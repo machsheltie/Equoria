@@ -39,8 +39,7 @@ import {
   GameDialogBody,
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
-import { skillLevelLabel } from '@/lib/staffLabels';
-import { groomSpecialtyTitle } from '@/lib/groomSpecialtyLabels';
+import { groomSpecialtyTitle, skillLevelLabel } from '@/lib/staffLabels';
 
 interface GroomListProps {
   onGroomHired?: (_groom: MarketplaceGroom) => void;

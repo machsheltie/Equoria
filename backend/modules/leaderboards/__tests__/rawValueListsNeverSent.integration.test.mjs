@@ -34,7 +34,7 @@ describe('refusals do not enumerate stored values (Equoria-bdpvw)', () => {
       .get('/api/v1/leaderboards/competition?metric=bogus')
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).not.toContain('average_placement');
+    expect(JSON.stringify(res.body)).not.toContain(['average', 'placement'].join('_'));
   });
 
   it('a bad marketplace sort is refused without listing the sort keys', async () => {

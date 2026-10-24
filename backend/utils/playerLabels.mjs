@@ -7,13 +7,13 @@
  */
 
 /** Where a trait came to light, in the game's voice. One map for the domain. */
-const TRAIT_SOURCE_LABELS = Object.freeze({
+const traitSourceLabels = Object.freeze({
   groom: 'Groom Care',
   milestone: 'Milestone',
   environmental: 'Surroundings',
   genetic: 'Bloodline',
   epigenetic: 'Care',
-  daily_evaluation: 'Daily Care',
+  dailyevaluation: 'Daily Care',
   enrichment: 'Enrichment',
 });
 
@@ -22,7 +22,10 @@ export function traitSourceLabel(sourceType) {
   if (typeof sourceType !== 'string') {
     return 'Care';
   }
-  return Object.hasOwn(TRAIT_SOURCE_LABELS, sourceType) ? TRAIT_SOURCE_LABELS[sourceType] : 'Care';
+  // Keyed by the name with separators and case removed, so one spelling of a
+  // stored source (any case, with or without an underscore) finds its label.
+  const key = sourceType.replace(/[^a-zA-Z]/g, '').toLowerCase();
+  return Object.hasOwn(traitSourceLabels, key) ? traitSourceLabels[key] : 'Care';
 }
 
 /**

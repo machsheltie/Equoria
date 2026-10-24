@@ -97,25 +97,3 @@ export function groomSpecialtyLabel(
 
 /** Exported for the test that proves every backend specialty value is covered. */
 export const KNOWN_GROOM_SPECIALTY_LABELS = GROOM_SPECIALTY_LABELS;
-
-/**
- * Title-cased specialty for a card chip (Equoria-bdpvw): the same stored values
- * as the sentence phrases above, in the register a badge uses. An unknown value
- * reads as a generic authored phrase, never the stored value.
- */
-const GROOM_SPECIALTY_TITLES: Readonly<Record<string, string>> = Object.freeze({
-  foalCare: 'Foal Care',
-  general: 'Everyday Care',
-  training: 'Training Support',
-  medical: 'Medical Care',
-  generalGrooming: 'Grooming',
-  specializedDisciplines: 'Specialist Disciplines',
-});
-
-export function groomSpecialtyTitle(specialty: string | null | undefined): string {
-  if (typeof specialty !== 'string') return 'Everyday Care';
-  return GROOM_SPECIALTY_TITLES[specialty.trim()] ?? 'Everyday Care';
-}
-
-/** Exported for the test that proves every backend specialty value is covered. */
-export const KNOWN_GROOM_SPECIALTY_TITLES = GROOM_SPECIALTY_TITLES;

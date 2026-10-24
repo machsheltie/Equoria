@@ -15,6 +15,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const hex = () => randomBytes(4).toString('hex');
@@ -44,12 +45,26 @@ beforeAll(async () => {
   grownName = `TestFixture-WyagFoalGrown-${hex()}`;
   const young = await createTestHorse(
     prisma,
-    { name: youngName, sex: 'Colt', age: 1, bondScore: 61, dateOfBirth: hoursAgo(24 * 8), userId: user.id },
+    {
+      name: youngName,
+      sex: 'Colt',
+      age: 1,
+      bondScore: 61,
+      dateOfBirth: gameCalendarDate(new Date(), -8),
+      userId: user.id,
+    },
     horseIds,
   );
   const grown = await createTestHorse(
     prisma,
-    { name: grownName, sex: 'Colt', age: 5, bondScore: 77, dateOfBirth: hoursAgo(24 * 40), userId: user.id },
+    {
+      name: grownName,
+      sex: 'Colt',
+      age: 5,
+      bondScore: 77,
+      dateOfBirth: gameCalendarDate(new Date(), -40),
+      userId: user.id,
+    },
     horseIds,
   );
   // The legacy flag disagrees with game age on both rows on purpose.

@@ -36,8 +36,7 @@ import {
   GameDialogTitle,
 } from '@/components/ui/game';
 import { Checkbox, Select, Textarea } from '@/components/ui/form';
-import { skillLevelLabel } from '@/lib/staffLabels';
-import { groomSpecialtyTitle } from '@/lib/groomSpecialtyLabels';
+import { groomSpecialtyTitle, skillLevelLabel } from '@/lib/staffLabels';
 
 // Type definitions
 interface Groom {

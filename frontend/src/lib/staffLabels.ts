@@ -7,11 +7,12 @@
  * stored value.
  *
  * One map per domain. Skill levels and personalities are shared by all three
- * kinds of staff (the sets differ per kind, so one map holds the union); the
- * groom specialty has its own map in groomSpecialtyLabels.ts.
+ * kinds of staff (the sets differ per kind, so one map holds the union). The
+ * groom specialty chip title lives here too; the sentence-register phrase for a
+ * specialty stays in groomSpecialtyLabels.ts.
  */
 
-const SKILL_LEVEL_LABELS: Readonly<Record<string, string>> = Object.freeze({
+const skillLevelLabels: Readonly<Record<string, string>> = Object.freeze({
   // Groom: novice, intermediate, expert, master.
   novice: 'Novice',
   intermediate: 'Intermediate',
@@ -23,7 +24,7 @@ const SKILL_LEVEL_LABELS: Readonly<Record<string, string>> = Object.freeze({
   experienced: 'Experienced',
 });
 
-const PERSONALITY_LABELS: Readonly<Record<string, string>> = Object.freeze({
+const personalityLabels: Readonly<Record<string, string>> = Object.freeze({
   // Groom.
   gentle: 'Gentle',
   energetic: 'Energetic',
@@ -53,14 +54,34 @@ function lookup(
 
 /** A staff member's skill level as a title-cased word. */
 export function skillLevelLabel(skillLevel: string | null | undefined): string {
-  return lookup(SKILL_LEVEL_LABELS, skillLevel, 'Unrated');
+  return lookup(skillLevelLabels, skillLevel, 'Unrated');
 }
 
 /** A staff member's personality as a title-cased word. */
 export function personalityLabel(personality: string | null | undefined): string {
-  return lookup(PERSONALITY_LABELS, personality, 'Hard to Read');
+  return lookup(personalityLabels, personality, 'Hard to Read');
 }
 
 /** Exported so the test can prove every stored staff value is covered. */
-export const KNOWN_SKILL_LEVEL_LABELS = SKILL_LEVEL_LABELS;
-export const KNOWN_PERSONALITY_LABELS = PERSONALITY_LABELS;
+export const knownSkillLevelLabels = skillLevelLabels;
+export const knownPersonalityLabels = personalityLabels;
+
+/**
+ * A groom's specialty as a title-cased chip. An unknown value reads as a generic
+ * authored phrase, never the stored value.
+ */
+const groomSpecialtyTitles: Readonly<Record<string, string>> = Object.freeze({
+  foalCare: 'Foal Care',
+  general: 'Everyday Care',
+  training: 'Training Support',
+  medical: 'Medical Care',
+  // Legacy strings that appear only in older fixtures.
+  generalGrooming: 'Grooming',
+  specializedDisciplines: 'Specialist Disciplines',
+});
+
+export function groomSpecialtyTitle(specialty: string | null | undefined): string {
+  return lookup(groomSpecialtyTitles, specialty, 'Everyday Care');
+}
+
+export const knownGroomSpecialtyTitles = groomSpecialtyTitles;

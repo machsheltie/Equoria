@@ -24,7 +24,7 @@ import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const MAX_ITEMS = 8;
 // A foal is a horse under game age 3.
-const FOAL_AGE_LIMIT = 3;
+const foalAgeLimit = 3;
 
 export async function getWhileYouWereGone(req, res) {
   try {
@@ -125,7 +125,7 @@ export async function getWhileYouWereGone(req, res) {
       // and the bond shown is the horse's own Horse.bondScore.
       // Game age under 3 = born fewer than 21 game days ago (a game week is a game
       // year), read from the birth date so it never depends on the cached age column.
-      const foalCutoff = gameCalendarDate(new Date(), -FOAL_AGE_LIMIT * 7);
+      const foalCutoff = gameCalendarDate(new Date(), -foalAgeLimit * 7);
       const foals = await prisma.foalDevelopment.findMany({
         where: {
           foal: { userId, dateOfBirth: { gt: foalCutoff } },

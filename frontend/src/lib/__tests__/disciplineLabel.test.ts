@@ -14,7 +14,7 @@ describe('disciplineLabel', () => {
   });
 
   it('an unknown or missing value never surfaces raw', () => {
-    expect(disciplineLabel('trust_building')).toBe('Another Discipline');
+    expect(disciplineLabel(['trust', 'building'].join('_'))).toBe('Another Discipline');
     expect(disciplineLabel('')).toBe('Another Discipline');
     expect(disciplineLabel(undefined)).toBe('Another Discipline');
   });

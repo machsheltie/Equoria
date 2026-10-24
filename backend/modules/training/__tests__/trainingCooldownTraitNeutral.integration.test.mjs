@@ -24,7 +24,7 @@ const { createTestHorse, cleanupTestHorses } = await import(
 const { trainHorse } = await import(join(__dirname, '../controllers/trainingController.mjs'));
 
 const SUFFIX = randomBytes(6).toString('hex');
-const DAY_MS = 24 * 60 * 60 * 1000;
+const dayMs = 24 * 60 * 60 * 1000;
 
 describe('INTEGRATION: training cooldown is seven days whatever the horse traits (Equoria-fjgzp)', () => {
   const createdHorseIds = [];
@@ -85,7 +85,7 @@ describe('INTEGRATION: training cooldown is seven days whatever the horse traits
     const result = await trainHorse(horse.id, 'Dressage');
     expect(result.success).toBe(true);
     const row = await prisma.horse.findUnique({ where: { id: horse.id }, select: { trainingCooldown: true } });
-    return (row.trainingCooldown.getTime() - before) / DAY_MS;
+    return (row.trainingCooldown.getTime() - before) / dayMs;
   }
 
   it('an intelligent horse waits the same seven days as a horse with no trait', async () => {

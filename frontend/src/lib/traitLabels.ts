@@ -6,14 +6,14 @@
  * the maps have not been taught reads as a generic authored phrase.
  */
 
-const TRAIT_RARITY_LABELS: Readonly<Record<string, string>> = Object.freeze({
+const traitRarityLabels: Readonly<Record<string, string>> = Object.freeze({
   common: 'Common',
   uncommon: 'Uncommon',
   rare: 'Rare',
   legendary: 'Legendary',
 });
 
-const TRAIT_CATEGORY_LABELS: Readonly<Record<string, string>> = Object.freeze({
+const traitCategoryLabels: Readonly<Record<string, string>> = Object.freeze({
   epigenetic: 'Care Trait',
   bond: 'Bond Trait',
   situational: 'Situational Trait',
@@ -21,14 +21,14 @@ const TRAIT_CATEGORY_LABELS: Readonly<Record<string, string>> = Object.freeze({
 
 export function traitRarityLabel(rarity: string | null | undefined): string {
   if (typeof rarity !== 'string') return 'Unrecorded';
-  return TRAIT_RARITY_LABELS[rarity.trim().toLowerCase()] ?? 'Unrecorded';
+  return traitRarityLabels[rarity.trim().toLowerCase()] ?? 'Unrecorded';
 }
 
 export function traitCategoryLabel(category: string | null | undefined): string {
   if (typeof category !== 'string') return 'Trait';
-  return TRAIT_CATEGORY_LABELS[category.trim().toLowerCase()] ?? 'Trait';
+  return traitCategoryLabels[category.trim().toLowerCase()] ?? 'Trait';
 }
 
 /** Exported so the test can prove every stored value is covered. */
-export const KNOWN_TRAIT_RARITY_LABELS = TRAIT_RARITY_LABELS;
-export const KNOWN_TRAIT_CATEGORY_LABELS = TRAIT_CATEGORY_LABELS;
+export const knownTraitRarityLabels = traitRarityLabels;
+export const knownTraitCategoryLabels = traitCategoryLabels;

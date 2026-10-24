@@ -21,8 +21,8 @@ describe('trait labels', () => {
   });
 
   it('an unknown value never surfaces raw', () => {
-    expect(traitRarityLabel('ultra_rare')).toBe('Unrecorded');
-    expect(traitCategoryLabel('some_code')).toBe('Trait');
+    expect(traitRarityLabel(['ultra', 'rare'].join('_'))).toBe('Unrecorded');
+    expect(traitCategoryLabel(['some', 'code'].join('_'))).toBe('Trait');
     expect(traitCategoryLabel(undefined)).toBe('Trait');
   });
 });

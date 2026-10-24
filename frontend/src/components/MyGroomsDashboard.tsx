@@ -51,8 +51,7 @@ import {
   feeForGroom as feeForGroomIn,
   filterAndSortGrooms,
 } from './groom/myGroomsRoster';
-import { skillLevelLabel } from '@/lib/staffLabels';
-import { groomSpecialtyTitle } from '@/lib/groomSpecialtyLabels';
+import { groomSpecialtyTitle, skillLevelLabel } from '@/lib/staffLabels';
 
 interface MyGroomsDashboardProps {
   userId: string | number;
