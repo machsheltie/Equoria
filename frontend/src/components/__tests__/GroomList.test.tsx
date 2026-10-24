@@ -56,7 +56,7 @@ const mockMarketplaceData = {
       marketplaceId: 'groom-3',
       firstName: 'Emma',
       lastName: 'Thompson',
-      specialty: 'showHandling',
+      specialty: 'medical',
       skillLevel: 'master',
       personality: 'energetic',
       experience: 12,
@@ -247,7 +247,7 @@ describe('GroomList Component', () => {
 
       await waitFor(() => {
         const specialtyFilter = screen.getByTestId('specialty-filter');
-        fireEvent.change(specialtyFilter, { target: { value: 'showHandling' } });
+        fireEvent.change(specialtyFilter, { target: { value: 'medical' } });
       });
 
       await waitFor(() => {

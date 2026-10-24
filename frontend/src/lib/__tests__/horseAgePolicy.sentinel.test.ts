@@ -23,7 +23,7 @@ const read = (relative: string) => readFileSync(join(__dirname, relative), 'utf8
 describe('shared retirement age (Equoria-iehtc)', () => {
   it('mirrors the backend horseAgePolicy value', () => {
     const backend = read('../../../../backend/constants/horseAgePolicy.mjs');
-    const match = /export const RETIREMENT_AGE_YEARS = (\d+);/.exec(backend);
+    const match = /export const retirementAgeYears = (\d+);/.exec(backend);
 
     expect(match).not.toBeNull();
     expect(retirementAgeYears).toBe(Number(match?.[1]));
