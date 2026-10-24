@@ -25,11 +25,12 @@
  * Refusal text is authored for players; the `code` is for the client and tests.
  */
 
+import { MS_PER_DAY, MS_PER_MINUTE, MS_PER_WEEK } from '../../../constants/time.mjs';
 import { helpTag } from './helpConstants.mjs';
 
-export const helpMessageCooldownMs = 10 * 60 * 1000;
-export const helpDuplicateWindowMs = 24 * 60 * 60 * 1000;
-export const helpConversationOpenMs = 7 * 24 * 60 * 60 * 1000;
+export const helpMessageCooldownMs = 10 * MS_PER_MINUTE;
+export const helpDuplicateWindowMs = MS_PER_DAY;
+export const helpConversationOpenMs = MS_PER_WEEK;
 
 const userSelect = { id: true, username: true };
 /** Most recent help messages inspected per send; far above any honest player. */
@@ -110,7 +111,7 @@ export async function sendHelpMessageTx(tx, { senderId, recipient, subject, cont
   if (latest) {
     const waitMs = latest.createdAt.getTime() + helpMessageCooldownMs - now.getTime();
     if (waitMs > 0) {
-      const minutes = Math.max(1, Math.ceil(waitMs / 60_000));
+      const minutes = Math.max(1, Math.ceil(waitMs / MS_PER_MINUTE));
       return refusal(
         429,
         'helpCooldown',

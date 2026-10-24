@@ -58,9 +58,6 @@ model User {
   mfaSecret        String?
   mfaEnabled       Boolean           @default(false)
   mfaRecoveryCodes Json?
-  /// Equoria-vc5x1: last time this account made an authenticated request,
-  /// stamped at most once a minute. Backs the Need Help? online status.
-  lastActiveAt     DateTime?
   /// Timestamps
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -2449,4 +2446,16 @@ model NewsItem {
   @@index([endsAt])
   @@index([authorUserId])
   @@map("news_items")
+}
+
+/// Equoria-vc5x1: when an account last made an authenticated request, stamped at
+/// most once a minute by authenticateToken. Backs the Need Help? online status.
+/// Its own table with NO relation to User on purpose: the stamp must never take
+/// a lock on the User row (an FK insert takes FOR KEY SHARE on the parent) or
+/// write to it, so it cannot interfere with player-state transactions.
+model UserPresence {
+  userId       String   @id
+  lastActiveAt DateTime
+
+  @@map("user_presence")
 }

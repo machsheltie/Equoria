@@ -55,29 +55,39 @@ export const evictPasswordChangedAtCache = userId => {
 };
 
 /**
- * Presence (Equoria-vc5x1): stamp User.lastActiveAt at most once a minute per
- * account so the Need Help? page can show who is online.
+ * Presence (Equoria-vc5x1): record when an account was last active, at most once
+ * a minute per account, so the Need Help? page can show who is online.
+ *
+ * Best-effort and off the request path: it writes the separate user_presence
+ * table (never the User row, never inside another transaction), is not awaited,
+ * and a failure only logs. The User row is deliberately left alone: a write to
+ * it from every request would interfere with the lock-order and settings
+ * compare-and-swap guarantees player-state transactions depend on.
  */
 const lastActiveStampIntervalMs = 60_000;
 const lastActiveStamped = new Map();
 
-const stampLastActive = async (userId, requestId) => {
+const stampLastActive = (userId, requestId) => {
   const nowMs = Date.now();
   const stampedAt = lastActiveStamped.get(userId);
   if (stampedAt !== undefined && nowMs - stampedAt < lastActiveStampIntervalMs) {
     return;
   }
   lastActiveStamped.set(userId, nowMs);
-  try {
-    // Prisma stores TIMESTAMP(3) as naive UTC; the database clock converted to
-    // UTC matches that regardless of the session time zone (a bound JS Date
-    // would be shifted by it).
-    await prisma.$executeRaw`UPDATE "User" SET "lastActiveAt" = (now() AT TIME ZONE 'UTC') WHERE "id" = ${userId}`;
-  } catch (stampError) {
-    // Presence is a convenience: a failed stamp must never fail authentication.
-    lastActiveStamped.delete(userId);
-    logger.warn(`[auth:${requestId}] lastActiveAt stamp failed: ${stampError.message}`);
-  }
+  const now = new Date(nowMs);
+  Promise.resolve()
+    .then(() =>
+      prisma.userPresence.upsert({
+        where: { userId },
+        create: { userId, lastActiveAt: now },
+        update: { lastActiveAt: now },
+      }),
+    )
+    .catch(stampError => {
+      // Presence is a convenience: a failed stamp must never fail authentication.
+      lastActiveStamped.delete(userId);
+      logger.warn(`[auth:${requestId}] presence stamp failed: ${stampError.message}`);
+    });
 };
 
 /**
@@ -274,7 +284,7 @@ export const authenticateToken = async (req, res, next) => {
 
     req.user = user;
     if (typeof user.id === 'string' && user.id.length > 0) {
-      await stampLastActive(user.id, requestId);
+      stampLastActive(user.id, requestId);
     }
     // Equoria-lax36: expose the token source for the CSRF session-identifier
     // resolver. 'cookie' → CSRF-able session, bind to user.id; 'header' →

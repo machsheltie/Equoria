@@ -1,11 +1,12 @@
 /**
  * Need Help? integration tests (Equoria-vc5x1): the staff list with online
- * status, the lastActiveAt presence stamp, and the three anti-abuse rules on
+ * status, the user_presence stamp, and the three anti-abuse rules on
  * player-to-staff messages. Real app, real database, real CSRF flow.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
+import { MS_PER_MINUTE } from '../../../constants/time.mjs';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -17,7 +18,7 @@ import { helpOnlineWindowMs } from '../services/helpDirectory.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const unique = () => randomBytes(6).toString('hex');
-const MINUTE = 60_000;
+const MINUTE = MS_PER_MINUTE;
 
 const created = [];
 const cleanup = createCleanupTracker();
@@ -32,10 +33,12 @@ async function makeUser(role, lastActiveAt = null) {
       firstName: 'Need',
       lastName: 'Help',
       role,
-      lastActiveAt,
     },
   });
   created.push(user.id);
+  if (lastActiveAt) {
+    await prisma.userPresence.create({ data: { userId: user.id, lastActiveAt } });
+  }
   return { ...user, token: generateTestToken({ id: user.id, email: user.email, role }) };
 }
 
@@ -91,6 +94,7 @@ afterAll(async () => {
       }),
     'directMessage',
   );
+  cleanup.add(() => prisma.userPresence.deleteMany({ where: { userId: { in: created } } }), 'userPresence');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: created } } }), 'users');
   await cleanup.run();
 }, 30000);
@@ -135,17 +139,37 @@ describe('GET /api/v1/help/staff', () => {
 });
 
 describe('presence', () => {
-  it('an authenticated request stamps lastActiveAt', async () => {
+  it('an authenticated request records the account as active, off the request path', async () => {
     const fresh = await makeUser('user');
-    expect(fresh.lastActiveAt).toBeNull();
+    expect(await prisma.userPresence.findUnique({ where: { userId: fresh.id } })).toBeNull();
     await request(app)
       .get('/api/v1/help/staff')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${fresh.token}`)
       .expect(200);
-    const row = await prisma.user.findUnique({ where: { id: fresh.id } });
-    expect(row.lastActiveAt).not.toBeNull();
+    // The stamp is best-effort and not awaited by the request: poll for it.
+    let row = null;
+    for (let attempt = 0; attempt < 50 && row === null; attempt += 1) {
+      row = await prisma.userPresence.findUnique({ where: { userId: fresh.id } });
+      if (row === null) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    expect(row).not.toBeNull();
     expect(Date.now() - row.lastActiveAt.getTime()).toBeLessThan(helpOnlineWindowMs);
+  });
+
+  it('never touches the User row: updatedAt is unchanged by authenticated requests', async () => {
+    const fresh = await makeUser('user');
+    const before = await prisma.user.findUnique({ where: { id: fresh.id } });
+    await request(app)
+      .get('/api/v1/help/staff')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${fresh.token}`)
+      .expect(200);
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const after = await prisma.user.findUnique({ where: { id: fresh.id } });
+    expect(after.updatedAt.getTime()).toBe(before.updatedAt.getTime());
   });
 });
 
