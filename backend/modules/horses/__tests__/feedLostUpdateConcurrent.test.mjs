@@ -235,7 +235,7 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
         pregnancySireId: sire.id,
         pendingFoalName: `TestFixture-Kv2gzFoal_${ts}`,
         // Never fed → first feed is not gated by alreadyFedToday.
-        lastFedDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Excellent hunger, not fed today: owner ruling 2026-10-23 (hunger fill bar) - a never-fed horse is Bad and can be fed again today
+        lastFedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // Excellent hunger, not fed today: owner ruling 2026-10-23 (hunger fill bar) - a never-fed horse is Bad and can be fed again today
         pregnancyFeedingsByTier: {},
       },
     });
