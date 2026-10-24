@@ -95,6 +95,7 @@ model User {
   staffMarketplaceStates  StaffMarketplaceState[]
   notifications             Notification[]
   rankSnapshots             UserRankSnapshot[]
+  monthlyTotals             PlayerMonthlyTotal[]
   staffCheckinCodes         StaffCheckinCode[]
   staffTrustedDevices       StaffTrustedDevice[]
   staffTicketsFiled         StaffTicket[]          @relation("StaffTicketFiler")
@@ -107,6 +108,8 @@ model User {
 
   @@index([email])
   @@index([emailVerified])
+  /// Equoria-y3nia: the Overall player XP board orders by xp.
+  @@index([xp])
 }
 
 model Notification {
@@ -273,6 +276,7 @@ model Horse {
   groomInteractions       GroomInteraction[]
   groomPerformanceRecords GroomPerformanceRecord[]
   horseXpEvents           HorseXpEvent[]
+  monthlyTotals           HorseMonthlyTotal[]
   traitHistoryLogs        TraitHistoryLog[]
   milestoneTraitLogs      MilestoneTraitLog[]
   ultraRareTraitEvents    UltraRareTraitEvent[]
@@ -302,6 +306,9 @@ model Horse {
   @@index([userId])
   @@index([breedId])
   @@index([stableId])
+  /// Equoria-y3nia: the Overall horse points and earnings boards.
+  @@index([horseXp])
+  @@index([totalEarnings])
   /// Equoria-ezx1y: indexes for high-traffic WHERE-filter queries.
   /// - sireId  → backend/modules/users/services/gdprAccountService.mjs:286
   ///   (cascade `prisma.horse.updateMany({ where: { sireId: { in: horseIds } } })`)
@@ -993,6 +1000,10 @@ model CompetitionResult {
   /// second column is the wrong one, so that index leaves the `viewedAt`
   /// predicate to a heap re-check on every row of every horse.
   @@index([horseId, viewedAt])
+  /// Equoria-y3nia: the live Overall win boards count first places (and shows
+  /// entered) per horse and per discipline from this index alone.
+  @@index([discipline, placement, horseId])
+  @@index([placement, horseId])
   @@map("competition_results")
 }
 
@@ -2458,4 +2469,42 @@ model UserPresence {
   lastActiveAt DateTime
 
   @@map("user_presence")
+}
+
+/// Equoria-y3nia (owner rulings q42, 2026-10-23): the Monthly leaderboards read
+/// these totals; the Overall boards are counted live. One row per player per
+/// game month per category, added to inside the transaction that earns the
+/// amount (a show settling, an XP award), so a rolled-back settlement leaves no
+/// trace and a duplicate settlement is refused before it can be counted twice.
+/// `month` is the Eastern game month, 'YYYY-MM' (backend/utils/gameTime.mjs).
+/// Categories: xp, earnings, wins, shows.
+model PlayerMonthlyTotal {
+  id       Int    @id @default(autoincrement())
+  month    String
+  category String
+  playerId String
+  value    Int    @default(0)
+  player   User   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([month, category, playerId])
+  @@index([month, category, value(sort: Desc), playerId])
+  @@index([playerId])
+  @@map("player_monthly_totals")
+}
+
+/// Equoria-y3nia: the horse side of PlayerMonthlyTotal. Categories: points
+/// (Horse Points earned), earnings, wins, shows, and one 'disciplineWins:<name>'
+/// per discipline (first places in that discipline, the per-discipline boards).
+model HorseMonthlyTotal {
+  id       Int    @id @default(autoincrement())
+  month    String
+  category String
+  horseId  Int
+  value    Int    @default(0)
+  horse    Horse  @relation(fields: [horseId], references: [id], onDelete: Cascade)
+
+  @@unique([month, category, horseId])
+  @@index([month, category, value(sort: Desc), horseId])
+  @@index([horseId])
+  @@map("horse_monthly_totals")
 }
