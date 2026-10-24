@@ -22,6 +22,7 @@ import { enterConformationShow } from '../controllers/conformationShowController
 // Equoria-dm1i: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const SUITE_PREFIX = 'a12';
 
@@ -182,7 +183,7 @@ describe('Bad-health gate on conformation show entry', () => {
     // pass, isolating the A12 gate as the actual rejector.
     const horse = await createHorse(user.id, {
       lastFedDate: new Date(Date.now() - 10 * 86_400_000),
-      lastVettedDate: new Date(Date.now() - 25 * 86_400_000),
+      lastVettedDate: gameCalendarDate(new Date(), -25),
       healthStatus: 'Excellent',
     });
     const groom = await createGroom(user.id);

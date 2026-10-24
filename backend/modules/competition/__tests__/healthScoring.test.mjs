@@ -11,6 +11,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { healthGradeOf, horseHealthGrade } from '../../../utils/horseHealth.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { healthScorePercent, healthScorePercents } from '../rules/healthScoring.mjs';
 
 const now = new Date('2026-10-23T16:00:00.000Z');
@@ -48,7 +49,7 @@ describe('healthGradeOf: the one health mapping', () => {
 // (0-7 Excellent, 8-14 Very Good, 15-21 Good, 22-28 Fair, 29+ Bad) and hunger
 // lowers it (Fair one level, Bad two). Old contract: the worse of feed and vet
 // health, with a stored healthStatus word overriding the vet days.
-const vettedDaysAgo = days => new Date(Date.UTC(2026, 9, 23 - days));
+const vettedDaysAgo = days => gameCalendarDate(now, -days);
 const care = (vetDays, fedDaysAgo = 0) => ({
   age: 7,
   lastVettedDate: vettedDaysAgo(vetDays),

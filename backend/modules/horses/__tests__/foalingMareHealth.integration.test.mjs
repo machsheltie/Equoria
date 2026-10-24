@@ -16,8 +16,8 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { horseHealthGrade } from '../../../utils/horseHealth.mjs';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const FIXTURE_PREFIX = 'TestFixture-w4ivy';
+const dayMs = 24 * 60 * 60 * 1000;
+const fixturePrefix = 'TestFixture-w4ivy';
 const tag = randomBytes(4).toString('hex');
 
 let testUser;
@@ -29,14 +29,14 @@ async function pregnantMare(label, care) {
   return prisma.horse.create({
     data: {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-Dam-${label}-${tag}`,
+      name: `${fixturePrefix}-Dam-${label}-${tag}`,
       sex: 'Mare',
       dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
       age: 5,
       breedId,
       userId: testUser.id,
       healthStatus: 'Excellent',
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancySireId: sire.id,
       pregnancyFeedingsByTier: {},
       ...care,
@@ -55,8 +55,8 @@ const vettedDaysAgo = days => gameCalendarDate(new Date(), -days);
 beforeAll(async () => {
   testUser = await prisma.user.create({
     data: {
-      email: `${FIXTURE_PREFIX}-${tag}@test.com`,
-      username: `${FIXTURE_PREFIX}-${tag}`.slice(0, 30),
+      email: `${fixturePrefix}-${tag}@test.com`,
+      username: `${fixturePrefix}-${tag}`.slice(0, 30),
       password: 'irrelevant-hash',
       firstName: 'Mare',
       lastName: 'Health',
@@ -72,7 +72,7 @@ beforeAll(async () => {
   sire = await prisma.horse.create({
     data: {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-Sire-${tag}`,
+      name: `${fixturePrefix}-Sire-${tag}`,
       sex: 'Stallion',
       dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
       age: 5,
@@ -132,7 +132,7 @@ describe('the foal is born with the mare health and hunger (Equoria-w4ivy)', () 
   ])('%s', async (label, { vetDays, fedDaysAgo }) => {
     const dam = await pregnantMare(`inherit-${vetDays}-${fedDaysAgo}`, {
       lastVettedDate: vettedDaysAgo(vetDays),
-      lastFedDate: new Date(Date.now() - fedDaysAgo * DAY_MS),
+      lastFedDate: new Date(Date.now() - fedDaysAgo * dayMs),
     });
     const { foal } = await foalWith(dam.id);
     const born = await prisma.horse.findUnique({ where: { id: foal.id } });
@@ -143,7 +143,7 @@ describe('the foal is born with the mare health and hunger (Equoria-w4ivy)', () 
   });
 
   it('carries a hunger raised by feeding (hungerSince) to the foal', async () => {
-    const hungerSince = new Date(Date.now() - 4 * DAY_MS);
+    const hungerSince = new Date(Date.now() - 4 * dayMs);
     const dam = await pregnantMare('hungerSince', {
       lastVettedDate: vettedDaysAgo(0),
       lastFedDate: new Date(),

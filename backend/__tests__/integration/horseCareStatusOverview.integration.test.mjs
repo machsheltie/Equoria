@@ -17,7 +17,7 @@ import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 const uid = () => randomBytes(5).toString('hex');
-const DAY_MS = 24 * 60 * 60 * 1000;
+const dayMs = 24 * 60 * 60 * 1000;
 const cleanup = createCleanupTracker();
 const horseIds = [];
 let owner;
@@ -65,7 +65,7 @@ beforeAll(async () => {
   groom = await prisma.groom.create({
     data: {
       name: `TestFixture-0l0tq-g-${uid()}`,
-      speciality: 'show_handling',
+      speciality: 'showHandling',
       personality: 'gentle',
       skillLevel: 'expert',
       user: { connect: { id: owner.id } },
@@ -82,7 +82,7 @@ afterAll(() => cleanup.run(), 60000);
 
 describe('overview Current Status verdicts (Equoria-0l0tq)', () => {
   it('reports lastShod and lastGroomed as stored, and null when never', async () => {
-    const shod = new Date(Date.now() - 3 * DAY_MS);
+    const shod = new Date(Date.now() - 3 * dayMs);
     const horse = await makeHorse({ lastShod: shod, lastGroomed: shod });
     const data = await overview(horse.id);
     expect(new Date(data.lastShod).getTime()).toBe(shod.getTime());
@@ -98,7 +98,7 @@ describe('overview Current Status verdicts (Equoria-0l0tq)', () => {
     const horse = await makeHorse();
     expect((await overview(horse.id)).canTrainNow).toBe(true);
 
-    const trainedAt = new Date(Date.now() - 2 * DAY_MS);
+    const trainedAt = new Date(Date.now() - 2 * dayMs);
     await prisma.trainingLog.create({ data: { horseId: horse.id, discipline: 'Dressage', trainedAt } });
     const data = await overview(horse.id);
     expect(data.canTrainNow).toBe(false);
@@ -106,7 +106,7 @@ describe('overview Current Status verdicts (Equoria-0l0tq)', () => {
 
     await prisma.trainingLog.updateMany({
       where: { horseId: horse.id },
-      data: { trainedAt: new Date(Date.now() - 8 * DAY_MS) },
+      data: { trainedAt: new Date(Date.now() - 8 * dayMs) },
     });
     expect((await overview(horse.id)).canTrainNow).toBe(true);
   });

@@ -14,6 +14,7 @@ import {
   hungerFeedingPlan,
   horseHealthGrade,
 } from '../../../utils/horseHealth.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 // Owner ruling 2026-10-23 (Equoria-u0jop): health is exactly Excellent, Very
 // Good, Good, Fair, Bad; Poor, Bad and Critical all map to Bad. Old contract:
@@ -60,7 +61,7 @@ describe('hasBadHealth (the Fair-or-better gate for breeding, training and shows
   const vetted = daysAgo => ({
     age: 5,
     healthStatus: null,
-    lastVettedDate: new Date(NOW.getTime() - daysAgo * 86400000),
+    lastVettedDate: gameCalendarDate(NOW, -daysAgo),
   });
   const fed = daysAgo => ({ lastFedDate: new Date(NOW.getTime() - daysAgo * 86400000) });
 

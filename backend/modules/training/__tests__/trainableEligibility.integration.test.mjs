@@ -19,6 +19,7 @@ import { randomBytes } from 'node:crypto';
 import app from '../../../app.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { canTrain } from '../controllers/trainingController.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const prefix = 'TestFixture-trainable-eligibility';
 
@@ -50,7 +51,7 @@ beforeAll(async () => {
   await make('unfed', {
     age: 6,
     lastFedDate: null,
-    lastVettedDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+    lastVettedDate: gameCalendarDate(new Date(), -25),
   });
 }, 120000);
 

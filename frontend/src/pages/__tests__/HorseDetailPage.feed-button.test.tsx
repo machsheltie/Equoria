@@ -19,7 +19,7 @@ import React from 'react';
 
 const originalFetch = global.fetch;
 
-const BASE_HORSE = {
+const baseHorse = {
   id: 5,
   name: 'Comet',
   breed: 'Thoroughbred',
@@ -110,7 +110,7 @@ afterEach(() => {
 describe('HorseDetailPage — feed button disabled-reason', () => {
   it('shows "No feed selected" when equippedFeedType is null', async () => {
     global.fetch = createFetchMock({
-      ...BASE_HORSE,
+      ...baseHorse,
       equippedFeedType: null,
       lastFedDate: null,
       feedHealth: null,
@@ -133,7 +133,7 @@ describe('HorseDetailPage — feed button disabled-reason', () => {
     vi.setSystemTime(new Date('2026-10-10T02:00:00Z'));
     try {
       global.fetch = createFetchMock({
-        ...BASE_HORSE,
+        ...baseHorse,
         equippedFeedType: 'basic',
         lastFedDate: '2026-10-09T14:00:00Z',
         feedHealth: 'Excellent',
@@ -159,7 +159,7 @@ describe('HorseDetailPage — feed button disabled-reason', () => {
     vi.setSystemTime(new Date('2026-10-10T02:00:00Z'));
     try {
       global.fetch = createFetchMock({
-        ...BASE_HORSE,
+        ...baseHorse,
         equippedFeedType: 'basic',
         lastFedDate: '2026-10-09T14:00:00Z',
         feedHealth: 'Fair',
@@ -178,7 +178,7 @@ describe('HorseDetailPage — feed button disabled-reason', () => {
 
   it('shows "Retired." when feedHealth is retired', async () => {
     global.fetch = createFetchMock({
-      ...BASE_HORSE,
+      ...baseHorse,
       equippedFeedType: 'basic',
       lastFedDate: null,
       feedHealth: 'retired',
@@ -196,7 +196,7 @@ describe('HorseDetailPage — feed button disabled-reason', () => {
     // Two days back is never today's Eastern game day, DST included.
     const yesterday = new Date(Date.now() - 2 * 86_400_000).toISOString();
     global.fetch = createFetchMock({
-      ...BASE_HORSE,
+      ...baseHorse,
       equippedFeedType: 'basic',
       lastFedDate: yesterday,
       feedHealth: 'good',

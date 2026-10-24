@@ -1204,7 +1204,6 @@
   "frontend/src/pages/__tests__/FoalDetailPage.lifecycle.test.tsx": 5,
   "frontend/src/pages/__tests__/FoalDetailPage.notAFoal.test.tsx": 7,
   "frontend/src/pages/__tests__/ForgotPasswordPage.test.tsx": 5,
-  "frontend/src/pages/__tests__/HorseDetailPage.feed-button.test.tsx": 5,
   "frontend/src/pages/__tests__/HorseDetailPage.ultraRareReveal.sentinel.test.ts": 2,
   "frontend/src/pages/__tests__/HorseEquipPage.tackImages.sentinel.test.ts": 4,
   "frontend/src/pages/__tests__/HorseEquipPage.test.tsx": 7,
