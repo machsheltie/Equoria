@@ -253,6 +253,27 @@ describe('Filing a ticket', () => {
     let row = null;
     const res = await fileWithSmtpPort(mod, modDevice, silentSmtp.address().port, async (filed, ms) => {
       elapsed = ms;
+      // A filing mails every verified admin and owner in the database, one send at
+      // a time in id order. A shared database holds more than this test's own admin
+      // (another suite's, or a leftover), and each of their sends would sit on the
+      // silent server in turn, so this admin's email would never reach it. Hang up
+      // on those until this admin's own email is the one being sent.
+      const ownEmailStatus = async () =>
+        (
+          await prisma.emailOutbox.findFirst({
+            where: {
+              idempotencyKey: { startsWith: `staffTicket:${filed.body.ticket.id}:` },
+              recipientId: admin.id,
+            },
+            select: { status: true },
+          })
+        )?.status;
+      for (let tries = 0; (await ownEmailStatus()) !== 'sending' && tries < 400; tries += 1) {
+        for (const socket of silentSockets) {
+          socket.destroy();
+        }
+        await new Promise(resolve => setTimeout(resolve, 25));
+      }
       // The send really reached the mail server and is waiting on it.
       for (let tries = 0; silentSockets.size === 0 && tries < 50; tries += 1) {
         await new Promise(resolve => setTimeout(resolve, 20));
