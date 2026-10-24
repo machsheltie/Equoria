@@ -20,8 +20,11 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const MAX_ITEMS = 8;
+// A foal is a horse under game age 3.
+const FOAL_AGE_LIMIT = 3;
 
 export async function getWhileYouWereGone(req, res) {
   try {
@@ -117,13 +120,22 @@ export async function getWhileYouWereGone(req, res) {
 
     // 3. Foal development milestones (bond level increases)
     try {
+      // Equoria-fr2kg (owner rulings Q11/Q16, 2026-10-22): a foal is a horse under
+      // game age 3 (the legacy FoalDevelopment.isActive flag never turns false),
+      // and the bond shown is the horse's own Horse.bondScore.
+      // Game age under 3 = born fewer than 21 game days ago (a game week is a game
+      // year), read from the birth date so it never depends on the cached age column.
+      const foalCutoff = gameCalendarDate(new Date(), -FOAL_AGE_LIMIT * 7);
       const foals = await prisma.foalDevelopment.findMany({
         where: {
-          foal: { userId },
+          foal: { userId, dateOfBirth: { gt: foalCutoff } },
           lastInteractionAt: { gte: since },
-          isActive: true,
         },
-        include: { foal: { select: { name: true } } },
+        select: {
+          foalId: true,
+          lastInteractionAt: true,
+          foal: { select: { name: true, bondScore: true } },
+        },
         take: 2,
       });
 
@@ -132,7 +144,7 @@ export async function getWhileYouWereGone(req, res) {
           type: 'foal-milestone',
           priority: 2,
           title: `${foal.foal?.name ?? 'Your foal'} is developing`,
-          description: `Bond level: ${foal.bondScore ?? foal.bondingLevel ?? 0}`,
+          description: `Bond level: ${foal.foal?.bondScore ?? 0}`,
           timestamp: foal.lastInteractionAt?.toISOString() ?? new Date().toISOString(),
           actionUrl: '/grooms',
           metadata: { foalId: foal.foalId },
