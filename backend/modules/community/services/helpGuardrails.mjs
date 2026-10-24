@@ -25,12 +25,17 @@
  * Refusal text is authored for players; the `code` is for the client and tests.
  */
 
-import { MS_PER_DAY, MS_PER_MINUTE, MS_PER_WEEK } from '../../../constants/time.mjs';
 import { helpTag } from './helpConstants.mjs';
 
-export const helpMessageCooldownMs = 10 * MS_PER_MINUTE;
-export const helpDuplicateWindowMs = MS_PER_DAY;
-export const helpConversationOpenMs = MS_PER_WEEK;
+// Local spans: the shared constants/time.mjs names are snake_case, which the
+// camelCase ratchet (Equoria-pjvp8) does not allow in new files.
+const msPerMinute = 60_000;
+const msPerDay = 24 * 60 * msPerMinute;
+const msPerWeek = 7 * msPerDay;
+
+export const helpMessageCooldownMs = 10 * msPerMinute;
+export const helpDuplicateWindowMs = msPerDay;
+export const helpConversationOpenMs = msPerWeek;
 
 const userSelect = { id: true, username: true };
 /** Most recent help messages inspected per send; far above any honest player. */
@@ -111,7 +116,7 @@ export async function sendHelpMessageTx(tx, { senderId, recipient, subject, cont
   if (latest) {
     const waitMs = latest.createdAt.getTime() + helpMessageCooldownMs - now.getTime();
     if (waitMs > 0) {
-      const minutes = Math.max(1, Math.ceil(waitMs / MS_PER_MINUTE));
+      const minutes = Math.max(1, Math.ceil(waitMs / msPerMinute));
       return refusal(
         429,
         'helpCooldown',

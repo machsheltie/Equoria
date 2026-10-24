@@ -6,9 +6,12 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { MS_PER_MINUTE } from '../../../constants/time.mjs';
 
-export const helpOnlineWindowMs = 5 * MS_PER_MINUTE;
+// Local spans: the shared constants/time.mjs names are snake_case, which the
+// camelCase ratchet (Equoria-pjvp8) does not allow in new files.
+const msPerMinute = 60_000;
+
+export const helpOnlineWindowMs = 5 * msPerMinute;
 
 const roleToSection = { owner: 'owner', admin: 'admin', moderator: 'moderator' };
 

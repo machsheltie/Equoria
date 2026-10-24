@@ -6,7 +6,6 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { MS_PER_MINUTE } from '../../../constants/time.mjs';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -18,7 +17,7 @@ import { helpOnlineWindowMs } from '../services/helpDirectory.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const unique = () => randomBytes(6).toString('hex');
-const MINUTE = MS_PER_MINUTE;
+const MINUTE = 60_000;
 
 const created = [];
 const cleanup = createCleanupTracker();
