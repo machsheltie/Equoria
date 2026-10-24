@@ -258,8 +258,11 @@ describe('Finding 9 — GET /api/v1/auth/email-change/status', () => {
     const confirmed = await confirmChange(rawToken);
     expect(confirmed.status).toBe(200);
 
-    // The session token still names the old address; the endpoint must read the
-    // account row, not the JWT claim.
+    // Equoria-8p6e6: confirming ends every earlier session, so the pre-change
+    // token is only accepted when both land in the same second. Sign in again
+    // with a token whose claim still names the OLD address: the endpoint must
+    // read the account row, not the JWT claim.
+    token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
     const res = await readStatus();
     expect(res.status).toBe(200);
     expect(res.body.data.email).toBe(replacement);
