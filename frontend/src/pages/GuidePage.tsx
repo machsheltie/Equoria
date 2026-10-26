@@ -26,6 +26,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Surface } from '@/components/ui/Surface';
 import {
   guideClosingLine,
   guideTitle,
@@ -233,11 +236,20 @@ export default function GuidePage() {
 
   return (
     <div className="guide" data-testid="guide-page">
-      <header className="guide__hero">
-        <h1 id={topId} tabIndex={-1} className="type-announcer-title guide__title">
-          {guideTitle}
-        </h1>
-      </header>
+      <div id={topId} tabIndex={-1} className="guide__top">
+        <PageHero title={guideTitle} />
+      </div>
+
+      {/* Banner image in glass card */}
+      <PageContainer variant="content" padded={false} className="pt-1 pb-4">
+        <Surface variant="panel">
+          <img
+            src="/images/equoriavisitorscenter.jpg"
+            alt="The Equoria Visitors Centre"
+            className="w-full h-auto rounded-[var(--radius-md)]"
+          />
+        </Surface>
+      </PageContainer>
 
       <div className="guide__body">
         <aside className="guide__aside">

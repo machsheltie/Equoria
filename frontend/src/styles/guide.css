@@ -12,31 +12,15 @@
   padding: var(--space-6) 0 var(--space-8);
 }
 
-/* ── Title ─────────────────────────────────────────────────────────────── */
+/* ── Title (PageHero) ─────────────────────────────────────────────────── */
 
-.guide__hero {
+.guide__top {
   margin-bottom: var(--space-6);
-  text-align: center;
 }
 
-.guide__title {
-  margin: 0;
-  color: var(--gold-primary);
-  font-size: var(--text-h1);
-  line-height: 1.18;
-  overflow-wrap: break-word;
-}
-
-.guide__title:focus-visible {
+.guide__top:focus-visible {
   outline: 2px solid var(--gold-bright);
   outline-offset: 4px;
-  border-radius: var(--radius-sm);
-}
-
-@media (min-width: 768px) {
-  .guide__title {
-    font-size: var(--text-display);
-  }
 }
 
 /* ── Body: index + text ────────────────────────────────────────────────── */

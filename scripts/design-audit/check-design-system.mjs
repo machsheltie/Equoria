@@ -105,6 +105,8 @@ const PAGEHERO_ALLOWLIST = [
   'pages/CraftingPage.tsx',
   'pages/WorldMapPage.tsx',
   'pages/WorldHubPage.tsx',
+  'pages/NewsPage.tsx',
+  'pages/GuidePage.tsx',
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

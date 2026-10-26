@@ -12,37 +12,7 @@
   container: news / inline-size;
 }
 
-/* ── Arrival ──────────────────────────────────────────────────────────── */
-.news-arrive {
-  padding: var(--space-5) 0 var(--space-2);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-3) var(--space-5);
-}
-
-.news-arrive h1 {
-  margin: 0;
-  font-family: var(--font-announcer);
-  font-weight: 700;
-  font-synthesis: none;
-  font-size: 2rem;
-  line-height: 1.1;
-  color: var(--gold-light);
-  text-shadow:
-    0 1px 6px var(--bg-deep-space),
-    0 0 20px color-mix(in srgb, var(--bg-deep-space) 90%, transparent),
-    0 0 30px var(--alpha-gold-ember-30);
-}
-
-.news-arrive p {
-  margin: var(--space-2) 0 0;
-  max-width: 52ch;
-  color: var(--text-primary);
-  text-shadow: 0 1px 6px var(--bg-deep-space);
-}
-
+/* ── Arrival (title lives in PageHero) ───────────────────────────────── */
 .news-desk-link {
   display: inline-flex;
   align-items: center;
@@ -541,10 +511,6 @@
 
 /* ── Desktop: the night's name stands to the left of the road ────────── */
 @container news (min-width: 760px) {
-  .news-arrive h1 {
-    font-size: var(--text-display);
-  }
-
   .news-ribbon {
     grid-template-columns: 1fr auto;
     padding: var(--space-4) 56px;

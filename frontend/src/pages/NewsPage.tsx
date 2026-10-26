@@ -13,6 +13,8 @@
 
 import { Link } from 'react-router';
 import { PageContainer } from '@/components/layout/PageContainer';
+import PageHero from '@/components/layout/PageHero';
+import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
 import { ErrorState, InlineError } from '@/components/ui/state';
 import EmptyState from '@/components/ui/EmptyState';
@@ -90,19 +92,32 @@ export default function NewsPage() {
   }
 
   return (
-    <PageContainer variant="content" className="news-page" data-testid="news-page">
-      <header className="news-arrive">
-        <div>
-          <h1>Equoria News</h1>
-          <p>Written each dawn, Equoria time, by the game and the people who run it.</p>
-        </div>
+    <div data-testid="news-page">
+      <PageHero
+        title="Equoria News"
+        subtitle="Written each dawn, Equoria time, by the game and the people who run it."
+      >
         {isAdmin && (
           <Link to="/news/desk" className="news-desk-link">
             Write for the News
           </Link>
         )}
-      </header>
-      {content}
-    </PageContainer>
+      </PageHero>
+
+      {/* Banner image in glass card */}
+      <PageContainer variant="content" padded={false} className="pt-1 pb-4">
+        <Surface variant="panel">
+          <img
+            src="/images/equorianews.jpg"
+            alt="Equoria News"
+            className="w-full h-auto rounded-[var(--radius-md)]"
+          />
+        </Surface>
+      </PageContainer>
+
+      <PageContainer variant="content" className="news-page">
+        {content}
+      </PageContainer>
+    </div>
   );
 }

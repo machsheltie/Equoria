@@ -320,3 +320,19 @@ describe('NewsPage — the desk link', () => {
     expect(screen.queryByRole('link', { name: 'Write for the News' })).not.toBeInTheDocument();
   });
 });
+
+describe('NewsPage hero (Equoria-vcpbq)', () => {
+  it('shows the news banner in a panel below the title, with the gold divider', async () => {
+    stubFeed(() => page({ items: [entry({ title: 'Something' })] }));
+    renderNews();
+    await screen.findByText('Something');
+
+    const heading = screen.getByRole('heading', { level: 1, name: 'Equoria News' });
+    const hero = heading.closest('header') as HTMLElement;
+    expect(within(hero).getByTestId('page-hero-divider')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /equoria news/i })).toHaveAttribute(
+      'src',
+      '/images/equorianews.jpg'
+    );
+  });
+});
