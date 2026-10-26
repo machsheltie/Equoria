@@ -3,7 +3,7 @@
  *
  * Centralized hooks for tack shop API calls:
  * - Get inventory (saddles + bridles)
- * - Purchase a tack item for a horse
+ * - Purchase a tack item into the inventory (no horse involved)
  * - Unequip a decorative item
  *
  * Tack does not degrade with use — the previous repair flow was removed
@@ -38,7 +38,7 @@ export function useTackInventory() {
 export function usePurchaseTackItem() {
   const queryClient = useQueryClient();
 
-  return useMutation<TackPurchaseResult, ApiError, { horseId: number; itemId: string }>({
+  return useMutation<TackPurchaseResult, ApiError, { itemId: string }>({
     mutationFn: (data) => tackShopApi.purchaseItem(data),
     onSuccess: (result) => {
       queryClient.setQueryData(
@@ -48,8 +48,8 @@ export function usePurchaseTackItem() {
           return { ...old, user: { ...old.user, money: result.remainingMoney } };
         }
       );
-      // Invalidate horse data so tack JSON refreshes
-      queryClient.invalidateQueries({ queryKey: ['horses'] });
+      // The bought item lands in the inventory.
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
       // Background sync after instant balance update
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },

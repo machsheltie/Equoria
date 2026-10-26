@@ -33,9 +33,7 @@ const saddle: TackItem = {
 };
 
 const renderCard = (item: TackItem) =>
-  render(
-    <TackItemCard item={item} selectedHorse={null} onPurchase={vi.fn()} isPurchasing={false} />
-  );
+  render(<TackItemCard item={item} onPurchase={vi.fn()} isPurchasing={false} />);
 
 describe('TackItemCard Coming soon', () => {
   it('marks non-scoring tack Coming soon and shows no effect text', () => {

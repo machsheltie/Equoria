@@ -62,18 +62,13 @@ const harnessDisciplines = new Set([
 /** Every discipline, from the one discipline list in constants/schema.mjs. */
 const allDisciplines = Object.values(DISCIPLINES);
 
-const allPurposeSaddleCost = 400;
-const allPurposeBridleCost = 300;
-
 /**
- * Prices an item had before it became a one-discipline item; the others take
- * the All Purpose price for their slot until the owner sets one (Equoria-k1p62).
+ * Owner ruling 2026-10-26 (q78, Equoria-dslww): every saddle, harness and
+ * bridle, the All Purpose pair included, costs 500 coins. This is the one price
+ * for all of them; the discipline items, the All Purpose pair and the retired
+ * aliases below all read it.
  */
-const keptCost = Object.freeze({
-  'dressage-saddle': 800,
-  'endurance-saddle': 850,
-  'racing-bridle': 600,
-});
+export const saddleAndBridleCost = 500;
 
 const keptImage = Object.freeze({
   'dressage-saddle': '/images/tack/dressage-saddle.png',
@@ -95,7 +90,7 @@ function disciplineSaddleOrHarness(discipline) {
     description: harness
       ? `A harness built for ${discipline}, worn where other disciplines use a saddle.`
       : `A saddle made for ${discipline} and no other discipline.`,
-    cost: keptCost[id] ?? allPurposeSaddleCost,
+    cost: saddleAndBridleCost,
     bonus: tackBonusLabel([discipline]),
     tier: 'quality',
     disciplines: [discipline],
@@ -110,7 +105,7 @@ function disciplineBridle(discipline) {
     category: 'bridle',
     name: `${discipline} Bridle`,
     description: `A bridle made for ${discipline} and no other discipline.`,
-    cost: keptCost[id] ?? allPurposeBridleCost,
+    cost: saddleAndBridleCost,
     bonus: tackBonusLabel([discipline]),
     tier: 'quality',
     disciplines: [discipline],
@@ -124,22 +119,22 @@ const disciplineBridles = allDisciplines.map(disciplineBridle);
  * Saddles and bridles that were shared by several disciplines before the
  * one-discipline ruling (q02). Players may still have them on a horse, so they
  * keep working as hidden aliases of the single-discipline item named by
- * `target` (the first discipline they listed) at the price they were sold for.
+ * `target` (the first discipline they listed) at the one saddle-and-bridle price.
  * `racing-bridle` kept its id on the Racing bridle and needs no alias.
  */
 const retiredSharedTack = Object.freeze([
-  { id: 'jumping-saddle', target: 'show-jumping-saddle', cost: 750 },
-  { id: 'western-saddle', target: 'western-pleasure-saddle', cost: 700 },
-  { id: 'racing-exercise-saddle', target: 'racing-saddle', cost: 900 },
-  { id: 'snaffle-bridle', target: 'dressage-bridle', cost: 200 },
-  { id: 'hackamore', target: 'western-pleasure-bridle', cost: 180 },
-  { id: 'double-bridle', target: 'dressage-bridle', cost: 500 },
-  { id: 'figure-eight-bridle', target: 'show-jumping-bridle', cost: 450 },
+  { id: 'jumping-saddle', target: 'show-jumping-saddle' },
+  { id: 'western-saddle', target: 'western-pleasure-saddle' },
+  { id: 'racing-exercise-saddle', target: 'racing-saddle' },
+  { id: 'snaffle-bridle', target: 'dressage-bridle' },
+  { id: 'hackamore', target: 'western-pleasure-bridle' },
+  { id: 'double-bridle', target: 'dressage-bridle' },
+  { id: 'figure-eight-bridle', target: 'show-jumping-bridle' },
 ]);
 
-const retiredSharedAliases = retiredSharedTack.map(({ id, target, cost }) => {
+const retiredSharedAliases = retiredSharedTack.map(({ id, target }) => {
   const item = [...disciplineSaddles, ...disciplineBridles].find(i => i.id === target);
-  return { ...item, id, cost, isLegacyAlias: true };
+  return { ...item, id, isLegacyAlias: true };
 });
 
 // ── Tack inventory catalog ──────────────────────────────────────────────────
@@ -152,7 +147,7 @@ export const TACK_INVENTORY = [
     name: 'All Purpose Saddle',
     description:
       'Versatile saddle suitable for general riding across multiple disciplines. A great starter saddle.',
-    cost: allPurposeSaddleCost,
+    cost: saddleAndBridleCost,
     // An empty list is how the shop filter shows an item under every discipline.
     bonus: tackBonusLabel([]),
     tier: 'basic',
@@ -165,7 +160,7 @@ export const TACK_INVENTORY = [
     name: 'All Purpose Bridle',
     description:
       'Versatile bridle suitable for general training and competition across disciplines.',
-    cost: allPurposeBridleCost,
+    cost: saddleAndBridleCost,
     bonus: tackBonusLabel([]),
     tier: 'basic',
     disciplines: [],

@@ -8,8 +8,6 @@
 
 import { DISCIPLINE_VALUES } from '@/constants/disciplines';
 
-export type TackShopTab = 'horses' | 'shop';
-
 /** Fallback display names if backend doesn't provide them */
 export const DEFAULT_CATEGORY_NAMES: Record<string, string> = {
   saddle: 'Saddles',

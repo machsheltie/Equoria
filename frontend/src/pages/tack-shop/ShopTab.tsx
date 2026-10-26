@@ -4,7 +4,7 @@
  * The "Shop" tab: loads live tack inventory, applies a discipline filter,
  * renders functional categories plus a separated Decorative & Parade
  * section (regular + seasonal), and drives the purchase mutation for the
- * currently-selected horse. Owns its own loading / error / success states.
+ * inventory (no horse involved). Owns its own loading / error / success states.
  *
  * Design-system migration (Equoria-o5hub, world-services family): canonical
  * SectionLoading / ErrorState, form Select for the discipline filter,
@@ -21,29 +21,22 @@ import { Select } from '@/components/ui/form';
 import { SectionLoading, ErrorState } from '@/components/ui/state';
 import { useTackInventory, usePurchaseTackItem } from '@/hooks/api/useTackShop';
 import type { TackItem } from '@/hooks/api/useTackShop';
-import type { HorseCardData } from '@/lib/api-client';
 import { TackItemCard } from './TackItemCard';
 import { DEFAULT_CATEGORY_NAMES, DISCIPLINE_OPTIONS } from './constants';
 
-interface ShopTabProps {
-  selectedHorse: HorseCardData | null;
-  onSwitchToHorses: () => void;
-}
-
-export const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) => {
+export const ShopTab: React.FC = () => {
   const { data, isLoading, isError, error, refetch } = useTackInventory();
   const purchaseMutation = usePurchaseTackItem();
   const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null);
   const [disciplineFilter, setDisciplineFilter] = useState('All');
 
   const handlePurchase = (item: TackItem) => {
-    if (!selectedHorse) return;
     setPurchaseSuccess(null);
     purchaseMutation.mutate(
-      { horseId: selectedHorse.id, itemId: item.id },
+      { itemId: item.id },
       {
         onSuccess: (result) => {
-          const msg = `Purchased ${result.item.name} for ${result.horse.name}. Remaining balance: ${result.remainingMoney.toLocaleString('en-US')} coins`;
+          const msg = `Bought ${result.item.name}; it is in your inventory, ready to equip. Remaining balance: ${result.remainingMoney.toLocaleString('en-US')} coins`;
           setPurchaseSuccess(msg);
           toast.success(msg);
         },
@@ -106,25 +99,6 @@ export const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorse
 
   return (
     <div className="space-y-8" data-testid="tack-shop-tab">
-      {/* Selected horse banner */}
-      {selectedHorse ? (
-        <div className="flex items-center justify-between p-3 rounded-[var(--radius-md)] bg-[var(--role-success-bg)] border border-[var(--role-success-border)] text-[var(--role-success-text)] text-sm">
-          <span>
-            Purchasing for: <span className="font-semibold">{selectedHorse.name}</span>
-          </span>
-          <Button type="button" variant="link" size="sm" onClick={onSwitchToHorses}>
-            Change horse
-          </Button>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between p-3 rounded-[var(--radius-md)] bg-[var(--role-neutral-bg)] border border-[var(--role-neutral-border)] text-[var(--text-muted)] text-sm">
-          <span>No horse selected — go to My Horses to pick one</span>
-          <Button type="button" variant="link" size="sm" onClick={onSwitchToHorses}>
-            Select horse
-          </Button>
-        </div>
-      )}
-
       {/* Discipline filter */}
       <div className="flex items-center gap-3">
         <Filter className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
@@ -177,7 +151,6 @@ export const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorse
               <TackItemCard
                 key={item.id}
                 item={item}
-                selectedHorse={selectedHorse}
                 onPurchase={handlePurchase}
                 isPurchasing={purchaseMutation.isPending}
               />
@@ -211,7 +184,6 @@ export const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorse
                   <TackItemCard
                     key={item.id}
                     item={item}
-                    selectedHorse={selectedHorse}
                     onPurchase={handlePurchase}
                     isPurchasing={purchaseMutation.isPending}
                   />
@@ -231,7 +203,6 @@ export const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorse
                   <TackItemCard
                     key={item.id}
                     item={item}
-                    selectedHorse={selectedHorse}
                     onPurchase={handlePurchase}
                     isPurchasing={purchaseMutation.isPending}
                   />

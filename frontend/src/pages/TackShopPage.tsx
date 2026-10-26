@@ -1,45 +1,26 @@
 /**
- * TackShopPage — World > Tack Shop Location (Epic 10 — Story 10-4)
+ * TackShopPage — World > Tack Shop (owner ruling 2026-10-26, Equoria-dslww)
  *
- * The Tack Shop location in the World hub. Two modes:
- * - My Horses: Select a horse to equip; shows equipped tack per horse
- * - Shop: Browse tack from the live API across all categories; purchase for selected horse
+ * Works like the Feed Shop: just a place to buy things. Horses play no part in
+ * a shop. Buying puts the tack in the player's inventory; equipping happens
+ * from the inventory or the horse page. Every saddle, harness and bridle costs
+ * 500 coins (the catalogue is the single source).
  *
- * Wired to real API hooks (Story 10-5 wire-up):
- *   useTackInventory()   — GET /api/tack-shop/inventory
- *   usePurchaseTackItem() — POST /api/tack-shop/purchase
- *   useHorses()          — GET /api/horses
+ *   useTackInventory()    — GET /api/v1/tack-shop/inventory
+ *   usePurchaseTackItem() — POST /api/v1/tack-shop/purchase ({ itemId })
  *
- * Decomposed in Equoria-f5xni: the sub-components (TackItemCard, ShopTab,
- * DecorationsPanel, HorsesTackTab) and constants live under
- * `pages/tack-shop/`. This file is now the thin page composition only —
- * page-level tab + selected-horse state and the World-hub chrome.
+ * Old contract: a My Horses tab chose the horse each purchase was bought for.
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router';
-import { Heart, ShoppingBag } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Surface } from '@/components/ui/Surface';
-import { CanonicalTabs } from '@/components/ui/game';
-import type { HorseCardData } from '@/lib/api-client';
-import type { TackShopTab } from './tack-shop/constants';
 import { ShopTab } from './tack-shop/ShopTab';
-import { HorsesTackTab } from './tack-shop/HorsesTackTab';
 
 const TackShopPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TackShopTab>('horses');
-  const [selectedHorse, setSelectedHorse] = useState<HorseCardData | null>(null);
-
-  const handleSelectHorse = (horse: HorseCardData) => {
-    setSelectedHorse(horse);
-  };
-
-  const handleGoToShop = () => {
-    setActiveTab('shop');
-  };
-
   return (
     <div className="min-h-screen">
       <PageHero
@@ -73,38 +54,7 @@ const TackShopPage: React.FC = () => {
       </PageContainer>
 
       <PageContainer variant="wide" padded={false} className="pb-8">
-        {/* My Horses / Shop tabs — CanonicalTabs (DECISIONS.md §6).
-            Controlled so HorsesTackTab's "Continue to Shop" and ShopTab's
-            "Change horse" can switch tabs programmatically. */}
-        <CanonicalTabs
-          value={activeTab}
-          onValueChange={(v) => setActiveTab(v as TackShopTab)}
-          tabs={[
-            {
-              value: 'horses',
-              label: 'My Horses',
-              icon: <Heart className="w-4 h-4" />,
-              content: (
-                <HorsesTackTab
-                  selectedHorse={selectedHorse}
-                  onSelectHorse={handleSelectHorse}
-                  onGoToShop={handleGoToShop}
-                />
-              ),
-            },
-            {
-              value: 'shop',
-              label: 'Shop',
-              icon: <ShoppingBag className="w-4 h-4" />,
-              content: (
-                <ShopTab
-                  selectedHorse={selectedHorse}
-                  onSwitchToHorses={() => setActiveTab('horses')}
-                />
-              ),
-            },
-          ]}
-        />
+        <ShopTab />
 
         {/* Info Panel (#7 — accurate descriptions) */}
         <Surface variant="panel" as="aside" className="mt-10 text-sm text-[var(--text-muted)]">
@@ -112,17 +62,14 @@ const TackShopPage: React.FC = () => {
           <ul className="space-y-1 list-disc list-inside">
             <li>Saddles and bridles provide direct numeric bonuses to competition scoring</li>
             <li>
-              Only one item per category can be equipped at a time — purchasing replaces the old
-              item
-            </li>
-            <li>Items with discipline tags give their full bonus in matching competitions</li>
-            <li>General items (no discipline tag) work across all events</li>
-            <li>
-              Manage equipped tack from the{' '}
+              Tack you buy goes to your inventory; equip it to a horse from the{' '}
               <Link to="/inventory" className="text-role-link underline">
                 Inventory page
               </Link>
             </li>
+            <li>Only one item per category can be equipped on a horse at a time</li>
+            <li>Items with discipline tags give their full bonus in matching competitions</li>
+            <li>General items (no discipline tag) work across all events</li>
           </ul>
         </Surface>
       </PageContainer>

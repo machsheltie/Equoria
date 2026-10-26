@@ -3,7 +3,7 @@
  *
  * A single purchasable tack item rendered as a shared ItemCard. Owns the
  * tier badge, discipline/age-restriction meta chips, and the
- * purchase-for-selected-horse action button. Pure presentational: all
+ * Buy action button. Pure presentational: all
  * purchase behavior is delegated to the onPurchase callback.
  *
  * Design-system migration (Equoria-o5hub, world-services family): canonical
@@ -16,26 +16,16 @@ import { ItemCard } from '@/components/ui/ItemCard';
 import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
 import type { TackItem } from '@/hooks/api/useTackShop';
-import type { HorseCardData } from '@/lib/api-client';
 import { CATEGORY_ICONS, TIER_COLORS } from './constants';
 
 interface TackItemCardProps {
   item: TackItem;
-  selectedHorse: HorseCardData | null;
   onPurchase: (_item: TackItem) => void;
   isPurchasing: boolean;
 }
 
-export const TackItemCard: React.FC<TackItemCardProps> = ({
-  item,
-  selectedHorse,
-  onPurchase,
-  isPurchasing,
-}) => {
-  const canPurchase = selectedHorse !== null && !isPurchasing;
+export const TackItemCard: React.FC<TackItemCardProps> = ({ item, onPurchase, isPurchasing }) => {
   const tierStyle = TIER_COLORS[item.tier] ?? TIER_COLORS.basic;
-
-  const buttonLabel = selectedHorse ? `Buy for ${selectedHorse.name}` : 'Select a Horse';
 
   const media = item.image ? (
     <img src={item.image} alt={item.name} className="w-20 h-20 object-contain" />
@@ -81,17 +71,13 @@ export const TackItemCard: React.FC<TackItemCardProps> = ({
       type="button"
       variant="secondary"
       size="sm"
-      disabled={!canPurchase}
-      pending={isPurchasing && selectedHorse !== null}
-      onClick={() => canPurchase && onPurchase(item)}
+      disabled={isPurchasing}
+      pending={isPurchasing}
+      onClick={() => onPurchase(item)}
       className="w-full"
-      title={
-        canPurchase
-          ? `Purchase ${item.name} for ${selectedHorse!.name}`
-          : 'Select a horse from My Horses to purchase'
-      }
+      data-testid={`buy-${item.id}`}
     >
-      {buttonLabel}
+      Buy
     </Button>
   );
 

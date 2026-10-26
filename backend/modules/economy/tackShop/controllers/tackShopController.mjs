@@ -6,7 +6,10 @@
  *
  * Routes:
  *   GET  /api/tack-shop/inventory          → list available tack items
- *   POST /api/tack-shop/purchase           → purchase an item for a horse
+ *   POST /api/tack-shop/purchase           → buy an item into the inventory
+ *                                            (a horseId, if sent, is the legacy
+ *                                            buy-and-equip path; the shop page
+ *                                            no longer sends one)
  *   POST /api/tack-shop/unequip-decoration → remove a decorative item
  *
  * Tack does NOT degrade with use. The previous condition / repair system
@@ -15,6 +18,7 @@
  * no longer reads them.
  */
 
+import { randomUUID } from 'node:crypto';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
@@ -28,7 +32,7 @@ import {
 // Equoria-q4uem.4 (WS4 S4): the tack catalog and the tack-bonus policy live in
 // ../services/tackInventory.mjs (data/policy, not HTTP). Re-exported here so
 // same-module importers and tests keep their existing specifiers.
-import { TACK_INVENTORY } from '../services/tackInventory.mjs';
+import { TACK_INVENTORY, tackEffectFields } from '../services/tackInventory.mjs';
 export { TACK_INVENTORY } from '../services/tackInventory.mjs';
 
 // ── Category display configuration ──────────────────────────────────────────
@@ -160,8 +164,87 @@ export async function getTackInventory(_req, res) {
 }
 
 /**
+ * Buy an item into the owner's inventory (owner ruling 2026-10-26, q78,
+ * Equoria-dslww): the Tack Shop is just a place to buy things, so no horse is
+ * involved. The item lands unequipped; equipping is /inventory/equip.
+ *
+ * Same shape as the Feed Shop purchase: the debit comes FIRST (its conditional
+ * updateMany takes the User row lock), the inventory is read AFTER that lock and
+ * only the `inventory` settings path is written, so concurrent purchases
+ * serialise and none is lost. Debit, inventory record and ledger row commit or
+ * unwind together.
+ */
+async function purchaseIntoInventory(req, res, item) {
+  const userId = req.user.id;
+  let remainingMoney;
+  let record;
+  try {
+    ({ remainingMoney, record } = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        const moneyAfter = await debitMoneyOrThrow(tx, {
+          userId,
+          amount: item.cost,
+          systemAccount: SYSTEM_ACCOUNT_BURN,
+          category: 'tackPurchaseBurn',
+          description: `Tack purchase — ${item.name}`,
+          metadata: { itemId: item.id, itemCategory: item.category },
+        });
+        const locked = await tx.user.findUnique({
+          where: { id: userId },
+          select: { settings: true },
+        });
+        const inventory = inventoryOf(locked?.settings).map(entry => ({ ...entry }));
+        // One record per bought item, id unique (equip addresses records by id).
+        const bought = {
+          id: `shop-${randomUUID()}-${item.id}`,
+          itemId: item.id,
+          category: item.category,
+          name: item.name,
+          ...tackEffectFields(item),
+          quantity: 1,
+          origin: 'shop',
+          equippedToHorseId: null,
+          equippedToHorseName: null,
+        };
+        inventory.push(bought);
+        await updateUserSettingsPaths(tx, userId, { set: { inventory } });
+        await recordTransactionTx(tx, {
+          userId,
+          type: 'debit',
+          amount: item.cost,
+          category: 'tackPurchase',
+          description: item.name,
+          metadata: { itemId: item.id, category: item.category },
+        });
+        return { remainingMoney: moneyAfter, record: bought };
+      }),
+      { message: 'The tack shop is busy right now, please retry in a moment.' },
+    ));
+  } catch (txErr) {
+    if (txErr instanceof InsufficientFundsError) {
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient funds. ${item.name} costs ${item.cost} coins`,
+        data: { required: item.cost },
+      });
+    }
+    throw txErr;
+  }
+
+  logger.info(
+    `[tackShopController] User ${userId} bought "${item.name}" into the inventory — cost ${item.cost}`,
+  );
+  return res.status(200).json({
+    success: true,
+    message: `${item.name} purchased successfully`,
+    data: { item, inventoryItem: record, cost: item.cost, remainingMoney },
+  });
+}
+
+/**
  * POST /api/tack-shop/purchase
- * Body: { horseId, itemId } — stores item ID AND numeric bonuses in Horse.tack.
+ * Body: { itemId } — buys the item into the inventory.
+ * Legacy: { horseId, itemId } buys it and puts it straight on that horse's tack.
  */
 export async function purchaseTackItem(req, res) {
   try {
@@ -173,6 +256,10 @@ export async function purchaseTackItem(req, res) {
       return res
         .status(404)
         .json({ success: false, message: 'Item not found in inventory', data: null });
+    }
+
+    if (horseId === undefined || horseId === null) {
+      return await purchaseIntoInventory(req, res, item);
     }
 
     // Fast 404 + display name only; the tack is re-read inside the tx below.

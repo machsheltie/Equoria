@@ -49,7 +49,6 @@ export interface TackInventoryData {
 }
 
 export interface TackPurchaseResult {
-  horse: { id: number; name: string; tack: Record<string, unknown> };
   item: TackItem;
   cost: number;
   remainingMoney: number;
@@ -62,7 +61,8 @@ export interface TackUnequipDecorationResult {
 
 export const tackShopApi = {
   getInventory: () => apiClient.get<TackInventoryData>('/api/v1/tack-shop/inventory'),
-  purchaseItem: (data: { horseId: number; itemId: string }) =>
+  /** Buying puts the tack in the player's inventory; equipping happens elsewhere. */
+  purchaseItem: (data: { itemId: string }) =>
     apiClient.post<TackPurchaseResult>('/api/v1/tack-shop/purchase', data),
   unequipDecoration: (data: { horseId: number; itemId: string }) =>
     apiClient.post<TackUnequipDecorationResult>('/api/v1/tack-shop/unequip-decoration', data),

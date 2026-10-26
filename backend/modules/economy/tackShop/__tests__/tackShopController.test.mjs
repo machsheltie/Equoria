@@ -85,7 +85,11 @@ describe('GET /api/tack-shop/inventory', () => {
 // ─── POST /api/tack-shop/purchase ─────────────────────────────────────────────
 
 describe('POST /api/tack-shop/purchase', () => {
-  it('returns 400 when horseId is missing', async () => {
+  // Owner ruling 2026-10-26 (q78, Equoria-dslww). Old contract: horseId was
+  // required (400 without it). New: the Tack Shop buys into the inventory and a
+  // horseId is optional; a missing one passes validation and an unknown item is
+  // then a 404. A malformed horseId is still a 400.
+  it('accepts a purchase without a horseId (validation passes, unknown item is 404)', async () => {
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/tack-shop/purchase')
@@ -94,6 +98,20 @@ describe('POST /api/tack-shop/purchase', () => {
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({ itemId: 'some-item' });
+
+    expect(res.status).toBe(404);
+    expect(res.body.success).toBe(false);
+  });
+
+  it('returns 400 when horseId is malformed', async () => {
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    const res = await request(app)
+      .post('/api/v1/tack-shop/purchase')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: 'abc', itemId: 'some-item' });
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);

@@ -4,7 +4,7 @@
  *
  * Path summary:
  *   GET  /inventory          → list available tack items
- *   POST /purchase           → purchase an item for a horse
+ *   POST /purchase           → buy an item into the inventory (legacy: for a horse)
  *   POST /unequip-decoration → remove a decorative item from a horse
  */
 
@@ -38,7 +38,7 @@ router.post(
   '/purchase',
   financialRateLimiter,
   [
-    body('horseId').isInt({ min: 1 }).withMessage('horseId must be a positive integer'),
+    body('horseId').optional().isInt({ min: 1 }).withMessage('horseId must be a positive integer'),
     body('itemId').notEmpty().withMessage('itemId is required'),
     handleValidationErrors,
   ],
