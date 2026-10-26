@@ -154,9 +154,8 @@ const boards = {
 export const boardNames = Object.keys(boards);
 
 /**
- * The player boards, the categories of "Your rankings" and the daily rank
- * snapshots (Equoria-3kfne, owner rulings q10, q11). The snapshot `category`
- * column holds these names.
+ * The player boards, the categories of "Your rankings" (Equoria-3kfne, owner
+ * rulings q10, q11).
  */
 export const playerBoardNames = Object.keys(boards).filter(name => boards[name].kind === 'player');
 
@@ -179,20 +178,6 @@ function rankedPlayerBoardSql(boardName) {
            (ROW_NUMBER() OVER (ORDER BY "value" DESC, "subjectId" ASC))::int AS "rank",
            (COUNT(*) OVER ())::int AS "total"
     FROM (${boards[boardName].records('overall', {})}) AS "board"`;
-}
-
-/**
- * The place of every player on one board, for the nightly snapshot: one
- * set-based read, no per-player loop.
- *
- * @param {string} boardName - one of playerBoardNames.
- * @param {{ $queryRaw: Function }} [client] - a Prisma client or extension.
- * @returns {Promise<Array<{ subjectId: string, rank: number }>>}
- */
-export async function loadPlayerBoardRanks(boardName, client = prisma) {
-  return client.$queryRaw(
-    Prisma.sql`SELECT "subjectId", "rank" FROM (${rankedPlayerBoardSql(boardName)}) AS "ranked"`,
-  );
 }
 
 /**
