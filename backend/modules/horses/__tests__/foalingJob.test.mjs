@@ -26,6 +26,10 @@ import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
+// The pregnancy bonus pools in foalingService.mjs.
+const positiveBonusPool = /^(resilient|athletic|calm|peopleTrusting)$/;
+const negativeBonusPool = /^(fragile|lowImmunity|nervous|reactive)$/;
+
 const dayMs = 24 * 60 * 60 * 1000;
 
 async function createUser(suffix) {
@@ -278,8 +282,10 @@ describe('runFoalingJob (B5)', () => {
     const foals = await prisma.horse.findMany({ where: { damId: dam.id } });
     expect(foals.length).toBe(1);
     const epi = foals[0].epigeneticModifiers || {};
-    expect(Array.isArray(epi.negative)).toBe(true);
-    expect(epi.negative.length).toBeGreaterThanOrEqual(1);
+    // Owner ruling 2026-10-26 (q98, Equoria-2d55z): a bonus trait is carried
+    // hidden, because neither parent has it active and revealed.
+    expect(epi.hidden).toEqual(expect.arrayContaining([expect.stringMatching(negativeBonusPool)]));
+    expect(epi.negative).toEqual([]);
   });
 
   it('positive bonus roll: high-tier feedings + rng=0 produces a positive bonus trait', async () => {
@@ -299,8 +305,10 @@ describe('runFoalingJob (B5)', () => {
     const foals = await prisma.horse.findMany({ where: { damId: dam.id } });
     expect(foals.length).toBe(1);
     const epi = foals[0].epigeneticModifiers || {};
-    expect(Array.isArray(epi.positive)).toBe(true);
-    expect(epi.positive.length).toBeGreaterThanOrEqual(1);
+    // Owner ruling 2026-10-26 (q98, Equoria-2d55z): a bonus trait is carried
+    // hidden, because neither parent has it active and revealed.
+    expect(epi.hidden).toEqual(expect.arrayContaining([expect.stringMatching(positiveBonusPool)]));
+    expect(epi.positive).toEqual([]);
   });
 
   it('multiple mares due simultaneously: all are foaled in one run', async () => {
@@ -435,8 +443,13 @@ describe('runFoalingJob (B5)', () => {
     expect(result.foal).toBeTruthy();
     expect(result.appliedTraits).toBeTruthy();
     const epi = result.foal.epigeneticModifiers || {};
-    expect(epi.positive.length).toBeGreaterThanOrEqual(1);
-    expect(epi.negative.length).toBeGreaterThanOrEqual(1);
+    // Owner ruling 2026-10-26 (q98, Equoria-2d55z): a bonus trait is carried
+    // hidden, because neither parent has it active and revealed.
+    expect(epi.hidden).toEqual(
+      expect.arrayContaining([expect.stringMatching(positiveBonusPool), expect.stringMatching(negativeBonusPool)]),
+    );
+    expect(epi.positive).toEqual([]);
+    expect(epi.negative).toEqual([]);
   });
 
   it('pendingFoalName: foaling job uses caller-specified foal name from dam record', async () => {

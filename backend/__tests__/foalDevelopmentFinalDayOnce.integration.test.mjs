@@ -5,10 +5,15 @@
  * 1. Day 6 is the last development day. Once it has been evaluated the foal is
  *    finished (owner ruling 2026-10-20: a separate "finished" marker, the day
  *    stays 6) and later nightly runs never roll it again.
- * 2. Two concurrent passes over the same foal claim the day once: one set of
- *    reveals, one set of history rows, at most one notification.
- * 3. Reveals, their history rows and the day claim commit together; a failure
- *    part-way leaves the foal exactly as it was.
+ * 2. Two concurrent passes over the same foal claim the day once: the day
+ *    moves forward by one.
+ *
+ * Owner ruling 2026-10-26 (q98, Equoria-2d55z): the pass no longer rolls or
+ * records traits (it used to invent them), so the former "one set of reveals /
+ * history rows / notification" and "a failed reveal write rolls back the claim"
+ * cases are gone. Carried traits are revealed by
+ * modules/traits/services/traitRevealEngine.mjs, whose lock, write and history
+ * rows share one transaction (traitRevealEngine.integration.test.mjs).
  *
  * Math.random is pinned so a reveal is certain (0) or impossible (0.99); it is
  * the only thing replaced. Everything else is the real job against the real
@@ -131,7 +136,7 @@ describe('INTEGRATION: a foal development day is evaluated once (Equoria-mwjst)'
     expect(await prisma.traitHistoryLog.count({ where: { horseId: foal.id } })).toBe(0);
   }, 60000);
 
-  it('two concurrent passes over the same day reveal and record it once', async () => {
+  it('two concurrent passes over the same day claim it once and add no traits', async () => {
     const foal = await makeFoal(2);
     const snapshot = await reload(foal.id);
     jest.spyOn(Math, 'random').mockReturnValue(0);
@@ -142,41 +147,11 @@ describe('INTEGRATION: a foal development day is evaluated once (Equoria-mwjst)'
     ]);
 
     const after = await reload(foal.id);
-    const revealed = revealedNames(after);
-    // Precondition: day 2 with these conditions and a certain roll does reveal.
-    expect(revealed.length).toBeGreaterThan(0);
-    expect(new Set(revealed).size).toBe(revealed.length);
     expect(after.foalDevelopment.currentDay).toBe(3);
-
-    expect(results.filter(r => r.traitsRevealed > 0)).toHaveLength(1);
-    const history = await prisma.traitHistoryLog.findMany({
-      where: { horseId: foal.id, sourceType: 'daily_evaluation' },
-    });
-    expect(history).toHaveLength(revealed.length);
-    const notes = await prisma.notification.findMany({
-      where: { userId: user.id, type: 'traitDiscovery' },
-    });
-    expect(notes.filter(n => n.payload?.foalId === foal.id).length).toBeLessThanOrEqual(1);
-  }, 60000);
-
-  it('a failure while recording the reveal leaves the foal untouched', async () => {
-    const foal = await makeFoal(3);
-    jest.spyOn(Math, 'random').mockReturnValue(0);
-    const notify = jest.fn();
-    const service = realService({
-      logTraitRevelation: () => {
-        throw new Error('history write failed');
-      },
-      notifyTraitRevelation: notify,
-    });
-
-    await expect(foalTraitImpl.evaluateFoalTraits(service, await reload(foal.id))).rejects.toThrow(
-      'history write failed',
-    );
-
-    const after = await reload(foal.id);
+    // One pass moved the day 2 -> 3; the other found it already claimed at 2.
+    expect(results.map(r => r.currentDay).sort()).toEqual([2, 3]);
+    expect(results.every(r => r.traitsRevealed === 0)).toBe(true);
     expect(revealedNames(after)).toEqual([]);
-    expect(after.foalDevelopment.currentDay).toBe(3);
-    expect(notify).not.toHaveBeenCalled();
+    expect(await prisma.traitHistoryLog.count({ where: { horseId: foal.id } })).toBe(0);
   }, 60000);
 });

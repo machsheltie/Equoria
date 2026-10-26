@@ -13,15 +13,20 @@
  *   Stage 3 — lineage discipline specialization → disciplineAffinity<Discipline>
  *     (+ legacyTalent for a strong 4+-ancestor lineage).
  *   Stage 4 — poor feed → lowImmunity.
- *   Dedupe, then RESOLVE VISIBILITY (§D): rare traits 70% / legendary 90% born
- *     hidden, and ANY trait 30% hidden under poor conditions (low feed). Hidden traits land in `hidden[]` for later discovery.
+ *   Dedupe, then VISIBILITY (owner ruling 2026-10-26, q98; Equoria-2d55z):
+ *     every trait the foal carries is born HIDDEN, unless a parent had that
+ *     trait active and revealed (`parentActiveTraits`), in which case it is
+ *     born active in positive[] / negative[]. Hidden traits are revealed or
+ *     switched off later only by grooming and neglect days
+ *     (modules/traits/services/traitRevealEngine.mjs). This replaced the
+ *     rarity/feed visibility rolls (rare 70% / legendary 90% / poor feed 30%
+ *     hidden), which made a store-bred foal's traits visible by chance.
  *
  * A mare in Fair health multiplies EVERY negative-trait roll here by 1.25 and a
  * mare in Bad health by 1.5 (owner ruling 2026-10-26, Equoria-pw7cm): pass the
  * multiplier as `negativeRollMultiplier`. No other odds move.
  *
- * Determinism: pass `seed` (number) for reproducible Stage-0 + visibility rolls
- * in tests. Without a seed, Math.random is used.
+ * Determinism: pass `seed` (number) for reproducible rolls in tests. Without a seed, Math.random is used.
  *
  * Canonical trait keys (camelCase) only — see backend/utils/epigeneticTraitKeyMap.mjs.
  */
@@ -77,26 +82,9 @@ function inheritanceProbability(trait, bondScore) {
   return Math.max(0, Math.min(1, base));
 }
 
-/**
- * §D visibility resolution. Returns 'hidden' | 'positive' | 'negative'.
- *   - rare trait: 70% hidden
- *   - legendary trait: 90% hidden
- *   - ANY trait under poor conditions (low feed): 30% hidden
- * Falls through to the trait's natural type (positive/negative) otherwise.
- */
-function resolveVisibility(trait, { poorConditions }, rng, fallbackType) {
+/** Whether a carried trait acts positively or negatively, by its definition, else by the stage that produced it. */
+function traitPolarity(trait, fallbackType) {
   const def = getTraitDefinition(trait);
-  const rarity = def?.rarity;
-  if (rarity === 'rare' && rng() < 0.7) {
-    return 'hidden';
-  }
-  if (rarity === 'legendary' && rng() < 0.9) {
-    return 'hidden';
-  }
-  if (poorConditions && rng() < 0.3) {
-    return 'hidden';
-  }
-  // Natural type: prefer the definition, else the stage's classification.
   if (def?.type === 'positive' || def?.type === 'negative') {
     return def.type;
   }
@@ -113,6 +101,8 @@ function resolveVisibility(trait, { poorConditions }, rng, fallbackType) {
  * @param {number} [params.negativeRollMultiplier] - mare-health multiplier on every negative roll (default 1)
  * @param {string[]} [params.sireTraits] - sire's epigenetic traits (pos∪neg∪hidden)
  * @param {string[]} [params.damTraits]  - dam's epigenetic traits (pos∪neg∪hidden)
+ * @param {string[]} [params.parentActiveTraits] - traits active and revealed on
+ *   either parent (their positive ∪ negative); only these can be born active
  * @param {number} [params.seed] - deterministic seed for tests
  * @returns {{positive:string[], negative:string[], hidden:string[]}}
  */
@@ -123,6 +113,7 @@ export function applyEpigeneticTraitsAtBirth({
   negativeRollMultiplier = 1,
   sireTraits = [],
   damTraits = [],
+  parentActiveTraits = [],
   seed,
 }) {
   logger.info('[applyEpigeneticTraitsAtBirth] Starting staged trait assignment at birth');
@@ -268,8 +259,13 @@ export function applyEpigeneticTraitsAtBirth({
     logger.info('[applyEpigeneticTraitsAtBirth] Applied lowImmunity (poor nutrition)');
   }
 
-  // ── Dedupe + §D visibility resolution ───────────────────────────────────────
-  const poorConditions = currentFeedQuality <= 30;
+  // ── Dedupe + visibility (q98) ───────────────────────────────────────────────
+  // Hidden unless a parent had the trait active and revealed.
+  const activeOnParent = new Set(
+    (Array.isArray(parentActiveTraits) ? parentActiveTraits : [])
+      .filter(t => typeof t === 'string' && t.length > 0)
+      .map(normalizeTraitKey),
+  );
   const result = { positive: [], negative: [], hidden: [] };
   const seen = new Set();
 
@@ -284,13 +280,10 @@ export function applyEpigeneticTraitsAtBirth({
       continue;
     }
     seen.add(trait);
-    const visibility = resolveVisibility(trait, { poorConditions }, rng, fallback);
-    if (visibility === 'hidden') {
-      result.hidden.push(trait);
-    } else if (visibility === 'negative') {
-      result.negative.push(trait);
+    if (activeOnParent.has(trait)) {
+      result[traitPolarity(trait, fallback)].push(trait);
     } else {
-      result.positive.push(trait);
+      result.hidden.push(trait);
     }
   }
 

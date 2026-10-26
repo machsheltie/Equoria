@@ -54,7 +54,7 @@
   "backend/__tests__/fileSizeThresholdDoctrine.sentinel.test.mjs": 21,
   "backend/__tests__/financialRateLimiter.integration.test.mjs": 12,
   "backend/__tests__/foalDayCountsEveningWindow.integration.test.mjs": 4,
-  "backend/__tests__/foalDevelopmentFinalDayOnce.integration.test.mjs": 2,
+  "backend/__tests__/foalDevelopmentFinalDayOnce.integration.test.mjs": 1,
   "backend/__tests__/foalDevelopmentNoPrematureAging.integration.test.mjs": 2,
   "backend/__tests__/foalTraitRevealHistoryLog.integration.test.mjs": 1,
   "backend/__tests__/foalTraitRevealNotification.integration.test.mjs": 1,

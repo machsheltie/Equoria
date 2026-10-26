@@ -90,6 +90,6 @@ describe('no stress in the foal trait pipeline', () => {
         }),
       );
     expect(born(0)).toEqual(born(90));
-    expect(born(0).some(r => r.positive.includes('resilient'))).toBe(true);
+    expect(born(0).some(r => r.hidden.includes('resilient'))).toBe(true);
   });
 });

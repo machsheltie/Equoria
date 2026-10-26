@@ -7,6 +7,10 @@
 import { describe, it, expect } from '@jest/globals';
 import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
 
+// Owner ruling 2026-10-26 (q98, Equoria-2d55z): traits from the birth stages are
+// born hidden, so "the foal gets X" means X is among the traits it carries.
+const carried = r => [...r.positive, ...r.negative, ...r.hidden];
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -65,7 +69,7 @@ describe('applyEpigeneticTraitsAtBirth — feed conditions', () => {
         lineage: emptyLineage(),
         feedQuality: 90,
       });
-      if (result.positive.length > 0) {
+      if (carried(result).length > 0) {
         foundPositive = true;
         break;
       }
@@ -81,7 +85,7 @@ describe('applyEpigeneticTraitsAtBirth — feed conditions', () => {
         lineage: emptyLineage(),
         feedQuality: 100,
       });
-      if (result.positive.includes('resilient') || result.positive.includes('peopleTrusting')) {
+      if (carried(result).includes('resilient') || carried(result).includes('peopleTrusting')) {
         found = true;
         break;
       }
@@ -97,7 +101,7 @@ describe('applyEpigeneticTraitsAtBirth — feed conditions', () => {
         lineage: emptyLineage(),
         feedQuality: 10,
       });
-      if (result.negative.includes('lowImmunity')) {
+      if (carried(result).includes('lowImmunity')) {
         found = true;
         break;
       }
@@ -118,7 +122,7 @@ describe('applyEpigeneticTraitsAtBirth — inbreeding', () => {
         lineage: lineageWithInbreeding(42, 4), // high severity (count >= 4)
         feedQuality: 50,
       });
-      if (result.negative.includes('fragile') || result.negative.includes('reactive')) {
+      if (carried(result).includes('fragile') || carried(result).includes('reactive')) {
         found = true;
         break;
       }
@@ -135,7 +139,7 @@ describe('applyEpigeneticTraitsAtBirth — inbreeding', () => {
         lineage: emptyLineage(),
         feedQuality: 60,
       });
-      if (result.negative.includes('fragile') || result.negative.includes('reactive')) {
+      if (carried(result).includes('fragile') || carried(result).includes('reactive')) {
         inbreedingTraitFound = true;
         break;
       }
@@ -157,7 +161,7 @@ describe('applyEpigeneticTraitsAtBirth — discipline specialization', () => {
         lineage: lineageWithDiscipline('Dressage', 4),
         feedQuality: 50,
       });
-      const hasAffinity = result.positive.some(t => t.includes('disciplineAffinity'));
+      const hasAffinity = carried(result).some(t => t.includes('disciplineAffinity'));
       if (hasAffinity) {
         found = true;
         break;
@@ -174,7 +178,7 @@ describe('applyEpigeneticTraitsAtBirth — discipline specialization', () => {
         lineage: lineageWithDiscipline('Racing', 6),
         feedQuality: 50,
       });
-      if (result.positive.includes('legacyTalent')) {
+      if (carried(result).includes('legacyTalent')) {
         found = true;
         break;
       }
@@ -190,7 +194,7 @@ describe('applyEpigeneticTraitsAtBirth — discipline specialization', () => {
         lineage: lineageWithDiscipline('Jumping', 2),
         feedQuality: 50,
       });
-      if (result.positive.some(t => t.includes('disciplineAffinity'))) {
+      if (carried(result).some(t => t.includes('disciplineAffinity'))) {
         affinityFound = true;
         break;
       }
@@ -239,7 +243,7 @@ describe('applyEpigeneticTraitsAtBirth — inbreeding severity branches', () => 
         lineage: lineageWithInbreeding(55, 3),
         feedQuality: 50,
       });
-      if (result.negative.includes('fragile') || result.negative.includes('reactive')) {
+      if (carried(result).includes('fragile') || carried(result).includes('reactive')) {
         found = true;
         break;
       }
@@ -257,9 +261,9 @@ describe('applyEpigeneticTraitsAtBirth — inbreeding severity branches', () => 
         feedQuality: 50,
       });
       if (
-        result.negative.includes('fragile') ||
-        result.negative.includes('reactive') ||
-        result.negative.includes('lowImmunity')
+        carried(result).includes('fragile') ||
+        carried(result).includes('reactive') ||
+        carried(result).includes('lowImmunity')
       ) {
         found = true;
         break;
@@ -297,7 +301,7 @@ describe('applyEpigeneticTraitsAtBirth — analyzeDisciplineSpecialization branc
         lineage,
         feedQuality: 50,
       });
-      if (result.positive.some(t => t.includes('disciplineAffinity') || t === 'legacyTalent')) {
+      if (carried(result).some(t => t.includes('disciplineAffinity') || t === 'legacyTalent')) {
         found = true;
         break;
       }
@@ -317,7 +321,7 @@ describe('applyEpigeneticTraitsAtBirth — analyzeDisciplineSpecialization branc
         lineage,
         feedQuality: 50,
       });
-      if (result.positive.some(t => t.includes('disciplineAffinity'))) {
+      if (carried(result).some(t => t.includes('disciplineAffinity'))) {
         found = true;
         break;
       }
@@ -350,7 +354,7 @@ describe('applyEpigeneticTraitsAtBirth — getHighestScoringDiscipline branches'
       feedQuality: 50,
     });
     // Only 1 ancestor → count < 3 → no specialization
-    expect(result.positive.some(t => t.includes('disciplineAffinity'))).toBe(false);
+    expect(carried(result).some(t => t.includes('disciplineAffinity'))).toBe(false);
   });
 
   it('mixed score types exercise typeof score===number false-branch for non-number entries', () => {
@@ -369,7 +373,7 @@ describe('applyEpigeneticTraitsAtBirth — getHighestScoringDiscipline branches'
         lineage,
         feedQuality: 50,
       });
-      if (result.positive.some(t => t.includes('disciplineAffinityDressage'))) {
+      if (carried(result).some(t => t.includes('disciplineAffinityDressage'))) {
         found = true;
         break;
       }
@@ -407,7 +411,9 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
   // `fnForSeed` receives the seed and must thread it into the call under test.
   function traitAppears(fnForSeed, traitName, category = 'positive', maxSeeds = 50) {
     for (let seed = 1; seed <= maxSeeds; seed++) {
-      if (fnForSeed(seed)[category].includes(traitName)) {
+      // q98: stage traits are born hidden, so a carried trait counts wherever it sits.
+      const result = fnForSeed(seed);
+      if ([...result[category], ...result.hidden].includes(traitName)) {
         return true;
       }
     }
@@ -423,8 +429,8 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
 
   it('does not assign positive traits with poor feed quality (deterministic)', () => {
     const result = applyEpigeneticTraitsAtBirth({ mare: {}, feedQuality: 60 });
-    expect(result.positive).not.toContain('resilient');
-    expect(result.positive).not.toContain('peopleTrusting');
+    expect(carried(result)).not.toContain('resilient');
+    expect(carried(result)).not.toContain('peopleTrusting');
   });
 
   it('uses disciplineScores when discipline field is not available', () => {
@@ -454,8 +460,8 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
       lineage,
       feedQuality: 50,
     });
-    expect(result.positive.filter(t => t.startsWith('disciplineAffinity'))).toHaveLength(0);
-    expect(result.positive).not.toContain('legacyTalent');
+    expect(carried(result).filter(t => t.startsWith('disciplineAffinity'))).toHaveLength(0);
+    expect(carried(result)).not.toContain('legacyTalent');
   });
 
   it('assigns low_immunity trait with poor nutrition', () => {
@@ -485,6 +491,6 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
       lineage,
       feedQuality: 25,
     });
-    expect(result.negative.filter(t => t === 'lowImmunity').length).toBeLessThanOrEqual(1);
+    expect(carried(result).filter(t => t === 'lowImmunity').length).toBeLessThanOrEqual(1);
   });
 });

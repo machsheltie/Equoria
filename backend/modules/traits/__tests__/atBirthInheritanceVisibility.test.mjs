@@ -8,9 +8,9 @@
  *   - inheritance FIRES: a parent trait actually lands on the foal under a
  *     seed (and is absent when no parents carry traits — the check isn't
  *     vacuous).
- *   - §D hidden: a legendary parent trait under poor conditions lands in
- *     hidden[] for at least one seed, AND is visible for a different seed
- *     (so the visibility roll is real, not a constant).
+ *   - visibility (owner ruling 2026-10-26, q98, replacing the §D rolls): an
+ *     inherited trait is born hidden unless a parent had it active and
+ *     revealed, for every seed.
  *   - the result always has the three-array shape.
  */
 
@@ -95,14 +95,15 @@ describe('§A Stage-0 inheritance — parent traits can be inherited', () => {
   });
 });
 
-describe('§D visibility — legendary parent trait can be born hidden under poor conditions', () => {
-  it('when inherited, legendaryBloodline lands in hidden[] for at least one seed (legendary 90% hidden)', () => {
-    // Use favorable inheritance conditions (high bond) so the
-    // legendary parent trait is actually inherited; the 90%-hidden roll is
-    // independent of conditions. We assert that across many seeds it is born
-    // hidden at least once (and the next test proves it can also be visible).
-    let hiddenSeen = false;
-    for (let seed = 1; seed <= 300 && !hiddenSeen; seed++) {
+// Owner ruling 2026-10-26 (q98, Equoria-2d55z) replaced the §D rarity rolls
+// (legendary 90% / rare 70% / poor feed 30% born hidden, otherwise visible by
+// chance) with one rule: a carried trait is born hidden unless a parent had it
+// active and revealed. These two cases pin the new rule for the legendary trait
+// the old §D tests used.
+describe('visibility (q98) — an inherited legendary trait follows the parent, never a roll', () => {
+  it('inherited from parents where it was hidden: born hidden for every seed', () => {
+    let inherited = 0;
+    for (let seed = 1; seed <= 300; seed++) {
       const r = applyEpigeneticTraitsAtBirth({
         mare: goodMare,
         lineage: [],
@@ -111,31 +112,32 @@ describe('§D visibility — legendary parent trait can be born hidden under poo
         sireTraits: ['legendaryBloodline'],
         seed,
       });
-      if (r.hidden.includes('legendaryBloodline')) {
-        hiddenSeen = true;
-      }
+      expect(r.positive).not.toContain('legendaryBloodline');
+      inherited += r.hidden.includes('legendaryBloodline') ? 1 : 0;
     }
-    expect(hiddenSeen).toBe(true);
+    expect(inherited).toBeGreaterThan(0);
   });
 
-  it('legendaryBloodline CAN be visible for a different seed (the roll is real, not constant-hidden)', () => {
-    let visibleSeen = false;
-    for (let seed = 1; seed <= 300 && !visibleSeen; seed++) {
+  it('inherited from a parent where it was active and revealed: born active for every seed', () => {
+    let inherited = 0;
+    for (let seed = 1; seed <= 300; seed++) {
       const r = applyEpigeneticTraitsAtBirth({
         mare: goodMare,
         lineage: [],
         feedQuality: 90,
         damTraits: ['legendaryBloodline'],
         sireTraits: ['legendaryBloodline'],
+        parentActiveTraits: ['legendaryBloodline'],
         seed,
       });
-      if (r.positive.includes('legendaryBloodline')) {
-        visibleSeen = true;
-      }
+      expect(r.hidden).not.toContain('legendaryBloodline');
+      inherited += r.positive.includes('legendaryBloodline') ? 1 : 0;
     }
-    expect(visibleSeen).toBe(true);
+    expect(inherited).toBeGreaterThan(0);
   });
+});
 
+describe('seeded births', () => {
   it('a deterministic seed is reproducible (same inputs+seed → same result)', () => {
     const args = {
       mare: poorMare,

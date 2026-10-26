@@ -96,6 +96,12 @@ function collectEpigeneticTraits(modifiers) {
   return [...new Set([...norm.positive, ...norm.negative, ...norm.hidden])];
 }
 
+/** A horse's active, revealed traits (positive ∪ negative): the only ones a foal can be born with active. */
+function collectActiveTraits(modifiers) {
+  const norm = normalizeEpigeneticModifiers(modifiers);
+  return [...new Set([...norm.positive, ...norm.negative])];
+}
+
 /** Error code thrown when the guarded pregnancy claim matches no row. */
 export const PREGNANCY_NOT_CLAIMABLE = 'PREGNANCY_NOT_CLAIMABLE';
 
@@ -236,6 +242,14 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   // deterministic (used by tests).
   const damTraits = collectEpigeneticTraits(dam.epigeneticModifiers);
   const sireTraits = collectEpigeneticTraits(sire.epigeneticModifiers);
+  // Owner ruling 2026-10-26 (q98, Equoria-2d55z): a foal's traits are born
+  // hidden unless a parent had the trait active and revealed.
+  const parentActiveTraits = [
+    ...new Set([
+      ...collectActiveTraits(dam.epigeneticModifiers),
+      ...collectActiveTraits(sire.epigeneticModifiers),
+    ]),
+  ];
   // A Fair mare multiplies EVERY negative foal-trait roll by 1.25, a Bad mare by 1.5
   // (owner rulings 2026-10-23 Equoria-w4ivy and 2026-10-26 Equoria-pw7cm).
   const damHealthGrade = horseHealthGrade(dam);
@@ -247,6 +261,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     negativeRollMultiplier,
     sireTraits,
     damTraits,
+    parentActiveTraits,
     seed: options.epigeneticSeed,
   });
   // §D: the pipeline now also returns hidden[]; carry it through to persistence.
@@ -266,19 +281,24 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   const positiveTraits = [...(epigeneticTraits.positive || [])];
   const negativeTraits = [...(epigeneticTraits.negative || [])];
 
+  // A bonus trait is carried like any other: hidden unless a parent had it
+  // active and revealed (q98).
+  const carriedTraits = () => [...positiveTraits, ...negativeTraits, ...hiddenTraits];
+  const bornAs = (trait, activeList) =>
+    parentActiveTraits.includes(trait) ? activeList : hiddenTraits;
   if (positiveChance > 0 && rng() * 100 < positiveChance) {
-    const bonus = pickFirstUnused(PREGNANCY_BONUS_POSITIVE_TRAITS, positiveTraits);
+    const bonus = pickFirstUnused(PREGNANCY_BONUS_POSITIVE_TRAITS, carriedTraits());
     if (bonus) {
-      positiveTraits.push(bonus);
+      bornAs(bonus, positiveTraits).push(bonus);
       logger.info(
         `[foalingService] Bonus positive epigenetic trait '${bonus}' rolled (chance=${positiveChance}%)`,
       );
     }
   }
   if (negativeChance > 0 && rng() * 100 < negativeChance) {
-    const bonus = pickFirstUnused(PREGNANCY_BONUS_NEGATIVE_TRAITS, negativeTraits);
+    const bonus = pickFirstUnused(PREGNANCY_BONUS_NEGATIVE_TRAITS, carriedTraits());
     if (bonus) {
-      negativeTraits.push(bonus);
+      bornAs(bonus, negativeTraits).push(bonus);
       logger.info(
         `[foalingService] Bonus negative epigenetic trait '${bonus}' rolled (chance=${negativeChance}%)`,
       );

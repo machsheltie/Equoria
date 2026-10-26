@@ -41,9 +41,8 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
-import { evaluateTraitRevelation } from '../../../utils/traitEvaluation.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
-import { appendEpigeneticTraits, logTraitAssignment } from '../../../modules/traits/index.mjs';
+import { logTraitAssignment } from '../../../modules/traits/index.mjs';
 
 const FINAL_DEVELOPMENT_DAY = 6;
 
@@ -143,7 +142,7 @@ export async function evaluateFoalTraits(service, foal) {
     return { traitsRevealed: 0, reason: 'development_complete' };
   }
 
-  // Equoria-3i34b: no premature aging. Day N is evaluated (its reveals rolled)
+  // Equoria-3i34b: no premature aging. Day N is evaluated
   // and then advanced only once the foal has lived more than N whole Eastern game days.
   // A second run the same day — the admin trigger, a repeated cron fire — finds
   // currentDay already equal to the elapsed days and does nothing.
@@ -152,38 +151,19 @@ export async function evaluateFoalTraits(service, foal) {
     return { traitsRevealed: 0, reason: 'day_not_elapsed', currentDay };
   }
 
-  // Equoria-mwjst: claim the day, roll it, and record the reveals in ONE
-  // transaction. The claim comes first and is a compare-and-swap on the day the
-  // caller saw, so of two concurrent passes exactly one rolls; the loser waits
-  // on the row lock, matches nothing and returns. The roll reads the foal's
-  // traits inside the transaction, never the caller's snapshot. Any failure
-  // rolls back the claim with the reveals and their history rows, so the day
-  // stays due and nothing is half-recorded.
-  const outcome = await prisma.$transaction(async tx => {
-    const claimed = await claimDevelopmentDay(tx, foal.id, currentDay);
-    if (!claimed) {
-      return null;
-    }
-
-    const fresh = await tx.horse.findUnique({ where: { id: foal.id } });
-    const currentTraits = normalizeTraits(fresh.epigeneticModifiers);
-    const newTraits = evaluateTraitRevelation(fresh, currentTraits, currentDay);
-    const totalNewTraits =
-      newTraits.positive.length + newTraits.negative.length + newTraits.hidden.length;
-    if (totalNewTraits === 0) {
-      return { fresh, newTraits, totalNewTraits, updatedTraits: currentTraits };
-    }
-
-    // Equoria-m1sf8: append in one statement against the row's current value,
-    // never write back the object read above. Another writer of this column
-    // (the age-1 milestone's tags) may commit between that read and this write.
-    const stored = await appendEpigeneticTraits(tx, foal.id, newTraits);
-    const updatedTraits = normalizeTraits(stored);
-    await service.logTraitRevelation(foal.id, foal.name, newTraits, currentDay, fresh, tx);
-    return { fresh, newTraits, totalNewTraits, updatedTraits };
-  });
-
-  if (!outcome) {
+  // Equoria-mwjst: claim the day in a transaction. The claim is a
+  // compare-and-swap on the day the caller saw, so of two concurrent passes
+  // exactly one advances; the loser waits on the row lock, matches nothing and
+  // returns.
+  //
+  // Equoria-2d55z (owner ruling 2026-10-26, q98): this pass no longer rolls
+  // traits. It used to invent new traits for the foal each night from its bond
+  // score; a horse now carries a trait or it doesn't, and carried traits are
+  // revealed or switched off only by grooming and neglect days
+  // (modules/traits/services/traitRevealEngine.mjs). The pass still advances the
+  // development day, which the foal's daily activities depend on.
+  const claimed = await prisma.$transaction(tx => claimDevelopmentDay(tx, foal.id, currentDay));
+  if (!claimed) {
     logger.info(
       `[CronJobService.evaluateFoalTraits] Foal ${foal.id} day ${currentDay} was already evaluated by another run`,
     );
@@ -191,36 +171,7 @@ export async function evaluateFoalTraits(service, foal) {
   }
 
   const nextDay = Math.min(currentDay + 1, FINAL_DEVELOPMENT_DAY);
-  if (outcome.totalNewTraits === 0) {
-    logger.info(`[CronJobService.evaluateFoalTraits] No new traits revealed for foal ${foal.id}`);
-    return { traitsRevealed: 0, reason: 'no_new_traits', currentDay: nextDay };
-  }
-
-  // Equoria-yy1a5: notify the foal's owner when one or more VISIBLE traits
-  // were revealed. Hidden traits remain a discovery and do NOT notify. Only
-  // after commit (Equoria-mwjst), so a rolled-back reveal never notifies.
-  await service.notifyTraitRevelation(outcome.fresh, outcome.newTraits, currentDay);
-
-  logger.info(
-    `[CronJobService.evaluateFoalTraits] Updated foal ${foal.id} with ${outcome.totalNewTraits} new traits`,
-  );
-
-  return {
-    traitsRevealed: outcome.totalNewTraits,
-    newTraits: outcome.newTraits,
-    updatedTraits: outcome.updatedTraits,
-    currentDay: nextDay,
-  };
-}
-
-/** The foal's epigenetic modifiers as three arrays, whatever the stored Json holds. */
-function normalizeTraits(raw) {
-  const value = raw !== null && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-  return {
-    positive: Array.isArray(value.positive) ? value.positive : [],
-    negative: Array.isArray(value.negative) ? value.negative : [],
-    hidden: Array.isArray(value.hidden) ? value.hidden : [],
-  };
+  return { traitsRevealed: 0, reason: 'no_new_traits', currentDay: nextDay };
 }
 
 /**

@@ -10,10 +10,15 @@
 import { describe, expect, it } from '@jest/globals';
 import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
 
+// Owner ruling 2026-10-26 (q98, Equoria-2d55z): traits from the birth stages are
+// born hidden, so "the foal gets X" means X is among the traits it carries.
+const carried = r => [...r.positive, ...r.negative, ...r.hidden];
+
 function traitAppears(fn, traitName, category = 'positive', maxRuns = 25) {
   for (let i = 0; i < maxRuns; i++) {
     const result = fn();
-    if (result[category].includes(traitName)) {
+    // q98: stage traits are born hidden, so a carried trait counts wherever it sits.
+    if ([...result[category], ...result.hidden].includes(traitName)) {
       return true;
     }
   }
@@ -46,8 +51,8 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
     it('does not assign positive traits when feed quality is too low', () => {
       const mare = { id: 1, name: 'Underfed Mare' };
       const result = applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 60 });
-      expect(result.positive).not.toContain('resilient');
-      expect(result.positive).not.toContain('peopleTrusting');
+      expect(carried(result)).not.toContain('resilient');
+      expect(carried(result)).not.toContain('peopleTrusting');
     });
   });
 
@@ -120,9 +125,9 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
         { id: 504, name: 'Horse 4' },
       ];
       const result = applyEpigeneticTraitsAtBirth({ mare, lineage: diverseLineage, feedQuality: 50 });
-      expect(result.negative).not.toContain('fragile');
-      expect(result.negative).not.toContain('reactive');
-      expect(result.negative).not.toContain('lowImmunity');
+      expect(carried(result)).not.toContain('fragile');
+      expect(carried(result)).not.toContain('reactive');
+      expect(carried(result)).not.toContain('lowImmunity');
     });
   });
 
@@ -181,8 +186,8 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
         { id: 904, name: 'Trail Horse', mostCompetedDiscipline: 'Trail' },
       ];
       const result = applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 55 });
-      expect(result.positive.filter(t => t.startsWith('disciplineAffinity'))).toHaveLength(0);
-      expect(result.positive).not.toContain('legacyTalent');
+      expect(carried(result).filter(t => t.startsWith('disciplineAffinity'))).toHaveLength(0);
+      expect(carried(result)).not.toContain('legacyTalent');
     });
 
     it('handles ancestors without mostCompetedDiscipline field', () => {
@@ -193,8 +198,8 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
         { id: 1004, name: 'Horse 4' },
       ];
       const result = applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 50 });
-      expect(result.positive.filter(t => t.startsWith('disciplineAffinity'))).toHaveLength(0);
-      expect(result.positive).not.toContain('legacyTalent');
+      expect(carried(result).filter(t => t.startsWith('disciplineAffinity'))).toHaveLength(0);
+      expect(carried(result)).not.toContain('legacyTalent');
     });
   });
 
