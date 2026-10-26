@@ -23,6 +23,7 @@ import React, { useCallback, useState } from 'react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import StaffActionLog from '@/components/staff/StaffActionLog';
 import StaffCheckIn from '@/components/staff/StaffCheckIn';
+import StaffConduct from '@/components/staff/StaffConduct';
 import StaffQuarantinedShows from '@/components/staff/StaffQuarantinedShows';
 import StaffRoles from '@/components/staff/StaffRoles';
 import StaffTickets from '@/components/staff/StaffTickets';
@@ -76,6 +77,9 @@ export default function StewardsOfficePage() {
               canResolve={can('ticket.resolve')}
               onCheckinRequired={onCheckinRequired}
             />
+          )}
+          {can('warn') && (
+            <StaffConduct onCheckinRequired={onCheckinRequired} canLift={can('conduct.lift')} />
           )}
           {can('roles.manage') && (
             <StaffRoles

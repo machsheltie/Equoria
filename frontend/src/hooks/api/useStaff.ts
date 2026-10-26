@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   staffApi,
+  type ConductAction,
   type FileTicketPayload,
   type StaffLogFilter,
   type TicketStatus,
@@ -24,6 +25,7 @@ export const staffKeys = {
   // Under the ledger's prefix, so anything that refreshes the ledger refreshes it too.
   logActors: ['staff', 'log', 'actors'] as const,
   roles: ['staff', 'roles'] as const,
+  conduct: (userId: string) => ['staff', 'conduct', userId] as const,
   tickets: ['staff', 'tickets'] as const,
   quarantinedShows: ['staff', 'quarantined-shows'] as const,
   ticket: (id: number) => ['staff', 'tickets', id] as const,
@@ -145,6 +147,33 @@ export function useLookupUser() {
   return useMutation({
     mutationKey: [...staffKeys.all, 'lookup'],
     mutationFn: (username: string) => staffApi.lookupUser(username),
+  });
+}
+
+export function useLookupConductPlayer() {
+  return useMutation({
+    mutationKey: [...staffKeys.all, 'conduct-lookup'],
+    mutationFn: (username: string) => staffApi.lookupConductPlayer(username),
+  });
+}
+
+export function useConductRecord(userId: string) {
+  return useQuery({
+    queryKey: staffKeys.conduct(userId),
+    queryFn: () => staffApi.conductRecord(userId),
+  });
+}
+
+export function useConductAction(userId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: [...staffKeys.all, 'conduct-act'],
+    mutationFn: (args: { action: ConductAction; reason: string; days?: 1 | 3 | 7 }) =>
+      staffApi.conductAct(userId, args.action, args.reason, args.days),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: staffKeys.conduct(userId) });
+      queryClient.invalidateQueries({ queryKey: staffKeys.log });
+    },
   });
 }
 

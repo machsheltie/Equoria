@@ -16,7 +16,34 @@
  * future step-up surface.
  */
 
+import { formatDateTime } from '../formatDate.js';
 import type { ApiError } from './types.js';
+
+/**
+ * What the stewards' conduct rules say at the door (Equoria-w47x7). Authored here,
+ * never the server's string; a freeze names the day it ends, in game time.
+ */
+function conductRefusalMessage(error: ApiError): string | null {
+  if (error.statusCode !== 403) return null;
+  if (error.code === 'accountFrozen') {
+    const ends = error.until
+      ? formatDateTime(error.until, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          timeZoneName: 'short',
+        })
+      : null;
+    return ends ? `Your account is frozen until ${ends}.` : 'Your account is frozen for now.';
+  }
+  if (error.code === 'accountBanned') return 'This account has been banned.';
+  if (error.code === 'accessBlocked') {
+    return 'This connection can no longer be used to sign in or create an account.';
+  }
+  return null;
+}
 
 /** Copy for a refused email/password submission. */
 export function credentialsMessage(error: ApiError | null | undefined): string | null {
@@ -26,6 +53,10 @@ export function credentialsMessage(error: ApiError | null | undefined): string |
   // Network / offline — apiClient normalizes a rejected fetch to statusCode 0.
   if (status === 0) {
     return "Can't reach the stable. Check your connection and try again.";
+  }
+  const conduct = conductRefusalMessage(error);
+  if (conduct) {
+    return conduct;
   }
   if (status === 400) {
     return 'Check your email and password, then try again.';

@@ -255,6 +255,7 @@ export async function fetchWithAuth<T>(
         // A machine-readable refusal code (e.g. STAFF_CHECKIN_REQUIRED) lets a
         // caller tell apart two refusals that share a status. Never rendered.
         ...(typeof errorData.code === 'string' ? { code: errorData.code } : {}),
+        ...(typeof errorData.until === 'string' ? { until: errorData.until } : {}),
       } as ApiError;
     }
 

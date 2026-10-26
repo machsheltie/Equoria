@@ -17,6 +17,8 @@ export interface ApiError {
    * (e.g. `STAFF_CHECKIN_REQUIRED`). For branching only; never shown to players.
    */
   code?: string;
+  /** The day a freeze ends (ISO), on the accountFrozen refusal. Shown only as a formatted date. */
+  until?: string;
   /**
    * True only on the 401 the transport throws after the refresh-token attempt
    * FAILED — the session is dead, not merely an expired access token

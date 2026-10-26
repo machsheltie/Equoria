@@ -37,6 +37,33 @@ export interface StaffMe {
   trusted: boolean;
 }
 
+/** Equoria-w47x7: a player's conduct standing and record (Steward's Office). */
+export type ConductAction =
+  | 'warn'
+  | 'freeze'
+  | 'ban/account'
+  | 'ban/ip'
+  | 'ban/device'
+  | 'lift/account'
+  | 'lift/ip'
+  | 'lift/device';
+
+export interface ConductEntry {
+  id: number;
+  kind: 'warning' | 'freeze' | 'ban' | 'lift';
+  reason: string;
+  issuedByRole: string;
+  freezeDays: number | null;
+  endsAt: string | null;
+  createdAt: string;
+}
+
+export interface ConductRecordView {
+  player: StaffMember;
+  standing: { state: 'good' | 'frozen' | 'banned'; endsAt?: string };
+  records: ConductEntry[];
+}
+
 export interface StaffLogEntry {
   id: number;
   actorId: string;
@@ -193,6 +220,16 @@ export const staffApi = {
     apiClient.post<StaffMember>(`${BASE}/roles/lookup`, { username }),
   setRole: (userId: string, role: 'moderator' | 'admin' | 'user', reason: string) =>
     apiClient.post<StaffMember>(`${BASE}/roles/${encodeURIComponent(userId)}`, { role, reason }),
+
+  lookupConductPlayer: (username: string) =>
+    apiClient.post<StaffMember>(`${BASE}/conduct/lookup`, { username }),
+  conductRecord: (userId: string) =>
+    apiClient.get<ConductRecordView>(`${BASE}/conduct/${encodeURIComponent(userId)}`),
+  conductAct: (userId: string, action: ConductAction, reason: string, days?: 1 | 3 | 7) =>
+    apiClient.post<{ id: string }>(`${BASE}/conduct/${encodeURIComponent(userId)}/${action}`, {
+      reason,
+      ...(action === 'freeze' ? { days } : {}),
+    }),
 
   listTickets: (cursor?: string) =>
     apiClient.get<StaffTicketPage>(

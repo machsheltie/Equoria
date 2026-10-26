@@ -359,6 +359,27 @@ const RiderRetiringRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
   );
 };
 
+/** Equoria-w47x7: a steward's warning, in the steward's own words. */
+const ConductWarningRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
+  const reason = typeof notif.payload?.reason === 'string' ? notif.payload.reason : null;
+  return (
+    <GameNotifShell
+      notif={notif}
+      iconBg="bg-[var(--role-warning-bg)]"
+      emoji="⚠️"
+      badgeLabel="Warning"
+      badgeVariant="warning"
+      title="A warning from the stewards"
+      body={
+        <>
+          <p>The stewards have warned your account.</p>
+          {reason && <p className="text-role-muted">{reason}</p>}
+        </>
+      }
+    />
+  );
+};
+
 const UnknownNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) => (
   <GameNotifShell
     notif={notif}
@@ -385,6 +406,8 @@ export const GameNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) =
       return <StaffTicketRow notif={notif} />;
     case 'staffTicketUpdate':
       return <StaffTicketUpdateRow notif={notif} />;
+    case 'conductWarning':
+      return <ConductWarningRow notif={notif} />;
     default:
       return <UnknownNotifRow notif={notif} />;
   }
