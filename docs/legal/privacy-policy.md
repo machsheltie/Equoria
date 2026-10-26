@@ -1,6 +1,6 @@
 # Equoria Privacy Policy
 
-**Last updated:** 2026-09-25
+**Last updated:** 2026-10-26
 **Applies to:** the Equoria horse breeding & competition simulation game (web).
 
 This policy describes what personal data Equoria collects, why we collect
@@ -26,16 +26,17 @@ security contact in `SECURITY.md`).
 We only collect data that is necessary to operate the game. There is **no
 advertising, no third-party analytics SDK, and no sale of personal data**.
 
-| Category                | Specific data                                                                                                                                              | Why we collect it (lawful basis: performance of the game contract you enter by registering) |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Account / identity      | username, email address, first name, last name, hashed password (`User`)                                                                                   | To create and secure your account and let you log in                                        |
-| Authentication security | password-change timestamp, email-verification status, refresh tokens, password-reset tokens, optional TOTP MFA secret (encrypted at rest) & recovery codes | To keep your account secure and support login/MFA/password reset                            |
-| Game progression        | in-game currency, level, XP, XP events (`User`, `XpEvent`)                                                                                                 | To run game progression and leaderboards                                                    |
-| Preferences             | settings JSON (theme, UI preferences) (`User.settings`)                                                                                                    | To remember how you like the game configured                                                |
-| Game assets you own     | horses, grooms, riders, trainers, facilities and their full state                                                                                          | These are the objects you play with — the game cannot function without them                 |
-| Game activity           | competition results, training logs, transactions, horse sales, notifications                                                                               | To run competitions, the economy, and show you your history                                 |
-| Social activity         | forum threads/posts, direct messages, club memberships, election ballots                                                                                   | To provide community features you opt into by using them                                    |
-| Operational security    | a server-side audit trail of sensitive actions (login, financial, breeding, training, admin, account, groom)                                               | Fraud/abuse prevention and security forensics (lawful basis: legitimate interest)           |
+| Category                     | Specific data                                                                                                                                                                       | Why we collect it (lawful basis: performance of the game contract you enter by registering)                                            |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Account / identity           | username, email address, first name, last name, hashed password (`User`)                                                                                                            | To create and secure your account and let you log in                                                                                   |
+| Authentication security      | password-change timestamp, email-verification status, refresh tokens, password-reset tokens, optional TOTP MFA secret (encrypted at rest) & recovery codes                          | To keep your account secure and support login/MFA/password reset                                                                       |
+| Game progression             | in-game currency, level, XP, XP events (`User`, `XpEvent`)                                                                                                                          | To run game progression and leaderboards                                                                                               |
+| Preferences                  | settings JSON (theme, UI preferences) (`User.settings`)                                                                                                                             | To remember how you like the game configured                                                                                           |
+| Game assets you own          | horses, grooms, riders, trainers, facilities and their full state                                                                                                                   | These are the objects you play with — the game cannot function without them                                                            |
+| Game activity                | competition results, training logs, transactions, horse sales, notifications                                                                                                        | To run competitions, the economy, and show you your history                                                                            |
+| Social activity              | forum threads/posts, direct messages, club memberships, election ballots                                                                                                            | To provide community features you opt into by using them                                                                               |
+| Operational security         | a server-side audit trail of sensitive actions (login, financial, breeding, training, admin, account, groom)                                                                        | Fraud/abuse prevention and security forensics (lawful basis: legitimate interest)                                                      |
+| Sign-in location and conduct | the IP address and a random device identifier (a cookie the game itself sets; only a hash of it is stored) from each sign-in, and any warning, freeze or ban placed on your account | To keep the game safe: enforcing bans and spotting ban evasion (lawful basis: legitimate interest). Nothing is sent to any third party |
 
 We do **not** intentionally collect special-category data. Please do not
 put sensitive personal information into free-text fields (horse names,
@@ -50,6 +51,10 @@ forum posts, messages, settings).
 - **Security audit trail (`AuditLog`):** retained for a rolling window
   (default **90 days**, minimum 7 days) and then automatically purged by a
   nightly job (`backend/services/auditLogRetentionService.mjs`).
+- **Sign-in IP address and device records:** kept for **90 days** after the
+  last sign-in from that address and device, and cleared nightly. A ban placed
+  on an IP address or device stays until a steward lifts it. Your conduct
+  record (warnings, freezes, bans) is kept with your account.
 
 ---
 

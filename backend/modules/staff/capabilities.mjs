@@ -45,6 +45,9 @@ const adminOnly = [
   'ticket.resolve',
   'log.view.all',
   'view.identity',
+  // Owner ruling q101 (2026-10-26, Equoria-w47x7): the Owner and Admins lift any
+  // freeze or ban early; moderators cannot undo.
+  'conduct.lift',
   'jobs.hold',
   'time-back',
   'horse.admin',

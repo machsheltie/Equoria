@@ -35,6 +35,9 @@ import {
   banDevice,
   banIp,
   freezePlayer,
+  liftAccount,
+  liftDevice,
+  liftIp,
   getConductRecord,
   lookupPlayer,
   warnPlayer,
@@ -72,6 +75,11 @@ router.post('/conduct/:userId/freeze', requireStaffCapability('freeze'), freezeP
 router.post('/conduct/:userId/ban/account', requireStaffCapability('ban.account'), banAccount);
 router.post('/conduct/:userId/ban/ip', requireStaffCapability('ban.ip'), banIp);
 router.post('/conduct/:userId/ban/device', requireStaffCapability('ban.device'), banDevice);
+
+// Lifting (owner ruling q101): the Owner and Admins only; a moderator cannot undo.
+router.post('/conduct/:userId/lift/account', requireStaffCapability('conduct.lift'), liftAccount);
+router.post('/conduct/:userId/lift/ip', requireStaffCapability('conduct.lift'), liftIp);
+router.post('/conduct/:userId/lift/device', requireStaffCapability('conduct.lift'), liftDevice);
 
 // Tickets: moderators file; both roles read and reply (a moderator only on
 // their own); only the admin changes status. Capability lists stay inline

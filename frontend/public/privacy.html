@@ -54,7 +54,7 @@
   <body>
     <h1>Equoria Privacy Policy</h1>
     <p>
-      <strong>Last updated:</strong> 2026-09-25 <strong>Applies to:</strong> the Equoria horse
+      <strong>Last updated:</strong> 2026-10-26 <strong>Applies to:</strong> the Equoria horse
       breeding &amp; competition simulation game (web).
     </p>
     <p>
@@ -136,6 +136,17 @@
         </td>
         <td>Fraud/abuse prevention and security forensics (lawful basis: legitimate interest)</td>
       </tr>
+      <tr>
+        <td>Sign-in location and conduct</td>
+        <td>
+          the IP address and a random device identifier (a cookie the game itself sets; only a hash
+          of it is stored) from each sign-in, and any warning, freeze or ban placed on your account
+        </td>
+        <td>
+          To keep the game safe: enforcing bans and spotting ban evasion (lawful basis: legitimate
+          interest). Nothing is sent to any third party
+        </td>
+      </tr>
     </table>
     <p>
       We do <strong>not</strong> intentionally collect special-category data. Please do not put
@@ -153,6 +164,12 @@
         <strong>Security audit trail (<code>AuditLog</code>):</strong> retained for a rolling window
         (default <strong>90 days</strong>, minimum 7 days) and then automatically purged by a
         nightly job (<code>backend/services/auditLogRetentionService.mjs</code>).
+      </li>
+      <li>
+        <strong>Sign-in IP address and device records:</strong> kept for <strong>90 days</strong>
+        after the last sign-in from that address and device, and cleared nightly. A ban placed on an
+        IP address or device stays until a steward lifts it. Your conduct record (warnings, freezes,
+        bans) is kept with your account.
       </li>
     </ul>
     <hr />

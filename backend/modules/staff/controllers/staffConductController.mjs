@@ -328,6 +328,69 @@ function banConnection(kind, capability) {
     });
 }
 
+/**
+ * Lift a freeze or ban early (owner ruling q101: the Owner and Admins only). A
+ * lift is a conduct record of its own: everything issued before it stops
+ * counting, and the history stays.
+ */
+export const liftAccount = (req, res, next) =>
+  runAction(req, res, next, {
+    capability: 'conduct.lift',
+    async apply(tx, { target, reason, actor }) {
+      const standing = await accountStanding(tx, target.id);
+      if (!standing) {
+        throw new Refusal(409, 'There is nothing to lift on this account.', 'conductNothingToLift');
+      }
+      const record = await tx.conductRecord.create({
+        data: {
+          userId: target.id,
+          kind: 'lift',
+          reason,
+          issuedById: actor.id,
+          issuedByRole: actor.role,
+        },
+      });
+      return {
+        before: { standing: standing.state },
+        after: { standing: 'good', recordId: record.id },
+        body: { id: target.id, kind: 'lift', recordId: record.id },
+      };
+    },
+  });
+
+/** Lift the IP or device ban placed through this player. */
+function liftConnection(kind) {
+  return (req, res, next) =>
+    runAction(req, res, next, {
+      capability: 'conduct.lift',
+      targetType: kind === 'ip' ? 'playerIp' : 'playerDevice',
+      async apply(tx, { target }) {
+        const { count } = await tx.conductBlock.deleteMany({
+          where: { kind, sourceUserId: target.id },
+        });
+        if (count === 0) {
+          throw new Refusal(
+            409,
+            kind === 'ip'
+              ? 'There is no IP ban from this player to lift.'
+              : 'There is no device ban from this player to lift.',
+            'conductNothingToLift',
+          );
+        }
+        return {
+          before: { kind: `${kind}Ban`, sourceUserId: target.id, count },
+          after: { kind: `${kind}Ban`, lifted: true },
+          body: { id: target.id, kind: `${kind}BanLifted`, count },
+        };
+      },
+    });
+}
+
+/** POST /api/v1/staff/conduct/:userId/lift/ip { reason } */
+export const liftIp = liftConnection('ip');
+/** POST /api/v1/staff/conduct/:userId/lift/device { reason } */
+export const liftDevice = liftConnection('device');
+
 /** POST /api/v1/staff/conduct/:userId/ban/ip { reason } */
 export const banIp = banConnection('ip', 'ban.ip');
 /** POST /api/v1/staff/conduct/:userId/ban/device { reason } */

@@ -40,10 +40,20 @@ export function evictStandingCache(userId) {
  * @param {Date} [now]
  */
 export async function accountStanding(client, userId, now = new Date()) {
-  const rows = await client.conductRecord.findMany({
-    where: { userId, OR: [{ kind: 'ban' }, { kind: 'freeze', endsAt: { gt: now } }] },
-    select: { kind: true, endsAt: true },
+  // A lift record (q101) ends everything issued before it; only rows after the
+  // latest lift count.
+  const all = await client.conductRecord.findMany({
+    where: {
+      userId,
+      OR: [{ kind: 'ban' }, { kind: 'lift' }, { kind: 'freeze', endsAt: { gt: now } }],
+    },
+    select: { id: true, kind: true, endsAt: true },
   });
+  const lastLiftId = all.reduce(
+    (latest, row) => (row.kind === 'lift' && row.id > latest ? row.id : latest),
+    0,
+  );
+  const rows = all.filter(row => row.kind !== 'lift' && row.id > lastLiftId);
   if (rows.some(row => row.kind === 'ban')) {
     return { state: 'banned' };
   }

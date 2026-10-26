@@ -541,3 +541,116 @@ describe('The conduct record', () => {
     expect((await post(`${API}/conduct/lookup`, mod.user, { username: 42 }, mod.device)).status).toBe(400);
   });
 });
+
+describe('Lifting a freeze or ban early (owner ruling q101)', () => {
+  const LIFTS = ['lift/account', 'lift/ip', 'lift/device'];
+
+  it('keeps the lift from moderators, with STAFF_CAPABILITY_REQUIRED on every lift route', async () => {
+    const player = await makePlayer();
+    expect((await act(admin, player, 'ban/account')).status).toBe(200);
+    for (const action of LIFTS) {
+      const res = await act(mod, player, action);
+      expect({ action, status: res.status, code: res.body.code }).toEqual({
+        action,
+        status: 403,
+        code: 'STAFF_CAPABILITY_REQUIRED',
+      });
+    }
+    expect((await get(conduct(player.id), mod.user, mod.device)).body.standing.state).toBe('banned');
+  });
+
+  it('lets an admin lift a freeze: the player signs in again, the record keeps the lift, one log entry', async () => {
+    const player = await makePlayer();
+    expect((await act(mod, player, 'freeze', { days: 7 })).status).toBe(200);
+    expect((await login(player)).res.status).toBe(403);
+
+    const res = await act(admin, player, 'lift/account', { reason: 'issued in error' });
+    expect(res.status).toBe(200);
+    expect((await login(player)).res.status).toBe(200);
+    const record = await get(conduct(player.id), admin.user, admin.device);
+    expect(record.body.standing).toEqual({ state: 'good' });
+    expect(record.body.records.map(r => r.kind)).toEqual(['lift', 'freeze']);
+    const rows = await logFor(player.id, 'conduct.lift');
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      actorRole: 'admin',
+      reason: 'issued in error',
+      before: { standing: 'frozen' },
+      after: { standing: 'good' },
+    });
+  });
+
+  it('lets the owner lift a ban, and a ban after the lift binds again', async () => {
+    const player = await makePlayer();
+    expect((await act(mod, player, 'ban/account')).status).toBe(200);
+    expect((await act(owner, player, 'lift/account')).status).toBe(200);
+    expect((await login(player)).res.status).toBe(200);
+    expect((await act(mod, player, 'ban/account')).status).toBe(200);
+    const blocked = await login(player);
+    expect(blocked.res.status).toBe(403);
+    expect(blocked.res.body.code).toBe('accountBanned');
+  });
+
+  it('refuses a lift with nothing to lift, and a missing reason, with exact codes', async () => {
+    const player = await makePlayer();
+    for (const action of LIFTS) {
+      const res = await act(admin, player, action);
+      expect({ action, status: res.status, code: res.body.code }).toEqual({
+        action,
+        status: 409,
+        code: 'conductNothingToLift',
+      });
+    }
+    expect((await act(admin, player, 'ban/account')).status).toBe(200);
+    const noReason = await post(`${conduct(player.id)}/lift/account`, admin.user, { reason: ' ' }, admin.device);
+    expect(noReason.status).toBe(400);
+    expect(noReason.body.code).toBe('conductReasonRequired');
+    expect((await get(conduct(player.id), admin.user, admin.device)).body.standing.state).toBe('banned');
+  });
+
+  it('still refuses an admin lifting on another admin, a moderator or the owner', async () => {
+    for (const [target, code] of [
+      [adminB, 'staffTargetStaff'],
+      [modB, 'staffTargetStaff'],
+      [owner, 'staffTargetOwner'],
+    ]) {
+      const res = await act(admin, target.user, 'lift/account');
+      expect({ status: res.status, code: res.body.code }).toEqual({ status: 403, code });
+    }
+  });
+
+  it('lifts an IP ban and a device ban, so the connection signs in again', async () => {
+    const target = await makePlayer();
+    const bystander = await makePlayer();
+    const { ip, device } = await login(target);
+    expect((await act(mod, target, 'ban/ip')).status).toBe(200);
+    expect((await act(mod, target, 'ban/device')).status).toBe(200);
+    expect((await login(bystander, { ip })).res.status).toBe(403);
+    expect((await login(bystander, { device })).res.status).toBe(403);
+
+    expect((await act(admin, target, 'lift/ip')).status).toBe(200);
+    // The IP is free again; the target's device is still banned.
+    expect((await login(bystander, { ip })).res.status).toBe(200);
+    expect((await login(bystander, { device })).res.status).toBe(403);
+    expect((await act(owner, target, 'lift/device')).status).toBe(200);
+    expect((await login(bystander, { device })).res.status).toBe(200);
+    expect(await prisma.conductBlock.count({ where: { sourceUserId: target.id } })).toBe(0);
+    expect(await logFor(target.id, 'conduct.lift')).toHaveLength(2);
+  });
+
+  it('lets exactly one of two lifts at once succeed', async () => {
+    const player = await makePlayer();
+    expect((await act(mod, player, 'ban/account')).status).toBe(200);
+    const starters = [
+      await preparePost(`${conduct(player.id)}/lift/account`, admin.user, { reason: 'race a' }, admin.device),
+      await preparePost(`${conduct(player.id)}/lift/account`, owner.user, { reason: 'race b' }, owner.device),
+    ];
+    const results = await raceUnderLock(
+      tx => tx.$queryRaw`SELECT id FROM "User" WHERE id = ${player.id} FOR UPDATE`,
+      starters,
+    );
+    expect(results.map(r => r.status).sort()).toEqual([200, 409]);
+    expect(results.find(r => r.status === 409).body.code).toBe('conductNothingToLift');
+    expect(await logFor(player.id, 'conduct.lift')).toHaveLength(1);
+  }, 60_000);
+});
