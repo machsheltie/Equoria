@@ -64,6 +64,7 @@ import epigeneticFlagRoutes from '../modules/traits/routes/epigeneticFlagRoutes.
 import ultraRareTraitRoutes from '../modules/traits/routes/ultraRareTraitRoutes.mjs';
 import advancedEpigeneticRoutes from '../modules/traits/routes/advancedEpigeneticRoutes.mjs';
 import groomRoutes from '../modules/grooms/routes/groomRoutes.mjs';
+import groomCareRoutes from '../modules/grooms/routes/groomCareRoutes.mjs';
 import groomMarketplaceRoutes from '../modules/grooms/routes/groomMarketplaceRoutes.mjs';
 import enhancedGroomRoutes from '../modules/grooms/routes/enhancedGroomRoutes.mjs';
 import groomAssignmentRoutes from '../modules/grooms/routes/groomAssignmentRoutes.mjs';
@@ -229,6 +230,9 @@ export function buildRouters() {
   authRouter.use('/news', newsRoutes);
 
   // Groom management system
+  // Daily care ("groom horse") is mounted before /grooms so its paths are never
+  // claimed by a groom-id route.
+  authRouter.use('/grooms/care', groomCareRoutes);
   authRouter.use('/grooms', groomRoutes);
   authRouter.use('/grooms/enhanced', enhancedGroomRoutes);
   authRouter.use('/groom-assignments', groomAssignmentRoutes);

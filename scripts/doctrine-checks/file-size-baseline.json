@@ -9,7 +9,6 @@
   "backend/modules/breeding/routes/advancedBreedingGeneticsRoutes.mjs": 643,
   "backend/modules/community/__tests__/clubController.test.mjs": 981,
   "backend/modules/competition/__tests__/showController.test.mjs": 921,
-  "backend/modules/grooms/routes/groomRoutes.mjs": 674,
   "backend/modules/health/__tests__/session-lifecycle.test.mjs": 860,
   "backend/modules/horses/__tests__/breedingColorInheritanceService.test.mjs": 1114,
   "backend/modules/horses/__tests__/phenotypeCalculationService.test.mjs": 837,

@@ -31,7 +31,8 @@ import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
 import { trainHorse } from '../modules/training/controllers/trainingController.mjs';
 import { executeClosedShows } from '../modules/competition/shows/showExecutionService.mjs';
-import { recordInteraction } from '../modules/grooms/controllers/groomInteractionController.mjs';
+// "Groom horse" is the only grooming path since the old doors were retired (Equoria-l7xag).
+import { groomHorse } from '../modules/grooms/services/groomCareService.mjs';
 
 const tag = () => randomBytes(6).toString('hex');
 const PREFIX = 'TestFixture-dea06';
@@ -62,22 +63,6 @@ const horseStats = [
   'boldness',
   'flexibility',
 ];
-
-function fakeRes() {
-  const res = {
-    statusCode: 200,
-    body: null,
-    status(code) {
-      res.statusCode = code;
-      return res;
-    },
-    json(body) {
-      res.body = body;
-      return res;
-    },
-  };
-  return res;
-}
 
 let user;
 const horseIds = [];
@@ -297,15 +282,8 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
       data: { groomId: groom.id, foalId: foal.id, userId: user.id, isActive: true },
     });
 
-    const res = fakeRes();
-    await recordInteraction(
-      {
-        user: { id: user.id },
-        body: { foalId: foal.id, groomId: groom.id, interactionType: 'desensitization', duration: 30 },
-      },
-      res,
-    );
-    expect(res.statusCode).toBe(200);
+    const status = await groomHorse({ horseId: foal.id });
+    expect(status.groomedToday).toBe(true);
     expect(await prisma.groomInteraction.count({ where: { groomId: groom.id } })).toBe(1);
 
     const groomAfter = await prisma.groom.findUnique({

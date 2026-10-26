@@ -19,6 +19,8 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -43,6 +45,9 @@ describe('groom validation refusals carry no value lists (Equoria-bdpvw)', () =>
         money: 5000,
       },
     });
+    // This user is the suite's own: its horses and grooms go first, then the user.
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user?.id } }), 'horses');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user?.id } }), 'grooms');
     cleanup.add(() => prisma.user.delete({ where: { id: user?.id } }), 'user');
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
     csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${token}`] });
@@ -60,19 +65,43 @@ describe('groom validation refusals carry no value lists (Equoria-bdpvw)', () =>
       .set('X-CSRF-Token', csrf.csrfToken)
       .set('Cookie', csrf.cookieHeader);
 
-  it('a bad interactionType is refused without listing the valid interaction codes', async () => {
-    const res = await post('/api/v1/grooms/interact').send({
-      foalId: 1,
-      groomId: 1,
-      interactionType: 'not-a-real-interaction',
-      duration: 30,
+  // POST /grooms/interact (and its interactionType list) is retired
+  // (Equoria-l7xag); "groom horse" is the care door now, and its activity
+  // refusal must not list the foal's activity codes either.
+  it('a bad foal activity is refused without listing the activity codes', async () => {
+    const foal = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `bdpvw-foal-${randomBytes(4).toString('hex')}`,
+        sex: 'Filly',
+        dateOfBirth: gameCalendarDate(new Date(), -3),
+        age: 0,
+        userId: user.id,
+      },
+    });
+    const groom = await prisma.groom.create({
+      data: {
+        name: `bdpvw-groom-${randomBytes(4).toString('hex')}`,
+        speciality: 'foalCare',
+        skillLevel: 'novice',
+        personality: 'gentle',
+        userId: user.id,
+      },
+    });
+    await prisma.groomAssignment.create({
+      data: { foalId: foal.id, groomId: groom.id, userId: user.id, isActive: true },
+    });
+
+    const res = await post(`/api/v1/grooms/care/${foal.id}/groom`).send({
+      activity: 'notARealActivity',
     });
 
     expect(res.status).toBe(400);
+    expect(res.body.data.code).toBe('activityNotOffered');
     const body = JSON.stringify(res.body);
-    expect(body).toMatch(/interactionType/);
     expect(body).not.toMatch(/must be one of/i);
     expect(body).not.toMatch(noValueList);
+    expect(body).not.toMatch(/tyingPractice|hoofHandling|stableExposure/);
   });
 
   it('bad hire fields are refused without listing the valid specialities, skill levels or personalities', async () => {

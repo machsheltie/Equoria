@@ -133,6 +133,13 @@ describe('overview Current Status verdicts (Equoria-0l0tq)', () => {
 
   it('canGroomToday follows the groom action: yes until an interaction today', async () => {
     const horse = await makeHorse();
+    // "Groom horse" needs a groom on the horse (Equoria-l7xag; owner ruling
+    // 2026-10-20: the player's press sets the groom to work). Without one the
+    // action refuses, so the verdict is no.
+    expect((await overview(horse.id)).canGroomToday).toBe(false);
+    await prisma.groomAssignment.create({
+      data: { foalId: horse.id, groomId: groom.id, userId: owner.id, isActive: true },
+    });
     expect((await overview(horse.id)).canGroomToday).toBe(true);
 
     await prisma.groomInteraction.create({

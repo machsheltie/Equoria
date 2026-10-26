@@ -1,6 +1,8 @@
 /**
- * Integration test (Equoria-5v6g): POST /api/grooms/interact auto-updates
- * GroomHorseSynergy on EVERY interaction, not just milestone events.
+ * Integration test (Equoria-5v6g): grooming auto-updates GroomHorseSynergy on
+ * EVERY session, not just milestone events. The session is "groom horse"
+ * (POST /api/grooms/care/:horseId/groom), the only grooming door since
+ * POST /api/grooms/interact was retired (Equoria-l7xag).
  *
  * Pre-fix behavior: synergy row stays absent (or unchanged) after generic
  * brushing/grooming sessions. Only updateGroomSynergy callers tied to
@@ -31,7 +33,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 const ORIGIN = 'http://localhost:3000';
 const TAG = `5v6g-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}`;
 
-describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy', () => {
+describe('Equoria-5v6g: groom horse auto-updates GroomHorseSynergy', () => {
   let user;
   let token;
   let foal;
@@ -83,6 +85,9 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
         isActive: true,
       },
     });
+    await prisma.groomAssignment.create({
+      data: { foalId: foal.id, groomId: groom.id, userId: user.id, isActive: true },
+    });
 
     // Equoria-obufp: bind CSRF to the authenticated user (per-user CSRF
     // binding, Equoria-plw0h). Anonymous issuance => 403 on the Bearer mutation.
@@ -116,17 +121,12 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
     expect(pre).toBeNull();
 
     const res = await request(app)
-      .post('/api/v1/grooms/interact')
+      .post(`/api/v1/grooms/care/${foal.id}/groom`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('X-CSRF-Token', csrfToken)
       .set('Cookie', cookieHeader)
-      .send({
-        foalId: foal.id,
-        groomId: groom.id,
-        interactionType: 'brushing',
-        duration: 30,
-      });
+      .send({});
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -171,6 +171,10 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
     );
     perTestCleanup.add(() => prisma.horse.delete({ where: { id: freshFoal.id } }), 'freshFoal-horse');
 
+    await prisma.groomAssignment.create({
+      data: { foalId: freshFoal.id, groomId: groom.id, userId: user.id, isActive: true },
+    });
+
     // Seed a synergy row at sessionsTogether=3 directly. The next interaction
     // should bump it to 4 and trigger the modulo-4 +1 synergyScore reward.
     await prisma.groomHorseSynergy.create({
@@ -184,17 +188,12 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
     });
 
     const res = await request(app)
-      .post('/api/v1/grooms/interact')
+      .post(`/api/v1/grooms/care/${freshFoal.id}/groom`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('X-CSRF-Token', csrfToken)
       .set('Cookie', cookieHeader)
-      .send({
-        foalId: freshFoal.id,
-        groomId: groom.id,
-        interactionType: 'brushing',
-        duration: 30,
-      });
+      .send({});
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);

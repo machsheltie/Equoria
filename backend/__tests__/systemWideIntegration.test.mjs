@@ -202,18 +202,18 @@ describe('System-Wide Data Integrity', () => {
   // earn XP. Old contract: this test asserted the interaction INCREMENTED the
   // groom's experience (> 0). New contract: experience and level stay as generated.
   test('Groom interaction leaves groom experience and level unchanged — cross-system: Groom Interaction → Groom Profile API', async () => {
+    // "Groom horse" is the only grooming door (Equoria-l7xag): the groom is
+    // assigned to the horse and the player presses groom horse.
+    await prisma.groomAssignment.create({
+      data: { foalId: testHorse.id, groomId: testGroom.id, userId: testUser.id, isActive: true },
+    });
     const interactionResponse = await request(app)
-      .post('/api/v1/grooms/interact')
+      .post(`/api/v1/grooms/care/${testHorse.id}/groom`)
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({
-        groomId: testGroom.id,
-        foalId: testHorse.id,
-        interactionType: 'early_touch',
-        duration: 30,
-      })
+      .send({})
       .expect(200);
 
     expect(interactionResponse.body.success).toBe(true);

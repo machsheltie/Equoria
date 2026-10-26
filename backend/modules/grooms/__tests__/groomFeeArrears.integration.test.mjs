@@ -54,8 +54,7 @@ import {
   checkGroomMayWork,
   hasFullUnpaidWeek,
 } from '../services/groomEngagementService.mjs';
-import { recordInteraction } from '../controllers/groomInteractionController.mjs';
-import { performEnhancedInteraction } from '../controllers/enhancedGroomController.mjs';
+import { groomHorse } from '../services/groomCareService.mjs';
 import { listFreeAgentGrooms, hireFreeAgent } from '../controllers/groomFreeAgentController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-ypb7d-fee';
@@ -354,22 +353,14 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
     expect(check.allowed).toBe(false);
     expect(check.code).toBe('feeUnpaid');
 
-    // And the care endpoint refuses, which is where it matters.
-    const res = fakeRes();
-    await recordInteraction(
-      {
-        user: { id: user.id },
-        body: {
-          foalId: horse.id,
-          groomId: groom.id,
-          interactionType: 'brushing',
-          duration: 30,
-        },
-      },
-      res,
-    );
-    expect(res.statusCode).toBe(400);
-    expect(res.body.data).toEqual(expect.objectContaining({ groomId: groom.id, groomUnavailable: 'feeUnpaid' }));
+    // And "groom horse" refuses, which is where it matters. It is the only way
+    // to groom since the old doors (POST /grooms/interact and
+    // /grooms/enhanced/interact) were retired (Equoria-l7xag), so one refusal
+    // here is the whole rule.
+    await expect(groomHorse({ horseId: horse.id })).rejects.toMatchObject({
+      status: 409,
+      code: 'groomCannotWork',
+    });
     // No interaction was recorded.
     expect(await prisma.groomInteraction.count({ where: { groomId: groom.id } })).toBe(0);
   });
@@ -467,28 +458,9 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
     });
   }, 60000);
 
-  it('the SECOND care path refuses too — a rule on one of two doors is not a rule', async () => {
-    // `POST /grooms/enhanced/interact` is the other way a groom can work. The gate
-    // is applied in both controllers, so both are driven; asserting only the first
-    // would have left the rule bypassable by changing endpoint.
-    const res = fakeRes();
-    await performEnhancedInteraction(
-      {
-        user: { id: user.id },
-        body: {
-          groomId: groom.id,
-          horseId: horse.id,
-          interactionType: 'daily_care',
-          variation: 'Morning Routine',
-          duration: 30,
-        },
-      },
-      res,
-    );
-    expect(res.statusCode).toBe(400);
-    expect(res.body.data).toEqual(expect.objectContaining({ groomId: groom.id, groomUnavailable: 'feeUnpaid' }));
-    expect(await prisma.groomInteraction.count({ where: { groomId: groom.id } })).toBe(0);
-  });
+  // The former "SECOND care path refuses too" case drove POST
+  // /grooms/enhanced/interact. That door is retired (Equoria-l7xag): "groom
+  // horse" is the only care path, refused above.
 
   it('week two unpaid: released to the pool, history ended and never deleted', async () => {
     // A full pay week has now gone by unpaid. The predicate is pay-week based, not

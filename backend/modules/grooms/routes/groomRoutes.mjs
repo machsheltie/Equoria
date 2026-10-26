@@ -27,7 +27,6 @@ import {
   assignGroom,
   ensureDefaultAssignment,
   getFoalAssignments,
-  recordInteraction,
   getUserGrooms,
   hireGroom,
   getGroomDefinitions,
@@ -36,7 +35,6 @@ import {
   getGroomBonusTraits,
   getGroomHorseSynergyPreview,
 } from '../controllers/groomController.mjs';
-import { GROOM_CONFIG } from '../../../config/groomConfig.mjs';
 import {
   GROOM_SPECIALTY_VALUES,
   GROOM_SKILL_LEVEL_VALUES,
@@ -44,32 +42,12 @@ import {
 } from '../../../constants/schema.mjs';
 import logger from '../../../utils/logger.mjs';
 import { handleValidationErrors } from './_groomRouteHelpers.mjs';
+import { retiredGroomDoor } from '../controllers/groomCareController.mjs';
 import groomRetirementRoutes from './groomRetirementRoutes.mjs';
 import groomLegacyRoutes from './groomLegacyRoutes.mjs';
 import groomTalentsRoutes from './groomTalentsRoutes.mjs';
 
 const router = express.Router();
-
-/**
- * Get all valid interaction types from configuration
- * @returns {Array} Array of all valid interaction type strings
- */
-function getAllValidInteractionTypes() {
-  return [
-    // Legacy interaction types (for backward compatibility)
-    'daily_care',
-    'feeding',
-    'grooming',
-    'exercise',
-    'medical_check',
-    // New foal enrichment tasks (0-2 years)
-    ...GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS,
-    // New foal grooming tasks (1-3 years)
-    ...GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS,
-    // New general grooming tasks (3+ years)
-    ...GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS,
-  ];
-}
 
 /**
  * @swagger
@@ -245,120 +223,10 @@ router.get(
 );
 
 /**
- * @swagger
- * /api/grooms/interact:
- *   post:
- *     summary: Record a groom interaction with a foal
- *     tags: [Grooms]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - foalId
- *               - groomId
- *               - interactionType
- *               - duration
- *             properties:
- *               foalId:
- *                 type: integer
- *                 minimum: 1
- *                 description: ID of the foal
- *               groomId:
- *                 type: integer
- *                 minimum: 1
- *                 description: ID of the groom
- *               interactionType:
- *                 type: string
- *                 description: Type of interaction (includes legacy types, foal enrichment tasks, foal grooming tasks, and general grooming tasks)
- *               duration:
- *                 type: integer
- *                 minimum: 5
- *                 maximum: 480
- *                 description: Duration in minutes
- *               assignmentId:
- *                 type: integer
- *                 minimum: 1
- *                 description: Optional assignment ID
- *               notes:
- *                 type: string
- *                 maxLength: 500
- *                 description: Optional interaction notes
- *     responses:
- *       200:
- *         description: Interaction recorded successfully
- *       400:
- *         description: Invalid request data
- *       404:
- *         description: Foal or groom not found
- *       500:
- *         description: Internal server error
+ * POST /api/grooms/interact — retired. "Groom horse" (POST /api/grooms/care/:horseId/groom)
+ * is the only way to groom; this answers 410 (owner rulings 2026-10-20, 2026-10-26).
  */
-router.post(
-  '/interact',
-  authenticateToken,
-  [
-    body('foalId').isInt({ min: 1 }).withMessage('foalId must be a positive integer'),
-    body('groomId').isInt({ min: 1 }).withMessage('groomId must be a positive integer'),
-    body('interactionType')
-      .isIn(getAllValidInteractionTypes())
-      .withMessage('interactionType is not a recognized interaction'),
-    body('duration')
-      .isInt({ min: 5, max: 480 })
-      .withMessage('duration must be between 5 and 480 minutes'),
-    body('assignmentId')
-      .optional()
-      .isInt({ min: 1 })
-      .withMessage('assignmentId must be a positive integer'),
-    body('notes')
-      .optional()
-      .isLength({ max: 500 })
-      .withMessage('notes must be 500 characters or less'),
-    handleValidationErrors,
-  ],
-  // Dual ownership validation middleware (IDOR protection)
-  async (req, res, next) => {
-    try {
-      const { foalId, groomId } = req.body;
-      const userId = req.user.id;
-
-      // Import findOwnedResource dynamically to avoid circular dependencies
-      const { findOwnedResource } = await import('../../../middleware/ownership.mjs');
-
-      // Validate foal ownership
-      const foal = await findOwnedResource('foal', foalId, userId);
-      if (!foal) {
-        return res.status(404).json({
-          success: false,
-          message: 'Foal not found',
-        });
-      }
-
-      // Validate groom ownership
-      const groom = await findOwnedResource('groom', groomId, userId);
-      if (!groom) {
-        return res.status(404).json({
-          success: false,
-          message: 'Groom not found',
-        });
-      }
-
-      // Attach validated resources for controller
-      req.foal = foal;
-      req.groom = groom;
-      next();
-    } catch (error) {
-      logger.error('[groomRoutes] Ownership validation error:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-      });
-    }
-  },
-  recordInteraction,
-);
+router.post('/interact', retiredGroomDoor);
 
 /**
  * @swagger

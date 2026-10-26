@@ -36,7 +36,8 @@ import logger from './logger.mjs';
  * The FoalActivity table holds TWO streams that are DISJOINT BY DESIGN
  * (Equoria-2emg / 8yhe3 — unifying them was explicitly rejected as
  * data-corrupting):
- *   - GROOM_INTERACTION: groomController.recordInteraction. This is the ONLY
+ *   - GROOM_INTERACTION: groomCareService.groomHorse ("groom horse"; it replaced
+ *     the retired groomController.recordInteraction). This is the ONLY
  *     stream that drives the Horse.taskLog count cache (trait/milestone/streak
  *     evaluators read those counts on a hot path).
  *   - ENRICHMENT_ACTIVITY: rows written by the removed player-run
@@ -53,8 +54,11 @@ import logger from './logger.mjs';
  * counts ONLY groom-source rows, so an enrichment row CANNOT be counted
  * regardless of any activityType-namespace collision.
  */
+/** camelCase spelling for new consumers (Equoria-pjvp8 ratchet); the same value. */
+export const groomInteractionSource = 'groom_interaction';
+
 export const FOAL_ACTIVITY_SOURCE = Object.freeze({
-  GROOM_INTERACTION: 'groom_interaction',
+  GROOM_INTERACTION: groomInteractionSource,
   ENRICHMENT_ACTIVITY: 'enrichment_activity',
 });
 

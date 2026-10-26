@@ -12,7 +12,8 @@
  *   3. train          — a horse whose training cooldown expired
  *   4. compete        — an OPEN show the user has an eligible horse for
  *   5. breed          — a Stallion, or a Mare off her breeding cooldown
- *   6. groom-foal      — a foal development record for a horse under 3
+ *   6. groom-foal      — a foal development record for a horse under 3 that has
+ *                       not been groomed this Eastern game day
  *   7. visit-vet      — an injured horse, or one in bad health
  *      feed           — a horse in bad health (Equoria-cn6kt)
  *
@@ -62,6 +63,7 @@ import {
   loadHorsesWithConformationGroom,
 } from '../../../utils/competitionEntryRules.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { gameDayBounds } from '../../../utils/gameTime.mjs';
 import { maxActiveAgeYears, minActiveAgeYears } from '../../../constants/horseAgePolicy.mjs';
 import { getFeedHealth, hasBadHealth, hungerFeedingPlan } from '../../../utils/horseHealth.mjs';
 import { damBreedingCooldownEndsAt } from '../../horses/index.mjs';
@@ -147,6 +149,10 @@ export async function getNextActions(req, res) {
     // legacy FoalDevelopment.isActive column never turns false. A horse is a
     // foal while its game age is under 3 (minActiveAge).
     //
+    // Equoria-08luj (owner ruling 2026-10-26, q67): the home reminder lists only
+    // horses not yet groomed today (Eastern game day), so a foal with a groom
+    // interaction today is left out.
+    //
     // 21R-PROD-BUG-1 (Equoria-j8s2): the FoalDevelopment model has a `foal`
     // relation (named `FoalDevelopmentFoal` via foalId FK); it does NOT have a
     // `horse` relation. Output `horseId` is sourced from `foalId` because that
@@ -154,10 +160,15 @@ export async function getNextActions(req, res) {
     // usable on a transient foal-query error rather than failing the whole
     // response; real errors are still logged.
     let activeFoals = [];
+    const today = gameDayBounds(now);
     try {
       activeFoals = await prisma.foalDevelopment.findMany({
         where: {
-          foal: { userId, age: { lt: minActiveAge } },
+          foal: {
+            userId,
+            age: { lt: minActiveAge },
+            groomInteractions: { none: { timestamp: { gte: today.start, lt: today.end } } },
+          },
         },
         select: { foalId: true, foal: { select: { name: true, dateOfBirth: true } } },
       });

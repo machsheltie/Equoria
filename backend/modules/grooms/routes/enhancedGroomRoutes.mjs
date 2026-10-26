@@ -4,15 +4,15 @@
  */
 
 import express from 'express';
-import { body, param, validationResult } from 'express-validator';
+import { param, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
   getEnhancedInteractions,
-  performEnhancedInteraction,
   getRelationshipDetails,
 } from '../controllers/enhancedGroomController.mjs';
+import { retiredGroomDoor } from '../controllers/groomCareController.mjs';
 
 const router = express.Router();
 
@@ -54,36 +54,10 @@ router.get(
 );
 
 /**
- * POST /api/grooms/enhanced/interact
- * Perform an enhanced interaction between groom and horse
- *
- * Security: Controller uses atomic validation to verify both groom and horse ownership
+ * POST /api/grooms/enhanced/interact — retired. "Groom horse" (POST
+ * /api/grooms/care/:horseId/groom) is the only way to groom; this answers 410.
  */
-router.post(
-  '/interact',
-  [
-    body('groomId').isInt({ min: 1 }).withMessage('Groom ID must be a positive integer'),
-    body('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    body('interactionType')
-      .isString()
-      .isLength({ min: 1, max: 50 })
-      .withMessage('Interaction type must be a non-empty string (max 50 characters)'),
-    body('variation')
-      .isString()
-      .isLength({ min: 1, max: 100 })
-      .withMessage('Variation must be a non-empty string (max 100 characters)'),
-    body('duration')
-      .isInt({ min: 5, max: 180 })
-      .withMessage('Duration must be between 5 and 180 minutes'),
-    body('notes')
-      .optional()
-      .isString()
-      .isLength({ max: 500 })
-      .withMessage('Notes must be a string (max 500 characters)'),
-  ],
-  handleValidationErrors,
-  performEnhancedInteraction,
-);
+router.post('/interact', retiredGroomDoor);
 
 /**
  * GET /api/grooms/enhanced/relationship/:groomId/:horseId

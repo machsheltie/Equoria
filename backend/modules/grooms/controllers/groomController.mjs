@@ -11,7 +11,7 @@
  * Public surface (12 handlers):
  *   - assignment:    assignGroom, ensureDefaultAssignment, getFoalAssignments,
  *                    getGroomAssignmentLogs
- *   - interaction:   recordInteraction, getGroomHorseSynergyPreview
+ *   - interaction:   getGroomHorseSynergyPreview (grooming itself: groomCareController)
  *   - roster:        getUserGrooms, hireGroom, getGroomProfile,
  *                    getGroomDefinitions
  *   - bonus-traits:  getGroomBonusTraits, updateGroomBonusTraits
@@ -24,7 +24,7 @@ export {
   getGroomAssignmentLogs,
 } from './groomAssignmentHandlers.mjs';
 
-export { recordInteraction, getGroomHorseSynergyPreview } from './groomInteractionController.mjs';
+export { getGroomHorseSynergyPreview } from './groomInteractionController.mjs';
 
 export {
   getUserGrooms,

@@ -22,8 +22,8 @@
  * here); nothing writes it any more, so every new row takes the 0.0 default. Dropping
  * it is a migration for a later task — noted in the commit, not smuggled in.
  *
- * Real DB, no mocks. The interaction is driven through the controller with a fake
- * req/res, the Equoria-otii0 pattern in this directory.
+ * Real DB, no mocks. The session is "groom horse" (groomCareService.groomHorse),
+ * the only way to groom since the old doors were retired (Equoria-l7xag).
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -33,26 +33,10 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { calculateGroomInteractionEffects } from '../../../utils/groomSystem.mjs';
 import { calculateEnhancedEffects, getAvailableInteractions } from '../services/enhancedGroomInteractions.mjs';
-import { recordInteraction } from '../controllers/groomInteractionController.mjs';
+import { groomHorse } from '../services/groomCareService.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-tfo3c-free';
 const tag = () => randomBytes(6).toString('hex');
-
-function fakeRes() {
-  const res = {
-    statusCode: 200,
-    body: null,
-    status(code) {
-      res.statusCode = code;
-      return res;
-    },
-    json(body) {
-      res.body = body;
-      return res;
-    },
-  };
-  return res;
-}
 
 describe('Equoria-tfo3c — the care calculators quote no price', () => {
   const groom = {
@@ -114,7 +98,7 @@ describe('Equoria-tfo3c — a real grooming session writes no price and takes no
         ...fixtureColor(),
         name: `${FIXTURE_PREFIX}-horse-${suffix}`,
         sex: 'Filly',
-        dateOfBirth: new Date('2026-08-20'), // a foal, so enrichment tasks apply
+        dateOfBirth: new Date('2026-08-20'),
         age: 0,
         userId: user.id,
         healthStatus: 'Excellent',
@@ -152,20 +136,8 @@ describe('Equoria-tfo3c — a real grooming session writes no price and takes no
       (await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money,
     );
 
-    const res = fakeRes();
-    await recordInteraction(
-      {
-        user: { id: user.id },
-        body: {
-          foalId: horse.id,
-          groomId: groom.id,
-          interactionType: 'trust_building',
-          duration: 30,
-        },
-      },
-      res,
-    );
-    expect(res.statusCode).toBe(200);
+    const status = await groomHorse({ horseId: horse.id });
+    expect(status.groomedToday).toBe(true);
 
     const rows = await prisma.groomInteraction.findMany({
       where: { groomId: groom.id, foalId: horse.id },

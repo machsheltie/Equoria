@@ -95,29 +95,19 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     });
 
     // Equoria-4kp53: section 3 ('Relationship Details') asserts
-    // statistics.totalInteractions > 0, which depends on section 2 having
-    // run first to create at least one groomInteraction. To make the
-    // suite order-independent we seed exactly one priming interaction
-    // here so section 3 reads stable state regardless of describe order.
-    // Section 2 still creates its own interactions and validates those.
-    try {
-      await request(app)
-        .post('/api/v1/grooms/enhanced/interact')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          groomId: testGroom.id,
-          horseId: testHorse.id,
-          interactionType: 'daily_care',
-          variation: 'Morning Routine',
-          duration: 30,
-          notes: 'Equoria-4kp53 priming interaction for section-3 reads',
-        });
-    } catch {
-      /* Priming is best-effort; section-2 will still create its own. */
-    }
+    // statistics.totalInteractions > 0, so one groom interaction row is seeded
+    // here. The enhanced interact door that used to make it is retired
+    // (Equoria-l7xag: "groom horse" is the only way to groom), so the row is
+    // written directly, as a past session would have left it.
+    await prisma.groomInteraction.create({
+      data: {
+        foalId: testHorse.id,
+        groomId: testGroom.id,
+        interactionType: 'groomHorse',
+        duration: 0,
+        bondingChange: 5,
+      },
+    });
 
     // Test setup complete
   });
@@ -229,236 +219,10 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     });
   });
 
-  describe('2. Perform Enhanced Interactions', () => {
-    it('should perform a basic enhanced interaction', async () => {
-      // Equoria-2gqir: the enhanced-interaction daily limit is PER HORSE
-      // (enhancedGroomController.performEnhancedInteraction checks
-      // groomInteraction WHERE foalId=horseId for today, returning 400
-      // "already had a groom interaction today" when one exists). The
-      // beforeAll seeds an Equoria-4kp53 priming interaction on testHorse
-      // for section 3, which consumes testHorse's one-per-day budget. This
-      // test previously reused testHorse and so always 400'd on the daily
-      // limit. Use a dedicated fresh horse — mirroring the enrichment /
-      // daily-limit sibling tests below — so the real 201 success path is
-      // exercised without colliding with the priming interaction.
-      const basicHorse = await prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'Basic Care Test Horse',
-          sex: 'Mare',
-          dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
-          userId: testUser.id,
-          bondScore: 25,
-        },
-      });
-
-      const interactionData = {
-        groomId: testGroom.id,
-        horseId: basicHorse.id,
-        interactionType: 'daily_care',
-        variation: 'Morning Routine',
-        duration: 30,
-        notes: 'Basic care interaction test',
-      };
-
-      const response = await request(app)
-        .post('/api/v1/grooms/enhanced/interact')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(interactionData);
-
-      expect(response.status).toBe(201);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('interaction');
-      expect(response.body.data).toHaveProperty('effects');
-      expect(response.body.data).toHaveProperty('relationship');
-      expect(response.body.data).toHaveProperty('horse');
-
-      // Check interaction data
-      const { interaction } = response.body.data;
-      expect(interaction.type).toBe('daily_care');
-      expect(interaction.variation).toBe('Morning Routine');
-      expect(interaction.duration).toBe(30);
-      expect(interaction).toHaveProperty('quality');
-      // Equoria-tfo3c (owner ruling, 2026-09-14): care costs nothing, so the
-      // response quotes no price. It used to carry one that was charged to nobody.
-      expect(interaction).not.toHaveProperty('cost');
-
-      // Check effects
-      const { effects } = response.body.data;
-      expect(effects).toHaveProperty('bondingChange');
-      expect(effects).toHaveProperty('newBondScore');
-      expect(effects.bondingChange).toBeGreaterThan(0);
-
-      // Check relationship progression
-      const { relationship } = response.body.data;
-      expect(relationship).toHaveProperty('oldLevel');
-      expect(relationship).toHaveProperty('newLevel');
-      expect(relationship).toHaveProperty('levelUp');
-      expect(relationship).toHaveProperty('currentPoints');
-
-      // Clean up — GroomInteraction.foal is onDelete:Cascade, so deleting the
-      // horse removes its interaction row too (mirrors the sibling tests). The
-      // user-scoped afterAll teardown also covers this id as a safety net.
-      await prisma.horse.deleteMany({ where: { id: basicHorse.id } });
-    });
-
-    it('should perform enrichment interaction with higher effects', async () => {
-      // Create a second horse for this test to avoid daily limit
-      const secondHorse = await prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'Second Test Horse',
-          sex: 'Mare',
-          dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
-          userId: testUser.id,
-          bondScore: 30,
-        },
-      });
-
-      const interactionData = {
-        groomId: testGroom.id,
-        horseId: secondHorse.id,
-        interactionType: 'enrichment',
-        variation: 'Sensory Exploration',
-        duration: 45,
-        notes: 'Enrichment activity test',
-      };
-
-      const response = await request(app)
-        .post('/api/v1/grooms/enhanced/interact')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(interactionData);
-
-      expect(response.status).toBe(201);
-      expect(response.body.success).toBe(true);
-
-      const { effects } = response.body.data;
-      expect(effects.bondingChange).toBeGreaterThan(3); // Should be higher than basic care
-
-      // Clean up
-      await prisma.horse.deleteMany({ where: { id: secondHorse.id } });
-    });
-
-    it('should prevent multiple interactions per day', async () => {
-      // Create a third horse for this test
-      const thirdHorse = await prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'Third Test Horse',
-          sex: 'Mare',
-          dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
-          userId: testUser.id,
-          bondScore: 20,
-        },
-      });
-
-      // First interaction should succeed
-      const interactionData = {
-        groomId: testGroom.id,
-        horseId: thirdHorse.id,
-        interactionType: 'bonding_time',
-        variation: 'Trust Building',
-        duration: 40,
-      };
-
-      const firstResponse = await request(app)
-        .post('/api/v1/grooms/enhanced/interact')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(interactionData);
-
-      expect(firstResponse.status).toBe(201);
-
-      // Second interaction same day should fail
-      const secondResponse = await request(app)
-        .post('/api/v1/grooms/enhanced/interact')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(interactionData);
-
-      expect(secondResponse.status).toBe(400);
-      expect(secondResponse.body.success).toBe(false);
-      expect(secondResponse.body.message).toContain('already had a groom interaction today');
-      expect(secondResponse.body.data).toHaveProperty('dailyLimitReached');
-      expect(secondResponse.body.data.dailyLimitReached).toBe(true);
-
-      // Clean up
-      await prisma.horse.deleteMany({ where: { id: thirdHorse.id } });
-    });
-
-    it('should validate required fields', async () => {
-      const invalidData = {
-        groomId: testGroom.id,
-        horseId: testHorse.id,
-        // Missing interactionType, variation, duration
-      };
-
-      const response = await request(app)
-        .post('/api/v1/grooms/enhanced/interact')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(invalidData);
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Validation failed');
-    });
-
-    it('should validate interaction type', async () => {
-      const invalidData = {
-        groomId: testGroom.id,
-        horseId: testHorse.id,
-        interactionType: 'invalidType',
-        variation: 'Test Variation',
-        duration: 30,
-      };
-
-      const response = await request(app)
-        .post('/api/v1/grooms/enhanced/interact')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(invalidData);
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Invalid interaction type');
-    });
-
-    it('should validate duration bounds', async () => {
-      const invalidData = {
-        groomId: testGroom.id,
-        horseId: testHorse.id,
-        interactionType: 'daily_care',
-        variation: 'Morning Routine',
-        duration: 200, // Too long
-      };
-
-      const response = await request(app)
-        .post('/api/v1/grooms/enhanced/interact')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(invalidData);
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-    });
-  });
+  // Section 2 ('Perform Enhanced Interactions') drove POST
+  // /api/grooms/enhanced/interact, retired by Equoria-l7xag (owner rulings
+  // 2026-10-20 and 2026-10-26: one daily "groom horse", +5 bond). Grooming is
+  // covered by modules/grooms/__tests__/groomCareRoutes.integration.test.mjs.
 
   describe('3. Relationship Details', () => {
     it('should get detailed relationship information', async () => {

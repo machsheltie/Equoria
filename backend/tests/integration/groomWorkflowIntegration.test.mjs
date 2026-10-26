@@ -1,7 +1,7 @@
 /**
  * Groom Workflow Integration Tests
  *
- * Tests the complete groom management workflow (hire → assign → interact)
+ * Tests the groom management workflow (hire → assign)
  * end-to-end against the real DB. No mocks of any kind.
  *
  * Fixtures:
@@ -14,13 +14,12 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { hireGroom, recordInteraction } from '../../modules/grooms/controllers/groomController.mjs';
+import { hireGroom } from '../../modules/grooms/controllers/groomController.mjs';
 import { assignGroom } from '../../modules/grooms/controllers/groomAssignmentHandlers.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
-import { createSequentially } from '../helpers/createSequentially.mjs'; // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
 
 // ─── plain response capture ───────────────────────────────────────────────────
 
@@ -429,142 +428,9 @@ describe('Groom Workflow Integration Tests', () => {
     });
   });
 
-  // ─── 3. Age-Based Task Validation ────────────────────────────────────────────
-
-  describe('3. Age-Based Task Validation', () => {
-    let testGroom = null;
-
-    beforeEach(async () => {
-      testGroom = await prisma.groom.create({
-        data: {
-          name: 'Age Test Groom',
-          speciality: 'foalCare',
-          skillLevel: 'expert',
-          personality: 'gentle',
-          sessionRate: 25.0,
-          userId: testUser.id,
-        },
-      });
-
-      await createSequentially([
-        () =>
-          prisma.groomAssignment.create({
-            data: {
-              foalId: testFoal.id,
-              groomId: testGroom.id,
-              userId: testUser.id,
-              priority: 1,
-              isActive: true,
-            },
-          }),
-        () =>
-          prisma.groomAssignment.create({
-            data: {
-              foalId: testYoungHorse.id,
-              groomId: testGroom.id,
-              userId: testUser.id,
-              priority: 1,
-              isActive: true,
-            },
-          }),
-        () =>
-          prisma.groomAssignment.create({
-            data: {
-              foalId: testAdultHorse.id,
-              groomId: testGroom.id,
-              userId: testUser.id,
-              priority: 1,
-              isActive: true,
-            },
-          }),
-      ]);
-    });
-
-    it('allows enrichment tasks for foals (0-2 years)', async () => {
-      const req = {
-        body: {
-          foalId: testFoal.id,
-          groomId: testGroom.id,
-          interactionType: 'trust_building',
-          duration: 30,
-          notes: 'Building trust with young foal',
-        },
-        user: { id: testUser.id },
-      };
-      const res = makeRes();
-
-      await recordInteraction(req, res);
-
-      expect(res._status).toBe(200);
-      expect(res._json).toMatchObject({
-        success: true,
-        data: {
-          interaction: { interactionType: 'trust_building' },
-        },
-      });
-
-      const interaction = await prisma.groomInteraction.findFirst({
-        where: { foalId: testFoal.id, interactionType: 'trust_building' },
-      });
-      expect(interaction).toBeTruthy();
-    });
-
-    it('allows grooming tasks for horses 1-3 years old', async () => {
-      const req = {
-        body: {
-          foalId: testYoungHorse.id,
-          groomId: testGroom.id,
-          interactionType: 'hoof_handling',
-          duration: 30,
-          notes: 'Handling hooves for young horse',
-        },
-        user: { id: testUser.id },
-      };
-      const res = makeRes();
-
-      await recordInteraction(req, res);
-
-      expect(res._status).toBe(200);
-      expect(res._json).toMatchObject({
-        success: true,
-        data: {
-          interaction: { interactionType: 'hoof_handling' },
-        },
-      });
-
-      const interaction = await prisma.groomInteraction.findFirst({
-        where: { foalId: testYoungHorse.id, interactionType: 'hoof_handling' },
-      });
-      expect(interaction).toBeTruthy();
-    });
-
-    it('allows grooming tasks for horses over 3 years old', async () => {
-      const req = {
-        body: {
-          foalId: testAdultHorse.id,
-          groomId: testGroom.id,
-          interactionType: 'brushing',
-          duration: 60,
-          notes: 'Brushing for adult horse',
-        },
-        user: { id: testUser.id },
-      };
-      const res = makeRes();
-
-      await recordInteraction(req, res);
-
-      expect(res._status).toBe(200);
-      expect(res._json).toMatchObject({
-        success: true,
-        data: {
-          interaction: { interactionType: 'brushing' },
-        },
-      });
-
-      const interaction = await prisma.groomInteraction.findFirst({
-        where: { foalId: testAdultHorse.id, interactionType: 'brushing' },
-      });
-      expect(interaction).toBeTruthy();
-    });
-  });
+  // Section 3 ('Age-Based Task Validation') drove recordInteraction with the
+  // old per-age task lists. That door is retired (Equoria-l7xag): "groom horse"
+  // is the only way to groom, and a foal's choices come from the one band
+  // schedule (owner rulings 2026-10-20, 2026-10-26 q70). Covered by
+  // modules/grooms/__tests__/groomCareRoutes.integration.test.mjs.
 });

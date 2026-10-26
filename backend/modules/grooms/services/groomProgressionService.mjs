@@ -30,6 +30,9 @@ import logger from '../../../utils/logger.mjs';
  *   when a tx is passed, failures are RETHROWN instead of fail-softed.
  * @returns {Object} Result with synergy changes
  */
+/** The action a grooming session reports (camelCase name for new callers, Equoria-pjvp8). */
+export const interactionCompletedAction = 'interaction_completed';
+
 export async function updateGroomSynergy(groomId, horseId, action, sessions = 1, client = prisma) {
   try {
     logger.info(
@@ -57,7 +60,7 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1,
     // Equoria-5v6g: for generic interactions, award +1 synergy every 4th session crossed.
     // This keeps synergy growth small relative to milestone events (+1) but ensures
     // sustained grooming still increases the score over time.
-    if (action === 'interaction_completed') {
+    if (action === interactionCompletedAction) {
       const oldSessions = synergyRecord?.sessionsTogether ?? 0;
       const newSessions = oldSessions + sessions;
       synergyGain = Math.floor(newSessions / 4) - Math.floor(oldSessions / 4);
