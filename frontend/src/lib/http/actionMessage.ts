@@ -127,3 +127,21 @@ export const equipRefused: ActionCopy = {
 export const refreshRefused: ActionCopy = {
   400: "The marketplace couldn't be refreshed. Your balance may not cover the fee.",
 };
+
+/**
+ * A refused show hosting (Equoria-oey96.13): the weekly limit, a prize the host
+ * cannot cover and a name another show already has are coded refusals; the
+ * 400 and 409 copy covers an older answer with no code.
+ */
+export const createShowRefused: ActionCopy = {
+  400: "That show couldn't be hosted. Check the name, discipline, level and entry fee, and that your coins cover the prize.",
+  409: "That show couldn't be hosted. You may have reached this week's limit, or the name is already taken.",
+};
+
+export const createShowRefusalCodes: ActionCodeCopy = {
+  weeklyShowLimitReached:
+    "You've hosted all the shows you can this week. A new week of hosting begins on Monday.",
+  insufficientFunds:
+    "Your coins don't cover the prize for that entry fee. Lower the entry fee, or hold a show once you have more coins.",
+  showNameTaken: 'Another show already has that name. Give yours a different one.',
+};

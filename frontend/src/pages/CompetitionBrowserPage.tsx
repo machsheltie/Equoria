@@ -24,6 +24,8 @@ import CompetitionDetailModal, {
   type Competition as ModalCompetition,
 } from '@/components/competition/CompetitionDetailModal';
 import ConformationShowsPanel from '@/components/competition/ConformationShowsPanel';
+import CreateShowDialog from '@/components/competition/CreateShowDialog';
+import { Button } from '@/components/ui/button';
 import { applyCompetitionFilters } from '@/lib/utils/competition-filters';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -67,6 +69,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
   const [selectedCompetition, setSelectedCompetition] = useState<ModalCompetition | null>(null);
   const [selectedHorseId, setSelectedHorseId] = useState<number | ''>('');
   const [entryError, setEntryError] = useState<string | undefined>();
+  const [hostDialogOpen, setHostDialogOpen] = useState(false);
 
   // Equoria-lfkw1: real scouting field for the open detail modal. Fetched
   // here (container) and passed into the presentational modal so the modal
@@ -272,6 +275,21 @@ const CompetitionBrowserPage = (): JSX.Element => {
             <ConformationShowsPanel />
           </TabsContent>
           <TabsContent value="ridden" data-testid="ridden-tab-panel">
+            {/* Hosting a show (Equoria-oey96.13): the one gold action on this tab; the
+                entry flow's gold action lives in its own dialog. */}
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-[var(--text-secondary)]">
+                Open a show of your own and set the entry fee.
+              </p>
+              <Button
+                type="button"
+                data-testid="host-show-button"
+                onClick={() => setHostDialogOpen(true)}
+              >
+                Host a Show
+              </Button>
+            </div>
+
             {/* Filters Section — legacy data-testid="page-header" wrapper removed:
                 it now collides with the canonical PageHeader root testid. */}
             <CompetitionFilters
@@ -295,6 +313,8 @@ const CompetitionBrowserPage = (): JSX.Element => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {hostDialogOpen && <CreateShowDialog open onOpenChange={setHostDialogOpen} />}
 
       {/* Competition Detail Modal */}
       <CompetitionDetailModal

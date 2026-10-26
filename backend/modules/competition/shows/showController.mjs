@@ -169,9 +169,11 @@ export async function createShow(req, res) {
         });
       }
       if (txError.message === 'INSUFFICIENT_FUNDS') {
-        return res
-          .status(400)
-          .json({ success: false, message: 'Insufficient funds to fund the prize pool' });
+        return res.status(400).json({
+          success: false,
+          code: 'insufficientFunds',
+          message: 'Insufficient funds to fund the prize pool',
+        });
       }
       throw txError;
     }
@@ -186,14 +188,46 @@ export async function createShow(req, res) {
       return res.status(503).json({ success: false, code: 'SERVICE_BUSY', message: error.message });
     }
     if (error.code === 'P2002') {
-      return res
-        .status(409)
-        .json({ success: false, message: 'A show with that name already exists' });
+      return res.status(409).json({
+        success: false,
+        code: 'showNameTaken',
+        message: 'A show with that name already exists',
+      });
     }
     logger.error('showController.createShow error:', error);
     return res
       .status(500)
       .json({ success: false, code: 'INTERNAL_ERROR', message: 'Failed to create show' });
+  }
+}
+
+// ── Equoria-oey96.13: how many shows this host has made this game-time week ────
+
+export async function getHostingStatus(req, res) {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+    const weekStartedAt = startOfShowWeek(new Date());
+    const hostedThisWeek = await prisma.show.count({
+      where: { createdByUserId: userId, createdAt: { gte: weekStartedAt } },
+    });
+    return res.status(200).json({
+      success: true,
+      data: {
+        hostedThisWeek,
+        weeklyLimit: weeklyShowCreationLimit(req.user),
+        weekStartedAt: weekStartedAt.toISOString(),
+      },
+    });
+  } catch (error) {
+    logger.error('showController.getHostingStatus error:', error);
+    return res.status(500).json({
+      success: false,
+      code: 'hostingStatusUnavailable',
+      message: 'Failed to load hosting status',
+    });
   }
 }
 

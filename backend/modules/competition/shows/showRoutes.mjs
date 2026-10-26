@@ -13,7 +13,7 @@
 import express from 'express';
 import { authenticateToken, requireRole } from '../../../middleware/auth.mjs';
 import { csrfProtection } from '../../../middleware/csrf.mjs';
-import { createShow, getShows, enterShow } from './showController.mjs';
+import { createShow, getShows, enterShow, getHostingStatus } from './showController.mjs';
 import { executeClosedShows } from './showExecutionService.mjs';
 
 const router = express.Router();
@@ -49,6 +49,7 @@ router.post(
   executeClosedShows,
 );
 
+router.get('/hosting', getHostingStatus);
 router.get('/', getShows);
 router.post('/:id/enter', enterShow);
 
