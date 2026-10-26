@@ -571,11 +571,8 @@ export async function eraseUserAccount(userId) {
       }
 
       // ── Remaining directly-keyed rows ─────────────────────────────────────
-      // (Most are Cascade on user, but deleting explicitly inside the same
-      // transaction keeps the final user.delete unambiguous and the intent
-      // auditable.)
-      // Equoria-0o7ib: user_presence has NO foreign key to User by design
-      // (Equoria-vc5x1), so nothing cascades to it; delete the stamp here.
+      // (Most cascade on user; explicit deletes keep the intent auditable.)
+      // Equoria-0o7ib: user_presence has no FK to User (Equoria-vc5x1); delete it here.
       await tx.userPresence.deleteMany({ where: { userId } });
       await tx.notification.deleteMany({ where: { userId } });
       await tx.userTransaction.deleteMany({ where: { userId } });
