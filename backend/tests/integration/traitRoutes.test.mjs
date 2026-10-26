@@ -64,7 +64,6 @@ describe('Trait Routes Integration Tests', () => {
           breed: { connect: { id: testBreed.id } },
           user: { connect: { id: testUser.id } }, // Link horse to test user in ACTUAL database
           bondScore: 85,
-          stressLevel: 15,
           healthStatus: 'excellent',
           epigeneticModifiers: {
             positive: ['resilient'],
@@ -135,7 +134,6 @@ describe('Trait Routes Integration Tests', () => {
       expect(response.body.data).toHaveProperty('horseId', testHorse.id);
       expect(response.body.data).toHaveProperty('horseName', testHorse.name);
       expect(response.body.data).toHaveProperty('bondScore');
-      expect(response.body.data).toHaveProperty('stressLevel');
       expect(response.body.data).toHaveProperty('age');
       expect(response.body.data).toHaveProperty('traits');
       expect(response.body.data).toHaveProperty('summary');
@@ -253,7 +251,6 @@ describe('Trait Routes Integration Tests', () => {
 
       const { currentStats } = response.body.data;
       expect(currentStats).toHaveProperty('bondScore');
-      expect(currentStats).toHaveProperty('stressLevel');
       expect(currentStats).toHaveProperty('age');
 
       const { traitCounts } = response.body.data;

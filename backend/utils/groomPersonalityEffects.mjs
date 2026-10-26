@@ -40,7 +40,6 @@ import { minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
  * - effect: Description of the personality's special abilities
  * - successRateModifier: Base success rate modification
  * - bondingModifier: Bonding rate modification
- * - stressReductionModifier: Stress reduction effectiveness
  * - streakGrowthModifier: Consecutive days streak growth rate
  * - traitInfluenceModifier: Trait development influence modification
  * - specialConditions: Special conditions for enhanced effects
@@ -51,7 +50,6 @@ export const GROOM_PERSONALITY_EFFECTS = {
     effect: '10% increased success rate on nervous or timid horses',
     successRateModifier: 1.1,
     bondingModifier: 1.2,
-    stressReductionModifier: 1.4,
     streakGrowthModifier: 1.0,
     traitInfluenceModifier: 1.0,
     specialConditions: {
@@ -66,7 +64,6 @@ export const GROOM_PERSONALITY_EFFECTS = {
     effect: 'Better bonding with foals; 15% faster streak gain',
     successRateModifier: 1.0,
     bondingModifier: 1.3,
-    stressReductionModifier: 1.1,
     streakGrowthModifier: 1.15,
     traitInfluenceModifier: 1.2,
     specialConditions: {
@@ -83,7 +80,6 @@ export const GROOM_PERSONALITY_EFFECTS = {
     effect: 'Increased trait influence for stubborn or independent horses',
     successRateModifier: 1.05,
     bondingModifier: 0.9,
-    stressReductionModifier: 0.9,
     streakGrowthModifier: 1.0,
     traitInfluenceModifier: 1.3,
     specialConditions: {
@@ -98,7 +94,6 @@ export const GROOM_PERSONALITY_EFFECTS = {
     effect: 'Reduces failure chance on enrichment tasks',
     successRateModifier: 1.15,
     bondingModifier: 1.3,
-    stressReductionModifier: 1.2,
     streakGrowthModifier: 1.05,
     traitInfluenceModifier: 1.1,
     specialConditions: {
@@ -113,7 +108,6 @@ export const GROOM_PERSONALITY_EFFECTS = {
     effect: 'Extra trait point on success',
     successRateModifier: 1.1,
     bondingModifier: 1.1,
-    stressReductionModifier: 0.8,
     streakGrowthModifier: 1.2,
     traitInfluenceModifier: 1.4,
     specialConditions: {
@@ -129,7 +123,6 @@ export const GROOM_PERSONALITY_EFFECTS = {
     effect: 'No bonuses; 10% lower streak growth and slower bonding',
     successRateModifier: 0.9,
     bondingModifier: 0.8,
-    stressReductionModifier: 0.9,
     streakGrowthModifier: 0.9,
     traitInfluenceModifier: 0.8,
     specialConditions: {
@@ -182,9 +175,6 @@ export function calculatePersonalityEffects(groom, horse, taskType, baseEffects)
     // Apply base personality modifiers
     modifiedEffects.bondingChange = Math.round(
       modifiedEffects.bondingChange * personalityConfig.bondingModifier,
-    );
-    modifiedEffects.stressChange = Math.round(
-      modifiedEffects.stressChange * personalityConfig.stressReductionModifier,
     );
 
     // Apply success rate modifications
@@ -367,7 +357,6 @@ export function getPersonalityEffectSummary(personality, taskType) {
     effect: personalityConfig.effect,
     modifiers: {
       bonding: personalityConfig.bondingModifier,
-      stressReduction: personalityConfig.stressReductionModifier,
       successRate: personalityConfig.successRateModifier,
       streakGrowth: personalityConfig.streakGrowthModifier,
       traitInfluence: personalityConfig.traitInfluenceModifier,

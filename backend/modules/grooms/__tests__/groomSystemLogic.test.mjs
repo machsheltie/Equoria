@@ -5,7 +5,7 @@
  * focusing on pure business rule validation and mathematical calculations.
  *
  * 📋 BUSINESS RULES TESTED:
- * - Groom interaction effects: Bonding change, stress reduction, cost calculation, quality assessment
+ * - Groom interaction effects: Bonding change, cost calculation, quality assessment
  * - Specialty modifiers: foalCare (1.5x), general (1.0x), training, medical specialties
  * - Skill level progression: novice (0.8x), intermediate (1.0x), expert (1.3x), master (1.6x)
  * - Personality traits: gentle (1.2x), energetic, patient, strict modifiers
@@ -60,14 +60,12 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       id: 1,
       name: 'Test Foal',
       bondScore: 50,
-      stressLevel: 20,
     };
 
     it('should calculate basic interaction effects', () => {
       const effects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 60);
 
       expect(effects).toHaveProperty('bondingChange');
-      expect(effects).toHaveProperty('stressChange');
       // Equoria-tfo3c: care costs nothing, so there is no `cost` to have.
       expect(effects).not.toHaveProperty('cost');
       expect(effects).toHaveProperty('quality');
@@ -76,10 +74,6 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       // Bonding change should be positive and within bounds
       expect(effects.bondingChange).toBeGreaterThanOrEqual(0);
       expect(effects.bondingChange).toBeLessThanOrEqual(10);
-
-      // Stress change should be negative (stress reduction) or small positive
-      expect(effects.stressChange).toBeGreaterThanOrEqual(-10);
-      expect(effects.stressChange).toBeLessThanOrEqual(5);
 
       // Equoria-tfo3c: care costs nothing, so the effects carry no price at all.
       expect(effects).not.toHaveProperty('cost');
@@ -190,7 +184,6 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       const { foalCare } = GROOM_SPECIALTIES;
       expect(foalCare.name).toBe('Foal Care Specialist');
       expect(foalCare.bondingModifier).toBe(1.5);
-      expect(foalCare.stressReduction).toBe(1.3);
       expect(foalCare.preferredActivities).toContain('dailyCare');
       expect(foalCare.preferredActivities).toContain('feeding');
       expect(foalCare.preferredActivities).toContain('grooming');
@@ -200,7 +193,6 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
         expect(specialty).toHaveProperty('name');
         expect(specialty).toHaveProperty('description');
         expect(specialty).toHaveProperty('bondingModifier');
-        expect(specialty).toHaveProperty('stressReduction');
         expect(specialty).toHaveProperty('preferredActivities');
         expect(Array.isArray(specialty.preferredActivities)).toBe(true);
       });
@@ -250,14 +242,12 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       const { gentle } = PERSONALITY_TRAITS;
       expect(gentle.name).toBe('Gentle');
       expect(gentle.bondingModifier).toBe(1.2);
-      expect(gentle.stressReduction).toBe(1.4);
       expect(gentle.description).toBe('Calm and patient approach');
 
       // Check all personalities have required properties
       Object.values(PERSONALITY_TRAITS).forEach(trait => {
         expect(trait).toHaveProperty('name');
         expect(trait).toHaveProperty('bondingModifier');
-        expect(trait).toHaveProperty('stressReduction');
         expect(trait).toHaveProperty('description');
       });
     });
@@ -338,7 +328,6 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       const effects = calculateGroomInteractionEffects(invalidGroom, { bondScore: 50 }, 'dailyCare', 60);
 
       expect(effects).toHaveProperty('bondingChange');
-      expect(effects).toHaveProperty('stressChange');
       // Equoria-tfo3c: care costs nothing, so there is no `cost` to have.
       expect(effects).not.toHaveProperty('cost');
       expect(effects.bondingChange).toBeGreaterThanOrEqual(0);

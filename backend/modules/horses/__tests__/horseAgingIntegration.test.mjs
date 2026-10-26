@@ -165,7 +165,6 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
           userId: testUser.id,
           breedId: testBreed.id,
           bondScore: 85,
-          stressLevel: 5,
           taskLog: {
             // Comprehensive foal development
             trust_building: 12, // 60 points to bonded, resilient

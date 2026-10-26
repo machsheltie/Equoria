@@ -65,28 +65,24 @@ export const SEASON_FACTORS = deepFreeze({
     growthModifier: 1.2,
     healthModifier: 1.1,
     trainingEffectiveness: 1.15,
-    stressLevel: 15,
     description: 'Spring growth period with optimal development conditions',
   },
   summer: {
     growthModifier: 1.0,
     healthModifier: 0.95,
     trainingEffectiveness: 0.9,
-    stressLevel: 35,
     description: 'Summer heat requires careful management and hydration',
   },
   autumn: {
     growthModifier: 1.05,
     healthModifier: 1.05,
     trainingEffectiveness: 1.1,
-    stressLevel: 20,
     description: 'Autumn preparation period with moderate conditions',
   },
   winter: {
     growthModifier: 0.9,
     healthModifier: 0.9,
     trainingEffectiveness: 0.85,
-    stressLevel: 30,
     description: 'Winter challenges requiring shelter and extra care',
   },
 });
@@ -138,10 +134,10 @@ export const COMFORT_TRAIT_ADJUSTMENTS = deepFreeze([
 // { whenAnyTrigger: true } (any trigger is active), { tempAbove: n } and
 // { tempBelow: n } (the weather's temperature, strictly).
 export const TRIGGER_TRAIT_FACTORS = deepFreeze([
-  ['calm', 0.7, { whenTrigger: 'storm_stress' }],
+  ['calm', 0.7, { whenTrigger: 'storm' }],
   ['nervous', 1.3, { whenAnyTrigger: true }],
-  ['heat_tolerant', 0.5, { whenTrigger: 'heat_stress' }],
-  ['cold_tolerant', 0.5, { whenTrigger: 'cold_stress' }],
+  ['heat_tolerant', 0.5, { whenTrigger: 'extremeHeat' }],
+  ['cold_tolerant', 0.5, { whenTrigger: 'extremeCold' }],
   ['hardy', 0.8],
 ]);
 export const IMPACT_TRAIT_FACTORS = deepFreeze([
@@ -149,20 +145,6 @@ export const IMPACT_TRAIT_FACTORS = deepFreeze([
   ['sensitive', 1.2],
   ['heat_tolerant', 0.7, { tempAbove: 30 }],
   ['cold_tolerant', 0.7, { tempBelow: 10 }],
-]);
-// Ordered multipliers for environmental stress and stress recovery time.
-export const STRESS_TRAIT_FACTORS = deepFreeze([
-  ['calm', 0.8],
-  ['nervous', 1.3],
-  ['hardy', 0.7],
-  ['sensitive', 1.2],
-  ['resilient', 0.6],
-]);
-export const RECOVERY_TRAIT_FACTORS = deepFreeze([
-  ['hardy', 0.7],
-  ['resilient', 0.6],
-  ['sensitive', 1.3],
-  ['calm', 0.8],
 ]);
 
 // How each data condition in the factor tables is read (one key per condition).

@@ -4,7 +4,7 @@
  * Background — the duplication this module eliminates:
  * Two engines in the codebase score competition entries:
  *   1. backend/logic/simulateCompetition.mjs (rich, instant-path simulator —
- *      full stats / traits / tack / health / stress / luck pipeline).
+ *      full stats / traits / tack / health / luck pipeline).
  *   2. backend/modules/competition/shows/showExecutionService.mjs#executeClosedShows
  *      (the nightly 7-day-show cron — 50/30/20 discipline base + luck + rider; B4a).
  *
@@ -28,7 +28,7 @@
  *
  * Scope note (AC §1 — "Single scoreCompetitionEntry function"):
  * The two engines apply substantively different scoring formulas (the full
- * sim uses 50/30/20 weighted stats + traits + tack + health + stress, the
+ * sim uses 50/30/20 weighted stats + traits + tack + health, the
  * cron uses the 50/30/20 base + luck + rider only). They are not realistically
  * unifiable into a single scorer without changing product semantics. The
  * pragmatic interpretation of "single scoring function the two engines

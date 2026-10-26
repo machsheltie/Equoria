@@ -9,7 +9,7 @@
  * - Trait timeline data aggregation from trait history and milestone logs
  * - Timeline formatting with age-based organization
  * - Trait source event tracking (milestone, groom, breeding, environmental)
- * - Bond/stress context inclusion with care pattern analysis
+ * - Bond context inclusion with care pattern analysis
  * - Age-based filtering (only traits before age 4)
  * - Trait type distinctions (epigenetic, inherited, rare, negative)
  * - API endpoint for trait timeline card retrieval
@@ -142,7 +142,6 @@ describe('Trait Timeline System', () => {
             ageInDays: trait.ageInDays,
             groomId: trait.sourceType === 'groom' ? testGroom.id : null,
             bondScore: 75,
-            stressLevel: 20,
             influenceScore: 5,
           },
         });
@@ -195,7 +194,6 @@ describe('Trait Timeline System', () => {
           ageInDays: 45,
           groomId: testGroom.id,
           bondScore: 85,
-          stressLevel: 15,
           influenceScore: 7,
         },
       });
@@ -224,7 +222,6 @@ describe('Trait Timeline System', () => {
       expect(traitEvent.groomContext).toBeDefined();
       expect(traitEvent.groomContext.groomName).toBe(testGroom.name);
       expect(traitEvent.groomContext.bondScore).toBe(85);
-      expect(traitEvent.groomContext.stressLevel).toBe(15);
       expect(traitEvent.milestoneContext).toBeDefined();
       expect(traitEvent.milestoneContext.milestoneType).toBe('socialization');
       expect(traitEvent.milestoneContext.taskConsistency).toBe(9);
@@ -248,7 +245,6 @@ describe('Trait Timeline System', () => {
             ageInDays: trait.ageInDays,
             groomId: null,
             bondScore: 70,
-            stressLevel: 25,
             influenceScore: 4,
           },
         });
@@ -284,7 +280,6 @@ describe('Trait Timeline System', () => {
             ageInDays: 100,
             groomId: trait.sourceType === 'groom' ? testGroom.id : null,
             bondScore: 70,
-            stressLevel: 25,
             influenceScore: trait.isNegative ? -2 : 5,
           },
         });
@@ -337,7 +332,6 @@ describe('Trait Timeline System', () => {
             ageInDays: trait.ageInDays,
             groomId: null,
             bondScore: 70,
-            stressLevel: 25,
             influenceScore: 4,
           },
         });
@@ -355,17 +349,17 @@ describe('Trait Timeline System', () => {
       expect(timeline.ageRanges.thirdYear).toHaveLength(1);
     });
 
-    it('should include bond and stress trend analysis', async () => {
-      // Create traits with varying bond/stress patterns
-      const bondStressData = [
-        { ageInDays: 30, bondScore: 60, stressLevel: 40 },
-        { ageInDays: 60, bondScore: 70, stressLevel: 30 },
-        { ageInDays: 90, bondScore: 80, stressLevel: 20 },
-        { ageInDays: 120, bondScore: 85, stressLevel: 15 },
+    it('should include bond trend analysis', async () => {
+      // Create traits with a rising bond
+      const bondData = [
+        { ageInDays: 30, bondScore: 60 },
+        { ageInDays: 60, bondScore: 70 },
+        { ageInDays: 90, bondScore: 80 },
+        { ageInDays: 120, bondScore: 85 },
       ];
 
-      for (let i = 0; i < bondStressData.length; i++) {
-        const data = bondStressData[i];
+      for (let i = 0; i < bondData.length; i++) {
+        const data = bondData[i];
         await prisma.traitHistoryLog.create({
           data: {
             horseId: testHorse.id,
@@ -375,7 +369,6 @@ describe('Trait Timeline System', () => {
             ageInDays: data.ageInDays,
             groomId: testGroom.id,
             bondScore: data.bondScore,
-            stressLevel: data.stressLevel,
             influenceScore: 5,
           },
         });
@@ -385,10 +378,9 @@ describe('Trait Timeline System', () => {
 
       const timeline = await generateTraitTimeline(testHorse.id);
 
-      expect(timeline.bondStressTrend).toBeDefined();
-      expect(timeline.bondStressTrend.bondTrend).toBe('improving'); // 60 -> 85
-      expect(timeline.bondStressTrend.stressTrend).toBe('decreasing'); // 40 -> 15
-      expect(timeline.bondStressTrend.dataPoints).toHaveLength(4);
+      expect(timeline.bondProgress).toBeDefined();
+      expect(timeline.bondProgress.bondTrend).toBe('improving'); // 60 -> 85
+      expect(timeline.bondProgress.dataPoints).toHaveLength(4);
     });
   });
 
@@ -404,7 +396,6 @@ describe('Trait Timeline System', () => {
           ageInDays: 45,
           groomId: testGroom.id,
           bondScore: 80,
-          stressLevel: 20,
           influenceScore: 6,
         },
       });

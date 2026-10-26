@@ -65,7 +65,7 @@ describe('Equoria-tfo3c — the care calculators quote no price', () => {
     sessionRate: 40,
     level: 3,
   };
-  const horse = { id: 1, name: 'Fixture Horse', bondScore: 50, stressLevel: 10, age: 4 };
+  const horse = { id: 1, name: 'Fixture Horse', bondScore: 50, age: 4 };
 
   it('calculateGroomInteractionEffects returns no cost', () => {
     const effects = calculateGroomInteractionEffects(groom, horse, 'daily_care', 60);
@@ -119,7 +119,6 @@ describe('Equoria-tfo3c — a real grooming session writes no price and takes no
         userId: user.id,
         healthStatus: 'Excellent',
         bondScore: 40,
-        stressLevel: 10,
       },
     });
     groom = await prisma.groom.create({

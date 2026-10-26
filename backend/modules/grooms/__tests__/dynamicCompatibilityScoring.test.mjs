@@ -148,48 +148,6 @@ describe('predictInteractionOutcome', () => {
   });
 });
 
-// ── calculateStressSituationModifier branches (Equoria-jkht) ──────────────────
-// context.horseCurrentStress overrides horse.stressLevel in the modifier.
-// Tiers: <= 3 → 1.1, <= 6 → 1.0, <= 8 → 0.9, > 8 → 0.7.
-
-describe('calculateDynamicCompatibility — stressSituationModifier branches (Equoria-jkht)', () => {
-  it('stressSituationModifier=1.1 when horseCurrentStress=1 (≤ 3)', async () => {
-    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
-      taskType: 'coat_check',
-      timeOfDay: 'morning',
-      horseCurrentStress: 1,
-    });
-    expect(result.stressSituationModifier).toBe(1.1);
-  });
-
-  it('stressSituationModifier=1.0 when horseCurrentStress=5 (≤ 6)', async () => {
-    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
-      taskType: 'coat_check',
-      timeOfDay: 'morning',
-      horseCurrentStress: 5,
-    });
-    expect(result.stressSituationModifier).toBe(1.0);
-  });
-
-  it('stressSituationModifier=0.9 when horseCurrentStress=7 (≤ 8)', async () => {
-    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
-      taskType: 'coat_check',
-      timeOfDay: 'morning',
-      horseCurrentStress: 7,
-    });
-    expect(result.stressSituationModifier).toBe(0.9);
-  });
-
-  it('stressSituationModifier=0.7 when horseCurrentStress=9 (> 8)', async () => {
-    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
-      taskType: 'coat_check',
-      timeOfDay: 'morning',
-      horseCurrentStress: 9,
-    });
-    expect(result.stressSituationModifier).toBe(0.7);
-  });
-});
-
 // ── calculateTimeOfDayModifier branches (Equoria-jkht) ───────────────────────
 // morning → 1.1, afternoon → 1.0, evening → 0.95.
 
@@ -221,9 +179,9 @@ describe('calculateDynamicCompatibility — timeOfDayModifier branches (Equoria-
 
 // ── analyzeCompatibilityTrends — slope branches with DB interactions (Equoria-jkht) ──
 // One groom + 3 horses, each with 3 interactions shaped to produce:
-//   improving: scores [0.467, 0.733, 0.833] → slope ≈ +0.183 > 0.05
-//   declining: scores [0.833, 0.65,  0.317] → slope ≈ -0.258 < -0.05
-//   stable:    scores [0.55,  0.55,  0.55 ] → slope = 0
+//   improving: scores [0.45, 0.85, 1.0] → slope ≈ +0.275 > 0.05
+//   declining: scores [1.0, 0.725, 0.225] → slope ≈ -0.388 < -0.05
+//   stable:    scores [0.575, 0.575, 0.575] → slope = 0
 
 describe('analyzeCompatibilityTrends — trend slope branches with DB interactions (Equoria-jkht)', () => {
   let trendUser;
@@ -291,12 +249,12 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
       },
     });
 
-    // improving: quality=[fair,good,excellent], bondingChange=[0,2,4], stressChange=0
-    // → compatibility scores ≈ [0.467, 0.733, 0.833] → slope ≈ +0.183
+    // improving: quality=[fair,good,excellent], bondingChange=[0,2,4]
+    // → compatibility scores ≈ [0.45, 0.85, 1.0] → slope ≈ +0.275
     const improvingRows = [
-      { quality: 'fair', bondingChange: 0, stressChange: 0 },
-      { quality: 'good', bondingChange: 2, stressChange: 0 },
-      { quality: 'excellent', bondingChange: 4, stressChange: 0 },
+      { quality: 'fair', bondingChange: 0 },
+      { quality: 'good', bondingChange: 2 },
+      { quality: 'excellent', bondingChange: 4 },
     ];
     for (let i = 0; i < improvingRows.length; i++) {
       const r = improvingRows[i];
@@ -307,7 +265,6 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
           interactionType: 'daily_care',
           duration: 30,
           bondingChange: r.bondingChange,
-          stressChange: r.stressChange,
           quality: r.quality,
           taskType: 'coat_check',
           createdAt: new Date(ts - (improvingRows.length - i) * 60000),
@@ -316,12 +273,12 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
       });
     }
 
-    // declining: quality=[excellent,good,poor], bondingChange=[3,1,-1], stressChange=0
-    // → compatibility scores ≈ [0.833, 0.65, 0.317] → slope ≈ -0.258
+    // declining: quality=[excellent,good,poor], bondingChange=[3,1,-1]
+    // → compatibility scores ≈ [1.0, 0.725, 0.225] → slope ≈ -0.388
     const decliningRows = [
-      { quality: 'excellent', bondingChange: 3, stressChange: 0 },
-      { quality: 'good', bondingChange: 1, stressChange: 0 },
-      { quality: 'poor', bondingChange: -1, stressChange: 0 },
+      { quality: 'excellent', bondingChange: 3 },
+      { quality: 'good', bondingChange: 1 },
+      { quality: 'poor', bondingChange: -1 },
     ];
     for (let i = 0; i < decliningRows.length; i++) {
       const r = decliningRows[i];
@@ -332,7 +289,6 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
           interactionType: 'daily_care',
           duration: 30,
           bondingChange: r.bondingChange,
-          stressChange: r.stressChange,
           quality: r.quality,
           taskType: 'coat_check',
           createdAt: new Date(ts - (decliningRows.length - i) * 60000),
@@ -341,8 +297,8 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
       });
     }
 
-    // stable: all quality='fair', bondingChange=1, stressChange=0
-    // → compatibility scores = [0.55, 0.55, 0.55] → slope = 0
+    // stable: all quality='fair', bondingChange=1
+    // → compatibility scores = [0.575, 0.575, 0.575] → slope = 0
     for (let i = 0; i < 3; i++) {
       await prisma.groomInteraction.create({
         data: {
@@ -351,7 +307,6 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
           interactionType: 'daily_care',
           duration: 30,
           bondingChange: 1,
-          stressChange: 0,
           quality: 'fair',
           taskType: 'coat_check',
           createdAt: new Date(ts - (3 - i) * 60000),
@@ -480,7 +435,6 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
           interactionType: 'daily_care',
           duration: 30,
           bondingChange: 4,
-          stressChange: -2,
           quality: 'excellent',
           taskType: 'coat_check',
           timestamp: new Date(ts - 2 * 24 * 60 * 60 * 1000),
@@ -491,7 +445,6 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
           interactionType: 'daily_care',
           duration: 30,
           bondingChange: 3,
-          stressChange: -1,
           quality: 'good',
           taskType: 'coat_check',
           timestamp: new Date(ts - 1 * 24 * 60 * 60 * 1000),
@@ -510,33 +463,30 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('recommendationLevel=acceptable: stress=7 + evening context', async () => {
+  it('recommendationLevel=acceptable: evening context', async () => {
     const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'evening',
-      horseCurrentStress: 7,
     });
     expect(result.recommendationLevel).toBe('acceptable');
     expect(result.overallScore).toBeGreaterThanOrEqual(0.4);
     expect(result.overallScore).toBeLessThan(0.6);
   });
 
-  it('recommendationLevel=not_recommended: stress=9 + chaotic environment', async () => {
+  it('recommendationLevel=not_recommended: chaotic environment', async () => {
     const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'evening',
-      horseCurrentStress: 9,
       environmentalFactors: ['chaotic'],
     });
     expect(result.recommendationLevel).toBe('not_recommended');
     expect(result.environmentalModifier).toBeCloseTo(0.85, 2);
   });
 
-  it('recommendationLevel=highly_recommended: high-experience groom morning low-stress', async () => {
+  it('recommendationLevel=highly_recommended: high-experience groom in the morning', async () => {
     const result = await analyzePair(highExpGroom.id, branchHorse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
-      horseCurrentStress: 1,
     });
     expect(result.recommendationLevel).toBe('highly_recommended');
     expect(result.overallScore).toBeGreaterThanOrEqual(0.8);
@@ -626,7 +576,6 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
     const result = await analyzePair(methodicalGroom.id, branchHorse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
-      horseCurrentStress: 1,
     });
     expect(result.overallScore).toBeGreaterThan(0);
     expect(result.overallScore).toBeLessThanOrEqual(1.5);
@@ -638,9 +587,9 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
 // ── Branch coverage extension (Equoria-rr7) ───────────────────────────────────
 // Covers lines 279 (interaction-not-found throw), 348-354 (empty-grooms return),
-// 562 (default env factor switch arm), 703 (methodical stress compat), 725/727
+// 562 (default env factor switch arm), 725/727
 // (energetic/methodical bonding potential), 780 (low-bond+methodical risk),
-// 803 (methodical+developing strength), 839 (high-stress recommendation), 855
+// 803 (methodical+developing strength), 855
 // (0-interaction insufficient_data trend), 864-875 (multi-interaction slope),
 // 898 (empty-recentInteractions baseline=0.5), 948-949/962 (contextual notes).
 
@@ -648,9 +597,8 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
   let rr7User;
   let rr7MethodicalGroom;
   let rr7EnergeticGroom;
-  let rr7Horse; // bondScore default (0), stressLevel default (0)
+  let rr7Horse; // bondScore default (0)
   let rr7HighBondHorse; // bondScore=30 for energetic+highBond branch
-  let rr7StressHorse; // stressLevel=9 for high-stress tests
   let rr7NoGroomUser;
   let rr7NoGroomHorse;
   // 1st interaction (quality 'poor') is created for the 2-interaction trend but
@@ -716,7 +664,6 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
         dateOfBirth: new Date(),
         age: 0,
         bondScore: 0,
-        stressLevel: 0,
         userId: rr7User.id,
       },
     });
@@ -729,20 +676,6 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
         dateOfBirth: new Date(),
         age: 0,
         bondScore: 30,
-        stressLevel: 0,
-        userId: rr7User.id,
-      },
-    });
-
-    rr7StressHorse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-RR7-Stress-${ts}`,
-        sex: 'Filly',
-        dateOfBirth: new Date(),
-        age: 0,
-        bondScore: 0,
-        stressLevel: 9,
         userId: rr7User.id,
       },
     });
@@ -760,7 +693,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
 
     // GroomInteraction.foalId/groomId both onDelete: Cascade — deleting the
     // RR7-prefixed horses + grooms cascades EVERY interaction created in this
-    // suite (including per-test ones on rr7StressHorse / rr7HighBondHorse), so
+    // suite (including per-test ones on rr7HighBondHorse), so
     // the per-test finally-deletes were removed in favour of this suite sweep.
     cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }), 'rr7-grooms');
     cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }), 'rr7-horses');
@@ -795,13 +728,6 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
 
   // ── analyzeCompatibilityFactors: personality branches ────────────────────
 
-  it('analyzeCompatibilityFactors: methodical groom → stress compat score=0.7 (line 703)', async () => {
-    const result = await analyzeCompatibilityFactors(rr7MethodicalGroom.id, rr7Horse.id);
-    expect(result).toBeDefined();
-    // methodical → analyzeStressCompatibility score=0.7
-    expect(result.stressCompatibility.score).toBe(0.7);
-  });
-
   it('analyzeCompatibilityFactors: energetic groom + bondScore=30 → bonding potential=0.7 (line 725)', async () => {
     const result = await analyzeCompatibilityFactors(rr7EnergeticGroom.id, rr7HighBondHorse.id);
     expect(result).toBeDefined();
@@ -830,30 +756,5 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
     expect(
       result.strengthFactors.some(s => s.includes('Methodical') || s.includes('methodical') || s.includes('routine')),
     ).toBe(true);
-  });
-
-  // ── predictInteractionOutcome: high stress recommendation (line 839) ──────
-
-  it('predictInteractionOutcome: horseCurrentStress=9 → stress recommendation added (line 839)', async () => {
-    const result = await analyzePair(rr7MethodicalGroom.id, rr7StressHorse.id, predictInteraction, {
-      taskType: 'coat_check',
-      timeOfDay: 'morning',
-      horseCurrentStress: 9,
-    });
-    expect(result).toBeDefined();
-    const recs = result.recommendations ?? [];
-    expect(recs.some(r => r.toLowerCase().includes('calm'))).toBe(true);
-  });
-
-  // ── getOptimalGroomRecommendations: high stress contextual note (line 962) ─
-
-  it('getOptimalGroomRecommendations: horseCurrentStress=9 → contextual note about stress (line 962)', async () => {
-    const result = await rankFor(rr7StressHorse.id, {
-      taskType: 'coat_check',
-      timeOfDay: 'morning',
-      horseCurrentStress: 9,
-    });
-    expect(Array.isArray(result.contextualNotes)).toBe(true);
-    expect(result.contextualNotes.some(n => n.toLowerCase().includes('stress'))).toBe(true);
   });
 });

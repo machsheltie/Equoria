@@ -107,7 +107,6 @@ describe('INTEGRATION: epigeneticModifiers writers keep each other’s work (Equ
         userId: user.id,
         // Conditions under which day-2 positive traits are eligible.
         bondScore: 80,
-        stressLevel: 10,
         // A task the age-1 milestone maps to an epigenetic tag.
         taskLog: { desensitization: 3 },
         daysGroomedInARow: 3,

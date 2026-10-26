@@ -199,7 +199,6 @@ export async function createTestHorse(horseData = {}) {
     obedience: 50,
     intelligence: 50,
     healthStatus: 'Good',
-    stressLevel: 20,
     epigeneticModifiers: {
       positive: [],
       negative: [],

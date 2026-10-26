@@ -32,28 +32,25 @@ import { generateInteractionMatrix } from '../services/traitInteractionMatrix.mj
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-// Representative trait states: empty, synergistic, conflicting with high
-// stress and low bond, many traits with emergent properties at maturity, an
-// unknown trait only, and bond/stress-modulated social + negative traits.
+// Representative trait states: empty, synergistic, conflicting with
+// low bond, many traits with emergent properties at maturity, an
+// unknown trait only, and bond-modulated social + negative traits.
 const FIXTURES = {
-  empty: { flags: [], stressLevel: 0, bondScore: 0, ageDays: 0 },
-  synergistic: { flags: ['brave', 'confident', 'social'], stressLevel: 3, bondScore: 35, ageDays: 40 },
-  conflictingHighStressLowBond: {
+  empty: { flags: [], bondScore: 0, ageDays: 0 },
+  synergistic: { flags: ['brave', 'confident', 'social'], bondScore: 35, ageDays: 40 },
+  conflictingLowBond: {
     flags: ['fearful', 'brave', 'reactive', 'calm', 'social', 'antisocial'],
-    stressLevel: 9,
     bondScore: 2,
     ageDays: 10,
   },
   matureEmergent: {
     flags: ['confident', 'brave', 'intelligent', 'social', 'curious', 'calm', 'adaptable', 'sensitive'],
-    stressLevel: 2,
     bondScore: 40,
     ageDays: 120,
   },
-  unknownTraitOnly: { flags: ['developing'], stressLevel: 7, bondScore: 15, ageDays: 60 },
+  unknownTraitOnly: { flags: ['developing'], bondScore: 15, ageDays: 60 },
   socialAndNegative: {
     flags: ['social', 'affectionate', 'outgoing', 'trusting', 'fragile', 'reactive', 'aloof'],
-    stressLevel: 5,
     bondScore: 5,
     ageDays: 89,
   },
@@ -131,7 +128,6 @@ describe('trait interaction analysis characterization (Equoria-q4uem.5)', () => 
           dateOfBirth: gameCalendarDate(now, -fixture.ageDays),
           age: 0,
           userId: user.id,
-          stressLevel: fixture.stressLevel,
           bondScore: fixture.bondScore,
           epigeneticFlags: fixture.flags,
         },

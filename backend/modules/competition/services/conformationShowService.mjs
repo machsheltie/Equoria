@@ -134,8 +134,7 @@ export class ConformationGroomMissingError extends Error {
  * Equoria-u0jop): the only health bar is Fair or better (displayed health not
  * Bad), the same one breeding, training and ridden shows use; the entry route
  * and checkConformationEntryInTx apply it (hasBadHealth), so the old
- * Excellent/Good requirement is gone. The
- * high-stress entry warning went with it (no stress consequence exists).
+ * Excellent/Good requirement is gone.
  *
  * Note: No training score or discipline prerequisite — conformation is innate (AC3).
  *

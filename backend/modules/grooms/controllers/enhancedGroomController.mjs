@@ -72,7 +72,6 @@ export async function getEnhancedInteractions(req, res) {
           // overwrote a non-loaded field with ageInDays.
           age: true,
           bondScore: true,
-          stressLevel: true,
         },
       }),
     ]);
@@ -109,7 +108,6 @@ export async function getEnhancedInteractions(req, res) {
         interactionType: true,
         quality: true,
         bondingChange: true,
-        stressChange: true,
         timestamp: true,
         notes: true,
       },
@@ -135,7 +133,6 @@ export async function getEnhancedInteractions(req, res) {
           age: horse.age,
           ageInDays,
           bondScore: horse.bondScore,
-          stressLevel: horse.stressLevel,
         },
         relationship: {
           level: relationshipLevel.name,
@@ -256,7 +253,6 @@ export async function performEnhancedInteraction(req, res) {
         // the real DB value (not a day-count overwrite as in the pre-fix bug).
         age: true,
         bondScore: true,
-        stressLevel: true,
         // Equoria-730iv: load flags so flag-bonding influence applies here too.
         epigeneticFlags: true,
       },
@@ -294,22 +290,20 @@ export async function performEnhancedInteraction(req, res) {
       );
     }
 
-    // Equoria-mc22a: interaction row, bond/stress and synergy commit together.
+    // Equoria-mc22a: interaction row, bond and synergy commit together.
     // Equoria-9a5ny: the daily limit is re-checked under the Horse row lock (the
     // check above is only a fast refusal). Lock order: Horse, then staff rows.
     let newBondScore;
-    let newStressLevel;
     let currentBondScore;
     const interaction = await withRetryableTxMapping(
       prisma.$transaction(async tx => {
         const current = await lockHorseForGroomCare(tx, horse.id);
         currentBondScore = current.bondScore;
         newBondScore = Math.max(0, Math.min(100, current.bondScore + effectiveBondingChange));
-        newStressLevel = Math.max(0, Math.min(100, current.stressLevel + effects.stressChange));
 
         await tx.horse.update({
           where: { id: horse.id },
-          data: { bondScore: newBondScore, stressLevel: newStressLevel },
+          data: { bondScore: newBondScore },
         });
 
         const created = await tx.groomInteraction.create({
@@ -319,7 +313,6 @@ export async function performEnhancedInteraction(req, res) {
             interactionType: `${interactionType}_${variation.replace(/\s+/g, '_').toLowerCase()}`,
             duration,
             bondingChange: effects.bondingChange,
-            stressChange: effects.stressChange,
             quality: effects.quality,
             // Equoria-tfo3c: no `cost` - care costs nothing, so the column keeps its
             // 0.0 default rather than recording a price nobody is charged.
@@ -343,7 +336,7 @@ export async function performEnhancedInteraction(req, res) {
     const levelUp = newLevel.level > oldLevel.level;
 
     logger.info(
-      `[enhancedGroomController] Enhanced interaction completed: +${effects.bondingChange} bonding, ${effects.stressChange} stress`,
+      `[enhancedGroomController] Enhanced interaction completed: +${effects.bondingChange} bonding`,
     );
 
     if (effects.specialEvent) {
@@ -369,9 +362,7 @@ export async function performEnhancedInteraction(req, res) {
         },
         effects: {
           bondingChange: effects.bondingChange,
-          stressChange: effects.stressChange,
           newBondScore,
-          newStressLevel,
         },
         relationship: {
           oldLevel: oldLevel.name,
@@ -385,7 +376,6 @@ export async function performEnhancedInteraction(req, res) {
           id: horse.id,
           name: horse.name,
           bondScore: newBondScore,
-          stressLevel: newStressLevel,
         },
       },
     });
@@ -498,15 +488,6 @@ function getNextThreshold(currentLevel) {
 
 export function generateInteractionRecommendations(groom, horse, relationshipLevel) {
   const recommendations = [];
-
-  // Based on stress level
-  if (horse.stressLevel > 60) {
-    recommendations.push({
-      type: 'bonding_time',
-      variation: 'Quiet Companionship',
-      reason: 'High stress levels - calming interaction recommended',
-    });
-  }
 
   // Based on relationship level
   if (relationshipLevel.level < 2) {

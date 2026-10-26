@@ -19,11 +19,7 @@ import {
 } from '../../utils/ultraRareTraits.mjs';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from '../../utils/ultraRareTriggerEngine.mjs';
 import { assignRareTraitBoosterPerks, applyRareTraitBoosterEffects } from '../../utils/groomRareTraitPerks.mjs';
-import {
-  applyUltraRareStressEffects,
-  applyUltraRareCompetitionEffects,
-  hasUltraRareAbility,
-} from '../../utils/ultraRareMechanicalEffects.mjs';
+import { applyUltraRareCompetitionEffects, hasUltraRareAbility } from '../../utils/ultraRareMechanicalEffects.mjs';
 
 import { randomBytes } from 'node:crypto';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
@@ -96,7 +92,6 @@ describe('Ultra-Rare & Exotic Traits System', () => {
         userId: testUser.id,
         temperament: 'reactive',
         bondScore: 85,
-        stressLevel: 20,
         ultraRareTraits: {
           ultraRare: [],
           exotic: [],
@@ -156,7 +151,6 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       expect(ultraRareTraits['phoenix-born'].name).toBe('Phoenix-Born');
       expect(ultraRareTraits['phoenix-born'].rarity).toBe('ultra-rare');
       expect(ultraRareTraits['phoenix-born'].baseChance).toBe(0.02);
-      expect(ultraRareTraits['phoenix-born'].mechanicalEffects.stressDecayMultiplier).toBe(1.3);
     });
 
     test('should retrieve all exotic trait definitions', () => {
@@ -250,7 +244,6 @@ describe('Ultra-Rare & Exotic Traits System', () => {
 
       const baseChance = 0.02;
       const conditions = {
-        stressEvents: true,
         recoveries: true,
       };
 
@@ -264,24 +257,6 @@ describe('Ultra-Rare & Exotic Traits System', () => {
   });
 
   describe('Mechanical Effects Integration', () => {
-    test('should apply ultra-rare stress effects correctly', () => {
-      const horseWithPhoenixBorn = {
-        ultraRareTraits: {
-          ultraRare: [{ name: 'Phoenix-Born' }],
-          exotic: [],
-        },
-      };
-
-      const baseStress = 50;
-      const result = applyUltraRareStressEffects(horseWithPhoenixBorn, baseStress);
-
-      expect(result.originalStress).toBe(50);
-      expect(result.modifiedStress).toBeLessThan(50); // 20% stress resistance
-      expect(result.appliedEffects).toHaveLength(1);
-      expect(result.appliedEffects[0].trait).toBe('Phoenix-Born');
-      expect(result.appliedEffects[0].effect).toBe('stress_resistance');
-    });
-
     test('should apply ultra-rare competition effects correctly', () => {
       const horseWithBornLeader = {
         ultraRareTraits: {
@@ -321,9 +296,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
 
       // Equoria-0d4wa: no burnout, so no burnout immunity (old contract: true).
       expect(hasUltraRareAbility(horseWithIronWilled, 'burnout_immunity')).toBe(false);
-      expect(hasUltraRareAbility(horseWithIronWilled, 'stress_immunity')).toBe(false);
 
-      expect(hasUltraRareAbility(horseWithGhostwalker, 'stress_immunity')).toBe(true);
       expect(hasUltraRareAbility(horseWithGhostwalker, 'burnout_immunity')).toBe(false);
     });
   });

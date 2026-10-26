@@ -64,7 +64,6 @@ describe('Groom Legacy Service', () => {
         dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
         userId: testUser.id,
         bondScore: 50,
-        stressLevel: 30,
       },
     });
   };

@@ -139,7 +139,6 @@ describe('Advanced Epigenetic API Routes', () => {
         dateOfBirth: oneWeekAgo,
         userId: testUser.id,
         bondScore: 20,
-        stressLevel: 4,
         epigeneticFlags: ['curious', 'developing'],
       },
     });
@@ -153,7 +152,6 @@ describe('Advanced Epigenetic API Routes', () => {
         dateOfBirth: oneMonthAgo,
         userId: testUser.id,
         bondScore: 35,
-        stressLevel: 3,
         epigeneticFlags: ['confident', 'brave', 'social'],
       },
     });
@@ -169,7 +167,6 @@ describe('Advanced Epigenetic API Routes', () => {
         duration: 30,
         taskType: 'trust_building',
         bondingChange: 2,
-        stressChange: 1,
         quality: 'good',
         cost: 40.0,
       },
@@ -183,7 +180,6 @@ describe('Advanced Epigenetic API Routes', () => {
         duration: 45,
         taskType: 'showground_exposure',
         bondingChange: 3,
-        stressChange: -1,
         quality: 'excellent',
         cost: 40.0,
       },
@@ -242,7 +238,6 @@ describe('Advanced Epigenetic API Routes', () => {
           dateOfBirth: new Date(),
           userId: otherUser.id,
           bondScore: 15,
-          stressLevel: 5,
         },
       });
       ids.horses.push(otherHorse.id);

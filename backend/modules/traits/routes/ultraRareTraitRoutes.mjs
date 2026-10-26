@@ -22,7 +22,6 @@ import {
   getUltraRareTraitDefinition,
 } from '../../../utils/ultraRareTraits.mjs';
 import {
-  applyUltraRareStressEffects,
   applyUltraRareCompetitionEffects,
   hasUltraRareAbility as _hasUltraRareAbility,
 } from '../../../utils/ultraRareMechanicalEffects.mjs';
@@ -200,7 +199,7 @@ router.post(
   [
     body('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
     body('effectType')
-      .isIn(['stress', 'competition', 'bonding', 'training'])
+      .isIn(['competition', 'bonding', 'training'])
       .withMessage('Invalid effect type'),
     body('baseValue').isNumeric().withMessage('Base value must be numeric'),
     body('context').optional().isObject().withMessage('Context must be an object'),
@@ -224,13 +223,6 @@ router.post(
       let effectResult;
 
       switch (effectType) {
-        case 'stress':
-          effectResult = applyUltraRareStressEffects(
-            horse,
-            parseFloat(baseValue),
-            context.stressSource,
-          );
-          break;
         case 'competition':
           effectResult = applyUltraRareCompetitionEffects(horse, parseFloat(baseValue), context);
           break;

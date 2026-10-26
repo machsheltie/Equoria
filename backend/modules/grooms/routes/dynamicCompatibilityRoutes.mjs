@@ -52,10 +52,6 @@ router.post(
       .isString()
       .isIn(['morning', 'afternoon', 'evening'])
       .withMessage('Time of day must be morning, afternoon, or evening'),
-    body('context.horseCurrentStress')
-      .optional()
-      .isInt({ min: 0, max: 10 })
-      .withMessage('Horse current stress must be between 0 and 10'),
     body('context.environmentalFactors')
       .optional()
       .isArray()

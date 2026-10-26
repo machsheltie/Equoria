@@ -174,7 +174,6 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
       foalTemperament: horse.temperament,
       bondScore: horse.bondScore,
       baseMilestoneScore: baseScoreBeforePersonality,
-      baseStressLevel: horse.stressLevel,
       baseBondingRate: 0,
     });
 
@@ -215,7 +214,6 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
               groomPersonality: currentGroom.personality,
               foalTemperament: horse.temperament,
               traitModifier: personalityEffects.personalityMatchScore,
-              stressReduction: personalityEffects.effects.stressReduction,
               bondingBonus: personalityEffects.effects.bondingRateChange,
             }
           : null,

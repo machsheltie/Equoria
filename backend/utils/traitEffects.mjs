@@ -19,15 +19,12 @@ const traitEffects = {
   resilient: {
     // Training effects
     suppressTemperamentDrift: true,
-    trainingStressReduction: 0.15, // 15% less stress from training
     trainingConsistencyBonus: 0.1, // 10% more consistent training results
 
     // Competition effects
-    competitionStressResistance: 0.15, // 15% less stress impact in competitions
     competitionScoreModifier: 0.03, // +3% to final competition score
 
     // Recovery effects
-    stressRecoveryRate: 1.25, // 25% faster stress recovery
     injuryRecoveryBonus: 0.2, // 20% faster injury recovery
 
     // Discipline-specific bonuses
@@ -45,20 +42,16 @@ const traitEffects = {
 
     // Training effects
     suppressTemperamentDrift: true,
-    trainingStressReduction: 0.2, // 20% less stress from training
     trainingFocusBonus: 0.15, // 15% better focus during training
     trainingConsistencyBonus: 0.15, // 15% more consistent training
 
     // Competition effects
-    competitionStressResistance: 0.25, // 25% less stress impact
     competitionFocusBonus: 0.1, // 10% better focus in competitions
     competitionScoreModifier: 0.025, // +2.5% to final score
     competitionConsistency: 0.15, // 15% more consistent performance
 
     // General effects
-    baseStressReduction: 5, // -5 base stress level
     temperamentStability: true, // Prevents negative temperament changes
-    stressRecoveryBonus: 0.15, // 15% faster stress recovery
 
     // Discipline-specific bonuses
     disciplineModifiers: {
@@ -187,11 +180,9 @@ const traitEffects = {
     handlerCompatibility: 0.2, // 20% better handler relationships
 
     // Competition effects
-    crowdComfort: 0.1, // 10% less stress from crowds
     competitionSocialBonus: 0.05, // 5% bonus in social competition environments
 
     // General effects
-    stressReduction: 5, // -5 base stress from social interaction
     temperamentStability: true, // More stable temperament
 
     description: 'Thrives on social interaction and bonds easily',
@@ -225,11 +216,9 @@ const traitEffects = {
     handlerTrustBonus: 0.15, // 15% bonus when working with trusted handlers
 
     // Competition effects
-    crowdComfort: 0.15, // 15% less stress from crowds
     competitionHandlerBonus: 0.1, // 10% bonus with familiar handlers
 
     // General effects
-    stressReduction: 8, // -8 base stress from human interaction
     socialComfort: true, // Comfortable in social situations
 
     description: 'Naturally trusting and cooperative with humans',
@@ -272,16 +261,13 @@ const traitEffects = {
     bondingInconsistency: 0.25, // 25% more inconsistent bonding
 
     // Training effects
-    trainingStressIncrease: 0.25, // 25% more stress from training
     trainingInconsistency: 0.15, // 15% more inconsistent results
 
     // Competition effects
-    competitionStressRisk: 10, // +10 stress risk in competitions
     competitionScoreModifier: -0.04, // -4% to final score
     competitionNervePenalty: 0.25, // 25% worse under pressure
 
     // General effects
-    stressAccumulation: 1.2, // 20% faster stress accumulation
     temperamentInstability: true, // More prone to temperament changes
 
     // Discipline-specific penalties
@@ -291,7 +277,7 @@ const traitEffects = {
       Eventing: -0.04,
     },
 
-    description: 'Struggles with stress and performs inconsistently under pressure',
+    description: 'Struggles under pressure and performs inconsistently',
   },
 
   antisocial: {
@@ -305,11 +291,9 @@ const traitEffects = {
     isolationPreference: true, // Prefers isolated training
 
     // Competition effects
-    crowdStress: 0.15, // 15% more stress from crowds
     competitionSocialPenalty: 0.08, // 8% penalty in social environments
 
     // General effects
-    stressIncrease: 10, // +10 base stress from social situations
     temperamentInstability: 0.15, // 15% more temperament drift
 
     description: 'Prefers solitude and struggles with social interaction',
@@ -349,7 +333,6 @@ const traitEffects = {
 
     // Recovery effects
     injuryRecoveryPenalty: 0.3, // 30% slower injury recovery
-    stressRecoveryPenalty: 0.15, // 15% slower stress recovery
 
     // Discipline-specific penalties
     disciplineModifiers: {
@@ -361,13 +344,11 @@ const traitEffects = {
 
   reactive: {
     // Training effects
-    trainingStressIncrease: 0.3, // 30% more stress from training
     trainingUnpredictability: 0.25, // 25% more unpredictable during training
     handlerDifficulty: 0.2, // 20% more difficult for handlers
 
     // Competition effects
     competitionScoreModifier: -0.05, // -5% to final score
-    competitionStressRisk: 15, // +15 stress risk in competitions
     crowdReactivity: 0.3, // 30% more reactive to crowds
     environmentalSensitivity: 0.25, // 25% more sensitive to environment changes
 
@@ -376,7 +357,6 @@ const traitEffects = {
     trustDifficulty: 0.25, // 25% harder to build trust
 
     // General effects
-    stressAccumulation: 1.3, // 30% faster stress accumulation
     temperamentInstability: true, // More prone to temperament changes
     unpredictableBehavior: true, // May react unpredictably
 
@@ -388,7 +368,7 @@ const traitEffects = {
       Dressage: -0.05,
     },
 
-    description: 'Highly reactive to stimuli and prone to stress responses',
+    description: 'Highly reactive to stimuli and prone to overreacting',
   },
 
   lowImmunity: {
@@ -408,13 +388,11 @@ const traitEffects = {
     performanceInconsistency: 0.25, // 25% more inconsistent due to health
 
     // General effects
-    stressFromIllness: 1.25, // 25% more stress when ill
     environmentalSensitivity: 0.2, // 20% more sensitive to environmental factors
     seasonalVulnerability: true, // More vulnerable to seasonal changes
 
     // Recovery effects
     generalRecoveryPenalty: 0.25, // 25% slower general recovery
-    stressRecoveryPenalty: 0.15, // 15% slower stress recovery when ill
 
     // All disciplines affected due to health concerns
     disciplineModifiers: {

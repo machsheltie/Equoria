@@ -43,7 +43,6 @@ foreach ($file in $files) {
         @{pattern = "const thresholds = "; replacement = "const _thresholds = "},
         @{pattern = "const flagKey = "; replacement = "const _flagKey = "},
         @{pattern = "const triggered = "; replacement = "const _triggered = "},
-        @{pattern = "const stressPatterns = "; replacement = "const _stressPatterns = "},
         @{pattern = "const neglectPatterns = "; replacement = "const _neglectPatterns = "},
         @{pattern = "const energeticEffects = "; replacement = "const _energeticEffects = "},
         @{pattern = "const methodicalEffects = "; replacement = "const _methodicalEffects = "},

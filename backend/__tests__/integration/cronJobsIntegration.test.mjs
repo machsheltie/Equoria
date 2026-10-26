@@ -85,7 +85,6 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
         age: 0,
         userId: adminUser.id,
         bondScore: 65,
-        stressLevel: 35,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
     });

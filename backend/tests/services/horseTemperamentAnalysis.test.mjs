@@ -8,7 +8,6 @@
  * - Temperament analysis from interaction patterns
  * - Flag-based temperament classification
  * - Behavioral trend analysis over time
- * - Stress response pattern identification
  * - Bonding preference analysis
  * - Temperament stability and change detection
  */
@@ -19,7 +18,6 @@ import { analyzeHorseTemperament } from '../../modules/horses/index.mjs';
 import {
   classifyTemperamentFromFlags,
   analyzeBehavioralTrends,
-  identifyStressResponsePatterns,
   analyzeBondingPreferences,
   detectTemperamentChanges,
 } from '../../modules/horses/services/horseTemperamentAnalysis.mjs';
@@ -93,7 +91,6 @@ describe('Horse Temperament Analysis', () => {
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
             bondScore: 12,
-            stressLevel: 8,
             epigeneticFlags: ['fearful', 'reactive', 'insecure'],
           },
         }),
@@ -107,7 +104,6 @@ describe('Horse Temperament Analysis', () => {
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
             bondScore: 35,
-            stressLevel: 2,
             epigeneticFlags: ['brave', 'confident', 'social'],
           },
         }),
@@ -121,7 +117,6 @@ describe('Horse Temperament Analysis', () => {
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
             bondScore: 22,
-            stressLevel: 5,
             epigeneticFlags: ['curious', 'social', 'reactive'],
           },
         }),
@@ -135,7 +130,6 @@ describe('Horse Temperament Analysis', () => {
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
             bondScore: 18,
-            stressLevel: 6,
             epigeneticFlags: [],
           },
         }),
@@ -176,7 +170,6 @@ describe('Horse Temperament Analysis', () => {
               duration: 30,
               taskType: 'trust_building',
               bondingChange: 1, // Slow bonding
-              stressChange: 2, // Stress increase
               quality: 'fair',
               cost: 30.0,
             },
@@ -190,7 +183,6 @@ describe('Horse Temperament Analysis', () => {
               duration: 25,
               taskType: 'desensitization',
               bondingChange: -1, // Negative bonding
-              stressChange: 4, // High stress increase
               quality: 'poor',
               cost: 25.0,
             },
@@ -205,14 +197,12 @@ describe('Horse Temperament Analysis', () => {
       expect(temperament.temperamentTraits).toBeDefined();
       expect(Array.isArray(temperament.temperamentTraits)).toBe(true);
       expect(temperament.confidenceLevel).toBeDefined();
-      expect(temperament.stressResilience).toBeDefined();
       expect(temperament.socialTendency).toBeDefined();
       expect(temperament.adaptability).toBeDefined();
 
       // Should identify nervous/reactive temperament
       expect(['nervous', 'reactive', 'sensitive'].includes(temperament.primaryTemperament)).toBe(true);
       expect(temperament.confidenceLevel).toBeLessThan(0.5);
-      expect(temperament.stressResilience).toBeLessThan(0.5);
     });
 
     test('should analyze temperament for confident horse', async () => {
@@ -229,7 +219,6 @@ describe('Horse Temperament Analysis', () => {
               duration: 30,
               taskType: 'showground_exposure',
               bondingChange: 3, // Good bonding
-              stressChange: -1, // Stress reduction
               quality: 'excellent',
               cost: 30.0,
             },
@@ -243,7 +232,6 @@ describe('Horse Temperament Analysis', () => {
               duration: 35,
               taskType: 'desensitization',
               bondingChange: 4, // Excellent bonding
-              stressChange: -2, // Good stress management
               quality: 'excellent',
               cost: 25.0,
             },
@@ -255,7 +243,6 @@ describe('Horse Temperament Analysis', () => {
       expect(temperament.primaryTemperament).toBeDefined();
       expect(['confident', 'bold', 'outgoing'].includes(temperament.primaryTemperament)).toBe(true);
       expect(temperament.confidenceLevel).toBeGreaterThan(0.6);
-      expect(temperament.stressResilience).toBeGreaterThan(0.6);
       expect(temperament.socialTendency).toBeGreaterThan(0.5);
     });
 
@@ -332,7 +319,6 @@ describe('Horse Temperament Analysis', () => {
             duration: 30,
             taskType: 'trust_building',
             bondingChange: 2 + i, // Improving bonding over time
-            stressChange: 3 - i, // Decreasing stress over time
             quality: i < 2 ? 'fair' : i < 4 ? 'good' : 'excellent',
             cost: 30.0,
             createdAt: new Date(Date.now() - (5 - i) * 24 * 60 * 60 * 1000),
@@ -345,36 +331,14 @@ describe('Horse Temperament Analysis', () => {
 
       expect(trends).toBeDefined();
       expect(trends.bondingTrend).toBeDefined();
-      expect(trends.stressTrend).toBeDefined();
       expect(trends.qualityTrend).toBeDefined();
       expect(trends.overallDirection).toBeDefined();
       expect(trends.trendStrength).toBeDefined();
 
       // Should detect improving trends
       expect(trends.bondingTrend).toBe('improving');
-      expect(trends.stressTrend).toBe('improving'); // Stress decreasing is improving
       expect(trends.overallDirection).toBe('positive');
       expect(trends.trendStrength).toBeGreaterThan(0.5);
-    });
-  });
-
-  describe('identifyStressResponsePatterns', () => {
-    test('should identify stress response patterns', async () => {
-      const [horse] = testHorses; // Nervous horse
-
-      const patterns = await identifyStressResponsePatterns(horse.id);
-
-      expect(patterns).toBeDefined();
-      expect(patterns.stressThreshold).toBeDefined();
-      expect(patterns.recoveryRate).toBeDefined();
-      expect(patterns.triggerFactors).toBeDefined();
-      expect(Array.isArray(patterns.triggerFactors)).toBe(true);
-      expect(patterns.copingMechanisms).toBeDefined();
-      expect(patterns.responseType).toBeDefined();
-
-      // Should identify high stress sensitivity
-      expect(patterns.stressThreshold).toBeLessThan(0.6);
-      expect(['high_sensitivity', 'reactive', 'anxious'].includes(patterns.responseType)).toBe(true);
     });
   });
 
@@ -413,7 +377,6 @@ describe('Horse Temperament Analysis', () => {
               duration: 30,
               taskType: 'trust_building',
               bondingChange: 3,
-              stressChange: -2,
               quality: 'good',
               cost: 30.0,
               createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 2 weeks ago
@@ -428,7 +391,6 @@ describe('Horse Temperament Analysis', () => {
               duration: 30,
               taskType: 'showground_exposure',
               bondingChange: 4,
-              stressChange: -1,
               quality: 'excellent',
               cost: 30.0,
               createdAt: new Date(), // Recent

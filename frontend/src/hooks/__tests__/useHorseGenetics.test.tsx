@@ -103,7 +103,6 @@ const realTraitTimeline = {
       event: 'grooming: trust_building',
       groom: 'Anna',
       bondingChange: 5,
-      stressChange: -3,
       quality: 'excellent',
       data: {},
     },

@@ -117,7 +117,6 @@ describe('Schema Validation', () => {
         userId: testUser.id,
         breedId: testBreed.id,
         bondScore: 50,
-        stressLevel: 20,
         taskLog: { trust_building: 3, desensitization: 2 },
         lastGroomed: new Date(),
         daysGroomedInARow: 5,
@@ -127,7 +126,6 @@ describe('Schema Validation', () => {
 
     expect(horse).toBeTruthy();
     expect(horse.bondScore).toBe(50);
-    expect(horse.stressLevel).toBe(20);
     expect(horse.daysGroomedInARow).toBe(5);
   });
 
@@ -225,7 +223,6 @@ describe('Schema Validation', () => {
         interactionType: 'brushing',
         duration: 30,
         bondingChange: 3,
-        stressChange: -2,
         quality: 'excellent',
         cost: 35.0,
         notes: 'Great session',
@@ -238,7 +235,6 @@ describe('Schema Validation', () => {
     expect(interaction.interactionType).toBe('brushing');
     expect(interaction.duration).toBe(30);
     expect(interaction.bondingChange).toBe(3);
-    expect(interaction.stressChange).toBe(-2);
     expect(interaction.quality).toBe('excellent');
   });
 });

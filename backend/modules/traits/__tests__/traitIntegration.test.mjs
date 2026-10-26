@@ -9,7 +9,6 @@
  * - Negative trait penalties: antisocial/nervous traits reduce bonding effectiveness
  * - Competition bonding rewards: placement-based bonding with trait modifiers
  * - Temperament drift suppression: resilient/calm traits prevent temperament changes
- * - Stress resistance effects: traits reduce competition stress impact
  * - Trait combination algorithms: multiple trait effects combine additively
  * - Error handling: missing/malformed trait data handled gracefully
  * - Activity type validation: invalid activities return appropriate errors
@@ -19,10 +18,9 @@
  * 1. calculateBondingChange() - Trait-modified bonding for grooming/training/competition
  * 2. getCombinedTraitEffects() - Multi-trait effect combination and validation
  * 3. Bonding modifiers: social/calm bonuses, antisocial/nervous penalties
- * 4. Competition stress resistance: trait-based stress impact reduction
- * 5. Error handling: missing traits, malformed data, invalid activities
- * 6. Edge cases: empty trait arrays, unknown traits, invalid inputs
- * 7. Integration workflows: complete trait effect application across systems
+ * 4. Error handling: missing traits, malformed data, invalid activities
+ * 5. Edge cases: empty trait arrays, unknown traits, invalid inputs
+ * 6. Integration workflows: complete trait effect application across systems
  *
  * NOTE: calculateTemperamentDrift() tests were removed (TEMP-3).
  * temperamentDrift.mjs uses a legacy 6-type system incompatible with the
@@ -31,7 +29,7 @@
  *
  * 🔄 BALANCED MOCKING APPROACH:
  * ✅ REAL: Complete trait integration logic, bonding calculations, temperament management
- * ✅ REAL: Effect combination algorithms, stress calculations, validation rules
+ * ✅ REAL: Effect combination algorithms, validation rules
  * 🔧 MOCK: Math.random - for deterministic testing of probability-based effects
  *
  * 💡 TEST STRATEGY: Integration testing with minimal mocking to validate trait
@@ -137,26 +135,6 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
       const effects = getCombinedTraitEffects(['unknownTrait', 'anotherUnknown']);
 
       expect(Object.keys(effects)).toHaveLength(0);
-    });
-  });
-
-  describe('Competition Stress Response', () => {
-    it('should calculate stress impact during competition', () => {
-      // This would be tested through the simulateCompetition function
-      // Testing the stress calculation logic
-      const baseStressLevel = 70;
-      const stressImpactPercent = baseStressLevel * 0.002; // 0.2% per stress point
-      const expectedImpact = 100 * stressImpactPercent; // On a base score of 100
-
-      expect(expectedImpact).toBeCloseTo(14, 1); // 70 * 0.002 * 100 = 14 point penalty
-    });
-
-    it('should apply stress resistance from traits', () => {
-      const traits = ['resilient'];
-      const effects = getCombinedTraitEffects(traits);
-
-      expect(effects.competitionStressResistance).toBeGreaterThan(0);
-      expect(effects.competitionStressResistance).toBeLessThanOrEqual(1);
     });
   });
 

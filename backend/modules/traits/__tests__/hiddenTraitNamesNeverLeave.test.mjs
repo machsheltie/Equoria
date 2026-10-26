@@ -55,7 +55,6 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
         breed: { connect: { id: breed.id } },
         user: { connect: { id: user.id } },
         bondScore: 50,
-        stressLevel: 50,
         epigeneticModifiers: { positive: [VISIBLE], negative: [], hidden: HIDDEN },
         ...data,
       },
@@ -96,7 +95,6 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
         sourceType: 'milestone',
         ageInDays: i,
         bondScore: 50,
-        stressLevel: 50,
       })),
     });
   });

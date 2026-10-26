@@ -122,7 +122,6 @@ describe('processGroomingSession() — real DB persistence', () => {
       expect(i.groomId).toBe(groom.id);
       expect(i.interactionType).toBe('brushing');
       expect(i.duration).toBe(30);
-      expect(i.stressChange).toBe(0);
       expect(i.quality).toBe('good');
       expect(i.qualityScore).toBe(0.75);
       expect(Number.isInteger(i.bondingChange)).toBe(true);

@@ -37,7 +37,6 @@ function makeHorse(overrides = {}) {
     name: 'TestHorse',
     dateOfBirth: gameCalendarDate(new Date(), -400), // 400 days ago → mature
     bondScore: 30,
-    stressLevel: 3,
     epigeneticFlags: ['curious', 'bold'],
     traitHistoryLogs: [],
     ...overrides,
@@ -61,7 +60,6 @@ function makeInteraction(overrides = {}) {
     interactionType: 'grooming',
     taskType: 'brush',
     bondingChange: 1,
-    stressChange: -1,
     quality: 'good',
     groom: { name: 'Alice' },
     ...overrides,
@@ -168,10 +166,9 @@ describe('buildTraitTimeline', () => {
   });
 
   it('adds significant_interaction only when |bondingChange| > 2', () => {
-    const insignificant = makeInteraction({ bondingChange: 1, stressChange: 0 });
+    const insignificant = makeInteraction({ bondingChange: 1 });
     const significant = makeInteraction({
       bondingChange: 3,
-      stressChange: 0,
       createdAt: new Date('2025-01-16T10:00:00Z'),
     });
     const timeline = buildTraitTimeline([], [insignificant, significant]);
@@ -179,17 +176,11 @@ describe('buildTraitTimeline', () => {
     expect(timeline[0].type).toBe('significant_interaction');
   });
 
-  it('adds significant_interaction when |stressChange| > 2', () => {
-    const interaction = makeInteraction({ bondingChange: 0, stressChange: -5 });
-    const timeline = buildTraitTimeline([], [interaction]);
-    expect(timeline).toHaveLength(1);
-  });
-
   // Equoria-bdpvw: a timeline item is a summary for the player, not the stored
   // row. The whole groom_interactions / trait-history row used to ride along in
   // `data`, visible in the network tab.
   it('carries no raw database row on any item', () => {
-    const timeline = buildTraitTimeline([makeTraitLog()], [makeInteraction({ bondingChange: 3, stressChange: 0 })]);
+    const timeline = buildTraitTimeline([makeTraitLog()], [makeInteraction({ bondingChange: 3 })]);
     expect(timeline).toHaveLength(2);
     for (const item of timeline) {
       expect(item).not.toHaveProperty('data');
@@ -208,7 +199,7 @@ describe('buildTraitTimeline', () => {
 
 describe('mapEnvironmentalEvents', () => {
   it('returns empty for interactions with no environmental match', () => {
-    const interaction = makeInteraction({ taskType: 'brush', bondingChange: 0, stressChange: 0 });
+    const interaction = makeInteraction({ taskType: 'brush', bondingChange: 0 });
     expect(mapEnvironmentalEvents([interaction])).toEqual([]);
   });
 
@@ -228,13 +219,8 @@ describe('mapEnvironmentalEvents', () => {
     expect(mapEnvironmentalEvents([interaction])[0].factor).toBe('Social bonding activity');
   });
 
-  it('maps stressChange > 2 to Stress-inducing activity', () => {
-    const interaction = makeInteraction({ taskType: 'other', stressChange: 5, bondingChange: 0 });
-    expect(mapEnvironmentalEvents([interaction])[0].factor).toBe('Stress-inducing activity');
-  });
-
   it('maps bondingChange > 2 to Bonding-enhancing activity', () => {
-    const interaction = makeInteraction({ taskType: 'other', bondingChange: 5, stressChange: 0 });
+    const interaction = makeInteraction({ taskType: 'other', bondingChange: 5 });
     expect(mapEnvironmentalEvents([interaction])[0].factor).toBe('Bonding-enhancing activity');
   });
 
@@ -242,11 +228,10 @@ describe('mapEnvironmentalEvents', () => {
     const interaction = makeInteraction({
       taskType: 'trust_building',
       bondingChange: 3,
-      stressChange: -1,
       quality: 'excellent',
     });
     const events = mapEnvironmentalEvents([interaction]);
-    expect(events[0].impact).toMatchObject({ bonding: 3, stress: -1, quality: 'excellent' });
+    expect(events[0].impact).toMatchObject({ bonding: 3, quality: 'excellent' });
   });
 });
 
@@ -282,14 +267,10 @@ describe('generateStableOverview', () => {
     expect(overview.ageDistribution.mature).toBe(1);
   });
 
-  it('computes average bond and stress', () => {
-    const horses = [
-      makeHorse({ bondScore: 20, stressLevel: 4 }),
-      makeHorse({ id: 2, name: 'B', bondScore: 40, stressLevel: 6 }),
-    ];
+  it('computes average bond', () => {
+    const horses = [makeHorse({ bondScore: 20 }), makeHorse({ id: 2, name: 'B', bondScore: 40 })];
     const overview = generateStableOverview(horses);
     expect(overview.averageBondScore).toBe(30);
-    expect(overview.averageStressLevel).toBe(5);
   });
 
   it('aggregates trait counts from epigeneticFlags', () => {
@@ -413,9 +394,9 @@ describe('identifyTraitDifferences', () => {
 
 describe('generateHorseRankings', () => {
   const horses = [
-    makeHorse({ id: 1, name: 'A', epigeneticFlags: ['a', 'b'], bondScore: 30, stressLevel: 8 }),
-    makeHorse({ id: 2, name: 'B', epigeneticFlags: ['a', 'b', 'c'], bondScore: 50, stressLevel: 2 }),
-    makeHorse({ id: 3, name: 'C', epigeneticFlags: ['a'], bondScore: 20, stressLevel: 5 }),
+    makeHorse({ id: 1, name: 'A', epigeneticFlags: ['a', 'b'], bondScore: 30 }),
+    makeHorse({ id: 2, name: 'B', epigeneticFlags: ['a', 'b', 'c'], bondScore: 50 }),
+    makeHorse({ id: 3, name: 'C', epigeneticFlags: ['a'], bondScore: 20 }),
   ];
 
   it('ranks by trait count descending', () => {
@@ -427,11 +408,6 @@ describe('generateHorseRankings', () => {
   it('ranks by bond score descending', () => {
     const rankings = generateHorseRankings(horses);
     expect(rankings.byBondScore[0].horse.name).toBe('B');
-  });
-
-  it('ranks by stress level ascending (lower stress = better)', () => {
-    const rankings = generateHorseRankings(horses);
-    expect(rankings.byStressLevel[0].horse.name).toBe('B');
   });
 
   it('assigns correct rank numbers', () => {
@@ -544,11 +520,10 @@ describe('generateSummaryReport', () => {
     expect(typeof report.basicInfo.age).toBe('number');
   });
 
-  it('includes bond and stress scores', async () => {
-    const horse = makeHorse({ bondScore: 35, stressLevel: 4 });
+  it('includes the bond score', async () => {
+    const horse = makeHorse({ bondScore: 35 });
     const report = await generateSummaryReport(horse);
     expect(report.scores.bondScore).toBe(35);
-    expect(report.scores.stressLevel).toBe(4);
   });
 
   it('generates summary string with excellent bonding for bondScore > 30', async () => {
@@ -588,9 +563,9 @@ describe('generateDetailedReport', () => {
     expect(report.developmentalAnalysis.developmentalStage).toBe('critical_period');
   });
 
-  it('gives no recommendations, even for a stressed, poorly bonded horse', async () => {
+  it('gives no recommendations, even for a poorly bonded horse', async () => {
     // Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts (old contract: a recommendations array of care advice).
-    const horse = makeHorse({ stressLevel: 8, bondScore: 10 });
+    const horse = makeHorse({ bondScore: 10 });
     const report = await generateDetailedReport(horse);
     expect(report).not.toHaveProperty('recommendations');
   });
@@ -599,7 +574,7 @@ describe('generateDetailedReport', () => {
 // ── generateComparisonInsights ────────────────────────────────────────────────
 
 describe('generateComparisonInsights', () => {
-  const comparison = { averages: { traitCount: 2, bondScore: 30, stressLevel: 4 } };
+  const comparison = { averages: { traitCount: 2, bondScore: 30 } };
   const similarities = [{ horse1: { name: 'A' }, horse2: { name: 'B' }, similarityScore: 0.8 }];
   const differences = [{ horse1: { name: 'A' }, horse2: { name: 'C' } }];
 
@@ -660,7 +635,7 @@ describe('generateSummaryReport — developing bond category (Equoria-jkht)', ()
 });
 
 describe('generateComparisonInsights — empty similarities and differences (Equoria-jkht)', () => {
-  const comparison = { averages: { traitCount: 2, bondScore: 30, stressLevel: 4 } };
+  const comparison = { averages: { traitCount: 2, bondScore: 30 } };
 
   it('skips similarity insight when similarities is empty', () => {
     const insights = generateComparisonInsights(comparison, [], []);
@@ -740,19 +715,18 @@ describe('identifyCriticalPeriods — (Equoria-jkht)', () => {
 
 // ── generateHorseComparison — branch coverage (Equoria-jkht) ─────────────────
 // Lines 444-469: async but pure (no DB). Needs horses array with epigeneticFlags,
-// bondScore, stressLevel, dateOfBirth properties.
+// bondScore, dateOfBirth properties.
 
 describe('generateHorseComparison — (Equoria-jkht)', () => {
   it('returns comparison with averages for two horses', async () => {
     const horses = [
-      makeHorse({ id: 1, name: 'A', epigeneticFlags: ['bold', 'curious'], bondScore: 40, stressLevel: 3 }),
-      makeHorse({ id: 2, name: 'B', epigeneticFlags: ['calm'], bondScore: 20, stressLevel: 5 }),
+      makeHorse({ id: 1, name: 'A', epigeneticFlags: ['bold', 'curious'], bondScore: 40 }),
+      makeHorse({ id: 2, name: 'B', epigeneticFlags: ['calm'], bondScore: 20 }),
     ];
     const result = await generateHorseComparison(horses);
     expect(result.horses).toHaveLength(2);
     expect(result.averages.traitCount).toBeCloseTo(1.5);
     expect(result.averages.bondScore).toBeCloseTo(30);
-    expect(result.averages.stressLevel).toBeCloseTo(4);
     expect(typeof result.horses[0].age).toBe('number');
     expect(result.horses[0].traitCount).toBe(2);
   });

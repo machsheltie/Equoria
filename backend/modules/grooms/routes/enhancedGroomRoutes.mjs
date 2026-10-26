@@ -214,13 +214,7 @@ router.get('/special-events', async (req, res) => {
         events,
         mechanics: {
           description: 'Special events can occur during interactions based on various conditions',
-          factors: [
-            'Relationship level',
-            'Horse stress level',
-            'Horse age',
-            'Groom specialty match',
-            'Random chance',
-          ],
+          factors: ['Relationship level', 'Horse age', 'Groom specialty match', 'Random chance'],
         },
       },
     });
@@ -277,7 +271,6 @@ function generateEventDescription(name, _effects) {
     'Breakthrough Moment': 'A sudden moment of understanding creates a lasting positive memory',
     'Perfect Harmony': 'Groom and horse work in perfect synchronization',
     'Learning Moment': 'Young horse gains valuable life experience',
-    'Comfort in Distress': 'Groom provides exactly the right comfort when needed',
     'Playful Moment': 'Spontaneous play brings joy to both groom and horse',
   };
 

@@ -59,7 +59,6 @@ beforeAll(async () => {
       age: 360,
       user: { connect: { id: USER_ID } },
       bondScore: 75,
-      stressLevel: 15,
       taskLog: null,
       lastGroomed: null,
       daysGroomedInARow: 0,

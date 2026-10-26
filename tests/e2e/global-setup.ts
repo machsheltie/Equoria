@@ -343,7 +343,6 @@ async function globalSetup(config: FullConfig) {
           healthStatus: 'Excellent',
           lastFedDate: now,
           lastVettedDate: now,
-          stressLevel: 0,
         },
         select: { id: true, healthStatus: true, lastFedDate: true, lastVettedDate: true },
       });

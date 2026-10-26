@@ -25,28 +25,24 @@ export const GROOM_SPECIALTIES = {
     name: 'Foal Care Specialist',
     description: 'Specialized in caring for young horses',
     bondingModifier: 1.5,
-    stressReduction: 1.3,
     preferredActivities: ['dailyCare', 'feeding', 'grooming'],
   },
   general: {
     name: 'General Caretaker',
     description: 'well-rounded horse care experience',
     bondingModifier: 1.0,
-    stressReduction: 1.0,
     preferredActivities: ['dailyCare', 'grooming', 'exercise'],
   },
   training: {
     name: 'Training Assistant',
     description: 'Focused on training and exercise',
     bondingModifier: 1.2,
-    stressReduction: 0.8,
     preferredActivities: ['exercise', 'training', 'dailyCare'],
   },
   medical: {
     name: 'Veterinary Assistant',
     description: 'Medical care and health monitoring',
     bondingModifier: 0.9,
-    stressReduction: 1.5,
     preferredActivities: ['medicalCheck', 'dailyCare', 'feeding'],
   },
 };
@@ -92,25 +88,21 @@ export const PERSONALITY_TRAITS = {
   gentle: {
     name: 'Gentle',
     bondingModifier: 1.2,
-    stressReduction: 1.4,
     description: 'Calm and patient approach',
   },
   energetic: {
     name: 'Energetic',
     bondingModifier: 1.1,
-    stressReduction: 0.9,
     description: 'Active and enthusiastic',
   },
   patient: {
     name: 'Patient',
     bondingModifier: 1.3,
-    stressReduction: 1.2,
     description: 'Takes time with each horse',
   },
   strict: {
     name: 'Strict',
     bondingModifier: 0.9,
-    stressReduction: 0.8,
     description: 'Disciplined and structured',
   },
 };
@@ -318,7 +310,7 @@ export async function recordGroomInteraction(
 }
 
 /**
- * Calculate bonding and stress changes from groom interaction
+ * Calculate the bonding change from groom interaction
  * @param {Object} groom - Groom object
  * @param {Object} foal - Foal object
  * @param {string} interactionType - Type of interaction
@@ -333,17 +325,12 @@ export function calculateGroomInteractionEffects(groom, foal, interactionType, d
   // Base bonding change (1-5 points per 30 minutes)
   const baseBondingChange = Math.floor((duration / 30) * (2 + Math.random() * 3));
 
-  // Base stress reduction (1-3 points per 30 minutes)
-  const baseStressReduction = Math.floor((duration / 30) * (1 + Math.random() * 2));
-
   // Apply modifiers
   const totalBondingModifier =
     specialty.bondingModifier * skillLevel.bondingModifier * personality.bondingModifier;
-  const totalStressModifier = specialty.stressReduction * personality.stressReduction;
 
   // Calculate final changes
   let bondingChange = Math.round(baseBondingChange * totalBondingModifier);
-  let stressChange = -Math.round(baseStressReduction * totalStressModifier); // Negative = stress reduction
 
   // Apply experience bonus
   const experienceBonus = Math.floor(groom.experience / 5); // +1 bonding per 5 years experience
@@ -353,12 +340,10 @@ export function calculateGroomInteractionEffects(groom, foal, interactionType, d
   const errorOccurred = Math.random() < skillLevel.errorChance;
   if (errorOccurred) {
     bondingChange = Math.max(0, bondingChange - 2);
-    stressChange += 1; // Increase stress slightly
   }
 
   // Ensure reasonable bounds
   bondingChange = Math.max(0, Math.min(10, bondingChange));
-  stressChange = Math.max(-10, Math.min(5, stressChange));
 
   // Equoria-tfo3c (owner ruling, 2026-09-14): "Care itself does not cost money." The
   // per-session price computed here from `sessionRate` was written to
@@ -379,7 +364,6 @@ export function calculateGroomInteractionEffects(groom, foal, interactionType, d
   // Create base effects object for personality modification
   const baseEffects = {
     bondingChange,
-    stressChange,
     quality,
     errorOccurred,
     successRate: 1.0 - skillLevel.errorChance, // Base success rate
@@ -405,9 +389,8 @@ export function calculateGroomInteractionEffects(groom, foal, interactionType, d
   }
   finalEffects.synergyModifier = synergyModifier;
 
-  // Ensure both bondingChange and stressChange stay within reasonable bounds after all modifications
+  // Keep bondingChange within reasonable bounds after all modifications
   finalEffects.bondingChange = Math.max(0, Math.min(10, finalEffects.bondingChange));
-  finalEffects.stressChange = Math.max(-10, Math.min(5, finalEffects.stressChange));
 
   logger.info(
     `[groomSystem.calculateGroomInteractionEffects] Applied personality effects for ${groom.personality}: ${finalEffects.personalityEffects?.bonusesApplied?.join(', ') || 'none'} (synergy=${synergyModifier})`,

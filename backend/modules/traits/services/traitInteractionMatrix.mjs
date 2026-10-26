@@ -2,7 +2,7 @@
  * Trait Interaction Matrix Service
  *
  * Analyzes how a horse's epigenetic traits interact: synergies that amplify,
- * conflicts that suppress, dominance shaped by stress and bond, stability, and
+ * conflicts that suppress, dominance shaped by bond, stability, and
  * how the interactions evolve as the horse matures.
  *
  * Shape (Equoria-q4uem.5): the database is a thin seam and the analysis is
@@ -32,7 +32,7 @@ import {
  * Read the horse state every trait analysis needs, once.
  * @param {number} horseId
  * @param {object} [client] Prisma client (or transaction client)
- * @returns {Promise<Readonly<{id, epigeneticFlags, stressLevel, bondScore, dateOfBirth}>>}
+ * @returns {Promise<Readonly<{id, epigeneticFlags, bondScore, dateOfBirth}>>}
  * @throws {NotFoundError} when the horse does not exist
  */
 export async function loadTraitAnalysisSnapshot(horseId, client = prisma) {
@@ -41,7 +41,6 @@ export async function loadTraitAnalysisSnapshot(horseId, client = prisma) {
     select: {
       id: true,
       epigeneticFlags: true,
-      stressLevel: true,
       bondScore: true,
       dateOfBirth: true,
     },
@@ -56,14 +55,13 @@ export async function loadTraitAnalysisSnapshot(horseId, client = prisma) {
  * Pick the analysis fields from a horse row (any row with at least the
  * snapshot fields, e.g. the full row requireOwnership attaches as req.horse)
  * and freeze them. Pure: no database read.
- * @param {{id, epigeneticFlags, stressLevel, bondScore, dateOfBirth}} horse
- * @returns {Readonly<{id, epigeneticFlags, stressLevel, bondScore, dateOfBirth}>}
+ * @param {{id, epigeneticFlags, bondScore, dateOfBirth}} horse
+ * @returns {Readonly<{id, epigeneticFlags, bondScore, dateOfBirth}>}
  */
 export function toTraitAnalysisSnapshot(horse) {
   return Object.freeze({
     id: horse.id,
     epigeneticFlags: Object.freeze([...horse.epigeneticFlags]),
-    stressLevel: horse.stressLevel,
     bondScore: horse.bondScore,
     dateOfBirth: horse.dateOfBirth,
   });
@@ -71,7 +69,7 @@ export function toTraitAnalysisSnapshot(horse) {
 
 /**
  * Analyze trait interactions from one snapshot and one clock. Pure.
- * @param {{id, epigeneticFlags, stressLevel, bondScore, dateOfBirth}} snapshot
+ * @param {{id, epigeneticFlags, bondScore, dateOfBirth}} snapshot
  * @param {{timeWindow?: number, now?: Date}} [options] timeWindow in days (default 30)
  * @returns {object} Complete interaction matrix; every section shares analysisTimestamp
  */
@@ -323,14 +321,9 @@ function identifyDominantTraits(traits) {
     .sort((a, b) => b.dominanceScore - a.dominanceScore);
 }
 
-/** Stress strengthens negative traits and weakens positive ones; bond lifts social traits. */
+/** Bond lifts social traits. */
 function calculateEnvironmentalDominanceModifier(snapshot, trait) {
   let modifier = 1.0;
-  if (['fearful', 'reactive', 'fragile'].includes(trait)) {
-    modifier += snapshot.stressLevel * 0.05;
-  } else if (['brave', 'confident', 'calm'].includes(trait)) {
-    modifier -= snapshot.stressLevel * 0.03;
-  }
   if (['social', 'affectionate', 'trusting'].includes(trait)) {
     modifier += (snapshot.bondScore - 20) * 0.01;
   }
@@ -394,10 +387,7 @@ function calculateStabilityMetrics(counts, traitCount) {
 
 function assessStability(snapshot, traits, counts) {
   const synergyStability = counts.synergies > 0 ? 0.8 : 0.5;
-  const overallStability = Math.max(
-    0,
-    Math.min(1, synergyStability - counts.conflicts * 0.1 - snapshot.stressLevel * 0.05),
-  );
+  const overallStability = Math.max(0, Math.min(1, synergyStability - counts.conflicts * 0.1));
 
   const stabilityFactors = [];
   if (counts.synergies > 0) {
@@ -406,16 +396,10 @@ function assessStability(snapshot, traits, counts) {
   if (snapshot.bondScore > 30) {
     stabilityFactors.push('strong_bonding');
   }
-  if (snapshot.stressLevel < 4) {
-    stabilityFactors.push('low_stress');
-  }
 
   const volatilityRisks = [];
   if (counts.conflicts > 2) {
     volatilityRisks.push('multiple_trait_conflicts');
-  }
-  if (snapshot.stressLevel > 7) {
-    volatilityRisks.push('high_stress_environment');
   }
   if (traits.includes('reactive')) {
     volatilityRisks.push('reactive_temperament');

@@ -68,11 +68,10 @@ describe('PERSONALITY_TEMPERAMENT_COMPATIBILITY', () => {
     }
   });
 
-  it('each entry has idealMatches, traitDevBonus, stressMod, bondModifier, description', () => {
+  it('each entry has idealMatches, traitDevBonus, bondModifier, description', () => {
     for (const config of Object.values(PERSONALITY_TEMPERAMENT_COMPATIBILITY)) {
       expect(config).toHaveProperty('idealMatches');
       expect(config).toHaveProperty('traitDevBonus');
-      expect(config).toHaveProperty('stressMod');
       expect(config).toHaveProperty('bondModifier');
       expect(config).toHaveProperty('description');
       expect(Array.isArray(config.idealMatches)).toBe(true);
@@ -123,12 +122,6 @@ describe('calculatePersonalityCompatibility', () => {
     expect(result.description).toBe('Unknown personality type');
   });
 
-  it('returns stressResistanceBonus as decimal (stressMod / 100)', () => {
-    const result = calculatePersonalityCompatibility('Calm', 'Reactive', 0);
-    // Calm groom has stressMod: -15 → stressResistanceBonus = -0.15
-    expect(result.stressResistanceBonus).toBeCloseTo(-0.15);
-  });
-
   it('returns bondModifier from compatibility config', () => {
     const result = calculatePersonalityCompatibility('Calm', 'Reactive', 0);
     expect(typeof result.bondModifier).toBe('number');
@@ -154,12 +147,11 @@ describe('getCompatibleGroomsForTemperament', () => {
     expect(result).toEqual([]);
   });
 
-  it('each returned entry has personality, traitDevBonus, stressMod, bondModifier, description', () => {
+  it('each returned entry has personality, traitDevBonus, bondModifier, description', () => {
     const result = getCompatibleGroomsForTemperament('Spirited');
     for (const entry of result) {
       expect(entry).toHaveProperty('personality');
       expect(entry).toHaveProperty('traitDevBonus');
-      expect(entry).toHaveProperty('stressMod');
       expect(entry).toHaveProperty('bondModifier');
       expect(entry).toHaveProperty('description');
     }
@@ -226,7 +218,6 @@ describe('calculatePersonalityCompatibility — catch block (lines 213-215)', ()
     expect(result.isMatch).toBe(false);
     expect(result.isStrongMatch).toBe(false);
     expect(result.traitModifierScore).toBe(0);
-    expect(result.stressResistanceBonus).toBe(0);
     expect(result.bondModifier).toBe(0);
     expect(result.description).toBe('Error calculating compatibility');
   });

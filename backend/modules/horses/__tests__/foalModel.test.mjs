@@ -35,7 +35,6 @@ async function mkFoal(suffix, opts = {}) {
       dateOfBirth: opts.dateOfBirth ?? DATE_OF_BIRTH,
       age: opts.age ?? 0,
       ...(opts.bondScore !== undefined && { bondScore: opts.bondScore }),
-      ...(opts.stressLevel !== undefined && { stressLevel: opts.stressLevel }),
     },
   });
 }
@@ -46,7 +45,6 @@ async function mkDev(foalId, opts = {}) {
       foalId,
       currentDay: opts.currentDay ?? 0,
       bondingLevel: opts.bondingLevel ?? 50,
-      stressLevel: opts.stressLevel ?? 20,
       completedActivities: opts.completedActivities ?? {},
     },
   });
@@ -121,7 +119,7 @@ describe('getFoalDevelopment', () => {
   it('accepts 1-year-old horse', async () => {
     const foal = await mkFoal('Yearling', { age: 1 });
     try {
-      await mkDev(foal.id, { currentDay: 1, bondingLevel: 55, stressLevel: 18 });
+      await mkDev(foal.id, { currentDay: 1, bondingLevel: 55 });
       const result = await getFoalDevelopment(foal.id);
       expect(result.foal.name).toBe(`${PREFIX}Yearling`);
       expect(result.development.currentDay).toBe(1);
@@ -130,18 +128,16 @@ describe('getFoalDevelopment', () => {
     }
   });
 
-  // Equoria-fr2kg Q16. OLD CONTRACT: development.bondingLevel / stressLevel
-  // echoed the legacy FoalDevelopment columns, frozen at their 50 / 20
-  // defaults. NEW RULING (owner, 2026-10-22): the foal page shows the horse's
-  // real bond and stress (Horse.bondScore / Horse.stressLevel, which grooms
-  // write); the legacy columns are kept but ignored.
-  it("serves the horse's real bond and stress, not the frozen legacy columns (Equoria-fr2kg Q16)", async () => {
-    const foal = await mkFoal('RealBond', { age: 1, bondScore: 37, stressLevel: 12 });
+  // Equoria-fr2kg Q16. OLD CONTRACT: development.bondingLevel echoed the legacy
+  // FoalDevelopment column, frozen at its 50 default. NEW RULING (owner,
+  // 2026-10-22): the foal page shows the horse's real bond (Horse.bondScore,
+  // which grooms write); the legacy column is kept but ignored.
+  it("serves the horse's real bond, not the frozen legacy column (Equoria-fr2kg Q16)", async () => {
+    const foal = await mkFoal('RealBond', { age: 1, bondScore: 37 });
     try {
-      await mkDev(foal.id, { bondingLevel: 50, stressLevel: 20 });
+      await mkDev(foal.id, { bondingLevel: 50 });
       const result = await getFoalDevelopment(foal.id);
       expect(result.development.bondingLevel).toBe(37);
-      expect(result.development.stressLevel).toBe(12);
     } finally {
       await rmFoal(foal.id);
     }
@@ -153,7 +149,6 @@ describe('getFoalDevelopment', () => {
       await mkDev(foal.id, {
         currentDay: 2,
         bondingLevel: 60,
-        stressLevel: 15,
         completedActivities: { 0: ['gentle_touch'], 1: ['feeding_assistance'] },
       });
       const result = await getFoalDevelopment(foal.id);
@@ -183,14 +178,13 @@ describe('getFoalDevelopment', () => {
   });
 
   it('auto-creates development record for foal with no existing record', async () => {
-    const foal = await mkFoal('NoDev', { age: 0, bondScore: 4, stressLevel: 3 });
+    const foal = await mkFoal('NoDev', { age: 0, bondScore: 4 });
     try {
       const result = await getFoalDevelopment(foal.id);
       expect(result.development.currentDay).toBe(0);
       expect(await prisma.foalDevelopment.count({ where: { foalId: foal.id } })).toBe(1);
-      // Bond and stress are the horse's own (Equoria-fr2kg Q16).
+      // The bond is the horse's own (Equoria-fr2kg Q16).
       expect(result.development.bondingLevel).toBe(4);
-      expect(result.development.stressLevel).toBe(3);
     } finally {
       await rmFoal(foal.id);
     }

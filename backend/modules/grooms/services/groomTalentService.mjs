@@ -47,14 +47,8 @@ export const TALENT_TREES = {
       {
         id: 'empathic_sync',
         name: 'Empathic Sync',
-        description: 'Reduced stress in reactive foals, +15% milestone accuracy',
+        description: 'Bonus with reactive foals, +15% milestone accuracy',
         effect: { reactiveHorseBonus: 0.15, milestoneAccuracy: 0.1 },
-      },
-      {
-        id: 'stress_whisperer',
-        name: 'Stress Whisperer',
-        description: '+20% stress reduction effectiveness',
-        effect: { stressReduction: 0.2 },
       },
     ],
     tier3: [
@@ -335,14 +329,6 @@ export async function applyTalentEffects(groomId, baseInteraction) {
         if (talent.effect.bondingBonus) {
           const bonus = Math.ceil(enhancedInteraction.bondingChange * talent.effect.bondingBonus);
           enhancedInteraction.bondingChange += bonus;
-        }
-
-        // Apply stress reduction (make stress change more negative)
-        if (talent.effect.stressReduction) {
-          const reduction = Math.ceil(
-            Math.abs(enhancedInteraction.stressChange) * talent.effect.stressReduction,
-          );
-          enhancedInteraction.stressChange -= reduction;
         }
 
         // Apply quality bonus

@@ -2,7 +2,7 @@
  * POST /api/v1/environment/calculate-impact assesses every horse against ONE
  * environmental snapshot (Equoria-q4uem.7 S3, real app + DB).
  *
- * Before S3 the route called impact, triggers and stress separately for each
+ * Before S3 the route called impact and triggers separately for each
  * horse, each with its own `new Date()`. The weather model seeds its daily
  * variation from the millisecond timestamp, so the sections of one response
  * could describe different weather. To make that observable deterministically,
@@ -90,7 +90,7 @@ describe('POST /api/v1/environment/calculate-impact uses one environmental snaps
     // otherwise silently remove the delay that makes separate clocks visible.
     expect(delays).toBeGreaterThan(0);
     expect(res.body.data.results).toHaveLength(horseIds.length);
-    const weathers = res.body.data.results.flatMap(r => [r.impact.weather, r.triggers.weather, r.stress.weather]);
+    const weathers = res.body.data.results.flatMap(r => [r.impact.weather, r.triggers.weather]);
     expect(new Set(weathers.map(w => w.timestamp)).size).toBe(1);
     for (const w of weathers) {
       expect(w).toEqual(weathers[0]);

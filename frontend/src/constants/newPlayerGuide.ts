@@ -11,7 +11,7 @@
  * semantic HTML (paragraphs, lists, tables) and never injects markup. Inline
  * text supports three marks only, parsed by `parseGuideInline`:
  *   **bold**              emphasis
- *   *italic*              a name or a gentle stress
+ *   *italic*              a name or a gentle emphasis
  *   [label](#section-id)  a link to another section of this guide
  *
  * Undecided rules. A `pending` block marks something the owner has not ruled on.

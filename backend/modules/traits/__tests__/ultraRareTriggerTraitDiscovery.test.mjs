@@ -23,7 +23,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const baseCleanup = createCleanupTracker();
-const highStressCleanup = createCleanupTracker();
+const plainCleanup = createCleanupTracker();
 const giCleanup = createCleanupTracker();
 const bmCleanup = createCleanupTracker();
 
@@ -102,61 +102,55 @@ describe('getDiscoveryProgress', () => {
   });
 });
 
-// ── evaluateUltraRareTriggers — Phoenix-Born triggered via high stressLevel ───
+// ── evaluateUltraRareTriggers — Phoenix-Born is not earned by anything now ────
 //
-// evaluatePhoenixBornConditions: `(stressEvents >= 1 || hasHighStress) && recoveries >= 0`
-// recoveries >= 0 is always true; hasHighStress = stressLevel > 50.
-// A horse with stressLevel: 51 triggers Phoenix-Born, covering lines 34-37
-// (logger.info + triggeredTraits.push branch) in evaluateUltraRareTriggers.
+// The care rule that earned Phoenix-Born was removed (owner ruling 2026-10-26,
+// Equoria-b76x0), so no horse triggers it.
 
-let highStressUser;
-let highStressHorse;
+let plainUser;
+let plainHorse;
 
 beforeAll(async () => {
-  highStressUser = await prisma.user.create({
+  plainUser = await prisma.user.create({
     data: {
       email: `ultratrait-hs-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `ultratraiths${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
-      firstName: 'HighStress',
+      firstName: 'Plain',
       lastName: 'Tester',
       money: 1000,
     },
   });
-  highStressHorse = await prisma.horse.create({
+  plainHorse = await prisma.horse.create({
     data: {
       ...fixtureColor(),
-      name: `TestFixture-HighStressHorse-${Date.now()}`,
+      name: `TestFixture-PlainHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,
-      userId: highStressUser.id,
-      stressLevel: 51,
+      userId: plainUser.id,
     },
   });
 
   // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: horse -> user
   // (Horse.userId Restrict). Runs in the afterAll below.
-  highStressCleanup.add(() => prisma.horse.delete({ where: { id: highStressHorse.id } }), 'horse');
-  highStressCleanup.add(() => prisma.user.delete({ where: { id: highStressUser.id } }), 'user');
+  plainCleanup.add(() => prisma.horse.delete({ where: { id: plainHorse.id } }), 'horse');
+  plainCleanup.add(() => prisma.user.delete({ where: { id: plainUser.id } }), 'user');
 }, 30000);
 
-afterAll(() => highStressCleanup.run(), 30000);
+afterAll(() => plainCleanup.run(), 30000);
 
-describe('evaluateUltraRareTriggers — high-stress horse triggers Phoenix-Born (lines 34-37)', () => {
-  it('returns at least one triggered ultra-rare trait for stressLevel:51 horse', async () => {
-    const result = await evaluateUltraRareTriggers(highStressHorse.id);
+describe('evaluateUltraRareTriggers — Phoenix-Born is never triggered', () => {
+  it('returns no Phoenix-Born for a plain horse', async () => {
+    const result = await evaluateUltraRareTriggers(plainHorse.id);
     expect(Array.isArray(result)).toBe(true);
-    expect(result.length).toBeGreaterThan(0);
-    expect(result[0].tier).toBe('ultra-rare');
-    expect(result[0].name).toBe('Phoenix-Born');
+    expect(result.map(t => t.name)).not.toContain('Phoenix-Born');
   });
 });
 
-// ── Fixture 3: horse with groomInteractions carrying stressChange values ──────
+// ── Fixture 3: horse with groomInteractions ───────────────────────────────────
 //
 // Purpose: cover arrow-function bodies inside `.filter()` / `.map()` calls in
-// evaluatePhoenixBornConditions (stressChange > 15 / < -15),
 // evaluateIronWilledConditions (bondScore !== null filter + bondScore map), and
 // evaluateEmpathicMirrorConditions (same bondScore filter + map).
 //
@@ -164,7 +158,7 @@ describe('evaluateUltraRareTriggers — high-stress horse triggers Phoenix-Born 
 // `undefined`.  The filter predicate `undefined !== null` evaluates to true so
 // every interaction passes, EXECUTING the arrow-function body (=coverage), but
 // the downstream reduce produces NaN, so Iron-Willed / Empathic Mirror do NOT
-// trigger. Phoenix-Born DOES trigger because stressEvents = 1 (≥ 1).
+// trigger.
 
 let giUser;
 let giGroom;
@@ -203,12 +197,11 @@ beforeAll(async () => {
       dateOfBirth: new Date(),
       age: 0,
       userId: giUser.id,
-      stressLevel: 0,
       bondScore: 50,
     },
   });
 
-  // Positive stress event (stressChange > 15) — covers Phoenix-Born high-stress filter body
+  // A positive bonding interaction
   await prisma.groomInteraction.create({
     data: {
       foalId: giHorse.id,
@@ -216,12 +209,11 @@ beforeAll(async () => {
       interactionType: 'grooming',
       duration: 30,
       bondingChange: 5,
-      stressChange: 20,
       timestamp: new Date(),
     },
   });
 
-  // Negative stress event (stressChange < -15) — covers Phoenix-Born recovery filter body
+  // A negative bonding interaction
   await prisma.groomInteraction.create({
     data: {
       foalId: giHorse.id,
@@ -229,7 +221,6 @@ beforeAll(async () => {
       interactionType: 'grooming',
       duration: 30,
       bondingChange: -5,
-      stressChange: -20,
       timestamp: new Date(),
     },
   });
@@ -244,12 +235,12 @@ beforeAll(async () => {
 
 afterAll(() => giCleanup.run(), 30000);
 
-describe('evaluateUltraRareTriggers — groom-interaction horse covers stressChange + bondScore filter/map bodies', () => {
-  it('executes stressChange filter bodies; Phoenix-Born triggers, Iron-Willed and Empathic Mirror do not', async () => {
+describe('evaluateUltraRareTriggers — groom-interaction horse covers the bondScore filter/map bodies', () => {
+  it('Iron-Willed and Empathic Mirror do not trigger; Phoenix-Born never does', async () => {
     const result = await evaluateUltraRareTriggers(giHorse.id);
     expect(Array.isArray(result)).toBe(true);
     const names = result.map(t => t.name);
-    expect(names).toContain('Phoenix-Born');
+    expect(names).not.toContain('Phoenix-Born');
     expect(names).not.toContain('Iron-Willed');
     expect(names).not.toContain('Empathic Mirror');
   });
@@ -262,7 +253,7 @@ describe('evaluateUltraRareTriggers — groom-interaction horse covers stressCha
 // Iron-Willed: milestoneCount (4) >= 4, no negative traits, bondConsistency = 80/100 = 0.8 >= 0.8
 // Empathic Mirror: no groomInteractions → sameGroomFromBirth = true (empty uniqueGrooms),
 //   bondScores fallback to currentBondScore (80) → minBond = avgBond = 80 >= 80
-// Phoenix-Born: stressEvents = 0, hasHighStress = false → does NOT trigger
+// Phoenix-Born: never triggers
 
 let bmUser;
 let bmHorse;
@@ -324,7 +315,7 @@ describe('evaluateUltraRareTriggers — bonded-milestone horse triggers Iron-Wil
     expect(names).toContain('Empathic Mirror');
   });
 
-  it('Phoenix-Born does not trigger for horse with stressLevel:0 and no groomInteractions', async () => {
+  it('Phoenix-Born does not trigger for a horse with no groomInteractions', async () => {
     const result = await evaluateUltraRareTriggers(bmHorse.id);
     const names = result.map(t => t.name);
     expect(names).not.toContain('Phoenix-Born');

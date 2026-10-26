@@ -37,7 +37,6 @@ const nullFlagsHorse = (id = 1) => ({
   name: `TestFixture-wiudw-${id}`,
   dateOfBirth: new Date('2025-01-01T00:00:00.000Z'),
   bondScore: 25,
-  stressLevel: 3,
   epigeneticFlags: null,
 });
 

@@ -250,7 +250,6 @@ export async function getAssignedHandler(horseId, userId) {
             id: true,
             name: true,
             bondScore: true,
-            stressLevel: true,
           },
         },
       },

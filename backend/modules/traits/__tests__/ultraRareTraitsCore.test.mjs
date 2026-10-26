@@ -13,11 +13,7 @@ import {
   getUltraRareTraitDefinition,
 } from '../../../utils/ultraRareTraits.mjs';
 import { applyRareTraitBoosterEffects } from '../../../utils/groomRareTraitPerks.mjs';
-import {
-  applyUltraRareStressEffects,
-  applyUltraRareCompetitionEffects,
-  hasUltraRareAbility,
-} from '../../../utils/ultraRareMechanicalEffects.mjs';
+import { applyUltraRareCompetitionEffects, hasUltraRareAbility } from '../../../utils/ultraRareMechanicalEffects.mjs';
 
 describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
   describe('Trait Definitions System', () => {
@@ -32,7 +28,6 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
       expect(ultraRareTraits['phoenix-born'].name).toBe('Phoenix-Born');
       expect(ultraRareTraits['phoenix-born'].rarity).toBe('ultra-rare');
       expect(ultraRareTraits['phoenix-born'].baseChance).toBe(0.02);
-      expect(ultraRareTraits['phoenix-born'].mechanicalEffects.stressDecayMultiplier).toBe(1.3);
     });
 
     test('should retrieve all exotic trait definitions', () => {
@@ -106,7 +101,6 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
 
       const baseChance = 0.02;
       const conditions = {
-        stressEvents: true,
         recoveries: true,
       };
 
@@ -146,25 +140,6 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
   });
 
   describe('Mechanical Effects Integration', () => {
-    test('should apply ultra-rare stress effects correctly', () => {
-      const horseWithPhoenixBorn = {
-        ultraRareTraits: {
-          ultraRare: [{ name: 'Phoenix-Born' }],
-          exotic: [],
-        },
-      };
-
-      const baseStress = 50;
-      const result = applyUltraRareStressEffects(horseWithPhoenixBorn, baseStress);
-
-      expect(result.originalStress).toBe(50);
-      expect(result.modifiedStress).toBeLessThan(50); // 20% stress resistance
-      expect(result.modifiedStress).toBe(40); // 50 - (50 * 0.2) = 40
-      expect(result.appliedEffects).toHaveLength(1);
-      expect(result.appliedEffects[0].trait).toBe('Phoenix-Born');
-      expect(result.appliedEffects[0].effect).toBe('stress_resistance');
-    });
-
     test('should apply ultra-rare competition effects correctly', () => {
       const horseWithBornLeader = {
         ultraRareTraits: {
@@ -204,54 +179,8 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
 
       // Equoria-0d4wa: no burnout, so no burnout immunity (old contract: true).
       expect(hasUltraRareAbility(horseWithIronWilled, 'burnout_immunity')).toBe(false);
-      expect(hasUltraRareAbility(horseWithIronWilled, 'stress_immunity')).toBe(false);
 
-      expect(hasUltraRareAbility(horseWithGhostwalker, 'stress_immunity')).toBe(true);
       expect(hasUltraRareAbility(horseWithGhostwalker, 'burnout_immunity')).toBe(false);
-    });
-
-    test('should handle multiple ultra-rare traits correctly', () => {
-      const horseWithMultipleTraits = {
-        ultraRareTraits: {
-          ultraRare: [{ name: 'Phoenix-Born' }, { name: 'Stormtouched' }],
-          exotic: [],
-        },
-      };
-
-      const baseStress = 100;
-      const result = applyUltraRareStressEffects(horseWithMultipleTraits, baseStress);
-
-      expect(result.originalStress).toBe(100);
-      expect(result.appliedEffects.length).toBeGreaterThan(0);
-
-      // Should have effects from both traits
-      const phoenixEffect = result.appliedEffects.find(effect => effect.trait === 'Phoenix-Born');
-      const stormtouchedEffect = result.appliedEffects.find(effect => effect.trait === 'Stormtouched');
-
-      expect(phoenixEffect).toBeDefined();
-      expect(stormtouchedEffect).toBeDefined();
-
-      // Phoenix-Born reduces stress, Stormtouched increases it
-      expect(phoenixEffect.effect).toBe('stress_resistance');
-      expect(stormtouchedEffect.effect).toBe('stress_gain_multiplier');
-    });
-
-    test('should handle stress immunity correctly', () => {
-      const horseWithGhostwalker = {
-        ultraRareTraits: {
-          ultraRare: [],
-          exotic: [{ name: 'Ghostwalker' }],
-        },
-      };
-
-      const baseStress = 100;
-      const result = applyUltraRareStressEffects(horseWithGhostwalker, baseStress);
-
-      expect(result.originalStress).toBe(100);
-      expect(result.modifiedStress).toBe(0); // Complete immunity
-      expect(result.appliedEffects).toHaveLength(1);
-      expect(result.appliedEffects[0].effect).toBe('stress_immunity');
-      expect(result.totalReduction).toBe(100);
     });
   });
 

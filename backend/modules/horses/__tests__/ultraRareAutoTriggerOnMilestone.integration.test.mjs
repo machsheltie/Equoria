@@ -60,7 +60,6 @@ describe('Equoria-d4tl: evaluateEnhancedMilestone auto-runs ultra-rare evaluatio
         dateOfBirth: dobForAge(3),
         age: 0,
         bondScore: 60,
-        stressLevel: 5,
         userId: user.id,
       },
     });

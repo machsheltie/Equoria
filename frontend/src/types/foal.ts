@@ -113,7 +113,6 @@ export interface Foal extends Horse {
 
   // Development metrics
   bondingLevel?: number; // 0-100
-  stressLevel?: number; // 0-100
 
   // Parent references
   sireId: number;

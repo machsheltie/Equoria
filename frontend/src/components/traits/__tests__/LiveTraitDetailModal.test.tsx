@@ -17,7 +17,7 @@ const positiveTrait: HorseTrait = {
   key: 'resilient',
   name: 'Resilient',
   valence: 'positive',
-  description: 'Less likely to be affected by stress.',
+  description: 'Takes challenges in stride.',
   rarity: 'common',
   category: 'epigenetic',
 };
@@ -39,7 +39,7 @@ describe('LiveTraitDetailModal', () => {
 
   it('renders trait name, description and a Beneficial banner for a positive trait', () => {
     render(<LiveTraitDetailModal isOpen onClose={() => {}} trait={positiveTrait} />);
-    expect(screen.getByText('Less likely to be affected by stress.')).toBeInTheDocument();
+    expect(screen.getByText('Takes challenges in stride.')).toBeInTheDocument();
     expect(screen.getByTestId('trait-detail-valence')).toHaveTextContent('Beneficial Trait');
     // name appears in the GameDialog title
     expect(screen.getAllByText('Resilient').length).toBeGreaterThan(0);

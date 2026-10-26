@@ -42,18 +42,14 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
         fearful: -0.3,
       },
       behaviorModifiers: {
-        stressReduction: 0.1,
         competitionBonus: 0.15,
         statRecoveryBonus: 0.05,
-        stressResistance: 0.1,
       },
     },
     conflictsWith: ['fearful', 'anxious'],
     triggerConditions: {
       careConsistency: 0.7,
-      stressManagement: 'effective',
       taskDiversity: 0.5,
-      stressSpikes: 'low',
     },
   },
 
@@ -71,7 +67,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
         timid: -0.25,
       },
       behaviorModifiers: {
-        stressResistance: 0.2,
         competitionBonus: 0.1,
         trainingEfficiency: 0.05,
       },
@@ -79,7 +74,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     conflictsWith: ['insecure', 'fearful'],
     triggerConditions: {
       strongBondGrowth: true,
-      lowStress: true,
       diverseExperiences: true,
       excellentQuality: 0.5,
     },
@@ -118,7 +112,7 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     displayName: 'Resilient',
     type: FLAG_TYPES.POSITIVE,
     sourceCategory: SOURCE_CATEGORIES.ENVIRONMENT,
-    description: 'Horse recovers quickly from stress and adapts well to challenges',
+    description: 'Horse adapts well to challenges',
     influences: {
       traitWeightModifiers: {
         hardy: 0.4,
@@ -127,14 +121,12 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
         sensitive: -0.3,
       },
       behaviorModifiers: {
-        stressRecovery: 0.2,
         adaptability: 0.25,
         healthBonus: 0.05,
       },
     },
     conflictsWith: ['fragile', 'sensitive'],
     triggerConditions: {
-      stressRecovery: 'fast',
       adaptabilityShown: true,
       challengeOvercome: true,
     },
@@ -155,17 +147,13 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
         confident: -0.4,
       },
       behaviorModifiers: {
-        stressIncrease: 0.2,
         competitionPenalty: -0.15,
-        stressVulnerability: 0.15,
       },
     },
     conflictsWith: ['brave', 'confident'],
     triggerConditions: {
       careGaps: 'frequent',
-      highStressSpikes: true,
       inconsistentCare: true,
-      poorStressManagement: true,
     },
   },
 
@@ -238,7 +226,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
         steady: -0.25,
       },
       behaviorModifiers: {
-        stressIncrease: 0.15,
         environmentalSensitivity: 0.2,
       },
     },
@@ -247,7 +234,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       overreactions: 'frequent',
       stimuliSensitivity: 'high',
       unpredictableBehavior: true,
-      environmentalStress: true,
     },
   },
 
@@ -265,15 +251,12 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
         delicate: 0.25,
       },
       behaviorModifiers: {
-        stressIncrease: 0.3,
         recoveryTime: 0.2,
-        stressVulnerability: 0.25,
       },
     },
     conflictsWith: ['resilient', 'hardy'],
     triggerConditions: {
       overwhelmingSituations: true,
-      poorStressRecovery: true,
       sensitiveReactions: true,
       emotionalBreakdowns: true,
     },

@@ -38,10 +38,10 @@ describe('BreedingInsightsCard Component', () => {
       'Both parents have exceptional speed stats',
       'Compatible temperament traits for racing',
     ],
-    recommendations: ['Focus on agility training early', 'Monitor stress levels during weaning'],
+    recommendations: ['Focus on agility training early', 'Monitor condition during weaning'],
     considerations: ['Parents share some genetic markers', 'Dam has lower stamina than ideal'],
     warnings: [
-      'High risk of inheriting stress sensitivity',
+      'High risk of inheriting nervous behaviour',
       'May require specialized care in first months',
     ],
     optimalCareStrategies: [
@@ -194,7 +194,7 @@ describe('BreedingInsightsCard Component', () => {
     it('should display all recommendation items', () => {
       render(<BreedingInsightsCard insights={mockInsights} />);
       expect(screen.getByText('Focus on agility training early')).toBeInTheDocument();
-      expect(screen.getByText('Monitor stress levels during weaning')).toBeInTheDocument();
+      expect(screen.getByText('Monitor condition during weaning')).toBeInTheDocument();
     });
 
     it('should not display recommendations section when array is empty', () => {
@@ -291,13 +291,13 @@ describe('BreedingInsightsCard Component', () => {
 
     it('should display all warning items', () => {
       render(<BreedingInsightsCard insights={mockInsights} />);
-      expect(screen.getByText('High risk of inheriting stress sensitivity')).toBeInTheDocument();
+      expect(screen.getByText('High risk of inheriting nervous behaviour')).toBeInTheDocument();
       expect(screen.getByText('May require specialized care in first months')).toBeInTheDocument();
     });
 
     it('should apply font-medium to warning text', () => {
       render(<BreedingInsightsCard insights={mockInsights} />);
-      const warningText = screen.getByText('High risk of inheriting stress sensitivity');
+      const warningText = screen.getByText('High risk of inheriting nervous behaviour');
       expect(warningText).toHaveClass('font-medium');
     });
 

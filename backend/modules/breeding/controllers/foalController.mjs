@@ -13,7 +13,7 @@
  * ruling 2026-10-20: players must never write traits for themselves — traits
  * will be activated by grooms, not a player button).
  *
- * The former PUT /develop (client-set day/bond/stress) and POST /advance-day
+ * The former PUT /develop (client-set day/bond) and POST /advance-day
  * handlers were removed (Equoria-mwjst): foals wait out the full development
  * week, and only the nightly trait job advances the day. The player-run
  * POST /activity, /enrichment, /enrich and /graduate handlers were removed
@@ -136,7 +136,6 @@ export async function getFoalHandler(req, res) {
         userId: foal.userId,
         breedId: foal.breedId,
         bondScore: foal.bondScore,
-        stressLevel: foal.stressLevel,
         epigeneticFlags: foal.epigeneticFlags || [],
         // Unrevealed hidden traits are never named, to anyone (Equoria-6dace).
         epigeneticModifiers: publicTraitModifiers(foal.epigeneticModifiers),
@@ -186,7 +185,6 @@ export async function getFoalActivitiesHandler(req, res) {
         activity: a.activityType, // alias for frontend FoalActivity.activity
         outcome: a.outcome,
         bondingChange: a.bondingChange,
-        stressChange: a.stressChange,
         description: a.description,
         createdAt: a.createdAt,
       })),

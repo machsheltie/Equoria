@@ -372,7 +372,7 @@ export async function notifyTraitRevelation(foal, newTraits, currentDay) {
  * @param {string} foalName - Foal name
  * @param {Object} newTraits - New traits revealed
  * @param {number} currentDay - Current development day
- * @param {Object} [foal] - Full foal record (for bondScore / stressLevel)
+ * @param {Object} [foal] - Full foal record (for bondScore)
  * @param {Object} [tx] - The caller's transaction (Equoria-mwjst). With one,
  *   the history rows commit with the reveal and any failure propagates so the
  *   whole reveal rolls back; nothing is swallowed inside a transaction.
@@ -398,7 +398,6 @@ export async function logTraitRevelation(
           sourceType: 'daily_evaluation',
           isEpigenetic: true,
           bondScore: foal?.bondScore ?? null,
-          stressLevel: foal?.stressLevel ?? null,
         },
         tx,
       );
@@ -434,7 +433,6 @@ export async function logTraitRevelation(
       ...(newTraits.hidden || []),
     ];
     const bondScore = foal?.bondScore ?? null;
-    const stressLevel = foal?.stressLevel ?? null;
     for (const traitName of allRevealed) {
       try {
         await logTraitAssignment({
@@ -443,7 +441,6 @@ export async function logTraitRevelation(
           sourceType: 'daily_evaluation',
           isEpigenetic: true,
           bondScore,
-          stressLevel,
         });
       } catch (persistError) {
         logger.error(

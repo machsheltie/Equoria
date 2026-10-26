@@ -187,7 +187,7 @@ export async function createHorseFromRequest(reqBody, userId) {
   const phenotype = { ...baseColor, ...markings };
 
   // Whitelist creation fields to prevent mass-assignment of protected fields
-  // (e.g. totalEarnings, level, bondScore, stressLevel, epigeneticModifiers)
+  // (e.g. totalEarnings, level, bondScore, epigeneticModifiers)
 
   // Derive dateOfBirth from age so that getHorseAgeYears() computes the correct game age.
   // Equoria game-year convention: 1 game-year = 7 real days. A horse created with

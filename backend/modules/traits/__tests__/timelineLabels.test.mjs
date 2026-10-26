@@ -31,7 +31,6 @@ describe('buildTraitTimeline labels', () => {
     interactionType: code('daily', 'care'),
     taskType: code('trust', 'building'),
     bondingChange: 5,
-    stressChange: 0,
     quality: 'good',
     groom: { name: 'Sam' },
   };

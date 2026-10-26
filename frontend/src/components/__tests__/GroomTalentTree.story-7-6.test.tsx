@@ -106,7 +106,7 @@ describe('formatTalentEffect', () => {
   });
 
   it('formats a large bonus', () => {
-    expect(formatTalentEffect('stressReduction', 0.2)).toBe('+20% Stress Reduction');
+    expect(formatTalentEffect('milestoneAccuracy', 0.2)).toBe('+20% Milestone Accuracy');
   });
 
   it('formats multiple-word keys', () => {
@@ -270,7 +270,6 @@ describe('AC1: All tiers and talents displayed', () => {
   it('shows all calm tier2 talents', () => {
     render(<GroomTalentTree groom={level8Groom} />);
     expect(screen.getByTestId('talent-card-empathic_sync')).toBeInTheDocument();
-    expect(screen.getByTestId('talent-card-stress_whisperer')).toBeInTheDocument();
   });
 
   it('shows tier3 talent', () => {

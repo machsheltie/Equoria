@@ -87,7 +87,6 @@ function horseData(ownerId, name) {
     dateOfBirth: new Date('2023-06-01T12:00:00Z'),
     age: 2,
     temperament: 'developing',
-    stressLevel: 5,
     bondScore: 25,
     healthStatus: 'Good',
     epigeneticFlags: [],

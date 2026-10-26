@@ -2,8 +2,8 @@
  * The environmental trigger analysis characterization grid (Equoria-q4uem.7 S4).
  *
  * buildTriggerFixtures(prisma, token) creates owned fixtures in the real test
- * DB: one owner, two grooms (one 'calm' influence), and foals of chosen ages,
- * stress and bond with chosen interaction histories. runTriggerGrid(api, fx)
+ * DB: one owner, two grooms (one 'calm' influence), and foals of chosen ages
+ * and bond with chosen interaction histories. runTriggerGrid(api, fx)
  * calls every analysis for every foal (and for a horse that does not exist) and
  * returns { caseKey -> normalized output }; normalization replaces ids, the
  * fixture clock and interaction timestamps with stable labels, so the outputs
@@ -12,7 +12,7 @@
  *
  * The outputs here are mostly UNROUNDED (thresholds, exposure),
  * so the order of every multiplication and sum reaches the digests: the grid
- * varies age, stress and bond together so the 4-factor threshold
+ * varies age and bond together so the threshold
  * products all vary.
  *
  * api = async { detect(id), thresholds(id), exposure(id), report(id) }
@@ -26,34 +26,17 @@ const DAY = 24 * 60 * 60 * 1000;
 // Interaction histories: [daysAgo, groom (0 calm | 1 other), fields]
 const HISTORIES = {
   none: [],
-  stressful: [
-    [
-      2,
-      1,
-      { stressChange: 4, bondingChange: -2, quality: 'poor', duration: 10, taskType: 'bathing' },
-    ],
-    [
-      5,
-      0,
-      { stressChange: 3, bondingChange: -1, quality: 'poor', duration: 12, taskType: 'bathing' },
-    ],
-    [
-      9,
-      1,
-      { stressChange: 3, bondingChange: 0, quality: 'fair', duration: 20, taskType: 'feeding' },
-    ],
-    [
-      14,
-      1,
-      { stressChange: 2, bondingChange: -2, quality: 'poor', duration: 14, taskType: 'feeding' },
-    ],
+  harsh: [
+    [2, 1, { bondingChange: -2, quality: 'poor', duration: 10, taskType: 'bathing' }],
+    [5, 0, { bondingChange: -1, quality: 'poor', duration: 12, taskType: 'bathing' }],
+    [9, 1, { bondingChange: 0, quality: 'fair', duration: 20, taskType: 'feeding' }],
+    [14, 1, { bondingChange: -2, quality: 'poor', duration: 14, taskType: 'feeding' }],
   ],
   confident: [
     [
       1,
       0,
       {
-        stressChange: -1,
         bondingChange: 3,
         quality: 'excellent',
         duration: 45,
@@ -65,7 +48,6 @@ const HISTORIES = {
       3,
       0,
       {
-        stressChange: 0,
         bondingChange: 2,
         quality: 'excellent',
         duration: 40,
@@ -77,23 +59,17 @@ const HISTORIES = {
       6,
       0,
       {
-        stressChange: -2,
         bondingChange: 2,
         quality: 'good',
         duration: 35,
         taskType: 'showground_exposure',
       },
     ],
-    [
-      11,
-      1,
-      { stressChange: 0, bondingChange: 1, quality: 'good', duration: 31, taskType: 'grooming' },
-    ],
+    [11, 1, { bondingChange: 1, quality: 'good', duration: 31, taskType: 'grooming' }],
     [
       18,
       0,
       {
-        stressChange: -1,
         bondingChange: 3,
         quality: 'excellent',
         duration: 60,
@@ -101,18 +77,13 @@ const HISTORIES = {
         interactionType: 'enrichment',
       },
     ],
-    [
-      24,
-      1,
-      { stressChange: 1, bondingChange: 0, quality: 'fair', duration: 25, taskType: 'feeding' },
-    ],
+    [24, 1, { bondingChange: 0, quality: 'fair', duration: 25, taskType: 'feeding' }],
   ],
   mixed: [
     [
       1,
       1,
       {
-        stressChange: 3,
         bondingChange: 3,
         quality: 'excellent',
         duration: 50,
@@ -123,7 +94,6 @@ const HISTORIES = {
       4,
       0,
       {
-        stressChange: 0,
         bondingChange: -2,
         quality: 'poor',
         duration: 8,
@@ -134,7 +104,6 @@ const HISTORIES = {
       8,
       1,
       {
-        stressChange: 1,
         bondingChange: 1,
         quality: 'good',
         duration: 30,
@@ -146,68 +115,39 @@ const HISTORIES = {
       13,
       0,
       {
-        stressChange: -1,
         bondingChange: 2,
         quality: 'good',
         duration: 16,
         taskType: 'trust_building',
       },
     ],
-    [
-      20,
-      1,
-      { stressChange: 5, bondingChange: -1, quality: 'poor', duration: 14, taskType: 'bathing' },
-    ],
-    [
-      27,
-      0,
-      { stressChange: 0, bondingChange: 0, quality: 'fair', duration: 33, taskType: 'feeding' },
-    ],
+    [20, 1, { bondingChange: -1, quality: 'poor', duration: 14, taskType: 'bathing' }],
+    [27, 0, { bondingChange: 0, quality: 'fair', duration: 33, taskType: 'feeding' }],
     [
       29,
       1,
       {
-        stressChange: 2,
         bondingChange: 2,
         quality: 'excellent',
         duration: 22,
         taskType: 'desensitization',
       },
     ],
-    [
-      31,
-      0,
-      { stressChange: 4, bondingChange: -3, quality: 'poor', duration: 9, taskType: 'bathing' },
-    ],
+    [31, 0, { bondingChange: -3, quality: 'poor', duration: 9, taskType: 'bathing' }],
     [
       45,
       1,
       {
-        stressChange: -2,
         bondingChange: 3,
         quality: 'excellent',
         duration: 70,
         taskType: 'trust_building',
       },
     ],
-    [
-      60,
-      0,
-      { stressChange: 1, bondingChange: 1, quality: 'good', duration: 26, taskType: 'grooming' },
-    ],
-    [
-      75,
-      1,
-      { stressChange: 0, bondingChange: 0, quality: 'fair', duration: 18, taskType: 'feeding' },
-    ],
+    [60, 0, { bondingChange: 1, quality: 'good', duration: 26, taskType: 'grooming' }],
+    [75, 1, { bondingChange: 0, quality: 'fair', duration: 18, taskType: 'feeding' }],
   ],
-  sparse: [
-    [
-      3,
-      1,
-      { stressChange: 0, bondingChange: -2, quality: 'fair', duration: 9, taskType: 'grooming' },
-    ],
-  ],
+  sparse: [[3, 1, { bondingChange: -2, quality: 'fair', duration: 9, taskType: 'grooming' }]],
   // Three interactions share one createdAt (`tie`): their order is decided by
   // id (insertion order), which the snapshot reads explicitly.
   tied: [
@@ -215,7 +155,6 @@ const HISTORIES = {
       2,
       0,
       {
-        stressChange: 3,
         bondingChange: -1,
         quality: 'poor',
         duration: 12,
@@ -227,7 +166,6 @@ const HISTORIES = {
       2,
       1,
       {
-        stressChange: -1,
         bondingChange: 3,
         quality: 'excellent',
         duration: 40,
@@ -239,7 +177,6 @@ const HISTORIES = {
       2,
       0,
       {
-        stressChange: 0,
         bondingChange: 1,
         quality: 'good',
         duration: 31,
@@ -252,23 +189,17 @@ const HISTORIES = {
       5,
       1,
       {
-        stressChange: 2,
         bondingChange: 2,
         quality: 'excellent',
         duration: 22,
         taskType: 'showground_exposure',
       },
     ],
-    [
-      9,
-      0,
-      { stressChange: 4, bondingChange: -2, quality: 'poor', duration: 9, taskType: 'bathing' },
-    ],
+    [9, 0, { bondingChange: -2, quality: 'poor', duration: 9, taskType: 'bathing' }],
     [
       12,
       1,
       {
-        stressChange: -2,
         bondingChange: 3,
         quality: 'excellent',
         duration: 65,
@@ -278,21 +209,21 @@ const HISTORIES = {
   ],
 };
 
-// [key, ageDays, stressLevel, bondScore, history]
+// [key, ageDays, bondScore, history]
 const FOALS = [
-  ['newborn-calm', 2, 0, 0, 'none'],
-  ['newborn-stressed', 2, 9, 5, 'stressful'],
-  ['fear1', 9, 7, 15, 'stressful'],
-  ['fear1-bonded', 10, 3, 40, 'confident'],
-  ['curious', 20, 4, 25, 'mixed'],
-  ['social', 45, 12, 0, 'mixed'],
-  ['social-bonded', 50, 1, 50, 'confident'],
-  ['independent', 75, 6, 30, 'sparse'],
-  ['independent-late', 100, 10, 10, 'stressful'],
-  ['residual', 125, 2, 20, 'mixed'],
-  ['minimal', 160, 8, 45, 'confident'],
-  ['mature', 400, 5, 35, 'mixed'],
-  ['tied', 30, 5, 20, 'tied'],
+  ['newborn-calm', 2, 0, 'none'],
+  ['newborn-harsh', 2, 5, 'harsh'],
+  ['fear1', 9, 15, 'harsh'],
+  ['fear1-bonded', 10, 40, 'confident'],
+  ['curious', 20, 25, 'mixed'],
+  ['social', 45, 0, 'mixed'],
+  ['social-bonded', 50, 50, 'confident'],
+  ['independent', 75, 30, 'sparse'],
+  ['independent-late', 100, 10, 'harsh'],
+  ['residual', 125, 20, 'mixed'],
+  ['minimal', 160, 45, 'confident'],
+  ['mature', 400, 35, 'mixed'],
+  ['tied', 30, 20, 'tied'],
 ];
 
 export async function buildTriggerFixtures(prisma, token, colour) {
@@ -324,7 +255,7 @@ export async function buildTriggerFixtures(prisma, token, colour) {
   }
   const labels = new Map();
   const horses = [];
-  for (const [key, ageDays, stressLevel, bondScore, history] of FOALS) {
+  for (const [key, ageDays, bondScore, history] of FOALS) {
     const horse = await prisma.horse.create({
       data: {
         ...colour(),
@@ -335,7 +266,6 @@ export async function buildTriggerFixtures(prisma, token, colour) {
         dateOfBirth: gameCalendarDate(new Date(now), -ageDays),
         age: 0,
         userId: user.id,
-        stressLevel,
         bondScore,
       },
     });
@@ -348,7 +278,6 @@ export async function buildTriggerFixtures(prisma, token, colour) {
           interactionType: fields.interactionType ?? 'daily_care',
           duration: fields.duration,
           bondingChange: fields.bondingChange,
-          stressChange: fields.stressChange,
           quality: fields.quality,
           taskType: fields.taskType,
           foalId: horse.id,

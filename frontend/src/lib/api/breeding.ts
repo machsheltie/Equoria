@@ -51,13 +51,11 @@ export function normalizeFoalDevelopment(
   // fields (PUT /develop returns a flat body).
   const currentDay = dev.currentDay ?? raw.currentDay ?? 0;
   const bondingLevel = dev.bondingLevel ?? raw.bondingLevel ?? 0;
-  const stressLevel = dev.stressLevel ?? raw.stressLevel ?? 0;
   const maxDay = dev.maxDay ?? raw.maxDay ?? 6;
   return {
     currentDay,
     maxDay,
     bondingLevel,
-    stressLevel,
   };
 }
 

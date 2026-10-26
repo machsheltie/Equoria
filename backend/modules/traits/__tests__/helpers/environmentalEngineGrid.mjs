@@ -1,7 +1,7 @@
 /**
  * The environmental engine characterization grid (Equoria-q4uem.7 S3).
  *
- * Pure: runGrid(api) calls the seven engine projections over a fixed grid of
+ * Pure: runGrid(api) calls the engine projections over a fixed grid of
  * dates, locations, horses and weather overrides and returns
  * { caseKey -> output }. The golden digests in environmentalEngine.golden.json
  * were recorded from the pre-S3 engine (HEAD 439e793d6) through the same grid,
@@ -14,7 +14,7 @@
  * That keeps the digests equal on an Eastern-time laptop and on UTC CI.
  *
  * api = { weather(d, l), seasonal(d), comfort(h), triggers(d, l, h, w),
- *         impact(d, l, h, w), stress(d, l, h, w), history(s, e, l) }
+ *         impact(d, l, h, w), history(s, e, l) }
  */
 
 import { createHash } from 'node:crypto';
@@ -64,7 +64,7 @@ const TRAIT_SETS = [
   ['nervous', 'sensitive'],
   ['desert_adapted', 'heat_sensitive'],
   ['calm', 'resilient', 'adaptable'],
-  // Sets that put 3, 4 and 5 factors into one product (stress, triggers, impact).
+  // Sets that put 3, 4 and 5 factors into one product (triggers, impact).
   ['calm', 'nervous', 'hardy', 'sensitive', 'resilient'],
   ['nervous', 'hardy', 'sensitive', 'resilient'],
   ['calm', 'hardy', 'resilient'],
@@ -177,7 +177,6 @@ export function runGrid(api) {
           const key = `${dk}|${lk}|${hk}|${ok}`;
           out[`triggers|${key}`] = api.triggers(date[dk], loc[lk], h, w);
           out[`impact|${key}`] = api.impact(date[dk], loc[lk], h, w);
-          out[`stress|${key}`] = api.stress(date[dk], loc[lk], h, w);
         }
       }
     }
@@ -213,7 +212,7 @@ export function canonicalJson(value) {
 /** The group a case belongs to: kind + date + location for horse cases, kind + date for weather. */
 export function groupOf(caseKey) {
   const parts = caseKey.split('|');
-  if (['triggers', 'impact', 'stress'].includes(parts[0])) {
+  if (['triggers', 'impact'].includes(parts[0])) {
     return parts.slice(0, 3).join('|');
   }
   if (['seasonal', 'comfort'].includes(parts[0])) {
@@ -253,10 +252,10 @@ export const TRAIT_PRODUCT_CASES = [
   ...subsets(['calm', 'nervous', 'heat_tolerant', 'cold_tolerant', 'hardy']).flatMap(traits =>
     [
       [],
-      ['storm_stress'],
-      ['heat_stress'],
-      ['cold_stress', 'storm_stress'],
-      ['heat_stress', 'strong_wind', 'storm_stress'],
+      ['storm'],
+      ['extremeHeat'],
+      ['extremeCold', 'storm'],
+      ['extremeHeat', 'strong_wind', 'storm'],
       ['wet_conditions'],
     ].map(triggers => ({ table: 'trigger', traits, triggers })),
   ),
@@ -267,10 +266,6 @@ export const TRAIT_PRODUCT_CASES = [
       weather: { temperature },
     })),
   ),
-  ...subsets(['calm', 'nervous', 'hardy', 'sensitive', 'resilient']).map(traits => ({
-    table: 'stress',
-    traits,
-  })),
 ].map(c => ({
   ...c,
   key: [

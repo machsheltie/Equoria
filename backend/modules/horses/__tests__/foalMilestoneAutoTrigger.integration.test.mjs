@@ -65,7 +65,6 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
         dateOfBirth: dobForAge(3),
         age: 0,
         bondScore: 50,
-        stressLevel: 0,
         userId: user.id,
       },
     });
@@ -78,7 +77,6 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
         dateOfBirth: dobForAge(18),
         age: 0,
         bondScore: 50,
-        stressLevel: 0,
         userId: user.id,
       },
     });
@@ -91,7 +89,6 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
         dateOfBirth: dobForAge(1200),
         age: 4,
         bondScore: 50,
-        stressLevel: 0,
         userId: user.id,
       },
     });

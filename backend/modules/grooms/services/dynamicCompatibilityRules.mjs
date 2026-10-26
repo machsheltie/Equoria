@@ -19,15 +19,6 @@ const deepFreeze = value => {
   return value;
 };
 
-// Stress-situation modifier: [maxStress, modifier], the first band the stress
-// does not exceed; above every band (or unknown stress) the fallback.
-export const STRESS_SITUATION_BANDS = deepFreeze([
-  [3, 1.1], // Low stress - slight bonus
-  [6, 1.0], // Moderate stress - neutral
-  [8, 0.9], // High stress - slight penalty
-]);
-export const STRESS_SITUATION_FALLBACK = 0.7; // Very high stress - significant penalty
-
 // Each listed environmental factor multiplies the modifier (in the context's
 // order); unlisted factors are ignored. The product is clamped to the range.
 export const ENVIRONMENT_FACTOR_MULTIPLIERS = deepFreeze({
@@ -65,7 +56,7 @@ export const TASK_EFFECTIVENESS_MATRIX = deepFreeze({
 export const TASK_EFFECTIVENESS_DEFAULT = 0.6;
 
 // Text rules: every condition must hold. Facts: personality, temperament,
-// stressLevel, bondScore, experienceLevel.
+// bondScore, experienceLevel.
 export const RISK_FACTOR_RULES = deepFreeze([
   {
     when: [
@@ -73,13 +64,6 @@ export const RISK_FACTOR_RULES = deepFreeze([
       { field: 'temperament', op: 'in', value: ['nervous', 'fearful'] },
     ],
     texts: ['Energetic groom may overwhelm nervous/fearful horse'],
-  },
-  {
-    when: [
-      { field: 'stressLevel', op: 'gt', value: 7 },
-      { field: 'personality', op: 'eq', value: 'energetic' },
-    ],
-    texts: ['High stress horse may not respond well to energetic approach'],
   },
   {
     when: [
@@ -125,18 +109,11 @@ export const STRENGTH_FACTOR_RULES = deepFreeze([
   },
 ]);
 
-// Facts: overallScore, horseCurrentStress (from the context).
+// Facts: overallScore.
 export const PREDICTION_RECOMMENDATION_RULES = deepFreeze([
   {
     when: [{ field: 'overallScore', op: 'lt', value: 0.5 }],
-    texts: [
-      'Consider using a different groom for this interaction',
-      'If proceeding, monitor closely for stress signs',
-    ],
-  },
-  {
-    when: [{ field: 'horseCurrentStress', op: 'gt', value: 7 }],
-    texts: ['Focus on calming activities rather than stimulating ones'],
+    texts: ['Consider using a different groom for this interaction'],
   },
   {
     when: [{ field: 'overallScore', op: 'gt', value: 0.8 }],

@@ -3,7 +3,7 @@
  *
  * buildCompatibilityFixtures(prisma, token, colour) creates owned fixtures: an
  * owner with five grooms (calm, an expert calm, energetic, methodical,
- * balanced) and five horses of chosen stress, bond and epigenetic flags; a
+ * balanced) and five horses of chosen bond and epigenetic flags; a
  * second owner whose only groom has an unknown personality type; a third owner
  * with a horse and no grooms. Interaction histories sit inside and outside the
  * 14-day history window, at most 10 per pair inside it (which 10 of more is
@@ -47,7 +47,6 @@ export const CONTEXTS = [
       taskType: 'trust_building',
       timeOfDay: 'morning',
       environmentalFactors: ['quiet', 'familiar', 'structured'],
-      horseCurrentStress: 2,
       urgency: 'high',
     },
   ],
@@ -57,7 +56,6 @@ export const CONTEXTS = [
       taskType: 'desensitization',
       timeOfDay: 'evening',
       environmentalFactors: ['noisy', 'unfamiliar', 'chaotic', 'stimulating'],
-      horseCurrentStress: 9,
     },
   ],
   ['afternoon-plain', { taskType: 'sponge_bath', timeOfDay: 'afternoon' }],
@@ -83,7 +81,7 @@ export const CONTEXTS = [
     'coat-array-time',
     { taskType: 'coat_check', timeOfDay: ['morning'], environmentalFactors: ['familiar'] },
   ],
-  ['tying-number-time', { taskType: 'tying_practice', timeOfDay: 1, horseCurrentStress: 7 }],
+  ['tying-number-time', { taskType: 'tying_practice', timeOfDay: 1 }],
   [
     'early-touch',
     {
@@ -112,19 +110,19 @@ const GROOMS = [
   ['methodical-novice', 'methodical', 20, 1, 'B'],
 ];
 
-// [key, stressLevel, bondScore, epigeneticFlags, owner]
+// [key, bondScore, epigeneticFlags, owner]
 const HORSES = [
-  ['flagless', 2, 10, [], 'A'],
-  ['nervous', 8, 12, ['nervous', 'fearful', 'insecure'], 'A'],
-  ['confident', 5, 30, ['brave', 'confident', 'curious'], 'A'],
-  ['stressed', 10, 5, ['reactive'], 'A'],
-  ['mixed', 6, 26, ['calm', 'social', 'fearful'], 'A'],
-  ['b-horse', 4, 20, ['curious'], 'B'],
-  ['c-horse', 3, 12, ['brave'], 'C'],
+  ['flagless', 10, [], 'A'],
+  ['nervous', 12, ['nervous', 'fearful', 'insecure'], 'A'],
+  ['confident', 30, ['brave', 'confident', 'curious'], 'A'],
+  ['reactive', 5, ['reactive'], 'A'],
+  ['mixed', 26, ['calm', 'social', 'fearful'], 'A'],
+  ['b-horse', 20, ['curious'], 'B'],
+  ['c-horse', 12, ['brave'], 'C'],
   // All-negative flags and no interactions: the temperament analysis says
   // 'nervous', so the energetic+nervous/fearful risk rule and the calm+nervous/
   // fearful strength rule (the `in` operator) fire.
-  ['anxious', 9, 8, ['fearful', 'insecure', 'reactive', 'fragile'], 'A'],
+  ['anxious', 8, ['fearful', 'insecure', 'reactive', 'fragile'], 'A'],
 ];
 
 // Interaction histories per [groom, horse]: [daysAgo, fields]
@@ -133,40 +131,40 @@ const HISTORIES = [
     'calm',
     'nervous',
     [
-      [1, { quality: 'excellent', bondingChange: 3, stressChange: -2, duration: 40 }],
-      [3, { quality: 'good', bondingChange: 2, stressChange: -1, duration: 30 }],
-      [6, { quality: 'fair', bondingChange: 0, stressChange: 1, duration: 20 }],
-      [10, { quality: 'good', bondingChange: 1, stressChange: 0, duration: 25 }],
-      [20, { quality: 'poor', bondingChange: -2, stressChange: 3, duration: 10 }],
-      [35, { quality: 'fair', bondingChange: 1, stressChange: 1, duration: 15 }],
-      [50, { quality: 'poor', bondingChange: -1, stressChange: 2, duration: 12 }],
+      [1, { quality: 'excellent', bondingChange: 3, duration: 40 }],
+      [3, { quality: 'good', bondingChange: 2, duration: 30 }],
+      [6, { quality: 'fair', bondingChange: 0, duration: 20 }],
+      [10, { quality: 'good', bondingChange: 1, duration: 25 }],
+      [20, { quality: 'poor', bondingChange: -2, duration: 10 }],
+      [35, { quality: 'fair', bondingChange: 1, duration: 15 }],
+      [50, { quality: 'poor', bondingChange: -1, duration: 12 }],
     ],
   ],
   [
     'energetic',
     'confident',
     [
-      [2, { quality: 'good', bondingChange: 2, stressChange: 0, duration: 35 }],
-      [4, { quality: 'excellent', bondingChange: 3, stressChange: -1, duration: 50 }],
-      [16, { quality: 'fair', bondingChange: 1, stressChange: 1, duration: 22 }],
+      [2, { quality: 'good', bondingChange: 2, duration: 35 }],
+      [4, { quality: 'excellent', bondingChange: 3, duration: 50 }],
+      [16, { quality: 'fair', bondingChange: 1, duration: 22 }],
     ],
   ],
   [
     'methodical',
-    'stressed',
+    'reactive',
     [
-      [1, { quality: 'poor', bondingChange: -2, stressChange: 4, duration: 8 }],
-      [5, { quality: 'poor', bondingChange: -1, stressChange: 3, duration: 9 }],
-      [9, { quality: 'fair', bondingChange: 0, stressChange: 2, duration: 14 }],
-      [13, { quality: 'good', bondingChange: 1, stressChange: 0, duration: 28 }],
+      [1, { quality: 'poor', bondingChange: -2, duration: 8 }],
+      [5, { quality: 'poor', bondingChange: -1, duration: 9 }],
+      [9, { quality: 'fair', bondingChange: 0, duration: 14 }],
+      [13, { quality: 'good', bondingChange: 1, duration: 28 }],
     ],
   ],
   [
     'calm-expert',
     'mixed',
     [
-      [3, { quality: 'excellent', bondingChange: 2, stressChange: -1, duration: 45 }],
-      [30, { quality: 'good', bondingChange: 1, stressChange: 0, duration: 33 }],
+      [3, { quality: 'excellent', bondingChange: 2, duration: 45 }],
+      [30, { quality: 'good', bondingChange: 1, duration: 33 }],
     ],
   ],
 ];
@@ -205,7 +203,7 @@ export async function buildCompatibilityFixtures(prisma, token, colour) {
     labels.set(`groom:${grooms[key].id}`, key);
   }
   const horses = {};
-  for (const [key, stressLevel, bondScore, epigeneticFlags, owner] of HORSES) {
+  for (const [key, bondScore, epigeneticFlags, owner] of HORSES) {
     horses[key] = await prisma.horse.create({
       data: {
         ...colour(),
@@ -214,7 +212,6 @@ export async function buildCompatibilityFixtures(prisma, token, colour) {
         dateOfBirth: gameCalendarDate(new Date(now), -40),
         age: 0,
         userId: owners[owner].id,
-        stressLevel,
         bondScore,
         epigeneticFlags,
       },

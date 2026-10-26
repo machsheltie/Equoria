@@ -3,7 +3,7 @@
  * player-state writes as ONE transaction.
  *
  * The five writes are:
- *   1. Horse.update        — bondScore, stressLevel, taskLog, lastGroomed,
+ *   1. Horse.update        — bondScore, taskLog, lastGroomed,
  *                            daysGroomedInARow
  *   2. GroomInteraction.create — the row the DAILY LIMIT check keys off
  *   3. FoalActivity.create     — the canonical foal-activity event log
@@ -36,7 +36,7 @@
  * The assertion is then the whole point: after the request fails, NONE of the
  * five writes may be visible. Against the pre-fix (non-transactional) handler
  * writes 1-3 are already committed by the time write 4 blocks, so the horse's
- * bond/stress/taskLog, the GroomInteraction row and the FoalActivity row all
+ * bond/taskLog, the GroomInteraction row and the FoalActivity row all
  * survive and this test fails — which is how it was proved to detect the bug.
  *
  * ── WHAT THIS TEST CANNOT SEE ───────────────────────────────────────────────
@@ -121,7 +121,6 @@ describe('Equoria-po1fl: POST /api/v1/grooms/interact is atomic across its five 
         dateOfBirth: dob,
         age: 5,
         bondScore: 50,
-        stressLevel: 10,
         daysGroomedInARow: 0,
         temperament: 'Calm',
         userId: user.id,
@@ -226,7 +225,6 @@ describe('Equoria-po1fl: POST /api/v1/grooms/interact is atomic across its five 
 
     const horseAfter = await prisma.horse.findUnique({ where: { id: foal.id } });
     expect(horseAfter.bondScore).toBe(horseBefore.bondScore);
-    expect(horseAfter.stressLevel).toBe(horseBefore.stressLevel);
     expect(horseAfter.daysGroomedInARow).toBe(horseBefore.daysGroomedInARow);
     expect(horseAfter.lastGroomed).toEqual(horseBefore.lastGroomed);
     expect(horseAfter.taskLog).toEqual(horseBefore.taskLog);

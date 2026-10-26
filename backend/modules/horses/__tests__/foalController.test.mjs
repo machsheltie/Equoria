@@ -130,7 +130,7 @@ describe('POST /api/v1/foals/:foalId/advance-day (retired)', () => {
 // Equoria-fr2kg. OLD CONTRACT: the owner could POST /activity (a stage or
 // day activity), /enrichment or its /enrich alias (a day 0-6 enrichment
 // activity) and /graduate (close the foal window at age 3); each returned 200
-// for a valid request and wrote bond/stress, activity or graduation state.
+// for a valid request and wrote bond, activity or graduation state.
 // NEW RULING (owner, 2026-10-14/15): foal enrichment is the groom's job and
 // there is no graduation; the player-run enrichment and graduation were AI
 // inventions. The routes are gone: an authenticated owner gets 404 and
@@ -147,7 +147,7 @@ describe('retired player-run foal routes (Equoria-fr2kg)', () => {
   it.each(retired)('POST /:foalId/%s returns 404 to the owner and changes nothing', async (path, body) => {
     const before = await prisma.horse.findUnique({
       where: { id: foal.id },
-      select: { bondScore: true, stressLevel: true },
+      select: { bondScore: true },
     });
     const devBefore = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
@@ -163,7 +163,7 @@ describe('retired player-run foal routes (Equoria-fr2kg)', () => {
     expect(
       await prisma.horse.findUnique({
         where: { id: foal.id },
-        select: { bondScore: true, stressLevel: true },
+        select: { bondScore: true },
       }),
     ).toEqual(before);
     expect(await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } })).toEqual(devBefore);

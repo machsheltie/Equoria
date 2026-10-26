@@ -92,8 +92,6 @@ const handleValidationErrors = (req, res, next) => {
  *                       type: string
  *                     bondScore:
  *                       type: integer
- *                     stressLevel:
- *                       type: integer
  *                     age:
  *                       type: integer
  *                     traits:

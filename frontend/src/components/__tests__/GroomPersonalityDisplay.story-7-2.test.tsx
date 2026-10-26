@@ -171,9 +171,8 @@ describe('AC1: Personality type and trait influences visible', () => {
 
   it('displays multiple trait influences for gentle personality', () => {
     render(<GroomPersonalityDisplay personality="gentle" />);
-    // Gentle has: Bonding, Stress Reduction, Obedience
+    // Gentle has: Bonding, Obedience
     expect(screen.getByText('Bonding')).toBeInTheDocument();
-    expect(screen.getByText('Stress Reduction')).toBeInTheDocument();
     expect(screen.getByText('Obedience')).toBeInTheDocument();
   });
 

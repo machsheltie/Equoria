@@ -111,7 +111,7 @@ describe('Trait Metadata Validation', () => {
     it('should have proper description format for resilient trait', () => {
       const metadata = getTraitMetadata('resilient');
 
-      expect(metadata.description).toBe('Less likely to be affected by stress.');
+      expect(metadata.description).toBe('Takes challenges in stride.');
       expect(metadata.type).toBe('positive');
       expect(metadata.category).toBe('epigenetic');
     });
@@ -136,7 +136,7 @@ describe('Trait Metadata Validation', () => {
       const metadata = getTraitMetadata('fearful');
 
       expect(metadata).not.toBeNull();
-      expect(metadata.description).toBe('Hesitation or spook-prone behavior under stress.');
+      expect(metadata.description).toBe('Hesitation or spook-prone behavior under pressure.');
       expect(metadata.type).toBe('negative');
       expect(metadata.category).toBe('epigenetic');
     });

@@ -132,7 +132,6 @@ describe('calculatePersonalityModifiers', () => {
 
     expect(result).toBeDefined();
     expect(typeof result.bondingModifier).toBe('number');
-    expect(typeof result.stressModifier).toBe('number');
     expect(typeof result.qualityModifier).toBe('number');
     expect(typeof result.taskEffectiveness).toBe('number');
   });
@@ -156,14 +155,12 @@ describe('analyzePersonalityCompatibility', () => {
 // ── groomPersonalityTraits — branch coverage (experience levels + compatibility) ──
 // Covers: calculateExperienceLevel 'medium'/'high'/'expert' (lines 560-569),
 // calculateTraitCompatibility positive/negative score paths,
-// calculateOverallCompatibility stressModifier=0.7/1.2 branches (lines 655-659),
 // analyzePersonalityCompatibility overallScore<0.4 + overallScore>0.7 branches,
 // strengths.push, challenges.push, fearful-specific recommendation (Equoria-jkht).
 
 describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
   let gptUser;
   let fearfulHorse;
-  let stressedFearfulHorse;
   let mediumGroom;
   let highGroom;
   let calmExpertGroom;
@@ -194,19 +191,6 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
         age: 0,
         userId: gptUser.id,
         epigeneticFlags: ['fearful'],
-      },
-    });
-
-    stressedFearfulHorse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-GPT-StressedHorse-${ts}`,
-        sex: 'Colt',
-        dateOfBirth: new Date(),
-        age: 0,
-        userId: gptUser.id,
-        epigeneticFlags: ['fearful'],
-        stressLevel: 8,
       },
     });
 
@@ -298,27 +282,13 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     expect(result.challenges.length).toBeGreaterThan(0);
     expect(result.recommendations.some(r => r.includes('calm, patient groom'))).toBe(true);
   });
-
-  it('calculateOverallCompatibility applies stressModifier=0.7 for stressed + energetic (line 656)', async () => {
-    const result = await analyzePersonalityCompatibility(energeticGroom.id, stressedFearfulHorse.id);
-    // stressLevel=8>7 + energetic → stressModifier=0.7 applied
-    expect(result.overallScore).toBeGreaterThanOrEqual(0);
-    expect(result.overallScore).toBeLessThanOrEqual(1.0);
-  });
-
-  it('calculateOverallCompatibility applies stressModifier=1.2 for stressed + calm (line 658)', async () => {
-    const result = await analyzePersonalityCompatibility(calmExpertGroom.id, stressedFearfulHorse.id);
-    // stressLevel=8>7 + calm → stressModifier=1.2, boosts score above 0.7
-    expect(result.overallScore).toBeGreaterThan(0.7);
-    expect(result.compatibilityLevel).toBe('excellent');
-  });
 });
 
 // ── groomPersonalityTraits — branch coverage (Equoria-jkht) ──────────────────────
 // Covers: analyzePersonalityCompatibility low/excellent/moderate + fearful/reactive
 //         sub-branches; calculatePersonalityModifiers negative/neutral/task-type
 //         paths; calculateExperienceLevel medium/high/expert; getCompatibilityLevel
-//         all 5 thresholds; calculateOverallCompatibility stress modifier branches.
+//         all 5 thresholds.
 
 describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
   let gpUser;
@@ -329,7 +299,6 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
   let gpHorseFearfulReactive;
   let gpHorseCompatible;
   let gpHorseNeutral;
-  let gpHorseHighStress;
   let gpHorseBrave;
   const cleanup = createCleanupTracker();
 
@@ -394,70 +363,56 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
         }),
     ]);
 
-    [gpHorseFearfulReactive, gpHorseCompatible, gpHorseNeutral, gpHorseHighStress, gpHorseBrave] =
-      await createSequentially([
-        () =>
-          prisma.horse.create({
-            data: {
-              ...fixtureColor(),
-              name: `TestFixture-GP-HorseFearfulReactive-${ts}`,
-              sex: 'Filly',
-              dateOfBirth: new Date(),
-              age: 0,
-              userId: gpUser.id,
-              epigeneticFlags: ['fearful', 'reactive'],
-            },
-          }),
-        () =>
-          prisma.horse.create({
-            data: {
-              ...fixtureColor(),
-              name: `TestFixture-GP-HorseCompatible-${ts}`,
-              sex: 'Colt',
-              dateOfBirth: new Date(),
-              age: 0,
-              userId: gpUser.id,
-              epigeneticFlags: ['fearful', 'insecure', 'reactive', 'fragile'],
-            },
-          }),
-        () =>
-          prisma.horse.create({
-            data: {
-              ...fixtureColor(),
-              name: `TestFixture-GP-HorseNeutral-${ts}`,
-              sex: 'Filly',
-              dateOfBirth: new Date(),
-              age: 0,
-              userId: gpUser.id,
-              epigeneticFlags: ['reactive'],
-            },
-          }),
-        () =>
-          prisma.horse.create({
-            data: {
-              ...fixtureColor(),
-              name: `TestFixture-GP-HorseHighStress-${ts}`,
-              sex: 'Colt',
-              dateOfBirth: new Date(),
-              age: 0,
-              userId: gpUser.id,
-              epigeneticFlags: ['fearful', 'insecure'],
-              stressLevel: 8,
-            },
-          }),
-        () =>
-          prisma.horse.create({
-            data: {
-              ...fixtureColor(),
-              name: `TestFixture-GP-HorseBrave-${ts}`,
-              sex: 'Filly',
-              dateOfBirth: new Date(),
-              age: 0,
-              userId: gpUser.id,
-              epigeneticFlags: ['brave', 'confident'],
-            },
-          }),
-      ]);
+    [gpHorseFearfulReactive, gpHorseCompatible, gpHorseNeutral, gpHorseBrave] = await createSequentially([
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `TestFixture-GP-HorseFearfulReactive-${ts}`,
+            sex: 'Filly',
+            dateOfBirth: new Date(),
+            age: 0,
+            userId: gpUser.id,
+            epigeneticFlags: ['fearful', 'reactive'],
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `TestFixture-GP-HorseCompatible-${ts}`,
+            sex: 'Colt',
+            dateOfBirth: new Date(),
+            age: 0,
+            userId: gpUser.id,
+            epigeneticFlags: ['fearful', 'insecure', 'reactive', 'fragile'],
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `TestFixture-GP-HorseNeutral-${ts}`,
+            sex: 'Filly',
+            dateOfBirth: new Date(),
+            age: 0,
+            userId: gpUser.id,
+            epigeneticFlags: ['reactive'],
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `TestFixture-GP-HorseBrave-${ts}`,
+            sex: 'Filly',
+            dateOfBirth: new Date(),
+            age: 0,
+            userId: gpUser.id,
+            epigeneticFlags: ['brave', 'confident'],
+          },
+        }),
+    ]);
   }, 60000);
 
   // FK order: horses + grooms (both Restrict on user) → user. No groom-child
@@ -499,7 +454,6 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     // energetic groom + fearful horse: enthusiastic+stimulating are incompatibleWith fearful → bondingModifier *= 0.8 twice
     const result = await calculatePersonalityModifiers(gpEnergeticGroom.id, gpHorseFearfulReactive.id, 'grooming');
     expect(result.bondingModifier).toBeLessThan(1.0);
-    expect(result.stressModifier).toBeGreaterThan(1.0);
   });
 
   // ── calculatePersonalityModifiers — neutral compatibility ─────────────────────
@@ -547,20 +501,6 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
 
   it("compatibilityLevel is 'excellent' for calm expert groom + fully compatible horse (score ≈ 1.0)", async () => {
     const result = await analyzePersonalityCompatibility(gpCalmGroomExpert.id, gpHorseCompatible.id);
-    expect(result.compatibilityLevel).toBe('excellent');
-  });
-
-  it("compatibilityLevel is 'very_poor' and energetic stress penalty applied for high-stress fearful horse", async () => {
-    // energetic + stressLevel=8 fearful+insecure horse: stressModifier=0.7 penalty pushes score below 0.2
-    const result = await analyzePersonalityCompatibility(gpEnergeticGroom.id, gpHorseHighStress.id);
-    expect(result.overallScore).toBeLessThan(0.2);
-    expect(result.compatibilityLevel).toBe('very_poor');
-  });
-
-  it('calm groom stress bonus applied: calm + high-stress horse scores higher than without bonus', async () => {
-    // calm expert + stressLevel=8 fearful+insecure horse: stressModifier=1.2 bonus
-    const result = await analyzePersonalityCompatibility(gpCalmGroomExpert.id, gpHorseHighStress.id);
-    expect(result.overallScore).toBeGreaterThan(0.7);
     expect(result.compatibilityLevel).toBe('excellent');
   });
 });

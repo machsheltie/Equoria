@@ -94,7 +94,6 @@ export async function getHorseFlags(req, res) {
         horseName: horse.name,
         ageInYears,
         currentBondScore: horse.bondScore || 0,
-        currentStressLevel: horse.stressLevel || 0,
         flagCount: flagDetails.length,
         flags: flagDetails,
         influenceSummary,
@@ -283,7 +282,7 @@ export async function getFlagAnalytics(req, res) {
 
     // Auth-scoped load: only the caller's own horses. Select just the fields
     // the reused service functions read (id, name, dateOfBirth, bondScore,
-    // stressLevel, epigeneticFlags).
+    // epigeneticFlags).
     const horses = await _prisma.horse.findMany({
       where: { userId },
       select: {
@@ -291,7 +290,6 @@ export async function getFlagAnalytics(req, res) {
         name: true,
         dateOfBirth: true,
         bondScore: true,
-        stressLevel: true,
         epigeneticFlags: true,
       },
     });
@@ -315,7 +313,6 @@ export async function getFlagAnalytics(req, res) {
             ageDistribution: {},
             traitCounts: {},
             averageBondScore: 0,
-            averageStressLevel: 0,
           },
           horseCount: 0,
         },

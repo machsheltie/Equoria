@@ -36,7 +36,6 @@ const cleanup = createCleanupTracker();
 const daysAgo = n => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 // dateOfBirth is a date-only column: store the Eastern game date, as production writers do.
 const gameDaysAgo = n => gameCalendarDate(new Date(), -n);
-const hoursAgo = n => new Date(Date.now() - n * 60 * 60 * 1000);
 const yearsAgo = n => gameCalendarDate(new Date(), -Math.round(n * 365.25));
 
 // Equoria-z183: epigenetic eligibility is gated on canonical GAME-years
@@ -61,7 +60,6 @@ async function mkHorse(suffix, opts = {}) {
       sex: 'Colt',
       dateOfBirth: opts.dateOfBirth ?? ELIGIBLE_DOB(),
       bondScore: opts.bondScore ?? 50,
-      stressLevel: opts.stressLevel ?? 20,
     },
   });
   // Equoria-1ohys: register a scoped, fail-loud cleanup (drained in afterEach).
@@ -78,7 +76,6 @@ async function mkInteraction(foalId, opts = {}) {
       interactionType: opts.interactionType ?? 'daily_care',
       duration: 30,
       bondingChange: opts.bondingChange ?? 3,
-      stressChange: opts.stressChange ?? 0,
       quality: opts.quality ?? 'good',
       notes: opts.notes ?? null,
       createdAt: opts.createdAt ?? new Date(),
@@ -129,14 +126,13 @@ afterAll(async () => {
 
 describe('analyzeCarePatterns', () => {
   test('returns eligible result with all pattern categories for a young horse', async () => {
-    const horse = await mkHorse('Eligible', { bondScore: 50, stressLevel: 20 });
+    const horse = await mkHorse('Eligible', { bondScore: 50 });
     const result = await analyzeCarePatterns(horse.id, new Date());
 
     expect(result.eligible).toBe(true);
     expect(result.horseId).toBe(horse.id);
     expect(result.patterns).toHaveProperty('consistentCare');
     expect(result.patterns).toHaveProperty('noveltyExposure');
-    expect(result.patterns).toHaveProperty('stressManagement');
     expect(result.patterns).toHaveProperty('bondingPatterns');
     expect(result.patterns).toHaveProperty('neglectPatterns');
     expect(result.patterns).toHaveProperty('environmentalFactors');
@@ -194,21 +190,18 @@ describe('consistentCare pattern', () => {
     await mkInteraction(horse.id, {
       interactionType: 'daily_care',
       bondingChange: 5,
-      stressChange: -2,
       quality: 'good',
       createdAt: daysAgo(3),
     });
     await mkInteraction(horse.id, {
       interactionType: 'grooming',
       bondingChange: 7,
-      stressChange: -3,
       quality: 'excellent',
       createdAt: daysAgo(2),
     });
     await mkInteraction(horse.id, {
       interactionType: 'daily_care',
       bondingChange: 4,
-      stressChange: -1,
       quality: 'good',
       createdAt: daysAgo(1),
     });
@@ -231,28 +224,24 @@ describe('noveltyExposure pattern', () => {
     await mkInteraction(horse.id, {
       interactionType: 'desensitization',
       bondingChange: 3,
-      stressChange: 1,
       quality: 'good',
       createdAt: daysAgo(4),
     });
     await mkInteraction(horse.id, {
       interactionType: 'exploration',
       bondingChange: 5,
-      stressChange: 0,
       quality: 'excellent',
       createdAt: daysAgo(3),
     });
     await mkInteraction(horse.id, {
       interactionType: 'showground_exposure',
       bondingChange: 2,
-      stressChange: 2,
       quality: 'good',
       createdAt: daysAgo(2),
     });
     await mkInteraction(horse.id, {
       interactionType: 'daily_care',
       bondingChange: -5,
-      stressChange: 8,
       quality: 'poor',
       createdAt: daysAgo(1),
     });
@@ -267,51 +256,6 @@ describe('noveltyExposure pattern', () => {
   });
 });
 
-// ─── stressManagement pattern ─────────────────────────────────────────────────
-
-describe('stressManagement pattern', () => {
-  test('counts stress events and recovery-within-24h (stressWithSupport)', async () => {
-    const horse = await mkHorse('StressManagement', { stressLevel: 30 });
-    // Stress event + recovery pair (within 24h)
-    await mkInteraction(horse.id, {
-      interactionType: 'daily_care',
-      quality: 'poor',
-      bondingChange: -2,
-      stressChange: 6,
-      createdAt: hoursAgo(10),
-    });
-    await mkInteraction(horse.id, {
-      interactionType: 'grooming',
-      quality: 'good',
-      bondingChange: 3,
-      stressChange: -4,
-      createdAt: hoursAgo(8),
-    });
-    // Second stress event + recovery pair (within 24h)
-    await mkInteraction(horse.id, {
-      interactionType: 'medical_check',
-      quality: 'fair',
-      bondingChange: 0,
-      stressChange: 5,
-      createdAt: hoursAgo(5),
-    });
-    await mkInteraction(horse.id, {
-      interactionType: 'grooming',
-      quality: 'excellent',
-      bondingChange: 5,
-      stressChange: -6,
-      createdAt: hoursAgo(3),
-    });
-
-    const result = await analyzeCarePatterns(horse.id, new Date());
-
-    expect(result.patterns.stressManagement.stressEvents).toBe(2);
-    expect(result.patterns.stressManagement.recoveryEvents).toBe(2);
-    expect(result.patterns.stressManagement.stressWithSupport).toBe(2);
-    expect(result.patterns.stressManagement.meetsResilientThreshold).toBe(false); // Needs 3+
-  });
-});
-
 // ─── bondingPatterns pattern ──────────────────────────────────────────────────
 
 describe('bondingPatterns pattern', () => {
@@ -322,21 +266,18 @@ describe('bondingPatterns pattern', () => {
       interactionType: 'daily_care',
       quality: 'excellent',
       bondingChange: 8,
-      stressChange: -2,
       createdAt: daysAgo(6),
     });
     await mkInteraction(horse.id, {
       interactionType: 'grooming',
       quality: 'good',
       bondingChange: 6,
-      stressChange: -1,
       createdAt: daysAgo(5),
     });
     await mkInteraction(horse.id, {
       interactionType: 'feeding',
       quality: 'excellent',
       bondingChange: 7,
-      stressChange: 0,
       createdAt: daysAgo(4),
     });
 
@@ -360,14 +301,12 @@ describe('neglectPatterns pattern', () => {
       interactionType: 'daily_care',
       quality: 'poor',
       bondingChange: -3,
-      stressChange: 4,
       createdAt: daysAgo(11),
     });
     await mkInteraction(horse.id, {
       interactionType: 'grooming',
       quality: 'fair',
       bondingChange: -1,
-      stressChange: 2,
       createdAt: daysAgo(6),
     });
 
@@ -388,12 +327,10 @@ describe('neglectPatterns pattern', () => {
 describe('environmentalFactors pattern', () => {
   test('counts startleEvents and routineInteractions', async () => {
     const horse = await mkHorse('EnvFactors');
-    // stressChange > 5 triggers startle detection
     await mkInteraction(horse.id, {
       interactionType: 'daily_care',
       quality: 'good',
       bondingChange: 2,
-      stressChange: 7,
       notes: 'Horse startled by loud noise',
       createdAt: daysAgo(3),
     });
@@ -401,14 +338,12 @@ describe('environmentalFactors pattern', () => {
       interactionType: 'feeding',
       quality: 'good',
       bondingChange: 3,
-      stressChange: 0,
       createdAt: daysAgo(2),
     });
     await mkInteraction(horse.id, {
       interactionType: 'daily_care',
       quality: 'good',
       bondingChange: 2,
-      stressChange: 6,
       createdAt: daysAgo(1),
     });
 
@@ -431,7 +366,6 @@ describe('edge cases', () => {
     expect(result.eligible).toBe(true);
     expect(result.patterns.consistentCare.totalInteractions).toBe(0);
     expect(result.patterns.noveltyExposure.noveltyEvents).toBe(0);
-    expect(result.patterns.stressManagement.stressEvents).toBe(0);
     expect(result.patterns.bondingPatterns.positiveInteractions).toBe(0);
   });
 });

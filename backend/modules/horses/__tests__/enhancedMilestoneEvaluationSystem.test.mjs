@@ -269,7 +269,6 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
         age: 0,
         userId: fixtureUser.id,
         bondScore: 0,
-        stressLevel: 0,
       },
     });
 

@@ -128,7 +128,6 @@ export async function recordInteraction(req, res) {
           name: true,
           age: true,
           bondScore: true,
-          stressLevel: true,
           taskLog: true,
           lastGroomed: true,
           daysGroomedInARow: true,
@@ -257,7 +256,7 @@ export async function recordInteraction(req, res) {
     // Equoria-po1fl: ONE grooming session is ONE player-state change.
     //
     // Before this fix the handler issued five independent writes with no
-    // transaction: GroomInteraction.create, Horse.update (bond, stress,
+    // transaction: GroomInteraction.create, Horse.update (bond,
     // taskLog, lastGroomed, streak), FoalActivity.create, the groom's
     // +2 XP, and the GroomHorseSynergy row - the last three wrapped in
     // fail-soft try/catch arms that logged and continued. Any failure partway
@@ -286,23 +285,20 @@ export async function recordInteraction(req, res) {
     // between the Horse write and the staff writes.
     // -------------------------------------------------------------------------
     let newBondScore;
-    let newStressLevel;
     const interaction = await withRetryableTxMapping(
       prisma.$transaction(async tx => {
         // 0. Equoria-9a5ny: lock the Horse row and re-check the daily limit
         // under that lock. The unlocked check above is only a fast refusal; two
-        // requests in flight both pass it. The bond/stress change is applied to
+        // requests in flight both pass it. The bond change is applied to
         // the values read under the lock, not to the pre-transaction read.
         const current = await lockHorseForGroomCare(tx, foalId);
         newBondScore = Math.max(0, Math.min(100, current.bondScore + effectiveBondingChange));
-        newStressLevel = Math.max(0, Math.min(100, current.stressLevel + effects.stressChange));
 
-        // 1. Horse row - bond, stress, task log, streak.
+        // 1. Horse row - bond, task log, streak.
         await tx.horse.update({
           where: { id: foalId },
           data: {
             bondScore: newBondScore,
-            stressLevel: newStressLevel,
             taskLog: taskLogUpdate.taskLog,
             lastGroomed: streakUpdate.lastGroomed,
             daysGroomedInARow: streakUpdate.consecutiveDays,
@@ -319,7 +315,6 @@ export async function recordInteraction(req, res) {
             interactionType,
             duration,
             bondingChange: effects.bondingChange,
-            stressChange: effects.stressChange,
             quality: effects.quality,
             // Equoria-tfo3c (owner ruling, 2026-09-14): care costs nothing. The
             // per-session price that used to be written here was charged to nobody;
@@ -344,7 +339,6 @@ export async function recordInteraction(req, res) {
             activityType: interactionType,
             outcome: effects.quality || 'good',
             bondingChange: effects.bondingChange,
-            stressChange: effects.stressChange,
             description: `Groom interaction (${interactionType}) recorded via groom system`,
             // Equoria-8yhe3: tag this as the taskLog-driving groom stream so the
             // count derivation only ever aggregates these rows (enrichment rows
@@ -365,7 +359,7 @@ export async function recordInteraction(req, res) {
     );
 
     logger.info(
-      `[groomController.recordInteraction] Interaction recorded: ${effects.bondingChange} bonding, ${effects.stressChange} stress, task: ${interactionType} (count: ${taskLogUpdate.taskCount})`,
+      `[groomController.recordInteraction] Interaction recorded: ${effects.bondingChange} bonding, task: ${interactionType} (count: ${taskLogUpdate.taskCount})`,
     );
 
     // Log personality effects if applied
@@ -384,10 +378,7 @@ export async function recordInteraction(req, res) {
         foalUpdates: {
           previousBondScore: foal.bondScore,
           newBondScore,
-          previousStressLevel: foal.stressLevel,
-          newStressLevel,
           bondingChange: effects.bondingChange,
-          stressChange: effects.stressChange,
         },
         taskLogging: {
           taskType: eligibilityResult.taskType,

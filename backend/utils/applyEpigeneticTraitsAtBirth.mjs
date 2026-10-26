@@ -8,14 +8,17 @@
  *   Stage 0 — INHERITANCE (NEW, §A): each distinct sire/dam epigenetic trait is
  *     inherited with a per-trait probability (rarity- + dam-condition-adjusted,
  *     ported from epigeneticTraits.calculateEpigeneticTraits).
- *   Stage 1 — low mare stress + premium feed → resilient / peopleTrusting.
+ *   Stage 1 — premium feed → resilient / peopleTrusting.
  *   Stage 2 — inbreeding → fragile / reactive / lowImmunity.
  *   Stage 3 — lineage discipline specialization → disciplineAffinity<Discipline>
  *     (+ legacyTalent for a strong 4+-ancestor lineage).
- *   Stage 4 — high mare stress → nervous; poor feed → lowImmunity.
+ *   Stage 4 — poor feed → lowImmunity.
  *   Dedupe, then RESOLVE VISIBILITY (§D): rare traits 70% / legendary 90% born
- *     hidden, and ANY trait 30% hidden under poor conditions (high stress / low
- *     feed). Hidden traits land in `hidden[]` for later discovery.
+ *     hidden, and ANY trait 30% hidden under poor conditions (low feed). Hidden traits land in `hidden[]` for later discovery.
+ *
+ * A mare in Fair health multiplies EVERY negative-trait roll here by 1.25 and a
+ * mare in Bad health by 1.5 (owner ruling 2026-10-26, Equoria-pw7cm): pass the
+ * multiplier as `negativeRollMultiplier`. No other odds move.
  *
  * Determinism: pass `seed` (number) for reproducible Stage-0 + visibility rolls
  * in tests. Without a seed, Math.random is used.
@@ -48,7 +51,7 @@ function makeRng(seed) {
  * Ported from epigeneticTraits.calculateInheritanceProbability so the live
  * birth path and the (previously orphaned) model agree.
  */
-function inheritanceProbability(trait, bondScore, stressLevel) {
+function inheritanceProbability(trait, bondScore) {
   const def = getTraitDefinition(trait);
   let base = 0.4; // unknown-trait default
   if (def) {
@@ -67,10 +70,8 @@ function inheritanceProbability(trait, bondScore, stressLevel) {
     }
     if (def.type === 'positive') {
       base += (bondScore - 50) * 0.004;
-      base -= (stressLevel - 50) * 0.003;
     } else if (def.type === 'negative') {
       base -= (bondScore - 50) * 0.003;
-      base += (stressLevel - 50) * 0.004;
     }
   }
   return Math.max(0, Math.min(1, base));
@@ -80,7 +81,7 @@ function inheritanceProbability(trait, bondScore, stressLevel) {
  * §D visibility resolution. Returns 'hidden' | 'positive' | 'negative'.
  *   - rare trait: 70% hidden
  *   - legendary trait: 90% hidden
- *   - ANY trait under poor conditions (high stress / low feed): 30% hidden
+ *   - ANY trait under poor conditions (low feed): 30% hidden
  * Falls through to the trait's natural type (positive/negative) otherwise.
  */
 function resolveVisibility(trait, { poorConditions }, rng, fallbackType) {
@@ -106,10 +107,10 @@ function resolveVisibility(trait, { poorConditions }, rng, fallbackType) {
  * Apply epigenetic traits at birth via the staged pipeline.
  *
  * @param {Object} params
- * @param {Object} params.mare - Mare object (stressLevel, bondScore, ...)
+ * @param {Object} params.mare - Mare object (bondScore, ...)
  * @param {Array}  params.lineage - ancestor records (discipline info)
  * @param {number} params.feedQuality - 0-100
- * @param {number} params.stressLevel - mare stress 0-100
+ * @param {number} [params.negativeRollMultiplier] - mare-health multiplier on every negative roll (default 1)
  * @param {string[]} [params.sireTraits] - sire's epigenetic traits (pos∪neg∪hidden)
  * @param {string[]} [params.damTraits]  - dam's epigenetic traits (pos∪neg∪hidden)
  * @param {number} [params.seed] - deterministic seed for tests
@@ -119,7 +120,7 @@ export function applyEpigeneticTraitsAtBirth({
   mare,
   lineage,
   feedQuality,
-  stressLevel,
+  negativeRollMultiplier = 1,
   sireTraits = [],
   damTraits = [],
   seed,
@@ -139,14 +140,13 @@ export function applyEpigeneticTraitsAtBirth({
   const addPositive = t => positiveCandidates.add(t);
   const addNegative = t => negativeCandidates.add(t);
 
-  // Equoria-4maxb: NOT NULL column (Equoria-507mt), 0 is a legitimate value; never promote it.
-  const currentStressLevel = stressLevel !== undefined ? stressLevel : (mare.stressLevel ?? 0);
   const currentFeedQuality = feedQuality !== undefined ? feedQuality : 50;
   const damBondScore = typeof mare.bondScore === 'number' ? mare.bondScore : 50;
 
-  logger.info(
-    `[applyEpigeneticTraitsAtBirth] Mare stress: ${currentStressLevel}, Feed quality: ${currentFeedQuality}`,
-  );
+  // A negative roll's chance, scaled by the mare's health and capped at certainty.
+  const negativeChance = chance => Math.min(1, chance * negativeRollMultiplier);
+
+  logger.info(`[applyEpigeneticTraitsAtBirth] Feed quality: ${currentFeedQuality}`);
 
   // ── Stage 0 — INHERITANCE (§A) ─────────────────────────────────────────────
   // Normalize incoming parent traits to canonical keys so legacy snake-case
@@ -163,9 +163,12 @@ export function applyEpigeneticTraitsAtBirth({
     ),
   ];
   for (const trait of parentTraits) {
-    const p = inheritanceProbability(trait, damBondScore, currentStressLevel);
+    const def = getTraitDefinition(trait);
+    const p =
+      def?.type === 'negative'
+        ? negativeChance(inheritanceProbability(trait, damBondScore))
+        : inheritanceProbability(trait, damBondScore);
     if (rng() < p) {
-      const def = getTraitDefinition(trait);
       if (def?.type === 'negative') {
         addNegative(trait);
       } else {
@@ -177,17 +180,15 @@ export function applyEpigeneticTraitsAtBirth({
     }
   }
 
-  // ── Stage 1 — low stress + premium feed ────────────────────────────────────
-  if (currentStressLevel <= 20 && currentFeedQuality >= 80) {
+  // ── Stage 1 — premium feed ────────────────────────────────────
+  if (currentFeedQuality >= 80) {
     if (rng() < 0.75) {
       addPositive('resilient');
-      logger.info('[applyEpigeneticTraitsAtBirth] Applied resilient (low stress + premium feed)');
+      logger.info('[applyEpigeneticTraitsAtBirth] Applied resilient (premium feed)');
     }
     if (rng() < 0.6) {
       addPositive('peopleTrusting');
-      logger.info(
-        '[applyEpigeneticTraitsAtBirth] Applied peopleTrusting (low stress + premium feed)',
-      );
+      logger.info('[applyEpigeneticTraitsAtBirth] Applied peopleTrusting (premium feed)');
     }
   }
 
@@ -204,7 +205,7 @@ export function applyEpigeneticTraitsAtBirth({
         : inbreedingAnalysis.severity === 'moderate'
           ? 0.5
           : 0.25;
-    if (rng() < fragileChance) {
+    if (rng() < negativeChance(fragileChance)) {
       addNegative('fragile');
       logger.info('[applyEpigeneticTraitsAtBirth] Applied fragile (inbreeding)');
     }
@@ -215,7 +216,7 @@ export function applyEpigeneticTraitsAtBirth({
         : inbreedingAnalysis.severity === 'moderate'
           ? 0.4
           : 0.2;
-    if (rng() < reactiveChance) {
+    if (rng() < negativeChance(reactiveChance)) {
       addNegative('reactive');
       logger.info('[applyEpigeneticTraitsAtBirth] Applied reactive (inbreeding)');
     }
@@ -226,7 +227,7 @@ export function applyEpigeneticTraitsAtBirth({
         : inbreedingAnalysis.severity === 'moderate'
           ? 0.35
           : 0.15;
-    if (rng() < immunityChance) {
+    if (rng() < negativeChance(immunityChance)) {
       addNegative('lowImmunity');
       logger.info('[applyEpigeneticTraitsAtBirth] Applied lowImmunity (inbreeding)');
     }
@@ -257,18 +258,18 @@ export function applyEpigeneticTraitsAtBirth({
     }
   }
 
-  // ── Stage 4 — high mare stress / poor feed ──────────────────────────────────
-  if (currentStressLevel >= 80 && rng() < 0.4 && !negativeCandidates.has('reactive')) {
-    addNegative('nervous');
-    logger.info('[applyEpigeneticTraitsAtBirth] Applied nervous (high mare stress)');
-  }
-  if (currentFeedQuality <= 30 && rng() < 0.3 && !negativeCandidates.has('lowImmunity')) {
+  // ── Stage 4 — poor feed ──────────────────────────────────
+  if (
+    currentFeedQuality <= 30 &&
+    rng() < negativeChance(0.3) &&
+    !negativeCandidates.has('lowImmunity')
+  ) {
     addNegative('lowImmunity');
     logger.info('[applyEpigeneticTraitsAtBirth] Applied lowImmunity (poor nutrition)');
   }
 
   // ── Dedupe + §D visibility resolution ───────────────────────────────────────
-  const poorConditions = currentStressLevel >= 80 || currentFeedQuality <= 30;
+  const poorConditions = currentFeedQuality <= 30;
   const result = { positive: [], negative: [], hidden: [] };
   const seen = new Set();
 

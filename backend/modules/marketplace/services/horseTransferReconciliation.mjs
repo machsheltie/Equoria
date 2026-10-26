@@ -20,7 +20,7 @@
  *     awarded XP to, the SELLER's trainer;
  *   - `dailyCareAutomation.runDailyCareAutomation` grooms every horse with an
  *     active assignment with no ownership check, so the seller's groom kept
- *     changing the BUYER's horse's bond/stress and earning XP for it; and
+ *     changing the BUYER's horse's bond and earning XP for it; and
  *   - `groomSalaryService.processWeeklySalaries` charges the ASSIGNMENT's
  *     `userId` weekly for every active assignment, so the seller kept paying a
  *     groom's wages for a horse they had sold.

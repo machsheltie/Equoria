@@ -47,7 +47,6 @@ export async function getHorseTraits(req, res) {
         name: true,
         epigeneticModifiers: true,
         bondScore: true,
-        stressLevel: true,
         age: true,
       },
     });
@@ -93,7 +92,6 @@ export async function getHorseTraits(req, res) {
         horseId: parsedHorseId,
         horseName: horse.name,
         bondScore: horse.bondScore,
-        stressLevel: horse.stressLevel,
         age: horse.age,
         traits: enhancedTraits,
         summary: {
@@ -291,7 +289,6 @@ export async function getDiscoveryStatus(req, res) {
         horseName: horse.name,
         currentStats: {
           bondScore: horse.bondScore || 0,
-          stressLevel: horse.stressLevel || 0,
           age: horse.age,
         },
         traitCounts: {

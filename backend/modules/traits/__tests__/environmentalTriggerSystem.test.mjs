@@ -74,7 +74,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
   let etsHorseMature; // 200 days old → ageInDays >90 (ageModifier=1.0) + past critical periods
   let etsGroom1; // epigeneticInfluenceType='calm' → routine_stability branch coverage
   let etsGroom2; // second groom for multiple-groom fixture interactions
-  let etsHorseStressedFoal; // 1 day, stressLevel=8 → sensitivity=0.82>0.7 for generateEnvironmentalReport line 931
+  let etsHorseNewFoal; // 1 day old → ageModifier=0.6, sensitivity=0.7 for generateEnvironmentalReport
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
@@ -157,15 +157,14 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
       },
     });
 
-    // 1 day old, stressLevel=8 → ageModifier=0.6, stressModifier=0.6 → finalThreshold=0.18 → sensitivity=0.82>0.7
-    etsHorseStressedFoal = await prisma.horse.create({
+    // 1 day old → ageModifier=0.6 → finalThreshold=0.3 → sensitivity=0.7
+    etsHorseNewFoal = await prisma.horse.create({
       data: {
         ...fixtureColor(),
-        name: `TestFixture-ETS-StressedFoal-${ts}`,
+        name: `TestFixture-ETS-NewFoal-${ts}`,
         sex: 'Colt',
         dateOfBirth: daysAgo(1),
         age: 0,
-        stressLevel: 8,
         userId: etsUser.id,
       },
     });
@@ -175,34 +174,31 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
     // and analyzeCumulativeEffects (fires at index 4)
     await prisma.groomInteraction.createMany({
       data: [
-        // stress_inducing: stressChange>2✓, quality=poor✓, bondingChange<0✓ → interactionScore=0.7 → fires (avg=0.7>0.3)
+        // harsh_environment: quality=poor✓, bondingChange<0✓ → interactionScore=0.4 → fires (avg=0.4>0.3)
         {
           foalId: etsHorseMature.id,
           groomId: etsGroom1.id,
           interactionType: 'handling',
           duration: 20,
-          stressChange: 4,
           quality: 'poor',
           bondingChange: -1,
         },
-        // confidence_building: bondingChange>1✓, quality=excellent✓, stressChange<=0✓ → fires (avg=0.7>0.3)
+        // confidence_building: bondingChange>1✓, quality=excellent✓ → fires (avg=0.5>0.3)
         // calculateInteractionExposure: bondingChange=3>2✓ (*1.3), quality=excellent✓ (*1.2)
         {
           foalId: etsHorseMature.id,
           groomId: etsGroom1.id,
           interactionType: 'enrichment',
           duration: 45,
-          stressChange: 0,
           quality: 'excellent',
           bondingChange: 3,
         },
-        // isolation_stress: bondingChange<-1✓, duration<15✓ → fires (avg=0.5>0.3)
+        // isolation: bondingChange<-1✓, duration<15✓ → fires (avg=0.5>0.3)
         {
           foalId: etsHorseMature.id,
           groomId: etsGroom2.id,
           interactionType: 'grooming',
           duration: 10,
-          stressChange: 1,
           quality: 'good',
           bondingChange: -2,
         },
@@ -212,7 +208,6 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
           groomId: etsGroom1.id,
           interactionType: 'training',
           duration: 30,
-          stressChange: 0,
           quality: 'good',
           bondingChange: 0,
           taskType: 'desensitization',
@@ -223,17 +218,15 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
           groomId: etsGroom1.id,
           interactionType: 'grooming',
           duration: 35,
-          stressChange: 0,
           quality: 'excellent',
           bondingChange: 1,
         },
-        // sensory_enrichment taskType=showground_exposure branch; stressChange=4 → analyzeStressEnv severity=high
+        // sensory_enrichment taskType=showground_exposure branch
         {
           foalId: etsHorseMature.id,
           groomId: etsGroom2.id,
           interactionType: 'training',
           duration: 8,
-          stressChange: 4,
           quality: 'poor',
           bondingChange: -2,
           taskType: 'showground_exposure',
@@ -298,18 +291,17 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
 
   // ── detectEnvironmentalTriggers — horse with interactions ─────────────────
 
-  it('detectEnvironmentalTriggers: stress_inducing + confidence_building + isolation_stress detected', async () => {
+  it('detectEnvironmentalTriggers: harsh_environment + confidence_building + isolation detected', async () => {
     const result = await analyze(etsHorseMature.id, detectTriggers);
     expect(result.horseId).toBe(etsHorseMature.id);
     expect(result.detectedTriggers.length).toBeGreaterThan(0);
     expect(result.interactionCount).toBe(6);
     const types = result.detectedTriggers.map(t => t.type);
-    expect(types).toContain('stress_inducing');
+    expect(types).toContain('harsh_environment');
     expect(types).toContain('confidence_building');
     expect(Array.isArray(result.environmentalFactors)).toBe(true);
-    // identifyActiveTriggerFactors: loud_noises/unfamiliar_surroundings cases (stressChange>2✓)
-    const stressTrigger = result.detectedTriggers.find(t => t.type === 'stress_inducing');
-    expect(Array.isArray(stressTrigger.factors)).toBe(true);
+    const harshTrigger = result.detectedTriggers.find(t => t.type === 'harsh_environment');
+    expect(Array.isArray(harshTrigger.factors)).toBe(true);
   });
 
   // ── trackCumulativeExposure — horse with interactions ─────────────────────
@@ -330,10 +322,10 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
   // ── generateEnvironmentalReport — highly sensitive horse ─────────────────
 
   it('generateEnvironmentalReport: a highly sensitive young foal still gets no advice or windows', async () => {
-    const result = await generateEnvironmentalReport(etsHorseStressedFoal.id);
-    // thresholds.sensitivity=0.82 used to add a 'highly sensitive' recommendation and the
+    const result = await generateEnvironmentalReport(etsHorseNewFoal.id);
+    // thresholds.sensitivity=0.7 used to add a 'highly sensitive' recommendation and the
     // foal's age a 'critical developmental period' one. Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts.
-    expect(result.triggerThresholds.sensitivity).toBeGreaterThan(0.7);
+    expect(result.triggerThresholds.sensitivity).toBeCloseTo(0.7);
     expect(result).not.toHaveProperty('recommendations');
     expect(result).not.toHaveProperty('criticalPeriodSensitivity');
   });

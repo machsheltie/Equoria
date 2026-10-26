@@ -26,14 +26,11 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     effects: {
       traitProbability: { confident: +0.2, fearful: -0.3 },
       competitionBonus: { showJumping: +2, crossCountry: +3 },
-      stressReduction: +0.1,
     },
     conflictsWith: ['fearful', 'anxious'],
     triggerConditions: {
       careConsistency: 0.7,
-      stressManagement: 'effective',
       taskDiversity: 0.5,
-      stressSpikes: 'low',
     },
   },
 
@@ -62,12 +59,10 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     effects: {
       traitProbability: { bold: +0.25, insecure: -0.3 },
       competitionBonus: { dressage: +2, racing: +1 },
-      stressResistance: +0.2,
     },
     conflictsWith: ['insecure', 'fearful'],
     triggerConditions: {
       strongBondGrowth: true,
-      lowStress: true,
       diverseExperiences: true,
       excellentQuality: 0.5,
     },
@@ -96,14 +91,11 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     description: 'Horse maintains composure under pressure',
     effects: {
       traitProbability: { steady: +0.25, reactive: -0.3 },
-      stressResistance: +0.25,
       competitionBonus: { dressage: +3, endurance: +2 },
     },
     conflictsWith: ['reactive', 'nervous'],
     triggerConditions: {
-      lowStressSpikes: true,
       consistentBehavior: true,
-      stressRecovery: 'fast',
     },
   },
 
@@ -115,12 +107,9 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     effects: {
       traitProbability: { anxious: +0.3, brave: -0.4 },
       competitionPenalty: { showJumping: -3, crossCountry: -4 },
-      stressIncrease: +0.2,
     },
     conflictsWith: ['brave', 'confident'],
     triggerConditions: {
-      highStressSpikes: true,
-      poorStressManagement: true,
       inconsistentCare: true,
       careGaps: 'frequent',
     },
@@ -167,13 +156,11 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     description: 'Horse is emotionally sensitive and easily overwhelmed',
     effects: {
       traitProbability: { sensitive: +0.3, resilient: -0.3 },
-      stressIncrease: +0.3,
       competitionPenalty: { racing: -2, eventing: -3 },
     },
     conflictsWith: ['resilient', 'steady'],
     triggerConditions: {
       overwhelmingSituations: true,
-      poorStressRecovery: true,
       sensitiveReactions: true,
     },
   },
@@ -184,7 +171,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     description: 'Horse overreacts to stimuli and situations',
     effects: {
       traitProbability: { explosive: +0.25, calm: -0.3 },
-      stressIncrease: +0.15,
       competitionPenalty: { dressage: -3, endurance: -2 },
     },
     conflictsWith: ['calm', 'steady'],

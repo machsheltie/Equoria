@@ -200,10 +200,10 @@ describe('generateInteractionMatrix', () => {
 
 // ── traitInteractionMatrix — with-flags branch coverage (Equoria-jkht) ───────
 // Two fixture horses exercise the non-empty-traits code paths:
-//   tiSynergyHorse: ['brave','confident','fearful'] + stressLevel=2, bondScore=50
+//   tiSynergyHorse: ['brave','confident','fearful'] + bondScore=50
 //     → brave+confident synergy (confidence_cluster), fearful+brave/confident conflicts
-//   tiConflictHorse: ['fearful','brave','reactive','calm','social','antisocial'] + stressLevel=8
-//     → 3 conflicts (> 2), high stress (> 7), has 'reactive' trait
+//   tiConflictHorse: ['fearful','brave','reactive','calm','social','antisocial']
+//     → 3 conflicts (> 2), has 'reactive' trait
 
 describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)', () => {
   let tiUser;
@@ -234,7 +234,6 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
         dateOfBirth: new Date(),
         age: 0,
         userId: tiUser.id,
-        stressLevel: 2,
         bondScore: 50,
         epigeneticFlags: ['brave', 'confident', 'fearful'],
       },
@@ -248,7 +247,6 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
         dateOfBirth: new Date(),
         age: 0,
         userId: tiUser.id,
-        stressLevel: 8,
         bondScore: 10,
         epigeneticFlags: ['fearful', 'brave', 'reactive', 'calm', 'social', 'antisocial'],
       },
@@ -290,18 +288,16 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
     expect(result.suppressionEffects['brave']).toBeDefined();
   });
 
-  it('stability section adds trait_synergies/low_stress/strong_bonding stabilityFactors', async () => {
+  it('stability section adds trait_synergies/strong_bonding stabilityFactors', async () => {
     const result = (await generateInteractionMatrix(tiSynergyHorse.id)).stability;
     expect(result.stabilityFactors).toContain('trait_synergies');
-    expect(result.stabilityFactors).toContain('low_stress');
     expect(result.stabilityFactors).toContain('strong_bonding');
     expect(typeof result.overallStability).toBe('number');
   });
 
-  it('stability section adds multiple_trait_conflicts/high_stress/reactive_temperament volatilityRisks', async () => {
+  it('stability section adds multiple_trait_conflicts/reactive_temperament volatilityRisks', async () => {
     const result = (await generateInteractionMatrix(tiConflictHorse.id)).stability;
     expect(result.volatilityRisks).toContain('multiple_trait_conflicts');
-    expect(result.volatilityRisks).toContain('high_stress_environment');
     expect(result.volatilityRisks).toContain('reactive_temperament');
   });
 

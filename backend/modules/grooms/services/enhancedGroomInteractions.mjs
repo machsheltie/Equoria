@@ -100,8 +100,8 @@ export const SPECIAL_EVENTS = {
     id: 'breakthrough',
     name: 'Breakthrough Moment',
     probability: 0.05, // 5% chance
-    conditions: ['relationship_level >= 2', 'stress_level < 30'],
-    effects: { bonding: 15, stress: -10, memory: true },
+    conditions: ['relationship_level >= 2'],
+    effects: { bonding: 15, memory: true },
   },
 
   PERFECT_HARMONY: {
@@ -109,7 +109,7 @@ export const SPECIAL_EVENTS = {
     name: 'Perfect Harmony',
     probability: 0.03, // 3% chance
     conditions: ['relationship_level >= 4', 'groom_specialty_match'],
-    effects: { bonding: 20, stress: -15, memory: true },
+    effects: { bonding: 20, memory: true },
   },
 
   LEARNING_MOMENT: {
@@ -119,15 +119,7 @@ export const SPECIAL_EVENTS = {
     // Equoria-yny4: horse.age is game-years (post Equoria-son6). 3 game-years
     // is the foal-care upper bound (was 1095 days pre-migration).
     conditions: ['horse_age < 3'], // Under 3 game-years
-    effects: { bonding: 8, stress: -5, development: 5 },
-  },
-
-  COMFORT_PROVIDED: {
-    id: 'comfort_provided',
-    name: 'Comfort in Distress',
-    probability: 0.12, // 12% chance when stressed
-    conditions: ['stress_level > 60'],
-    effects: { bonding: 12, stress: -20, memory: true },
+    effects: { bonding: 8, development: 5 },
   },
 
   PLAYFUL_INTERACTION: {
@@ -136,8 +128,8 @@ export const SPECIAL_EVENTS = {
     probability: 0.1, // 10% chance
     // Equoria-yny4: horse.age is game-years (post Equoria-son6). 2 game-years
     // is the playful-foal upper bound (was 730 days pre-migration).
-    conditions: ['horse_age < 2', 'stress_level < 40'], // Under 2 game-years, low stress
-    effects: { bonding: 10, stress: -8, joy: 5 },
+    conditions: ['horse_age < 2'], // Under 2 game-years
+    effects: { bonding: 10, joy: 5 },
   },
 };
 
@@ -237,16 +229,6 @@ function evaluateCondition(condition, context) {
     return relationshipLevel.level >= threshold;
   }
 
-  if (condition.includes('stress_level <')) {
-    const threshold = parseInt(condition.split('<')[1].trim());
-    return (horse.stressLevel || 0) < threshold;
-  }
-
-  if (condition.includes('stress_level >')) {
-    const threshold = parseInt(condition.split('>')[1].trim());
-    return (horse.stressLevel || 0) > threshold;
-  }
-
   if (condition.includes('horse_age <')) {
     const threshold = parseInt(condition.split('<')[1].trim());
     return (horse.age || 0) < threshold;
@@ -287,15 +269,12 @@ export function calculateEnhancedEffects(groom, horse, interactionType, variatio
 
   // Base effects calculation
   const baseBonding = Math.floor((duration / 30) * (3 + Math.random() * 4)); // 3-7 per 30 min
-  const baseStress = -Math.floor((duration / 30) * (2 + Math.random() * 3)); // -2 to -5 per 30 min
 
   // Apply variation multiplier
   let bonding = Math.round(baseBonding * variationData.bonusMultiplier);
-  let stress = Math.round(baseStress * variationData.bonusMultiplier);
 
   // Apply relationship level multiplier
   bonding = Math.round(bonding * relationshipLevel.multiplier);
-  stress = Math.round(stress * relationshipLevel.multiplier);
 
   // Apply groom preference bonus
   const preferences = GROOM_PREFERENCES[groom.personality];
@@ -306,7 +285,6 @@ export function calculateEnhancedEffects(groom, horse, interactionType, variatio
 
     if (preferences.preferred_contexts.includes(variationData.context)) {
       bonding = Math.round(bonding * 1.1);
-      stress = Math.round(stress * 1.1);
     }
   }
 
@@ -316,7 +294,6 @@ export function calculateEnhancedEffects(groom, horse, interactionType, variatio
 
   if (specialEvent) {
     bonding += specialEvent.effects.bonding || 0;
-    stress += specialEvent.effects.stress || 0;
   }
 
   // 31D-4 (Equoria-gi9o follow-up): apply temperament-groom synergy modifier
@@ -328,13 +305,11 @@ export function calculateEnhancedEffects(groom, horse, interactionType, variatio
 
   // Ensure reasonable bounds
   bonding = Math.max(1, Math.min(25, bonding));
-  stress = Math.max(-20, Math.min(5, stress));
 
   const result = {
     bondingChange: bonding,
-    stressChange: stress,
     synergyModifier,
-    quality: calculateInteractionQuality(bonding, stress),
+    quality: calculateInteractionQuality(bonding),
     relationshipLevel: relationshipLevel.name,
     variation: variationData.name,
     specialEvent: specialEvent || null,
@@ -342,7 +317,7 @@ export function calculateEnhancedEffects(groom, horse, interactionType, variatio
   };
 
   logger.info(
-    `[enhancedGroomInteractions] Calculated effects: +${bonding} bonding, ${stress} stress, quality: ${result.quality}`,
+    `[enhancedGroomInteractions] Calculated effects: +${bonding} bonding, quality: ${result.quality}`,
   );
 
   return result;
@@ -351,11 +326,10 @@ export function calculateEnhancedEffects(groom, horse, interactionType, variatio
 /**
  * Calculate interaction quality based on effects
  * @param {number} bonding - Bonding change
- * @param {number} stress - Stress change
  * @returns {string} Quality rating
  */
-function calculateInteractionQuality(bonding, stress) {
-  const score = bonding + Math.abs(stress);
+function calculateInteractionQuality(bonding) {
+  const score = bonding;
 
   if (score >= 20) {
     return 'exceptional';
@@ -426,15 +400,11 @@ export async function processInteractionWithPerformance(
   // Determine task success based on interaction quality
   const taskSuccess = ['excellent', 'exceptional'].includes(effects.quality);
 
-  // Calculate wellbeing impact (stress reduction is positive wellbeing)
-  const wellbeingImpact = Math.abs(effects.stressChange) / 4; // Convert stress to wellbeing scale
-
   // Record performance asynchronously (don't block interaction)
   recordGroomPerformance(groom.id, userId, interactionType, {
     horseId: horse.id,
     bondGain: effects.bondingChange,
     taskSuccess,
-    wellbeingImpact,
     duration,
     playerRating: null, // Could be added later via separate rating system
   }).catch(error => {
@@ -449,7 +419,6 @@ export async function processInteractionWithPerformance(
     ...effects,
     performanceTracked: true,
     taskSuccess,
-    wellbeingImpact,
   };
 }
 

@@ -317,7 +317,7 @@ describe('horseStarterStats — generateStoreStats output for a known breed', ()
       expect(total).toBeLessThanOrEqual(TOTAL_STAT_CAP);
     }
     // Sanity: at least one iteration should have hit the cap reasonably close
-    // (otherwise the JSON means + std are too low to ever stress the cap and
+    // (otherwise the JSON means + std are too low to ever reach the cap and
     // this test isn't actually exercising the clamp path). Most breeds in
     // the JSON have means summing ~190-200 so this is comfortably true.
     expect(maxTotal).toBeGreaterThan(150);

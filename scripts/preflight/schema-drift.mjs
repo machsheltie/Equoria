@@ -27,7 +27,7 @@
  * either side is drift. Every finding names the object.
  *
  * SCOPE, AND IT IS A FLOOR. Every table in `public`, not one. The floor the old
- * script covered — `horses.bondScore`, `horses.stressLevel`, the eight
+ * script covered — `horses.bondScore`, the eight
  * `foal_training_history` columns and the five `foal_training_history` indexes
  * including `foal_training_history_pkey` — is a strict subset of what is
  * compared here.

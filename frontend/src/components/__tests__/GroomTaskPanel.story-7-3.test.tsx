@@ -272,7 +272,6 @@ describe('GroomTaskPanel — AC3: Task duration and effects displayed', () => {
     render(<GroomTaskPanel horseAge={0} />);
     const effects = screen.getByTestId('task-effects-trust_building');
     expect(effects).toHaveTextContent('Increases bond score');
-    expect(effects).toHaveTextContent('Reduces stress level');
   });
 
   it('shows hand-walking task with duration for adult horse', () => {

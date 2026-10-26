@@ -78,7 +78,6 @@ async function makeHorse(data) {
       sex: 'Filly',
       age: 0,
       bondScore: 50,
-      stressLevel: 20,
       user: { connect: { id: owner.id } },
       ...data,
     },

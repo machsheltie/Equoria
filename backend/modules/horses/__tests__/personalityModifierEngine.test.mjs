@@ -27,11 +27,9 @@ describe('applyPersonalityEffectsToMilestone', () => {
       groomPersonality: null,
       foalTemperament: MATCH_FOAL,
       baseMilestoneScore: 5,
-      baseStressLevel: 10,
       baseBondingRate: 2,
     });
     expect(result.modifiedMilestoneScore).toBe(5);
-    expect(result.modifiedStressLevel).toBe(10);
     expect(result.modifiedBondingRate).toBe(2);
     expect(result.personalityEffectApplied).toBe(false);
   });
@@ -51,25 +49,11 @@ describe('applyPersonalityEffectsToMilestone', () => {
       foalTemperament: MATCH_FOAL,
       bondScore: 50,
       baseMilestoneScore: 3,
-      baseStressLevel: 20,
       baseBondingRate: 1,
     });
     expect(result.personalityEffectApplied).toBe(true);
     expect(result).toHaveProperty('modifiedMilestoneScore');
-    expect(result).toHaveProperty('modifiedStressLevel');
     expect(result).toHaveProperty('modifiedBondingRate');
-  });
-
-  it('modified stress level is non-negative', () => {
-    const result = applyPersonalityEffectsToMilestone({
-      groomPersonality: MATCH_GROOM,
-      foalTemperament: MATCH_FOAL,
-      bondScore: 100,
-      baseMilestoneScore: 0,
-      baseStressLevel: 5,
-      baseBondingRate: 0,
-    });
-    expect(result.modifiedStressLevel).toBeGreaterThanOrEqual(0);
   });
 
   it('returns result with effects shape including isMatch/isStrongMatch', () => {
@@ -78,11 +62,9 @@ describe('applyPersonalityEffectsToMilestone', () => {
       foalTemperament: MATCH_FOAL,
       bondScore: 50,
       baseMilestoneScore: 5,
-      baseStressLevel: 10,
       baseBondingRate: 2,
     });
     expect(result.effects).toHaveProperty('milestoneScoreChange');
-    expect(result.effects).toHaveProperty('stressReduction');
     expect(result.effects).toHaveProperty('bondingRateChange');
     expect(typeof result.effects.isMatch).toBe('boolean');
     expect(typeof result.effects.isStrongMatch).toBe('boolean');
@@ -93,11 +75,9 @@ describe('applyPersonalityEffectsToMilestone', () => {
       groomPersonality: '',
       foalTemperament: MATCH_FOAL,
       baseMilestoneScore: 7,
-      baseStressLevel: 3,
       baseBondingRate: 1,
     });
     expect(result.baseMilestoneScore).toBe(7);
-    expect(result.baseStressLevel).toBe(3);
     expect(result.baseBondingRate).toBe(1);
   });
 });
@@ -191,7 +171,6 @@ describe('getPersonalityEffectPreview', () => {
     expect(preview).toHaveProperty('isCompatible');
     expect(preview).toHaveProperty('compatibilityLevel');
     expect(preview).toHaveProperty('traitBonus');
-    expect(preview).toHaveProperty('stressReduction');
     expect(preview).toHaveProperty('bondingBonus');
     expect(preview).toHaveProperty('description');
     expect(preview).toHaveProperty('recommendation');
@@ -210,12 +189,6 @@ describe('getPersonalityEffectPreview', () => {
   it('compatibilityLevel is poor for mismatch', () => {
     const preview = getPersonalityEffectPreview(MISMATCH_GROOM, MISMATCH_FOAL, 0);
     expect(preview.compatibilityLevel).toBe('poor');
-  });
-
-  it('stressReduction is a non-negative number', () => {
-    const preview = getPersonalityEffectPreview(MATCH_GROOM, MATCH_FOAL, 50);
-    expect(typeof preview.stressReduction).toBe('number');
-    expect(preview.stressReduction).toBeGreaterThanOrEqual(0);
   });
 
   it('returns unknown-compatibility fallback on error (empty personality)', () => {
@@ -237,14 +210,13 @@ describe('getPersonalityEffectPreview', () => {
 // ---------------------------------------------------------------------------
 
 describe('applyPersonalityEffectsToMilestone — defaults + catch', () => {
-  it('uses default 0 for baseMilestoneScore/baseStressLevel/baseBondingRate when omitted', () => {
+  it('uses default 0 for baseMilestoneScore/baseBondingRate when omitted', () => {
     const result = applyPersonalityEffectsToMilestone({
       groomPersonality: 'Calm',
       foalTemperament: 'Nervous',
       bondScore: 50,
     });
     expect(result.baseMilestoneScore).toBe(0);
-    expect(result.baseStressLevel).toBe(0);
     expect(result.baseBondingRate).toBe(0);
     expect(result.personalityEffectApplied).toBe(true);
   });
@@ -258,7 +230,6 @@ describe('applyPersonalityEffectsToMilestone — defaults + catch', () => {
     const result = applyPersonalityEffectsToMilestone(evil);
     expect(result.personalityEffectApplied).toBe(false);
     expect(result.modifiedMilestoneScore).toBe(0);
-    expect(result.modifiedStressLevel).toBe(0);
     expect(result.modifiedBondingRate).toBe(0);
   });
 });

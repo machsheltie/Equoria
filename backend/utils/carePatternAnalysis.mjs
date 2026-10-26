@@ -9,7 +9,7 @@
  *
  * 📋 BUSINESS RULES:
  * - Analyzes GroomInteraction records for pattern matching
- * - Evaluates bond scores, stress events, and care consistency
+ * - Evaluates bond scores and care consistency
  * - Tracks novelty exposure and environmental factors
  * - Supports weekly evaluation cycles
  * - Considers care quality and groom presence during events
@@ -67,7 +67,7 @@ export function careWindowInteractions(evaluationDate) {
  * Analyze care patterns for a horse already read with its care-window
  * interactions (Equoria-cmw85.38: the weekly batch reads many horses at once).
  * Pure: no database access.
- * @param {Object} horse - { id, dateOfBirth, bondScore, stressLevel, groomInteractions }
+ * @param {Object} horse - { id, dateOfBirth, bondScore, groomInteractions }
  * @param {Date} evaluationDate
  * @returns {Object} Care pattern analysis results
  */
@@ -101,7 +101,6 @@ export function analyzeLoadedCarePatterns(horse, evaluationDate = new Date()) {
   const patterns = {
     consistentCare: analyzeConsistentCare(horse.groomInteractions, horse.bondScore),
     noveltyExposure: analyzeNoveltyExposure(horse.groomInteractions, horse.bondScore),
-    stressManagement: analyzeStressManagement(horse.groomInteractions, horse.stressLevel),
     bondingPatterns: analyzeBondingPatterns(horse.groomInteractions, horse.bondScore),
     neglectPatterns: analyzeNeglectPatterns(horse.groomInteractions, horse.bondScore),
     environmentalFactors: analyzeEnvironmentalFactors(horse.groomInteractions),
@@ -113,7 +112,6 @@ export function analyzeLoadedCarePatterns(horse, evaluationDate = new Date()) {
     ageInDays,
     ageInYears,
     currentBondScore: horse.bondScore || 0,
-    currentStressLevel: horse.stressLevel || 0,
     patterns,
     evaluationDate,
   };
@@ -164,7 +162,7 @@ function analyzeNoveltyExposure(interactions, bondScore) {
     i => i.bondingChange >= 0 && ['good', 'excellent'].includes(i.quality),
   );
 
-  const fearEvents = interactions.filter(i => i.stressChange > 5 || i.bondingChange < -3);
+  const fearEvents = interactions.filter(i => i.bondingChange < -3);
 
   return {
     noveltyEvents: noveltyInteractions.length,
@@ -172,37 +170,6 @@ function analyzeNoveltyExposure(interactions, bondScore) {
     fearEvents: fearEvents.length,
     calmGroomPresent: noveltyWithSupport.length > 0,
     meetsBraveThreshold: noveltyWithSupport.length >= 3 && bondScore >= 30,
-  };
-}
-
-/**
- * Analyze stress management patterns
- * @param {Array} interactions - Groom interactions
- * @param {number} stressLevel - Current stress level
- * @returns {Object} Stress management analysis
- */
-function analyzeStressManagement(interactions, stressLevel) {
-  const stressEvents = interactions.filter(i => i.stressChange > 3);
-  const recoveryEvents = interactions.filter(i => i.stressChange < -2);
-
-  const stressWithSupport = stressEvents.filter(i => {
-    // Find recovery within 24 hours
-    const eventTime = new Date(i.createdAt);
-    return interactions.some(
-      recovery =>
-        recovery.stressChange < -2 &&
-        new Date(recovery.createdAt) > eventTime &&
-        new Date(recovery.createdAt) <= new Date(eventTime.getTime() + 24 * 60 * 60 * 1000),
-    );
-  });
-
-  return {
-    stressEvents: stressEvents.length,
-    recoveryEvents: recoveryEvents.length,
-    stressWithSupport: stressWithSupport.length,
-    currentStressLevel: stressLevel,
-    meetsResilientThreshold: stressWithSupport.length >= 3,
-    meetsFragileThreshold: stressEvents.length >= 3 && stressWithSupport.length === 0,
   };
 }
 
@@ -263,7 +230,7 @@ function analyzeNeglectPatterns(interactions, bondScore) {
  */
 function analyzeEnvironmentalFactors(interactions) {
   const startleEvents = interactions.filter(
-    i => (i.notes && i.notes.toLowerCase().includes('startle')) || i.stressChange > 5,
+    i => i.notes && i.notes.toLowerCase().includes('startle'),
   );
 
   const routineInteractions = interactions.filter(
@@ -368,7 +335,6 @@ export default {
   analyzeLoadedCarePatterns,
   analyzeConsistentCare,
   analyzeNoveltyExposure,
-  analyzeStressManagement,
   analyzeBondingPatterns,
   analyzeNeglectPatterns,
   analyzeEnvironmentalFactors,

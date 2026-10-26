@@ -16,7 +16,7 @@
  *         surfaces persisted data (not a hardcoded []).
  *
  * ADDITIVITY: every legacy field the FoalDetailPage flow reads
- * (development.currentDay/bondingLevel/stressLevel/maxDay, activityHistory,
+ * (development.currentDay/bondingLevel/maxDay, activityHistory,
  * foal) must remain present with unchanged semantics.
  *
  * Equoria-fr2kg. OLD CONTRACT: the response also carried the player-run
@@ -87,7 +87,6 @@ beforeAll(async () => {
       dateOfBirth: dobDaysAgo(9),
       age: 1,
       bondScore: 30,
-      stressLevel: 10,
       userId: user.id,
     },
   });
@@ -100,7 +99,6 @@ beforeAll(async () => {
       foalId: yearlingFoal.id,
       currentDay: 2,
       bondingLevel: 45,
-      stressLevel: 12,
       completedActivities: { 0: ['gentle_touch'] },
       completedMilestones: { bond25: SEEDED_MILESTONE_TS },
     },
@@ -135,14 +133,13 @@ describe('GET /api/v1/foals/:foalId/development — BB.1/BB.2/BB.3 additive (Equ
     expect(data.birthDate).toBe(yearlingFoal.dateOfBirth.toISOString());
   });
 
-  // Equoria-fr2kg Q16. OLD CONTRACT: bondingLevel / stressLevel echoed the
-  // legacy FoalDevelopment columns (45 / 12 here). NEW RULING (owner,
-  // 2026-10-22): they carry the horse's real Horse.bondScore / stressLevel
-  // (30 / 10 here); the legacy columns are kept but ignored.
-  it("ADDITIVE: every development field is present; bond and stress are the horse's own", () => {
+  // Equoria-fr2kg Q16. OLD CONTRACT: bondingLevel echoed the legacy
+  // FoalDevelopment column (45 here). NEW RULING (owner, 2026-10-22): it carries
+  // the horse's real Horse.bondScore (30 here); the legacy column is kept but
+  // ignored.
+  it("ADDITIVE: every development field is present; the bond is the horse's own", () => {
     expect(data.development.currentDay).toBe(2);
     expect(data.development.bondingLevel).toBe(30);
-    expect(data.development.stressLevel).toBe(10);
     expect(data.development.maxDay).toBe(6);
     expect(Array.isArray(data.activityHistory)).toBe(true);
     expect(data.foal.id).toBe(yearlingFoal.id);

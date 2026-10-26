@@ -279,7 +279,7 @@ describe('applyFlagInfluencesToBonding — groomEffectiveness branch TRUE + FALS
   });
 
   it('does not set groomEffectiveness when brave flag is present (FALSE arm — brave has no groomEffectiveness)', () => {
-    // brave.behaviorModifiers: { stressReduction, competitionBonus, statRecoveryBonus, stressResistance }
+    // brave.behaviorModifiers: { competitionBonus, statRecoveryBonus }
     // No groomEffectiveness → `if (behaviorModifiers.groomEffectiveness)` is false → skipped
     const result = applyFlagInfluencesToBonding(10, [BRAVE]);
     expect(result.appliedModifiers).not.toHaveProperty('groomEffectiveness');

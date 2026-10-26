@@ -167,22 +167,6 @@ describe('POST /api/v1/ultra-rare-traits/effects/calculate', () => {
     expect(res.body.success).toBe(false);
   });
 
-  it('returns 200 when calculating stress effects for owned horse', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/ultra-rare-traits/effects/calculate')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: horse.id, effectType: 'stress', baseValue: 50 });
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.effectType).toBe('stress');
-  });
-
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
@@ -190,7 +174,7 @@ describe('POST /api/v1/ultra-rare-traits/effects/calculate', () => {
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: horse.id, effectType: 'stress', baseValue: 50 });
+      .send({ horseId: horse.id, effectType: 'competition', baseValue: 50 });
 
     expect(res.status).toBe(401);
   });

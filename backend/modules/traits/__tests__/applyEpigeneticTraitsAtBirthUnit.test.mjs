@@ -21,55 +21,31 @@ function traitAppears(fn, traitName, category = 'positive', maxRuns = 25) {
 }
 
 describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () => {
-  describe('Low-stress mare with premium feed → positive traits', () => {
-    it('assigns resilient trait when mare has low stress and premium feed', () => {
-      const mare = { id: 1, name: 'Premium Mare', stressLevel: 15 };
+  describe('Premium feed → positive traits', () => {
+    it('assigns resilient trait with premium feed', () => {
+      const mare = { id: 1, name: 'Premium Mare' };
       expect(
-        traitAppears(
-          () => applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 85, stressLevel: 15 }),
-          'resilient',
-        ),
+        traitAppears(() => applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 85 }), 'resilient'),
       ).toBe(true);
     });
 
-    it('assigns peopleTrusting trait when mare has low stress and premium feed', () => {
-      const mare = { id: 1, name: 'Premium Mare', stressLevel: 20 };
+    it('assigns peopleTrusting trait with premium feed', () => {
+      const mare = { id: 1, name: 'Premium Mare' };
       expect(
-        traitAppears(
-          () => applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 80, stressLevel: 20 }),
-          'peopleTrusting',
-        ),
+        traitAppears(() => applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 80 }), 'peopleTrusting'),
       ).toBe(true);
     });
 
     it('assigns both positive traits with optimal conditions', () => {
-      const mare = { id: 1, name: 'Optimal Mare', stressLevel: 10 };
-      const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 95, stressLevel: 10 });
-      expect(traitAppears(fn, 'resilient')).toBe(true);
-      expect(traitAppears(fn, 'peopleTrusting')).toBe(true);
-    });
-
-    // Equoria-4maxb: Horse.stressLevel is NOT NULL with default 0 = calm
-    // (Equoria-507mt). When the caller does not override stressLevel, a mare
-    // row with stressLevel 0 must be read as perfectly calm, not promoted to
-    // 50 by a `|| 50` guard (which silently disabled the low-stress branch).
-    it('reads a perfectly calm mare (stressLevel 0) as calm when no override is passed — Equoria-4maxb', () => {
-      const mare = { id: 1, name: 'Calm Mare', stressLevel: 0 };
+      const mare = { id: 1, name: 'Optimal Mare' };
       const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 95 });
       expect(traitAppears(fn, 'resilient')).toBe(true);
       expect(traitAppears(fn, 'peopleTrusting')).toBe(true);
     });
 
-    it('does not assign positive traits when stress is too high', () => {
-      const mare = { id: 1, name: 'Stressed Mare', stressLevel: 50 };
-      const result = applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 85, stressLevel: 50 });
-      expect(result.positive).not.toContain('resilient');
-      expect(result.positive).not.toContain('peopleTrusting');
-    });
-
     it('does not assign positive traits when feed quality is too low', () => {
-      const mare = { id: 1, name: 'Underfed Mare', stressLevel: 15 };
-      const result = applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 60, stressLevel: 15 });
+      const mare = { id: 1, name: 'Underfed Mare' };
+      const result = applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 60 });
       expect(result.positive).not.toContain('resilient');
       expect(result.positive).not.toContain('peopleTrusting');
     });
@@ -90,12 +66,12 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       { id: 201, name: 'Other Horse' },
       { id: 202, name: 'Another Horse' },
     ];
-    const mare = { id: 1, name: 'Inbred Mare', stressLevel: 50 };
+    const mare = { id: 1, name: 'Inbred Mare' };
 
     it('assigns fragile trait with high inbreeding (4+ repeated ancestors)', () => {
       expect(
         traitAppears(
-          () => applyEpigeneticTraitsAtBirth({ mare, lineage: highLineage, feedQuality: 50, stressLevel: 50 }),
+          () => applyEpigeneticTraitsAtBirth({ mare, lineage: highLineage, feedQuality: 50 }),
           'fragile',
           'negative',
         ),
@@ -105,7 +81,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
     it('assigns reactive trait with moderate inbreeding (3 repeated ancestors)', () => {
       expect(
         traitAppears(
-          () => applyEpigeneticTraitsAtBirth({ mare, lineage: moderateLineage, feedQuality: 50, stressLevel: 50 }),
+          () => applyEpigeneticTraitsAtBirth({ mare, lineage: moderateLineage, feedQuality: 50 }),
           'reactive',
           'negative',
         ),
@@ -115,7 +91,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
     it('assigns lowImmunity trait with inbreeding', () => {
       expect(
         traitAppears(
-          () => applyEpigeneticTraitsAtBirth({ mare, lineage: moderateLineage, feedQuality: 50, stressLevel: 50 }),
+          () => applyEpigeneticTraitsAtBirth({ mare, lineage: moderateLineage, feedQuality: 50 }),
           'lowImmunity',
           'negative',
         ),
@@ -130,7 +106,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
         { id: 400, name: 'Common Ancestor' },
         { id: 400, name: 'Common Ancestor' },
       ];
-      const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage: severeLineage, feedQuality: 50, stressLevel: 50 });
+      const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage: severeLineage, feedQuality: 50 });
       expect(traitAppears(fn, 'fragile', 'negative')).toBe(true);
       expect(traitAppears(fn, 'reactive', 'negative')).toBe(true);
       expect(traitAppears(fn, 'lowImmunity', 'negative')).toBe(true);
@@ -143,7 +119,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
         { id: 503, name: 'Horse 3' },
         { id: 504, name: 'Horse 4' },
       ];
-      const result = applyEpigeneticTraitsAtBirth({ mare, lineage: diverseLineage, feedQuality: 50, stressLevel: 50 });
+      const result = applyEpigeneticTraitsAtBirth({ mare, lineage: diverseLineage, feedQuality: 50 });
       expect(result.negative).not.toContain('fragile');
       expect(result.negative).not.toContain('reactive');
       expect(result.negative).not.toContain('lowImmunity');
@@ -151,7 +127,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
   });
 
   describe('3+ ancestors with same discipline → affinity + legacyTalent', () => {
-    const mare = { id: 1, name: 'Racing Mare', stressLevel: 30 };
+    const mare = { id: 1, name: 'Racing Mare' };
 
     it('assigns disciplineAffinityRacing with 3+ racing ancestors', () => {
       const lineage = [
@@ -162,7 +138,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       ];
       expect(
         traitAppears(
-          () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 60, stressLevel: 30 }),
+          () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 60 }),
           'disciplineAffinityRacing',
         ),
       ).toBe(true);
@@ -176,7 +152,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
         { id: 704, name: 'Show Jumper 4', mostCompetedDiscipline: 'Show Jumping' },
         { id: 705, name: 'Racing Horse', mostCompetedDiscipline: 'Racing' },
       ];
-      const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 65, stressLevel: 25 });
+      const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 65 });
       expect(traitAppears(fn, 'disciplineAffinityShowJumping')).toBe(true);
       expect(traitAppears(fn, 'legacyTalent')).toBe(true);
     });
@@ -191,7 +167,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       ];
       expect(
         traitAppears(
-          () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 70, stressLevel: 35 }),
+          () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 70 }),
           'disciplineAffinityDressage',
         ),
       ).toBe(true);
@@ -204,7 +180,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
         { id: 903, name: 'Show Jumper', mostCompetedDiscipline: 'Show Jumping' },
         { id: 904, name: 'Trail Horse', mostCompetedDiscipline: 'Trail' },
       ];
-      const result = applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 55, stressLevel: 40 });
+      const result = applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 55 });
       expect(result.positive.filter(t => t.startsWith('disciplineAffinity'))).toHaveLength(0);
       expect(result.positive).not.toContain('legacyTalent');
     });
@@ -216,7 +192,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
         { id: 1003, name: 'Horse 3' },
         { id: 1004, name: 'Horse 4' },
       ];
-      const result = applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 50, stressLevel: 45 });
+      const result = applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 50 });
       expect(result.positive.filter(t => t.startsWith('disciplineAffinity'))).toHaveLength(0);
       expect(result.positive).not.toContain('legacyTalent');
     });
@@ -224,21 +200,21 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
 
   describe('Return value structure', () => {
     it('always returns positive and negative arrays', () => {
-      const mare = { id: 1, stressLevel: 50 };
-      const result = applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 50, stressLevel: 50 });
+      const mare = { id: 1 };
+      const result = applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 50 });
       expect(Array.isArray(result.positive)).toBe(true);
       expect(Array.isArray(result.negative)).toBe(true);
     });
 
     it('optimal conditions can produce positive traits (probabilistic smoke test)', () => {
-      const mare = { id: 1, stressLevel: 10 };
+      const mare = { id: 1 };
       const lineage = [
         { id: 1101, name: 'Racing Horse 1', mostCompetedDiscipline: 'Racing' },
         { id: 1102, name: 'Racing Horse 2', mostCompetedDiscipline: 'Racing' },
         { id: 1103, name: 'Racing Horse 3', mostCompetedDiscipline: 'Racing' },
         { id: 1104, name: 'Racing Horse 4', mostCompetedDiscipline: 'Racing' },
       ];
-      const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 85, stressLevel: 10 });
+      const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 85 });
       expect(traitAppears(fn, 'resilient')).toBe(true);
       expect(traitAppears(fn, 'disciplineAffinityRacing')).toBe(true);
     });

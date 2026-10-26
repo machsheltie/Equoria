@@ -12,7 +12,6 @@ import {
   analyzeHorseTemperament,
   classifyTemperamentFromFlags,
   analyzeBehavioralTrends,
-  identifyStressResponsePatterns,
   analyzeBondingPreferences,
   detectTemperamentChanges,
 } from '../services/horseTemperamentAnalysis.mjs';
@@ -73,7 +72,6 @@ describe('analyzeHorseTemperament', () => {
     expect(result.horseName).toBe(horse.name);
     expect(typeof result.primaryTemperament).toBe('string');
     expect(typeof result.confidenceLevel).toBe('number');
-    expect(typeof result.stressResilience).toBe('number');
     expect(typeof result.socialTendency).toBe('number');
     expect(typeof result.adaptability).toBe('number');
     expect(typeof result.dataSource).toBe('string');
@@ -158,7 +156,6 @@ describe('analyzeBehavioralTrends', () => {
 
     expect(result).toBeDefined();
     expect(result.bondingTrend).toBe('insufficient_data');
-    expect(result.stressTrend).toBe('insufficient_data');
     expect(result.qualityTrend).toBe('insufficient_data');
     expect(result.overallDirection).toBe('unknown');
     expect(result.trendStrength).toBe(0);
@@ -169,35 +166,6 @@ describe('analyzeBehavioralTrends', () => {
     const result = await analyzeBehavioralTrends(999999999);
     expect(result.bondingTrend).toBe('insufficient_data');
     expect(result.dataPoints).toBe(0);
-  });
-});
-
-// ── identifyStressResponsePatterns ───────────────────────────────────────────
-
-describe('identifyStressResponsePatterns', () => {
-  it('returns stress response object for horse with no interactions', async () => {
-    const result = await identifyStressResponsePatterns(horse.id);
-
-    expect(result).toBeDefined();
-    expect(typeof result).toBe('object');
-    expect(typeof result.stressThreshold).toBe('number');
-    expect(typeof result.recoveryRate).toBe('number');
-    expect(Array.isArray(result.triggerFactors)).toBe(true);
-    expect(typeof result.responseType).toBe('string');
-    expect(typeof result.analysisDepth).toBe('number');
-    expect(result.analysisDepth).toBe(0);
-  });
-
-  it('returns without throwing for non-existent horseId', async () => {
-    // horse.stressLevel is accessed; null horse causes error — just verify it throws or returns
-    let threw = false;
-    try {
-      await identifyStressResponsePatterns(999999999);
-    } catch {
-      threw = true;
-    }
-    // Either path is acceptable for a non-existent horse
-    expect(typeof threw).toBe('boolean');
   });
 });
 
@@ -313,17 +281,17 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
       },
     });
 
-    // 7 interactions: bondingChange rising [0,1,1,2,3,4,5], stressChange constant [2],
+    // 7 interactions: bondingChange rising [0,1,1,2,3,4,5],
     // quality mix: first 4 'good', last 3 'excellent' (43% excellent > 30% threshold).
     // Spaced 1 min apart so createdAt ordering is deterministic for detectTemperamentChanges.
     const interactionData = [
-      { bondingChange: 0, stressChange: 2, quality: 'good' },
-      { bondingChange: 1, stressChange: 2, quality: 'good' },
-      { bondingChange: 1, stressChange: 2, quality: 'good' },
-      { bondingChange: 2, stressChange: 2, quality: 'good' },
-      { bondingChange: 3, stressChange: 2, quality: 'excellent' },
-      { bondingChange: 4, stressChange: 2, quality: 'excellent' },
-      { bondingChange: 5, stressChange: 2, quality: 'excellent' },
+      { bondingChange: 0, quality: 'good' },
+      { bondingChange: 1, quality: 'good' },
+      { bondingChange: 1, quality: 'good' },
+      { bondingChange: 2, quality: 'good' },
+      { bondingChange: 3, quality: 'excellent' },
+      { bondingChange: 4, quality: 'excellent' },
+      { bondingChange: 5, quality: 'excellent' },
     ];
 
     for (let i = 0; i < interactionData.length; i++) {
@@ -335,7 +303,6 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
           interactionType: 'grooming',
           duration: 30,
           bondingChange: d.bondingChange,
-          stressChange: d.stressChange,
           quality: d.quality,
           timestamp: new Date(ts - (interactionData.length - i) * 60000),
           createdAt: new Date(ts - (interactionData.length - i) * 60000),
@@ -370,14 +337,6 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
     expect(typeof result.trendStrength).toBe('number');
   });
 
-  it('identifyStressResponsePatterns returns reactive when avgStressChange > 1 (line 767)', async () => {
-    const result = await identifyStressResponsePatterns(interHorse.id);
-    expect(result.responseType).toBe('reactive');
-    expect(result.avgStressChange).toBeGreaterThan(1);
-    expect(result.copingMechanisms).toContain('bonding_seeking');
-    expect(result.copingMechanisms).toContain('responds_to_quality_care');
-  });
-
   it('analyzeBondingPreferences returns dataAvailable=true with interactions (line 428)', async () => {
     const result = await analyzeBondingPreferences(interHorse.id);
     expect(result.dataAvailable).toBe(true);
@@ -403,14 +362,11 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
 //   Lines 678: outgoing condition evaluated (unreachable true, but line executed)
 //   Lines 310-311, 313: negative/stable overallDirection in analyzeBehavioralTrends
 //   Line 714: declining direction in calculateTrend
-//   Lines 549-552, 563: negative/neutral changeDirection + increased_stress_sensitivity
-//   Lines 770, 772: high_sensitivity/resilient in determineStressResponseType
-//   Lines 770+else: moderate (else arm of determineStressResponseType)
+//   Lines 549-552: negative/neutral changeDirection
 
 describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)', () => {
   let rbrUser, rbrGroom;
-  let confidentHorse, nervousHorse, calmHorse, negTrendHorse;
-  let highSensHorse, resilientHorse, moderateHorse;
+  let confidentHorse, nervousHorse, negTrendHorse;
   let neutralChangeHorse, worseningHorse;
   const rbrCleanup = createCleanupTracker();
 
@@ -440,8 +396,8 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
     });
 
     // ── Horse fixtures ─────────────────────────────────────────────────────────
-    // confidentHorse: high bondingChange (+3), negative stressChange (-2) →
-    //   analyzeFromInteractions: confidenceLevel=0.9>0.7, stressResilience=0.83>0.6 → 'confident'
+    // confidentHorse: high bondingChange (+3) →
+    //   analyzeFromInteractions: confidenceLevel=0.9>0.7 → 'confident'
     //   analyzeBehavioralTrends: all slopes=0 → 'stable' overallDirection
     confidentHorse = await prisma.horse.create({
       data: {
@@ -462,14 +418,13 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
           interactionType: 'grooming',
           duration: 30,
           bondingChange: 3,
-          stressChange: -2,
           quality: 'good',
         },
       });
     }
 
-    // nervousHorse: negative bondingChange (-1), high stressChange (+3) →
-    //   confidenceLevel=0.25<0.4, stressResilience=0.1<0.4 → 'nervous'
+    // nervousHorse: negative bondingChange (-1) →
+    //   confidenceLevel=0.25<0.4 → 'nervous'
     nervousHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
@@ -489,44 +444,14 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
           interactionType: 'grooming',
           duration: 30,
           bondingChange: -1,
-          stressChange: 3,
           quality: 'good',
         },
       });
     }
 
-    // calmHorse: low bondingChange (avg≈0.33), very negative stressChange (-2) →
-    //   confidenceLevel≈0.58 (<0.7), stressResilience≈0.83 (>0.7), avgBonding>0 → 'calm'
-    calmHorse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-HTA-RBR-Calm-${ts}`,
-        sex: 'Filly',
-        dateOfBirth: new Date('2019-01-01'),
-        age: 30,
-        userId: rbrUser.id,
-        epigeneticFlags: [],
-      },
-    });
-    for (const bc of [0, 0, 1, 0, 0, 1]) {
-      await prisma.groomInteraction.create({
-        data: {
-          foalId: calmHorse.id,
-          groomId: rbrGroom.id,
-          interactionType: 'grooming',
-          duration: 30,
-          bondingChange: bc,
-          stressChange: -2,
-          quality: 'good',
-        },
-      });
-    }
-
-    // negTrendHorse: bondingChange decreasing [5,4,3,2,1,0,-1], stressChange=0 →
+    // negTrendHorse: bondingChange decreasing [5,4,3,2,1,0,-1] →
     //   calculateTrend slope=-1 → 'declining' (line 714)
-    //   avgTrendScore=-1/3≈-0.333<-0.3 → 'negative' overallDirection (line 311)
-    //   analyzeHorseTemperament: confidenceLevel=0.9 but stressResilience=0.5 →
-    //     NOT confident, NOT calm, reaches outgoing check (line 678) → 'developing'
+    //   avgTrendScore=-1/2=-0.5<-0.3 → 'negative' overallDirection (line 311)
     negTrendHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
@@ -546,90 +471,8 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
           interactionType: 'grooming',
           duration: 30,
           bondingChange: 5 - i, // [5,4,3,2,1,0,-1]
-          stressChange: 0,
           quality: 'good',
           createdAt: new Date(ts - (7 - i) * 60000),
-        },
-      });
-    }
-
-    // highSensHorse: fearful flag, stressChange=1 (avgStressChange=1, NOT >1) →
-    //   NOT reactive, fearful flag present → 'high_sensitivity' (line 770)
-    highSensHorse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-HTA-RBR-HighSens-${ts}`,
-        sex: 'Filly',
-        dateOfBirth: new Date('2019-01-01'),
-        age: 30,
-        userId: rbrUser.id,
-        epigeneticFlags: ['fearful'],
-      },
-    });
-    for (let i = 0; i < 5; i++) {
-      await prisma.groomInteraction.create({
-        data: {
-          foalId: highSensHorse.id,
-          groomId: rbrGroom.id,
-          interactionType: 'grooming',
-          duration: 30,
-          bondingChange: 1,
-          stressChange: 1,
-          quality: 'good',
-        },
-      });
-    }
-
-    // resilientHorse: no flags, stressChange=-3 → stressReductions=5>stressSpikes=0 →
-    //   NOT reactive, NOT fearful → 'resilient' (line 772)
-    resilientHorse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-HTA-RBR-Resilient-${ts}`,
-        sex: 'Colt',
-        dateOfBirth: new Date('2019-01-01'),
-        age: 30,
-        userId: rbrUser.id,
-        epigeneticFlags: [],
-      },
-    });
-    for (let i = 0; i < 5; i++) {
-      await prisma.groomInteraction.create({
-        data: {
-          foalId: resilientHorse.id,
-          groomId: rbrGroom.id,
-          interactionType: 'grooming',
-          duration: 30,
-          bondingChange: 1,
-          stressChange: -3,
-          quality: 'good',
-        },
-      });
-    }
-
-    // moderateHorse: no flags, stressChange=0 → stressSpikes=0, stressReductions=0
-    //   NOT reactive, NOT fearful, NOT resilient (0 not > 0) → else → 'moderate'
-    moderateHorse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-HTA-RBR-Moderate-${ts}`,
-        sex: 'Filly',
-        dateOfBirth: new Date('2019-01-01'),
-        age: 30,
-        userId: rbrUser.id,
-        epigeneticFlags: [],
-      },
-    });
-    for (let i = 0; i < 5; i++) {
-      await prisma.groomInteraction.create({
-        data: {
-          foalId: moderateHorse.id,
-          groomId: rbrGroom.id,
-          interactionType: 'grooming',
-          duration: 30,
-          bondingChange: 1,
-          stressChange: 0,
-          quality: 'good',
         },
       });
     }
@@ -655,18 +498,16 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
           interactionType: 'grooming',
           duration: 30,
           bondingChange: 2,
-          stressChange: 2,
           quality: 'good',
           createdAt: new Date(ts - (6 - i) * 60000),
         },
       });
     }
 
-    // worseningHorse: early 3 excellent with bondingChange=5,stressChange=0;
-    //   recent 3 poor with bondingChange=1,stressChange=4 →
+    // worseningHorse: early 3 excellent with bondingChange=5;
+    //   recent 3 poor with bondingChange=1 →
     //   bondingChange metric=-4 (<-0.5) → 'declining_bonding'
-    //   stressChange metric=0-4=-4 (<-0.5) → 'increased_stress_sensitivity' (line 563)
-    //   overallChange=(-4-4-3)/3≈-3.67<-0.5 → 'negative' changeDirection (line 550)
+    //   overallChange=(-4-3)/2=-3.5<-0.5 → 'negative' changeDirection (line 550)
     worseningHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
@@ -687,7 +528,6 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
           interactionType: 'grooming',
           duration: 30,
           bondingChange: isEarly ? 5 : 1,
-          stressChange: isEarly ? 0 : 4,
           quality: isEarly ? 'excellent' : 'poor',
           createdAt: new Date(ts - (6 - i) * 60000),
         },
@@ -707,11 +547,7 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
               in: [
                 confidentHorse?.id,
                 nervousHorse?.id,
-                calmHorse?.id,
                 negTrendHorse?.id,
-                highSensHorse?.id,
-                resilientHorse?.id,
-                moderateHorse?.id,
                 neutralChangeHorse?.id,
                 worseningHorse?.id,
               ].filter(Boolean),
@@ -741,21 +577,6 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
     expect(result.primaryTemperament).toBe('nervous');
   });
 
-  it('analyzeFromInteractions: calm temperament (lines 676-677)', async () => {
-    const result = await analyzeHorseTemperament(calmHorse.id);
-    expect(result.dataSource).toBe('interactions');
-    expect(result.primaryTemperament).toBe('calm');
-  });
-
-  it('analyzeFromInteractions: reaches outgoing condition (line 678) + falls to developing', async () => {
-    // confidenceLevel=0.9 (>0.7) but stressResilience=0.5 (≤0.6) → NOT confident.
-    // stressResilience=0.5 NOT >0.7 → NOT calm. socialTendency=0.7 NOT >0.7 → NOT outgoing.
-    // Line 678 is executed (condition evaluated false) → 'developing'.
-    const result = await analyzeHorseTemperament(negTrendHorse.id);
-    expect(result.dataSource).toBe('interactions');
-    expect(result.primaryTemperament).toBe('developing');
-  });
-
   // ── analyzeBehavioralTrends remaining directions ──────────────────────────────
 
   it('analyzeBehavioralTrends: stable overallDirection with constant values (line 313)', async () => {
@@ -769,23 +590,6 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
     expect(result.bondingTrend).toBe('declining');
   });
 
-  // ── determineStressResponseType remaining paths ───────────────────────────────
-
-  it('identifyStressResponsePatterns: high_sensitivity for fearful horse (line 770)', async () => {
-    const result = await identifyStressResponsePatterns(highSensHorse.id);
-    expect(result.responseType).toBe('high_sensitivity');
-  });
-
-  it('identifyStressResponsePatterns: resilient for horse with consistent stress reductions (line 772)', async () => {
-    const result = await identifyStressResponsePatterns(resilientHorse.id);
-    expect(result.responseType).toBe('resilient');
-  });
-
-  it('identifyStressResponsePatterns: moderate for horse with no spikes or reductions (else arm)', async () => {
-    const result = await identifyStressResponsePatterns(moderateHorse.id);
-    expect(result.responseType).toBe('moderate');
-  });
-
   // ── detectTemperamentChanges remaining directions ─────────────────────────────
 
   it('detectTemperamentChanges: neutral direction with stable interactions (line 552)', async () => {
@@ -794,11 +598,10 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
     expect(result.changeDetected).toBe(false);
   });
 
-  it('detectTemperamentChanges: negative direction + increased_stress_sensitivity (lines 550, 563)', async () => {
+  it('detectTemperamentChanges: negative direction + declining_bonding (line 550)', async () => {
     const result = await detectTemperamentChanges(worseningHorse.id);
     expect(result.changeDirection).toBe('negative');
     expect(result.changeDetected).toBe(true);
     expect(result.contributingFactors).toContain('declining_bonding');
-    expect(result.contributingFactors).toContain('increased_stress_sensitivity');
   });
 });

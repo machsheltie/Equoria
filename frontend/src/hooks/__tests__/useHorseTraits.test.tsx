@@ -34,7 +34,6 @@ const realHorseTraits = {
   horseId: 42,
   horseName: 'TestFixture-Trait-Horse',
   bondScore: 50,
-  stressLevel: 10,
   age: 4,
   traits: {
     positive: [
@@ -43,7 +42,7 @@ const realHorseTraits = {
         definition: {
           type: 'positive',
           rarity: 'common',
-          description: 'Less likely to be affected by stress.',
+          description: 'Takes challenges in stride.',
           category: 'epigenetic',
         },
       },
@@ -68,7 +67,7 @@ const realHorseTraits = {
 const realDiscoveryStatus = {
   horseId: 42,
   horseName: 'TestFixture-Trait-Horse',
-  currentStats: { bondScore: 50, stressLevel: 10, age: 4 },
+  currentStats: { bondScore: 50, age: 4 },
   traitCounts: { visible: 2, hidden: 2 },
   discoveryConditions: {
     met: [{ trait: 'brave', reason: 'High bond score reached' }],
@@ -88,7 +87,7 @@ describe('useHorseTraits — pure mappers', () => {
         name: 'Resilient',
         valence: 'positive',
       });
-      expect(view.positive[0].description).toMatch(/stress/i);
+      expect(view.positive[0].description).toBe('Takes challenges in stride.');
       expect(view.negative).toHaveLength(1);
       expect(view.negative[0]).toMatchObject({
         key: 'nervous',

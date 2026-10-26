@@ -191,7 +191,7 @@ const sampleMentorInfo: MentorInfo = {
     id: 'gentle_hands',
     name: 'Gentle Hands',
     description: 'Inherited gentle touch technique',
-    effect: { bondingBonus: 0.05, stressReduction: 0.1 },
+    effect: { bondingBonus: 0.05 },
   },
   mentorshipDate: '2025-06-15T00:00:00.000Z',
 };

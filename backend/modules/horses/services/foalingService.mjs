@@ -9,7 +9,7 @@
  * pipeline previously inlined in `horseController.createFoal`:
  *
  *   - lineage gathering (3 generations)
- *   - epigenetic-trait roll at birth (mare stress + lineage + feed quality)
+ *   - epigenetic-trait roll at birth (lineage + feed quality + mare health)
  *   - conformation, gait, temperament generation (or inherited)
  *   - the actual `createHorse()` insert
  *   - clearing the dam's pregnancy, in the same transaction as the insert, and
@@ -224,13 +224,11 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   const mareStats = {
     id: dam.id,
     name: dam.name,
-    stressLevel: dam.stressLevel,
     bondScore: dam.bondScore,
     healthStatus: dam.healthStatus || 'Good',
   };
   const lineage = await gatherLineage(sireId, damId, 3);
   const feedQuality = assessFeedQualityFromMare(mareStats);
-  const { stressLevel } = mareStats;
 
   // §A inheritance: pass the union of each parent's epigenetic traits
   // (positive ∪ negative ∪ hidden) so the staged pipeline can inherit them.
@@ -238,11 +236,15 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   // deterministic (used by tests).
   const damTraits = collectEpigeneticTraits(dam.epigeneticModifiers);
   const sireTraits = collectEpigeneticTraits(sire.epigeneticModifiers);
+  // A Fair mare multiplies EVERY negative foal-trait roll by 1.25, a Bad mare by 1.5
+  // (owner rulings 2026-10-23 Equoria-w4ivy and 2026-10-26 Equoria-pw7cm).
+  const damHealthGrade = horseHealthGrade(dam);
+  const negativeRollMultiplier = negativeTraitChanceMultiplier(damHealthGrade);
   const epigeneticTraits = applyEpigeneticTraitsAtBirth({
     mare: mareStats,
     lineage,
     feedQuality,
-    stressLevel,
+    negativeRollMultiplier,
     sireTraits,
     damTraits,
     seed: options.epigeneticSeed,
@@ -257,10 +259,9 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   const positiveChance = Number(options.positiveTraitChance) || 0;
   // A Fair mare raises the CURRENT negative-trait chance by 25%, a Bad mare by
   // 50% (owner ruling 2026-10-23, Equoria-w4ivy); no other odds move.
-  const damHealthGrade = horseHealthGrade(dam);
   const negativeChance = Math.min(
     100,
-    (Number(options.negativeTraitChance) || 0) * negativeTraitChanceMultiplier(damHealthGrade),
+    (Number(options.negativeTraitChance) || 0) * negativeRollMultiplier,
   );
   const positiveTraits = [...(epigeneticTraits.positive || [])];
   const negativeTraits = [...(epigeneticTraits.negative || [])];
@@ -468,7 +469,6 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     foal: newFoal,
     appliedTraits: { positive: positiveTraits, negative: negativeTraits },
     breedingAnalysis: {
-      mareStress: stressLevel,
       feedQuality,
       lineageCount: lineage.length,
       pregnancyBonus: { positiveChance, negativeChance },
@@ -508,7 +508,6 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
       name: true,
       userId: true,
       breedId: true,
-      stressLevel: true,
       bondScore: true,
       healthStatus: true,
       lastVettedDate: true,

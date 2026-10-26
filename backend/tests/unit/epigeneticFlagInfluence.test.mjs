@@ -40,25 +40,22 @@ describe('Epigenetic Flag Influence System', () => {
       const result = calculateBehaviorModifiers(['brave']);
 
       expect(result.statRecoveryBonus).toBe(0.05);
-      expect(result.stressResistance).toBe(0.1);
     });
 
     test('should aggregate modifiers from multiple flags', () => {
       const result = calculateBehaviorModifiers(['brave', 'resilient']);
 
-      // Brave: statRecoveryBonus 0.05, stressResistance 0.1
-      // Resilient: stressRecovery 0.2, healthBonus 0.05
+      // Brave: statRecoveryBonus 0.05
+      // Resilient: healthBonus 0.05
       expect(result.statRecoveryBonus).toBe(0.05);
-      expect(result.stressResistance).toBe(0.1);
-      expect(result.stressRecovery).toBe(0.2);
       expect(result.healthBonus).toBe(0.05);
     });
 
     test('should stack same modifier types', () => {
-      const result = calculateBehaviorModifiers(['fearful', 'fragile']);
+      const result = calculateBehaviorModifiers(['brave', 'confident']);
 
-      // Both flags have stressVulnerability
-      expect(result.stressVulnerability).toBe(0.4); // 0.15 + 0.25
+      // Both flags have competitionBonus
+      expect(result.competitionBonus).toBeCloseTo(0.25, 10); // 0.15 + 0.1
     });
   });
 
@@ -74,42 +71,28 @@ describe('Epigenetic Flag Influence System', () => {
     test('should apply competition bonus correctly', () => {
       const result = applyFlagInfluencesToCompetition(100, ['confident'], 'racing');
 
-      // Confident has competitionBonus 0.1 and stressResistance 0.2 (applied as 0.2 * 0.3 = 0.06)
+      // Confident has competitionBonus 0.1
       // competitionBonus: 100 * 0.1 = 10
-      // stressResistance: 100 * 0.06 = 6
-      // Total: 100 + 10 + 6 = 116
-      expect(result.modifiedScore).toBe(116);
-      expect(result.totalModifier).toBe(16);
+      // Total: 100 + 10 = 110
+      expect(result.modifiedScore).toBe(110);
+      expect(result.totalModifier).toBe(10);
       expect(result.appliedModifiers.competitionBonus).toBe(10);
     });
 
     test('should apply competition penalty correctly', () => {
       const result = applyFlagInfluencesToCompetition(100, ['fearful'], 'racing');
 
-      // Fearful has competitionPenalty -0.15 and stressVulnerability 0.15
+      // Fearful has competitionPenalty -0.15
       // competitionPenalty: 100 * -0.15 = -15
-      // stressVulnerability: 100 * (-0.15 * 0.5) = -7.5
-      // Total: 100 - 15 - 7.5 = 77.5
-      expect(result.modifiedScore).toBe(77.5);
+      // Total: 100 - 15 = 85
+      expect(result.modifiedScore).toBe(85);
       expect(result.appliedModifiers.competitionPenalty).toBe(-15);
-      expect(result.appliedModifiers.stressVulnerability).toBe(-7.5);
-    });
-
-    test('should apply stress modifiers correctly', () => {
-      const result = applyFlagInfluencesToCompetition(100, ['brave'], 'racing');
-
-      // Brave has competitionBonus 0.15 and stressResistance 0.1 (applied as 0.1 * 0.3 = 0.03)
-      // competitionBonus: 100 * 0.15 = 15
-      // stressResistance: 100 * 0.03 = 3
-      // Total: 100 + 15 + 3 = 118
-      expect(result.modifiedScore).toBe(118);
-      expect(result.appliedModifiers.stressResistance).toBe(3);
     });
 
     test('should not allow negative scores', () => {
       const result = applyFlagInfluencesToCompetition(10, ['fragile'], 'racing');
 
-      // Fragile has high stress vulnerability that could make score negative
+      // The score never goes below 0
       expect(result.modifiedScore).toBeGreaterThanOrEqual(0);
     });
   });

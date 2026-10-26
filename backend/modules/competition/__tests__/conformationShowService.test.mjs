@@ -341,7 +341,7 @@ describe('validateConformationEntry — pure-input branches (Equoria-jkht)', () 
   });
 
   it('pushes groom-not-assigned error when ids are null', async () => {
-    const horse = { id: null, age: 2, healthStatus: 'Good', stressLevel: 5, conformationScores: { head: 70 } };
+    const horse = { id: null, age: 2, healthStatus: 'Good', conformationScores: { head: 70 } };
     const groom = { id: null };
     const result = await validateConformationEntry(horse, groom, 'uid');
     expect(result.valid).toBe(false);
@@ -349,31 +349,24 @@ describe('validateConformationEntry — pure-input branches (Equoria-jkht)', () 
   });
 
   it('pushes age-invalid error when horse.age < 0 (line 389-391)', async () => {
-    const horse = { id: null, age: -1, healthStatus: 'Good', stressLevel: 5, conformationScores: null };
+    const horse = { id: null, age: -1, healthStatus: 'Good', conformationScores: null };
     const groom = { id: null };
     const result = await validateConformationEntry(horse, groom, 'uid');
     expect(result.errors.some(e => e.includes('invalid'))).toBe(true);
   });
 
-  // Old contract: an Excellent/Good health requirement and a high-stress
-  // warning. Owner rulings 2026-10-23 (Equoria-0d4wa): only critical displayed
-  // health blocks (applied by the entry route), and the stress warning is gone.
+  // Old contract: an Excellent/Good health requirement. Owner rulings
+  // 2026-10-23 (Equoria-0d4wa): only critical displayed health blocks (applied
+  // by the entry route).
   it('pushes no health error of its own (owner ruling 2026-10-23)', async () => {
-    const horse = { id: null, age: 2, healthStatus: 'Injured', stressLevel: 5, conformationScores: null };
+    const horse = { id: null, age: 2, healthStatus: 'Injured', conformationScores: null };
     const groom = { id: null };
     const result = await validateConformationEntry(horse, groom, 'uid');
     expect(result.errors.some(e => /health/i.test(e))).toBe(false);
   });
 
-  it('adds no stress warning, however high the stress (owner ruling 2026-10-23)', async () => {
-    const horse = { id: null, age: 2, healthStatus: 'Good', stressLevel: 90, conformationScores: null };
-    const groom = { id: null };
-    const result = await validateConformationEntry(horse, groom, 'uid');
-    expect(result.warnings.some(w => /stress/i.test(w))).toBe(false);
-  });
-
   it('adds no-conformationScores warning when conformationScores is null (lines 409-411)', async () => {
-    const horse = { id: null, age: 2, healthStatus: 'Excellent', stressLevel: 5, conformationScores: null };
+    const horse = { id: null, age: 2, healthStatus: 'Excellent', conformationScores: null };
     const groom = { id: null };
     const result = await validateConformationEntry(horse, groom, 'uid');
     expect(result.warnings.some(w => w.includes('conformation scores'))).toBe(true);
@@ -564,7 +557,7 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
   describe('validateConformationEntry — line 337: DB query with non-null IDs (Equoria-rr7)', () => {
     it('executes DB query when horse.id and groom.id are non-null; returns groom-not-assigned when no assignment exists', async () => {
       // IDs are non-null integers but no groomAssignment exists for them → query fires (line 337), returns null
-      const horse = { id: 999999997, age: 2, healthStatus: 'Good', stressLevel: 0, conformationScores: null };
+      const horse = { id: 999999997, age: 2, healthStatus: 'Good', conformationScores: null };
       const groom = { id: 999999997 };
       const result = await validateConformationEntry(horse, groom, cssUser.id);
       expect(result.valid).toBe(false);
@@ -576,7 +569,7 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
 
   describe('validateConformationEntry — lines 350-358: assignment date check (Equoria-rr7)', () => {
     it('line 355 true arm: pushes "at least N days" error when groom assignment is < MIN_GROOM_ASSIGNMENT_DAYS old', async () => {
-      const horse = { id: cssHorse.id, age: 2, healthStatus: 'Good', stressLevel: 0, conformationScores: null };
+      const horse = { id: cssHorse.id, age: 2, healthStatus: 'Good', conformationScores: null };
       const groom = { id: cssFreshGroom.id };
       const result = await validateConformationEntry(horse, groom, cssUser.id);
       expect(result.errors.some(e => e.includes('at least'))).toBe(true);
@@ -584,7 +577,7 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
 
     it('line 355 false arm: no assignment-days error when assignment is >= MIN_GROOM_ASSIGNMENT_DAYS old', async () => {
       // cssOldGroom assignment was created 10 days ago → daysSinceAssignment >= 2 → no error
-      const horse = { id: cssHorse.id, age: 2, healthStatus: 'Good', stressLevel: 0, conformationScores: null };
+      const horse = { id: cssHorse.id, age: 2, healthStatus: 'Good', conformationScores: null };
       const groom = { id: cssOldGroom.id };
       const result = await validateConformationEntry(horse, groom, cssUser.id);
       expect(result.errors.every(e => !e.includes('at least'))).toBe(true);

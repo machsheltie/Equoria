@@ -50,7 +50,7 @@
 // The TASK keys here (e.g. `desensitization`, `environment_exploration`) are foal
 // DEVELOPMENTAL ACTIVITIES, not traits — do NOT confuse them with the similarly
 // named PRD-04 §1.2 design-vision behavioral names (desensitized, explorative,
-// secretive, peopleOriented, routineDependent, stressProne). Those six names are
+// secretive, peopleOriented, routineDependent). Those five names are
 // DESIGN VOCABULARY only: they are NOT in TRAIT_DEFINITIONS and NOT referenced by
 // this map. They stay unimplemented — task-influence design markers, not full
 // behavioral traits — until the deferred deterministic conflict resolver lands

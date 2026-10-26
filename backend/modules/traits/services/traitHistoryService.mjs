@@ -28,7 +28,6 @@ export async function logTraitAssignment(traitData, client = prisma) {
     isEpigenetic = false,
     groomId = null,
     bondScore = null,
-    stressLevel = null,
   } = traitData;
 
   // Calculate horse age in days
@@ -54,7 +53,6 @@ export async function logTraitAssignment(traitData, client = prisma) {
       isEpigenetic,
       groomId,
       bondScore,
-      stressLevel,
       ageInDays,
       timestamp: new Date(),
     },

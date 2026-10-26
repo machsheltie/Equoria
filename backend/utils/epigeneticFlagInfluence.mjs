@@ -102,19 +102,6 @@ export function applyFlagInfluencesToCompetition(baseScore, epigeneticFlags, _di
       appliedModifiers.competitionPenalty = penalty;
     }
 
-    // Apply stress-related modifiers
-    if (behaviorModifiers.stressVulnerability) {
-      const stressPenalty = baseScore * (-behaviorModifiers.stressVulnerability * 0.5); // Reduce impact
-      totalModifier += stressPenalty;
-      appliedModifiers.stressVulnerability = stressPenalty;
-    }
-
-    if (behaviorModifiers.stressResistance) {
-      const stressBonus = baseScore * (behaviorModifiers.stressResistance * 0.3); // Moderate impact
-      totalModifier += stressBonus;
-      appliedModifiers.stressResistance = stressBonus;
-    }
-
     const modifiedScore = Math.max(0, baseScore + totalModifier);
 
     logger.debug(

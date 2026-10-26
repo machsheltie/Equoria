@@ -90,7 +90,6 @@ describe('Foal Task Log Storage', () => {
           connect: { id: testUser.id },
         },
         bondScore: 50,
-        stressLevel: 20,
         taskLog: null,
         lastGroomed: null,
       },

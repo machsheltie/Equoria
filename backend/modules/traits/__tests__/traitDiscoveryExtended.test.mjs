@@ -56,7 +56,6 @@ beforeAll(async () => {
       sex: 'Mare',
       age: 4, // adult
       bondScore: 60,
-      stressLevel: 30,
       epigeneticModifiers: { positive: ['resilient'], negative: ['nervous'], hidden: ['calm'] },
     },
   });
@@ -92,7 +91,6 @@ describe('getDiscoveryProgress() — success path', () => {
     expect(typeof result.visibleTraitsCount).toBe('number');
     expect(result.currentStats).toBeDefined();
     expect(typeof result.currentStats.bondScore).toBe('number');
-    expect(typeof result.currentStats.stressLevel).toBe('number');
     expect(typeof result.currentStats.developmentDay).toBe('number');
     expect(Array.isArray(result.conditions)).toBe(true);
   }, 15000);

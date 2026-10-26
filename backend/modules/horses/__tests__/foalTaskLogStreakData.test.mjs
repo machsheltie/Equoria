@@ -93,7 +93,6 @@ describe('Foal Task Log and Streak Data', () => {
           connect: { id: testUser.id },
         },
         bondScore: 50,
-        stressLevel: 20,
         taskLog: null,
         // consecutiveDaysFoalCare omitted — schema default 0 (`Int @default(0)`, NOT NULL)
         lastGroomed: null,

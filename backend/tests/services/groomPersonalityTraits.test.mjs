@@ -106,7 +106,6 @@ describe('Groom Personality Trait System', () => {
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 10,
-              stressLevel: 8,
               epigeneticFlags: ['fearful', 'insecure'],
             },
           }),
@@ -119,7 +118,6 @@ describe('Groom Personality Trait System', () => {
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 35,
-              stressLevel: 2,
               epigeneticFlags: ['brave', 'confident'],
             },
           }),
@@ -132,7 +130,6 @@ describe('Groom Personality Trait System', () => {
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 20,
-              stressLevel: 5,
               epigeneticFlags: [],
             },
           }),
@@ -235,7 +232,6 @@ describe('Groom Personality Trait System', () => {
 
       expect(modifiers).toBeDefined();
       expect(modifiers.bondingModifier).toBeGreaterThan(1.0); // Calm grooms excel with nervous horses
-      expect(modifiers.stressModifier).toBeLessThan(1.0); // Reduce stress
       expect(modifiers.qualityModifier).toBeGreaterThan(1.0); // Higher quality interactions
       expect(modifiers.taskEffectiveness).toBeGreaterThan(1.0); // More effective
       expect(modifiers.compatibilityScore).toBeGreaterThan(0.7); // High compatibility
@@ -261,7 +257,6 @@ describe('Groom Personality Trait System', () => {
       const modifiers = await calculatePersonalityModifiers(energeticGroom.id, nervousHorse.id, 'trust_building');
 
       expect(modifiers).toBeDefined();
-      expect(modifiers.stressModifier).toBeGreaterThan(1.0); // May increase stress
       expect(modifiers.compatibilityScore).toBeLessThan(0.5); // Poor compatibility
       expect(modifiers.taskEffectiveness).toBeLessThan(1.0); // Less effective
     });

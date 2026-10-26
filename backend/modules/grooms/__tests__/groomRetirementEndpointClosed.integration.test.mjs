@@ -231,7 +231,6 @@ describe('Equoria-m9lz1 — POST /api/v1/grooms/:id/retirement/process is closed
         interactionType: 'daily_care',
         duration: 30,
         bondingChange: 3,
-        stressChange: -1,
         quality: 'good',
       },
     });

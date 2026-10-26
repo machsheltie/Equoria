@@ -240,7 +240,6 @@ describe('Groom Bonus Traits System', () => {
             interactionType: 'enrichment',
             duration: 30,
             bondingChange: 8, // GroomInteraction uses bondingChange
-            stressChange: -2, // GroomInteraction uses stressChange
             quality: 'excellent', // GroomInteraction uses quality
             cost: 25.0,
             notes: `Test interaction ${i + 1}`,
@@ -282,7 +281,6 @@ describe('Groom Bonus Traits System', () => {
           interactionType: 'grooming',
           duration: 15,
           bondingChange: 3, // GroomInteraction uses bondingChange
-          stressChange: -1, // GroomInteraction uses stressChange
           quality: 'fair', // GroomInteraction uses quality
           cost: 25.0,
           notes: 'Low bond interaction',
@@ -323,7 +321,6 @@ describe('Groom Bonus Traits System', () => {
             interactionType: 'enrichment',
             duration: 30,
             bondingChange: 8, // High bonding to ensure bond > 60
-            stressChange: -2,
             quality: 'excellent',
             cost: 25.0,
             notes: `High bond interaction ${i + 1}`,

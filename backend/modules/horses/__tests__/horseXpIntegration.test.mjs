@@ -50,7 +50,6 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
         obedience: 50,
         intelligence: 55,
         healthStatus: 'Excellent',
-        stressLevel: 20,
         horseXp: 0,
         availableStatPoints: 0,
       },

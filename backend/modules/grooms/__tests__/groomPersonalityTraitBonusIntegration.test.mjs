@@ -75,7 +75,6 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         dateOfBirth: gameCalendarDate(new Date()), // 0 days old (newborn for imprinting)
         temperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
         bondScore: 65,
-        stressLevel: 20,
         healthStatus: 'Good',
         sex: 'filly',
         breedId: testBreed.id,
@@ -147,7 +146,6 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       expect(compatibility.isMatch).toBe(true);
       expect(compatibility.isStrongMatch).toBe(true); // High bond score (>60)
       expect(compatibility.traitModifierScore).toBe(2); // Strong match bonus
-      expect(compatibility.stressResistanceBonus).toBe(-0.15); // -15% stress
       expect(compatibility.bondModifier).toBe(10);
     });
 
@@ -163,7 +161,6 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       expect(compatibility.isMatch).toBe(false);
       expect(compatibility.isStrongMatch).toBe(false);
       expect(compatibility.traitModifierScore).toBe(-1); // Mismatch penalty
-      expect(compatibility.stressResistanceBonus).toBe(0.05); // +5% stress
       expect(compatibility.bondModifier).toBe(-5);
     });
 
@@ -178,7 +175,6 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       expect(compatibility.isMatch).toBe(true);
       expect(compatibility.isStrongMatch).toBe(false); // Bond too low
       expect(compatibility.traitModifierScore).toBe(1); // Regular match bonus
-      expect(compatibility.stressResistanceBonus).toBe(-0.05); // -5% stress
       expect(compatibility.bondModifier).toBe(5);
     });
   });
@@ -190,14 +186,12 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         foalTemperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
         bondScore: 70,
         baseMilestoneScore: 1,
-        baseStressLevel: 30,
         baseBondingRate: 5,
       });
 
       expect(effects.personalityEffectApplied).toBe(true);
       expect(effects.personalityMatchScore).toBe(2); // Strong match
       expect(effects.modifiedMilestoneScore).toBe(3); // 1 + 2
-      expect(effects.modifiedStressLevel).toBeLessThan(30); // Stress reduced
       expect(effects.modifiedBondingRate).toBe(15); // 5 + 10
     });
 
@@ -207,14 +201,12 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         foalTemperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
         bondScore: 70,
         baseMilestoneScore: 1,
-        baseStressLevel: 30,
         baseBondingRate: 5,
       });
 
       expect(effects.personalityEffectApplied).toBe(false);
       expect(effects.personalityMatchScore).toBe(0);
       expect(effects.modifiedMilestoneScore).toBe(1); // Unchanged
-      expect(effects.modifiedStressLevel).toBe(30); // Unchanged
       expect(effects.modifiedBondingRate).toBe(5); // Unchanged
     });
   });

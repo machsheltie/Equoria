@@ -56,7 +56,6 @@ const TARGET_COLUMNS = [
   'focus',
   'totalEarnings',
   'bondScore',
-  'stressLevel',
   'daysGroomedInARow',
   'consecutiveDaysFoalCare',
   'horseXp',

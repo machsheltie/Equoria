@@ -98,12 +98,9 @@ export function evaluateFlagTriggers(flagDefinition, carePatterns, predisposed =
       );
       break;
     case 'resilient':
-      triggered = evaluateResilientTriggers(
-        conditions,
-        carePatterns,
-        evaluationResults,
-        predisposed,
-      );
+    case 'fragile':
+      // The care rule that earned these two flags was removed (owner ruling
+      // 2026-10-26, Equoria-b76x0); no care pattern earns them now.
       break;
     case 'fearful':
       triggered = evaluateFearfulTriggers(conditions, carePatterns, evaluationResults, predisposed);
@@ -126,9 +123,6 @@ export function evaluateFlagTriggers(flagDefinition, carePatterns, predisposed =
         evaluationResults,
         predisposed,
       );
-      break;
-    case 'fragile':
-      triggered = evaluateFragileTriggers(conditions, carePatterns, evaluationResults, predisposed);
       break;
     default:
       logger.warn(`[flagEvaluationEngine] Unknown flag type: ${flagDefinition.name}`);
@@ -162,12 +156,10 @@ export function evaluateFlagTriggers(flagDefinition, carePatterns, predisposed =
 //   brave        novelty noveltyWithSupport >= 3, bondScore >= 30
 //   confident    positiveInteractions >= 10, bondScore >= 40; consecutiveDays >= 7, bondScore >= 40
 //   affectionate daysWithInteraction >= 7, bondScore >= 50; qualityInteractions >= 5
-//   resilient    stressWithSupport >= 3; stressEvents >= 2
 //   fearful      fearEvents >= 2; bondScore <= 20; noveltyWithSupport === 0
 //   insecure     daysWithoutCare >= 4 & bondScore <= 25; OR poorQualityInteractions >= 3
 //   aloof        interactions < 3 & bondScore <= 30; positiveInteractions <= 2
 //   skittish     startleEvents >= 2; (noveltyWithSupport === 0 OR bondScore <= 25)
-//   fragile      stressEvents >= 3 & stressWithSupport === 0; recoveryEvents === 0
 
 function evaluateBraveTriggers(conditions, patterns, results, predisposed = false) {
   results.noveltyExposure =
@@ -198,13 +190,6 @@ function evaluateAffectionateTriggers(conditions, patterns, results, predisposed
     patterns.consistentCare.qualityInteractions >= relaxMin(5, predisposed);
 
   return results.dailyGrooming && results.humanInteraction;
-}
-
-function evaluateResilientTriggers(conditions, patterns, results, predisposed = false) {
-  results.stressRecovery = patterns.stressManagement.stressWithSupport >= relaxMin(3, predisposed);
-  results.moderateStress = patterns.stressManagement.stressEvents >= relaxMin(2, predisposed);
-
-  return results.stressRecovery && results.moderateStress;
 }
 
 function evaluateFearfulTriggers(conditions, patterns, results, predisposed = false) {
@@ -243,13 +228,4 @@ function evaluateSkittishTriggers(conditions, patterns, results, predisposed = f
   results.lowBond = patterns.bondingPatterns.currentBondScore <= relaxMax(25, predisposed);
 
   return results.startleEvents && (results.noGroomPresent || results.lowBond);
-}
-
-function evaluateFragileTriggers(conditions, patterns, results, predisposed = false) {
-  results.multipleStressSpikes =
-    patterns.stressManagement.stressEvents >= relaxMin(3, predisposed) &&
-    patterns.stressManagement.stressWithSupport === 0;
-  results.inadequateSupport = patterns.stressManagement.recoveryEvents === 0;
-
-  return results.multipleStressSpikes && results.inadequateSupport;
 }

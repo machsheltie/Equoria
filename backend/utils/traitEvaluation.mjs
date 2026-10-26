@@ -7,7 +7,7 @@
  * resolution, epigenetic trait assignment, and permanent trait application.
  *
  * @features
- * - Discovery-based trait revelation system with bond/stress conditions
+ * - Discovery-based trait revelation system with bond conditions
  * - Groom interaction trait influence system (+3/-3 permanence rules)
  * - Epigenetic trait marking for early development (before age 3)
  * - Trait conflict resolution and duplication prevention
@@ -38,14 +38,13 @@ import { getHorseAgeYears } from './horseAge.mjs';
  * Trait definitions with their revelation conditions
  */
 const TRAIT_DEFINITIONS = {
-  // Positive traits revealed through good bonding and low stress
+  // Positive traits revealed through good bonding
   positive: {
     resilient: {
       name: 'Resilient',
-      description: 'Faster stress recovery and improved training consistency',
+      description: 'Improved training consistency',
       revealConditions: {
         minBondScore: 70,
-        maxStressLevel: 30,
         minAge: 2, // days
       },
       rarity: 'common',
@@ -53,10 +52,9 @@ const TRAIT_DEFINITIONS = {
     },
     calm: {
       name: 'Calm',
-      description: 'Reduced stress accumulation and improved focus',
+      description: 'Improved focus',
       revealConditions: {
         minBondScore: 60,
-        maxStressLevel: 20,
         minAge: 1,
       },
       rarity: 'common',
@@ -67,7 +65,6 @@ const TRAIT_DEFINITIONS = {
       description: 'Accelerated learning and improved skill retention',
       revealConditions: {
         minBondScore: 75,
-        maxStressLevel: 25,
         minAge: 3,
       },
       rarity: 'common',
@@ -78,7 +75,6 @@ const TRAIT_DEFINITIONS = {
       description: 'Enhanced competition performance and better adaptability',
       revealConditions: {
         minBondScore: 65,
-        maxStressLevel: 40,
         minAge: 4,
       },
       rarity: 'common',
@@ -89,7 +85,6 @@ const TRAIT_DEFINITIONS = {
       description: 'Improved physical stats and better movement quality',
       revealConditions: {
         minBondScore: 80,
-        maxStressLevel: 35,
         minAge: 5,
       },
       rarity: 'rare',
@@ -100,7 +95,6 @@ const TRAIT_DEFINITIONS = {
       description: 'Major training efficiency bonus',
       revealConditions: {
         minBondScore: 85,
-        maxStressLevel: 15,
         minAge: 6,
       },
       rarity: 'rare',
@@ -108,14 +102,13 @@ const TRAIT_DEFINITIONS = {
     },
   },
 
-  // Negative traits revealed through poor bonding and high stress
+  // Negative traits revealed through poor bonding
   negative: {
     nervous: {
       name: 'Nervous',
-      description: 'Increased stress sensitivity, requires gentle approach',
+      description: 'Easily unsettled, requires gentle approach',
       revealConditions: {
         maxBondScore: 40,
-        minStressLevel: 60,
         minAge: 1,
       },
       rarity: 'common',
@@ -126,7 +119,6 @@ const TRAIT_DEFINITIONS = {
       description: 'Slower initial learning, increased training time',
       revealConditions: {
         maxBondScore: 30,
-        minStressLevel: 50,
         minAge: 2,
       },
       rarity: 'common',
@@ -137,7 +129,6 @@ const TRAIT_DEFINITIONS = {
       description: 'Higher injury risk, requires careful management',
       revealConditions: {
         maxBondScore: 35,
-        minStressLevel: 70,
         minAge: 3,
       },
       rarity: 'common',
@@ -148,7 +139,6 @@ const TRAIT_DEFINITIONS = {
       description: 'Handling challenges and social difficulties',
       revealConditions: {
         maxBondScore: 25,
-        minStressLevel: 80,
         minAge: 4,
       },
       rarity: 'common',
@@ -159,7 +149,6 @@ const TRAIT_DEFINITIONS = {
       description: 'Reduced training efficiency, requires motivation',
       revealConditions: {
         maxBondScore: 45,
-        minStressLevel: 40,
         minAge: 5,
       },
       rarity: 'common',
@@ -178,7 +167,6 @@ const TRAIT_DEFINITIONS = {
       description: 'Exceptional heritage with superior potential',
       revealConditions: {
         minBondScore: 90,
-        maxStressLevel: 10,
         minAge: 6,
       },
       rarity: 'legendary',
@@ -206,7 +194,7 @@ const TRAIT_CONFLICTS = {
 
 /**
  * Evaluate which traits should be revealed for a foal based on current conditions
- * @param {Object} foal - Foal data with bondScore, stressLevel, age
+ * @param {Object} foal - Foal data with bondScore, age
  * @param {Object} currentTraits - Current epigeneticModifiers object
  * @param {number} currentDay - Current development day (0-6)
  * @returns {Object} - New traits to be revealed
@@ -217,7 +205,6 @@ function evaluateTraitRevelation(foal, currentTraits, currentDay) {
   );
 
   const bondScore = foal.bondScore ?? 0;
-  const stressLevel = foal.stressLevel ?? 0;
   const age = foal.age || 0;
 
   // Convert age in years to development days for young foals
@@ -242,12 +229,12 @@ function evaluateTraitRevelation(foal, currentTraits, currentDay) {
       continue;
     }
 
-    if (shouldRevealTrait(traitDef, bondScore, stressLevel, developmentAge)) {
+    if (shouldRevealTrait(traitDef, bondScore, developmentAge)) {
       if (Math.random() < traitDef.baseChance) {
         // Check for conflicts
         if (!hasTraitConflict(traitKey, existingTraits)) {
           // Determine if trait should be hidden
-          const shouldHide = shouldTraitBeHidden(traitDef, bondScore, stressLevel);
+          const shouldHide = shouldTraitBeHidden(traitDef, bondScore);
           if (shouldHide) {
             newTraits.hidden.push(traitKey);
           } else {
@@ -269,12 +256,12 @@ function evaluateTraitRevelation(foal, currentTraits, currentDay) {
       continue;
     }
 
-    if (shouldRevealTrait(traitDef, bondScore, stressLevel, developmentAge)) {
+    if (shouldRevealTrait(traitDef, bondScore, developmentAge)) {
       if (Math.random() < traitDef.baseChance) {
         // Check for conflicts
         if (!hasTraitConflict(traitKey, existingTraits)) {
           // Negative traits are usually visible as warnings
-          const shouldHide = shouldTraitBeHidden(traitDef, bondScore, stressLevel);
+          const shouldHide = shouldTraitBeHidden(traitDef, bondScore);
           if (shouldHide) {
             newTraits.hidden.push(traitKey);
           } else {
@@ -296,7 +283,7 @@ function evaluateTraitRevelation(foal, currentTraits, currentDay) {
       continue;
     }
 
-    if (shouldRevealTrait(traitDef, bondScore, stressLevel, developmentAge)) {
+    if (shouldRevealTrait(traitDef, bondScore, developmentAge)) {
       if (Math.random() < traitDef.baseChance) {
         // Check for conflicts
         if (!hasTraitConflict(traitKey, existingTraits)) {
@@ -321,11 +308,10 @@ function evaluateTraitRevelation(foal, currentTraits, currentDay) {
  * Check if trait revelation conditions are met
  * @param {Object} traitDef - Trait definition
  * @param {number} bondScore - Current bond score
- * @param {number} stressLevel - Current stress level
  * @param {number} developmentAge - Development age in days
  * @returns {boolean} - Whether trait should be revealed
  */
-function shouldRevealTrait(traitDef, bondScore, stressLevel, developmentAge) {
+function shouldRevealTrait(traitDef, bondScore, developmentAge) {
   const conditions = traitDef.revealConditions;
 
   // Check age requirement
@@ -338,14 +324,6 @@ function shouldRevealTrait(traitDef, bondScore, stressLevel, developmentAge) {
     return false;
   }
   if (conditions.maxBondScore && bondScore > conditions.maxBondScore) {
-    return false;
-  }
-
-  // Check stress level conditions
-  if (conditions.minStressLevel && stressLevel < conditions.minStressLevel) {
-    return false;
-  }
-  if (conditions.maxStressLevel && stressLevel > conditions.maxStressLevel) {
     return false;
   }
 
@@ -367,10 +345,9 @@ function hasTraitConflict(traitKey, existingTraits) {
  * Determine if a trait should be hidden based on conditions
  * @param {Object} traitDef - Trait definition
  * @param {number} bondScore - Current bond score
- * @param {number} stressLevel - Current stress level
  * @returns {boolean} - Whether trait should be hidden
  */
-function shouldTraitBeHidden(traitDef, bondScore, stressLevel) {
+function shouldTraitBeHidden(traitDef, bondScore) {
   // Legendary traits are almost always hidden
   if (traitDef.rarity === 'legendary') {
     return Math.random() < 0.9;
@@ -382,7 +359,7 @@ function shouldTraitBeHidden(traitDef, bondScore, stressLevel) {
   }
 
   // Poor conditions increase chance of traits being hidden
-  const conditionScore = bondScore - stressLevel;
+  const conditionScore = bondScore;
   if (conditionScore < 20) {
     return Math.random() < 0.3;
   }

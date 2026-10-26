@@ -310,7 +310,6 @@ export async function getHorsePersonalityImpact(req, res) {
           isMatch: compatibility.isMatch,
           isStrongMatch: compatibility.isStrongMatch,
           traitModifier: compatibility.traitModifierScore,
-          stressReduction: Math.abs(compatibility.stressResistanceBonus * 100), // Convert to percentage
           bondModifier: compatibility.bondModifier,
           description: compatibility.description,
           recommendation: compatibility.isMatch

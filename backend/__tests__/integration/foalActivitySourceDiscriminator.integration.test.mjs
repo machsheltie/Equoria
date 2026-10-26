@@ -93,7 +93,6 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
           activityType: COLLISION_TASK,
           outcome: 'good',
           bondingChange: 2,
-          stressChange: -1,
           description: 'groom-stream event',
           source: FOAL_ACTIVITY_SOURCE.GROOM_INTERACTION,
         },
@@ -107,7 +106,6 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
         activityType: COLLISION_TASK,
         outcome: 'good',
         bondingChange: 1,
-        stressChange: 0,
         description: 'enrichment-stream collision event',
         source: FOAL_ACTIVITY_SOURCE.ENRICHMENT_ACTIVITY,
       },
@@ -135,7 +133,6 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
         activityType: 'legacyNullTask',
         outcome: 'good',
         bondingChange: 1,
-        stressChange: 0,
         description: 'pre-8yhe3 legacy row (no source column written)',
         // source intentionally omitted → NULL
       },

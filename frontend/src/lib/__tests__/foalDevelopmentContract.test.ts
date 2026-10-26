@@ -5,7 +5,7 @@
  * development stats nested under `data.development`, e.g. after the
  * apiClient `.data` unwrap:
  *
- *   { foal, development: { currentDay, bondingLevel, stressLevel, maxDay },
+ *   { foal, development: { currentDay, bondingLevel, maxDay },
  *     activityHistory }
  *
  * FoalDetailPage / FoalDevelopmentTracker read `development.currentDay`,
@@ -34,7 +34,6 @@ describe('normalizeFoalDevelopment — foal-development contract (Equoria-n3yw6)
       development: {
         currentDay: 3,
         bondingLevel: 72,
-        stressLevel: 14,
         maxDay: 6,
       },
     };
@@ -46,7 +45,6 @@ describe('normalizeFoalDevelopment — foal-development contract (Equoria-n3yw6)
     expect(flat?.currentDay).toBe(3);
     expect(flat?.maxDay).toBe(6);
     expect(flat?.bondingLevel).toBe(72);
-    expect(flat?.stressLevel).toBe(14);
   });
 
   // Equoria-fr2kg. OLD CONTRACT: the flat record carried the player-run
@@ -60,7 +58,6 @@ describe('normalizeFoalDevelopment — foal-development contract (Equoria-n3yw6)
       development: {
         currentDay: 3,
         bondingLevel: 72,
-        stressLevel: 14,
         maxDay: 6,
         completedActivities: { 0: ['gentle_touch'] },
         enrichmentDay: 3,
@@ -70,12 +67,12 @@ describe('normalizeFoalDevelopment — foal-development contract (Equoria-n3yw6)
     } as unknown as RawFoalDevelopmentBody;
 
     const flat = normalizeFoalDevelopment(legacyBody) as Record<string, unknown> | null;
-    expect(flat).toEqual({ currentDay: 3, maxDay: 6, bondingLevel: 72, stressLevel: 14 });
+    expect(flat).toEqual({ currentDay: 3, maxDay: 6, bondingLevel: 72 });
   });
 
   it('does NOT leave development stats nested (the bug) — no double-nesting', () => {
     const rawNested: RawFoalDevelopmentBody = {
-      development: { currentDay: 5, bondingLevel: 60, stressLevel: 5, maxDay: 6 },
+      development: { currentDay: 5, bondingLevel: 60, maxDay: 6 },
     };
     const flat = normalizeFoalDevelopment(rawNested);
     // The regression symptom: a consumer reading `flat.currentDay` got
@@ -93,13 +90,11 @@ describe('normalizeFoalDevelopment — foal-development contract (Equoria-n3yw6)
     const rawFlat: RawFoalDevelopmentBody = {
       currentDay: 2,
       bondingLevel: 55,
-      stressLevel: 18,
       maxDay: 6,
     };
     const flat = normalizeFoalDevelopment(rawFlat);
     expect(flat?.currentDay).toBe(2);
     expect(flat?.bondingLevel).toBe(55);
-    expect(flat?.stressLevel).toBe(18);
     expect(flat?.maxDay).toBe(6);
   });
 
@@ -119,6 +114,5 @@ describe('normalizeFoalDevelopment — foal-development contract (Equoria-n3yw6)
     expect(flat?.currentDay).toBe(2);
     expect(flat?.maxDay).toBe(6);
     expect(flat?.bondingLevel).toBe(0);
-    expect(flat?.stressLevel).toBe(0);
   });
 });

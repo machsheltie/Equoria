@@ -148,8 +148,8 @@ const BehavioralFlagsPanel: React.FC<BehavioralFlagsPanelProps> = ({ horseId }) 
                 {carePatterns.ageInYears !== undefined
                   ? `${carePatterns.ageInYears}-year-old `
                   : ''}
-                foal is still in the behavioral-flag development window. Consistent, varied, and
-                low-stress care now shapes which permanent flags it develops.
+                foal is still in the behavioral-flag development window. Consistent and varied care
+                now shapes which permanent flags it develops.
               </p>
             </div>
           )}

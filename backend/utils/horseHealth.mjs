@@ -269,10 +269,11 @@ export function horseHealthGrade(horse, now = new Date()) {
 }
 
 /**
- * How a mare's health at foaling scales the foal's negative-trait chance (owner
- * ruling 2026-10-23, Equoria-w4ivy): a Fair mare raises it by 25%, a Bad mare
- * by 50%; Excellent, Very Good and Good leave it alone. A multiplier on the
- * chance as it already stands, nothing else about the odds.
+ * How a mare's health at foaling scales EVERY negative foal-trait roll (owner
+ * rulings 2026-10-23, Equoria-w4ivy, and 2026-10-26, Equoria-pw7cm): a Fair mare
+ * multiplies the chance by 1.25, a Bad mare by 1.5; Excellent, Very Good and
+ * Good leave it alone. A multiplier on the chance as it already stands, nothing
+ * else about the odds.
  *
  * @param {'excellent'|'veryGood'|'good'|'fair'|'bad'} grade - horseHealthGrade of the mare
  * @returns {number}

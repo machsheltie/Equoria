@@ -63,7 +63,6 @@ export const TASK_DATA: TaskInfo[] = [
     recommendedDurationMinutes: 45,
     effects: [
       { label: 'Increases bond score', type: 'positive' },
-      { label: 'Reduces stress level', type: 'positive' },
       { label: 'Develops gentle trait', type: 'positive' },
     ],
     description: 'Build a foundation of trust through calm, consistent interaction.',
@@ -101,10 +100,7 @@ export const TASK_DATA: TaskInfo[] = [
     minAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MIN,
     maxAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MAX,
     recommendedDurationMinutes: 25,
-    effects: [
-      { label: 'Reduces stress level', type: 'positive' },
-      { label: 'Develops calm demeanor', type: 'positive' },
-    ],
+    effects: [{ label: 'Develops calm demeanor', type: 'positive' }],
     description: 'Soft grooming and stroking to promote relaxation and socialization.',
   },
   {
@@ -168,10 +164,7 @@ export const TASK_DATA: TaskInfo[] = [
     minAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MIN,
     maxAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MAX,
     recommendedDurationMinutes: 25,
-    effects: [
-      { label: 'Acclimates to water', type: 'positive' },
-      { label: 'Reduces stress level', type: 'positive' },
-    ],
+    effects: [{ label: 'Acclimates to water', type: 'positive' }],
     description: 'Introduce water and bathing to normalize grooming routines.',
   },
   {
@@ -229,10 +222,7 @@ export const TASK_DATA: TaskInfo[] = [
     category: 'general_grooming',
     minAge: TASK_AGE_THRESHOLDS.GENERAL_GROOMING_MIN,
     recommendedDurationMinutes: 45,
-    effects: [
-      { label: 'Improves living conditions', type: 'positive' },
-      { label: 'Reduces stress level', type: 'positive' },
-    ],
+    effects: [{ label: 'Improves living conditions', type: 'positive' }],
     description: 'Clean and maintain the stall for optimal health and comfort.',
   },
   {

@@ -20,28 +20,28 @@ describe('generateInteractionRecommendations — foalCare age threshold (Equoria
   it('5-year-old does NOT receive foalCare recommendation (adult horse)', () => {
     // Pre-fix: horse.age=5 < 1095 was true → 'Sensory Exploration' included.
     // Post-fix: horse.age=5 < 3 is false → not included.
-    const adultHorse = { age: 5, stressLevel: 0 };
+    const adultHorse = { age: 5 };
     const recs = generateInteractionRecommendations(foalCareGroom, adultHorse, calmRelationship);
 
     expect(recs.find(r => r.variation === 'Sensory Exploration')).toBeUndefined();
   });
 
   it('2-year-old foal DOES receive foalCare recommendation', () => {
-    const foal = { age: 2, stressLevel: 0 };
+    const foal = { age: 2 };
     const recs = generateInteractionRecommendations(foalCareGroom, foal, calmRelationship);
 
     expect(recs.find(r => r.variation === 'Sensory Exploration')).toBeDefined();
   });
 
   it('foal threshold is strict: a 3-year-old does NOT get foalCare rec (boundary)', () => {
-    const exactlyThree = { age: 3, stressLevel: 0 };
+    const exactlyThree = { age: 3 };
     const recs = generateInteractionRecommendations(foalCareGroom, exactlyThree, calmRelationship);
 
     expect(recs.find(r => r.variation === 'Sensory Exploration')).toBeUndefined();
   });
 
   it('non-foalCare groom does not get the recommendation regardless of age', () => {
-    const youngHorse = { age: 1, stressLevel: 0 };
+    const youngHorse = { age: 1 };
     const recs = generateInteractionRecommendations(otherGroom, youngHorse, calmRelationship);
 
     expect(recs.find(r => r.variation === 'Sensory Exploration')).toBeUndefined();

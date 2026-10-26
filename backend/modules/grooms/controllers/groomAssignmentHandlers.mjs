@@ -179,7 +179,7 @@ export async function getFoalAssignments(req, res) {
       include: {
         groom: true,
         foal: {
-          select: { id: true, name: true, bondScore: true, stressLevel: true },
+          select: { id: true, name: true, bondScore: true },
         },
       },
       orderBy: [{ isActive: 'desc' }, { priority: 'asc' }, { createdAt: 'desc' }],

@@ -283,7 +283,6 @@ describe('Epigenetic Flag Definitions', () => {
       expect(resilient.name).toBe('resilient');
       expect(resilient.type).toBe('positive');
       expect(resilient.sourceCategory).toBe('environment');
-      expect(resilient.influences.behaviorModifiers.stressRecovery).toBe(0.2);
     });
   });
 });

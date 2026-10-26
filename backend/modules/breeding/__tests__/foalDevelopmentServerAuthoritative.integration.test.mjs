@@ -3,7 +3,7 @@
  * 2026-10-02, Finding 3).
  *
  * The defect: `PUT /api/v1/foals/:id/develop` wrote whatever `currentDay`
- * (0–6), `bondingLevel` and `stressLevel` (0–100) the owner sent straight into
+ * (0–6) and `bondingLevel` (0–100) the owner sent straight into
  * FoalDevelopment, and the owner-callable `POST /api/v1/foals/:id/advance-day`
  * (documented as an admin/cron endpoint, mounted for any owner) bumped the day
  * on demand. `FoalDevelopment.currentDay` is the development day the nightly
@@ -18,7 +18,7 @@
  *
  * The invariants this file locks:
  *   - No HTTP request can set or advance the development day, or write
- *     bond/stress values; the nightly job still advances exactly one day per run.
+ *     bond values; the nightly job still advances exactly one day per run.
  *   - The legacy player activity (`POST /:id/activity`) is gone too
  *     (Equoria-fr2kg; owner ruling 2026-10-14/15: foal enrichment is the
  *     groom's job). OLD CONTRACT: it wrote the FoalDevelopment update and its
@@ -27,7 +27,7 @@
  *     record change, no FoalActivity row.
  *
  * Why these assertions detect the old defect: under the old router the PUT
- * returned 200 and stored day 6 / bond 100 / stress 0, and advance-day returned
+ * returned 200 and stored day 6 / bond 100, and advance-day returned
  * 200 with day+1.
  *
  * Real app, real JWT, real CSRF, real database.
@@ -65,7 +65,7 @@ async function makeFoal({ bornDaysAgo = 0 } = {}) {
     dateOfBirth: gameCalendarDate(new Date(), -bornDaysAgo),
   });
   await prisma.foalDevelopment.create({
-    data: { foalId: foal.id, currentDay: 0, bondingLevel: 50, stressLevel: 20, completedActivities: {} },
+    data: { foalId: foal.id, currentDay: 0, bondingLevel: 50, completedActivities: {} },
   });
   return foal;
 }
@@ -83,7 +83,7 @@ function send(method, path, body = {}) {
 async function readDevelopment(foalId) {
   return prisma.foalDevelopment.findUnique({
     where: { foalId },
-    select: { currentDay: true, bondingLevel: true, stressLevel: true, completedActivities: true, updatedAt: true },
+    select: { currentDay: true, bondingLevel: true, completedActivities: true, updatedAt: true },
   });
 }
 
@@ -101,14 +101,13 @@ afterAll(async () => {
 });
 
 describe('foal development is server-authoritative (Equoria-mwjst Finding 3)', () => {
-  it('PUT /:id/develop cannot jump the day or choose bond/stress: 404 and the record is unchanged', async () => {
+  it('PUT /:id/develop cannot jump the day or choose the bond: 404 and the record is unchanged', async () => {
     const foal = await makeFoal();
     const before = await readDevelopment(foal.id);
 
     const res = await send('put', `/api/v1/foals/${foal.id}/develop`, {
       currentDay: 6,
       bondingLevel: 100,
-      stressLevel: 0,
     });
 
     expect(res.status).toBe(404);
@@ -127,9 +126,9 @@ describe('foal development is server-authoritative (Equoria-mwjst Finding 3)', (
     expect(await readDevelopment(foal.id)).toEqual(before);
   });
 
-  it('GET /:id/development reports the server-owned day, bond and stress after the attempts', async () => {
+  it('GET /:id/development reports the server-owned day and bond after the attempts', async () => {
     const foal = await makeFoal();
-    await send('put', `/api/v1/foals/${foal.id}/develop`, { currentDay: 6, bondingLevel: 100, stressLevel: 0 });
+    await send('put', `/api/v1/foals/${foal.id}/develop`, { currentDay: 6, bondingLevel: 100 });
     await send('post', `/api/v1/foals/${foal.id}/advance-day`);
 
     const res = await request(app)
@@ -138,21 +137,20 @@ describe('foal development is server-authoritative (Equoria-mwjst Finding 3)', (
       .set('Origin', ORIGIN);
 
     expect(res.status).toBe(200);
-    // Equoria-fr2kg Q16 (owner ruling 2026-10-22): bond and stress are the
-    // horse's own Horse.bondScore / stressLevel (OLD CONTRACT: the frozen
-    // legacy FoalDevelopment 50 / 20). Neither the attempted PUT (bond 100) nor
-    // anything else in this request path wrote them.
+    // Equoria-fr2kg Q16 (owner ruling 2026-10-22): the bond is the horse's own
+    // Horse.bondScore (OLD CONTRACT: the frozen legacy FoalDevelopment 50).
+    // Neither the attempted PUT (bond 100) nor anything else in this request
+    // path wrote it.
     const horse = await prisma.horse.findUnique({
       where: { id: foal.id },
-      select: { bondScore: true, stressLevel: true },
+      select: { bondScore: true },
     });
     expect(horse.bondScore).not.toBe(100);
     expect(res.body.data.development).toMatchObject({
       currentDay: 0,
       bondingLevel: horse.bondScore,
-      stressLevel: horse.stressLevel,
     });
-    expect(await readDevelopment(foal.id)).toMatchObject({ bondingLevel: 50, stressLevel: 20 });
+    expect(await readDevelopment(foal.id)).toMatchObject({ bondingLevel: 50 });
   });
 
   it('the nightly trait job still advances the development day by exactly one per run', async () => {

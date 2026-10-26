@@ -106,7 +106,7 @@ export interface BreedRequest {
  *
  * IMPORTANT: the real backend (GET /api/foals/:foalId/development) returns
  *   { success, data: { foal, development: { currentDay, bondingLevel,
- *     stressLevel, maxDay }, activityHistory } }
+ *     maxDay }, activityHistory } }
  * After the apiClient `.data` unwrap that leaves the development stats nested
  * one level deeper (data.development.development.*), so consumers reading
  * `development.currentDay` saw `undefined` and rendered placeholders. The
@@ -123,8 +123,6 @@ export interface FoalDevelopment {
   maxDay: number;
   /** Bond score 0–100. */
   bondingLevel: number;
-  /** Stress level 0–100. */
-  stressLevel: number;
 }
 
 /**
@@ -136,14 +134,12 @@ export interface RawFoalDevelopmentBody {
   development?: {
     currentDay?: number;
     bondingLevel?: number;
-    stressLevel?: number;
     maxDay?: number;
   };
   // The PUT /develop endpoint returns the FLAT shape already, so the same
   // normalizer must also pass through a body that has these fields at the top.
   currentDay?: number;
   bondingLevel?: number;
-  stressLevel?: number;
   maxDay?: number;
 }
 
@@ -214,6 +210,8 @@ export interface HorseSummary {
   level?: number;
   dateOfBirth: string;
   healthStatus: string;
+  // Bond, 0-100 (GET /horses/:id returns the whole row).
+  bondScore?: number;
   imageUrl?: string;
   stats: SimpleHorseStats;
   disciplineScores: Record<string, number>;

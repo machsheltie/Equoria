@@ -9,7 +9,7 @@
  * calls) against the REAL database (no mocks) and asserts:
  *   1. One TraitHistoryLog row per revealed trait (positive + negative + hidden).
  *   2. sourceType reflects the daily-cron origin ('daily_evaluation').
- *   3. bondScore / stressLevel / ageInDays are persisted.
+ *   3. bondScore / ageInDays are persisted.
  *   4. A run that reveals nothing writes no rows.
  *
  * Scoped cleanup only (CLAUDE.md §2).
@@ -64,7 +64,7 @@ describe('INTEGRATION: daily cron persists revealed traits to TraitHistoryLog (E
     await cleanup.run();
   }, 120000);
 
-  async function makeFoal({ bondScore = 70, stressLevel = 25 } = {}) {
+  async function makeFoal({ bondScore = 70 } = {}) {
     return createTestHorse(
       prisma,
       {
@@ -74,7 +74,6 @@ describe('INTEGRATION: daily cron persists revealed traits to TraitHistoryLog (E
         age: 0,
         userId: user.id,
         bondScore,
-        stressLevel,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
       createdHorseIds,
@@ -82,7 +81,7 @@ describe('INTEGRATION: daily cron persists revealed traits to TraitHistoryLog (E
   }
 
   it('writes one TraitHistoryLog row per revealed trait with daily_evaluation source', async () => {
-    const foal = await makeFoal({ bondScore: 72, stressLevel: 18 });
+    const foal = await makeFoal({ bondScore: 72 });
 
     await cronJobService.logTraitRevelation(
       foal.id,
@@ -103,7 +102,6 @@ describe('INTEGRATION: daily cron persists revealed traits to TraitHistoryLog (E
     for (const row of rows) {
       expect(row.sourceType).toBe('daily_evaluation');
       expect(row.bondScore).toBe(72);
-      expect(row.stressLevel).toBe(18);
       expect(row.isEpigenetic).toBe(true);
       // ageInDays is computed from dateOfBirth — a non-negative integer.
       expect(Number.isInteger(row.ageInDays)).toBe(true);

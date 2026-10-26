@@ -28,8 +28,6 @@ import {
   ENVIRONMENT_FACTOR_MULTIPLIERS,
   ENVIRONMENT_MODIFIER_RANGE,
   PREDICTION_RECOMMENDATION_RULES,
-  STRESS_SITUATION_BANDS,
-  STRESS_SITUATION_FALLBACK,
   TIME_OF_DAY_DEFAULT,
   TIME_OF_DAY_MODIFIERS,
   ruleTexts,
@@ -63,7 +61,7 @@ export async function loadCompatibilityInputs(
 ) {
   const horse = await client.horse.findUnique({
     where: { id: horseId },
-    select: { id: true, userId: true, stressLevel: true, bondScore: true, epigeneticFlags: true },
+    select: { id: true, userId: true, bondScore: true, epigeneticFlags: true },
   });
   let grooms = [];
   if (!ownerGrooms) {
@@ -130,7 +128,6 @@ export function scoreCompatibility(inputs, groomId, context) {
 
   // Calculate contextual modifiers
   const experienceBonus = calculateExperienceBonus(groom);
-  const stressSituationModifier = calculateStressSituationModifier(horse, context);
   const taskSpecificModifier = getTaskCompatibilityModifier(
     context.taskType,
     groom.epigeneticInfluenceType,
@@ -141,7 +138,6 @@ export function scoreCompatibility(inputs, groomId, context) {
 
   const contextualModifiers = {
     experience: experienceBonus,
-    stressSituation: stressSituationModifier,
     taskSpecific: taskSpecificModifier,
     environmental: environmentalModifier,
     timeOfDay: timeOfDayModifier,
@@ -152,7 +148,6 @@ export function scoreCompatibility(inputs, groomId, context) {
     0,
     baseCompatibility *
       experienceBonus * // Remove cap to allow experience differences
-      stressSituationModifier *
       taskSpecificModifier *
       environmentalModifier *
       timeOfDayModifier *
@@ -181,7 +176,7 @@ export function scoreCompatibility(inputs, groomId, context) {
     recommendationLevel = 'not_recommended';
   }
 
-  const confidence = calculateConfidence(groom, horse, context, historicalModifier);
+  const confidence = calculateConfidence(groom, horse, historicalModifier);
 
   return {
     groomId,
@@ -190,7 +185,6 @@ export function scoreCompatibility(inputs, groomId, context) {
     baseCompatibility,
     contextualModifiers,
     experienceBonus,
-    stressSituationModifier,
     taskSpecificModifier,
     environmentalModifier,
     timeOfDayModifier,
@@ -221,20 +215,11 @@ export async function analyzeCompatibilityFactors(groomId, horseId) {
  */
 export function predictInteraction(inputs, groomId, context) {
   const compatibility = scoreCompatibility(inputs, groomId, context);
-  const groomTraits = personalityTraitsFor(requireGroom(inputs, groomId));
-  const { horse, horseId } = inputs;
+  const { horseId } = inputs;
 
   // Predict bonding change
   const baseBondingChange = compatibility.overallScore * 4 - 1; // Range: -1 to 3
   const predictedBondingChange = Math.max(-2, Math.min(4, Math.round(baseBondingChange)));
-
-  // Predict stress change
-  const baseStressChange = (1 - compatibility.overallScore) * 4 - 1; // Range: -1 to 3
-  const stressModifier = horse.stressLevel > 7 ? 1.5 : 1.0; // High stress horses more sensitive
-  const predictedStressChange = Math.max(
-    -3,
-    Math.min(5, Math.round(baseStressChange * stressModifier)),
-  );
 
   let predictedQuality;
   if (compatibility.overallScore >= 0.8) {
@@ -252,23 +237,19 @@ export function predictInteraction(inputs, groomId, context) {
 
   const potentialIssues = [];
   if (compatibility.overallScore < 0.5) {
-    potentialIssues.push('Low compatibility may result in stress or poor bonding');
-  }
-  if (horse.stressLevel > 7 && groomTraits.primaryPersonality === 'energetic') {
-    potentialIssues.push('Energetic approach may increase stress in high-stress horse');
+    potentialIssues.push('Low compatibility may result in poor bonding');
   }
 
   return {
     groomId,
     horseId,
     predictedBondingChange,
-    predictedStressChange,
     predictedQuality,
     successProbability,
     confidence: predictionConfidence,
     compatibilityScore: compatibility.overallScore,
     potentialIssues,
-    recommendations: generatePredictionRecommendations(compatibility, context),
+    recommendations: generatePredictionRecommendations(compatibility),
     predictionTimestamp: inputs.now,
   };
 }
@@ -347,8 +328,7 @@ export function compatibilityTrends(inputs, groomId) {
     const qualityScore =
       { poor: 0.2, fair: 0.4, good: 0.7, excellent: 1.0 }[interaction.quality] || 0.5;
     const bondingScore = Math.max(0, Math.min(1, (interaction.bondingChange + 2) / 4));
-    const stressScore = Math.max(0, Math.min(1, (-interaction.stressChange + 3) / 6));
-    return (qualityScore + bondingScore + stressScore) / 3;
+    return (qualityScore + bondingScore) / 2;
   });
 
   const trend = calculateLinearTrend(compatibilityScores);
@@ -434,12 +414,6 @@ function calculateExperienceBonus(groom) {
   return 1.0 + levelBonus + experienceBonus;
 }
 
-function calculateStressSituationModifier(horse, context) {
-  const currentStress = context.horseCurrentStress || horse.stressLevel;
-  const band = STRESS_SITUATION_BANDS.find(([max]) => currentStress <= max);
-  return band ? band[1] : STRESS_SITUATION_FALLBACK;
-}
-
 function calculateEnvironmentalModifier(context) {
   const factors = context.environmentalFactors || [];
   let modifier = 1.0;
@@ -460,7 +434,7 @@ function calculateTimeOfDayModifier(context) {
     : TIME_OF_DAY_DEFAULT;
 }
 
-function calculateConfidence(groom, horse, context, historicalModifier) {
+function calculateConfidence(groom, horse, historicalModifier) {
   let confidence = 0.7; // Base confidence
 
   // Higher confidence with more experience
@@ -474,20 +448,14 @@ function calculateConfidence(groom, horse, context, historicalModifier) {
     confidence += 0.1;
   }
 
-  // Lower confidence with high stress situations
-  if (horse.stressLevel > 7) {
-    confidence -= 0.1;
-  }
-
   return Math.max(0.3, Math.min(0.95, confidence));
 }
 
 // ===== ADVICE =====
 
-function generatePredictionRecommendations(compatibility, context) {
+function generatePredictionRecommendations(compatibility) {
   return ruleTexts(PREDICTION_RECOMMENDATION_RULES, {
     overallScore: compatibility.overallScore,
-    horseCurrentStress: context.horseCurrentStress,
   });
 }
 
@@ -500,10 +468,6 @@ function generateRecommendationReasoning(compatibility, groom) {
 
   if (compatibility.experienceBonus > 1.2) {
     reasons.push(`High experience level (${groom.experience} exp, level ${groom.level})`);
-  }
-
-  if (compatibility.stressSituationModifier > 1.0) {
-    reasons.push('Good stress management capabilities');
   }
 
   if (compatibility.taskSpecificModifier > 1.1) {
@@ -528,10 +492,6 @@ function generateContextualNotes(rankedGrooms, context) {
 
   if (context.urgency === 'high') {
     notes.push('High urgency - consider top recommendation even if not ideal');
-  }
-
-  if (context.horseCurrentStress > 7) {
-    notes.push('Horse is highly stressed - prioritize calm, experienced grooms');
   }
 
   return notes;

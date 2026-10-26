@@ -148,8 +148,8 @@ describe('getAllTraitDefinitions', () => {
 // evaluateTraitRevelation
 // ---------------------------------------------------------------------------
 describe('evaluateTraitRevelation', () => {
-  const goodFoal = { id: 1, bondScore: 90, stressLevel: 10, age: 0 };
-  const stressedFoal = { id: 2, bondScore: 20, stressLevel: 90, age: 0 };
+  const goodFoal = { id: 1, bondScore: 90, age: 0 };
+  const poorBondFoal = { id: 2, bondScore: 20, age: 0 };
   const emptyTraits = { positive: [], negative: [], hidden: [] };
 
   it('returns object with positive, negative, hidden arrays', () => {
@@ -179,7 +179,7 @@ describe('evaluateTraitRevelation', () => {
     expect(result.hidden).not.toContain('resilient');
   });
 
-  it('handles foal with default bondScore and stressLevel', () => {
+  it('handles foal with default bondScore', () => {
     const minimalFoal = { id: 3, age: 0 };
     const result = evaluateTraitRevelation(minimalFoal, emptyTraits, 0);
     expect(Array.isArray(result.positive)).toBe(true);
@@ -200,7 +200,7 @@ describe('evaluateTraitRevelation', () => {
   it('negative traits more likely with bad conditions', () => {
     let found = false;
     for (let i = 0; i < 200; i++) {
-      const result = evaluateTraitRevelation(stressedFoal, emptyTraits, 6);
+      const result = evaluateTraitRevelation(poorBondFoal, emptyTraits, 6);
       if (result.negative.length > 0) {
         found = true;
         break;
@@ -417,32 +417,15 @@ describe('evaluateTraitRevelation — uncovered branch paths', () => {
   it('negative trait already in existingTraits is skipped (line 287 continue)', () => {
     // Pass nervous as already known — loop continues without re-adding it
     const nervousKnown = { positive: [], negative: ['nervous'], hidden: [] };
-    const stressedFoal2 = { id: 50, bondScore: 20, stressLevel: 90, age: 0 };
-    const result = evaluateTraitRevelation(stressedFoal2, nervousKnown, 1);
+    const poorBondFoal2 = { id: 50, bondScore: 20, age: 0 };
+    const result = evaluateTraitRevelation(poorBondFoal2, nervousKnown, 1);
     expect(result.negative).not.toContain('nervous');
-  });
-
-  it('minStressLevel branch: low-stress foal suppresses negative trait (line 372)', () => {
-    // nervous: maxBondScore=40, minStressLevel=60
-    // foal: bondScore=20 (≤40 ✓), stressLevel=30 (<60) → shouldRevealTrait returns false at minStressLevel check
-    const lowStressFoal = { id: 51, bondScore: 20, stressLevel: 30, age: 0 };
-    const result = evaluateTraitRevelation(lowStressFoal, empty, 1);
-    expect(result.negative).not.toContain('nervous');
-    expect(result.negative).not.toContain('stubborn');
-  });
-
-  it('maxStressLevel branch: high-stress foal suppresses positive trait (line 375)', () => {
-    // resilient: minBondScore=70, maxStressLevel=30
-    // foal: bondScore=80 (≥70 ✓), stressLevel=50 (>30) → shouldRevealTrait returns false at maxStressLevel check
-    const highStressFoal = { id: 52, bondScore: 80, stressLevel: 50, age: 0 };
-    const result = evaluateTraitRevelation(highStressFoal, empty, 2);
-    expect(result.positive).not.toContain('resilient');
   });
 
   it('rare trait already in existingTraits is skipped (line 314 continue)', () => {
     // Equoria-3hl8c: canonical camelCase is legendaryBloodline (was legendary_bloodline).
     const legendaryKnown = { positive: [], negative: [], hidden: ['legendaryBloodline'] };
-    const eliteFoal = { id: 53, bondScore: 90, stressLevel: 10, age: 0 };
+    const eliteFoal = { id: 53, bondScore: 90, age: 0 };
     const result = evaluateTraitRevelation(eliteFoal, legendaryKnown, 6);
     expect(result.hidden).not.toContain('legendaryBloodline');
   });
@@ -454,7 +437,7 @@ describe('evaluateTraitRevelation — uncovered branch paths', () => {
     // New contract (owner approval 2026-09-30, Equoria-kdlvd): same assertion, same real
     //   rolls, no mocking and no change to any odds, but up to 2000 rolls:
     //   (1 - 0.0287)^2000 ≈ 5e-26. The early break keeps a typical run at ~35 rolls.
-    const eliteFoal = { id: 54, bondScore: 90, stressLevel: 10, age: 0 };
+    const eliteFoal = { id: 54, bondScore: 90, age: 0 };
     let found = false;
     for (let i = 0; i < 2000; i++) {
       const result = evaluateTraitRevelation(eliteFoal, empty, 6);
@@ -476,14 +459,14 @@ describe('evaluateTraitRevelation — uncovered branch paths', () => {
   // was removed rather than re-pointed at a fabricated trait.
 
   it('normal conditionScore branch in shouldTraitBeHidden (line 422, 200 trials)', () => {
-    // foal: bondScore=70, stressLevel=20 → conditionScore=50 (20 < 50 < 60, neither branch)
-    // calm: minBondScore=60, maxStressLevel=20 (stressLevel=20, 20>20=false → passes), minAge=1
-    // calm baseChance=0.3 → P(0 reveals in 200) = 0.7^200 ≈ 0 → line 422 will be exercised
-    const normalFoal = { id: 56, bondScore: 70, stressLevel: 20, age: 0 };
+    // foal: bondScore=40 → conditionScore=40 (20 < 40 < 60, neither branch)
+    // nervous: maxBondScore=40 (40 ≤ 40 passes), minAge=1, baseChance=0.35
+    // P(0 reveals in 200) = 0.65^200 ≈ 0 → line 422 will be exercised
+    const normalFoal = { id: 56, bondScore: 40, age: 0 };
     let revealed = false;
     for (let i = 0; i < 200; i++) {
       const result = evaluateTraitRevelation(normalFoal, empty, 4);
-      if (result.positive.length > 0 || result.hidden.length > 0) {
+      if (result.negative.length > 0 || result.hidden.length > 0) {
         revealed = true;
         break;
       }
@@ -498,7 +481,7 @@ describe('evaluateTraitRevelation — uncovered branch paths', () => {
 describe('evaluateTraitRevelation — age and currentTraits fallback branches', () => {
   it('age>0 + currentDay>6 exercises false-branch of age===0 ternary and Math.min cap', () => {
     // age=100 > 0 → developmentAge = Math.min(8, 6) = 6 (cap branch exercised)
-    const adultFoal = { id: 60, bondScore: 90, stressLevel: 10, age: 100 };
+    const adultFoal = { id: 60, bondScore: 90, age: 100 };
     const result = evaluateTraitRevelation(adultFoal, { positive: [], negative: [], hidden: [] }, 8);
     expect(Array.isArray(result.positive)).toBe(true);
     expect(Array.isArray(result.negative)).toBe(true);
@@ -506,14 +489,14 @@ describe('evaluateTraitRevelation — age and currentTraits fallback branches', 
 
   it('age>0 + currentDay<=6 exercises false-branch of age===0 ternary without Math.min cap', () => {
     // age=200 > 0 → developmentAge = Math.min(3, 6) = 3 (no cap)
-    const adultFoal2 = { id: 61, bondScore: 90, stressLevel: 10, age: 200 };
+    const adultFoal2 = { id: 61, bondScore: 90, age: 200 };
     const result = evaluateTraitRevelation(adultFoal2, { positive: [], negative: [], hidden: [] }, 3);
     expect(Array.isArray(result.positive)).toBe(true);
   });
 
   it('currentTraits={} (no keys) exercises positive||[], negative||[], hidden||[] fallbacks', () => {
     // {} has no .positive/.negative/.hidden → each ||[] fallback is exercised
-    const goodFoal2 = { id: 62, bondScore: 90, stressLevel: 10, age: 0 };
+    const goodFoal2 = { id: 62, bondScore: 90, age: 0 };
     const result = evaluateTraitRevelation(goodFoal2, {}, 5);
     expect(Array.isArray(result.positive)).toBe(true);
     expect(Array.isArray(result.negative)).toBe(true);
@@ -554,11 +537,11 @@ describe('evaluateEpigeneticTagsFromFoalTasks — traitPoints accumulation left-
 // ---------------------------------------------------------------------------
 describe('evaluateTraitRevelation — negative trait hidden path (line 297)', () => {
   it('negative trait with shouldHide=true lands in result.hidden (line 297)', () => {
-    // nervous: maxBondScore=40, minStressLevel=60, baseChance=0.35
-    // conditionScore = 20 - 90 = -70 → <20 → shouldTraitBeHidden 30% chance
+    // nervous: maxBondScore=40, baseChance=0.35
+    // conditionScore = bondScore = 10 → <20 → shouldTraitBeHidden 30% chance
     // Per-run P(hidden negative) ≈ 0.35 × 0.3 = 10.5%; P(0 in 300) ≈ 1.7e-10
     const negativeKeys = Object.keys(TRAIT_DEFINITIONS.negative);
-    const foal = { id: 99, bondScore: 20, stressLevel: 90, age: 0 };
+    const foal = { id: 99, bondScore: 10, age: 0 };
     let found = false;
     for (let i = 0; i < 300; i++) {
       const result = evaluateTraitRevelation(foal, { positive: [], negative: [], hidden: [] }, 2);
@@ -624,10 +607,10 @@ describe('evaluateTraitRevelation — conflict blocking FALSE branches (lines 26
   });
 
   it('positive trait calm blocked by pre-existing nervous (line 266 FALSE branch)', () => {
-    // calm conflicts with nervous; all reveal conditions met with bondScore=100, stressLevel=0
+    // calm conflicts with nervous; all reveal conditions met with bondScore=100
     // Math.random()=0 makes probability gate pass, but hasTraitConflict('calm',{nervous})=true
     // → !hasTraitConflict is FALSE → line 266 FALSE branch covered; calm absent from result
-    const foal = { id: 99, bondScore: 100, stressLevel: 0, age: 0 };
+    const foal = { id: 99, bondScore: 100, age: 0 };
     const currentTraits = { positive: [], negative: ['nervous'], hidden: [] };
     const result = evaluateTraitRevelation(foal, currentTraits, 6);
     const all = [...result.positive, ...result.negative, ...result.hidden];
@@ -635,10 +618,10 @@ describe('evaluateTraitRevelation — conflict blocking FALSE branches (lines 26
   });
 
   it('negative trait nervous blocked by pre-existing calm (line 293 FALSE branch)', () => {
-    // nervous conflicts with calm; conditions met with bondScore=0, stressLevel=100
+    // nervous conflicts with calm; conditions met with bondScore=0
     // Math.random()=0 passes probability gate, hasTraitConflict('nervous',{calm})=true
     // → !hasTraitConflict is FALSE → line 293 FALSE branch covered; nervous absent from result
-    const foal = { id: 98, bondScore: 0, stressLevel: 100, age: 0 };
+    const foal = { id: 98, bondScore: 0, age: 0 };
     const currentTraits = { positive: ['calm'], negative: [], hidden: [] };
     const result = evaluateTraitRevelation(foal, currentTraits, 6);
     const all = [...result.positive, ...result.negative, ...result.hidden];
@@ -676,14 +659,6 @@ describe('traitEvaluation — definition/conflict invariants (merged from legacy
         if (c.maxBondScore !== undefined) {
           expect(c.maxBondScore).toBeGreaterThanOrEqual(0);
           expect(c.maxBondScore).toBeLessThanOrEqual(100);
-        }
-        if (c.minStressLevel !== undefined) {
-          expect(c.minStressLevel).toBeGreaterThanOrEqual(0);
-          expect(c.minStressLevel).toBeLessThanOrEqual(100);
-        }
-        if (c.maxStressLevel !== undefined) {
-          expect(c.maxStressLevel).toBeGreaterThanOrEqual(0);
-          expect(c.maxStressLevel).toBeLessThanOrEqual(100);
         }
         expect(trait.baseChance).toBeGreaterThan(0);
         expect(trait.baseChance).toBeLessThanOrEqual(1);

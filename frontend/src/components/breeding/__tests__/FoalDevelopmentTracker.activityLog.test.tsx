@@ -13,12 +13,12 @@
  *     backend/modules/grooms/controllers/groomInteractionController.mjs:333-347
  *     (tx.foalActivity.create: day = age in days, activityType =
  *     interactionType, outcome = effects.quality || 'good', bondingChange,
- *     stressChange, description "Groom interaction (<type>) recorded via groom
+ *     description "Groom interaction (<type>) recorded via groom
  *     system", source groom_interaction).
  *   - Serialized by GET /activities:
  *     backend/modules/breeding/controllers/foalController.mjs:167-191
  *     ({ success, data: [{ id, day, activityType, activity (alias),
- *     outcome, bondingChange, stressChange, description, createdAt }] }).
+ *     outcome, bondingChange, description, createdAt }] }).
  */
 
 import React from 'react';
@@ -45,7 +45,6 @@ const groomRow = {
   activity: 'early_touch',
   outcome: 'good',
   bondingChange: 2,
-  stressChange: -1,
   description: 'Groom interaction (early_touch) recorded via groom system',
   createdAt: '2026-10-14T15:30:00.000Z',
 };
@@ -78,7 +77,7 @@ describe('FoalDevelopmentTracker — Activity Log shows groom rows (Equoria-fr2k
           success: true,
           data: {
             foal: { id: FOAL_ID, name: 'TestFixture-Moonbeam' },
-            development: { currentDay: 2, bondingLevel: 50, stressLevel: 20, maxDay: 6 },
+            development: { currentDay: 2, bondingLevel: 50, maxDay: 6 },
             activityHistory: [],
           },
         })

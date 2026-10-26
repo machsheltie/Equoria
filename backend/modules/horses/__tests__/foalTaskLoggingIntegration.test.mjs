@@ -158,7 +158,6 @@ describe('Foal Task Logging Integration', () => {
         age: 1, // 1 game-year old (post Equoria-son6: Horse.age is game-years)
         userId: testUser.id,
         bondScore: 50,
-        stressLevel: 20,
         taskLog: null, // Start with empty task log
         lastGroomed: null, // Never groomed before
       },
@@ -325,7 +324,6 @@ describe('Foal Task Logging Integration', () => {
             age: 1, // 1 game-year old (post Equoria-son6: Horse.age is game-years)
             userId: testUser.id,
             bondScore: 50,
-            stressLevel: 20,
             taskLog: null,
             lastGroomed: null,
           },

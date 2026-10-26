@@ -56,7 +56,6 @@ describe('weeklyFlagEvaluation cron handler — real DB (Equoria-yzqhj.2)', () =
         dateOfBirth: sevenDaysAgo,
         userId: user.id,
         bondScore: 50,
-        stressLevel: 10,
         epigeneticFlags: [],
       },
       created,

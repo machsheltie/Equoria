@@ -51,7 +51,6 @@ async function makeFoal(daysAgo, currentDay = 0) {
       age: 0,
       dateOfBirth: gameCalendarDate(new Date(), -daysAgo),
       bondScore: 50,
-      stressLevel: 20,
       user: { connect: { id: owner.id } },
     },
   });

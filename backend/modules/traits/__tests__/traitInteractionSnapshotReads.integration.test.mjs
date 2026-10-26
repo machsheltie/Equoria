@@ -100,7 +100,6 @@ describe('trait interaction analysis reads one horse snapshot (Equoria-q4uem.5)'
         dateOfBirth: gameCalendarDate(new Date(), -40),
         age: 0,
         userId: user.id,
-        stressLevel: 8,
         bondScore: 10,
         epigeneticFlags: ['brave', 'confident', 'social', 'fearful', 'reactive', 'calm'],
       },

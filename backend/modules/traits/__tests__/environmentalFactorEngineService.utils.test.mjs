@@ -118,7 +118,6 @@ describe('getSeasonalFactors', () => {
     expect(typeof r.growthModifier).toBe('number');
     expect(typeof r.healthModifier).toBe('number');
     expect(typeof r.trainingEffectiveness).toBe('number');
-    expect(typeof r.stressLevel).toBe('number');
     expect(typeof r.description).toBe('string');
     expect(typeof r.dayOfYear).toBe('number');
     expect(typeof r.transitionEffect).toBe('boolean');
@@ -148,14 +147,6 @@ describe('getSeasonalFactors', () => {
     expect(getSeasonalFactors(makeWinterDate()).growthModifier).toBeLessThan(1);
   });
 
-  it('summer stressLevel is highest among seasons', () => {
-    const summer = getSeasonalFactors(makeSummerDate()).stressLevel;
-    const winter = getSeasonalFactors(makeWinterDate()).stressLevel;
-    const spring = getSeasonalFactors(makeSpringDate()).stressLevel;
-    expect(summer).toBeGreaterThan(spring);
-    expect(summer).toBeGreaterThan(winter);
-  });
-
   it('dayOfYear is between 1 and 365', () => {
     const r = getSeasonalFactors(makeSummerDate());
     expect(r.dayOfYear).toBeGreaterThanOrEqual(1);
@@ -175,7 +166,6 @@ describe('calculateComfortZone', () => {
     expect(r.humidityRange.min).toBeDefined();
     expect(r.humidityRange.max).toBeDefined();
     expect(r.optimalConditions).toBeDefined();
-    expect(r.stressThresholds).toBeDefined();
   });
 
   it('base horse temperature range is 5 to 30', () => {
@@ -237,22 +227,22 @@ describe('calculateEnvironmentalTriggers', () => {
     expect(r.traitExpressionProbability).toBeLessThanOrEqual(1);
   });
 
-  it('hot weather triggers heat_stress', () => {
+  it('hot weather triggers extremeHeat', () => {
     const hotWeather = { ...neutralWeather, temperature: 40, conditions: 'sunny' };
     const r = assess(makeSummerDate(), makeLocation(), baseHorse, hotWeather).triggers;
-    expect(r.triggerTypes).toContain('heat_stress');
+    expect(r.triggerTypes).toContain('extremeHeat');
   });
 
-  it('cold weather triggers cold_stress', () => {
+  it('cold weather triggers extremeCold', () => {
     const coldWeather = { ...neutralWeather, temperature: -10, conditions: 'sunny' };
     const r = assess(makeWinterDate(), makeLocation(), baseHorse, coldWeather).triggers;
-    expect(r.triggerTypes).toContain('cold_stress');
+    expect(r.triggerTypes).toContain('extremeCold');
   });
 
-  it('stormy conditions add storm_stress trigger', () => {
+  it('stormy conditions add storm trigger', () => {
     const stormyWeather = { ...neutralWeather, conditions: 'stormy', precipitation: 0.9, windSpeed: 35 };
     const r = assess(makeSummerDate(), makeLocation(), baseHorse, stormyWeather).triggers;
-    expect(r.triggerTypes).toContain('storm_stress');
+    expect(r.triggerTypes).toContain('storm');
   });
 
   it('high humidity triggers high_humidity', () => {
@@ -318,47 +308,6 @@ describe('calculateEnvironmentalImpact', () => {
     const sunny = assess(makeSummerDate(), makeLocation(), baseHorse, sunnyWeather).impact;
     const stormy = assess(makeSummerDate(), makeLocation(), baseHorse, stormyWeather).impact;
     expect(stormy.overallImpact).toBeLessThan(sunny.overallImpact);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// assessEnvironmentalStress
-// ---------------------------------------------------------------------------
-describe('assessEnvironmentalStress', () => {
-  it('returns expected shape', () => {
-    const r = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).stress;
-    expect(typeof r.stressLevel).toBe('number');
-    expect(Array.isArray(r.stressFactors)).toBe(true);
-    expect(typeof r.severity).toBe('string');
-    // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: a mitigationRecommendations array.
-    expect(r).not.toHaveProperty('mitigationRecommendations');
-    expect(typeof r.timeToRecovery).toBe('number');
-    expect(Array.isArray(r.triggers)).toBe(true);
-  });
-
-  it('stressLevel is between 0 and 100', () => {
-    const r = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).stress;
-    expect(r.stressLevel).toBeGreaterThanOrEqual(0);
-    expect(r.stressLevel).toBeLessThanOrEqual(100);
-  });
-
-  it('severity is one of low/moderate/high/critical', () => {
-    const valid = new Set(['low', 'moderate', 'high', 'critical']);
-    const r = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).stress;
-    expect(valid.has(r.severity)).toBe(true);
-  });
-
-  it('extreme heat weather raises stressLevel', () => {
-    const extreme = { ...neutralWeather, temperature: 50, windSpeed: 35, conditions: 'stormy' };
-    const normal = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).stress;
-    const stressed = assess(makeSummerDate(), makeLocation(), baseHorse, extreme).stress;
-    expect(stressed.stressLevel).toBeGreaterThan(normal.stressLevel);
-  });
-
-  it('severe weather produces high/critical severity', () => {
-    const extreme = { ...neutralWeather, temperature: 50, windSpeed: 35, conditions: 'stormy', humidity: 95 };
-    const r = assess(makeSummerDate(), makeLocation(), baseHorse, extreme).stress;
-    expect(['high', 'critical']).toContain(r.severity);
   });
 });
 

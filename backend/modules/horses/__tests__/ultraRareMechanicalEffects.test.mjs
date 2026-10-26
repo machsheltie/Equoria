@@ -6,8 +6,6 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  applyUltraRareStressEffects,
-  applyUltraRareStressDecayEffects,
   applyUltraRareTrainingEffects,
   applyUltraRareCompetitionEffects,
   applyUltraRareBondingEffects,
@@ -24,109 +22,6 @@ const withUltraRare = (...names) => ({
 });
 const withExotic = (...names) => ({
   ultraRareTraits: { ultraRare: [], exotic: names.map(n => ({ name: n })) },
-});
-
-// ---------------------------------------------------------------------------
-// applyUltraRareStressEffects
-// ---------------------------------------------------------------------------
-describe('applyUltraRareStressEffects', () => {
-  it('returns result with expected shape', () => {
-    const result = applyUltraRareStressEffects(noTraits(), 50);
-    expect(result).toHaveProperty('originalStress');
-    expect(result).toHaveProperty('modifiedStress');
-    expect(result).toHaveProperty('appliedEffects');
-    expect(result).toHaveProperty('totalReduction');
-  });
-
-  it('no traits → stress unchanged, no applied effects', () => {
-    const result = applyUltraRareStressEffects(noTraits(), 100);
-    expect(result.modifiedStress).toBe(100);
-    expect(result.appliedEffects).toEqual([]);
-    expect(result.totalReduction).toBe(0);
-  });
-
-  it('missing ultraRareTraits field → stress unchanged', () => {
-    const result = applyUltraRareStressEffects({}, 80);
-    expect(result.modifiedStress).toBe(80);
-    expect(result.appliedEffects).toEqual([]);
-  });
-
-  it('phoenix-born stressResistance reduces stress by 20%', () => {
-    const horse = withUltraRare('phoenix-born');
-    const result = applyUltraRareStressEffects(horse, 100);
-    // stressResistance: 0.2 → reduction = 100 * 0.2 = 20
-    expect(result.modifiedStress).toBe(80);
-    expect(result.totalReduction).toBe(20);
-    expect(result.appliedEffects.some(e => e.effect === 'stress_resistance')).toBe(true);
-  });
-
-  it('stormtouched stressGainMultiplier doubles stress', () => {
-    const horse = withUltraRare('stormtouched');
-    const result = applyUltraRareStressEffects(horse, 100);
-    // stressGainMultiplier: 2.0 → increase = 100 * (2.0-1) = 100 → modifiedStress = 200
-    expect(result.modifiedStress).toBe(200);
-    expect(result.totalReduction).toBe(-100);
-    expect(result.appliedEffects.some(e => e.effect === 'stress_gain_multiplier')).toBe(true);
-  });
-
-  it('ghostwalker stressImmunity zeros out stress', () => {
-    const horse = withExotic('ghostwalker');
-    const result = applyUltraRareStressEffects(horse, 75);
-    expect(result.modifiedStress).toBe(0);
-    expect(result.totalReduction).toBe(75);
-    expect(result.appliedEffects.some(e => e.effect === 'stress_immunity')).toBe(true);
-  });
-
-  it('iron-willed competitionStressResistance applies only for competition source', () => {
-    const horse = withUltraRare('iron-willed');
-    const generalResult = applyUltraRareStressEffects(horse, 100, 'general');
-    const compResult = applyUltraRareStressEffects(horse, 100, 'competition');
-    // competitionStressResistance: 0.5 → 50% reduction on competition
-    expect(compResult.modifiedStress).toBeLessThan(generalResult.modifiedStress);
-    expect(compResult.appliedEffects.some(e => e.effect === 'competition_stress_resistance')).toBe(true);
-  });
-
-  it('stress cannot go below 0', () => {
-    const horse = withUltraRare('phoenix-born');
-    const result = applyUltraRareStressEffects(horse, 0);
-    expect(result.modifiedStress).toBe(0);
-  });
-
-  it('unknown trait name is skipped gracefully', () => {
-    const horse = { ultraRareTraits: { ultraRare: [{ name: 'nonexistent-trait' }], exotic: [] } };
-    const result = applyUltraRareStressEffects(horse, 50);
-    expect(result.modifiedStress).toBe(50);
-    expect(result.appliedEffects).toEqual([]);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// applyUltraRareStressDecayEffects
-// ---------------------------------------------------------------------------
-describe('applyUltraRareStressDecayEffects', () => {
-  it('no traits → decay unchanged', () => {
-    const result = applyUltraRareStressDecayEffects(noTraits(), 10);
-    expect(result.modifiedDecay).toBe(10);
-    expect(result.totalBonus).toBe(0);
-    expect(result.appliedEffects).toEqual([]);
-  });
-
-  it('phoenix-born stressDecayMultiplier adds 30% bonus decay', () => {
-    const horse = withUltraRare('phoenix-born');
-    const result = applyUltraRareStressDecayEffects(horse, 10);
-    // stressDecayMultiplier: 1.3 → bonus = 10 * (1.3-1) = 3
-    expect(result.modifiedDecay).toBe(13);
-    expect(result.totalBonus).toBe(3);
-    expect(result.appliedEffects.some(e => e.effect === 'stress_decay_multiplier')).toBe(true);
-  });
-
-  it('returns shape with originalDecay and appliedEffects', () => {
-    const result = applyUltraRareStressDecayEffects(noTraits(), 5);
-    expect(result).toHaveProperty('originalDecay', 5);
-    expect(result).toHaveProperty('modifiedDecay');
-    expect(result).toHaveProperty('appliedEffects');
-    expect(result).toHaveProperty('totalBonus');
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -377,11 +272,7 @@ describe('applyUltraRareStatEffects', () => {
 // ---------------------------------------------------------------------------
 describe('hasUltraRareAbility', () => {
   it('returns false when horse has no traits', () => {
-    expect(hasUltraRareAbility(noTraits(), 'stress_immunity')).toBe(false);
-  });
-
-  it('ghostwalker has stress_immunity', () => {
-    expect(hasUltraRareAbility(withExotic('ghostwalker'), 'stress_immunity')).toBe(true);
+    expect(hasUltraRareAbility(noTraits(), 'training_fatigue_immunity')).toBe(false);
   });
 
   // Owner ruling 2026-10-22 (Equoria-0d4wa): there is no burnout, so no
@@ -415,7 +306,7 @@ describe('hasUltraRareAbility', () => {
   });
 
   it('missing ultraRareTraits field returns false', () => {
-    expect(hasUltraRareAbility({}, 'stress_immunity')).toBe(false);
+    expect(hasUltraRareAbility({}, 'training_fatigue_immunity')).toBe(false);
   });
 });
 
@@ -424,22 +315,6 @@ describe('hasUltraRareAbility', () => {
 // 144-147, 241-242, 377-380, 471-472, 538-539, 611-612, 682-683)
 // ---------------------------------------------------------------------------
 describe('null-horse catch blocks', () => {
-  it('applyUltraRareStressEffects — catch (92-93): returns safe default when horse is null', () => {
-    const result = applyUltraRareStressEffects(null, 50);
-    expect(result.originalStress).toBe(50);
-    expect(result.modifiedStress).toBe(50);
-    expect(result.appliedEffects).toEqual([]);
-    expect(result.totalReduction).toBe(0);
-  });
-
-  it('applyUltraRareStressDecayEffects — catch (144-147): returns safe default when horse is null', () => {
-    const result = applyUltraRareStressDecayEffects(null, 10);
-    expect(result.originalDecay).toBe(10);
-    expect(result.modifiedDecay).toBe(10);
-    expect(result.appliedEffects).toEqual([]);
-    expect(result.totalBonus).toBe(0);
-  });
-
   it('applyUltraRareTrainingEffects: returns safe default when horse is null (Equoria-liy7c: now handled on the happy path, no throw)', () => {
     const trainingData = { success: false };
     const result = applyUltraRareTrainingEffects(null, trainingData);
@@ -479,7 +354,7 @@ describe('null-horse catch blocks', () => {
   });
 
   it('hasUltraRareAbility — catch (682-683): returns false when horse is null', () => {
-    expect(hasUltraRareAbility(null, 'stress_immunity')).toBe(false);
+    expect(hasUltraRareAbility(null, 'training_fatigue_immunity')).toBe(false);
   });
 });
 
@@ -494,12 +369,6 @@ describe('phantom-trait continue branches (no trait definition found)', () => {
       exotic: [],
     },
   };
-
-  it('applyUltraRareStressDecayEffects continue (119): phantom trait skips loop body', () => {
-    const result = applyUltraRareStressDecayEffects(phantomHorse, 10);
-    expect(result.modifiedDecay).toBe(10);
-    expect(result.appliedEffects).toEqual([]);
-  });
 
   it('applyUltraRareTrainingEffects continue (173): phantom trait skips loop body', () => {
     const result = applyUltraRareTrainingEffects(phantomHorse, { success: true });
@@ -525,7 +394,7 @@ describe('phantom-trait continue branches (no trait definition found)', () => {
   });
 
   it('hasUltraRareAbility continue (634): phantom trait skips loop body → returns false', () => {
-    expect(hasUltraRareAbility(phantomHorse, 'stress_immunity')).toBe(false);
+    expect(hasUltraRareAbility(phantomHorse, 'training_fatigue_immunity')).toBe(false);
   });
 });
 
@@ -534,10 +403,6 @@ describe('phantom-trait continue branches (no trait definition found)', () => {
 // but not the specific ability checked (lines 644, 654, 659, 664, 669, 674)
 // ---------------------------------------------------------------------------
 describe('hasUltraRareAbility — switch break branches', () => {
-  it('stress_immunity break (644): phoenix-born lacks stressImmunity → returns false', () => {
-    expect(hasUltraRareAbility(withUltraRare('phoenix-born'), 'stress_immunity')).toBe(false);
-  });
-
   it('training_fatigue_immunity break (654): phoenix-born lacks trainingFatigueImmunity → returns false', () => {
     expect(hasUltraRareAbility(withUltraRare('phoenix-born'), 'training_fatigue_immunity')).toBe(false);
   });
@@ -560,12 +425,6 @@ describe('hasUltraRareAbility — switch break branches', () => {
 // Lines 110, 164, 259, 398, 489, 556 (line 19/628 already covered by existing tests)
 // ---------------------------------------------------------------------------
 describe('missing-ultraRareTraits || fallback branches (Equoria-jkht)', () => {
-  it('applyUltraRareStressDecayEffects (line 110): {} horse uses [] fallback, decay unchanged', () => {
-    const result = applyUltraRareStressDecayEffects({}, 10);
-    expect(result.modifiedDecay).toBe(10);
-    expect(result.appliedEffects).toEqual([]);
-  });
-
   it('applyUltraRareTrainingEffects (line 164): {} horse uses [] fallback, no effects applied', () => {
     const result = applyUltraRareTrainingEffects({}, { success: true });
     expect(result.appliedEffects).toEqual([]);
@@ -592,17 +451,10 @@ describe('missing-ultraRareTraits || fallback branches (Equoria-jkht)', () => {
 
 // ---------------------------------------------------------------------------
 // if-condition FALSE branches — trait has mechanicalEffects but lacks the checked field
-// Line 125: stressDecayMultiplier FALSE
 // Line 450: bondCap FALSE
 // Line 572: (modifiedStats.stamina || 0) RIGHT branch when stamina is undefined
 // ---------------------------------------------------------------------------
 describe('if-condition FALSE branches — field absent despite mechanicalEffects (Equoria-jkht)', () => {
-  it('line 125 FALSE: iron-willed has mechanicalEffects but no stressDecayMultiplier → no multiplier', () => {
-    const result = applyUltraRareStressDecayEffects(withUltraRare('iron-willed'), 10);
-    expect(result.modifiedDecay).toBe(10);
-    expect(result.appliedEffects.some(e => e.effect === 'stress_decay_multiplier')).toBe(false);
-  });
-
   it('line 450 FALSE: iron-willed has mechanicalEffects but no bondCap → no cap applied', () => {
     const result = applyUltraRareBondingEffects(withUltraRare('iron-willed'), 5);
     expect(result.appliedEffects.some(e => e.effect === 'bond_cap')).toBe(false);

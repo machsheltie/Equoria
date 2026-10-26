@@ -25,9 +25,9 @@ export const ENVIRONMENTAL_EVENT_TO_TEMP_FLAG = deepFreeze({
 });
 
 export const ENVIRONMENTAL_TRIGGERS = deepFreeze({
-  stress_inducing: {
-    name: 'Stress Inducing Environment',
-    factors: ['loud_noises', 'unfamiliar_surroundings', 'rough_handling', 'time_pressure'],
+  harsh_environment: {
+    name: 'Harsh Environment',
+    factors: ['rough_handling', 'time_pressure'],
     traits_affected: ['fearful', 'reactive', 'insecure', 'fragile'],
   },
   confidence_building: {
@@ -40,8 +40,8 @@ export const ENVIRONMENTAL_TRIGGERS = deepFreeze({
     factors: ['multiple_handlers', 'group_activities', 'varied_interactions', 'social_exposure'],
     traits_affected: ['social', 'affectionate', 'outgoing'],
   },
-  isolation_stress: {
-    name: 'Isolation Stress Environment',
+  isolation: {
+    name: 'Isolation Environment',
     factors: ['limited_contact', 'minimal_interaction', 'solitary_confinement', 'neglect'],
     traits_affected: ['antisocial', 'withdrawn', 'insecure'],
   },
@@ -69,21 +69,19 @@ export const ENVIRONMENTAL_TRIGGERS = deepFreeze({
  * may be a dotted path (groom.epigeneticInfluenceType).
  */
 export const TRIGGER_SCORE_RULES = deepFreeze({
-  stress_inducing: [
-    [{ field: 'stressChange', op: 'gt', value: 2 }, 0.3],
+  harsh_environment: [
     [{ field: 'quality', op: 'eq', value: 'poor' }, 0.2],
     [{ field: 'bondingChange', op: 'lt', value: 0 }, 0.2],
   ],
   confidence_building: [
     [{ field: 'bondingChange', op: 'gt', value: 1 }, 0.3],
     [{ field: 'quality', op: 'eq', value: 'excellent' }, 0.2],
-    [{ field: 'stressChange', op: 'lte', value: 0 }, 0.2],
   ],
   social_stimulation: [
     [{ field: 'interactionType', op: 'eq', value: 'enrichment' }, 0.2],
     [{ field: 'duration', op: 'gt', value: 30 }, 0.1],
   ],
-  isolation_stress: [
+  isolation: [
     [{ field: 'bondingChange', op: 'lt', value: -1 }, 0.3],
     [{ field: 'duration', op: 'lt', value: 15 }, 0.2],
   ],
@@ -109,8 +107,6 @@ export const TRIGGER_WINDOW_DAYS = 30;
  * whether that should stay is owner question WS7-Q2.
  */
 export const FACTOR_PRESENCE_RULES = deepFreeze({
-  loud_noises: { anyInteraction: [{ field: 'stressChange', op: 'gt', value: 2 }] },
-  unfamiliar_surroundings: { anyInteraction: [{ field: 'stressChange', op: 'gt', value: 2 }] },
   calm_atmosphere: {
     anyInteraction: [
       { field: 'bondingChange', op: 'gt', value: 1 },
@@ -131,7 +127,7 @@ export const FACTOR_PRESENCE_RULES = deepFreeze({
 });
 export const DEFAULT_FACTOR_PRESENT_ABOVE = 0.7;
 
-// Threshold sensitivity: base x age x stress x bond (multiplied in this order).
+// Threshold sensitivity: base x age x bond (multiplied in this order).
 export const BASE_TRIGGER_THRESHOLD = 0.5;
 // [maxAgeDays, modifier]; the first band whose max the age does not exceed.
 export const THRESHOLD_AGE_BANDS = deepFreeze([
@@ -143,7 +139,6 @@ export const THRESHOLD_AGE_BANDS = deepFreeze([
 
 // Exposure per interaction: hours of contact, scaled (in this order).
 export const EXPOSURE_SCALING = deepFreeze([
-  [{ field: 'stressChange', op: 'gt', value: 2 }, 1.5],
   [{ field: 'bondingChange', op: 'gt', value: 2 }, 1.3],
   [{ field: 'quality', op: 'eq', value: 'excellent' }, 1.2],
   [{ field: 'quality', op: 'eq', value: 'poor' }, 0.8],

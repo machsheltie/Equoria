@@ -6,7 +6,7 @@
  * stored on `Horse.epigeneticFlags`, served by the /api/v1/flags/* endpoints.
  * They are a DIFFERENT concept from `frontend/src/types/traits.ts`'s
  * `EpigeneticFlag` (a trait-acquisition-SOURCE tag —
- * 'stress-induced'|'care-influenced'|... — rendered by EpigeneticFlagBadge on
+ * 'care-influenced'|... — rendered by EpigeneticFlagBadge on
  * genetic traits). To avoid conflation in the UI, this module names its type
  * `BehavioralFlag`, never `EpigeneticFlag`.
  *
@@ -14,7 +14,7 @@
  * the { success, data } envelope and returns `data`):
  *
  *   GET /api/v1/flags/horses/:id/flags  (auth + ownership) →
- *     { horseId, horseName, ageInYears, currentBondScore, currentStressLevel,
+ *     { horseId, horseName, ageInYears, currentBondScore,
  *       flagCount, flags: BehavioralFlag[], maxFlags, canReceiveMoreFlags }
  *   GET /api/v1/flags/definitions       (auth) →
  *     { count, flags: BehavioralFlag[] }
@@ -52,7 +52,6 @@ export interface HorseFlagsData {
   horseName: string;
   ageInYears: number;
   currentBondScore: number;
-  currentStressLevel: number;
   flagCount: number;
   flags: BehavioralFlag[];
   maxFlags: number;
@@ -79,7 +78,6 @@ export interface CarePatternsData {
   ageInDays?: number;
   ageInYears?: number;
   currentBondScore?: number;
-  currentStressLevel?: number;
   patterns?: Record<string, unknown>;
 }
 
@@ -104,7 +102,7 @@ export const useHorseFlags = (horseId: number): UseQueryResult<HorseFlagsData, A
 
 /**
  * Care-pattern analysis for an owned foal/youngstock (< 3 game-years). For
- * older horses the backend returns { eligible: false, reason }. Bond/stress
+ * older horses the backend returns { eligible: false, reason }. Bond
  * driven, so a shorter staleTime keeps it reasonably current.
  */
 export const useHorseCarePatterns = (horseId: number): UseQueryResult<CarePatternsData, ApiError> =>

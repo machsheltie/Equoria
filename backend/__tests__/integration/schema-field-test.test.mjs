@@ -68,7 +68,6 @@ describe('Schema Field Test', () => {
         userId: testUser.id,
         breedId: testBreed.id,
         bondScore: 50,
-        stressLevel: 20,
         taskLog: { trust_building: 3, desensitization: 2 },
         lastGroomed: new Date(),
         daysGroomedInARow: 5,
@@ -80,7 +79,6 @@ describe('Schema Field Test', () => {
     expect(horse).toBeTruthy();
     expect(horse.consecutiveDaysFoalCare).toBe(7);
     expect(horse.bondScore).toBe(50);
-    expect(horse.stressLevel).toBe(20);
     expect(horse.daysGroomedInARow).toBe(5);
 
     // Clean up

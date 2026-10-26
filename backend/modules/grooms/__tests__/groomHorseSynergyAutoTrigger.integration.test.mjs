@@ -67,7 +67,6 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
         dateOfBirth: dob,
         age: 21,
         bondScore: 50,
-        stressLevel: 0,
         userId: user.id,
       },
     });
@@ -154,7 +153,6 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
         dateOfBirth: dob,
         age: 21,
         bondScore: 50,
-        stressLevel: 0,
         userId: user.id,
       },
     });

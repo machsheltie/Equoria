@@ -33,6 +33,8 @@ export interface Horse {
   gender: string;
   dateOfBirth: string;
   healthStatus: string;
+  // Bond with the horse's groom, 0-100; shown on the horse page at every age.
+  bondScore?: number;
   imageUrl?: string;
   stats: HorseStats;
   disciplineScores: Record<string, number>;

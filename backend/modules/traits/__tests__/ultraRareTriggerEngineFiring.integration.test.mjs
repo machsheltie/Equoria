@@ -141,7 +141,7 @@ beforeAll(async () => {
   });
 
   // ── Stormtouched (POSITIVE): reactive temperament + >=7-day care gap +
-  //    novelty task + 2 stress spikes (via groomInteractions) ─────────────────
+  //    novelty task (via groomInteractions) ───────────────────────────────────
   stormtouchedHorse = await prisma.horse.create({
     data: {
       ...fixtureColor(),
@@ -161,7 +161,6 @@ beforeAll(async () => {
       interactionType: 'desensitization',
       duration: 30,
       taskType: 'desensitization',
-      stressChange: 8, // spike #1
       timestamp: new Date(ts - 40 * DAY),
     },
   });
@@ -172,7 +171,6 @@ beforeAll(async () => {
       interactionType: 'noveltyExposure',
       duration: 30,
       taskType: 'noveltyExposure', // novelty event
-      stressChange: 7, // spike #2
       timestamp: new Date(ts - 39 * DAY),
     },
   });
@@ -183,7 +181,6 @@ beforeAll(async () => {
       interactionType: 'grooming',
       duration: 30,
       taskType: 'grooming',
-      stressChange: 0,
       timestamp: new Date(ts - 29 * DAY), // 10-day gap from previous → missed care week
     },
   });
@@ -207,7 +204,6 @@ beforeAll(async () => {
       interactionType: 'noveltyExposure',
       duration: 30,
       taskType: 'noveltyExposure',
-      stressChange: 8,
       timestamp: new Date(ts - 40 * DAY),
     },
   });
@@ -218,7 +214,6 @@ beforeAll(async () => {
       interactionType: 'grooming',
       duration: 30,
       taskType: 'grooming',
-      stressChange: 8,
       timestamp: new Date(ts - 29 * DAY),
     },
   });
@@ -248,10 +243,16 @@ describe('Born Leader — fires on real qualifying data (Equoria-oey96.9)', () =
 });
 
 describe('Stormtouched — fires on real qualifying data (Equoria-oey96.9)', () => {
-  it('FIRES: reactive temperament + missed care week + novelty event + 2 stress spikes', async () => {
+  it('FIRES: reactive temperament + missed care week + novelty event', async () => {
     const result = await evaluateUltraRareTriggers(stormtouchedHorse.id);
     const names = result.map(t => t.name);
     expect(names).toContain('Stormtouched');
+    // The triggered trait carries its name, key, tier, baseChance and definition.
+    const trait = result.find(t => t.name === 'Stormtouched');
+    expect(trait).toHaveProperty('key');
+    expect(trait).toHaveProperty('tier', 'ultra-rare');
+    expect(trait).toHaveProperty('baseChance');
+    expect(trait).toHaveProperty('definition');
   }, 20000);
 
   it('does NOT fire when temperament is not reactive (negative arm)', async () => {

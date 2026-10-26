@@ -38,7 +38,6 @@ export const PERSONALITY_DATA: Record<GroomPersonality, PersonalityInfo> = {
       'Creates a calm, trusting environment for horses. Excels with sensitive or nervous horses.',
     traitInfluences: [
       { trait: 'Bonding', magnitude: 'high' },
-      { trait: 'Stress Reduction', magnitude: 'high' },
       { trait: 'Obedience', magnitude: 'medium' },
     ],
     compatibilityRatings: [

@@ -227,7 +227,7 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
   });
 
   // Equoria-mwjst. OLD CONTRACT (vulnerable): an "Advance Day" button sent
-  // PUT /develop and the server stored the client's chosen day/bond/stress.
+  // PUT /develop and the server stored the client's chosen day/bond.
   // CORRECTED CONTRACT (owner ruling 2026-10-05): no Advance Day anywhere; the
   // endpoint is gone and the development record does not move.
   test('the player cannot advance the development day: no control, and PUT /develop is refused', async ({
@@ -242,7 +242,7 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
       expect(res.ok(), `GET /development returned ${res.status()}`).toBeTruthy();
       const json = (await res.json()) as {
         data?: {
-          development?: { currentDay?: number; bondingLevel?: number; stressLevel?: number };
+          development?: { currentDay?: number; bondingLevel?: number };
         };
       };
       return json.data?.development;
@@ -252,7 +252,6 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     const forged = await csrfMutate(session, 'PUT', `/api/v1/foals/${foalId}/develop`, {
       currentDay: 6,
       bondingLevel: 100,
-      stressLevel: 0,
     });
     expect(forged.status(), 'the retired develop endpoint must not exist').toBe(404);
     expect(await readDevelopment()).toEqual(before);

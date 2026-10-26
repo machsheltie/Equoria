@@ -69,7 +69,6 @@ async function mkHorse(suffix, opts = {}) {
       age: opts.age ?? 1,
       userId: USER_ID,
       bondScore: opts.bondScore ?? 50,
-      stressLevel: opts.stressLevel ?? 20,
       epigeneticFlags: opts.epigeneticFlags ?? [],
     },
   });
@@ -87,7 +86,6 @@ async function mkInteraction(foalId, opts = {}) {
       interactionType: opts.interactionType ?? 'daily_care',
       duration: 30,
       bondingChange: opts.bondingChange ?? 3,
-      stressChange: opts.stressChange ?? 0,
       quality: opts.quality ?? 'good',
       notes: opts.notes ?? null,
       createdAt: opts.createdAt ?? new Date(),
@@ -189,21 +187,18 @@ async function addFearfulInteractions(foalId) {
     interactionType: 'daily_care',
     bondingChange: -5,
     quality: 'good',
-    stressChange: 0,
     createdAt: daysAgo(2),
   });
   await mkInteraction(foalId, {
     interactionType: 'daily_care',
     bondingChange: -5,
     quality: 'good',
-    stressChange: 0,
     createdAt: daysAgo(1),
   });
   await mkInteraction(foalId, {
     interactionType: 'daily_care',
     bondingChange: -5,
     quality: 'good',
-    stressChange: 0,
     createdAt: daysAgo(0),
   });
 }
@@ -385,7 +380,7 @@ describe('flag trigger conditions', () => {
   });
 
   test('triggers fearful flag: 3 fear events, bondScore <= 20, no novelty support', async () => {
-    const horse = await mkHorse('FearfulFlag', { bondScore: 15, stressLevel: 60 });
+    const horse = await mkHorse('FearfulFlag', { bondScore: 15 });
     await addFearfulInteractions(horse.id);
 
     const result = await evaluateHorseFlags(horse.id);

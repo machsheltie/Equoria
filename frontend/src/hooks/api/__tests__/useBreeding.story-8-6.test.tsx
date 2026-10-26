@@ -84,7 +84,6 @@ describe('useFoalDevelopment', () => {
     expect(result.current.data?.currentDay).toBe(1);
     expect(result.current.data?.maxDay).toBe(6);
     expect(result.current.data?.bondingLevel).toBe(50);
-    expect(result.current.data?.stressLevel).toBe(10);
   });
 
   it('is disabled when foalId is 0 (falsy)', () => {

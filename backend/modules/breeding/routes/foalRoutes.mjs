@@ -5,9 +5,9 @@
  * Validation middleware (express-validator) and ownership checks remain here.
  *
  * No route here may set or advance a foal's development day, or write its
- * bond/stress values (Equoria-mwjst; owner ruling 2026-10-05: "THEY MUST WAIT
+ * bond values (Equoria-mwjst; owner ruling 2026-10-05: "THEY MUST WAIT
  * OUT THE FULL 7 DAY AGING PROCESS"). PUT /:foalId/develop (client-chosen
- * day/bond/stress) and POST /:foalId/advance-day were removed; the nightly
+ * day/bond) and POST /:foalId/advance-day were removed; the nightly
  * trait job is the only thing that moves FoalDevelopment.currentDay.
  *
  * There is no player-run enrichment, foal activity or graduation either

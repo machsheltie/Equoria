@@ -113,7 +113,7 @@ const MIGRATED = [
   ['modules/grooms/services/groomAssignmentService.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/grooms/services/groomFoalAssignmentService.mjs', { wrapped: 1, totalTx: 1 }],
   // Equoria-mc22a added this one: POST /api/grooms/enhanced/interact now commits
-  // its interaction row, the horse's bond/stress and the synergy row as one
+  // its interaction row, the horse's bond and the synergy row as one
   // transaction (they were three autocommit writes), with the daily limit
   // re-checked under the horse lock inside it (Equoria-9a5ny). Client-facing,
   // so wrapped.

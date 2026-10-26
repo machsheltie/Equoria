@@ -84,7 +84,6 @@ describe('analyzeCarePatterns', () => {
     expect(typeof result.ageInYears).toBe('number');
     expect(result.ageInYears).toBeLessThan(3);
     expect(typeof result.currentBondScore).toBe('number');
-    expect(typeof result.currentStressLevel).toBe('number');
     expect(result.patterns).toBeDefined();
     expect(realDateOrReason(result.evaluationDate)).toBe('valid date');
   });
@@ -95,7 +94,6 @@ describe('analyzeCarePatterns', () => {
 
     expect(patterns.consistentCare).toBeDefined();
     expect(patterns.noveltyExposure).toBeDefined();
-    expect(patterns.stressManagement).toBeDefined();
     expect(patterns.bondingPatterns).toBeDefined();
     expect(patterns.neglectPatterns).toBeDefined();
     expect(patterns.environmentalFactors).toBeDefined();
@@ -135,7 +133,6 @@ describe('analyzeCarePatterns', () => {
 const {
   analyzeConsistentCare,
   analyzeNoveltyExposure,
-  analyzeStressManagement,
   analyzeBondingPatterns,
   analyzeNeglectPatterns,
   analyzeEnvironmentalFactors,
@@ -146,7 +143,6 @@ function mkInteraction(daysAgo = 0, overrides = {}) {
     interactionType: 'daily_care',
     quality: 'good',
     bondingChange: 2,
-    stressChange: 0,
     createdAt: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000),
     notes: null,
     ...overrides,
@@ -182,28 +178,6 @@ describe('analyzeNoveltyExposure — && branch coverage (Equoria-jkht)', () => {
   it('meetsBraveThreshold: false when noveltyWithSupport>=3 but bondScore<30', () => {
     const r = analyzeNoveltyExposure(noveltyInteractions, 20);
     expect(r.meetsBraveThreshold).toBe(false);
-  });
-});
-
-describe('analyzeStressManagement — && branch coverage (Equoria-jkht)', () => {
-  it('meetsFragileThreshold: true when 3+ stress events with no recovery support', () => {
-    const stressOnly = [0, 2, 4].map(d => mkInteraction(d, { stressChange: 5 }));
-    const r = analyzeStressManagement(stressOnly, 30);
-    expect(r.meetsFragileThreshold).toBe(true);
-    expect(r.stressWithSupport).toBe(0);
-  });
-
-  it('meetsFragileThreshold: false when stressWithSupport>0 (support present for each event)', () => {
-    const now = Date.now();
-    const interactions = [];
-    for (let i = 0; i < 3; i++) {
-      const base = now - (i * 48 + 10) * 60 * 60 * 1000;
-      interactions.push(mkInteraction(0, { stressChange: 5, createdAt: new Date(base) }));
-      interactions.push(mkInteraction(0, { stressChange: -3, createdAt: new Date(base + 2 * 60 * 60 * 1000) }));
-    }
-    const r = analyzeStressManagement(interactions, 30);
-    expect(r.meetsFragileThreshold).toBe(false);
-    expect(r.stressWithSupport).toBeGreaterThanOrEqual(3);
   });
 });
 
@@ -272,30 +246,30 @@ describe('calculateConsecutiveDays via analyzeConsistentCare — streak-reset br
 });
 
 describe('analyzeEnvironmentalFactors — filter-predicate branch coverage (Equoria-jkht)', () => {
-  it('notes===null covers && left-false branch; stressChange>5 covers || right branch', () => {
+  it('notes===null covers && left-false branch; a feeding interaction is routine', () => {
     const interactions = [
-      mkInteraction(0, { stressChange: 6, notes: null, interactionType: 'exercise' }), // non-routine; stressChange>5 → startle
+      mkInteraction(0, { notes: null, interactionType: 'exercise' }), // non-routine, no note → no startle
       mkInteraction(1, { interactionType: 'feeding' }), // feeding → || right-branch of routineInteractions filter
     ];
     const r = analyzeEnvironmentalFactors(interactions);
-    expect(r.startleEvents).toBe(1);
+    expect(r.startleEvents).toBe(0);
     expect(r.routineInteractions).toBe(1);
   });
 
-  it('notes containing "startle" covers && right branch (notes truthy and includes startle)', () => {
-    const interactions = [mkInteraction(0, { notes: 'horse startled at loud noise', stressChange: 0 })];
-    const r = analyzeEnvironmentalFactors(interactions);
-    expect(r.startleEvents).toBe(1);
-  });
-
-  it('meetsSkittishThreshold: true when 2+ startle events (stressChange>5)', () => {
+  it('meetsSkittishThreshold: true when 2+ startle events (notes)', () => {
     const interactions = [
-      mkInteraction(0, { stressChange: 6, notes: null }),
-      mkInteraction(1, { stressChange: 8, notes: null }),
+      mkInteraction(0, { notes: 'horse startled at loud noise' }),
+      mkInteraction(1, { notes: 'startled by a flapping tarp' }),
     ];
     const r = analyzeEnvironmentalFactors(interactions);
     expect(r.meetsSkittishThreshold).toBe(true);
     expect(r.startleEvents).toBe(2);
+  });
+
+  it('notes containing "startle" covers && right branch (notes truthy and includes startle)', () => {
+    const interactions = [mkInteraction(0, { notes: 'horse startled at loud noise' })];
+    const r = analyzeEnvironmentalFactors(interactions);
+    expect(r.startleEvents).toBe(1);
   });
 
   it('hasRoutine: true when 5+ routine interactions (interactionType daily_care)', () => {

@@ -271,7 +271,6 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         bondScore: 40,
-        stressLevel: 10,
       },
     });
     horseIds.push(foal.id);

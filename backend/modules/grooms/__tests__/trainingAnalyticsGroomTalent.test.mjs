@@ -202,10 +202,9 @@ describe('validateTalentSelection', () => {
 
 describe('applyTalentEffects', () => {
   it('returns base interaction unchanged for groom with no talent selections', async () => {
-    const baseInteraction = { bondingChange: 5, stressChange: -2, quality: 'good' };
+    const baseInteraction = { bondingChange: 5, quality: 'good' };
     const result = await applyTalentEffects(groom.id, baseInteraction);
     expect(result.bondingChange).toBe(5);
-    expect(result.stressChange).toBe(-2);
     expect(Array.isArray(result.talentBonuses)).toBe(true);
     expect(result.talentBonuses).toHaveLength(0);
   });
@@ -362,24 +361,22 @@ describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
   });
 
   it('applyTalentEffects: bondingBonus from gentle_hands talent increases bondingChange', async () => {
-    const baseInteraction = { bondingChange: 5, stressChange: -2 };
+    const baseInteraction = { bondingChange: 5 };
     const result = await applyTalentEffects(ttGroomCalmL5.id, baseInteraction);
     expect(result.talentBonuses.length).toBeGreaterThan(0);
     expect(result.bondingChange).toBeGreaterThan(5);
   });
 });
 
-// ── groomTalentService — selectTalent + stressReduction/qualityBonus branches (Equoria-rr7) ──
+// ── groomTalentService — selectTalent + qualityBonus branches (Equoria-rr7) ──
 // Covers: selectTalent valid path (lines 279-309), validation-fail throw (lines 283-284),
 //         tier3 prerequisite 'tier1' fallback (line 256 false arm),
-//         applyTalentEffects stressReduction (lines 357-361),
 //         applyTalentEffects qualityBonus (lines 365-368)
 
 describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)', () => {
   let st2User;
   let st2GroomCalmL3; // calm, level=3 — selectTalent valid path
   let st2GroomCalmL8; // calm, level=8, no selections — tier3 prerequisite 'tier1' branch
-  let st2GroomStress; // calm, tier1+tier2='stress_whisperer' seeded — stressReduction path
   let st2GroomQuality; // energetic, tier1='enthusiasm_boost' seeded — qualityBonus path
   // Equoria-1ohys: fail-loud scoped cleanup for this describe's fixtures.
   const st2Cleanup = createCleanupTracker();
@@ -399,7 +396,7 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
       },
     });
 
-    [st2GroomCalmL3, st2GroomCalmL8, st2GroomStress, st2GroomQuality] = await createSequentially([
+    [st2GroomCalmL3, st2GroomCalmL8, st2GroomQuality] = await createSequentially([
       () =>
         prisma.groom.create({
           data: {
@@ -423,16 +420,6 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
       () =>
         prisma.groom.create({
           data: {
-            name: `TestFixture-ST2-Stress-${ts}`,
-            speciality: 'foalCare',
-            personality: 'calm',
-            level: 8,
-            userId: st2User.id,
-          },
-        }),
-      () =>
-        prisma.groom.create({
-          data: {
             name: `TestFixture-ST2-Quality-${ts}`,
             speciality: 'foalCare',
             personality: 'energetic',
@@ -446,10 +433,6 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
     await createSequentially([
       () =>
         prisma.groomTalentSelections.create({
-          data: { groomId: st2GroomStress.id, tier1: 'gentle_hands', tier2: 'stress_whisperer' },
-        }),
-      () =>
-        prisma.groomTalentSelections.create({
           data: { groomId: st2GroomQuality.id, tier1: 'enthusiasm_boost' },
         }),
     ]);
@@ -461,7 +444,7 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
     st2Cleanup.add(
       () =>
         prisma.groomTalentSelections.deleteMany({
-          where: { groomId: { in: [st2GroomCalmL3.id, st2GroomCalmL8.id, st2GroomStress.id, st2GroomQuality.id] } },
+          where: { groomId: { in: [st2GroomCalmL3.id, st2GroomCalmL8.id, st2GroomQuality.id] } },
         }),
       'st2 talent selections',
     );
@@ -495,16 +478,8 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
     expect(result.prerequisite).toBe('tier1');
   });
 
-  it('applyTalentEffects: stressReduction from stress_whisperer makes stressChange more negative (lines 357-361)', async () => {
-    const baseInteraction = { bondingChange: 5, stressChange: -4 };
-    const result = await applyTalentEffects(st2GroomStress.id, baseInteraction);
-    // stress_whisperer has stressReduction=0.2 → reduction applied to stressChange
-    expect(result.stressChange).toBeLessThan(-4);
-    expect(result.talentBonuses.some(b => b.talentId === 'stress_whisperer')).toBe(true);
-  });
-
   it('applyTalentEffects: qualityBonus from enthusiasm_boost sets qualityModifier (lines 365-368)', async () => {
-    const baseInteraction = { bondingChange: 5, stressChange: -2 };
+    const baseInteraction = { bondingChange: 5 };
     const result = await applyTalentEffects(st2GroomQuality.id, baseInteraction);
     // enthusiasm_boost has qualityBonus=0.15 → qualityModifier = 1 + 0.15 = 1.15
     expect(typeof result.qualityModifier).toBe('number');

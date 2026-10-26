@@ -173,7 +173,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ horseId: horseB.id, effectType: 'stress', baseValue: 1 });
+        .send({ horseId: horseB.id, effectType: 'competition', baseValue: 1 });
 
       expect(resNotOwned.status).toBe(404);
       expect(resNotOwned.body.success).toBe(false);
@@ -184,7 +184,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ horseId: NONEXISTENT_ID, effectType: 'stress', baseValue: 1 });
+        .send({ horseId: NONEXISTENT_ID, effectType: 'competition', baseValue: 1 });
 
       expect(resMissing.status).toBe(404);
       // Byte-identical sentinel — divergence allows ID enumeration.

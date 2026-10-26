@@ -93,7 +93,6 @@ const flagHorseSelect = Object.freeze({
   dateOfBirth: true,
   epigeneticFlags: true,
   bondScore: true,
-  stressLevel: true,
   // Equoria-yzqhj.4: parents reachable for live predisposition derivation.
   sireId: true,
   damId: true,

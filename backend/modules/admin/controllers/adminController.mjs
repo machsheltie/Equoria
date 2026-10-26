@@ -172,14 +172,12 @@ export async function getFoalDevelopment(req, res) {
         name: true,
         age: true,
         bondScore: true,
-        stressLevel: true,
         epigeneticModifiers: true,
         breed: { select: { name: true } },
         foalDevelopment: {
           select: {
             currentDay: true,
             bondingLevel: true,
-            stressLevel: true,
           },
         },
       },

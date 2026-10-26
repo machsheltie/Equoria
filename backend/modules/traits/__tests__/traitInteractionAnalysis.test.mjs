@@ -16,7 +16,6 @@ function snapshot(overrides = {}) {
   return Object.freeze({
     id: 41,
     epigeneticFlags: Object.freeze(['brave', 'confident', 'fearful']),
-    stressLevel: 2,
     bondScore: 50,
     // 90 whole UTC days before NOW: the module's maturity boundary.
     dateOfBirth: new Date('2026-03-03T00:00:00Z'),
@@ -99,48 +98,43 @@ describe('analyzeTraitSnapshot', () => {
     expect(traitInteractions.dominantTraits.map(t => t.trait)).toEqual(['brave', 'confident']);
   });
 
-  it('modulates dominance by stress and bond from the snapshot', () => {
+  it('modulates dominance by bond from the snapshot', () => {
     const { dominance } = analyzeTraitSnapshot(snapshot(), { now: NOW });
 
     expect(dominance.dominanceHierarchy.map(t => [t.trait, t.environmentalModifier])).toEqual([
-      ['brave', 0.94],
-      ['confident', 0.94],
-      ['fearful', 1.1],
+      ['brave', 1],
+      ['confident', 1],
+      ['fearful', 1],
     ]);
     expect(dominance.primaryTrait.trait).toBe('brave');
-    expect(dominance.primaryTrait.dominanceScore).toBeCloseTo(0.846, 10);
+    expect(dominance.primaryTrait.dominanceScore).toBeCloseTo(0.9, 10);
 
-    const bonded = analyzeTraitSnapshot(snapshot({ epigeneticFlags: ['social'], stressLevel: 0, bondScore: 80 }), {
+    const bonded = analyzeTraitSnapshot(snapshot({ epigeneticFlags: ['social'], bondScore: 80 }), {
       now: NOW,
     });
     // (80 - 20) * 0.01 = +0.6, clamped to the 1.5 ceiling.
     expect(bonded.dominance.primaryTrait.environmentalModifier).toBe(1.5);
   });
 
-  it('assesses stability from conflicts, stress and bond', () => {
+  it('assesses stability from conflicts and bond', () => {
     const calm = analyzeTraitSnapshot(snapshot(), { now: NOW }).stability;
-    expect(calm.overallStability).toBeCloseTo(0.5, 10);
-    expect(calm.stabilityFactors).toEqual(['trait_synergies', 'strong_bonding', 'low_stress']);
+    expect(calm.overallStability).toBeCloseTo(0.6, 10);
+    expect(calm.stabilityFactors).toEqual(['trait_synergies', 'strong_bonding']);
     expect(calm.volatilityRisks).toEqual([]);
     // Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts (old contract: recommendations listed care advice).
     expect(calm).not.toHaveProperty('recommendations');
 
-    const stressed = analyzeTraitSnapshot(
+    const conflicted = analyzeTraitSnapshot(
       snapshot({
         epigeneticFlags: ['fearful', 'brave', 'reactive', 'calm', 'social', 'antisocial'],
-        stressLevel: 9,
         bondScore: 2,
       }),
       { now: NOW },
     ).stability;
-    expect(stressed.overallStability).toBeCloseTo(0.8 - 0.3 - 0.45, 10);
-    expect(stressed.stabilityFactors).toEqual(['trait_synergies']);
-    expect(stressed.volatilityRisks).toEqual([
-      'multiple_trait_conflicts',
-      'high_stress_environment',
-      'reactive_temperament',
-    ]);
-    expect(stressed).not.toHaveProperty('recommendations');
+    expect(conflicted.overallStability).toBeCloseTo(0.8 - 0.3, 10);
+    expect(conflicted.stabilityFactors).toEqual(['trait_synergies']);
+    expect(conflicted.volatilityRisks).toEqual(['multiple_trait_conflicts', 'reactive_temperament']);
+    expect(conflicted).not.toHaveProperty('recommendations');
   });
 
   it('models temporal evolution from the age at the analysis clock and the requested window', () => {
@@ -219,7 +213,6 @@ describe('toTraitAnalysisSnapshot', () => {
       name: 'Moonlit Ember',
       userId: 'owner-1',
       epigeneticFlags: ['brave', 'calm'],
-      stressLevel: 3,
       bondScore: 22,
       dateOfBirth: new Date('2026-01-01T00:00:00Z'),
       speed: 80,
@@ -229,7 +222,6 @@ describe('toTraitAnalysisSnapshot', () => {
     expect(snap).toEqual({
       id: 7,
       epigeneticFlags: ['brave', 'calm'],
-      stressLevel: 3,
       bondScore: 22,
       dateOfBirth: row.dateOfBirth,
     });

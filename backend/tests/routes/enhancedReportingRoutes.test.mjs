@@ -140,7 +140,6 @@ describe('Enhanced Reporting API Routes', () => {
         sex: 'Filly',
         dateOfBirth: oneWeekAgo,
         bondScore: 20,
-        stressLevel: 4,
         epigeneticFlags: ['curious', 'developing'],
       },
       // Older foal with established traits
@@ -149,7 +148,6 @@ describe('Enhanced Reporting API Routes', () => {
         sex: 'Colt',
         dateOfBirth: oneMonthAgo,
         bondScore: 35,
-        stressLevel: 3,
         epigeneticFlags: ['confident', 'brave', 'social'],
       },
       // Mature foal with complex traits
@@ -158,7 +156,6 @@ describe('Enhanced Reporting API Routes', () => {
         sex: 'Colt',
         dateOfBirth: twoMonthsAgo,
         bondScore: 40,
-        stressLevel: 2,
         epigeneticFlags: ['intelligent', 'calm', 'adaptable', 'social'],
       },
     ];
@@ -187,7 +184,6 @@ describe('Enhanced Reporting API Routes', () => {
             duration: 30 + i * 10,
             taskType: ['trust_building', 'showground_exposure', 'desensitization'][i],
             bondingChange: [2, 3, 1][i],
-            stressChange: [1, -1, 2][i],
             quality: ['good', 'excellent', 'fair'][i],
             cost: 40.0,
             createdAt: new Date(now.getTime() - (i + 1) * 24 * 60 * 60 * 1000),
@@ -410,7 +406,6 @@ describe('Enhanced Reporting API Routes', () => {
           dateOfBirth: new Date(),
           userId: otherUser.id,
           bondScore: 15,
-          stressLevel: 5,
         },
       });
       ids.horses.push(otherHorse.id);

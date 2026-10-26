@@ -33,7 +33,6 @@ describe('GROOM_PERSONALITY_EFFECTS', () => {
     for (const [, config] of Object.entries(GROOM_PERSONALITY_EFFECTS)) {
       expect(typeof config.successRateModifier).toBe('number');
       expect(typeof config.bondingModifier).toBe('number');
-      expect(typeof config.stressReductionModifier).toBe('number');
       expect(typeof config.streakGrowthModifier).toBe('number');
       // Equoria-0d4wa: there is no burnout, so no personality carries a burnout modifier.
       expect(config.burnoutRiskModifier).toBeUndefined();
@@ -68,7 +67,6 @@ describe('GROOM_PERSONALITY_EFFECTS', () => {
 describe('calculatePersonalityEffects', () => {
   const baseEffects = {
     bondingChange: 10,
-    stressChange: -5,
     successRate: 0.85,
     streakGrowth: 1,
     traitInfluence: 5,
@@ -84,12 +82,6 @@ describe('calculatePersonalityEffects', () => {
     const groom = { personality: 'gentle' };
     const result = calculatePersonalityEffects(groom, { traits: [] }, 'stall_care', baseEffects);
     expect(result.bondingChange).toBe(Math.round(10 * 1.2));
-  });
-
-  it('gentle: amplifies stressReduction (multiplies stressChange by 1.4)', () => {
-    const groom = { personality: 'gentle' };
-    const result = calculatePersonalityEffects(groom, { traits: [] }, 'brushing', baseEffects);
-    expect(result.stressChange).toBe(Math.round(-5 * 1.4));
   });
 
   it('gentle: applies successRateModifier 1.1', () => {
@@ -175,7 +167,7 @@ describe('calculatePersonalityEffects', () => {
 
   it('handles baseEffects without optional fields gracefully', () => {
     const groom = { personality: 'gentle' };
-    const minimal = { bondingChange: 5, stressChange: -3, successRate: 0.85 };
+    const minimal = { bondingChange: 5, successRate: 0.85 };
     const result = calculatePersonalityEffects(groom, { traits: [] }, 'brushing', minimal);
     expect(result.bondingChange).toBeDefined();
     expect(result.successRate).toBeDefined();
@@ -210,7 +202,6 @@ describe('getPersonalityEffectSummary', () => {
     expect(typeof result.taskBonus).toBe('boolean');
     expect(typeof result.effect).toBe('string');
     expect(result.modifiers).toHaveProperty('bonding');
-    expect(result.modifiers).toHaveProperty('stressReduction');
     expect(result.modifiers).toHaveProperty('successRate');
   });
 
@@ -236,7 +227,6 @@ describe('getPersonalityEffectSummary', () => {
 describe('calculatePersonalityEffects — additional branches', () => {
   const baseEffects = {
     bondingChange: 10,
-    stressChange: -5,
     successRate: 0.85,
     streakGrowth: 1,
     traitInfluence: 5,
@@ -347,7 +337,7 @@ describe('getAllPersonalityTypes', () => {
 describe('calculatePersonalityEffects — successRate || 0.85 fallback (line 196)', () => {
   it('baseEffects without successRate uses 0.85 default (|| right-branch covered)', () => {
     const groom = { personality: 'gentle' };
-    const baseWithoutRate = { bondingChange: 10, stressChange: -5 };
+    const baseWithoutRate = { bondingChange: 10 };
     const result = calculatePersonalityEffects(groom, { traits: [] }, 'brushing', baseWithoutRate);
     // successRate was undefined → 0.85 default → min(0.99, 0.85 * 1.1) = 0.935
     expect(result.successRate).toBeCloseTo(Math.min(0.99, 0.85 * 1.1));
@@ -368,7 +358,6 @@ describe('calculatePersonalityEffects — trait bonusBonding branch (line 223)',
       effect: 'test only',
       successRateModifier: 1.0,
       bondingModifier: 1.0,
-      stressReductionModifier: 1.0,
       streakGrowthModifier: 1.0,
       traitInfluenceModifier: 1.0,
       specialConditions: {
@@ -385,7 +374,7 @@ describe('calculatePersonalityEffects — trait bonusBonding branch (line 223)',
   it('horse with matching trait and bonusBonding applies bondingChange bonus (line 223 covered)', () => {
     const groom = { personality: '_testTraitBonding' };
     const horse = { traits: ['docile'], age: 500 };
-    const baseEffects = { successRate: 0.85, bondingChange: 10, stressChange: -5 };
+    const baseEffects = { successRate: 0.85, bondingChange: 10 };
 
     const result = calculatePersonalityEffects(groom, horse, 'brushing', baseEffects);
 
@@ -401,7 +390,6 @@ describe('calculatePersonalityEffects — trait bonusBonding branch (line 223)',
 describe('calculatePersonalityEffects — specialConditions FALSE branches (lines 204, 237, 252)', () => {
   const baseEffects = {
     bondingChange: 10,
-    stressChange: -5,
     successRate: 0.85,
     streakGrowth: 1,
     traitInfluence: 5,
@@ -414,7 +402,6 @@ describe('calculatePersonalityEffects — specialConditions FALSE branches (line
       effect: 'test only — no specialConditions',
       successRateModifier: 1.0,
       bondingModifier: 1.0,
-      stressReductionModifier: 1.0,
       streakGrowthModifier: 1.0,
       traitInfluenceModifier: 1.0,
       // intentionally omitted: specialConditions
@@ -426,7 +413,6 @@ describe('calculatePersonalityEffects — specialConditions FALSE branches (line
       effect: 'test only — ageRange, no bonusBonding',
       successRateModifier: 1.0,
       bondingModifier: 1.0,
-      stressReductionModifier: 1.0,
       streakGrowthModifier: 1.0,
       traitInfluenceModifier: 1.0,
       specialConditions: {
@@ -441,7 +427,6 @@ describe('calculatePersonalityEffects — specialConditions FALSE branches (line
       effect: 'test only — taskCategories, no bonusSuccessRate',
       successRateModifier: 1.0,
       bondingModifier: 1.0,
-      stressReductionModifier: 1.0,
       streakGrowthModifier: 1.0,
       traitInfluenceModifier: 1.0,
       specialConditions: {
@@ -499,7 +484,6 @@ describe('groomPersonalityEffects — exact config & bonusesApplied (merged from
     name: 'Test Horse',
     age: 365,
     bondScore: 50,
-    stressLevel: 20,
     traits: [
       { name: 'nervous', type: 'behavioral' },
       { name: 'curious', type: 'mental' },
@@ -508,7 +492,6 @@ describe('groomPersonalityEffects — exact config & bonusesApplied (merged from
   });
   const baseEffects = () => ({
     bondingChange: 5,
-    stressChange: -3,
     cost: 25.0,
     quality: 'good',
     errorOccurred: false,
@@ -519,12 +502,11 @@ describe('groomPersonalityEffects — exact config & bonusesApplied (merged from
   });
 
   describe('exact config values', () => {
-    it('gentle has exact bonding 1.2, stressReduction 1.4, nervous specialCondition + 0.1 bonus', () => {
+    it('gentle has exact bonding 1.2 and a nervous specialCondition + 0.1 bonus', () => {
       const { gentle } = GROOM_PERSONALITY_EFFECTS;
       expect(gentle.bonusTasks).toContain('brushing');
       expect(gentle.bonusTasks).toContain('stall_care');
       expect(gentle.bondingModifier).toBe(1.2);
-      expect(gentle.stressReductionModifier).toBe(1.4);
       expect(gentle.specialConditions.horseTraits).toContain('nervous');
       expect(gentle.specialConditions.bonusSuccessRate).toBe(0.1);
     });

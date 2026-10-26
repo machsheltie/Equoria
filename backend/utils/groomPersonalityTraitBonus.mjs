@@ -4,7 +4,7 @@
  *
  * This module defines and implements a system where Groom personality types interact
  * with foal temperament to dynamically influence trait development outcomes, bonding
- * success, and stress resistance. The system adds a new layer of compatibility logic
+ * success. The system adds a new layer of compatibility logic
  * to enhance grooming realism and personalize foal care outcomes.
  */
 
@@ -49,13 +49,12 @@ export const FOAL_TEMPERAMENT_TYPES = {
 
 /**
  * Compatibility Matrix (from specification)
- * This table governs how personality alignment influences bonding, stress, and trait development
+ * This table governs how personality alignment influences bonding and trait development
  *
  * Format: {
  *   groomPersonality: {
  *     idealMatches: [temperament1, temperament2],
  *     traitDevBonus: number,
- *     stressMod: number (percentage),
  *     bondModifier: number
  *   }
  * }
@@ -68,7 +67,6 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
       FOAL_TEMPERAMENT_TYPES.NERVOUS, // Calm groom is ideal for anxious foals
     ],
     traitDevBonus: 1,
-    stressMod: -15, // -15% stress
     bondModifier: 10,
     description: 'Excels with reactive, spirited, and nervous foals, providing calming influence',
   },
@@ -81,7 +79,6 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
       FOAL_TEMPERAMENT_TYPES.CALM, // Energetic groom can stimulate calm foals
     ],
     traitDevBonus: 1,
-    stressMod: -5, // -5% stress
     bondModifier: 5,
     description: 'Motivates lazy foals, matches energy with driven and bold ones',
   },
@@ -94,7 +91,6 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
       FOAL_TEMPERAMENT_TYPES.WILLING, // A gentle hand suits a foal eager to please
     ],
     traitDevBonus: 0,
-    stressMod: -10, // -10% stress
     bondModifier: 0,
     description:
       'Gentle approach helps aggressive, spirited, nervous, and willing foals feel secure',
@@ -107,7 +103,6 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
       FOAL_TEMPERAMENT_TYPES.BOLD, // Assertive groom matches bold foal's self-confidence
     ],
     traitDevBonus: 1,
-    stressMod: 0, // No stress modification
     bondModifier: 5,
     description: 'Firm guidance works well with stubborn, aggressive, and bold personalities',
   },
@@ -115,7 +110,6 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
   [GROOM_PERSONALITY_TYPES.PLAYFUL]: {
     idealMatches: [FOAL_TEMPERAMENT_TYPES.DRIVEN, FOAL_TEMPERAMENT_TYPES.LAZY],
     traitDevBonus: 1,
-    stressMod: -10, // -10% stress
     bondModifier: 10,
     description: 'Creates engaging experiences for driven foals and motivates lazy ones',
   },
@@ -128,7 +122,6 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
       FOAL_TEMPERAMENT_TYPES.INDEPENDENT, // Structure suits independent foals who need consistency
     ],
     traitDevBonus: 1,
-    stressMod: -5, // -5% stress
     bondModifier: 5,
     description: 'Consistent approach helps reactive, stubborn, nervous, and independent foals',
   },
@@ -140,7 +133,6 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
       FOAL_TEMPERAMENT_TYPES.WILLING, // Praise and care suit a foal eager to please
     ],
     traitDevBonus: 1,
-    stressMod: -5, // -5% stress
     bondModifier: 10,
     description: 'Nurturing care suits steady and willing foals and encourages lazy ones',
   },
@@ -152,7 +144,6 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
       FOAL_TEMPERAMENT_TYPES.INDEPENDENT, // Reserved groom respects the independent foal's space
     ],
     traitDevBonus: 0,
-    stressMod: 5, // +5% stress (less effective)
     bondModifier: -5,
     description:
       'Quiet approach may not provide enough engagement for most foals, but respects independent ones',
@@ -181,7 +172,6 @@ export function calculatePersonalityCompatibility(
         isMatch: false,
         isStrongMatch: false,
         traitModifierScore: 0,
-        stressResistanceBonus: 0,
         bondModifier: 0,
         description: 'Unknown personality type',
       };
@@ -200,9 +190,6 @@ export function calculatePersonalityCompatibility(
       traitModifierScore = -1; // Mismatch penalty
     }
 
-    // Calculate stress resistance bonus (convert percentage to decimal)
-    const stressResistanceBonus = compatibility.stressMod / 100;
-
     // Bond modifier from compatibility
     const { bondModifier } = compatibility;
 
@@ -214,7 +201,6 @@ export function calculatePersonalityCompatibility(
       isMatch,
       isStrongMatch,
       traitModifierScore,
-      stressResistanceBonus,
       bondModifier,
       description: compatibility.description,
       compatibility,
@@ -225,7 +211,6 @@ export function calculatePersonalityCompatibility(
       isMatch: false,
       isStrongMatch: false,
       traitModifierScore: 0,
-      stressResistanceBonus: 0,
       bondModifier: 0,
       description: 'Error calculating compatibility',
     };
@@ -246,7 +231,6 @@ export function getCompatibleGroomsForTemperament(foalTemperament) {
       compatibleGrooms.push({
         personality,
         traitDevBonus: config.traitDevBonus,
-        stressMod: config.stressMod,
         bondModifier: config.bondModifier,
         description: config.description,
       });

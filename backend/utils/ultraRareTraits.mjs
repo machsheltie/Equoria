@@ -20,15 +20,11 @@ export const ULTRA_RARE_TRAITS = {
 
     // Trigger conditions
     triggerConditions: {
-      minStressEvents: 3,
-      minSuccessfulRecoveries: 2,
       evaluationWindow: 'birth_to_age_3',
     },
 
     // Mechanical effects
     mechanicalEffects: {
-      stressDecayMultiplier: 1.3, // 30% faster stress decay
-      stressResistance: 0.2, // 20% less stress from all sources
       competitionScoreModifier: 0.04, // +4% competition score
     },
 
@@ -60,7 +56,6 @@ export const ULTRA_RARE_TRAITS = {
     mechanicalEffects: {
       trainingFatigueImmunity: true, // Ignores training fatigue
       staminaBonus: 5, // +5 stamina stat
-      competitionStressResistance: 0.5, // 50% less stress in competitions
       trainingConsistencyBonus: 0.25, // 25% more consistent training
     },
 
@@ -95,7 +90,6 @@ export const ULTRA_RARE_TRAITS = {
       pairEventBonus: 0.05, // +5% bonus in pair/team events
       bondingRateMultiplier: 1.4, // 40% faster bonding
       empathyBonus: true, // Special empathy interactions
-      stressTransfer: 0.1, // Can absorb 10% of companion's stress
     },
 
     // Groom bonus tags
@@ -154,13 +148,11 @@ export const ULTRA_RARE_TRAITS = {
       reactiveTemperament: true,
       missedWeekOfCare: true,
       noveltyInteractionEvent: true,
-      stressSpikes: 2,
     },
 
     // Mechanical effects
     mechanicalEffects: {
       statGrowthBonus: 0.1, // +10% stat growth in rider-assigned discipline
-      stressGainMultiplier: 2.0, // 2x stress gain (double stress)
       performanceVolatility: 0.3, // 30% more variable performance
       noveltyBonus: 0.08, // +8% bonus with new experiences
       weatherSensitivity: true, // Affected by weather conditions
@@ -201,7 +193,7 @@ export const EXOTIC_TRAITS = {
       firstHandlerBondBonus: 10, // +10 bond growth with first bonded handler
       otherHandlerPenalty: -0.2, // -20% bond growth with others
       loyaltyBonus: 0.12, // +12% performance with bonded handler
-      separationAnxiety: true, // Stress when separated from bonded handler
+      separationAnxiety: true, // Upset when separated from bonded handler
       exclusiveBonding: true, // Can only truly bond with one person
     },
 
@@ -219,7 +211,7 @@ export const EXOTIC_TRAITS = {
     name: 'Ghostwalker',
     rarity: 'exotic',
     type: 'detachment',
-    description: 'Exists in emotional isolation, immune to stress but unable to form deep bonds',
+    description: 'Exists in emotional isolation, unable to form deep bonds',
 
     // Unlock conditions
     unlockConditions: {
@@ -231,7 +223,6 @@ export const EXOTIC_TRAITS = {
 
     // Mechanical effects
     mechanicalEffects: {
-      stressImmunity: true, // Immune to stress
       bondCap: 60, // Cannot gain bond past 60
       reassignmentImpossible: true, // Cannot be reassigned once bonded
       emotionalDetachment: true, // Reduced emotional responses
@@ -267,8 +258,6 @@ export const EXOTIC_TRAITS = {
       sameGroomPerformanceBonus: 0.1, // +10% show performance with same groom/rider
       perfectHarmony: true, // Special harmony bonuses
       bondTranscendence: true, // Bond can exceed normal limits
-      spiritualResilience: 0.25, // 25% stress resistance with bonded groom
-      empathicHealing: true, // Can heal stress through bond
     },
 
     // Groom bonus tags
@@ -333,7 +322,6 @@ export const EXOTIC_TRAITS = {
 
     // Mechanical effects
     mechanicalEffects: {
-      mirroredStress: true, // Stress changes mirror between twins
       mirroredStats: true, // Stat changes mirror between twins
       mirroredBond: true, // Bond changes mirror between twins
       separationWeakening: true, // Weakened if separated from twin

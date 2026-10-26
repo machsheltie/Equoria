@@ -317,7 +317,6 @@ export async function processGroomingSession(horseId, groomId, groomingTask, dur
         interactionType: groomingTask,
         duration: duration || 0,
         bondingChange: Math.round(bondingEffects.bondChange),
-        stressChange: 0,
         quality: 'good',
         taskType: eligibilityCheck.taskType,
         qualityScore: 0.75,

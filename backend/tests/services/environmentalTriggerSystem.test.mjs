@@ -9,7 +9,6 @@
  * - Trigger threshold calculations and accumulation
  * - Trait expression probability based on environmental exposure
  * - Seasonal and weather-based trigger variations
- * - Stress-based environmental triggers
  * - Social environment impact on trait expression
  * - Cumulative environmental exposure tracking
  * - Critical period environmental sensitivity
@@ -96,7 +95,6 @@ describe('Environmental Trigger System', () => {
               dateOfBirth: oneWeekAgo,
               userId: testUser.id,
               bondScore: 15,
-              stressLevel: 6,
               epigeneticFlags: ['developing'],
             },
           }),
@@ -109,20 +107,18 @@ describe('Environmental Trigger System', () => {
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 25,
-              stressLevel: 4,
               epigeneticFlags: ['curious'],
             },
           }),
-          // Stressed foal - high trigger sensitivity
+          // Reactive foal - high trigger sensitivity
           tx.horse.create({
             data: {
               ...fixtureColor(),
-              name: `Test Foal Stressed ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+              name: `Test Foal Reactive ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'filly',
               dateOfBirth: twoWeeksAgo,
               userId: testUser.id,
               bondScore: 10,
-              stressLevel: 8,
               epigeneticFlags: ['reactive'],
             },
           }),
@@ -165,7 +161,6 @@ describe('Environmental Trigger System', () => {
             duration: 30,
             taskType: 'showground_exposure',
             bondingChange: 2,
-            stressChange: 3,
             quality: 'good',
             cost: 30.0,
             createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
@@ -179,7 +174,6 @@ describe('Environmental Trigger System', () => {
             duration: 45,
             taskType: 'desensitization',
             bondingChange: 1,
-            stressChange: 4,
             quality: 'fair',
             cost: 35.0,
             createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
@@ -197,7 +191,7 @@ describe('Environmental Trigger System', () => {
       expect(triggers.environmentalFactors).toBeDefined();
       expect(triggers.analysisWindow).toBeDefined();
 
-      // Should detect stress-inducing environmental factors
+      // Should detect environmental factors
       expect(triggers.detectedTriggers.length).toBeGreaterThan(0);
       expect(triggers.triggerStrength).toBeGreaterThan(0);
     });
@@ -213,7 +207,7 @@ describe('Environmental Trigger System', () => {
     });
 
     test('should detect multiple environmental trigger types', async () => {
-      const horse = testHorses[2]; // Stressed foal
+      const horse = testHorses[2]; // Reactive foal
 
       // Create diverse environmental interactions
       await Promise.all([
@@ -225,7 +219,6 @@ describe('Environmental Trigger System', () => {
             duration: 20,
             taskType: 'sponge_bath',
             bondingChange: -1,
-            stressChange: 2,
             quality: 'poor',
             cost: 30.0,
           },
@@ -238,7 +231,6 @@ describe('Environmental Trigger System', () => {
             duration: 60,
             taskType: 'showground_exposure',
             bondingChange: 3,
-            stressChange: -1,
             quality: 'excellent',
             cost: 35.0,
           },
@@ -266,24 +258,10 @@ describe('Environmental Trigger System', () => {
 
       expect(youngThresholds.baseThreshold).toBeDefined();
       expect(youngThresholds.ageModifier).toBeDefined();
-      expect(youngThresholds.stressModifier).toBeDefined();
       expect(youngThresholds.finalThreshold).toBeDefined();
 
       // Younger horses should have lower thresholds (more sensitive)
       expect(youngThresholds.finalThreshold).toBeLessThan(olderThresholds.finalThreshold);
-    });
-
-    test('should apply stress-based threshold modifications', async () => {
-      const stressedHorse = testHorses[2]; // High stress
-
-      const calmHorse = testHorses[1]; // Lower stress
-
-      const stressedThresholds = await analyze(stressedHorse.id, triggerThresholds);
-      const calmThresholds = await analyze(calmHorse.id, triggerThresholds);
-
-      // Stressed horses should have lower thresholds (more sensitive to triggers)
-      expect(stressedThresholds.finalThreshold).toBeLessThan(calmThresholds.finalThreshold);
-      expect(stressedThresholds.stressModifier).toBeLessThan(1.0);
     });
   });
 
@@ -301,7 +279,6 @@ describe('Environmental Trigger System', () => {
             duration: 30,
             taskType: 'desensitization',
             bondingChange: 1,
-            stressChange: 1,
             quality: 'good',
             cost: 30.0,
             createdAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000),
@@ -336,7 +313,6 @@ describe('Environmental Trigger System', () => {
           duration: 30,
           taskType: 'trust_building',
           bondingChange: 2,
-          stressChange: 1,
           quality: 'good',
           cost: 30.0,
         },

@@ -89,7 +89,6 @@ describe('epigenetic-insights reads one horse and one interaction history (Equor
         dateOfBirth: gameCalendarDate(new Date(), -40),
         age: 0,
         userId: user.id,
-        stressLevel: 8,
         bondScore: 10,
         epigeneticFlags: ['brave', 'confident', 'social', 'fearful', 'reactive', 'calm'],
       },

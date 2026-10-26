@@ -57,7 +57,7 @@ describe('INTEGRATION: foalTraitEvaluation impl module (Equoria-urqic.3)', () =>
     await cleanup.run();
   }, 120000);
 
-  async function makeFoal(currentDay, { bondScore = 50, stressLevel = 20 } = {}) {
+  async function makeFoal(currentDay, { bondScore = 50 } = {}) {
     const foal = await createTestHorse(
       prisma,
       {
@@ -70,7 +70,6 @@ describe('INTEGRATION: foalTraitEvaluation impl module (Equoria-urqic.3)', () =>
         age: 0,
         userId: user.id,
         bondScore,
-        stressLevel,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
       createdHorseIds,
@@ -145,7 +144,7 @@ describe('INTEGRATION: foalTraitEvaluation impl module (Equoria-urqic.3)', () =>
 
   describe('logTraitRevelation(...)', () => {
     it('persists each revealed trait to TraitHistoryLog with sourceType daily_evaluation', async () => {
-      const foal = await makeFoal(2, { bondScore: 60, stressLevel: 25 });
+      const foal = await makeFoal(2, { bondScore: 60 });
       const reloaded = await reload(foal.id);
 
       await foalTraitImpl.logTraitRevelation(

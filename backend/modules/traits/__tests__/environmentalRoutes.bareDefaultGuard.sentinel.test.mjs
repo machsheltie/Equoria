@@ -8,7 +8,7 @@
  * stat of 0 is a legitimate game state (undeveloped or injury). The `||`
  * fallback silently masks 0 by collapsing it to the fallback — for
  * non-zero fallbacks (this file uses 50) this corrupts environmental
- * impact / triggers / stress calculations by treating an intentional
+ * impact / trigger calculations by treating an intentional
  * stat-0 as if the horse had average stats.
  *
  * Canonical fix: nullish coalescing `?? <number>` — only triggers on

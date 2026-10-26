@@ -106,7 +106,6 @@ const FoalDetailPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Stat label="Day" value={`${development.currentDay} / ${development.maxDay}`} />
             <Stat label="Bonding" value={String(development.bondingLevel)} />
-            <Stat label="Stress" value={String(development.stressLevel)} />
           </div>
         )}
       </Surface>

@@ -23,7 +23,6 @@ export const msPerDay = 24 * 60 * 60 * 1000;
 export const topBondThreshold = 85; // Born Leader — top-tier bond snapshot
 export const topConformationThreshold = 80; // Born Leader — top-tier conformation snapshot
 export const careGapDays = 7; // Stormtouched — missed-care-week gap (PRD-04 §3.3)
-export const stressSpikeThreshold = 5; // Stormtouched — groomInteraction stressChange spike
 export const failedMilestoneScore = 50; // Shadow-Follower — failed/missed milestone score
 export const age2Days = 2 * 7; // late-bond boundary: game age 2 = 14 days (7 days = 1 game year)
 // Ghostwalker — youth window: game age 3 = 21 game days (a game week is a game year),

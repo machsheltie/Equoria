@@ -55,7 +55,6 @@ async function seedBorderlineCare(foalId) {
       interactionType: 'dailyGrooming',
       duration: 30,
       bondingChange: 3,
-      stressChange: 0,
       quality: 'good',
       taskType: 'grooming',
       qualityScore: 0.8,
@@ -86,7 +85,7 @@ async function makeCohort(tag) {
   const plainSire = await horse(`${tag}-psire`, { sex: 'Stallion', dateOfBirth: adultDob, epigeneticFlags: [] });
   const plainDam = await horse(`${tag}-pdam`, { sex: 'Mare', dateOfBirth: adultDob, epigeneticFlags: [] });
   const foalDob = gameCalendarDate(new Date(), -7);
-  const foal = { sex: 'Filly', dateOfBirth: foalDob, bondScore: 50, stressLevel: 5, epigeneticFlags: [] };
+  const foal = { sex: 'Filly', dateOfBirth: foalDob, bondScore: 50, epigeneticFlags: [] };
   const predisposed = await horse(`${tag}-pfoal`, { ...foal, sireId: flaggedSire.id, damId: flaggedDam.id });
   const control = await horse(`${tag}-cfoal`, { ...foal, sireId: plainSire.id, damId: plainDam.id });
   // 35 Eastern days = 5 game-years: past the 0-3 evaluation window.

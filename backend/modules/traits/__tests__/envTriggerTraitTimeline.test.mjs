@@ -133,7 +133,7 @@ describe('generateTraitTimeline', () => {
     expect(result.timelineEvents).toHaveLength(0);
     expect(result.isEmpty).toBe(true);
     expect(typeof result.summary).toBe('object');
-    expect(typeof result.bondStressTrend).toBe('object');
+    expect(typeof result.bondProgress).toBe('object');
     expect(Array.isArray(result.excludedTraits)).toBe(true);
     expect(realDateOrReason(result.generatedAt)).toBe('valid date');
   });
@@ -233,62 +233,60 @@ describe('age-bracket branches (Equoria-jkht)', () => {
   });
 });
 
-// ── stressful interactions (Equoria-jkht) ──
-// Covers the trackCumulativeExposure non-empty path and the exposure stressChange>2 branch.
+// ── poor-quality interactions (Equoria-jkht) ──
+// Covers the trackCumulativeExposure non-empty path.
 
-describe('stressful interactions (Equoria-jkht)', () => {
-  let stressUser;
-  let stressGroom;
-  let stressHorse;
-  const stressCleanup = createCleanupTracker();
+describe('poor-quality interactions (Equoria-jkht)', () => {
+  let harshUser;
+  let harshGroom;
+  let harshHorse;
+  const harshCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
 
-    stressUser = await prisma.user.create({
+    harshUser = await prisma.user.create({
       data: {
-        email: `et-str-${ts}-${rand()}@test.com`,
-        username: `etstr${ts}${rand()}`,
+        email: `et-hsh-${ts}-${rand()}@test.com`,
+        username: `ethsh${ts}${rand()}`,
         password: 'irrelevant-hash',
         firstName: 'ET',
-        lastName: 'StressB',
+        lastName: 'HarshB',
         money: 1000,
       },
     });
 
-    stressGroom = await prisma.groom.create({
+    harshGroom = await prisma.groom.create({
       data: {
-        name: `TestFixture-ET-StrGroom-${ts}`,
+        name: `TestFixture-ET-HshGroom-${ts}`,
         speciality: 'foalCare',
         personality: 'gentle',
-        userId: stressUser.id,
+        userId: harshUser.id,
         isActive: true,
       },
     });
 
-    stressHorse = await prisma.horse.create({
+    harshHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
-        name: `TestFixture-ET-StrHorse-${ts}`,
+        name: `TestFixture-ET-HshHorse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
-        userId: stressUser.id,
-        stressLevel: 8,
+        userId: harshUser.id,
       },
     });
 
-    // 2 bathing interactions: stressChange=4 each → avgStress=4 > 3 → severity='high'
+    // 2 poor bathing interactions and 2 fair feeding interactions
     for (let i = 0; i < 2; i++) {
       await prisma.groomInteraction.create({
         data: {
-          foalId: stressHorse.id,
-          groomId: stressGroom.id,
+          foalId: harshHorse.id,
+          groomId: harshGroom.id,
           interactionType: 'daily_care',
           duration: 30,
           bondingChange: 0,
-          stressChange: 4,
           quality: 'poor',
           taskType: 'bathing',
           createdAt: new Date(ts - (i + 1) * 60000),
@@ -296,53 +294,41 @@ describe('stressful interactions (Equoria-jkht)', () => {
         },
       });
     }
-
-    // 2 feeding interactions: stressChange=2 and stressChange=3 → avgStress=2.5 → severity='moderate'
-    await prisma.groomInteraction.create({
-      data: {
-        foalId: stressHorse.id,
-        groomId: stressGroom.id,
-        interactionType: 'daily_care',
-        duration: 20,
-        bondingChange: 0,
-        stressChange: 2,
-        quality: 'fair',
-        taskType: 'feeding',
-        createdAt: new Date(ts - 3 * 60000),
-        timestamp: new Date(ts - 3 * 60000),
-      },
-    });
-    await prisma.groomInteraction.create({
-      data: {
-        foalId: stressHorse.id,
-        groomId: stressGroom.id,
-        interactionType: 'daily_care',
-        duration: 20,
-        bondingChange: 0,
-        stressChange: 3,
-        quality: 'fair',
-        taskType: 'feeding',
-        createdAt: new Date(ts - 4 * 60000),
-        timestamp: new Date(ts - 4 * 60000),
-      },
-    });
+    for (const [n, minutes] of [
+      [0, 3],
+      [1, 4],
+    ]) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: harshHorse.id,
+          groomId: harshGroom.id,
+          interactionType: 'daily_care',
+          duration: 20,
+          bondingChange: 0,
+          quality: 'fair',
+          taskType: 'feeding',
+          createdAt: new Date(ts - minutes * 60000 - n),
+          timestamp: new Date(ts - minutes * 60000 - n),
+        },
+      });
+    }
   }, 60000);
 
   afterAll(async () => {
     // Scoped, fail-loud cleanup (Equoria-1ohys). Dependency order:
     // groomInteraction -> horse + groom -> user.
-    stressCleanup.add(
-      () => prisma.groomInteraction.deleteMany({ where: { foalId: stressHorse.id } }),
+    harshCleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { foalId: harshHorse.id } }),
       'groomInteraction',
     );
-    stressCleanup.add(() => prisma.horse.delete({ where: { id: stressHorse.id } }), 'horse');
-    stressCleanup.add(() => prisma.groom.delete({ where: { id: stressGroom.id } }), 'groom');
-    stressCleanup.add(() => prisma.user.delete({ where: { id: stressUser.id } }), 'user');
-    await stressCleanup.run();
+    harshCleanup.add(() => prisma.horse.delete({ where: { id: harshHorse.id } }), 'horse');
+    harshCleanup.add(() => prisma.groom.delete({ where: { id: harshGroom.id } }), 'groom');
+    harshCleanup.add(() => prisma.user.delete({ where: { id: harshUser.id } }), 'user');
+    await harshCleanup.run();
   }, 30000);
 
   it('trackCumulativeExposure returns non-zero exposure for horse with 4 interactions', async () => {
-    const result = await analyze(stressHorse.id, cumulativeExposure);
+    const result = await analyze(harshHorse.id, cumulativeExposure);
     expect(result.totalExposure).toBeGreaterThan(0);
     expect(result.exposureTimeline).toHaveLength(4);
     expect(Object.keys(result.exposureByType).length).toBeGreaterThan(0);

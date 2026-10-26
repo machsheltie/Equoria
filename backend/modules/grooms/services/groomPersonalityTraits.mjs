@@ -26,7 +26,6 @@ const PERSONALITY_TRAIT_DEFINITIONS = {
         description: 'Maintains composure and takes time with difficult horses',
         effects: {
           bondingModifier: 1.3,
-          stressReduction: 0.8,
           qualityBonus: 1.2,
         },
         compatibleWith: ['fearful', 'insecure', 'reactive'],
@@ -37,7 +36,6 @@ const PERSONALITY_TRAIT_DEFINITIONS = {
         description: 'Uses soft, non-threatening movements and voice',
         effects: {
           bondingModifier: 1.2,
-          stressReduction: 0.7,
           trustBuilding: 1.4,
         },
         compatibleWith: ['fearful', 'fragile', 'insecure'],
@@ -58,7 +56,6 @@ const PERSONALITY_TRAIT_DEFINITIONS = {
         name: 'reassuring',
         description: 'Provides comfort and confidence to nervous horses',
         effects: {
-          stressReduction: 0.6,
           confidenceBuilding: 1.4,
           bondingModifier: 1.1,
         },
@@ -197,7 +194,6 @@ const PERSONALITY_TRAIT_DEFINITIONS = {
         name: 'moderate',
         description: 'Provides steady, reliable care without extremes',
         effects: {
-          stressReduction: 0.75,
           trustBuilding: 1.1,
           reliabilityBonus: 1.2,
         },
@@ -210,7 +206,6 @@ const PERSONALITY_TRAIT_DEFINITIONS = {
         effects: {
           emotionalStability: 1.2,
           confidenceBuilding: 1.1,
-          stressManagement: 1.15,
         },
         compatibleWith: ['all-ages', 'varied-temperaments'],
         incompatibleWith: [],
@@ -281,7 +276,6 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
     select: {
       id: true,
       epigeneticFlags: true,
-      stressLevel: true,
       bondScore: true,
     },
   });
@@ -292,7 +286,6 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
 
   // Calculate base modifiers from personality traits
   let bondingModifier = 1.0;
-  let stressModifier = 1.0;
   let qualityModifier = 1.0;
   let taskEffectiveness = 1.0;
 
@@ -304,9 +297,6 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
       // Apply positive effects with compatibility scaling
       if (trait.effects.bondingModifier) {
         bondingModifier *= 1.0 + (trait.effects.bondingModifier - 1.0) * compatibility;
-      }
-      if (trait.effects.stressReduction) {
-        stressModifier *= trait.effects.stressReduction;
       }
       if (trait.effects.qualityModifier) {
         qualityModifier *= 1.0 + (trait.effects.qualityModifier - 1.0) * compatibility;
@@ -330,7 +320,6 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
     } else if (compatibility < 0) {
       // Apply negative effects for incompatible combinations
       bondingModifier *= 0.8; // Reduce bonding effectiveness
-      stressModifier *= 1.2; // Increase stress
       taskEffectiveness *= 0.9; // Reduce task effectiveness
     } else {
       // Neutral compatibility - still apply some base trait effects
@@ -346,7 +335,6 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
 
   return {
     bondingModifier: Math.max(0.3, bondingModifier),
-    stressModifier: Math.max(0.3, Math.min(2.0, stressModifier)),
     qualityModifier: Math.max(0.3, qualityModifier),
     taskEffectiveness: Math.max(0.3, taskEffectiveness),
     compatibilityScore,
@@ -370,7 +358,6 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
       id: true,
       name: true,
       epigeneticFlags: true,
-      stressLevel: true,
       bondScore: true,
     },
   });
@@ -402,7 +389,7 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
   // Generate recommendations based on compatibility
   if (overallScore < 0.4) {
     recommendations.push('Consider using a different groom personality type for this horse');
-    recommendations.push('If using this groom, focus on gentle, low-stress interactions');
+    recommendations.push('If using this groom, focus on gentle interactions');
 
     if (asFlagArray(horse.epigeneticFlags).includes('fearful')) {
       recommendations.push('This horse would benefit from a calm, patient groom');
@@ -415,7 +402,7 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
     recommendations.push('Consider increasing interaction frequency to maximize benefits');
   } else {
     recommendations.push('Moderate compatibility - monitor interactions closely');
-    recommendations.push("Adjust approach based on horse's daily mood and stress level");
+    recommendations.push("Adjust approach based on horse's daily mood");
   }
 
   return {
@@ -547,15 +534,7 @@ export function calculateOverallCompatibility(groomTraits, horse) {
 
   const baseScore = traitCount > 0 ? totalCompatibility / traitCount : 0;
 
-  // Apply stress level modifier (high stress horses need calmer grooms)
-  let stressModifier = 1.0;
-  if (horse.stressLevel > 7 && groomTraits.primaryPersonality === 'energetic') {
-    stressModifier = 0.7; // Penalty for energetic grooms with high-stress horses
-  } else if (horse.stressLevel > 7 && groomTraits.primaryPersonality === 'calm') {
-    stressModifier = 1.2; // Bonus for calm grooms with high-stress horses
-  }
-
-  return Math.max(0, Math.min(1.0, (baseScore + 0.5) * stressModifier));
+  return Math.max(0, Math.min(1.0, baseScore + 0.5));
 }
 
 /**

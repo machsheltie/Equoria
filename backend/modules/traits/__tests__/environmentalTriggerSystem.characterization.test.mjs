@@ -3,7 +3,7 @@
  *
  * helpers/environmentalTriggerSystem.golden.json holds a sha256 per case of
  * every analysis output over the fixtures and calls in
- * helpers/environmentalTriggerGrid.mjs: 13 foals of chosen age, stress, bond
+ * helpers/environmentalTriggerGrid.mjs: 13 foals of chosen age and bond
  * and interaction history (one with three interactions sharing a timestamp),
  * plus a horse that does not exist; detection, thresholds,
  * exposure and the full report. It was

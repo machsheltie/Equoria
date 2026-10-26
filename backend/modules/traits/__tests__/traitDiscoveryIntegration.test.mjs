@@ -75,7 +75,6 @@ describe('Trait Discovery API Integration Tests', () => {
         breedId: testBreed.id,
         dateOfBirth: new Date('2024-01-01'),
         bondScore: 85,
-        stressLevel: 15,
         userId: testUserId, // Use relation instead of userId field
         epigeneticModifiers: {
           positive: [],
@@ -94,7 +93,6 @@ describe('Trait Discovery API Integration Tests', () => {
         breedId: testBreed.id,
         dateOfBirth: new Date('2024-01-01'),
         bondScore: 30,
-        stressLevel: 70,
         userId: testUserId, // Use relation instead of userId field
         epigeneticModifiers: {
           positive: [],
@@ -113,7 +111,6 @@ describe('Trait Discovery API Integration Tests', () => {
         breedId: testBreed.id,
         dateOfBirth: new Date('2019-01-01'),
         bondScore: 90,
-        stressLevel: 10,
         userId: testUserId, // Use relation instead of userId field
         epigeneticModifiers: {
           positive: ['calm'],
@@ -131,7 +128,6 @@ describe('Trait Discovery API Integration Tests', () => {
         foalId: foal1.id,
         currentDay: 3,
         bondingLevel: 85,
-        stressLevel: 15,
       },
     });
 
@@ -140,7 +136,6 @@ describe('Trait Discovery API Integration Tests', () => {
         foalId: foal2.id,
         currentDay: 2,
         bondingLevel: 30,
-        stressLevel: 70,
       },
     });
 
@@ -152,7 +147,6 @@ describe('Trait Discovery API Integration Tests', () => {
         activity: 'gentle_handling',
         outcome: 'Gentle Touch - Successful bonding session',
         bondChange: 5,
-        stressChange: -2,
       },
     });
 
@@ -163,7 +157,6 @@ describe('Trait Discovery API Integration Tests', () => {
         activity: 'human_interaction',
         outcome: 'Human Bonding - Positive interaction',
         bondChange: 3,
-        stressChange: -1,
       },
     });
 
@@ -174,7 +167,6 @@ describe('Trait Discovery API Integration Tests', () => {
         activity: 'social_play',
         outcome: 'Social Time - Enjoyed playtime',
         bondChange: 2,
-        stressChange: -1,
       },
     });
   });
@@ -227,14 +219,12 @@ describe('Trait Discovery API Integration Tests', () => {
 
       expect(response.body.data.currentStats).toEqual({
         bondScore: 85,
-        stressLevel: 15,
         developmentDay: 3,
       });
 
       // Should have all discovery conditions
       const { conditions } = response.body.data;
       expect(conditions).toHaveProperty('high_bond');
-      expect(conditions).toHaveProperty('low_stress');
       expect(conditions).toHaveProperty('perfect_care');
       expect(conditions).toHaveProperty('consistent_training');
 
@@ -242,11 +232,7 @@ describe('Trait Discovery API Integration Tests', () => {
       expect(conditions.high_bond.met).toBe(true);
       expect(conditions.high_bond.progress).toBe(100);
 
-      // Low stress condition should be met
-      expect(conditions.low_stress.met).toBe(true);
-      expect(conditions.low_stress.progress).toBe(100);
-
-      // Perfect care should be met (high bond + low stress)
+      // Perfect care should be met (high bond)
       expect(conditions.perfect_care.met).toBe(true);
       expect(conditions.perfect_care.progress).toBe(100);
     });
@@ -293,7 +279,6 @@ describe('Trait Discovery API Integration Tests', () => {
       // Check categories
       const { categories } = response.body.data;
       expect(categories).toHaveProperty('bonding');
-      expect(categories).toHaveProperty('stress');
       expect(categories).toHaveProperty('activities');
       expect(categories).toHaveProperty('milestones');
     });

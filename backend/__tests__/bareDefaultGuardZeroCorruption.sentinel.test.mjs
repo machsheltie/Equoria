@@ -2,11 +2,10 @@
  * bareDefaultGuardZeroCorruption.sentinel.test.mjs (Equoria-4maxb)
  *
  * Migration 20260530130000_507mt made 19 Horse stat/counter columns NOT NULL
- * with default 0 (bondScore 0 = unbonded, stressLevel 0 = calm, stats 0 =
- * undeveloped). A bare `||` guard with a non-zero fallback on one of those
+ * with default 0 (bondScore 0 = unbonded, stats 0 = undeveloped). A bare `||` guard with a non-zero fallback on one of those
  * columns silently rewrites a legitimate 0:
  *
- *   horse.stressLevel || 100   -> a calm horse is read as MAX stress
+ *   horse.horseXp     || 100   -> a horse with no XP is read as experienced
  *   horse.bondScore   || 50    -> an unbonded horse is read as neutral-50
  *   stallion.speed    || 50    -> an undeveloped stat is read as average
  *
@@ -79,7 +78,6 @@ describe('Equoria-4maxb — legitimate 0 on NOT NULL Horse columns survives the 
         age: 5,
         userId,
         bondScore: 0,
-        stressLevel: 0,
       },
       horseIds,
     );
@@ -124,22 +122,18 @@ describe('Equoria-4maxb — legitimate 0 on NOT NULL Horse columns survives the 
   it('the planted state is a stored 0, not null and not undefined', async () => {
     const stored = await prisma.horse.findUnique({
       where: { id: calmUnbondedId },
-      select: { bondScore: true, stressLevel: true },
+      select: { bondScore: true },
     });
-    expect(stored).toEqual({ bondScore: 0, stressLevel: 0 });
+    expect(stored).toEqual({ bondScore: 0 });
   });
 
-  it('trait discovery reads a calm (stressLevel 0), unbonded (bondScore 0) horse as calm and unbonded', async () => {
+  it('trait discovery reads an unbonded (bondScore 0) horse as unbonded', async () => {
     const progress = await getDiscoveryProgress(calmUnbondedId);
 
-    // Defect: `horse.stressLevel || 100` inverted 0 into max stress and
-    // `horse.bondScore || 50` promoted 0 into neutral-50.
-    expect(progress.currentStats.stressLevel).toBe(0);
+    // Defect: `horse.bondScore || 50` promoted 0 into neutral-50.
     expect(progress.currentStats.bondScore).toBe(0);
 
     const met = progress.conditions.map(c => c.name);
-    expect(met).toContain('LOW_STRESS');
-    expect(met).toContain('MINIMAL_STRESS');
     // Unbonded: no bond-based discovery may fire.
     expect(met).not.toContain('HIGH_BOND');
     expect(met).not.toContain('PERFECT_CARE');
@@ -190,7 +184,6 @@ const NOT_NULL_HORSE_COLUMNS = [
   'focus',
   'totalEarnings',
   'bondScore',
-  'stressLevel',
   'daysGroomedInARow',
   'consecutiveDaysFoalCare',
   'horseXp',
@@ -253,7 +246,7 @@ describe('Equoria-4maxb — `|| <non-zero>` on a NOT NULL Horse column cannot re
   it('the detector FIRES on planted violations (sentinel-positive)', () => {
     const planted = `
       const a = horse.bondScore || 50;
-      const b = (foal.stressLevel || 100) <= 20;
+      const b = (foal.horseXp || 100) <= 20;
       const c = assignment.foal.bondScore || 50;
       const d = mare?.speed || 50;
       const e = horse1[stat] || 50;
@@ -261,7 +254,7 @@ describe('Equoria-4maxb — `|| <non-zero>` on a NOT NULL Horse column cannot re
     const hits = findZeroCorruptingGuards(planted).map(v => v.text);
     expect(hits).toEqual([
       'horse.bondScore || 50',
-      'foal.stressLevel || 100',
+      'foal.horseXp || 100',
       'assignment.foal.bondScore || 50',
       'mare?.speed || 50',
       'horse1[stat] || 50',
@@ -271,7 +264,7 @@ describe('Equoria-4maxb — `|| <non-zero>` on a NOT NULL Horse column cannot re
   it('the detector ignores forms that cannot corrupt a 0', () => {
     const benign = `
       const a = horse.bondScore ?? 0;
-      const b = horse.stressLevel ?? 50;
+      const b = horse.horseXp ?? 50;
       const c = horse.bondScore || 0;
       const d = horse.bondScore;
       const e = activityData.duration || 15;

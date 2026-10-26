@@ -82,12 +82,11 @@ export async function loadEnvironmentalTriggerSnapshot(
     heldHorse
       ? {
           dateOfBirth: heldHorse.dateOfBirth,
-          stressLevel: heldHorse.stressLevel,
           bondScore: heldHorse.bondScore,
         }
       : client.horse.findUnique({
           where: { id: horseId },
-          select: { dateOfBirth: true, stressLevel: true, bondScore: true },
+          select: { dateOfBirth: true, bondScore: true },
         }),
     client.groomInteraction.findMany({
       where: { foalId: horseId },
@@ -150,7 +149,7 @@ export function detectTriggers({ horseId, interactions, now }) {
   };
 }
 
-/** Age-, stress- and bond-adjusted trigger threshold. Throws when the horse does not exist. */
+/** Age- and bond-adjusted trigger threshold. Throws when the horse does not exist. */
 export function triggerThresholds({ horseId, horse, now }) {
   if (!horse) {
     throw new Error(`Horse not found: ${horseId}`);
@@ -158,17 +157,15 @@ export function triggerThresholds({ horseId, horse, now }) {
   const ageInDays = getHorseAgeDays(horse.dateOfBirth, now);
   const baseThreshold = BASE_TRIGGER_THRESHOLD;
   const ageModifier = bandValue(THRESHOLD_AGE_BANDS, ageInDays);
-  // Stressed horses are more sensitive; well-bonded horses less.
-  const stressModifier = Math.max(0.5, 1.0 - horse.stressLevel / 20);
+  // Well-bonded horses are less sensitive.
   const bondModifier = Math.min(1.2, 1.0 + horse.bondScore / 100);
-  const finalThreshold = baseThreshold * ageModifier * stressModifier * bondModifier;
+  const finalThreshold = baseThreshold * ageModifier * bondModifier;
 
   return {
     horseId,
     baseThreshold,
     ageInDays,
     ageModifier,
-    stressModifier,
     bondModifier,
     finalThreshold: Math.max(0.1, Math.min(1.0, finalThreshold)),
     sensitivity: 1.0 - finalThreshold, // Inverse relationship
@@ -208,7 +205,6 @@ export function cumulativeExposure({ horseId, interactions, now }) {
       exposureValue,
       cumulativeExposure: totalExposure,
       bondingChange: interaction.bondingChange,
-      stressChange: interaction.stressChange,
     });
 
     if ((index + 1) % CUMULATIVE_EFFECTS_EVERY === 0) {
@@ -328,14 +324,12 @@ function interactionExposure(interaction) {
 
 function analyzeCumulativeEffects(interactions) {
   const totalBonding = interactions.reduce((sum, i) => sum + (i.bondingChange || 0), 0);
-  const totalStress = interactions.reduce((sum, i) => sum + (i.stressChange || 0), 0);
   const avgQuality =
     interactions.reduce((sum, i) => sum + (QUALITY_SCORES[i.quality] || DEFAULT_QUALITY_SCORE), 0) /
     interactions.length;
 
   return {
     bondingTrend: totalBonding > 0 ? 'positive' : totalBonding < 0 ? 'negative' : 'neutral',
-    stressTrend: totalStress > 0 ? 'increasing' : totalStress < 0 ? 'decreasing' : 'stable',
     qualityAverage: avgQuality,
     interactionCount: interactions.length,
   };

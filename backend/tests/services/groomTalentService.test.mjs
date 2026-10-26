@@ -163,7 +163,7 @@ describe('Groom Talent Service', () => {
 
     test('should require prerequisite tiers', async () => {
       // Try to select tier 2 without tier 1
-      const validation = await validateTalentSelection(testGroom.id, 'tier2', 'stress_whisperer');
+      const validation = await validateTalentSelection(testGroom.id, 'tier2', 'empathic_sync');
 
       expect(validation.valid).toBe(false);
       expect(validation.reason).toBe('prerequisite_required');
@@ -196,14 +196,14 @@ describe('Groom Talent Service', () => {
       await selectTalent(testGroom.id, 'tier1', 'gentle_hands');
 
       // Select tier 2
-      await selectTalent(testGroom.id, 'tier2', 'stress_whisperer');
+      await selectTalent(testGroom.id, 'tier2', 'empathic_sync');
 
       // Select tier 3
       const result = await selectTalent(testGroom.id, 'tier3', 'master_bonding');
 
       expect(result.success).toBe(true);
       expect(result.selection.tier1).toBe('gentle_hands');
-      expect(result.selection.tier2).toBe('stress_whisperer');
+      expect(result.selection.tier2).toBe('empathic_sync');
       expect(result.selection.tier3).toBe('master_bonding');
     });
 
@@ -240,15 +240,12 @@ describe('Groom Talent Service', () => {
       // Apply talent effects to a mock interaction
       const baseInteraction = {
         bondingChange: 5,
-        stressChange: -2,
         quality: 'good',
       };
 
       const enhancedInteraction = await applyTalentEffects(testGroom.id, baseInteraction);
 
       expect(enhancedInteraction.bondingChange).toBeGreaterThan(baseInteraction.bondingChange);
-      // gentle_hands only has bonding bonus, not stress reduction
-      expect(enhancedInteraction.stressChange).toBe(baseInteraction.stressChange);
       expect(enhancedInteraction.talentBonuses).toBeDefined();
       expect(enhancedInteraction.talentBonuses.length).toBeGreaterThan(0);
     });
@@ -261,11 +258,10 @@ describe('Groom Talent Service', () => {
       });
 
       await selectTalent(testGroom.id, 'tier1', 'gentle_hands');
-      await selectTalent(testGroom.id, 'tier2', 'stress_whisperer');
+      await selectTalent(testGroom.id, 'tier2', 'empathic_sync');
 
       const baseInteraction = {
         bondingChange: 5,
-        stressChange: -2,
         quality: 'good',
       };
 
@@ -278,14 +274,12 @@ describe('Groom Talent Service', () => {
     test('should handle groom with no talent selections', async () => {
       const baseInteraction = {
         bondingChange: 5,
-        stressChange: -2,
         quality: 'good',
       };
 
       const enhancedInteraction = await applyTalentEffects(testGroom.id, baseInteraction);
 
       expect(enhancedInteraction.bondingChange).toBe(baseInteraction.bondingChange);
-      expect(enhancedInteraction.stressChange).toBe(baseInteraction.stressChange);
       expect(enhancedInteraction.talentBonuses).toEqual([]);
     });
   });

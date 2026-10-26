@@ -46,7 +46,6 @@ describe('evaluateEnhancedMilestone — mature horse (age >= 3 years)', () => {
     age: 3,
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     bondScore: 50,
-    stressLevel: 30,
   };
 
   it('returns base milestone shape without DB calls for mature horse', async () => {
@@ -73,7 +72,6 @@ describe('evaluateEnhancedMilestone — game-age gate boundary (Equoria-xggat)',
     age: Math.floor(ageInDays / 7),
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     bondScore: 50,
-    stressLevel: 30,
   });
 
   it('horse at 20 days (game age 2) RUNS enhanced eval', async () => {
@@ -109,7 +107,6 @@ describe('evaluateEnhancedMilestone — newborn foal (graceful ultra-rare failur
     age: 0,
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     bondScore: 0,
-    stressLevel: 0,
   };
 
   it('returns full result shape even when ultra-rare triggers fail gracefully', async () => {
@@ -145,7 +142,6 @@ describe('evaluateEnhancedMilestone — with groom object', () => {
     age: 0,
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     bondScore: 40,
-    stressLevel: 20,
   };
 
   const groom = {
@@ -321,46 +317,6 @@ describe('evaluateEnhancedMilestone — bond stability branches', () => {
   });
 });
 
-// ── stress management branches (calculateStressManagement) ───────────────────
-
-describe('evaluateEnhancedMilestone — stress management branches', () => {
-  const youngHorse = {
-    id: -1,
-    dateOfBirth: gameDaysAgo(16),
-    age: 0,
-    epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-  };
-
-  it('stressManagement is good when stressHistory is absent', async () => {
-    const result = await evaluateEnhancedMilestone(youngHorse, {}, null, milestoneData);
-    expect(result.enhancementFactors.stressManagement).toBe('good');
-  });
-
-  it('stressManagement is excellent with very low avg stress', async () => {
-    const history = { stressHistory: [{ stressLevel: 1 }, { stressLevel: 2 }] };
-    const result = await evaluateEnhancedMilestone(youngHorse, history, null, milestoneData);
-    expect(result.enhancementFactors.stressManagement).toBe('excellent');
-  });
-
-  it('stressManagement is good with moderate stress (3-4)', async () => {
-    const history = { stressHistory: [{ stressLevel: 3 }, { stressLevel: 4 }] };
-    const result = await evaluateEnhancedMilestone(youngHorse, history, null, milestoneData);
-    expect(result.enhancementFactors.stressManagement).toBe('good');
-  });
-
-  it('stressManagement is fair with stress around 5-6', async () => {
-    const history = { stressHistory: [{ stressLevel: 5 }, { stressLevel: 6 }] };
-    const result = await evaluateEnhancedMilestone(youngHorse, history, null, milestoneData);
-    expect(result.enhancementFactors.stressManagement).toBe('fair');
-  });
-
-  it('stressManagement is poor with high avg stress (>= 7)', async () => {
-    const history = { stressHistory: [{ stressLevel: 7 }, { stressLevel: 8 }] };
-    const result = await evaluateEnhancedMilestone(youngHorse, history, null, milestoneData);
-    expect(result.enhancementFactors.stressManagement).toBe('poor');
-  });
-});
-
 // ── personality bonus branches (calculatePersonalityBonuses) ─────────────────
 
 describe('evaluateEnhancedMilestone — personality bonus branches', () => {
@@ -426,10 +382,9 @@ describe('evaluateEnhancedMilestone — personality bonus branches', () => {
 
 // ── evaluateEnhancedMilestone — real DB horse: ultra-rare success path (lines 70-80) ──
 //
-// Using a real DB horse (stressLevel:51) ensures evaluateUltraRareTriggers succeeds
-// (returns an array instead of throwing), covering lines 70-80 where the ultraRareEvaluation
-// object is assigned from both successful ultra-rare and exotic results.
-// Also covers lines 34-37 in ultraRareTriggerEngine (PhoenixBorn triggered).
+// Using a real DB horse ensures evaluateUltraRareTriggers succeeds (returns an array
+// instead of throwing), covering lines 70-80 where the ultraRareEvaluation object is
+// assigned from both successful ultra-rare and exotic results.
 
 let dbMilestoneUser;
 let dbMilestoneHorse;
@@ -454,7 +409,6 @@ beforeAll(async () => {
       dateOfBirth: new Date(),
       age: 0,
       userId: dbMilestoneUser.id,
-      stressLevel: 51,
     },
   });
 
@@ -468,8 +422,7 @@ afterAll(() => dbMilestoneCleanup.run(), 30000);
 describe('evaluateEnhancedMilestone — real DB horse (ultra-rare success path, lines 70-80)', () => {
   const milestoneDataForDB = { type: 'imprinting', completed: true, score: 75 };
 
-  it('ultraRareEvaluation success path: totalRareTraits > 0 for stressLevel:51 horse', async () => {
-    // Phoenix-Born conditions: (stressEvents>=1 || hasHighStress=51>50=true) && recoveries>=0 → true
+  it('ultraRareEvaluation success path: returns the evaluation shape for a real DB horse', async () => {
     const result = await evaluateEnhancedMilestone(
       { ...dbMilestoneHorse, epigeneticModifiers: { positive: [], negative: [], hidden: [] } },
       { interactions: [] },
@@ -479,10 +432,9 @@ describe('evaluateEnhancedMilestone — real DB horse (ultra-rare success path, 
     expect(typeof result.ultraRareEvaluation).toBe('object');
     expect(Array.isArray(result.ultraRareEvaluation.ultraRareTriggered)).toBe(true);
     expect(Array.isArray(result.ultraRareEvaluation.exoticUnlocked)).toBe(true);
-    // Phoenix-Born is triggered for stressLevel:51 → totalRareTraits >= 1
-    expect(result.ultraRareEvaluation.totalRareTraits).toBeGreaterThanOrEqual(1);
-    expect(result.ultraRareEvaluation.ultraRareTriggered.length).toBeGreaterThan(0);
-    expect(result.ultraRareEvaluation.ultraRareTriggered[0].name).toBe('Phoenix-Born');
+    expect(typeof result.ultraRareEvaluation.totalRareTraits).toBe('number');
+    // Phoenix-Born is never triggered: the care rule that earned it is gone.
+    expect(result.ultraRareEvaluation.ultraRareTriggered.map(t => t.name)).not.toContain('Phoenix-Born');
   });
 });
 

@@ -57,7 +57,6 @@ beforeAll(async () => {
       dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
       breed: { connect: { id: breed.id } },
       healthStatus: 'Good',
-      stressLevel: 25,
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     },
   });

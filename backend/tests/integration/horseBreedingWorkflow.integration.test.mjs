@@ -280,10 +280,9 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
 
     const lineage = [mare, stallion]; // Simplified lineage
     const epigeneticTraits = applyEpigeneticTraitsAtBirth({
-      mare: { stressLevel: 20 }, // Low stress
+      mare: {},
       lineage,
       feedQuality: 85, // Premium feed
-      stressLevel: 20,
     });
 
     // Update foal with epigenetic traits

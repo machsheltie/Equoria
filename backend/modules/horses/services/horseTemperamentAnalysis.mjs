@@ -7,7 +7,6 @@
  * Business Rules:
  * - Temperament analysis from interaction patterns and epigenetic flags
  * - Behavioral trend analysis over time
- * - Stress response pattern identification
  * - Bonding preference analysis based on groom interactions
  * - Temperament stability and change detection
  * - Confidence scoring based on data quality and consistency
@@ -24,7 +23,6 @@ const TEMPERAMENT_CLASSIFICATIONS = {
     traits: ['brave', 'confident', 'social', 'curious'],
     characteristics: {
       confidenceLevel: [0.7, 1.0],
-      stressResilience: [0.6, 1.0],
       socialTendency: [0.5, 1.0],
       adaptability: [0.6, 1.0],
     },
@@ -35,7 +33,6 @@ const TEMPERAMENT_CLASSIFICATIONS = {
     traits: ['fearful', 'insecure', 'reactive', 'fragile'],
     characteristics: {
       confidenceLevel: [0.0, 0.4],
-      stressResilience: [0.0, 0.4],
       socialTendency: [0.0, 0.5],
       adaptability: [0.0, 0.4],
     },
@@ -46,7 +43,6 @@ const TEMPERAMENT_CLASSIFICATIONS = {
     traits: ['reactive', 'sensitive', 'energetic'],
     characteristics: {
       confidenceLevel: [0.3, 0.7],
-      stressResilience: [0.2, 0.6],
       socialTendency: [0.3, 0.8],
       adaptability: [0.3, 0.7],
     },
@@ -57,7 +53,6 @@ const TEMPERAMENT_CLASSIFICATIONS = {
     traits: ['calm', 'patient', 'stable'],
     characteristics: {
       confidenceLevel: [0.5, 0.8],
-      stressResilience: [0.7, 1.0],
       socialTendency: [0.4, 0.8],
       adaptability: [0.5, 0.8],
     },
@@ -68,7 +63,6 @@ const TEMPERAMENT_CLASSIFICATIONS = {
     traits: ['social', 'affectionate', 'curious'],
     characteristics: {
       confidenceLevel: [0.6, 0.9],
-      stressResilience: [0.5, 0.8],
       socialTendency: [0.7, 1.0],
       adaptability: [0.6, 0.9],
     },
@@ -79,7 +73,6 @@ const TEMPERAMENT_CLASSIFICATIONS = {
     traits: ['mixed', 'variable'],
     characteristics: {
       confidenceLevel: [0.3, 0.7],
-      stressResilience: [0.3, 0.7],
       socialTendency: [0.3, 0.7],
       adaptability: [0.4, 0.8],
     },
@@ -90,7 +83,6 @@ const TEMPERAMENT_CLASSIFICATIONS = {
     traits: [],
     characteristics: {
       confidenceLevel: [0.4, 0.6],
-      stressResilience: [0.4, 0.6],
       socialTendency: [0.4, 0.6],
       adaptability: [0.4, 0.6],
     },
@@ -110,7 +102,6 @@ export async function analyzeHorseTemperament(horseId) {
       name: true,
       epigeneticFlags: true,
       bondScore: true,
-      stressLevel: true,
       dateOfBirth: true,
     },
   });
@@ -162,7 +153,6 @@ export async function analyzeHorseTemperament(horseId) {
     primaryTemperament: temperamentAnalysis.primaryTemperament,
     temperamentTraits: temperamentAnalysis.traits,
     confidenceLevel: temperamentAnalysis.confidenceLevel,
-    stressResilience: temperamentAnalysis.stressResilience,
     socialTendency: temperamentAnalysis.socialTendency,
     adaptability: temperamentAnalysis.adaptability,
     dataSource,
@@ -278,7 +268,6 @@ export async function analyzeBehavioralTrends(horseId) {
   if (interactions.length < 3) {
     return {
       bondingTrend: 'insufficient_data',
-      stressTrend: 'insufficient_data',
       qualityTrend: 'insufficient_data',
       overallDirection: 'unknown',
       trendStrength: 0,
@@ -288,11 +277,10 @@ export async function analyzeBehavioralTrends(horseId) {
 
   // Analyze trends using linear regression approach
   const bondingTrend = calculateTrend(interactions.map(i => i.bondingChange || 0));
-  const stressTrend = calculateTrend(interactions.map(i => -(i.stressChange || 0))); // Negative stress change is positive
   const qualityTrend = calculateQualityTrend(interactions);
 
   // Determine overall direction
-  const trendScores = [bondingTrend.score, stressTrend.score, qualityTrend.score];
+  const trendScores = [bondingTrend.score, qualityTrend.score];
   const avgTrendScore = trendScores.reduce((sum, score) => sum + score, 0) / trendScores.length;
 
   let overallDirection;
@@ -308,86 +296,15 @@ export async function analyzeBehavioralTrends(horseId) {
 
   return {
     bondingTrend: bondingTrend.direction,
-    stressTrend: stressTrend.direction,
     qualityTrend: qualityTrend.direction,
     overallDirection,
     trendStrength,
     trendDetails: {
       bonding: bondingTrend,
-      stress: stressTrend,
       quality: qualityTrend,
     },
     dataPoints: interactions.length,
     analysisWindow: 30, // days
-  };
-}
-
-/**
- * Identify stress response patterns
- * @param {number} horseId - ID of the horse to analyze
- * @returns {Object} Stress response pattern analysis
- */
-export async function identifyStressResponsePatterns(horseId) {
-  const horse = await prisma.horse.findUnique({
-    where: { id: horseId },
-    select: { stressLevel: true, epigeneticFlags: true },
-  });
-
-  const interactions = await prisma.groomInteraction.findMany({
-    where: { foalId: horseId },
-    include: {
-      groom: { select: { epigeneticInfluenceType: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 50, // Last 50 interactions
-  });
-
-  // Analyze stress responses
-  const stressChanges = interactions.map(i => i.stressChange || 0);
-  const avgStressChange =
-    stressChanges.reduce((sum, change) => sum + change, 0) / stressChanges.length;
-  const stressSpikes = stressChanges.filter(change => change >= 3).length;
-  const stressReductions = stressChanges.filter(change => change <= -2).length;
-
-  // Identify trigger factors
-  const triggerFactors = [];
-  const epigeneticInfluenceTypeStress = {};
-
-  interactions.forEach(interaction => {
-    const personality = interaction.groom?.epigeneticInfluenceType;
-    if (personality && interaction.stressChange > 1) {
-      epigeneticInfluenceTypeStress[personality] =
-        (epigeneticInfluenceTypeStress[personality] || 0) + 1;
-    }
-  });
-
-  // Identify problematic groom personalities
-  Object.entries(epigeneticInfluenceTypeStress).forEach(([personality, count]) => {
-    if (count >= 2) {
-      triggerFactors.push(`${personality}_groom_personality`);
-    }
-  });
-
-  // Determine stress threshold and response type
-  const stressThreshold = calculateStressThreshold(horse, interactions);
-  const recoveryRate = calculateRecoveryRate(interactions);
-  const responseType = determineStressResponseType(
-    horse,
-    avgStressChange,
-    stressSpikes,
-    stressReductions,
-  );
-
-  return {
-    stressThreshold,
-    recoveryRate,
-    triggerFactors,
-    responseType,
-    avgStressChange,
-    stressSpikes,
-    stressReductions,
-    copingMechanisms: identifyCopingMechanisms(interactions),
-    analysisDepth: interactions.length,
   };
 }
 
@@ -513,10 +430,9 @@ export async function detectTemperamentChanges(horseId) {
 
   // Detect changes
   const bondingChange = recentMetrics.avgBonding - earlyMetrics.avgBonding;
-  const stressChange = earlyMetrics.avgStress - recentMetrics.avgStress; // Positive = improvement
   const qualityChange = recentMetrics.avgQuality - earlyMetrics.avgQuality;
 
-  const overallChange = (bondingChange + stressChange + qualityChange) / 3;
+  const overallChange = (bondingChange + qualityChange) / 2;
   const changeStrength = Math.abs(overallChange);
 
   let changeDirection;
@@ -534,11 +450,6 @@ export async function detectTemperamentChanges(horseId) {
   const contributingFactors = [];
   if (Math.abs(bondingChange) > 0.5) {
     contributingFactors.push(bondingChange > 0 ? 'improved_bonding' : 'declining_bonding');
-  }
-  if (Math.abs(stressChange) > 0.5) {
-    contributingFactors.push(
-      stressChange > 0 ? 'better_stress_management' : 'increased_stress_sensitivity',
-    );
   }
   if (Math.abs(qualityChange) > 0.3) {
     contributingFactors.push(
@@ -564,7 +475,6 @@ export async function detectTemperamentChanges(horseId) {
       recent: recentMetrics,
       changes: {
         bonding: bondingChange,
-        stress: stressChange,
         quality: qualityChange,
       },
     },
@@ -581,7 +491,6 @@ async function performTemperamentAnalysis(horse, interactions, dataSource) {
     primaryTemperament: 'developing',
     traits: [],
     confidenceLevel: 0.5,
-    stressResilience: 0.5,
     socialTendency: 0.5,
     adaptability: 0.5,
   };
@@ -598,7 +507,6 @@ async function performTemperamentAnalysis(horse, interactions, dataSource) {
 
     // Supplement with basic stats
     analysis.confidenceLevel = Math.max(0.1, Math.min(0.9, horse.bondScore / 40));
-    analysis.stressResilience = Math.max(0.1, Math.min(0.9, (10 - horse.stressLevel) / 10));
     analysis.socialTendency = horseFlags.includes('social')
       ? 0.8
       : horseFlags.includes('antisocial')
@@ -612,7 +520,6 @@ async function performTemperamentAnalysis(horse, interactions, dataSource) {
   } else {
     // Basic stats only
     analysis.confidenceLevel = Math.max(0.1, Math.min(0.9, horse.bondScore / 40));
-    analysis.stressResilience = Math.max(0.1, Math.min(0.9, (10 - horse.stressLevel) / 10));
     analysis.primaryTemperament = 'developing';
   }
 
@@ -625,29 +532,22 @@ async function performTemperamentAnalysis(horse, interactions, dataSource) {
 function analyzeFromInteractions(horse, interactions) {
   const avgBonding =
     interactions.reduce((sum, i) => sum + (i.bondingChange || 0), 0) / interactions.length;
-  const avgStressChange =
-    interactions.reduce((sum, i) => sum + (i.stressChange || 0), 0) / interactions.length;
   const qualityScores = { poor: 1, fair: 2, good: 3, excellent: 4 };
   const avgQuality =
     interactions.reduce((sum, i) => sum + (qualityScores[i.quality] || 2), 0) / interactions.length;
 
   // Calculate temperament characteristics
   const confidenceLevel = Math.max(0.1, Math.min(0.9, (avgBonding + 2) / 4));
-  const stressResilience = Math.max(0.1, Math.min(0.9, (-avgStressChange + 3) / 6));
   const socialTendency = Math.max(0.1, Math.min(0.9, avgBonding > 0 ? 0.7 : 0.3));
   const adaptability = Math.max(0.1, Math.min(0.9, (avgQuality - 1) / 3));
 
   // Determine primary temperament
   let primaryTemperament = 'developing';
 
-  if (confidenceLevel > 0.7 && stressResilience > 0.6) {
+  if (confidenceLevel > 0.7) {
     primaryTemperament = 'confident';
-  } else if (confidenceLevel < 0.4 && stressResilience < 0.4) {
+  } else if (confidenceLevel < 0.4) {
     primaryTemperament = 'nervous';
-  } else if (avgStressChange > 1 && stressResilience < 0.5) {
-    primaryTemperament = 'reactive';
-  } else if (stressResilience > 0.7 && avgBonding > 0) {
-    primaryTemperament = 'calm';
   } else if (socialTendency > 0.7 && confidenceLevel > 0.6) {
     primaryTemperament = 'outgoing';
   }
@@ -656,7 +556,6 @@ function analyzeFromInteractions(horse, interactions) {
     primaryTemperament,
     traits: TEMPERAMENT_CLASSIFICATIONS[primaryTemperament]?.traits || [],
     confidenceLevel,
-    stressResilience,
     socialTendency,
     adaptability,
   };
@@ -706,69 +605,6 @@ function calculateQualityTrend(interactions) {
 }
 
 /**
- * Calculate stress threshold
- */
-function calculateStressThreshold(horse, interactions) {
-  const baseThreshold = (10 - horse.stressLevel) / 10; // Higher stress = lower threshold
-
-  if (interactions.length === 0) {
-    return baseThreshold;
-  }
-
-  const stressSpikes = interactions.filter(i => (i.stressChange || 0) >= 3).length;
-  const spikeRatio = stressSpikes / interactions.length;
-
-  return Math.max(0.1, baseThreshold - spikeRatio * 0.3);
-}
-
-/**
- * Calculate recovery rate
- */
-function calculateRecoveryRate(interactions) {
-  if (interactions.length === 0) {
-    return 0.5;
-  }
-
-  const stressReductions = interactions.filter(i => (i.stressChange || 0) <= -2).length;
-  return Math.min(1.0, stressReductions / (interactions.length * 0.3)); // Expect 30% to be stress-reducing
-}
-
-/**
- * Determine stress response type
- */
-function determineStressResponseType(horse, avgStressChange, stressSpikes, stressReductions) {
-  const horseFlags = asFlagArray(horse.epigeneticFlags);
-  if (horseFlags.includes('reactive') || avgStressChange > 1) {
-    return 'reactive';
-  } else if (horseFlags.includes('fearful') || stressSpikes > stressReductions) {
-    return 'high_sensitivity';
-  } else if (stressReductions > stressSpikes) {
-    return 'resilient';
-  } else {
-    return 'moderate';
-  }
-}
-
-/**
- * Identify coping mechanisms
- */
-function identifyCopingMechanisms(interactions) {
-  const mechanisms = [];
-
-  const bondingInteractions = interactions.filter(i => (i.bondingChange || 0) > 2);
-  if (bondingInteractions.length > 0) {
-    mechanisms.push('bonding_seeking');
-  }
-
-  const qualityInteractions = interactions.filter(i => i.quality === 'excellent');
-  if (qualityInteractions.length > interactions.length * 0.3) {
-    mechanisms.push('responds_to_quality_care');
-  }
-
-  return mechanisms;
-}
-
-/**
  * Calculate trust level
  */
 function calculateTrustLevel(interactions) {
@@ -790,17 +626,15 @@ function calculateTrustLevel(interactions) {
  */
 function calculatePeriodMetrics(interactions) {
   if (interactions.length === 0) {
-    return { avgBonding: 0, avgStress: 0, avgQuality: 2 };
+    return { avgBonding: 0, avgQuality: 2 };
   }
 
   const avgBonding =
     interactions.reduce((sum, i) => sum + (i.bondingChange || 0), 0) / interactions.length;
-  const avgStress =
-    interactions.reduce((sum, i) => sum + (i.stressChange || 0), 0) / interactions.length;
 
   const qualityScores = { poor: 1, fair: 2, good: 3, excellent: 4 };
   const avgQuality =
     interactions.reduce((sum, i) => sum + (qualityScores[i.quality] || 2), 0) / interactions.length;
 
-  return { avgBonding, avgStress, avgQuality };
+  return { avgBonding, avgQuality };
 }

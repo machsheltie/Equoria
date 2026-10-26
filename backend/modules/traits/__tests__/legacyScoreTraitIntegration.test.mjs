@@ -156,7 +156,6 @@ describe('Legacy Score Trait Integration System', () => {
             ageInDays: trait.ageInDays,
             groomId: trait.sourceType === 'groom' ? testGroom.id : null,
             bondScore: 75,
-            stressLevel: 20,
             influenceScore: 5,
           },
         });
@@ -199,7 +198,6 @@ describe('Legacy Score Trait Integration System', () => {
             ageInDays: trait.ageInDays,
             groomId: null,
             bondScore: 50,
-            stressLevel: 40,
             influenceScore: trait.traitName === 'sensitive' ? 5 : -3,
           },
         });
@@ -232,7 +230,6 @@ describe('Legacy Score Trait Integration System', () => {
             ageInDays: trait.ageInDays,
             groomId: trait.sourceType === 'groom' ? testGroom.id : null,
             bondScore: 75,
-            stressLevel: 20,
             influenceScore: 5,
           },
         });
@@ -282,7 +279,6 @@ describe('Legacy Score Trait Integration System', () => {
           ageInDays: 100,
           groomId: testGroom.id,
           bondScore: 80,
-          stressLevel: 15,
           influenceScore: 5,
         },
       });
@@ -309,7 +305,6 @@ describe('Legacy Score Trait Integration System', () => {
           ageInDays: 365,
           groomId: testGroom.id,
           bondScore: 90,
-          stressLevel: 10,
           influenceScore: 8,
         },
       });
@@ -350,7 +345,6 @@ describe('Legacy Score Trait Integration System', () => {
           ageInDays: 200,
           groomId: testGroom.id,
           bondScore: 85,
-          stressLevel: 15,
           influenceScore: 6,
         },
       });

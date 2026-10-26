@@ -506,7 +506,6 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
         interactionType: 'grooming',
         duration: 30,
         bondingChange: 4,
-        stressChange: -2,
         quality: 'excellent',
       },
     });

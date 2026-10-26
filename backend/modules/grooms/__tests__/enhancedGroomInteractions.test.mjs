@@ -52,14 +52,12 @@ const youngHorse = {
   id: 'h1',
   age: 1, // 1 game-year — foal
   bondScore: 0,
-  stressLevel: 20,
 };
 
 const adultHorse = {
   id: 'h2',
   age: 4, // 4 game-years — adult
   bondScore: 150,
-  stressLevel: 40,
 };
 
 // ---------------------------------------------------------------------------
@@ -165,7 +163,7 @@ describe('checkForSpecialEvent', () => {
       const context = {
         // Equoria-yny4: age is game-years; 1 = young foal
         groom: gentleGroom,
-        horse: { ...youngHorse, age: 1, stressLevel: 10 },
+        horse: { ...youngHorse, age: 1 },
         relationshipLevel: RELATIONSHIP_LEVELS.STRANGER,
         interactionType: 'enrichment',
       };
@@ -190,7 +188,6 @@ describe('calculateEnhancedEffects', () => {
   it('returns expected shape', () => {
     const result = calculateEnhancedEffects(gentleGroom, youngHorse, 'daily_care', 'Morning Routine', 30);
     expect(result).toHaveProperty('bondingChange');
-    expect(result).toHaveProperty('stressChange');
     expect(result).toHaveProperty('quality');
     expect(result).toHaveProperty('relationshipLevel');
     expect(result).toHaveProperty('variation');
@@ -204,12 +201,6 @@ describe('calculateEnhancedEffects', () => {
     const result = calculateEnhancedEffects(gentleGroom, youngHorse, 'daily_care', 'Morning Routine', 30);
     expect(result.bondingChange).toBeGreaterThanOrEqual(1);
     expect(result.bondingChange).toBeLessThanOrEqual(25);
-  });
-
-  it('stressChange is between -20 and 5 (clamped)', () => {
-    const result = calculateEnhancedEffects(gentleGroom, youngHorse, 'daily_care', 'Morning Routine', 30);
-    expect(result.stressChange).toBeGreaterThanOrEqual(-20);
-    expect(result.stressChange).toBeLessThanOrEqual(5);
   });
 
   it('quality is a known string', () => {
@@ -346,7 +337,7 @@ describe('processInteractionWithPerformance — full function body coverage', ()
     // Equoria-yny4: age is game-years; 1 = young foal
     const result = await processInteractionWithPerformance(
       { id: 999999, personality: 'gentle', skillLevel: 'expert', speciality: 'medical', sessionRate: 20 },
-      { id: 999999, age: 1, bondScore: 0, stressLevel: 20 },
+      { id: 999999, age: 1, bondScore: 0 },
       '00000000-0000-0000-0000-000000000000',
       'daily_care',
       'Morning Routine',
@@ -354,9 +345,7 @@ describe('processInteractionWithPerformance — full function body coverage', ()
     );
     expect(result.performanceTracked).toBe(true);
     expect(result).toHaveProperty('bondingChange');
-    expect(result).toHaveProperty('stressChange');
     expect(result).toHaveProperty('quality');
-    expect(typeof result.wellbeingImpact).toBe('number');
     expect(typeof result.taskSuccess).toBe('boolean');
   });
 
@@ -365,7 +354,7 @@ describe('processInteractionWithPerformance — full function body coverage', ()
     await expect(
       processInteractionWithPerformance(
         { id: 999999, personality: 'gentle', skillLevel: 'expert', speciality: 'medical', sessionRate: 20 },
-        { id: 999999, age: 1, bondScore: 0, stressLevel: 20 },
+        { id: 999999, age: 1, bondScore: 0 },
         '00000000-0000-0000-0000-000000000000',
         'UNKNOWN_TYPE_XYZ',
         'Morning Routine',
@@ -386,7 +375,7 @@ describe('Equoria-yny4 — horse.age treated as game-years', () => {
     // BUT age === 3 should still include enrichment (boundary). To prove the
     // service uses game-year thresholds, we use age=4: under legacy 4 < 1095
     // → enrichment available; under game-years 4 > 3 → enrichment excluded.
-    const fourYearOld = { id: 'sentinel', age: 4, bondScore: 0, stressLevel: 10 };
+    const fourYearOld = { id: 'sentinel', age: 4, bondScore: 0 };
     const result = getAvailableInteractions(
       { id: 'g', personality: 'gentle', skillLevel: 'expert', speciality: 'foalCare', sessionRate: 20 },
       fourYearOld,
@@ -398,7 +387,7 @@ describe('Equoria-yny4 — horse.age treated as game-years', () => {
   it('enrichment is excluded at exactly age 3 (Equoria-fjgzp: grooms do enrichment for horses under 3)', () => {
     // Old contract: `horse.age > 3` allowed enrichment at exactly 3.
     // Owner ruling 2026-10-14: enrichment is for horses UNDER 3.
-    const threeYearOld = { id: 'sentinel', age: 3, bondScore: 0, stressLevel: 10 };
+    const threeYearOld = { id: 'sentinel', age: 3, bondScore: 0 };
     const result = getAvailableInteractions(
       { id: 'g', personality: 'gentle', skillLevel: 'expert', speciality: 'foalCare', sessionRate: 20 },
       threeYearOld,
@@ -411,7 +400,7 @@ describe('Equoria-yny4 — horse.age treated as game-years', () => {
     // Under game-year semantics: 2 game-years < 3 → enrichment available (correct).
     // Sentinel value: also under legacy semantics age=2 would mean 2-day-old foal;
     // game-year semantics correctly classifies a 2-game-year horse as a foal.
-    const twoYearOld = { id: 'sentinel', age: 2, bondScore: 0, stressLevel: 10 };
+    const twoYearOld = { id: 'sentinel', age: 2, bondScore: 0 };
     const result = getAvailableInteractions(
       { id: 'g', personality: 'gentle', skillLevel: 'expert', speciality: 'foalCare', sessionRate: 20 },
       twoYearOld,
@@ -426,7 +415,7 @@ describe('Equoria-yny4 — horse.age treated as game-years', () => {
     // This test guards against a regression that re-introduces the 1095 threshold,
     // because a regression would still pass this test — so we PAIR it with the
     // age=4 test above (which a regression would fail).
-    const ancientHorse = { id: 'sentinel', age: 1500, bondScore: 0, stressLevel: 10 };
+    const ancientHorse = { id: 'sentinel', age: 1500, bondScore: 0 };
     const result = getAvailableInteractions(
       { id: 'g', personality: 'gentle', skillLevel: 'expert', speciality: 'foalCare', sessionRate: 20 },
       ancientHorse,

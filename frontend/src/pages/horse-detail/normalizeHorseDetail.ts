@@ -124,6 +124,7 @@ export function normalizeHorseDetail(raw: HorseSummary): Horse {
     temperament: raw.temperament ?? null,
     dateOfBirth: raw.dateOfBirth,
     healthStatus: raw.healthStatus,
+    bondScore: raw.bondScore,
     imageUrl: raw.imageUrl,
     stats,
     disciplineScores: raw.disciplineScores ?? {},

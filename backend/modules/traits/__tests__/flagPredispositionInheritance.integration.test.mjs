@@ -56,7 +56,6 @@ async function seedBorderlineAffectionateCare(foalId, groomId) {
       interactionType: 'dailyGrooming',
       duration: 30,
       bondingChange: 3, // positive (counts toward positiveInteractions)
-      stressChange: 0,
       quality: 'good', // counts toward qualityInteractions (good/excellent)
       taskType: 'grooming',
       qualityScore: 0.8,
@@ -162,7 +161,6 @@ describe('parent → foal flag predisposition (Equoria-yzqhj.4) — real DB', ()
         dateOfBirth: foalDob,
         userId: user.id,
         bondScore: 50,
-        stressLevel: 5,
         epigeneticFlags: [],
         sireId: predisposedSire.id,
         damId: predisposedDam.id,
@@ -177,7 +175,6 @@ describe('parent → foal flag predisposition (Equoria-yzqhj.4) — real DB', ()
         dateOfBirth: foalDob,
         userId: user.id,
         bondScore: 50,
-        stressLevel: 5,
         epigeneticFlags: [],
         sireId: controlSire.id,
         damId: controlDam.id,
@@ -245,7 +242,6 @@ describe('parent → foal flag predisposition (Equoria-yzqhj.4) — real DB', ()
         dateOfBirth: gameCalendarDate(new Date(), -7),
         userId: user.id,
         bondScore: 50,
-        stressLevel: 5,
         epigeneticFlags: [],
         // sireId / damId intentionally omitted → null parents.
       },

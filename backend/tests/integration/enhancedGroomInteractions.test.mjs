@@ -76,7 +76,6 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
         userId: testUser.id,
         bondScore: 25,
-        stressLevel: 40,
         // breedId is optional, so we'll omit it for the test
       },
     });
@@ -250,7 +249,6 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
           dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
           userId: testUser.id,
           bondScore: 25,
-          stressLevel: 40,
         },
       });
 
@@ -291,11 +289,8 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       // Check effects
       const { effects } = response.body.data;
       expect(effects).toHaveProperty('bondingChange');
-      expect(effects).toHaveProperty('stressChange');
       expect(effects).toHaveProperty('newBondScore');
-      expect(effects).toHaveProperty('newStressLevel');
       expect(effects.bondingChange).toBeGreaterThan(0);
-      expect(effects.stressChange).toBeLessThanOrEqual(0);
 
       // Check relationship progression
       const { relationship } = response.body.data;
@@ -320,7 +315,6 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
           dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
           userId: testUser.id,
           bondScore: 30,
-          stressLevel: 35,
         },
       });
 
@@ -346,7 +340,6 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
 
       const { effects } = response.body.data;
       expect(effects.bondingChange).toBeGreaterThan(3); // Should be higher than basic care
-      expect(effects.stressChange).toBeLessThan(0); // Should reduce stress
 
       // Clean up
       await prisma.horse.deleteMany({ where: { id: secondHorse.id } });
@@ -362,7 +355,6 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
           dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
           userId: testUser.id,
           bondScore: 20,
-          stressLevel: 50,
         },
       });
 

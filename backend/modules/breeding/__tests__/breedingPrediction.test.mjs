@@ -175,7 +175,6 @@ describe('Breeding Prediction System', () => {
           ageInDays: 45,
           groomId: null,
           bondScore: 70,
-          stressLevel: 30,
           influenceScore: 5,
         },
       });
@@ -189,7 +188,6 @@ describe('Breeding Prediction System', () => {
           ageInDays: 60,
           groomId: testGroom.id,
           bondScore: 85,
-          stressLevel: 15,
           influenceScore: 6,
         },
       });
@@ -220,7 +218,6 @@ describe('Breeding Prediction System', () => {
           ageInDays: 60,
           groomId: testGroom.id,
           bondScore: 85,
-          stressLevel: 15,
           influenceScore: 7,
         },
       });

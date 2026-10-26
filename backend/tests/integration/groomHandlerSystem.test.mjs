@@ -76,7 +76,6 @@ describe('Groom Handler System Integration Tests', () => {
         dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
         userId: testUser.id,
         bondScore: 50,
-        stressLevel: 30,
       },
     });
 
@@ -176,7 +175,6 @@ describe('Groom Handler System Integration Tests', () => {
           dateOfBirth: gameCalendarDate(new Date(), -730), // 2 years old
           userId: testUser.id,
           bondScore: 30,
-          stressLevel: 40,
         },
       });
 

@@ -189,7 +189,6 @@ describe('traitEffects — exact per-trait definitions (merged from legacy backe
       const combined = getCombinedTraitEffects(['resilient', 'intelligent']);
       expect(combined.suppressTemperamentDrift).toBe(true); // resilient
       expect(combined.trainingXpModifier).toBe(0.25); // intelligent
-      expect(combined.trainingStressReduction).toBe(0.15); // resilient
       expect(combined.statGainChanceModifier).toBe(0.15); // intelligent
     });
   });
@@ -198,10 +197,7 @@ describe('traitEffects — exact per-trait definitions (merged from legacy backe
     it('resilient has correct effects', () => {
       const e = getTraitEffects('resilient');
       expect(e.suppressTemperamentDrift).toBe(true);
-      expect(e.trainingStressReduction).toBe(0.15);
-      expect(e.competitionStressResistance).toBe(0.15);
       expect(e.competitionScoreModifier).toBe(0.03);
-      expect(e.stressRecoveryRate).toBe(1.25);
       expect(e.disciplineModifiers['Cross Country']).toBe(0.05);
     });
 
@@ -229,10 +225,7 @@ describe('traitEffects — exact per-trait definitions (merged from legacy backe
   describe('negative traits — exact penalty values', () => {
     it('nervous has correct penalties', () => {
       const e = getTraitEffects('nervous');
-      expect(e.trainingStressIncrease).toBe(0.25);
-      expect(e.competitionStressRisk).toBe(10);
       expect(e.competitionScoreModifier).toBe(-0.04);
-      expect(e.stressAccumulation).toBe(1.2);
       expect(e.disciplineModifiers['Racing']).toBe(-0.06);
     });
 

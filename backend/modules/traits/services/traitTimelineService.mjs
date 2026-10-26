@@ -9,10 +9,10 @@
  * - Trait timeline data aggregation from trait history and milestone logs
  * - Timeline formatting with age-based organization
  * - Trait source event tracking (milestone, groom, breeding, environmental)
- * - Bond/stress context inclusion with care pattern analysis
+ * - Bond context inclusion with care pattern analysis
  * - Age-based filtering (only traits before age 4)
  * - Trait type distinctions (epigenetic, inherited, rare, negative)
- * - Bond and stress trend analysis
+ * - Bond trend analysis
  *
  * Business Rules:
  * - Only traits gained before age 4 (1460 days) are included in timeline
@@ -135,7 +135,6 @@ export async function generateTraitTimeline(horseId) {
       isNegative: NEGATIVE_TRAITS.includes(trait.traitName),
       influenceScore: trait.influenceScore,
       bondScore: trait.bondScore,
-      stressLevel: trait.stressLevel,
       timestamp: trait.timestamp,
       groomContext: trait.groom
         ? {
@@ -144,7 +143,6 @@ export async function generateTraitTimeline(horseId) {
             speciality: trait.groom.speciality,
             personality: trait.groom.epigeneticInfluenceType,
             bondScore: trait.bondScore,
-            stressLevel: trait.stressLevel,
           }
         : null,
       milestoneContext: milestoneContext
@@ -168,8 +166,8 @@ export async function generateTraitTimeline(horseId) {
   // Categorize traits
   const categorization = categorizeTraits(timelineEvents);
 
-  // Analyze bond and stress trends
-  const bondStressTrend = analyzeBondStressTrend(timelineEvents);
+  // Analyze the bond trend
+  const bondProgress = analyzeBondTrend(timelineEvents);
 
   const result = {
     horseId,
@@ -177,7 +175,7 @@ export async function generateTraitTimeline(horseId) {
     ageRanges,
     summary,
     categorization,
-    bondStressTrend,
+    bondProgress,
     excludedTraits: excludedTraits.map(trait => ({
       name: trait.traitName,
       ageInDays: trait.ageInDays,
@@ -279,10 +277,6 @@ function calculateTimelineSummary(timelineEvents, excludedTraits) {
       timelineEvents.length > 0
         ? timelineEvents.reduce((sum, e) => sum + (e.bondScore || 50), 0) / timelineEvents.length
         : 50,
-    averageStressLevel:
-      timelineEvents.length > 0
-        ? timelineEvents.reduce((sum, e) => sum + (e.stressLevel || 50), 0) / timelineEvents.length
-        : 50,
   };
 }
 
@@ -308,56 +302,42 @@ function categorizeTraits(timelineEvents) {
 }
 
 /**
- * Analyze bond and stress trends over time
+ * Analyze the bond trend over time
  * @param {Array} timelineEvents - Array of timeline events
- * @returns {Object} Bond and stress trend analysis
+ * @returns {Object} Bond trend analysis
  */
-function analyzeBondStressTrend(timelineEvents) {
+function analyzeBondTrend(timelineEvents) {
   if (timelineEvents.length === 0) {
     return {
       bondTrend: 'no_data',
-      stressTrend: 'no_data',
       dataPoints: [],
     };
   }
 
   const dataPoints = timelineEvents
-    .filter(e => e.bondScore !== null && e.stressLevel !== null)
+    .filter(e => e.bondScore !== null)
     .map(e => ({
       ageInDays: e.ageInDays,
       bondScore: e.bondScore,
-      stressLevel: e.stressLevel,
     }));
 
   if (dataPoints.length < 2) {
     return {
       bondTrend: 'insufficient_data',
-      stressTrend: 'insufficient_data',
       dataPoints,
     };
   }
 
   const firstBond = dataPoints[0].bondScore;
   const lastBond = dataPoints[dataPoints.length - 1].bondScore;
-  const firstStress = dataPoints[0].stressLevel;
-  const lastStress = dataPoints[dataPoints.length - 1].stressLevel;
 
   const bondTrend =
     lastBond > firstBond + 5 ? 'improving' : lastBond < firstBond - 5 ? 'declining' : 'stable';
 
-  const stressTrend =
-    lastStress < firstStress - 5
-      ? 'decreasing'
-      : lastStress > firstStress + 5
-        ? 'increasing'
-        : 'stable';
-
   return {
     bondTrend,
-    stressTrend,
     dataPoints,
     bondChange: lastBond - firstBond,
-    stressChange: lastStress - firstStress,
   };
 }
 
@@ -380,8 +360,7 @@ export async function getTraitTimelineSummary(horseId) {
     rareTraits: timeline.summary.rareTraits,
     negativeTraits: timeline.summary.negativeTraits,
     sourceTypes: timeline.summary.sourceTypes,
-    bondTrend: timeline.bondStressTrend.bondTrend,
-    stressTrend: timeline.bondStressTrend.stressTrend,
+    bondTrend: timeline.bondProgress.bondTrend,
     developmentQuality: calculateDevelopmentQuality(timeline),
   };
 
@@ -402,7 +381,7 @@ function calculateDevelopmentQuality(timeline) {
     return 'no_development';
   }
 
-  const { summary, bondStressTrend } = timeline;
+  const { summary, bondProgress } = timeline;
   let score = 0;
 
   // Trait quantity (max 3 points)
@@ -429,14 +408,9 @@ function calculateDevelopmentQuality(timeline) {
   }
 
   // Bond trend (max 2 points)
-  if (bondStressTrend.bondTrend === 'improving') {
+  if (bondProgress.bondTrend === 'improving') {
     score += 2;
-  } else if (bondStressTrend.bondTrend === 'stable') {
-    score += 1;
-  }
-
-  // Stress trend (max 1 point)
-  if (bondStressTrend.stressTrend === 'decreasing') {
+  } else if (bondProgress.bondTrend === 'stable') {
     score += 1;
   }
 

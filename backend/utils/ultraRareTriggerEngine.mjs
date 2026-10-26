@@ -18,7 +18,6 @@ import {
   topBondThreshold,
   topConformationThreshold,
   careGapDays,
-  stressSpikeThreshold,
   asPlainObject,
   textIncludesAny,
   hasCareGap,
@@ -251,46 +250,11 @@ async function evaluateExoticUnlockConditions(horse, traitDef, _context) {
 }
 
 /**
- * Phoenix-Born: 3+ stress events + 2 successful emotional recoveries
+ * Phoenix-Born: the care rule that earned it was removed (owner ruling
+ * 2026-10-26, Equoria-b76x0), so nothing earns it for now.
  */
-async function evaluatePhoenixBornConditions(horse, _conditions) {
-  try {
-    // Use groom interactions and competition results as proxy for stress events
-    const groomInteractions = horse.groomInteractions || [];
-    const competitionResults = horse.competitionResults || [];
-
-    // Count high-stress indicators from interactions and competitions
-    const stressEvents =
-      groomInteractions.filter(
-        interaction => interaction.stressChange && interaction.stressChange > 15,
-      ).length +
-      competitionResults.filter(
-        result => result.placement > 5, // Poor performance can indicate stress
-      ).length;
-
-    // Count successful recoveries from groom interactions
-    const recoveries = groomInteractions.filter(
-      interaction => interaction.stressChange && interaction.stressChange < -15, // Stress reduction
-    ).length;
-
-    // Use current horse stress level as additional indicator
-    const currentStressLevel = horse.stressLevel || 0;
-    const hasHighStress = currentStressLevel > 50;
-
-    // More lenient conditions for testing - at least some stress indicators
-    const meetsConditions = (stressEvents >= 1 || hasHighStress) && recoveries >= 0;
-
-    logger.debug(
-      `[ultraRareTriggerEngine] Phoenix-Born evaluation: stress events: ${stressEvents}, recoveries: ${recoveries}, current stress: ${currentStressLevel}, meets conditions: ${meetsConditions}`,
-    );
-
-    return meetsConditions;
-  } catch (error) {
-    logger.error(
-      `[ultraRareTriggerEngine] Error evaluating Phoenix-Born conditions: ${error.message}`,
-    );
-    return false;
-  }
+async function evaluatePhoenixBornConditions() {
+  return false;
 }
 
 /**
@@ -450,7 +414,7 @@ async function evaluateBornLeaderConditions(horse, conditions) {
 /**
  * Stormtouched: Reactive temperament + missed care + novelty events
  */
-async function evaluateStormtouchedConditions(horse, conditions) {
+async function evaluateStormtouchedConditions(horse, _conditions) {
   try {
     // Reactive / volatile temperament (real scalar column).
     const temperament = horse.temperament?.toLowerCase();
@@ -470,21 +434,10 @@ async function evaluateStormtouchedConditions(horse, conditions) {
       textIncludesAny(i.taskType, ['novelty', 'new', 'exposure']),
     );
 
-    // Stress spikes — groom interactions carrying a large positive stress change
-    // (Equoria-oey96.9: stressChange lives on GroomInteraction; replaces the
-    // stressLevel-delta scan over the nonexistent per-day care-log relation).
-    const stressSpikes = interactions.filter(
-      i => typeof i.stressChange === 'number' && i.stressChange >= stressSpikeThreshold,
-    ).length;
-
-    const meetsConditions =
-      reactiveTemperament &&
-      missedWeekOfCare &&
-      noveltyInteractionEvent &&
-      stressSpikes >= conditions.stressSpikes;
+    const meetsConditions = reactiveTemperament && missedWeekOfCare && noveltyInteractionEvent;
 
     logger.debug(
-      `[ultraRareTriggerEngine] Stormtouched evaluation: reactive: ${reactiveTemperament}, missed care: ${missedWeekOfCare}, novelty: ${noveltyInteractionEvent}, stress spikes: ${stressSpikes}, meets conditions: ${meetsConditions}`,
+      `[ultraRareTriggerEngine] Stormtouched evaluation: reactive: ${reactiveTemperament}, missed care: ${missedWeekOfCare}, novelty: ${noveltyInteractionEvent}, meets conditions: ${meetsConditions}`,
     );
 
     return meetsConditions;

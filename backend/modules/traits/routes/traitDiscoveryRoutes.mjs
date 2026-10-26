@@ -117,7 +117,6 @@ router.get('/conditions', async (req, res) => {
         totalConditions: conditions.length,
         categories: {
           bonding: conditions.filter(c => c.category === 'bonding').length,
-          stress: conditions.filter(c => c.category === 'stress').length,
           activities: conditions.filter(c => c.category === 'activities').length,
           milestones: conditions.filter(c => c.category === 'milestones').length,
         },
@@ -224,9 +223,6 @@ router.post(
 function categorizeCondition(conditionKey) {
   if (conditionKey.includes('bonding') || conditionKey === 'perfect_care') {
     return 'bonding';
-  }
-  if (conditionKey.includes('stress')) {
-    return 'stress';
   }
   if (conditionKey.includes('activities')) {
     return 'activities';

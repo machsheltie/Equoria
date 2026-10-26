@@ -100,7 +100,6 @@ export const v1TrailingMirrorHandlers = [
         development: {
           currentDay: 1,
           bondingLevel: 50,
-          stressLevel: 10,
           maxDay: 6,
         },
         activityHistory: [],

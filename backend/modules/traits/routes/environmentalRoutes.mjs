@@ -5,7 +5,7 @@
  * and environmental impact calculations for horse management.
  *
  * Owner ruling 2026-10-07 and 2026-10-16 (Equoria-huuaf): no forecasts and no
- * advice. GET /forecast is gone, and the impact, trigger and stress results
+ * advice. GET /forecast is gone, and the impact and trigger results
  * carry no recommendations.
  */
 
@@ -196,17 +196,13 @@ router.post(
           },
         };
 
-        const { impact, triggers, stress, comfortZone } = assessHorseEnvironment(
-          snapshot,
-          horseData,
-        );
+        const { impact, triggers, comfortZone } = assessHorseEnvironment(snapshot, horseData);
 
         results.push({
           horseId: horse.id,
           horseName: horse.name,
           impact,
           triggers,
-          stress,
           comfortZone,
         });
       }

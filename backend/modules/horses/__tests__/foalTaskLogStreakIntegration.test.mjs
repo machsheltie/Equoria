@@ -93,7 +93,6 @@ describe('Foal Task Log and Streak Data Integration', () => {
             connect: { id: testUser.id },
           },
           bondScore: 30,
-          stressLevel: 15,
           taskLog: null,
           lastGroomed: null,
           daysGroomedInARow: 0,

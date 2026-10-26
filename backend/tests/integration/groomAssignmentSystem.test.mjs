@@ -77,7 +77,6 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
         userId: testUser.id,
         bondScore: 30,
-        stressLevel: 40,
       },
     });
 
@@ -89,7 +88,6 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         dateOfBirth: gameCalendarDate(new Date(), -730), // 2 years old
         userId: testUser.id,
         bondScore: 45,
-        stressLevel: 25,
       },
     });
 

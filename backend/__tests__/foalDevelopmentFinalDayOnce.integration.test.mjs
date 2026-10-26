@@ -92,7 +92,6 @@ describe('INTEGRATION: a foal development day is evaluated once (Equoria-mwjst)'
         userId: user.id,
         // Conditions under which day-0..6 positive traits are eligible.
         bondScore: 80,
-        stressLevel: 10,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
       createdHorseIds,

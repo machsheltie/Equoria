@@ -46,7 +46,7 @@ export const LEGACY_PERKS = {
       id: 'gentle_hands',
       name: 'Gentle Hands',
       description: 'Inherited gentle touch technique',
-      effect: { bondingBonus: 0.05, stressReduction: 0.1 },
+      effect: { bondingBonus: 0.05 },
     },
     {
       id: 'empathic_sync',

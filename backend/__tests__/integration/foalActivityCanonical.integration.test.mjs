@@ -82,7 +82,6 @@ describe('FoalActivity canonical store (Equoria-2emg)', () => {
           activityType: 'early_touch',
           outcome: 'good',
           bondingChange: 2,
-          stressChange: -1,
           description: 'test event',
         },
       });
@@ -95,7 +94,6 @@ describe('FoalActivity canonical store (Equoria-2emg)', () => {
           activityType: 'desensitization',
           outcome: 'good',
           bondingChange: 1,
-          stressChange: 0,
           description: 'test event',
         },
       });

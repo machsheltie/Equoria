@@ -76,6 +76,31 @@ const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Age</p>
             <p className="fantasy-body text-[var(--text-primary)]">{horse.age} years old</p>
           </Surface>
+          {typeof horse.bondScore === 'number' && (
+            <Surface variant="subtle" className="p-4">
+              <div data-testid="horse-bond">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="fantasy-caption text-[var(--text-secondary)]">Bond</p>
+                  <p className="fantasy-body text-[var(--text-primary)] tabular-nums">
+                    {horse.bondScore}
+                  </p>
+                </div>
+                <div
+                  className="h-2 w-full rounded-full bg-[var(--celestial-navy-700)] overflow-hidden"
+                  role="meter"
+                  aria-label="Bond"
+                  aria-valuenow={horse.bondScore}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                >
+                  <div
+                    className="h-full rounded-full bg-[var(--gold-primary)]"
+                    style={{ width: `${Math.min(100, Math.max(0, horse.bondScore))}%` }}
+                  />
+                </div>
+              </div>
+            </Surface>
+          )}
           <Surface variant="subtle" className="p-4">
             <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Date of Birth</p>
             <p className="fantasy-body text-[var(--text-primary)]">

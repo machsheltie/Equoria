@@ -25,8 +25,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { asFlagArray, asFlagObject } from '../utils/jsonbArrayGuard.mjs';
 import {
-  applyUltraRareStressEffects,
-  applyUltraRareStressDecayEffects,
   applyUltraRareTrainingEffects,
   applyUltraRareCompetitionEffects,
   applyUltraRareBondingEffects,
@@ -80,17 +78,6 @@ describe('asFlagObject (Equoria-liy7c)', () => {
 // ── ultraRareMechanicalEffects — every exported reader ──────────────────────
 
 describe('ultraRareMechanicalEffects tolerate malformed ultraRareTraits (Equoria-liy7c)', () => {
-  it.each(BAD_SHAPES)('applyUltraRareStressEffects does not throw when ultraRareTraits is %s', (_label, value) => {
-    const horse = { id: 1, ultraRareTraits: value };
-    expect(() => applyUltraRareStressEffects(horse, 10, 'training')).not.toThrow();
-    const result = applyUltraRareStressEffects(horse, 10, 'training');
-    expect(result.modifiedStress).toBe(10); // no traits → unchanged
-  });
-
-  it.each(BAD_SHAPES)('applyUltraRareStressDecayEffects does not throw when ultraRareTraits is %s', (_label, value) => {
-    expect(() => applyUltraRareStressDecayEffects({ ultraRareTraits: value }, 5)).not.toThrow();
-  });
-
   it.each(BAD_SHAPES)('applyUltraRareTrainingEffects does not throw when ultraRareTraits is %s', (_label, value) => {
     expect(() => applyUltraRareTrainingEffects({ ultraRareTraits: value }, {})).not.toThrow();
   });
@@ -108,11 +95,11 @@ describe('ultraRareMechanicalEffects tolerate malformed ultraRareTraits (Equoria
   });
 
   it.each(BAD_SHAPES)('hasUltraRareAbility returns false (no throw) when ultraRareTraits is %s', (_label, value) => {
-    expect(hasUltraRareAbility({ ultraRareTraits: value }, 'stress_immunity')).toBe(false);
+    expect(hasUltraRareAbility({ ultraRareTraits: value }, 'training_fatigue_immunity')).toBe(false);
   });
 
   it('handles a whole horse with no ultraRareTraits property at all', () => {
-    expect(() => applyUltraRareStressEffects({ id: 99 }, 10)).not.toThrow();
+    expect(() => applyUltraRareCompetitionEffects({ id: 99 }, 100)).not.toThrow();
   });
 });
 

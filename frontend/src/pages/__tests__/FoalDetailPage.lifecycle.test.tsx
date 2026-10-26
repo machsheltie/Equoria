@@ -19,7 +19,7 @@
  * The REAL wire shapes mirrored below are taken verbatim from the backend
  * controllers (backend/modules/breeding/controllers/foalController.mjs):
  *   - GET  /:foalId             → { success, data: { id, name, sex, dateOfBirth, ageInDays, sireId, damId, ... } }
- *   - GET  /:foalId/development  → { success, data: { foal, development: { currentDay, bondingLevel, stressLevel } } }
+ *   - GET  /:foalId/development  → { success, data: { foal, development: { currentDay, bondingLevel } } }
  *   - GET  /:foalId/activities   → { success, data: [ { id, activity, ... } ] }
  */
 
@@ -86,7 +86,6 @@ function useDefaultHandlers(dateOfBirth: string = adultDob) {
           development: {
             currentDay: 3,
             bondingLevel: 50,
-            stressLevel: 10,
           },
         },
       })
@@ -169,7 +168,7 @@ describe('FoalDetailPage — lifecycle UI (Equoria-bi6i)', () => {
 
   // Equoria-mwjst. OLD CONTRACT (vulnerable): an "Advance Day" button sent
   // PUT /develop { currentDay: day + 1 }, and the server stored whatever day,
-  // bond and stress the client chose. CORRECTED CONTRACT (owner ruling
+  // bond the client chose. CORRECTED CONTRACT (owner ruling
   // 2026-10-05: no advance day, foals wait out the full week): the page offers
   // no way to set or advance the development day, and never calls /develop.
   it('offers no Advance Day control and never calls the develop boundary', async () => {

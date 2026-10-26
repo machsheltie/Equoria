@@ -31,7 +31,6 @@ const flagsEnvelope = (flags: unknown[], canReceiveMoreFlags = false) => ({
     horseName: 'TestFixture-Flagged',
     ageInYears: 2,
     currentBondScore: 60,
-    currentStressLevel: 15,
     flagCount: flags.length,
     flags,
     maxFlags: 5,

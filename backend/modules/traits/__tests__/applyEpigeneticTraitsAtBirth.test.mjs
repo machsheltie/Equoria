@@ -10,7 +10,7 @@ import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTrai
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-const baseMare = () => ({ id: 1, stressLevel: 30 });
+const baseMare = () => ({ id: 1 });
 const emptyLineage = () => [];
 
 const lineageWithDiscipline = (discipline, count = 3) =>
@@ -27,7 +27,6 @@ describe('applyEpigeneticTraitsAtBirth — return shape', () => {
       mare: baseMare(),
       lineage: emptyLineage(),
       feedQuality: 50,
-      stressLevel: 30,
     });
     expect(Array.isArray(result.positive)).toBe(true);
     expect(Array.isArray(result.negative)).toBe(true);
@@ -38,7 +37,6 @@ describe('applyEpigeneticTraitsAtBirth — return shape', () => {
       mare: baseMare(),
       lineage: emptyLineage(),
       feedQuality: 50,
-      stressLevel: 30,
     });
     const unique = new Set(result.positive);
     expect(unique.size).toBe(result.positive.length);
@@ -49,7 +47,6 @@ describe('applyEpigeneticTraitsAtBirth — return shape', () => {
       mare: baseMare(),
       lineage: lineageWithInbreeding(999, 5),
       feedQuality: 10,
-      stressLevel: 90,
     });
     const unique = new Set(result.negative);
     expect(unique.size).toBe(result.negative.length);
@@ -57,17 +54,16 @@ describe('applyEpigeneticTraitsAtBirth — return shape', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Stress + feed conditions
+// Feed conditions
 // ---------------------------------------------------------------------------
-describe('applyEpigeneticTraitsAtBirth — stress/feed conditions', () => {
-  it('low stress + premium feed runs many seeds and usually grants positive traits', () => {
+describe('applyEpigeneticTraitsAtBirth — feed conditions', () => {
+  it('premium feed runs many seeds and usually grants positive traits', () => {
     let foundPositive = false;
     for (let i = 0; i < 50; i++) {
       const result = applyEpigeneticTraitsAtBirth({
         mare: baseMare(),
         lineage: emptyLineage(),
         feedQuality: 90,
-        stressLevel: 10,
       });
       if (result.positive.length > 0) {
         foundPositive = true;
@@ -77,33 +73,15 @@ describe('applyEpigeneticTraitsAtBirth — stress/feed conditions', () => {
     expect(foundPositive).toBe(true);
   });
 
-  it('positive traits from low stress include resilient or peopleTrusting', () => {
+  it('positive traits from premium feed include resilient or peopleTrusting', () => {
     let found = false;
     for (let i = 0; i < 100; i++) {
       const result = applyEpigeneticTraitsAtBirth({
         mare: baseMare(),
         lineage: emptyLineage(),
         feedQuality: 100,
-        stressLevel: 0,
       });
       if (result.positive.includes('resilient') || result.positive.includes('peopleTrusting')) {
-        found = true;
-        break;
-      }
-    }
-    expect(found).toBe(true);
-  });
-
-  it('high stress (>=80) can produce nervous trait in negative array', () => {
-    let found = false;
-    for (let i = 0; i < 100; i++) {
-      const result = applyEpigeneticTraitsAtBirth({
-        mare: baseMare(),
-        lineage: emptyLineage(),
-        feedQuality: 50,
-        stressLevel: 90,
-      });
-      if (result.negative.includes('nervous')) {
         found = true;
         break;
       }
@@ -118,7 +96,6 @@ describe('applyEpigeneticTraitsAtBirth — stress/feed conditions', () => {
         mare: baseMare(),
         lineage: emptyLineage(),
         feedQuality: 10,
-        stressLevel: 20,
       });
       if (result.negative.includes('lowImmunity')) {
         found = true;
@@ -126,16 +103,6 @@ describe('applyEpigeneticTraitsAtBirth — stress/feed conditions', () => {
       }
     }
     expect(found).toBe(true);
-  });
-
-  it('uses mare.stressLevel when stressLevel param is omitted', () => {
-    const mare = { id: 1, stressLevel: 5 };
-    const result = applyEpigeneticTraitsAtBirth({
-      mare,
-      lineage: emptyLineage(),
-      feedQuality: 100,
-    });
-    expect(Array.isArray(result.positive)).toBe(true);
   });
 });
 
@@ -150,7 +117,6 @@ describe('applyEpigeneticTraitsAtBirth — inbreeding', () => {
         mare: baseMare(),
         lineage: lineageWithInbreeding(42, 4), // high severity (count >= 4)
         feedQuality: 50,
-        stressLevel: 30,
       });
       if (result.negative.includes('fragile') || result.negative.includes('reactive')) {
         found = true;
@@ -168,7 +134,6 @@ describe('applyEpigeneticTraitsAtBirth — inbreeding', () => {
         mare: baseMare(),
         lineage: emptyLineage(),
         feedQuality: 60,
-        stressLevel: 20,
       });
       if (result.negative.includes('fragile') || result.negative.includes('reactive')) {
         inbreedingTraitFound = true;
@@ -191,7 +156,6 @@ describe('applyEpigeneticTraitsAtBirth — discipline specialization', () => {
         mare: baseMare(),
         lineage: lineageWithDiscipline('Dressage', 4),
         feedQuality: 50,
-        stressLevel: 20,
       });
       const hasAffinity = result.positive.some(t => t.includes('disciplineAffinity'));
       if (hasAffinity) {
@@ -209,7 +173,6 @@ describe('applyEpigeneticTraitsAtBirth — discipline specialization', () => {
         mare: baseMare(),
         lineage: lineageWithDiscipline('Racing', 6),
         feedQuality: 50,
-        stressLevel: 20,
       });
       if (result.positive.includes('legacyTalent')) {
         found = true;
@@ -226,7 +189,6 @@ describe('applyEpigeneticTraitsAtBirth — discipline specialization', () => {
         mare: baseMare(),
         lineage: lineageWithDiscipline('Jumping', 2),
         feedQuality: 50,
-        stressLevel: 20,
       });
       if (result.positive.some(t => t.includes('disciplineAffinity'))) {
         affinityFound = true;
@@ -242,7 +204,7 @@ describe('applyEpigeneticTraitsAtBirth — discipline specialization', () => {
 // ---------------------------------------------------------------------------
 describe('applyEpigeneticTraitsAtBirth — error handling', () => {
   it('throws when mare is not provided', () => {
-    expect(() => applyEpigeneticTraitsAtBirth({ mare: null, lineage: [], feedQuality: 50, stressLevel: 30 })).toThrow();
+    expect(() => applyEpigeneticTraitsAtBirth({ mare: null, lineage: [], feedQuality: 50 })).toThrow();
   });
 
   it('handles null lineage gracefully (treated as empty)', () => {
@@ -250,7 +212,6 @@ describe('applyEpigeneticTraitsAtBirth — error handling', () => {
       mare: baseMare(),
       lineage: null,
       feedQuality: 50,
-      stressLevel: 30,
     });
     expect(Array.isArray(result.positive)).toBe(true);
     expect(Array.isArray(result.negative)).toBe(true);
@@ -277,7 +238,6 @@ describe('applyEpigeneticTraitsAtBirth — inbreeding severity branches', () => 
         mare: baseMare(),
         lineage: lineageWithInbreeding(55, 3),
         feedQuality: 50,
-        stressLevel: 30,
       });
       if (result.negative.includes('fragile') || result.negative.includes('reactive')) {
         found = true;
@@ -295,7 +255,6 @@ describe('applyEpigeneticTraitsAtBirth — inbreeding severity branches', () => 
         mare: baseMare(),
         lineage: lineageWithInbreeding(66, 2),
         feedQuality: 50,
-        stressLevel: 30,
       });
       if (
         result.negative.includes('fragile') ||
@@ -316,7 +275,6 @@ describe('applyEpigeneticTraitsAtBirth — inbreeding severity branches', () => 
       mare: baseMare(),
       lineage: lineageWithNull,
       feedQuality: 50,
-      stressLevel: 30,
     });
     expect(Array.isArray(result.positive)).toBe(true);
     expect(Array.isArray(result.negative)).toBe(true);
@@ -338,7 +296,6 @@ describe('applyEpigeneticTraitsAtBirth — analyzeDisciplineSpecialization branc
         mare: baseMare(),
         lineage,
         feedQuality: 50,
-        stressLevel: 30,
       });
       if (result.positive.some(t => t.includes('disciplineAffinity') || t === 'legacyTalent')) {
         found = true;
@@ -359,7 +316,6 @@ describe('applyEpigeneticTraitsAtBirth — analyzeDisciplineSpecialization branc
         mare: baseMare(),
         lineage,
         feedQuality: 50,
-        stressLevel: 30,
       });
       if (result.positive.some(t => t.includes('disciplineAffinity'))) {
         found = true;
@@ -376,7 +332,6 @@ describe('applyEpigeneticTraitsAtBirth — analyzeDisciplineSpecialization branc
       mare: baseMare(),
       lineage,
       feedQuality: 50,
-      stressLevel: 30,
     });
     expect(Array.isArray(result.positive)).toBe(true);
   });
@@ -393,7 +348,6 @@ describe('applyEpigeneticTraitsAtBirth — getHighestScoringDiscipline branches'
       mare: baseMare(),
       lineage,
       feedQuality: 50,
-      stressLevel: 30,
     });
     // Only 1 ancestor → count < 3 → no specialization
     expect(result.positive.some(t => t.includes('disciplineAffinity'))).toBe(false);
@@ -414,7 +368,6 @@ describe('applyEpigeneticTraitsAtBirth — getHighestScoringDiscipline branches'
         mare: baseMare(),
         lineage,
         feedQuality: 50,
-        stressLevel: 30,
       });
       if (result.positive.some(t => t.includes('disciplineAffinityDressage'))) {
         found = true;
@@ -422,24 +375,6 @@ describe('applyEpigeneticTraitsAtBirth — getHighestScoringDiscipline branches'
       }
     }
     expect(found).toBe(true);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// fallback branches
-// ---------------------------------------------------------------------------
-describe('applyEpigeneticTraitsAtBirth — fallback branches', () => {
-  it('mare without stressLevel property exercises mare.stressLevel||50 right-branch (defaults to 50)', () => {
-    // stressLevel param omitted → stressLevel!==undefined is false → use mare.stressLevel||50
-    // mare has no stressLevel key → undefined||50 = 50 (right-branch of || covered)
-    const mare = { id: 1 };
-    const result = applyEpigeneticTraitsAtBirth({
-      mare,
-      lineage: emptyLineage(),
-      feedQuality: 50,
-    });
-    expect(Array.isArray(result.positive)).toBe(true);
-    expect(Array.isArray(result.negative)).toBe(true);
   });
 });
 
@@ -479,24 +414,15 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
     return false;
   }
 
-  it('assigns peopleTrusting trait with low stress and premium feed', () => {
-    const mare = { stressLevel: 20 };
-    expect(
-      traitAppears(
-        seed => applyEpigeneticTraitsAtBirth({ mare, feedQuality: 80, stressLevel: 20, seed }),
-        'peopleTrusting',
-      ),
-    ).toBe(true);
-  });
-
-  it('does not assign positive traits with high stress (deterministic)', () => {
-    const result = applyEpigeneticTraitsAtBirth({ mare: { stressLevel: 50 }, feedQuality: 85, stressLevel: 50 });
-    expect(result.positive).not.toContain('resilient');
-    expect(result.positive).not.toContain('peopleTrusting');
+  it('assigns peopleTrusting trait with premium feed', () => {
+    const mare = {};
+    expect(traitAppears(seed => applyEpigeneticTraitsAtBirth({ mare, feedQuality: 80, seed }), 'peopleTrusting')).toBe(
+      true,
+    );
   });
 
   it('does not assign positive traits with poor feed quality (deterministic)', () => {
-    const result = applyEpigeneticTraitsAtBirth({ mare: { stressLevel: 15 }, feedQuality: 60, stressLevel: 15 });
+    const result = applyEpigeneticTraitsAtBirth({ mare: {}, feedQuality: 60 });
     expect(result.positive).not.toContain('resilient');
     expect(result.positive).not.toContain('peopleTrusting');
   });
@@ -510,8 +436,7 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
     ];
     expect(
       traitAppears(
-        seed =>
-          applyEpigeneticTraitsAtBirth({ mare: { stressLevel: 50 }, lineage, feedQuality: 50, stressLevel: 50, seed }),
+        seed => applyEpigeneticTraitsAtBirth({ mare: {}, lineage, feedQuality: 50, seed }),
         'disciplineAffinityRacing',
       ),
     ).toBe(true);
@@ -525,10 +450,9 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
       { id: 4, discipline: 'Racing' },
     ];
     const result = applyEpigeneticTraitsAtBirth({
-      mare: { stressLevel: 50 },
+      mare: {},
       lineage,
       feedQuality: 50,
-      stressLevel: 50,
     });
     expect(result.positive.filter(t => t.startsWith('disciplineAffinity'))).toHaveLength(0);
     expect(result.positive).not.toContain('legacyTalent');
@@ -539,10 +463,9 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
       traitAppears(
         seed =>
           applyEpigeneticTraitsAtBirth({
-            mare: { stressLevel: 50 },
+            mare: {},
             lineage: [],
             feedQuality: 25,
-            stressLevel: 50,
             seed,
           }),
         'lowImmunity',
@@ -558,10 +481,9 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
       { id: 1, name: 'Common Ancestor' },
     ];
     const result = applyEpigeneticTraitsAtBirth({
-      mare: { stressLevel: 50 },
+      mare: {},
       lineage,
       feedQuality: 25,
-      stressLevel: 50,
     });
     expect(result.negative.filter(t => t === 'lowImmunity').length).toBeLessThanOrEqual(1);
   });

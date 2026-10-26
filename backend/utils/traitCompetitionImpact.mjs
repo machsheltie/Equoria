@@ -17,7 +17,6 @@ const TRAIT_COMPETITION_EFFECTS = {
     type: 'positive',
     general: {
       scoreModifier: 0.03, // +3% to final score
-      stressResistance: 0.15, // 15% less stress impact
       description: 'Maintains performance under pressure',
     },
     disciplines: {
@@ -63,7 +62,7 @@ const TRAIT_COMPETITION_EFFECTS = {
     general: {
       scoreModifier: 0.025, // +2.5% to final score
       focusBonus: 0.2, // 20% better focus under pressure
-      description: 'Maintains composure in stressful situations',
+      description: 'Maintains composure under pressure',
     },
     disciplines: {
       Dressage: { scoreModifier: 0.05, description: 'Perfect composure for precise movements' },
@@ -144,7 +143,6 @@ const TRAIT_COMPETITION_EFFECTS = {
     type: 'positive',
     general: {
       scoreModifier: 0.025, // +2.5% to final score
-      crowdComfort: 0.15, // 15% less stress from crowds
       description: 'Thrives in social environments and enjoys interaction',
     },
     disciplines: {
@@ -163,8 +161,7 @@ const TRAIT_COMPETITION_EFFECTS = {
     type: 'negative',
     general: {
       scoreModifier: -0.04, // -4% to final score
-      stressPenalty: 0.25, // 25% more affected by stress
-      description: 'Easily startled and stressed in competitive environments',
+      description: 'Easily startled in competitive environments',
     },
     disciplines: {
       'Show Jumping': { scoreModifier: -0.05, description: 'Hesitant at obstacles, may refuse' },
@@ -238,7 +235,6 @@ const TRAIT_COMPETITION_EFFECTS = {
     type: 'negative',
     general: {
       scoreModifier: -0.035, // -3.5% to final score
-      crowdStress: 0.2, // 20% more stress from crowds
       description: 'Struggles in social environments and prefers isolation',
     },
     disciplines: {
@@ -249,7 +245,7 @@ const TRAIT_COMPETITION_EFFECTS = {
       },
       'Western Pleasure': {
         scoreModifier: -0.04,
-        description: 'Stressed in group competition settings',
+        description: 'Uneasy in group competition settings',
       },
     },
   },

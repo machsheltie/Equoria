@@ -270,8 +270,7 @@ describe('Bad health blocks conformation show entry', () => {
  * Owner rulings 2026-10-23: conformation entry uses the SAME health bar as
  * breeding, training and ridden shows — Fair or better (Equoria-u0jop; the
  * earlier same-day "only critical blocks" ruling and the old Excellent/Good
- * requirement are both gone) — and the non-blocking high-stress warning on
- * entry is removed (Equoria-0d4wa follow-up).
+ * requirement are both gone).
  */
 describe('Conformation entry: Fair or better (owner ruling 2026-10-23)', () => {
   /** An entry-ready conformation horse: a groom on staff, assigned five days ago. */
@@ -317,16 +316,6 @@ describe('Conformation entry: Fair or better (owner ruling 2026-10-23)', () => {
 
     expect({ status: res.status, errors: res.body.errors }).toEqual({ status: 201, errors: undefined });
     expect(await prisma.showEntry.count({ where: { showId: show.id, horseId: entrant.horse.id } })).toBe(1);
-  });
-
-  it('gives no high-stress warning on entry', async () => {
-    const show = await conformationShow();
-    const entrant = await conformationHorse({ stressLevel: 95 });
-
-    const res = await enterConformation(show, entrant);
-
-    expect(res.status).toBe(201);
-    expect(res.body.data.warnings.filter(w => /stress/i.test(w))).toEqual([]);
   });
 
   it.each(['Critical', 'Poor'])(

@@ -93,14 +93,13 @@ export function buildTraitTimeline(traitHistory, interactions) {
 
   // Add significant interactions to timeline
   interactions.forEach(interaction => {
-    if (Math.abs(interaction.bondingChange) > 2 || Math.abs(interaction.stressChange) > 2) {
+    if (Math.abs(interaction.bondingChange) > 2) {
       timeline.push({
         date: interaction.createdAt,
         type: 'significant_interaction',
         event: `${labelWords(interaction.interactionType)}: ${labelWords(interaction.taskType)}`,
         groom: interaction.groom?.name,
         bondingChange: interaction.bondingChange,
-        stressChange: interaction.stressChange,
         quality: interaction.quality,
       });
     }
@@ -173,9 +172,7 @@ export function mapEnvironmentalEvents(interactions) {
         environmentalFactor = 'Social bonding activity';
         break;
       default:
-        if (interaction.stressChange > 2) {
-          environmentalFactor = 'Stress-inducing activity';
-        } else if (interaction.bondingChange > 2) {
+        if (interaction.bondingChange > 2) {
           environmentalFactor = 'Bonding-enhancing activity';
         }
     }
@@ -187,7 +184,6 @@ export function mapEnvironmentalEvents(interactions) {
         taskType: interaction.taskType,
         impact: {
           bonding: interaction.bondingChange,
-          stress: interaction.stressChange,
           quality: interaction.quality,
         },
       });
@@ -206,11 +202,9 @@ export function generateStableOverview(horses) {
     ageDistribution: {},
     traitCounts: {},
     averageBondScore: 0,
-    averageStressLevel: 0,
   };
 
   let totalBond = 0;
-  let totalStress = 0;
 
   horses.forEach(horse => {
     // Equoria-l06yb (Option 1, 2026-05-20): elapsed-time age-distribution
@@ -231,7 +225,6 @@ export function generateStableOverview(horses) {
     overview.ageDistribution[ageCategory] = (overview.ageDistribution[ageCategory] || 0) + 1;
 
     totalBond += horse.bondScore;
-    totalStress += horse.stressLevel;
 
     asFlagArray(horse.epigeneticFlags).forEach(trait => {
       overview.traitCounts[trait] = (overview.traitCounts[trait] || 0) + 1;
@@ -239,7 +232,6 @@ export function generateStableOverview(horses) {
   });
 
   overview.averageBondScore = totalBond / horses.length;
-  overview.averageStressLevel = totalStress / horses.length;
 
   return overview;
 }
@@ -357,13 +349,11 @@ export async function generateHorseComparison(horses) {
       age: getHorseAgeDays(horse.dateOfBirth),
       traitCount: asFlagArray(horse.epigeneticFlags).length,
       bondScore: horse.bondScore,
-      stressLevel: horse.stressLevel,
       traits: asFlagArray(horse.epigeneticFlags),
     })),
     averages: {
       traitCount: 0,
       bondScore: 0,
-      stressLevel: 0,
     },
   };
 
@@ -372,8 +362,6 @@ export async function generateHorseComparison(horses) {
     comparison.horses.reduce((sum, h) => sum + h.traitCount, 0) / horses.length;
   comparison.averages.bondScore =
     comparison.horses.reduce((sum, h) => sum + h.bondScore, 0) / horses.length;
-  comparison.averages.stressLevel =
-    comparison.horses.reduce((sum, h) => sum + h.stressLevel, 0) / horses.length;
 
   return comparison;
 }
@@ -456,7 +444,6 @@ export function generateHorseRankings(horses) {
       (a, b) => asFlagArray(b.epigeneticFlags).length - asFlagArray(a.epigeneticFlags).length,
     ),
     byBondScore: [...horses].sort((a, b) => b.bondScore - a.bondScore),
-    byStressLevel: [...horses].sort((a, b) => a.stressLevel - b.stressLevel), // Lower stress is better
   };
 
   return {
@@ -469,11 +456,6 @@ export function generateHorseRankings(horses) {
       rank: index + 1,
       horse: { id: horse.id, name: horse.name },
       value: horse.bondScore,
-    })),
-    byStressLevel: rankings.byStressLevel.map((horse, index) => ({
-      rank: index + 1,
-      horse: { id: horse.id, name: horse.name },
-      value: horse.stressLevel,
     })),
   };
 }
@@ -498,11 +480,9 @@ export function generateComparisonInsights(comparison, similarities, differences
 
   const avgTraitCount = comparison.averages.traitCount;
   const avgBondScore = comparison.averages.bondScore;
-  const avgStressLevel = comparison.averages.stressLevel;
 
   insights.push(`Average traits per horse: ${avgTraitCount.toFixed(1)}`);
   insights.push(`Average bond score: ${avgBondScore.toFixed(1)}`);
-  insights.push(`Average stress level: ${avgStressLevel.toFixed(1)}`);
 
   return insights;
 }
@@ -603,7 +583,6 @@ export async function generateSummaryReport(horse) {
     },
     scores: {
       bondScore: horse.bondScore,
-      stressLevel: horse.stressLevel,
     },
     summary: `${horse.name} has ${asFlagArray(horse.epigeneticFlags).length} epigenetic traits and shows ${horse.bondScore > 30 ? 'excellent' : horse.bondScore > 20 ? 'good' : 'developing'} bonding.`,
   };

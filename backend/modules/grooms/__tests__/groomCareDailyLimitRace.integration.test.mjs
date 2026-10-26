@@ -2,7 +2,7 @@
  * Equoria-9a5ny + Equoria-mc22a: the two groom-care doors
  * (POST /api/v1/grooms/interact and POST /api/v1/grooms/enhanced/interact)
  * hold the one-interaction-per-horse-per-game-day limit under concurrency, and
- * the enhanced door commits its interaction row and the horse's bond/stress as
+ * the enhanced door commits its interaction row and the horse's bond as
  * one transaction.
  *
  * THE DEFECTS
@@ -10,7 +10,7 @@
  *    write. Two requests in flight for one horse both read "no interaction
  *    today", both wrote, and the horse was groomed twice in one day.
  *  - mc22a: the enhanced door wrote GroomInteraction and then Horse
- *    bondScore/stressLevel as two independent autocommit statements, so the
+ *    bondScore as two independent autocommit statements, so the
  *    interaction row was committed (spending the day's interaction) before the
  *    bond change existed, and a failure between them kept it that way.
  *
@@ -95,7 +95,6 @@ describe('groom-care daily limit and atomicity under concurrency (Equoria-9a5ny,
         dateOfBirth: dob,
         age: 5,
         bondScore: 50,
-        stressLevel: 10,
         daysGroomedInARow: 0,
         temperament: 'Calm',
         userId: user.id,
@@ -206,7 +205,6 @@ describe('groom-care daily limit and atomicity under concurrency (Equoria-9a5ny,
     expect(res.status).toBe(201);
     const after = await prisma.horse.findUnique({ where: { id: horse.id } });
     expect(after.bondScore).toBe(res.body.data.effects.newBondScore);
-    expect(after.stressLevel).toBe(res.body.data.effects.newStressLevel);
     expect(after.bondScore).not.toBe(before.bondScore);
     expect(await prisma.groomInteraction.count({ where: { foalId: horse.id } })).toBe(1);
   }, 120000);

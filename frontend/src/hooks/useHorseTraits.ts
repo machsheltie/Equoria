@@ -58,7 +58,6 @@ export interface RawHorseTraits {
   horseId?: number;
   horseName?: string;
   bondScore?: number;
-  stressLevel?: number;
   age?: number;
   traits?: {
     positive?: RawEnhancedTrait[];
@@ -77,7 +76,7 @@ export interface RawHorseTraits {
 export interface RawDiscoveryStatus {
   horseId?: number;
   horseName?: string;
-  currentStats?: { bondScore?: number; stressLevel?: number; age?: number };
+  currentStats?: { bondScore?: number; age?: number };
   traitCounts?: { visible?: number; hidden?: number };
   discoveryConditions?: {
     met?: Array<{ trait?: string; reason?: string } | string>;

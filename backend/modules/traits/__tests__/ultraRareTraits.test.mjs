@@ -45,11 +45,6 @@ describe('ULTRA_RARE_TRAITS', () => {
     }
   });
 
-  it('phoenix-born has stressDecayMultiplier in mechanicalEffects', () => {
-    expect(ULTRA_RARE_TRAITS['phoenix-born'].mechanicalEffects.stressDecayMultiplier).toBeDefined();
-    expect(ULTRA_RARE_TRAITS['phoenix-born'].mechanicalEffects.stressDecayMultiplier).toBeGreaterThan(1);
-  });
-
   // Owner ruling 2026-10-22 (Equoria-0d4wa): there is no burnout (old contract:
   // iron-willed carried burnoutImmunity).
   it('iron-willed carries no burnout immunity', () => {
@@ -76,10 +71,6 @@ describe('EXOTIC_TRAITS', () => {
 
   it('includes dreamtwin', () => {
     expect(EXOTIC_TRAITS['dreamtwin']).toBeDefined();
-  });
-
-  it('ghostwalker has stressImmunity', () => {
-    expect(EXOTIC_TRAITS['ghostwalker'].mechanicalEffects.stressImmunity).toBe(true);
   });
 
   it('fey-kissed has allStatBonus', () => {

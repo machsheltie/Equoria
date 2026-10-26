@@ -131,7 +131,7 @@ describe('calculateHandlerBonus', () => {
       personality: 'gentle',
       experience: 0,
     };
-    const mockHorse = { id: horse.id, bondScore: 20, stressLevel: 3 };
+    const mockHorse = { id: horse.id, bondScore: 20 };
     const result = calculateHandlerBonus(mockGroom, mockHorse, 'Dressage', null);
     expect(result.handlerBonus).toBe(0);
     expect(result.isConformationShow).toBe(false);
@@ -146,7 +146,7 @@ describe('calculateHandlerBonus', () => {
       personality: 'gentle',
       experience: 0,
     };
-    const mockHorse = { id: horse.id, bondScore: 20, stressLevel: 3 };
+    const mockHorse = { id: horse.id, bondScore: 20 };
     const result = calculateHandlerBonus(mockGroom, mockHorse, 'Foals/Youngstock', {
       bondScore: 20,
     });

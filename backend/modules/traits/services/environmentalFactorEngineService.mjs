@@ -6,7 +6,7 @@
  *   date + location (+ optional weather override)
  *     -> buildEnvironmentalSnapshot        { date, location, weather, seasonal }
  *     -> assessHorseEnvironment(snapshot, horse)
- *          comfort zone once, triggers once; impact and stress consume them
+ *          comfort zone once, triggers once; impact consumes them
  *   getEnvironmentalHistory                             day-by-day projections
  *
  * Weather, seasonal factors and the comfort zone are pure projections that the
@@ -27,14 +27,12 @@ import {
   DEFAULT_TRANSITION_GROWTH_EFFECT,
   DEFAULT_WIND_SPEED,
   IMPACT_TRAIT_FACTORS,
-  RECOVERY_TRAIT_FACTORS,
   REGION_BASE_TEMPERATURE,
   REGION_HUMIDITY,
   REGION_PRECIPITATION,
   REGION_WIND_SPEED,
   SEASON_FACTORS,
   SEASON_STARTS,
-  STRESS_TRAIT_FACTORS,
   TRANSITION_BOUNDARIES,
   TRANSITION_DAYS,
   TRANSITION_GROWTH_EFFECT,
@@ -62,10 +60,10 @@ export function buildEnvironmentalSnapshot(date, location, { weather } = {}) {
 
 /**
  * Assess one horse against a snapshot: comfort zone, trait-expression triggers,
- * development/performance impact and stress, each computed once.
+ * and development/performance impact, each computed once.
  * @param {ReturnType<typeof buildEnvironmentalSnapshot>} snapshot
  * @param {{traits: string[], age?: number, health?: number}} horse
- * @returns {{comfortZone: object, triggers: object, impact: object, stress: object}}
+ * @returns {{comfortZone: object, triggers: object, impact: object}}
  */
 export function assessHorseEnvironment(snapshot, horse) {
   const comfortZone = calculateComfortZone(horse);
@@ -74,7 +72,6 @@ export function assessHorseEnvironment(snapshot, horse) {
     comfortZone,
     triggers,
     impact: projectImpact(snapshot, horse, comfortZone, triggers),
-    stress: projectStress(snapshot, horse, comfortZone, triggers),
   };
 }
 
@@ -124,14 +121,13 @@ export function getSeasonalFactors(date) {
     growthModifier: Math.round(growthModifier * 100) / 100,
     healthModifier: Math.round(factors.healthModifier * 100) / 100,
     trainingEffectiveness: Math.round(trainingEffectiveness * 100) / 100,
-    stressLevel: Math.round(factors.stressLevel),
     description: factors.description,
     dayOfYear,
     transitionEffect: transitionEffect.isTransition,
   };
 }
 
-/** A horse's temperature/humidity comfort zone and stress thresholds from its traits. Pure. */
+/** A horse's temperature/humidity comfort zone from its traits. Pure. */
 export function calculateComfortZone(horse) {
   const zone = { ...COMFORT_BASE };
   for (const [trait, adjustment] of COMFORT_TRAIT_ADJUSTMENTS) {
@@ -159,11 +155,6 @@ export function calculateComfortZone(horse) {
       humidity: humidityOptimal,
       windSpeed: 8,
       conditions: 'sunny',
-    },
-    stressThresholds: {
-      temperature: { low: tempMin - 5, high: tempMax + 5 },
-      humidity: { low: humidityMin - 10, high: humidityMax + 15 },
-      windSpeed: 25,
     },
   };
 }
@@ -204,10 +195,10 @@ function projectTriggers({ weather, seasonal }, horse, comfortZone) {
 
   // Temperature triggers
   if (weather.temperature > comfortZone.temperatureRange.max) {
-    triggers.push('heat_stress');
+    triggers.push('extremeHeat');
     intensity += Math.min(30, (weather.temperature - comfortZone.temperatureRange.max) * 2);
   } else if (weather.temperature < comfortZone.temperatureRange.min) {
-    triggers.push('cold_stress');
+    triggers.push('extremeCold');
     intensity += Math.min(25, (comfortZone.temperatureRange.min - weather.temperature) * 1.5);
   }
 
@@ -222,16 +213,11 @@ function projectTriggers({ weather, seasonal }, horse, comfortZone) {
   }
 
   if (weather.conditions === 'stormy') {
-    triggers.push('storm_stress');
+    triggers.push('storm');
     intensity += 25;
   } else if (weather.conditions === 'rainy') {
     triggers.push('wet_conditions');
     intensity += 10;
-  }
-
-  if (seasonal.stressLevel > 30) {
-    triggers.push('seasonal_stress');
-    intensity += seasonal.stressLevel - 30;
   }
 
   intensity *= traitFactorProduct(TRIGGER_TRAIT_FACTORS, horse.traits, { triggers });
@@ -274,55 +260,6 @@ function projectImpact({ weather, seasonal }, horse, comfortZone, triggers) {
     weather,
     seasonalFactors: seasonal,
     triggers: triggers.triggerTypes,
-  };
-}
-
-function projectStress({ weather }, horse, comfortZone, triggers) {
-  let stressLevel = 0;
-  const stressFactors = [];
-
-  if (weather.temperature > comfortZone.stressThresholds.temperature.high) {
-    stressLevel += 30;
-    stressFactors.push('Extreme heat exposure');
-  } else if (weather.temperature < comfortZone.stressThresholds.temperature.low) {
-    stressLevel += 25;
-    stressFactors.push('Extreme cold exposure');
-  }
-  if (weather.humidity > comfortZone.stressThresholds.humidity.high) {
-    stressLevel += 20;
-    stressFactors.push('High humidity stress');
-  }
-  if (weather.windSpeed > comfortZone.stressThresholds.windSpeed) {
-    stressLevel += 15;
-    stressFactors.push('Strong wind stress');
-  }
-  if (weather.conditions === 'stormy') {
-    stressLevel += 25;
-    stressFactors.push('Storm-related stress');
-  }
-
-  // The ROUNDED trigger intensity, as returned by the triggers projection
-  stressLevel += triggers.intensity * 0.5;
-  stressLevel *= traitFactorProduct(STRESS_TRAIT_FACTORS, horse.traits);
-
-  let severity;
-  if (stressLevel >= 80) {
-    severity = 'critical';
-  } else if (stressLevel >= 60) {
-    severity = 'high';
-  } else if (stressLevel >= 30) {
-    severity = 'moderate';
-  } else {
-    severity = 'low';
-  }
-
-  return {
-    stressLevel: Math.round(Math.min(100, stressLevel)),
-    stressFactors,
-    severity,
-    timeToRecovery: calculateRecoveryTime(stressLevel, horse),
-    triggers: triggers.triggerTypes,
-    weather,
   };
 }
 
@@ -455,23 +392,6 @@ function calculateStatModifiers(overallImpact, seasonalFactors) {
   };
 }
 
-function calculateRecoveryTime(stressLevel, horse) {
-  // Base: 0.5 hours per stress point, scaled by traits, age and health. Each
-  // factor multiplies the running value in turn, exactly as before S3 (a product
-  // of factors could differ in the last bit before the whole-hour rounding).
-  let baseRecovery = stressLevel * 0.5;
-  for (const [trait, factor] of RECOVERY_TRAIT_FACTORS) {
-    if (horse.traits.includes(trait)) {
-      baseRecovery *= factor;
-    }
-  }
-  const ageFactor = horse.age > 15 ? 1.2 : horse.age < 5 ? 0.8 : 1.0;
-  baseRecovery *= ageFactor;
-  const healthFactor = horse.health > 80 ? 0.9 : horse.health < 60 ? 1.2 : 1.0;
-  baseRecovery *= healthFactor;
-  return Math.round(Math.max(1, baseRecovery));
-}
-
 function calculateEnvironmentalQuality(weather, seasonalFactors) {
   let quality = 50;
 
@@ -490,7 +410,6 @@ function calculateEnvironmentalQuality(weather, seasonalFactors) {
 
   quality += CONDITION_QUALITY[weather.conditions] || 0;
   quality += (seasonalFactors.growthModifier - 1) * 20;
-  quality -= seasonalFactors.stressLevel * 0.5;
 
   return Math.round(Math.max(0, Math.min(100, quality)));
 }

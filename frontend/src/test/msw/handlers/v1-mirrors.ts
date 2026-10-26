@@ -255,7 +255,6 @@ export const v1MirrorHandlers = [
         horseName: 'TestFixture-Horse',
         ageInYears: 4,
         currentBondScore: 50,
-        currentStressLevel: 10,
         flagCount: 0,
         flags: [],
         maxFlags: 5,

@@ -31,7 +31,7 @@ describe('Dynamic Compatibility Scoring', () => {
   let testHorses = [];
 
   beforeAll(async () => {
-    // Create test horses with different temperaments and stress levels
+    // Create test horses with different temperaments
     const now = new Date();
     const oneMonthAgo = gameCalendarDate(now, -30);
 
@@ -98,7 +98,7 @@ describe('Dynamic Compatibility Scoring', () => {
         ]);
 
         testHorses = await Promise.all([
-          // High-stress fearful horse
+          // Fearful horse
           tx.horse.create({
             data: {
               ...fixtureColor(),
@@ -107,7 +107,6 @@ describe('Dynamic Compatibility Scoring', () => {
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 8,
-              stressLevel: 9,
               epigeneticFlags: ['fearful', 'reactive', 'insecure'],
             },
           }),
@@ -120,7 +119,6 @@ describe('Dynamic Compatibility Scoring', () => {
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 38,
-              stressLevel: 2,
               epigeneticFlags: ['brave', 'confident', 'social'],
             },
           }),
@@ -133,7 +131,6 @@ describe('Dynamic Compatibility Scoring', () => {
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 25,
-              stressLevel: 5,
               epigeneticFlags: ['curious', 'calm'],
             },
           }),
@@ -165,12 +162,11 @@ describe('Dynamic Compatibility Scoring', () => {
   describe('calculateDynamicCompatibility', () => {
     test('should calculate high compatibility for calm groom with fearful horse', async () => {
       const [calmGroom] = testGrooms; // Expert calm groom
-      const [fearfulHorse] = testHorses; // High-stress fearful horse
+      const [fearfulHorse] = testHorses; // Fearful horse
 
       const context = {
         taskType: 'trust_building',
         timeOfDay: 'morning',
-        horseCurrentStress: 9,
         environmentalFactors: ['quiet', 'familiar'],
         recentInteractions: [],
       };
@@ -182,7 +178,6 @@ describe('Dynamic Compatibility Scoring', () => {
       expect(compatibility.baseCompatibility).toBeDefined();
       expect(compatibility.contextualModifiers).toBeDefined();
       expect(compatibility.experienceBonus).toBeDefined();
-      expect(compatibility.stressSituationModifier).toBeDefined();
       expect(compatibility.taskSpecificModifier).toBeDefined();
       expect(compatibility.confidence).toBeGreaterThan(0.8);
 
@@ -192,12 +187,11 @@ describe('Dynamic Compatibility Scoring', () => {
 
     test('should calculate low compatibility for energetic groom with fearful horse', async () => {
       const energeticGroom = testGrooms[1]; // Novice energetic groom
-      const [fearfulHorse] = testHorses; // High-stress fearful horse
+      const [fearfulHorse] = testHorses; // Fearful horse
 
       const context = {
         taskType: 'trust_building',
         timeOfDay: 'afternoon',
-        horseCurrentStress: 9,
         environmentalFactors: ['noisy', 'unfamiliar'],
         recentInteractions: [],
       };
@@ -205,7 +199,6 @@ describe('Dynamic Compatibility Scoring', () => {
       const compatibility = await analyzePair(energeticGroom.id, fearfulHorse.id, scoreCompatibility, context);
 
       expect(compatibility.overallScore).toBeLessThan(0.4); // Low compatibility
-      expect(compatibility.stressSituationModifier).toBeLessThan(1.0); // Penalty for high stress
       expect(compatibility.recommendationLevel).toBe('not_recommended');
     });
 
@@ -217,7 +210,6 @@ describe('Dynamic Compatibility Scoring', () => {
       const context = {
         taskType: 'hoof_handling',
         timeOfDay: 'morning',
-        horseCurrentStress: 5,
         environmentalFactors: ['quiet', 'structured'],
         recentInteractions: [],
       };
@@ -240,7 +232,6 @@ describe('Dynamic Compatibility Scoring', () => {
       const context = {
         taskType: 'desensitization',
         timeOfDay: 'morning',
-        horseCurrentStress: 3,
         environmentalFactors: ['quiet'],
         recentInteractions: [],
       };
@@ -263,7 +254,6 @@ describe('Dynamic Compatibility Scoring', () => {
       expect(factors).toBeDefined();
       expect(factors.personalityMatch).toBeDefined();
       expect(factors.experienceLevel).toBeDefined();
-      expect(factors.stressCompatibility).toBeDefined();
       expect(factors.bondingPotential).toBeDefined();
       expect(factors.taskEffectiveness).toBeDefined();
       expect(factors.riskFactors).toBeDefined();
@@ -273,7 +263,6 @@ describe('Dynamic Compatibility Scoring', () => {
 
       // Should identify specific factors
       expect(factors.personalityMatch.score).toBeGreaterThan(0.6);
-      expect(factors.stressCompatibility.score).toBeGreaterThan(0.7);
     });
 
     test('should identify risk factors for poor matches', async () => {
@@ -283,11 +272,7 @@ describe('Dynamic Compatibility Scoring', () => {
       const factors = await analyzeCompatibilityFactors(energeticGroom.id, fearfulHorse.id);
 
       expect(factors.riskFactors.length).toBeGreaterThan(0);
-      expect(
-        factors.riskFactors.some(
-          factor => factor.includes('energetic') || factor.includes('stress') || factor.includes('fearful'),
-        ),
-      ).toBe(true);
+      expect(factors.riskFactors.some(factor => factor.includes('energetic') || factor.includes('fearful'))).toBe(true);
     });
   });
 
@@ -306,14 +291,12 @@ describe('Dynamic Compatibility Scoring', () => {
 
       expect(prediction).toBeDefined();
       expect(prediction.predictedBondingChange).toBeDefined();
-      expect(prediction.predictedStressChange).toBeDefined();
       expect(prediction.predictedQuality).toBeDefined();
       expect(prediction.successProbability).toBeDefined();
       expect(prediction.confidence).toBeDefined();
 
       // Should predict positive outcomes
       expect(prediction.predictedBondingChange).toBeGreaterThan(0);
-      expect(prediction.predictedStressChange).toBeLessThan(2); // Low stress increase
       expect(['good', 'excellent'].includes(prediction.predictedQuality)).toBe(true);
       expect(prediction.successProbability).toBeGreaterThan(0.6);
     });
@@ -331,7 +314,6 @@ describe('Dynamic Compatibility Scoring', () => {
       const prediction = await analyzePair(energeticGroom.id, fearfulHorse.id, predictInteraction, context);
 
       expect(prediction.predictedBondingChange).toBeLessThan(2); // Low bonding gain
-      expect(prediction.predictedStressChange).toBeGreaterThan(1); // Stress increase
       expect(prediction.successProbability).toBeLessThan(0.5);
     });
   });
@@ -401,7 +383,6 @@ describe('Dynamic Compatibility Scoring', () => {
             duration: 30,
             taskType: 'hoof_handling',
             bondingChange: 2 + i, // Improving over time
-            stressChange: 1 - i, // Decreasing stress
             quality: i === 0 ? 'fair' : i === 1 ? 'good' : 'excellent',
             cost: 28.0,
             createdAt: new Date(Date.now() - (3 - i) * 24 * 60 * 60 * 1000),

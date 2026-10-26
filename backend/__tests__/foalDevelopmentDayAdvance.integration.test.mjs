@@ -72,7 +72,7 @@ describe('INTEGRATION: foalDevelopment.currentDay auto-advance (Equoria-3lb8q)',
   }, 120000);
 
   /** Helper: create a foal + foalDevelopment row at a given currentDay. */
-  async function makeFoal(currentDay, { bondScore = 50, stressLevel = 20 } = {}) {
+  async function makeFoal(currentDay, { bondScore = 50 } = {}) {
     const foal = await createTestHorse(
       prisma,
       {
@@ -85,7 +85,6 @@ describe('INTEGRATION: foalDevelopment.currentDay auto-advance (Equoria-3lb8q)',
         age: 0,
         userId: user.id,
         bondScore,
-        stressLevel,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
       createdHorseIds,
@@ -138,9 +137,9 @@ describe('INTEGRATION: foalDevelopment.currentDay auto-advance (Equoria-3lb8q)',
   }, 60000);
 
   it('advances even on a no-reveal night (low-baseChance conditions still tick the day)', async () => {
-    // bondScore/stressLevel deliberately in a band where most gates fail their
-    // bond/stress conditions; regardless, currentDay must advance.
-    const foal = await makeFoal(0, { bondScore: 50, stressLevel: 45 });
+    // bondScore deliberately in a band where most gates fail their
+    // bond conditions; regardless, currentDay must advance.
+    const foal = await makeFoal(0, { bondScore: 50 });
     const before = await reload(foal.id);
 
     const result = await cronJobService.evaluateFoalTraits(before);
@@ -156,7 +155,7 @@ describe('INTEGRATION: foalDevelopment.currentDay auto-advance (Equoria-3lb8q)',
     // by advancing day-by-day does developmentAge reach 4. We assert the day
     // climbs to 4 across runs (the sole prerequisite the cron controls), which
     // is exactly the gating the bug blocked.
-    const foal = await makeFoal(0, { bondScore: 65, stressLevel: 30 });
+    const foal = await makeFoal(0, { bondScore: 65 });
     for (let i = 0; i < 4; i++) {
       const current = await reload(foal.id);
       await cronJobService.evaluateFoalTraits(current);

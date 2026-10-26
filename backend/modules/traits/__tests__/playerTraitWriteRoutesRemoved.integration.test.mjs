@@ -72,7 +72,7 @@ describe('Player trait-write routes are removed (Equoria-gu8jk)', () => {
     token = generateTestToken({ id: player.id, email: player.email, role: 'user' });
     csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${token}`] });
 
-    // A newborn foal whose reveal conditions are all met (bond 95, stress 0)
+    // A newborn foal whose reveal conditions are all met (bond 95)
     // and who carries hidden traits, so the old reveal routes would really
     // have moved them into the visible lists.
     foal = await prisma.horse.create({
@@ -84,7 +84,6 @@ describe('Player trait-write routes are removed (Equoria-gu8jk)', () => {
         age: 0,
         dateOfBirth: new Date(),
         bondScore: 95,
-        stressLevel: 0,
         temperament: 'nervous',
         epigeneticModifiers: { positive: [], negative: [], hidden: ['resilient', 'calm'] },
       },

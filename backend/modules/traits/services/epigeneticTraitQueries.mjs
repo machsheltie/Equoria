@@ -42,7 +42,7 @@ export async function getHorseWithActiveGroomAssignments(horseId) {
  * for a horse, used to feed enhanced milestone evaluation.
  *
  * @param {number} horseId
- * @returns {Promise<{ interactions: Array, assignments: Array, bondHistory: Array, stressHistory: Array }>}
+ * @returns {Promise<{ interactions: Array, assignments: Array, bondHistory: Array }>}
  */
 export async function getGroomCareHistoryForHorse(horseId) {
   const [interactions, assignments] = await Promise.all([
@@ -80,6 +80,5 @@ export async function getGroomCareHistoryForHorse(horseId) {
     interactions,
     assignments,
     bondHistory: [], // Would be populated from bond tracking
-    stressHistory: [], // Would be populated from stress tracking
   };
 }

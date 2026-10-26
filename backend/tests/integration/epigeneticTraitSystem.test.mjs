@@ -190,7 +190,6 @@ describe('Epigenetic Trait System Integration Tests', () => {
       isEpigenetic: true,
       groomId: testGroom.id,
       bondScore: 25,
-      stressLevel: 2,
     });
   }
 
@@ -423,7 +422,6 @@ describe('Epigenetic Trait System Integration Tests', () => {
             interactionType: 'grooming',
             duration: 30,
             bondingChange: 2,
-            stressChange: -1,
             quality: 'excellent',
             cost: 25.0,
             timestamp: new Date(Date.now() - i * 24 * 60 * 60 * 1000), // Daily for past week
@@ -539,7 +537,6 @@ describe('Trait History Service', () => {
       isEpigenetic: true,
       groomId: testGroom.id,
       bondScore: 20,
-      stressLevel: 3,
     };
 
     const loggedTrait = await logTraitAssignment(traitData);

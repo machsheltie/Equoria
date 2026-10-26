@@ -159,7 +159,6 @@ describe('calculateGroomInteractionEffects()', () => {
   it('returns an object with expected fields for a valid groom', () => {
     const result = calculateGroomInteractionEffects(makeGroom(), foal, 'grooming', 60);
     expect(result).toHaveProperty('bondingChange');
-    expect(result).toHaveProperty('stressChange');
     // Equoria-tfo3c: no `cost` — care costs nothing.
     expect(result).not.toHaveProperty('cost');
     expect(result).toHaveProperty('quality');
@@ -172,12 +171,6 @@ describe('calculateGroomInteractionEffects()', () => {
     const result = calculateGroomInteractionEffects(makeGroom(), foal, 'grooming', 60);
     expect(result.bondingChange).toBeGreaterThanOrEqual(0);
     expect(result.bondingChange).toBeLessThanOrEqual(10);
-  });
-
-  it('stressChange is within [-10, 5]', () => {
-    const result = calculateGroomInteractionEffects(makeGroom(), foal, 'grooming', 60);
-    expect(result.stressChange).toBeGreaterThanOrEqual(-10);
-    expect(result.stressChange).toBeLessThanOrEqual(5);
   });
 
   it('quality is one of the four expected values', () => {
@@ -583,7 +576,6 @@ describe('groomSystem — constants & comparative effects (merged from legacy ba
         expect(specialty).toHaveProperty('name');
         expect(specialty).toHaveProperty('description');
         expect(specialty).toHaveProperty('bondingModifier');
-        expect(specialty).toHaveProperty('stressReduction');
         expect(specialty).toHaveProperty('preferredActivities');
       });
     });
@@ -604,7 +596,6 @@ describe('groomSystem — constants & comparative effects (merged from legacy ba
       Object.values(PERSONALITY_TRAITS).forEach(trait => {
         expect(trait).toHaveProperty('name');
         expect(trait).toHaveProperty('bondingModifier');
-        expect(trait).toHaveProperty('stressReduction');
         expect(trait).toHaveProperty('description');
       });
     });
@@ -620,7 +611,7 @@ describe('groomSystem — constants & comparative effects (merged from legacy ba
       experience: 5,
       sessionRate: 18.0,
     };
-    const mockFoal = { id: 1, name: 'Test Foal', bondScore: 50, stressLevel: 20 };
+    const mockFoal = { id: 1, name: 'Test Foal', bondScore: 50 };
 
     it('foalCare specialty modifier exceeds general', () => {
       const foalCare = calculateGroomInteractionEffects(

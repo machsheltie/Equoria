@@ -15,7 +15,7 @@
  * ranked-groom shape, trends insufficient_data, config) require a richer fixture
  * than the original 1-groom/1-horse beforeAll could produce. The top-level
  * createFixture()'s 3-groom (calm/energetic/methodical) + 3-horse (incl. a
- * nervous horse stressLevel:9 bondScore:15) fixture is ported below so the
+ * nervous horse bondScore:15) fixture is ported below so the
  * thresholds are exercised against real computed scores, not luck. Every created
  * id is tracked in the fail-loud cleanup tracker (FK order: horse -> groom ->
  * user -> breed; Horse.userId/Horse.breedId onDelete: Restrict).
@@ -136,9 +136,9 @@ beforeAll(async () => {
   }
 
   const horseData = [
-    { name: `Fearful Horse ${uid}`, temperament: 'nervous', stressLevel: 9, bondScore: 15 },
-    { name: `Confident Horse ${uid}`, temperament: 'confident', stressLevel: 3, bondScore: 35 },
-    { name: `Developing Horse ${uid}`, temperament: 'developing', stressLevel: 5, bondScore: 25 },
+    { name: `Fearful Horse ${uid}`, temperament: 'nervous', bondScore: 15 },
+    { name: `Confident Horse ${uid}`, temperament: 'confident', bondScore: 35 },
+    { name: `Developing Horse ${uid}`, temperament: 'developing', bondScore: 25 },
   ];
 
   horses = [];
@@ -154,7 +154,6 @@ beforeAll(async () => {
           dateOfBirth: birthDate2YearsOld,
           age: 2,
           temperament: data.temperament,
-          stressLevel: data.stressLevel,
           bondScore: data.bondScore,
           healthStatus: 'Good',
           speed: 50,
@@ -209,7 +208,6 @@ beforeAll(async () => {
       dateOfBirth: birthDate2YearsOld,
       age: 2,
       temperament: 'confident',
-      stressLevel: 3,
       bondScore: 35,
       healthStatus: 'Good',
       speed: 50,
@@ -346,7 +344,7 @@ describe('POST /api/compatibility/calculate', () => {
   });
 
   // Equoria-fefh2.40 migrated: high compatibility — calm/expert groom with a
-  // fearful (nervous, high-stress) horse should score highly_recommended.
+  // fearful (nervous) horse should score highly_recommended.
   it('calculates high compatibility for calm groom with fearful horse', async () => {
     const [calmGroom] = grooms;
     const [fearfulHorse] = horses;
@@ -363,7 +361,6 @@ describe('POST /api/compatibility/calculate', () => {
         context: {
           taskType: 'trust_building',
           timeOfDay: 'morning',
-          horseCurrentStress: 9,
           environmentalFactors: ['quiet', 'familiar'],
           recentInteractions: [],
         },
@@ -395,7 +392,6 @@ describe('POST /api/compatibility/calculate', () => {
         context: {
           taskType: 'trust_building',
           timeOfDay: 'afternoon',
-          horseCurrentStress: 9,
           environmentalFactors: ['noisy', 'unfamiliar'],
           recentInteractions: [],
         },
@@ -483,7 +479,6 @@ describe('POST /api/compatibility/predict', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeDefined();
     expect(res.body.data.predictedBondingChange).toBeGreaterThan(0);
-    expect(res.body.data.predictedStressChange).toBeLessThan(2);
     expect(['good', 'excellent'].includes(res.body.data.predictedQuality)).toBe(true);
     expect(res.body.data.successProbability).toBeGreaterThan(0.6);
   });
@@ -513,7 +508,6 @@ describe('POST /api/compatibility/predict', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.predictedBondingChange).toBeLessThan(2);
-    expect(res.body.data.predictedStressChange).toBeGreaterThanOrEqual(1);
     expect(res.body.data.successProbability).toBeLessThanOrEqual(0.52);
   });
 });
@@ -652,7 +646,6 @@ describe('GET /api/compatibility/factors/:groomId/:horseId', () => {
     expect(res.body.data).toBeDefined();
     expect(res.body.data.personalityMatch).toBeDefined();
     expect(res.body.data.experienceLevel).toBeDefined();
-    expect(res.body.data.stressCompatibility).toBeDefined();
     expect(res.body.data.bondingPotential).toBeDefined();
     expect(res.body.data.taskEffectiveness).toBeDefined();
     expect(res.body.data.riskFactors).toBeDefined();
@@ -750,7 +743,7 @@ describe('GET /api/compatibility/trends/:groomId/:horseId ownership and pair sco
     const pairGroom = grooms[2];
     const pairHorse = horses[2];
     // Assumes no other test in this file records interactions for grooms[2] with horses[2].
-    const base = { interactionType: 'enrichment', duration: 30, bondingChange: 1, stressChange: -1, quality: 'good' };
+    const base = { interactionType: 'enrichment', duration: 30, bondingChange: 1, quality: 'good' };
     for (let i = 0; i < 3; i += 1) {
       await prisma.groomInteraction.create({
         data: { ...base, groomId: pairGroom.id, foalId: pairHorse.id },

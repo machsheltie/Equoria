@@ -71,7 +71,6 @@ async function makeFoal({ suffix, days, ageYears, bondScore = 0, epigeneticModif
     dateOfBirth: dobDaysAgo(days),
     age: ageYears,
     bondScore,
-    stressLevel: 10,
     userId: user.id,
   };
   if (epigeneticModifiers !== undefined) {

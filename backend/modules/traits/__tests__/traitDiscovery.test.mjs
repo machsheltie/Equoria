@@ -62,8 +62,6 @@ describe('DISCOVERY_CONDITIONS — structure and synchronous condition branches'
     const keys = Object.keys(DISCOVERY_CONDITIONS);
     expect(keys).toContain('HIGH_BOND');
     expect(keys).toContain('EXCELLENT_BOND');
-    expect(keys).toContain('LOW_STRESS');
-    expect(keys).toContain('MINIMAL_STRESS');
     expect(keys).toContain('PERFECT_CARE');
     expect(keys).toContain('MATURE_BOND');
     expect(keys).toContain('CONSISTENT_TRAINING');
@@ -97,47 +95,15 @@ describe('DISCOVERY_CONDITIONS — structure and synchronous condition branches'
     expect(DISCOVERY_CONDITIONS.EXCELLENT_BOND.condition({ bondScore: 95 })).toBe(true);
   });
 
-  // LOW_STRESS: stressLevel <= 20. Horse.stressLevel is NOT NULL (Equoria-507mt)
-  // with default 0 = calm; a 0 is the calmest legitimate state and MUST satisfy
-  // the condition. The previous `|| 100` guard inverted a calm horse into
-  // max-stress (Equoria-4maxb). A missing field (partial select) compares as
-  // `undefined <= 20` → false, which is the conservative outcome.
-  it('LOW_STRESS returns false when stressLevel is missing (undefined never satisfies <= 20)', () => {
-    expect(DISCOVERY_CONDITIONS.LOW_STRESS.condition({})).toBe(false);
+  // PERFECT_CARE: bondScore >= 80
+  it('PERFECT_CARE returns true when the bond criterion is met', () => {
+    expect(DISCOVERY_CONDITIONS.PERFECT_CARE.condition({ bondScore: 85 })).toBe(true);
   });
-  it('LOW_STRESS returns true when stressLevel is 0 (calm horse is not read as max-stress) — Equoria-4maxb', () => {
-    expect(DISCOVERY_CONDITIONS.LOW_STRESS.condition({ stressLevel: 0 })).toBe(true);
+  it('PERFECT_CARE returns true for a fully bonded horse', () => {
+    expect(DISCOVERY_CONDITIONS.PERFECT_CARE.condition({ bondScore: 100 })).toBe(true);
   });
-  it('LOW_STRESS returns true when stressLevel <= 20', () => {
-    expect(DISCOVERY_CONDITIONS.LOW_STRESS.condition({ stressLevel: 15 })).toBe(true);
-  });
-  it('LOW_STRESS returns false when stressLevel > 20', () => {
-    expect(DISCOVERY_CONDITIONS.LOW_STRESS.condition({ stressLevel: 21 })).toBe(false);
-  });
-
-  // MINIMAL_STRESS: stressLevel <= 5
-  it('MINIMAL_STRESS returns true when stressLevel is 3', () => {
-    expect(DISCOVERY_CONDITIONS.MINIMAL_STRESS.condition({ stressLevel: 3 })).toBe(true);
-  });
-  it('MINIMAL_STRESS returns true when stressLevel is 0 — Equoria-4maxb', () => {
-    expect(DISCOVERY_CONDITIONS.MINIMAL_STRESS.condition({ stressLevel: 0 })).toBe(true);
-  });
-  it('MINIMAL_STRESS returns false when stressLevel is 10', () => {
-    expect(DISCOVERY_CONDITIONS.MINIMAL_STRESS.condition({ stressLevel: 10 })).toBe(false);
-  });
-
-  // PERFECT_CARE: bondScore >= 80 AND stressLevel <= 20
-  it('PERFECT_CARE returns true when both criteria met', () => {
-    expect(DISCOVERY_CONDITIONS.PERFECT_CARE.condition({ bondScore: 85, stressLevel: 10 })).toBe(true);
-  });
-  it('PERFECT_CARE returns true for a fully bonded, perfectly calm (stressLevel 0) horse — Equoria-4maxb', () => {
-    expect(DISCOVERY_CONDITIONS.PERFECT_CARE.condition({ bondScore: 85, stressLevel: 0 })).toBe(true);
-  });
-  it('PERFECT_CARE returns false when only bond criterion met', () => {
-    expect(DISCOVERY_CONDITIONS.PERFECT_CARE.condition({ bondScore: 85, stressLevel: 50 })).toBe(false);
-  });
-  it('PERFECT_CARE returns false when only stress criterion met', () => {
-    expect(DISCOVERY_CONDITIONS.PERFECT_CARE.condition({ bondScore: 50, stressLevel: 10 })).toBe(false);
+  it('PERFECT_CARE returns false below 80 bond', () => {
+    expect(DISCOVERY_CONDITIONS.PERFECT_CARE.condition({ bondScore: 79 })).toBe(false);
   });
 
   // MATURE_BOND: age >= 3 AND (bondScore || 0) >= 70
@@ -160,61 +126,45 @@ describe('DISCOVERY_CONDITIONS — structure and synchronous condition branches'
 // ── checkDiscoveryConditions — async, uses real DB (horse.id=-1 → 0 logs) ────
 
 describe('checkDiscoveryConditions()', () => {
-  it('returns empty array when no conditions are met (bond=0, stress=100, age=0)', async () => {
-    const horse = { id: -1, bondScore: 0, stressLevel: 100, age: 0 };
+  it('returns empty array when no conditions are met (bond=0, age=0)', async () => {
+    const horse = { id: -1, bondScore: 0, age: 0 };
     const result = await checkDiscoveryConditions(horse);
     expect(Array.isArray(result)).toBe(true);
     expect(result).toEqual([]);
   }, 10000);
 
   it('returns HIGH_BOND when bondScore >= 80', async () => {
-    const horse = { id: -1, bondScore: 85, stressLevel: 100, age: 1 };
+    const horse = { id: -1, bondScore: 85, age: 1 };
     const result = await checkDiscoveryConditions(horse);
     const names = result.map(c => c.name);
     expect(names).toContain('HIGH_BOND');
   }, 10000);
 
   it('returns HIGH_BOND and EXCELLENT_BOND when bondScore >= 95', async () => {
-    const horse = { id: -1, bondScore: 97, stressLevel: 100, age: 1 };
+    const horse = { id: -1, bondScore: 97, age: 1 };
     const result = await checkDiscoveryConditions(horse);
     const names = result.map(c => c.name);
     expect(names).toContain('HIGH_BOND');
     expect(names).toContain('EXCELLENT_BOND');
   }, 10000);
 
-  it('returns LOW_STRESS when stressLevel <= 20', async () => {
-    const horse = { id: -1, bondScore: 10, stressLevel: 15, age: 1 };
-    const result = await checkDiscoveryConditions(horse);
-    const names = result.map(c => c.name);
-    expect(names).toContain('LOW_STRESS');
-  }, 10000);
-
-  it('returns MINIMAL_STRESS and LOW_STRESS when stressLevel <= 5', async () => {
-    const horse = { id: -1, bondScore: 10, stressLevel: 3, age: 1 };
-    const result = await checkDiscoveryConditions(horse);
-    const names = result.map(c => c.name);
-    expect(names).toContain('LOW_STRESS');
-    expect(names).toContain('MINIMAL_STRESS');
-  }, 10000);
-
   it('returns MATURE_BOND when age >= 3 and bondScore >= 70', async () => {
-    const horse = { id: -1, bondScore: 75, stressLevel: 100, age: 5 };
+    const horse = { id: -1, bondScore: 75, age: 5 };
     const result = await checkDiscoveryConditions(horse);
     const names = result.map(c => c.name);
     expect(names).toContain('MATURE_BOND');
   }, 10000);
 
-  it('returns PERFECT_CARE + HIGH_BOND + LOW_STRESS when both criteria met', async () => {
-    const horse = { id: -1, bondScore: 90, stressLevel: 10, age: 1 };
+  it('returns PERFECT_CARE + HIGH_BOND when the bond criterion is met', async () => {
+    const horse = { id: -1, bondScore: 90, age: 1 };
     const result = await checkDiscoveryConditions(horse);
     const names = result.map(c => c.name);
     expect(names).toContain('PERFECT_CARE');
     expect(names).toContain('HIGH_BOND');
-    expect(names).toContain('LOW_STRESS');
   }, 10000);
 
   it('returned conditions have name, description, priority, category, type', async () => {
-    const horse = { id: -1, bondScore: 85, stressLevel: 100, age: 1 };
+    const horse = { id: -1, bondScore: 85, age: 1 };
     const result = await checkDiscoveryConditions(horse);
     expect(result.length).toBeGreaterThan(0);
     const cond = result[0];
@@ -251,7 +201,6 @@ describe('checkDiscoveryConditions() — condition-throws catch path (Equoria-jk
         throw new Error('bond bomb');
       },
       id: -1,
-      stressLevel: 100,
       age: 0,
     };
     const result = await checkDiscoveryConditions(evil);
@@ -290,7 +239,6 @@ describe('getDiscoveryProgress() — DB-fixture path (Equoria-jkht)', () => {
         dateOfBirth: new Date(),
         age: 0,
         bondScore: 50,
-        stressLevel: 30,
         userId: tdUser.id,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },

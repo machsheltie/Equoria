@@ -2,17 +2,17 @@
  * traitTimelineService branch-coverage tests (Equoria-jkht coverage sprint).
  *
  * No-fixture paths (non-existent horseId → empty timeline):
- *   generateTraitTimeline — isEmpty=true, 'no_data' bond/stress trend, 'no_development' quality
+ *   generateTraitTimeline — isEmpty=true, 'no_data' bond trend, 'no_development' quality
  *   getTraitTimelineSummary — hasTraits=false, all empty stats
  *
  * DB fixture — 1-trait horse:
- *   analyzeBondStressTrend — 'insufficient_data' (dataPoints.length=1)
+ *   analyzeBondTrend — 'insufficient_data' (dataPoints.length=1)
  *   calculateDevelopmentQuality — 'poor' (score=1)
  *
  * DB fixture — 5-trait horse (all 5 formatAgeDescription branches, improving/decreasing trend):
  *   formatAgeDescription: ≤7, ≤30, ≤90, ≤365, >365
- *   analyzeBondStressTrend: 'improving' bond, 'decreasing' stress
- *   calculateDevelopmentQuality: 'exceptional' (score=9)
+ *   analyzeBondTrend: 'improving' bond
+ *   calculateDevelopmentQuality: 'exceptional' (score=8)
  *   calculateTimelineSummary: non-empty averages, rareTraits, negativeTraits, sourceTypes
  *   organizeByAgeRanges: events placed in firstWeek, firstMonth, firstThreeMonths, firstYear, secondYear
  */
@@ -38,11 +38,10 @@ describe('generateTraitTimeline — empty timeline (no traits, non-existent hors
     expect(result.excludedTraits).toHaveLength(0);
   });
 
-  it('bondStressTrend is no_data for empty timeline', async () => {
+  it('bondProgress is no_data for empty timeline', async () => {
     const result = await generateTraitTimeline(999999999);
-    expect(result.bondStressTrend.bondTrend).toBe('no_data');
-    expect(result.bondStressTrend.stressTrend).toBe('no_data');
-    expect(result.bondStressTrend.dataPoints).toHaveLength(0);
+    expect(result.bondProgress.bondTrend).toBe('no_data');
+    expect(result.bondProgress.dataPoints).toHaveLength(0);
   });
 
   it('summary averages default to 0/50 when timelineEvents is empty', async () => {
@@ -50,7 +49,6 @@ describe('generateTraitTimeline — empty timeline (no traits, non-existent hors
     expect(result.summary.totalTraits).toBe(0);
     expect(result.summary.averageInfluenceScore).toBe(0);
     expect(result.summary.averageBondScore).toBe(50);
-    expect(result.summary.averageStressLevel).toBe(50);
     expect(result.summary.sourceTypeCount).toBe(0);
   });
 
@@ -59,7 +57,6 @@ describe('generateTraitTimeline — empty timeline (no traits, non-existent hors
     expect(summary.hasTraits).toBe(false);
     expect(summary.totalTraits).toBe(0);
     expect(summary.bondTrend).toBe('no_data');
-    expect(summary.stressTrend).toBe('no_data');
     expect(summary.developmentQuality).toBe('no_development');
   });
 });
@@ -109,7 +106,7 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
       },
     });
 
-    // 1-trait horse: 1 trait with bondScore+stressLevel → dataPoints.length=1 → insufficient_data
+    // 1-trait horse: 1 trait with bondScore → dataPoints.length=1 → insufficient_data
     await prisma.traitHistoryLog.create({
       data: {
         horseId: ttsHorse1Trait.id,
@@ -119,7 +116,6 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
         isEpigenetic: false,
         ageInDays: 15,
         bondScore: 50,
-        stressLevel: 40,
         timestamp: new Date(ts),
       },
     });
@@ -127,16 +123,15 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
     // 5-trait horse: traits at ages 5, 14, 60, 200, 500 — covering all formatAgeDescription branches
     const fiveTraits = [
       // ageInDays=5 → formatAgeDescription("Day 5"), firstWeek range, rare noble
-      { traitName: 'noble', sourceType: 'milestone', ageInDays: 5, bondScore: 40, stressLevel: 60 },
+      { traitName: 'noble', sourceType: 'milestone', ageInDays: 5, bondScore: 40 },
       // ageInDays=14 → formatAgeDescription("2 weeks"), firstMonth range
-      { traitName: 'curious', sourceType: 'groom', ageInDays: 14, bondScore: 50, stressLevel: 50 },
+      { traitName: 'curious', sourceType: 'groom', ageInDays: 14, bondScore: 50 },
       // ageInDays=60 → formatAgeDescription("2 months"), firstThreeMonths range, negative anxious
       {
         traitName: 'anxious',
         sourceType: 'environmental',
         ageInDays: 60,
         bondScore: 55,
-        stressLevel: 45,
       },
       // ageInDays=200 → formatAgeDescription("6 months"), firstYear range, rare legacyTalent
       {
@@ -144,10 +139,9 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
         sourceType: 'genetic',
         ageInDays: 200,
         bondScore: 65,
-        stressLevel: 35,
       },
       // ageInDays=500 → formatAgeDescription("1 years"), secondYear range
-      { traitName: 'brave', sourceType: 'milestone', ageInDays: 500, bondScore: 80, stressLevel: 20 },
+      { traitName: 'brave', sourceType: 'milestone', ageInDays: 500, bondScore: 80 },
     ];
 
     for (const t of fiveTraits) {
@@ -160,7 +154,6 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
           isEpigenetic: false,
           ageInDays: t.ageInDays,
           bondScore: t.bondScore,
-          stressLevel: t.stressLevel,
           timestamp: new Date(ts),
         },
       });
@@ -184,13 +177,12 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
 
   // ── 1-trait horse — insufficient_data and poor quality ───────────────────────
 
-  it('1-trait horse: bondStressTrend=insufficient_data (dataPoints.length=1)', async () => {
+  it('1-trait horse: bondProgress=insufficient_data (dataPoints.length=1)', async () => {
     const result = await generateTraitTimeline(ttsHorse1Trait.id);
     expect(result.isEmpty).toBe(false);
     expect(result.timelineEvents).toHaveLength(1);
-    expect(result.bondStressTrend.bondTrend).toBe('insufficient_data');
-    expect(result.bondStressTrend.stressTrend).toBe('insufficient_data');
-    expect(result.bondStressTrend.dataPoints).toHaveLength(1);
+    expect(result.bondProgress.bondTrend).toBe('insufficient_data');
+    expect(result.bondProgress.dataPoints).toHaveLength(1);
   });
 
   it('1-trait horse: developmentQuality=poor (score=1, totalTraits=1)', async () => {
@@ -229,14 +221,11 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
     expect(ev500.ageDescription).not.toBe('1 years');
   });
 
-  it('5-trait horse: bondTrend=improving, stressTrend=decreasing (first→last δ > 5)', async () => {
+  it('5-trait horse: bondTrend=improving (first→last δ > 5)', async () => {
     const result = await generateTraitTimeline(ttsHorse5Traits.id);
     // first bond=40 → last bond=80, change=40 > 5 → 'improving'
-    expect(result.bondStressTrend.bondTrend).toBe('improving');
-    // first stress=60 → last stress=20, change=-40, lastStress < firstStress-5 → 'decreasing'
-    expect(result.bondStressTrend.stressTrend).toBe('decreasing');
-    expect(result.bondStressTrend.bondChange).toBe(40);
-    expect(result.bondStressTrend.stressChange).toBe(-40);
+    expect(result.bondProgress.bondTrend).toBe('improving');
+    expect(result.bondProgress.bondChange).toBe(40);
   });
 
   it('5-trait horse: categorization has rare=2 (noble+legacy_talent), negative=1 (anxious)', async () => {
@@ -266,12 +255,11 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
     expect(result.ageRanges.secondYear).toHaveLength(1); // ageInDays=500
   });
 
-  it('5-trait horse: developmentQuality=exceptional (score=9 ≥ 8)', async () => {
-    // totalTraits=5→+3, sourceTypeCount=4→+2, rareTraits=2→+2, improving→+2, decreasing→+1, negative=1→-1 = 9
+  it('5-trait horse: developmentQuality=exceptional (score=8 ≥ 8)', async () => {
+    // totalTraits=5→+3, sourceTypeCount=4→+2, rareTraits=2→+2, improving→+2, negative=1→-1 = 8
     const summary = await getTraitTimelineSummary(ttsHorse5Traits.id);
     expect(summary.developmentQuality).toBe('exceptional');
     expect(summary.bondTrend).toBe('improving');
-    expect(summary.stressTrend).toBe('decreasing');
   });
 });
 
@@ -330,7 +318,6 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
         isEpigenetic: false,
         ageInDays: 15,
         bondScore: 50,
-        stressLevel: 50,
       },
     });
     await prisma.traitHistoryLog.create({
@@ -342,7 +329,6 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
         isEpigenetic: false,
         ageInDays: 30,
         bondScore: 51,
-        stressLevel: 49,
       },
     });
     await prisma.traitHistoryLog.create({
@@ -354,7 +340,6 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
         isEpigenetic: false,
         ageInDays: 45,
         bondScore: 51,
-        stressLevel: 49,
       },
     });
 
@@ -368,7 +353,6 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
         isEpigenetic: false,
         ageInDays: 1500,
         bondScore: 55,
-        stressLevel: 45,
       },
     });
 
@@ -410,7 +394,6 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
         isEpigenetic: false,
         ageInDays: 10,
         bondScore: 50,
-        stressLevel: 50,
       },
     });
     await prisma.traitHistoryLog.create({
@@ -422,7 +405,6 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
         isEpigenetic: false,
         ageInDays: 20,
         bondScore: 60,
-        stressLevel: 40,
       },
     });
     await prisma.traitHistoryLog.create({
@@ -434,7 +416,6 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
         isEpigenetic: false,
         ageInDays: 30,
         bondScore: 70,
-        stressLevel: 30,
       },
     });
 
@@ -465,7 +446,6 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
           isEpigenetic: false,
           ageInDays,
           bondScore,
-          stressLevel: 50,
         },
       });
     }

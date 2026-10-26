@@ -49,29 +49,10 @@ const DISCOVERY_CONDITIONS = {
     revealableTraits: ['devoted', 'empathetic', 'intuitive'],
   },
 
-  // Stress-based discoveries
-  LOW_STRESS: {
-    name: 'Low Stress',
-    condition: horse => horse.stressLevel <= 20,
-    description: 'Stress levels minimized',
-    priority: 'medium',
-    category: 'stress',
-    revealableTraits: ['calm', 'relaxed', 'confident'],
-  },
-
-  MINIMAL_STRESS: {
-    name: 'Minimal Stress',
-    condition: horse => horse.stressLevel <= 5,
-    description: 'Perfect stress management',
-    priority: 'high',
-    category: 'stress',
-    revealableTraits: ['zen', 'unflappable', 'serene'],
-  },
-
   // Combined conditions
   PERFECT_CARE: {
     name: 'Perfect Care',
-    condition: horse => horse.bondScore >= 80 && horse.stressLevel <= 20,
+    condition: horse => horse.bondScore >= 80,
     description: 'Perfect care conditions achieved',
     priority: 'legendary',
     category: 'milestones',
@@ -197,7 +178,6 @@ export async function getDiscoveryProgress(horseId) {
   // Get current stats for condition checking
   const currentStats = {
     bondScore: horse.bondScore,
-    stressLevel: horse.stressLevel,
     developmentDay: horse.foalDevelopment?.currentDay || 0,
   };
 

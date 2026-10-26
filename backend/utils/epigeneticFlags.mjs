@@ -20,11 +20,7 @@ export const EPIGENETIC_FLAGS = {
   BRAVE: {
     name: 'brave',
     description: 'Horse shows exceptional courage and confidence',
-    triggers: [
-      'novelty_exposure_with_support',
-      'consistent_desensitization',
-      'positive_stress_handling',
-    ],
+    triggers: ['novelty_exposure_with_support', 'consistent_desensitization'],
     effects: {
       traitProbability: { Fearless: +0.3, Bold: +0.2, Confident: +0.25 },
       temperamentBonus: { bold: +0.15, calm: +0.1 },
@@ -117,15 +113,10 @@ export const EPIGENETIC_FLAGS = {
   // Resilience-related flags
   RESILIENT: {
     name: 'resilient',
-    description: 'Horse adapts well to stress and recovers quickly',
-    triggers: [
-      'gradual_stress_exposure',
-      'consistent_recovery_support',
-      'varied_environmental_exposure',
-    ],
+    description: 'Horse adapts well and recovers quickly',
+    triggers: ['consistent_recovery_support', 'varied_environmental_exposure'],
     effects: {
       traitProbability: { Resilient: +0.3, Hardy: +0.25, Adaptable: +0.2 },
-      stressRecovery: +0.3, // 30% faster stress recovery
       healthBonus: +0.1,
     },
     conflictsWith: ['FRAGILE', 'SENSITIVE'],
@@ -134,10 +125,9 @@ export const EPIGENETIC_FLAGS = {
   SENSITIVE: {
     name: 'sensitive',
     description: 'Horse is highly responsive to environmental changes',
-    triggers: ['overstimulation', 'inconsistent_environment', 'high_stress_exposure'],
+    triggers: ['overstimulation', 'inconsistent_environment'],
     effects: {
       traitProbability: { Sensitive: +0.3, Reactive: +0.25, 'High-Strung': +0.2 },
-      stressAccumulation: +0.2, // 20% faster stress accumulation
       environmentalSensitivity: +0.25,
     },
     conflictsWith: ['RESILIENT', 'HARDY'],

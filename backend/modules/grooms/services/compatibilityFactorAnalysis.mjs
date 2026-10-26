@@ -19,13 +19,12 @@ import {
  * The factor breakdown of one groom with one horse. Pure.
  * @param {object} groomTraits - personalityTraitsFor(groom)
  * @param {object} horseTemperament - the horses module's analyzeHorseTemperament result
- * @param {object} horse - { stressLevel, bondScore, ... }
+ * @param {object} horse - { bondScore, ... }
  * @returns {Object} Detailed compatibility factor analysis
  */
 export function factorBreakdown(groomTraits, horseTemperament, horse) {
   const personalityMatch = analyzePersonalityMatch(groomTraits, horseTemperament);
   const experienceLevel = analyzeExperienceLevel(groomTraits);
-  const stressCompatibility = analyzeStressCompatibility(groomTraits, horse);
   const bondingPotential = analyzeBondingPotential(groomTraits, horse);
   const taskEffectiveness = analyzeTaskEffectiveness(groomTraits, horseTemperament);
   const riskFactors = identifyRiskFactors(groomTraits, horseTemperament, horse);
@@ -34,16 +33,11 @@ export function factorBreakdown(groomTraits, horseTemperament, horse) {
   return {
     personalityMatch,
     experienceLevel,
-    stressCompatibility,
     bondingPotential,
     taskEffectiveness,
     riskFactors,
     strengthFactors,
-    overallAssessment: calculateOverallAssessment(
-      personalityMatch,
-      experienceLevel,
-      stressCompatibility,
-    ),
+    overallAssessment: calculateOverallAssessment(personalityMatch, experienceLevel),
   };
 }
 
@@ -69,27 +63,6 @@ function analyzeExperienceLevel(groomTraits) {
     traitStrength,
     effectivenessMultiplier: traitStrength,
     description: `${experienceLevel} experience level with ${Math.round(traitStrength * 100)}% trait strength`,
-  };
-}
-
-function analyzeStressCompatibility(groomTraits, horse) {
-  const personality = groomTraits.primaryPersonality;
-  const { stressLevel } = horse;
-
-  let score = 0.5;
-  if (personality === 'calm' && stressLevel > 6) {
-    score = 0.9;
-  } else if (personality === 'energetic' && stressLevel > 7) {
-    score = 0.2;
-  } else if (personality === 'methodical') {
-    score = 0.7;
-  }
-
-  return {
-    score,
-    horseStressLevel: stressLevel,
-    epigeneticInfluenceType: personality,
-    recommendation: score > 0.7 ? 'excellent_match' : score > 0.5 ? 'good_match' : 'poor_match',
   };
 }
 
@@ -132,7 +105,6 @@ function factorFacts(groomTraits, horseTemperament, horse) {
   return {
     personality: groomTraits.primaryPersonality,
     temperament: horseTemperament.primaryTemperament,
-    stressLevel: horse.stressLevel,
     bondScore: horse.bondScore,
     experienceLevel: groomTraits.experienceLevel,
   };
@@ -146,9 +118,8 @@ function identifyStrengthFactors(groomTraits, horseTemperament, horse) {
   return ruleTexts(STRENGTH_FACTOR_RULES, factorFacts(groomTraits, horseTemperament, horse));
 }
 
-function calculateOverallAssessment(personalityMatch, experienceLevel, stressCompatibility) {
-  const avgScore =
-    (personalityMatch.score + experienceLevel.traitStrength + stressCompatibility.score) / 3;
+function calculateOverallAssessment(personalityMatch, experienceLevel) {
+  const avgScore = (personalityMatch.score + experienceLevel.traitStrength) / 2;
 
   return {
     score: avgScore,

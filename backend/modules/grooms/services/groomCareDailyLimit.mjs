@@ -15,7 +15,7 @@
  * commits, and under READ COMMITTED its next statement sees the winner's
  * interaction row, so it refuses instead of writing.
  *
- * The bond and stress values are re-read under the same lock so the caller
+ * The bond value is re-read under the same lock so the caller
  * applies its change to the committed values, not to a pre-transaction read.
  * This does not change any amount: the caller computes its change exactly as
  * before and only the base it is applied to is current.
@@ -35,10 +35,10 @@ export class GroomDailyLimitReachedError extends Error {
 
 /**
  * Lock the horse row, re-check today's groom interactions, and return the
- * horse's current bond and stress.
+ * horse's current bond.
  * @param {object} tx - Prisma interactive-transaction client
  * @param {number} horseId
- * @returns {Promise<{bondScore: number, stressLevel: number}>}
+ * @returns {Promise<{bondScore: number}>}
  * @throws {GroomDailyLimitReachedError} when the horse was already groomed today
  */
 export async function lockHorseForGroomCare(tx, horseId) {
@@ -56,7 +56,7 @@ export async function lockHorseForGroomCare(tx, horseId) {
 
   const current = await tx.horse.findUnique({
     where: { id: horseId },
-    select: { bondScore: true, stressLevel: true },
+    select: { bondScore: true },
   });
   if (!current) {
     throw new Error(`Horse with ID ${horseId} not found`);

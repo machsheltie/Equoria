@@ -145,7 +145,6 @@ describe('🌤️ Environmental Factor Engine', () => {
         expect(factors).toHaveProperty('growthModifier');
         expect(factors).toHaveProperty('healthModifier');
         expect(factors).toHaveProperty('trainingEffectiveness');
-        expect(factors).toHaveProperty('stressLevel');
         expect(factors).toHaveProperty('description');
       });
 
@@ -153,8 +152,6 @@ describe('🌤️ Environmental Factor Engine', () => {
       expect(springFactors.growthModifier).toBeGreaterThan(1.0);
       expect(springFactors.season).toBe('spring');
 
-      // Summer should have heat stress
-      expect(summerFactors.stressLevel).toBeGreaterThan(winterFactors.stressLevel);
       expect(summerFactors.season).toBe('summer');
 
       // Winter should have reduced training effectiveness
@@ -180,9 +177,6 @@ describe('🌤️ Environmental Factor Engine', () => {
 
       // Spring should have higher growth modifier than winter
       expect(earlySpring.growthModifier).toBeGreaterThan(lateWinter.growthModifier);
-
-      // Summer should have higher stress level than spring
-      expect(earlySummer.stressLevel).toBeGreaterThan(lateSpring.stressLevel);
     });
   });
 
@@ -205,7 +199,7 @@ describe('🌤️ Environmental Factor Engine', () => {
       expect(triggers.traitExpressionProbability).toBeLessThanOrEqual(1);
     });
 
-    test('should identify stress triggers based on weather conditions', () => {
+    test('should identify triggers based on weather conditions', () => {
       const extremeWeather = {
         temperature: 38, // Very hot
         humidity: 95, // Very humid
@@ -221,11 +215,11 @@ describe('🌤️ Environmental Factor Engine', () => {
       };
 
       // Mock weather calculation for testing
-      const stressTriggersExtreme = assess(testDate, testLocation, testHorse, extremeWeather).triggers;
-      const stressTriggersMild = assess(testDate, testLocation, testHorse, mildWeather).triggers;
+      const extremeTriggers = assess(testDate, testLocation, testHorse, extremeWeather).triggers;
+      const mildTriggers = assess(testDate, testLocation, testHorse, mildWeather).triggers;
 
-      expect(stressTriggersExtreme.intensity).toBeGreaterThan(stressTriggersMild.intensity);
-      expect(stressTriggersExtreme.activeTriggersCount).toBeGreaterThan(stressTriggersMild.activeTriggersCount);
+      expect(extremeTriggers.intensity).toBeGreaterThan(mildTriggers.intensity);
+      expect(extremeTriggers.activeTriggersCount).toBeGreaterThan(mildTriggers.activeTriggersCount);
     });
 
     test('should account for horse traits in trigger calculation', () => {
@@ -315,7 +309,6 @@ describe('🌤️ Environmental Factor Engine', () => {
       expect(comfortZone).toHaveProperty('temperatureRange');
       expect(comfortZone).toHaveProperty('humidityRange');
       expect(comfortZone).toHaveProperty('optimalConditions');
-      expect(comfortZone).toHaveProperty('stressThresholds');
 
       // Verify temperature range structure
       expect(comfortZone.temperatureRange).toHaveProperty('min');
@@ -352,38 +345,6 @@ describe('🌤️ Environmental Factor Engine', () => {
 
       // Heat tolerant horse should have higher temperature preferences
       expect(heatComfort.temperatureRange.max).toBeGreaterThan(coldComfort.temperatureRange.max);
-    });
-  });
-
-  describe('⚠️ Environmental Stress Assessment', () => {
-    test('should assess environmental stress levels', () => {
-      const stressAssessment = assess(testDate, testLocation, testHorse).stress;
-
-      expect(stressAssessment).toHaveProperty('stressLevel');
-      expect(stressAssessment).toHaveProperty('stressFactors');
-      expect(stressAssessment).toHaveProperty('severity');
-      // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: stress.mitigationRecommendations.
-      expect(stressAssessment).not.toHaveProperty('mitigationRecommendations');
-      expect(stressAssessment).toHaveProperty('timeToRecovery');
-
-      expect(stressAssessment.stressLevel).toBeGreaterThanOrEqual(0);
-      expect(stressAssessment.stressLevel).toBeLessThanOrEqual(100);
-      expect(['low', 'moderate', 'high', 'critical']).toContain(stressAssessment.severity);
-      expect(Array.isArray(stressAssessment.stressFactors)).toBe(true);
-      expect(stressAssessment.timeToRecovery).toBeGreaterThanOrEqual(0);
-    });
-
-    test('severe weather raises the stress severity above low', () => {
-      const highStressWeather = {
-        temperature: 42,
-        humidity: 95,
-        windSpeed: 35,
-        conditions: 'stormy',
-      };
-
-      const stressAssessment = assess(testDate, testLocation, testHorse, highStressWeather).stress;
-
-      expect(stressAssessment.severity).not.toBe('low');
     });
   });
 });

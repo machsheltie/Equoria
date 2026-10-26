@@ -108,7 +108,6 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
         age: 5,
         breedId: testBreed.id,
         userId: testUser.id,
-        stressLevel: 10,
         bondScore: 80,
         healthStatus: 'Good',
         lastFedDate: new Date(), // healthy by default so happy-path tests pass
@@ -127,7 +126,6 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
         age: 4,
         breedId: testBreed.id,
         userId: testUser.id,
-        stressLevel: 15,
         bondScore: 70,
         healthStatus: 'Good',
         lastFedDate: new Date(), // healthy by default so happy-path tests pass

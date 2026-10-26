@@ -62,9 +62,9 @@ describe('TraitConfirmationCard Component', () => {
     description: 'Shows anxiety in new situations',
     effects: [
       {
-        type: 'Stress Gain',
+        type: 'Score Penalty',
         value: 10,
-        description: '+10% stress from competitions',
+        description: '-10% competition score',
       },
     ],
     isPositive: false,
@@ -128,8 +128,8 @@ describe('TraitConfirmationCard Component', () => {
 
     it('should display negative effects correctly', () => {
       render(<TraitConfirmationCard trait={mockNegativeTrait} score={-2} />);
-      expect(screen.getByText(/Stress Gain/)).toBeInTheDocument();
-      expect(screen.getByText(/\+10% stress/)).toBeInTheDocument();
+      expect(screen.getByText(/Score Penalty/)).toBeInTheDocument();
+      expect(screen.getByText(/-10% competition score/)).toBeInTheDocument();
     });
   });
 

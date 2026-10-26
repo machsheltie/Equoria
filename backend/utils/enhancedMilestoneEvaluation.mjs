@@ -114,7 +114,6 @@ export async function evaluateEnhancedMilestone(
       epigeneticInfluenceType: currentGroom?.epigeneticInfluenceType || 'balanced',
       careQuality: calculateCareQuality(groomCareHistory),
       bondStability: calculateBondStability(groomCareHistory),
-      stressManagement: calculateStressManagement(groomCareHistory),
     },
   };
 }
@@ -378,27 +377,6 @@ function calculateBondStability(groomCareHistory) {
     return 'fluctuating';
   }
   return 'unstable';
-}
-
-function calculateStressManagement(groomCareHistory) {
-  if (!groomCareHistory?.stressHistory) {
-    return 'good';
-  }
-
-  // Analyze stress recovery patterns
-  const stressLevels = groomCareHistory.stressHistory.map(entry => entry.stressLevel);
-  const avgStress = stressLevels.reduce((a, b) => a + b, 0) / stressLevels.length;
-
-  if (avgStress < 3) {
-    return 'excellent';
-  }
-  if (avgStress < 5) {
-    return 'good';
-  }
-  if (avgStress < 7) {
-    return 'fair';
-  }
-  return 'poor';
 }
 
 function calculateCareDuration(groomCareHistory, groomId) {

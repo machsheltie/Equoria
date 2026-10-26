@@ -1,7 +1,7 @@
 /**
  * Ultra-Rare & Exotic Trait Mechanical Effects Integration
  * Integrates ultra-rare and exotic trait effects with existing game systems
- * Provides modifiers for stress, training, competition, and other mechanics
+ * Provides modifiers for training, competition, and other mechanics
  */
 
 import logger from './logger.mjs';
@@ -25,150 +25,6 @@ import { asFlagArray, asFlagObject } from './jsonbArrayGuard.mjs';
 function getUltraRareTraitList(horse) {
   const ultraRareTraits = asFlagObject(horse && horse.ultraRareTraits);
   return [...asFlagArray(ultraRareTraits.ultraRare), ...asFlagArray(ultraRareTraits.exotic)];
-}
-
-/**
- * Apply ultra-rare trait effects to stress calculations
- * @param {Object} horse - Horse data with ultra-rare traits
- * @param {number} baseStress - Base stress amount
- * @param {string} stressSource - Source of stress (training, competition, etc.)
- * @returns {Object} Modified stress and applied effects
- */
-export function applyUltraRareStressEffects(horse, baseStress, stressSource = 'general') {
-  try {
-    const allTraits = getUltraRareTraitList(horse);
-
-    let modifiedStress = baseStress;
-    const appliedEffects = [];
-
-    for (const traitData of allTraits) {
-      const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) {
-        continue;
-      }
-
-      const effects = traitDef.mechanicalEffects;
-
-      // Apply stress resistance
-      if (effects.stressResistance) {
-        const reduction = baseStress * effects.stressResistance;
-        modifiedStress -= reduction;
-        appliedEffects.push({
-          trait: traitDef.name,
-          effect: 'stress_resistance',
-          value: effects.stressResistance,
-          reduction,
-        });
-      }
-
-      // Apply competition stress resistance
-      if (effects.competitionStressResistance && stressSource === 'competition') {
-        const reduction = baseStress * effects.competitionStressResistance;
-        modifiedStress -= reduction;
-        appliedEffects.push({
-          trait: traitDef.name,
-          effect: 'competition_stress_resistance',
-          value: effects.competitionStressResistance,
-          reduction,
-        });
-      }
-
-      // Apply stress immunity (Ghostwalker)
-      if (effects.stressImmunity) {
-        modifiedStress = 0;
-        appliedEffects.push({
-          trait: traitDef.name,
-          effect: 'stress_immunity',
-          value: true,
-          reduction: baseStress,
-        });
-        break; // Immunity overrides all other effects
-      }
-
-      // Apply stress gain multiplier (Stormtouched)
-      if (effects.stressGainMultiplier) {
-        const increase = baseStress * (effects.stressGainMultiplier - 1);
-        modifiedStress += increase;
-        appliedEffects.push({
-          trait: traitDef.name,
-          effect: 'stress_gain_multiplier',
-          value: effects.stressGainMultiplier,
-          increase,
-        });
-      }
-    }
-
-    // Ensure stress doesn't go below 0
-    modifiedStress = Math.max(0, modifiedStress);
-
-    return {
-      originalStress: baseStress,
-      modifiedStress,
-      appliedEffects,
-      totalReduction: baseStress - modifiedStress,
-    };
-  } catch (error) {
-    logger.error(`[ultraRareMechanicalEffects] Error applying stress effects: ${error.message}`);
-    return {
-      originalStress: baseStress,
-      modifiedStress: baseStress,
-      appliedEffects: [],
-      totalReduction: 0,
-    };
-  }
-}
-
-/**
- * Apply ultra-rare trait effects to stress decay calculations
- * @param {Object} horse - Horse data with ultra-rare traits
- * @param {number} baseDecay - Base stress decay amount
- * @returns {Object} Modified decay and applied effects
- */
-export function applyUltraRareStressDecayEffects(horse, baseDecay) {
-  try {
-    const allTraits = getUltraRareTraitList(horse);
-
-    let modifiedDecay = baseDecay;
-    const appliedEffects = [];
-
-    for (const traitData of allTraits) {
-      const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) {
-        continue;
-      }
-
-      const effects = traitDef.mechanicalEffects;
-
-      // Apply stress decay multiplier (Phoenix-Born)
-      if (effects.stressDecayMultiplier) {
-        const bonus = baseDecay * (effects.stressDecayMultiplier - 1);
-        modifiedDecay += bonus;
-        appliedEffects.push({
-          trait: traitDef.name,
-          effect: 'stress_decay_multiplier',
-          value: effects.stressDecayMultiplier,
-          bonus,
-        });
-      }
-    }
-
-    return {
-      originalDecay: baseDecay,
-      modifiedDecay,
-      appliedEffects,
-      totalBonus: modifiedDecay - baseDecay,
-    };
-  } catch (error) {
-    logger.error(
-      `[ultraRareMechanicalEffects] Error applying stress decay effects: ${error.message}`,
-    );
-    return {
-      originalDecay: baseDecay,
-      modifiedDecay: baseDecay,
-      appliedEffects: [],
-      totalBonus: 0,
-    };
-  }
 }
 
 /**
@@ -587,11 +443,6 @@ export function hasUltraRareAbility(horse, abilityType) {
       const effects = traitDef.mechanicalEffects;
 
       switch (abilityType) {
-        case 'stress_immunity':
-          if (effects.stressImmunity) {
-            return true;
-          }
-          break;
         case 'training_fatigue_immunity':
           if (effects.trainingFatigueImmunity) {
             return true;

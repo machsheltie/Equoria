@@ -10,13 +10,12 @@
  *    product). It proves the outputs are unchanged on that grid: any change to
  *    a returned number, text or key there fails.
  * 2. helpers/environmentalTraitProducts.golden.json: the UNROUNDED trait-factor
- *    products (trigger, impact, stress tables) for every trait subset and
+ *    products (trigger and impact tables) for every trait subset and
  *    condition context, compared with Object.is. Outputs are rounded before they
  *    leave the engine, so (1) cannot see the order a product is multiplied in;
  *    (2) can: reordering a table or its loop changes the last bit of some product.
  *
- * Not covered: the recovery-time chain (its sequential multiplication is only
- * visible through a whole-hour rounding). A deliberate mechanics change
+ * A deliberate mechanics change
  * (owner ruling) re-records the golden files and says so in its commit.
  */
 
@@ -39,19 +38,13 @@ import {
   runGrid,
   TRAIT_PRODUCT_CASES,
 } from './helpers/environmentalEngineGrid.mjs';
-import {
-  IMPACT_TRAIT_FACTORS,
-  STRESS_TRAIT_FACTORS,
-  TRIGGER_TRAIT_FACTORS,
-  traitFactorProduct,
-} from '../services/environmentalPolicy.mjs';
+import { IMPACT_TRAIT_FACTORS, TRIGGER_TRAIT_FACTORS, traitFactorProduct } from '../services/environmentalPolicy.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PRODUCTS = JSON.parse(readFileSync(resolve(HERE, 'helpers/environmentalTraitProducts.golden.json'), 'utf8'));
 const TABLES = {
   trigger: TRIGGER_TRAIT_FACTORS,
   impact: IMPACT_TRAIT_FACTORS,
-  stress: STRESS_TRAIT_FACTORS,
 };
 const GOLDEN = JSON.parse(readFileSync(resolve(HERE, 'helpers/environmentalEngine.golden.json'), 'utf8'));
 
@@ -63,7 +56,6 @@ const API = {
   comfort: h => calculateComfortZone(h),
   triggers: (d, l, h, w) => assess(d, l, h, w).triggers,
   impact: (d, l, h, w) => assess(d, l, h, w).impact,
-  stress: (d, l, h, w) => assess(d, l, h, w).stress,
   history: (s, e, l) => getEnvironmentalHistory(s, e, l),
 };
 
@@ -96,11 +88,10 @@ describe('environmental engine characterization (golden digests from the pre-S3 
       elevation: 0,
     });
     const horse = { traits: ['nervous'], age: 8, health: 75 };
-    const { triggers, impact, stress } = assessHorseEnvironment(snapshot, horse);
+    const { triggers, impact } = assessHorseEnvironment(snapshot, horse);
     expect(Object.isFrozen(snapshot)).toBe(true);
     expect(triggers.weather).toBe(snapshot.weather);
     expect(impact.weather).toBe(snapshot.weather);
-    expect(stress.weather).toBe(snapshot.weather);
     expect(triggers.seasonalFactors).toBe(snapshot.seasonal);
     expect(impact.seasonalFactors).toBe(snapshot.seasonal);
   });

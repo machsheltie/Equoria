@@ -95,7 +95,6 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
             {[
               { label: 'Day', value: `${development.currentDay} / ${development.maxDay}` },
               { label: 'Bonding', value: development.bondingLevel },
-              { label: 'Stress', value: development.stressLevel },
             ].map(({ label, value }) => (
               <div
                 key={label}

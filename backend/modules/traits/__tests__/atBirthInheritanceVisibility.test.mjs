@@ -17,8 +17,8 @@
 import { describe, it, expect } from '@jest/globals';
 import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
 
-const goodMare = { stressLevel: 10, bondScore: 90, healthStatus: 'Excellent' };
-const poorMare = { stressLevel: 95, bondScore: 20, healthStatus: 'Poor' }; // used in determinism test
+const goodMare = { bondScore: 90, healthStatus: 'Excellent' };
+const poorMare = { bondScore: 20, healthStatus: 'Poor' }; // used in determinism test
 
 function unionTraits(result) {
   return [...result.positive, ...result.negative, ...result.hidden];
@@ -30,7 +30,6 @@ describe('§A Stage-0 inheritance — parent traits can be inherited', () => {
       mare: goodMare,
       lineage: [],
       feedQuality: 90,
-      stressLevel: 10,
       seed: 1,
     });
     expect(Array.isArray(r.positive)).toBe(true);
@@ -45,7 +44,6 @@ describe('§A Stage-0 inheritance — parent traits can be inherited', () => {
         mare: goodMare,
         lineage: [],
         feedQuality: 90,
-        stressLevel: 10,
         damTraits: ['intelligent'],
         sireTraits: ['athletic'],
         seed,
@@ -63,10 +61,9 @@ describe('§A Stage-0 inheritance — parent traits can be inherited', () => {
     // trait names are absent (they can only come from inheritance).
     for (let seed = 1; seed <= 20; seed++) {
       const r = applyEpigeneticTraitsAtBirth({
-        mare: { stressLevel: 50, bondScore: 50 },
+        mare: { bondScore: 50 },
         lineage: [],
         feedQuality: 50,
-        stressLevel: 50,
         damTraits: [],
         sireTraits: [],
         seed,
@@ -85,7 +82,6 @@ describe('§A Stage-0 inheritance — parent traits can be inherited', () => {
         mare: goodMare,
         lineage: [],
         feedQuality: 90,
-        stressLevel: 10,
         damTraits: ['eager_learner'],
         seed,
       });
@@ -101,7 +97,7 @@ describe('§A Stage-0 inheritance — parent traits can be inherited', () => {
 
 describe('§D visibility — legendary parent trait can be born hidden under poor conditions', () => {
   it('when inherited, legendaryBloodline lands in hidden[] for at least one seed (legendary 90% hidden)', () => {
-    // Use favorable inheritance conditions (high bond, low stress) so the
+    // Use favorable inheritance conditions (high bond) so the
     // legendary parent trait is actually inherited; the 90%-hidden roll is
     // independent of conditions. We assert that across many seeds it is born
     // hidden at least once (and the next test proves it can also be visible).
@@ -111,7 +107,6 @@ describe('§D visibility — legendary parent trait can be born hidden under poo
         mare: goodMare,
         lineage: [],
         feedQuality: 90,
-        stressLevel: 10,
         damTraits: ['legendaryBloodline'],
         sireTraits: ['legendaryBloodline'],
         seed,
@@ -130,7 +125,6 @@ describe('§D visibility — legendary parent trait can be born hidden under poo
         mare: goodMare,
         lineage: [],
         feedQuality: 90,
-        stressLevel: 10,
         damTraits: ['legendaryBloodline'],
         sireTraits: ['legendaryBloodline'],
         seed,
@@ -147,7 +141,6 @@ describe('§D visibility — legendary parent trait can be born hidden under poo
       mare: poorMare,
       lineage: [],
       feedQuality: 20,
-      stressLevel: 95,
       damTraits: ['legendaryBloodline', 'intelligent'],
       sireTraits: ['athletic'],
       seed: 42,

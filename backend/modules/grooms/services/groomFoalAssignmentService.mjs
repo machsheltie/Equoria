@@ -239,7 +239,7 @@ export async function ensureDefaultGroomAssignment(foalId, userId) {
   return {
     success: false,
     message:
-      'No groom assigned to foal. Please hire and assign a groom manually to increase bonding and reduce stress.',
+      'No groom assigned to foal. Please hire and assign a groom manually to increase bonding.',
     requiresManualAssignment: true,
     foalId,
   };

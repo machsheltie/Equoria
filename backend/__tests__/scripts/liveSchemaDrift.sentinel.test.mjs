@@ -5,9 +5,9 @@
  * by fee265d07; its dead CI step removed by a22ac438f) read
  * `information_schema.columns` and `pg_indexes` from a LIVE database and
  * exited 1 on any absence. Its real inventory — a floor, not a total — was:
- * `horses.bondScore`, `horses.stressLevel`, the `foal_training_history` table,
- * eight of its columns (id, horseId, day, activity, outcome, bondChange,
- * stressChange, timestamp) and FIVE index names including
+ * `horses.bondScore`, a second `horses` column (since removed from the game), the
+ * `foal_training_history` table, eight of its columns (id, horseId, day, activity,
+ * outcome, bondChange, timestamp, and one since removed) and FIVE index names including
  * `foal_training_history_pkey`. The justification for deleting it counted 8
  * columns and 4 indexes and called them "declared in schema.prisma and
  * enforced by migrate deploy". That is a claim about source. The script made a
@@ -33,7 +33,7 @@
  * WHAT THIS FILE PROVES.
  *  1. GREEN — the real test database matches the migration-applied structure.
  *  2. SENTINEL-POSITIVE, ABSENCE — dropping `horses.bondScore`,
- *     `horses.stressLevel`, a `foal_training_history` index, or
+ *     `horses.daysGroomedInARow`, a `foal_training_history` index, or
  *     `foal_training_history_pkey` is reported, by name. These are the exact
  *     objects the deleted script covered, so the replacement demonstrably
  *     subsumes it.
@@ -160,8 +160,7 @@ describe('live-schema drift sentinel (Equoria-axyem.2)', () => {
     }
     // The floor the deleted script covered is present in the reference side.
     expect(pristine.columns['horses.bondScore']).toBeDefined();
-    expect(pristine.columns['horses.stressLevel']).toBeDefined();
-    for (const column of ['id', 'horseId', 'day', 'activity', 'outcome', 'bondChange', 'stressChange', 'timestamp']) {
+    for (const column of ['id', 'horseId', 'day', 'activity', 'outcome', 'bondChange', 'timestamp']) {
       expect(pristine.columns[`foal_training_history.${column}`]).toBeDefined();
     }
     for (const index of [
@@ -184,16 +183,16 @@ describe('live-schema drift sentinel (Equoria-axyem.2)', () => {
     expect(formatFindings(findings)).toBe('No drift: the live database matches the migration-applied structure.');
   }, 120_000);
 
-  test('SENTINEL-POSITIVE: dropping horses.bondScore and horses.stressLevel is reported by name', async () => {
+  test('SENTINEL-POSITIVE: dropping horses.bondScore and horses.daysGroomedInARow is reported by name', async () => {
     const drifted = await catalogAfterPlantedDdl([
       'ALTER TABLE "horses" DROP COLUMN "bondScore"',
-      'ALTER TABLE "horses" DROP COLUMN "stressLevel"',
+      'ALTER TABLE "horses" DROP COLUMN "daysGroomedInARow"',
     ]);
     const findings = diffCatalog(pristine, drifted, {
       toleratedExtraIndexes: toleratedExtraIndexNames(),
     });
     expect(namesOf(findings, 'columns', 'missing')).toEqual(
-      expect.arrayContaining(['horses.bondScore', 'horses.stressLevel']),
+      expect.arrayContaining(['horses.bondScore', 'horses.daysGroomedInARow']),
     );
     expect(formatFindings(findings)).toMatch(/MISSING\s+columns: horses\.bondScore/);
   }, 120_000);

@@ -103,13 +103,12 @@ const PERSONALITY_TRAITS = {
   patient: [
     {
       label: 'Patient Repetition',
-      description:
-        'Uses calm, methodical repetition to build lasting muscle memory without stress.',
+      description: 'Uses calm, methodical repetition to build lasting muscle memory.',
       icon: '🔁',
       strength: 'mild',
     },
     {
-      label: 'Stress-Free Learning',
+      label: 'Gentle Learning',
       description: 'Creates low-pressure environments where horses absorb lessons without tension.',
       icon: '😌',
       strength: 'moderate',
