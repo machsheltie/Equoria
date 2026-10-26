@@ -588,9 +588,11 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
 
   it('tack bought into the inventory and equipped returns to the seller on a sale, as one record', async () => {
     // The current flow (owner ruling 2026-10-26): buy into the inventory, then equip.
-    expect((await buyAndEquip(post, seller.token, listedHorse.id, INVENTORY_SADDLE)).status).toBe(200);
-    expect((await buyAndEquip(post, seller.token, listedHorse.id, SHOP_DECORATION)).status).toBe(200);
-    expect((await horseRow(listedHorse.id)).tack.saddle).toBe(INVENTORY_SADDLE);
+    const saddleId = 'all-purpose-saddle';
+    const ribbonId = 'show-ribbon';
+    expect((await buyAndEquip(post, seller.token, listedHorse.id, saddleId)).status).toBe(200);
+    expect((await buyAndEquip(post, seller.token, listedHorse.id, ribbonId)).status).toBe(200);
+    expect((await horseRow(listedHorse.id)).tack.saddle).toBe(saddleId);
 
     expect((await buyRequest(buyer.token, listedHorse.id)).status).toBe(200);
 
@@ -600,10 +602,10 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
     expect(sold.tack.decorations ?? []).toEqual([]);
 
     const inventory = await sellerInventory(seller.id);
-    expect(recordsFor(inventory, INVENTORY_SADDLE)).toEqual([
+    expect(recordsFor(inventory, saddleId)).toEqual([
       expect.objectContaining({ equippedToHorseId: null, quantity: 1 }),
     ]);
-    expect(recordsFor(inventory, SHOP_DECORATION)).toEqual([
+    expect(recordsFor(inventory, ribbonId)).toEqual([
       expect.objectContaining({ equippedToHorseId: null, quantity: 1 }),
     ]);
   }, 90000);
