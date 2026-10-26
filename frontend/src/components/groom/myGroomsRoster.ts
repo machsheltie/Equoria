@@ -13,7 +13,7 @@
 import type { Groom, GroomAssignment, SalarySummary } from '@/lib/api-client';
 
 /** Equoria-95yrv: the server publishes the cap; this is the pre-load fallback. */
-export const DEFAULT_MAX_HORSES_PER_GROOM = 10;
+export const DEFAULT_MAX_HORSES_PER_GROOM = 20;
 
 /** The horses this groom is currently caring for. */
 export function activeAssignmentsFor(

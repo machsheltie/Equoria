@@ -83,7 +83,7 @@ const GroomList: React.FC<GroomListProps> = ({
   // with the offer list. Defaulted only so the card renders while the list is
   // still arriving; the real numbers come from the API, never from a copy here.
   const feePerHorse = marketplaceData?.feePerHorsePerWeek ?? 70;
-  const maxHorsesPerGroom = marketplaceData?.maxHorsesPerGroom ?? 10;
+  const maxHorsesPerGroom = marketplaceData?.maxHorsesPerGroom ?? 20;
 
   // Hire groom mutation
   const hireMutation = useHireGroom();

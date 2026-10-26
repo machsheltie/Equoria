@@ -59,7 +59,7 @@ export const NAV_SECTIONS: NavItem[] = [
  * (Riders, Trainers and Grooms are browsed and hired under World); Bank stays
  * here and in the top bar.
  */
-export const HOME_ROOMS: NavItem[] = [
+export const homeRooms: NavItem[] = [
   // D-27 (DECISIONS.md §10): /stable is the roster browser — label "Stable".
   { name: 'Stable', href: '/stable', Icon: Building2, shortName: 'Stable' },
   { name: 'Staff', href: '/staff', Icon: UsersRound },

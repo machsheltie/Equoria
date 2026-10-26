@@ -13,10 +13,10 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { HOME_ROOMS, NAV_SECTIONS, isRouteActive, type NavItem } from './navItems';
+import { homeRooms, NAV_SECTIONS, isRouteActive, type NavItem } from './navItems';
 
 const STORAGE_KEY = 'equoria-sidebar-collapsed';
-const THREAD_KEY = 'equoria-sidebar-home-thread';
+const threadKey = 'equoria-sidebar-home-thread';
 
 function readStoredCollapsed(): boolean {
   if (typeof window === 'undefined') return false;
@@ -37,7 +37,7 @@ function writeStoredCollapsed(value: boolean): void {
 
 function readStoredThread(): boolean {
   try {
-    return window.localStorage.getItem(THREAD_KEY) === 'true';
+    return window.localStorage.getItem(threadKey) === 'true';
   } catch {
     return false;
   }
@@ -45,7 +45,7 @@ function readStoredThread(): boolean {
 
 function writeStoredThread(value: boolean): void {
   try {
-    window.localStorage.setItem(THREAD_KEY, String(value));
+    window.localStorage.setItem(threadKey, String(value));
   } catch {
     /* storage blocked — non-fatal */
   }
@@ -73,7 +73,7 @@ export function SidebarNav() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState<boolean>(readStoredCollapsed);
   const [threadOpen, setThreadOpen] = useState<boolean>(readStoredThread);
-  const roomActive = HOME_ROOMS.some((room) => isRouteActive(location.pathname, room.href));
+  const roomActive = homeRooms.some((room) => isRouteActive(location.pathname, room.href));
   const threadShown = threadOpen;
 
   // Arriving in a room lets the thread down, so the player sees where they are.
@@ -214,7 +214,7 @@ export function SidebarNav() {
                         className="pointer-events-none absolute bottom-3 left-[5px] top-0 w-px bg-gradient-to-b from-[var(--gold-primary)] to-[var(--gold-dim)]/30"
                       />
                     )}
-                    {HOME_ROOMS.map((room) => {
+                    {homeRooms.map((room) => {
                       const roomIsActive = isRouteActive(location.pathname, room.href);
                       return (
                         <li key={room.href} className="flex items-center gap-2">

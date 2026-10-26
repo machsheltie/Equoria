@@ -526,9 +526,14 @@ describe('Story 7-1: Groom Hiring Interface', () => {
       expect(
         within(specialtyFilter).getByRole('option', { name: /foal care/i })
       ).toBeInTheDocument();
+      // Equoria-x7gw6 / Equoria-lmvlv: the filter offers only the backend's specialties;
+      // "show handling" is not one, so it is not offered.
+      for (const name of [/general/i, /training/i, /medical/i]) {
+        expect(within(specialtyFilter).getByRole('option', { name })).toBeInTheDocument();
+      }
       expect(
-        within(specialtyFilter).getByRole('option', { name: /show handling/i })
-      ).toBeInTheDocument();
+        within(specialtyFilter).queryByRole('option', { name: /show handling/i })
+      ).not.toBeInTheDocument();
     });
   });
 });

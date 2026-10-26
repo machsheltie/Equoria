@@ -12,7 +12,7 @@ import { Link, useLocation } from 'react-router';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect } from 'react';
-import { HOME_ROOMS, NAV_SECTIONS, isRouteActive } from './navItems';
+import { homeRooms, NAV_SECTIONS, isRouteActive } from './navItems';
 
 interface NavPanelProps {
   isOpen: boolean;
@@ -90,9 +90,9 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
         {/* Nav links */}
         <nav className="flex-1 overflow-y-auto py-3 px-3">
           {/* The rooms under Home follow it, as in the sidebar's thread. */}
-          {NAV_SECTIONS.flatMap((item) => (item.href === '/' ? [item, ...HOME_ROOMS] : [item])).map(
+          {NAV_SECTIONS.flatMap((item) => (item.href === '/' ? [item, ...homeRooms] : [item])).map(
             (item) => {
-              const room = HOME_ROOMS.includes(item);
+              const room = homeRooms.includes(item);
               const active = isRouteActive(location.pathname, item.href);
               return (
                 <Link

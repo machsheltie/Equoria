@@ -210,7 +210,7 @@ export const guideSectionsStart: readonly GuideSection[] = [
       },
       {
         kind: 'paragraph',
-        text: '**Groom fees.** A groom costs **70 coins per horse per week**, and each groom looks after up to 10 horses. A groom with no horses costs nothing. Fees are taken on Monday mornings, Eastern.',
+        text: '**Groom fees.** A groom costs **70 coins per horse per week**, and each groom looks after up to 20 horses. A groom with no horses costs nothing. Fees are taken on Monday mornings, Eastern.',
       },
       {
         kind: 'list',
