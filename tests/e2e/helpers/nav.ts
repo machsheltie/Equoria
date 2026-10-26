@@ -34,3 +34,16 @@ export async function openNavPanel(page: Page): Promise<Locator> {
   await expect(panel).toBeVisible({ timeout: 5_000 });
   return panel;
 }
+
+// Equoria-3qjwz (owner q96, option A): Stable, Staff, Inventory and Bank hang
+// beneath Home on the sidebar's thread, drawn up until the player lets it down.
+// On desktop this lets the thread down if it is up; in the mobile panel the
+// rooms are always listed under Home, so there is no arrow to press.
+export async function openHomeRooms(nav: Locator): Promise<void> {
+  const arrow = nav.getByTestId('home-thread-toggle');
+  if ((await arrow.count()) === 0) return;
+  if ((await arrow.getAttribute('aria-expanded')) !== 'true') {
+    await arrow.click();
+  }
+  await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+}

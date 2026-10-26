@@ -9,7 +9,7 @@
  *  - Protected routes redirect unauthenticated users to /login
  */
 import { test, expect } from '@playwright/test';
-import { openNavPanel } from './helpers/nav';
+import { openHomeRooms, openNavPanel } from './helpers/nav';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Authenticated Navigation Tests (uses storageState from global setup)
@@ -41,12 +41,26 @@ test.describe('Celestial Night Navigation — Authenticated', () => {
     // 'My Stable' → 'Stable'. 'Training' remains excluded (not a top-level
     // nav item — Training Grounds is reached via /world per Epic 13).
     // exact: true forces accessible-name equality.
-    const expectedNavLinks = ['Home', 'Stable', 'Competitions', 'Breeding', 'World'];
+    const expectedNavLinks = ['Home', 'Competitions', 'Breeding', 'World'];
 
     for (const linkName of expectedNavLinks) {
       const link = navContainer.getByRole('link', { name: linkName, exact: true }).first();
       await expect(link).toBeVisible({ timeout: 10000 });
     }
+
+    // Owner ruling 2026-10-26 (q96, Equoria-3qjwz). Old contract: Stable (and
+    // Inventory, Bank, Riders) were top-level sidebar links. Now Stable, Staff,
+    // Inventory and Bank hang beneath Home on a thread the player lets down,
+    // and the top-level Riders link is gone.
+    await openHomeRooms(navContainer);
+    for (const room of ['Stable', 'Staff', 'Inventory', 'Bank']) {
+      await expect(navContainer.getByRole('link', { name: room, exact: true }).first()).toBeVisible(
+        {
+          timeout: 10000,
+        }
+      );
+    }
+    await expect(navContainer.getByRole('link', { name: 'Riders', exact: true })).toHaveCount(0);
   });
 
   test('World Hub loads with location cards', async ({ page }) => {
