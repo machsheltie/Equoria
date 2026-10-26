@@ -22,7 +22,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 export const CHECKIN_CODE_RETENTION_MS = 24 * 60 * 60 * 1000;
 export const TRUSTED_DEVICE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 /** Owner ruling q102 (Equoria-w47x7): login IP and device records are kept 90 days. */
-export const LOGIN_SIGHTING_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+export const loginSightingRetentionMs = 90 * 24 * 60 * 60 * 1000;
 
 /**
  * @param {Date} [now]
@@ -40,7 +40,7 @@ export async function purgeStaleStaffCheckinRecords(now = new Date()) {
     where: { OR: [{ revokedAt: { lt: deviceCutoff } }, { expiresAt: { lt: deviceCutoff } }] },
   });
   // Where players signed in from: last seen more than 90 days ago (q102).
-  const sightingCutoff = new Date(now.getTime() - LOGIN_SIGHTING_RETENTION_MS);
+  const sightingCutoff = new Date(now.getTime() - loginSightingRetentionMs);
   const sightings = await prisma.loginSighting.deleteMany({
     where: { lastSeenAt: { lt: sightingCutoff } },
   });

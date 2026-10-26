@@ -17,15 +17,19 @@
 import crypto from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { REFRESH_TOKEN_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
+import config from '../../../config/config.mjs';
+import {
+  resolveCookieSameSite,
+  resolveCookieSecure,
+} from '../../../utils/cookieSecurityPolicy.mjs';
 
-export const DEVICE_COOKIE = 'equoriaDevice';
-const DEVICE_COOKIE_MAX_AGE_MS = 2 * 365 * 24 * 60 * 60 * 1000;
-const STANDING_CACHE_TTL_MS = 30_000;
+export const deviceCookie = 'equoriaDevice';
+const deviceCookieMaxAgeMs = 2 * 365 * 24 * 60 * 60 * 1000;
+const standingCacheTtlMs = 30_000;
 const standingCache = new Map();
 
 const sha256 = value => crypto.createHash('sha256').update(value, 'utf8').digest('hex');
-const DEVICE_TOKEN_SHAPE = /^[0-9a-f]{64}$/;
+const deviceTokenShape = /^[0-9a-f]{64}$/;
 
 /** Drop an account's cached standing; every conduct action calls this. */
 export function evictStandingCache(userId) {
@@ -75,7 +79,7 @@ export async function cachedAccountStanding(userId) {
     }
   }
   const standing = await accountStanding(prisma, userId, new Date(now));
-  standingCache.set(userId, { standing, expiresAt: now + STANDING_CACHE_TTL_MS });
+  standingCache.set(userId, { standing, expiresAt: now + standingCacheTtlMs });
   return standing;
 }
 
@@ -140,12 +144,21 @@ export function deviceHashFor(req, res) {
   if (req.conductDeviceHash) {
     return req.conductDeviceHash;
   }
-  let token = req.cookies?.[DEVICE_COOKIE];
-  if (typeof token !== 'string' || !DEVICE_TOKEN_SHAPE.test(token)) {
+  let token = req.cookies?.[deviceCookie];
+  if (typeof token !== 'string' || !deviceTokenShape.test(token)) {
     token = crypto.randomBytes(32).toString('hex');
-    res.cookie(DEVICE_COOKIE, token, {
-      ...REFRESH_TOKEN_COOKIE_OPTIONS,
-      maxAge: DEVICE_COOKIE_MAX_AGE_MS,
+    res.cookie(deviceCookie, token, {
+      httpOnly: true,
+      secure: resolveCookieSecure({
+        nodeEnv: config.env,
+        cookieSecureEnv: process.env.COOKIE_SECURE,
+      }),
+      sameSite: resolveCookieSameSite({
+        nodeEnv: config.env,
+        cookieSamesiteEnv: process.env.COOKIE_SAMESITE,
+      }),
+      path: '/',
+      maxAge: deviceCookieMaxAgeMs,
     });
   }
   req.conductDeviceHash = sha256(token);
@@ -187,11 +200,18 @@ export async function recordLoginSighting(req, res, userId) {
   try {
     const ipAddress = requestIp(req);
     const deviceHash = deviceHashFor(req, res);
-    await prisma.loginSighting.upsert({
-      where: { userId_ipAddress_deviceHash: { userId, ipAddress, deviceHash } },
-      create: { userId, ipAddress, deviceHash },
-      update: { lastSeenAt: new Date() },
+    // Touch the row when it exists; otherwise add it. Two sign-ins racing to add
+    // the same row leave one: the unique key skips the duplicate.
+    const touched = await prisma.loginSighting.updateMany({
+      where: { userId, ipAddress, deviceHash },
+      data: { lastSeenAt: new Date() },
     });
+    if (touched.count === 0) {
+      await prisma.loginSighting.createMany({
+        data: [{ userId, ipAddress, deviceHash }],
+        skipDuplicates: true,
+      });
+    }
   } catch (error) {
     logger.warn(`[conduct] login sighting not recorded: ${error.message}`);
   }

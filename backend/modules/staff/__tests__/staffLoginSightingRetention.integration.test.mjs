@@ -11,12 +11,9 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import cronJobService from '../../../services/cronJobs.mjs';
-import { CRON_JOB_REGISTRY } from '../../../services/jobs/index.mjs';
+import retentionJob from '../../../services/jobs/staffCheckinRetentionJob.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import {
-  LOGIN_SIGHTING_RETENTION_MS,
-  purgeStaleStaffCheckinRecords,
-} from '../services/staffCheckinRetentionService.mjs';
+import { loginSightingRetentionMs, purgeStaleStaffCheckinRecords } from '../services/staffCheckinRetentionService.mjs';
 import { createUserFactory, uid } from './helpers/staffFixtures.mjs';
 
 const cleanup = createCleanupTracker();
@@ -43,13 +40,13 @@ const remaining = ids =>
 
 describe('Login sighting retention (q102)', () => {
   it('keeps the window at 90 days', () => {
-    expect(LOGIN_SIGHTING_RETENTION_MS).toBe(90 * 24 * 60 * 60 * 1000);
+    expect(loginSightingRetentionMs).toBe(90 * 24 * 60 * 60 * 1000);
   });
 
   it('deletes sightings last seen more than 90 days ago and nothing sooner, idempotently', async () => {
     const player = await makeUser('user');
     const now = new Date();
-    const edge = -LOGIN_SIGHTING_RETENTION_MS;
+    const edge = -loginSightingRetentionMs;
     const ids = {
       past: await sighting(player.id, at(now, edge - 1)),
       exactly: await sighting(player.id, at(now, edge)),
@@ -69,9 +66,8 @@ describe('Login sighting retention (q102)', () => {
 
   it('is cleared by the nightly job through the cron registry', async () => {
     const player = await makeUser('user');
-    const stale = await sighting(player.id, new Date(Date.now() - LOGIN_SIGHTING_RETENTION_MS - 60_000));
-    const job = CRON_JOB_REGISTRY.find(entry => entry.jobName === 'staffCheckinRetention');
-    const summary = await job.run(cronJobService);
+    const stale = await sighting(player.id, new Date(Date.now() - loginSightingRetentionMs - 60_000));
+    const summary = await retentionJob.run(cronJobService);
     expect(summary.sightingsDeleted).toBeGreaterThanOrEqual(1);
     expect(await remaining([stale])).toEqual([]);
   });

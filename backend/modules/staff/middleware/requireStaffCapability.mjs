@@ -28,6 +28,9 @@ import {
 // it always answers with the JSON 404, never SPA html.
 const respondNotFound = createNotFoundHandler({ spaHtml: null, logger });
 
+/** The refusal code a capability guard answers with when the role lacks the tool. */
+export const capabilityRequiredCode = 'STAFF_CAPABILITY_REQUIRED';
+
 const respondGuardFailure = (res, error) => {
   logger.error(`[staff] guard lookup failed: ${error.message}`);
   return res.status(500).json({
@@ -78,7 +81,7 @@ function buildCapabilityGuard(capabilities) {
       if (!capabilities.some(capability => hasCapability(account.role, capability))) {
         return res.status(403).json({
           success: false,
-          code: 'STAFF_CAPABILITY_REQUIRED',
+          code: capabilityRequiredCode,
           message: 'Your staff role does not include this tool.',
         });
       }

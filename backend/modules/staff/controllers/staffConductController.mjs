@@ -25,12 +25,12 @@ import { staffRoles, staffTargetRefusal } from '../capabilities.mjs';
 import { recordStaffActionTx } from '../services/staffActionLogService.mjs';
 import { accountStanding, evictStandingCache } from '../services/conductEnforcementService.mjs';
 
-export const FREEZE_DAYS = Object.freeze([1, 3, 7]);
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const MAX_TEXT = 100;
-const MAX_REASON = 1000;
-const RECORD_PAGE = 50;
-const PUBLIC_FIELDS = { id: true, username: true, role: true };
+export const freezeLengths = Object.freeze([1, 3, 7]);
+const msPerDay = 24 * 60 * 60 * 1000;
+const maxText = 100;
+const maxReason = 1000;
+const recordPage = 50;
+const publicFields = { id: true, username: true, role: true };
 
 const fail = (res, status, message, code) =>
   res.status(status).json({ success: false, message, ...(code ? { code } : {}) });
@@ -53,10 +53,10 @@ const noSuchPlayer = () => new Refusal(404, 'No such player', 'conductTargetNotF
 export async function lookupPlayer(req, res, next) {
   try {
     const username = req.body?.username;
-    if (!isText(username, MAX_TEXT)) {
+    if (!isText(username, maxText)) {
       return fail(res, 400, 'A username is required');
     }
-    const user = await prisma.user.findUnique({ where: { username }, select: PUBLIC_FIELDS });
+    const user = await prisma.user.findUnique({ where: { username }, select: publicFields });
     if (!user) {
       return fail(res, 404, 'No player has that username', 'conductTargetNotFound');
     }
@@ -71,8 +71,8 @@ export async function lookupPlayer(req, res, next) {
 export async function getConductRecord(req, res, next) {
   try {
     const { userId } = req.params;
-    const user = isText(userId, MAX_TEXT)
-      ? await prisma.user.findUnique({ where: { id: userId }, select: PUBLIC_FIELDS })
+    const user = isText(userId, maxText)
+      ? await prisma.user.findUnique({ where: { id: userId }, select: publicFields })
       : null;
     if (!user) {
       return fail(res, 404, 'No such player', 'conductTargetNotFound');
@@ -82,7 +82,7 @@ export async function getConductRecord(req, res, next) {
       prisma.conductRecord.findMany({
         where: { userId: user.id },
         orderBy: { id: 'desc' },
-        take: RECORD_PAGE,
+        take: recordPage,
         select: {
           id: true,
           kind: true,
@@ -114,12 +114,12 @@ export async function getConductRecord(req, res, next) {
 async function runAction(req, res, next, { capability, targetType = 'player', input = {}, apply }) {
   try {
     const reason = req.body?.reason;
-    if (!isText(reason, MAX_REASON)) {
+    if (!isText(reason, maxReason)) {
       return fail(res, 400, 'A reason is required', 'conductReasonRequired');
     }
     const { userId } = req.params;
     const outcome = await prisma.$transaction(async tx => {
-      if (!isText(userId, MAX_TEXT)) {
+      if (!isText(userId, maxText)) {
         throw noSuchPlayer();
       }
       // Lock the target first: everything below sees what the lock holder sees.
@@ -195,7 +195,7 @@ export const warnPlayer = (req, res, next) =>
 /** POST /api/v1/staff/conduct/:userId/freeze { days: 1|3|7, reason } */
 export const freezePlayer = (req, res, next) => {
   const days = req.body?.days;
-  if (!FREEZE_DAYS.includes(days)) {
+  if (!freezeLengths.includes(days)) {
     return fail(res, 400, 'A freeze lasts 1, 3 or 7 days', 'conductFreezeLength');
   }
   return runAction(req, res, next, {
@@ -209,7 +209,7 @@ export const freezePlayer = (req, res, next) => {
       if (standing?.state === 'frozen') {
         throw new Refusal(409, 'This account is already frozen.', 'conductAlreadyFrozen');
       }
-      const endsAt = new Date(Date.now() + input.days * MS_PER_DAY);
+      const endsAt = new Date(Date.now() + input.days * msPerDay);
       const record = await tx.conductRecord.create({
         data: {
           userId: target.id,

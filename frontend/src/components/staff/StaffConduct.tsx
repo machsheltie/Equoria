@@ -20,10 +20,21 @@ import {
 import type { ConductAction, ConductEntry, StaffMember } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
-import { STAFF_TIME_OPTIONS, staffErrorMessage } from './staffMessages';
+import { staffErrorMessage } from './staffMessages';
 import StaffSection from './StaffSection';
 
-const ACTION_OPTIONS = [
+/** Game time is Eastern; the zone name keeps the time honest for any reader. */
+const gameClockFormat: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: 'America/New_York',
+  timeZoneName: 'short',
+};
+
+const actionOptions = [
   { value: 'warn', label: 'Warn' },
   { value: 'freeze', label: 'Freeze' },
   { value: 'ban/account', label: 'Ban the account' },
@@ -32,32 +43,32 @@ const ACTION_OPTIONS = [
 ];
 
 // Owner and Admins only (q101): a moderator cannot undo.
-const LIFT_OPTIONS = [
+const liftOptions = [
   { value: 'lift/account', label: 'Lift the freeze or ban on the account' },
   { value: 'lift/ip', label: 'Lift the IP ban they caused' },
   { value: 'lift/device', label: 'Lift the device ban they caused' },
 ];
 
 // Owner ruling q103: an IP ban can reach other players on a shared connection.
-export const IP_BAN_WARNING =
+export const ipBanWarning =
   'An IP ban can also block other players who share this connection, such as a household, school or library. Consider banning the device first.';
 
-const FREEZE_OPTIONS = [
+const freezeOptions = [
   { value: '1', label: '1 day' },
   { value: '3', label: '3 days' },
   { value: '7', label: '7 days' },
 ];
 
-const ENTRY_WORDS: Record<ConductEntry['kind'], string> = {
+const entryWords: Record<ConductEntry['kind'], string> = {
   warning: 'Warned',
   freeze: 'Frozen',
   ban: 'Banned',
   lift: 'Lifted',
 };
 
-const LOOKUP_MESSAGES = { 400: 'Enter a username.', 404: 'No player goes by that name.' };
+const lookupMessages = { 400: 'Enter a username.', 404: 'No player goes by that name.' };
 
-const ACT_MESSAGES = {
+const actMessages = {
   400: 'Write a reason first.',
   403: 'You cannot act on this account.',
   404: 'That player no longer exists.',
@@ -67,7 +78,7 @@ const ACT_MESSAGES = {
 function standingLine(standing: { state: string; endsAt?: string }): string {
   if (standing.state === 'banned') return 'Banned.';
   if (standing.state === 'frozen' && standing.endsAt) {
-    return `Frozen until ${formatDateTime(standing.endsAt, STAFF_TIME_OPTIONS)}.`;
+    return `Frozen until ${formatDateTime(standing.endsAt, gameClockFormat)}.`;
   }
   return 'In good standing.';
 }
@@ -112,13 +123,13 @@ function ConductPanel({ member, canLift }: { member: StaffMember; canLift: boole
             {record.data.records.map((entry) => (
               <li key={entry.id} className="py-2 text-sm">
                 <span className="text-[var(--text-primary)]">
-                  {ENTRY_WORDS[entry.kind]}
+                  {entryWords[entry.kind]}
                   {entry.kind === 'freeze' && entry.freezeDays
                     ? ` for ${entry.freezeDays} day${entry.freezeDays === 1 ? '' : 's'}`
                     : ''}
                 </span>{' '}
                 <span className="text-role-secondary">
-                  ({formatDateTime(entry.createdAt, STAFF_TIME_OPTIONS)}): {entry.reason}
+                  ({formatDateTime(entry.createdAt, gameClockFormat)}): {entry.reason}
                 </span>
               </li>
             ))}
@@ -137,14 +148,14 @@ function ConductPanel({ member, canLift }: { member: StaffMember; canLift: boole
             <Select
               {...field}
               value={action}
-              options={canLift ? [...ACTION_OPTIONS, ...LIFT_OPTIONS] : ACTION_OPTIONS}
+              options={canLift ? [...actionOptions, ...liftOptions] : actionOptions}
               onChange={(event) => setAction(event.target.value as ConductAction)}
             />
           )}
         </FormField>
         {action === 'ban/ip' && (
           <p role="note" className="text-sm text-role-secondary">
-            {IP_BAN_WARNING}
+            {ipBanWarning}
           </p>
         )}
         {action === 'freeze' && (
@@ -153,7 +164,7 @@ function ConductPanel({ member, canLift }: { member: StaffMember; canLift: boole
               <Select
                 {...field}
                 value={days}
-                options={FREEZE_OPTIONS}
+                options={freezeOptions}
                 onChange={(event) => setDays(event.target.value as '1' | '3' | '7')}
               />
             )}
@@ -177,10 +188,10 @@ function ConductPanel({ member, canLift }: { member: StaffMember; canLift: boole
             pending={act.isPending}
             disabled={trimmed === ''}
           >
-            {[...ACTION_OPTIONS, ...LIFT_OPTIONS].find((option) => option.value === action)
-              ?.label ?? 'Confirm'}
+            {[...actionOptions, ...liftOptions].find((option) => option.value === action)?.label ??
+              'Confirm'}
           </Button>
-          {act.isError && <InlineError message={staffErrorMessage(act.error, ACT_MESSAGES)} />}
+          {act.isError && <InlineError message={staffErrorMessage(act.error, actMessages)} />}
           {act.isSuccess && (
             <p className="text-sm text-role-secondary">Done. It is in the ledger.</p>
           )}
@@ -243,7 +254,7 @@ export function StaffConduct({ onCheckinRequired, canLift = false }: StaffConduc
           </Button>
         </div>
         {lookup.isError && (
-          <InlineError message={staffErrorMessage(lookup.error, LOOKUP_MESSAGES)} />
+          <InlineError message={staffErrorMessage(lookup.error, lookupMessages)} />
         )}
       </form>
       {found && <ConductPanel key={found.id} member={found} canLift={canLift} />}

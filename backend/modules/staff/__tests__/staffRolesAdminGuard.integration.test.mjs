@@ -13,6 +13,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { capabilityRequiredCode } from '../middleware/requireStaffCapability.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import {
@@ -97,7 +98,7 @@ describe('Roles routes are owner-only (Equoria-puj1e.1, Equoria-i1hgt q76)', () 
     ];
     for (const res of responses) {
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('STAFF_CAPABILITY_REQUIRED');
+      expect(res.body.code).toBe(capabilityRequiredCode);
     }
     expect(await roleOf(player.id)).toBe('user');
     expect(await roleOf(mod.id)).toBe('moderator');

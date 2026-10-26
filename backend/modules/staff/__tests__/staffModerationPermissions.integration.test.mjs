@@ -9,6 +9,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { capabilityRequiredCode } from '../middleware/requireStaffCapability.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import {
   checkIn,
@@ -70,7 +71,7 @@ describe('Only the owner appoints admins (Equoria-i1hgt)', () => {
     const player = await makeUser('user');
     const res = await setRole(admin, player, 'admin');
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('STAFF_CAPABILITY_REQUIRED');
+    expect(res.body.code).toBe(capabilityRequiredCode);
     expect(await roleOf(player.id)).toBe('user');
   });
 
@@ -128,7 +129,7 @@ describe('Nobody acts on the owner; admins and moderators never on each other (E
     for (const role of ['user', 'moderator']) {
       const res = await setRole(admin, owner, role);
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('STAFF_CAPABILITY_REQUIRED');
+      expect(res.body.code).toBe(capabilityRequiredCode);
     }
     expect(await roleOf(owner.id)).toBe('owner');
   });
@@ -138,7 +139,7 @@ describe('Nobody acts on the owner; admins and moderators never on each other (E
     const other = await makeUser('admin');
     const res = await setRole(admin, other, 'user');
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('STAFF_CAPABILITY_REQUIRED');
+    expect(res.body.code).toBe(capabilityRequiredCode);
     expect(await roleOf(other.id)).toBe('admin');
   });
 

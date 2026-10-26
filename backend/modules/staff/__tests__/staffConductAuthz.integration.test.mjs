@@ -18,6 +18,7 @@ import crypto from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { capabilityRequiredCode } from '../middleware/requireStaffCapability.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createTestUser } from '../../../tests/helpers/authHelper.mjs';
 import {
@@ -553,7 +554,7 @@ describe('Lifting a freeze or ban early (owner ruling q101)', () => {
       expect({ action, status: res.status, code: res.body.code }).toEqual({
         action,
         status: 403,
-        code: 'STAFF_CAPABILITY_REQUIRED',
+        code: capabilityRequiredCode,
       });
     }
     expect((await get(conduct(player.id), mod.user, mod.device)).body.standing.state).toBe('banned');

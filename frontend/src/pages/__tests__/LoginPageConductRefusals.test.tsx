@@ -14,7 +14,7 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/msw/server';
 import LoginPage from '../LoginPage';
 
-const LOGIN_URL = 'http://localhost:3000/api/v1/auth/login';
+const loginUrl = 'http://localhost:3000/api/v1/auth/login';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router', async () => {
@@ -38,7 +38,7 @@ describe('LoginPage: conduct refusals', () => {
   });
 
   async function signInRefusedWith(body: Record<string, unknown>) {
-    server.use(http.post(LOGIN_URL, () => HttpResponse.json(body, { status: 403 })));
+    server.use(http.post(loginUrl, () => HttpResponse.json(body, { status: 403 })));
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
