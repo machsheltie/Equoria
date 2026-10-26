@@ -123,7 +123,7 @@ export type {
 // ── Vet Clinic ────────────────────────────────────────────────────────────────
 // Extracted to ./api/vet (Equoria-rfsml). Re-exported for barrel compat.
 export { vetApi } from './api/vet.js';
-export type { VetService, VetAppointmentResult } from './api/vet.js';
+export type { VetService, VetHorse, VetAppointmentResult } from './api/vet.js';
 
 // -- Breeds --
 // Extracted to ./api/breeds (Equoria-jog8w). Re-exported for barrel compat.
@@ -157,7 +157,7 @@ export type {
 // ── Farrier ───────────────────────────────────────────────────────────────────
 // Extracted to ./api/farrier (Equoria-rfsml). Re-exported for barrel compat.
 export { farrierApi } from './api/farrier.js';
-export type { FarrierShoeingResult } from './api/farrier.js';
+export type { FarrierService, FarrierHorse, FarrierShoeingResult } from './api/farrier.js';
 
 // -- Feed Shop / per-horse feed --
 // Extracted to ./api/feedShop (Equoria-rfsml). Re-exported for barrel compat.

@@ -1,106 +1,130 @@
 /**
- * FarrierPage — World > Farrier Location (Epic 10 — Story 10-2;
- * UI consistency 2026-05-05, Equoria-hfqe).
+ * FarrierPage — World > Farrier (owner ruling 2026-10-26, q78, Equoria-zz14s;
+ * the weekly action is Equoria-zmqzf).
  *
- * Owner ruling 2026-10-23 (Equoria-zmqzf): the farrier has one action. Once a
- * week the player picks a horse and clicks "Shoe horse" for 50 coins; the horse
- * is recorded as shod and, for now, one stat gains +1. The hero layout stays;
- * only the service area is this single action.
+ * No My Horses format. The farrier lists his shoe types as data (Basic Shoes for
+ * now; more later), each a centred box with a dropdown of the player's horses
+ * and one priced button. A horse shod within the week is greyed out; a retired
+ * horse (21+) is not listed. The action is the weekly "Shoe horse": once a week,
+ * the horse gains +1 in one random stat.
  *
- * Design-system migration (Equoria-o5hub, world-services family): PageHero
- * retained (genuine location artwork), PageContainer variants replace local
- * max-w wrappers, Surface replaces local glass recipes, canonical async
- * states (SectionLoading / ErrorState / EmptyState), Currency for prices,
- * Button for command actions.
+ * Old contract: a horse-card grid with one "Shoe horse — 50 coins" button.
  *
- * Data sources:
- *   - useHorses()     → user's horses from /api/horses
- *   - useShoeHorse()  → POST /api/v1/farrier/shoe-horse
+ * PageHero retained (genuine location artwork).
+ *
+ *   useFarrierServices() -> GET  /api/v1/farrier/shoe-types
+ *   useFarrierHorses()   -> GET  /api/v1/farrier/horses
+ *   useShoeHorse()       -> POST /api/v1/farrier/shoe-horse
  */
 
-import { actionMessageFor } from '@/lib/http/actionMessage';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Wrench, CheckCircle, Leaf } from 'lucide-react';
+import { Wrench, Leaf } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Surface } from '@/components/ui/Surface';
-import { Button } from '@/components/ui/button';
-import Currency from '@/components/ui/Currency';
-import { CardGrid } from '@/components/ui/CardGrid';
 import { SectionLoading, ErrorState } from '@/components/ui/state';
 import EmptyState from '@/components/ui/EmptyState';
-import { HorseCard } from '@/components/horse/HorseCard';
-import { useHorses } from '@/hooks/api/useHorses';
-import { useShoeHorse } from '@/hooks/api/useFarrier';
-
-/** Shown on the button; the server charges the same 50 (farrierController shoeingCost). */
-const shoeingCost = 50;
+import { ServiceHorseBox } from '@/components/world/ServiceHorseBox';
+import { actionMessageFor } from '@/lib/http/actionMessage';
+import { userMessageFor } from '@/lib/http/userMessage';
+import { useFarrierServices, useFarrierHorses, useShoeHorse } from '@/hooks/api/useFarrier';
+import type { FarrierService } from '@/hooks/api/useFarrier';
 
 const titleCase = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+interface Outcome {
+  serviceId: string;
+  confirmation?: string;
+  failure?: string;
+}
 
 const FarrierPage: React.FC = () => {
   const navigate = useNavigate();
-  const [selectedHorseId, setSelectedHorseId] = useState<number | null>(null);
-  const [shoeingSuccess, setShoeingSuccess] = useState<string | null>(null);
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
 
-  const { data: horses, isLoading, isError, refetch } = useHorses();
-  const shoeMutation = useShoeHorse();
+  const services = useFarrierServices();
+  const horses = useFarrierHorses();
+  const shoe = useShoeHorse();
+  const shoeingServiceId = shoe.isPending ? shoe.variables?.serviceId : undefined;
 
-  const selectedHorse = horses?.find((h) => h.id === selectedHorseId) ?? null;
-
-  const handleSelectHorse = (id: number) => {
-    setSelectedHorseId((prev) => (prev === id ? null : id));
-    setShoeingSuccess(null);
-  };
-
-  const handleShoe = () => {
-    if (selectedHorseId === null) return;
-    setShoeingSuccess(null);
-
-    shoeMutation.mutate(
-      { horseId: selectedHorseId },
+  const handleShoe = (service: FarrierService, horseId: number) => {
+    setOutcome(null);
+    shoe.mutate(
+      { horseId, serviceId: service.id },
       {
         onSuccess: (result) => {
-          setShoeingSuccess(
-            `${result.horse.name} has been shod and gained +1 ${titleCase(result.statGained)}. Remaining balance: ${result.remainingMoney.toLocaleString('en-US')} coins.`
-          );
+          setOutcome({
+            serviceId: service.id,
+            confirmation: `${result.horse.name} has been shod and gained +1 ${titleCase(result.statGained)}. Remaining balance: ${result.remainingMoney.toLocaleString('en-US')} coins.`,
+          });
+        },
+        onError: (error) => {
+          setOutcome({
+            serviceId: service.id,
+            failure: `Shoeing failed: ${actionMessageFor(error, {
+              400: "The farrier couldn't shoe that horse. Check your balance.",
+              404: "That horse couldn't be found. Reload and try again.",
+              409: 'That horse has already been shod this week.',
+            })}`,
+          });
         },
       }
     );
   };
 
-  const renderHorses = () => {
-    if (isLoading) {
+  const renderServices = () => {
+    if (services.isLoading || horses.isLoading) {
       return (
-        <div data-testid="farrier-horses">
-          <SectionLoading label="Loading your horses" minHeight="256px" />
+        <div data-testid="farrier-services">
+          <SectionLoading label="Loading the forge" minHeight="256px" />
         </div>
       );
     }
-
-    if (isError) {
+    if (services.isError) {
       return (
-        <div data-testid="farrier-horses">
+        <div data-testid="farrier-services">
+          <ErrorState
+            title="Unable to Load Services"
+            message={userMessageFor(services.error).message}
+            retry={{ label: 'Try Again', onClick: () => services.refetch() }}
+          />
+        </div>
+      );
+    }
+    if (horses.isError) {
+      return (
+        <div data-testid="farrier-services">
           <ErrorState
             title="Unable to Load Horses"
-            message="Unable to load horses. Please try again later."
-            retry={{ label: 'Try Again', onClick: () => refetch() }}
+            message={userMessageFor(horses.error).message}
+            retry={{ label: 'Try Again', onClick: () => horses.refetch() }}
+          />
+        </div>
+      );
+    }
+    if (!services.data || services.data.length === 0) {
+      return (
+        <div data-testid="farrier-services">
+          <EmptyState
+            variant="unavailable"
+            icon={<Wrench className="w-8 h-8" aria-hidden="true" />}
+            title="The forge is cold"
+            description="The farrier is not taking work right now. Check back soon."
           />
         </div>
       );
     }
 
-    if (!horses || horses.length === 0) {
+    const farrierHorses = horses.data ?? [];
+    if (farrierHorses.length === 0) {
       return (
-        <div data-testid="farrier-horses">
+        <div data-testid="farrier-services">
           <EmptyState
             variant="first-use"
             icon={<Wrench className="w-8 h-8" aria-hidden="true" />}
-            title="No Horses Registered"
-            description="Visit your stable to bring a horse in. The farrier shoes each horse once a week."
+            title="No horses to shoe"
+            description="Bring a horse into your stable and the farrier can shoe it."
             primaryAction={{ label: 'Go to Stable', onClick: () => navigate('/stable') }}
           />
         </div>
@@ -108,18 +132,33 @@ const FarrierPage: React.FC = () => {
     }
 
     return (
-      <div data-testid="farrier-horses" className="space-y-4">
-        <CardGrid aria-label="Your horses">
-          {horses.map((horse) => (
-            <HorseCard
-              key={horse.id}
-              horse={horse}
-              selected={horse.id === selectedHorseId}
-              onClick={() => handleSelectHorse(horse.id)}
-              data-testid={`horse-card-${horse.id}`}
+      <div
+        data-testid="farrier-services"
+        className="flex flex-col md:flex-row md:justify-center md:items-start gap-8"
+      >
+        {services.data.map((service) => {
+          const mine = outcome?.serviceId === service.id ? outcome : null;
+          return (
+            <ServiceHorseBox
+              key={service.id}
+              serviceId={service.id}
+              title={service.name}
+              description={service.description}
+              cost={service.cost}
+              actionLabel={service.actionLabel}
+              horses={farrierHorses.map((horse) => ({
+                id: horse.id,
+                name: horse.name,
+                unavailableReason: horse.shod ? 'already shod this week' : undefined,
+              }))}
+              pending={shoeingServiceId === service.id}
+              onConfirm={(horseId) => handleShoe(service, horseId)}
+              confirmation={mine?.confirmation}
+              failure={mine?.failure}
+              onboardingTarget="farrier-book-button"
             />
-          ))}
-        </CardGrid>
+          );
+        })}
       </div>
     );
   };
@@ -155,61 +194,14 @@ const FarrierPage: React.FC = () => {
       </PageContainer>
 
       <PageContainer variant="wide" padded={false} className="pb-8">
-        {shoeingSuccess && (
-          <div className="mb-6 p-4 rounded-[var(--radius-md)] bg-[var(--role-success-bg)] border border-[var(--role-success-border)] flex items-center gap-2 text-[var(--role-success-text)] text-sm">
-            <CheckCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-            {shoeingSuccess}
-          </div>
-        )}
+        {renderServices()}
 
-        {shoeMutation.isError && (
-          <div
-            className="mb-6 p-4 rounded-[var(--radius-md)] bg-[var(--role-danger-bg)] border border-[var(--role-danger-border)] text-[var(--role-danger-text)] text-sm"
-            role="alert"
-          >
-            Shoeing failed:{' '}
-            {actionMessageFor(shoeMutation.error, {
-              400: "The farrier couldn't shoe that horse. Check your balance.",
-              404: "That horse couldn't be found. Reload and try again.",
-              409: 'That horse has already been shod this week.',
-            })}
-          </div>
-        )}
-
-        <Surface
-          variant="subtle"
-          className="mb-6 p-4 flex items-center justify-between gap-4"
-          data-testid="farrier-shoe-action"
-        >
-          <p className="text-sm text-[var(--text-muted)]">
-            {selectedHorse
-              ? `Shoeing: ${selectedHorse.name}`
-              : 'Choose a horse below, then shoe it.'}
-          </p>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            disabled={selectedHorseId === null || shoeMutation.isPending}
-            pending={shoeMutation.isPending}
-            onClick={handleShoe}
-            className="flex-shrink-0"
-            data-onboarding-target="farrier-book-button"
-          >
-            <span className="flex items-center gap-1.5">
-              Shoe horse — <Currency amount={shoeingCost} />
-            </span>
-          </Button>
-        </Surface>
-
-        {renderHorses()}
-
-        {/* Info Panel */}
         <Surface variant="panel" as="aside" className="mt-10 text-sm text-[var(--text-muted)]">
           <h3 className="font-semibold text-[var(--text-primary)] mb-2">About the Farrier</h3>
           <ul className="space-y-1 list-disc list-inside">
-            <li>Each horse can be shod once a week, for 50 coins</li>
+            <li>Each horse can be shod once a week</li>
             <li>A shod horse gains +1 in one stat</li>
+            <li>Retired horses are no longer shod</li>
           </ul>
         </Surface>
       </PageContainer>

@@ -12,14 +12,23 @@
  * conditional updateMany on the horse row, so concurrent clicks cannot shoe
  * (or charge for) the same horse twice.
  *
- * Route:
- *   POST /api/v1/farrier/shoe-horse -> shoe a horse. Body: { horseId }
+ * Owner ruling 2026-10-26 (q78, Equoria-zz14s): the farrier's shoe types are a
+ * data list (FARRIER_SERVICES; Basic Shoes at 50 for now, more later). The page
+ * shows each as a box with a dropdown of the player's horses: a horse shod this
+ * week is greyed out and a retired horse (21+) is not listed (GET /horses).
+ *
+ * Routes:
+ *   GET  /api/v1/farrier/shoe-types -> the shoe types
+ *   GET  /api/v1/farrier/horses     -> the player's horses under 21, with shod state
+ *   POST /api/v1/farrier/shoe-horse -> shoe a horse. Body: { horseId, serviceId? }
+ *        (serviceId defaults to basic-shoes, the only type today)
  */
 
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
 import { gameDayIndex, startOfGameDayIndex } from '../../../../utils/gameTime.mjs';
+import { retirementAgeYears } from '../../../../constants/horseAgePolicy.mjs';
 import { HORSE_STAT_VALUES } from '../../../../constants/schema.mjs';
 import {
   recordTransactionTx,
@@ -28,7 +37,18 @@ import {
   SYSTEM_ACCOUNT_BURN,
 } from '../../services/financialLedgerService.mjs';
 
-export const shoeingCost = 50;
+/** The shoe types, as data. Prices are the owner's. */
+export const FARRIER_SERVICES = [
+  {
+    id: 'basic-shoes',
+    name: 'Basic Shoes',
+    description: 'A standard set of shoes. A shod horse gains +1 in one stat.',
+    cost: 50,
+    actionLabel: 'Shoe Horse',
+  },
+];
+export const defaultServiceId = 'basic-shoes';
+export const shoeingCost = FARRIER_SERVICES[0].cost;
 /** Game days that must pass between two shoeings of the same horse. */
 export const shoeingIntervalDays = 7;
 
@@ -44,18 +64,74 @@ function shoeableWhere(now) {
   return { OR: [{ lastShod: null }, { lastShod: { lt: cutoff } }] };
 }
 
+/** Shod within the week: the horse's last shoeing is inside the weekly window. */
+function isShodThisWeek(lastShod, now) {
+  if (!lastShod) {
+    return false;
+  }
+  const cutoff = startOfGameDayIndex(gameDayIndex(now) - (shoeingIntervalDays - 1));
+  return lastShod >= cutoff;
+}
+
+/**
+ * GET /api/v1/farrier/shoe-types
+ * (Not /services: that path stays 404, guarded by farrierController.test.mjs.)
+ */
+export async function getFarrierServices(_req, res) {
+  res.status(200).json({
+    success: true,
+    message: 'Farrier services retrieved successfully',
+    data: FARRIER_SERVICES,
+  });
+}
+
+/**
+ * GET /api/v1/farrier/horses
+ * The dropdown list: the player's horses under 21 and whether each is shod.
+ */
+export async function getFarrierHorses(req, res) {
+  try {
+    const rows = await prisma.horse.findMany({
+      where: {
+        userId: req.user.id,
+        OR: [{ age: null }, { age: { lt: retirementAgeYears } }],
+      },
+      select: { id: true, name: true, lastShod: true },
+      orderBy: { name: 'asc' },
+    });
+    const now = new Date();
+    res.status(200).json({
+      success: true,
+      message: 'Farrier horses retrieved successfully',
+      data: rows.map(horse => ({
+        id: horse.id,
+        name: horse.name,
+        shod: isShodThisWeek(horse.lastShod, now),
+      })),
+    });
+  } catch (error) {
+    logger.error(`[farrierController] getFarrierHorses error: ${error.message}`);
+    res.status(500).json({ success: false, message: 'Failed to load horses', data: null });
+  }
+}
+
 function pickRandomStat() {
   return HORSE_STAT_VALUES[Math.floor(Math.random() * HORSE_STAT_VALUES.length)];
 }
 
 /**
  * POST /api/v1/farrier/shoe-horse
- * Body: { horseId }
+ * Body: { horseId, serviceId? }
  */
 export async function shoeHorse(req, res) {
   try {
     const userId = req.user.id;
-    const { horseId } = req.body;
+    const { horseId, serviceId = defaultServiceId } = req.body;
+
+    const service = FARRIER_SERVICES.find(entry => entry.id === serviceId);
+    if (!service) {
+      return res.status(404).json({ success: false, message: 'Service not found', data: null });
+    }
 
     const horse = await prisma.horse.findFirst({ where: { id: horseId, userId } });
     if (!horse) {
@@ -75,7 +151,7 @@ export async function shoeHorse(req, res) {
           // User row first. Equoria-kl16c: paired SystemAccount burn credit.
           const balance = await debitMoneyOrThrow(tx, {
             userId,
-            amount: shoeingCost,
+            amount: service.cost,
             systemAccount: SYSTEM_ACCOUNT_BURN,
             category: 'farrierServiceBurn',
             description: `Farrier fee, shoeing ${horse.name}`,
@@ -98,7 +174,7 @@ export async function shoeHorse(req, res) {
           await recordTransactionTx(tx, {
             userId,
             type: 'debit',
-            amount: shoeingCost,
+            amount: service.cost,
             category: 'farrierService',
             description: `Shoeing for ${horse.name}`,
             metadata: { horseId },
@@ -111,8 +187,8 @@ export async function shoeHorse(req, res) {
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient funds. Shoeing costs ${shoeingCost} coins`,
-          data: { required: shoeingCost },
+          message: `Insufficient funds. ${service.name} costs ${service.cost} coins`,
+          data: { required: service.cost },
         });
       }
       if (txErr instanceof AlreadyShodThisWeekError) {
@@ -133,7 +209,7 @@ export async function shoeHorse(req, res) {
       data: {
         horse: { id: updatedHorse.id, name: updatedHorse.name, lastShod: updatedHorse.lastShod },
         statGained: stat,
-        cost: shoeingCost,
+        cost: service.cost,
         remainingMoney: moneyAfter,
       },
     });

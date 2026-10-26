@@ -89,6 +89,9 @@ beforeAll(async () => {
       age: 6,
       userId: user.id,
       healthStatus: 'Good',
+      // Owner ruling 2026-10-26 (Equoria-7dmzp): a horse vetted within the last week is
+      // refused a second health check, so this fixture was last vetted long ago.
+      lastVettedDate: new Date('2024-01-01'),
     },
   });
   createdHorseIds.push(horse.id);
@@ -114,7 +117,7 @@ afterAll(async () => {
 
 describe('vet bookVetAppointment recordTransactionTx migration sentinel (Equoria-2hfss)', () => {
   it('SENTINEL: ledger row balanceAfter is sourced from inside the tx (post-debit)', async () => {
-    const service = VET_SERVICES[0]; // health-check, $150
+    const service = VET_SERVICES[0]; // health-check, 100 coins
     const req = {
       user: { id: user.id },
       body: { horseId: horse.id, serviceId: service.id },

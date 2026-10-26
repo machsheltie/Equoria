@@ -3,14 +3,15 @@
  * All vet endpoints under /api/vet.
  *
  * Path summary:
- *   GET  /services           → list available vet services
+ *   GET  /services           → the two vet services
+ *   GET  /horses             → the player's horses under 21 with vetted / tested state
  *   POST /book-appointment   → book an appointment for a horse
  */
 
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import logger from '../../../../utils/logger.mjs';
-import { getVetServices, bookVetAppointment } from '../controllers/vetController.mjs';
+import { getVetServices, getVetHorses, bookVetAppointment } from '../controllers/vetController.mjs';
 // Equoria-ftjm: dedicated stricter per-user economy-mutation limiter.
 import { financialRateLimiter } from '../../../../middleware/rateLimiting.mjs';
 
@@ -28,6 +29,7 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 router.get('/services', getVetServices);
+router.get('/horses', getVetHorses);
 
 router.post(
   '/book-appointment',

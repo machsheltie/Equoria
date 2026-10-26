@@ -1,10 +1,30 @@
 /**
- * Farrier API client (Equoria-rfsml; one weekly action since Equoria-zmqzf).
+ * Farrier API client (Equoria-rfsml; one weekly action since Equoria-zmqzf;
+ * shoe types are data since Equoria-zz14s).
  *
- *   POST /api/v1/farrier/shoe-horse → FarrierShoeingResult
+ *   GET  /api/v1/farrier/shoe-types -> FarrierService[]
+ *   GET  /api/v1/farrier/horses     -> FarrierHorse[]  (horses under 21, with shod state)
+ *   POST /api/v1/farrier/shoe-horse -> FarrierShoeingResult
  */
 
 import { apiClient } from '../http/apiClient.js';
+
+export interface FarrierService {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  /** The verb on the service's button, e.g. "Shoe Horse". */
+  actionLabel: string;
+}
+
+/** A horse the farrier may see: retired horses (21+) are never listed. */
+export interface FarrierHorse {
+  id: number;
+  name: string;
+  /** Shod within the week: not shoeable again yet. */
+  shod: boolean;
+}
 
 export interface FarrierShoeingResult {
   horse: {
@@ -19,6 +39,8 @@ export interface FarrierShoeingResult {
 }
 
 export const farrierApi = {
-  shoeHorse: (data: { horseId: number }) =>
+  getServices: () => apiClient.get<FarrierService[]>('/api/v1/farrier/shoe-types'),
+  getHorses: () => apiClient.get<FarrierHorse[]>('/api/v1/farrier/horses'),
+  shoeHorse: (data: { horseId: number; serviceId: string }) =>
     apiClient.post<FarrierShoeingResult>('/api/v1/farrier/shoe-horse', data),
 };

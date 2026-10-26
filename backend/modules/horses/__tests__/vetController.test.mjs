@@ -47,6 +47,9 @@ beforeAll(async () => {
       age: 6,
       userId: user.id,
       healthStatus: 'Good',
+      // Owner ruling 2026-10-26 (Equoria-7dmzp): a horse vetted within the last week is
+      // refused a second health check, so this fixture was last vetted long ago.
+      lastVettedDate: new Date('2024-01-01'),
     },
   });
 
