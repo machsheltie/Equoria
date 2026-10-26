@@ -282,7 +282,6 @@ describe('the weekly pass: one-week notice, then retirement (Equoria-or2ua)', ()
     const assignment = await prisma.riderAssignment.create({
       data: { riderId: rider.id, horseId: horse.id, userId: other.user.id, isActive: true },
     });
-    await prisma.horse.update({ where: { id: horse.id }, data: { rider: { id: rider.id, name: 'x' } } });
 
     const first = await processRiderRetirement();
     expect(first.noticedIds).toContain(rider.id);
