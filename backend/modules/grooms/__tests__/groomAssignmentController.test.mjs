@@ -123,7 +123,8 @@ describe('GET /api/groom-assignments/config', () => {
     expect(res.body.success).toBe(true);
     // Equoria-95yrv: one cap and one rate for every groom; the per-skill caps and
     // the never-charged per-skill pay table are gone.
-    expect(res.body.data.maxHorsesPerGroom).toBe(10);
+    // The owner ruling 2026-10-26 (q68) raised the cap from ten to twenty.
+    expect(res.body.data.maxHorsesPerGroom).toBe(20);
     expect(res.body.data.feePerHorsePerWeek).toBe(70);
     expect(res.body.data).not.toHaveProperty('maxAssignmentsBySkill');
     expect(res.body.data).not.toHaveProperty('weeklySalaryBySkill');

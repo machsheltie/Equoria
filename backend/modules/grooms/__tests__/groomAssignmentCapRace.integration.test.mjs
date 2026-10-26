@@ -148,7 +148,7 @@ async function makeHorse(userId, label) {
   });
 }
 
-describe('Equoria-95yrv F1 — two assignments racing at nine horses seat exactly ten', () => {
+describe('Equoria-95yrv F1 — two assignments racing one short of the cap seat exactly the cap (20, q68)', () => {
   let user;
   let groom;
   let contested;
@@ -237,10 +237,10 @@ describe('Equoria-95yrv F1 — two assignments racing at nine horses seat exactl
     expect(seated).toHaveLength(1);
     expect(refused).toHaveLength(1);
     // The loser is refused in the player's own words, not with a constraint error.
-    expect(String(refused[0].reason?.message)).toMatch(/already caring for 10 horses/i);
+    expect(String(refused[0].reason?.message)).toMatch(/already caring for 20 horses/i);
   }
 
-  it('createAssignment: the loser is refused and the roster holds ten', async () => {
+  it('createAssignment: the loser is refused and the roster holds the cap', async () => {
     const outcomes = await raceForTheLastSeat(horse => createAssignment(groom.id, horse.id, user.id));
     expectExactlyOneSeated(outcomes);
 
@@ -250,7 +250,7 @@ describe('Equoria-95yrv F1 — two assignments racing at nine horses seat exactl
     expect(active).toBe(MAX_HORSES_PER_GROOM);
   }, 120000);
 
-  it('assignGroomToFoal: the loser is refused and the roster holds ten', async () => {
+  it('assignGroomToFoal: the loser is refused and the roster holds the cap', async () => {
     const outcomes = await raceForTheLastSeat(horse => assignGroomToFoal(horse.id, groom.id, user.id));
     expectExactlyOneSeated(outcomes);
 

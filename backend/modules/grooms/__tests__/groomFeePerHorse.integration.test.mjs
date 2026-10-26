@@ -108,12 +108,13 @@ async function moneyOf(userId) {
 describe('Equoria-95yrv — the fee is 70 x horses assigned', () => {
   it('is $70 per horse per week, and a groom on no horses is free', () => {
     expect(FEE_PER_HORSE_PER_WEEK).toBe(70);
-    expect(MAX_HORSES_PER_GROOM).toBe(10);
+    // The owner ruling 2026-10-26 (q68) raised the cap from ten to twenty.
+    expect(MAX_HORSES_PER_GROOM).toBe(20);
 
     expect(calculateWeeklyFee(0)).toBe(0);
     expect(calculateWeeklyFee(1)).toBe(70);
     expect(calculateWeeklyFee(3)).toBe(210);
-    expect(calculateWeeklyFee(MAX_HORSES_PER_GROOM)).toBe(700);
+    expect(calculateWeeklyFee(MAX_HORSES_PER_GROOM)).toBe(1400);
   });
 
   it('REPORTS an over-cap groom honestly rather than truncating the charge', () => {
@@ -197,7 +198,7 @@ describe('Equoria-95yrv — the weekly pass and the summary charge the same thin
 // 5. The cap, at every door that creates an assignment
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Equoria-95yrv — a groom works at most ten horses', () => {
+describe('Equoria-95yrv — a groom works at most twenty horses (q68)', () => {
   let user;
   let groom;
   let spareHorse;
@@ -222,8 +223,8 @@ describe('Equoria-95yrv — a groom works at most ten horses', () => {
 
   afterAll(() => cleanup.run(), 60000);
 
-  it('refuses the eleventh horse through createAssignment, in words a player can read', async () => {
-    await expect(createAssignment(groom.id, spareHorse.id, user.id)).rejects.toThrow(/already caring for 10 horses/i);
+  it('refuses the horse past the cap through createAssignment, in words a player can read', async () => {
+    await expect(createAssignment(groom.id, spareHorse.id, user.id)).rejects.toThrow(/already caring for 20 horses/i);
 
     const count = await prisma.groomAssignment.count({
       where: { groomId: groom.id, isActive: true },
@@ -231,8 +232,8 @@ describe('Equoria-95yrv — a groom works at most ten horses', () => {
     expect(count).toBe(MAX_HORSES_PER_GROOM);
   }, 30000);
 
-  it('refuses the eleventh horse through assignGroomToFoal too', async () => {
-    await expect(assignGroomToFoal(spareHorse.id, groom.id, user.id)).rejects.toThrow(/already caring for 10 horses/i);
+  it('refuses the horse past the cap through assignGroomToFoal too', async () => {
+    await expect(assignGroomToFoal(spareHorse.id, groom.id, user.id)).rejects.toThrow(/already caring for 20 horses/i);
 
     const count = await prisma.groomAssignment.count({
       where: { groomId: groom.id, isActive: true },

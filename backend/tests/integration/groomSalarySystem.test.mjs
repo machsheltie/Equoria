@@ -141,7 +141,8 @@ describe('Groom Salary System', () => {
       expect(response.body.data.totalWeeklyCost).toBe(70);
       expect(response.body.data.groomCount).toBe(1);
       expect(response.body.data.feePerHorsePerWeek).toBe(70);
-      expect(response.body.data.maxHorsesPerGroom).toBe(10);
+      // Owner ruling 2026-10-26 (q68): twenty horses per groom (was ten).
+      expect(response.body.data.maxHorsesPerGroom).toBe(20);
     });
 
     it('should get salary summary', async () => {

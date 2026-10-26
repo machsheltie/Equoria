@@ -37,7 +37,8 @@ describe('calculateWeeklyFee — $70 per horse assigned', () => {
     expect(FEE_PER_HORSE_PER_WEEK).toBe(70);
     expect(calculateWeeklyFee(1)).toBe(70);
     expect(calculateWeeklyFee(4)).toBe(280);
-    expect(calculateWeeklyFee(MAX_HORSES_PER_GROOM)).toBe(700);
+    // Owner ruling 2026-10-26 (q68): the cap is twenty horses, so a full groom is 1400.
+    expect(calculateWeeklyFee(MAX_HORSES_PER_GROOM)).toBe(1400);
   });
 
   it('a groom on no horses costs nothing', () => {

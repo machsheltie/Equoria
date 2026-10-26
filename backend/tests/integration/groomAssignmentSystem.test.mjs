@@ -436,8 +436,8 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       expect(limits).toHaveProperty('currentAssignments');
       expect(limits).toHaveProperty('availableSlots');
       expect(limits).toHaveProperty('canTakeMore');
-      // Equoria-95yrv: ten horses per groom, the same for every skill level.
-      expect(limits.maxAssignments).toBe(10);
+      // Equoria-95yrv: one cap per groom, the same for every skill level (the owner ruling 2026-10-26 (q68) raised the cap from ten to twenty).
+      expect(limits.maxAssignments).toBe(20);
     });
 
     it('should enforce assignment limits', async () => {
@@ -445,10 +445,10 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       // horses, whatever their skill — the per-skill ladder (2/3/4/5) this case
       // used to walk contradicted that ruling and made the cap unreachable. The
       // Equoria-enles beforeEach wipes this user's assignments before every test,
-      // so testGroom1 starts at zero: twelve candidate horses → the first ten
-      // succeed and the last two are refused.
+      // so testGroom1 starts at zero: twenty-two candidate horses → the first twenty
+      // succeed and the last two are refused (the owner ruling 2026-10-26 (q68) raised the cap from ten to twenty).
       const horses = [];
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 22; i++) {
         const horse = await prisma.horse.create({
           data: {
             ...fixtureColor(),
@@ -485,12 +485,12 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
             successfulAssignments++;
           } else {
             failedAssignments++;
-            expect(response.body.message).toMatch(/already caring for 10 horses/i);
+            expect(response.body.message).toMatch(/already caring for 20 horses/i);
           }
         }
 
-        // Ten is the cap, starting from 0 active → 10 succeed, 2 rejected.
-        expect(successfulAssignments).toBe(10);
+        // Twenty is the cap, starting from 0 active → 20 succeed, 2 rejected.
+        expect(successfulAssignments).toBe(20);
         expect(failedAssignments).toBe(2);
       } finally {
         // Clean up — scoped to the ids this test created.
@@ -650,7 +650,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       expect(response.body.success).toBe(true);
       // Equoria-95yrv: one cap and one rate. The per-skill caps and the
       // never-charged per-skill pay table are gone with the basis they served.
-      expect(response.body.data.maxHorsesPerGroom).toBe(10);
+      expect(response.body.data.maxHorsesPerGroom).toBe(20);
       expect(response.body.data.feePerHorsePerWeek).toBe(70);
       expect(response.body.data).not.toHaveProperty('maxAssignmentsBySkill');
       expect(response.body.data).not.toHaveProperty('weeklySalaryBySkill');

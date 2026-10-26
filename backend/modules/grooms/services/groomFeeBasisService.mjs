@@ -30,8 +30,11 @@ export const FEE_PER_HORSE_PER_WEEK = 70;
  * are CREATED (groomAssignmentService.validateAssignmentEligibility and
  * groomSystem.assignGroomToFoal), which is the only place it can be enforced
  * without lying to a player about a roster they can see.
+ *
+ * Owner ruling 2026-10-26 (q68): twenty horses (was ten). Players still press
+ * "groom horse" for every horse every day.
  */
-export const MAX_HORSES_PER_GROOM = 10;
+export const MAX_HORSES_PER_GROOM = 20;
 
 /**
  * Equoria-bgdfb, owner ruling 2026-09-14 10:23: "It's owed."
