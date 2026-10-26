@@ -77,12 +77,12 @@ afterAll(() => cleanup.run(), 30000);
 // ── groomAssignmentService ────────────────────────────────────────────────────
 
 describe('getGroomAssignmentLimits', () => {
-  it('returns the ten-horse cap for a groom with no assignments', async () => {
-    // Equoria-95yrv: one cap for every groom, whatever their skill.
+  it('returns the twenty-horse cap for a groom with no assignments', async () => {
+    // Equoria-95yrv: one cap for every groom, whatever their skill; owner q68 (2026-10-26) set it to 20.
     const result = await getGroomAssignmentLimits({ id: groom.id, skillLevel: 'novice' });
-    expect(result.maxAssignments).toBe(10);
+    expect(result.maxAssignments).toBe(20);
     expect(result.currentAssignments).toBe(0);
-    expect(result.availableSlots).toBe(10);
+    expect(result.availableSlots).toBe(20);
     expect(result.canTakeMore).toBe(true);
   });
 });
