@@ -758,8 +758,10 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
       // VERIFY: Next eligible date is approximately 7 days from now
       const nextEligible = new Date(response.body.nextEligibleDate);
-      const expectedDate = new Date(trainingTime);
-      expectedDate.setDate(expectedDate.getDate() + 7);
+      // The cooldown is exactly one week of elapsed time (MS_PER_WEEK, 168 h).
+      // setDate(+7) in local time is 167 or 169 h across a DST change, so the
+      // test failed only in clock-change weeks.
+      const expectedDate = new Date(trainingTime.getTime() + 7 * 24 * 60 * 60 * 1000);
 
       const timeDifference = Math.abs(nextEligible.getTime() - expectedDate.getTime());
       expect(timeDifference).toBeLessThan(60000); // Within 1 minute
