@@ -90,7 +90,11 @@ import {
   startOfGameWeek,
 } from '../../../utils/gameTime.mjs';
 import logger from '../../../utils/logger.mjs';
-import { InsufficientFundsError, SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
+import {
+  debitMoneyOrThrow,
+  InsufficientFundsError,
+  SYSTEM_ACCOUNT_BURN,
+} from '../../economy/index.mjs';
 // `ensureEngagementTx` (Equoria-ypb7d.2): a groom on staff since before
 // `groom_engagements` existed gets its engagement row opened by the fee pass, which is
 // the transaction that proves the engagement is live. The migration backfills none on
@@ -101,7 +105,6 @@ import { acquirePayWeekLockTx, ensureEngagementsTx } from './groomEngagementServ
 // then release to the grooms-for-hire pool. Replaces the never-working
 // `handleInsufficientFunds` + `terminateGroomsForNonPayment` pair.
 import { handleUnpaidFees, recordUncollectedFees } from './groomFeeArrearsService.mjs';
-import { chargeWeekWithArrearsFallback } from './groomSalaryCharge.mjs';
 // Equoria-95yrv / Equoria-bgdfb: WHAT a groom costs, the ten-horse cap, and what an
 // unpaid week becomes. Defined next door so this file stays the COLLECTION of the
 // fee; re-exported below so every existing importer of this module is unchanged.
@@ -233,7 +236,6 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
     // Equoria-icqqm: pay-week window for the idempotency predicate.
     const payWeekStart = getPayWeekStart(now);
     const payWeekEnd = startOfGameDayIndex(gameDayIndex(payWeekStart) + 7);
-    // Equoria-h7518: the pay week as a key the database can hold a unique on.
     const weekKey = gameDateKey(payWeekStart);
 
     const results = {
@@ -380,18 +382,51 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
               // Equoria-95yrv: a player whose whole staff is idle owes nothing this
               // week. `debitMoneyOrThrow` rejects a non-positive amount (by design —
               // an unpaired zero-debit is meaningless), so the move is skipped rather
-              // than faked. The per-groom rows below are still written, at 0, so the
-              // pay week is recorded and the pass stays idempotent for those grooms.
+              // than faked; per-groom rows are still written, at 0, to record the week.
               //
-              const arrearsSettledNow = await chargeWeekWithArrearsFallback(tx, {
-                userId,
-                username: user.username,
-                groomCount: unpaidAssignments.length,
-                unpaidTotal,
-                arrearsTotal,
-                payWeekStart,
-                systemAccount: SYSTEM_ACCOUNT_BURN,
-              });
+              // Equoria-bgdfb (F2): THIS WEEK FIRST, THEN THE DEBT. Try week + arrears in
+              // ONE debit (it cannot half-succeed); if the wallet cannot cover both, fall
+              // back to this week alone so the groom keeps working and the arrears stay
+              // owed. The fallback is legal inside this transaction: debitMoneyOrThrow
+              // throws on a zero-row updateMany (a JS decision), so the tx is not aborted.
+              const chargeAttempts = [];
+              if (unpaidTotal + arrearsTotal > 0) {
+                chargeAttempts.push({ amount: unpaidTotal + arrearsTotal, withArrears: true });
+              }
+              if (arrearsTotal > 0 && unpaidTotal > 0) {
+                chargeAttempts.push({ amount: unpaidTotal, withArrears: false });
+              }
+
+              let arrearsSettledNow = false;
+              for (const [index, attempt] of chargeAttempts.entries()) {
+                try {
+                  await debitMoneyOrThrow(tx, {
+                    userId,
+                    amount: attempt.amount,
+                    systemAccount: SYSTEM_ACCOUNT_BURN,
+                    category: 'groomSalaryBurn',
+                    description: `Groom salary weekly run — user ${user.username}`,
+                    metadata: {
+                      groomCount: unpaidAssignments.length,
+                      totalSalary: unpaidTotal,
+                      // Equoria-bgdfb: the owed weeks settled by THIS debit — 0 when
+                      // the wallet only covered the current week.
+                      arrears: attempt.withArrears ? arrearsTotal : 0,
+                      paymentType: 'weeklySalary',
+                      payWeekStart: payWeekStart.toISOString(), // Equoria-icqqm audit key
+                    },
+                  });
+                  arrearsSettledNow = attempt.withArrears;
+                  break;
+                } catch (debitError) {
+                  const isLastAttempt = index === chargeAttempts.length - 1;
+                  if (!(debitError instanceof InsufficientFundsError) || isLastAttempt) {
+                    // Nothing left to fall back to: this week itself is unaffordable,
+                    // which is the grace/release path the caller already handles.
+                    throw debitError;
+                  }
+                }
+              }
               arrearsTotal = arrearsSettledNow ? arrearsTotal : 0;
 
               // Equoria-bgdfb: the owed weeks are now paid. Marked INSIDE the same
@@ -477,17 +512,9 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
             { timeout: 30000 }, // 30s — guard against 5s default under load
           );
         } catch (txError) {
-          // Equoria-h7518: the database refused a second PAID row for this groom and pay
-          // week (partial unique index groom_salary_payments_paid_week_key). The pay-week
-          // lock and the paid-rows read above should make that unreachable, so reaching it
-          // means the week was already paid by a run that got past them. The whole
-          // transaction rolled back, so nothing was debited twice. Treat the week as
-          // already paid: it must not fall through to the unpaid-fee path, which would
-          // put an already-paid groom into grace.
+          // Equoria-h7518: the paid-week unique refused a second paid row (tx rolled back).
           if (txError?.code === 'P2002') {
-            logger.warn(
-              `[groomSalaryService] Pay week ${weekKey} was already paid for user ${user.username}; the database refused a second paid row`,
-            );
+            logger.warn(`[groomSalaryService] Week ${weekKey} already paid: ${user.username}`);
             results.skipped++;
             continue;
           }
