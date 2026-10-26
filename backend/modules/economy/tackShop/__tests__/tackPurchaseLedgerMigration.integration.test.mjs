@@ -26,7 +26,7 @@
  * signature makes that impossible by construction.
  *
  * Sentinel-positive coverage: we also assert the ledger row has the
- * correct category, amount, type, and metadata.{horseId,itemId,category}
+ * correct category, amount, type, and metadata.{itemId,category}
  * so a refactor that drops one of those fields fails loudly.
  *
  * Real DB, no mocks, scoped fixtures (TestFixture-0caxg prefix).
@@ -36,17 +36,14 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
-import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { purchaseTackItem, TACK_INVENTORY } from '../controllers/tackShopController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-0caxg-tack';
 const STARTING_MONEY = 10000;
 
 let user;
-let horse;
 let item;
 const createdUserIds = [];
-const createdHorseIds = [];
 
 function fakeRes() {
   const res = {
@@ -81,30 +78,12 @@ beforeAll(async () => {
     },
   });
   createdUserIds.push(user.id);
-
-  horse = await prisma.horse.create({
-    data: {
-      ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag}`,
-      sex: 'Mare',
-      dateOfBirth: new Date('2019-06-15'),
-      age: 6,
-      userId: user.id,
-      healthStatus: 'Good',
-    },
-  });
-  createdHorseIds.push(horse.id);
 }, 60000);
 
 afterAll(async () => {
   if (createdUserIds.length) {
     await prisma.userTransaction
       .deleteMany({ where: { userId: { in: createdUserIds } } })
-      .catch(err => console.warn(`[cleanup] ${err.message}`));
-  }
-  if (createdHorseIds.length) {
-    await prisma.horse
-      .deleteMany({ where: { id: { in: createdHorseIds } } })
       .catch(err => console.warn(`[cleanup] ${err.message}`));
   }
   if (createdUserIds.length) {
@@ -118,7 +97,7 @@ describe('tackShop purchaseTackItem recordTransactionTx migration sentinel (Equo
   it('SENTINEL: ledger row balanceAfter is sourced from inside the tx (post-debit)', async () => {
     const req = {
       user: { id: user.id },
-      body: { horseId: horse.id, itemId: item.id },
+      body: { itemId: item.id },
     };
     const res = fakeRes();
     await purchaseTackItem(req, res);
@@ -148,8 +127,8 @@ describe('tackShop purchaseTackItem recordTransactionTx migration sentinel (Equo
     expect(Number(ledgerRow.amount)).toBe(item.cost);
     expect(ledgerRow.category).toBe('tackPurchase');
     expect(Number(ledgerRow.balanceAfter)).toBe(expectedMoneyAfter);
+    // Owner ruling 2026-10-26: no horse is involved, so no horseId in the metadata.
     expect(ledgerRow.metadata).toMatchObject({
-      horseId: horse.id,
       itemId: item.id,
       category: item.category,
     });

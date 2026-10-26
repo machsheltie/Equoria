@@ -52,6 +52,7 @@ import { generateTestToken } from '../../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../../__tests__/helpers/failLoudCleanup.mjs';
+import { buyAndEquip } from '../../../../__tests__/helpers/tackShopBuy.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-6p398-12-race';
@@ -235,12 +236,8 @@ describe('tack return on sale vs a concurrent inventory write (Equoria-6p398.12)
     // Real provenance, through the real endpoints: a saddle on the LISTED horse
     // (which the sale must return) and a spare bridle the seller is free to
     // move (the concurrent write that races the sale).
-    expect(
-      (await post('/api/v1/tack-shop/purchase', seller.token, { horseId: listedHorse.id, itemId: SOLD_SADDLE })).status,
-    ).toBe(200);
-    expect(
-      (await post('/api/v1/tack-shop/purchase', seller.token, { horseId: keptHorse.id, itemId: SPARE_BRIDLE })).status,
-    ).toBe(200);
+    expect((await buyAndEquip(post, seller.token, listedHorse.id, SOLD_SADDLE)).status).toBe(200);
+    expect((await buyAndEquip(post, seller.token, keptHorse.id, SPARE_BRIDLE)).status).toBe(200);
 
     const seeded = await request(app)
       .get('/api/v1/inventory')

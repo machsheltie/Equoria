@@ -7,9 +7,6 @@
  * Routes:
  *   GET  /api/tack-shop/inventory          → list available tack items
  *   POST /api/tack-shop/purchase           → buy an item into the inventory
- *                                            (a horseId, if sent, is the legacy
- *                                            buy-and-equip path; the shop page
- *                                            no longer sends one)
  *   POST /api/tack-shop/unequip-decoration → remove a decorative item
  *
  * Tack does NOT degrade with use. The previous condition / repair system
@@ -48,29 +45,6 @@ const CATEGORY_DISPLAY = {
   breastplate: 'Breastplates',
   decorative: 'Decorative & Parade',
 };
-
-class HorseNotOwnedError extends Error {}
-
-// Merge a purchased item into Horse.tack (no mutation). Decorations are additive
-// (no duplicates); functional items replace their slot. The show-score bonus is
-// read from the item in the slot (competition/rules/tackScoring.mjs), so no
-// numeric mirror is stored beside it (Equoria-lsudd).
-function mergeTackItem(rawTack, item) {
-  const current =
-    rawTack !== null && typeof rawTack === 'object' && !Array.isArray(rawTack) ? rawTack : {};
-  const updated = { ...current };
-  if (item.category === 'decorative') {
-    const existing = Array.isArray(updated.decorations) ? updated.decorations : [];
-    if (!existing.includes(item.id)) {
-      updated.decorations = [...existing, item.id];
-    }
-    return updated;
-  }
-  updated[item.category] = item.id;
-  return updated;
-}
-
-// ── Decoration return helpers (Equoria-6p398.19) ──────────────────────────────
 
 /** The catalogue entry for an item id, or undefined. */
 function catalogItem(itemId) {
@@ -257,13 +231,11 @@ async function purchaseIntoInventory(req, res, item) {
 
 /**
  * POST /api/tack-shop/purchase
- * Body: { itemId } — buys the item into the inventory.
- * Legacy: { horseId, itemId } buys it and puts it straight on that horse's tack.
+ * Body: { itemId } — buys the item into the inventory. No horse is involved.
  */
 export async function purchaseTackItem(req, res) {
   try {
-    const userId = req.user.id;
-    const { horseId, itemId } = req.body;
+    const { itemId } = req.body;
 
     const item = catalogItem(itemId);
     if (!item) {
@@ -272,92 +244,7 @@ export async function purchaseTackItem(req, res) {
         .json({ success: false, message: 'Item not found in inventory', data: null });
     }
 
-    if (horseId === undefined || horseId === null) {
-      return await purchaseIntoInventory(req, res, item);
-    }
-
-    // Fast 404 + display name only; the tack is re-read inside the tx below.
-    const horse = await prisma.horse.findFirst({
-      where: { id: horseId, userId },
-      select: { name: true },
-    });
-    if (!horse) {
-      return res.status(404).json({ success: false, message: 'Horse not found', data: null });
-    }
-
-    // Equoria-6g8wm / 78i38: the debit, horse.tack update and ledger row commit
-    // or unwind together; InsufficientFundsError surfaces as a 400.
-    let updatedHorse;
-    let updatedUser;
-    try {
-      ({ updatedHorse, updatedUser } = await withRetryableTxMapping(
-        prisma.$transaction(async tx => {
-          // Equoria-6p398.9 lock ordering: User row BEFORE Horse row, else this
-          // deadlocks buyHorse (holds User(owner), waits for Horse). Guarded by
-          // backend/__tests__/txUserBeforeHorseLockOrder.sentinel.test.mjs.
-          // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
-          const moneyAfter = await debitTackPurchase(tx, {
-            userId,
-            item,
-            description: `Tack purchase — ${item.name} for ${horse.name ?? horseId}`,
-            metadata: { horseId, itemId: item.id, itemCategory: item.category },
-          });
-          // Equoria-bvddn.14: re-read tack AFTER the debit, whose User row lock
-          // serialises concurrent purchases (and a sale) — no stale overwrite.
-          // userId guard: a horse sold mid-purchase is never written (404).
-          const where = { id: horseId, userId };
-          const fresh = await tx.horse.findFirst({ where, select: { tack: true } });
-          const tack = fresh && mergeTackItem(fresh.tack, item);
-          if (!fresh || (await tx.horse.updateMany({ where, data: { tack } })).count !== 1) {
-            throw new HorseNotOwnedError();
-          }
-          const horseRow = { id: horseId, name: horse.name, tack };
-          // Equoria-0caxg: balanceAfter is read inside the tx by the service;
-          // moneyAfter is only the response value (remainingMoney below).
-          await recordTransactionTx(tx, {
-            userId,
-            type: 'debit',
-            amount: item.cost,
-            category: 'tackPurchase',
-            description: `${item.name} for ${horse.name ?? horseId}`,
-            metadata: { horseId, itemId: item.id, category: item.category },
-          });
-          return { updatedHorse: horseRow, updatedUser: { money: moneyAfter } };
-        }),
-        { message: 'The tack shop is busy right now, please retry in a moment.' },
-      ));
-    } catch (txErr) {
-      if (txErr instanceof HorseNotOwnedError) {
-        return res.status(404).json({ success: false, message: 'Horse not found', data: null });
-      }
-      if (txErr instanceof InsufficientFundsError) {
-        return res.status(400).json({
-          success: false,
-          message: `Insufficient funds. ${item.name} costs $${item.cost}`,
-          data: { required: item.cost },
-        });
-      }
-      throw txErr;
-    }
-
-    logger.info(
-      `[tackShopController] User ${userId} purchased "${item.name}" for horse ${horseId} — cost $${item.cost}`,
-    );
-
-    res.status(200).json({
-      success: true,
-      message: `${item.name} purchased successfully`,
-      data: {
-        horse: {
-          id: updatedHorse.id,
-          name: updatedHorse.name,
-          tack: updatedHorse.tack,
-        },
-        item,
-        cost: item.cost,
-        remainingMoney: updatedUser.money,
-      },
-    });
+    return await purchaseIntoInventory(req, res, item);
   } catch (error) {
     // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
     if (error?.status === 503) {

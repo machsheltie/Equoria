@@ -13,10 +13,9 @@
  *   5. POST /api/v1/inventory/unequip — remove item from the horse
  *   6. GET /api/v1/inventory to assert equippedToHorseId is null
  *
- * Note: The tack-shop purchase endpoint writes to Horse.tack only — not to
- * User.settings.inventory — so purchased items do not appear in GET /api/v1/inventory
- * when the user already has an inventory (which all users do via the starter kit).
- * The equip/unequip flow is exercised with starter-kit items already in inventory.
+ * Note: since the owner ruling of 2026-10-26 the tack-shop purchase endpoint takes only
+ * an itemId and adds the item to User.settings.inventory, unequipped; equipping is this
+ * separate inventory flow. It is exercised here with starter-kit items already in inventory.
  *
  * Issue: Equoria-lqpb
  */

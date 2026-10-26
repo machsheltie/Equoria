@@ -84,7 +84,7 @@ function withoutEffect(record) {
 
 /**
  * The record for a shop-bought item a replacement pushes off a horse (Equoria-063xk):
- * `purchaseTackItem` writes only `Horse.tack`, so overwriting the slot would destroy
+ * the shop purchase used to write only `Horse.tack` (until 2026-10-26; older horses still carry it), so overwriting the slot would destroy
  * a paid-for item. Same shape and `<horseId>-<itemId>` id scheme as the sale path
  * (marketplace `deriveReturnedItem`); ids stay unique because equip addresses by id.
  */

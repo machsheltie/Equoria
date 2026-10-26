@@ -35,6 +35,7 @@ import { generateTestToken } from '../../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../../__tests__/helpers/failLoudCleanup.mjs';
+import { buyAndEquip } from '../../../../__tests__/helpers/tackShopBuy.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-6p398-12-tackdoc';
@@ -126,9 +127,7 @@ describe('Horse.tack document integrity around equip/unequip (Equoria-6p398.12)'
   afterEach(() => cleanup.run(), 30000);
 
   it('stores no bonus mirror beside the item, and unequip takes off exactly the item key', async () => {
-    expect(
-      (await post('/api/v1/tack-shop/purchase', owner.token, { horseId: horse.id, itemId: SHOP_SADDLE })).status,
-    ).toBe(200);
+    expect((await buyAndEquip(post, owner.token, horse.id, SHOP_SADDLE)).status).toBe(200);
 
     const equipped = await readTack(horse.id);
     expect(equipped.saddle).toBe(SHOP_SADDLE);
@@ -148,13 +147,10 @@ describe('Horse.tack document integrity around equip/unequip (Equoria-6p398.12)'
   }, 90000);
 
   it('re-equips a decoration returned by a sale into tack.decorations, where scoring reads it', async () => {
-    // Two shop decorations on the horse that is about to be sold. Only the sale
-    // produces decorative inventory records, so this is the only route to the
-    // state under test.
+    // Two shop decorations bought into the inventory and put on the horse that
+    // is about to be sold; the sale must return both to the seller.
     for (const itemId of [RIBBON, BROWBAND]) {
-      expect((await post('/api/v1/tack-shop/purchase', owner.token, { horseId: listedHorse.id, itemId })).status).toBe(
-        200,
-      );
+      expect((await buyAndEquip(post, owner.token, listedHorse.id, itemId)).status).toBe(200);
     }
     expect((await readTack(listedHorse.id)).decorations).toEqual([RIBBON, BROWBAND]);
 

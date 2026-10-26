@@ -20,6 +20,14 @@
  *    was overwritten — paid for, then gone. Forced with a real row lock
  *    (rowLockBarrier), no mocks.
  *
+ * Owner ruling 2026-10-26 (q78, Equoria-dslww): the Tack Shop no longer puts tack
+ * on a horse; buying goes to the inventory. Horses bought-for before that ruling
+ * still carry shop tack with NO inventory record, and the replace and
+ * decoration-return paths must keep reconciling it, so tests 1, 2 and 4 seed that
+ * legacy state directly (seedLegacyShopTack). Old contract for test 3: a tack
+ * purchase for the horse raced an equip on the horse's tack; a purchase now races
+ * an equip on the inventory array, where the equip's compare-and-swap loses.
+ *
  * Real DB, real HTTP + CSRF, real tack-shop and inventory endpoints.
  */
 
@@ -33,6 +41,7 @@ import { generateTestToken } from '../../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../../__tests__/helpers/failLoudCleanup.mjs';
+import { seedLegacyShopTack } from '../../../../__tests__/helpers/tackShopBuy.mjs';
 import {
   createBarrierClient,
   openRowLockBarrier,
@@ -126,8 +135,7 @@ describe('Horse.tack replace / decoration return / equip-vs-purchase (Equoria-6p
   afterAll(() => barrierClient.$disconnect());
 
   it('an inventory saddle replacing a shop saddle leaves only its own id, with no numeric bonus beside it', async () => {
-    const bought = await post('/api/v1/tack-shop/purchase', token, { horseId: horse.id, itemId: shopSaddle });
-    expect(bought.status).toBe(200);
+    await seedLegacyShopTack(horse.id, { id: shopSaddle, category: 'saddle' });
     const purchased = await readTack(horse.id);
     expect(purchased.saddle).toBe(shopSaddle);
     expect(purchased.saddleBonus).toBeUndefined();
@@ -145,7 +153,7 @@ describe('Horse.tack replace / decoration return / equip-vs-purchase (Equoria-6p
   });
 
   it('a shop-bought decoration taken off returns to the owner’s inventory and can be worn again', async () => {
-    expect((await post('/api/v1/tack-shop/purchase', token, { horseId: horse.id, itemId: browband })).status).toBe(200);
+    await seedLegacyShopTack(horse.id, { id: browband, category: 'decorative' });
 
     const off = await post('/api/v1/tack-shop/unequip-decoration', token, {
       horseId: horse.id,
@@ -190,9 +198,7 @@ describe('Horse.tack replace / decoration return / equip-vs-purchase (Equoria-6p
   });
 
   it('an inventory saddle equipped over a shop-bought saddle returns the shop saddle to inventory (Equoria-063xk)', async () => {
-    expect((await post('/api/v1/tack-shop/purchase', token, { horseId: horse.id, itemId: shopSaddle })).status).toBe(
-      200,
-    );
+    await seedLegacyShopTack(horse.id, { id: shopSaddle, category: 'saddle' });
     await setInventory([record('inv-saddle', inventorySaddle, 'saddle')]);
 
     const equipped = await post('/api/v1/inventory/equip', token, {
@@ -241,8 +247,9 @@ describe('Horse.tack replace / decoration return / equip-vs-purchase (Equoria-6p
     expect(inventory.find(i => i.id === 'inv-b')).toMatchObject({ equippedToHorseId: horse.id });
   });
 
-  it('an equip racing a tack purchase for the same horse keeps the purchased item', async () => {
+  it('an equip racing a shop purchase loses cleanly: the purchase and its debit stand, the equip changes nothing', async () => {
     await setInventory([record('inv-browband', browband, 'decorative')]);
+    const moneyBefore = (await prisma.user.findUnique({ where: { id: owner.id } })).money;
 
     const barrier = await openRowLockBarrier(
       barrierClient,
@@ -252,11 +259,8 @@ describe('Horse.tack replace / decoration return / equip-vs-purchase (Equoria-6p
     let equip;
     try {
       // The purchase queues on its debit (User row); the equip then reads the
-      // pre-purchase tack and queues on its inventory write behind it.
-      purchase = post('/api/v1/tack-shop/purchase', token, {
-        horseId: horse.id,
-        itemId: shopSaddleForRace,
-      }).then(r => r);
+      // pre-purchase inventory and queues on its inventory write behind it.
+      purchase = post('/api/v1/tack-shop/purchase', token, { itemId: shopSaddleForRace }).then(r => r);
       await waitForBlockedSessions(barrierClient, barrier.pid, 1);
       equip = post('/api/v1/inventory/equip', token, {
         inventoryItemId: 'inv-browband',
@@ -268,11 +272,24 @@ describe('Horse.tack replace / decoration return / equip-vs-purchase (Equoria-6p
     }
     const [bought, equipped] = await Promise.all([purchase, equip]);
     expect(bought.status).toBe(200);
-    expect(equipped.status).toBe(200);
+    // The purchase committed first and changed the inventory array underneath the
+    // equip, so the equip's compare-and-swap affected no row.
+    expect(equipped.status).toBe(409);
 
-    const tack = await readTack(horse.id);
-    expect(tack.saddle).toBe(shopSaddleForRace);
-    expect(readDecorationsOf(tack)).toContain(browband);
+    const inventory = await readInventory(owner.id);
+    expect(inventory.filter(i => i.itemId === shopSaddleForRace)).toHaveLength(1);
+    expect(inventory.find(i => i.id === 'inv-browband')).toMatchObject({ equippedToHorseId: null });
+    expect(readDecorationsOf(await readTack(horse.id))).toEqual([]);
+    const moneyAfter = (await prisma.user.findUnique({ where: { id: owner.id } })).money;
+    expect(moneyBefore - moneyAfter).toBe(500);
+
+    // The owner simply retries against fresh state.
+    const retry = await post('/api/v1/inventory/equip', token, {
+      inventoryItemId: 'inv-browband',
+      horseId: horse.id,
+    });
+    expect(retry.status).toBe(200);
+    expect(readDecorationsOf(await readTack(horse.id))).toContain(browband);
   }, 60000);
 });
 

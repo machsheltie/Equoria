@@ -86,9 +86,9 @@ describe('GET /api/tack-shop/inventory', () => {
 
 describe('POST /api/tack-shop/purchase', () => {
   // Owner ruling 2026-10-26 (q78, Equoria-dslww). Old contract: horseId was
-  // required (400 without it). New: the Tack Shop buys into the inventory and a
-  // horseId is optional; a missing one passes validation and an unknown item is
-  // then a 404. A malformed horseId is still a 400.
+  // required (400 without it) and the item went onto that horse. New: the Tack
+  // Shop buys into the inventory and no horse is involved, so a purchase needs
+  // only an itemId (an unknown one is a 404).
   it('accepts a purchase without a horseId (validation passes, unknown item is 404)', async () => {
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
@@ -103,20 +103,6 @@ describe('POST /api/tack-shop/purchase', () => {
     expect(res.body.success).toBe(false);
   });
 
-  it('returns 400 when horseId is malformed', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/tack-shop/purchase')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: 'abc', itemId: 'some-item' });
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
   it('returns 400 when itemId is missing', async () => {
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
@@ -125,7 +111,7 @@ describe('POST /api/tack-shop/purchase', () => {
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: horse.id });
+      .send({});
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
@@ -139,13 +125,13 @@ describe('POST /api/tack-shop/purchase', () => {
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: horse.id, itemId: 'nonexistent-tack-xyz-99999' });
+      .send({ itemId: 'nonexistent-tack-xyz-99999' });
 
     expect(res.status).toBe(404);
     expect(res.body.success).toBe(false);
   });
 
-  it('returns 200 when purchasing a known item for an owned horse', async () => {
+  it('purchasing a known item answers 200 or 400 (funds)', async () => {
     // Get the first available item from inventory
     const inventoryRes = await request(app)
       .get('/api/v1/tack-shop/inventory')
@@ -164,9 +150,9 @@ describe('POST /api/tack-shop/purchase', () => {
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: horse.id, itemId: firstItem.id });
+      .send({ itemId: firstItem.id });
 
-    // 200 success or 400 (already equipped, insufficient funds, etc.)
+    // 200 success or 400 (insufficient funds)
     expect([200, 400]).toContain(res.status);
     expect(res.body.success !== undefined).toBe(true);
   });
@@ -276,34 +262,44 @@ describe('purchaseTackItem / unequipDecoration — controller-direct decorative 
     return res;
   };
 
-  it('appends a purchased decorative item ID to tack.decorations[]', async () => {
+  const inventoryRecords = async itemId => {
+    const row = await prisma.user.findUnique({ where: { id: user.id }, select: { settings: true } });
+    return (row.settings?.inventory ?? []).filter(r => r.itemId === itemId);
+  };
+
+  // Owner ruling 2026-10-26 (q78, Equoria-dslww). Old contract: a purchase
+  // appended the decoration to a horse's tack.decorations[] (deduplicated). New:
+  // it adds an unequipped record to the inventory; equipping is separate.
+  it('adds a purchased decorative item to the inventory, unequipped, and touches no horse', async () => {
     await prisma.horse.update({ where: { id: horse.id }, data: { tack: {} } });
-    await prisma.user.update({ where: { id: user.id }, data: { money: 50000 } });
+    await prisma.user.update({ where: { id: user.id }, data: { money: 50000, settings: {} } });
     const res = makeRes();
-    await purchaseTackItem(makeReq({ body: { horseId: horse.id, itemId: 'show-ribbon' } }), res);
+    await purchaseTackItem(makeReq({ body: { itemId: 'show-ribbon' } }), res);
     expect(res._status).toBe(200);
     expect(res._body.success).toBe(true);
+    const records = await inventoryRecords('show-ribbon');
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({ category: 'decorative', equippedToHorseId: null, quantity: 1 });
     const h = await prisma.horse.findUnique({ where: { id: horse.id } });
-    expect(h.tack.decorations).toContain('show-ribbon');
-    expect(h.tack).not.toHaveProperty('decorative');
+    expect(h.tack).toEqual({});
   });
 
-  it('appends to an existing decorations array without duplicating on re-purchase', async () => {
-    await prisma.horse.update({ where: { id: horse.id }, data: { tack: { decorations: ['show-ribbon'] } } });
-    await prisma.user.update({ where: { id: user.id }, data: { money: 50000 } });
-    await purchaseTackItem(makeReq({ body: { horseId: horse.id, itemId: 'floral-browband' } }), makeRes());
-    await purchaseTackItem(makeReq({ body: { horseId: horse.id, itemId: 'show-ribbon' } }), makeRes());
-    const h = await prisma.horse.findUnique({ where: { id: horse.id } });
-    expect(h.tack.decorations).toEqual(expect.arrayContaining(['show-ribbon', 'floral-browband']));
-    expect(h.tack.decorations.filter(id => id === 'show-ribbon').length).toBe(1);
+  it('keeps a second purchase of the same decoration as its own record', async () => {
+    await prisma.user.update({ where: { id: user.id }, data: { money: 50000, settings: {} } });
+    await purchaseTackItem(makeReq({ body: { itemId: 'floral-browband' } }), makeRes());
+    await purchaseTackItem(makeReq({ body: { itemId: 'show-ribbon' } }), makeRes());
+    await purchaseTackItem(makeReq({ body: { itemId: 'show-ribbon' } }), makeRes());
+    const ribbons = await inventoryRecords('show-ribbon');
+    expect(ribbons).toHaveLength(2);
+    expect(new Set(ribbons.map(r => r.id)).size).toBe(2);
+    expect(await inventoryRecords('floral-browband')).toHaveLength(1);
   });
 
   it('writes the tackPurchase ledger transaction synchronously before resolving', async () => {
-    await prisma.horse.update({ where: { id: horse.id }, data: { tack: {} } });
     await prisma.user.update({ where: { id: user.id }, data: { money: 50000 } });
     const before = await prisma.userTransaction.count({ where: { userId: user.id, category: 'tackPurchase' } });
     const res = makeRes();
-    await purchaseTackItem(makeReq({ body: { horseId: horse.id, itemId: 'show-ribbon' } }), res);
+    await purchaseTackItem(makeReq({ body: { itemId: 'show-ribbon' } }), res);
     expect(res._status).toBe(200);
     const after = await prisma.userTransaction.count({ where: { userId: user.id, category: 'tackPurchase' } });
     expect(after).toBe(before + 1);
@@ -312,15 +308,15 @@ describe('purchaseTackItem / unequipDecoration — controller-direct decorative 
       orderBy: { createdAt: 'desc' },
     });
     expect(row.type).toBe('debit');
-    expect(row.amount).toBe(120);
+    // Owner ruling 2026-10-26: every tack item costs 500 (old contract: 120).
+    expect(row.amount).toBe(500);
     await prisma.userTransaction.deleteMany({ where: { userId: user.id, category: 'tackPurchase' } });
   });
 
   it('returns 400 on insufficient funds', async () => {
-    await prisma.horse.update({ where: { id: horse.id }, data: { tack: {} } });
     await prisma.user.update({ where: { id: user.id }, data: { money: 50 } });
     const res = makeRes();
-    await purchaseTackItem(makeReq({ body: { horseId: horse.id, itemId: 'show-ribbon' } }), res);
+    await purchaseTackItem(makeReq({ body: { itemId: 'show-ribbon' } }), res);
     expect(res._status).toBe(400);
     expect(res._body.message).toMatch(/Insufficient funds/);
     await prisma.user.update({ where: { id: user.id }, data: { money: 50000 } });

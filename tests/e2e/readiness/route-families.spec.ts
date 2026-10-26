@@ -288,29 +288,56 @@ test('all beta route families execute real read and write flows', async ({ page,
     'POST /api/v1/shows/:id/enter'
   );
 
+  // Vet (owner ruling 2026-10-26): two services, each acting on a horse picked from
+  // the vet's own horse list. A new starter horse is already vetted (its vet date
+  // starts today), so the health check is only booked when the list says it is
+  // due; the genetics panel is always available once.
   const vetServices = unwrapData<Array<{ id: string }>>(
     await expectOk(await page.request.get('/api/v1/vet/services'), 'GET /api/v1/vet/services')
   );
-  await expectOk(
-    await csrfRequest(page, 'POST', '/api/v1/vet/book-appointment', {
-      horseId: starterHorseId,
-      serviceId: vetServices[0].id,
-    }),
-    'POST /api/v1/vet/book-appointment'
+  expect(vetServices.map((service) => service.id)).toEqual(['health-check', 'genetic-testing']);
+  const vetHorses = unwrapData<Array<{ id: number; vetted: boolean; geneticsTested: boolean }>>(
+    await expectOk(await page.request.get('/api/v1/vet/horses'), 'GET /api/v1/vet/horses')
   );
-  const farrierServices = unwrapData<Array<{ id: string }>>(
+  const vetStarter = vetHorses.find((horse) => horse.id === starterHorseId);
+  expect(vetStarter, 'The starter horse must be listed by the vet').toBeTruthy();
+  if (!vetStarter!.vetted) {
     await expectOk(
-      await page.request.get('/api/v1/farrier/services'),
-      'GET /api/v1/farrier/services'
+      await csrfRequest(page, 'POST', '/api/v1/vet/book-appointment', {
+        horseId: starterHorseId,
+        serviceId: 'health-check',
+      }),
+      'POST /api/v1/vet/book-appointment (health-check)'
+    );
+  }
+  if (!vetStarter!.geneticsTested) {
+    await expectOk(
+      await csrfRequest(page, 'POST', '/api/v1/vet/book-appointment', {
+        horseId: starterHorseId,
+        serviceId: 'genetic-testing',
+      }),
+      'POST /api/v1/vet/book-appointment (genetic-testing)'
+    );
+  }
+  // Farrier: the shoe types are data; the weekly shoe action takes a shoe type.
+  const shoeTypes = unwrapData<Array<{ id: string }>>(
+    await expectOk(
+      await page.request.get('/api/v1/farrier/shoe-types'),
+      'GET /api/v1/farrier/shoe-types'
     )
   );
-  await expectOk(
-    await csrfRequest(page, 'POST', '/api/v1/farrier/book-service', {
-      horseId: starterHorseId,
-      serviceId: farrierServices[0].id,
-    }),
-    'POST /api/v1/farrier/book-service'
+  const farrierHorses = unwrapData<Array<{ id: number; shod: boolean }>>(
+    await expectOk(await page.request.get('/api/v1/farrier/horses'), 'GET /api/v1/farrier/horses')
   );
+  if (!farrierHorses.find((horse) => horse.id === starterHorseId)?.shod) {
+    await expectOk(
+      await csrfRequest(page, 'POST', '/api/v1/farrier/shoe-horse', {
+        horseId: starterHorseId,
+        serviceId: shoeTypes[0].id,
+      }),
+      'POST /api/v1/farrier/shoe-horse'
+    );
+  }
   const feedCatalog = unwrapData<Array<{ id: string }>>(
     await expectOk(
       await page.request.get('/api/v1/feed-shop/catalog'),
@@ -338,9 +365,10 @@ test('all beta route families execute real read and write flows', async ({ page,
   const cheapestTack = tackCatalog.items.reduce((cheapest, item) =>
     item.cost < cheapest.cost ? item : cheapest
   );
+  // The Tack Shop is just a shop (owner ruling 2026-10-26): buying takes an item
+  // and no horse, and puts the tack in the inventory.
   await expectOk(
     await csrfRequest(page, 'POST', '/api/v1/tack-shop/purchase', {
-      horseId: starterHorseId,
       itemId: cheapestTack.id,
     }),
     'POST /api/v1/tack-shop/purchase'

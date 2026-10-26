@@ -244,7 +244,7 @@ function deriveReturnedItem(horseId, entry, takenIds) {
  *     recreated. Without this the record kept pointing at a horse the seller no
  *     longer owned, and neither equip (409 on the previous horse's tack write)
  *     nor unequip (it may not write a stranger's horse) could recover the item.
- *   - `tackShopController.purchaseTackItem` writes ONLY `Horse.tack`, so there
+ *   - the retired buy-for-a-horse shop purchase (before 2026-10-26) wrote ONLY `Horse.tack`, so for older horses there
  *     is no record at all: one is DERIVED. Without this the sale handed the
  *     item to the buyer outright.
  *

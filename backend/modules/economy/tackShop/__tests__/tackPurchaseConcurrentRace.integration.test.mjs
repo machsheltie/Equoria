@@ -1,22 +1,24 @@
 /**
  * tackShop purchaseTackItem concurrent-race sentinel (Equoria-6g8wm).
  * Site 6 of 6 — closes the helper-adoption follow-up.
+ *
+ * Owner ruling 2026-10-26 (q78, Equoria-dslww): a purchase no longer involves a
+ * horse; it buys into the inventory. The race it proves is unchanged: with money
+ * for ONE item, exactly one of N parallel purchases succeeds, the wallet never
+ * goes negative, and now exactly one inventory record and one ledger row exist.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
-import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { purchaseTackItem, TACK_INVENTORY } from '../controllers/tackShopController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-6g8wm-tack';
 const N = 5;
 
 let user;
-let horse;
 const createdUserIds = [];
-const createdHorseIds = [];
 
 function fakeRes() {
   const res = {
@@ -51,27 +53,9 @@ beforeAll(async () => {
     },
   });
   createdUserIds.push(user.id);
-
-  horse = await prisma.horse.create({
-    data: {
-      ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag}`,
-      sex: 'Mare',
-      dateOfBirth: new Date('2019-06-15'),
-      age: 6,
-      userId: user.id,
-      healthStatus: 'healthy',
-    },
-  });
-  createdHorseIds.push(horse.id);
 }, 60000);
 
 afterAll(async () => {
-  if (createdHorseIds.length) {
-    await prisma.horse
-      .deleteMany({ where: { id: { in: createdHorseIds } } })
-      .catch(err => console.warn(`[cleanup] ${err.message}`));
-  }
   if (createdUserIds.length) {
     await prisma.userTransaction
       .deleteMany({ where: { userId: { in: createdUserIds } } })
@@ -87,7 +71,7 @@ describe('tackShop purchaseTackItem concurrent-race sentinel (Equoria-6g8wm)', (
     const item = TACK_INVENTORY.filter(i => !i.isLegacyAlias && i.cost > 0)[0];
     const reqs = Array.from({ length: N }, () => ({
       user: { id: user.id },
-      body: { horseId: horse.id, itemId: item.id },
+      body: { itemId: item.id },
     }));
     const responses = await Promise.all(
       reqs.map(req => {
@@ -108,5 +92,10 @@ describe('tackShop purchaseTackItem concurrent-race sentinel (Equoria-6g8wm)', (
     });
     expect(Number(after.money)).toBe(0);
     expect(Number(after.money)).toBeGreaterThanOrEqual(0);
+
+    // Exactly one item was bought: one inventory record, one ledger row.
+    const row = await prisma.user.findUnique({ where: { id: user.id }, select: { settings: true } });
+    expect((row.settings?.inventory ?? []).filter(r => r.itemId === item.id)).toHaveLength(1);
+    expect(await prisma.userTransaction.count({ where: { userId: user.id, category: 'tackPurchase' } })).toBe(1);
   });
 });

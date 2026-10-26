@@ -63,12 +63,12 @@ const harnessDisciplines = new Set([
 const allDisciplines = Object.values(DISCIPLINES);
 
 /**
- * Owner ruling 2026-10-26 (q78, Equoria-dslww): every saddle, harness and
- * bridle, the All Purpose pair included, costs 500 coins. This is the one price
- * for all of them; the discipline items, the All Purpose pair and the retired
- * aliases below all read it.
+ * Owner ruling 2026-10-26 (q78, Equoria-dslww): every tack item costs 500
+ * coins: saddles, harnesses, bridles, the All Purpose pair, halters, pads,
+ * wraps, reins, girths, breastplates, the Coming soon items, the decorations
+ * and the retired aliases. This is the one price; the catalogue reads it.
  */
-export const saddleAndBridleCost = 500;
+export const tackPrice = 500;
 
 const keptImage = Object.freeze({
   'dressage-saddle': '/images/tack/dressage-saddle.png',
@@ -90,7 +90,7 @@ function disciplineSaddleOrHarness(discipline) {
     description: harness
       ? `A harness built for ${discipline}, worn where other disciplines use a saddle.`
       : `A saddle made for ${discipline} and no other discipline.`,
-    cost: saddleAndBridleCost,
+    cost: tackPrice,
     bonus: tackBonusLabel([discipline]),
     tier: 'quality',
     disciplines: [discipline],
@@ -105,7 +105,7 @@ function disciplineBridle(discipline) {
     category: 'bridle',
     name: `${discipline} Bridle`,
     description: `A bridle made for ${discipline} and no other discipline.`,
-    cost: saddleAndBridleCost,
+    cost: tackPrice,
     bonus: tackBonusLabel([discipline]),
     tier: 'quality',
     disciplines: [discipline],
@@ -147,7 +147,7 @@ export const TACK_INVENTORY = [
     name: 'All Purpose Saddle',
     description:
       'Versatile saddle suitable for general riding across multiple disciplines. A great starter saddle.',
-    cost: saddleAndBridleCost,
+    cost: tackPrice,
     // An empty list is how the shop filter shows an item under every discipline.
     bonus: tackBonusLabel([]),
     tier: 'basic',
@@ -160,7 +160,7 @@ export const TACK_INVENTORY = [
     name: 'All Purpose Bridle',
     description:
       'Versatile bridle suitable for general training and competition across disciplines.',
-    cost: saddleAndBridleCost,
+    cost: tackPrice,
     bonus: tackBonusLabel([]),
     tier: 'basic',
     disciplines: [],
@@ -178,7 +178,7 @@ export const TACK_INVENTORY = [
     comingSoon: true,
     name: 'Leather Halter',
     description: 'Durable leather halter for daily handling and turnout. A stable essential.',
-    cost: 80,
+    cost: tackPrice,
     tier: 'basic',
     disciplines: [],
   },
@@ -189,7 +189,7 @@ export const TACK_INVENTORY = [
     name: 'Show Halter',
     description:
       'Polished halter with silver fittings for in-hand showing. Presents your horse at its best.',
-    cost: 250,
+    cost: tackPrice,
     tier: 'quality',
     disciplines: ['Halter', 'In-Hand'],
   },
@@ -201,7 +201,7 @@ export const TACK_INVENTORY = [
     comingSoon: true,
     name: 'Cotton Saddle Pad',
     description: 'Standard cotton pad providing cushioning and sweat absorption under the saddle.',
-    cost: 60,
+    cost: tackPrice,
     tier: 'basic',
     disciplines: [],
   },
@@ -212,7 +212,7 @@ export const TACK_INVENTORY = [
     name: 'Memory Foam Saddle Pad',
     description:
       "Contoured memory foam pad that moulds to the horse's back. Reduces pressure points during long rides.",
-    cost: 200,
+    cost: tackPrice,
     tier: 'quality',
     disciplines: ['Endurance', 'Eventing', 'Cross Country'],
   },
@@ -224,7 +224,7 @@ export const TACK_INVENTORY = [
     comingSoon: true,
     name: 'Polo Wraps',
     description: 'Soft fleece wraps providing light support and protection during exercise.',
-    cost: 50,
+    cost: tackPrice,
     tier: 'basic',
     disciplines: [],
   },
@@ -235,7 +235,7 @@ export const TACK_INVENTORY = [
     name: 'Splint Boots',
     description:
       'Hard-shell boots protecting the cannon bone and splint area from strikes during jumping.',
-    cost: 150,
+    cost: tackPrice,
     tier: 'quality',
     disciplines: ['Show Jumping', 'Cross Country', 'Eventing'],
   },
@@ -246,7 +246,7 @@ export const TACK_INVENTORY = [
     name: 'Sport Medicine Boots',
     description:
       'High-performance boots with fetlock support and shock absorption. Used by top competitors.',
-    cost: 350,
+    cost: tackPrice,
     tier: 'premium',
     disciplines: ['Show Jumping', 'Cross Country', 'Barrel Racing', 'Reining'],
   },
@@ -258,7 +258,7 @@ export const TACK_INVENTORY = [
     comingSoon: true,
     name: 'Leather Girth',
     description: 'Traditional leather girth. Durable and reliable for everyday riding.',
-    cost: 100,
+    cost: tackPrice,
     tier: 'basic',
     disciplines: [],
   },
@@ -269,7 +269,7 @@ export const TACK_INVENTORY = [
     name: 'Anatomic Girth',
     description:
       'Contoured girth with cutaway design for shoulder freedom. Improves comfort and movement.',
-    cost: 280,
+    cost: tackPrice,
     tier: 'quality',
     disciplines: ['Dressage', 'Show Jumping', 'Eventing'],
   },
@@ -281,7 +281,7 @@ export const TACK_INVENTORY = [
     comingSoon: true,
     name: 'Rubber Grip Reins',
     description: 'Leather reins with rubber grip for secure hold in all conditions.',
-    cost: 70,
+    cost: tackPrice,
     tier: 'basic',
     disciplines: [],
   },
@@ -292,7 +292,7 @@ export const TACK_INVENTORY = [
     name: 'Laced Reins',
     description:
       'Hand-laced leather reins providing excellent grip without bulk. Preferred for jumping.',
-    cost: 120,
+    cost: tackPrice,
     tier: 'quality',
     disciplines: ['Show Jumping', 'Cross Country', 'Eventing', 'Hunter'],
   },
@@ -304,7 +304,7 @@ export const TACK_INVENTORY = [
     comingSoon: true,
     name: 'Hunting Breastplate',
     description: 'Three-point breastplate preventing saddle slip on galloping and jumping horses.',
-    cost: 180,
+    cost: tackPrice,
     tier: 'quality',
     disciplines: ['Cross Country', 'Eventing', 'Hunter', 'Steeplechase'],
   },
@@ -315,7 +315,7 @@ export const TACK_INVENTORY = [
     name: 'Five-Point Breastplate',
     description:
       'Full chest breastplate distributing pressure evenly. Maximum saddle stability for demanding courses.',
-    cost: 320,
+    cost: tackPrice,
     tier: 'premium',
     disciplines: ['Cross Country', 'Eventing', 'Steeplechase'],
   },
@@ -328,7 +328,7 @@ export const TACK_INVENTORY = [
     name: 'Foal Halter',
     description:
       'Adjustable halter sized for young horses. Used for early handling and desensitisation.',
-    cost: 40,
+    cost: tackPrice,
     tier: 'basic',
     disciplines: [],
     ageRestriction: 2,
@@ -340,7 +340,7 @@ export const TACK_INVENTORY = [
     name: 'Surcingle',
     description:
       'Training surcingle for backing and lunging young horses. Introduces the feel of girth pressure.',
-    cost: 120,
+    cost: tackPrice,
     tier: 'basic',
     disciplines: [],
     ageRestriction: 2,
@@ -352,7 +352,7 @@ export const TACK_INVENTORY = [
     category: 'decorative',
     name: 'Show Ribbon',
     description: 'A silk ribbon braided into the mane. Adds elegance and charm to parade shows.',
-    cost: 120,
+    cost: tackPrice,
     bonus: '+3 presentation',
     presenceBonus: 3,
     tier: 'basic',
@@ -365,7 +365,7 @@ export const TACK_INVENTORY = [
     name: 'Braided Mane Wrap',
     description:
       'Intricate braided mane styling with gold thread accents. A staple for high-scoring parade entries.',
-    cost: 200,
+    cost: tackPrice,
     bonus: '+4 presentation',
     presenceBonus: 4,
     tier: 'basic',
@@ -378,7 +378,7 @@ export const TACK_INVENTORY = [
     name: 'Parade Blanket',
     description:
       'Embroidered ceremonial blanket draped over the hindquarters. Impressive at full presentation speed.',
-    cost: 350,
+    cost: tackPrice,
     bonus: '+5 presentation',
     presenceBonus: 5,
     tier: 'quality',
@@ -390,7 +390,7 @@ export const TACK_INVENTORY = [
     category: 'decorative',
     name: 'Glitter Spray',
     description: 'Shimmering coat spray for that extra sparkle. Limited use — 3 applications.',
-    cost: 80,
+    cost: tackPrice,
     bonus: '+2 presentation',
     presenceBonus: 2,
     tier: 'basic',
@@ -404,7 +404,7 @@ export const TACK_INVENTORY = [
     name: 'Floral Browband',
     description:
       'Fresh flowers woven into the browband. A classic touch of nature for summer parade classes.',
-    cost: 160,
+    cost: tackPrice,
     bonus: '+3 presentation',
     presenceBonus: 3,
     tier: 'basic',
@@ -418,7 +418,7 @@ export const TACK_INVENTORY = [
     name: 'Snowflake Parade Tack',
     description:
       'A limited winter set with silver snowflake embroidery. Available during the frost season.',
-    cost: 500,
+    cost: tackPrice,
     bonus: '+6 presentation',
     presenceBonus: 6,
     tier: 'premium',

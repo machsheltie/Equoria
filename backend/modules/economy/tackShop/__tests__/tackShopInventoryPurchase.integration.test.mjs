@@ -4,7 +4,8 @@
  * Owner ruling 2026-10-26 (q78): the Tack Shop works like the Feed Shop, "just
  * a place to buy things". Horses play no part in a shop: buying puts the tack in
  * the player's inventory and equipping happens elsewhere (the inventory / horse
- * page). Every saddle, harness and bridle, All Purpose included, costs 500.
+ * page). EVERY tack item costs 500: saddles, harnesses, bridles, halters, pads,
+ * wraps, reins, girths, breastplates, the Coming soon items and the decorations.
  *
  * Old contract: purchase required a horseId and wrote the item straight onto
  * that horse's tack (items were priced 300-900).
@@ -76,11 +77,12 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 30000);
 
-describe('every saddle, harness and bridle costs 500 (q78)', () => {
-  it('prices the whole saddle and bridle catalogue at 500, All Purpose pair included', () => {
-    const slots = allTackItems().filter(i => i.category === 'saddle' || i.category === 'bridle');
-    expect(slots.length).toBeGreaterThan(40);
-    expect(slots.filter(i => i.cost !== 500).map(i => `${i.id}:${i.cost}`)).toEqual([]);
+describe('every tack item costs 500 (q78)', () => {
+  it('prices the whole catalogue at 500, every category and the retired aliases included', () => {
+    const items = allTackItems();
+    expect(items.length).toBeGreaterThan(60);
+    expect(new Set(items.map(i => i.category)).size).toBeGreaterThan(8);
+    expect(items.filter(i => i.cost !== 500).map(i => `${i.id}:${i.cost}`)).toEqual([]);
   });
 
   it('serves the same 500 prices through the shop endpoint', async () => {
@@ -88,8 +90,8 @@ describe('every saddle, harness and bridle costs 500 (q78)', () => {
       .get('/api/v1/tack-shop/inventory')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
-    const slots = res.body.data.items.filter(i => i.category === 'saddle' || i.category === 'bridle');
-    expect(slots.every(i => i.cost === 500)).toBe(true);
+    expect(res.body.data.items.length).toBeGreaterThan(40);
+    expect(res.body.data.items.every(i => i.cost === 500)).toBe(true);
   });
 });
 
