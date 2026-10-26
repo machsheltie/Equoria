@@ -9,7 +9,8 @@
  * Companion child issues:
  *   - Equoria-m55h — ultraRareTraitRoutes /effects/calculate
  *   - Equoria-qpeg — enhancedReportingRoutes /horses/compare-epigenetics
- *   - Equoria-msh4 — environmentalRoutes /environment/calculate-impact
+ *   - Equoria-msh4 — environmentalRoutes /environment/calculate-impact (route removed by
+ *     Equoria-aq9ya — there is no weather — so its case went with it)
  *   - Equoria-q4yy — traitDiscoveryRoutes /discover/batch (route removed by
  *     Equoria-gu8jk — players never reveal traits — so its case went with it)
  *   - Equoria-5w2v — groomAssignmentService.validateAssignmentEligibility
@@ -227,33 +228,6 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ horseIds: [horseA.id, NONEXISTENT_ID] });
-
-      expect(resMissing.status).toBe(404);
-      expect(resMissing.body).toEqual(resCrossUser.body);
-    });
-  });
-
-  // ─── Equoria-msh4 ────────────────────────────────────────────────────────
-  describe('environmentalRoutes POST /environment/calculate-impact', () => {
-    it('returns 404 for cross-user horseIds with byte-identical response to not-exists', async () => {
-      const resCrossUser = await request(app)
-        .post('/api/v1/auth/environment/calculate-impact')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ horseIds: [horseB.id] });
-
-      expect(resCrossUser.status).toBe(404);
-      expect(resCrossUser.body.success).toBe(false);
-
-      const resMissing = await request(app)
-        .post('/api/v1/auth/environment/calculate-impact')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ horseIds: [NONEXISTENT_ID] });
 
       expect(resMissing.status).toBe(404);
       expect(resMissing.body).toEqual(resCrossUser.body);

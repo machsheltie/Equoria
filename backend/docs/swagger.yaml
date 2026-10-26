@@ -2271,15 +2271,6 @@ paths:
       responses:
         '200': { description: 'Memory status' }
 
-  /environment:
-    get:
-      tags: [Labs]
-      summary: '[EXPERIMENTAL] Get environmental conditions affecting horses'
-      description: 'Non-SLO endpoint. Response shape subject to change without notice.'
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200': { description: 'Environmental data' }
-
   /compatibility:
     post:
       tags: [Labs]

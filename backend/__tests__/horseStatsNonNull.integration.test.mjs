@@ -38,7 +38,6 @@ const COMPETITION_SCORING = path.join(
   'services',
   'competitionScoring.mjs',
 );
-const ENV_ROUTES = path.join(REPO_ROOT, 'backend', 'modules', 'traits', 'routes', 'environmentalRoutes.mjs');
 const FOAL_MODEL = path.join(REPO_ROOT, 'backend', 'modules', 'horses', 'models', 'foalModel.mjs');
 
 const TARGET_COLUMNS = [
@@ -96,14 +95,6 @@ describe('Horse stat columns NOT NULL (Equoria-507mt)', () => {
     }
     // Positive: the post-fix shape is present at its current home.
     expect(scoringSrc).toMatch(/h\.speed\s*\+\s*h\.stamina\s*\+\s*h\.agility\s*\+\s*h\.precision\s*\+\s*h\.boldness/);
-  });
-
-  it('SENTINEL: environmentalRoutes no longer carries `horse.<stat> ?? 50`', () => {
-    const src = fs.readFileSync(ENV_ROUTES, 'utf8');
-    expect(src).not.toMatch(/horse\.speed\s*\?\?\s*50/);
-    expect(src).not.toMatch(/horse\.stamina\s*\?\?\s*50/);
-    expect(src).not.toMatch(/horse\.agility\s*\?\?\s*50/);
-    expect(src).not.toMatch(/horse\.intelligence\s*\?\?\s*50/);
   });
 
   it('SENTINEL: foalModel.bondScore reader no longer carries `?? 50`', () => {

@@ -75,7 +75,6 @@ import leaderboardRoutes from '../modules/leaderboards/routes/leaderboardRoutes.
 // Equoria-q4uem.4 (WS4 S1): the former labs module was dissolved into traits,
 // horses and admin.
 import enhancedReportingRoutes from '../modules/traits/routes/enhancedReportingRoutes.mjs';
-import environmentalRoutes from '../modules/traits/routes/environmentalRoutes.mjs';
 import personalityEvolutionRoutes from '../modules/horses/routes/personalityEvolutionRoutes.mjs';
 import apiOptimizationRoutes from '../modules/admin/routes/apiOptimizationRoutes.mjs';
 import memoryManagementRoutes from '../modules/admin/routes/memoryManagementRoutes.mjs';
@@ -262,7 +261,6 @@ export function buildRouters() {
   // unchanged (/api/v1/optimization/*, /api/v1/memory/*) — admin-only, not moved.
   authRouter.use('/optimization', requireRole('admin'), apiOptimizationRoutes);
   authRouter.use('/memory', requireRole('admin'), memoryManagementRoutes);
-  authRouter.use('/environment', environmentalRoutes);
   authRouter.use('/compatibility', dynamicCompatibilityRoutes);
   authRouter.use('/personality-evolution', personalityEvolutionRoutes);
 
