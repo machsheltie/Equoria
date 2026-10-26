@@ -12,6 +12,7 @@ import { useClubElections } from '@/hooks/api/useClubs';
 import { SectionLoading } from '@/components/ui/state';
 import { ElectionCard } from './ElectionCard';
 import { ClubQueryError } from './ClubQueryError';
+import { ClubsMore } from './ClubsMore';
 
 export const ClubElectionsSection: React.FC<{
   clubId: number;
@@ -37,6 +38,30 @@ export const ClubElectionsSection: React.FC<{
 
   const active = query.data.elections.filter((e) => e.status !== 'closed');
 
+  const more = (
+    <ClubsMore
+      hasMore={query.hasNextPage}
+      failed={query.isFetchNextPageError}
+      error={query.error}
+      pending={query.isFetchingNextPage}
+      onMore={() => void query.fetchNextPage()}
+      noun="elections"
+      testId={`club-${clubId}-elections-more`}
+    />
+  );
+
+  // A page of only closed elections can still hide open ones on the next page.
+  if (active.length === 0 && query.hasNextPage) {
+    return (
+      <div className="mb-3">
+        <p className="text-xs text-role-muted">
+          No active elections yet in <span className="text-role-secondary">{clubName}</span>.
+        </p>
+        {more}
+      </div>
+    );
+  }
+
   if (active.length === 0) {
     return (
       <p className="text-xs text-role-muted mb-3">
@@ -51,6 +76,7 @@ export const ClubElectionsSection: React.FC<{
       {active.map((election) => (
         <ElectionCard key={election.id} election={election} isMember={isMember} />
       ))}
+      {more}
     </div>
   );
 };

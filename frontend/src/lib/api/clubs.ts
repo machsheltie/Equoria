@@ -64,15 +64,34 @@ export interface ElectionCandidate {
   voteCount: number;
 }
 
+/**
+ * The lists answer at most 100 at a time (Equoria-cmw85.22). `nextCursor` is the
+ * server's own cursor for the following page, null on the last one.
+ */
+export interface ClubPageInfo {
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+const withCursor = (params: URLSearchParams, cursor?: string) => {
+  if (cursor) params.set('cursor', cursor);
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
+};
+
 export const clubsApi = {
-  getClubs: (type?: ClubType, category?: string) => {
+  getClubs: (type?: ClubType, category?: string, cursor?: string) => {
     const params = new URLSearchParams();
     if (type) params.set('type', type);
     if (category) params.set('category', category);
-    const qs = params.toString();
-    return apiClient.get<{ clubs: Club[] }>(`/api/v1/clubs${qs ? `?${qs}` : ''}`);
+    return apiClient.get<{ clubs: Club[]; pageInfo?: ClubPageInfo }>(
+      `/api/v1/clubs${withCursor(params, cursor)}`
+    );
   },
-  getMyClubs: () => apiClient.get<{ memberships: ClubMembership[] }>('/api/v1/clubs/mine'),
+  getMyClubs: (cursor?: string) =>
+    apiClient.get<{ memberships: ClubMembership[]; pageInfo?: ClubPageInfo }>(
+      `/api/v1/clubs/mine${withCursor(new URLSearchParams(), cursor)}`
+    ),
   getClub: (id: number) =>
     apiClient.get<{ club: Club & { members: ClubMember[] } }>(`/api/v1/clubs/${id}`),
   createClub: (payload: { name: string; type: ClubType; category: string; description: string }) =>
@@ -80,8 +99,10 @@ export const clubsApi = {
   joinClub: (id: number) =>
     apiClient.post<{ membership: ClubMembership }>(`/api/v1/clubs/${id}/join`, {}),
   leaveClub: (id: number) => apiClient.delete<void>(`/api/v1/clubs/${id}/leave`),
-  getElections: (clubId: number) =>
-    apiClient.get<{ elections: ClubElection[] }>(`/api/v1/clubs/${clubId}/elections`),
+  getElections: (clubId: number, cursor?: string) =>
+    apiClient.get<{ elections: ClubElection[]; pageInfo?: ClubPageInfo }>(
+      `/api/v1/clubs/${clubId}/elections${withCursor(new URLSearchParams(), cursor)}`
+    ),
   /** Count of open elections across the caller's clubs — Equoria-r4cyk. */
   getOpenElectionsCount: () =>
     apiClient.get<{ count: number }>('/api/v1/clubs/elections/open-count'),

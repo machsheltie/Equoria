@@ -13,13 +13,25 @@
  *   - useElectionResults()→ { data: { election, candidates }, isLoading }
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clubsApi, ClubType } from '@/lib/api-client';
+import type { ClubPageInfo } from '@/lib/api/clubs';
+
+/**
+ * The club lists come 100 at a time. Each list hook reads the server's cursor
+ * (pageInfo.nextCursor) and joins the pages loaded so far into the one list the
+ * screens already read; `hasNextPage` / `fetchNextPage` bring in the next page.
+ */
+const nextCursorOf = <T extends { pageInfo?: ClubPageInfo }>(last: T) =>
+  last.pageInfo?.nextCursor ?? undefined;
 
 export function useClubs(type?: ClubType, category?: string) {
-  return useQuery({
-    queryKey: ['clubs', type, category],
-    queryFn: () => clubsApi.getClubs(type, category),
+  return useInfiniteQuery({
+    queryKey: ['clubs', 'list', type, category],
+    queryFn: ({ pageParam }) => clubsApi.getClubs(type, category, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: nextCursorOf,
+    select: (data) => ({ clubs: data.pages.flatMap((p) => p.clubs) }),
     staleTime: 5 * 60_000,
     // Owner ruling 2026-10-23 (Equoria-m00gp, option a): the community hub shows
     // an honest error with Try again when this cannot load. The default
@@ -29,9 +41,12 @@ export function useClubs(type?: ClubType, category?: string) {
 }
 
 export function useMyClubs() {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['clubs', 'mine'],
-    queryFn: () => clubsApi.getMyClubs(),
+    queryFn: ({ pageParam }) => clubsApi.getMyClubs(pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: nextCursorOf,
+    select: (data) => ({ memberships: data.pages.flatMap((p) => p.memberships) }),
     staleTime: 2 * 60_000,
   });
 }
@@ -81,9 +96,12 @@ export function useCreateClub() {
 }
 
 export function useClubElections(clubId: number) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['clubs', clubId, 'elections'],
-    queryFn: () => clubsApi.getElections(clubId),
+    queryFn: ({ pageParam }) => clubsApi.getElections(clubId, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: nextCursorOf,
+    select: (data) => ({ elections: data.pages.flatMap((p) => p.elections) }),
     enabled: !!clubId,
     staleTime: 2 * 60_000,
   });

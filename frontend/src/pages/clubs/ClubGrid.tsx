@@ -22,6 +22,7 @@ import { joinRefused } from './clubMessages';
 import { useJoinClub, useMyClubs } from '@/hooks/api/useClubs';
 import type { Club } from '@/lib/api-client';
 import { clubIcon } from './constants';
+import { ClubsMore, type ClubsMoreProps } from './ClubsMore';
 
 export const ClubGrid: React.FC<{
   clubs: Club[];
@@ -32,8 +33,10 @@ export const ClubGrid: React.FC<{
   error?: unknown;
   /** Wired to the query's refetch so the retry affordance is live, not a dead button. */
   onRetry?: () => void;
+  /** The next page of the list, when the server has more than it sent. */
+  more?: Omit<ClubsMoreProps, 'noun' | 'testId'>;
   testPrefix: string;
-}> = ({ clubs, isLoading, isError, error, onRetry, testPrefix }) => {
+}> = ({ clubs, isLoading, isError, error, onRetry, more, testPrefix }) => {
   const joinClub = useJoinClub();
   const { data: myClubsData } = useMyClubs();
   const myClubIds = new Set(myClubsData?.memberships.map((m) => m.club.id) ?? []);
@@ -86,70 +89,73 @@ export const ClubGrid: React.FC<{
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" data-testid={`${testPrefix}-clubs-grid`}>
-      {clubs.map((club) => {
-        const isMember = myClubIds.has(club.id);
-        return (
-          <Surface key={club.id} variant="panel" data-testid={`club-card-${club.id}`}>
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="text-2xl" aria-hidden="true">
-                  {clubIcon(club)}
-                </span>
-                <div className="min-w-0">
-                  <h3 className="font-bold text-role-primary text-sm break-words">{club.name}</h3>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] text-role-muted">{club.category}</span>
+    <div data-testid={`${testPrefix}-clubs-grid`}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {clubs.map((club) => {
+          const isMember = myClubIds.has(club.id);
+          return (
+            <Surface key={club.id} variant="panel" data-testid={`club-card-${club.id}`}>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-2xl" aria-hidden="true">
+                    {clubIcon(club)}
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-role-primary text-sm break-words">{club.name}</h3>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[10px] text-role-muted">{club.category}</span>
+                    </div>
                   </div>
                 </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-sm font-bold text-role-secondary">{club.memberCount}</div>
+                  <div className="text-[10px] text-role-muted">members</div>
+                </div>
               </div>
-              <div className="text-right flex-shrink-0">
-                <div className="text-sm font-bold text-role-secondary">{club.memberCount}</div>
-                <div className="text-[10px] text-role-muted">members</div>
+
+              <p className="text-xs text-role-muted mb-3 leading-relaxed break-words">
+                {club.description}
+              </p>
+
+              <div className="flex items-center justify-between mb-4 text-xs text-role-muted">
+                <span className="flex items-center gap-1 min-w-0">
+                  <Crown
+                    className="w-3.5 h-3.5 flex-shrink-0 text-[var(--gold-400)]"
+                    aria-hidden="true"
+                  />
+                  <span className="break-words min-w-0">{club.leader.username}</span>
+                </span>
               </div>
-            </div>
 
-            <p className="text-xs text-role-muted mb-3 leading-relaxed break-words">
-              {club.description}
-            </p>
-
-            <div className="flex items-center justify-between mb-4 text-xs text-role-muted">
-              <span className="flex items-center gap-1 min-w-0">
-                <Crown
-                  className="w-3.5 h-3.5 flex-shrink-0 text-[var(--gold-400)]"
-                  aria-hidden="true"
+              {isMember ? (
+                <div className="w-full py-2 text-xs font-medium rounded-[var(--radius-md)] bg-[var(--role-success-bg)] border border-[var(--role-success-border)] text-[var(--role-success-text)] flex items-center justify-center gap-1.5">
+                  ✓ Member
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => joinClub.mutate(club.id)}
+                  disabled={joinClub.isPending}
+                  data-testid={`join-button-${club.id}`}
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                  {joinClub.isPending ? 'Joining…' : 'Join Club'}
+                </Button>
+              )}
+              {/* The one join mutation serves every card: show its refusal on the club tried. */}
+              {joinClub.isError && joinClub.variables === club.id && (
+                <InlineError
+                  message={actionMessageFor(joinClub.error, joinRefused)}
+                  className="mt-2"
                 />
-                <span className="break-words min-w-0">{club.leader.username}</span>
-              </span>
-            </div>
-
-            {isMember ? (
-              <div className="w-full py-2 text-xs font-medium rounded-[var(--radius-md)] bg-[var(--role-success-bg)] border border-[var(--role-success-border)] text-[var(--role-success-text)] flex items-center justify-center gap-1.5">
-                ✓ Member
-              </div>
-            ) : (
-              <Button
-                type="button"
-                size="sm"
-                className="w-full"
-                onClick={() => joinClub.mutate(club.id)}
-                disabled={joinClub.isPending}
-                data-testid={`join-button-${club.id}`}
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-                {joinClub.isPending ? 'Joining…' : 'Join Club'}
-              </Button>
-            )}
-            {/* The one join mutation serves every card: show its refusal on the club tried. */}
-            {joinClub.isError && joinClub.variables === club.id && (
-              <InlineError
-                message={actionMessageFor(joinClub.error, joinRefused)}
-                className="mt-2"
-              />
-            )}
-          </Surface>
-        );
-      })}
+              )}
+            </Surface>
+          );
+        })}
+      </div>
+      {more && <ClubsMore {...more} noun="clubs" testId={`${testPrefix}-clubs-more`} />}
     </div>
   );
 };

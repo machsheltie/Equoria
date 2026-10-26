@@ -28,24 +28,40 @@ import { tabsConfig, type ClubsTab } from './clubs/constants';
 import { ClubGrid } from './clubs/ClubGrid';
 import { MyClubTab } from './clubs/MyClubTab';
 
+/** What ClubGrid needs to offer the next page of a club list. */
+const moreOf = (q: ReturnType<typeof useClubs>) => ({
+  hasMore: q.hasNextPage,
+  failed: q.isFetchNextPageError,
+  error: q.error,
+  pending: q.isFetchingNextPage,
+  onMore: () => void q.fetchNextPage(),
+});
+
 const ClubsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ClubsTab>('discipline');
 
+  const disciplineQuery = useClubs('discipline');
+  const breedQuery = useClubs('breed');
   const {
     data: disciplineData,
     isLoading: discLoading,
     isError: discError,
     error: discErrorObj,
     refetch: refetchDiscipline,
-  } = useClubs('discipline');
+  } = disciplineQuery;
   const {
     data: breedData,
     isLoading: breedLoading,
     isError: breedError,
     error: breedErrorObj,
     refetch: refetchBreed,
-  } = useClubs('breed');
-  const { data: allData, isPending: allPending, isError: allError } = useClubs();
+  } = breedQuery;
+  const {
+    data: allData,
+    isPending: allPending,
+    isError: allError,
+    hasNextPage: allHasMore,
+  } = useClubs();
 
   const disciplineClubs = disciplineData?.clubs ?? [];
   const breedClubs = breedData?.clubs ?? [];
@@ -75,7 +91,13 @@ const ClubsPage: React.FC = () => {
             <span className="inline-flex items-center gap-2">
               <Users className="w-4 h-4" aria-hidden="true" />
               {/* '…' only while loading; '—' when the count is unknown; a real 0 is 0 (§4). */}
-              <span>{allPending ? '…' : allError ? '—' : `${totalClubs} clubs total`}</span>
+              <span>
+                {allPending
+                  ? '…'
+                  : allError
+                    ? '—'
+                    : `${totalClubs}${allHasMore ? '+' : ''} clubs total`}
+              </span>
             </span>
           }
           className="mb-6"
@@ -100,9 +122,10 @@ const ClubsPage: React.FC = () => {
             <ClubGrid
               clubs={disciplineClubs}
               isLoading={discLoading}
-              isError={discError}
+              isError={discError && !disciplineData}
               error={discErrorObj}
               onRetry={refetchDiscipline}
+              more={moreOf(disciplineQuery)}
               testPrefix="discipline"
             />
           </TabsContent>
@@ -110,9 +133,10 @@ const ClubsPage: React.FC = () => {
             <ClubGrid
               clubs={breedClubs}
               isLoading={breedLoading}
-              isError={breedError}
+              isError={breedError && !breedData}
               error={breedErrorObj}
               onRetry={refetchBreed}
+              more={moreOf(breedQuery)}
               testPrefix="breed"
             />
           </TabsContent>

@@ -21,6 +21,7 @@ import { userMessageFor } from '@/lib/http/userMessage';
 import { actionMessageFor } from '@/lib/http/actionMessage';
 import { FormField, Input, Select, Textarea } from '@/components/ui/form';
 import { useClubs, useMyClubs, useCreateClub } from '@/hooks/api/useClubs';
+import { ClubsMore } from './ClubsMore';
 import type { ClubType, ClubMembership } from '@/lib/api-client';
 import { clubIcon } from './constants';
 import { createClubRefused } from './clubMessages';
@@ -83,7 +84,7 @@ export const MyClubTab: React.FC = () => {
       {/* My Memberships — LOADING → ERROR → EMPTY → data (§1) */}
       {myClubsQuery.isPending ? (
         <SectionLoading label="Loading your clubs" minHeight="96px" />
-      ) : myClubsQuery.isError ? (
+      ) : myClubsQuery.isError && !myClubsQuery.data ? (
         <MyClubsError error={myClubsQuery.error} onRetry={() => myClubsQuery.refetch()} />
       ) : myMemberships.length > 0 ? (
         <div className="mb-8">
@@ -119,6 +120,15 @@ export const MyClubTab: React.FC = () => {
               </Surface>
             ))}
           </div>
+          <ClubsMore
+            hasMore={myClubsQuery.hasNextPage}
+            failed={myClubsQuery.isFetchNextPageError}
+            error={myClubsQuery.error}
+            pending={myClubsQuery.isFetchingNextPage}
+            onMore={() => void myClubsQuery.fetchNextPage()}
+            noun="of your clubs"
+            testId="my-clubs-more"
+          />
         </div>
       ) : (
         <div className="mb-8">
