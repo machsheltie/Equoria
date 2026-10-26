@@ -13,7 +13,7 @@
  * (or charge for) the same horse twice.
  *
  * Owner ruling 2026-10-26 (q78, Equoria-zz14s): the farrier's shoe types are a
- * data list (FARRIER_SERVICES; Basic Shoes at 50 for now, more later). The page
+ * data list (farrierServices; Basic Shoes at 50 for now, more later). The page
  * shows each as a box with a dropdown of the player's horses: a horse shod this
  * week is greyed out and a retired horse (21+) is not listed (GET /horses).
  *
@@ -38,7 +38,7 @@ import {
 } from '../../services/financialLedgerService.mjs';
 
 /** The shoe types, as data. Prices are the owner's. */
-export const FARRIER_SERVICES = [
+export const farrierServices = [
   {
     id: 'basic-shoes',
     name: 'Basic Shoes',
@@ -48,7 +48,7 @@ export const FARRIER_SERVICES = [
   },
 ];
 export const defaultServiceId = 'basic-shoes';
-export const shoeingCost = FARRIER_SERVICES[0].cost;
+export const shoeingCost = farrierServices[0].cost;
 /** Game days that must pass between two shoeings of the same horse. */
 export const shoeingIntervalDays = 7;
 
@@ -81,7 +81,7 @@ export async function getFarrierServices(_req, res) {
   res.status(200).json({
     success: true,
     message: 'Farrier services retrieved successfully',
-    data: FARRIER_SERVICES,
+    data: farrierServices,
   });
 }
 
@@ -128,7 +128,7 @@ export async function shoeHorse(req, res) {
     const userId = req.user.id;
     const { horseId, serviceId = defaultServiceId } = req.body;
 
-    const service = FARRIER_SERVICES.find(entry => entry.id === serviceId);
+    const service = farrierServices.find(entry => entry.id === serviceId);
     if (!service) {
       return res.status(404).json({ success: false, message: 'Service not found', data: null });
     }

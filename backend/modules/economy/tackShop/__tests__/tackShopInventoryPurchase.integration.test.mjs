@@ -24,7 +24,7 @@ import { createCleanupTracker } from '../../../../__tests__/helpers/failLoudClea
 import { allTackItems } from '../services/tackInventory.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const START_MONEY = 2000;
+const startMoney = 2000;
 const cleanup = createCleanupTracker();
 
 let user;
@@ -55,7 +55,7 @@ beforeAll(async () => {
       password: 'irrelevant-hash',
       firstName: 'Tack',
       lastName: 'Buyer',
-      money: START_MONEY,
+      money: startMoney,
     },
   });
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
@@ -97,10 +97,10 @@ describe('POST /tack-shop/purchase puts tack in the inventory, no horse involved
   it('charges 500, adds an unequipped inventory record and leaves every horse untouched', async () => {
     const res = await buy({ itemId: 'dressage-saddle' });
     expect(res.status).toBe(200);
-    expect(res.body.data.remainingMoney).toBe(START_MONEY - 500);
+    expect(res.body.data.remainingMoney).toBe(startMoney - 500);
 
     const after = await readUser();
-    expect(after.money).toBe(START_MONEY - 500);
+    expect(after.money).toBe(startMoney - 500);
     const records = after.settings.inventory.filter(r => r.itemId === 'dressage-saddle');
     expect(records).toHaveLength(1);
     expect(records[0]).toMatchObject({

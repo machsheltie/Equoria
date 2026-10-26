@@ -36,21 +36,21 @@ import {
   SYSTEM_ACCOUNT_BURN,
 } from '../../services/financialLedgerService.mjs';
 
-export const HEALTH_CHECK_ID = 'health-check';
-export const GENETIC_TESTING_ID = 'genetic-testing';
+export const healthCheckId = 'health-check';
+export const geneticTestingId = 'genetic-testing';
 
 // The owner-set service list. Prices are the owner's; never change them here
 // without a ruling.
 export const VET_SERVICES = [
   {
-    id: HEALTH_CHECK_ID,
+    id: healthCheckId,
     name: 'General Health Check',
     description: 'A full examination. Keeps a horse in Excellent health for a week.',
     cost: 100,
     actionLabel: 'Vet Horse',
   },
   {
-    id: GENETIC_TESTING_ID,
+    id: geneticTestingId,
     name: 'Genetic Testing',
     description: 'A colour genetics panel that uncovers the colour genes a horse carries.',
     cost: 500,
@@ -140,7 +140,7 @@ export async function bookVetAppointment(req, res) {
     // concurrent clicks cannot buy the same service twice: the loser matches no
     // row and its debit rolls back with the thrown error.
     // Date-only column: store the Eastern calendar date of the visit.
-    const isPanel = service.id === GENETIC_TESTING_ID;
+    const isPanel = service.id === geneticTestingId;
     const updateData = isPanel
       ? { colorGeneticsTested: true }
       : { lastVettedDate: gameCalendarDate(), healthStatus: 'Excellent' };

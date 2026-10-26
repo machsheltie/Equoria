@@ -1217,8 +1217,6 @@
   "frontend/src/pages/__tests__/RegisterPage.test.tsx": 5,
   "frontend/src/pages/__tests__/ResetPasswordPage.test.tsx": 5,
   "frontend/src/pages/__tests__/StewardsOfficePage.test.tsx": 7,
-  "frontend/src/pages/__tests__/TackShopPage.unequip-decoration.test.tsx": 4,
-  "frontend/src/pages/__tests__/VeterinarianPage.fourState.test.tsx": 4,
   "frontend/src/pages/__tests__/my-stable-page-career-stats.test.tsx": 14,
   "frontend/src/pages/__tests__/my-stable-page-champion-frame.test.tsx": 12,
   "frontend/src/pages/__tests__/pagesMaxLinesDoctrine.sentinel.test.tsx": 13,

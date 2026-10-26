@@ -164,6 +164,22 @@ export async function getTackInventory(_req, res) {
 }
 
 /**
+ * The one tack debit: the buyer pays the item's cost and the coins go to the
+ * burn account (money conservation, Equoria-kl16c). Both purchase paths call it
+ * as their FIRST write, so the User row lock is taken before any horse row.
+ */
+function debitTackPurchase(tx, { userId, item, description, metadata }) {
+  return debitMoneyOrThrow(tx, {
+    userId,
+    amount: item.cost,
+    systemAccount: SYSTEM_ACCOUNT_BURN,
+    category: 'tackPurchaseBurn',
+    description,
+    metadata,
+  });
+}
+
+/**
  * Buy an item into the owner's inventory (owner ruling 2026-10-26, q78,
  * Equoria-dslww): the Tack Shop is just a place to buy things, so no horse is
  * involved. The item lands unequipped; equipping is /inventory/equip.
@@ -181,11 +197,9 @@ async function purchaseIntoInventory(req, res, item) {
   try {
     ({ remainingMoney, record } = await withRetryableTxMapping(
       prisma.$transaction(async tx => {
-        const moneyAfter = await debitMoneyOrThrow(tx, {
+        const moneyAfter = await debitTackPurchase(tx, {
           userId,
-          amount: item.cost,
-          systemAccount: SYSTEM_ACCOUNT_BURN,
-          category: 'tackPurchaseBurn',
+          item,
           description: `Tack purchase — ${item.name}`,
           metadata: { itemId: item.id, itemCategory: item.category },
         });
@@ -282,11 +296,9 @@ export async function purchaseTackItem(req, res) {
           // deadlocks buyHorse (holds User(owner), waits for Horse). Guarded by
           // backend/__tests__/txUserBeforeHorseLockOrder.sentinel.test.mjs.
           // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
-          const moneyAfter = await debitMoneyOrThrow(tx, {
+          const moneyAfter = await debitTackPurchase(tx, {
             userId,
-            amount: item.cost,
-            systemAccount: SYSTEM_ACCOUNT_BURN,
-            category: 'tackPurchaseBurn',
+            item,
             description: `Tack purchase — ${item.name} for ${horse.name ?? horseId}`,
             metadata: { horseId, itemId: item.id, itemCategory: item.category },
           });

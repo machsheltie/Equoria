@@ -28,7 +28,7 @@ import { createCleanupTracker } from '../../../../__tests__/helpers/failLoudClea
 import { gameCalendarDate } from '../../../../utils/gameTime.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const START_MONEY = 5000;
+const startMoney = 5000;
 const cleanup = createCleanupTracker();
 
 let user;
@@ -75,7 +75,7 @@ beforeAll(async () => {
       password: 'irrelevant-hash',
       firstName: 'Vet',
       lastName: 'Picker',
-      money: START_MONEY,
+      money: startMoney,
     },
   });
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });

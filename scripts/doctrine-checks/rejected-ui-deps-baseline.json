@@ -17,11 +17,9 @@
   "frontend/src/pages/InventoryPage.tsx": { "sonner": 1, "toast()": 2 },
   "frontend/src/pages/OnboardingPage.tsx": { "sonner": 1, "toast()": 1 },
   "frontend/src/pages/SettingsPage.tsx": { "sonner": 1, "toast()": 10 },
-  "frontend/src/pages/VeterinarianPage.tsx": { "sonner": 1, "toast()": 2 },
   "frontend/src/pages/horse-detail/HorseActionBar.tsx": { "sonner": 1, "toast()": 3 },
   "frontend/src/pages/horse-detail/RiderPickerModal.tsx": { "sonner": 1, "toast()": 2 },
   "frontend/src/pages/horse-detail/StudSaleTab.tsx": { "sonner": 1, "toast()": 1 },
   "frontend/src/pages/horses/HorseEquipPage.tsx": { "sonner": 1, "toast()": 8 },
-  "frontend/src/pages/tack-shop/DecorationsPanel.tsx": { "sonner": 1, "toast()": 2 },
   "frontend/src/pages/tack-shop/ShopTab.tsx": { "sonner": 1, "toast()": 2 }
 }
