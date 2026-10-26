@@ -18,6 +18,9 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { trainHorse } from '../controllers/trainingController.mjs';
 import { trainingAnalyticsService } from '../services/trainingAnalyticsService.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 const fixturePrefix = 'TestFixture-ky2ob';
 const tag = randomBytes(4).toString('hex');
@@ -41,6 +44,7 @@ async function createHorse(label, extra = {}) {
       ...extra,
     },
   });
+  await assignTestTrainer(horse);
   createdHorseIds.push(horse.id);
   return horse;
 }

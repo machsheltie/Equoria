@@ -26,7 +26,13 @@ const HorseTrainerPanel: React.FC<{ horseId: number }> = ({ horseId }) => {
         </p>
       ) : assignment ? (
         <div className="flex flex-wrap items-center gap-3">
-          <span className="fantasy-body text-[var(--text-primary)]">{assignment.trainerName}</span>
+          <Link
+            to={`/trainers/${assignment.trainerId}`}
+            className="fantasy-body text-[var(--text-primary)] hover:underline"
+            data-testid="horse-trainer-link"
+          >
+            {assignment.trainerName}
+          </Link>
           <TrainerPersonalityBadge personality={assignment.trainerPersonality} size="sm" />
           <span className="text-sm text-[var(--text-secondary)]">
             <Currency amount={fee} /> per session

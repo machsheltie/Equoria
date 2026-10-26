@@ -173,15 +173,19 @@ describe('a player who cannot pay the fee (Equoria-3kegj)', () => {
   });
 });
 
-describe('training without a trainer (Equoria-3kegj)', () => {
-  it('charges nothing', async () => {
+// Old contract (Equoria-3kegj): a horse with no trainer trained free. Owner ruling
+// 2026-10-26 (Equoria-r8a6h q81): a trainer is required, so it is refused instead,
+// and still charges nothing (the refusal itself is pinned in trainerRequired.integration.test.mjs).
+describe('training without a trainer (Equoria-3kegj, Equoria-r8a6h)', () => {
+  it('is refused and charges nothing', async () => {
     const s = await stable({ money: 1000, trainer: false });
 
     const res = await s.train('Dressage');
 
-    expect(res.status).toBe(200);
-    expect(res.body.trainingFee).toBe(0);
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('trainerRequired');
     expect(await moneyOf(s.user.id)).toBe(1000);
     expect(await feeRows(s.user.id)).toHaveLength(0);
+    expect(await logsOf(s.horse.id)).toHaveLength(0);
   });
 });

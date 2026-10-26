@@ -6,7 +6,12 @@ import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import { getUserWithHorses } from '../../users/index.mjs';
-import { trainingRefusalReason } from './trainingEligibility.mjs';
+import {
+  horseIdsWithTrainer,
+  trainerRequiredReason,
+  trainingRefusal,
+  trainingRefusalReason,
+} from './trainingEligibility.mjs';
 
 /**
  * Log a training session for a horse in a specific discipline
@@ -255,6 +260,9 @@ async function getTrainableHorses(userId) {
     const allDisciplines = getAllDisciplines();
 
     const allHorses = [];
+    // One lookup for the whole stable: a horse with no trainer cannot train
+    // (owner ruling 2026-10-26, Equoria-r8a6h), the same rule the train call applies.
+    const withTrainer = await horseIdsWithTrainer(player.horses.map(h => h.id));
 
     for (const horse of player.horses) {
       try {
@@ -313,6 +321,15 @@ async function getTrainableHorses(userId) {
         if (refusal) {
           horseData.canTrain = false;
           horseData.ineligibleReason = refusal;
+          horseData.trainableDisciplines = [];
+          allHorses.push(horseData);
+          continue;
+        }
+
+        if (!withTrainer.has(horse.id)) {
+          horseData.canTrain = false;
+          horseData.ineligibleReason = trainerRequiredReason(horse.name);
+          horseData.ineligibleCode = trainingRefusal.trainerRequired;
           horseData.trainableDisciplines = [];
           allHorses.push(horseData);
           continue;

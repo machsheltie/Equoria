@@ -50,6 +50,9 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // red suite instead of a silent canonical-DB leak.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -183,6 +186,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         },
       },
     });
+    await assignTestTrainer(adultHorse);
 
     const twoYearsAgo = new Date();
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
@@ -206,6 +210,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         },
       },
     });
+    await assignTestTrainer(youngHorse);
 
     const fiveYearsAgo = new Date();
     fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
@@ -231,6 +236,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         },
       },
     });
+    await assignTestTrainer(trainedHorse);
 
     // Create a recent training log to put trainedHorse in cooldown
     await prisma.trainingLog.create({
@@ -353,6 +359,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           },
         },
       });
+      await assignTestTrainer(scoreTestHorse);
 
       // Get initial state
       const initialHorse = await prisma.horse.findUnique({
@@ -415,6 +422,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           },
         },
       });
+      await assignTestTrainer(horse1);
 
       const sixYearsAgoForAccumulation2 = new Date();
       sixYearsAgoForAccumulation2.setFullYear(sixYearsAgoForAccumulation2.getFullYear() - 6);
@@ -438,6 +446,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           },
         },
       });
+      await assignTestTrainer(horse2);
 
       // Train horse 1 in a new discipline
       const response1 = await trainingRequest().send({
@@ -520,6 +529,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           },
         },
       });
+      await assignTestTrainer(oldTrainedHorse);
 
       // Create old training log (8 days ago)
       const eightDaysAgo = new Date();
@@ -589,6 +599,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           },
         },
       });
+      await assignTestTrainer(xpTestHorse);
 
       const response = await trainingRequest().send({
         horseId: xpTestHorse.id,
@@ -652,6 +663,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           },
         },
       });
+      await assignTestTrainer(logTestHorse);
 
       const beforeTraining = new Date();
 
@@ -745,6 +757,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           },
         },
       });
+      await assignTestTrainer(dateTestHorse);
 
       const trainingTime = new Date();
 

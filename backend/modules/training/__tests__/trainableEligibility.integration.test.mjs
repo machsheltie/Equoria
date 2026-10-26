@@ -20,6 +20,9 @@ import app from '../../../app.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { canTrain } from '../controllers/trainingController.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 const prefix = 'TestFixture-trainable-eligibility';
 
@@ -39,8 +42,9 @@ beforeAll(async () => {
   token = a.token;
 
   const make = (key, extra) =>
-    createTestHorse({ name: `${prefix}-${key}-${tag}`, userId: owner.id, ...fit, ...extra }).then(h => {
+    createTestHorse({ name: `${prefix}-${key}-${tag}`, userId: owner.id, ...fit, ...extra }).then(async h => {
       horses[key] = h;
+      await assignTestTrainer(h);
     });
   await make('fit', { age: 6 });
   await make('lastYear', { age: 20 });

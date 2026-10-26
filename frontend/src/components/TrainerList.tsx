@@ -27,6 +27,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router';
 import { GraduationCap, Coins, RefreshCw } from 'lucide-react';
 import TrainerPersonalityBadge from './trainer/TrainerPersonalityBadge';
 import {
@@ -324,7 +325,13 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-bold text-[var(--text-primary)]">
-                        {trainer.firstName} {trainer.lastName}
+                        <Link
+                          to={`/trainers/offers/${trainer.marketplaceId}${horseId ? `?horseId=${horseId}` : ''}`}
+                          className="hover:underline"
+                          data-testid={`trainer-link-${trainer.marketplaceId}`}
+                        >
+                          {trainer.firstName} {trainer.lastName}
+                        </Link>
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <span

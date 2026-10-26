@@ -45,7 +45,16 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
   const feedHorseMutation = useFeedHorse(Number(horse.id));
   const delistHorseMutation = useDelistHorse();
   // Equoria-1poxi: with a trainer assigned the button names the one session charge.
-  const { fee: trainerFee } = useHorseTrainer(Number(horse.id));
+  const {
+    assignment: horseTrainer,
+    fee: trainerFee,
+    isLoading: trainerLoading,
+    isError: trainerError,
+  } = useHorseTrainer(Number(horse.id));
+  // Equoria-r8a6h (q81): a trainer is required to train, so a horse with none offers
+  // "Assign Trainer" instead. A trainer list still loading or failed offers the plain
+  // button; the server's refusal stays the authority.
+  const needsTrainer = !trainerLoading && !trainerError && horseTrainer === null;
 
   // Hunger is a fill bar (owner ruling 2026-10-23): a horse below Excellent can be
   // fed again today; at Excellent it is fed once per Eastern game day. The level is
@@ -119,11 +128,17 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
           type="button"
           variant="secondary"
           size="sm"
-          onClick={() => navigate(`/training?horseId=${horse.id}`)}
+          onClick={() =>
+            navigate(
+              needsTrainer ? `/trainers?horseId=${horse.id}` : `/training?horseId=${horse.id}`
+            )
+          }
           data-testid="action-train"
         >
           <Dumbbell className="w-3.5 h-3.5" />
-          {trainerFee > 0 ? (
+          {needsTrainer ? (
+            'Assign Trainer'
+          ) : trainerFee > 0 ? (
             <span className="inline-flex items-center gap-1.5">
               Train Horse <Currency amount={trainerFee} />
             </span>

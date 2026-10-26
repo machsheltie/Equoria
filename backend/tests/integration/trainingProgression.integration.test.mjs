@@ -44,6 +44,9 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // and gets fixed at the source.
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 import { randomBytes } from 'node:crypto';
+import { assignTestTrainer, cleanupTestTrainers } from '../helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -249,6 +252,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
         },
       },
     });
+    await assignTestTrainer(youngHorse);
 
     expect(youngHorse.age).toBe(2);
     expect(youngHorse.disciplineScores).toEqual({});
@@ -276,6 +280,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
         },
       },
     });
+    await assignTestTrainer(matureHorse);
 
     expect(matureHorse.age).toBe(4);
     expect(matureHorse.disciplineScores).toEqual({});

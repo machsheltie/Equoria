@@ -25,6 +25,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { canTrain } from '../controllers/trainingController.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 // Backdate dateOfBirth to a whole game-age plus one day, as an Eastern
 // date-only value (Equoria-1lk00), so the horse sits inside the intended
@@ -80,6 +83,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
+    await assignTestTrainer(horse20);
 
     // Age 21 — retired / over the active max. Ineligible.
     horse21 = await prisma.horse.create({
@@ -98,6 +102,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
+    await assignTestTrainer(horse21);
 
     // Age 21 via dateOfBirth ONLY (age column null) — proves the gate reads age
     // through the getHorseAgeYears fallback (Equoria-vdw5), not just the stored
@@ -118,6 +123,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
+    await assignTestTrainer(horse21NoAgeField);
 
     // Age 5, INJURED — healthy age but cannot train while injured.
     horseInjured = await prisma.horse.create({
@@ -135,6 +141,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
         healthStatus: 'Injured',
       },
     });
+    await assignTestTrainer(horseInjured);
 
     // Age 5, Excellent — control / happy path. Eligible.
     horseHealthy = await prisma.horse.create({
@@ -153,6 +160,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
+    await assignTestTrainer(horseHealthy);
   });
 
   afterAll(async () => {

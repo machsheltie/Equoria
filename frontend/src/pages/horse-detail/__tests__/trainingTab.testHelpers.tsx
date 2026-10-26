@@ -111,6 +111,21 @@ export const createMockTrainingResult = (disciplineId: string) => ({
   horseId: 1,
 });
 
+// A horse trains only with an assigned trainer (owner ruling 2026-10-26, Equoria-r8a6h),
+// so the shared stub gives the mock horse (id 1) one by default.
+export const createMockTrainerAssignment = (overrides = {}) => ({
+  id: 5,
+  trainerId: 10,
+  horseId: 1,
+  horseName: 'Thunder',
+  trainerName: 'Alice Thornton',
+  trainerPersonality: 'focused',
+  trainerSessionRate: 250,
+  startDate: '2026-02-01T00:00:00Z',
+  isActive: true,
+  ...overrides,
+});
+
 // Store original fetch
 export const originalFetch = global.fetch;
 
@@ -122,6 +137,7 @@ export const createFetchMock = (
     trainingResult?: any;
     trainingError?: string;
     geneticsData?: any;
+    trainerAssignments?: any[];
   } = {}
 ) => {
   const {
@@ -130,6 +146,7 @@ export const createFetchMock = (
     trainingResult,
     trainingError,
     geneticsData = { traits: [], interactions: [], timeline: [] },
+    trainerAssignments = [createMockTrainerAssignment()],
   } = options;
 
   return vi.fn((url: string | Request, init?: RequestInit) => {
@@ -153,6 +170,15 @@ export const createFetchMock = (
         ok: true,
         status: 200,
         json: () => Promise.resolve({ success: true, data: horse }),
+      } as Response);
+    }
+
+    // Trainer assignments (Equoria-r8a6h)
+    if (urlStr.includes('/api/v1/trainers/assignments') && method === 'GET') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ success: true, data: trainerAssignments }),
       } as Response);
     }
 

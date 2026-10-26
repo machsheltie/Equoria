@@ -22,6 +22,9 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 describe('System-Wide Data Integrity', () => {
   let csrf;
@@ -72,6 +75,7 @@ describe('System-Wide Data Integrity', () => {
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
+    await assignTestTrainer(testHorse);
 
     testGroom = await prisma.groom.create({
       data: {
@@ -279,6 +283,7 @@ describe('System-Wide Data Integrity', () => {
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
+    await assignTestTrainer(tempHorse);
 
     const groomsBefore = await prisma.groom.count({ where: { userId: testUser.id } });
 

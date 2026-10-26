@@ -19,6 +19,9 @@ import { randomBytes } from 'node:crypto';
 
 import app from '../../../app.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 const FIXTURE_PREFIX = 'TestFixture-trainable-phenotype';
 
@@ -54,6 +57,8 @@ beforeAll(async () => {
     age: 5,
     phenotype: null,
   });
+  await assignTestTrainer(horseWithPhenotype);
+  await assignTestTrainer(horseWithoutPhenotype);
 }, 120000);
 
 afterAll(async () => {

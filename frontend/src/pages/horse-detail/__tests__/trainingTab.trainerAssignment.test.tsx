@@ -2,7 +2,9 @@
  * HorseDetailPage Training Tab — assigned trainer (Equoria-r8a6h, owner ruling 2026-10-23).
  * The horse page shows the trainer assigned to this horse with its per-session fee, and
  * the confirm button reads "Train Horse <price>" (the fee charged once per weekly
- * session). With no trainer there is no fee and the button keeps its plain label.
+ * session). Owner ruling 2026-10-26 (q81): a trainer is REQUIRED to train, so with none
+ * assigned the tab offers "Assign Trainer" in place of the discipline picker (the old
+ * contract here let an untrained-by-anyone horse reach the confirm button).
  * Real providers and the real hooks; only the network boundary is stubbed.
  */
 
@@ -103,25 +105,31 @@ describe('HorseDetailPage Training Tab — assigned trainer', () => {
     expect(panel).not.toHaveTextContent('Alice Thornton');
   });
 
-  test('with no trainer the confirm button has no price', async () => {
+  test('with no trainer the picker is replaced by an Assign Trainer link to that horse', async () => {
     global.fetch = fetchWithAssignments([]);
-    const user = userEvent.setup();
     renderWithProviders(<HorseDetailPage />);
     await waitForHorseToLoad();
     await navigateToTrainingTab();
-    await waitFor(() =>
-      expect(
-        within(screen.getByTestId('horse-trainer-panel')).getByRole('link', {
-          name: /assign trainer/i,
-        })
-      ).toBeInTheDocument()
+
+    const cta = await screen.findByTestId('training-assign-trainer');
+    expect(cta).toHaveTextContent('Assign Trainer');
+    expect(cta).toHaveAttribute('href', '/trainers?horseId=1');
+    expect(screen.getByTestId('training-eligibility-warning')).toHaveTextContent(
+      /needs a trainer/i
     );
-    await waitFor(() => expect(screen.getByTestId('discipline-picker')).toBeInTheDocument());
+    expect(screen.queryByTestId('discipline-picker')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('training-status-ready')).not.toBeInTheDocument();
+  });
 
-    await user.click(screen.getByRole('button', { name: /dressage/i }));
+  test('the trainer panel names the trainer as a link to the trainer page', async () => {
+    global.fetch = fetchWithAssignments([assignment()]);
+    renderWithProviders(<HorseDetailPage />);
+    await waitForHorseToLoad();
+    await navigateToTrainingTab();
 
-    const modal = await screen.findByTestId('training-confirm-modal');
-    expect(within(modal).getByTestId('confirm-button')).toHaveTextContent('Confirm Training');
+    const link = await screen.findByTestId('horse-trainer-link');
+    await waitFor(() => expect(link).toHaveTextContent('Alice Thornton'));
+    expect(link).toHaveAttribute('href', '/trainers/10');
   });
 
   test('shows nothing about trainer fit', async () => {

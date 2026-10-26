@@ -271,7 +271,13 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-bold text-role-primary">
-                      {trainer.firstName} {trainer.lastName}
+                      <Link
+                        to={`/trainers/${trainer.id}`}
+                        className="hover:underline"
+                        data-testid={`trainer-link-${trainer.id}`}
+                      >
+                        {trainer.firstName} {trainer.lastName}
+                      </Link>
                     </h3>
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className="text-xs text-role-muted">

@@ -27,6 +27,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 import { createTestHorse } from '../helpers/createTestHorse.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../tests/helpers/assignTrainer.mjs';
 import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
 import { competitionDateOfBirth, giveEligibleRider } from '../helpers/eligibleCompetitor.mjs';
@@ -78,10 +79,11 @@ beforeAll(async () => {
 }, 60000);
 
 afterAll(() => cleanup.run(), 60000);
+afterAll(() => cleanupTestTrainers(), 60000);
 
 /** An adult horse owned by `owner`; fed today and in Excellent health unless overridden. */
-function makeHorse(fields = {}) {
-  return createTestHorse(
+async function makeHorse(fields = {}) {
+  const horse = await createTestHorse(
     prisma,
     {
       name: `TestFixture-hioc-${uid()}`,
@@ -96,6 +98,8 @@ function makeHorse(fields = {}) {
     },
     horseIds,
   );
+  await assignTestTrainer(horse); // a trainer is required to train (owner ruling 2026-10-26)
+  return horse;
 }
 
 async function makeShow(fields = {}) {

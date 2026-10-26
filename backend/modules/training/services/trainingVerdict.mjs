@@ -2,12 +2,12 @@
  * The server's verdict on training a horse right now, for the horse page's
  * "Last Trained" line (Equoria-0l0tq). It applies exactly what the train call
  * applies (services/trainingEligibility.mjs: age window, injury, Fair-or-better
- * health, and the weekly cooldown), so the page never recomputes it.
+ * health, an assigned trainer, and the weekly cooldown), so the page never recomputes it.
  */
 
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import { activeTrainingCooldownEnd, getAnyRecentTraining } from './trainingModelService.mjs';
-import { trainingRefusalReason } from './trainingEligibility.mjs';
+import { trainerRefusalReason, trainingRefusalReason } from './trainingEligibility.mjs';
 
 /**
  * @param {{ id: number, age?: number|null, dateOfBirth?: Date|string|null }} horse
@@ -23,6 +23,7 @@ export async function getTrainingVerdict(horse, now = new Date()) {
       : (getHorseAgeYears(horse.dateOfBirth) ?? 0);
   const canTrainNow =
     trainingRefusalReason(horse, effectiveAge) === null &&
+    (await trainerRefusalReason(horse)) === null &&
     activeTrainingCooldownEnd(horse.trainingCooldown, now) === null;
   return { lastTrainedAt, canTrainNow };
 }

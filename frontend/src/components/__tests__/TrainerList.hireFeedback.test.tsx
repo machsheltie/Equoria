@@ -16,6 +16,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { server } from '@/test/msw/server';
+import { MemoryRouter } from 'react-router';
 import { MockAuthProvider } from '@/test/utils';
 import TrainerList from '../TrainerList';
 
@@ -54,10 +55,12 @@ function renderList() {
   });
   return render(
     <QueryClientProvider client={qc}>
-      <MockAuthProvider>
-        {/* Equoria-1poxi: the listing is opened for a horse, so the hire assigns to it. */}
-        <TrainerList userId="user-1" horseId={1} />
-      </MockAuthProvider>
+      <MemoryRouter>
+        <MockAuthProvider>
+          {/* Equoria-1poxi: the listing is opened for a horse, so the hire assigns to it. */}
+          <TrainerList userId="user-1" horseId={1} />
+        </MockAuthProvider>
+      </MemoryRouter>
     </QueryClientProvider>
   );
 }

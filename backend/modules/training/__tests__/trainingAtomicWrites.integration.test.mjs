@@ -28,6 +28,9 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { trainHorse } from '../controllers/trainingController.mjs';
 import { DISCIPLINE_VALUES, HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 const FIXTURE_PREFIX = 'TestFixture-bvddn17';
 const tag = randomBytes(4).toString('hex');
@@ -52,6 +55,7 @@ async function createHorse(label, extra = {}) {
       ...extra,
     },
   });
+  await assignTestTrainer(horse);
   createdHorseIds.push(horse.id);
   return horse;
 }

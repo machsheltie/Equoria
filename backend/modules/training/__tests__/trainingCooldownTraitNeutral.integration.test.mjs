@@ -13,6 +13,9 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 import { randomBytes } from 'node:crypto';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, '../../../.env.test') });
@@ -81,6 +84,7 @@ describe('INTEGRATION: training cooldown is seven days whatever the horse traits
       },
       createdHorseIds,
     );
+    await assignTestTrainer(horse);
     const before = Date.now();
     const result = await trainHorse(horse.id, 'Dressage');
     expect(result.success).toBe(true);

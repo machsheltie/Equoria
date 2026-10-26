@@ -34,6 +34,9 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 import { randomBytes } from 'node:crypto';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -113,7 +116,7 @@ describe('🏋️ INTEGRATION: POST /train response contract (Equoria-o1x6g)', (
   async function makeEligibleHorse(name) {
     const fourYearsAgo = new Date();
     fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
-    return createTestHorse(
+    const horse = await createTestHorse(
       prisma,
       {
         name,
@@ -129,6 +132,8 @@ describe('🏋️ INTEGRATION: POST /train response contract (Equoria-o1x6g)', (
       },
       createdHorseIds,
     );
+    await assignTestTrainer(horse);
+    return horse;
   }
 
   it('trainHorse() returns the real XP and score awards and no stat gain', async () => {

@@ -42,6 +42,9 @@ import { canTrain, trainHorse, getTrainingStatus, getTrainableHorses } from '../
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 // Test data setup
 let testUser;
@@ -104,6 +107,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
+    await assignTestTrainer(testHorseEligible);
     testHorse4Years = testHorseEligible;
 
     // Create additional adult horse (3 game-years old): 21 days ago (eligible)
@@ -125,6 +129,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
+    await assignTestTrainer(testHorseAdult);
 
     // Create young horse (2 game-years old, under the age:3 training gate).
     // 14 days = exactly 2 game-years; add a 1-day buffer (15 days) so floor()
@@ -148,6 +153,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
+    await assignTestTrainer(testHorseYoung);
 
     // Create horse with recent training
     testHorseRecentTraining = await prisma.horse.create({
@@ -166,6 +172,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
+    await assignTestTrainer(testHorseRecentTraining);
 
     // Add recent training log (3 days ago)
     const threeDaysAgo = new Date();
@@ -288,6 +295,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         },
       });
+      await assignTestTrainer(oldTrainingHorse);
 
       await prisma.trainingLog.create({
         data: {
@@ -356,6 +364,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         },
       });
+      await assignTestTrainer(edgeCaseHorse);
 
       await prisma.trainingLog.create({
         data: {
@@ -501,6 +510,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         },
       });
+      await assignTestTrainer(expiredCooldownHorse);
 
       await prisma.trainingLog.create({
         data: {
@@ -578,6 +588,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         },
       });
+      await assignTestTrainer(expiredCooldownHorse);
 
       await prisma.trainingLog.create({
         data: {

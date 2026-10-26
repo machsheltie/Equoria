@@ -56,6 +56,9 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 /**
  * Extract cookie value from Set-Cookie header array
@@ -267,6 +270,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         },
       },
     });
+    await assignTestTrainer(testHorse);
 
     // Verify horse was created with correct age for training eligibility
     expect(testHorse.age).toBeGreaterThanOrEqual(3);

@@ -42,6 +42,9 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -205,6 +208,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         },
       },
     });
+    await assignTestTrainer(adultHorse);
 
     youngHorse = await prisma.horse.create({
       data: {
@@ -225,6 +229,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         },
       },
     });
+    await assignTestTrainer(youngHorse);
 
     trainedHorse = await prisma.horse.create({
       data: {
@@ -247,9 +252,10 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         },
       },
     });
+    await assignTestTrainer(trainedHorse);
 
     // Create horses for multi-horse user testing
-    await prisma.horse.create({
+    const controllerHorse1 = await prisma.horse.create({
       data: {
         ...fixtureColor(),
         name: 'Controller Horse 1',
@@ -268,8 +274,9 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         },
       },
     });
+    await assignTestTrainer(controllerHorse1);
 
-    await prisma.horse.create({
+    const controllerHorse2 = await prisma.horse.create({
       data: {
         ...fixtureColor(),
         name: 'Controller Horse 2',
@@ -288,6 +295,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         },
       },
     });
+    await assignTestTrainer(controllerHorse2);
 
     // Create a recent training log to put trainedHorse in cooldown
     await prisma.trainingLog.create({
@@ -428,6 +436,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
           },
         },
       });
+      await assignTestTrainer(workflowHorse);
 
       // Initial status check - should be trainable
       let status = await getTrainingStatus(workflowHorse.id, 'Racing'); // Fixed: added required discipline parameter
@@ -645,6 +654,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
           },
         },
       });
+      await assignTestTrainer(freshHorse);
 
       const mockReq = {
         body: { horseId: freshHorse.id, discipline: 'Show Jumping' },

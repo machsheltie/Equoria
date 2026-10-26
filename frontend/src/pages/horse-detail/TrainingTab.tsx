@@ -13,8 +13,9 @@
  * Story 4-1: Training Session Interface - Task 6
  */
 
-import { actionMessageFor, trainRefused } from '@/lib/http/actionMessage';
+import { actionMessageFor, trainRefused, trainRefusalCodes } from '@/lib/http/actionMessage';
 import React, { useState } from 'react';
+import { Link } from 'react-router';
 import { formatDate } from '@/lib/formatDate';
 import { AlertCircle, Loader2, Dumbbell, Clock, CheckCircle } from 'lucide-react';
 import DisciplinePicker from '../../components/training/DisciplinePicker';
@@ -60,7 +61,16 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   } = useTrainingOverview(horse.id);
   const trainHorse = useTrainHorse();
   // Equoria-r8a6h: the assigned trainer's per-session fee is what the button charges.
-  const { fee: trainerFee } = useHorseTrainer(horse.id);
+  const {
+    assignment: horseTrainer,
+    fee: trainerFee,
+    isLoading: isTrainerLoading,
+    isError: isTrainerError,
+  } = useHorseTrainer(horse.id);
+  // Owner ruling 2026-10-26 (q81): a trainer is required to train. With none assigned
+  // the tab offers "Assign Trainer" instead of the discipline picker. A failed trainer
+  // read says nothing here: the server's refusal stays the authority on a train click.
+  const needsTrainer = !isTrainerLoading && !isTrainerError && horseTrainer === null;
 
   // Check training eligibility
   const eligibility = canTrain({
@@ -70,7 +80,9 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     // The server refuses a horse in Bad health (owner ruling 2026-10-23); never offer one.
     ineligibleReason: isBadHealth(horse.displayedHealth ?? horse.healthStatus)
       ? `${horse.name} is in Bad health and cannot train. Feed and vet to restore health.`
-      : null,
+      : needsTrainer
+        ? `${horse.name} needs a trainer before training.`
+        : null,
     trainingCooldown: getGlobalCooldown(trainingOverview),
   });
 
@@ -166,7 +178,7 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       setIsResultModalOpen(true);
     } catch (error) {
       // Keep modal open on error so user can retry
-      setTrainingError(actionMessageFor(error, trainRefused));
+      setTrainingError(actionMessageFor(error, trainRefused, trainRefusalCodes));
     }
   };
 
@@ -301,6 +313,15 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             <div>
               <h4 className="font-semibold text-[var(--status-danger)]">Training Not Available</h4>
               <p className="text-sm text-[var(--status-danger)] mt-1">{eligibility.reason}</p>
+              {needsTrainer && (
+                <Link
+                  to={`/trainers?horseId=${horse.id}`}
+                  className="inline-block mt-2 text-sm text-[var(--gold-400)] hover:underline"
+                  data-testid="training-assign-trainer"
+                >
+                  Assign Trainer
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -312,22 +333,24 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           errored we can't know which disciplines are on cooldown, so presenting
           a fully-enabled picker would be the same false-actionable defect as the
           "Ready to train!" status (§1/§4). The error state's retry recovers it. */}
-      {!isOverviewError && (eligibility.eligible || isIneligibleDueToCooldown) && (
-        <div className="glass-panel rounded-lg p-6">
-          <h3 className="type-section-heading mb-4 flex items-center">
-            <Dumbbell className="w-5 h-5 mr-2 text-[rgb(160,175,200)]" />
-            Select Discipline
-          </h3>
+      {!isOverviewError &&
+        !isTrainerLoading &&
+        (eligibility.eligible || isIneligibleDueToCooldown) && (
+          <div className="glass-panel rounded-lg p-6">
+            <h3 className="type-section-heading mb-4 flex items-center">
+              <Dumbbell className="w-5 h-5 mr-2 text-[rgb(160,175,200)]" />
+              Select Discipline
+            </h3>
 
-          <DisciplinePicker
-            selectedDiscipline={selectedDiscipline}
-            onSelectDiscipline={handleDisciplineSelect}
-            disciplineScores={horse.disciplineScores || {}}
-            disabledDisciplines={disabledDisciplines}
-            isLoading={isStatusLoading || trainHorse.isPending}
-          />
-        </div>
-      )}
+            <DisciplinePicker
+              selectedDiscipline={selectedDiscipline}
+              onSelectDiscipline={handleDisciplineSelect}
+              disciplineScores={horse.disciplineScores || {}}
+              disabledDisciplines={disabledDisciplines}
+              isLoading={isStatusLoading || trainHorse.isPending}
+            />
+          </div>
+        )}
 
       {/* Training Error Display */}
       {trainingError && (

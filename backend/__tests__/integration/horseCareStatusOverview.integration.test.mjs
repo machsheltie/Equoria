@@ -13,6 +13,7 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 import { createTestHorse } from '../helpers/createTestHorse.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../tests/helpers/assignTrainer.mjs';
 import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
@@ -33,8 +34,8 @@ const overview = async horseId => {
   return res.body.data;
 };
 
-const makeHorse = (fields = {}) =>
-  createTestHorse(
+const makeHorse = async (fields = {}) => {
+  const horse = await createTestHorse(
     prisma,
     {
       name: `TestFixture-0l0tq-${uid()}`,
@@ -49,6 +50,9 @@ const makeHorse = (fields = {}) =>
     },
     horseIds,
   );
+  await assignTestTrainer(horse); // a trainer is required to train (owner ruling 2026-10-26)
+  return horse;
+};
 
 beforeAll(async () => {
   owner = await prisma.user.create({
@@ -79,6 +83,7 @@ beforeAll(async () => {
 }, 60000);
 
 afterAll(() => cleanup.run(), 60000);
+afterAll(() => cleanupTestTrainers(), 60000);
 
 describe('overview Current Status verdicts (Equoria-0l0tq)', () => {
   it('reports lastShod and lastGroomed as stored, and null when never', async () => {

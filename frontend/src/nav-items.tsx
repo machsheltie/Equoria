@@ -43,6 +43,7 @@ const InventoryPage = lazy(() => import('./pages/InventoryPage'));
 const MyStablePage = lazy(() => import('./pages/MyStablePage'));
 // Epic 13 — Trainer System (World sub-location, route-only)
 const TrainersPage = lazy(() => import('./pages/TrainersPage'));
+const TrainerPage = lazy(() => import('./pages/TrainerPage'));
 // Epic 21 — Marketplace Hub + sub-routes
 const MarketplaceHubPage = lazy(() => import('./pages/MarketplaceHubPage'));
 const HorseMarketplacePage = lazy(() => import('./pages/HorseMarketplacePage'));
@@ -210,6 +211,19 @@ export const navItems = [
     to: '/trainers',
     icon: null,
     Page: TrainersPage,
+  },
+  // Equoria-r8a6h (q82): one page per trainer, hired or on offer.
+  {
+    title: 'Trainer',
+    to: '/trainers/:trainerId',
+    icon: null,
+    Page: TrainerPage,
+  },
+  {
+    title: 'Trainer on offer',
+    to: '/trainers/offers/:marketplaceId',
+    icon: null,
+    Page: TrainerPage,
   },
   // Epic 21 — Marketplace sub-routes (hub at /marketplace; sub-pages linked from hub cards)
   {

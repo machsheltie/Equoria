@@ -48,6 +48,9 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 // Custom Jest matcher for toBeOneOf
 expect.extend({
@@ -115,6 +118,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
+    await assignTestTrainer(testHorse);
     testHorseId = testHorse.id;
 
     // Second horse so the "allow training" test isn't blocked by a cooldown from earlier tests
@@ -129,6 +133,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
+    await assignTestTrainer(secondHorse);
     secondHorseId = secondHorse.id;
 
     // Mint CSRF bound to this suite's user (authToken) — see note above.

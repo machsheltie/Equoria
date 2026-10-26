@@ -15,6 +15,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../tests/helpers/assignTrainer.mjs';
 import * as horsesModule from '../modules/horses/index.mjs';
 import { TEMPERAMENT_TYPES } from '../modules/horses/data/temperamentTypes.mjs';
 import { trainHorse } from '../modules/training/controllers/trainingController.mjs';
@@ -49,7 +50,7 @@ async function createBreed() {
 }
 
 async function createHorse(userId, breedId, overrides = {}) {
-  return prisma.horse.create({
+  const horse = await prisma.horse.create({
     data: {
       ...fixtureColor(),
       name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
@@ -65,6 +66,8 @@ async function createHorse(userId, breedId, overrides = {}) {
       user: { connect: { id: userId } },
     },
   });
+  await assignTestTrainer(horse); // a trainer is required to train (owner ruling 2026-10-26)
+  return horse;
 }
 
 async function cleanupSuite() {
@@ -88,6 +91,7 @@ async function cleanupSuite() {
   await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.breed.deleteMany({ where: { name: { startsWith: SUITE_PREFIX } } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+  await cleanupTestTrainers();
 }
 
 describe('the horses module no longer offers temperament training modifiers', () => {

@@ -13,7 +13,11 @@ import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { invalidateCache, invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
-import { trainingRefusalReason } from '../services/trainingEligibility.mjs';
+import {
+  trainerRefusalReason,
+  trainingRefusal,
+  trainingRefusalReason,
+} from '../services/trainingEligibility.mjs';
 
 /**
  * Check if a horse is eligible to train in a specific discipline
@@ -93,6 +97,13 @@ async function computeCanTrain(parsedHorseId, discipline) {
     return { eligible: false, reason: refusal };
   }
 
+  // A trainer is required (owner ruling 2026-10-26, Equoria-r8a6h).
+  const noTrainer = await trainerRefusalReason(horse);
+  if (noTrainer) {
+    logger.info(`[trainingController.canTrain] Horse ${parsedHorseId} has no assigned trainer`);
+    return { eligible: false, reason: noTrainer, code: trainingRefusal.trainerRequired };
+  }
+
   // Check trait requirements for specific disciplines (e.g., Gaited)
   if (discipline === 'Gaited') {
     if (!checkTraitRequirements(horse, discipline)) {
@@ -137,9 +148,10 @@ const TRAINING_DISCIPLINE_GAIN = 5;
 const trainingPlayerXp = 5;
 
 /** The result trainHorse returns when it refuses a session (nothing was written). */
-const refusal = reason => ({
+const refusal = (reason, code = null) => ({
   success: false,
   reason,
+  ...(code ? { code } : {}),
   updatedHorse: null,
   message: `Training not allowed: ${reason}`,
   nextEligible: null,
@@ -163,7 +175,7 @@ async function trainHorse(horseId, discipline) {
 
     if (!eligibilityCheck.eligible) {
       logger.warn(`[trainingController.trainHorse] Training rejected: ${eligibilityCheck.reason}`);
-      return refusal(eligibilityCheck.reason);
+      return refusal(eligibilityCheck.reason, eligibilityCheck.code);
     }
 
     // Get horse data with traits for effect calculations
@@ -408,6 +420,7 @@ async function getTrainingStatus(horseId, discipline) {
     const status = {
       eligible: eligibilityCheck.eligible,
       reason: eligibilityCheck.reason,
+      ...(eligibilityCheck.code ? { code: eligibilityCheck.code } : {}),
       horseAge: age,
       lastTrainingDate: lastTrainingDateInDiscipline, // Still show discipline-specific for UI
       nextEligibleDate, // ISO string when cooldown is active, null otherwise
@@ -480,6 +493,7 @@ async function trainRouteHandler(req, res) {
       res.status(400).json({
         success: false,
         message: result.message,
+        ...(result.code ? { code: result.code } : {}),
       });
     }
   } catch (error) {

@@ -21,6 +21,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { canTrain, getTrainableHorses, getTrainingStatus, trainHorse } from '../controllers/trainingController.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 const PREFIX = 'TestFixture-w0qb7';
 const dayMs = 24 * 60 * 60 * 1000;
@@ -60,6 +63,7 @@ async function makeUserWithHorse() {
       trainingCooldown: null,
     },
   });
+  await assignTestTrainer(horse);
   horseIds.push(horse.id);
   return { user, horse };
 }

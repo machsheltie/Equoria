@@ -18,6 +18,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { server } from '@/test/msw/server';
+import { MemoryRouter } from 'react-router';
 import { MockAuthProvider } from '@/test/utils';
 import TrainerList from '../TrainerList';
 
@@ -54,9 +55,11 @@ function renderList() {
   });
   return render(
     <QueryClientProvider client={qc}>
-      <MockAuthProvider>
-        <TrainerList userId="user-1" />
-      </MockAuthProvider>
+      <MemoryRouter>
+        <MockAuthProvider>
+          <TrainerList userId="user-1" />
+        </MockAuthProvider>
+      </MemoryRouter>
     </QueryClientProvider>
   );
 }

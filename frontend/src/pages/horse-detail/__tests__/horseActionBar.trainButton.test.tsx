@@ -2,7 +2,8 @@
  * HorseActionBar — the main Train button reads "Train Horse <price>" when the horse has
  * a trainer assigned (Equoria-1poxi, owner ruling q14 2026-10-23). The price is the
  * trainer's per-session fee in the game's coin formatting. With no trainer the label is
- * unchanged ("Train"); whether a trainer is required is a separate owner question (q81).
+ * "Assign Trainer" instead: owner ruling 2026-10-26 (q81) makes a trainer required to
+ * train, so the bar offers the way to get one. (Old contract: the plain "Train" label.)
  * Real providers and hooks; only the network is stubbed.
  */
 
@@ -70,12 +71,12 @@ describe('HorseActionBar Train button (Equoria-1poxi)', () => {
     await waitFor(() => expect(train).toHaveTextContent(/Train Horse\s*1,250/));
   });
 
-  it('keeps the plain "Train" label with no trainer assigned', async () => {
+  it('offers "Assign Trainer" in place of Train with no trainer assigned', async () => {
     server.use(http.get(ASSIGNMENTS, () => HttpResponse.json({ success: true, data: [] })));
     renderBar();
 
     const train = screen.getByTestId('action-train');
-    await waitFor(() => expect(train).toHaveTextContent(/^Train$/));
+    await waitFor(() => expect(train).toHaveTextContent(/^Assign Trainer$/));
     expect(train).not.toHaveTextContent(/Train Horse/);
   });
 
@@ -88,6 +89,7 @@ describe('HorseActionBar Train button (Equoria-1poxi)', () => {
     renderBar();
 
     const train = screen.getByTestId('action-train');
-    await waitFor(() => expect(train).toHaveTextContent(/^Train$/));
+    await waitFor(() => expect(train).toHaveTextContent(/^Assign Trainer$/));
+    expect(train).not.toHaveTextContent(/Train Horse/);
   });
 });

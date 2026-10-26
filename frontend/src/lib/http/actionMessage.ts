@@ -109,6 +109,15 @@ export const trainRefused: ActionCopy = {
   400: "That training session couldn't go ahead. The horse may be on cooldown, too young or in poor health.",
 };
 
+/**
+ * The refusal code the train call answers for a horse with no assigned trainer
+ * (owner ruling 2026-10-26, Equoria-r8a6h). Pass as the third argument of
+ * `actionMessageFor` beside `trainRefused`.
+ */
+export const trainRefusalCodes: ActionCodeCopy = {
+  trainerRequired: 'Assign a trainer to this horse before training it.',
+};
+
 /** A refused show entry, ridden or conformation (Equoria-mr1kq). */
 export const enterShowRefused: ActionCopy = {
   400: "That horse can't be entered in this show right now.",

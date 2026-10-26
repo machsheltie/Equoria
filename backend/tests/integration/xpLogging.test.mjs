@@ -20,6 +20,9 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // RED so leaked fixtures don't silently pollute the canonical DB (CLAUDE.md §2).
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 const UNIQUE = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
@@ -67,6 +70,7 @@ beforeAll(async () => {
       epigeneticModifiers: { positive: [], negative: [] },
     },
   });
+  await assignTestTrainer(testHorse);
 }, 120000);
 
 afterAll(async () => {
@@ -145,6 +149,7 @@ describe('XP Logging — Training Workflow', () => {
         epigeneticModifiers: { positive: [], negative: [] },
       },
     });
+    await assignTestTrainer(youngHorse);
 
     const xpBefore = (await prisma.user.findUnique({ where: { id: testUser.id } })).xp;
     const eventsBefore = await prisma.xpEvent.count({ where: { userId: testUser.id } });

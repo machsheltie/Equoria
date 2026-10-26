@@ -22,6 +22,9 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 import { randomBytes } from 'node:crypto';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -108,10 +111,10 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
    * A fresh, training-eligible (5yo, no cooldown) horse with a given
    * temperament and optional epigenetic traits.
    */
-  async function makeHorse(label, { temperament = null, positiveTraits = [] } = {}) {
+  async function makeHorse(label, { temperament = null, positiveTraits = [], fixtureTrainer = true } = {}) {
     const fiveYearsAgo = new Date();
     fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
-    return createTestHorse(
+    const horse = await createTestHorse(
       prisma,
       {
         name: `TestFixture-oey967-${label}-${SUFFIX}`,
@@ -129,6 +132,11 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
       },
       createdHorseIds,
     );
+    // A trainer is required to train (owner ruling 2026-10-26, Equoria-r8a6h).
+    if (fixtureTrainer) {
+      await assignTestTrainer(horse);
+    }
+    return horse;
   }
 
   /**
@@ -155,10 +163,10 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
   }
 
   // -- T1: the flat +5, whatever the trainer ---------------------------------
-  it('T1: a matched expert trainer, a penalised trainer and no trainer all give exactly +5', async () => {
+  it('T1: a matched expert trainer, a penalised trainer and a plain trainer all give exactly +5 (owner ruling 2026-10-26: a trainer is required, so the control has a plain fixture trainer)', async () => {
     const controlHorse = await makeHorse('t1-control', { temperament: 'Calm' });
-    const expertHorse = await makeHorse('t1-expert', { temperament: 'Calm' });
-    const badHireHorse = await makeHorse('t1-badhire', { temperament: 'Nervous' });
+    const expertHorse = await makeHorse('t1-expert', { temperament: 'Calm', fixtureTrainer: false });
+    const badHireHorse = await makeHorse('t1-badhire', { temperament: 'Nervous', fixtureTrainer: false });
     await assignTrainer(expertHorse.id, {
       skillLevel: 'expert',
       level: 10,

@@ -33,6 +33,9 @@ import { trainHorse } from '../controllers/trainingController.mjs';
 // Equoria-1ohys: fail-loud scoped cleanup — a failed delete must turn the suite
 // RED so leaked fixtures don't silently pollute the canonical DB (CLAUDE.md §2).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+
+afterAll(() => cleanupTestTrainers(), 60000);
 
 const FIXTURE_PREFIX = 'TestFixture-0ihyi';
 const N_PARALLEL = 10;
@@ -70,6 +73,7 @@ beforeAll(async () => {
       trainingCooldown: null,
     },
   });
+  await assignTestTrainer(testHorse);
   createdHorseIds.push(testHorse.id);
 }, 60000);
 
