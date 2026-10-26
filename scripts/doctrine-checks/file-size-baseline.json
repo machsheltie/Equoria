@@ -19,7 +19,6 @@
   "backend/modules/horses/__tests__/phenotypeCalculationService.test.mjs": 837,
   "backend/modules/horses/services/horseTemperamentAnalysis.mjs": 806,
   "backend/modules/horses/services/phenotypeCalculationService.mjs": 725,
-  "backend/modules/leaderboards/controllers/leaderboardController.mjs": 744,
   "backend/modules/marketplace/controllers/marketplaceController.mjs": 742,
   "backend/modules/traits/services/enhancedReportingService.mjs": 817,
   "backend/modules/users/controllers/userController.mjs": 631,

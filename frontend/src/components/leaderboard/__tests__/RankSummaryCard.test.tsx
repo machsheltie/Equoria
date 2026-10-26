@@ -28,7 +28,6 @@ const createRanking = (overrides: Partial<CategoryRanking> = {}): CategoryRankin
   categoryLabel: 'Horse Level',
   rank: 42,
   totalEntries: 1254,
-  rankChange: 5,
   primaryStat: 15,
   statLabel: 'Level',
   ...overrides,
@@ -77,35 +76,6 @@ describe('RankSummaryCard', () => {
       });
       render(<RankSummaryCard ranking={ranking} />);
       expect(screen.getByText('82.5%')).toBeInTheDocument();
-    });
-  });
-
-  describe('Rank Change Indicators', () => {
-    it('shows green up indicator with "+5" for positive rank change', () => {
-      const ranking = createRanking({ rankChange: 5 });
-      render(<RankSummaryCard ranking={ranking} />);
-      const indicator = screen.getByTestId('rank-change-indicator');
-      expect(indicator).toHaveTextContent('+5');
-      expect(indicator).toHaveStyle({ backgroundColor: expect.stringContaining('') });
-      // Verify green styling is present
-      expect(indicator.className).toMatch(/green|emerald/i);
-    });
-
-    it('shows red down indicator with "-3" for negative rank change', () => {
-      const ranking = createRanking({ rankChange: -3 });
-      render(<RankSummaryCard ranking={ranking} />);
-      const indicator = screen.getByTestId('rank-change-indicator');
-      expect(indicator).toHaveTextContent('-3');
-      expect(indicator.className).toMatch(/red/i);
-    });
-
-    it('shows gray dash indicator for no rank change', () => {
-      const ranking = createRanking({ rankChange: 0 });
-      render(<RankSummaryCard ranking={ranking} />);
-      const indicator = screen.getByTestId('rank-change-indicator');
-      expect(indicator).toHaveTextContent('\u2014');
-      // Neutral "no change" state uses tokenized slate colors per design tokens
-      expect(indicator.className).toMatch(/text-slate-400|rgba\(15,35,70/);
     });
   });
 

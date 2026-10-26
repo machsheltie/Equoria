@@ -40,7 +40,7 @@ import type {
 import type { LeaderboardEntryData } from '@/components/leaderboard/LeaderboardEntry';
 import type { HorseDetailData } from '@/components/leaderboard/LeaderboardHorseDetailModal';
 import { useLeaderboardHorseProfile } from '@/hooks/api/useLeaderboardHorseProfile';
-import type { LeaderboardHorseProfile } from '@/lib/api/leaderboards';
+import { boardNames, type LeaderboardHorseProfile } from '@/lib/api/leaderboards';
 
 // ---------------------------------------------------------------------------
 // URL State Management Hook
@@ -216,10 +216,14 @@ function buildHorseDetail(
  * page with URL-driven state, data fetching, and a horse detail modal.
  */
 // The rank summary's categories that are leaderboards.
-const summaryCategoryBoards: Record<string, LeaderboardCategory | undefined> = {
-  xp: 'player-xp',
-  'horse-earnings': 'player-earnings',
-};
+// Since Equoria-3kfne each one is named for the board it ranks, so the page
+// finds the board by the name the backend gives it.
+const summaryCategoryBoards = Object.fromEntries(
+  (Object.entries(boardNames) as [LeaderboardCategory, string][]).map(([category, name]) => [
+    name,
+    category,
+  ])
+) as Record<string, LeaderboardCategory | undefined>;
 
 const LeaderboardsPage = () => {
   const navigate = useNavigate();

@@ -107,8 +107,8 @@ describe('Cron Job Service (real node-cron + real DB)', () => {
     it('should register exactly the canonical scheduled jobs visible via getCronJobStatus', () => {
       // Shape-based assertion (Equoria-w5fjw): the prior `toBe(3)` magic
       // number was brittle test-vs-code drift — it broke every time a
-      // legitimate new cron job was added (riderTrainerRetirement,
-      // userRankSnapshot). Assert the EXACT set of canonical job names
+      // legitimate new cron job was added (riderTrainerRetirement).
+      // Assert the EXACT set of canonical job names
       // instead. Adding/removing a job now requires an intentional edit
       // to this list (a deliberate signal), not an opaque count bump.
       // Equoria-m9lz1: `groomCareerProgression` briefly appeared in this list.
@@ -116,14 +116,8 @@ describe('Cron Job Service (real node-cron + real DB)', () => {
       // no heartbeat and is invisible to /api/admin/cron/health, and that pass is
       // the one whose silent failure has no external symptom. It is asserted by
       // __tests__/cronJobRegistry.structure.test.mjs instead, so this list is
-      // back to five.
-      const CANONICAL_CRON_JOBS = [
-        'weeklySalaries',
-        'tokenCleanup',
-        'foaling',
-        'riderTrainerRetirement',
-        'userRankSnapshot',
-      ];
+      // back to four (the rank-snapshot job was removed with the owner's 2026-10-26 q86 ruling).
+      const CANONICAL_CRON_JOBS = ['weeklySalaries', 'tokenCleanup', 'foaling', 'riderTrainerRetirement'];
 
       initializeCronJobs();
 

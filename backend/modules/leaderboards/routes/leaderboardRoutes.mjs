@@ -7,14 +7,12 @@ import {
   getTopPlayersByHorseEarnings,
   getLeaderboardStats,
   getUserRankSummary,
-  getUserRankHistory,
-  captureRankSnapshots,
 } from '../controllers/leaderboardController.mjs';
 import * as pageBoards from '../controllers/pageBoardsController.mjs';
 import { boardHandler } from '../controllers/boardsController.mjs';
 import { isKnownDiscipline } from '../../competition/index.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
-import auth, { requireRole } from '../../../middleware/auth.mjs';
+import auth from '../../../middleware/auth.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getHorseProfileForLeaderboard } from '../services/leaderboardCompetitionQueries.mjs';
 import {
@@ -41,7 +39,7 @@ router.get('/boards/:board', auth, boardHandler);
  *   get:
  *     summary: Get a user's rank summary across all leaderboard categories
  *     description: |
- *       Returns rankings per category (level, xp, horse-earnings, horse-performance)
+ *       Returns the player's place on each player board they are on (playerXp, playerEarnings, playerWins, playerWinPercentage)
  *       plus best ranking achievements (Top 10 / Top 100). Story 21S-1.
  *     tags: [Leaderboard]
  *     security:
@@ -91,60 +89,6 @@ router.get('/boards/:board', auth, boardHandler);
  *         description: Unauthenticated
  */
 router.get('/user-summary/:userId', auth, getUserRankSummary);
-
-/**
- * Ownership guard for rank-history: a user may only read their own
- * historical rank snapshots (Equoria-l332). Mirrors the selfAccess
- * pattern in userRoutes.mjs (req.user.id must equal :userId).
- */
-const requireSelfRankHistory = (req, res, next) => {
-  const targetUserId = req.params.userId;
-  if (!req.user?.id || req.user.id !== targetUserId) {
-    logger.warn(
-      `[leaderboardRoutes] rank-history self-access violation: user ${req.user?.id} → ${targetUserId}`,
-    );
-    return res.status(403).json({
-      success: false,
-      message: 'You can only access your own rank history',
-    });
-  }
-  return next();
-};
-
-/**
- * @swagger
- * /api/leaderboards/rank-history/{userId}:
- *   get:
- *     summary: Get a user's historical rank time-series per category
- *     description: |
- *       Returns UserRankSnapshot rows grouped into one ascending series per
- *       category (level / xp / horse-earnings / horse-performance). Powers the
- *       rank-trend LineChart on the profile page. Ownership-enforced — a user
- *       may only read their own history. Equoria-l332.
- *     tags: [Leaderboard]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *       - in: query
- *         name: days
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 365
- *         description: Lookback window in days (default + max 365)
- *     responses:
- *       200:
- *         description: Historical rank series. Empty series when no snapshots exist.
- *       403:
- *         description: Attempted to read another user's rank history
- */
-router.get('/rank-history/:userId', auth, requireSelfRankHistory, getUserRankHistory);
 
 /**
  * @swagger
@@ -582,12 +526,5 @@ router.get(
     }
   },
 );
-
-/**
- * POST /api/v1/leaderboards/admin/capture-rank-snapshots
- * Admin-only: capture current ranks for all users into user_rank_snapshots.
- * Intended for nightly scheduled invocation.  Equoria-uptj.
- */
-router.post('/admin/capture-rank-snapshots', auth, requireRole('admin'), captureRankSnapshots);
 
 export default router;

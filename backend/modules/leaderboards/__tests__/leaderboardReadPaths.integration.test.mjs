@@ -4,8 +4,8 @@
  *
  * Real backend, real Prisma, real auth, real DB. Prisma delegates are wrapped
  * with delegating recorders (the real call still runs) so the SHAPE of each
- * read is observable: which columns a horse read selects, how many snapshot
- * rows a rank summary reads, whether a pagination total is materialised, and
+ * read is observable: which columns a horse read selects, whether a pagination
+ * total is materialised, and
  * what order keys a leaderboard query carries. Fixtures are scoped
  * (TestFixture-LBRead-<run>) and removed by id.
  */
@@ -76,6 +76,7 @@ beforeAll(async () => {
   const created = await createTestUser({
     username: `LBRead_${RUN}`,
     email: `lbread_${RUN}@test.com`,
+    xp: 5, // on the playerXp board
   });
   user = created.user;
   token = created.token;
@@ -114,23 +115,6 @@ beforeAll(async () => {
     discipline: disciplineB,
   });
 
-  // A snapshot history far deeper than the four rows a summary needs.
-  const day = 24 * 60 * 60 * 1000;
-  const categories = ['level', 'xp', 'horse-earnings', 'horse-performance'];
-  const rows = [];
-  for (let d = 0; d < 12; d++) {
-    for (const category of categories) {
-      rows.push({
-        userId: user.id,
-        category,
-        rank: 1000 + d, // d=0 is the newest and therefore the one that counts
-        capturedAt: new Date(Date.now() - d * day),
-      });
-    }
-  }
-  await prisma.userRankSnapshot.createMany({ data: rows });
-
-  cleanup.add(() => prisma.userRankSnapshot.deleteMany({ where: { userId: user.id } }), 'snapshots');
   cleanup.add(
     () => prisma.competitionResult.deleteMany({ where: { horseId: { in: horses.map(h => h.id) } } }),
     'results',
@@ -354,30 +338,13 @@ describe('documented leaderboard parameters are honoured (Equoria-9svu0)', () =>
   }, 60_000);
 });
 
-describe('user rank summary (Equoria-cmw85.18)', () => {
-  it('reads at most one snapshot per category however deep the history is', async () => {
-    const rec = record([
-      ['userRankSnapshot', 'findMany'],
-      ['userRankSnapshot', 'findFirst'],
-    ]);
-    let res;
-    try {
-      res = await get(`/api/v1/leaderboards/user-summary/${user.id}`);
-    } finally {
-      rec.restore();
-    }
+describe('user rank summary (Equoria-cmw85.18, Equoria-3kfne)', () => {
+  it('reports the place on each board the player is on', async () => {
+    const res = await get(`/api/v1/leaderboards/user-summary/${user.id}`);
     expect(res.status).toBe(200);
 
-    const rowsRead = rec.calls.reduce(
-      (sum, call) => sum + (Array.isArray(call.rows) ? call.rows.length : call.rows ? 1 : 0),
-      0,
-    );
-    expect(rowsRead).toBeLessThanOrEqual(4);
-
-    // The newest snapshot (rank 1000) is the one rankChange is measured from.
-    expect(res.body.rankings).toHaveLength(4);
-    for (const ranking of res.body.rankings) {
-      expect(ranking.rankChange).toBe(1000 - ranking.rank);
-    }
+    // The fixture is on the XP board (xp 5) and the wins board (seven first
+    // places); it has no earnings and fewer than 100 shows.
+    expect(res.body.rankings.map(r => r.category)).toEqual(['playerXp', 'playerWins']);
   }, 60_000);
 });

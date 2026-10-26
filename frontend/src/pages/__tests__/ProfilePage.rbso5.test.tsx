@@ -54,9 +54,6 @@ function stubBoundary(progress: () => Response | Promise<Response>) {
     http.get(`${base}/api/v1/users/:id/progress`, () => progress()),
     http.get(`${base}/api/v1/users/:id/activity`, () =>
       HttpResponse.json({ success: true, data: [] })
-    ),
-    http.get(`${base}/api/v1/leaderboards/rank-history/:id`, () =>
-      HttpResponse.json({ success: true, data: { series: [] } })
     )
   );
 }

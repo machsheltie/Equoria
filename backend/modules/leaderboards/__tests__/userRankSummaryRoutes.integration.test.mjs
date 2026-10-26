@@ -7,12 +7,18 @@
  * `/leaderboards` is classified `beta-live` against but does not exist in
  * the backend today.
  *
+ * Equoria-3kfne (owner rulings q10, q11): "Your rankings" shows the player's
+ * place on the player boards of the leaderboard redesign (playerXp,
+ * playerEarnings, playerWins, playerWinPercentage - at least 100 shows) and
+ * only on the boards the player is on. The old level and horse-performance
+ * rankings left with their boards.
+ *
  * Coverage:
  *   - unauthenticated → 401
- *   - ghost userId (no user, no horses, no xp) → 200 with empty arrays
- *   - real user with no horses/xp → 200 with 4 rankings, 0 bestRankings
- *   - real user with level/xp/horses → 200 with rankings populated and
- *     bestRankings for any category where rank ≤ 100
+ *   - ghost userId (no user) → 200 with empty arrays
+ *   - real user with nothing on any board → 200 with no rankings
+ *   - real user with xp / earnings / a win → rankings on exactly those boards,
+ *     each place equal to the player's position on that board's page
  *
  * NO MOCKS — real backend, real Prisma, real auth.
  */
@@ -23,6 +29,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
+import { loadBoard } from '../services/boardService.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 describe('INTEGRATION: GET /api/v1/leaderboards/user-summary/:userId (21S-1)', () => {
   let __csrf__;
@@ -46,7 +53,7 @@ describe('INTEGRATION: GET /api/v1/leaderboards/user-summary/:userId (21S-1)', (
   beforeAll(async () => {
     const ts = Date.now();
 
-    // User with level, XP, and a horse carrying earnings + competition-result score
+    // User with XP and a horse carrying earnings and a win
     const active = await createTestUser({
       username: `rank_active_${ts}`,
       email: `rank_active_${ts}@test.com`,
@@ -56,16 +63,6 @@ describe('INTEGRATION: GET /api/v1/leaderboards/user-summary/:userId (21S-1)', (
     activeUser = active.user;
     activeToken = active.token;
 
-    // Seed an XP event for the active user so xp leaderboard has data
-    await prisma.xpEvent.create({
-      data: {
-        userId: activeUser.id,
-        amount: 750,
-        reason: 'integration-test-seed',
-        timestamp: new Date(),
-      },
-    });
-
     // Seed a horse with earnings owned by the active user
     const horse = await createTestHorse({
       name: `RankActiveHorse_${ts}`,
@@ -74,7 +71,7 @@ describe('INTEGRATION: GET /api/v1/leaderboards/user-summary/:userId (21S-1)', (
     });
     createdHorseIds.push(horse.id);
 
-    // Seed a Show + CompetitionResult so horse-performance has data
+    // Seed a Show + one first place so the player is on the wins board
     const show = await prisma.show.create({
       data: {
         name: `RankSummaryShow_${ts}`,
@@ -101,8 +98,7 @@ describe('INTEGRATION: GET /api/v1/leaderboards/user-summary/:userId (21S-1)', (
     });
     _seededCompetitionResultId = result.id;
 
-    // User with no horses, no xp events — should still appear in level ranking
-    // but have 0 for horse-earnings/horse-performance primary stats.
+    // A user with nothing on any board: no XP, no horses, no results.
     const empty = await createTestUser({
       username: `rank_empty_${ts}`,
       email: `rank_empty_${ts}@test.com`,
@@ -112,15 +108,12 @@ describe('INTEGRATION: GET /api/v1/leaderboards/user-summary/:userId (21S-1)', (
     emptyUser = empty.user;
     emptyToken = empty.token;
 
-    // Equoria-avmf: User who owns a horse but has ZERO CompetitionResult rows.
-    // This exercises the code path where targetPerfMax = 0 (no results found)
-    // and horseOwnerCount includes this user (they have a horse), so
-    // totalEntries for horse-performance must still be >= rank.
+    // A user who owns a horse with no earnings and no results: still on no board.
     const noResults = await createTestUser({
       username: `rank_no_results_${ts}`,
       email: `rank_no_results_${ts}@test.com`,
       level: 2,
-      xp: 10,
+      xp: 0,
     });
     noResultsUser = noResults.user;
     noResultsToken = noResults.token;
@@ -147,9 +140,6 @@ describe('INTEGRATION: GET /api/v1/leaderboards/user-summary/:userId (21S-1)', (
       if (createdHorseIds.length) {
         await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } });
       }
-      await prisma.xpEvent.deleteMany({
-        where: { userId: { in: [activeUser?.id, emptyUser?.id, noResultsUser?.id].filter(Boolean) } },
-      });
       // Equoria-avmf: clean up noResults horse (no competition results to delete first)
       if (noResultsHorseIds.length) {
         await prisma.horse.deleteMany({ where: { id: { in: noResultsHorseIds } } });
@@ -194,8 +184,8 @@ describe('INTEGRATION: GET /api/v1/leaderboards/user-summary/:userId (21S-1)', (
     });
   });
 
-  describe('Real user — empty profile', () => {
-    it('returns 200 with 4 category rankings and no bestRankings for a fresh account', async () => {
+  describe('Real user — nothing on any board', () => {
+    it('returns 200 with no rankings and no bestRankings for a fresh account', async () => {
       const res = await request(app)
         .get(`/api/v1/leaderboards/user-summary/${emptyUser.id}`)
         .set('Origin', 'http://localhost:3000')
@@ -205,40 +195,23 @@ describe('INTEGRATION: GET /api/v1/leaderboards/user-summary/:userId (21S-1)', (
       expect(res.body.userId).toBe(emptyUser.id);
       // Post-Equoria-2gfor fix: userName is the public username handle, not real first+last name.
       expect(res.body.userName).toBe(emptyUser.username);
+      expect(res.body.rankings).toEqual([]);
+      expect(res.body.bestRankings).toEqual([]);
+    });
 
-      // Exactly 4 categories
-      expect(Array.isArray(res.body.rankings)).toBe(true);
-      expect(res.body.rankings).toHaveLength(4);
+    it('does the same for a player who owns a horse with no earnings and no results', async () => {
+      const res = await request(app)
+        .get(`/api/v1/leaderboards/user-summary/${noResultsUser.id}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${noResultsToken}`);
 
-      const categories = res.body.rankings.map(r => r.category).sort();
-      expect(categories).toEqual(['horse-earnings', 'horse-performance', 'level', 'xp']);
-
-      // Shape check on one entry
-      const levelRanking = res.body.rankings.find(r => r.category === 'level');
-      expect(levelRanking).toMatchObject({
-        category: 'level',
-        categoryLabel: expect.any(String),
-        rank: expect.any(Number),
-        totalEntries: expect.any(Number),
-        rankChange: 0,
-        primaryStat: 1,
-        statLabel: expect.any(String),
-      });
-
-      // Empty user has no earnings / no performance horses → primaryStat 0
-      expect(res.body.rankings.find(r => r.category === 'horse-earnings').primaryStat).toBe(0);
-      expect(res.body.rankings.find(r => r.category === 'horse-performance').primaryStat).toBe(0);
-
-      // Regression (code review P1 BUG-1): a user with zero horses must never
-      // render "#N of M<N". totalEntries must always be >= rank.
-      for (const ranking of res.body.rankings) {
-        expect(ranking.totalEntries).toBeGreaterThanOrEqual(ranking.rank);
-      }
+      expect(res.status).toBe(200);
+      expect(res.body.rankings).toEqual([]);
     });
   });
 
-  describe('Real user — populated profile', () => {
-    it('returns ranked data and bestRankings for categories where rank ≤ 100', async () => {
+  describe('Real user — on three boards', () => {
+    it('ranks XP, earnings and wins; never level, horse performance or an unearned win percentage', async () => {
       const res = await request(app)
         .get(`/api/v1/leaderboards/user-summary/${activeUser.id}`)
         .set('Origin', 'http://localhost:3000')
@@ -247,64 +220,50 @@ describe('INTEGRATION: GET /api/v1/leaderboards/user-summary/:userId (21S-1)', (
       expect(res.status).toBe(200);
       expect(res.body.userId).toBe(activeUser.id);
 
+      // One win in one show: far short of the 100 shows the win % board needs.
+      expect(res.body.rankings.map(r => r.category)).toEqual(['playerXp', 'playerEarnings', 'playerWins']);
       const byCategory = Object.fromEntries(res.body.rankings.map(r => [r.category, r]));
 
-      // Level — active user is level 12
-      expect(byCategory.level.primaryStat).toBe(12);
-      expect(byCategory.level.rank).toBeGreaterThanOrEqual(1);
+      expect(byCategory.playerXp).toMatchObject({
+        categoryLabel: 'Player XP',
+        statLabel: 'XP',
+        primaryStat: 450,
+      });
+      expect(byCategory.playerEarnings).toMatchObject({
+        categoryLabel: 'Player Earnings',
+        statLabel: 'Earnings',
+        primaryStat: 50000,
+      });
+      expect(byCategory.playerWins).toMatchObject({
+        categoryLabel: 'Player Wins',
+        statLabel: 'Wins',
+        primaryStat: 1,
+      });
 
-      // XP — seeded 750
-      expect(byCategory.xp.primaryStat).toBeGreaterThanOrEqual(750);
+      // Never "#N of M<N", and every place is a real position.
+      for (const ranking of res.body.rankings) {
+        expect(ranking.rank).toBeGreaterThanOrEqual(1);
+        expect(ranking.totalEntries).toBeGreaterThanOrEqual(ranking.rank);
+      }
 
-      // Horse-earnings — active user has a horse with $50,000
-      expect(byCategory['horse-earnings'].primaryStat).toBe(50000);
-
-      // Horse-performance — active user's best horse scored 87.5 in a CompetitionResult
-      expect(Number(byCategory['horse-performance'].primaryStat)).toBeCloseTo(87.5, 1);
-
-      // At least one bestRanking should exist (test DB is small; user will be top 100)
       expect(Array.isArray(res.body.bestRankings)).toBe(true);
-      expect(res.body.bestRankings.length).toBeGreaterThan(0);
-
       for (const best of res.body.bestRankings) {
         expect(['Top 10', 'Top 100']).toContain(best.achievement);
         expect(best.rank).toBeLessThanOrEqual(100);
       }
     });
-  });
 
-  // Equoria-avmf: user owns horses but has ZERO CompetitionResult rows.
-  // This exercises the distinct code path where targetPerfMax = 0 (the
-  // prisma.competitionResult.aggregate returns null._max.score), but
-  // horseOwnerCount includes this user (they own at least one horse).
-  // The denominator guard `Math.max(horseOwnerCount, performanceRank)`
-  // must ensure totalEntries >= rank even in this case.
-  describe('Real user — owns horses, zero competition results (Equoria-avmf)', () => {
-    it('returns horse-performance.primaryStat = 0, rank = 1, and totalEntries >= rank', async () => {
+    it('puts the player at the same place the board page does', async () => {
       const res = await request(app)
-        .get(`/api/v1/leaderboards/user-summary/${noResultsUser.id}`)
+        .get(`/api/v1/leaderboards/user-summary/${activeUser.id}`)
         .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${noResultsToken}`);
+        .set('Authorization', `Bearer ${activeToken}`);
 
-      expect(res.status).toBe(200);
-      expect(res.body.userId).toBe(noResultsUser.id);
-
-      const rankings = res.body.rankings;
-      expect(Array.isArray(rankings)).toBe(true);
-      expect(rankings).toHaveLength(4);
-
-      const perf = rankings.find(r => r.category === 'horse-performance');
-      expect(perf).toBeDefined();
-
-      // primaryStat is 0 — no competition results, so MAX score = null → 0
-      expect(Number(perf.primaryStat)).toBe(0);
-
-      // rank is at least 1
-      expect(perf.rank).toBeGreaterThanOrEqual(1);
-
-      // Denominator guard: totalEntries must always be >= rank
-      // (prevents "#N of M<N" display bug)
-      expect(perf.totalEntries).toBeGreaterThanOrEqual(perf.rank);
+      for (const ranking of res.body.rankings) {
+        const { entries } = await loadBoard(ranking.category, 'overall', { take: 1, skip: ranking.rank - 1 });
+        expect(entries[0]?.ownerId).toBe(activeUser.id);
+        expect(entries[0]?.rank).toBe(ranking.rank);
+      }
     });
   });
 });

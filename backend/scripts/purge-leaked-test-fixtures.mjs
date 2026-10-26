@@ -317,7 +317,6 @@ async function executeScopedPurge(userIds, horseIds) {
     await tx.groom.deleteMany({ where: { userId: { in: userIds } } });
 
     // ── Remaining directly-keyed rows (most Cascade, explicit for intent) ────
-    await tx.userRankSnapshot.deleteMany({ where: { userId: { in: userIds } } });
     await tx.notification.deleteMany({ where: { userId: { in: userIds } } });
     await tx.userTransaction.deleteMany({ where: { userId: { in: userIds } } });
     await tx.xpEvent.deleteMany({ where: { userId: { in: userIds } } });

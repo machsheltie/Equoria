@@ -574,7 +574,6 @@ export async function eraseUserAccount(userId) {
       // (Most are Cascade on user, but deleting explicitly inside the same
       // transaction keeps the final user.delete unambiguous and the intent
       // auditable.)
-      await tx.userRankSnapshot.deleteMany({ where: { userId } });
       // Equoria-0o7ib: user_presence has NO foreign key to User by design
       // (Equoria-vc5x1), so nothing cascades to it; delete the stamp here.
       await tx.userPresence.deleteMany({ where: { userId } });

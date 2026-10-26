@@ -37,7 +37,6 @@ const fullSummary = {
       categoryLabel: 'Level',
       rank: 7,
       totalEntries: 120,
-      rankChange: 1,
       primaryStat: 15,
       statLabel: 'Level',
     },

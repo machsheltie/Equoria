@@ -16,9 +16,6 @@
  * Kept (NOT migrated):
  *   - frontend/src/lib/api/__tests__/leaderboards.test.ts uses MSW for
  *     the network boundary only (already converted off vi.mock-of-api).
- *   - frontend/src/components/leaderboard/__tests__/RankHistoryChart.test.tsx
- *     mocks recharts (a third-party visualization library at the
- *     framework boundary, legitimate per CLAUDE.md §3 narrow case).
  *
  * Auth: storageState from tests/e2e/global-setup.ts.
  * Per Epic 21R doctrine: no graceful skip — if /leaderboards is broken

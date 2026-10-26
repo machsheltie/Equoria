@@ -19,7 +19,6 @@ import { GAME_TIME_ZONE } from '../utils/gameTime.mjs';
 import { processWeeklySalaries } from '../modules/grooms/index.mjs';
 import { runFoalingJob } from '../modules/horses/index.mjs';
 import { processRiderTrainerRetirement } from '../modules/trainers/index.mjs';
-import { captureAllUserRankSnapshots } from '../modules/leaderboards/index.mjs';
 // Equoria-dx65z: every cron handler in this file runs under a Postgres advisory
 // lock — multi-replica deployments cannot double-execute. Since
 // Equoria-cmw85.9 the lock is taken by legacyCronJobs.runWithHeartbeat (which
@@ -139,14 +138,6 @@ export function getCronJobStatus() {
  */
 export async function triggerRiderTrainerRetirement() {
   return processRiderTrainerRetirement();
-}
-
-/**
- * Manually trigger the UserRankSnapshot capture pass (for testing/admin).
- * @returns {Promise<Object>} Capture results
- */
-export async function triggerUserRankSnapshotCapture() {
-  return captureAllUserRankSnapshots();
 }
 
 /**

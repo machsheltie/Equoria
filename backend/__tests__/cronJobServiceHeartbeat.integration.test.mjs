@@ -1,6 +1,6 @@
 /**
- * Equoria-cmw85.9 — the five cronJobService-registry jobs (weeklySalaries,
- * tokenCleanup, foaling, riderTrainerRetirement, userRankSnapshot) used to run
+ * Equoria-cmw85.9 — the four cronJobService-registry jobs (weeklySalaries,
+ * tokenCleanup, foaling, riderTrainerRetirement) used to run
  * only under an advisory lock: no heartbeat, no CronRunLog row, and
  * /api/admin/cron/health never listed them, so a silent stall of the salary job
  * raised no signal.
@@ -52,7 +52,7 @@ describe('cronJobService registry heartbeat coverage (Equoria-cmw85.9)', () => {
     }
   });
 
-  it('cron health lists all five registry jobs once the service is initialised', () => {
+  it('cron health lists all four registry jobs once the service is initialised', () => {
     initializeCronJobs();
     const health = cronJobService.getHealth();
     for (const jobName of registryNames) {

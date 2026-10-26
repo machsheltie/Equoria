@@ -28,8 +28,7 @@
  * sequence so the Map insertion order (and therefore getCronJobStatus()
  * iteration order, and the canonical-jobs sentinel in cronJobService.test) is
  * byte-identical to before the split:
- *   weeklySalaries, tokenCleanup, foaling, riderTrainerRetirement,
- *   userRankSnapshot.
+ *   weeklySalaries, tokenCleanup, foaling, riderTrainerRetirement.
  *
  * Equoria-m9lz1 note: the weekly groom career/auto-retirement pass briefly lived
  * here next to riderTrainerRetirement, which it resembles. It moved to
@@ -42,14 +41,12 @@ import weeklySalariesJob from './weeklySalariesJob.mjs';
 import tokenCleanupJob from './tokenCleanupJob.mjs';
 import foalingJob from './foalingJob.mjs';
 import riderTrainerRetirementJob from './riderTrainerRetirementJob.mjs';
-import userRankSnapshotJob from './userRankSnapshotJob.mjs';
 
 export const CRON_JOB_SERVICE_REGISTRY = Object.freeze([
   weeklySalariesJob,
   tokenCleanupJob,
   foalingJob,
   riderTrainerRetirementJob,
-  userRankSnapshotJob,
 ]);
 
 export default CRON_JOB_SERVICE_REGISTRY;

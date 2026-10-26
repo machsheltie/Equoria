@@ -7,11 +7,12 @@ import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
-import {
-  captureAllUserRankSnapshots,
-  readLatestRankSnapshots,
-} from '../services/userRankSnapshotService.mjs';
 import { isKnownDiscipline } from '../../competition/index.mjs';
+import {
+  loadPlayerStanding,
+  playerBoardLabels,
+  playerBoardNames,
+} from '../services/boardService.mjs';
 
 const CACHE_TTL = 300; // 5 minutes
 
@@ -372,7 +373,7 @@ export const getUserRankSummary = async (req, res) => {
     //    during beta. (Frontend hook type is `UserRankSummaryResponse | null`.)
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, username: true, level: true, xp: true },
+      select: { id: true, username: true },
     });
 
     if (!targetUser) {
@@ -386,128 +387,29 @@ export const getUserRankSummary = async (req, res) => {
 
     const userName = targetUser.username || 'Unknown';
 
-    // Every count/aggregate below is independent of the others once the target
-    // user is known, so they run together (Equoria-cmw85.18); only the three
-    // "users ahead" counts need a target total first and form the second round.
-    const [
-      totalUsers, // totalEntries for the level + xp categories
-      usersAheadByLevel, // (level DESC, xp DESC): users strictly ahead
-      targetXpAgg, // total XP earned across all xpEvents
-      targetEarningsAgg,
-      targetPerfAgg, // primaryStat = MAX(competitionResult.score) over the user's horses
-      horseOwnerCount, // prefer distinct owners so it reads "rank 3 of N owners"
-      snapshotMap,
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({
-        where: {
-          OR: [
-            { level: { gt: targetUser.level } },
-            { AND: [{ level: targetUser.level }, { xp: { gt: targetUser.xp } }] },
-          ],
-        },
-      }),
-      prisma.xpEvent.aggregate({ where: { userId: targetUser.id }, _sum: { amount: true } }),
-      prisma.horse.aggregate({ where: { userId: targetUser.id }, _sum: { totalEarnings: true } }),
-      prisma.competitionResult.aggregate({
-        where: { horse: { userId: targetUser.id } },
-        _max: { score: true },
-      }),
-      prisma.user.count({ where: { horses: { some: {} } } }),
-      readLatestRankSnapshots(userId),
-    ]);
+    // Equoria-3kfne: the player's place on each player board (owner rulings
+    // q10, q11), counted exactly as the board page counts it. A board the player
+    // is not on (no XP, no earnings, no wins, fewer than 100 shows) is left out
+    // rather than given a made-up place.
+    const standings = await Promise.all(
+      playerBoardNames.map(board => loadPlayerStanding(board, targetUser.id)),
+    );
 
-    const levelRank = usersAheadByLevel + 1;
-    const targetXpTotal = targetXpAgg._sum.amount ?? 0;
-    const targetEarningsTotal = targetEarningsAgg._sum.totalEarnings ?? 0;
-    const targetPerfMax = targetPerfAgg._max.score ? Number(targetPerfAgg._max.score) : 0;
-
-    // Users strictly ahead, each a single GROUP BY + HAVING count (no full table
-    // materialisation): XP and earnings by per-user sums, performance by each
-    // owner's best score.
-    const [xpAheadResult, earningsAheadResult, perfAheadResult] = await Promise.all([
-      prisma.$queryRaw`
-        SELECT COUNT(*)::int AS cnt
-        FROM (
-          SELECT "userId", COALESCE(SUM(amount), 0) AS total_xp
-          FROM "xp_events"
-          GROUP BY "userId"
-          HAVING COALESCE(SUM(amount), 0) > ${targetXpTotal}
-        ) sub
-      `,
-      prisma.$queryRaw`
-        SELECT COUNT(*)::int AS cnt
-        FROM (
-          SELECT "userId", COALESCE(SUM("totalEarnings"), 0) AS total_earnings
-          FROM "horses"
-          WHERE "userId" IS NOT NULL
-          GROUP BY "userId"
-          HAVING COALESCE(SUM("totalEarnings"), 0) > ${targetEarningsTotal}
-        ) sub
-      `,
-      prisma.$queryRaw`
-        SELECT COUNT(*)::int AS cnt
-        FROM (
-          SELECT h."userId", MAX(cr.score) AS best_score
-          FROM "competition_results" cr
-          JOIN "horses" h ON cr."horseId" = h.id
-          WHERE h."userId" IS NOT NULL
-          GROUP BY h."userId"
-          HAVING MAX(cr.score) > ${targetPerfMax}
-        ) sub
-      `,
-    ]);
-    const xpRank = Number(xpAheadResult[0]?.cnt ?? 0) + 1;
-    const earningsRank = Number(earningsAheadResult[0]?.cnt ?? 0) + 1;
-    const performanceRank = Number(perfAheadResult[0]?.cnt ?? 0) + 1;
-
-    const rankings = [
-      {
-        category: 'level',
-        categoryLabel: 'Level',
-        rank: levelRank,
-        totalEntries: totalUsers,
-        rankChange: snapshotMap['level'] !== undefined ? snapshotMap['level'] - levelRank : 0,
-        primaryStat: targetUser.level,
-        statLabel: 'Level',
-      },
-      {
-        category: 'xp',
-        categoryLabel: 'XP',
-        rank: xpRank,
-        // Every xp_event has a user FK, so totalUsers >= xpGrouped.length.
-        totalEntries: totalUsers,
-        rankChange: snapshotMap['xp'] !== undefined ? snapshotMap['xp'] - xpRank : 0,
-        primaryStat: targetXpTotal,
-        statLabel: 'XP',
-      },
-      {
-        category: 'horse-earnings',
-        categoryLabel: 'Horse Earnings',
-        rank: earningsRank,
-        // Guard: if target has zero horses, their rank can be horseOwnerCount + 1.
-        // Ensure totalEntries >= rank so the UI never renders "#N of M<N".
-        totalEntries: Math.max(horseOwnerCount, earningsRank),
-        rankChange:
-          snapshotMap['horse-earnings'] !== undefined
-            ? snapshotMap['horse-earnings'] - earningsRank
-            : 0,
-        primaryStat: targetEarningsTotal,
-        statLabel: 'Earnings',
-      },
-      {
-        category: 'horse-performance',
-        categoryLabel: 'Horse Performance',
-        rank: performanceRank,
-        totalEntries: Math.max(horseOwnerCount, performanceRank),
-        rankChange:
-          snapshotMap['horse-performance'] !== undefined
-            ? snapshotMap['horse-performance'] - performanceRank
-            : 0,
-        primaryStat: targetPerfMax,
-        statLabel: 'Score',
-      },
-    ];
+    const rankings = [];
+    playerBoardNames.forEach((category, index) => {
+      const standing = standings[index];
+      if (!standing) {
+        return;
+      }
+      rankings.push({
+        category,
+        categoryLabel: playerBoardLabels[category].categoryLabel,
+        rank: standing.rank,
+        totalEntries: standing.total,
+        primaryStat: standing.primaryStat,
+        statLabel: playerBoardLabels[category].statLabel,
+      });
+    });
 
     // Best rankings — rank ≤ 10 → "Top 10", ≤ 100 → "Top 100", else omit.
     const bestRankings = rankings
@@ -535,117 +437,6 @@ export const getUserRankSummary = async (req, res) => {
   }
 };
 
-/**
- * POST /api/v1/leaderboards/admin/capture-rank-snapshots
- * Admin-only: capture current ranks for all users into user_rank_snapshots.
- * Intended to be called nightly (e.g., via Railway cron or an external scheduler).
- */
-export const captureRankSnapshots = async (req, res, options = {}) => {
-  try {
-    // Equoria-fiiy: previously this route recomputed level/xp/earnings/
-    // performance ranks INSIDE a per-user loop — ~8 DB round-trips per user,
-    // each a full-table aggregate (O(users) × O(full-table) ≈ O(N²)). That is
-    // the exact blowup Equoria-ky0x fixed in userRankSnapshotService via a
-    // single-pass set-based rewrite. Rather than duplicate that algorithm
-    // here (the ky0x service already documents byte-identical rank
-    // semantics), delegate to it — one source of truth, O(N log N), one bulk
-    // insert. `options.prismaClient` is an optional DI seam for the
-    // perf-shape sentinel test.
-    const { captured } = await captureAllUserRankSnapshots(options.prismaClient);
-
-    return res.json({ success: true, message: `Captured rank snapshots for ${captured} users` });
-  } catch (error) {
-    logger.error(`[leaderboardController.captureRankSnapshots] Error: ${error.message}`);
-    return res.status(500).json({ success: false, message: 'Failed to capture rank snapshots' });
-  }
-};
-
-/**
- * GET /api/leaderboards/rank-history/:userId
- *
- * Returns the historical UserRankSnapshot time-series for a user, grouped by
- * category (level / xp / horse-earnings / horse-performance). Powers the
- * rank-trend Recharts LineChart on the profile page (Equoria-l332).
- *
- * Ownership is enforced at the route level (selfAccess middleware) — a user
- * may only read their own rank history. Returns 200 + empty series when the
- * user has no snapshots yet so the chart can render an honest empty state.
- *
- * Query params:
- *   - days (optional): integer 1..365. Limits the series to snapshots captured
- *     within the last N days. Omitted/invalid → full history (capped at 365d).
- */
-export const getUserRankHistory = async (req, res) => {
-  const { userId } = req.params;
-
-  // Validate UUID format before hitting Prisma to avoid a Prisma 500.
-  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!UUID_RE.test(userId)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid userId format',
-    });
-  }
-
-  // Clamp the lookback window. Default + max is 365 days.
-  let days = 365;
-  const rawDays = req.query?.days;
-  if (rawDays !== undefined) {
-    const parsed = Number.parseInt(rawDays, 10);
-    if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 365) {
-      days = parsed;
-    }
-  }
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-
-  try {
-    const snapshots = await prisma.userRankSnapshot.findMany({
-      where: { userId, capturedAt: { gte: since } },
-      select: { category: true, rank: true, capturedAt: true },
-      orderBy: { capturedAt: 'asc' },
-    });
-
-    // Group into one ascending series per category. Categories with no
-    // snapshots are omitted (the chart only plots lines that have data).
-    const seriesByCategory = {};
-    for (const s of snapshots) {
-      if (!seriesByCategory[s.category]) {
-        seriesByCategory[s.category] = [];
-      }
-      seriesByCategory[s.category].push({
-        rank: Number(s.rank),
-        capturedAt: s.capturedAt.toISOString(),
-      });
-    }
-
-    const categoryLabels = {
-      level: 'Level',
-      xp: 'XP',
-      'horse-earnings': 'Horse Earnings',
-      'horse-performance': 'Horse Performance',
-    };
-
-    const series = Object.entries(seriesByCategory).map(([category, points]) => ({
-      category,
-      categoryLabel: categoryLabels[category] ?? category,
-      points,
-    }));
-
-    return res.json({
-      userId,
-      days,
-      series,
-    });
-  } catch (error) {
-    logger.error(`[leaderboardController.getUserRankHistory] Error: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve user rank history',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-    });
-  }
-};
-
 // Aliases
 export const getTopPlayersByXP = getTopUsersByXP;
 export const getTopPlayersByHorseEarnings = getTopUsersByHorseEarnings;
@@ -660,6 +451,4 @@ export default {
   getTopPlayersByHorseEarnings,
   getLeaderboardStats,
   getUserRankSummary,
-  getUserRankHistory,
-  captureRankSnapshots,
 };

@@ -11,8 +11,8 @@
  * - Local max-w-md/px-* wrapper → PageContainer variant="narrow" (DECISIONS §1;
  *   gutters belong to the DashboardLayout shell).
  * - One mega glass-panel containing nested cards → per-section Surface panels;
- *   the subtle wrappers around RankHistoryChart and ActivityFeed were removed
- *   because those components (and StatisticsCard) render their own framed
+ *   the subtle wrapper around ActivityFeed was removed
+ *   because that component (and StatisticsCard) renders its own framed
  *   items — wrapping them was card-in-card.
  * - Loading → PageLoading; error → ErrorState with a real retry (refetch).
  * - celestial-input × 2 → canonical Input/Textarea + FormField (validation
@@ -43,8 +43,6 @@ import { userMessageFor } from '@/lib/http/userMessage';
 import { Button } from '@/components/ui/button';
 import { useActivityFeed, useUserProgress } from '../hooks/api/useUserProgress';
 import { useUserCompetitionStats } from '../hooks/api/useUserCompetitionStats';
-import { useRankHistory } from '../hooks/api/useRankHistory';
-import RankHistoryChart from '@/components/leaderboard/RankHistoryChart';
 
 const ProfilePage: React.FC = () => {
   const { data: profileData, isLoading, isError, refetch } = useProfile();
@@ -72,17 +70,6 @@ const ProfilePage: React.FC = () => {
     error: winsError,
     refetch: refetchWins,
   } = useUserCompetitionStats(profileData?.user?.id ?? null);
-
-  // Rank-history time-series for the trend chart (Equoria-l332). The backend
-  // endpoint is ownership-enforced, so we only ever request the signed-in
-  // user's own id (a UUID string, distinct from the numeric `userId` above).
-  const rankUserId = profileData?.user?.id ?? '';
-  const {
-    data: rankHistory,
-    isLoading: isRankHistoryLoading,
-    isError: isRankHistoryError,
-    error: rankHistoryError,
-  } = useRankHistory({ userId: rankUserId, enabled: rankUserId.length > 0 });
 
   const [formData, setFormData] = useState<ProfileFormData>({
     username: '',
@@ -304,19 +291,6 @@ const ProfilePage: React.FC = () => {
               </div>
             )}
           </section>
-
-          {/* Rank History Trend (Equoria-l332) — single panel frame; the chart
-              itself is unframed */}
-          <Surface variant="panel" className="space-y-2" data-testid="profile-rank-history-panel">
-            <h2 className="type-label">Rank History</h2>
-            <RankHistoryChart
-              series={rankHistory?.series ?? []}
-              isLoading={isRankHistoryLoading}
-              errorMessage={
-                isRankHistoryError ? userMessageFor(rankHistoryError).message : undefined
-              }
-            />
-          </Surface>
 
           {/* Activity Feed — items render their own cards; no extra frame */}
           <section aria-label="Recent activity">

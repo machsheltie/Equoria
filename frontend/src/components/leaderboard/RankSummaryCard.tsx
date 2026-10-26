@@ -17,7 +17,7 @@
  * Story 5-5: Leaderboards - Task 3
  */
 
-import { TrendingUp, TrendingDown, Minus, Award } from 'lucide-react';
+import { Award } from 'lucide-react';
 import Currency from '@/components/ui/Currency';
 
 /**
@@ -28,7 +28,6 @@ export interface CategoryRanking {
   categoryLabel: string;
   rank: number;
   totalEntries: number;
-  rankChange: number;
   primaryStat: number;
   statLabel: string;
 }
@@ -76,46 +75,6 @@ const getAchievement = (rank: number): string | null => {
   if (rank <= 10) return 'Top 10';
   if (rank <= 100) return 'Top 100';
   return null;
-};
-
-/**
- * Renders the rank change indicator badge showing position movement.
- */
-const RankChangeIndicator = ({ rankChange }: { rankChange: number }) => {
-  if (rankChange > 0) {
-    return (
-      <span
-        className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-[rgba(16,185,129,0.1)] text-emerald-400"
-        data-testid="rank-change-indicator"
-      >
-        <TrendingUp size={12} aria-hidden="true" />
-        <span>+{rankChange}</span>
-      </span>
-    );
-  }
-
-  if (rankChange < 0) {
-    return (
-      <span
-        className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-[rgba(239,68,68,0.1)] text-red-400"
-        data-testid="rank-change-indicator"
-      >
-        <TrendingDown size={12} aria-hidden="true" />
-        <span>{rankChange}</span>
-      </span>
-    );
-  }
-
-  // rankChange === 0
-  return (
-    <span
-      className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-[rgba(15,35,70,0.5)] text-slate-400"
-      data-testid="rank-change-indicator"
-    >
-      <Minus size={12} aria-hidden="true" />
-      <span>{'\u2014'}</span>
-    </span>
-  );
 };
 
 /**
@@ -186,10 +145,9 @@ const RankSummaryCard = ({
       tabIndex={isClickable ? 0 : undefined}
       role={isClickable ? 'button' : undefined}
     >
-      {/* Header: Category Label and Rank Change */}
+      {/* Header: Category Label */}
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-base font-bold text-[rgb(220,235,255)]">{ranking.categoryLabel}</h3>
-        <RankChangeIndicator rankChange={ranking.rankChange} />
       </div>
 
       {/* Rank Display */}

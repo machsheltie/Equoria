@@ -153,6 +153,68 @@ const boards = {
 
 export const boardNames = Object.keys(boards);
 
+/**
+ * The player boards, the categories of "Your rankings" and the daily rank
+ * snapshots (Equoria-3kfne, owner rulings q10, q11). The snapshot `category`
+ * column holds these names.
+ */
+export const playerBoardNames = Object.keys(boards).filter(name => boards[name].kind === 'player');
+
+/** Authored labels for the player boards: the card title and the stat's own label. */
+export const playerBoardLabels = {
+  playerXp: { categoryLabel: 'Player XP', statLabel: 'XP' },
+  playerEarnings: { categoryLabel: 'Player Earnings', statLabel: 'Earnings' },
+  playerWins: { categoryLabel: 'Player Wins', statLabel: 'Wins' },
+  playerWinPercentage: { categoryLabel: 'Player Win %', statLabel: 'Win %' },
+};
+
+/**
+ * One player board over the whole game with every entry's place, exactly as
+ * the board page orders it (value, then subject id). Columns: subjectId,
+ * value, wins, shows, rank, total. A player who is not on the board has no row.
+ */
+function rankedPlayerBoardSql(boardName) {
+  return Prisma.sql`
+    SELECT "subjectId", "value", "wins", "shows",
+           (ROW_NUMBER() OVER (ORDER BY "value" DESC, "subjectId" ASC))::int AS "rank",
+           (COUNT(*) OVER ())::int AS "total"
+    FROM (${boards[boardName].records('overall', {})}) AS "board"`;
+}
+
+/**
+ * The place of every player on one board, for the nightly snapshot: one
+ * set-based read, no per-player loop.
+ *
+ * @param {string} boardName - one of playerBoardNames.
+ * @param {{ $queryRaw: Function }} [client] - a Prisma client or extension.
+ * @returns {Promise<Array<{ subjectId: string, rank: number }>>}
+ */
+export async function loadPlayerBoardRanks(boardName, client = prisma) {
+  return client.$queryRaw(
+    Prisma.sql`SELECT "subjectId", "rank" FROM (${rankedPlayerBoardSql(boardName)}) AS "ranked"`,
+  );
+}
+
+/**
+ * One player's place on one board, or null when they are not on it.
+ *
+ * @returns {Promise<{ rank: number, total: number, primaryStat: number } | null>}
+ */
+export async function loadPlayerStanding(boardName, userId) {
+  const rows = await prisma.$queryRaw(Prisma.sql`
+    SELECT * FROM (${rankedPlayerBoardSql(boardName)}) AS "ranked" WHERE "subjectId" = ${userId}`);
+  const row = rows[0];
+  if (!row) {
+    return null;
+  }
+  const value = Number(row.value);
+  return {
+    rank: row.rank,
+    total: row.total,
+    primaryStat: boards[boardName].stat === 'winPercentage' ? toPercent(value) : value,
+  };
+}
+
 export const isBoardName = name => Object.hasOwn(boards, name);
 
 /** Win percentage to one decimal place, for display only (ranking uses the exact ratio). */

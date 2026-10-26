@@ -102,7 +102,6 @@ describe('Leaderboard Fixtures', () => {
       expect(ranking).toHaveProperty('categoryLabel');
       expect(ranking).toHaveProperty('rank');
       expect(ranking).toHaveProperty('totalEntries');
-      expect(ranking).toHaveProperty('rankChange');
       expect(ranking).toHaveProperty('primaryStat');
       expect(ranking).toHaveProperty('statLabel');
     });
