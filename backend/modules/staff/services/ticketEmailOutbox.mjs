@@ -249,6 +249,11 @@ export async function scrubTicketEmailFilerTx(tx, userId) {
       )`;
 }
 
+// Post-commit deliveries still running in this process. The request never waits
+// for them; whenTicketEmailKicksFinish lets a caller that must (a test, a
+// shutdown) wait for the real completion instead of guessing a time.
+const runningKicks = new Set();
+
 /**
  * After-commit kick for a filing's own rows. Never awaited by the request;
  * anything it cannot deliver stays in the outbox for the scheduled job.
@@ -257,9 +262,19 @@ export function kickTicketEmails(keys) {
   if (keys.length === 0) {
     return;
   }
-  runEmailOutbox({ keys }).catch(error => {
-    logger.error(
-      `[emailOutbox] post-commit delivery stopped: ${maskEmailsInText(error.message)}; the job will retry`,
-    );
-  });
+  const run = runEmailOutbox({ keys })
+    .catch(error => {
+      logger.error(
+        `[emailOutbox] post-commit delivery stopped: ${maskEmailsInText(error.message)}; the job will retry`,
+      );
+    })
+    .finally(() => runningKicks.delete(run));
+  runningKicks.add(run);
+}
+
+/** Resolves once every post-commit delivery started in this process has finished. */
+export async function whenTicketEmailKicksFinish() {
+  while (runningKicks.size > 0) {
+    await Promise.all([...runningKicks]);
+  }
 }

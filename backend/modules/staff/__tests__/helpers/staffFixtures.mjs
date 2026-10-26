@@ -17,6 +17,7 @@ import prisma from '../../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
+import { whenTicketEmailKicksFinish } from '../../services/ticketEmailOutbox.mjs';
 
 export const ORIGIN = 'http://localhost:3000';
 export const STAFF_API = '/api/v1/staff';
@@ -170,9 +171,21 @@ export function capturedTicketEmailsFor(email) {
 /**
  * A ticket's email-outbox rows once the post-commit delivery has finished
  * (STAFF-CR-10): none still waiting for its first attempt or mid-send.
+ *
+ * A filing mails every verified admin and owner in the database, one row at a
+ * time, and under load each row can take a second or more (Equoria-8iy6k), so
+ * no fixed deadline can say when that loop is done. Called without a timeout,
+ * this waits for the deliveries themselves to finish
+ * (whenTicketEmailKicksFinish) and then checks the rows once: a row still
+ * unsettled after its delivery ended is a real defect and fails at once, with
+ * no clock involved. A caller that is deliberately holding a delivery open
+ * (the silent mail server) passes a short timeout and gets the polling wait.
  */
-export async function settledTicketEmails(ticketId, timeoutMs = 15_000) {
-  const deadline = Date.now() + timeoutMs;
+export async function settledTicketEmails(ticketId, timeoutMs = null) {
+  if (timeoutMs === null) {
+    await whenTicketEmailKicksFinish();
+  }
+  const deadline = timeoutMs === null ? null : Date.now() + timeoutMs;
   for (;;) {
     const rows = await prisma.emailOutbox.findMany({
       where: { idempotencyKey: { startsWith: `staffTicket:${ticketId}:` } },
@@ -183,6 +196,9 @@ export async function settledTicketEmails(ticketId, timeoutMs = 15_000) {
     );
     if (!inFlight) {
       return rows;
+    }
+    if (deadline === null) {
+      throw new Error(`ticket ${ticketId} email left unsettled after its delivery finished`);
     }
     if (Date.now() > deadline) {
       throw new Error(`ticket ${ticketId} email still in flight after ${timeoutMs} ms`);

@@ -310,6 +310,49 @@ describe('Filing a ticket', () => {
     expect(row).toMatchObject({ status: 'pending', attempts: 1, sentAt: null });
   });
 
+  // Equoria-8iy6k: a filing mails every verified admin and owner one row at a
+  // time, and under load that loop can run for longer than any fixed deadline.
+  // The suites therefore wait for the delivery itself, not for a clock.
+  it('waits for the delivery itself while a mail server holds it open', async () => {
+    const { mod, modDevice } = await fixtureStaff();
+
+    const wait = { done: false, rows: null, failure: null };
+    let reached = 0;
+    await fileWithSmtpPort(mod, modDevice, silentSmtp.address().port, async filed => {
+      settledTicketEmails(filed.body.ticket.id)
+        .then(rows => {
+          wait.rows = rows;
+        })
+        .catch(error => {
+          wait.failure = error;
+        })
+        .finally(() => {
+          wait.done = true;
+        });
+      for (let tries = 0; silentSockets.size === 0 && tries < 100; tries += 1) {
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+      reached = silentSockets.size;
+      // A send is on the wire, and the wait has neither given up nor answered.
+      await new Promise(resolve => setTimeout(resolve, 500));
+      expect(wait.done).toBe(false);
+      // Hang up on each waiting send until every delivery has given up.
+      while (!wait.done) {
+        for (const socket of silentSockets) {
+          socket.destroy();
+        }
+        await new Promise(resolve => setTimeout(resolve, 25));
+      }
+    });
+
+    expect(reached).toBeGreaterThan(0);
+    expect(wait.failure).toBeNull();
+    expect(wait.rows.length).toBeGreaterThan(0);
+    for (const row of wait.rows) {
+      expect(row.status === 'sending' || (row.status === 'pending' && row.attempts === 0)).toBe(false);
+    }
+  });
+
   it('refuses an admin (no ticket.file), a player, and a moderator without a trusted browser', async () => {
     const { admin, adminDevice, mod } = await fixtureStaff();
     const player = await makeUser('player');
