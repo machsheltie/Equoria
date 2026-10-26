@@ -220,10 +220,9 @@ model Horse {
   lastVettedDate          DateTime?             @default(now()) @db.Date
   /// Veterinarian Genetic Testing panel bought (owner ruling 2026-10-26, Equoria-7dmzp). Equoria-8tz7p reveals colour genetics once true.
   colorGeneticsTested     Boolean               @default(false)
-  /// Equoria-507mt: bond/stress + grooming/foal counters NOT NULL too.
+  /// Equoria-507mt: bond + grooming/foal counters NOT NULL too.
   /// bondScore default stays 0 (unbonded — per user decision: bond is earned, not innate).
   bondScore               Int                   @default(0)
-  stressLevel             Int                   @default(0)
   /// Groom bonding: consecutive-day care streak
   daysGroomedInARow       Int                   @default(0)
   /// Foal task logging and streak tracking
@@ -779,8 +778,6 @@ model GroomInteraction {
   duration        Int
   /// Bonding change (-10 to +10)
   bondingChange   Int              @default(0)
-  /// Stress change (-10 to +10)
-  stressChange    Int              @default(0)
   /// Quality of interaction
   quality         String           @default("good")
   /// Notes
@@ -1032,7 +1029,6 @@ model FoalDevelopment {
   currentDay          Int       @default(0)
   bondingLevel        Int       @default(50)
   bondScore           Int       @default(0)
-  stressLevel         Int       @default(20)
   completedActivities Json      @default("{}")
   /// BB-1: Age-based stage (derived from Horse.dateOfBirth but cached here)
   ageStage            AgeStage  @default(newborn)
@@ -1065,7 +1061,6 @@ model FoalActivity {
   activityType  String
   outcome       String
   bondingChange Int
-  stressChange  Int
   description   String
   /// Stream-source discriminator (Equoria-8yhe3). ENFORCES the disjointness of
   /// the two FoalActivity writers so the taskLog-count derivation can never
@@ -1094,7 +1089,6 @@ model FoalTrainingHistory {
   activity     String
   outcome      String
   bondChange   Int      @default(0)
-  stressChange Int      @default(0)
   /// Foreign key
   horseId      Int
   /// Timestamps
@@ -1426,8 +1420,6 @@ model TraitHistoryLog {
   groomId     Int?
   /// Bond score at time of trait assignment
   bondScore   Int?
-  /// Stress level at time of trait assignment
-  stressLevel Int?
   /// Age of horse when trait was assigned (in days)
   ageInDays   Int
   /// Timestamps
