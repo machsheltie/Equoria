@@ -23,8 +23,8 @@ import { createTestUser } from '../../../tests/helpers/authHelper.mjs';
 import { signupDeviceLockKey } from '../services/deviceAccountLimitService.mjs';
 import { ORIGIN, createUserFactory, sha256 } from './helpers/staffFixtures.mjs';
 
-const REFUSAL_MESSAGE = 'This device already has four Equoria accounts, which is the most one player may have.';
-const DAY_MS = 24 * 60 * 60 * 1000;
+const refusalMessage = 'This device already has four Equoria accounts, which is the most one player may have.';
+const dayMs = 24 * 60 * 60 * 1000;
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('devlimit');
@@ -82,7 +82,7 @@ const accountsOnDevice = async device =>
 function expectRefused(res) {
   expect(res.status).toBe(403);
   expect(res.body.code).toBe('accountLimitReached');
-  expect(res.body.message).toBe(REFUSAL_MESSAGE);
+  expect(res.body.message).toBe(refusalMessage);
 }
 
 describe('at most four accounts per device (Equoria-x5n89)', () => {
@@ -120,7 +120,7 @@ describe('at most four accounts per device (Equoria-x5n89)', () => {
 
   it('ignores sightings older than the 90-day window', async () => {
     const device = freshDevice();
-    await seedDevice(device, 4, { lastSeenAt: new Date(Date.now() - 91 * DAY_MS) });
+    await seedDevice(device, 4, { lastSeenAt: new Date(Date.now() - 91 * dayMs) });
     expect((await signup({ device })).status).toBe(201);
   }, 30_000);
 
