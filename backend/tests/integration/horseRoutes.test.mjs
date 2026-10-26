@@ -14,6 +14,7 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../helpers/assignTrainer.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
@@ -76,6 +77,9 @@ describe('Horse Routes Integration Tests', () => {
     testUser = txResult.user;
     trainableHorse = txResult.trainable;
     foalHorse = txResult.foal;
+    // Owner ruling 2026-10-26 (q81, Equoria-r8a6h): a trainer is required to
+    // train, so the trainable fixture has one.
+    await assignTestTrainer(trainableHorse);
     testToken = generateTestToken(testUser);
   });
 
@@ -86,6 +90,7 @@ describe('Horse Routes Integration Tests', () => {
     if (foalHorse) {
       await prisma.horse.deleteMany({ where: { id: foalHorse.id } });
     }
+    await cleanupTestTrainers();
     if (testUser) {
       await prisma.user.deleteMany({ where: { id: testUser.id } });
       testUser = null;
