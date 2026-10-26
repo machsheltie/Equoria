@@ -3,11 +3,11 @@
  * converted to MSW boundary under Equoria-fefh2.12)
  *
  * Boundary-level: the component renders against the REAL
- * `useHorseCoatColor` / `useHorseCoatGenetics` hooks (real React Query +
+ * `useHorseCoatColor` hook (real React Query +
  * real `horsesApi` over `apiClient`) with the network boundary stubbed by
  * MSW (`server.use(...)`). This is NOT a
  * `vi.mock('@/hooks/useHorseCoatGenetics')`. It exercises the real query
- * keys (`['horse-coat-color', id]`, `['horse-coat-genetics', id]`), the
+ * key (`['horse-coat-color', id]`), the
  * `enabled: Boolean(horseId)` gating, and the `{ success, message, data }`
  * envelope unwrap done by `apiClient.get` — where `data === null` is the
  * canonical legacy-horse signal — end-to-end.
@@ -17,17 +17,13 @@
  *  - GET /api/v1/horses/:id/color    → { success, message, data:
  *      { horseId, horseName, colorName, shade, faceMarking, legMarkings,
  *        advancedMarkings, modifiers } } | { ..., data: null }   (getColor)
- *  - GET /api/v1/horses/:id/genetics → { success, message, data:
- *      { horseId, horseName, colorGenotype, phenotype } } |
- *      { ..., data: null }                                       (getGenetics)
  *  `apiClient.get` unwraps `.data`, so each hook's `data` is the payload
  *  object OR `null` (legacy horse). Covers the rendering branches:
  *   - Loading state
- *   - Full color + genotype payload
+ *   - Full color payload
  *   - Modifier chip rendering (only when truthy)
  *   - null colorName → "not recorded" (never literal "Unknown")
  *   - Legacy null payload → empty-state copy
- *   - Genotype table rows + interpretation tooltips
  *
  * The previous over-mocked test set `isLoading` / `data` on the hook return
  * directly. The MSW conversion drives those same states through the real
@@ -43,12 +39,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse, delay } from 'msw';
 import { ReactNode } from 'react';
 import { server } from '@/test/msw/server';
-import type { HorseColorResponse, HorseGeneticsResponse } from '@/lib/api-client';
+import type { HorseColorResponse } from '@/lib/api-client';
 import CoatTab from '../CoatTab';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const colorPath = (id: number) => `${base}/api/v1/horses/${id}/color`;
-const geneticsPath = (id: number) => `${base}/api/v1/horses/${id}/genetics`;
 
 /**
  * Stub the coat-color boundary. Mirrors the real controller envelope:
@@ -63,18 +58,6 @@ function stubColor(id: number, data: HorseColorResponse | null) {
   );
 }
 
-/**
- * Stub the coat-genetics boundary. Mirrors the real controller envelope:
- * `{ success, message, data: HorseGeneticsResponse | null }`.
- */
-function stubGenetics(id: number, data: HorseGeneticsResponse | null) {
-  server.use(
-    http.get(geneticsPath(id), () =>
-      HttpResponse.json({ success: true, message: 'Genetics data retrieved successfully', data })
-    )
-  );
-}
-
 function makeWrapper() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -85,7 +68,7 @@ function makeWrapper() {
 }
 
 describe('CoatTab (31E-4 / ea3n + oovy)', () => {
-  it('renders color, markings, modifiers, and genotype rows for a full payload', async () => {
+  it('renders color, markings and modifiers for a full payload', async () => {
     stubColor(1, {
       horseId: 1,
       horseName: 'Pretty',
@@ -101,13 +84,6 @@ describe('CoatTab (31E-4 / ea3n + oovy)', () => {
       advancedMarkings: { bloodyShoulderPresent: true, snowflakePresent: false },
       modifiers: { isSooty: true, isFlaxen: false, isPangare: false, isRabicano: true },
     } as unknown as HorseColorResponse);
-
-    stubGenetics(1, {
-      horseId: 1,
-      horseName: 'Pretty',
-      colorGenotype: { E_Extension: 'E/e', A_Agouti: 'A/a' },
-      phenotype: null,
-    });
 
     const Wrapper = makeWrapper();
     render(
@@ -142,9 +118,8 @@ describe('CoatTab (31E-4 / ea3n + oovy)', () => {
     expect(mods).not.toHaveTextContent(/Flaxen/);
     expect(mods).not.toHaveTextContent(/Pangare/);
 
-    // Genotype table rows — second query, also async.
-    expect(await screen.findByTestId('coat-locus-E_Extension')).toHaveTextContent(/E\/e/);
-    expect(screen.getByTestId('coat-locus-A_Agouti')).toHaveTextContent(/A\/a/);
+    // The genotype table moved to the Genetics tab (owner ruling 2026-10-26, q72).
+    expect(screen.queryByTestId('coat-genotype-table')).toBeNull();
   });
 
   it('renders "not recorded" (not literal "Unknown") when payload has null colorName (Equoria-3o5s, iwy3 convention)', async () => {
@@ -162,7 +137,6 @@ describe('CoatTab (31E-4 / ea3n + oovy)', () => {
       advancedMarkings: null,
       modifiers: null,
     });
-    stubGenetics(7, null);
 
     const Wrapper = makeWrapper();
     render(
@@ -179,7 +153,6 @@ describe('CoatTab (31E-4 / ea3n + oovy)', () => {
 
   it('renders empty-state when color data is null (legacy horse, AC3)', async () => {
     stubColor(99, null);
-    stubGenetics(99, null);
 
     const Wrapper = makeWrapper();
     render(
@@ -189,17 +162,12 @@ describe('CoatTab (31E-4 / ea3n + oovy)', () => {
     );
 
     expect(await screen.findByText(/No color data available/i)).toBeInTheDocument();
-    expect(await screen.findByText(/No genotype data available/i)).toBeInTheDocument();
   });
 
   it('renders loading state while queries are pending', async () => {
     // Delay BOTH boundary responses so the in-flight loading state is observable.
     server.use(
       http.get(colorPath(1), async () => {
-        await delay('infinite');
-        return HttpResponse.json({ success: true, data: null });
-      }),
-      http.get(geneticsPath(1), async () => {
         await delay('infinite');
         return HttpResponse.json({ success: true, data: null });
       })
@@ -213,7 +181,6 @@ describe('CoatTab (31E-4 / ea3n + oovy)', () => {
     );
 
     expect(await screen.findByText(/Loading color data/i)).toBeInTheDocument();
-    expect(screen.getByText(/Loading genotype/i)).toBeInTheDocument();
   });
 
   it('hides modifier section when no modifiers are truthy (AC2)', async () => {
@@ -227,7 +194,6 @@ describe('CoatTab (31E-4 / ea3n + oovy)', () => {
       advancedMarkings: null,
       modifiers: { isSooty: false, isFlaxen: false, isPangare: false, isRabicano: false },
     } as unknown as HorseColorResponse);
-    stubGenetics(1, null);
 
     const Wrapper = makeWrapper();
     render(

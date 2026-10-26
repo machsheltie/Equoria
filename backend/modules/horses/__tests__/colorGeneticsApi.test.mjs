@@ -80,6 +80,7 @@ function createMockReqRes(horseOverrides = {}) {
     breedId: 3,
     colorGenotype: MOCK_GENOTYPE,
     phenotype: MOCK_PHENOTYPE,
+    colorGeneticsTested: true,
     ...horseOverrides,
   };
 
@@ -119,7 +120,7 @@ describe('getGenetics', () => {
     await getGenetics(req, res);
 
     const data = res.body.data;
-    expect(Object.keys(data)).toEqual(['horseId', 'horseName', 'colorGenotype', 'phenotype']);
+    expect(Object.keys(data)).toEqual(['horseId', 'horseName', 'colorGeneticsTested', 'colorGenotype', 'phenotype']);
   });
 
   test('T3.2: returns 200 with null data for legacy horse without colorGenotype', async () => {

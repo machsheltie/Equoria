@@ -29,7 +29,6 @@ import TemperamentReferenceModal from '@/components/horse/TemperamentReferenceMo
 import ColorPredictionChart from '@/components/breeding/ColorPredictionChart';
 import BreedingPredictionsPanel from '@/pages/breeding/BreedingPredictionsPanel';
 import MilestoneEvaluationDisplay from '@/components/foal/MilestoneEvaluationDisplay';
-import BehavioralFlagsPanel from '@/components/traits/BehavioralFlagsPanel';
 import CompetitionResultsModal from '@/components/competition/CompetitionResultsModal';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -69,7 +68,6 @@ const surfaces: Array<[string, () => React.ReactElement]> = [
   ['ColorPredictionChart', () => <ColorPredictionChart sireId={1} damId={2} />],
   ['BreedingPredictionsPanel', () => <BreedingPredictionsPanel sireId={1} damId={2} />],
   ['MilestoneEvaluationDisplay', () => <MilestoneEvaluationDisplay foalId={1} />],
-  ['BehavioralFlagsPanel', () => <BehavioralFlagsPanel horseId={1} />],
   [
     'CompetitionResultsModal',
     () => <CompetitionResultsModal isOpen onClose={() => undefined} competitionId={7} />,

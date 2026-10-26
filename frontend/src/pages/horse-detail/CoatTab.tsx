@@ -1,14 +1,14 @@
 /**
- * CoatTab — dedicated Color & Genetics panel for HorseDetailPage (Epic 31E-4)
+ * CoatTab — dedicated Color & Markings panel for HorseDetailPage (Epic 31E-4)
  *
- * Equoria-ea3n + Equoria-oovy. Sources data from the new /horses/:id/color and
- * /horses/:id/genetics endpoints via React Query hooks, rather than reading
- * phenotype JSON straight off the main horse payload. Surfaces:
+ * Equoria-ea3n. Sources data from /horses/:id/color via a React Query hook,
+ * rather than reading phenotype JSON straight off the main horse payload. The
+ * genotype table moved to the Genetics tab (owner ruling 2026-10-26, q72): it
+ * stays hidden until the Vet's Genetic Testing is paid for. Surfaces:
  *
  *   1. Color name + shade (e.g. "Bay — Dark").
  *   2. Face marking, leg markings, advanced markings.
  *   3. Modifier chips (sooty, flaxen, pangare, rabicano) — only when present.
- *   4. Locus-by-locus genotype table with allele pairs (breeding planning).
  *
  * Legacy horses without color data render a graceful empty state with the
  * message returned by the backend, rather than throwing or hiding.
@@ -16,34 +16,7 @@
 
 import { Loader2 } from 'lucide-react';
 import { ErrorState } from '@/components/ui/state';
-import { useHorseCoatGenetics, useHorseCoatColor } from '@/hooks/useHorseCoatGenetics';
-
-/**
- * Short, human-readable description per locus. Used as a tooltip-grade
- * interpretation in the genotype table (Equoria-oovy AC2). Keys mirror the
- * CORE_LOCI list in backend genotypeGenerationService.mjs so that any new
- * locus added in the backend will surface as the locus name itself until
- * a description is added here — no crash, just less context.
- */
-const LOCUS_INTERPRETATIONS: Record<string, string> = {
-  E_Extension: 'Extension — controls black vs red base coat (E dominant, e recessive).',
-  A_Agouti: 'Agouti — restricts black pigment to mane/tail/legs (bay vs black).',
-  Cr_Cream: 'Cream — dilutes red and black pigment (palomino, buckskin, cremello).',
-  D_Dun: 'Dun — primitive marking + body dilution.',
-  Z_Silver: 'Silver — dilutes black pigment only (e.g. silver bay, silver dapple).',
-  Ch_Champagne: 'Champagne — soft body dilution with mottled skin & light eyes.',
-  G_Gray: 'Gray — progressive depigmentation with age (dominant).',
-  Rn_Roan: 'Roan — interspersed white hairs on the body (head/legs stay dark).',
-  W_DominantWhite: 'Dominant White — large patches of unpigmented skin and hair.',
-  TO_Tobiano: 'Tobiano — vertical white spotting that crosses the topline.',
-  O_FrameOvero: 'Frame Overo — horizontal white spotting (lethal in homozygous).',
-  SB1_Sabino1: 'Sabino-1 — irregular white edges, belly spots, leg markings.',
-  SW_SplashWhite: 'Splash White — "dipped in paint" pattern with blue eyes.',
-  LP_LeopardComplex: 'Leopard Complex — Appaloosa spotting base gene.',
-  PATN1_Pattern1: 'Pattern-1 — modifies the extent of leopard-complex spotting.',
-  EDXW: 'EDXW — Extreme White; large coverage variant.',
-  MFSD12_Mushroom: 'Mushroom — sepia-toned recessive dilution of red.',
-};
+import { useHorseCoatColor } from '@/hooks/useHorseCoatGenetics';
 
 /**
  * Human-friendly label for each leg position.
@@ -96,7 +69,6 @@ interface CoatTabProps {
 
 export default function CoatTab({ horseId }: CoatTabProps) {
   const colorQuery = useHorseCoatColor(horseId);
-  const geneticsQuery = useHorseCoatGenetics(horseId);
 
   return (
     <div className="space-y-6">
@@ -209,56 +181,6 @@ export default function CoatTab({ horseId }: CoatTabProps) {
                 </div>
               );
             })()}
-          </div>
-        )}
-      </section>
-
-      {/* ----------------------------------------------------------------- */}
-      {/* Section 2 — Genotype table (oovy)                                */}
-      {/* ----------------------------------------------------------------- */}
-      <section data-testid="coat-genotype-section">
-        <h2 className="type-section-heading mb-3">Genotype (Breeding Planning)</h2>
-        {geneticsQuery.isLoading && <LoadingBlock label="Loading genotype..." />}
-        {geneticsQuery.isError && (
-          <ErrorState
-            message="Could not load genotype data."
-            retry={{ label: 'Try Again', onClick: () => geneticsQuery.refetch() }}
-          />
-        )}
-        {geneticsQuery.isSuccess && geneticsQuery.data === null && (
-          <EmptyState message="No genotype data available for this horse." />
-        )}
-        {geneticsQuery.isSuccess && geneticsQuery.data !== null && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm" data-testid="coat-genotype-table">
-              <thead>
-                <tr className="bg-[var(--alpha-bg-midnight-50)] text-[var(--text-secondary)]">
-                  <th className="px-3 py-2 text-left">Locus</th>
-                  <th className="px-3 py-2 text-left">Allele pair</th>
-                  <th className="px-3 py-2 text-left">Interpretation</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(geneticsQuery.data.colorGenotype).map(([locus, allelePair]) => (
-                  <tr
-                    key={locus}
-                    className="border-t border-[var(--alpha-gold-primary-10)]"
-                    data-testid={`coat-locus-${locus}`}
-                  >
-                    <td className="px-3 py-2 font-medium text-[var(--text-primary)]">{locus}</td>
-                    <td className="px-3 py-2 font-mono text-[var(--gold-primary)]">
-                      {String(allelePair)}
-                    </td>
-                    <td
-                      className="px-3 py-2 text-[var(--text-secondary)]"
-                      title={LOCUS_INTERPRETATIONS[locus] ?? locus}
-                    >
-                      {LOCUS_INTERPRETATIONS[locus] ?? '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         )}
       </section>

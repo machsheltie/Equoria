@@ -14,12 +14,21 @@ import type { HorseSummary, HorseTrainingAnalytics, HorseXP, HorseXPHistory } fr
  * Both endpoints return the canonical envelope { success, message, data } where
  * `data === null` for legacy horses that pre-date the color-genetics system.
  */
-export interface HorseGeneticsResponse {
-  horseId: number;
-  horseName: string;
-  colorGenotype: Record<string, string>;
-  phenotype: Record<string, unknown> | null;
-}
+export type HorseGeneticsResponse =
+  | {
+      horseId: number;
+      horseName: string;
+      colorGeneticsTested: true;
+      colorGenotype: Record<string, string>;
+      phenotype: Record<string, unknown> | null;
+    }
+  | {
+      // Owner ruling 2026-10-26 (q72): until the Vet's Genetic Testing is paid
+      // for, the server sends no genotype at all.
+      horseId: number;
+      horseName: string;
+      colorGeneticsTested: false;
+    };
 
 /**
  * GET /api/v1/horses/:id/breeding-data — the per-horse breeding summary. Only

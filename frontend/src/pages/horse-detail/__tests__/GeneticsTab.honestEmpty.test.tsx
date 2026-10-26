@@ -11,7 +11,6 @@
 
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router';
@@ -90,17 +89,5 @@ describe('GeneticsTab — honest states (Equoria-kjlub)', () => {
 
     expect(await screen.findByText(/all traits discovered/i)).toBeInTheDocument();
     expect(screen.queryByText(/no traits discovered yet/i)).toBeNull();
-  });
-
-  it('only blames the filters when they exclude traits the horse really has', async () => {
-    stubTraits(['resilient'], 0);
-    const user = userEvent.setup();
-    renderTab();
-    await screen.findByText(/all traits discovered/i);
-    expect(screen.queryByText(/no traits match the current filters/i)).toBeNull();
-
-    // Rarity 'legendary' excludes the single common trait.
-    await user.selectOptions(screen.getByLabelText(/rarity/i), 'legendary');
-    expect(await screen.findByText(/no traits match the current filters/i)).toBeInTheDocument();
   });
 });

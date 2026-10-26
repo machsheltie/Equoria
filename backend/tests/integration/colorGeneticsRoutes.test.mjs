@@ -30,6 +30,7 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
   let otherToken;
   let horseWithColor;
   let legacyHorse;
+  let untestedHorse;
   const createdHorseIds = [];
   const createdUserIds = [];
 
@@ -75,6 +76,7 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
         dateOfBirth: gameCalendarDate(new Date(), -Math.round(4 * 365.25)),
         age: 4,
         userId: testUser.id,
+        colorGeneticsTested: true,
         colorGenotype: {
           E_Extension: 'e/e',
           A_Agouti: 'A/a',
@@ -92,6 +94,22 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
       },
     });
     createdHorseIds.push(horseWithColor.id);
+
+    // Untested horse: has a genotype but the owner has not paid for the vet's
+    // colour genetics test (owner ruling 2026-10-26, q72), so it must stay hidden.
+    // eslint-disable-next-line equoria/no-raw-test-horse-create -- gate fixture: explicit genotype + phenotype with colorGeneticsTested left false on purpose.
+    untestedHorse = await prisma.horse.create({
+      data: {
+        name: `CGUntestedHorse_${ts}`,
+        sex: 'Mare',
+        dateOfBirth: gameCalendarDate(new Date(), -Math.round(4 * 365.25)),
+        age: 4,
+        userId: testUser.id,
+        colorGenotype: { E_Extension: 'E/e', A_Agouti: 'A/A' },
+        phenotype: { colorName: 'Bay', shade: 'Standard', faceMarking: 'Star' },
+      },
+    });
+    createdHorseIds.push(untestedHorse.id);
 
     // Legacy horse (no color data) — exercises the null-data response branch.
     // eslint-disable-next-line equoria/no-raw-test-horse-create -- the /color route gates data:null on phenotype IS NULL and /genetics on colorGenotype IS NULL (horseController.mjs:1161,1303); this fixture MUST be born with BOTH null to exercise those legacy branches (assertions at lines ~145/201 expect data:null). A fixtureColor() spread would defeat the test. Scoped id-in afterEach cleanup contains the row.
@@ -136,6 +154,33 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
       expect(Array.isArray(res.body.data.colorGenotype)).toBe(false);
       expect(res.body.data.colorGenotype.E_Extension).toBe('e/e');
       expect(res.body.data.phenotype.colorName).toBe('Chestnut');
+    });
+
+    it('ruling q72: an untested horse never has its genotype in the response', async () => {
+      const res = await request(app)
+        .get(`/api/v1/horses/${untestedHorse.id}/genetics`)
+        .set('Authorization', `Bearer ${testToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.colorGeneticsTested).toBe(false);
+      expect(res.body.data.horseId).toBe(untestedHorse.id);
+      expect(res.body.data).not.toHaveProperty('colorGenotype');
+      expect(JSON.stringify(res.body)).not.toContain('E_Extension');
+      expect(JSON.stringify(res.body)).not.toContain('E/e');
+    });
+
+    it('ruling q72: a paid test (colorGeneticsTested) reveals the genotype', async () => {
+      await prisma.horse.update({
+        where: { id: untestedHorse.id },
+        data: { colorGeneticsTested: true },
+      });
+      const res = await request(app)
+        .get(`/api/v1/horses/${untestedHorse.id}/genetics`)
+        .set('Authorization', `Bearer ${testToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.colorGeneticsTested).toBe(true);
+      expect(res.body.data.colorGenotype.E_Extension).toBe('E/e');
     });
 
     it('AC: 200 with data:null for legacy horse (no genotype)', async () => {

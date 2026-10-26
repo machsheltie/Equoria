@@ -187,6 +187,21 @@ export async function getGenetics(req, res) {
       });
     }
 
+    // Owner ruling 2026-10-26 (q72): colour genetics stay hidden until the owner
+    // pays for the vet's Genetic Testing. The genotype never leaves the server
+    // for an untested horse.
+    if (horse.colorGeneticsTested !== true) {
+      return res.status(200).json({
+        success: true,
+        message: 'Colour genetics have not been tested for this horse',
+        data: {
+          horseId: horse.id,
+          horseName: horse.name,
+          colorGeneticsTested: false,
+        },
+      });
+    }
+
     logger.info(`[horseController.getGenetics] Retrieved genetics for horse ${horse.id}`);
 
     return res.status(200).json({
@@ -195,6 +210,7 @@ export async function getGenetics(req, res) {
       data: {
         horseId: horse.id,
         horseName: horse.name,
+        colorGeneticsTested: true,
         colorGenotype: horse.colorGenotype,
         phenotype: horse.phenotype ?? null,
       },
