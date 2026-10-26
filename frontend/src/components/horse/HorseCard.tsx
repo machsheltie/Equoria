@@ -145,9 +145,8 @@ export function HorseCard({
           <p className="text-xs text-[var(--text-secondary)] truncate">
             {[sex, age ? `${age} yrs` : null].filter(Boolean).join(' · ')}
           </p>
-          {/* Equoria-92ss — phenotype coat color chip. Falls back to
-              finalDisplayColor (legacy serializer field) and finally hides
-              the chip entirely for legacy horses with no color recorded. */}
+          {/* Equoria-92ss — phenotype coat color chip. Hidden entirely for
+              legacy horses with no color recorded. */}
           <div className="mt-1 flex flex-wrap gap-1">
             {/* Equoria-yyn7 — in-foal badge. Hidden when not pregnant. */}
             {pregnancy ? (
@@ -161,7 +160,7 @@ export function HorseCard({
               </span>
             ) : null}
             {(() => {
-              const colorName = horse.phenotype?.colorName ?? horse.finalDisplayColor ?? null;
+              const colorName = horse.phenotype?.colorName ?? null;
               if (!colorName) return null;
               return (
                 <span

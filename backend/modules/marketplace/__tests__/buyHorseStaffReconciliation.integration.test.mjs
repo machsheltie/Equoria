@@ -18,7 +18,7 @@
  *     awarded XP to — the SELLER's trainer.
  *
  * History is preserved: the assignment rows survive, deactivated. Nothing is
- * re-owned; only `isActive` and the horse's derived `rider` JSON change.
+ * re-owned; only `isActive` changes.
  *
  * Real DB, real HTTP, real CSRF, scoped fail-loud fixtures. No mocks.
  */
@@ -242,8 +242,17 @@ async function waitFor(promise, label) {
 async function horseRow(horseId) {
   return prisma.horse.findUnique({
     where: { id: horseId },
-    select: { id: true, userId: true, rider: true },
+    select: { id: true, userId: true },
   });
+}
+
+/** The rider on the horse now: its active RiderAssignment, or null. */
+async function activeRiderId(horseId) {
+  const row = await prisma.riderAssignment.findFirst({
+    where: { horseId, isActive: true },
+    select: { riderId: true },
+  });
+  return row?.riderId ?? null;
 }
 
 describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () => {
@@ -303,13 +312,13 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
     await cleanup.run();
   }, 30000);
 
-  it('ends the seller’s rider, trainer and groom assignments and clears the horse rider', async () => {
+  it('ends the seller’s rider, trainer and groom assignments', async () => {
     const bought = await buyRequest(buyer.token, listedHorse.id);
     expect(bought.status).toBe(200);
 
     const persistedHorse = await horseRow(listedHorse.id);
     expect(persistedHorse.userId).toBe(buyer.id);
-    expect(persistedHorse.rider).toBeNull();
+    expect(await activeRiderId(listedHorse.id)).toBeNull();
 
     // History rows survive, deactivated — nothing is deleted, nothing re-owned.
     const riderAssignment = await prisma.riderAssignment.findUnique({
@@ -353,7 +362,7 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
 
     const reassigned = await assignRiderRequest(seller.token, rider.id, keptHorse.id);
     expect(reassigned.status).toBe(201);
-    expect((await horseRow(keptHorse.id)).rider.id).toBe(rider.id);
+    expect(await activeRiderId(keptHorse.id)).toBe(rider.id);
   }, 60000);
 
   it('leaves the seller’s staff untouched when the purchase is rejected', async () => {
@@ -365,7 +374,7 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
 
     const persistedHorse = await horseRow(listedHorse.id);
     expect(persistedHorse.userId).toBe(seller.id);
-    expect(persistedHorse.rider.id).toBe(rider.id);
+    expect(await activeRiderId(listedHorse.id)).toBe(rider.id);
     expect((await prisma.riderAssignment.findUnique({ where: { id: riderAssignmentId } })).isActive).toBe(true);
     expect((await prisma.trainerAssignment.findUnique({ where: { id: trainerAssignmentId } })).isActive).toBe(true);
     expect((await prisma.groomAssignment.findUnique({ where: { id: groomAssignmentId } })).isActive).toBe(true);
@@ -394,11 +403,11 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
     expect(unassignedStatus).toBe(200);
 
     // Whichever way the two transactions serialize, the end state is the same
-    // and both representations agree: the horse belongs to the buyer, carries
-    // no rider, and no assignment on it is still active.
+    // the horse belongs to the buyer, carries no rider, and no assignment on it
+    // is still active.
     const persistedHorse = await horseRow(listedHorse.id);
     expect(persistedHorse.userId).toBe(buyer.id);
-    expect(persistedHorse.rider).toBeNull();
+    expect(await activeRiderId(listedHorse.id)).toBeNull();
     expect(await prisma.riderAssignment.count({ where: { horseId: listedHorse.id, isActive: true } })).toBe(0);
     expect(await prisma.trainerAssignment.count({ where: { horseId: listedHorse.id, isActive: true } })).toBe(0);
     expect(await prisma.groomAssignment.count({ where: { foalId: listedHorse.id, isActive: true } })).toBe(0);
@@ -446,7 +455,7 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
 
     const persistedHorse = await horseRow(listedHorse.id);
     expect(persistedHorse.userId).toBe(buyer.id);
-    expect(persistedHorse.rider).toBeNull();
+    expect(await activeRiderId(listedHorse.id)).toBeNull();
 
     // The assignment in force at the moment of sale survives, deactivated ...
     expect((await prisma.riderAssignment.findUnique({ where: { id: currentRiderAssignmentId } })).isActive).toBe(false);

@@ -4,7 +4,6 @@ import {
   getRelevantStats,
   calculateStatGains,
   calculateEntryFees,
-  hasValidRider,
 } from '../../../utils/competitionRewards.mjs';
 
 describe('calculatePrizeDistribution', () => {
@@ -138,28 +137,6 @@ describe('calculateEntryFees', () => {
   });
 });
 
-describe('hasValidRider', () => {
-  it('returns true when rider is an object', () => {
-    expect(hasValidRider({ rider: { id: 1, name: 'Alice' } })).toBe(true);
-  });
-
-  it('returns false when rider is null', () => {
-    expect(hasValidRider({ rider: null })).toBe(false);
-  });
-
-  it('returns false when rider is undefined', () => {
-    expect(hasValidRider({ rider: undefined })).toBe(false);
-  });
-
-  it('returns false when rider is a string (not an object)', () => {
-    expect(hasValidRider({ rider: 'Alice' })).toBe(false);
-  });
-
-  it('returns false when rider is a number', () => {
-    expect(hasValidRider({ rider: 42 })).toBe(false);
-  });
-});
-
 // ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
 // Deterministic _rngFn-injected coverage of calculateStatGains (the module tests
 // above only probe the probabilistic structure). Plus exhaustive discipline
@@ -273,12 +250,6 @@ describe('competitionRewards — deterministic _rngFn & exhaustive coverage (mer
           expect(validRacingStats.has(result.stat)).toBe(true);
         }
       }
-    });
-  });
-
-  describe('hasValidRider — empty object edge case', () => {
-    it('returns true for a horse with an empty rider object', () => {
-      expect(hasValidRider({ rider: {} })).toBe(true);
     });
   });
 });

@@ -120,7 +120,7 @@ beforeAll(() => {
 afterAll(() => cleanup.run(), 60000);
 
 describe('POST /api/v1/riders/assignments — retired guard (Equoria-oey96.24)', () => {
-  it('REJECTS a RETIRED rider: 400, no assignment row, horse.rider JSONB unchanged', async () => {
+  it('REJECTS a RETIRED rider: 400, no assignment row, horse still riderless', async () => {
     const { user, token } = await makeUser();
     const rider = await seedRider(user.id, { retired: true });
     const horse = await seedHorse(user.id);
@@ -135,13 +135,8 @@ describe('POST /api/v1/riders/assignments — retired guard (Equoria-oey96.24)',
     const rows = await prisma.riderAssignment.count({ where: { riderId: rider.id } });
     expect(rows).toBe(0);
 
-    // horse.rider JSONB was never synced — the competition engine must not see
-    // this horse as having a (retired) rider.
-    const after = await prisma.horse.findUnique({
-      where: { id: horse.id },
-      select: { rider: true },
-    });
-    expect(after.rider).toBeNull();
+    // The competition engine must not see this horse as having a (retired) rider.
+    expect(await prisma.riderAssignment.count({ where: { horseId: horse.id } })).toBe(0);
   });
 
   it('CONTROL: a NON-retired rider assigns fine (201, assignment row created)', async () => {

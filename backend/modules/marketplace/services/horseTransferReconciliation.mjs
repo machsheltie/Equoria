@@ -30,10 +30,8 @@
  * The automated paths above are what make groom reconciliation necessary.)
  *
  * WHAT IT DOES
- * Ends every active staff assignment on the transferred horse and clears the
- * horse's derived `rider` JSON (the representation `hasValidRider()` and the
- * competition engine read). The buyer starts with a clean, riderless horse and
- * no inherited staff; no `userId` is ever rewritten, so nobody's staff changes
+ * Ends every active staff assignment on the transferred horse. The buyer starts
+ * with a clean, riderless horse and no inherited staff; no `userId` is ever rewritten, so nobody's staff changes
  * hands.
  *
  * The `where` clauses deliberately do NOT pin the previous owner: an active
@@ -395,9 +393,7 @@ async function endActiveAssignmentsOnHorse(delegate, { horseField, horseId, endD
  * @returns {Promise<{ riderAssignmentsEnded: number, trainerAssignmentsEnded: number, groomAssignmentsEnded: number }>}
  */
 export async function reconcileStaffOnHorseTransfer(tx, { horseId }) {
-  // HORSE row first (already claimed by the caller — no new lock taken).
-  await tx.horse.update({ where: { id: horseId }, data: { rider: null } });
-
+  // The horse row is already claimed by the caller — no new lock is taken.
   const riderAssignmentsEnded = await endActiveAssignmentsOnHorse(tx.riderAssignment, {
     horseField: 'horseId',
     horseId,

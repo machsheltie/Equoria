@@ -52,13 +52,9 @@ export interface Horse {
   };
   // Equipped tack — JSON field from Prisma; includes item IDs + <category>_condition values
   tack?: Record<string, unknown>;
-  // Resolved coat color — finalDisplayColor string (legacy vestigial TEXT column;
-  // NULL for all canonical-DB horses post-31E).
-  finalDisplayColor?: string;
-  // Phenotype JSONB — colorName is the player-visible color (Equoria-lsi5).
-  // Mirror the HorseCard.tsx:130 fallback pattern: phenotype.colorName takes
-  // precedence over finalDisplayColor, then falls back to 'not recorded'
-  // in the UI per Equoria-iwy3.
+  // Phenotype JSONB — colorName is the player-visible color (Equoria-lsi5),
+  // the one source of a horse's color; the UI shows 'not recorded' when it is
+  // absent (Equoria-iwy3).
   phenotype?: { colorName?: string; [key: string]: unknown } | null;
   // Feed-system redesign 2026-04-29 (A11/A16): per-horse equipped feed tier
   // and the three derived health bands injected by the backend serializer

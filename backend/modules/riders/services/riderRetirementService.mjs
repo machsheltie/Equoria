@@ -26,10 +26,8 @@
  * age, no retirement age and no countdown. Riders with no schedule row (not yet
  * backfilled) are left alone: the pass never draws an age itself.
  *
- * Retiring ends BOTH representations of an assignment (the RiderAssignment rows
- * and the denormalised Horse.rider JSON the competition engine reads;
- * Equoria-r9u5k), in one transaction, Horse rows before staff rows (ascending
- * ids).
+ * Retiring ends the RiderAssignment rows in one transaction, Horse rows locked
+ * before staff rows (ascending ids; Equoria-r9u5k).
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -65,7 +63,7 @@ async function loadScheduledRiders() {
 
 /**
  * Retire riders who have reached their retirement age and were noticed in an
- * earlier pass. Deactivates their active assignments and clears Horse.rider.
+ * earlier pass. Deactivates their active assignments.
  *
  * @returns {Promise<{retiredCount: number, deactivatedAssignmentCount: number, retiredIds: number[]}>}
  */
@@ -91,7 +89,7 @@ export async function retireRidersAtTheirAge() {
     });
     const horseIds = [...new Set(active.map(a => a.horseId))].sort((a, b) => a - b);
     if (horseIds.length > 0) {
-      await tx.horse.updateMany({ where: { id: { in: horseIds } }, data: { rider: null } });
+      await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ANY(${horseIds}) ORDER BY "id" FOR UPDATE`;
     }
     const ended = await tx.riderAssignment.updateMany({
       where: { riderId: { in: ids }, isActive: true },

@@ -1,13 +1,12 @@
 /**
- * Equoria-r9u5k: a rider retired by the weekly career job leaves no trace on
- * the horses they rode.
+ * Equoria-r9u5k: a rider retired by the weekly career job leaves no active
+ * assignment on the horses they rode.
  *
  * The weekly job (processRiderRetirement; autoRetireOverdueRiders before
- * Equoria-or2ua) flipped Rider.retired and
- * deactivated the RiderAssignment rows but left the denormalised Horse.rider
- * JSON naming the retired rider, so the horse kept satisfying the competition
- * engine's rider check with a rider who had left. dismissRider already clears
- * both (Equoria-6p398.6); the job now does the same, in one transaction.
+ * Equoria-or2ua) flips Rider.retired and deactivates the RiderAssignment rows
+ * in one transaction. (It once also had to clear a denormalised Horse.rider
+ * JSON copy; that column is gone, Equoria-97se, so the assignment rows are the
+ * only record.)
  *
  * Also covered: a player assign racing that retirement. assignRider checked
  * `retired` on an unlocked read, so a rider retired while the assign was in
@@ -36,7 +35,7 @@ const fixturePrefix = 'TestFixture-r9u5k';
 const tag = () => randomBytes(6).toString('hex');
 const barrierClient = createBarrierClient();
 
-describe('rider retirement and Horse.rider (Equoria-r9u5k)', () => {
+describe('rider retirement ends the assignment on the horse (Equoria-r9u5k)', () => {
   const cleanup = createCleanupTracker();
   let owner;
   let token;
@@ -99,12 +98,13 @@ describe('rider retirement and Horse.rider (Equoria-r9u5k)', () => {
       .send({ riderId: rider.id, horseId: horse.id });
   };
 
-  it('the weekly retirement clears Horse.rider along with the assignment', async () => {
-    // Put the rider on the horse through the real assign route, so Horse.rider
-    // and the assignment are exactly what a player produces.
+  it('the weekly retirement ends the horse assignment', async () => {
+    // Put the rider on the horse through the real assign route, so the
+    // assignment is exactly what a player produces.
     expect((await assign()).status).toBe(201);
-    const assigned = await prisma.horse.findUnique({ where: { id: horse.id }, select: { rider: true } });
-    expect(assigned.rider?.id).toBe(rider.id);
+    expect(
+      await prisma.riderAssignment.count({ where: { riderId: rider.id, horseId: horse.id, isActive: true } }),
+    ).toBe(1);
 
     // Owner ruling 2026-10-23 (Equoria-or2ua): the rider is at their hidden
     // retirement age and the one-week notice went out in an earlier pass.
@@ -121,8 +121,6 @@ describe('rider retirement and Horse.rider (Equoria-r9u5k)', () => {
     const result = await processRiderRetirement();
     expect(result.retiredIds).toContain(rider.id);
 
-    const after = await prisma.horse.findUnique({ where: { id: horse.id }, select: { rider: true } });
-    expect(after.rider).toBeNull();
     const active = await prisma.riderAssignment.count({ where: { riderId: rider.id, isActive: true } });
     expect(active).toBe(0);
     expect((await prisma.rider.findUnique({ where: { id: rider.id } })).retired).toBe(true);
@@ -144,8 +142,6 @@ describe('rider retirement and Horse.rider (Equoria-r9u5k)', () => {
     const res = await inFlight;
 
     expect(res.status).toBe(400);
-    const after = await prisma.horse.findUnique({ where: { id: horse.id }, select: { rider: true } });
-    expect(after.rider).toBeNull();
     expect(await prisma.riderAssignment.count({ where: { riderId: rider.id } })).toBe(0);
   }, 60000);
 });

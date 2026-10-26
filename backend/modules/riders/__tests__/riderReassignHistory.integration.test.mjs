@@ -169,12 +169,6 @@ describe('rider re-assignment history (Equoria-kccmt)', () => {
     const active = rows.filter(r => r.isActive);
     expect(active).toHaveLength(1);
     expect(active[0].riderId).toBe(riderC.id);
-
-    const persistedHorse = await prisma.horse.findUnique({
-      where: { id: horse.id },
-      select: { rider: true },
-    });
-    expect(persistedHorse.rider.id).toBe(riderC.id);
   }, 60000);
 
   it('still refuses two ACTIVE rows for the same rider and horse under concurrent writers', async () => {

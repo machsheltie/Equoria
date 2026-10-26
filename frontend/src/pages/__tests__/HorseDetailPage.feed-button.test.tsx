@@ -51,7 +51,6 @@ const baseHorse = {
   userId: '1',
   parentIds: null,
   tack: null,
-  finalDisplayColor: null,
   inFoalSinceDate: null,
   pregnancySireId: null,
   pregnancyFeedingsByTier: {},

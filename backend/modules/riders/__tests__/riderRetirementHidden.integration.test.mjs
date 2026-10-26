@@ -311,7 +311,6 @@ describe('the weekly pass: one-week notice, then retirement (Equoria-or2ua)', ()
     expect(second.retiredIds).toContain(rider.id);
     expect((await prisma.rider.findUnique({ where: { id: rider.id } })).retired).toBe(true);
     expect((await prisma.riderAssignment.findUnique({ where: { id: assignment.id } })).isActive).toBe(false);
-    expect((await prisma.horse.findUnique({ where: { id: horse.id }, select: { rider: true } })).rider).toBeNull();
     // Retirement itself sends nothing further: the week's warning was the notice.
     expect(await notificationsFor(other.user.id, rider.id)).toHaveLength(1);
   }, 60000);

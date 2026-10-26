@@ -55,7 +55,6 @@ describe('Horse Seed Integration Tests', () => {
           name: 'TestSeed_ExistingHorse',
           age: 5,
           sex: 'Mare',
-          finalDisplayColor: 'Bay',
           speed: 75,
           stamina: 70,
           strength: 65,

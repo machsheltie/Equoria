@@ -131,11 +131,11 @@ export async function assignRider(req, res) {
   const userId = req.user.id;
   const { riderId, horseId, notes } = req.body;
   try {
-    // Equoria-6p398.6 (finding 6): the rider row, the horse's `rider` JSON and
-    // the assignment rows are ONE state change. They commit together, in the
-    // project's lock order — Horse row first, staff rows second — and the horse
-    // write re-asserts CURRENT ownership so a horse sold between this request's
-    // reads and its writes can never be handed the former owner's rider.
+    // Equoria-6p398.6 (finding 6): the rider row and the assignment rows are ONE
+    // state change. They commit together, in the project's lock order — Horse
+    // row first, staff rows second — and the horse lock re-asserts CURRENT
+    // ownership so a horse sold between this request's reads and its writes can
+    // never be handed the former owner's rider.
     const assignment = await withRetryableTxMapping(
       prisma.$transaction(async tx => {
         // Verify rider belongs to user
@@ -170,24 +170,15 @@ export async function assignRider(req, res) {
         // so the nightly birthday release cannot slip between check and assign.
         await assertHorseTakesNewStaffTx(tx, horseId);
 
-        // HORSE row first. Syncing the horse.rider JSONB field is what makes
-        // hasValidRider() true for competition entry; RiderAssignment alone is
-        // not sufficient. The `userId` predicate is the authoritative ownership
-        // check — count 0 means the horse changed hands after the read above,
-        // and the whole assignment rolls back rather than writing a rider onto
-        // a stranger's horse.
-        const claimed = await tx.horse.updateMany({
-          where: { id: horseId, userId },
-          data: {
-            rider: {
-              id: rider.id,
-              name: `${rider.firstName} ${rider.lastName}`,
-              level: rider.level,
-              speciality: rider.speciality,
-            },
-          },
-        });
-        if (claimed.count !== 1) {
+        // HORSE row first. The RiderAssignment row is the one record of who rides
+        // the horse (the Horse.rider JSON copy is gone, Equoria-97se). The
+        // `userId` predicate on the locked read is the authoritative ownership
+        // check — no row means the horse changed hands after the read above, and
+        // the whole assignment rolls back rather than writing a rider onto a
+        // stranger's horse.
+        const claimed = await tx.$queryRaw`
+          SELECT "id" FROM "horses" WHERE "id" = ${horseId} AND "userId" = ${userId} FOR UPDATE`;
+        if (claimed.length !== 1) {
           throw httpError(409, HORSE_NOT_YOURS);
         }
 
@@ -260,15 +251,14 @@ export async function deleteRiderAssignment(req, res) {
   try {
     // Equoria-6p398.6 (finding 6): owning the ASSIGNMENT ROW is not authority
     // over the HORSE. The pre-fix endpoint authorized on the row's stored
-    // `userId`, accepted an inactive row, and then cleared `Horse.rider` by
-    // horse id with no ownership predicate — so a previous owner (or the same
-    // owner's superseded assignment) could null the rider that is currently on
-    // the horse. Both facts are now re-proved as WRITE predicates inside one
-    // transaction, in the project's lock order (Horse row, then staff rows):
+    // `userId`, accepted an inactive row, and acted on the horse by id with no
+    // ownership predicate — so a previous owner (or the same owner's superseded
+    // assignment) could end the rider that is currently on the horse. Both
+    // facts are now re-proved inside one transaction, in the project's lock
+    // order (Horse row, then staff rows):
     //   - the horse must still belong to the caller, and
     //   - this assignment must still be the ACTIVE one.
-    // Either predicate failing rolls the other write back, so the assignment
-    // status and the horse's rider can never disagree about what happened.
+    // Either predicate failing rolls the transaction back.
     await withRetryableTxMapping(
       prisma.$transaction(async tx => {
         const assignment = await tx.riderAssignment.findFirst({
@@ -286,14 +276,10 @@ export async function deleteRiderAssignment(req, res) {
           throw httpError(409, ASSIGNMENT_NOT_CURRENT);
         }
 
-        // Clear horse.rider JSONB so the competition engine sees the horse as
-        // riderless after unassignment — but only on a horse still owned by the
-        // caller.
-        const cleared = await tx.horse.updateMany({
-          where: { id: assignment.horseId, userId },
-          data: { rider: null },
-        });
-        if (cleared.count !== 1) {
+        // Lock the horse row, but only a horse still owned by the caller.
+        const locked = await tx.$queryRaw`
+          SELECT "id" FROM "horses" WHERE "id" = ${assignment.horseId} AND "userId" = ${userId} FOR UPDATE`;
+        if (locked.length !== 1) {
           throw httpError(409, HORSE_NOT_YOURS);
         }
 
@@ -383,11 +369,9 @@ export async function dismissRider(req, res) {
   const userId = req.user.id;
   const riderId = parseInt(req.params.id, 10);
   try {
-    // Equoria-6p398.6 (finding 6): dismissing deactivated the assignment rows
-    // but left `Horse.rider` populated, so a dismissed rider kept satisfying
-    // hasValidRider() on their old horses. Both representations now end in one
-    // transaction, in lock order (Horse rows, then staff rows), and the horse
-    // write is scoped to horses the caller still owns.
+    // Equoria-6p398.6 (finding 6): dismissing ends the assignment rows and
+    // retires the rider in one transaction, in lock order (Horse rows, then
+    // staff rows), locking only horses the caller still owns.
     await withRetryableTxMapping(
       prisma.$transaction(async tx => {
         const rider = await tx.rider.findFirst({
@@ -407,10 +391,9 @@ export async function dismissRider(req, res) {
         const horseIds = [...new Set(active.map(a => a.horseId))].sort((a, b) => a - b);
 
         if (horseIds.length > 0) {
-          await tx.horse.updateMany({
-            where: { id: { in: horseIds }, userId },
-            data: { rider: null },
-          });
+          // Lock the caller's horses in ascending id order before the staff rows.
+          await tx.$queryRaw`
+            SELECT "id" FROM "horses" WHERE "id" = ANY(${horseIds}) AND "userId" = ${userId} ORDER BY "id" FOR UPDATE`;
         }
 
         // Deactivate all active assignments before dismissing

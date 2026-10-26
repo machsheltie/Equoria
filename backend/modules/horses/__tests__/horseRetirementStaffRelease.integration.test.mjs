@@ -114,16 +114,12 @@ async function staffHorse(key, horse) {
   await prisma.trainerAssignment.create({
     data: { trainerId: trainer.id, horseId: horse.id, userId: user.id, isActive: true },
   });
-  await prisma.horse.update({
-    where: { id: horse.id },
-    data: { rider: { id: rider.id, name: `${rider.firstName} ${rider.lastName}`, level: 1 } },
-  });
   return { groom, rider, trainer };
 }
 
 async function staffState(horseId) {
   const [horse, grooms, riders, trainers] = await Promise.all([
-    prisma.horse.findUnique({ where: { id: horseId }, select: { age: true, rider: true } }),
+    prisma.horse.findUnique({ where: { id: horseId }, select: { age: true } }),
     prisma.groomAssignment.findMany({
       where: { foalId: horseId },
       select: { isActive: true, endDate: true },
@@ -135,7 +131,6 @@ async function staffState(horseId) {
 }
 
 function expectAllStaffEnded(state) {
-  expect(state.horse.rider).toBeNull();
   // Ended, not deleted: each row survives as history.
   expect(state.grooms).toHaveLength(1);
   expect(state.grooms[0].isActive).toBe(false);
@@ -145,8 +140,7 @@ function expectAllStaffEnded(state) {
   expect(state.trainers).toEqual([{ isActive: false }]);
 }
 
-function expectAllStaffKept(state, riderId) {
-  expect(state.horse.rider).toMatchObject({ id: riderId });
+function expectAllStaffKept(state) {
   expect(state.grooms).toEqual([{ isActive: true, endDate: null }]);
   expect(state.riders).toEqual([{ isActive: true }]);
   expect(state.trainers).toEqual([{ isActive: true }]);
@@ -156,9 +150,7 @@ let turning21;
 let turning20;
 let legacyRetired;
 let inFoal21;
-let staff20;
 let staffLegacy;
-let staffInFoal;
 let summary;
 
 beforeAll(async () => {
@@ -220,9 +212,9 @@ beforeAll(async () => {
     equippedFeedType: 'elite',
   });
   await staffHorse('h21', turning21);
-  staff20 = await staffHorse('h20', turning20);
+  await staffHorse('h20', turning20);
   staffLegacy = await staffHorse('legacy', legacyRetired);
-  staffInFoal = await staffHorse('inFoal', inFoal21);
+  await staffHorse('inFoal', inFoal21);
 
   summary = await processHorseBirthdays({
     horseIds: [turning21.id, turning20.id, legacyRetired.id, inFoal21.id],
@@ -251,7 +243,7 @@ describe('Equoria-6p398.14 — staff leave a horse when it turns 21', () => {
   it('a horse turning 20 keeps all of its staff', async () => {
     const state = await staffState(turning20.id);
     expect(state.horse.age).toBe(20);
-    expectAllStaffKept(state, staff20.rider.id);
+    expectAllStaffKept(state);
   });
 
   it('a retired horse that is not in foal is still not fed (existing rule)', async () => {
@@ -264,7 +256,7 @@ describe('Equoria-6p398.14 — a mare who turns 21 in foal keeps her staff until
   it('on her 21st birthday she keeps her groom, rider and trainer', async () => {
     const state = await staffState(inFoal21.id);
     expect(state.horse.age).toBe(21);
-    expectAllStaffKept(state, staffInFoal.rider.id);
+    expectAllStaffKept(state);
   });
 
   it('she can still be fed', async () => {

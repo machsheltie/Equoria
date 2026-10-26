@@ -93,11 +93,6 @@ export const validateHorseCreation = [
     .optional()
     .isLength({ min: 1, max: 50 })
     .withMessage('User ID must be between 1 and 50 characters'),
-  body('finalDisplayColor')
-    .optional()
-    .isString()
-    .isLength({ min: 1, max: 100 })
-    .withMessage('Final display color must be a string up to 100 characters'),
   body('sireId').optional().isInt({ min: 1 }).withMessage('Sire ID must be a positive integer'),
   body('damId').optional().isInt({ min: 1 }).withMessage('Dam ID must be a positive integer'),
   handleValidationErrors,

@@ -2,10 +2,10 @@
  * POST /api/v1/riders/assignments under concurrency (Equoria-j8s5c): two
  * DIFFERENT riders assigned to the SAME horse leave exactly one active rider on
  * it, and ONE rider assigned to two horses is active on only one of them; in
- * both cases Horse.rider agrees with the active assignment.
+ * both cases the active assignment rows say who rides.
  *
  * Assigning a rider replaces whoever rides the horse. Since Equoria-6p398.6
- * the transaction writes the Horse row (its `rider` JSON) before it
+ * the transaction locks the Horse row before it
  * deactivates the horse's active assignment, so a second transaction for the
  * same horse waits on that row and then sees the first one's committed
  * assignment. This test pins that.
@@ -104,7 +104,7 @@ describe('rider assign under concurrency (Equoria-j8s5c)', () => {
       .send({ riderId, horseId });
   };
 
-  it('leaves exactly one active rider on the horse, matching Horse.rider', async () => {
+  it('leaves exactly one active rider on the horse', async () => {
     const horse = horses[0];
     const responses = await raceBehindLock(
       barrierClient,
@@ -115,8 +115,6 @@ describe('rider assign under concurrency (Equoria-j8s5c)', () => {
 
     const active = await prisma.riderAssignment.findMany({ where: { horseId: horse.id, isActive: true } });
     expect(active).toHaveLength(1);
-    const after = await prisma.horse.findUnique({ where: { id: horse.id }, select: { rider: true } });
-    expect(after.rider?.id).toBe(active[0].riderId);
   }, 60000);
 
   // One rider assigned to two horses at once. Pre-fix both requests read "this
@@ -136,10 +134,10 @@ describe('rider assign under concurrency (Equoria-j8s5c)', () => {
 
     const active = await prisma.riderAssignment.findMany({ where: { riderId: rider.id, isActive: true } });
     expect(active).toHaveLength(1);
-    const ridden = await prisma.horse.findMany({
-      where: { userId: owner.id, rider: { path: ['id'], equals: rider.id } },
-      select: { id: true },
+    const ridden = await prisma.riderAssignment.findMany({
+      where: { riderId: rider.id, isActive: true, horse: { userId: owner.id } },
+      select: { horseId: true },
     });
-    expect(ridden.map(h => h.id)).toEqual([active[0].horseId]);
+    expect(ridden.map(a => a.horseId)).toEqual([active[0].horseId]);
   }, 60000);
 });

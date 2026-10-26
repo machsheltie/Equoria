@@ -109,6 +109,10 @@ model User {
   @@index([emailVerified])
   /// Equoria-y3nia: the Overall player XP board orders by xp.
   @@index([xp])
+  /// Equoria-cmw85.36: the player search is a case-insensitive prefix match, which
+  /// the plain unique index above cannot serve. A trigram index can (needs the
+  /// pg_trgm extension, created by the migration).
+  @@index([username(ops: raw("gin_trgm_ops"))], type: Gin, map: "User_username_trgm_idx")
 }
 
 model Notification {
@@ -164,13 +168,9 @@ model Horse {
   /// Foreign keys
   breedId                 Int?
   stableId                Int?
-  /// Genetics and appearance
-  genotype                Json?
-  phenotypicMarkings      Json?
   /// Coat color genetics (Epic 31E)
   colorGenotype           Json?                 // Allele pairs per locus: { E_Extension: "E/e", ... }
-  phenotype               Json?                 // Calculated phenotype: { color, shade, markings, ... }
-  finalDisplayColor       String?
+  phenotype               Json?                 // Calculated phenotype: { colorName, shade, markings, ... }. The one source of a horse's color and markings.
   shade                   String?
   imageUrl                String?               @default("/images/samplehorse.JPG")
   /// Traits and characteristics
@@ -240,7 +240,9 @@ model Horse {
   // earnings counter and is what the leaderboards / horseController /
   // frontend all read. The writer in backend/utils/horseUpdates.mjs was
   // re-aimed at totalEarnings in the same commit.
-  rider                   Json?
+  // Equoria-97se: the `rider` JSON copy is gone (migration
+  // 20261026140100_drop_dead_horse_columns_and_prefix_indexes); the active
+  // RiderAssignment row is the only record of who rides a horse.
   disciplineScores        Json?
   epigeneticModifiers     Json?                 @default("{\"hidden\": [], \"negative\": [], \"positive\": []}")
   /// Ultra-rare and exotic traits with acquisition metadata
@@ -309,6 +311,9 @@ model Horse {
   /// Equoria-y3nia: the Overall horse points and earnings boards.
   @@index([horseXp])
   @@index([totalEarnings])
+  /// Equoria-cmw85.24: the daily foaling job picks the mares in foal. The column is
+  /// NULL for almost every horse, so this index is tiny.
+  @@index([inFoalSinceDate])
   /// Equoria-ezx1y: indexes for high-traffic WHERE-filter queries.
   /// - sireId  → backend/modules/users/services/gdprAccountService.mjs:286
   ///   (cascade `prisma.horse.updateMany({ where: { sireId: { in: horseIds } } })`)
@@ -764,8 +769,13 @@ model GroomAssignment {
   /// `groom_assignments_active_foalId_groomId_key ... WHERE "isActive"`,
   /// created in raw SQL by migration
   /// 20260907120000_kccmt_partial_unique_active_staff_assignments.
+  /// Equoria-cmw85.35: the plain [foalId] index was kept off the drop list because the only
+  /// other foalId-leading index is the ACTIVE-only partial unique, which cannot serve
+  /// history reads.
   @@index([foalId])
   @@index([groomId])
+  /// Equoria-cmw85.25: "My grooms", salary and stats read one player's assignments.
+  @@index([userId, createdAt(sort: Desc)])
   @@map("groom_assignments")
 }
 
@@ -803,7 +813,9 @@ model GroomInteraction {
   foal            Horse            @relation(fields: [foalId], references: [id], onDelete: Cascade)
   groom           Groom            @relation(fields: [groomId], references: [id], onDelete: Cascade)
 
-  @@index([foalId])
+  /// Equoria-cmw85.25: daily care and milestone checks read one foal's interactions in a
+  /// time range. Replaces the plain [foalId] index, which this one covers.
+  @@index([foalId, timestamp])
   @@index([groomId])
   @@map("groom_interactions")
 }
@@ -874,7 +886,11 @@ model Show {
   hostUser           User?               @relation(fields: [hostUserId], references: [id])
   createdByUser      User?               @relation("ShowCreator", fields: [createdByUserId], references: [id])
 
-  @@index([status])
+  /// Equoria-cmw85.26: the browse page filters on status and sorts by runDate; the
+  /// dashboard's upcoming shows filter on runDate alone. [status, runDate] replaces the
+  /// plain [status] index it covers.
+  @@index([status, runDate])
+  @@index([runDate])
   @@index([closeDate])
   /// Equoria-c7mx0: serves the show-execution reaper's stale-'executing'
   /// scan. `map` pins the name the migration created so `prisma migrate dev`
@@ -1002,6 +1018,11 @@ model CompetitionResult {
   /// entered) per horse and per discipline from this index alone.
   @@index([discipline, placement, horseId])
   @@index([placement, horseId])
+  /// Equoria-cmw85.23: a horse's recent results (horse pages), and the leaderboard and
+  /// recent-winner reads by discipline or placement over a date range.
+  @@index([horseId, runDate(sort: Desc)])
+  @@index([discipline, runDate])
+  @@index([placement, runDate(sort: Desc)])
   @@map("competition_results")
 }
 
@@ -1019,6 +1040,10 @@ model TrainingLog {
   horseId     Int
   horse       Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
 
+  /// Equoria-cmw85.7: every training-eligibility check reads a horse's latest session,
+  /// optionally for one discipline.
+  @@index([horseId, discipline, trainedAt(sort: Desc)])
+  @@index([horseId, trainedAt(sort: Desc)])
   @@map("training_logs")
 }
 
@@ -1304,6 +1329,14 @@ model GroomSalaryPayment {
   amount      Int
   /// Payment date
   paymentDate DateTime @default(now())
+  /// The pay week this row belongs to: the Eastern (game-clock) Monday that starts the
+  /// week, as 'YYYY-MM-DD' (Equoria-h7518). NULL only on a row written by code from
+  /// before the column existed. The database holds at most ONE 'paid' row per
+  /// (userId, groomId, weekKey, paymentType): a partial unique index that exists only in
+  /// migration SQL (Prisma cannot express a partial index), like the three staff-assignment
+  /// ones. Rows that record a missed week are not limited: one week can be missed more
+  /// than once, and a missed week can be paid later.
+  weekKey     String?
   /// Type of payment (weeklySalary, bonus, etc.)
   paymentType String   @default("weeklySalary")
   /// Payment status (paid, missedInsufficientFunds, etc.)
@@ -1397,7 +1430,6 @@ model GroomMetrics {
   groom Groom @relation(fields: [groomId], references: [id], onDelete: Cascade)
 
   @@index([reputationScore])
-  @@index([groomId])
   @@map("groom_metrics")
 }
 
@@ -1431,7 +1463,6 @@ model TraitHistoryLog {
   horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
   groom Groom? @relation(fields: [groomId], references: [id], onDelete: SetNull)
 
-  @@index([horseId])
   @@index([horseId, timestamp])
   @@index([traitName])
   @@index([sourceType])
@@ -1480,7 +1511,6 @@ model MilestoneTraitLog {
   horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
   groom Groom? @relation(fields: [groomId], references: [id], onDelete: SetNull)
 
-  @@index([horseId])
   @@index([horseId, milestoneType])
   @@index([milestoneType])
   @@index([groomId])
@@ -1520,7 +1550,6 @@ model UltraRareTraitEvent {
   horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
   groom Groom? @relation(fields: [groomId], references: [id], onDelete: SetNull)
 
-  @@index([horseId])
   @@index([traitName])
   @@index([traitTier])
   @@index([eventType])
@@ -1552,7 +1581,6 @@ model GroomHorseSynergy {
   horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
 
   @@unique([groomId, horseId])
-  @@index([groomId])
   @@index([horseId])
   @@index([synergyScore])
   @@map("groom_horse_synergies")
@@ -1583,7 +1611,6 @@ model GroomAssignmentLog {
   groom Groom @relation(fields: [groomId], references: [id], onDelete: Cascade)
   horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
 
-  @@index([groomId])
   @@index([horseId])
   @@index([assignedAt])
   @@index([groomId, assignedAt])
@@ -1626,7 +1653,6 @@ model GroomTalentSelections {
 
   groom   Groom   @relation(fields: [groomId], references: [id], onDelete: Cascade)
 
-  @@index([groomId])
   @@map("groom_talent_selections")
 }
 
@@ -1676,9 +1702,11 @@ model Rider {
   /// serialise it (see RiderRetirementSchedule).
   riderRetirementSchedule RiderRetirementSchedule?
 
-  @@index([userId])
+  /// Equoria-cmw85.25: the roster pages and the weekly retirement job. Each replaces a
+  /// plain single-column index (userId, retired) that it covers.
+  @@index([userId, retired])
   @@index([level])
-  @@index([retired])
+  @@index([retired, careerWeeks])
   @@map("riders")
 }
 
@@ -1781,9 +1809,9 @@ model Trainer {
   assignments  TrainerAssignment[]
   user         User?               @relation(fields: [userId], references: [id])
 
-  @@index([userId])
+  @@index([userId, retired])
   @@index([level])
-  @@index([retired])
+  @@index([retired, careerWeeks])
   @@map("trainers")
 }
 
@@ -1870,6 +1898,9 @@ model ForumThread {
   lastActivityAt DateTime     @default(now())
   createdAt      DateTime     @default(now())
   posts          ForumPost[]
+
+  /// Equoria-lffdv: the author's threads (profile page, account erasure).
+  @@index([authorId])
 }
 
 model ForumPost {
@@ -1883,6 +1914,8 @@ model ForumPost {
 
   /// Equoria-bvddn.23: FK index for thread-page post lookups.
   @@index([threadId])
+  /// Equoria-lffdv: the author's posts (profile page, account erasure).
+  @@index([authorId])
 }
 
 model DirectMessage {
@@ -1897,9 +1930,12 @@ model DirectMessage {
   isRead      Boolean  @default(false)
   createdAt   DateTime @default(now())
 
-  /// Equoria-bvddn.23: FK indexes for sent-box and inbox lookups.
+  /// Equoria-bvddn.23: FK indexes for sent-box and inbox lookups (the foreignKeyIndexes
+  /// sentinel pins both as single-column btrees).
   @@index([senderId])
   @@index([recipientId])
+  /// Equoria-lffdv: the inbox is read newest first.
+  @@index([recipientId, createdAt])
 }
 
 enum ClubType {
@@ -1946,6 +1982,9 @@ model Club {
   createdAt   DateTime         @default(now())
   members     ClubMembership[]
   elections   ClubElection[]
+
+  /// Equoria-lffdv: the clubs a player leads (account erasure, leader checks).
+  @@index([leaderId])
 }
 
 model ClubMembership {
@@ -1983,6 +2022,9 @@ model ClubElection {
   runoffOfId        Int?             @unique
   runoffOf          ClubElection?    @relation("ElectionRunoff", fields: [runoffOfId], references: [id], onDelete: SetNull)
   runoff            ClubElection?    @relation("ElectionRunoff")
+
+  /// Equoria-lffdv: a club's elections.
+  @@index([clubId])
 }
 
 model ClubCandidate {
@@ -2032,8 +2074,10 @@ model HorseSale {
 
   /// Equoria-bvddn.23: FK index for per-horse sale history.
   @@index([horseId])
-  @@index([sellerId])
-  @@index([buyerId])
+  /// Equoria-cmw85.26: sale history reads one seller's or buyer's sales, newest first.
+  /// Each replaces the plain single-column index it covers.
+  @@index([sellerId, soldAt(sort: Desc)])
+  @@index([buyerId, soldAt(sort: Desc)])
   @@index([soldAt])
   @@map("horse_sales")
 }
@@ -2077,7 +2121,6 @@ model ShowEntry {
   createdAt DateTime @default(now())
 
   @@unique([showId, horseId])
-  @@index([showId])
   @@index([horseId])
   @@index([userId])
   @@index([groomId])
@@ -2099,7 +2142,6 @@ model StaffMarketplaceState {
   refreshCount Int      @default(0)
 
   @@unique([userId, staffType])
-  @@index([userId])
   @@map("staff_marketplace_state")
 }
 

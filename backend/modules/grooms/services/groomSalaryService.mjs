@@ -83,7 +83,12 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { gameDayIndex, startOfGameDayIndex, startOfGameWeek } from '../../../utils/gameTime.mjs';
+import {
+  gameDateKey,
+  gameDayIndex,
+  startOfGameDayIndex,
+  startOfGameWeek,
+} from '../../../utils/gameTime.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
   debitMoneyOrThrow,
@@ -231,6 +236,8 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
     // Equoria-icqqm: pay-week window for the idempotency predicate.
     const payWeekStart = getPayWeekStart(now);
     const payWeekEnd = startOfGameDayIndex(gameDayIndex(payWeekStart) + 7);
+    // Equoria-h7518: the pay week as a key the database can hold a unique on.
+    const weekKey = gameDateKey(payWeekStart);
 
     const results = {
       processed: 0,
@@ -475,6 +482,7 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
                   userId,
                   amount: salary,
                   paymentDate: now,
+                  weekKey,
                   paymentType: 'weeklySalary',
                   status: 'paid',
                 })),
@@ -518,6 +526,20 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
             { timeout: 30000 }, // 30s — guard against 5s default under load
           );
         } catch (txError) {
+          // Equoria-h7518: the database refused a second PAID row for this groom and pay
+          // week (partial unique index groom_salary_payments_paid_week_key). The pay-week
+          // lock and the paid-rows read above should make that unreachable, so reaching it
+          // means the week was already paid by a run that got past them. The whole
+          // transaction rolled back, so nothing was debited twice. Treat the week as
+          // already paid: it must not fall through to the unpaid-fee path, which would
+          // put an already-paid groom into grace.
+          if (txError?.code === 'P2002') {
+            logger.warn(
+              `[groomSalaryService] Pay week ${weekKey} was already paid for user ${user.username}; the database refused a second paid row`,
+            );
+            results.skipped++;
+            continue;
+          }
           if (txError instanceof InsufficientFundsError) {
             // Insufficient funds — enter grace, or release after a full week.
             // The handler operates OUTSIDE the aborted tx and opens its own

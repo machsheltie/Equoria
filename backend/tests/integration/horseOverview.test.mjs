@@ -73,6 +73,10 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
     await prisma.trainingLog.deleteMany({
       where: { horse: { name: { startsWith: 'TestHorse' } } },
     });
+    await prisma.riderAssignment.deleteMany({
+      where: { horse: { name: { startsWith: 'TestHorse' } } },
+    });
+    await prisma.rider.deleteMany({ where: { lastName: { startsWith: 'TestFixture-97se-' } } });
     await prisma.horse.deleteMany({
       where: { name: { startsWith: 'TestHorse' } },
     });
@@ -134,11 +138,6 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
           saddleBonus: 5,
           bridleBonus: 3,
         },
-        rider: {
-          name: 'Jenna Black',
-          bonusPercent: 0.08,
-          penaltyPercent: 0,
-        },
       },
     });
   }, 120000); // 120s — cleanup + user/horse create can be slow under full-suite load
@@ -152,6 +151,10 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
     await prisma.trainingLog.deleteMany({
       where: { horse: { name: { startsWith: 'TestHorse' } } },
     });
+    await prisma.riderAssignment.deleteMany({
+      where: { horse: { name: { startsWith: 'TestHorse' } } },
+    });
+    await prisma.rider.deleteMany({ where: { lastName: { startsWith: 'TestFixture-97se-' } } });
     await prisma.horse.deleteMany({
       where: { name: { startsWith: 'TestHorse' } },
     });
@@ -178,6 +181,23 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
           discipline: 'Dressage',
           trainedAt: lastTrainingDate,
         },
+      });
+
+      // The horse's rider is its active RiderAssignment.
+      const overviewRider = await prisma.rider.create({
+        data: {
+          firstName: 'Jenna',
+          lastName: `TestFixture-97se-${randomBytes(4).toString('hex')}`,
+          personality: 'daring',
+          skillLevel: 'experienced',
+          speciality: 'Dressage',
+          weeklyRate: 200,
+          level: 4,
+          userId: testUser.id,
+        },
+      });
+      await prisma.riderAssignment.create({
+        data: { riderId: overviewRider.id, horseId: testHorse.id, userId: testUser.id, isActive: true },
       });
 
       // Create test show for competition result
@@ -241,11 +261,12 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       expect(data.lastShowResult.showName).toBe('Summer Invitational');
       expect(data.lastShowResult.placement).toBe(1);
 
-      // Verify rider info
+      // Verify rider info: the horse's active RiderAssignment (Equoria-97se).
       expect(data.rider).toEqual({
-        name: 'Jenna Black',
-        bonusPercent: 0.08,
-        penaltyPercent: 0,
+        id: overviewRider.id,
+        name: `${overviewRider.firstName} ${overviewRider.lastName}`,
+        level: 4,
+        speciality: 'Dressage',
       });
 
       // Verify tack info
@@ -347,7 +368,6 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
           disciplineScores: {},
           totalEarnings: 0,
           tack: {},
-          rider: null,
         },
       });
 

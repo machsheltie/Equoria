@@ -29,18 +29,13 @@ import { retirementAgeYears } from '../../../constants/horseAgePolicy.mjs';
 import { HorseRetiredError } from '../../../errors/HorseRetiredError.mjs';
 
 /**
- * End every active groom, rider and trainer assignment on one horse and clear
- * its `rider` JSON. `rider` is written only when set, so a staffless horse costs
- * no extra horse write.
+ * End every active groom, rider and trainer assignment on one horse.
  *
  * @param {object} tx - interactive transaction client
- * @param {{ horseId: number, rider: unknown }} horse - the locked horse's id and current rider JSON
+ * @param {number} horseId - the locked horse's id
  * @returns {Promise<{ groomAssignmentsEnded: number, riderAssignmentsEnded: number, trainerAssignmentsEnded: number }>}
  */
-async function releaseHorseStaff(tx, { horseId, rider }) {
-  if (rider !== null && rider !== undefined) {
-    await tx.horse.update({ where: { id: horseId }, data: { rider: null } });
-  }
+async function releaseHorseStaff(tx, horseId) {
   const ended = { isActive: false };
   const grooms = await tx.groomAssignment.updateMany({
     where: { foalId: horseId, isActive: true },
@@ -74,12 +69,12 @@ export async function writeBirthdayTx(tx, { horseId, age, retiring }) {
   const horse = await tx.horse.update({
     where: { id: horseId },
     data: { age },
-    select: { inFoalSinceDate: true, rider: true },
+    select: { inFoalSinceDate: true },
   });
   if (!retiring || horse.inFoalSinceDate !== null) {
     return null;
   }
-  return releaseHorseStaff(tx, { horseId, rider: horse.rider });
+  return releaseHorseStaff(tx, horseId);
 }
 
 /**
@@ -93,12 +88,12 @@ export async function writeBirthdayTx(tx, { horseId, age, retiring }) {
 export async function releaseStaffIfRetiredTx(tx, horseId) {
   const horse = await tx.horse.findUnique({
     where: { id: horseId },
-    select: { age: true, rider: true },
+    select: { age: true },
   });
   if (!horse || horse.age === null || horse.age < retirementAgeYears) {
     return null;
   }
-  return releaseHorseStaff(tx, { horseId, rider: horse.rider });
+  return releaseHorseStaff(tx, horseId);
 }
 
 /**

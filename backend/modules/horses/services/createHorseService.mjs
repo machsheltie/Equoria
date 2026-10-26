@@ -215,7 +215,6 @@ export async function createHorseFromRequest(reqBody, userId) {
     phenotype,
     ...(sireId && { sireId }),
     ...(damId && { damId }),
-    ...(reqBody.finalDisplayColor && { finalDisplayColor: reqBody.finalDisplayColor }),
   };
 
   const newHorse = await createHorse(horseData);

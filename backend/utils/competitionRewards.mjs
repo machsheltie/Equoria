@@ -68,19 +68,4 @@ function calculateEntryFees(entryFee, numEntries) {
   return entryFee * numEntries;
 }
 
-/**
- * Validate that a horse has a rider (required for competition entry)
- * @param {Object} horse - Horse object
- * @returns {boolean} - True if horse has a valid rider
- */
-function hasValidRider(horse) {
-  return horse.rider !== null && horse.rider !== undefined && typeof horse.rider === 'object';
-}
-
-export {
-  calculatePrizeDistribution,
-  getRelevantStats,
-  calculateStatGains,
-  calculateEntryFees,
-  hasValidRider,
-};
+export { calculatePrizeDistribution, getRelevantStats, calculateStatGains, calculateEntryFees };

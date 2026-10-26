@@ -4,16 +4,16 @@
  *
  * The defect: the endpoint authorized on the ASSIGNMENT ROW's stored `userId`
  * only, accepted an inactive (historical) row, and then cleared
- * `Horse.rider` by horse id with no ownership predicate at all. A player who
- * had once put a rider on a horse could therefore null the CURRENT owner's
- * rider — or their own replacement rider — long after that assignment stopped
- * being the horse's rider, and the two representations (the assignment rows
- * and `Horse.rider`) drifted apart.
+ * the horse by id with no ownership predicate at all. A player who had once put
+ * a rider on a horse could therefore end the CURRENT owner's rider — or their
+ * own replacement rider — long after that assignment stopped being the horse's
+ * rider.
  *
- * What is asserted here is persisted state, never a status code alone:
- *   - `Horse.rider` (the JSON the competition engine reads through
- *     `hasValidRider`), and
- *   - the `RiderAssignment` rows' `isActive` flags (the roster representation).
+ * Equoria-97se: the Horse.rider JSON copy is gone, so the RiderAssignment rows
+ * are the only record of who rides a horse.
+ *
+ * What is asserted here is persisted state, never a status code alone: the
+ * `RiderAssignment` rows' `isActive` flags.
  *
  * Real DB, real HTTP, real CSRF, real marketplace purchase for the ownership
  * transfer, scoped fail-loud fixtures. No mocks.
@@ -125,8 +125,17 @@ function buyRequest(token, horseId) {
 async function horseRow(horseId) {
   return prisma.horse.findUnique({
     where: { id: horseId },
-    select: { id: true, userId: true, rider: true },
+    select: { id: true, userId: true },
   });
+}
+
+/** The rider on the horse now: its active RiderAssignment, or null. */
+async function activeRiderId(horseId) {
+  const row = await prisma.riderAssignment.findFirst({
+    where: { horseId, isActive: true },
+    select: { riderId: true },
+  });
+  return row?.riderId ?? null;
 }
 
 async function assignmentRow(assignmentId) {
@@ -195,8 +204,7 @@ describe('rider assignment ownership (finding 6)', () => {
     // being erased, which the pre-fix endpoint did while answering HTTP 200.
     const persistedHorse = await horseRow(horse.id);
     expect(persistedHorse.userId).toBe(buyer.id);
-    expect(persistedHorse.rider).not.toBeNull();
-    expect(persistedHorse.rider.id).toBe(buyerRider.id);
+    expect(await activeRiderId(horse.id)).toBe(buyerRider.id);
 
     expect((await assignmentRow(buyerAssignmentId)).isActive).toBe(true);
     expect((await assignmentRow(sellerAssignmentId)).isActive).toBe(false);
@@ -222,8 +230,7 @@ describe('rider assignment ownership (finding 6)', () => {
       expect(stale.status).toBe(409);
     }
 
-    const persistedHorse = await horseRow(horse.id);
-    expect(persistedHorse.rider.id).toBe(buyerRider.id);
+    expect(await activeRiderId(horse.id)).toBe(buyerRider.id);
     expect((await assignmentRow(buyerAssignmentId)).isActive).toBe(true);
   }, 60000);
 
@@ -240,41 +247,39 @@ describe('rider assignment ownership (finding 6)', () => {
     const stale = await unassignRequest(seller.token, firstAssignmentId);
     expect(stale.status).toBe(409);
 
-    const persistedHorse = await horseRow(horse.id);
-    expect(persistedHorse.rider).not.toBeNull();
-    expect(persistedHorse.rider.id).toBe(sellerRiderTwo.id);
+    expect(await activeRiderId(horse.id)).toBe(sellerRiderTwo.id);
     expect((await assignmentRow(secondAssignmentId)).isActive).toBe(true);
     expect((await assignmentRow(firstAssignmentId)).isActive).toBe(false);
   }, 60000);
 
-  it('a legitimate unassignment clears the assignment row and the horse rider together', async () => {
+  it('a legitimate unassignment ends the assignment and leaves the horse riderless', async () => {
     const assigned = await assignRiderRequest(seller.token, sellerRider.id, horse.id);
     const assignmentId = assigned.body.data.id;
-    expect((await horseRow(horse.id)).rider.id).toBe(sellerRider.id);
+    expect(await activeRiderId(horse.id)).toBe(sellerRider.id);
 
     const removed = await unassignRequest(seller.token, assignmentId);
     expect(removed.status).toBe(200);
     expect(removed.body.success).toBe(true);
 
-    expect((await horseRow(horse.id)).rider).toBeNull();
+    expect(await activeRiderId(horse.id)).toBeNull();
     expect((await assignmentRow(assignmentId)).isActive).toBe(false);
   }, 60000);
 
-  it('a failure AFTER the horse write rolls the unassignment back (both representations)', async () => {
+  it('a failure after the horse lock rolls the unassignment back', async () => {
     // Equoria-6p398.21. The unassign transaction writes in this order: clear
-    // `Horse.rider`, THEN deactivate the assignment row. A failure on that second
+    // lock the horse row, THEN deactivate the assignment row. A failure on that second
     // write must undo the first. The old forcing mechanism (a composite-unique
     // rejection on deactivation) was removed with Equoria-kccmt, and deactivation
     // cannot fail on data any more, so the failure is forced the way a real
     // contended database forces one: a separate session holds the ASSIGNMENT row
     // FOR UPDATE, so the second write blocks past Prisma's interactive-transaction
-    // timeout and the transaction expires. The first write (`Horse.rider = null`)
+    // timeout and the transaction expires. The first step (the horse lock)
     // has by then already been executed inside it. Nothing is mocked: every query is
     // the production query, delayed by a lock the database arbitrates, and the
     // endpoint's own retryable-transaction mapping answers 503.
     const assigned = await assignRiderRequest(seller.token, sellerRider.id, horse.id);
     const assignmentId = assigned.body.data.id;
-    expect((await horseRow(horse.id)).rider.id).toBe(sellerRider.id);
+    expect(await activeRiderId(horse.id)).toBe(sellerRider.id);
 
     const barrier = await holdLock(
       barrierClient,
@@ -309,24 +314,24 @@ describe('rider assignment ownership (finding 6)', () => {
     const finalHorse = await barrierClient.$transaction(
       async tx => {
         await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ${horse.id} FOR UPDATE`;
-        const rows = await tx.$queryRaw`SELECT "rider" FROM "horses" WHERE "id" = ${horse.id}`;
-        return rows[0];
+        return tx.riderAssignment.findFirst({
+          where: { horseId: horse.id, isActive: true },
+          select: { riderId: true },
+        });
       },
       { maxWait: 20000, timeout: 30000 },
     );
 
-    // Neither representation moved: the horse still carries the rider and the
-    // assignment is still the active one. A transaction that wrote the horse
-    // outside `tx` would leave `rider` null with the assignment still active.
-    expect(finalHorse.rider).not.toBeNull();
-    expect(finalHorse.rider.id).toBe(sellerRider.id);
+    // Nothing moved: the horse still carries the rider and the assignment is
+    // still the active one.
+    expect(finalHorse.riderId).toBe(sellerRider.id);
     expect((await assignmentRow(assignmentId)).isActive).toBe(true);
   }, 90000);
 
-  it('a failed assignment write leaves the horse rider untouched (both representations roll back)', async () => {
+  it('a failed assignment write leaves the horse rider untouched', async () => {
     const assigned = await assignRiderRequest(seller.token, sellerRider.id, horse.id);
     const assignmentId = assigned.body.data.id;
-    expect((await horseRow(horse.id)).rider.id).toBe(sellerRider.id);
+    expect(await activeRiderId(horse.id)).toBe(sellerRider.id);
 
     // FORCING MECHANISM CHANGED (Equoria-kccmt) — the invariant is unchanged.
     // This test used to reach a genuine in-transaction failure by planting a
@@ -335,14 +340,14 @@ describe('rider assignment ownership (finding 6)', () => {
     // defect Equoria-kccmt removed: it capped assignment history at one row per
     // pair. Deactivation can no longer fail that way, so the failure is now
     // forced on the ASSIGN transaction instead, which writes in the same order
-    // and is the stronger case — `Horse.rider`, then the deactivation, then the
-    // create, three writes of which two must be undone.
+    // and is the stronger case — the horse lock, then the deactivation, then the
+    // create, where the deactivation must be undone.
     //
     // The failure is still genuine and unmocked: a NUL byte is not
     // representable in a Postgres `text` value ("invalid byte sequence for
     // encoding UTF8: 0x00"), so `riderAssignment.create` really fails at the
-    // database, after `Horse.rider` has already been written inside the
-    // transaction. Nothing about the request is faked; `notes` passes the
+    // database, after the earlier deactivation has already been written inside
+    // the transaction. Nothing about the request is faked; `notes` passes the
     // route's own validation (optional, max 500 characters).
     const poisonNotes = `note${String.fromCharCode(0)}end`;
     const attempted = await fetchCsrf(app).then(csrf =>
@@ -359,14 +364,10 @@ describe('rider assignment ownership (finding 6)', () => {
     // is a visible decision rather than a silent one.
     expect(attempted.status).toBe(500);
 
-    // Neither representation moved: the horse still carries the FIRST rider and
-    // the first assignment is still the active one. A non-transactional
-    // controller would have left the horse pointing at sellerRiderTwo with no
-    // assignment row to match, or an inactive first assignment and no
-    // replacement.
-    const persistedHorse = await horseRow(horse.id);
-    expect(persistedHorse.rider).not.toBeNull();
-    expect(persistedHorse.rider.id).toBe(sellerRider.id);
+    // Nothing moved: the horse still carries the FIRST rider and the first
+    // assignment is still the active one. A non-transactional controller would
+    // have left an inactive first assignment and no replacement.
+    expect(await activeRiderId(horse.id)).toBe(sellerRider.id);
     expect((await assignmentRow(assignmentId)).isActive).toBe(true);
     expect(
       await prisma.riderAssignment.count({

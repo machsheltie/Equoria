@@ -134,13 +134,12 @@ function expectRetiredRefusal(res) {
 }
 
 async function activeStaffOn(horseId) {
-  const [grooms, riders, trainers, horse] = await Promise.all([
+  const [grooms, riders, trainers] = await Promise.all([
     prisma.groomAssignment.count({ where: { foalId: horseId, isActive: true } }),
     prisma.riderAssignment.count({ where: { horseId, isActive: true } }),
     prisma.trainerAssignment.count({ where: { horseId, isActive: true } }),
-    prisma.horse.findUnique({ where: { id: horseId }, select: { rider: true } }),
   ]);
-  return { grooms, riders, trainers, rider: horse.rider };
+  return { grooms, riders, trainers };
 }
 
 let retired22;
@@ -230,12 +229,11 @@ describe('Equoria-6p398.14 — a retired horse (21+, not in foal) is given no ne
     expect(ok.status).toBe(201);
   });
 
-  it('nothing was written for the retired horse: no active assignment, no rider copy', async () => {
+  it('nothing was written for the retired horse: no active assignment', async () => {
     expect(await activeStaffOn(retired22.id)).toEqual({
       grooms: 0,
       riders: 0,
       trainers: 0,
-      rider: null,
     });
     const control = await activeStaffOn(active20.id);
     expect(control).toMatchObject({ grooms: 1, riders: 1, trainers: 1 });

@@ -111,7 +111,6 @@ export async function getHorseOverview(req, res) {
         disciplineScores: true,
         totalEarnings: true,
         tack: true,
-        rider: true,
         // Health-band inputs (A11): required by withHealth() / getFeedHealth() /
         // getVetHealth() to derive feedHealth, vetHealth, displayedHealth on
         // the response. See backend/utils/horseHealth.mjs.
@@ -173,6 +172,26 @@ export async function getHorseOverview(req, res) {
       );
     }
 
+    // The horse's rider is its active RiderAssignment (Equoria-97se: the Horse.rider
+    // JSON copy is gone). Shape kept: { id, name, level, speciality }, else 'none'.
+    const riderAssignment = await prisma.riderAssignment.findFirst({
+      where: { horseId, isActive: true },
+      orderBy: { id: 'desc' },
+      select: {
+        rider: {
+          select: { id: true, firstName: true, lastName: true, level: true, speciality: true },
+        },
+      },
+    });
+    const assignedRider = riderAssignment
+      ? {
+          id: riderAssignment.rider.id,
+          name: `${riderAssignment.rider.firstName} ${riderAssignment.rider.lastName}`,
+          level: riderAssignment.rider.level,
+          speciality: riderAssignment.rider.speciality,
+        }
+      : 'none';
+
     // Get most recent show result
     let lastShowResult = 'never';
     try {
@@ -217,7 +236,7 @@ export async function getHorseOverview(req, res) {
       nextTrainingDate,
       earnings: horse.totalEarnings || 0,
       lastShowResult,
-      rider: horse.rider || 'none',
+      rider: assignedRider,
       tack: horse.tack || {},
       // Current Status (Equoria-0l0tq): dates and the server's can-do-now verdicts.
       lastShod: horse.lastShod ? horse.lastShod.toISOString() : null,

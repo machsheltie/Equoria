@@ -239,8 +239,6 @@ export interface HorseSummary {
   // Earnings fields (API may return either name)
   totalEarnings?: number;
   earnings?: number;
-  // Coat color from genetics system
-  finalDisplayColor?: string;
   // Full phenotype JSONB — returned by GET /horses/:id; colorName is the player-visible color
   phenotype?: { colorName?: string; [key: string]: unknown } | null;
   // Epic 31D — horse temperament (e.g. "Calm", "Spirited"). Null/undefined for legacy horses.

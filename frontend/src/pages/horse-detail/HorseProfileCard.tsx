@@ -158,15 +158,11 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
       <div className="flex flex-wrap gap-3 text-sm fantasy-body text-[var(--text-secondary)]">
         <span>Breed: {getBreedName(horse.breed)}</span>
         <span>•</span>
-        {/* Equoria-lsi5 + Equoria-iwy3 — mirror HorseCard.tsx:130
-            fallback chain. phenotype.colorName is the canonical
-            genetics-derived color; finalDisplayColor is the
-            vestigial pre-31E column (NULL for all canonical DB
-            horses). Legacy horses (phenotype: null,
-            finalDisplayColor: null) must NEVER render 'Unknown';
-            'not recorded' is the honest fallback. */}
+        {/* Equoria-lsi5 + Equoria-iwy3 — phenotype.colorName is the canonical
+            genetics-derived color. Legacy horses (phenotype: null) must NEVER
+            render 'Unknown'; 'not recorded' is the honest fallback. */}
         <span data-testid="horse-detail-color">
-          Color: {horse.phenotype?.colorName ?? horse.finalDisplayColor ?? 'not recorded'}
+          Color: {horse.phenotype?.colorName ?? 'not recorded'}
         </span>
         <span>•</span>
         <span>Age: {horse.age}</span>

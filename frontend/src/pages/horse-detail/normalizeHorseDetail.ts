@@ -135,10 +135,8 @@ export function normalizeHorseDetail(raw: HorseSummary): Horse {
     userId: raw.userId,
     parentIds: raw.parentIds,
     tack: raw.tack,
-    // Equoria-lsi5 + Equoria-iwy3: expose BOTH colour fields so the render layer
-    // applies phenotype.colorName ?? finalDisplayColor ?? 'not recorded'. The
-    // legacy finalDisplayColor column is NULL for every canonical-DB horse.
-    finalDisplayColor: raw.finalDisplayColor ?? undefined,
+    // Equoria-lsi5 + Equoria-iwy3: the render layer shows phenotype.colorName,
+    // else 'not recorded'.
     phenotype: phenotypeRecord
       ? { ...phenotypeRecord, colorName: stringOrUndefined(phenotypeRecord.colorName) }
       : null,

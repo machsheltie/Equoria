@@ -15,6 +15,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { finalizeNotificationAfterCommit } from '../../../utils/notificationService.mjs';
+import { gameDateKey } from '../../../utils/gameTime.mjs';
 // Equoria-bgdfb: what an unpaid week becomes, and the two ways it stops being owed.
 import { ARREARS_OWED_STATUSES, ARREARS_WRITTEN_OFF_STATUS } from './groomFeeBasisService.mjs';
 import {
@@ -119,6 +120,7 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
               userId,
               amount: salary,
               paymentDate: payWeekStart,
+              weekKey: gameDateKey(payWeekStart),
               paymentType: 'weeklySalary',
               status: 'terminatedNonPayment',
             },
@@ -218,6 +220,7 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
             // says which week it is. (A `missedGracePeriod` row is not owed — its
             // week is already recorded by the `missedInsufficientFunds` row.)
             paymentDate: payWeekStart,
+            weekKey: gameDateKey(payWeekStart),
             paymentType: 'weeklySalary',
             // The distinction the existing vocabulary already draws: the week the
             // fee was first missed, versus a later failure inside the same week.
@@ -334,6 +337,7 @@ export async function recordUncollectedFees(userId, unpaid, payWeekStart, cause)
             // Equoria-bgdfb: the pay week this row records — see the note in
             // handleUnpaidFees. This week is OWED, and a later collection settles it.
             paymentDate: payWeekStart,
+            weekKey: gameDateKey(payWeekStart),
             paymentType: 'weeklySalary',
             // A status of its own, because "we could not take the money" is not the
             // same event as "the player did not have it", and a reader of this table

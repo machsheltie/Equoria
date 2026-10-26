@@ -33,7 +33,6 @@ export type HorseListItemDto = Omit<
   | 'tack'
   | 'lastGroomed'
   | 'earnings'
-  | 'finalDisplayColor'
   | 'equippedFeedType'
   | 'pregnancySireId'
   | 'pregnancyFeedingsByTier'
