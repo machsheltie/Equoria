@@ -5,7 +5,7 @@ import { AppError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { MS_PER_WEEK } from '../constants/time.mjs';
-import { satisfiesRole } from '../modules/staff/index.mjs';
+import { cachedAccountStanding, satisfiesRole, standingRefusal } from '../modules/staff/index.mjs';
 
 /**
  * In-memory TTL cache for User.passwordChangedAt — Equoria-2bbf.
@@ -279,6 +279,27 @@ export const authenticateToken = async (req, res, next) => {
           `[auth:${requestId}] Token rejected: iat predates passwordChangedAt for user ${user.id}`,
         );
         return respondUnauthorized('Session invalidated. Please login again.');
+      }
+    }
+
+    // Equoria-w47x7: a frozen or banned account cannot act. Read through a short
+    // cache that every conduct action evicts, so it bites on the next request.
+    if (typeof user.id === 'string' && user.id.length > 0) {
+      let standing;
+      try {
+        standing = await cachedAccountStanding(user.id);
+      } catch (standingError) {
+        logger.error(
+          `[auth:${requestId}] conduct standing lookup failed for user ${user.id}: ${standingError.message}`,
+        );
+        return respondUnauthorized('Authentication unavailable. Please retry.');
+      }
+      const refusal = standingRefusal(standing);
+      if (refusal) {
+        logger.warn(
+          `[auth:${requestId}] Request refused: account ${standing.state} for user ${user.id}`,
+        );
+        return res.status(refusal.status).json(refusal.body);
       }
     }
 

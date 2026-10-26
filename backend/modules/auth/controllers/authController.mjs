@@ -36,6 +36,12 @@ function getFakeBcryptHash() {
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { resetAuthRateLimit } from '../../../middleware/authRateLimiter.mjs';
+import {
+  accountStanding,
+  recordLoginSighting,
+  refuseSignIn,
+  standingRefusal,
+} from '../../staff/index.mjs';
 import { createTokenPair, rotateRefreshToken } from '../../../utils/tokenRotationService.mjs';
 // Equoria-vhv3i: starter-horse creation extracted into
 // services/onboardingService.mjs (AC item 2). register() now calls
@@ -127,6 +133,11 @@ export const register = async (req, res, next) => {
     // Validate input
     if (!username || !email || !password) {
       throw new ValidationError('Username, email, and password are required');
+    }
+
+    // Equoria-w47x7: a banned IP or device cannot create an account.
+    if (await refuseSignIn(req, res)) {
+      return undefined;
     }
 
     // COPPA age gate (Equoria-iqzn). Server-authoritative: enforced here,
@@ -251,6 +262,7 @@ export const register = async (req, res, next) => {
     // Equoria-plw0h: pass user.id so the issued token is bound to the
     // same identifier authenticateToken will resolve on the next mutation.
     const csrfToken = issueCsrfToken(req, res, { userId: user.id });
+    await recordLoginSighting(req, res, user.id);
 
     res.status(201).json({
       success: true,
@@ -320,6 +332,12 @@ export const login = async (req, res, next) => {
       throw new AppError('Invalid credentials', 401);
     }
 
+    // Equoria-w47x7: a banned IP or device, a frozen or banned account. After the
+    // password check so a refusal never confirms that an account exists.
+    if (await refuseSignIn(req, res, { userId: user.id })) {
+      return undefined;
+    }
+
     // OWASP A07 (Equoria-2vwwh): if MFA is enabled, the first factor
     // (password) is verified but NO session tokens are issued. The client
     // must complete the second factor at POST /auth/mfa/challenge with the
@@ -343,6 +361,8 @@ export const login = async (req, res, next) => {
         },
       });
     }
+
+    await recordLoginSighting(req, res, user.id);
 
     // ✅ CWE-384 MITIGATION: Invalidate ALL existing sessions for this user
     // This prevents session fixation attacks by ensuring only the new login session is valid
@@ -432,6 +452,13 @@ export const refreshToken = async (req, res, next) => {
 
       logger.warn('[authController.refreshToken] Token rotation failed:', rotationResult.error);
       throw new AppError('Invalid refresh token', 401);
+    }
+
+    // Equoria-w47x7: a frozen or banned account cannot refresh a session. Conduct
+    // actions also delete the account's refresh tokens, so this is the second lock.
+    const standingRefused = standingRefusal(await accountStanding(prisma, rotationResult.userId));
+    if (standingRefused) {
+      return res.status(standingRefused.status).json(standingRefused.body);
     }
 
     const { newTokenPair } = rotationResult;

@@ -25,6 +25,7 @@ import { createTokenPair } from '../../../utils/tokenRotationService.mjs';
 import { COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 import { issueCsrfToken } from '../../../middleware/csrf.mjs';
 import { resetAuthRateLimit } from '../../../middleware/authRateLimiter.mjs';
+import { recordLoginSighting } from '../../staff/index.mjs';
 
 /**
  * Issue the access/refresh/CSRF triple for a fully-authenticated user and
@@ -37,6 +38,8 @@ import { resetAuthRateLimit } from '../../../middleware/authRateLimiter.mjs';
  * @returns {Promise<{ user: object, csrfToken: string }>}
  */
 export async function issueAuthenticatedSession(req, res, user) {
+  await recordLoginSighting(req, res, user.id);
+
   // CWE-384: invalidate all existing sessions on a new login.
   await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
 

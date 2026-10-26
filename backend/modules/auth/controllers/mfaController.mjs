@@ -32,6 +32,7 @@ import logger from '../../../utils/logger.mjs';
 import { maskEmailsInError } from '../../../utils/emailIdentityPolicy.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { issueAuthenticatedSession } from '../services/authSessionService.mjs';
+import { refuseSignIn } from '../../staff/index.mjs';
 
 /**
  * POST /api/v1/auth/mfa/enroll  (authenticated)
@@ -275,6 +276,12 @@ export const mfaChallenge = async (req, res, next) => {
     // Equoria-kg7i2: a successful challenge resets the failure counter so a
     // single typo before success does not penalise a legitimate user.
     await mfaLockoutService.recordSuccess(payload.userId);
+
+    // Equoria-w47x7: standing and banned connections are judged again here, after
+    // the second factor, in case a steward acted since the password step.
+    if (await refuseSignIn(req, res, { userId: user.id })) {
+      return undefined;
+    }
 
     const sessionData = await issueAuthenticatedSession(req, res, user);
     logger.info('[mfaController.mfaChallenge] MFA challenge passed', { userId: user.id });

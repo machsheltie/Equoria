@@ -31,6 +31,15 @@ import {
 } from '../controllers/staffTicketController.mjs';
 import { listStaff, lookupUser, setUserRole } from '../controllers/staffRolesController.mjs';
 import {
+  banAccount,
+  banDevice,
+  banIp,
+  freezePlayer,
+  getConductRecord,
+  lookupPlayer,
+  warnPlayer,
+} from '../controllers/staffConductController.mjs';
+import {
   diagnoseShow,
   getQuarantinedShows,
   getShowScoreInputs,
@@ -51,6 +60,18 @@ router.get('/log/actors', requireStaffCapability('log.view.all'), getStaffLogAct
 router.get('/roles', requireStaffCapability('roles.manage'), listStaff);
 router.post('/roles/lookup', requireStaffCapability('roles.manage'), lookupUser);
 router.post('/roles/:userId', requireStaffCapability('roles.manage'), setUserRole);
+
+// Player conduct (Equoria-w47x7, owner ruling q77): warn, freeze 1/3/7 days, ban the
+// account, ban the IP or device. Moderators, admins and the owner; the actor-versus-
+// target rules are staffTargetRefusal's, applied under the target's row lock.
+// /conduct/lookup is registered before the /conduct/:userId catch-all.
+router.post('/conduct/lookup', requireStaffCapability('warn'), lookupPlayer);
+router.get('/conduct/:userId', requireStaffCapability('warn'), getConductRecord);
+router.post('/conduct/:userId/warn', requireStaffCapability('warn'), warnPlayer);
+router.post('/conduct/:userId/freeze', requireStaffCapability('freeze'), freezePlayer);
+router.post('/conduct/:userId/ban/account', requireStaffCapability('ban.account'), banAccount);
+router.post('/conduct/:userId/ban/ip', requireStaffCapability('ban.ip'), banIp);
+router.post('/conduct/:userId/ban/device', requireStaffCapability('ban.device'), banDevice);
 
 // Tickets: moderators file; both roles read and reply (a moderator only on
 // their own); only the admin changes status. Capability lists stay inline
