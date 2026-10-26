@@ -21,6 +21,10 @@ export {
   refuseSignIn,
   standingRefusal,
 } from './services/conductEnforcementService.mjs';
+export {
+  accountLimitRefusal,
+  createAccountWithinDeviceLimit,
+} from './services/deviceAccountLimitService.mjs';
 export { registerQuarantinedShowTools } from './services/quarantinedShowToolsPort.mjs';
 export { retireStaffCheckinCodesTx } from './services/staffChallengeRetirement.mjs';
 export { purgeStaleStaffCheckinRecords } from './services/staffCheckinRetentionService.mjs';

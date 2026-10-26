@@ -37,7 +37,9 @@ import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { resetAuthRateLimit } from '../../../middleware/authRateLimiter.mjs';
 import {
+  accountLimitRefusal,
   accountStanding,
+  createAccountWithinDeviceLimit,
   recordLoginSighting,
   refuseSignIn,
   standingRefusal,
@@ -181,29 +183,33 @@ export const register = async (req, res, next) => {
     // STARTER_MONEY + STARTER_BONUS_COINS (10,000 per the 2026-07-07 economy
     // ruling), regardless of any client-supplied money field (no longer read).
     const startingMoney = STARTER_MONEY + STARTER_BONUS_COINS;
+    // Equoria-x5n89: at most four accounts per player. The device's count, the
+    // new account and its sighting commit together under the device's signup lock.
     let user;
     try {
-      user = await prisma.user.create({
-        data: {
-          username,
-          email,
-          password: hashedPassword,
-          firstName: firstName || null,
-          lastName: lastName || null,
-          // Equoria-iqzn: persisted only after the COPPA age gate above
-          // passed, so every stored row is >= 13. Treated as sensitive PII
-          // (redacted from audit/request logs).
-          dateOfBirth: new Date(dateOfBirth),
-          // Equoria-448du: server-authoritative economy. NOT sourced from
-          // req.body — a client cannot self-seed money/level/xp at signup.
-          money: startingMoney,
-          level: STARTER_LEVEL,
-          xp: STARTER_XP,
-          // Equoria-aazk: starter settings are ALWAYS server-seeded so a
-          // client-supplied settings body can never skip the crafting grant.
-          settings: buildStarterSettings(),
-        },
-      });
+      user = await createAccountWithinDeviceLimit(req, res, tx =>
+        tx.user.create({
+          data: {
+            username,
+            email,
+            password: hashedPassword,
+            firstName: firstName || null,
+            lastName: lastName || null,
+            // Equoria-iqzn: persisted only after the COPPA age gate above
+            // passed, so every stored row is >= 13. Treated as sensitive PII
+            // (redacted from audit/request logs).
+            dateOfBirth: new Date(dateOfBirth),
+            // Equoria-448du: server-authoritative economy. NOT sourced from
+            // req.body — a client cannot self-seed money/level/xp at signup.
+            money: startingMoney,
+            level: STARTER_LEVEL,
+            xp: STARTER_XP,
+            // Equoria-aazk: starter settings are ALWAYS server-seeded so a
+            // client-supplied settings body can never skip the crafting grant.
+            settings: buildStarterSettings(),
+          },
+        }),
+      );
     } catch (createError) {
       // P2002 = unique constraint violation — race condition where two concurrent
       // registrations both passed the findFirst check above. Return the same
@@ -216,6 +222,10 @@ export const register = async (req, res, next) => {
         throw new AppError(conflictMsg, 409);
       }
       throw createError;
+    }
+    if (!user) {
+      res.status(accountLimitRefusal.status).json(accountLimitRefusal.body);
+      return undefined;
     }
 
     // Equoria-vhv3i: starter-horse creation extracted to
@@ -261,8 +271,8 @@ export const register = async (req, res, next) => {
     // first mutation after register skips the /csrf-token round-trip.
     // Equoria-plw0h: pass user.id so the issued token is bound to the
     // same identifier authenticateToken will resolve on the next mutation.
+    // The account's login sighting was written with it (createAccountWithinDeviceLimit).
     const csrfToken = issueCsrfToken(req, res, { userId: user.id });
-    await recordLoginSighting(req, res, user.id);
 
     res.status(201).json({
       success: true,

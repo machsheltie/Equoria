@@ -171,6 +171,9 @@ const MIGRATED = [
   // the post-rollback decline; reject/cancel share one closeRequest transaction.
   ['modules/breeding/controllers/studRequestController.mjs', { wrapped: 3, totalTx: 3 }],
   ['modules/breeding/controllers/studRequestQueueController.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-x5n89 — signup: the device's account count, the new account and its
+  // login sighting commit as one wrapped transaction under the device's lock.
+  ['modules/staff/services/deviceAccountLimitService.mjs', { wrapped: 1, totalTx: 1 }],
 ];
 
 // marketplaceController is asserted separately: it has 2 wrapped sites
