@@ -14,6 +14,11 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import {
+  InvalidCursorError,
+  findKeysetPage,
+  readKeysetParams,
+} from '../../../utils/paginationHelper.mjs';
 // Equoria-lewrv (ADR-011): publish a low-latency 'message' SSE nudge to the
 // recipient AFTER the DirectMessage row is persisted. Fire-and-forget — bus
 // delivery must never affect the send (the DB row is the source of truth).
@@ -26,48 +31,62 @@ const USER_SELECT = { id: true, username: true };
 
 const PAGE_SIZE = 50;
 
-/** GET /api/messages/inbox?page=1 */
-export async function getInbox(req, res) {
-  const userId = req.user.id;
-  const page = Math.max(1, parseInt(req.query.page ?? '1', 10) || 1);
+// Newest first, ties on the instant broken by id (Equoria-cmw85.20), so a message
+// written while the player pages through the box is neither skipped nor repeated.
+const MESSAGE_SORT = [
+  { key: 'createdAt', dir: 'desc', type: 'date' },
+  { key: 'id', dir: 'desc', type: 'int' },
+];
+
+/**
+ * One keyset page of a message box plus the box's total. `?cursor` continues a
+ * list; `?page` still works without one. Replies with the shape the screen has
+ * always read, plus `pageInfo`.
+ */
+async function respondWithMessageBox(req, res, { where, counterpart, label }) {
   try {
-    const [messages, total] = await prisma.$transaction([
-      prisma.directMessage.findMany({
-        where: { recipientId: userId },
-        orderBy: { createdAt: 'desc' },
-        include: { sender: { select: USER_SELECT } },
-        take: PAGE_SIZE,
-        skip: (page - 1) * PAGE_SIZE,
+    const { limit, cursor, skip } = readKeysetParams(req.query, { def: PAGE_SIZE, max: 100 });
+    const [{ items, pageInfo }, total] = await Promise.all([
+      findKeysetPage(args => prisma.directMessage.findMany(args), {
+        where,
+        sort: MESSAGE_SORT,
+        limit,
+        cursor,
+        skip,
+        extra: { include: { [counterpart]: { select: USER_SELECT } } },
       }),
-      prisma.directMessage.count({ where: { recipientId: userId } }),
+      prisma.directMessage.count({ where }),
     ]);
-    return res.json({ success: true, data: { messages, total, page } });
+    const page = Math.max(1, parseInt(req.query.page ?? '1', 10) || 1);
+    return res.json({ success: true, data: { messages: items, total, page, pageInfo } });
   } catch (error) {
-    logger.error(`[messageController.getInbox] ${error.message}`);
-    return res.status(500).json({ success: false, message: 'Failed to fetch inbox' });
+    if (error instanceof InvalidCursorError) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    logger.error(`[messageController.${label}] ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: `Failed to fetch ${label === 'getInbox' ? 'inbox' : 'sent messages'}`,
+    });
   }
 }
 
-/** GET /api/messages/sent?page=1 */
-export async function getSent(req, res) {
-  const userId = req.user.id;
-  const page = Math.max(1, parseInt(req.query.page ?? '1', 10) || 1);
-  try {
-    const [messages, total] = await prisma.$transaction([
-      prisma.directMessage.findMany({
-        where: { senderId: userId },
-        orderBy: { createdAt: 'desc' },
-        include: { recipient: { select: USER_SELECT } },
-        take: PAGE_SIZE,
-        skip: (page - 1) * PAGE_SIZE,
-      }),
-      prisma.directMessage.count({ where: { senderId: userId } }),
-    ]);
-    return res.json({ success: true, data: { messages, total, page } });
-  } catch (error) {
-    logger.error(`[messageController.getSent] ${error.message}`);
-    return res.status(500).json({ success: false, message: 'Failed to fetch sent messages' });
-  }
+/** GET /api/messages/inbox?page=1 (or ?cursor=...) */
+export function getInbox(req, res) {
+  return respondWithMessageBox(req, res, {
+    where: { recipientId: req.user.id },
+    counterpart: 'sender',
+    label: 'getInbox',
+  });
+}
+
+/** GET /api/messages/sent?page=1 (or ?cursor=...) */
+export function getSent(req, res) {
+  return respondWithMessageBox(req, res, {
+    where: { senderId: req.user.id },
+    counterpart: 'recipient',
+    label: 'getSent',
+  });
 }
 
 /** GET /api/messages/unread-count */

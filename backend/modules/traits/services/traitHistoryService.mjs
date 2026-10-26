@@ -9,6 +9,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { visibleTraitHistoryWhere } from './visibleTraitHistory.mjs';
+import { clampLimit, findKeysetPage } from '../../../utils/paginationHelper.mjs';
 
 /**
  * Logs a trait assignment to the history
@@ -70,21 +71,9 @@ export async function logTraitAssignment(traitData, client = prisma) {
   return historyEntry;
 }
 
-/**
- * Retrieves trait development history for a horse
- * @param {number} horseId - ID of the horse
- * @param {Object} options - Query options
- * @returns {Array} Array of trait history entries
- */
-export async function getTraitHistory(horseId, options = {}) {
-  const {
-    limit = 50,
-    offset = 0,
-    sourceType = null,
-    isEpigenetic = null,
-    startDate = null,
-    endDate = null,
-  } = options;
+/** The where filter shared by the trait-history reads: the caller's filters, never a still-hidden trait. */
+async function traitHistoryFilter(horseId, options) {
+  const { sourceType = null, isEpigenetic = null, startDate = null, endDate = null } = options;
 
   const whereClause = {
     horseId,
@@ -110,22 +99,60 @@ export async function getTraitHistory(horseId, options = {}) {
 
   // Rows naming a trait still hidden on the horse are never returned
   // (Equoria-6dace); the summaries below build on this read too.
-  const history = await prisma.traitHistoryLog.findMany({
-    where: await visibleTraitHistoryWhere(whereClause),
-    include: {
-      horse: {
-        select: { name: true, dateOfBirth: true },
-      },
-      groom: {
-        select: { name: true, epigeneticInfluenceType: true, speciality: true },
-      },
-    },
-    orderBy: { timestamp: 'desc' },
-    take: limit,
-    skip: offset,
-  });
+  return visibleTraitHistoryWhere(whereClause);
+}
 
-  return history;
+/**
+ * One keyset page of a horse's trait development history, newest first with ties
+ * on the instant broken by id (Equoria-cmw85.20), and the true number of entries
+ * under the same filters. `cursor` continues a list; `offset` still works
+ * without one; the page size is the shared clamp (default 50, max 100).
+ *
+ * @param {number} horseId - ID of the horse
+ * @param {Object} options - Query options (limit, offset, cursor and the filters)
+ * @returns {Promise<{ items: Array, pageInfo: { nextCursor: string|null, hasMore: boolean }, total: number }>}
+ * @throws {InvalidCursorError} on a cursor that cannot be decoded
+ */
+export async function getTraitHistoryPage(horseId, options = {}) {
+  const { limit = 50, offset = 0, cursor = null } = options;
+  const where = await traitHistoryFilter(horseId, options);
+
+  const [page, total] = await Promise.all([
+    findKeysetPage(args => prisma.traitHistoryLog.findMany(args), {
+      where,
+      sort: [
+        { key: 'timestamp', dir: 'desc', type: 'date' },
+        { key: 'id', dir: 'desc', type: 'int' },
+      ],
+      limit: clampLimit(limit, { def: 50, max: 100 }),
+      cursor,
+      skip: Math.max(offset, 0),
+      extra: {
+        include: {
+          horse: {
+            select: { name: true, dateOfBirth: true },
+          },
+          groom: {
+            select: { name: true, epigeneticInfluenceType: true, speciality: true },
+          },
+        },
+      },
+    }),
+    prisma.traitHistoryLog.count({ where }),
+  ]);
+  return { ...page, total };
+}
+
+/**
+ * Retrieves trait development history for a horse (the first page of
+ * getTraitHistoryPage, as an array)
+ * @param {number} horseId - ID of the horse
+ * @param {Object} options - Query options
+ * @returns {Array} Array of trait history entries
+ */
+export async function getTraitHistory(horseId, options = {}) {
+  const { items } = await getTraitHistoryPage(horseId, options);
+  return items;
 }
 
 /**

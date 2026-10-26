@@ -1,7 +1,8 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import conformationShowRoutes from './conformationShowRoutes.mjs';
-import { getResultsByHorse, getUserResultsSummary } from '../services/resultModelService.mjs';
+import { getUserResultsSummary } from '../services/resultModelService.mjs';
+import { getHorseResults } from '../controllers/horseResultsController.mjs';
 import { getShowResultsView, toPlayerShowStatus } from '../services/competitionResultRecord.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 // Equoria-kacla: enterAndRunShow / executeEnhancedCompetition /
@@ -218,31 +219,7 @@ router.get(
   auth,
   [param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer')],
   requireOwnership('horse', { idParam: 'horseId' }),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.horseId, 10);
-
-      const results = await getResultsByHorse(horseId);
-
-      logger.info(
-        `[competitionRoutes.GET /horse/${horseId}/results] Retrieved ${results.length} results`,
-      );
-
-      res.json({
-        success: true,
-        horseId,
-        results,
-        count: results.length,
-      });
-    } catch (error) {
-      logger.error(`[competitionRoutes.GET /horse/:horseId/results] Error: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
+  getHorseResults,
 );
 
 /**

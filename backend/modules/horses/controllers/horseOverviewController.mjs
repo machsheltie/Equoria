@@ -7,6 +7,11 @@
  */
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import {
+  InvalidCursorError,
+  findKeysetPage,
+  readKeysetParams,
+} from '../../../utils/paginationHelper.mjs';
 
 /**
  * GET /api/horses/:horseId/competition-history
@@ -44,31 +49,17 @@ export async function getHorseCompetitionHistory(req, res, next) {
       return res.status(404).json({ success: false, message: 'Horse not found' });
     }
 
-    const results = await prisma.competitionResult.findMany({
+    // The career statistics cover EVERY result, read as one grouped aggregate over
+    // the placements rather than every row; the list below is one keyset page
+    // (Equoria-cmw85.22), newest first, ties on the run date broken by id.
+    const placementGroups = await prisma.competitionResult.groupBy({
+      by: ['placement'],
       where: { horseId },
-      select: {
-        id: true,
-        score: true,
-        placement: true,
-        discipline: true,
-        runDate: true,
-        showName: true,
-        prizeWon: true,
-        showId: true,
-        show: {
-          select: {
-            id: true,
-            name: true,
-            // Equoria-r54u9: dropped _count.competitionResults — entrant count
-            // leaks competitive intel across all show participants. Frontend
-            // hook does not display it; remove from public projection.
-          },
-        },
-      },
-      orderBy: { runDate: 'desc' },
+      _count: { _all: true },
+      _sum: { prizeWon: true },
     });
 
-    const totalCompetitions = results.length;
+    const totalCompetitions = placementGroups.reduce((sum, g) => sum + g._count._all, 0);
 
     if (totalCompetitions === 0) {
       return res.json({
@@ -84,6 +75,7 @@ export async function getHorseCompetitionHistory(req, res, next) {
           bestPlacement: 0,
         },
         competitions: [],
+        pageInfo: { nextCursor: null, hasMore: false },
       });
     }
 
@@ -94,22 +86,23 @@ export async function getHorseCompetitionHistory(req, res, next) {
     let placementCount = 0;
     let bestPlacement = Number.POSITIVE_INFINITY;
 
-    for (const r of results) {
-      const p = parseCompetitionPlacement(r.placement);
+    for (const g of placementGroups) {
+      const p = parseCompetitionPlacement(g.placement);
+      const n = g._count._all;
       if (p === 1) {
-        wins += 1;
+        wins += n;
       }
       if (p > 0 && p <= 3) {
-        top3Finishes += 1;
+        top3Finishes += n;
       }
       if (p > 0) {
-        placementSum += p;
-        placementCount += 1;
+        placementSum += p * n;
+        placementCount += n;
         if (p < bestPlacement) {
           bestPlacement = p;
         }
       }
-      totalPrizeMoney += Number(r.prizeWon ?? 0);
+      totalPrizeMoney += Number(g._sum.prizeWon ?? 0);
     }
 
     if (bestPlacement === Number.POSITIVE_INFINITY) {
@@ -118,6 +111,42 @@ export async function getHorseCompetitionHistory(req, res, next) {
 
     const winRate = totalCompetitions > 0 ? (wins / totalCompetitions) * 100 : 0;
     const averagePlacement = placementCount > 0 ? placementSum / placementCount : 0;
+
+    const { limit, cursor, skip } = readKeysetParams(req.query, { def: 100, max: 100 });
+    const { items: results, pageInfo } = await findKeysetPage(
+      args => prisma.competitionResult.findMany(args),
+      {
+        where: { horseId },
+        sort: [
+          { key: 'runDate', dir: 'desc', type: 'date' },
+          { key: 'id', dir: 'desc', type: 'int' },
+        ],
+        limit,
+        cursor,
+        skip,
+        extra: {
+          select: {
+            id: true,
+            score: true,
+            placement: true,
+            discipline: true,
+            runDate: true,
+            showName: true,
+            prizeWon: true,
+            showId: true,
+            show: {
+              select: {
+                id: true,
+                name: true,
+                // Equoria-r54u9: dropped _count.competitionResults — entrant count
+                // leaks competitive intel across all show participants. Frontend
+                // hook does not display it; remove from public projection.
+              },
+            },
+          },
+        },
+      },
+    );
 
     const competitions = results.map(r => ({
       competitionId: r.showId,
@@ -153,8 +182,12 @@ export async function getHorseCompetitionHistory(req, res, next) {
         bestPlacement,
       },
       competitions,
+      pageInfo,
     });
   } catch (error) {
+    if (error instanceof InvalidCursorError) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
     logger.error(`[horseController.getHorseCompetitionHistory] Error: ${error.message}`);
     return next ? next(error) : res.status(500).json({ success: false, message: 'Internal error' });
   }

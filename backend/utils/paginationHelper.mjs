@@ -407,6 +407,7 @@ export function clampLimit(raw, { def = 20, max = 100 } = {}) {
 }
 
 const cursorValueReaders = {
+  bool: v => (typeof v === 'boolean' ? v : undefined),
   int: v => (Number.isSafeInteger(v) ? v : undefined),
   bigint: v => (typeof v === 'string' && /^-?\d+$/.test(v) ? BigInt(v) : undefined),
   string: v => (typeof v === 'string' ? v : undefined),
@@ -436,7 +437,7 @@ export function encodeCursor(values) {
 
 /**
  * @param {unknown} cursor
- * @param {Array<'int'|'bigint'|'string'|'date'>} types - the type of each sort value, id last
+ * @param {Array<'bool'|'int'|'bigint'|'string'|'date'|'int?'|'bigint?'|'string?'|'date?'>} types - the type of each sort value, id last ('?' = the column may be null)
  * @returns {Array<Date|number|bigint|string>}
  * @throws {InvalidCursorError} on a wrong prefix, bad encoding, wrong length or wrong value type
  */
@@ -456,7 +457,10 @@ export function decodeCursor(cursor, types) {
     throw new InvalidCursorError();
   }
   return parsed.map((value, i) => {
-    const read = cursorValueReaders[types[i]]?.(value);
+    // A trailing '?' marks a nullable sort column: null is a legal value there.
+    const nullable = types[i].endsWith('?');
+    const read =
+      nullable && value === null ? null : cursorValueReaders[types[i].replace(/\?$/, '')]?.(value);
     if (read === undefined) {
       throw new InvalidCursorError();
     }
@@ -465,20 +469,63 @@ export function decodeCursor(cursor, types) {
 }
 
 /**
+ * The condition "after `value`" on one sort key, or null when no row can follow it.
+ * NULLs sort as Postgres puts them (last ascending, first descending) unless the entry
+ * says `nulls: 'first' | 'last'`. Booleans have no lt/gt filter in Prisma: equality.
+ */
+function afterOnKey({ key, dir, nullable, nulls }, value) {
+  const desc = dir === 'desc';
+  const nullsFirst = nulls ? nulls === 'first' : desc;
+  if (value === null) {
+    return nullsFirst ? { [key]: { not: null } } : null;
+  }
+  if (typeof value === 'boolean') {
+    return desc === value ? { [key]: !value } : null;
+  }
+  const beyond = { [key]: { [desc ? 'lt' : 'gt']: value } };
+  return nullable && !nullsFirst ? { OR: [beyond, { [key]: null }] } : beyond;
+}
+
+/**
  * The Prisma `where` fragment selecting the rows AFTER `values` in the sort
  * order (an OR-ladder: a later key only decides among rows equal on the earlier
- * ones), correct for mixed directions.
+ * ones), correct for mixed directions, nullable columns (`nullable: true` on the
+ * sort entry, plus `nulls` when the query overrides where NULLs go) and boolean keys.
  *
- * @param {Array<{ key: string, dir: 'asc'|'desc' }>} sort
- * @param {Array<Date|number|bigint|string>} values - one per sort entry
+ * @param {Array<{ key: string, dir: 'asc'|'desc', nullable?: boolean, nulls?: 'first'|'last' }>} sort
+ * @param {Array<Date|number|bigint|string|boolean|null>} values - one per sort entry
  */
 export function keysetWhere(sort, values) {
-  return {
-    OR: sort.map(({ key, dir }, i) => ({
-      ...Object.fromEntries(sort.slice(0, i).map((prev, j) => [prev.key, values[j]])),
-      [key]: { [dir === 'desc' ? 'lt' : 'gt']: values[i] },
-    })),
-  };
+  const branches = [];
+  sort.forEach((entry, i) => {
+    const after = afterOnKey(entry, values[i]);
+    if (after) {
+      branches.push({
+        ...Object.fromEntries(sort.slice(0, i).map((prev, j) => [prev.key, values[j]])),
+        ...after,
+      });
+    }
+  });
+  return { OR: branches };
+}
+
+/**
+ * The keyset parameters of a list request: `?limit` through the one clamp, `?cursor`
+ * as sent (empty means none; a malformed one fails in the page query), and the legacy
+ * offset (`?offset`, else `?page`) that applies only when no cursor is sent.
+ * Returns `{ limit, cursor, skip }` for `req.query` and `{ def, max }` limits.
+ */
+export function readKeysetParams(query, limits = {}) {
+  const limit = clampLimit(query.limit, limits);
+  const offset = Number.parseInt(String(query.offset), 10);
+  const page = Number.parseInt(String(query.page), 10);
+  let skip = 0;
+  if (Number.isSafeInteger(offset) && offset > 0) {
+    skip = offset;
+  } else if (Number.isSafeInteger(page) && page > 1) {
+    skip = (page - 1) * limit;
+  }
+  return { limit, cursor: query.cursor === '' ? null : (query.cursor ?? null), skip };
 }
 
 /**
@@ -490,7 +537,7 @@ export function keysetWhere(sort, values) {
  * endpoints migrate). Returns `{ items, pageInfo: { nextCursor, hasMore } }`.
  *
  * @param {(args: object) => Promise<object[]>} findMany - e.g. `args => prisma.horse.findMany(args)`
- * @param {{ where?: object, sort: Array<{key:string,dir:'asc'|'desc',type:string}>, limit: number, cursor?: string|null, skip?: number, extra?: object }} spec
+ * @param {{ where?: object, sort: Array<{key:string,dir:'asc'|'desc',type:string,nullable?:boolean,nulls?:'first'|'last'}>, limit: number, cursor?: string|null, skip?: number, extra?: object }} spec
  *   `extra` is spread into the findMany call (select / include).
  * @throws {InvalidCursorError}
  */
@@ -506,14 +553,14 @@ export async function findKeysetPage(
         sort,
         decodeCursor(
           cursor,
-          sort.map(s => s.type),
+          sort.map(s => (s.nullable ? `${s.type}?` : s.type)),
         ),
       )
     : null;
   const rows = await findMany({
     ...extra,
     where: after ? { AND: [where, after] } : where,
-    orderBy: sort.map(({ key, dir }) => ({ [key]: dir })),
+    orderBy: sort.map(({ key, dir, nulls }) => ({ [key]: nulls ? { sort: dir, nulls } : dir })),
     take: limit + 1,
     ...(after || skip === 0 ? {} : { skip }),
   });
@@ -543,6 +590,7 @@ export default {
   getPrismaQueryParams,
   paginationMiddleware,
   clampLimit,
+  readKeysetParams,
   encodeCursor,
   decodeCursor,
   keysetWhere,

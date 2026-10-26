@@ -13,6 +13,11 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import {
+  InvalidCursorError,
+  findKeysetPage,
+  readKeysetParams,
+} from '../../../utils/paginationHelper.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 // Equoria-pwwuz (ADR-011): publish a low-latency 'forumReply' SSE nudge to the
 // thread author when someone replies to their thread. Mirrors the DM 'message'
@@ -27,14 +32,28 @@ const VIEW_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
 const VALID_SECTIONS = ['general', 'art', 'sales', 'services', 'venting'];
 const THREADS_PER_PAGE = 20;
 
+// Pinned threads first, then the most recently active, ties broken by id
+// (Equoria-cmw85.21). A thread that is bumped or pinned while a player pages moves to the
+// FRONT of this order, ahead of any cursor already issued, so it is never shown twice.
+const threadSort = [
+  { key: 'isPinned', dir: 'desc', type: 'bool' },
+  { key: 'lastActivityAt', dir: 'desc', type: 'date' },
+  { key: 'id', dir: 'desc', type: 'int' },
+];
+
 /**
- * GET /api/forum/threads?section=&page=
+ * GET /api/forum/threads?section=&page= (or ?cursor=&limit=)
  * Returns threads for a section, pinned first, then by lastActivityAt desc.
+ * A numbered-page request (?page, no cursor) also gets the section's `total`;
+ * a cursor request does not pay for the count.
  */
 export async function getThreads(req, res) {
-  const { section, page = '1' } = req.query;
-  const pageNum = Math.max(1, parseInt(page, 10) || 1);
-  const skip = (pageNum - 1) * THREADS_PER_PAGE;
+  const { section } = req.query;
+  const { limit, cursor, skip } = readKeysetParams(req.query, {
+    def: THREADS_PER_PAGE,
+    max: 100,
+  });
+  const pageNum = Math.max(1, parseInt(req.query.page ?? '1', 10) || 1);
 
   if (section && !VALID_SECTIONS.includes(section)) {
     return res.status(400).json({
@@ -45,18 +64,21 @@ export async function getThreads(req, res) {
   const where = section ? { section } : {};
 
   try {
-    const [threads, total] = await Promise.all([
-      prisma.forumThread.findMany({
+    const [{ items: threads, pageInfo }, total] = await Promise.all([
+      findKeysetPage(args => prisma.forumThread.findMany(args), {
         where,
-        orderBy: [{ isPinned: 'desc' }, { lastActivityAt: 'desc' }],
+        sort: threadSort,
+        limit,
+        cursor,
         skip,
-        take: THREADS_PER_PAGE,
-        include: {
-          author: { select: { id: true, username: true } },
-          _count: { select: { posts: true } },
+        extra: {
+          include: {
+            author: { select: { id: true, username: true } },
+            _count: { select: { posts: true } },
+          },
         },
       }),
-      prisma.forumThread.count({ where }),
+      cursor ? Promise.resolve(undefined) : prisma.forumThread.count({ where }),
     ]);
 
     const shaped = threads.map(t => ({
@@ -72,8 +94,14 @@ export async function getThreads(req, res) {
       createdAt: t.createdAt,
     }));
 
-    return res.json({ success: true, data: { threads: shaped, total, page: pageNum } });
+    return res.json({
+      success: true,
+      data: { threads: shaped, total, page: pageNum, pageInfo },
+    });
   } catch (error) {
+    if (error instanceof InvalidCursorError) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
     logger.error(`[forumController.getThreads] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to fetch threads' });
   }

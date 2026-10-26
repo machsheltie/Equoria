@@ -91,11 +91,15 @@ export function parseOr400(res, parse, query) {
 }
 
 // Every order ends on `id` so tied prices/ages page deterministically (Equoria-dnpe4).
-const SALE_ORDER_BY = Object.freeze({
-  price_asc: [{ salePrice: 'asc' }, { id: 'asc' }],
-  price_desc: [{ salePrice: 'desc' }, { id: 'asc' }],
-  youngest: [{ age: 'asc' }, { id: 'asc' }],
-  newest: [{ createdAt: 'desc' }, { id: 'asc' }],
+// The keyset spec (Equoria-cmw85.21) carries each column's cursor type; the three
+// sort columns are nullable on Horse, and Postgres puts NULLs last ascending and first
+// descending, which is what keysetWhere assumes without a `nulls` override.
+const idAsc = { key: 'id', dir: 'asc', type: 'int' };
+const SALE_SORT = Object.freeze({
+  price_asc: [{ key: 'salePrice', dir: 'asc', type: 'int', nullable: true }, idAsc],
+  price_desc: [{ key: 'salePrice', dir: 'desc', type: 'int', nullable: true }, idAsc],
+  youngest: [{ key: 'age', dir: 'asc', type: 'int', nullable: true }, idAsc],
+  newest: [{ key: 'createdAt', dir: 'desc', type: 'date', nullable: true }, idAsc],
 });
 
 /**
@@ -116,6 +120,7 @@ export function parseSaleQuery(query) {
     maxPrice: requiredLenientInt(query, 'maxPrice'),
     page: lenientInt(query, 'page'),
     limit: parseInt(single(query, 'limit'), 10),
-    orderBy: ownValue(SALE_ORDER_BY, single(query, 'sort') ?? 'newest', 'sort'),
+    cursor: single(query, 'cursor'),
+    sort: ownValue(SALE_SORT, single(query, 'sort') ?? 'newest', 'sort'),
   };
 }

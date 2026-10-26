@@ -9,6 +9,8 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { InvalidCursorError, clampLimit } from '../../../utils/paginationHelper.mjs';
+import { findSaleHistoryPage, findSaleListingsPage } from '../services/saleListingPages.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
@@ -63,10 +65,10 @@ export async function browseListings(req, res) {
     if (sent) {
       return undefined;
     }
-    const { name, breed, breedId, sex, minAge, maxAge, minPrice, maxPrice, orderBy } = params;
+    const { name, breed, breedId, sex, minAge, maxAge, minPrice, maxPrice, sort, cursor } = params;
 
     const pageNum = Math.max(1, params.page || 1);
-    const pageSize = Math.min(100, Math.max(1, params.limit || 20));
+    const pageSize = clampLimit(params.limit);
     const skip = (pageNum - 1) * pageSize;
 
     const where = {
@@ -130,19 +132,14 @@ export async function browseListings(req, res) {
       where.salePrice = { ...where.salePrice, lte: maxPrice };
     }
 
-    const [horses, total] = await Promise.all([
-      prisma.horse.findMany({
-        where,
-        orderBy,
-        skip,
-        take: pageSize,
-        include: {
-          breed: { select: { name: true } },
-          user: { select: { username: true } },
-        },
-      }),
-      prisma.horse.count({ where }),
-    ]);
+    // Keyset page (Equoria-cmw85.21): `cursor` continues a list, `page` still works without one.
+    const { horses, pageInfo, total } = await findSaleListingsPage({
+      where,
+      sort,
+      pageSize,
+      cursor,
+      skip,
+    });
 
     const listings = horses.map(h => ({
       id: h.id,
@@ -172,11 +169,15 @@ export async function browseListings(req, res) {
           page: pageNum,
           limit: pageSize,
           total,
-          totalPages: Math.ceil(total / pageSize),
+          totalPages: total === undefined ? undefined : Math.ceil(total / pageSize),
         },
+        pageInfo,
       },
     });
   } catch (err) {
+    if (err instanceof InvalidCursorError) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
     logger.error('browseListings error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
@@ -710,16 +711,8 @@ export async function saleHistory(req, res) {
   try {
     const userId = req.user.id;
 
-    const sales = await prisma.horseSale.findMany({
-      where: {
-        OR: [{ sellerId: userId }, { buyerId: userId }],
-      },
-      include: {
-        seller: { select: { username: true } },
-        buyer: { select: { username: true } },
-      },
-      orderBy: { soldAt: 'desc' },
-    });
+    // Bounded under the shared cap policy (Equoria-cmw85.22); `pageInfo` and ?cursor continue it.
+    const { sales, pageInfo } = await findSaleHistoryPage(userId, req.query);
 
     const history = sales.map(s => ({
       id: s.id,
@@ -734,8 +727,11 @@ export async function saleHistory(req, res) {
           : (s.seller?.username ?? '[deleted user]'),
     }));
 
-    return res.json({ success: true, data: history });
+    return res.json({ success: true, data: history, pageInfo });
   } catch (err) {
+    if (err instanceof InvalidCursorError) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
     logger.error('saleHistory error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }

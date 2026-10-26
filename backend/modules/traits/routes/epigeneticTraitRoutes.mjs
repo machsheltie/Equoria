@@ -15,7 +15,7 @@ import { evaluateEnhancedMilestone } from '../../../utils/enhancedMilestoneEvalu
 // an owner insert any TraitHistoryLog row, was removed; only the nightly foal
 // job logs trait events (traitHistoryService.logTraitAssignment).
 import {
-  getTraitHistory,
+  getTraitHistoryPage,
   getTraitDevelopmentSummary,
   getBreedingInsights,
 } from '../services/traitHistoryService.mjs';
@@ -28,6 +28,7 @@ import {
 import { EPIGENETIC_FLAG_DEFINITIONS } from '../../../config/epigeneticFlagDefinitions.mjs';
 import { GROOM_PERSONALITIES } from '../../../utils/epigeneticFlags.mjs';
 import logger from '../../../utils/logger.mjs';
+import { InvalidCursorError } from '../../../utils/paginationHelper.mjs';
 import {
   getHorseWithActiveGroomAssignments,
   getGroomCareHistoryForHorse,
@@ -174,7 +175,14 @@ router.get(
         endDate: req.query.endDate || null,
       };
 
-      const history = await getTraitHistory(parseInt(horseId), options);
+      const {
+        items: history,
+        pageInfo,
+        total,
+      } = await getTraitHistoryPage(parseInt(horseId), {
+        ...options,
+        cursor: req.query.cursor || null,
+      });
 
       res.json({
         success: true,
@@ -182,11 +190,16 @@ router.get(
           horseId: parseInt(horseId),
           horseName: horse.name,
           history,
-          totalEntries: history.length,
+          // The true number of entries under these filters, not the page length.
+          totalEntries: total,
+          pageInfo,
           options,
         },
       });
     } catch (error) {
+      if (error instanceof InvalidCursorError) {
+        return res.status(400).json({ success: false, error: error.message });
+      }
       logger.error('Error fetching trait history:', error);
       res.status(500).json({
         success: false,

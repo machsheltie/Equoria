@@ -11,6 +11,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { InvalidCursorError } from '../../../utils/paginationHelper.mjs';
 import { gameDayIndex, startOfGameDayIndex, startOfGameWeek } from '../../../utils/gameTime.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { getTransactionsForUser, recordTransactionTx } from '../../economy/index.mjs';
@@ -179,6 +180,7 @@ export async function getTransactionHistory(req, res) {
     const history = await getTransactionsForUser(userId, {
       page: req.query.page,
       pageSize: req.query.pageSize,
+      cursor: req.query.cursor || null,
     });
 
     return res.status(200).json({
@@ -186,6 +188,9 @@ export async function getTransactionHistory(req, res) {
       data: history,
     });
   } catch (error) {
+    if (error instanceof InvalidCursorError) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
     logger.error('Transaction history lookup failed:', error);
     return res.status(500).json({
       success: false,

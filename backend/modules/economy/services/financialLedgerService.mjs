@@ -1,4 +1,5 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { clampLimit, findKeysetPage } from '../../../utils/paginationHelper.mjs';
 
 /**
  * Equoria-hjzwt: thrown by `debitMoneyOrThrow` when the conditional debit
@@ -479,31 +480,40 @@ export async function recordTransactionTx(
   return row;
 }
 
-export async function getTransactionsForUser(userId, { page = 1, pageSize = 20 } = {}) {
+export async function getTransactionsForUser(
+  userId,
+  { page = 1, pageSize = 20, cursor = null } = {},
+) {
   // Equoria-kz86s: no runtime ensureLedgerTable() on this read path either.
   // The table is migration-owned; a read should never issue DDL.
   const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
-  const safePageSize = Math.min(100, Math.max(1, Number.parseInt(pageSize, 10) || 20));
-  const skip = (safePage - 1) * safePageSize;
+  const safePageSize = clampLimit(pageSize);
 
-  // Typed Prisma findMany + count (replaces $queryRawUnsafe SELECT — Equoria-3ear).
-  // Order matches the prior SQL: createdAt DESC, id DESC for stable pagination
-  // when many rows share a timestamp.
-  const [rows, total] = await Promise.all([
-    prisma.userTransaction.findMany({
+  // Keyset page (Equoria-cmw85.20): newest first, ties on the instant broken by id,
+  // so a transaction written while the player pages is neither skipped nor repeated.
+  // `cursor` continues a list; `page` still works without one. The total is a
+  // separate count.
+  const [{ items: rows, pageInfo }, total] = await Promise.all([
+    findKeysetPage(args => prisma.userTransaction.findMany(args), {
       where: { userId },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      skip,
-      take: safePageSize,
-      select: {
-        id: true,
-        type: true,
-        amount: true,
-        category: true,
-        description: true,
-        balanceAfter: true,
-        metadata: true,
-        createdAt: true,
+      sort: [
+        { key: 'createdAt', dir: 'desc', type: 'date' },
+        { key: 'id', dir: 'desc', type: 'int' },
+      ],
+      limit: safePageSize,
+      cursor,
+      skip: (safePage - 1) * safePageSize,
+      extra: {
+        select: {
+          id: true,
+          type: true,
+          amount: true,
+          category: true,
+          description: true,
+          balanceAfter: true,
+          metadata: true,
+          createdAt: true,
+        },
       },
     }),
     prisma.userTransaction.count({ where: { userId } }),
@@ -523,5 +533,6 @@ export async function getTransactionsForUser(userId, { page = 1, pageSize = 20 }
     total,
     page: safePage,
     pageSize: safePageSize,
+    pageInfo,
   };
 }

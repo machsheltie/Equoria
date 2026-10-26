@@ -6,6 +6,12 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import {
+  InvalidCursorError,
+  clampLimit,
+  findKeysetPage,
+  readKeysetParams,
+} from '../../../utils/paginationHelper.mjs';
 // Equoria-pwwuz (ADR-011): the leadership-transfer producer notifies the
 // promoted member. createNotification writes the durable Notification DB row
 // (source of truth, surfaced by useGameNotifications) AND emits the matching
@@ -14,6 +20,25 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 import { createNotification } from '../../../utils/notificationService.mjs';
 
 const USER_SELECT = { id: true, username: true };
+
+// The club lists answer one page, newest first with the id as the final key
+// (Equoria-cmw85.22). The default and maximum are both 100: the screens read the whole
+// list in one request today, and `pageInfo` tells a client when there is more.
+const clubListLimits = { def: 100, max: 100 };
+
+const newestFirst = (key = 'createdAt', type = 'date') => [
+  { key, dir: 'desc', type },
+  { key: 'id', dir: 'desc', type: 'int' },
+];
+
+/** The 400 for a cursor the server did not issue; false when the error is something else. */
+function sendInvalidCursor(res, error) {
+  if (!(error instanceof InvalidCursorError)) {
+    return false;
+  }
+  res.status(400).json({ success: false, message: error.message });
+  return true;
+}
 
 /** GET /api/clubs?type=&category= */
 export async function getClubs(req, res) {
@@ -27,17 +52,26 @@ export async function getClubs(req, res) {
   }
 
   try {
-    const clubs = await prisma.club.findMany({
+    const { limit, cursor, skip } = readKeysetParams(req.query, clubListLimits);
+    const { items: clubs, pageInfo } = await findKeysetPage(args => prisma.club.findMany(args), {
       where,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        leader: { select: USER_SELECT },
-        _count: { select: { members: true } },
+      sort: newestFirst(),
+      limit,
+      cursor,
+      skip,
+      extra: {
+        include: {
+          leader: { select: USER_SELECT },
+          _count: { select: { members: true } },
+        },
       },
     });
     const shaped = clubs.map(c => ({ ...c, memberCount: c._count.members, _count: undefined }));
-    return res.json({ success: true, data: { clubs: shaped } });
+    return res.json({ success: true, data: { clubs: shaped, pageInfo } });
   } catch (error) {
+    if (sendInvalidCursor(res, error)) {
+      return undefined;
+    }
     logger.error(`[clubController.getClubs] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to fetch clubs' });
   }
@@ -47,16 +81,29 @@ export async function getClubs(req, res) {
 export async function getMyClubs(req, res) {
   const userId = req.user.id;
   try {
-    const memberships = await prisma.clubMembership.findMany({
-      where: { userId },
-      include: {
-        club: {
-          include: { leader: { select: USER_SELECT }, _count: { select: { members: true } } },
+    const { limit, cursor, skip } = readKeysetParams(req.query, clubListLimits);
+    const { items: memberships, pageInfo } = await findKeysetPage(
+      args => prisma.clubMembership.findMany(args),
+      {
+        where: { userId },
+        sort: newestFirst('joinedAt'),
+        limit,
+        cursor,
+        skip,
+        extra: {
+          include: {
+            club: {
+              include: { leader: { select: USER_SELECT }, _count: { select: { members: true } } },
+            },
+          },
         },
       },
-    });
-    return res.json({ success: true, data: { memberships } });
+    );
+    return res.json({ success: true, data: { memberships, pageInfo } });
   } catch (error) {
+    if (sendInvalidCursor(res, error)) {
+      return undefined;
+    }
     logger.error(`[clubController.getMyClubs] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to fetch clubs' });
   }
@@ -191,19 +238,29 @@ export async function getElections(req, res) {
     if (!membership) {
       return res.status(403).json({ success: false, message: 'Not a club member' });
     }
-    const elections = await prisma.clubElection.findMany({
-      where: { clubId },
-      orderBy: { startsAt: 'desc' },
-      include: { _count: { select: { candidates: true } } },
-    });
+    const { limit, cursor, skip } = readKeysetParams(req.query, clubListLimits);
+    const { items: elections, pageInfo } = await findKeysetPage(
+      args => prisma.clubElection.findMany(args),
+      {
+        where: { clubId },
+        sort: newestFirst('startsAt'),
+        limit,
+        cursor,
+        skip,
+        extra: { include: { _count: { select: { candidates: true } } } },
+      },
+    );
     const shaped = elections.map(e => ({
       ...e,
       candidateCount: e._count.candidates,
       _count: undefined,
       status: resolveElectionStatus(e),
     }));
-    return res.json({ success: true, data: { elections: shaped } });
+    return res.json({ success: true, data: { elections: shaped, pageInfo } });
   } catch (error) {
+    if (sendInvalidCursor(res, error)) {
+      return undefined;
+    }
     logger.error(`[clubController.getElections] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to fetch elections' });
   }
@@ -424,7 +481,9 @@ export async function getElectionResults(req, res) {
         user: { select: USER_SELECT },
         _count: { select: { ballots: true } },
       },
-      orderBy: { ballots: { _count: 'desc' } },
+      // Most votes first; ties by id so equal tallies keep their places (Equoria-cmw85.22).
+      orderBy: [{ ballots: { _count: 'desc' } }, { id: 'asc' }],
+      take: clampLimit(req.query.limit, clubListLimits),
     });
 
     const shaped = candidates.map(c => ({

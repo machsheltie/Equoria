@@ -22,6 +22,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
 import { ValidationError, NotFoundError } from '../../../errors/index.mjs';
+import { InvalidCursorError, readKeysetParams } from '../../../utils/paginationHelper.mjs';
 
 /**
  * Get horse XP status
@@ -228,8 +229,8 @@ export async function getHorseXpHistory(req, res) {
     const userId = req.user.id;
 
     // Parse query parameters
-    const limit = Math.min(parseInt(req.query.limit) || 50, 100); // Max 100 per request
-    const offset = parseInt(req.query.offset) || 0;
+    const { limit, cursor, skip } = readKeysetParams(req.query, { def: 50, max: 100 });
+    const offset = skip;
 
     // Validate horse ID
     const horseIdNum = parseInt(horseId);
@@ -237,7 +238,12 @@ export async function getHorseXpHistory(req, res) {
       throw new ValidationError('Invalid horse ID');
     }
 
-    const cacheKey = horseXpModel.horseXpHistoryCacheKey(horseIdNum, limit, offset);
+    const cacheKey = horseXpModel.horseXpHistoryCacheKey(
+      horseIdNum,
+      limit,
+      offset,
+      typeof cursor === 'string' ? cursor : '',
+    );
     const result = await getCachedQuery(
       cacheKey,
       async () => {
@@ -264,7 +270,11 @@ export async function getHorseXpHistory(req, res) {
         }
 
         // Get XP history using model
-        const historyResult = await horseXpModel.getHorseXpHistory(horseIdNum, { limit, offset });
+        const historyResult = await horseXpModel.getHorseXpHistory(horseIdNum, {
+          limit,
+          offset,
+          cursor,
+        });
 
         if (!historyResult.success) {
           return { error: historyResult.error };
@@ -294,12 +304,16 @@ export async function getHorseXpHistory(req, res) {
         events: result.events,
         count: result.count,
         pagination: result.pagination,
+        pageInfo: result.pageInfo,
       },
     });
   } catch (error) {
     logger.error(`[horseXpController.getHorseXpHistory] Error: ${error.message}`);
 
     if (error instanceof ValidationError || error.name === 'ValidationError') {
+      return res.status(400).json({ success: false, error: error.message });
+    }
+    if (error instanceof InvalidCursorError) {
       return res.status(400).json({ success: false, error: error.message });
     }
     if (error instanceof NotFoundError || error.name === 'NotFoundError') {

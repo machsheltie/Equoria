@@ -24,6 +24,11 @@ import { DatabaseError } from '../../../errors/index.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { invalidateCache, invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 import { addHorseMonthlyTotals } from '../../../utils/monthlyTotals.mjs';
+import {
+  InvalidCursorError,
+  clampLimit,
+  findKeysetPage,
+} from '../../../utils/paginationHelper.mjs';
 
 /**
  * Horse Points per stat allocation (owner ruling C15; bible 13). The one
@@ -43,8 +48,8 @@ export function horseXpStatusCacheKey(horseId) {
   return `horse:xp:status:${horseId}`;
 }
 
-export function horseXpHistoryCacheKey(horseId, limit, offset) {
-  return `horse:xp:history:${horseId}:${limit}:${offset}`;
+export function horseXpHistoryCacheKey(horseId, limit, offset, cursor = '') {
+  return `horse:xp:history:${horseId}:${limit}:${offset}:${cursor}`;
 }
 
 /**
@@ -56,8 +61,8 @@ export function horseXpHistoryCacheKey(horseId, limit, offset) {
  */
 export async function invalidateHorseXpCaches(horseId) {
   await invalidateCache(horseXpStatusCacheKey(horseId));
-  // Every page: the pattern matches any limit and offset.
-  await invalidateCachePattern(horseXpHistoryCacheKey(horseId, '*', '*'));
+  // Every page: the pattern matches any limit, offset and cursor.
+  await invalidateCachePattern(horseXpHistoryCacheKey(horseId, '*', '*', '*'));
 }
 
 /**
@@ -322,13 +327,13 @@ export async function allocateStatPoint(horseId, statName) {
 export async function getHorseXpHistory(horseId, limitOrOptions = {}, offset = 0) {
   try {
     // Handle both old signature (horseId, limit, offset) and new signature (horseId, options)
-    let limit, startDate, endDate;
+    let limit, startDate, endDate, cursor;
     if (typeof limitOrOptions === 'number') {
       // Old signature: getHorseXpHistory(horseId, limit, offset)
       limit = limitOrOptions;
     } else {
       // New signature: getHorseXpHistory(horseId, options)
-      ({ limit = 50, offset = 0, startDate, endDate } = limitOrOptions);
+      ({ limit = 50, offset = 0, startDate, endDate, cursor = null } = limitOrOptions);
     }
 
     if (limit === undefined) {
@@ -351,15 +356,24 @@ export async function getHorseXpHistory(horseId, limitOrOptions = {}, offset = 0
       }
     }
 
-    const events = await prisma.horseXpEvent.findMany({
-      where,
-      orderBy: { timestamp: 'desc' },
-      take: limit,
-      skip: offset,
-    });
+    const take = clampLimit(limit, { def: 50, max: 100 });
 
-    // Get total count for pagination
-    const totalCount = await prisma.horseXpEvent.count({ where });
+    // Keyset page (Equoria-cmw85.20): newest first, ties on the instant broken by id,
+    // so an event written while the player pages is neither skipped nor repeated.
+    // `cursor` continues a list; `offset` still works without one.
+    const { items: events, pageInfo } = await findKeysetPage(
+      args => prisma.horseXpEvent.findMany(args),
+      {
+        where,
+        sort: [
+          { key: 'timestamp', dir: 'desc', type: 'date' },
+          { key: 'id', dir: 'desc', type: 'int' },
+        ],
+        limit: take,
+        cursor,
+        skip: Math.max(offset, 0),
+      },
+    );
 
     logger.info(
       `[horseXpModel.getHorseXpHistory] Retrieved ${events.length} XP events for horse ${horseId}`,
@@ -370,12 +384,16 @@ export async function getHorseXpHistory(horseId, limitOrOptions = {}, offset = 0
       events,
       count: events.length,
       pagination: {
-        limit,
+        limit: take,
         offset,
-        hasMore: offset + events.length < totalCount,
+        hasMore: pageInfo.hasMore,
       },
+      pageInfo,
     };
   } catch (error) {
+    if (error instanceof InvalidCursorError) {
+      throw error;
+    }
     logger.error(`[horseXpModel.getHorseXpHistory] Error: ${error.message}`);
     throw new DatabaseError(`Failed to get horse XP history: ${error.message}`);
   }

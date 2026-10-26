@@ -13,6 +13,11 @@
  */
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import {
+  InvalidCursorError,
+  clampLimit,
+  findKeysetPage,
+} from '../../../utils/paginationHelper.mjs';
 import { studStatuses } from '../../../constants/schema.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
@@ -35,11 +40,13 @@ const MODE_BY_STATUS = Object.freeze({
 
 // A null studFee is a legacy 0, so it sorts with the cheapest. Every order ends
 // on `id` so ties (common: every unpriced stud reads as 0) page deterministically.
-const ORDER_BY = Object.freeze({
-  fee_asc: [{ studFee: { sort: 'asc', nulls: 'first' } }, { id: 'asc' }],
-  fee_desc: [{ studFee: { sort: 'desc', nulls: 'last' } }, { id: 'asc' }],
-  youngest: [{ age: 'asc' }, { id: 'asc' }],
-  newest: [{ createdAt: 'desc' }, { id: 'asc' }],
+// The keyset spec (Equoria-cmw85.21) carries each column's cursor type and where its NULLs go.
+const idAsc = { key: 'id', dir: 'asc', type: 'int' };
+const STUD_SORT = Object.freeze({
+  fee_asc: [{ key: 'studFee', dir: 'asc', type: 'int', nullable: true, nulls: 'first' }, idAsc],
+  fee_desc: [{ key: 'studFee', dir: 'desc', type: 'int', nullable: true, nulls: 'last' }, idAsc],
+  youngest: [{ key: 'age', dir: 'asc', type: 'int', nullable: true }, idAsc],
+  newest: [{ key: 'createdAt', dir: 'desc', type: 'date', nullable: true }, idAsc],
 });
 
 /** Validate the whole query up front; every refusal is a 400 with the standard body. */
@@ -57,7 +64,8 @@ function parseStudQuery(query) {
     page: boundedInt(query, 'page', INT4_MAX),
     limit: boundedInt(query, 'limit', INT4_MAX),
     statuses: mode === 'all' ? Object.values(STUD_MODES) : [ownValue(STUD_MODES, mode, 'mode')],
-    orderBy: ownValue(ORDER_BY, sort, 'sort'),
+    cursor: single(query, 'cursor'),
+    sort: ownValue(STUD_SORT, sort, 'sort'),
   };
 }
 
@@ -109,10 +117,10 @@ export async function browseStudListings(req, res) {
     if (sent) {
       return undefined;
     }
-    const { name, breed, breedId, minAge, maxAge, minFee, maxFee, statuses, orderBy } = params;
+    const { name, breed, breedId, minAge, maxAge, minFee, maxFee, statuses, sort, cursor } = params;
 
     const pageNum = Math.max(1, params.page || 1);
-    const pageSize = Math.min(100, Math.max(1, params.limit || 20));
+    const pageSize = clampLimit(params.limit);
 
     // Listed stallions of OTHER players only; an ownerless (erased) horse is never listed.
     const where = {
@@ -159,18 +167,23 @@ export async function browseStudListings(req, res) {
       );
     }
 
-    const [horses, total] = await Promise.all([
-      prisma.horse.findMany({
+    // Keyset page (Equoria-cmw85.21): `cursor` continues a list, `page` still works
+    // without one; only a request that is not a cursor continuation pays for the count.
+    const [{ items: horses, pageInfo }, total] = await Promise.all([
+      findKeysetPage(args => prisma.horse.findMany(args), {
         where,
-        orderBy,
+        sort,
+        limit: pageSize,
+        cursor,
         skip: (pageNum - 1) * pageSize,
-        take: pageSize,
-        include: {
-          breed: { select: { name: true } },
-          user: { select: { username: true } },
+        extra: {
+          include: {
+            breed: { select: { name: true } },
+            user: { select: { username: true } },
+          },
         },
       }),
-      prisma.horse.count({ where }),
+      cursor ? Promise.resolve(undefined) : prisma.horse.count({ where }),
     ]);
 
     const studs = horses.map(h => toStudListing(withoutUnrevealedTraits(h)));
@@ -183,11 +196,15 @@ export async function browseStudListings(req, res) {
           page: pageNum,
           limit: pageSize,
           total,
-          totalPages: Math.ceil(total / pageSize),
+          totalPages: total === undefined ? undefined : Math.ceil(total / pageSize),
         },
+        pageInfo,
       },
     });
   } catch (err) {
+    if (err instanceof InvalidCursorError) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
     logger.error(`[studListings] browseStudListings failed: ${err.message}`);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
