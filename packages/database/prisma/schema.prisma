@@ -104,6 +104,9 @@ model User {
   breedingRecordsAsStallionOwner BreedingRecord[]  @relation("BreedingRecordsAsStallionOwner")
   /// Equoria-wbt8l: News posts this account wrote at the News Desk.
   newsItemsAuthored              NewsItem[]        @relation("NewsItemAuthor")
+  /// Equoria-w47x7: this player's conduct record and where they have signed in from.
+  conductRecords                 ConductRecord[]
+  loginSightings                 LoginSighting[]
 
   @@index([email])
   @@index([emailVerified])
@@ -2475,6 +2478,66 @@ model NewsItem {
   @@index([endsAt])
   @@index([authorUserId])
   @@map("news_items")
+}
+
+/// Equoria-w47x7 (owner ruling q77, 2026-10-26): a player's conduct record. One row
+/// per steward action on the account: a warning, a freeze (1, 3 or 7 days, ending
+/// at endsAt) or an account ban. A freeze is active while endsAt is in the future;
+/// a ban is active forever (no lifting yet). issuedById has no foreign key, like
+/// StaffActionLog, so erasing a steward keeps the record. Every row is paired with
+/// a staff_action_log entry written in the same transaction.
+model ConductRecord {
+  id           Int       @id @default(autoincrement())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind         String // warning | freeze | ban
+  reason       String
+  issuedById   String
+  issuedByRole String
+  /// Freezes only: the length chosen (1, 3 or 7) and the moment it ends.
+  freezeDays   Int?
+  endsAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, kind])
+  @@map("conduct_records")
+}
+
+/// Equoria-w47x7: where an account has signed in from, so a steward's IP or device
+/// ban can name the connection. ipAddress is the request IP; deviceHash is the
+/// SHA-256 of the first-party equoriaDevice cookie the game itself issues (nothing
+/// is sent to any third party). One row per account, address and device, with the
+/// first and last time seen. Removed with the account.
+model LoginSighting {
+  id          Int      @id @default(autoincrement())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress   String   @db.VarChar(45)
+  deviceHash  String   @db.VarChar(64)
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  @@unique([userId, ipAddress, deviceHash])
+  @@index([userId, lastSeenAt(sort: Desc)])
+  @@map("login_sightings")
+}
+
+/// Equoria-w47x7: an IP or device ban. A banned IP or device cannot sign in or sign
+/// up. value is the IP address or the device hash. sourceUserId is the account the
+/// steward banned it through; no foreign key, so the ban outlives that account.
+model ConductBlock {
+  id           Int      @id @default(autoincrement())
+  kind         String // ip | device
+  value        String   @db.VarChar(64)
+  reason       String
+  issuedById   String
+  issuedByRole String
+  sourceUserId String?
+  createdAt    DateTime @default(now())
+
+  @@unique([kind, value])
+  @@map("conduct_blocks")
 }
 
 /// Equoria-vc5x1: when an account last made an authenticated request, stamped at
