@@ -248,6 +248,32 @@ describe('groom horse: a grown horse', () => {
     expect(changes.map(c => c.bondingChange)).toEqual([2, 0]);
   }, 60000);
 
+  // Equoria-tvmyx: the old flag-multiplier path turned a base gain of 5 into 6.5
+  // (Affectionate) or 3.5 (Aloof), which an Int column rejects. Grooming now adds
+  // the ruled +5 and no trait or flag changes it, so the write is always an integer.
+  it('an Affectionate horse (and a stale Aloof flag) still gains exactly +5, a whole number', async () => {
+    const horse = await makeHorse(alice, 'flags', { bondScore: 20 });
+    await prisma.horse.update({
+      where: { id: horse.id },
+      data: {
+        epigeneticFlags: ['affectionate', 'aloof'],
+        epigeneticModifiers: { positive: ['affectionate'], negative: [], hidden: [] },
+      },
+    });
+    const groom = await makeGroom(alice, 'flags-groom');
+    await assign(alice, horse, groom);
+
+    const res = await post(alice, groomUrl(horse));
+    expect(res.status).toBe(200);
+    expect(res.body.data.bond).toBe(25);
+
+    const row = await prisma.horse.findUnique({ where: { id: horse.id } });
+    expect(row.bondScore).toBe(25);
+    const [interaction] = await prisma.groomInteraction.findMany({ where: { foalId: horse.id } });
+    expect(interaction.bondingChange).toBe(5);
+    expect(Number.isInteger(interaction.bondingChange)).toBe(true);
+  }, 60000);
+
   it('refuses an activity for a grown horse', async () => {
     const horse = await makeHorse(alice, 'adult-activity');
     await assign(alice, horse, await makeGroom(alice, 'adult-activity-groom'));
