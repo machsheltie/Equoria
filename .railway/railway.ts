@@ -87,6 +87,10 @@ export default defineRailway(() => {
       PASSWORD_RESET_URL_BASE: preserve(),
       PORT: preserve(),
       REDIS_DISABLED: preserve(),
+      // News pictures (owner q24/q88, 2026-10-26): Supabase free-plan storage bucket.
+      SUPABASE_NEWS_BUCKET: preserve(),
+      SUPABASE_SERVICE_ROLE_KEY: preserve(),
+      SUPABASE_URL: preserve(),
       VERIFICATION_URL_BASE: preserve(),
     },
   });
