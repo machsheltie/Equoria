@@ -90,11 +90,7 @@ import {
   startOfGameWeek,
 } from '../../../utils/gameTime.mjs';
 import logger from '../../../utils/logger.mjs';
-import {
-  debitMoneyOrThrow,
-  InsufficientFundsError,
-  SYSTEM_ACCOUNT_BURN,
-} from '../../economy/index.mjs';
+import { InsufficientFundsError, SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 // `ensureEngagementTx` (Equoria-ypb7d.2): a groom on staff since before
 // `groom_engagements` existed gets its engagement row opened by the fee pass, which is
 // the transaction that proves the engagement is live. The migration backfills none on
@@ -105,6 +101,7 @@ import { acquirePayWeekLockTx, ensureEngagementsTx } from './groomEngagementServ
 // then release to the grooms-for-hire pool. Replaces the never-working
 // `handleInsufficientFunds` + `terminateGroomsForNonPayment` pair.
 import { handleUnpaidFees, recordUncollectedFees } from './groomFeeArrearsService.mjs';
+import { chargeWeekWithArrearsFallback } from './groomSalaryCharge.mjs';
 // Equoria-95yrv / Equoria-bgdfb: WHAT a groom costs, the ten-horse cap, and what an
 // unpaid week becomes. Defined next door so this file stays the COLLECTION of the
 // fee; re-exported below so every existing importer of this module is unchanged.
@@ -386,61 +383,15 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
               // than faked. The per-groom rows below are still written, at 0, so the
               // pay week is recorded and the pass stays idempotent for those grooms.
               //
-              // EQUORIA-BGDFB, FIX ROUND 1 (REVIEW F2) — THIS WEEK FIRST, THEN THE
-              // DEBT. The first implementation charged `week + arrears` as one
-              // all-or-nothing amount, so a player who could afford this week but not
-              // the debt paid NOTHING, stayed in grace, and lost the groom on the next
-              // pass. That is stricter than the ruling, which is "it's owed" and
-              // "collected when funds exist" — not "no work until the debt is cleared".
-              //
-              // So: attempt BOTH in one debit — still the right shape, because one
-              // debit cannot half-succeed and leave a week marked settled that was
-              // never paid. If the wallet cannot cover both, fall back to THIS WEEK
-              // ALONE: the groom keeps working, grace clears, and the arrears stay
-              // recorded in the same owed state for a later week when funds allow.
-              //
-              // The fallback is safe INSIDE this transaction: `debitMoneyOrThrow`
-              // throws on `claim.count === 0`, a JS decision after a zero-row
-              // `updateMany` — no SQL error, so the transaction is not aborted and a
-              // second, smaller attempt is a legal statement on it.
-              const chargeAttempts = [];
-              if (unpaidTotal + arrearsTotal > 0) {
-                chargeAttempts.push({ amount: unpaidTotal + arrearsTotal, withArrears: true });
-              }
-              if (arrearsTotal > 0 && unpaidTotal > 0) {
-                chargeAttempts.push({ amount: unpaidTotal, withArrears: false });
-              }
-
-              let arrearsSettledNow = false;
-              for (const [index, attempt] of chargeAttempts.entries()) {
-                try {
-                  await debitMoneyOrThrow(tx, {
-                    userId,
-                    amount: attempt.amount,
-                    systemAccount: SYSTEM_ACCOUNT_BURN,
-                    category: 'groomSalaryBurn',
-                    description: `Groom salary weekly run — user ${user.username}`,
-                    metadata: {
-                      groomCount: unpaidAssignments.length,
-                      totalSalary: unpaidTotal,
-                      // Equoria-bgdfb: the owed weeks settled by THIS debit — 0 when
-                      // the wallet only covered the current week.
-                      arrears: attempt.withArrears ? arrearsTotal : 0,
-                      paymentType: 'weeklySalary',
-                      payWeekStart: payWeekStart.toISOString(), // Equoria-icqqm audit key
-                    },
-                  });
-                  arrearsSettledNow = attempt.withArrears;
-                  break;
-                } catch (debitError) {
-                  const isLastAttempt = index === chargeAttempts.length - 1;
-                  if (!(debitError instanceof InsufficientFundsError) || isLastAttempt) {
-                    // Nothing left to fall back to: this week itself is unaffordable,
-                    // which is the grace/release path the caller already handles.
-                    throw debitError;
-                  }
-                }
-              }
+              const arrearsSettledNow = await chargeWeekWithArrearsFallback(tx, {
+                userId,
+                username: user.username,
+                groomCount: unpaidAssignments.length,
+                unpaidTotal,
+                arrearsTotal,
+                payWeekStart,
+                systemAccount: SYSTEM_ACCOUNT_BURN,
+              });
               arrearsTotal = arrearsSettledNow ? arrearsTotal : 0;
 
               // Equoria-bgdfb: the owed weeks are now paid. Marked INSIDE the same

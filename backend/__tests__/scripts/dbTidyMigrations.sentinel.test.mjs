@@ -37,23 +37,23 @@ import pg from 'pg';
 const { Client } = pg;
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
-const DB_PACKAGE = path.join(REPO_ROOT, 'packages', 'database');
-const SCHEMA_PATH = path.join(DB_PACKAGE, 'prisma', 'schema.prisma');
-const MIGRATIONS_DIR = path.join(DB_PACKAGE, 'prisma', 'migrations');
-const PRISMA_CLI = path.join(DB_PACKAGE, 'node_modules', 'prisma', 'build', 'index.js');
+const repoRoot = path.resolve(HERE, '..', '..', '..');
+const dbPackage = path.join(repoRoot, 'packages', 'database');
+const schemaPath = path.join(dbPackage, 'prisma', 'schema.prisma');
+const migrationsDir = path.join(dbPackage, 'prisma', 'migrations');
+const prismaCli = path.join(dbPackage, 'node_modules', 'prisma', 'build', 'index.js');
 
-const DROP_COLUMNS_SQL = path.join(
-  MIGRATIONS_DIR,
+const dropColumnsSql = path.join(
+  migrationsDir,
   '20261026140100_drop_dead_horse_columns_and_prefix_indexes',
   'migration.sql',
 );
-const WEEK_KEY_SQL = path.join(MIGRATIONS_DIR, '20261026140200_groom_salary_payment_week_key', 'migration.sql');
+const weekKeySql = path.join(migrationsDir, '20261026140200_groom_salary_payment_week_key', 'migration.sql');
 
-const REPLAY_DB_PREFIX = 'equoria_replay_sentinel_';
-const replayDbName = `${REPLAY_DB_PREFIX}${randomBytes(6).toString('hex')}`;
+const replayDbPrefix = 'equoria_replay_sentinel_';
+const replayDbName = `${replayDbPrefix}${randomBytes(6).toString('hex')}`;
 
-const SPEEDUP_INDEXES = Object.freeze([
+const speedupIndexes = Object.freeze([
   'training_logs_horseId_discipline_trainedAt_idx',
   'training_logs_horseId_trainedAt_idx',
   'competition_results_horseId_runDate_idx',
@@ -80,7 +80,7 @@ const SPEEDUP_INDEXES = Object.freeze([
 ]);
 
 /** Replaced by a wider index in the same migration. */
-const REPLACED_INDEXES = Object.freeze([
+const replacedIndexes = Object.freeze([
   'groom_interactions_foalId_idx',
   'riders_userId_idx',
   'riders_retired_idx',
@@ -92,7 +92,7 @@ const REPLACED_INDEXES = Object.freeze([
 ]);
 
 /** Strict prefixes of a longer full index on the same table. */
-const PREFIX_INDEXES_DROPPED = Object.freeze([
+const prefixIndexesDropped = Object.freeze([
   'trait_history_logs_horseId_idx',
   'milestone_trait_logs_horseId_idx',
   'ultra_rare_trait_events_horseId_idx',
@@ -105,7 +105,7 @@ const PREFIX_INDEXES_DROPPED = Object.freeze([
 ]);
 
 /** Look like prefixes, are not: the longer sibling is an ACTIVE-only partial unique. */
-const PREFIX_INDEXES_KEPT = Object.freeze([
+const prefixIndexesKept = Object.freeze([
   'groom_assignments_foalId_idx',
   'rider_assignments_riderId_idx',
   'trainer_assignments_trainerId_idx',
@@ -114,7 +114,7 @@ const PREFIX_INDEXES_KEPT = Object.freeze([
   'DirectMessage_senderId_idx',
 ]);
 
-const DROPPED_HORSE_COLUMNS = Object.freeze(['finalDisplayColor', 'genotype', 'phenotypicMarkings', 'rider']);
+const droppedHorseColumns = Object.freeze(['finalDisplayColor', 'genotype', 'phenotypicMarkings', 'rider']);
 
 function adminUrl() {
   const base = process.env.DATABASE_URL;
@@ -135,7 +135,7 @@ function replayUrl() {
 }
 
 function assertIsReplayDb(name) {
-  if (!name.startsWith(REPLAY_DB_PREFIX) || name === 'equoria') {
+  if (!name.startsWith(replayDbPrefix) || name === 'equoria') {
     throw new Error(`Refusing to operate on non-sentinel database "${name}"`);
   }
 }
@@ -162,9 +162,9 @@ async function withReplay(fn) {
 }
 
 function runPrisma(args, databaseUrl) {
-  return execFileSync(process.execPath, [PRISMA_CLI, ...args, `--schema=${SCHEMA_PATH}`], {
+  return execFileSync(process.execPath, [prismaCli, ...args, `--schema=${schemaPath}`], {
     env: { ...process.env, DATABASE_URL: databaseUrl },
-    cwd: DB_PACKAGE,
+    cwd: dbPackage,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -190,10 +190,10 @@ describe('database speed-up and tidy-up migrations (owner rulings 2026-10-26)', 
   test('the speed-up indexes exist and the indexes they replace are gone', async () => {
     await withReplay(async client => {
       const names = await indexNames(client);
-      for (const name of SPEEDUP_INDEXES) {
+      for (const name of speedupIndexes) {
         expect({ name, present: names.has(name) }).toEqual({ name, present: true });
       }
-      for (const name of REPLACED_INDEXES) {
+      for (const name of replacedIndexes) {
         expect({ name, present: names.has(name) }).toEqual({ name, present: false });
       }
     });
@@ -210,10 +210,10 @@ describe('database speed-up and tidy-up migrations (owner rulings 2026-10-26)', 
   test('the nine redundant prefix indexes are gone and the look-alikes that are not redundant stay', async () => {
     await withReplay(async client => {
       const names = await indexNames(client);
-      for (const name of PREFIX_INDEXES_DROPPED) {
+      for (const name of prefixIndexesDropped) {
         expect({ name, present: names.has(name) }).toEqual({ name, present: false });
       }
-      for (const name of PREFIX_INDEXES_KEPT) {
+      for (const name of prefixIndexesKept) {
         expect({ name, present: names.has(name) }).toEqual({ name, present: true });
       }
     });
@@ -225,7 +225,7 @@ describe('database speed-up and tidy-up migrations (owner rulings 2026-10-26)', 
         "SELECT column_name FROM information_schema.columns WHERE table_name = 'horses' AND table_schema = 'public'",
       );
       const columns = new Set(rows.map(r => r.column_name));
-      for (const column of DROPPED_HORSE_COLUMNS) {
+      for (const column of droppedHorseColumns) {
         expect({ column, present: columns.has(column) }).toEqual({ column, present: false });
       }
       expect(columns.has('phenotype')).toBe(true);
@@ -315,7 +315,7 @@ describe('database speed-up and tidy-up migrations (owner rulings 2026-10-26)', 
       // 6: an empty markings object and a phenotype that is not an object are left alone.
       await horse('emptyMarkings', null, '["unexpected"]', '{}');
 
-      await client.query(readFileSync(DROP_COLUMNS_SQL, 'utf8'));
+      await client.query(readFileSync(dropColumnsSql, 'utf8'));
 
       const { rows } = await client.query('SELECT "name", "phenotype" FROM "horses" ORDER BY "name"');
       const byName = Object.fromEntries(rows.map(r => [r.name, r.phenotype]));
@@ -328,7 +328,7 @@ describe('database speed-up and tidy-up migrations (owner rulings 2026-10-26)', 
 
       const columns = await client.query(
         "SELECT column_name FROM information_schema.columns WHERE table_name = 'horses' AND column_name = ANY($1)",
-        [[...DROPPED_HORSE_COLUMNS]],
+        [[...droppedHorseColumns]],
       );
       expect(columns.rows).toEqual([]);
       await client.query('DELETE FROM "horses"');
@@ -353,7 +353,7 @@ describe('database speed-up and tidy-up migrations (owner rulings 2026-10-26)', 
       // Groom 1: paid twice in the Eastern week that starts Monday 2026-10-19 (UTC dates differ).
       await plant(1, '2026-10-20 12:00:00', 'paid');
       await plant(1, '2026-10-25 12:00:00', 'paid');
-      const sql = readFileSync(WEEK_KEY_SQL, 'utf8');
+      const sql = readFileSync(weekKeySql, 'utf8');
 
       await expect(client.query(sql)).rejects.toThrow(/more than one paid row/);
       // Nothing changed: both rows survive and the column was not added (the file is one transaction).

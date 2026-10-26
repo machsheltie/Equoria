@@ -20,12 +20,13 @@ import { describe, it, expect, beforeAll, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { processWeeklySalaries, getPayWeekStart } from '../services/groomSalaryService.mjs';
-import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 import { gameDateKey } from '../../../utils/gameTime.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-h7518';
+// The economy's burn SystemAccount name (SYSTEM_ACCOUNT_BURN = 'burn').
+const burnAccountName = 'burn';
+const fixturePrefix = 'TestFixture-h7518';
 
 const tag = () => randomBytes(4).toString('hex');
 
@@ -36,8 +37,8 @@ describe('groom_salary_payments weekKey (Equoria-h7518)', () => {
 
   beforeAll(async () => {
     await prisma.systemAccount.upsert({
-      where: { name: SYSTEM_ACCOUNT_BURN },
-      create: { name: SYSTEM_ACCOUNT_BURN, balance: 0 },
+      where: { name: burnAccountName },
+      create: { name: burnAccountName, balance: 0 },
       update: {},
     });
   }, 30000);
@@ -48,8 +49,8 @@ describe('groom_salary_payments weekKey (Equoria-h7518)', () => {
     const suffix = tag();
     user = await prisma.user.create({
       data: {
-        email: `${FIXTURE_PREFIX}-${suffix}@test.com`,
-        username: `${FIXTURE_PREFIX}-${suffix}`.slice(0, 30),
+        email: `${fixturePrefix}-${suffix}@test.com`,
+        username: `${fixturePrefix}-${suffix}`.slice(0, 30),
         password: 'irrelevant-hash',
         firstName: 'h7518',
         lastName: 'Tester',
@@ -58,7 +59,7 @@ describe('groom_salary_payments weekKey (Equoria-h7518)', () => {
     });
     groom = await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-Groom-${suffix}`,
+        name: `${fixturePrefix}-Groom-${suffix}`,
         speciality: 'general',
         personality: 'gentle',
         skillLevel: 'novice',
@@ -68,7 +69,7 @@ describe('groom_salary_payments weekKey (Equoria-h7518)', () => {
     const horse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
-        name: `${FIXTURE_PREFIX}-Horse-${suffix}`,
+        name: `${fixturePrefix}-Horse-${suffix}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
