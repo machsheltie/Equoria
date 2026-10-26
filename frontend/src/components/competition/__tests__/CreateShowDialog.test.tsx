@@ -3,11 +3,12 @@
  *
  * Real dialog, real hooks, real AuthProvider; MSW answers only the network
  * boundary. The server derives the prize (10 x the entry fee) and takes it from
- * the host at creation, so the dialog states the exact prize and the balance
- * afterwards before the player confirms, and receipts it afterwards.
+ * the host at creation. Owner ruling 2026-10-26 (Equoria-o08zw): the prize is
+ * stated on the Host button and hosting is one click, with no balance preview,
+ * confirm step or receipt. Refusals are still shown in authored words.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -102,7 +103,7 @@ function stage(world: World, refusal?: { status: number; body: Record<string, un
   );
 }
 
-function renderDialog() {
+function renderDialog(onOpenChange: (open: boolean) => void = () => {}) {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -110,7 +111,7 @@ function renderDialog() {
     <QueryClientProvider client={qc}>
       <AuthProvider>
         <MemoryRouter>
-          <CreateShowDialog open onOpenChange={() => {}} />
+          <CreateShowDialog open onOpenChange={onOpenChange} />
         </MemoryRouter>
       </AuthProvider>
     </QueryClientProvider>
@@ -158,60 +159,54 @@ describe('CreateShowDialog (Equoria-oey96.13)', () => {
     );
   });
 
-  it('states the exact prize and the balance afterwards before anything is taken', async () => {
+  it('states the prize on the Host button and shows no balance preview', async () => {
     const world = newWorld();
     stage(world);
     const user = userEvent.setup();
     renderDialog();
+    expect(await screen.findByRole('button', { name: 'Host Show' })).toBeInTheDocument();
     await fillForm(user, '50');
-    await user.click(screen.getByRole('button', { name: /review show/i }));
-
-    const confirm = await screen.findByTestId('create-show-confirm');
-    expect(within(confirm).getByTestId('create-show-prize')).toHaveTextContent('500');
-    expect(within(confirm).getByTestId('create-show-balance-after')).toHaveTextContent('500');
-    expect(within(confirm).getByTestId('create-show-balance-now')).toHaveTextContent('1,000');
-    expect(within(confirm).getByText(/all the entry fees/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Host Show (prize 500)' })).toBeInTheDocument();
+    expect(screen.queryByText(/your coins/i)).toBeNull();
+    expect(screen.queryByTestId('create-show-confirm')).toBeNull();
     expect(world.posted).toHaveLength(0);
   });
 
-  it('hosts the show, sends no prize, and receipts what was taken and the new balance', async () => {
+  it('hosts the show in one click, sends no prize, and closes with no receipt', async () => {
     const world = newWorld();
     stage(world);
     const user = userEvent.setup();
-    renderDialog();
+    const onOpenChange = vi.fn();
+    renderDialog(onOpenChange);
     await fillForm(user, '50');
-    await user.click(screen.getByRole('button', { name: /review show/i }));
-    await user.click(await screen.findByRole('button', { name: /host this show/i }));
+    await user.click(screen.getByRole('button', { name: 'Host Show (prize 500)' }));
 
-    const receipt = await screen.findByTestId('create-show-receipt');
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     expect(world.posted).toEqual([
       { name: 'Starlit Dressage Cup', discipline: 'Dressage', level: 3, entryFee: 50 },
     ]);
-    expect(within(receipt).getByTestId('create-show-receipt-taken')).toHaveTextContent('500');
-    await waitFor(() =>
-      expect(within(receipt).getByTestId('create-show-receipt-balance')).toHaveTextContent('500')
-    );
+    expect(screen.queryByTestId('create-show-receipt')).toBeNull();
+    expect(document.body).not.toHaveTextContent(/your coins/i);
   });
 
-  it('takes nothing for a free show and says so', async () => {
+  it('labels a free show as free on the button', async () => {
     stage(newWorld());
     const user = userEvent.setup();
     renderDialog();
     await fillForm(user, '0');
-    await user.click(screen.getByRole('button', { name: /review show/i }));
-    const confirm = await screen.findByTestId('create-show-confirm');
-    expect(within(confirm).getByText(/no coins are taken/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Host Show (free)' })).toBeInTheDocument();
   });
 
-  it('will not review a show whose prize the player cannot cover', async () => {
-    stage(newWorld({ money: 100 }));
+  it('will not host a show whose prize the player cannot cover', async () => {
+    const world = newWorld({ money: 100 });
+    stage(world);
     const user = userEvent.setup();
     renderDialog();
     await fillForm(user, '50');
-    await waitFor(() => expect(screen.getByTestId('create-show-balance-hint')).toBeInTheDocument());
-    await user.click(screen.getByRole('button', { name: /review show/i }));
-    expect(screen.queryByTestId('create-show-confirm')).toBeNull();
+    await waitFor(() => expect(screen.getByLabelText(/show name/i)).toBeInTheDocument());
+    await user.click(await screen.findByRole('button', { name: /^host show/i }));
     expect(await screen.findByText(/coins don't cover the prize/i)).toBeInTheDocument();
+    expect(world.posted).toHaveLength(0);
   });
 
   it('says the week is full and offers no way to host when the limit is reached', async () => {
@@ -220,7 +215,7 @@ describe('CreateShowDialog (Equoria-oey96.13)', () => {
     renderDialog();
     expect(await screen.findByText('10 of 10 shows this week')).toBeInTheDocument();
     await fillForm(user, '5');
-    expect(screen.getByRole('button', { name: /review show/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^host show/i })).toBeDisabled();
     expect(screen.getByText(/new week of hosting begins on monday/i)).toBeInTheDocument();
   });
 
@@ -235,14 +230,12 @@ describe('CreateShowDialog (Equoria-oey96.13)', () => {
     const user = userEvent.setup();
     renderDialog();
     await fillForm(user, '50');
-    await user.click(screen.getByRole('button', { name: /review show/i }));
-    await user.click(await screen.findByRole('button', { name: /host this show/i }));
+    await user.click(screen.getByRole('button', { name: /^host show/i }));
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/hosted all the shows you can this week/i);
     expect(document.body).not.toHaveTextContent('weeklyShowLimitReached');
     expect(document.body).not.toHaveTextContent('RAW SERVER WORDING');
-    await user.click(screen.getByRole('button', { name: /change details/i }));
     expect(screen.getByLabelText(/show name/i)).toHaveValue('Starlit Dressage Cup');
   });
 
@@ -254,12 +247,11 @@ describe('CreateShowDialog (Equoria-oey96.13)', () => {
     const user = userEvent.setup();
     renderDialog();
     await fillForm(user, '5');
-    await user.click(screen.getByRole('button', { name: /review show/i }));
-    await user.click(await screen.findByRole('button', { name: /host this show/i }));
+    await user.click(screen.getByRole('button', { name: /^host show/i }));
     expect(await screen.findByText(/another show already has that name/i)).toBeInTheDocument();
   });
 
-  it('refuses a name under two characters before review', async () => {
+  it('refuses a name under two characters before hosting', async () => {
     stage(newWorld());
     const user = userEvent.setup();
     renderDialog();
@@ -267,8 +259,8 @@ describe('CreateShowDialog (Equoria-oey96.13)', () => {
     const discipline = await screen.findByLabelText(/discipline/i);
     await waitFor(() => expect(within(discipline).getByText('Dressage')).toBeInTheDocument());
     await user.selectOptions(discipline, 'Dressage');
-    await user.click(screen.getByRole('button', { name: /review show/i }));
+    await user.click(screen.getByRole('button', { name: /^host show/i }));
     expect(await screen.findByText(/at least two characters/i)).toBeInTheDocument();
-    expect(screen.queryByTestId('create-show-confirm')).toBeNull();
+    expect(screen.getByLabelText(/show name/i)).toBeInTheDocument();
   });
 });
