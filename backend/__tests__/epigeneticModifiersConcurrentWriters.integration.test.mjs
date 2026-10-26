@@ -5,9 +5,11 @@
  * The two production writers (the player trait-discovery routes were removed
  * under Equoria-gu8jk; utils/traitDiscovery.revealTraits has no production
  * caller) are:
- *   A. the nightly foal-trait evaluation (services/jobs/impl/foalTraitEvaluation
- *      .evaluateFoalTraits), which appends revealed traits to positive /
- *      negative / hidden;
+ *   A. the trait reveal engine (modules/traits/services/traitRevealEngine
+ *      .evaluateHorseTraitReveal), which moves carried traits between positive /
+ *      negative / hidden. (Owner ruling 2026-10-26, q98, Equoria-2d55z: it
+ *      replaced the nightly foal-trait evaluation, which appended invented
+ *      traits and was writer A here before.)
  *   B. the age-1 milestone in utils/horseAgingSystem.checkForMilestones (daily
  *      aging job and the admin age update), which records epigenetic_tags.
  * Both used to read the whole JSON object, change it in memory and write the
@@ -21,9 +23,10 @@
  * too). The barrier is released, so A writes first and B second, each from a
  * read taken before the other's write. Queue order is waited for, not slept for.
  *
- * Math.random is pinned to 0 so both writers certainly produce something; it
- * is the only thing replaced. Everything else is the real code against the
- * real database.
+ * Math.random is pinned to 0 so the milestone certainly produces tags; the
+ * engine gets a winning rng, complete test settings and an empty grooming
+ * history (its injectable reader), so it certainly reveals. Everything else is
+ * the real code against the real database.
  */
 
 import { describe, beforeAll, afterAll, afterEach, expect, it, jest } from '@jest/globals';
@@ -32,7 +35,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { createTestHorse, cleanupTestHorses } from './helpers/createTestHorse.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { createBarrierClient, holdLock, horseRowLock } from './helpers/rowLockBarrier.mjs';
-import * as foalTraitImpl from '../services/jobs/impl/foalTraitEvaluation.mjs';
+import { evaluateHorseTraitReveal } from '../modules/traits/services/traitRevealEngine.mjs';
 import { ageOneTagsKey, checkForMilestones } from '../utils/horseAgingSystem.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
 
@@ -40,17 +43,23 @@ const randHex = () => randomBytes(6).toString('hex');
 
 const barrierClient = createBarrierClient();
 
-/** A service handle that re-enters the impl exactly as the CronJobService delegators do. */
-function realService() {
-  const service = {
-    evaluateFoalTraits: f => foalTraitImpl.evaluateFoalTraits(service, f),
-    advanceFoalDevelopmentDay: (id, day) => foalTraitImpl.advanceFoalDevelopmentDay(id, day),
-    notifyTraitRevelation: (f, t, d) => foalTraitImpl.notifyTraitRevelation(f, t, d),
-    logTraitRevelation: (...args) => foalTraitImpl.logTraitRevelation(...args),
-    logAuditSummary: s => foalTraitImpl.logAuditSummary(s),
-  };
-  return service;
-}
+const byRarity = n => ({ common: n, uncommon: n, rare: n, ultraRare: n, legendary: n });
+// Test values only; the owner has not ruled the real numbers.
+const revealSettings = {
+  revealDays: { positive: byRarity(1), negative: byRarity(1) },
+  switchOffDays: { positive: byRarity(1), negative: byRarity(1) },
+  dailyChance: byRarity(1),
+  lastDayOfLife: 21,
+  traitRarity: { fearful: 'common' },
+};
+
+/** Writer A: one engine run over the foal's neglected days. */
+const runReveal = foalId =>
+  evaluateHorseTraitReveal(foalId, {
+    settings: revealSettings,
+    rng: () => 0,
+    readGroomedDays: async () => new Set(),
+  });
 
 describe('INTEGRATION: epigeneticModifiers writers keep each other’s work (Equoria-m1sf8)', () => {
   let user;
@@ -101,30 +110,26 @@ describe('INTEGRATION: epigeneticModifiers writers keep each other’s work (Equ
       {
         name: `TestFixture-m1sf8-${randHex()}`,
         sex: 'Colt',
-        // Lived ten whole days, so development day 2 is due tonight.
+        // Lived ten whole days, so the engine has days to evaluate.
         dateOfBirth: gameCalendarDate(new Date(), -10),
         age: 0,
         userId: user.id,
-        // Conditions under which day-2 positive traits are eligible.
-        bondScore: 80,
         // A task the age-1 milestone maps to an epigenetic tag.
         taskLog: { desensitization: 3 },
         daysGroomedInARow: 3,
-        epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+        epigeneticModifiers: { positive: [], negative: [], hidden: ['fearful'] },
       },
       createdHorseIds,
     );
-    await prisma.foalDevelopment.create({ data: { foalId: foal.id, currentDay: 2 } });
     return foal;
   }
 
   const reload = foalId => prisma.horse.findUnique({ where: { id: foalId }, include: { foalDevelopment: true } });
 
-  const revealedNames = mods => [...(mods?.positive ?? []), ...(mods?.negative ?? []), ...(mods?.hidden ?? [])];
+  const revealedNames = changes => changes.map(c => c.trait);
 
   it('a reveal that commits while the age-1 milestone is writing survives it', async () => {
     const foal = await makeFoal();
-    const snapshot = await reload(foal.id);
     jest.spyOn(Math, 'random').mockReturnValue(0);
 
     const barrier = await holdLock(barrierClient, horseRowLock(foal.id));
@@ -132,7 +137,7 @@ describe('INTEGRATION: epigeneticModifiers writers keep each other’s work (Equ
     let milestone;
     try {
       // A first: it reads the traits inside its transaction, then queues.
-      evaluation = foalTraitImpl.evaluateFoalTraits(realService(), snapshot);
+      evaluation = runReveal(foal.id);
       await barrier.waitForQueued(1);
       // B second: it reads the same traits, then queues behind A.
       milestone = checkForMilestones(foal.id, 0, 10);
@@ -142,12 +147,11 @@ describe('INTEGRATION: epigeneticModifiers writers keep each other’s work (Equ
     }
     const [evalResult, milestoneResult] = await Promise.all([evaluation, milestone]);
 
-    const revealed = revealedNames(evalResult.newTraits);
-    expect(revealed.length).toBeGreaterThan(0);
+    expect(revealedNames(evalResult.changes)).toEqual(['fearful']);
     expect(milestoneResult.traitsAssigned.length).toBeGreaterThan(0);
 
     const after = await reload(foal.id);
-    expect(revealedNames(after.epigeneticModifiers)).toEqual(expect.arrayContaining(revealed));
+    expect(after.epigeneticModifiers.negative).toEqual(['fearful']);
     expect(after.epigeneticModifiers[ageOneTagsKey]).toEqual(milestoneResult.traitsAssigned);
   }, 120000);
 
@@ -158,12 +162,11 @@ describe('INTEGRATION: epigeneticModifiers writers keep each other’s work (Equ
     const milestoneResult = await checkForMilestones(foal.id, 0, 10);
     expect(milestoneResult.traitsAssigned.length).toBeGreaterThan(0);
 
-    const evalResult = await foalTraitImpl.evaluateFoalTraits(realService(), await reload(foal.id));
-    const revealed = revealedNames(evalResult.newTraits);
-    expect(revealed.length).toBeGreaterThan(0);
+    const evalResult = await runReveal(foal.id);
+    expect(revealedNames(evalResult.changes)).toEqual(['fearful']);
 
     const after = await reload(foal.id);
     expect(after.epigeneticModifiers[ageOneTagsKey]).toEqual(milestoneResult.traitsAssigned);
-    expect(revealedNames(after.epigeneticModifiers)).toEqual(expect.arrayContaining(revealed));
+    expect(after.epigeneticModifiers.negative).toEqual(['fearful']);
   }, 120000);
 });
