@@ -50,6 +50,43 @@ const TIMER_GLOBALS = [
 ];
 const PRUNE_THRESHOLD = 4096;
 
+// Equoria-qe0b0: the shared-client methods a test must never leave replaced.
+const guardedPrismaMethods = ['$queryRaw', '$executeRaw', '$transaction'];
+
+/**
+ * Record the guarded method references of the shared Prisma client, if one is
+ * already on the sandbox global when the file starts (in-band runs forward the
+ * one client every file shares; a client first created by this file dies with
+ * its sandbox and cannot leak). Property reads on the extended client return a
+ * stable reference, so `===` is a sound comparison; a `.bind(prisma)` copy or a
+ * spy left behind is a different function.
+ */
+export function snapshotGuardedPrismaMethods(sandboxGlobal) {
+  const client = sandboxGlobal.__prisma;
+  if (!client) {
+    return null;
+  }
+  return { client, originals: guardedPrismaMethods.map(name => [name, client[name]]) };
+}
+
+/**
+ * Compare against the snapshot, put every original back (so one leaking file
+ * cannot poison the files after it) and return the names that had changed.
+ */
+export function restoreGuardedPrismaMethods(snapshot) {
+  if (!snapshot) {
+    return [];
+  }
+  const replaced = [];
+  for (const [name, original] of snapshot.originals) {
+    if (snapshot.client[name] !== original) {
+      replaced.push(name);
+      snapshot.client[name] = original;
+    }
+  }
+  return replaced;
+}
+
 /**
  * Wrap the sandbox's timer globals so every handle created from inside the
  * sandbox can be released at teardown. Returns the tracker; exported so the
@@ -121,10 +158,28 @@ export default class PrismaCleanupEnvironment extends NodeEnvironment {
   constructor(config, context) {
     super(config, context);
     this._sandboxTimers = trackSandboxTimers(this.global);
+    this._prismaMethodSnapshot = snapshotGuardedPrismaMethods(this.global);
   }
 
   async teardown() {
     const failures = [];
+
+    // Equoria-qe0b0: fail the file that leaves a shared Prisma method replaced.
+    try {
+      const replaced = restoreGuardedPrismaMethods(this._prismaMethodSnapshot);
+      this._prismaMethodSnapshot = null;
+      if (replaced.length > 0) {
+        failures.push(
+          new Error(
+            `Test file left shared Prisma client method(s) replaced: ${replaced.join(', ')}. ` +
+              'Restore the ORIGINAL unbound function by assignment (const real = prisma.$queryRaw ... ' +
+              'prisma.$queryRaw = real), never a .bind(prisma) copy. The originals were put back.',
+          ),
+        );
+      }
+    } catch (error) {
+      failures.push(error);
+    }
 
     try {
       await cleanupPrismaInstances(this.global);
