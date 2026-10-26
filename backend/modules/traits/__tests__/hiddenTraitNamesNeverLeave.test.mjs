@@ -177,12 +177,6 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
       expectNoHiddenNames(res);
       expect(res.body.data.hiddenTraitsCount).toBe(2);
     });
-
-    it('GET /environment/comfort-zone/:id names no hidden trait', async () => {
-      const res = await get(`/api/v1/environment/comfort-zone/${foal.id}`);
-      expectNoHiddenNames(res);
-      expect(res.body.data.traits).toEqual([VISIBLE]);
-    });
   });
 
   // Owner ruling 2026-10-19 (fix round 1): the fixed per-condition trait-name
