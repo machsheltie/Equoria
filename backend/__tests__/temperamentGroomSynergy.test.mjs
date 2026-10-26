@@ -3,7 +3,6 @@
  *
  * Covers:
  * - getTemperamentGroomSynergy() — all pairings from PRD-03 §7.6
- * - calculateBondingEffects() — synergy integration + regression (2-arg form)
  * - Data integrity — TEMPERAMENT_GROOM_SYNERGY keys match TEMPERAMENT_TYPES
  */
 
@@ -19,8 +18,6 @@ import {
   TEMPERAMENT_GROOM_SYNERGY,
 } from '../modules/horses/services/temperamentService.mjs';
 import { TEMPERAMENT_TYPES } from '../modules/horses/data/temperamentTypes.mjs';
-import { calculateBondingEffects } from '../utils/groomBondingSystem.mjs';
-import { GROOM_CONFIG } from '../config/groomConfig.mjs';
 
 describe('Story 31D.4: Groom Temperament Synergy', () => {
   // ─── Unit tests: getTemperamentGroomSynergy() ────────────────────────────
@@ -191,80 +188,6 @@ describe('Story 31D.4: Groom Temperament Synergy', () => {
     // Review: whitespace in temperament is trimmed correctly
     it('temperament with leading/trailing whitespace is normalised (e.g. " Nervous ")', () => {
       expect(getTemperamentGroomSynergy(' Nervous ', 'patient')).toBe(0.25);
-    });
-  });
-
-  // ─── Integration tests: calculateBondingEffects() ────────────────────────
-
-  describe('calculateBondingEffects() — synergy integration', () => {
-    // Owner ruling 2026-10-26 (q87) set the daily gain to +5 (was +2).
-    const BASE_GAIN = GROOM_CONFIG.DAILY_BOND_GAIN; // 5
-
-    // Task 4.8 — Nervous + patient → +25% → bondChange ≈ 6.25 (AC #1)
-    it('Nervous + patient groom: bondChange = 6.25, synergyModifier = 0.25 (AC #1)', () => {
-      const result = calculateBondingEffects(20, 'brushing', 'patient', 'Nervous');
-      expect(result.eligible).toBe(true);
-      expect(result.synergyModifier).toBe(0.25);
-      expect(result.bondChange).toBeCloseTo(BASE_GAIN * 1.25, 5); // 6.25
-      expect(result.newBondScore).toBeCloseTo(26.25, 5);
-    });
-
-    // Task 4.9 — Nervous + strict → -15% → bondChange ≈ 4.25 (AC #2)
-    it('Nervous + strict groom: bondChange = 4.25, synergyModifier = -0.15 (AC #2)', () => {
-      const result = calculateBondingEffects(20, 'brushing', 'strict', 'Nervous');
-      expect(result.eligible).toBe(true);
-      expect(result.synergyModifier).toBe(-0.15);
-      expect(result.bondChange).toBeCloseTo(BASE_GAIN * 0.85, 5); // 4.25
-      expect(result.newBondScore).toBeCloseTo(24.25, 5);
-    });
-
-    // Task 4.10 — 2-arg regression: bondChange = 5 (AC #7)
-    it('2-arg call: bondChange = 5, newBondScore = 25 (regression AC #7)', () => {
-      const result = calculateBondingEffects(20, 'brushing');
-      expect(result.bondChange).toBe(5);
-      expect(result.newBondScore).toBe(25);
-      expect(result.eligible).toBe(true);
-      expect(result.synergyModifier).toBe(0);
-    });
-
-    // Task 4.11 — null inputs → bondChange = 5
-    it('calculateBondingEffects(20, brushing, null, null): bondChange = 5 (null = neutral)', () => {
-      const result = calculateBondingEffects(20, 'brushing', null, null);
-      expect(result.bondChange).toBe(5);
-      expect(result.synergyModifier).toBe(0);
-    });
-
-    // Task 4.12 — enrichment task ineligible even with synergy supplied
-    it('enrichment task (desensitization) with synergy: bondChange = 0, ineligible', () => {
-      const result = calculateBondingEffects(20, 'desensitization', 'patient', 'Nervous');
-      expect(result.eligible).toBe(false);
-      expect(result.bondChange).toBe(0);
-      expect(result.newBondScore).toBe(20);
-    });
-
-    // REMOVED (no-mocks doctrine): "logs synergy info when modifier
-    // is non-zero" and "does not log synergy info when modifier is
-    // zero" — both asserted on logger.info call shape, dropped per
-    // doctrine. The behavioural surface (synergy modifier applied
-    // correctly) is exercised by the 17 explicit pairing tests above
-    // and the integration tests below.
-
-    // Review: cap behaviour with positive synergy — bond score near max
-    it('bond score near cap (99) with +25% synergy: bondChange capped, capped flag true', () => {
-      const result = calculateBondingEffects(99, 'brushing', 'patient', 'Nervous');
-      expect(result.eligible).toBe(true);
-      expect(result.capped).toBe(true);
-      expect(result.newBondScore).toBe(GROOM_CONFIG.BOND_SCORE_MAX);
-      expect(result.bondChange).toBe(GROOM_CONFIG.BOND_SCORE_MAX - 99); // 1 (not 2.5)
-    });
-
-    // Review: cap behaviour — bond score already at max
-    it('bond score at cap (100) with synergy: bondChange = 0, capped true', () => {
-      const result = calculateBondingEffects(GROOM_CONFIG.BOND_SCORE_MAX, 'brushing', 'patient', 'Nervous');
-      expect(result.eligible).toBe(true);
-      expect(result.capped).toBe(true);
-      expect(result.bondChange).toBe(0);
-      expect(result.newBondScore).toBe(GROOM_CONFIG.BOND_SCORE_MAX);
     });
   });
 

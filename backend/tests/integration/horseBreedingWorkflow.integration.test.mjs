@@ -304,7 +304,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
 
     // ── STEP 4: Groom Assignment & Care ─────────────────────────────────────
     // Import groom system (real business logic)
-    const { ensureDefaultGroomAssignment, recordGroomInteraction } = await import('../../utils/groomSystem.mjs');
+    const { ensureDefaultGroomAssignment } = await import('../../utils/groomSystem.mjs');
 
     // Ensure foal has a groom assignment
     const assignmentResult = await ensureDefaultGroomAssignment(foal.id, testUser.id);
@@ -323,25 +323,16 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
 
     const assignedGroom = dbAssignment.groom;
 
-    // Record groom interaction with foal
-    const interactionData = {
-      foalId: foal.id,
-      groomId: assignedGroom.id,
-      interactionType: 'daily_care',
-      duration: 60, // 1 hour
-      notes: 'Initial care for newborn foal',
-    };
+    // The player presses "groom horse": the one grooming door (groomCareService).
+    // A newborn foal picks one of day one's activities; the groom does it for +5 bond.
+    const { getCareStatus, groomHorse } = await import('../../modules/grooms/services/groomCareService.mjs');
+    const careBefore = await getCareStatus(foal.id);
+    expect(careBefore.canGroomToday).toBe(true);
+    const chosenActivity = careBefore.foal.activities[0].id;
 
-    const interactionResult = await recordGroomInteraction(
-      interactionData.foalId,
-      interactionData.groomId,
-      interactionData.interactionType,
-      interactionData.duration,
-      testUser.id,
-      interactionData.notes,
-    );
-
-    expect(interactionResult.success).toBe(true);
+    const careAfter = await groomHorse({ horseId: foal.id, activity: chosenActivity });
+    expect(careAfter.groomedToday).toBe(true);
+    expect(careAfter.bond).toBe(5);
 
     // VERIFY: Interaction logged in database
     const dbInteraction = await prisma.groomInteraction.findFirst({
@@ -352,8 +343,8 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
     });
 
     expect(dbInteraction).toBeTruthy();
-    expect(dbInteraction.interactionType).toBe('daily_care');
-    expect(dbInteraction.duration).toBe(60);
+    expect(dbInteraction.interactionType).toBe(chosenActivity);
+    expect(dbInteraction.bondingChange).toBe(5);
 
     // ── STEP 5: Foal Development Tracking ────────────────────────────────────
     // Get foal development data

@@ -12,8 +12,6 @@
  */
 
 import logger from '../../../utils/logger.mjs';
-import { recordGroomPerformance } from './groomPerformanceService.mjs';
-import { getTemperamentGroomSynergy } from '../../horses/index.mjs';
 
 // Enhanced interaction types with contextual variations
 export const ENHANCED_INTERACTIONS = {
@@ -244,109 +242,6 @@ function evaluateCondition(condition, context) {
 }
 
 /**
- * Calculate enhanced interaction effects
- * @param {Object} groom - Groom performing interaction
- * @param {Object} horse - Horse receiving interaction
- * @param {string} interactionType - Type of interaction
- * @param {string} variation - Specific variation of interaction
- * @param {number} duration - Duration in minutes
- * @returns {Object} Calculated effects
- */
-export function calculateEnhancedEffects(groom, horse, interactionType, variation, duration) {
-  // Get base interaction data
-  const interaction = ENHANCED_INTERACTIONS[interactionType.toUpperCase()];
-  if (!interaction) {
-    throw new Error(`Unknown interaction type: ${interactionType}`);
-  }
-
-  // Find specific variation
-  const variationData =
-    interaction.variations.find(v => v.name === variation) || interaction.variations[0];
-
-  // Calculate relationship level
-  const totalBonding = horse.bondScore || 0;
-  const relationshipLevel = calculateRelationshipLevel(totalBonding);
-
-  // Base effects calculation
-  const baseBonding = Math.floor((duration / 30) * (3 + Math.random() * 4)); // 3-7 per 30 min
-
-  // Apply variation multiplier
-  let bonding = Math.round(baseBonding * variationData.bonusMultiplier);
-
-  // Apply relationship level multiplier
-  bonding = Math.round(bonding * relationshipLevel.multiplier);
-
-  // Apply groom preference bonus
-  const preferences = GROOM_PREFERENCES[groom.personality];
-  if (preferences) {
-    if (preferences.preferred_interactions.includes(interaction.id)) {
-      bonding = Math.round(bonding * preferences.bonus_multiplier);
-    }
-
-    if (preferences.preferred_contexts.includes(variationData.context)) {
-      bonding = Math.round(bonding * 1.1);
-    }
-  }
-
-  // Check for special events
-  const context = { groom, horse, relationshipLevel, interactionType };
-  const specialEvent = checkForSpecialEvent(context);
-
-  if (specialEvent) {
-    bonding += specialEvent.effects.bonding || 0;
-  }
-
-  // 31D-4 (Equoria-gi9o follow-up): apply temperament-groom synergy modifier
-  // to enhancedGroomInteractions bondingChange — parity with calculateGroomInteractionEffects.
-  const synergyModifier = getTemperamentGroomSynergy(horse?.temperament, groom?.personality);
-  if (synergyModifier !== 0) {
-    bonding = Math.round(bonding * (1 + synergyModifier));
-  }
-
-  // Ensure reasonable bounds
-  bonding = Math.max(1, Math.min(25, bonding));
-
-  const result = {
-    bondingChange: bonding,
-    synergyModifier,
-    quality: calculateInteractionQuality(bonding),
-    relationshipLevel: relationshipLevel.name,
-    variation: variationData.name,
-    specialEvent: specialEvent || null,
-    duration,
-  };
-
-  logger.info(
-    `[enhancedGroomInteractions] Calculated effects: +${bonding} bonding, quality: ${result.quality}`,
-  );
-
-  return result;
-}
-
-/**
- * Calculate interaction quality based on effects
- * @param {number} bonding - Bonding change
- * @returns {string} Quality rating
- */
-function calculateInteractionQuality(bonding) {
-  const score = bonding;
-
-  if (score >= 20) {
-    return 'exceptional';
-  }
-  if (score >= 15) {
-    return 'excellent';
-  }
-  if (score >= 10) {
-    return 'good';
-  }
-  if (score >= 5) {
-    return 'fair';
-  }
-  return 'poor';
-}
-
-/**
  * Get available interaction variations for a groom and horse
  * @param {Object} groom - Groom object
  * @param {Object} horse - Horse object
@@ -374,52 +269,6 @@ export function getAvailableInteractions(groom, horse) {
   }
 
   return available;
-}
-
-/**
- * Process a complete groom interaction with performance tracking
- * @param {Object} groom - Groom performing interaction
- * @param {Object} horse - Horse receiving interaction
- * @param {string} userId - User ID
- * @param {string} interactionType - Type of interaction
- * @param {string} variation - Specific variation
- * @param {number} duration - Duration in minutes
- * @returns {Object} Complete interaction result with performance tracking
- */
-export async function processInteractionWithPerformance(
-  groom,
-  horse,
-  userId,
-  interactionType,
-  variation,
-  duration,
-) {
-  // Calculate interaction effects
-  const effects = calculateEnhancedEffects(groom, horse, interactionType, variation, duration);
-
-  // Determine task success based on interaction quality
-  const taskSuccess = ['excellent', 'exceptional'].includes(effects.quality);
-
-  // Record performance asynchronously (don't block interaction)
-  recordGroomPerformance(groom.id, userId, interactionType, {
-    horseId: horse.id,
-    bondGain: effects.bondingChange,
-    taskSuccess,
-    duration,
-    playerRating: null, // Could be added later via separate rating system
-  }).catch(error => {
-    logger.error(`[enhancedGroomInteractions] Failed to record performance: ${error.message}`);
-  });
-
-  logger.info(
-    `[enhancedGroomInteractions] Processed interaction with performance tracking: ${interactionType} (${variation})`,
-  );
-
-  return {
-    ...effects,
-    performanceTracked: true,
-    taskSuccess,
-  };
 }
 
 /**

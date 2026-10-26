@@ -10,9 +10,7 @@
  * - Task logging system for frequency tracking and trait evaluation
  * - Streak tracking with grace period logic for consecutive care bonuses
  * - Task mutual exclusivity enforcement (one enrichment OR one grooming per day)
- * - Bonding effect calculations for grooming sessions
  * - Consecutive day (care streak) tracking
- * - Complete grooming session processing workflow
  *
  * 🔧 DEPENDENCIES:
  * - groomConfig.mjs (configuration constants)
@@ -34,9 +32,6 @@
  */
 
 import { GROOM_CONFIG } from '../config/groomConfig.mjs';
-import { getTemperamentGroomSynergy } from '../modules/horses/index.mjs';
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from './logger.mjs';
 
 /**
  * Get eligible tasks for a horse based on age
@@ -113,56 +108,6 @@ export function getAgeGroupDescription(ageInYears) {
   } else {
     return 'adult horse (3+ years)';
   }
-}
-
-/**
- * Calculate bonding effects for a grooming session
- * @param {number} currentBondScore - Current bond score of the horse
- * @param {string} groomingTask - Type of grooming task
- * @param {string|null} groomPersonality - Groom personality for synergy (optional, backward-compatible)
- * @param {string|null} horseTemperament - Horse temperament for synergy (optional, backward-compatible)
- * @returns {Object} Bonding calculation results
- */
-export function calculateBondingEffects(
-  currentBondScore,
-  groomingTask,
-  groomPersonality = null,
-  horseTemperament = null,
-) {
-  // Check if task is eligible for bonding (any grooming task can provide bonding)
-  const taskCategory = categorizeTask(groomingTask);
-  if (taskCategory !== GROOM_CONFIG.TASK_CATEGORIES.GROOMING) {
-    return {
-      bondChange: 0,
-      newBondScore: currentBondScore,
-      eligible: false,
-      reason: `Task '${groomingTask}' is not eligible for bonding (enrichment tasks don't provide bonding)`,
-      synergyModifier: 0,
-    };
-  }
-
-  // Compute temperament-groom synergy modifier
-  const synergyMod = getTemperamentGroomSynergy(horseTemperament, groomPersonality);
-  const effectiveGain = GROOM_CONFIG.DAILY_BOND_GAIN * (1 + synergyMod);
-
-  if (synergyMod !== 0) {
-    logger.info(
-      `[calculateBondingEffects] Temperament "${horseTemperament}" × groom "${groomPersonality}": synergy ${(synergyMod * 100).toFixed(0)}% → effective gain ${effectiveGain.toFixed(2)}`,
-    );
-  }
-
-  // Calculate bond change with cap
-  const potentialNewScore = currentBondScore + effectiveGain;
-  const newBondScore = Math.min(potentialNewScore, GROOM_CONFIG.BOND_SCORE_MAX);
-  const actualBondChange = newBondScore - currentBondScore;
-
-  return {
-    bondChange: actualBondChange,
-    newBondScore,
-    eligible: true,
-    capped: newBondScore === GROOM_CONFIG.BOND_SCORE_MAX,
-    synergyModifier: synergyMod,
-  };
 }
 
 /**
@@ -246,109 +191,6 @@ export function updateConsecutiveDays(
     newConsecutiveDays: currentConsecutiveDays,
     wasReset: false,
     reason: `Within grace period (${daysSinceLastGrooming} days)`,
-  };
-}
-
-/**
- * Process a complete grooming session
- * @param {number} horseId - ID of the horse
- * @param {number} groomId - ID of the groom
- * @param {string} groomingTask - Type of grooming task
- * @param {number} duration - Duration in minutes
- * @returns {Object} Complete grooming session result
- */
-export async function processGroomingSession(horseId, groomId, groomingTask, duration) {
-  // Get horse data
-  const horse = await prisma.horse.findUnique({
-    where: { id: horseId },
-    select: {
-      id: true,
-      name: true,
-      age: true,
-      bondScore: true,
-      daysGroomedInARow: true,
-      temperament: true,
-      taskLog: true,
-    },
-  });
-
-  if (!horse) {
-    throw new Error(`Horse with ID ${horseId} not found`);
-  }
-
-  // Fetch groom personality for synergy calculation (null if groomId not provided)
-  const groom = groomId
-    ? await prisma.groom.findUnique({
-        where: { id: groomId },
-        select: { personality: true },
-      })
-    : null;
-
-  // Validate eligibility
-  const eligibilityCheck = await validateGroomingEligibility(horse, groomingTask);
-  if (!eligibilityCheck.eligible) {
-    return {
-      success: false,
-      reason: eligibilityCheck.reason,
-      data: eligibilityCheck,
-    };
-  }
-
-  // Calculate bonding effects with temperament-groom synergy
-  const bondingEffects = calculateBondingEffects(
-    horse.bondScore || 0,
-    groomingTask,
-    groom?.personality ?? null,
-    horse.temperament ?? null,
-  );
-
-  // Update consecutive days (assuming groomed today)
-  const consecutiveDaysUpdate = updateConsecutiveDays(horse.daysGroomedInARow || 0, true);
-
-  // Update task log with completed task
-  const taskLogUpdate = updateTaskLog(horse.taskLog, groomingTask);
-
-  // Create groom interaction record (only when a groom is assigned)
-  if (groomId) {
-    await prisma.groomInteraction.create({
-      data: {
-        foalId: horseId,
-        groomId,
-        interactionType: groomingTask,
-        duration: duration || 0,
-        bondingChange: Math.round(bondingEffects.bondChange),
-        quality: 'good',
-        taskType: eligibilityCheck.taskType,
-        qualityScore: 0.75,
-      },
-    });
-  }
-
-  // Persist updated horse state
-  await prisma.horse.update({
-    where: { id: horseId },
-    data: {
-      bondScore: Math.round(bondingEffects.newBondScore),
-      daysGroomedInARow: consecutiveDaysUpdate.newConsecutiveDays,
-      lastGroomed: new Date(),
-      taskLog: taskLogUpdate.taskLog,
-    },
-  });
-
-  logger.info(
-    `[groomBondingSystem.processGroomingSession] Horse ${horseId}: bondScore → ${Math.round(bondingEffects.newBondScore)}, streak → ${consecutiveDaysUpdate.newConsecutiveDays}`,
-  );
-
-  return {
-    success: true,
-    bondingEffects,
-    consecutiveDaysUpdate,
-    horse: {
-      id: horse.id,
-      name: horse.name,
-      newBondScore: bondingEffects.newBondScore,
-      newConsecutiveDays: consecutiveDaysUpdate.newConsecutiveDays,
-    },
   };
 }
 

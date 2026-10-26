@@ -3,61 +3,14 @@
  * (Equoria-rr7 coverage sprint).
  *
  * cacheHelper + tokenRotationService + groomRareTraitPerks: pure or near-pure.
- * groomSystem: constants + validateFoalInteractionLimits (needs DB horse fixture).
+ * groomSystem: constants.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import { randomBytes } from 'node:crypto';
+import { describe, it, expect } from '@jest/globals';
 import { cacheStats, generateCacheKey, getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
 import { hashRefreshToken, generateTokenFamily } from '../../../utils/tokenRotationService.mjs';
 import { applyRareTraitBoosterEffects } from '../../../utils/groomRareTraitPerks.mjs';
-import {
-  GROOM_SPECIALTIES,
-  SKILL_LEVELS,
-  PERSONALITY_TRAITS,
-  validateFoalInteractionLimits,
-} from '../../../utils/groomSystem.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-
-let user;
-let horse;
-const cleanup = createCleanupTracker();
-
-beforeAll(async () => {
-  user = await prisma.user.create({
-    data: {
-      email: `cacheutiltest-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
-      username: `cacheutiltest${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
-      password: 'irrelevant-hash',
-      firstName: 'CacheUtil',
-      lastName: 'Tester',
-      money: 1000,
-    },
-  });
-
-  horse = await prisma.horse.create({
-    data: {
-      ...fixtureColor(),
-      name: `TestFixture-CacheUtilHorse-${Date.now()}`,
-      sex: 'Filly',
-      dateOfBirth: new Date(),
-      age: 0,
-      userId: user.id,
-    },
-  });
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys). Horse before user for the
-  // Horse.userId onDelete:Restrict FK ordering. A failed delete fails the
-  // suite instead of being swallowed and leaking a fixture into the canonical DB.
-  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
-}, 30000);
-
-afterAll(() => cleanup.run(), 30000);
+import { GROOM_SPECIALTIES, SKILL_LEVELS, PERSONALITY_TRAITS } from '../../../utils/groomSystem.mjs';
 
 // ── cacheHelper ───────────────────────────────────────────────────────────────
 
@@ -207,18 +160,5 @@ describe('PERSONALITY_TRAITS', () => {
   it('is a non-empty object', () => {
     expect(typeof PERSONALITY_TRAITS).toBe('object');
     expect(Object.keys(PERSONALITY_TRAITS).length).toBeGreaterThan(0);
-  });
-});
-
-describe('validateFoalInteractionLimits', () => {
-  it('throws for non-existent horse', async () => {
-    await expect(validateFoalInteractionLimits(999999999)).rejects.toThrow();
-  });
-
-  it('returns canInteract:true for horse with no interactions today', async () => {
-    const result = await validateFoalInteractionLimits(horse.id);
-    expect(typeof result.canInteract).toBe('boolean');
-    expect(typeof result.message).toBe('string');
-    expect(result.canInteract).toBe(true);
   });
 });

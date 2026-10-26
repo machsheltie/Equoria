@@ -1,17 +1,15 @@
 /**
  * enhancedGroomInteractions — unit tests (Equoria-rr7)
  *
- * Pure exports only (no processInteractionWithPerformance which calls DB).
- * groomPerformanceService imports prisma but only at runtime — DB is real.
+ * Pure exports only (the interaction calculator and the performance-tracking wrapper were
+ * removed, Equoria-c39bq: "groom horse" is the only grooming door).
  */
 
 import { describe, it, expect } from '@jest/globals';
 import {
   calculateRelationshipLevel,
   checkForSpecialEvent,
-  calculateEnhancedEffects,
   getAvailableInteractions,
-  processInteractionWithPerformance,
   RELATIONSHIP_LEVELS,
   ENHANCED_INTERACTIONS,
   SPECIAL_EVENTS,
@@ -27,14 +25,6 @@ const gentleGroom = {
   skillLevel: 'expert',
   speciality: 'medical',
   sessionRate: 20,
-};
-
-const energeticGroom = {
-  id: 'g2',
-  personality: 'energetic',
-  skillLevel: 'intermediate',
-  speciality: 'training',
-  sessionRate: 25,
 };
 
 const basicGroom = {
@@ -182,72 +172,6 @@ describe('checkForSpecialEvent', () => {
 });
 
 // ---------------------------------------------------------------------------
-// calculateEnhancedEffects
-// ---------------------------------------------------------------------------
-describe('calculateEnhancedEffects', () => {
-  it('returns expected shape', () => {
-    const result = calculateEnhancedEffects(gentleGroom, youngHorse, 'daily_care', 'Morning Routine', 30);
-    expect(result).toHaveProperty('bondingChange');
-    expect(result).toHaveProperty('quality');
-    expect(result).toHaveProperty('relationshipLevel');
-    expect(result).toHaveProperty('variation');
-    expect(result).toHaveProperty('specialEvent');
-    expect(result).toHaveProperty('duration');
-    // Equoria-tfo3c: care costs nothing, so no `cost` is quoted.
-    expect(result).not.toHaveProperty('cost');
-  });
-
-  it('bondingChange is between 1 and 25 (clamped)', () => {
-    const result = calculateEnhancedEffects(gentleGroom, youngHorse, 'daily_care', 'Morning Routine', 30);
-    expect(result.bondingChange).toBeGreaterThanOrEqual(1);
-    expect(result.bondingChange).toBeLessThanOrEqual(25);
-  });
-
-  it('quality is a known string', () => {
-    const result = calculateEnhancedEffects(gentleGroom, youngHorse, 'daily_care', 'Morning Routine', 30);
-    expect(['exceptional', 'excellent', 'good', 'fair', 'poor']).toContain(result.quality);
-  });
-
-  it('duration echoed back in result', () => {
-    const result = calculateEnhancedEffects(gentleGroom, youngHorse, 'daily_care', 'Morning Routine', 60);
-    expect(result.duration).toBe(60);
-  });
-
-  it('cost is a positive number', () => {
-    const result = calculateEnhancedEffects(gentleGroom, youngHorse, 'daily_care', 'Morning Routine', 60);
-    // Equoria-tfo3c (owner ruling, 2026-09-14): care costs nothing, so the effects
-    // carry no price. This used to assert a positive per-session cost that was
-    // written to `groom_interactions.cost` and debited from nobody.
-    expect(result).not.toHaveProperty('cost');
-  });
-
-  it('throws for unknown interaction type', () => {
-    expect(() =>
-      calculateEnhancedEffects(gentleGroom, youngHorse, 'UNKNOWN_TYPE_XYZ', 'Morning Routine', 30),
-    ).toThrow();
-  });
-
-  it('works with enrichment interaction type', () => {
-    const result = calculateEnhancedEffects(energeticGroom, youngHorse, 'enrichment', 'Social Play', 45);
-    expect(result.bondingChange).toBeGreaterThanOrEqual(1);
-  });
-
-  it('uses first variation when named variation not found', () => {
-    const result = calculateEnhancedEffects(gentleGroom, youngHorse, 'daily_care', 'Nonexistent Variation', 30);
-    expect(result).toHaveProperty('variation');
-    // Should fall back to first variation: 'Morning Routine'
-    expect(result.variation).toBe('Morning Routine');
-  });
-
-  it('applies higher relationship multiplier for adult bonded horse', () => {
-    const bondedHorse = { ...adultHorse, bondScore: 200 }; // BONDED threshold
-    const result = calculateEnhancedEffects(gentleGroom, bondedHorse, 'daily_care', 'Morning Routine', 30);
-    expect(result.bondingChange).toBeGreaterThanOrEqual(1);
-    expect(result.relationshipLevel).toBe('Bonded');
-  });
-});
-
-// ---------------------------------------------------------------------------
 // getAvailableInteractions
 // ---------------------------------------------------------------------------
 describe('getAvailableInteractions', () => {
@@ -326,41 +250,6 @@ describe('calculateRelationshipLevel — negative-points fallback (line 180)', (
   it('returns STRANGER object when totalBondingPoints is negative (exhausts loop, hits fallback)', () => {
     const result = calculateRelationshipLevel(-1);
     expect(result).toBe(RELATIONSHIP_LEVELS.STRANGER);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// processInteractionWithPerformance — full function body (lines 426-457)
-// ---------------------------------------------------------------------------
-describe('processInteractionWithPerformance — full function body coverage', () => {
-  it('returns shape with performanceTracked:true (recordGroomPerformance is fire-and-forget)', async () => {
-    // Equoria-yny4: age is game-years; 1 = young foal
-    const result = await processInteractionWithPerformance(
-      { id: 999999, personality: 'gentle', skillLevel: 'expert', speciality: 'medical', sessionRate: 20 },
-      { id: 999999, age: 1, bondScore: 0 },
-      '00000000-0000-0000-0000-000000000000',
-      'daily_care',
-      'Morning Routine',
-      30,
-    );
-    expect(result.performanceTracked).toBe(true);
-    expect(result).toHaveProperty('bondingChange');
-    expect(result).toHaveProperty('quality');
-    expect(typeof result.taskSuccess).toBe('boolean');
-  });
-
-  it('throws when calculateEnhancedEffects throws (covers catch block lines 459-462)', async () => {
-    // Equoria-yny4: age is game-years; 1 = young foal
-    await expect(
-      processInteractionWithPerformance(
-        { id: 999999, personality: 'gentle', skillLevel: 'expert', speciality: 'medical', sessionRate: 20 },
-        { id: 999999, age: 1, bondScore: 0 },
-        '00000000-0000-0000-0000-000000000000',
-        'UNKNOWN_TYPE_XYZ',
-        'Morning Routine',
-        30,
-      ),
-    ).rejects.toThrow();
   });
 });
 

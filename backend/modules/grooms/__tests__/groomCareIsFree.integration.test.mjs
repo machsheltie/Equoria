@@ -31,14 +31,13 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { calculateGroomInteractionEffects } from '../../../utils/groomSystem.mjs';
-import { calculateEnhancedEffects, getAvailableInteractions } from '../services/enhancedGroomInteractions.mjs';
+import { getAvailableInteractions } from '../services/enhancedGroomInteractions.mjs';
 import { groomHorse } from '../services/groomCareService.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-tfo3c-free';
 const tag = () => randomBytes(6).toString('hex');
 
-describe('Equoria-tfo3c — the care calculators quote no price', () => {
+describe('Equoria-tfo3c — the care menu quotes no price', () => {
   const groom = {
     id: 1,
     name: 'Fixture Groom',
@@ -50,18 +49,6 @@ describe('Equoria-tfo3c — the care calculators quote no price', () => {
     level: 3,
   };
   const horse = { id: 1, name: 'Fixture Horse', bondScore: 50, age: 4 };
-
-  it('calculateGroomInteractionEffects returns no cost', () => {
-    const effects = calculateGroomInteractionEffects(groom, horse, 'daily_care', 60);
-    expect(effects).not.toHaveProperty('cost');
-    expect(typeof effects.bondingChange).toBe('number');
-  });
-
-  it('calculateEnhancedEffects returns no cost', () => {
-    const effects = calculateEnhancedEffects(groom, horse, 'DAILY_CARE', 'Morning Routine', 60);
-    expect(effects).not.toHaveProperty('cost');
-    expect(typeof effects.bondingChange).toBe('number');
-  });
 
   it('the available-interactions menu quotes no estimated cost', () => {
     const available = getAvailableInteractions(groom, horse);

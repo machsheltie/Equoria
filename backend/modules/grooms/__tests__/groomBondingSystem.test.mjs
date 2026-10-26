@@ -2,7 +2,7 @@
  * groomBondingSystem util unit tests (Equoria-rr7 coverage sprint).
  *
  * Sync functions: pure, no DB — tested with in-memory inputs.
- * Async functions (validateGroomingEligibility, processGroomingSession):
+ * Async function (validateGroomingEligibility):
  *   tested with real DB fixtures (user + horse + groom).
  */
 
@@ -12,9 +12,7 @@ import {
   getEligibleTasksForAge,
   categorizeTask,
   getAgeGroupDescription,
-  calculateBondingEffects,
   validateGroomingEligibility,
-  processGroomingSession,
   updateConsecutiveDays,
   updateTaskLog,
   updateStreakTracking,
@@ -130,23 +128,6 @@ describe('getAgeGroupDescription', () => {
     const older = getAgeGroupDescription(500);
     expect(typeof young).toBe('string');
     expect(typeof older).toBe('string');
-  });
-});
-
-// ── calculateBondingEffects ───────────────────────────────────────────────────
-
-describe('calculateBondingEffects', () => {
-  it('returns an object with bonding-related fields', () => {
-    const result = calculateBondingEffects('desensitization', 30, 5, 0);
-    expect(result).toBeDefined();
-    expect(typeof result).toBe('object');
-  });
-
-  it('returns numeric values for bond changes', () => {
-    const result = calculateBondingEffects('desensitization', 30, 5, 0);
-    if (typeof result.bondingChange === 'number') {
-      expect(typeof result.bondingChange).toBe('number');
-    }
   });
 });
 
@@ -281,46 +262,7 @@ describe('getAgeGroupDescription — branch coverage', () => {
   });
 });
 
-// ── calculateBondingEffects — branch coverage ─────────────────────────────────
 // Note: signature is (currentBondScore, groomingTask, groomPersonality, horseTemperament)
-
-describe('calculateBondingEffects — branch coverage', () => {
-  it('returns eligible:false for enrichment (non-grooming) task', () => {
-    const result = calculateBondingEffects(50, ENRICHMENT_TASK, null, null);
-    expect(result.eligible).toBe(false);
-    expect(result.bondChange).toBe(0);
-    expect(result.newBondScore).toBe(50);
-  });
-
-  it('returns eligible:false for unknown task', () => {
-    const result = calculateBondingEffects(50, 'magicBrushing', null, null);
-    expect(result.eligible).toBe(false);
-  });
-
-  it('applies bond gain for a valid grooming task', () => {
-    const result = calculateBondingEffects(50, FOAL_GROOM_TASK, null, null);
-    expect(result.eligible).toBe(true);
-    expect(result.bondChange).toBeGreaterThan(0);
-    expect(result.newBondScore).toBeCloseTo(50 + GROOM_CONFIG.DAILY_BOND_GAIN);
-  });
-
-  it('caps newBondScore at BOND_SCORE_MAX', () => {
-    const result = calculateBondingEffects(GROOM_CONFIG.BOND_SCORE_MAX - 1, FOAL_GROOM_TASK, null, null);
-    expect(result.newBondScore).toBe(GROOM_CONFIG.BOND_SCORE_MAX);
-    expect(result.capped).toBe(true);
-  });
-
-  it('capped is false when bond gain does not hit ceiling', () => {
-    const result = calculateBondingEffects(10, FOAL_GROOM_TASK, null, null);
-    expect(result.capped).toBe(false);
-  });
-
-  it('applies bond gain for a general grooming task', () => {
-    const result = calculateBondingEffects(0, GENERAL_TASK, null, null);
-    expect(result.eligible).toBe(true);
-    expect(result.newBondScore).toBeGreaterThan(0);
-  });
-});
 
 // ── updateConsecutiveDays — branch coverage ───────────────────────────────────
 
@@ -448,20 +390,6 @@ describe('checkTaskMutualExclusivity', () => {
   });
 });
 
-// ── calculateBondingEffects — synergyMod !== 0 branch (line 144) ──────────────
-// When a known temperament+personality pair has non-zero synergy, the logger.info
-// branch fires and the returned synergyModifier is non-zero.
-
-describe('calculateBondingEffects — non-zero synergy branch', () => {
-  it('fires synergyMod !== 0 branch for Nervous+gentle (synergy=0.25)', () => {
-    // Nervous temperament + gentle groom → synergy = 0.25 from TEMPERAMENT_GROOM_SYNERGY
-    const result = calculateBondingEffects(50, FOAL_GROOM_TASK, 'gentle', 'Nervous');
-    expect(result.eligible).toBe(true);
-    expect(result.synergyModifier).toBeCloseTo(0.25);
-    expect(result.bondChange).toBeGreaterThan(GROOM_CONFIG.DAILY_BOND_GAIN); // +25% bonus
-  });
-});
-
 // ── validateGroomingEligibility — task-not-eligible branch (line 174) ─────────
 // With a foal (age=0), eligible tasks are enrichment-only.
 // Passing a general grooming task ('brushing') triggers the !eligibleTasks.includes branch.
@@ -477,98 +405,14 @@ describe('validateGroomingEligibility — task-not-eligible branch', () => {
   });
 });
 
-// ── processGroomingSession — horse-not-found path (lines 280-298, 381-383) ──────
-
-describe('processGroomingSession() — horse not found', () => {
-  it('rejects with "Horse with ID -1 not found" for a non-existent horse (lines 280-298, 381-383)', async () => {
-    await expect(processGroomingSession(-1, null, 'brushing', 30)).rejects.toThrow('Horse with ID -1 not found');
-  });
-});
-
-// ── processGroomingSession — ineligible-task path (lines 309-316) ────────────
-
-describe('processGroomingSession() — ineligible task returns success:false (lines 309-316)', () => {
-  it('returns { success:false } when task is not eligible for this horse age', async () => {
-    // horse.age=0 → only enrichment tasks eligible; 'brushing' is NOT eligible
-    const result = await processGroomingSession(horse.id, null, 'brushing', 30);
-    expect(result.success).toBe(false);
-    expect(result.reason).toBeDefined();
-  });
-});
-
-// ── processGroomingSession — happy path with no groom (lines 300-380) ─────────
-
-describe('processGroomingSession() — happy path, groomId=null (lines 300-380)', () => {
-  it('returns { success:true } with bonding effects for eligible task and no groom', async () => {
-    // horse.age=0 + 'desensitization' is an eligible enrichment task
-    const result = await processGroomingSession(horse.id, null, 'desensitization', 30);
-    expect(result.success).toBe(true);
-    expect(result.bondingEffects).toBeDefined();
-    expect(result.consecutiveDaysUpdate).toBeDefined();
-    // Owner ruling 2026-10-23 (Equoria-0gl9o): no burnout, so no 'burnout immunity'
-    // label (old contract: immunityCheck + newBurnoutStatus were returned).
-    expect(result).not.toHaveProperty('immunityCheck');
-    expect(result.horse).not.toHaveProperty('newBurnoutStatus');
-    expect(result.horse).toBeDefined();
-    expect(result.horse.id).toBe(horse.id);
-  });
-});
-
-// ── processGroomingSession — happy path WITH groomId (line 337) ───────────────
-// The existing tests only ever pass groomId=null, leaving line 337
-// (`await prisma.groomInteraction.create(...)`) and the groomId-truthy arm of
-// the `groom = groomId ? findUnique : null` ternary uncovered.
-
-describe('processGroomingSession() — happy path, groomId provided (line 337 + groomId-truthy arm) (Equoria-jkht)', () => {
-  it('creates a groomInteraction record and returns success:true when groomId is truthy', async () => {
-    // groom fixture is created in beforeAll; horse.age=0 → 'desensitization' is eligible
-    const result = await processGroomingSession(horse.id, groom.id, 'desensitization', 45);
-    expect(result.success).toBe(true);
-    expect(result.bondingEffects).toBeDefined();
-    expect(result.horse.id).toBe(horse.id);
-
-    // Verify the interaction was persisted (covers line 337)
-    const interaction = await prisma.groomInteraction.findFirst({
-      where: { foalId: horse.id, groomId: groom.id },
-      orderBy: { timestamp: 'desc' },
-    });
-    expect(interaction).not.toBeNull();
-    expect(interaction.groomId).toBe(groom.id);
-    expect(interaction.interactionType).toBe('desensitization');
-  });
-});
-
 // ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
-// Exact-value bond mechanics, eligible-task recognition, age-restriction reasons,
+// Bond start value, eligible-task recognition, age-restriction reasons,
 // not covered by the shape-only tests above. (The burnout-immunity thresholds
 // went with the label, Equoria-0gl9o.)
 describe('groomBondingSystem — exact bonding values (merged from legacy backend/tests, Equoria-wvuin)', () => {
   describe('bond score mechanics', () => {
     it('starts at BOND_SCORE_START of 0', () => {
       expect(GROOM_CONFIG.BOND_SCORE_START).toBe(0);
-    });
-
-    // The owner ruling 2026-10-26 (q87) set the daily gain to +5 (was +2).
-    it('eligible task gives +5 bond (20 → 25)', () => {
-      const result = calculateBondingEffects(20, 'brushing');
-      expect(result.bondChange).toBe(5);
-      expect(result.newBondScore).toBe(25);
-    });
-
-    it('caps at 100 (99 → 100, only +1 applied)', () => {
-      const result = calculateBondingEffects(99, 'brushing');
-      expect(result.newBondScore).toBe(100);
-      expect(result.bondChange).toBe(1);
-    });
-
-    it('does not exceed 100 (100 → 100, +0)', () => {
-      const result = calculateBondingEffects(100, 'brushing');
-      expect(result.newBondScore).toBe(100);
-      expect(result.bondChange).toBe(0);
-    });
-
-    it('non-eligible task gives 0 bond change', () => {
-      expect(calculateBondingEffects(50, 'feeding').bondChange).toBe(0);
     });
   });
 

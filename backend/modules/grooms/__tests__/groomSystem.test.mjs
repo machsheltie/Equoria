@@ -16,12 +16,9 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import {
   hasAlreadyCompletedFoalTaskToday,
-  calculateGroomInteractionEffects,
   assignGroomToFoal,
   ensureDefaultGroomAssignment,
   getOrCreateDefaultGroom,
-  validateFoalInteractionLimits,
-  recordGroomInteraction,
   GROOM_SPECIALTIES,
   SKILL_LEVELS,
   PERSONALITY_TRAITS,
@@ -127,139 +124,6 @@ describe('hasAlreadyCompletedFoalTaskToday()', () => {
   });
 });
 
-// ── calculateGroomInteractionEffects — branch coverage (Equoria-jkht) ─────────
-//
-// Branch map:
-//   GROOM_SPECIALTIES[groom.speciality] || GROOM_SPECIALTIES.general  → known/unknown
-//   SKILL_LEVELS[groom.skillLevel]       || SKILL_LEVELS.intermediate  → known/unknown
-//   PERSONALITY_TRAITS[groom.personality]|| PERSONALITY_TRAITS.gentle  → known/unknown
-//   typeof groom.sessionRate === 'number'                              → true/false
-//   errorOccurred                                                       → random; tested via output shape
-//   quality: errorOccurred / bondingChange>=7 / >=4 / else            → random; tested via valid set
-//   catch                                                              → null groom throws
-
-describe('calculateGroomInteractionEffects()', () => {
-  // Minimal valid foal (no DB calls — function is synchronous pure calc)
-  const foal = { id: 1, bondScore: 50, temperament: null };
-
-  // Helper: build a groom object with all known keys
-  function makeGroom(overrides = {}) {
-    return {
-      speciality: 'foalCare',
-      skillLevel: 'intermediate',
-      personality: 'gentle',
-      experience: 0,
-      sessionRate: 20,
-      ...overrides,
-    };
-  }
-
-  // ── return shape ────────────────────────────────────────────────────────────
-
-  it('returns an object with expected fields for a valid groom', () => {
-    const result = calculateGroomInteractionEffects(makeGroom(), foal, 'grooming', 60);
-    expect(result).toHaveProperty('bondingChange');
-    // Equoria-tfo3c: no `cost` — care costs nothing.
-    expect(result).not.toHaveProperty('cost');
-    expect(result).toHaveProperty('quality');
-    expect(result).toHaveProperty('errorOccurred');
-    expect(result).toHaveProperty('successRate');
-    expect(result).toHaveProperty('modifiers');
-  });
-
-  it('bondingChange is within [0, 10]', () => {
-    const result = calculateGroomInteractionEffects(makeGroom(), foal, 'grooming', 60);
-    expect(result.bondingChange).toBeGreaterThanOrEqual(0);
-    expect(result.bondingChange).toBeLessThanOrEqual(10);
-  });
-
-  it('quality is one of the four expected values', () => {
-    const result = calculateGroomInteractionEffects(makeGroom(), foal, 'grooming', 60);
-    expect(['excellent', 'good', 'fair', 'poor']).toContain(result.quality);
-  });
-
-  // ── specialty fallback branch ───────────────────────────────────────────────
-
-  it('falls back to GROOM_SPECIALTIES.general for unknown speciality', () => {
-    const result = calculateGroomInteractionEffects(
-      makeGroom({ speciality: 'unicornWhisperer' }),
-      foal,
-      'grooming',
-      60,
-    );
-    // The general specialty has bondingModifier=1.0; modifiers.specialty reflects it
-    expect(result.modifiers.specialty).toBe(GROOM_SPECIALTIES.general.bondingModifier);
-  });
-
-  it('uses GROOM_SPECIALTIES.foalCare for foalCare speciality', () => {
-    const result = calculateGroomInteractionEffects(makeGroom({ speciality: 'foalCare' }), foal, 'grooming', 60);
-    expect(result.modifiers.specialty).toBe(GROOM_SPECIALTIES.foalCare.bondingModifier);
-  });
-
-  // ── skillLevel fallback branch ──────────────────────────────────────────────
-
-  it('falls back to SKILL_LEVELS.intermediate for unknown skillLevel', () => {
-    const result = calculateGroomInteractionEffects(makeGroom({ skillLevel: 'mythic' }), foal, 'grooming', 60);
-    expect(result.modifiers.skillLevel).toBe(SKILL_LEVELS.intermediate.bondingModifier);
-  });
-
-  it('uses SKILL_LEVELS.expert for expert skillLevel', () => {
-    const result = calculateGroomInteractionEffects(makeGroom({ skillLevel: 'expert' }), foal, 'grooming', 60);
-    expect(result.modifiers.skillLevel).toBe(SKILL_LEVELS.expert.bondingModifier);
-  });
-
-  // ── personality fallback branch ─────────────────────────────────────────────
-
-  it('falls back to PERSONALITY_TRAITS.gentle for unknown personality', () => {
-    const result = calculateGroomInteractionEffects(makeGroom({ personality: 'telepathic' }), foal, 'grooming', 60);
-    expect(result.modifiers.personality).toBe(PERSONALITY_TRAITS.gentle.bondingModifier);
-  });
-
-  it('uses PERSONALITY_TRAITS.strict for strict personality', () => {
-    const result = calculateGroomInteractionEffects(makeGroom({ personality: 'strict' }), foal, 'grooming', 60);
-    expect(result.modifiers.personality).toBe(PERSONALITY_TRAITS.strict.bondingModifier);
-  });
-
-  // ── the per-session price: DELETED, not relaxed ─────────────────────────────
-  //
-  // Equoria-tfo3c (owner ruling, 2026-09-14): "Care itself does not cost money."
-  // Three cases stood here walking the `sessionRate` branches of a price that was
-  // written to `groom_interactions.cost` and charged to nobody (30 for a numeric
-  // rate, 18 for a string, 18 for undefined). The price is gone, so they go with
-  // it — `sessionRate` no longer reaches this calculator at all. What replaces
-  // them is the absence itself, asserted in
-  // groomCareIsFree.integration.test.mjs alongside the real interaction that
-  // proves the column keeps its 0.0 default.
-
-  // ── experience bonus branch ─────────────────────────────────────────────────
-
-  it('applies experience bonus to bondingChange (+1 per 5 years)', () => {
-    const withExp = makeGroom({ experience: 5, skillLevel: 'master' });
-    const noExp = makeGroom({ experience: 0, skillLevel: 'master' });
-    const resultWith = calculateGroomInteractionEffects(withExp, foal, 'grooming', 60);
-    const resultNo = calculateGroomInteractionEffects(noExp, foal, 'grooming', 60);
-    // modifiers.experience should reflect the experienceBonus
-    expect(resultWith.modifiers.experience).toBe(1); // Math.floor(5/5)=1
-    expect(resultNo.modifiers.experience).toBe(0); // Math.floor(0/5)=0
-  });
-
-  // ── quality = 'fair' branch (line 598) — very short duration → bondingChange < 4 ─
-
-  it("quality is 'fair' (or 'poor' on rare error) when duration is extremely short", () => {
-    // duration=1 → baseBondingChange=0 → bondingChange=0 < 4
-    // master errorChance=0.01 → 99% no error → quality='fair' (line 598)
-    const groom = makeGroom({ skillLevel: 'master', experience: 0 });
-    const result = calculateGroomInteractionEffects(groom, foal, 'grooming', 1);
-    expect(['fair', 'poor']).toContain(result.quality);
-  });
-
-  // ── catch path ──────────────────────────────────────────────────────────────
-
-  it('throws when groom is null (catch re-throws)', () => {
-    expect(() => calculateGroomInteractionEffects(null, foal, 'grooming', 60)).toThrow();
-  });
-});
-
 // ── assignGroomToFoal — foal-not-found path (lines 177-191) ──────────────────
 
 describe('assignGroomToFoal() — foal not found', () => {
@@ -299,25 +163,6 @@ describe('getOrCreateDefaultGroom() — no foalCare groom found for ghost userId
       thrown = true;
     }
     expect(thrown).toBe(true);
-  });
-});
-
-// ── validateFoalInteractionLimits — horse-not-found path (lines 424-434) ─────
-
-describe('validateFoalInteractionLimits() — horse not found', () => {
-  it('rejects with "Horse with ID -1 not found" for a non-existent horse', async () => {
-    await expect(validateFoalInteractionLimits(-1)).rejects.toThrow('Horse with ID -1 not found');
-  });
-});
-
-// ── recordGroomInteraction — horse-not-found → catch returns object (lines 491-535)
-
-describe('recordGroomInteraction() — horse not found → success=false envelope', () => {
-  it('returns { success: false, error } when foalId -1 does not exist (catch envelope, lines 529-534)', async () => {
-    const result = await recordGroomInteraction(-1, -1, 'feeding', 30, GHOST_UUID);
-    expect(result.success).toBe(false);
-    expect(typeof result.error).toBe('string');
-    expect(result.error).toMatch(/Horse with ID -1 not found/);
   });
 });
 
@@ -374,19 +219,16 @@ describe('assignGroomToFoal() — groom not found (foal exists, groom=-1)', () =
   });
 });
 
-// ── assignGroomToFoal success path + ensureDefault + validateInteraction ────────
+// ── assignGroomToFoal success path + ensureDefault ────────
 //
 // Fixture set for lines 219-278 (assignGroomToFoal success path),
 // lines 312-316 (ensureDefaultGroomAssignment existing assignment),
 // lines 351-368 (ensureDefaultGroomAssignment test-mode creation),
-// line 406 (getOrCreateDefaultGroom existing groom),
-// lines 455 + 498-505 (validateFoalInteractionLimits daily limit),
-// lines 509-528 (recordGroomInteraction success path).
+// line 406 (getOrCreateDefaultGroom existing groom).
 
 let successUser;
 let groomForSuccessAssign;
 let foalForSuccessAssign;
-let foalForInteractTest;
 let foalPreAssigned;
 let foalForEnsure;
 // Equoria-1ohys: fail-loud scoped cleanup. FK order: groom* children
@@ -431,17 +273,6 @@ beforeAll(async () => {
     },
   });
 
-  foalForInteractTest = await prisma.horse.create({
-    data: {
-      ...fixtureColor(),
-      name: `TestFixture-InteractFoal-${ts}`,
-      sex: 'Colt',
-      dateOfBirth: new Date(),
-      age: 0,
-      userId: successUser.id,
-    },
-  });
-
   foalPreAssigned = await prisma.horse.create({
     data: {
       ...fixtureColor(),
@@ -477,10 +308,6 @@ beforeAll(async () => {
   // by groom/foal), then horses + groom (Restrict on Horse.userId/Groom.userId),
   // then the owning user last.
   successCleanup.add(
-    () => prisma.groomInteraction.deleteMany({ where: { foalId: foalForInteractTest.id } }),
-    'success groomInteractions',
-  );
-  successCleanup.add(
     () =>
       prisma.groomAssignment.deleteMany({
         where: { foalId: { in: [foalPreAssigned.id, foalForSuccessAssign.id, foalForEnsure.id] } },
@@ -490,10 +317,6 @@ beforeAll(async () => {
   successCleanup.add(
     () => prisma.horse.delete({ where: { id: foalForSuccessAssign.id } }),
     'success foalForSuccessAssign',
-  );
-  successCleanup.add(
-    () => prisma.horse.delete({ where: { id: foalForInteractTest.id } }),
-    'success foalForInteractTest',
   );
   successCleanup.add(() => prisma.horse.delete({ where: { id: foalPreAssigned.id } }), 'success foalPreAssigned');
   successCleanup.add(() => prisma.horse.delete({ where: { id: foalForEnsure.id } }), 'success foalForEnsure');
@@ -535,40 +358,9 @@ describe('ensureDefaultGroomAssignment() — test-mode assignment creation (line
   });
 });
 
-describe('recordGroomInteraction() — success path (lines 509-528) (Equoria-rr7)', () => {
-  it('records interaction and returns success for horse with no prior interactions today (lines 509-528)', async () => {
-    const result = await recordGroomInteraction(
-      foalForInteractTest.id,
-      groomForSuccessAssign.id,
-      'grooming',
-      30,
-      successUser.id,
-    );
-    expect(result.success).toBe(true);
-    expect(result.interaction).toBeDefined();
-    expect(result.interaction.foalId).toBe(foalForInteractTest.id);
-  });
-});
-
-describe('recordGroomInteraction() — daily limit reached (lines 455, 498-505) (Equoria-rr7)', () => {
-  it('returns dailyLimitReached=true on second call today for same horse (lines 455, 498-505)', async () => {
-    // foalForInteractTest already has an interaction from the previous test
-    const result = await recordGroomInteraction(
-      foalForInteractTest.id,
-      groomForSuccessAssign.id,
-      'grooming',
-      30,
-      successUser.id,
-    );
-    expect(result.success).toBe(false);
-    expect(result.dailyLimitReached).toBe(true);
-  });
-});
-
 // ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
-// System-constant structural completeness and the relational/comparative
-// calculateGroomInteractionEffects assertions not covered above. Pure (no DB).
-describe('groomSystem — constants & comparative effects (merged from legacy backend/tests, Equoria-wvuin)', () => {
+// System-constant structural completeness. Pure (no DB).
+describe('groomSystem — constants (merged from legacy backend/tests, Equoria-wvuin)', () => {
   describe('system constants completeness', () => {
     it('GROOM_SPECIALTIES has foalCare/general/training/medical with required fields', () => {
       ['foalCare', 'general', 'training', 'medical'].forEach(k => expect(GROOM_SPECIALTIES).toHaveProperty(k));
@@ -598,65 +390,6 @@ describe('groomSystem — constants & comparative effects (merged from legacy ba
         expect(trait).toHaveProperty('bondingModifier');
         expect(trait).toHaveProperty('description');
       });
-    });
-  });
-
-  describe('calculateGroomInteractionEffects — comparative modifiers', () => {
-    const mockGroom = {
-      id: 1,
-      name: 'Sarah Johnson',
-      speciality: 'foalCare',
-      skillLevel: 'intermediate',
-      personality: 'gentle',
-      experience: 5,
-      sessionRate: 18.0,
-    };
-    const mockFoal = { id: 1, name: 'Test Foal', bondScore: 50 };
-
-    it('foalCare specialty modifier exceeds general', () => {
-      const foalCare = calculateGroomInteractionEffects(
-        { ...mockGroom, speciality: 'foalCare' },
-        mockFoal,
-        'dailyCare',
-        60,
-      );
-      const general = calculateGroomInteractionEffects(
-        { ...mockGroom, speciality: 'general' },
-        mockFoal,
-        'dailyCare',
-        60,
-      );
-      expect(foalCare.modifiers.specialty).toBeGreaterThan(general.modifiers.specialty);
-    });
-
-    it('expert skill modifier (and cost) exceeds novice', () => {
-      const expert = calculateGroomInteractionEffects(
-        { ...mockGroom, skillLevel: 'expert' },
-        mockFoal,
-        'dailyCare',
-        60,
-      );
-      const novice = calculateGroomInteractionEffects(
-        { ...mockGroom, skillLevel: 'novice' },
-        mockFoal,
-        'dailyCare',
-        60,
-      );
-      expect(expert.modifiers.skillLevel).toBeGreaterThan(novice.modifiers.skillLevel);
-    });
-
-    it('experienced groom modifier exceeds new groom', () => {
-      const experienced = calculateGroomInteractionEffects({ ...mockGroom, experience: 15 }, mockFoal, 'dailyCare', 60);
-      const newGroom = calculateGroomInteractionEffects({ ...mockGroom, experience: 1 }, mockFoal, 'dailyCare', 60);
-      expect(experienced.modifiers.experience).toBeGreaterThan(newGroom.modifiers.experience);
-    });
-
-    it('a longer session bonds more — and still costs nothing (Equoria-tfo3c)', () => {
-      const short = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 30);
-      const long = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 120);
-      expect(long.bondingChange).toBeGreaterThanOrEqual(short.bondingChange);
-      expect(short).not.toHaveProperty('cost');
-      expect(long).not.toHaveProperty('cost');
     });
   });
 });

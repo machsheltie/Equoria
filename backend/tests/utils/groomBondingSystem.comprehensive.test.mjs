@@ -18,7 +18,6 @@
  * 🎯 FUNCTIONALITY TESTED:
  * 1. getEligibleTasksForAge - Age-based task filtering
  * 2. validateGroomingEligibility - Comprehensive eligibility validation
- * 3. calculateBondingEffects - Bonding score calculations
  * 4. categorizeTask - Task type classification
  * 5. getAgeGroupDescription - Age group determination
  * 6. Task availability and restriction logic
@@ -46,7 +45,6 @@ import { describe, it, expect } from '@jest/globals';
 import {
   getEligibleTasksForAge,
   validateGroomingEligibility,
-  calculateBondingEffects,
   categorizeTask,
   getAgeGroupDescription,
 } from '../../utils/groomBondingSystem.mjs';
@@ -219,56 +217,6 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
     });
   });
 
-  describe('Bonding Effect Calculations', () => {
-    it('should calculate bonding effects for grooming tasks', () => {
-      const currentBondScore = 50;
-      const groomingTask = 'brushing';
-
-      const result = calculateBondingEffects(currentBondScore, groomingTask);
-
-      expect(result).toHaveProperty('bondChange');
-      expect(result).toHaveProperty('newBondScore');
-      expect(typeof result.bondChange).toBe('number');
-      expect(typeof result.newBondScore).toBe('number');
-      expect(result.newBondScore).toBeGreaterThanOrEqual(0);
-      expect(result.newBondScore).toBeLessThanOrEqual(100);
-    });
-
-    it('should calculate bonding effects for non-grooming tasks', () => {
-      const currentBondScore = 30;
-      const nonGroomingTask = 'feeding';
-
-      const result = calculateBondingEffects(currentBondScore, nonGroomingTask);
-
-      expect(result).toHaveProperty('bondChange');
-      expect(result).toHaveProperty('newBondScore');
-      expect(result.newBondScore).toBeGreaterThanOrEqual(0);
-      expect(result.newBondScore).toBeLessThanOrEqual(100);
-      // Non-grooming tasks should not provide bonding
-      expect(result.bondChange).toBe(0);
-    });
-
-    it('should handle maximum bonding score scenarios', () => {
-      const currentBondScore = 95;
-      const groomingTask = 'brushing'; // Grooming task that provides bonding
-
-      const result = calculateBondingEffects(currentBondScore, groomingTask);
-
-      expect(result.newBondScore).toBeLessThanOrEqual(100);
-      expect(result.bondChange).toBeGreaterThanOrEqual(0);
-    });
-
-    it('should handle minimum bonding score scenarios', () => {
-      const currentBondScore = 5;
-      const groomingTask = 'feeding'; // Non-grooming task
-
-      const result = calculateBondingEffects(currentBondScore, groomingTask);
-
-      expect(result.newBondScore).toBeGreaterThanOrEqual(0);
-      expect(result.bondChange).toBe(0); // Non-grooming tasks don't provide bonding
-    });
-  });
-
   describe('Task Categorization', () => {
     it('should categorize enrichment tasks correctly', () => {
       const enrichmentTasks = ['desensitization', 'trust_building', 'showground_exposure', 'early_touch'];
@@ -362,15 +310,6 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
       expect(async () => {
         await validateGroomingEligibility(incompleteHorse, 'desensitization');
-      }).not.toThrow();
-    });
-
-    it('should handle invalid bonding calculation data', () => {
-      const invalidBondScore = null;
-      const invalidTask = undefined;
-
-      expect(() => {
-        calculateBondingEffects(invalidBondScore, invalidTask);
       }).not.toThrow();
     });
 
