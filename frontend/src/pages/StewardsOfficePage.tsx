@@ -80,7 +80,7 @@ export default function StewardsOfficePage() {
           {can('roles.manage') && (
             <StaffRoles
               onCheckinRequired={onCheckinRequired}
-              canAppointAdmin={can('roles.appointAdmin')}
+              canAppointAdmin={can('roles.manage')}
             />
           )}
           {can('shows.quarantine.resolve') && (

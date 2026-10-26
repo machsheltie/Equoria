@@ -95,7 +95,7 @@ function RoleControl({
 
 export interface StaffRolesProps {
   onCheckinRequired: () => void;
-  /** The viewer holds roles.appointAdmin (the owner). */
+  /** The viewer holds roles.manage (the owner alone, q76). */
   canAppointAdmin?: boolean;
 }
 

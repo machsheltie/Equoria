@@ -62,13 +62,15 @@ const setRole = (actor, target, role) =>
   post(`${roles}/${target.id}`, actor.user, { role, reason: 'permission rule check' }, actor.device);
 
 describe('Only the owner appoints admins (Equoria-i1hgt)', () => {
-  it('refuses an admin appointing an admin with adminAppointmentOwnerOnly', async () => {
+  // Owner ruling q76 (Equoria-i1hgt): only the owner manages ANY staff role, so an
+  // admin is now stopped at the route guard, before the target is read. This
+  // pinned adminAppointmentOwnerOnly while admins still managed moderators.
+  it('refuses an admin appointing an admin with STAFF_CAPABILITY_REQUIRED', async () => {
     const admin = await staffMember('admin');
     const player = await makeUser('user');
     const res = await setRole(admin, player, 'admin');
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('adminAppointmentOwnerOnly');
-    expect(res.body.message).not.toContain('adminAppointment');
+    expect(res.body.code).toBe('STAFF_CAPABILITY_REQUIRED');
     expect(await roleOf(player.id)).toBe('user');
   });
 
@@ -120,23 +122,23 @@ describe('Only the owner appoints admins (Equoria-i1hgt)', () => {
 });
 
 describe('Nobody acts on the owner; admins and moderators never on each other (Equoria-i1hgt)', () => {
-  it('refuses an admin changing the owner role with staffTargetOwner', async () => {
+  it('refuses an admin changing the owner role at the route guard (q76)', async () => {
     const admin = await staffMember('admin');
     const owner = await makeUser('owner');
     for (const role of ['user', 'moderator']) {
       const res = await setRole(admin, owner, role);
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('staffTargetOwner');
+      expect(res.body.code).toBe('STAFF_CAPABILITY_REQUIRED');
     }
     expect(await roleOf(owner.id)).toBe('owner');
   });
 
-  it('refuses admin to admin with staffTargetStaff', async () => {
+  it('refuses admin to admin at the route guard (q76; was staffTargetStaff)', async () => {
     const admin = await staffMember('admin');
     const other = await makeUser('admin');
     const res = await setRole(admin, other, 'user');
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('staffTargetStaff');
+    expect(res.body.code).toBe('STAFF_CAPABILITY_REQUIRED');
     expect(await roleOf(other.id)).toBe('admin');
   });
 

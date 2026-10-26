@@ -60,6 +60,9 @@ describe('The ledger actor list (STAFF-CR-16)', () => {
     const revoked = await makeUser('moderator');
     const erased = await makeUser('moderator');
     const adminDevice = await checkIn(admin);
+    // Owner ruling q76 (Equoria-i1hgt): only the owner changes staff roles.
+    const owner = await makeUser('owner');
+    const ownerDevice = await checkIn(owner);
 
     const revokedEntry = await recordStaffActionTx(prisma, entryFor(revoked));
     await recordStaffActionTx(prisma, entryFor(revoked));
@@ -68,9 +71,9 @@ describe('The ledger actor list (STAFF-CR-16)', () => {
     for (const mod of [revoked, erased]) {
       const demoted = await post(
         `${STAFF_API}/roles/${mod.id}`,
-        admin,
+        owner,
         { role: 'user', reason: 'stepped down' },
-        adminDevice,
+        ownerDevice,
       );
       expect(demoted.status).toBe(200);
     }

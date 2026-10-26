@@ -2,7 +2,7 @@
  * Promote and revoke moderators — real HTTP, real DB (Equoria-puj1e.1, Task 5).
  * Security gate: file-name token `AdminGuard`.
  *
- * Only the admin manages roles. Requests pass real authenticateToken, the
+ * Only the owner manages roles. Requests pass real authenticateToken, the
  * CSRF-protected staff router, trusted-device check-in
  * (helpers/staffFixtures.mjs) and requireStaffCapability('roles.manage').
  * Nothing is mocked; the concurrency case races two real requests against
@@ -39,13 +39,13 @@ const roleOf = async id => (await prisma.user.findUnique({ where: { id }, select
 const logRowsAbout = targetId =>
   prisma.staffActionLog.findMany({ where: { targetId, capability: 'roles.manage' }, orderBy: { id: 'asc' } });
 
-async function checkedInAdmin() {
-  const admin = await makeUser('admin');
-  return { admin, adminDevice: await checkIn(admin) };
+async function checkedInOwner() {
+  const owner = await makeUser('owner');
+  return { owner, ownerDevice: await checkIn(owner) };
 }
 
-const setRole = (admin, adminDevice, target, role, reason = 'trusted community helper') =>
-  post(`${ROLES}/${target.id}`, admin, { role, reason }, adminDevice);
+const setRole = (owner, ownerDevice, target, role, reason = 'trusted community helper') =>
+  post(`${ROLES}/${target.id}`, owner, { role, reason }, ownerDevice);
 
 beforeAll(() => {
   const scope = () => ({ in: createdUserIds });
@@ -63,7 +63,7 @@ beforeEach(() => startEmailCapture());
 
 afterEach(() => stopEmailCapture());
 
-describe('Roles routes are admin-only (Equoria-puj1e.1)', () => {
+describe('Roles routes are owner-only (Equoria-puj1e.1, Equoria-i1hgt q76)', () => {
   it('refuses a checked-in moderator with STAFF_CAPABILITY_REQUIRED on all three routes', async () => {
     const mod = await makeUser('moderator');
     const modDevice = await checkIn(mod);
@@ -82,6 +82,29 @@ describe('Roles routes are admin-only (Equoria-puj1e.1)', () => {
     expect(await logRowsAbout(player.id)).toHaveLength(0);
   });
 
+  it('refuses a checked-in admin with STAFF_CAPABILITY_REQUIRED on all three routes (owner ruling q76)', async () => {
+    const admin = await makeUser('admin');
+    const adminDevice = await checkIn(admin);
+    const player = await makeUser('user');
+    const mod = await makeUser('moderator');
+
+    const responses = [
+      await get(ROLES, admin, adminDevice),
+      await post(LOOKUP, admin, { username: player.username }, adminDevice),
+      await post(`${ROLES}/${player.id}`, admin, { role: 'moderator', reason: 'nice' }, adminDevice),
+      await post(`${ROLES}/${mod.id}`, admin, { role: 'user', reason: 'nice' }, adminDevice),
+      await post(`${ROLES}/${player.id}`, admin, { role: 'admin', reason: 'nice' }, adminDevice),
+    ];
+    for (const res of responses) {
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('STAFF_CAPABILITY_REQUIRED');
+    }
+    expect(await roleOf(player.id)).toBe('user');
+    expect(await roleOf(mod.id)).toBe('moderator');
+    expect(await logRowsAbout(player.id)).toHaveLength(0);
+    expect(await logRowsAbout(mod.id)).toHaveLength(0);
+  });
+
   it('answers a player with the ordinary 404 on all three routes', async () => {
     const player = await makeUser('user');
     const other = await makeUser('user');
@@ -94,14 +117,14 @@ describe('Roles routes are admin-only (Equoria-puj1e.1)', () => {
 
 describe('Admin promotes and revokes moderators (Equoria-puj1e.1)', () => {
   it('promotes a player to moderator and records one roles.manage entry', async () => {
-    const { admin, adminDevice } = await checkedInAdmin();
+    const { owner, ownerDevice } = await checkedInOwner();
     const player = await makeUser('user');
     // A device row left over from an earlier stint as staff.
     await prisma.staffTrustedDevice.create({
       data: { userId: player.id, tokenHash: `leftover-${uid()}${uid()}`, expiresAt: new Date(Date.now() + 86_400_000) },
     });
 
-    const res = await setRole(admin, adminDevice, player, 'moderator', '  steady forum helper  ');
+    const res = await setRole(owner, ownerDevice, player, 'moderator', '  steady forum helper  ');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: player.id, username: player.username, role: 'moderator' });
     expect(await roleOf(player.id)).toBe('moderator');
@@ -112,8 +135,8 @@ describe('Admin promotes and revokes moderators (Equoria-puj1e.1)', () => {
     const rows = await logRowsAbout(player.id);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      actorId: admin.id,
-      actorRole: 'admin',
+      actorId: owner.id,
+      actorRole: 'owner',
       capability: 'roles.manage',
       targetType: 'player',
       targetId: player.id,
@@ -125,12 +148,12 @@ describe('Admin promotes and revokes moderators (Equoria-puj1e.1)', () => {
   });
 
   it('revokes a moderator: role user, devices revoked, next staff request 404, one entry', async () => {
-    const { admin, adminDevice } = await checkedInAdmin();
+    const { owner, ownerDevice } = await checkedInOwner();
     const mod = await makeUser('moderator');
     const modDevice = await checkIn(mod);
     expect((await get(LOG, mod, modDevice)).status).toBe(200);
 
-    const res = await setRole(admin, adminDevice, mod, 'user', 'stepped away');
+    const res = await setRole(owner, ownerDevice, mod, 'user', 'stepped away');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: mod.id, username: mod.username, role: 'user' });
     expect(await roleOf(mod.id)).toBe('user');
@@ -152,12 +175,12 @@ describe('Admin promotes and revokes moderators (Equoria-puj1e.1)', () => {
   });
 
   it('makes a re-promoted moderator check in afresh: the old device cookie is refused', async () => {
-    const { admin, adminDevice } = await checkedInAdmin();
+    const { owner, ownerDevice } = await checkedInOwner();
     const mod = await makeUser('moderator');
     const oldDevice = await checkIn(mod);
 
-    expect((await setRole(admin, adminDevice, mod, 'user', 'break')).status).toBe(200);
-    expect((await setRole(admin, adminDevice, mod, 'moderator', 'back from break')).status).toBe(200);
+    expect((await setRole(owner, ownerDevice, mod, 'user', 'break')).status).toBe(200);
+    expect((await setRole(owner, ownerDevice, mod, 'moderator', 'back from break')).status).toBe(200);
 
     const res = await get(LOG, mod, oldDevice);
     expect(res.status).toBe(403);
@@ -165,35 +188,35 @@ describe('Admin promotes and revokes moderators (Equoria-puj1e.1)', () => {
     expect(await logRowsAbout(mod.id)).toHaveLength(2);
   });
 
-  it('refuses to act on self or another admin with 403 and changes nothing', async () => {
-    const { admin, adminDevice } = await checkedInAdmin();
+  it('refuses to act on self or an admin with 403 and changes nothing', async () => {
+    const { owner, ownerDevice } = await checkedInOwner();
     const otherAdmin = await makeUser('admin');
 
-    for (const target of [admin, otherAdmin]) {
+    for (const target of [owner, otherAdmin]) {
       for (const role of ['user', 'moderator']) {
-        const res = await setRole(admin, adminDevice, target, role, 'attempt');
+        const res = await setRole(owner, ownerDevice, target, role, 'attempt');
         expect({ target: target.id, role, status: res.status }).toEqual({ target: target.id, role, status: 403 });
       }
-      expect(await roleOf(target.id)).toBe('admin');
+      expect(await roleOf(target.id)).toBe(target.role);
       expect(await logRowsAbout(target.id)).toHaveLength(0);
     }
   });
 
   it('answers 404 for an unknown user id', async () => {
-    const { admin, adminDevice } = await checkedInAdmin();
-    const res = await setRole(admin, adminDevice, { id: `no-such-user-${uid()}` }, 'moderator', 'x');
+    const { owner, ownerDevice } = await checkedInOwner();
+    const res = await setRole(owner, ownerDevice, { id: `no-such-user-${uid()}` }, 'moderator', 'x');
     expect(res.status).toBe(404);
   });
 
   it('answers 409 when the role would not change, or the player email is unverified', async () => {
-    const { admin, adminDevice } = await checkedInAdmin();
+    const { owner, ownerDevice } = await checkedInOwner();
     const mod = await makeUser('moderator');
     const player = await makeUser('user');
     const unverified = await makeUser('user', { emailVerified: false, emailVerifiedAt: null });
 
-    expect((await setRole(admin, adminDevice, mod, 'moderator', 'again')).status).toBe(409);
-    expect((await setRole(admin, adminDevice, player, 'user', 'again')).status).toBe(409);
-    expect((await setRole(admin, adminDevice, unverified, 'moderator', 'helper')).status).toBe(409);
+    expect((await setRole(owner, ownerDevice, mod, 'moderator', 'again')).status).toBe(409);
+    expect((await setRole(owner, ownerDevice, player, 'user', 'again')).status).toBe(409);
+    expect((await setRole(owner, ownerDevice, unverified, 'moderator', 'helper')).status).toBe(409);
 
     expect(await roleOf(mod.id)).toBe('moderator');
     expect(await roleOf(player.id)).toBe('user');
@@ -204,7 +227,7 @@ describe('Admin promotes and revokes moderators (Equoria-puj1e.1)', () => {
   });
 
   it('rejects any role other than moderator or user, and a missing reason, with 400 before writing', async () => {
-    const { admin, adminDevice } = await checkedInAdmin();
+    const { owner, ownerDevice } = await checkedInOwner();
     const player = await makeUser('user');
     const bad = [
       // Owner ruling 2026-10-23 (Equoria-i1hgt): an admin role is now a real
@@ -218,7 +241,7 @@ describe('Admin promotes and revokes moderators (Equoria-puj1e.1)', () => {
       { role: 'moderator', reason: 42 },
     ];
     for (const body of bad) {
-      const res = await post(`${ROLES}/${player.id}`, admin, body, adminDevice);
+      const res = await post(`${ROLES}/${player.id}`, owner, body, ownerDevice);
       expect({ body, status: res.status }).toEqual({ body, status: 400 });
     }
     expect(await roleOf(player.id)).toBe('user');
@@ -226,11 +249,11 @@ describe('Admin promotes and revokes moderators (Equoria-puj1e.1)', () => {
   });
 
   it('lets exactly one of two parallel revokes succeed, with exactly one entry', async () => {
-    const { admin, adminDevice } = await checkedInAdmin();
+    const { owner, ownerDevice } = await checkedInOwner();
     const mod = await makeUser('moderator');
 
     // Fetch both CSRF pairs first so the two revokes leave together.
-    const cookies = cookiesFor(admin, adminDevice);
+    const cookies = cookiesFor(owner, ownerDevice);
     const csrfs = [
       await fetchCsrf(app, { origin: ORIGIN, extraCookies: cookies }),
       await fetchCsrf(app, { origin: ORIGIN, extraCookies: cookies }),
@@ -297,15 +320,15 @@ describe('Admin promotes and revokes moderators (Equoria-puj1e.1)', () => {
 
 describe('Admin reads staff and looks up players (Equoria-puj1e.1)', () => {
   it('lists current staff with id, username and role only', async () => {
-    const { admin, adminDevice } = await checkedInAdmin();
+    const { owner, ownerDevice } = await checkedInOwner();
     const mod = await makeUser('moderator');
     const player = await makeUser('user');
 
-    const res = await get(ROLES, admin, adminDevice);
+    const res = await get(ROLES, owner, ownerDevice);
     expect(res.status).toBe(200);
     const byId = new Map(res.body.staff.map(s => [s.id, s]));
     expect(byId.get(mod.id)).toEqual({ id: mod.id, username: mod.username, role: 'moderator' });
-    expect(byId.get(admin.id)).toEqual({ id: admin.id, username: admin.username, role: 'admin' });
+    expect(byId.get(owner.id)).toEqual({ id: owner.id, username: owner.username, role: 'owner' });
     expect(byId.has(player.id)).toBe(false);
     for (const entry of res.body.staff) {
       expect(Object.keys(entry).sort()).toEqual(['id', 'role', 'username']);
@@ -316,19 +339,19 @@ describe('Admin reads staff and looks up players (Equoria-puj1e.1)', () => {
   });
 
   it('looks a player up by username, returning id, username and role only', async () => {
-    const { admin, adminDevice } = await checkedInAdmin();
+    const { owner, ownerDevice } = await checkedInOwner();
     const player = await makeUser('user');
 
-    const res = await post(LOOKUP, admin, { username: player.username }, adminDevice);
+    const res = await post(LOOKUP, owner, { username: player.username }, ownerDevice);
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: player.id, username: player.username, role: 'user' });
   });
 
   it('answers 404 for an unknown username and 400 for a malformed one', async () => {
-    const { admin, adminDevice } = await checkedInAdmin();
-    expect((await post(LOOKUP, admin, { username: `nobody${uid()}${uid()}` }, adminDevice)).status).toBe(404);
+    const { owner, ownerDevice } = await checkedInOwner();
+    expect((await post(LOOKUP, owner, { username: `nobody${uid()}${uid()}` }, ownerDevice)).status).toBe(404);
     for (const body of [{}, { username: '' }, { username: 42 }, { username: ['a'] }, { username: 'x'.repeat(101) }]) {
-      const res = await post(LOOKUP, admin, body, adminDevice);
+      const res = await post(LOOKUP, owner, body, ownerDevice);
       expect({ body, status: res.status }).toEqual({ body, status: 400 });
     }
   });

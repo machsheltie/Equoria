@@ -40,14 +40,15 @@ describe('staff capabilities (Equoria-puj1e.2)', () => {
       expect(hasCapability('user', 'ban.ip')).toBe(false);
     });
 
-    it('lets only the owner appoint admins (Equoria-i1hgt)', () => {
-      expect(hasCapability('owner', 'roles.appointAdmin')).toBe(true);
-      expect(hasCapability('admin', 'roles.appointAdmin')).toBe(false);
-      expect(hasCapability('moderator', 'roles.appointAdmin')).toBe(false);
+    it('lets only the owner manage staff roles, admins and moderators alike (q76)', () => {
+      expect(hasCapability('owner', 'roles.manage')).toBe(true);
+      expect(hasCapability('admin', 'roles.manage')).toBe(false);
+      expect(hasCapability('moderator', 'roles.manage')).toBe(false);
+      expect(hasCapability('owner', 'roles.appointAdmin')).toBe(false);
     });
 
     it('grants admin the admin-only capabilities', () => {
-      expect(hasCapability('admin', 'roles.manage')).toBe(true);
+      expect(hasCapability('admin', 'ticket.resolve')).toBe(true);
     });
 
     it('grants admin the moderator capabilities except ticket.file', () => {
@@ -86,7 +87,8 @@ describe('staff capabilities (Equoria-puj1e.2)', () => {
   describe('capabilitiesFor', () => {
     it("lists a role's capabilities, and nothing for a non-staff or inherited role", () => {
       expect(capabilitiesFor('moderator')).toContain('ticket.file');
-      expect(capabilitiesFor('admin')).toContain('roles.manage');
+      expect(capabilitiesFor('admin')).toContain('ticket.resolve');
+      expect(capabilitiesFor('owner')).toContain('roles.manage');
       expect(capabilitiesFor('admin')).not.toContain('ticket.file');
       expect(capabilitiesFor('user')).toEqual([]);
       expect(capabilitiesFor('constructor')).toEqual([]);

@@ -45,7 +45,6 @@ const adminOnly = [
   'ticket.resolve',
   'log.view.all',
   'view.identity',
-  'roles.manage',
   'jobs.hold',
   'time-back',
   'horse.admin',
@@ -56,8 +55,10 @@ const adminOnly = [
   'results.scoreInputs.view',
 ];
 const ownerOnly = [
-  // Only the owner appoints admins, in the Steward's Office (Equoria-i1hgt).
-  'roles.appointAdmin',
+  // Owner ruling q76 (2026-10-26, Equoria-i1hgt): only the owner manages ALL staff
+  // roles, appointing and removing admins and moderators alike, in the Steward's
+  // Office. Admins no longer promote or revoke moderators.
+  'roles.manage',
   // Equoria-ehlbj (owner ruling 2026-10-23, q29/q30/q41; narrows Equoria-c7mx0.1,
   // which listed quarantined shows for admins too): quarantined shows are visible
   // to the Owner alone. One capability covers Diagnose and the two-step Run Show.

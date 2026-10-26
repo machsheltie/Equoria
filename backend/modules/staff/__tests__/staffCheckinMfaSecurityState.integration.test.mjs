@@ -178,13 +178,14 @@ describe('An outstanding code dies with the security state it was issued under (
   }, 60_000);
 
   it('refuses a code issued before a demote and re-promote', async () => {
-    const admin = await makeUser('admin');
-    const adminDevice = await checkIn(admin);
+    // Owner ruling q76 (Equoria-i1hgt): only the owner changes staff roles.
+    const owner = await makeUser('owner');
+    const ownerDevice = await checkIn(owner);
     const mod = await makeModerator();
     const code = await requestCode(mod);
 
     for (const role of ['user', 'moderator']) {
-      const res = await post(`${STAFF_API}/roles/${mod.id}`, admin, { role, reason: 'role review' }, adminDevice);
+      const res = await post(`${STAFF_API}/roles/${mod.id}`, owner, { role, reason: 'role review' }, ownerDevice);
       expect(res.status).toBe(200);
     }
 

@@ -101,12 +101,15 @@ describe('Erasing a former steward (Equoria-2yugk)', () => {
       expect.arrayContaining(['staff.checkin', 'ticket.file', 'ticket.reply']),
     );
 
-    // The admin demotes them, then an operator erases the account.
+    // The owner demotes them (q76: only the owner changes staff roles), then an
+    // operator erases the account.
+    const owner = await makeUser('owner');
+    const ownerDevice = await checkIn(owner);
     const demoted = await post(
       `${STAFF_API}/roles/${mod.id}`,
-      admin,
+      owner,
       { role: 'user', reason: 'stepped down' },
-      adminDevice,
+      ownerDevice,
     );
     expect(demoted.status).toBe(200);
 

@@ -34,6 +34,9 @@ const { makeUser, createdUserIds } = createUserFactory('stbellto');
 
 let admin;
 let adminDevice;
+// Owner ruling q76 (Equoria-i1hgt): only the owner changes staff roles.
+let owner;
+let ownerDevice;
 
 beforeAll(async () => {
   const scope = () => ({ in: createdUserIds });
@@ -49,6 +52,8 @@ beforeAll(async () => {
   startEmailCapture();
   admin = await makeUser('admin');
   adminDevice = await checkIn(admin);
+  owner = await makeUser('owner');
+  ownerDevice = await checkIn(owner);
   stopEmailCapture();
 });
 
@@ -73,7 +78,7 @@ async function filedTicket() {
 }
 
 const demotePath = mod => `${STAFF_API}/roles/${mod.id}`;
-const demote = mod => post(demotePath(mod), admin, { role: 'user', reason: 'Stepping down' }, adminDevice);
+const demote = mod => post(demotePath(mod), owner, { role: 'user', reason: 'Stepping down' }, ownerDevice);
 
 const staffBells = userId => prisma.notification.findMany({ where: { userId, type: { in: STAFF_BELLS } } });
 
@@ -112,7 +117,7 @@ describe('A filer who is no longer a moderator', () => {
     const { mod, ticket } = await filedTicket();
     const [url, body] = request(ticket);
     const sendChange = await preparePost(url, admin, body, adminDevice);
-    const sendDemotion = await preparePost(demotePath(mod), admin, { role: 'user', reason: 'Gone' }, adminDevice);
+    const sendDemotion = await preparePost(demotePath(mod), owner, { role: 'user', reason: 'Gone' }, ownerDevice);
 
     // The change queues on the held ticket row; the demotion does not touch
     // that row, so it commits first. The change then reads the filer fresh.
@@ -163,7 +168,7 @@ describe('Demotion', () => {
     });
 
     // No reason: refused before any write.
-    const refused = await post(demotePath(mod), admin, { role: 'user' }, adminDevice);
+    const refused = await post(demotePath(mod), owner, { role: 'user' }, ownerDevice);
 
     expect(refused.status).toBe(400);
     expect(await prisma.notification.findUnique({ where: { id: bell.id } })).not.toBeNull();

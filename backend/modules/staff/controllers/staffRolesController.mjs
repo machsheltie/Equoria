@@ -1,11 +1,10 @@
 /**
  * Staff roles controller (Equoria-puj1e.1, Task 5)
  *
- * An admin or the owner promotes a player to moderator and revokes them. Every
- * route runs behind requireStaffCapability('roles.manage'), which only admins
- * and the owner hold (Equoria-4tleh). Only the owner appoints admins (owner
- * ruling 2026-10-23, Equoria-i1hgt): roles.appointAdmin, refused for anyone
- * else before the target is even read.
+ * The owner promotes a player to moderator or admin and revokes them. Every
+ * route runs behind requireStaffCapability('roles.manage'), which only the owner
+ * holds (owner ruling q76, 2026-10-26, Equoria-i1hgt: only the owner manages ALL
+ * staff roles; admins no longer promote or revoke moderators).
  *
  * assertActionableTarget is deliberately not used: it refuses any staff
  * target, and revoking targets a moderator. Instead nobody may act on the
@@ -23,7 +22,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { deleteUnreadNotificationsTx } from '../../../utils/notificationService.mjs';
-import { hasCapability, staffRoles, staffTargetRefusal } from '../capabilities.mjs';
+import { staffRoles, staffTargetRefusal } from '../capabilities.mjs';
 import { recordStaffActionTx } from '../services/staffActionLogService.mjs';
 import { retireStaffCheckinCodesTx } from '../services/staffChallengeRetirement.mjs';
 
@@ -118,9 +117,6 @@ export async function setUserRole(req, res, next) {
     }
     if (!isText(reason, MAX_REASON)) {
       return fail(res, 400, 'A reason is required');
-    }
-    if (toRole === 'admin' && !hasCapability(req.staff.role, 'roles.appointAdmin')) {
-      return fail(res, 403, 'Only the owner can appoint an admin.', 'adminAppointmentOwnerOnly');
     }
     if (!isText(userId, MAX_TEXT)) {
       return fail(res, 404, 'No such player');
