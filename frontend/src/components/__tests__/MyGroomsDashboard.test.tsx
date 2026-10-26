@@ -51,7 +51,7 @@ const mockGroomsData = [
   {
     id: 2,
     name: 'Mike Rodriguez',
-    specialty: 'generalCare',
+    specialty: 'general',
     skillLevel: 'intermediate',
     personality: 'energetic',
     experience: 5,
@@ -138,7 +138,7 @@ const mockSalaryCostsData = {
       groomId: 2,
       groomName: 'Mike Rodriguez',
       skillLevel: 'intermediate',
-      speciality: 'generalCare',
+      speciality: 'general',
       assignedHorses: 0,
       weeklyFee: 0,
       feeUnpaid: false,
@@ -376,7 +376,7 @@ describe('MyGroomsDashboard Component', () => {
   describe('Filtering and Sorting', () => {
     // mockGroomsData fixtures used by these behavior assertions:
     //   Sarah Johnson  — skillLevel=expert,       specialty=foalCare,    rate=100 (card id 1)
-    //   Mike Rodriguez — skillLevel=intermediate, specialty=generalCare, rate=75  (card id 2)
+    //   Mike Rodriguez — skillLevel=intermediate, specialty=general,     rate=75  (card id 2)
     //   Emma Thompson  — skillLevel=master,        specialty=training,    rate=150 (card id 3)
     // These assert the component actually applies filteredAndSortedGrooms
     // (MyGroomsDashboard.tsx:201-220), not merely that the controls render.

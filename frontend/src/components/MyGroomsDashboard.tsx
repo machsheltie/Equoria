@@ -375,9 +375,9 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
             >
               <option value="all">All Specialties</option>
               <option value="foalCare">Foal Care</option>
-              <option value="generalCare">General Care</option>
+              <option value="general">General</option>
               <option value="training">Training</option>
-              <option value="showHandling">Show Handling</option>
+              <option value="medical">Medical</option>
             </Select>
           </div>
 
