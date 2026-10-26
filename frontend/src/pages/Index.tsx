@@ -18,6 +18,7 @@ import { Link, useNavigate } from 'react-router';
 import { Sparkles, Star, Dumbbell, Trophy, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NextActionsBar } from '@/components/hub/NextActionsBar';
+import { GroomingReminder } from '@/components/hub/GroomingReminder';
 import { NarrativeChip, deriveLatestChapter } from '@/components/hub/NarrativeChip';
 import { useHorses } from '@/hooks/api/useHorses';
 import { Button } from '@/components/ui/button';
@@ -257,8 +258,10 @@ const STARTER_ACTIONS = [
   },
   {
     icon: <Star className="w-5 h-5" />,
-    title: 'Groom Your Foal',
-    description: "Care for a young horse's early development",
+    // Equoria-j765w.3: Groom Quarters hires and assigns grooms; the daily
+    // Groom press lives on each horse's page, so this says what the page does.
+    title: 'Hire a Groom',
+    description: 'A groom cares for your horse each day you press Groom on its page',
     href: '/grooms',
   },
 ] as const;
@@ -387,7 +390,12 @@ const Index = () => {
       ) : isDayOne ? (
         <DayOneGettingStarted onDismiss={dismissDayOne} />
       ) : (
-        <NextActionsBar />
+        <>
+          <NextActionsBar />
+          {/* Tonight's grooming: horses not yet groomed today, each opening its
+              Care area (Equoria-akwyn, owner ruling q67). */}
+          <GroomingReminder />
+        </>
       )}
 
       {/* Horse grid — 250px min-width per card, auto-fill for responsive 3-col on laptop */}

@@ -8,6 +8,31 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
  * preserved. The other groom routes live in the v1-mirror block (groomsV1Handlers).
  */
 export const groomHandlers = [
+  // Daily groom care (care agent contract v1; Equoria-j765w.2). Defaults: no
+  // horse waiting tonight, and a horse with no groom yet. Tests override per case.
+  // ungroomed-today is registered before :horseId so it is not read as an id.
+  http.get(`${base}/api/v1/grooms/care/ungroomed-today`, () =>
+    HttpResponse.json({ success: true, data: { horses: [] } })
+  ),
+  http.get(`${base}/api/v1/grooms/care/:horseId`, ({ params }) =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        horseId: Number(params.horseId),
+        horseName: 'TestFixture-Horse',
+        bond: 0,
+        lastGroomedAt: null,
+        groomedToday: false,
+        canGroomToday: false,
+        refusal: {
+          code: 'noGroomAssigned',
+          message: 'This horse has no groom yet. Assign one to groom it.',
+        },
+        groom: null,
+        foal: null,
+      },
+    })
+  ),
   // Groom Management
   // (Equoria-0fw18) Deleted dead unversioned /api/grooms/user/:userId,
   // /api/groom-assignments (GET+POST), /api/groom-salaries/cost,

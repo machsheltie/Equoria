@@ -10,8 +10,9 @@ import { foalMareNow } from './fixtures/foaling';
  *   frontend/src/components/breeding/__tests__/FoalDevelopmentTracker.test.tsx
  * (39 vi.mock calls against @/hooks/api/useBreeding) per CLAUDE.md §3
  * (mocks aren't part of Equoria's toolkit). The container component
- * FoalDevelopmentTracker is wired into FoalDetailPage (route /foals/:id);
- * this spec drives it against the real backend through the real UI.
+ * FoalDevelopmentTracker and its /foals/:id page were removed by the one-horse-
+ * page ruling (Equoria-jaeot); this spec now drives the foal's own horse page
+ * against the real backend through the real UI.
  *
  * Fixture strategy:
  *  - createAuthedSession() loads the global-setup user (CSRF + auth cookies).
@@ -62,7 +63,11 @@ const test = base.extend<{ browserConsole: void }>({
   ],
 });
 
-test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)', () => {
+// Equoria-jaeot. OLD CONTRACT: /foals/:id was a separate foal page carrying
+// FoalDevelopmentTracker. OWNER RULING (2026-10-16, repeated in q71 on
+// 2026-10-26): one horse page for life; the foal page is gone and /foals/:id
+// lands on /horses/:id, where the foal's Care area lives.
+test.describe('Foal Development Lifecycle (one horse page: /foals/:id lands on /horses/:id)', () => {
   let session: AuthedSession;
   let foalId: number;
   let foalName: string;
@@ -116,7 +121,7 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
         },
       ],
       // The parents are only ever used as sireId/damId on the real
-      // POST /api/v1/horses/foals call; every assertion happens on /foals/:id.
+      // POST /api/v1/horses/foals call; every assertion happens on the foal's page.
       // This spec never renders the cached horse list.
       { requireHorseListVisibility: false }
     );
@@ -189,23 +194,19 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     await session?.context.close();
   });
 
-  test('foal detail page loads with development panel and lifecycle actions', async ({ page }) => {
+  test('an old foal link lands on the horse page, with the Care area and no lifecycle buttons', async ({
+    page,
+  }) => {
     await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(new RegExp(`/horses/${foalId}$`), { timeout: 20000 });
 
-    // Foal name in the summary card
+    // The foal's name on her one horse page.
     await expect(page.getByRole('heading', { name: foalName })).toBeVisible({ timeout: 20000 });
 
-    // Top-level Development panel header (rendered by FoalDetailPage)
-    await expect(page.getByRole('heading', { name: 'Development' })).toBeVisible({
-      timeout: 10000,
-    });
-
-    // FoalDevelopmentTracker renders the development timeline. There is NO
-    // Advance Day (Equoria-mwjst, owner ruling 2026-10-05: foals wait out their
-    // full development week) and NO Reveal Traits (Equoria-gu8jk).
-    await expect(page.getByTestId('development-tracker')).toBeVisible({
-      timeout: 15000,
-    });
+    // Tonight's Care area (owner ruling q67). There is NO Advance Day
+    // (Equoria-mwjst, owner ruling 2026-10-05: foals wait out their full
+    // development week) and NO Reveal Traits (Equoria-gu8jk).
+    await expect(page.getByTestId('horse-care')).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('button', { name: /Advance Day/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /Reveal Traits/i })).toHaveCount(0);
   });
@@ -219,7 +220,7 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     page,
   }) => {
     await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('development-tracker')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByTestId('horse-care')).toBeVisible({ timeout: 20000 });
     await expect(page.getByRole('button', { name: /Reveal Traits/i })).toHaveCount(0);
 
     const res = await csrfMutate(session, 'POST', `/api/v1/foals/${foalId}/reveal-traits`, {});
@@ -234,7 +235,7 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     page,
   }) => {
     await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('development-tracker')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByTestId('horse-care')).toBeVisible({ timeout: 20000 });
     await expect(page.getByRole('button', { name: /Advance Day/i })).toHaveCount(0);
 
     const readDevelopment = async () => {
@@ -266,7 +267,7 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     page,
   }) => {
     await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('development-tracker')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByTestId('horse-care')).toBeVisible({ timeout: 20000 });
     await expect(page.getByRole('button', { name: /Enrich/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /Graduat/i })).toHaveCount(0);
     await expect(page.getByText(/Available activities/i)).toHaveCount(0);

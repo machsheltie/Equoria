@@ -17,7 +17,8 @@ import { describe, it, expect } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { server } from '@/test/msw/server';
-import FoalDevelopmentTracker from '@/components/breeding/FoalDevelopmentTracker';
+import { MemoryRouter } from 'react-router';
+import CareArea from '@/pages/horse-detail/CareArea';
 import TrainingHistoryPanel from '@/components/training/TrainingHistoryPanel';
 import XpHistoryTimeline from '@/components/horse/XpHistoryTimeline';
 import GeneticsTab from '@/pages/horse-detail/GeneticsTab';
@@ -69,9 +70,16 @@ const horse: Horse = {
 };
 
 describe('server error text is mapped, never echoed (Equoria-0vm61)', () => {
-  it('FoalDevelopmentTracker shows the mapped copy for a failed development read', async () => {
+  // The foal page and its FoalDevelopmentTracker are gone (owner ruling q71,
+  // 2026-10-26: one horse page for life). The horse page's Care area now reads
+  // the foal's day and care, so it carries this guarantee instead.
+  it("the horse page's Care area shows the mapped copy for a failed care read", async () => {
     failEverythingWithSentinel();
-    renderWithQuery(<FoalDevelopmentTracker foalId={77} />);
+    renderWithQuery(
+      <MemoryRouter>
+        <CareArea horseId={77} horseName="Moonflower" />
+      </MemoryRouter>
+    );
 
     expect(await screen.findByText(serverFaultCopy)).toBeInTheDocument();
     expect(screen.queryByText(/connection reset by 10\.0\.0\.7/)).not.toBeInTheDocument();

@@ -14,11 +14,14 @@
  */
 
 import React, { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { Users, ShoppingBag, Leaf } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import GroomList from '@/components/GroomList';
 import MyGroomsDashboard from '@/components/MyGroomsDashboard';
+import AssignGroomModal from '@/components/AssignGroomModal';
+import { useUserGrooms } from '@/hooks/api/useGrooms';
+import { useHorses } from '@/hooks/api/useHorses';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Surface } from '@/components/ui/Surface';
@@ -31,6 +34,21 @@ const GroomsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<GroomsTab>('manage');
 
   const userId = user?.id ?? ''; // j2a51 diagnostic: raw UUID to reproduce the live crash
+
+  // Equoria-e861f: "Assign Groom" on a horse's page (and its Care area's "Assign a
+  // groom") arrive with ?horseId=. The horse it came from is the one the groom is
+  // assigned to, so the assign dialog opens for that horse once her grooms and
+  // horses have loaded. With no grooms hired, the Manage tab invites her to hire.
+  const [searchParams] = useSearchParams();
+  const horseIdParam = Number(searchParams.get('horseId'));
+  const { data: grooms = [] } = useUserGrooms(userId);
+  const { data: horses = [] } = useHorses();
+  const forHorse =
+    Number.isInteger(horseIdParam) && horseIdParam > 0
+      ? horses.find((h) => Number(h.id) === horseIdParam)
+      : undefined;
+  const [assignForHorseDone, setAssignForHorseDone] = useState(false);
+  const assignForHorseOpen = Boolean(forHorse) && grooms.length > 0 && !assignForHorseDone;
 
   return (
     <PageContainer variant="wide" padded={false} className="pb-8">
@@ -74,6 +92,18 @@ const GroomsPage: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {forHorse && assignForHorseOpen && (
+        <AssignGroomModal
+          isOpen
+          onClose={() => setAssignForHorseDone(true)}
+          horseId={Number(forHorse.id)}
+          horseName={String(forHorse.name ?? '')}
+          onAssignmentComplete={() => setAssignForHorseDone(true)}
+          availableGrooms={grooms}
+          horseTemperament={(forHorse as { temperament?: string | null }).temperament ?? null}
+        />
+      )}
 
       {/* Info Panel */}
       <Surface variant="panel" as="aside" className="mt-10 text-sm text-[var(--text-muted)]">

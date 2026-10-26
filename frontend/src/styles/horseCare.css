@@ -1,0 +1,338 @@
+/**
+ * The horse page's Current Status ledger and Care area (Equoria-jaeot,
+ * Equoria-j765w.2; owner rulings q67 / q71, 2026-10-26). Authored CSS over the
+ * Celestial Night tokens: no tiles, no card wall. Current Status is a stable
+ * ledger (condition bars beside a care record); the Care area is tonight's line
+ * in the horse's care journal, open until the player grooms her.
+ */
+
+/* ── Current Status ────────────────────────────────────────────────── */
+
+.horse-status__body {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+  .horse-status__body {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: var(--space-6);
+  }
+}
+
+.horse-status__condition {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.horse-status__bond-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-1);
+}
+
+.horse-status__bond-track {
+  height: 0.625rem;
+  border-radius: var(--radius-sm);
+  background: var(--border-muted);
+  overflow: hidden;
+}
+
+.horse-status__bond-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold-primary), var(--gold-light));
+  transform-origin: left center;
+  transition: transform var(--duration-slow, 400ms) var(--ease-reward, ease-out);
+}
+
+.horse-status__record {
+  margin: 0;
+  border-top: 1px solid var(--glass-border);
+}
+
+.horse-status__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.horse-status__row dt {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.horse-status__row dd {
+  margin: 0;
+  color: var(--text-primary);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.horse-status__row dd[data-glow='ready'] {
+  color: var(--health-excellent);
+  text-shadow: var(--glow-text-ready);
+}
+
+.horse-status__row dd[data-glow='overdue'] {
+  color: var(--health-bad);
+  text-shadow: var(--glow-text-danger);
+}
+
+.horse-status__trainer {
+  margin-top: var(--space-5);
+}
+
+/* ── Care area ─────────────────────────────────────────────────────── */
+
+.horse-care {
+  position: relative;
+  margin-bottom: var(--space-6);
+  padding: var(--space-5) 0 var(--space-4);
+  border-top: 1px solid var(--alpha-gold-primary-40);
+  border-bottom: 1px solid var(--glass-border);
+  scroll-margin-top: var(--space-8);
+}
+
+/* A thin lantern rule along the top edge: gold at the centre, fading out. */
+.horse-care::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+  pointer-events: none;
+}
+
+.horse-care:focus {
+  outline: none;
+}
+
+.horse-care:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 4px;
+}
+
+.horse-care__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.horse-care__title {
+  margin: 0;
+  font-family: var(--font-entity);
+  font-size: var(--text-h2);
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--gold-light);
+}
+
+/* The lantern: hollow while tonight's care is open, lit once she is groomed. */
+.horse-care__lantern {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--gold-primary);
+}
+
+.horse-care[data-state='open'] .horse-care__lantern-flame {
+  opacity: 0.35;
+}
+
+.horse-care[data-state='tended'] .horse-care__lantern {
+  color: var(--gold-light);
+  filter: drop-shadow(0 0 6px var(--gold-primary));
+}
+
+.horse-care__line {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--text-primary);
+  font-size: var(--text-lg);
+  line-height: 1.5;
+}
+
+.horse-care__line strong {
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.horse-care__note {
+  margin: var(--space-2) 0 0;
+  max-width: 60ch;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.horse-care__link {
+  color: var(--link-gold, var(--gold-primary));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.horse-care__activities {
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.horse-care__activities legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.horse-care__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* A choice is a tag hung on the stall door: the native radio stays in the
+   label for keyboard and screen readers; the label carries the look. */
+.horse-care__choice {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: var(--bg-midnight);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast, 150ms) ease-out,
+    background-color var(--duration-fast, 150ms) ease-out;
+}
+
+.horse-care__choice input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.horse-care__choice:hover {
+  border-color: var(--alpha-gold-primary-40);
+}
+
+.horse-care__choice:has(input:checked) {
+  border-color: var(--gold-primary);
+  background: var(--bg-twilight);
+  color: var(--gold-light);
+}
+
+.horse-care__choice:has(input:focus-visible) {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+.horse-care__choice:has(input:disabled) {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.horse-care__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.horse-care__journal {
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.horse-care__journal-title {
+  margin: var(--space-5) 0 var(--space-1);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.horse-care__entry {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.horse-care__entry time {
+  flex: none;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .horse-status__bond-fill,
+  .horse-care__choice {
+    transition: none;
+  }
+}
+
+/* ── Home reminder: tonight's grooming ─────────────────────────────── */
+
+.grooming-reminder__line {
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.grooming-reminder__lead {
+  color: var(--gold-light);
+}
+
+.grooming-reminder__link {
+  display: inline-block;
+  min-height: 44px;
+  padding: var(--space-2) 0;
+  color: var(--link-gold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.grooming-reminder__quiet {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.grooming-reminder__error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.grooming-reminder__retry {
+  min-height: 44px;
+  background: none;
+  border: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}

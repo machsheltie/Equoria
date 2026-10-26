@@ -237,4 +237,22 @@ describe('NextActionsBar', () => {
     const feedLink = await screen.findByLabelText('Ember needs feeding');
     expect(feedLink).toHaveAttribute('href', '/horses/6');
   });
+
+  // Equoria-j765w.3 / Equoria-akwyn (owner ruling q67, 2026-10-26): the old
+  // groom-foal card said "<foal> needs enrichment" and linked to Groom Quarters,
+  // which cannot groom. Grooming reminders now come from GroomingReminder (every
+  // horse not yet groomed today, each opening its Care area), so the bar does
+  // not repeat them, and never promises enrichment.
+  it('shows no groom-foal card and never promises enrichment', async () => {
+    stubNextActions([
+      { type: 'groom-foal', priority: 1, horseId: 9, horseName: 'Starling' },
+      { type: 'train', priority: 2, horseId: 1, horseName: 'Thunder' },
+    ]);
+
+    renderBar();
+    expect(await screen.findByText('Thunder is ready to train!')).toBeInTheDocument();
+    expect(screen.queryByText(/Starling/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/enrichment/i)).not.toBeInTheDocument();
+    expect(document.querySelector('a[href^="/grooms"]')).toBeNull();
+  });
 });

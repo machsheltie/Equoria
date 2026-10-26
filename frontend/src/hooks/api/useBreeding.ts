@@ -50,9 +50,9 @@ export const useFoalDevelopment = (foalId: number) =>
     queryFn: () => breedingApi.getFoalDevelopment(foalId),
     enabled: Boolean(foalId),
     staleTime: 30 * 1000,
-    // Equoria-v61q2: FoalDetailPage gates on this query's loading state and
-    // then mounts FoalDevelopmentTracker, which subscribes to it again. The
-    // default mount re-fetch of a 404 ("Horse is not a foal") looped.
+    // Equoria-v61q2: a consumer that mounts after this query errored must not
+    // re-fetch it on mount; the default mount re-fetch of a 404 ("Horse is not
+    // a foal") looped on the old foal page.
     retryOnMount: retryOnMountUnlessClientError,
   });
 

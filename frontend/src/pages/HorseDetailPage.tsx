@@ -74,6 +74,8 @@ import StudSaleTab from './horse-detail/StudSaleTab';
 import RiderPickerModal from './horse-detail/RiderPickerModal';
 import HorseActionBar from './horse-detail/HorseActionBar';
 import ListForSaleModal from './horse-detail/ListForSaleModal';
+// Tonight's care: the daily 'Groom horse' press (Equoria-j765w.2, owner ruling q67)
+import CareArea from './horse-detail/CareArea';
 // Equoria-o5hub.5 (D-24) — contextual bottom-action slot owned by
 // DashboardLayout. Falls back to in-place rendering when no layout provider
 // is mounted (direct page renders in tests).
@@ -339,6 +341,10 @@ const HorseDetailPage: React.FC = () => {
             </Button>
           )}
         </div>
+
+        {/* Tonight's care, at every age: one horse page for life (owner rulings
+            q67 / q71, 2026-10-26). Home reminders link here with #care. */}
+        <CareArea horseId={horse.id} horseName={horse.name} />
 
         {/* Tab Navigation + Content — CanonicalTabs underline variant (Equoria-o5hub.11).
             Controlled: activeTab also gates the competition-history query above.

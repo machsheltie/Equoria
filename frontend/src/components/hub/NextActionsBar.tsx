@@ -33,7 +33,10 @@ const NARRATIVES: Record<NextAction['type'], (_a: NextAction) => string> = {
   train: (a) => (a.horseName ? `${a.horseName} is ready to train!` : 'A horse is ready to train'),
   compete: (a) => (a.horseName ? `Enter ${a.horseName} in a show` : 'Browse open competitions'),
   breed: (a) => (a.horseName ? `${a.horseName} is ready to breed` : 'Check breeding pairs'),
-  'groom-foal': (a) => (a.horseName ? `${a.horseName} needs enrichment` : 'A foal needs care'),
+  // Equoria-j765w.3: never "needs enrichment" (grooms do it when the player presses
+  // Groom). The hub's GroomingReminder owns grooming; this copy is a fallback only.
+  'groom-foal': (a) =>
+    a.horseName ? `${a.horseName} is waiting to be groomed` : 'A foal is waiting to be groomed',
   'claim-prize': () => 'You have unclaimed prizes!',
   // Equoria-oey96.28: the server sends how many results are still unread, so
   // the card can name what is actually waiting instead of announcing a flat fact.
@@ -68,7 +71,8 @@ const ACTION_LINKS: Record<NextAction['type'], string> = {
   train: '/training',
   compete: '/competitions',
   breed: '/breeding',
-  'groom-foal': '/grooms',
+  // The horse's own Care area (owner ruling q67), never Groom Quarters.
+  'groom-foal': '/horses',
   'claim-prize': '/competitions',
   // Equoria-oey96.28: the results surface, not the browse-competitions list.
   'check-results': '/competition-results',
@@ -90,7 +94,9 @@ function ActionCard({ action, isTopPriority }: ActionCardProps) {
     ? ACTION_LINKS[action.type]
     : action.type === 'feed'
       ? `/horses/${action.horseId}`
-      : `${ACTION_LINKS[action.type]}?horseId=${action.horseId}`;
+      : action.type === 'groom-foal'
+        ? `/horses/${action.horseId}#care`
+        : `${ACTION_LINKS[action.type]}?horseId=${action.horseId}`;
 
   return (
     <Link
@@ -142,8 +148,14 @@ function ActionCard({ action, isTopPriority }: ActionCardProps) {
   );
 }
 
+// Grooming reminders come from GroomingReminder (every horse with a groom not yet
+// groomed today, foals first; Equoria-akwyn), shown beside this bar, so the
+// server's foal-only groom-foal suggestions are not repeated here as cards.
+const shownOnBar = (action: NextAction) => action.type !== 'groom-foal';
+
 export function NextActionsBar() {
-  const { data: actions, isLoading, error, refetch } = useNextActions();
+  const { data: allActions, isLoading, error, refetch } = useNextActions();
+  const actions = allActions?.filter(shownOnBar);
 
   if (isLoading) {
     return (

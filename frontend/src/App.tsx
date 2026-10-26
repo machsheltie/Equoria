@@ -18,6 +18,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 // unknown address (STAFF-CR-17).
 import StewardGate from '@/components/staff/StewardGate';
 import NotFoundPage from './pages/NotFoundPage';
+// One horse page for life (Equoria-jaeot): old /foals/:id links land on /horses/:id.
+import FoalLinkRedirect from './pages/FoalLinkRedirect';
 
 // Overlay components — lazy loaded (never visible on initial render)
 // WhileYouWereGone: shown only after 4+ hour authenticated absence
@@ -42,7 +44,6 @@ const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const ConfirmEmailChangePage = lazy(() => import('./pages/ConfirmEmailChangePage'));
 const HorseDetailPage = lazy(() => import('./pages/HorseDetailPage'));
 const HorseEquipPage = lazy(() => import('./pages/horses/HorseEquipPage'));
-const FoalDetailPage = lazy(() => import('./pages/FoalDetailPage'));
 // Equoria-puj1e.1: the staff-only Steward's Office. Deliberately absent from
 // navItems. Loaded only after StewardGate has confirmed a steward.
 const StewardsOfficePage = lazy(() => import('./pages/StewardsOfficePage'));
@@ -135,7 +136,7 @@ const App = () => (
                     >
                       <Route path="/horses/:id" element={<HorseDetailPage />} />
                       <Route path="/horses/:id/equip" element={<HorseEquipPage />} />
-                      <Route path="/foals/:id" element={<FoalDetailPage />} />
+                      <Route path="/foals/:id" element={<FoalLinkRedirect />} />
                       {navItems.map(({ to, Page }) => (
                         <Route key={to} path={to} element={<Page />} />
                       ))}

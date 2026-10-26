@@ -277,13 +277,13 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       // Full cinematic (Epic 28-2 / 28-3)
       setShowFoalCinematic(true);
 
-      // Only navigate to /foals/:id when we actually have a foal (legacy
-      // direct-foal response). Pregnancy responses stay on this page so the
+      // Only navigate to the foal's horse page when we actually have a foal
+      // (legacy direct-foal response; one horse page for life, Equoria-jaeot). Pregnancy responses stay on this page so the
       // user can see the success banner; the foal will appear in their stable
       // after the foaling job runs.
       if (data.kind === 'foal') {
         setTimeout(() => {
-          navigate(`/foals/${data.foalId}`);
+          navigate(`/horses/${data.foalId}`);
         }, 3500);
       }
     },

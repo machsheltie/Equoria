@@ -23,6 +23,7 @@ import MarkingsPanel from '../../components/horse/MarkingsPanel';
 import PregnancyFeedingPanel from '../../components/horse/PregnancyFeedingPanel';
 import { getHorseImage, getHorseImageStyle } from '@/lib/breed-images';
 import { getBreedName } from '@/lib/utils';
+import { horseAgeShort } from '@/lib/horseAgeWords';
 import { useRenameHorse } from '../../hooks/api/useHorses';
 import { InlineError } from '@/components/ui/state/InlineError';
 import {
@@ -165,7 +166,9 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
           Color: {horse.phenotype?.colorName ?? 'not recorded'}
         </span>
         <span>•</span>
-        <span>Age: {horse.age}</span>
+        <span data-testid="horse-detail-age">
+          Age: {horseAgeShort(horse.age, horse.dateOfBirth)}
+        </span>
         <span>•</span>
         <span>Gender: {horse.gender}</span>
         <span>•</span>

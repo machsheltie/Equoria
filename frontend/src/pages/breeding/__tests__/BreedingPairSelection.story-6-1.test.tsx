@@ -492,7 +492,7 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       // so this counts as a first breed.
       await waitFor(
         () => {
-          expect(mockNavigate).toHaveBeenCalledWith('/foals/123');
+          expect(mockNavigate).toHaveBeenCalledWith('/horses/123');
         },
         { timeout: 4500 }
       );
