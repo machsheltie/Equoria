@@ -8,7 +8,7 @@
  * construction, the `enabled` gating, the `{ success, message, data }` envelope
  * unwrap, and the `select: (data) => data.trainingHistory` transform end-to-end.
  *
- * The two CHILD components (ScoreRadarChart, TrainingHistoryTable) remain
+ * The two CHILD components (DisciplineScoreColumns, TrainingHistoryTable) remain
  * stubbed so the data the panel passes down can be inspected via data-* attrs —
  * child stubs are an allowed isolation boundary (they are not the system under
  * test; the panel's data fetch + transform IS).
@@ -37,7 +37,7 @@ const trainingHistoryPath = (horseId: number | string) =>
   `${base}/api/v1/horses/${horseId}/training-history`;
 
 // Define prop interfaces for the child-component stubs
-interface MockRadarChartProps {
+interface MockScoreColumnsProps {
   disciplineScores: Record<string, number>;
   className?: string;
 }
@@ -51,15 +51,18 @@ interface MockHistoryTableProps {
 // Stub child components to isolate the panel's data fetch + transform. These
 // are NOT the system under test (the panel's hook + transform is); they expose
 // the data the panel hands down through data-* attributes for inspection.
-vi.mock('../ScoreRadarChart', () => ({
-  default: function MockScoreRadarChart({ disciplineScores, className }: MockRadarChartProps) {
+vi.mock('../DisciplineScoreColumns', () => ({
+  default: function MockDisciplineScoreColumns({
+    disciplineScores,
+    className,
+  }: MockScoreColumnsProps) {
     return (
       <div
-        data-testid="score-radar-chart"
+        data-testid="discipline-score-columns"
         data-discipline-scores={JSON.stringify(disciplineScores)}
         className={className}
       >
-        Mock Radar Chart
+        Mock Score Columns
       </div>
     );
   },
@@ -162,15 +165,15 @@ describe('ScoreProgressionPanel', () => {
       render(<ScoreProgressionPanel horseId={1} disciplineScores={horseDisciplineScores} />, {
         wrapper: createWrapper(),
       });
-      expect(await screen.findByTestId('score-radar-chart')).toBeInTheDocument();
+      expect(await screen.findByTestId('discipline-score-columns')).toBeInTheDocument();
       expect(screen.getByTestId('score-progression-panel')).toBeInTheDocument();
     });
 
-    it('renders ScoreRadarChart component', async () => {
+    it('renders DisciplineScoreColumns component', async () => {
       render(<ScoreProgressionPanel horseId={1} disciplineScores={horseDisciplineScores} />, {
         wrapper: createWrapper(),
       });
-      expect(await screen.findByTestId('score-radar-chart')).toBeInTheDocument();
+      expect(await screen.findByTestId('discipline-score-columns')).toBeInTheDocument();
     });
 
     it('renders TrainingHistoryTable component', async () => {
@@ -187,7 +190,7 @@ describe('ScoreProgressionPanel', () => {
       render(<ScoreProgressionPanel horseId={1} disciplineScores={horseDisciplineScores} />, {
         wrapper: createWrapper(),
       });
-      await screen.findByTestId('score-radar-chart');
+      await screen.findByTestId('discipline-score-columns');
       expect(screen.queryByTestId('score-caps-section')).not.toBeInTheDocument();
       expect(screen.queryByText(/Score Caps/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/cap: 100/i)).not.toBeInTheDocument();
@@ -197,7 +200,7 @@ describe('ScoreProgressionPanel', () => {
       render(<ScoreProgressionPanel horseId={1} disciplineScores={horseDisciplineScores} />, {
         wrapper: createWrapper(),
       });
-      expect(await screen.findByText('Discipline Distribution')).toBeInTheDocument();
+      expect(await screen.findByText('Discipline Scores')).toBeInTheDocument();
       expect(screen.getByText('Training History')).toBeInTheDocument();
     });
   });
@@ -253,11 +256,11 @@ describe('ScoreProgressionPanel', () => {
       });
     });
 
-    it('passes disciplineScores to ScoreRadarChart', async () => {
+    it('passes disciplineScores to DisciplineScoreColumns', async () => {
       render(<ScoreProgressionPanel horseId={1} disciplineScores={horseDisciplineScores} />, {
         wrapper: createWrapper(),
       });
-      const chart = await screen.findByTestId('score-radar-chart');
+      const chart = await screen.findByTestId('discipline-score-columns');
       const scoresAttr = chart.getAttribute('data-discipline-scores');
       expect(scoresAttr).toBeTruthy();
       const parsedScores = JSON.parse(scoresAttr || '{}');
@@ -272,12 +275,12 @@ describe('ScoreProgressionPanel', () => {
       });
     });
 
-    it('the radar shows the horse scores even before any training is logged', async () => {
+    it('the score columns shows the horse scores even before any training is logged', async () => {
       stubTrainingHistory([]);
       render(<ScoreProgressionPanel horseId={1} disciplineScores={{ Dressage: 70 }} />, {
         wrapper: createWrapper(),
       });
-      const chart = await screen.findByTestId('score-radar-chart');
+      const chart = await screen.findByTestId('discipline-score-columns');
       expect(JSON.parse(chart.getAttribute('data-discipline-scores') || '{}')).toEqual({
         dressage: 70,
       });
@@ -494,7 +497,7 @@ describe('ScoreProgressionPanel', () => {
       render(<ScoreProgressionPanel horseId={1} disciplineScores={horseDisciplineScores} />, {
         wrapper: createWrapper(),
       });
-      await screen.findByTestId('score-radar-chart');
+      await screen.findByTestId('discipline-score-columns');
       const gridContainer = screen.getByTestId('content-grid');
       expect(gridContainer).toHaveClass('md:grid-cols-2');
     });
@@ -503,7 +506,7 @@ describe('ScoreProgressionPanel', () => {
       render(<ScoreProgressionPanel horseId={1} disciplineScores={horseDisciplineScores} />, {
         wrapper: createWrapper(),
       });
-      await screen.findByTestId('score-radar-chart');
+      await screen.findByTestId('discipline-score-columns');
       const gridContainer = screen.getByTestId('content-grid');
       expect(gridContainer).toHaveClass('grid-cols-1');
     });
@@ -512,7 +515,7 @@ describe('ScoreProgressionPanel', () => {
       render(<ScoreProgressionPanel horseId={1} disciplineScores={horseDisciplineScores} />, {
         wrapper: createWrapper(),
       });
-      await screen.findByTestId('score-radar-chart');
+      await screen.findByTestId('discipline-score-columns');
       const gridContainer = screen.getByTestId('content-grid');
       expect(gridContainer).toHaveClass('gap-6');
     });
@@ -530,7 +533,7 @@ describe('ScoreProgressionPanel', () => {
         expect(JSON.parse(table.getAttribute('data-history') || '[]').length).toBe(3);
       });
 
-      const chart = screen.getByTestId('score-radar-chart');
+      const chart = screen.getByTestId('discipline-score-columns');
       const scoresData = JSON.parse(chart.getAttribute('data-discipline-scores') || '{}');
       expect(Object.keys(scoresData).length).toBeGreaterThan(0);
     });
@@ -540,7 +543,7 @@ describe('ScoreProgressionPanel', () => {
         wrapper: createWrapper(),
       });
 
-      expect(await screen.findByTestId('score-radar-chart')).toBeInTheDocument();
+      expect(await screen.findByTestId('discipline-score-columns')).toBeInTheDocument();
       expect(screen.getByTestId('training-history-table')).toBeInTheDocument();
     });
 
@@ -571,7 +574,7 @@ describe('ScoreProgressionPanel', () => {
           wrapper: createWrapper(),
         }
       );
-      await screen.findByTestId('score-radar-chart');
+      await screen.findByTestId('discipline-score-columns');
       const panel = screen.getByTestId('score-progression-panel');
       expect(panel).toHaveClass('custom-class');
     });
@@ -593,12 +596,9 @@ describe('ScoreProgressionPanel', () => {
       render(<ScoreProgressionPanel horseId={1} disciplineScores={horseDisciplineScores} />, {
         wrapper: createWrapper(),
       });
-      await screen.findByTestId('score-radar-chart');
+      await screen.findByTestId('discipline-score-columns');
       const headings = screen.getAllByRole('heading');
-      expect(headings.map((h) => h.textContent)).toEqual([
-        'Discipline Distribution',
-        'Training History',
-      ]);
+      expect(headings.map((h) => h.textContent)).toEqual(['Discipline Scores', 'Training History']);
     });
 
     it('loading state has aria-label', async () => {
@@ -625,7 +625,7 @@ describe('ScoreProgressionPanel', () => {
       render(<ScoreProgressionPanel horseId={1} disciplineScores={horseDisciplineScores} />, {
         wrapper: createWrapper(),
       });
-      await screen.findByTestId('score-radar-chart');
+      await screen.findByTestId('discipline-score-columns');
       expect(screen.getByTestId('score-progression-panel').tagName.toLowerCase()).toBe('div');
     });
   });

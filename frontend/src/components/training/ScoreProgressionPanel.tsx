@@ -1,11 +1,11 @@
 /**
  * ScoreProgressionPanel Component
  *
- * An integration component that combines ScoreRadarChart and TrainingHistoryTable,
+ * An integration component that combines DisciplineScoreColumns and TrainingHistoryTable,
  * fetching data with React Query for displaying horse training progression.
  *
  * Features:
- * - Radar chart showing the horse's real discipline scores (Horse.disciplineScores)
+ * - Score columns showing the horse's real discipline scores (Horse.disciplineScores)
  * - Training history table with each session's recorded before/after score
  * - Loading and error states with retry functionality
  * - Responsive grid layout (desktop: 2 columns, mobile: 1 column)
@@ -18,7 +18,7 @@ import { useHorseTrainingHistory } from '@/hooks/api/useHorses';
 import type { HorseTrainingHistoryEntry } from '@/lib/api/types';
 import { DISCIPLINES } from '@/lib/utils/training-utils';
 import { userMessageFor } from '@/lib/http/userMessage';
-import ScoreRadarChart from './ScoreRadarChart';
+import DisciplineScoreColumns from './DisciplineScoreColumns';
 import TrainingHistoryTable from './TrainingHistoryTable';
 import type { TrainingHistoryEntry } from './TrainingHistoryTable';
 
@@ -36,12 +36,12 @@ interface ScoreProgressionPanelProps {
 
 /**
  * Map the horse's real disciplineScores (keyed by discipline name, as the
- * backend stores them) onto the radar's discipline ids. Only real numbers are
+ * backend stores them) onto the score columns' discipline ids. Only real numbers are
  * passed; a discipline the horse has never trained is left to the chart.
- * Equoria-ky2ob: the radar used to be rebuilt from a `score` field the
+ * Equoria-ky2ob: the chart used to be rebuilt from a `score` field the
  * training-history rows never carried, so it was always all zeros.
  */
-function toRadarScores(disciplineScores: Record<string, number>): Record<string, number> {
+function toColumnScores(disciplineScores: Record<string, number>): Record<string, number> {
   const scores: Record<string, number> = {};
   for (const discipline of DISCIPLINES) {
     const value = disciplineScores?.[discipline.name];
@@ -108,7 +108,7 @@ function TableSkeleton() {
  * ScoreProgressionPanel Component
  *
  * Displays discipline score distribution and training history for a horse.
- * Combines radar chart visualization with tabular history data.
+ * Combines score columns with tabular history data.
  *
  * @example
  * ```tsx
@@ -123,7 +123,7 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
   // Fetch training history using React Query hook
   const { data: trainingHistory, isLoading, error, refetch } = useHorseTrainingHistory(horseId);
 
-  const radarScores = toRadarScores(disciplineScores);
+  const columnScores = toColumnScores(disciplineScores);
 
   // Handle retry button click
   const handleRetry = () => {
@@ -198,12 +198,12 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
     <div data-testid="score-progression-panel" className={`space-y-6 p-4 ${className}`}>
       {/* Main content grid - responsive 2 columns on desktop, 1 on mobile */}
       <div data-testid="content-grid" className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* Section 1: Radar Chart */}
+        {/* Section 1: Discipline score columns */}
         <div className="glass-panel rounded-lg border border-[var(--glass-border)] p-4">
           <h3 className="mb-4 text-lg font-semibold text-[var(--text-primary)]">
-            Discipline Distribution
+            Discipline Scores
           </h3>
-          <ScoreRadarChart disciplineScores={radarScores} height={300} className="w-full" />
+          <DisciplineScoreColumns disciplineScores={columnScores} className="w-full" />
         </div>
 
         {/* Section 2: Training History Table */}
