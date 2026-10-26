@@ -332,7 +332,7 @@ describe('NewsPage hero (Equoria-vcpbq)', () => {
     expect(within(hero).getByTestId('page-hero-divider')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /equoria news/i })).toHaveAttribute(
       'src',
-      '/images/equorianews.jpg'
+      '/images/equorianews.webp'
     );
   });
 });

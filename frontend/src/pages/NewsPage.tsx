@@ -108,7 +108,7 @@ export default function NewsPage() {
       <PageContainer variant="content" padded={false} className="pt-1 pb-4">
         <Surface variant="panel">
           <img
-            src="/images/equorianews.jpg"
+            src="/images/equorianews.webp"
             alt="Equoria News"
             className="w-full h-auto rounded-[var(--radius-md)]"
           />

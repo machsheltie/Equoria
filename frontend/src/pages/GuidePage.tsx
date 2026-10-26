@@ -244,7 +244,7 @@ export default function GuidePage() {
       <PageContainer variant="content" padded={false} className="pt-1 pb-4">
         <Surface variant="panel">
           <img
-            src="/images/equoriavisitorscenter.jpg"
+            src="/images/equoriavisitorscenter.webp"
             alt="The Equoria Visitors Centre"
             className="w-full h-auto rounded-[var(--radius-md)]"
           />

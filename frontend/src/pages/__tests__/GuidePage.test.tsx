@@ -150,7 +150,7 @@ describe('GuidePage hero (Equoria-vcpbq)', () => {
     expect(within(hero).getByTestId('page-hero-divider')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /visitors centre/i })).toHaveAttribute(
       'src',
-      '/images/equoriavisitorscenter.jpg'
+      '/images/equoriavisitorscenter.webp'
     );
   });
 });
