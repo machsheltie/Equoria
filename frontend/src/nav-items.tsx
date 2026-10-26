@@ -40,6 +40,8 @@ const PremiumShopPage = lazy(() => import('./pages/PremiumShopPage'));
 // Epic 12 — Stable Management pages
 const BankPage = lazy(() => import('./pages/BankPage'));
 const InventoryPage = lazy(() => import('./pages/InventoryPage'));
+// Equoria-rdg0d — Staff: the grooms, riders and trainers a player has hired
+const StaffPage = lazy(() => import('./pages/StaffPage'));
 const MyStablePage = lazy(() => import('./pages/MyStablePage'));
 // Epic 13 — Trainer System (World sub-location, route-only)
 const TrainersPage = lazy(() => import('./pages/TrainersPage'));
@@ -90,6 +92,12 @@ export const navItems = [
     to: '/inventory',
     icon: <Package className="h-4 w-4" />,
     Page: InventoryPage,
+  },
+  {
+    title: 'Staff',
+    to: '/staff',
+    icon: null,
+    Page: StaffPage,
   },
   {
     title: 'Breeding',

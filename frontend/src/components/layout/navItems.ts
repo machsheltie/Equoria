@@ -11,13 +11,13 @@ import {
   Package,
   Trophy,
   Dna,
-  PersonStanding,
   Globe,
   ShoppingCart,
   BarChart3,
   MessageSquare,
   Mail,
   Landmark,
+  UsersRound,
   User,
   Settings,
   MoreHorizontal,
@@ -41,20 +41,30 @@ export const NAV_SECTIONS: NavItem[] = [
   { name: 'News', href: '/news', Icon: Newspaper },
   // Equoria-kd2dd: the new player guide. Owner ruling 2026-10-23 (q20): its link goes in the sidebar.
   { name: 'Guide', href: '/guide', Icon: BookOpen },
-  // D-27 (DECISIONS.md §10): /stable is the roster browser — label "Stable".
-  { name: 'Stable', href: '/stable', Icon: Building2, shortName: 'Stable' },
-  { name: 'Inventory', href: '/inventory', Icon: Package },
   { name: 'Competitions', href: '/competitions', Icon: Trophy, shortName: 'Compete' },
   { name: 'Breeding', href: '/breeding', Icon: Dna, shortName: 'Breed' },
-  { name: 'Riders', href: '/riders', Icon: PersonStanding },
   { name: 'World', href: '/world', Icon: Globe },
   { name: 'Marketplace', href: '/marketplace', Icon: ShoppingCart },
   { name: 'Leaderboards', href: '/leaderboards', Icon: BarChart3 },
   { name: 'Community', href: '/community', Icon: MessageSquare },
   { name: 'Messages', href: '/messages', Icon: Mail },
-  { name: 'Bank', href: '/bank', Icon: Landmark },
   { name: 'Profile', href: '/profile', Icon: User },
   { name: 'Settings', href: '/settings', Icon: Settings },
+];
+
+/**
+ * The rooms under Home — the stars on the Constellation Thread (owner ruling
+ * 2026-10-26, q96, option A). Home stays a page; these hang beneath it.
+ * Stable moved here from the top level; Riders is no longer a sidebar link
+ * (Riders, Trainers and Grooms are browsed and hired under World); Bank stays
+ * here and in the top bar.
+ */
+export const HOME_ROOMS: NavItem[] = [
+  // D-27 (DECISIONS.md §10): /stable is the roster browser — label "Stable".
+  { name: 'Stable', href: '/stable', Icon: Building2, shortName: 'Stable' },
+  { name: 'Staff', href: '/staff', Icon: UsersRound },
+  { name: 'Inventory', href: '/inventory', Icon: Package },
+  { name: 'Bank', href: '/bank', Icon: Landmark },
 ];
 
 /**

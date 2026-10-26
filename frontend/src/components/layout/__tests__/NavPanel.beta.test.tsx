@@ -36,7 +36,9 @@ describe('NavPanel — full exposure', () => {
     expect(screen.getByRole('link', { name: /settings/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /world/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /community/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /riders/i })).toBeInTheDocument();
+    // Owner ruling 2026-10-26 (q96, Equoria-3qjwz): the top-level Riders link is gone;
+    // riders are browsed and hired under World. Old contract: Riders was a nav link.
+    expect(screen.queryByRole('link', { name: /riders/i })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /leaderboards/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /profile/i })).toBeInTheDocument();
   });

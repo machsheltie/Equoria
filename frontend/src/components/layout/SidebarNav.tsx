@@ -11,11 +11,12 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { NAV_SECTIONS, isRouteActive } from './navItems';
+import { HOME_ROOMS, NAV_SECTIONS, isRouteActive, type NavItem } from './navItems';
 
 const STORAGE_KEY = 'equoria-sidebar-collapsed';
+const THREAD_KEY = 'equoria-sidebar-home-thread';
 
 function readStoredCollapsed(): boolean {
   if (typeof window === 'undefined') return false;
@@ -34,15 +35,87 @@ function writeStoredCollapsed(value: boolean): void {
   }
 }
 
+function readStoredThread(): boolean {
+  try {
+    return window.localStorage.getItem(THREAD_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function writeStoredThread(value: boolean): void {
+  try {
+    window.localStorage.setItem(THREAD_KEY, String(value));
+  } catch {
+    /* storage blocked — non-fatal */
+  }
+}
+
+/** A four-point star: the mark each room hangs from on the thread. */
+function ThreadStar({ lit }: { lit: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 12 12"
+      aria-hidden="true"
+      className={cn(
+        'h-3 w-3 shrink-0 transition-[color,filter] duration-200 motion-reduce:transition-none',
+        lit
+          ? 'text-[var(--gold-bright)] drop-shadow-[0_0_4px_rgba(245,230,163,0.7)]'
+          : 'text-[var(--gold-dim)]'
+      )}
+    >
+      <path d="M6 0 7.3 4.7 12 6 7.3 7.3 6 12 4.7 7.3 0 6 4.7 4.7Z" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function SidebarNav() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState<boolean>(readStoredCollapsed);
+  const [threadOpen, setThreadOpen] = useState<boolean>(readStoredThread);
+  const roomActive = HOME_ROOMS.some((room) => isRouteActive(location.pathname, room.href));
+  const threadShown = threadOpen;
+
+  // Arriving in a room lets the thread down, so the player sees where they are.
+  useEffect(() => {
+    if (roomActive) setThreadOpen(true);
+  }, [roomActive]);
+
+  useEffect(() => {
+    writeStoredThread(threadOpen);
+  }, [threadOpen]);
 
   useEffect(() => {
     writeStoredCollapsed(collapsed);
   }, [collapsed]);
 
   const toggle = () => setCollapsed((prev) => !prev);
+
+  const renderLink = (item: NavItem, active: boolean) => (
+    <Link
+      to={item.href}
+      aria-current={active ? 'page' : undefined}
+      title={collapsed ? item.name : undefined}
+      className={cn(
+        'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm',
+        'transition-colors',
+        active
+          ? 'bg-[var(--glass-border-gold-subtle)] text-[var(--gold-light)] border-l-2 border-l-[var(--gold-primary)] pl-[10px]'
+          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] border-l-2 border-l-transparent pl-[10px]',
+        collapsed && 'justify-center px-0'
+      )}
+    >
+      <item.Icon
+        className={cn('w-5 h-5 flex-shrink-0', active && 'text-[var(--gold-primary)]')}
+        aria-hidden="true"
+      />
+      {!collapsed && (
+        <span className="truncate" style={{ fontFamily: 'var(--font-body)' }}>
+          {item.name}
+        </span>
+      )}
+    </Link>
+  );
 
   return (
     <aside
@@ -92,31 +165,68 @@ export function SidebarNav() {
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
         {NAV_SECTIONS.map((item) => {
           const active = isRouteActive(location.pathname, item.href);
+          const isHome = item.href === '/';
           return (
-            <Link
-              key={item.href}
-              to={item.href}
-              aria-current={active ? 'page' : undefined}
-              title={collapsed ? item.name : undefined}
-              className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm',
-                'transition-colors',
-                active
-                  ? 'bg-[var(--glass-border-gold-subtle)] text-[var(--gold-light)] border-l-2 border-l-[var(--gold-primary)] pl-[10px]'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] border-l-2 border-l-transparent pl-[10px]',
-                collapsed && 'justify-center px-0'
+            <div key={item.href}>
+              <div className="flex items-stretch gap-1">
+                <div className="min-w-0 flex-1">{renderLink(item, active)}</div>
+                {isHome && !collapsed && (
+                  <button
+                    type="button"
+                    onClick={() => setThreadOpen((prev) => !prev)}
+                    aria-expanded={threadShown}
+                    aria-controls="home-rooms-thread"
+                    aria-label={
+                      threadShown ? 'Draw up the rooms under Home' : 'Let down the rooms under Home'
+                    }
+                    data-testid="home-thread-toggle"
+                    className={cn(
+                      'flex w-11 shrink-0 items-center justify-center rounded-md',
+                      'text-[var(--text-secondary)] hover:text-[var(--gold-primary)]',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)]',
+                      'transition-colors'
+                    )}
+                  >
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={cn(
+                        'h-4 w-4 transition-transform duration-200 motion-reduce:transition-none',
+                        threadShown && 'rotate-180'
+                      )}
+                    />
+                  </button>
+                )}
+              </div>
+              {isHome && (
+                <div
+                  id="home-rooms-thread"
+                  data-testid="home-rooms-thread"
+                  hidden={!collapsed && !threadShown}
+                  className="relative"
+                >
+                  <ul
+                    aria-label="Rooms under Home"
+                    className={cn('relative py-1', collapsed ? 'space-y-0.5' : 'ml-5 space-y-0.5')}
+                  >
+                    {!collapsed && (
+                      <span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute bottom-3 left-[5px] top-0 w-px bg-gradient-to-b from-[var(--gold-primary)] to-[var(--gold-dim)]/30"
+                      />
+                    )}
+                    {HOME_ROOMS.map((room) => {
+                      const roomIsActive = isRouteActive(location.pathname, room.href);
+                      return (
+                        <li key={room.href} className="flex items-center gap-2">
+                          {!collapsed && <ThreadStar lit={roomIsActive} />}
+                          <div className="min-w-0 flex-1">{renderLink(room, roomIsActive)}</div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               )}
-            >
-              <item.Icon
-                className={cn('w-5 h-5 flex-shrink-0', active && 'text-[var(--gold-primary)]')}
-                aria-hidden="true"
-              />
-              {!collapsed && (
-                <span className="truncate" style={{ fontFamily: 'var(--font-body)' }}>
-                  {item.name}
-                </span>
-              )}
-            </Link>
+            </div>
           );
         })}
       </nav>

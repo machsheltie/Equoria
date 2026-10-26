@@ -35,6 +35,7 @@ const ROUTE_LABELS: Record<string, string> = {
   community: 'Community',
   messages: 'Messages',
   riders: 'Riders',
+  staff: 'Staff',
   leaderboards: 'Leaderboards',
   settings: 'Settings',
   profile: 'Profile',

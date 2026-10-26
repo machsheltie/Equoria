@@ -12,7 +12,7 @@ import { Link, useLocation } from 'react-router';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect } from 'react';
-import { NAV_SECTIONS, isRouteActive } from './navItems';
+import { HOME_ROOMS, NAV_SECTIONS, isRouteActive } from './navItems';
 
 interface NavPanelProps {
   isOpen: boolean;
@@ -89,27 +89,32 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
 
         {/* Nav links */}
         <nav className="flex-1 overflow-y-auto py-3 px-3">
-          {NAV_SECTIONS.map((item) => {
-            const active = isRouteActive(location.pathname, item.href);
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={onClose}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-3 rounded-[var(--radius-md)] mb-0.5',
-                  'text-sm transition-all',
-                  active
-                    ? 'bg-[var(--glass-border-gold-subtle)] border-l-2 border-l-[var(--gold-primary)] text-[var(--gold-light)]'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] border-l-2 border-l-transparent'
-                )}
-                aria-current={active ? 'page' : undefined}
-              >
-                <item.Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-                <span style={{ fontFamily: 'var(--font-body)' }}>{item.name}</span>
-              </Link>
-            );
-          })}
+          {/* The rooms under Home follow it, as in the sidebar's thread. */}
+          {NAV_SECTIONS.flatMap((item) => (item.href === '/' ? [item, ...HOME_ROOMS] : [item])).map(
+            (item) => {
+              const room = HOME_ROOMS.includes(item);
+              const active = isRouteActive(location.pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  onClick={onClose}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-3 rounded-[var(--radius-md)] mb-0.5',
+                    room && 'ml-5',
+                    'text-sm transition-all',
+                    active
+                      ? 'bg-[var(--glass-border-gold-subtle)] border-l-2 border-l-[var(--gold-primary)] text-[var(--gold-light)]'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] border-l-2 border-l-transparent'
+                  )}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <item.Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                  <span style={{ fontFamily: 'var(--font-body)' }}>{item.name}</span>
+                </Link>
+              );
+            }
+          )}
         </nav>
       </div>
     </>
