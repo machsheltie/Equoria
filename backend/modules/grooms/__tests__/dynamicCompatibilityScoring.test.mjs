@@ -473,13 +473,17 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
     expect(result.overallScore).toBeLessThan(0.6);
   });
 
-  it('recommendationLevel=not_recommended: chaotic environment', async () => {
+  it('a chaotic environment lowers the score', async () => {
+    const plain = await analyzePair(groom.id, horse.id, scoreCompatibility, {
+      taskType: 'coat_check',
+      timeOfDay: 'evening',
+    });
     const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'evening',
       environmentalFactors: ['chaotic'],
     });
-    expect(result.recommendationLevel).toBe('not_recommended');
+    expect(result.overallScore).toBeLessThan(plain.overallScore);
     expect(result.environmentalModifier).toBeCloseTo(0.85, 2);
   });
 

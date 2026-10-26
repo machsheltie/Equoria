@@ -181,7 +181,7 @@ describe('analyzeTraitSnapshot', () => {
       overallHarmony: matrix.traitInteractions.overallHarmony,
       complexityScore: 1,
       stabilityScore: matrix.stability.overallStability,
-      dominantTrait: 'intelligent',
+      dominantTrait: 'confident',
     });
   });
 

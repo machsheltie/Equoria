@@ -101,6 +101,7 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
 
       const baseChance = 0.02;
       const conditions = {
+        noveltyEvents: true,
         recoveries: true,
       };
 

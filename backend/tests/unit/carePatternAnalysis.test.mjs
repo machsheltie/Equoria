@@ -338,6 +338,7 @@ describe('environmentalFactors pattern', () => {
       interactionType: 'feeding',
       quality: 'good',
       bondingChange: 3,
+      notes: 'Horse startled by a flapping tarp',
       createdAt: daysAgo(2),
     });
     await mkInteraction(horse.id, {

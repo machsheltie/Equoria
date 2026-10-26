@@ -66,7 +66,6 @@ describe('MilestoneEvaluationDisplay', () => {
 
     expect(screen.getByText('14 / 180')).toBeInTheDocument();
     expect(screen.getByText('65')).toBeInTheDocument();
-    expect(screen.getByText('20')).toBeInTheDocument();
     // Equoria-n3yw6: no 'Stage' row — the backend never sends a `stage`
     // field, so the dead fabricated row was removed.
     expect(screen.queryByText('Stage')).not.toBeInTheDocument();

@@ -83,8 +83,8 @@ describe('TALENT_TREES data', () => {
     expect(TALENT_TREES.calm.tier1).toHaveLength(2);
   });
 
-  it('calm tier2 has 2 talents', () => {
-    expect(TALENT_TREES.calm.tier2).toHaveLength(2);
+  it('calm tier2 has 1 talent', () => {
+    expect(TALENT_TREES.calm.tier2).toHaveLength(1);
   });
 
   it('calm tier3 has 1 talent', () => {

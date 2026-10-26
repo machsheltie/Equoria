@@ -244,6 +244,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
 
       const baseChance = 0.02;
       const conditions = {
+        noveltyEvents: true,
         recoveries: true,
       };
 
