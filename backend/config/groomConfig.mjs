@@ -23,7 +23,7 @@
  * - Mutual exclusivity: One enrichment OR one grooming task per day
  * - Task logging: JSON format tracking frequency for trait evaluation
  * - Streak tracking: 2-day grace period, +10% bonus for 7 consecutive days
- * - Bond scores: 0-100 range with +2 daily gain cap
+ * - Bond scores: 0-100, start at 0, +5 per daily "groom horse" (owner ruling 2026-10-26, q87)
  *
  * 🧪 TESTING APPROACH:
  * - Mock: Environment variables
@@ -40,11 +40,19 @@
  */
 export const MAX_GROOMS_PER_USER = 10;
 
+// camelCase spellings for new consumers (Equoria-pjvp8 ratchet); GROOM_CONFIG
+// below carries the same values.
+export const bondScoreMax = 100;
+// Owner ruling 2026-10-26 (q87): each daily groom adds +5, about 100 by day 21.
+export const dailyBondGain = 5;
+// Days a care streak (Horse.daysGroomedInARow) survives without grooming.
+export const careStreakGraceDays = 2;
+
 export const GROOM_CONFIG = {
   // Bonding mechanics
   BOND_SCORE_START: 0,
-  BOND_SCORE_MAX: 100,
-  DAILY_BOND_GAIN: 2,
+  BOND_SCORE_MAX: bondScoreMax,
+  DAILY_BOND_GAIN: dailyBondGain,
 
   // Age restrictions and thresholds
   MIN_AGE_FOR_GROOMING_TASKS: 0, // Allow grooms to work with foals from birth
@@ -86,7 +94,7 @@ export const GROOM_CONFIG = {
   FOAL_STREAK_BONUS_THRESHOLD: 7, // 7 consecutive days for +10% bonus
   // Days a care streak (Horse.daysGroomedInARow) survives without grooming
   // before it resets (Equoria-0gl9o: formerly also BURNOUT_RESET_GRACE_DAYS).
-  FOAL_STREAK_GRACE_DAYS: 2,
+  FOAL_STREAK_GRACE_DAYS: careStreakGraceDays,
 
   // Task type categories for mutual exclusivity checking
   TASK_CATEGORIES: {
@@ -94,11 +102,6 @@ export const GROOM_CONFIG = {
     GROOMING: 'grooming',
   },
 };
-
-// Environment variable overrides
-if (process.env.DAILY_BOND_GAIN) {
-  GROOM_CONFIG.DAILY_BOND_GAIN = parseInt(process.env.DAILY_BOND_GAIN, 10);
-}
 
 // Named exports for foal task categories
 export const { ELIGIBLE_FOAL_ENRICHMENT_TASKS } = GROOM_CONFIG;

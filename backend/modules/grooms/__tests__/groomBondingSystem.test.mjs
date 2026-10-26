@@ -548,10 +548,11 @@ describe('groomBondingSystem — exact bonding values (merged from legacy backen
       expect(GROOM_CONFIG.BOND_SCORE_START).toBe(0);
     });
 
-    it('eligible task gives +2 bond (20 → 22)', () => {
+    // The owner ruling 2026-10-26 (q87) set the daily gain to +5 (was +2).
+    it('eligible task gives +5 bond (20 → 25)', () => {
       const result = calculateBondingEffects(20, 'brushing');
-      expect(result.bondChange).toBe(2);
-      expect(result.newBondScore).toBe(22);
+      expect(result.bondChange).toBe(5);
+      expect(result.newBondScore).toBe(25);
     });
 
     it('caps at 100 (99 → 100, only +1 applied)', () => {

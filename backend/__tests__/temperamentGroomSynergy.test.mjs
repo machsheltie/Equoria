@@ -197,39 +197,40 @@ describe('Story 31D.4: Groom Temperament Synergy', () => {
   // ─── Integration tests: calculateBondingEffects() ────────────────────────
 
   describe('calculateBondingEffects() — synergy integration', () => {
-    const BASE_GAIN = GROOM_CONFIG.DAILY_BOND_GAIN; // 2
+    // Owner ruling 2026-10-26 (q87) set the daily gain to +5 (was +2).
+    const BASE_GAIN = GROOM_CONFIG.DAILY_BOND_GAIN; // 5
 
-    // Task 4.8 — Nervous + patient → +25% → bondChange ≈ 2.5 (AC #1)
-    it('Nervous + patient groom: bondChange = 2.5, synergyModifier = 0.25 (AC #1)', () => {
+    // Task 4.8 — Nervous + patient → +25% → bondChange ≈ 6.25 (AC #1)
+    it('Nervous + patient groom: bondChange = 6.25, synergyModifier = 0.25 (AC #1)', () => {
       const result = calculateBondingEffects(20, 'brushing', 'patient', 'Nervous');
       expect(result.eligible).toBe(true);
       expect(result.synergyModifier).toBe(0.25);
-      expect(result.bondChange).toBeCloseTo(BASE_GAIN * 1.25, 5); // 2.5
-      expect(result.newBondScore).toBeCloseTo(22.5, 5);
+      expect(result.bondChange).toBeCloseTo(BASE_GAIN * 1.25, 5); // 6.25
+      expect(result.newBondScore).toBeCloseTo(26.25, 5);
     });
 
-    // Task 4.9 — Nervous + strict → -15% → bondChange ≈ 1.7 (AC #2)
-    it('Nervous + strict groom: bondChange = 1.7, synergyModifier = -0.15 (AC #2)', () => {
+    // Task 4.9 — Nervous + strict → -15% → bondChange ≈ 4.25 (AC #2)
+    it('Nervous + strict groom: bondChange = 4.25, synergyModifier = -0.15 (AC #2)', () => {
       const result = calculateBondingEffects(20, 'brushing', 'strict', 'Nervous');
       expect(result.eligible).toBe(true);
       expect(result.synergyModifier).toBe(-0.15);
-      expect(result.bondChange).toBeCloseTo(BASE_GAIN * 0.85, 5); // 1.7
-      expect(result.newBondScore).toBeCloseTo(21.7, 5);
+      expect(result.bondChange).toBeCloseTo(BASE_GAIN * 0.85, 5); // 4.25
+      expect(result.newBondScore).toBeCloseTo(24.25, 5);
     });
 
-    // Task 4.10 — 2-arg regression: bondChange = 2 (AC #7)
-    it('2-arg call: bondChange = 2, newBondScore = 22 (regression AC #7)', () => {
+    // Task 4.10 — 2-arg regression: bondChange = 5 (AC #7)
+    it('2-arg call: bondChange = 5, newBondScore = 25 (regression AC #7)', () => {
       const result = calculateBondingEffects(20, 'brushing');
-      expect(result.bondChange).toBe(2);
-      expect(result.newBondScore).toBe(22);
+      expect(result.bondChange).toBe(5);
+      expect(result.newBondScore).toBe(25);
       expect(result.eligible).toBe(true);
       expect(result.synergyModifier).toBe(0);
     });
 
-    // Task 4.11 — null inputs → bondChange = 2
-    it('calculateBondingEffects(20, brushing, null, null): bondChange = 2 (null = neutral)', () => {
+    // Task 4.11 — null inputs → bondChange = 5
+    it('calculateBondingEffects(20, brushing, null, null): bondChange = 5 (null = neutral)', () => {
       const result = calculateBondingEffects(20, 'brushing', null, null);
-      expect(result.bondChange).toBe(2);
+      expect(result.bondChange).toBe(5);
       expect(result.synergyModifier).toBe(0);
     });
 

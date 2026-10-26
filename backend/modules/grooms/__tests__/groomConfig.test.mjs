@@ -167,8 +167,9 @@ describe('groomConfig — task category invariants & age eligibility (merged fro
     expect(GROOM_CONFIG.TASK_CATEGORIES.GROOMING).toBe('grooming');
   });
 
-  it('DAILY_BOND_GAIN is exactly 2', () => {
-    expect(GROOM_CONFIG.DAILY_BOND_GAIN).toBe(2);
+  // Owner ruling 2026-10-26 (q87) replaced the old +2: each daily groom adds +5.
+  it('DAILY_BOND_GAIN is exactly 5', () => {
+    expect(GROOM_CONFIG.DAILY_BOND_GAIN).toBe(5);
   });
 
   describe('age-based task eligibility logic', () => {

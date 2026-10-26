@@ -136,7 +136,8 @@ describe('processGroomingSession() — real DB persistence', () => {
 
       const after = await prisma.horse.findUnique({ where: { id: horse.id } });
       expect(Number.isInteger(after.bondScore)).toBe(true);
-      expect(after.bondScore).toBe(22); // 20 + round(2) = 22 (no temperament synergy)
+      // The owner ruling 2026-10-26 (q87) set the daily gain to +5 (was +2).
+      expect(after.bondScore).toBe(25); // 20 + round(5) = 25 (no temperament synergy)
       expect(after.daysGroomedInARow).toBe(1);
       // Cross-realm-safe Date check: under jest --experimental-vm-modules
       // (npm test), each test file runs in its own V8 context, so the Date
@@ -206,12 +207,12 @@ describe('processGroomingSession() — real DB persistence', () => {
       const result = await processGroomingSession(horse.id, null, 'brushing', 30);
       expect(result.success).toBe(true);
       expect(result.bondingEffects.synergyModifier).toBe(0);
-      expect(result.bondingEffects.bondChange).toBe(2);
+      expect(result.bondingEffects.bondChange).toBe(5);
     });
   });
 
   describe('Synergy applied correctly', () => {
-    it('Nervous horse + patient groom: bondChange rounds to 3, stored bondScore = 23', async () => {
+    it('Nervous horse + patient groom: bondChange rounds to 6, stored bondScore = 26', async () => {
       const user = await createUser();
       const horse = await createHorse(user.id, { temperament: 'Nervous' });
       const groom = await createGroom(user.id, 'patient');
@@ -219,13 +220,13 @@ describe('processGroomingSession() — real DB persistence', () => {
       await processGroomingSession(horse.id, groom.id, 'brushing', 30);
 
       const after = await prisma.horse.findUnique({ where: { id: horse.id } });
-      // effectiveGain = 2 * 1.25 = 2.5 → Math.round(20+2.5) = 23
-      expect(after.bondScore).toBe(23);
+      // effectiveGain = 5 * 1.25 = 6.25 → Math.round(20+6.25) = 26 (the owner ruling 2026-10-26 (q87) set the daily gain to +5 (was +2))
+      expect(after.bondScore).toBe(26);
       const interactions = await prisma.groomInteraction.findMany({ where: { foalId: horse.id } });
-      expect(interactions[0].bondingChange).toBe(3); // Math.round(2.5) = 3
+      expect(interactions[0].bondingChange).toBe(6); // Math.round(6.25) = 6
     });
 
-    it('Nervous horse + strict groom: bondChange rounds to 2, stored bondScore = 22', async () => {
+    it('Nervous horse + strict groom: bondChange rounds to 4, stored bondScore = 24', async () => {
       const user = await createUser();
       const horse = await createHorse(user.id, { temperament: 'Nervous' });
       const groom = await createGroom(user.id, 'strict');
@@ -233,10 +234,10 @@ describe('processGroomingSession() — real DB persistence', () => {
       await processGroomingSession(horse.id, groom.id, 'brushing', 30);
 
       const after = await prisma.horse.findUnique({ where: { id: horse.id } });
-      // effectiveGain = 2 * 0.85 = 1.7 → Math.round(20+1.7) = 22
-      expect(after.bondScore).toBe(22);
+      // effectiveGain = 5 * 0.85 = 4.25 → Math.round(20+4.25) = 24
+      expect(after.bondScore).toBe(24);
       const interactions = await prisma.groomInteraction.findMany({ where: { foalId: horse.id } });
-      expect(interactions[0].bondingChange).toBe(2); // Math.round(1.7) = 2
+      expect(interactions[0].bondingChange).toBe(4); // Math.round(4.25) = 4
     });
   });
 
