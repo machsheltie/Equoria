@@ -218,6 +218,8 @@ model Horse {
   /// Health and care
   healthStatus            String?               @default("Excellent")
   lastVettedDate          DateTime?             @default(now()) @db.Date
+  /// Veterinarian Genetic Testing panel bought (owner ruling 2026-10-26, Equoria-7dmzp). Equoria-8tz7p reveals colour genetics once true.
+  colorGeneticsTested     Boolean               @default(false)
   /// Equoria-507mt: bond/stress + grooming/foal counters NOT NULL too.
   /// bondScore default stays 0 (unbonded — per user decision: bond is earned, not innate).
   bondScore               Int                   @default(0)
