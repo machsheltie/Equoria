@@ -286,16 +286,17 @@ describe('rider payday: an unpaid rider cannot ride, then leaves', () => {
     const rider = await makeRider(user.id, 200);
 
     await pass(user.id, week1);
-    await prisma.user.update({ where: { id: user.id }, data: { money: 500 } });
+    // Owner q131 (2026-10-27): the missed week is owed, so week 2 collects 200 + 200.
+    await prisma.user.update({ where: { id: user.id }, data: { money: 1000 } });
     await pass(user.id, week2);
 
     const after = await prisma.rider.findUnique({ where: { id: rider.id } });
     expect(after.retired).toBe(false);
     expect(after.feeUnpaidSince).toBeNull();
-    expect(await moneyOf(user.id)).toBe(300);
+    expect(await moneyOf(user.id)).toBe(600);
     expect(await notices(user.id, 'riderReleased')).toHaveLength(0);
     // and a third pay week charges as normal
     await pass(user.id, week3);
-    expect(await moneyOf(user.id)).toBe(100);
+    expect(await moneyOf(user.id)).toBe(400);
   });
 });

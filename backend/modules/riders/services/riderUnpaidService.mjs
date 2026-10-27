@@ -36,6 +36,13 @@ export const riderFeeUnpaidNotificationType = 'riderFeeUnpaid';
 /** The player is told the rider has left after a full unpaid week. */
 export const riderReleasedNotificationType = 'riderReleased';
 
+/** A missed week still owed: collected with the next payday (owner q131). */
+export const riderArrearsOwedStatus = 'missed';
+/** A missed week collected with a later payday. */
+export const riderArrearsSettledStatus = 'arrearsSettled';
+/** A missed week forgiven because the rider left; the debt does not outlive the rider. */
+export const riderArrearsWrittenOffStatus = 'arrearsWrittenOff';
+
 /** Has a FULL pay week gone unpaid? True only for a STRICTLY EARLIER unpaid pay week. */
 export function hasFullUnpaidRiderWeek(feeUnpaidSince, payWeekStart) {
   if (!feeUnpaidSince) {
@@ -80,6 +87,10 @@ async function leaveTx(tx, { rider, userId, payWeekStart }) {
       status: 'releasedNonPayment',
     },
   });
+  await tx.riderSalaryPayment.updateMany({
+    where: { riderId: rider.id, userId, status: riderArrearsOwedStatus },
+    data: { status: riderArrearsWrittenOffStatus },
+  });
   const payload = {
     riderId: rider.id,
     riderName: riderName(rider),
@@ -90,12 +101,34 @@ async function leaveTx(tx, { rider, userId, payWeekStart }) {
   return payload;
 }
 
-async function graceTx(tx, { rider, userId, payWeekStart }) {
+async function graceTx(tx, { rider, userId, payWeekStart, allowLeave }) {
   const marked = await tx.rider.updateMany({
     where: { id: rider.id, userId, retired: false, feeUnpaidSince: null },
     data: { feeUnpaidSince: payWeekStart },
   });
   if (marked.count !== 1) {
+    // A failed pass (not the player's fault) never releases, so a rider already in
+    // grace from an EARLIER week is not released and this week must still be owed.
+    // No second notice; one missed row per rider per pay week.
+    if (!allowLeave && hasFullUnpaidRiderWeek(rider.feeUnpaidSince, payWeekStart)) {
+      const weekKey = riderPayWeekKey(payWeekStart);
+      const already = await tx.riderSalaryPayment.findFirst({
+        where: { riderId: rider.id, userId, weekKey, status: riderArrearsOwedStatus },
+        select: { id: true },
+      });
+      if (!already) {
+        await tx.riderSalaryPayment.create({
+          data: {
+            riderId: rider.id,
+            userId,
+            amount: rider.weeklyRate,
+            weekKey,
+            paymentDate: payWeekStart,
+            status: riderArrearsOwedStatus,
+          },
+        });
+      }
+    }
     return null;
   }
   await tx.riderSalaryPayment.create({
@@ -105,7 +138,7 @@ async function graceTx(tx, { rider, userId, payWeekStart }) {
       amount: rider.weeklyRate,
       weekKey: riderPayWeekKey(payWeekStart),
       paymentDate: payWeekStart,
-      status: 'missed',
+      status: riderArrearsOwedStatus,
     },
   });
   const payload = {
@@ -149,7 +182,7 @@ export async function handleUnpaidRiders(userId, unpaid, payWeekStart, { allowLe
       }
       const payload = await prisma.$transaction(async tx => {
         await acquireRiderPayWeekLockTx(tx, userId, payWeekStart);
-        return graceTx(tx, { rider, userId, payWeekStart });
+        return graceTx(tx, { rider, userId, payWeekStart, allowLeave });
       });
       if (payload) {
         finalizeNotificationAfterCommit(userId, riderFeeUnpaidNotificationType, payload);

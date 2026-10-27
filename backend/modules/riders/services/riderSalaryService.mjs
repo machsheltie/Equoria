@@ -13,8 +13,12 @@
  * week. A rider hired this pay week already has a paid row for it (the hire charge), so
  * the pass leaves them alone until next Monday. Retired riders are not charged.
  *
- * No arrears: a missed week is not carried forward and paid later (the groom pass does
- * carry arrears, by an earlier owner ruling; none exists for riders).
+ * Arrears (owner q131, 2026-10-27): a missed week is OWED, as for grooms. The next time
+ * the rider is paid, the 'missed' rows for earlier pay weeks are collected in the same
+ * single debit and marked 'arrearsSettled'. Like grooms, if the wallet covers this week
+ * but not the weeks owed too, this week alone is taken (the rider rides again) and the
+ * missed weeks stay owed. A rider who leaves has their owed weeks written off
+ * (riderUnpaidService). All or nothing still applies to the week itself (q132).
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -25,7 +29,11 @@ import {
   getRiderPayWeekStart,
   riderPayWeekKey,
 } from './riderPayWeek.mjs';
-import { handleUnpaidRiders } from './riderUnpaidService.mjs';
+import {
+  riderArrearsOwedStatus,
+  riderArrearsSettledStatus,
+  handleUnpaidRiders,
+} from './riderUnpaidService.mjs';
 
 // The economy module's burn sink, whose constant name is snake-case (ratchet): its value.
 const burnAccount = 'burn';
@@ -97,18 +105,58 @@ export async function processWeeklyRiderSalaries(
               return { skipped: true, amount: 0 };
             }
             const total = unpaid.reduce((sum, r) => sum + r.weeklyRate, 0);
-            if (total > 0) {
-              await debitMoneyOrThrow(tx, {
+            // Earlier weeks these riders still owe. A missed row is dated with its own
+            // pay week's Monday, so `lt: payWeekStart` can never pick up this week.
+            const owedRows = await tx.riderSalaryPayment.findMany({
+              where: {
                 userId,
-                amount: total,
-                systemAccount: burnAccount,
-                category: 'riderSalaryBurn',
-                description: `Rider weekly pay: user ${riders[0].user?.username ?? userId}`,
-                metadata: {
-                  riderCount: unpaid.length,
-                  totalSalary: total,
-                  payWeekStart: payWeekStart.toISOString(),
-                },
+                status: riderArrearsOwedStatus,
+                riderId: { in: unpaid.map(r => r.id) },
+                paymentDate: { lt: payWeekStart },
+              },
+              select: { id: true, amount: true },
+            });
+            const owedTotal = owedRows.reduce((sum, row) => sum + row.amount, 0);
+            // This week plus the debt in ONE debit; if the wallet cannot cover both,
+            // fall back to this week alone and leave the debt owed.
+            const attempts = [];
+            if (total + owedTotal > 0) {
+              attempts.push({ amount: total + owedTotal, withArrears: true });
+            }
+            if (owedTotal > 0 && total > 0) {
+              attempts.push({ amount: total, withArrears: false });
+            }
+            let arrearsSettledNow = false;
+            for (const [index, attempt] of attempts.entries()) {
+              try {
+                await debitMoneyOrThrow(tx, {
+                  userId,
+                  amount: attempt.amount,
+                  systemAccount: burnAccount,
+                  category: 'riderSalaryBurn',
+                  description: `Rider weekly pay: user ${riders[0].user?.username ?? userId}`,
+                  metadata: {
+                    riderCount: unpaid.length,
+                    totalSalary: total,
+                    arrears: attempt.withArrears ? owedTotal : 0,
+                    payWeekStart: payWeekStart.toISOString(),
+                  },
+                });
+                arrearsSettledNow = attempt.withArrears;
+                break;
+              } catch (debitError) {
+                if (
+                  !(debitError instanceof InsufficientFundsError) ||
+                  index === attempts.length - 1
+                ) {
+                  throw debitError;
+                }
+              }
+            }
+            if (arrearsSettledNow && owedRows.length > 0) {
+              await tx.riderSalaryPayment.updateMany({
+                where: { id: { in: owedRows.map(row => row.id) } },
+                data: { status: riderArrearsSettledStatus },
               });
             }
             await tx.riderSalaryPayment.createMany({
@@ -125,7 +173,7 @@ export async function processWeeklyRiderSalaries(
               where: { id: { in: unpaid.map(r => r.id) }, feeUnpaidSince: { not: null } },
               data: { feeUnpaidSince: null },
             });
-            return { skipped: false, amount: total };
+            return { skipped: false, amount: total + (arrearsSettledNow ? owedTotal : 0) };
           },
           { timeout: 30000 },
         );
