@@ -69,6 +69,7 @@ model User {
   groomEngagements        GroomEngagement[]
   horses                  Horse[]
   riders                  Rider[]
+  riderSalaryPayments     RiderSalaryPayment[]
   riderAssignments        RiderAssignment[]
   trainers                Trainer[]
   trainerAssignments      TrainerAssignment[]
@@ -1611,6 +1612,10 @@ model Rider {
   prestige     Int               @default(0)
   /// Retirement status
   retired      Boolean           @default(false)
+  /// Owner ruling 2026-10-27 (q111): the Eastern Monday (pay week) whose weekly pay this
+  /// rider went unpaid. NULL = paid up. While set the rider cannot ride; a full pay week
+  /// later, still unpaid, the rider leaves. Mirrors Groom.feeUnpaidSince.
+  feeUnpaidSince DateTime?
   /// Biography
   bio          String?
   /// User association
@@ -1623,6 +1628,7 @@ model Rider {
   /// The HIDDEN retirement age lives in its own table so no rider read can
   /// serialise it (see RiderRetirementSchedule).
   riderRetirementSchedule RiderRetirementSchedule?
+  salaryPayments RiderSalaryPayment[]
 
   /// Equoria-cmw85.25: the roster pages and the weekly retirement job. Each replaces a
   /// plain single-column index (userId, retired) that it covers.
@@ -1655,6 +1661,31 @@ model RiderRetirementSchedule {
   rider         Rider     @relation(fields: [riderId], references: [id], onDelete: Cascade)
 
   @@map("rider_retirement_schedules")
+}
+
+/// The weekly pay of a hired rider, one row per rider per pay week (owner ruling
+/// 2026-10-27, q111). weekKey is the Eastern (game-clock) Monday that starts the pay week
+/// as 'YYYY-MM-DD'. The database holds at most ONE 'paid' row per (riderId, weekKey): a
+/// partial unique index that exists only in migration SQL. Rows that record a missed week
+/// are not limited.
+model RiderSalaryPayment {
+  id          Int      @id @default(autoincrement())
+  riderId     Int
+  userId      String
+  /// The rider's weekly rate charged (or missed) for that week
+  amount      Int
+  weekKey     String
+  /// paid, missed (the week went unpaid), or releasedNonPayment (the rider left)
+  status      String   @default("paid")
+  paymentDate DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  rider Rider @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([riderId])
+  @@index([userId, weekKey])
+  @@map("rider_salary_payments")
 }
 
 model RiderAssignment {

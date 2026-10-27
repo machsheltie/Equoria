@@ -10,10 +10,12 @@
  *    cannot work that week, and leaves if the next payday is missed as well
  *    (groomFeeArrearsService / groomEngagementService). The weekly fee comes from
  *    GET /groom-salaries/cost, whose breakdown says which grooms are unpaid.
- *  - Riders are charged one week when hired and trainers a fee per training
- *    session. Neither has a weekly pay run, so there is no paid/unpaid state to
- *    show for them and none is made up. Only unpaid grooms can be about to leave
- *    for lack of pay, so leaving warnings appear for grooms alone, and only here.
+ *  - Riders have the same Monday payday (owner ruling 2026-10-27, q111): an unpaid
+ *    rider cannot ride that week and leaves if the next payday is missed too.
+ *    `feeUnpaidSince` on the rider row says which. Trainers are paid per
+ *    training session, when the player presses Train Horse, so they have no weekly
+ *    pay state and none is shown. Leaving warnings are for unpaid grooms and
+ *    riders, and only here.
  *
  * Composition: an open roll of names under three headings, separated by rules —
  * no cards, no stat tiles. Staff are fixed characters; no XP is shown.
@@ -108,6 +110,7 @@ const StaffPage: React.FC = () => {
     salaries.data?.breakdown.find((entry) => entry.groomId === groomId);
 
   const leavingSoon = (grooms.data ?? []).filter((groom) => unpaidFor(groom.id)?.feeUnpaid);
+  const ridersLeavingSoon = (riders.data ?? []).filter((rider) => Boolean(rider.feeUnpaidSince));
 
   const emptyRoll = (title: string, description: string, label: string, to: string) => (
     <EmptyState
@@ -126,7 +129,7 @@ const StaffPage: React.FC = () => {
         icon={<UsersRound className="h-6 w-6 text-[var(--gold-primary)]" aria-hidden="true" />}
       />
 
-      {leavingSoon.length > 0 && (
+      {(leavingSoon.length > 0 || ridersLeavingSoon.length > 0) && (
         <div
           role="alert"
           data-testid="staff-leaving-warning"
@@ -136,14 +139,30 @@ const StaffPage: React.FC = () => {
             className="mt-0.5 h-5 w-5 shrink-0 text-[var(--status-warning)]"
             aria-hidden="true"
           />
-          <p className="text-[var(--text-primary)]">
-            <span className="font-semibold">
-              {leavingSoon.map((groom) => groom.name).join(', ')}
-            </span>{' '}
-            {leavingSoon.length === 1 ? 'has' : 'have'} not been paid and cannot work this week.{' '}
-            {leavingSoon.length === 1 ? 'This groom leaves' : 'They leave'} your stable if the next
-            payday, Monday morning, is missed too.
-          </p>
+          <div className="space-y-2 text-[var(--text-primary)]">
+            {leavingSoon.length > 0 && (
+              <p>
+                <span className="font-semibold">
+                  {leavingSoon.map((groom) => groom.name).join(', ')}
+                </span>{' '}
+                {leavingSoon.length === 1 ? 'has' : 'have'} not been paid and cannot work this week.{' '}
+                {leavingSoon.length === 1 ? 'This groom leaves' : 'They leave'} your stable if the
+                next payday, Monday morning, is missed too.
+              </p>
+            )}
+            {ridersLeavingSoon.length > 0 && (
+              <p>
+                <span className="font-semibold">
+                  {ridersLeavingSoon
+                    .map((rider) => rider.name || `${rider.firstName} ${rider.lastName}`)
+                    .join(', ')}
+                </span>{' '}
+                {ridersLeavingSoon.length === 1 ? 'has' : 'have'} not been paid and cannot ride this
+                week. {ridersLeavingSoon.length === 1 ? 'This rider leaves' : 'They leave'} your
+                stable if the next payday, Monday morning, is missed too.
+              </p>
+            )}
+          </div>
         </div>
       )}
 
@@ -270,9 +289,29 @@ const StaffPage: React.FC = () => {
                   name={rider.name || `${rider.firstName} ${rider.lastName}`}
                   line={capitalise(rider.skillLevel)}
                   side={
-                    <p className="text-[var(--text-secondary)]">
-                      {coins(rider.weeklyRate)} coins for a week&rsquo;s hire
-                    </p>
+                    <>
+                      <p className="text-[var(--text-secondary)]">
+                        {coins(rider.weeklyRate)} coins a week
+                      </p>
+                      {rider.feeUnpaidSince ? (
+                        <p className="inline-flex items-center gap-1.5 font-semibold text-[var(--status-warning)]">
+                          <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+                          Not paid — not riding this week
+                        </p>
+                      ) : (
+                        <p className="inline-flex items-center gap-1.5 text-[var(--status-success)]">
+                          <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                          Paid this week
+                        </p>
+                      )}
+                    </>
+                  }
+                  note={
+                    rider.feeUnpaidSince ? (
+                      <p className="text-sm text-[var(--status-warning)]">
+                        {rider.firstName} leaves if the next payday is missed as well.
+                      </p>
+                    ) : undefined
                   }
                 />
               ))}

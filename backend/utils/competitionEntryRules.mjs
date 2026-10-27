@@ -60,6 +60,13 @@ export const ENTRY_REFUSALS = Object.freeze({
     status: 400,
     message: "This horse's rider is not employed by you",
   }),
+  // Owner ruling 2026-10-27 (q111): an unpaid rider cannot ride that week. camelCase: new
+  // codes may not add snake-case names (Equoria-pjvp8 ratchet).
+  riderFeeUnpaid: Object.freeze({
+    status: 400,
+    message:
+      "This horse's rider has not been paid this week and cannot ride. Pay day is Monday morning.",
+  }),
   GAITING_REQUIRED: Object.freeze({
     status: 400,
     message: 'Gaited shows require a horse with gaiting ability',
@@ -218,7 +225,7 @@ export const ENTRY_RULE_HORSE_SELECT = Object.freeze({
 /** The rider fields C10 reads from the active assignment. */
 const ASSIGNMENT_SELECT = Object.freeze({
   horseId: true,
-  rider: { select: { retired: true, userId: true } },
+  rider: { select: { retired: true, userId: true, feeUnpaidSince: true } },
 });
 
 /**
@@ -228,7 +235,7 @@ const ASSIGNMENT_SELECT = Object.freeze({
  *
  * @param {object} db
  * @param {number[]} horseIds
- * @returns {Promise<Map<number, { rider: { retired: boolean, userId: string|null } }>>}
+ * @returns {Promise<Map<number, { rider: { retired: boolean, userId: string|null, feeUnpaidSince: Date|null } }>>}
  */
 export async function loadActiveAssignments(db, horseIds) {
   if (horseIds.length === 0) {
@@ -287,6 +294,9 @@ export function riderRefusal(assignment, userId) {
   }
   if (assignment.rider.userId !== userId) {
     return 'RIDER_NOT_EMPLOYED';
+  }
+  if (assignment.rider.feeUnpaidSince) {
+    return 'riderFeeUnpaid';
   }
   return null;
 }

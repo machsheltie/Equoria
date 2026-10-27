@@ -174,6 +174,9 @@ describe('useEventStream', () => {
       // transaction as the grace entry / release they announce.
       'groomFeeUnpaid',
       'groomReleased',
+      // Equoria-gafyt: riderSalaryService / riderUnpaidService, same moments for riders.
+      'riderFeeUnpaid',
+      'riderReleased',
     ]);
   });
 

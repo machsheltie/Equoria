@@ -1,6 +1,6 @@
 /**
  * StaffPage (Equoria-rdg0d, owner q69): the hired grooms, riders and trainers,
- * with each groom's real pay state and the leaving warning. Real providers and
+ * with each groom's and rider's real pay state and the leaving warning. Real providers and
  * the real API client against MSW handlers shaped like the backend responses.
  */
 
@@ -133,19 +133,56 @@ describe('StaffPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('lists hired riders and trainers with their real charges and no pay claim', async () => {
+  // Old contract (Equoria-rdg0d): riders had no weekly pay run, so their row made no pay
+  // claim. Owner ruling 2026-10-27 (q111, Equoria-gafyt): riders have a Monday payday like
+  // grooms, so a rider row now shows paid or unpaid. Trainers are still paid per training.
+  it('lists hired riders as paid and trainers with their per-session charge and no pay claim', async () => {
     serveStaff({ riders: [rider], trainers: [trainer] });
     renderPage();
 
     const riderRow = await screen.findByTestId('staff-rider-5');
     expect(within(riderRow).getByText('Mara Quill')).toBeInTheDocument();
-    expect(within(riderRow).getByText(/200 coins/)).toBeInTheDocument();
-    expect(within(riderRow).queryByText(/paid/i)).not.toBeInTheDocument();
+    expect(within(riderRow).getByText(/200 coins a week/)).toBeInTheDocument();
+    expect(within(riderRow).getByText(/Paid this week/)).toBeInTheDocument();
+    expect(screen.queryByTestId('staff-leaving-warning')).not.toBeInTheDocument();
 
     const trainerRow = await screen.findByTestId('staff-trainer-7');
     expect(within(trainerRow).getByText(/150 coins a session/)).toBeInTheDocument();
+    expect(within(trainerRow).queryByText(/paid/i)).not.toBeInTheDocument();
     // A novice trainer's speciality stays unknown (owner q100).
     expect(within(trainerRow).queryByText(/dressage/i)).not.toBeInTheDocument();
+  });
+
+  it('warns about an unpaid rider: not riding, and leaves if the next payday is missed', async () => {
+    serveStaff({
+      riders: [
+        rider,
+        {
+          ...rider,
+          id: 6,
+          name: 'Joss Hale',
+          firstName: 'Joss',
+          lastName: 'Hale',
+          feeUnpaidSince: '2031-03-03T05:00:00.000Z',
+        },
+      ],
+    });
+    renderPage();
+
+    const warning = await screen.findByTestId('staff-leaving-warning');
+    expect(warning).toHaveTextContent('Joss Hale');
+    expect(warning).not.toHaveTextContent('Mara Quill');
+    expect(warning).toHaveTextContent(/cannot ride this week/i);
+    expect(warning).toHaveTextContent(/next payday/i);
+
+    const unpaidRow = screen.getByTestId('staff-rider-6');
+    expect(within(unpaidRow).getByText(/Not paid/)).toBeInTheDocument();
+    expect(
+      within(unpaidRow).getByText(/Joss leaves if the next payday is missed/)
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('staff-rider-5')).getByText(/Paid this week/)
+    ).toBeInTheDocument();
   });
 
   it('says so when there is no staff at all', async () => {

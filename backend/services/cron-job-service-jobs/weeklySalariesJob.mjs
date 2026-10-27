@@ -12,6 +12,7 @@
 
 import logger from '../../utils/logger.mjs';
 import { processWeeklySalaries } from '../../modules/grooms/index.mjs';
+import { processWeeklyRiderSalaries } from '../../modules/riders/index.mjs';
 
 /**
  * Run weekly salary processing
@@ -41,6 +42,17 @@ export async function runSalaryProcessing() {
     }
   } catch (error) {
     logger.error(`[cronJobService] Error in weekly salary processing: ${error.message}`);
+  }
+
+  // Owner ruling 2026-10-27 (q111, Equoria-gafyt): riders have the same Monday payday.
+  // Its own try, so a groom-pass failure never skips the riders, nor the reverse.
+  try {
+    const riderResults = await processWeeklyRiderSalaries();
+    logger.info(
+      `[cronJobService] Weekly rider pay completed. Results: ${JSON.stringify(riderResults)}`,
+    );
+  } catch (error) {
+    logger.error(`[cronJobService] Error in weekly rider pay: ${error.message}`);
   }
 }
 

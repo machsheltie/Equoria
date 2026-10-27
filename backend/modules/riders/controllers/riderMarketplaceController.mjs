@@ -27,6 +27,7 @@ import {
   drawRiderStartAge,
   ensureRiderRetirementSchedule,
 } from '../services/riderRetirementScheduleService.mjs';
+import { getRiderPayWeekStart, riderPayWeekKey } from '../services/riderPayWeek.mjs';
 import { getStableLevel } from '../../users/index.mjs';
 import { RosterCapExceededError, StaleOfferError } from '../../../errors/index.mjs';
 import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
@@ -332,6 +333,19 @@ export async function hireRiderFromMarketplace(req, res) {
             category: 'riderHireBurn',
             description: `Rider hire fee — ${rider.firstName} ${rider.lastName}`,
             metadata: { riderId: rider.id, marketplaceId },
+          });
+          // Owner ruling 2026-10-27 (q111, Equoria-gafyt): the hire charge IS this pay
+          // week's pay, so the Monday pass must not charge the same week again. Same
+          // transaction as the debit: a rollback leaves no paid row and no charge.
+          const hirePayWeek = getRiderPayWeekStart();
+          await tx.riderSalaryPayment.create({
+            data: {
+              riderId: rider.id,
+              userId,
+              amount: hiringCost,
+              weekKey: riderPayWeekKey(hirePayWeek),
+              status: 'paid',
+            },
           });
           // Equoria-oey96.8: authoritative roster-cap re-count (mirrors the groom
           // Equoria-n4m5j / hduc5 pattern). debitMoneyOrThrow above row-locked the

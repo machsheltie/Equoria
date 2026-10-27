@@ -359,6 +359,56 @@ const RiderRetiringRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
   );
 };
 
+/**
+ * The weekly pay moments for staff (grooms: Equoria-ypb7d.3; riders: Equoria-gafyt, owner
+ * q111). Authored words only, never the stored type name. Payloads carry the staff
+ * member's name and, when they leave, the horses they leave without.
+ */
+const StaffPayRow: React.FC<{
+  notif: GameNotification;
+  kind: 'groom' | 'rider';
+  event: 'unpaid' | 'left';
+}> = ({ notif, kind, event }) => {
+  const p = notif.payload ?? {};
+  const nameKey = kind === 'groom' ? 'groomName' : 'riderName';
+  const name = typeof p[nameKey] === 'string' ? (p[nameKey] as string) : `One of your ${kind}s`;
+  const work = kind === 'groom' ? 'work' : 'ride';
+  const horseNames = retiredGroomHorseNames(p);
+  if (event === 'unpaid') {
+    return (
+      <GameNotifShell
+        notif={notif}
+        iconBg="bg-[var(--role-warning-bg)]"
+        emoji="🪙"
+        badgeLabel={kind === 'groom' ? 'Groom Not Paid' : 'Rider Not Paid'}
+        badgeVariant="warning"
+        title={name}
+        body={
+          <p>
+            Could not be paid this week and cannot {work} until payday comes round again. They leave
+            your stable if next Monday&rsquo;s pay is missed too.
+          </p>
+        }
+      />
+    );
+  }
+  const without =
+    horseNames.length > 0
+      ? ` ${speakHorseNames(horseNames)} ${horseNames.length === 1 ? 'is' : 'are'} without a ${kind}.`
+      : '';
+  return (
+    <GameNotifShell
+      notif={notif}
+      iconBg="bg-[var(--role-warning-bg)]"
+      emoji="👋"
+      badgeLabel={kind === 'groom' ? 'Groom Left' : 'Rider Left'}
+      badgeVariant="warning"
+      title={name}
+      body={<p>Has left your stable after a full week without pay.{without}</p>}
+    />
+  );
+};
+
 /** Equoria-w47x7: a steward's warning, in the steward's own words. */
 const ConductWarningRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
   const reason = typeof notif.payload?.reason === 'string' ? notif.payload.reason : null;
@@ -402,6 +452,14 @@ export const GameNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) =
       return <GroomRetiredRow notif={notif} />;
     case 'riderRetiring':
       return <RiderRetiringRow notif={notif} />;
+    case 'groomFeeUnpaid':
+      return <StaffPayRow notif={notif} kind="groom" event="unpaid" />;
+    case 'groomReleased':
+      return <StaffPayRow notif={notif} kind="groom" event="left" />;
+    case 'riderFeeUnpaid':
+      return <StaffPayRow notif={notif} kind="rider" event="unpaid" />;
+    case 'riderReleased':
+      return <StaffPayRow notif={notif} kind="rider" event="left" />;
     case 'staffTicket':
       return <StaffTicketRow notif={notif} />;
     case 'staffTicketUpdate':

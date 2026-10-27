@@ -66,6 +66,9 @@ export const SSE_EVENT_NAMES = [
   // poll — which for "your groom has left" is too slow to be a warning.
   'groomFeeUnpaid',
   'groomReleased',
+  // Equoria-gafyt (owner q111): the same two moments for a rider's weekly pay.
+  'riderFeeUnpaid',
+  'riderReleased',
 ] as const;
 
 /**
@@ -97,6 +100,7 @@ const MONEY_EVENT_NAMES = new Set<(typeof SSE_EVENT_NAMES)[number]>([
   'horseSold',
   'competitionPlacement',
   'groomFeeUnpaid',
+  'riderFeeUnpaid',
 ]);
 
 /**
