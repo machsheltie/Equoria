@@ -21,6 +21,7 @@
 import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
+import { traitRosterIds } from '../../utils/epigeneticTraits.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 import bcrypt from 'bcryptjs';
@@ -171,7 +172,11 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
       expect(ourFoal.age).toBe(0);
     });
 
-    it('should get trait definitions', async () => {
+    // Old contract: the admin reference list answered the legacy { positive, negative, rare }
+    // table (resilient, calm, intelligent, bold, nervous, legendaryBloodline ... with reveal
+    // conditions and base chances). Owner ruling 2026-10-27 (q117) replaced the trait roster with
+    // twenty traits, so it now answers those, and only those (Equoria-qw4kp).
+    it('should get trait definitions: the twenty roster traits', async () => {
       const response = await request(app)
         .get('/api/v1/admin/traits/definitions')
         .set('Origin', 'http://localhost:3000')
@@ -179,20 +184,15 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('positive');
-      expect(response.body.data).toHaveProperty('negative');
-      expect(response.body.data).toHaveProperty('rare');
-
-      // Verify trait definition structure
-      Object.values(response.body.data).forEach(category => {
-        Object.values(category).forEach(trait => {
-          expect(trait).toHaveProperty('name');
-          expect(trait).toHaveProperty('description');
-          expect(trait).toHaveProperty('revealConditions');
-          expect(trait).toHaveProperty('rarity');
-          expect(trait).toHaveProperty('baseChance');
-        });
-      });
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.map(trait => trait.name)).toEqual(traitRosterIds);
+      for (const trait of response.body.data) {
+        expect(trait).toHaveProperty('label');
+        expect(trait).toHaveProperty('category', 'epigenetic');
+        expect(trait).toHaveProperty('rarity');
+        expect(Array.isArray(trait.conflicts)).toBe(true);
+      }
+      expect(response.body.data.map(trait => trait.name)).not.toContain('legendaryBloodline');
     });
 
     it('should start and stop cron job service', async () => {

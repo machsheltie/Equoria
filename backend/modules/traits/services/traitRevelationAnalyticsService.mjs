@@ -3,67 +3,47 @@
  *
  * Aggregates the queryable TraitHistoryLog (schema.prisma:840) into admin-facing
  * revelation statistics: counts by traitName, by definitional category
- * (positive / negative / rare / unknown), by day, plus a grand total. This is the
+ * (positive / negative / unknown), by day, plus a grand total. This is the
  * aggregate surface originally requested by the now-archived daily trait
  * evaluation plan. The implementation and tests are the current authority.
  *
  * Data source: TraitHistoryLog rows. Each row stores the revealed trait *key*
- * (e.g. "intelligent", "nervous", "legendaryBloodline") in `traitName`, a
+ * (e.g. "confident", "fearful") in `traitName`, a
  * `sourceType` (the daily cron writes "daily_evaluation" — Equoria-bfo1t), and a
  * `timestamp`. There is NO stored category column.
  *
  * IMPORTANT DATA-REALITY NOTE (OPTIMAL_FIX §1):
  * The AC asks for counts "by category (positive/negative/hidden)". The stored
  * data does NOT preserve the runtime "revealed-as-hidden" flag: the trait
- * evaluator (traitEvaluation.evaluateTraitRevelation) may push a positive/negative
+ * reveal engine may move a positive/negative
  * trait into the `hidden` bucket at reveal time, but only the trait *key* is
  * persisted to TraitHistoryLog — the hidden/visible distinction is lost. The only
  * category recoverable from the stored data is the trait's *definitional* category
- * from TRAIT_DEFINITIONS (the top-level grouping: positive | negative | rare).
- * This service therefore classifies by definitional category. A trait key not
- * present in TRAIT_DEFINITIONS is bucketed as "unknown" (e.g. milestone/groom
- * traits that share the table but are not part of the foal reveal roster), so the
- * category totals always reconcile to the grand total.
+ * from the 20-trait roster (utils/epigeneticTraits.mjs, owner ruling 2026-10-27,
+ * q117): its polarity, positive | negative. This service therefore classifies by
+ * definitional category. A trait key that is off the roster, or on it with no ruled
+ * polarity yet, is bucketed as "unknown", so the category totals always reconcile
+ * to the grand total.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { TRAIT_DEFINITIONS } from '../../../utils/traitEvaluation.mjs';
+import { getTraitDefinition } from '../../../utils/epigeneticTraits.mjs';
 import { gameDateKey } from '../../../utils/gameTime.mjs';
 import { withoutHiddenTraitHistory } from '../../../utils/publicTraitView.mjs';
 
 /**
- * Build a one-time map of traitKey -> definitional category from TRAIT_DEFINITIONS.
- * TRAIT_DEFINITIONS is shaped { positive: { key: {...} }, negative: {...}, rare: {...} }.
- * @returns {Map<string,string>} lowercase-trait-key -> category
- */
-function buildCategoryMap() {
-  const map = new Map();
-  for (const [category, traits] of Object.entries(TRAIT_DEFINITIONS)) {
-    // Guard: each category value must be a plain object of trait keys.
-    if (traits === null || typeof traits !== 'object' || Array.isArray(traits)) {
-      continue;
-    }
-    for (const traitKey of Object.keys(traits)) {
-      map.set(traitKey.toLowerCase(), category);
-    }
-  }
-  return map;
-}
-
-const CATEGORY_MAP = buildCategoryMap();
-
-/**
  * Classify a persisted traitName into its definitional category.
- * Falls back to 'unknown' for any trait not in the foal-reveal roster so that
- * the per-category counts always sum to the total.
+ * Falls back to 'unknown' for any trait off the roster, or on it with no ruled
+ * polarity, so that the per-category counts always sum to the total.
  * @param {string} traitName
- * @returns {string} 'positive' | 'negative' | 'rare' | 'unknown'
+ * @returns {string} 'positive' | 'negative' | 'unknown'
  */
 export function classifyTraitCategory(traitName) {
   if (typeof traitName !== 'string' || traitName.length === 0) {
     return 'unknown';
   }
-  return CATEGORY_MAP.get(traitName.toLowerCase()) ?? 'unknown';
+  const type = getTraitDefinition(traitName)?.type;
+  return type === 'positive' || type === 'negative' ? type : 'unknown';
 }
 
 /**
@@ -82,7 +62,7 @@ export function classifyTraitCategory(traitName) {
  *   {
  *     total: number,
  *     byTraitName: { [traitName]: number },   // descending in insertion via sort below
- *     byCategory: { positive, negative, rare, unknown },
+ *     byCategory: { positive, negative, unknown },
  *     byDate: { 'YYYY-MM-DD': number },        // UTC calendar day
  *     dateRange: { startDate, endDate },
  *     sourceType: string | null
@@ -123,7 +103,7 @@ export async function getTraitRevelationAnalytics(options = {}) {
       : withoutHiddenTraitHistory(allRows, row => row.horse?.epigeneticModifiers);
 
   const byTraitNameRaw = {};
-  const byCategory = { positive: 0, negative: 0, rare: 0, unknown: 0 };
+  const byCategory = { positive: 0, negative: 0, unknown: 0 };
   const byDate = {};
 
   for (const row of rows) {
@@ -134,9 +114,7 @@ export async function getTraitRevelationAnalytics(options = {}) {
 
     // Count by definitional category (data-reality: see file header note)
     const category = classifyTraitCategory(name);
-    // A new category appearing in TRAIT_DEFINITIONS would otherwise be dropped;
-    // initialize defensively so totals always reconcile.
-    byCategory[category] = (byCategory[category] ?? 0) + 1;
+    byCategory[category] += 1;
 
     // Count by Eastern game day (date-only bucket — over-time aggregation)
     const ts = row.timestamp instanceof Date ? row.timestamp : new Date(row.timestamp);

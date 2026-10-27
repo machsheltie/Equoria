@@ -5,21 +5,18 @@
  * 🎯 FEATURES TESTED:
  * - Integration between database schema and utility functions
  * - Real-world foal care scenarios with task logging and streak tracking
- * - Task influence mapping integration with task log storage
  * - Streak calculation in practice
  * - Grace period handling and streak maintenance
  *
  * 🔧 DEPENDENCIES:
  * - Horse model with taskLog and lastGroomed fields
  * - foalTaskLogManager utility functions
- * - taskInfluenceConfig for trait evaluation
  * - Prisma database operations
  *
  * 📋 BUSINESS RULES TESTED:
  * - Task log stores and retrieves task repetition counts correctly
  * - Streak data enables the streak bonus mechanics
  * - Grace period allows for missed days without breaking streaks
- * - Task history supports trait evaluation and development tracking
  * - Integration between daily task exclusivity and streak tracking
  *
  * 🧪 TESTING APPROACH:
@@ -34,7 +31,6 @@ import {
   getFoalCareSummary,
   calculateStreakFromLastCareDate,
 } from '../../../utils/foalTaskLogManager.mjs';
-import { calculateTraitPoints } from '../../../config/taskInfluenceConfig.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
@@ -218,71 +214,6 @@ describe('Foal Task Log and Streak Data Integration', () => {
       expect(summary).not.toHaveProperty('hasBurnoutImmunity');
       expect(summary.totalTaskCompletions).toBe(7);
       expect(summary.uniqueTasksCompleted).toBe(4); // trust_building, desensitization, early_touch, showground_exposure
-    });
-  });
-
-  describe('Task Log and Trait Evaluation Integration', () => {
-    it('should support trait point calculation from stored task log', async () => {
-      // Store comprehensive task log
-      const taskLog = {
-        trust_building: 5,
-        desensitization: 3,
-        early_touch: 4,
-        showground_exposure: 2,
-      };
-
-      await prisma.horse.update({
-        where: { id: testFoal.id },
-        data: { taskLog },
-      });
-
-      // Calculate trait points from stored data
-      const foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
-      const traitPoints = calculateTraitPoints(foal.taskLog);
-
-      // Verify trait development
-      expect(traitPoints.bonded).toBe(25); // trust_building: 5 * 5
-      expect(traitPoints.resilient).toBe(25); // trust_building: 5 * 5
-      expect(traitPoints.confident).toBe(25); // desensitization(3) + showground_exposure(2) = 5 * 5
-      expect(traitPoints.calm).toBe(20); // early_touch: 4 * 5
-      expect(traitPoints.crowdReady).toBe(10); // showground_exposure: 2 * 5
-    });
-
-    it('should track task progression over time', async () => {
-      // Week 1: Enrichment focus
-      let taskLog = { trust_building: 3, desensitization: 2 };
-      await prisma.horse.update({
-        where: { id: testFoal.id },
-        data: { taskLog },
-      });
-
-      let foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
-      let traitPoints = calculateTraitPoints(foal.taskLog);
-
-      // Early development should focus on foundational traits
-      expect(traitPoints.bonded).toBe(15);
-      expect(traitPoints.confident).toBe(10);
-
-      // Week 3: Add grooming tasks
-      taskLog = {
-        trust_building: 5,
-        desensitization: 3,
-        early_touch: 3,
-        hoof_handling: 2,
-      };
-
-      await prisma.horse.update({
-        where: { id: testFoal.id },
-        data: { taskLog },
-      });
-
-      foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
-      traitPoints = calculateTraitPoints(foal.taskLog);
-
-      // Later development should include handling traits
-      expect(traitPoints.bonded).toBe(25);
-      expect(traitPoints.calm).toBe(15);
-      expect(traitPoints.showCalm).toBe(10);
     });
   });
 

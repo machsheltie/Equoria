@@ -17,7 +17,6 @@
  *
  * @dependencies
  * - groomSystem: Core groom interaction and calculation system
- * - taskTraitInfluenceMap: Task-to-trait influence mapping
  * - logger: Winston logger for personality effect tracking
  *
  * @usage

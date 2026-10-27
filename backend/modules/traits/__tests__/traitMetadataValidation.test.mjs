@@ -12,13 +12,11 @@
  *
  * 🔧 DEPENDENCIES:
  * - epigeneticTraits.mjs (trait definitions)
- * - taskInfluenceConfig.mjs (task-trait mapping)
  *
  * 📋 BUSINESS RULES TESTED:
  * - All traits have proper descriptions for UI display
  * - Every roster trait is a care (epigenetic) trait (owner roster 2026-10-27)
  * - Conflict relationships are bidirectional
- * - Task influence map references valid traits
  * - Required traits for foal development exist
  *
  * 🧪 TESTING APPROACH:
@@ -37,8 +35,6 @@ const __dirname = dirname(__filename);
 const { getTraitDefinition, getTraitsByType, getTraitsByCategory, getTraitMetadata, checkTraitConflict } = await import(
   join(__dirname, '../../../utils/epigeneticTraits.mjs')
 );
-
-const { TASK_TRAIT_INFLUENCE_MAP } = await import(join(__dirname, '../../../config/taskInfluenceConfig.mjs'));
 
 describe('Trait Metadata Validation', () => {
   // Owner ruling 2026-10-27 (q117, Equoria-2d55z): the roster is twenty traits,
@@ -183,53 +179,6 @@ describe('Trait Metadata Validation', () => {
 
       allTraits.forEach(trait => {
         expect(checkTraitConflict(trait, trait)).toBe(false);
-      });
-    });
-  });
-
-  describe('Task Influence Map Integration', () => {
-    // The legacy task map (age-1 tags, written to an inert key) still names
-    // traits the 2026-10-27 roster removed. Re-keying or retiring it is
-    // Equoria-qw4kp. SHRINK-ONLY baseline: a new off-roster name fails, and an
-    // entry that leaves the map must leave this list too.
-    const knownOffRosterTaskTraits = ['bonded', 'calm', 'presentationBoosted', 'showCalm', 'crowdReady'];
-
-    it('every trait the task map names is a roster trait, except the known legacy names', () => {
-      const referencedTraits = new Set();
-
-      Object.values(TASK_TRAIT_INFLUENCE_MAP).forEach(influence => {
-        influence.traits.forEach(trait => {
-          referencedTraits.add(trait);
-        });
-      });
-
-      const offRoster = [...referencedTraits].filter(trait => getTraitMetadata(trait) === null);
-      expect(offRoster.sort()).toEqual([...knownOffRosterTaskTraits].sort());
-    });
-
-    it('should validate specific task-trait mappings', () => {
-      // Desensitization -> confident
-      expect(TASK_TRAIT_INFLUENCE_MAP.desensitization.traits).toContain('confident');
-
-      // Trust building -> bonded, resilient
-      expect(TASK_TRAIT_INFLUENCE_MAP.trust_building.traits).toContain('bonded');
-      expect(TASK_TRAIT_INFLUENCE_MAP.trust_building.traits).toContain('resilient');
-
-      // Sponge bath -> presentationBoosted, showCalm
-      expect(TASK_TRAIT_INFLUENCE_MAP.sponge_bath.traits).toContain('presentationBoosted');
-      expect(TASK_TRAIT_INFLUENCE_MAP.sponge_bath.traits).toContain('showCalm');
-
-      // Showground exposure -> crowdReady, confident
-      expect(TASK_TRAIT_INFLUENCE_MAP.showground_exposure.traits).toContain('crowdReady');
-      expect(TASK_TRAIT_INFLUENCE_MAP.showground_exposure.traits).toContain('confident');
-    });
-
-    it('should have valid daily values for all tasks', () => {
-      Object.entries(TASK_TRAIT_INFLUENCE_MAP).forEach(([_task, influence]) => {
-        expect(influence.dailyValue).toBeGreaterThan(0);
-        expect(influence.dailyValue).toBeLessThanOrEqual(10);
-        expect(Array.isArray(influence.traits)).toBe(true);
-        expect(influence.traits.length).toBeGreaterThan(0);
       });
     });
   });

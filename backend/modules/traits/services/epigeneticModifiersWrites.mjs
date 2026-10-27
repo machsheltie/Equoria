@@ -1,11 +1,9 @@
 /**
  * Single-statement writes to Horse.epigeneticModifiers (Equoria-m1sf8).
  *
- * The column is one JSON object written by more than one job: the nightly foal
- * trait evaluation appends to positive / negative / hidden, and the age-1
- * milestone records its tags under its own key. Each used to read the whole
- * object, change it in memory and write the whole object back, so whichever
- * wrote second erased the other's work.
+ * The column is one JSON object written by more than one job. Each writer used
+ * to read the whole object, change it in memory and write the whole object
+ * back, so whichever wrote second erased the other's work.
  *
  * These helpers change only what their caller owns, in one UPDATE that
  * computes the new value from the row's current value. Under READ COMMITTED a
@@ -52,28 +50,4 @@ export async function appendEpigeneticTraits(client, horseId, newTraits) {
     WHERE h."id" = ${horseId}
     RETURNING h."epigeneticModifiers" AS "epigeneticModifiers"`;
   return rows[0]?.epigeneticModifiers ?? null;
-}
-
-/**
- * Set one top-level key of epigeneticModifiers, leaving every other key as
- * stored. An absent or non-object value starts from the empty trait arrays,
- * as the in-memory default it replaces did.
- * @param {object} client - Prisma client or interactive-transaction client
- * @param {number} horseId
- * @param {string} key - top-level key the caller owns
- * @param {unknown} value - JSON-serialisable value
- * @returns {Promise<number>} rows updated
- */
-export async function setEpigeneticModifiersKey(client, horseId, key, value) {
-  const json = JSON.stringify(value);
-  return client.$executeRaw`
-    UPDATE "horses"
-    SET "epigeneticModifiers" = jsonb_set(
-      CASE WHEN jsonb_typeof("epigeneticModifiers") = 'object'
-        THEN "epigeneticModifiers"
-        ELSE '{"positive": [], "negative": [], "hidden": []}'::jsonb END,
-      ARRAY[${key}::text],
-      ${json}::jsonb
-    )
-    WHERE "id" = ${horseId}`;
 }

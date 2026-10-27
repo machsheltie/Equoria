@@ -194,7 +194,6 @@ const NOT_NULL_HORSE_COLUMNS = [
 // verified 2026-07-06 and again on fix day). Relative to backend/.
 const CLASS_1_FILES = [
   'utils/bondingModifiers.mjs',
-  'utils/traitEvaluation.mjs',
   'utils/traitDiscovery.mjs',
   'utils/applyEpigeneticTraitsAtBirth.mjs',
   'utils/enhancedMilestoneEvaluationSystem.mjs',

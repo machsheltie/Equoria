@@ -38,6 +38,7 @@ import {
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { traitRosterIds, getTraitMetadata } from '../../../utils/epigeneticTraits.mjs';
 
 /**
  * GET /api/admin/cron/status
@@ -196,8 +197,9 @@ export async function getFoalDevelopment(req, res) {
 export async function getTraitDefinitions(req, res) {
   try {
     logger.info('[adminController] GET /api/admin/traits/definitions');
-    const { getAllTraitDefinitions } = await import('../../../utils/traitEvaluation.mjs');
-    const definitions = getAllTraitDefinitions();
+    // The 20-trait roster (owner ruling 2026-10-27, q117). Admin tooling may see
+    // rarity (null until the owner rules it); player routes never do (q112).
+    const definitions = traitRosterIds.map(getTraitMetadata);
     res.json({ success: true, data: definitions });
   } catch (error) {
     logger.error(`[adminController] GET /api/admin/traits/definitions error: ${error.message}`);

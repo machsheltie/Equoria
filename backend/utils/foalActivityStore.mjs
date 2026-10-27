@@ -13,8 +13,7 @@
  * cache, and so an invariant test can assert cache == derived.
  *
  * 📋 WHY taskLog IS KEPT (not dropped):
- * The trait / milestone / streak evaluators (traitEvaluation.mjs,
- * foalTaskLogManager.mjs, horseAgingSystem.mjs) read counts on a hot path and
+ * The milestone / streak evaluators (foalTaskLogManager.mjs, horseAgingSystem.mjs) read counts on a hot path and
  * cannot afford an aggregate query per check. taskLog stays as the read cache;
  * FoalActivity is the authoritative log it must agree with. See Equoria-2emg
  * bd notes for the full rationale (incl. why literal "rebuild taskLog from

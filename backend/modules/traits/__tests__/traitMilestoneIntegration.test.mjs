@@ -1,14 +1,8 @@
 /**
  * Trait Milestone Integration Tests
  *
- * Tests the integration of foal task log persistence with
- * evaluateEpigeneticTagsFromFoalTasks and getFoalCareSummary.
+ * Tests the integration of foal task log persistence with getFoalCareSummary.
  * Uses real DB. No mocks of any kind.
- *
- * evaluateEpigeneticTagsFromFoalTasks uses Math.random() internally.
- * Assertions on its output are limited to structural guarantees (always
- * returns an array, no duplicates, correct empty output for empty/no-op
- * inputs). Assertions that require specific random outcomes are omitted.
  *
  * getFoalCareSummary is deterministic for totalTaskCompletions,
  * uniqueTasksCompleted and consecutiveDaysOfCare — all of these are fully
@@ -20,7 +14,6 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { evaluateEpigeneticTagsFromFoalTasks } from '../../../utils/traitEvaluation.mjs';
 import { getFoalCareSummary } from '../../../utils/foalTaskLogManager.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -156,65 +149,5 @@ describe('taskLog persistence round-trip', () => {
 
     const foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
     expect(foal.taskLog).toBeNull();
-  });
-});
-
-// ─── evaluateEpigeneticTagsFromFoalTasks — structural ────────────────────────
-
-describe('evaluateEpigeneticTagsFromFoalTasks with real persisted data', () => {
-  it('returns [] when taskLog is null (no development)', async () => {
-    await prisma.horse.update({
-      where: { id: testFoal.id },
-      data: { taskLog: null, daysGroomedInARow: 0 },
-    });
-    const foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
-
-    const traits = evaluateEpigeneticTagsFromFoalTasks(foal.taskLog, foal.daysGroomedInARow);
-
-    expect(traits).toEqual([]);
-  });
-
-  it('returns [] when taskLog is empty (no tasks completed)', async () => {
-    const foal = await setFoalTaskLog({}, 0);
-
-    const traits = evaluateEpigeneticTagsFromFoalTasks(foal.taskLog, foal.daysGroomedInARow);
-
-    expect(traits).toEqual([]);
-  });
-
-  it('returns an array without duplicates for a comprehensive task log', async () => {
-    const foal = await setFoalTaskLog(
-      { trust_building: 12, desensitization: 8, showground_exposure: 5, early_touch: 10 },
-      10,
-    );
-
-    const traits = evaluateEpigeneticTagsFromFoalTasks(foal.taskLog, foal.daysGroomedInARow);
-
-    expect(Array.isArray(traits)).toBe(true);
-    expect(new Set(traits).size).toBe(traits.length);
-  });
-
-  it('returns an array without duplicates for a minimal task log', async () => {
-    const foal = await setFoalTaskLog({ trust_building: 2, early_touch: 1 }, 3);
-
-    const traits = evaluateEpigeneticTagsFromFoalTasks(foal.taskLog, foal.daysGroomedInARow);
-
-    expect(Array.isArray(traits)).toBe(true);
-    expect(new Set(traits).size).toBe(traits.length);
-  });
-
-  it('evaluates traits consistently from a fully progressed development at age 365', async () => {
-    const foal = await setFoalTaskLog(
-      { trust_building: 8, desensitization: 6, early_touch: 5, hoof_handling: 2 },
-      0,
-      365,
-    );
-
-    expect(foal.age).toBe(365);
-
-    const traits = evaluateEpigeneticTagsFromFoalTasks(foal.taskLog, 0);
-
-    expect(Array.isArray(traits)).toBe(true);
-    expect(new Set(traits).size).toBe(traits.length);
   });
 });

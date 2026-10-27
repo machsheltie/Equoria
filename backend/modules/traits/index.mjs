@@ -16,7 +16,4 @@ export { runNightlyTraitReveal } from './services/traitRevealEngine.mjs';
 export { getTraitRevelationAnalytics } from './services/traitRevelationAnalyticsService.mjs';
 export { generateTraitTimeline } from './services/traitTimelineService.mjs';
 export { evaluateAndPersistUltraRareTraits } from './services/ultraRareTraitEvaluationService.mjs';
-export {
-  appendEpigeneticTraits,
-  setEpigeneticModifiersKey,
-} from './services/epigeneticModifiersWrites.mjs';
+export { appendEpigeneticTraits } from './services/epigeneticModifiersWrites.mjs';

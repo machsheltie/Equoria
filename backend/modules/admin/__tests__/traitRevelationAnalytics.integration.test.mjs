@@ -3,9 +3,15 @@
  *
  * GET /api/v1/admin/traits/analytics aggregates TraitHistoryLog into operator
  * revelation stats: counts by traitName, by definitional category
- * (positive/negative/rare/unknown), by UTC calendar day, plus a grand total.
+ * (positive/negative/unknown), by UTC calendar day, plus a grand total.
  *
  * This suite proves (no mocks — real Express app, real DB, real JWT):
+ * Old contract: the categories came from the legacy trait table (intelligent and bold positive,
+ * nervous negative, legendaryBloodline rare). Owner ruling 2026-10-27 (q117) replaced the roster
+ * with twenty traits (Equoria-qw4kp): category is the roster polarity, and a trait with no ruled
+ * polarity yet, or off the roster, is "unknown". The planted traits are roster traits now:
+ * confident and resilient (positive), fearful (negative), brave (no polarity yet).
+ *
  *   (a) the aggregate reflects PLANTED TraitHistoryLog rows exactly
  *       (per-trait, per-category, per-day, total) — sentinel-positive;
  *   (b) the endpoint is ADMIN-ONLY (non-admin → 403) — auth-scoping sentinel;
@@ -101,19 +107,19 @@ describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
     const horseB = await makeHorse(ownerB.id, 'horseB');
 
     // Plant a known distribution, scoped by SUITE_SOURCE:
-    //   intelligent (positive) × 2  → DAY_1, DAY_2
-    //   bold        (positive) × 1  → DAY_1
-    //   nervous     (negative) × 2  → DAY_1 (ownerA), DAY_2 (ownerB)
-    //   legendaryBloodline (rare) × 1 → DAY_2
-    // Totals: 6 rows; positive 3, negative 2, rare 1, unknown 0.
-    //   DAY_1: intelligent, bold, nervous            → 3
-    //   DAY_2: intelligent, nervous, legendaryBloodline → 3
-    await plantTrait(horseA.id, 'intelligent', DAY_1);
-    await plantTrait(horseA.id, 'intelligent', DAY_2);
-    await plantTrait(horseA.id, 'bold', DAY_1);
-    await plantTrait(horseA.id, 'nervous', DAY_1);
-    await plantTrait(horseB.id, 'nervous', DAY_2);
-    await plantTrait(horseB.id, 'legendaryBloodline', DAY_2);
+    //   confident (positive) × 2  → DAY_1, DAY_2
+    //   resilient (positive) × 1  → DAY_1
+    //   fearful   (negative) × 2  → DAY_1 (ownerA), DAY_2 (ownerB)
+    //   brave     (no polarity yet) × 1 → DAY_2
+    // Totals: 6 rows; positive 3, negative 2, unknown 1.
+    //   DAY_1: confident, resilient, fearful → 3
+    //   DAY_2: confident, fearful, brave     → 3
+    await plantTrait(horseA.id, 'confident', DAY_1);
+    await plantTrait(horseA.id, 'confident', DAY_2);
+    await plantTrait(horseA.id, 'resilient', DAY_1);
+    await plantTrait(horseA.id, 'fearful', DAY_1);
+    await plantTrait(horseB.id, 'fearful', DAY_2);
+    await plantTrait(horseB.id, 'brave', DAY_2);
   }, 120000);
 
   afterAll(async () => {
@@ -162,21 +168,21 @@ describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
     expect(data.total).toBe(6);
 
     // By traitName
-    expect(data.byTraitName.intelligent).toBe(2);
-    expect(data.byTraitName.bold).toBe(1);
-    expect(data.byTraitName.nervous).toBe(2);
-    expect(data.byTraitName.legendaryBloodline).toBe(1);
+    expect(data.byTraitName.confident).toBe(2);
+    expect(data.byTraitName.resilient).toBe(1);
+    expect(data.byTraitName.fearful).toBe(2);
+    expect(data.byTraitName.brave).toBe(1);
 
-    // By definitional category (intelligent+bold=positive, nervous=negative,
-    // legendaryBloodline=rare). Hidden runtime flag is not persisted — category
-    // is by trait definition (documented data-reality limitation).
+    // By definitional category (confident+resilient=positive, fearful=negative,
+    // brave=unknown until the owner rules its polarity). Hidden runtime flag is not
+    // persisted — category is by trait definition (documented data-reality limitation).
     expect(data.byCategory.positive).toBe(3);
     expect(data.byCategory.negative).toBe(2);
-    expect(data.byCategory.rare).toBe(1);
-    expect(data.byCategory.unknown).toBe(0);
+    expect(data.byCategory).not.toHaveProperty('rare');
+    expect(data.byCategory.unknown).toBe(1);
 
     // Category counts reconcile to the total.
-    const catSum = data.byCategory.positive + data.byCategory.negative + data.byCategory.rare + data.byCategory.unknown;
+    const catSum = data.byCategory.positive + data.byCategory.negative + data.byCategory.unknown;
     expect(catSum).toBe(data.total);
 
     // Over-time buckets (UTC calendar day) — the data DOES support time-series.
@@ -200,11 +206,11 @@ describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
 
     expect(res.status).toBe(200);
     const { data } = res.body;
-    expect(data.total).toBe(3); // DAY_1 only: intelligent, bold, nervous
-    expect(data.byTraitName.intelligent).toBe(1);
-    expect(data.byTraitName.bold).toBe(1);
-    expect(data.byTraitName.nervous).toBe(1);
-    expect(data.byTraitName.legendaryBloodline).toBeUndefined();
+    expect(data.total).toBe(3); // DAY_1 only: confident, resilient, fearful
+    expect(data.byTraitName.confident).toBe(1);
+    expect(data.byTraitName.resilient).toBe(1);
+    expect(data.byTraitName.fearful).toBe(1);
+    expect(data.byTraitName.brave).toBeUndefined();
     expect(data.byDate[DAY_1]).toBe(3);
     expect(data.byDate[DAY_2]).toBeUndefined();
   });
@@ -223,7 +229,7 @@ describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
     const { data } = res.body;
     expect(data.total).toBe(0);
     expect(data.byTraitName).toEqual({});
-    expect(data.byCategory).toEqual({ positive: 0, negative: 0, rare: 0, unknown: 0 });
+    expect(data.byCategory).toEqual({ positive: 0, negative: 0, unknown: 0 });
     expect(data.byDate).toEqual({});
   });
 

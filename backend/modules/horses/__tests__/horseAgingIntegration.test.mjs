@@ -1,23 +1,20 @@
 /**
  * Horse Aging Integration Test
- * Tests the complete integration of aging system with trait milestone evaluation
+ * Tests the aging system end to end through the cron entrypoint
  *
  * 🎯 FEATURES TESTED:
- * - Complete aging workflow from cron job to trait assignment
- * - Integration between aging system and trait evaluation
+ * - Complete aging workflow from cron job to the stored age
  * - Real database operations with milestone processing
  * - Cron job service integration
- * - Age 1 milestone trait evaluation from foal task history
+ * - The 7-day mark is no milestone: a first birthday ages the foal and touches no trait
  *
  * 🔧 DEPENDENCIES:
  * - cronJobs.mjs (cron job service)
  * - horseAgingSystem.mjs (aging logic)
- * - traitEvaluation.mjs (milestone evaluation)
  *
  * 📋 BUSINESS RULES TESTED:
  * - Daily aging process triggers birthday detection
- * - Age 1 milestone automatically evaluates traits from task history
- * - Trait assignment integrates with existing epigenetic system
+ * - A first birthday ages the foal and leaves its traits and task log as they were
  * - Cron job service orchestrates the complete workflow
  * - Real-world foal development scenarios
  *
@@ -38,14 +35,6 @@
  *   today (gameCalendarDate, Equoria-1lk00) instead of swapping the global
  *   Date constructor. `calculateAgeFromBirth` counts Eastern game days, so the
  *   age is exactly N whenever the suite runs — no clock isolation needed.
- * - Math.random: KEPT as a minimal `jest.spyOn(Math, 'random')`. The trait roll
- *   in evaluateEpigeneticTagsFromFoalTasks is `Math.random() * 100 < chance`
- *   PER trait; the production function takes only (taskLog, streak) — there is
- *   NO rng injection seam, and adding one would be a production change outside
- *   this test issue. Math.random is a JS runtime primitive (not Equoria domain
- *   code), so isolating ONLY it is the legitimate "runtime boundary" case, not
- *   a mock of our own logic. The deterministic invariants (pipeline counts,
- *   age, preserved modifiers) are asserted independently of the roll.
  * - Error path (Equoria-dgnle de-mock — CLAUDE.md §3 no-mocks-of-our-DB):
  *   the previous Error Handling test isolated `prisma.horse.update` via
  *   `mockRejectedValueOnce` to simulate a DB write failure — an isolation of
@@ -101,7 +90,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
   const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
-    // Restore any per-test Math.random spy from a previous case.
+    // Restore any per-test spy from a previous case.
     jest.restoreAllMocks();
     createdHorseIds.length = 0;
 
@@ -145,95 +134,48 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
   });
 
   describe('Complete Aging Workflow', () => {
-    it('should process foal birthday with trait milestone evaluation', async () => {
-      // Math.random — minimal runtime-boundary isolation (see file header).
-      // 0.15 → roll = 15; assigns any trait whose capped chance > 15%.
-      jest.spyOn(Math, 'random').mockReturnValue(0.15);
-
-      // Create foal turning 1 game-year old (7 days = 1 game-year) with a
-      // comprehensive task history. dob is 7 game days ago so calculateAgeFromBirth
-      // floors to exactly 7 days → calculatedAge = floor(7/7) = 1. Stored
-      // age 0 → birthday fires; prevAgeInDays = 0*7 = 0 < 7 and newAge = 7 >= 7,
-      // so the age-1 milestone gate (previousAge < 7 && newAge >= 7) fires.
+    // Old contract: the age-1 birthday ran the foal's task log through the legacy task map and
+    // wrote an 'epigenetic_tags' list (bonded, calm, ...) that nothing read; the old cases
+    // asserted those tags. Those names are off the owner's 2026-10-27 trait roster, so the
+    // evaluation is removed (Equoria-qw4kp): the birthday ages the horse and nothing else.
+    it('ages a foal on its first birthday, records no milestone, and leaves its traits and task log alone', async () => {
+      const taskLog = { trust_building: 12, desensitization: 8, early_touch: 10 };
+      const traits = { positive: ['athletic'], negative: [], hidden: ['mysteriousLineage'] };
+      // dob is 7 game days ago so calculatedAge = floor(7 / 7) = 1 against a stored age of 0.
       const foal = await prisma.horse.create({
         data: {
           ...fixtureColor(),
           name: `TestFixture-MilestoneFoal-${randHex()}`,
           sex: 'Filly',
           dateOfBirth: bornDaysAgo(7),
-          age: 0, // game-year before the year-1 birthday
+          age: 0,
           userId: testUser.id,
           breedId: testBreed.id,
           bondScore: 85,
-          taskLog: {
-            // Comprehensive foal development
-            trust_building: 12, // 60 points to bonded, resilient
-            desensitization: 8, // 40 points to confident
-            showground_exposure: 4, // 20 points to confident, crowd_ready
-            early_touch: 10, // 50 points to calm
-            hoof_handling: 6, // 30 points to show_calm
-            sponge_bath: 3, // 15 points to show_calm, presentation_boosted
-          },
-          daysGroomedInARow: 15, // Strong burnout immunity (+10 bonus)
-          epigeneticModifiers: {
-            positive: ['athletic'],
-            negative: [],
-            hidden: ['mysteriousLineage'],
-          },
+          taskLog,
+          daysGroomedInARow: 15,
+          epigeneticModifiers: traits,
         },
       });
       createdHorseIds.push(foal.id);
 
-      // Trigger the complete aging workflow through cron job service.
       const result = await cronJobService.manualHorseAging({ horseIds: [...createdHorseIds] });
 
-      // Verify aging process results (deterministic — independent of the roll).
       expect(result.totalProcessed).toBe(1);
       expect(result.birthdaysFound).toBe(1);
-      expect(result.milestonesTriggered).toBe(1);
+      expect(result.milestonesTriggered).toBe(0);
       expect(result.errors).toBe(0);
 
-      // Verify horse was updated in database.
-      const updatedFoal = await prisma.horse.findUnique({
-        where: { id: foal.id },
-      });
-
-      // Check age update (deterministic).
+      const updatedFoal = await prisma.horse.findUnique({ where: { id: foal.id } });
       expect(updatedFoal.age).toBe(1); // game-years: floor(7d / 7) = 1
-
-      // Check trait milestone evaluation produced an epigenetic_tags array.
-      const { epigeneticModifiers } = updatedFoal;
-      expect(epigeneticModifiers.epigenetic_tags).toBeDefined();
-      expect(Array.isArray(epigeneticModifiers.epigenetic_tags)).toBe(true);
-      expect(epigeneticModifiers.epigenetic_tags.length).toBeGreaterThan(0);
-
-      // Verify specific traits based on task history and streak bonus.
-      // With roll = 15 (Math.random 0.15 * 100) and +10 streak bonus:
-      // bonded: 60 + 10 = 70% (capped at 60%) > 15% ✓
-      // resilient: 60 + 10 = 70% (capped at 60%) > 15% ✓
-      // confident: (40 + 20) + 10 = 70% (capped at 60%) > 15% ✓
-      // crowd_ready: 20 + 10 = 30% > 15% ✓
-      // calm: 50 + 10 = 60% > 15% ✓
-      // show_calm: (30 + 15) + 10 = 55% > 15% ✓
-      // presentation_boosted: 15 + 10 = 25% > 15% ✓
-      expect(epigeneticModifiers.epigenetic_tags).toContain('bonded');
-      expect(epigeneticModifiers.epigenetic_tags).toContain('resilient');
-      expect(epigeneticModifiers.epigenetic_tags).toContain('confident');
-      expect(epigeneticModifiers.epigenetic_tags).toContain('calm');
-
-      // Verify existing traits were preserved (deterministic).
-      expect(epigeneticModifiers.positive).toContain('athletic');
-      expect(epigeneticModifiers.hidden).toContain('mysteriousLineage');
+      expect(updatedFoal.epigeneticModifiers).toEqual(traits);
+      expect(updatedFoal.taskLog).toEqual(taskLog);
     });
 
-    it('should handle multiple horses with different milestone scenarios', async () => {
-      // 0.2 → roll = 20; assigns any trait whose capped chance > 20%.
-      jest.spyOn(Math, 'random').mockReturnValue(0.2);
-
-      // Create multiple horses with different scenarios. dob offsets are live-
-      // now-relative so day-deltas are stable without a Date mock.
+    it('should handle multiple horses with different birthday scenarios', async () => {
+      // dob offsets are live-now-relative so day-deltas are stable without a Date mock.
       const horses = await createSequentially([
-        // Foal turning 1 game-year old (milestone): 7 game days ago → calc 1, stored 0.
+        // Foal turning 1 game-year old: 7 game days ago → calc 1, stored 0.
         () =>
           prisma.horse.create({
             data: {
@@ -241,7 +183,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
               name: `TestFixture-MilestoneFoal-${randHex()}`,
               sex: 'Colt',
               dateOfBirth: bornDaysAgo(7),
-              age: 0, // game-year before the year-1 birthday
+              age: 0,
               userId: testUser.id,
               breedId: testBreed.id,
               taskLog: { trust_building: 6, desensitization: 4 },
@@ -249,9 +191,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
               epigeneticModifiers: { positive: [], negative: [], hidden: [] },
             },
           }),
-        // Horse turning 3 game-years (birthday, no counted milestone): 21 game days
-        // ago → calc 3, stored 2. Minimal data so milestone eligibility resolves
-        // ineligible (no task_log / trait_milestones) — matches original intent.
+        // Horse turning 3 game-years: 21 game days ago → calc 3, stored 2.
         () =>
           prisma.horse.create({
             data: {
@@ -259,7 +199,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
               name: `TestFixture-TrainingReady-${randHex()}`,
               sex: 'Mare',
               dateOfBirth: bornDaysAgo(21),
-              age: 2, // game-year before the year-3 birthday
+              age: 2,
               userId: testUser.id,
               breedId: testBreed.id,
             },
@@ -273,7 +213,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
               name: `TestFixture-NoBirthday-${randHex()}`,
               sex: 'Stallion',
               dateOfBirth: bornDaysAgo(31),
-              age: 4, // floor(31 / 7) = 4 — already current, no birthday fires
+              age: 4,
               userId: testUser.id,
               breedId: testBreed.id,
             },
@@ -281,112 +221,27 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
       ]);
       horses.forEach(h => createdHorseIds.push(h.id));
 
-      // Process all horses.
       const result = await cronJobService.manualHorseAging({ horseIds: [...createdHorseIds] });
 
       expect(result.totalProcessed).toBe(3);
-      expect(result.birthdaysFound).toBe(2); // Milestone foal + training-ready horse
-      expect(result.milestonesTriggered).toBe(1); // Only the age-1 milestone
+      expect(result.birthdaysFound).toBe(2); // the foal and the training-ready horse
+      expect(result.milestonesTriggered).toBe(0); // neither birthday is a milestone
       expect(result.errors).toBe(0);
 
-      // Verify specific updates.
       const updatedHorses = await prisma.horse.findMany({
         where: { id: { in: horses.map(h => h.id) } },
         orderBy: { name: 'asc' },
       });
 
-      // Milestone foal should have traits assigned.
       const milestoneHorse = updatedHorses.find(h => h.name.startsWith('TestFixture-MilestoneFoal-'));
       expect(milestoneHorse.age).toBe(1); // game-years: floor(7d / 7) = 1
-      expect(milestoneHorse.epigeneticModifiers.epigenetic_tags).toBeDefined();
-      expect(milestoneHorse.epigeneticModifiers.epigenetic_tags.length).toBeGreaterThan(0);
+      expect(milestoneHorse.epigeneticModifiers).toEqual({ positive: [], negative: [], hidden: [] });
 
-      // Training-ready horse should just have age updated.
       const trainingHorse = updatedHorses.find(h => h.name.startsWith('TestFixture-TrainingReady-'));
       expect(trainingHorse.age).toBe(3); // game-years: floor(21d / 7) = 3
 
-      // No-birthday horse should remain unchanged.
       const noBirthdayHorse = updatedHorses.find(h => h.name.startsWith('TestFixture-NoBirthday-'));
       expect(noBirthdayHorse.age).toBe(4); // game-years: floor(31d / 7) = 4, unchanged
-    });
-
-    it('should handle foal with minimal task history', async () => {
-      // 0.5 → roll = 50; minimal task points (5% chance) are all < 50 → no
-      // trait assigned. Deterministic given the controlled roll.
-      jest.spyOn(Math, 'random').mockReturnValue(0.5);
-
-      // Create foal with minimal development (7 game days ago → calc 1, stored 0).
-      const foal = await prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `TestFixture-MinimalFoal-${randHex()}`,
-          sex: 'Colt',
-          dateOfBirth: bornDaysAgo(7),
-          age: 0,
-          userId: testUser.id,
-          breedId: testBreed.id,
-          taskLog: {
-            trust_building: 1, // 5 points to bonded, resilient
-            early_touch: 1, // 5 points to calm
-          },
-          daysGroomedInARow: 2, // No burnout immunity
-          epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-        },
-      });
-      createdHorseIds.push(foal.id);
-
-      const result = await cronJobService.manualHorseAging({ horseIds: [...createdHorseIds] });
-
-      expect(result.milestonesTriggered).toBe(1);
-
-      const updatedFoal = await prisma.horse.findUnique({
-        where: { id: foal.id },
-      });
-
-      expect(updatedFoal.age).toBe(1); // game-years: floor(7d / 7) = 1
-
-      // With minimal task history and roll = 50, no traits qualify:
-      // bonded: 5% < 50% ✗ / resilient: 5% < 50% ✗ / calm: 5% < 50% ✗
-      const epigeneticTags = updatedFoal.epigeneticModifiers?.epigenetic_tags || [];
-      expect(epigeneticTags.length).toBe(0);
-    });
-
-    it('should handle foal with no task history', async () => {
-      // No task entries → evaluateEpigeneticTagsFromFoalTasks returns [] before
-      // any roll, so the Math.random value is irrelevant here. Pinned anyway to
-      // keep the case fully deterministic regardless of code-path changes.
-      jest.spyOn(Math, 'random').mockReturnValue(0.1);
-
-      // Create foal with no development history (7 game days ago → calc 1, stored 0).
-      const foal = await prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `TestFixture-NoDevFoal-${randHex()}`,
-          sex: 'Filly',
-          dateOfBirth: bornDaysAgo(7),
-          age: 0,
-          userId: testUser.id,
-          breedId: testBreed.id,
-          taskLog: {}, // Empty task log
-          daysGroomedInARow: 0,
-          epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-        },
-      });
-      createdHorseIds.push(foal.id);
-
-      const result = await cronJobService.manualHorseAging({ horseIds: [...createdHorseIds] });
-
-      expect(result.milestonesTriggered).toBe(1);
-
-      const updatedFoal = await prisma.horse.findUnique({
-        where: { id: foal.id },
-      });
-
-      expect(updatedFoal.age).toBe(1); // game-years: floor(7d / 7) = 1
-
-      // No task history = no traits.
-      const epigeneticTags = updatedFoal.epigeneticModifiers?.epigenetic_tags || [];
-      expect(epigeneticTags.length).toBe(0);
     });
   });
 
@@ -493,10 +348,6 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
     });
 
     it('a clean multi-horse aging run processes every horse and keeps errors at 0 (the "continue across the batch" half of the contract)', async () => {
-      // 0.5 → roll = 50; trait outcomes are irrelevant here — this case asserts
-      // the batch-traversal/error-accounting contract, not trait assignment.
-      jest.spyOn(Math, 'random').mockReturnValue(0.5);
-
       // Three real horses with valid data and a real birthday each (stored age
       // below the calculated game-year), so every one exercises the real
       // updateHorseAge write path. A clean batch must process all three, count

@@ -123,13 +123,16 @@ describe('checkForMilestones()', () => {
   it('returns empty arrays when no age threshold is crossed (previousAge=newAge=0)', async () => {
     const result = await checkForMilestones(-1, 0, 0);
     expect(result.milestonesTriggered).toEqual([]);
-    expect(result.traitsAssigned).toEqual([]);
     expect(result.retirementTriggered).toBe(false);
   });
 
-  it('pushes age_1_trait_evaluation milestone when crossing 7-day threshold (horse not found → no-op)', async () => {
+  // Old contract: crossing 7 days ran the age-1 tag evaluation from the foal task log and
+  // recorded 'age_1_trait_evaluation'. That evaluation named traits off the owner's 2026-10-27
+  // roster and wrote a key nothing reads, so it is removed (Equoria-qw4kp): 7 days is no milestone.
+  it('crossing the 7-day threshold triggers no milestone', async () => {
     const result = await checkForMilestones(-1, 0, 7);
-    expect(result.milestonesTriggered).toContain('age_1_trait_evaluation');
+    expect(result.milestonesTriggered).toEqual([]);
+    expect(result.retirementTriggered).toBe(false);
   });
 
   it('enters additionalMilestone loop for 14-day threshold (horse not found → no-op)', async () => {
@@ -151,12 +154,11 @@ describe('checkForMilestones()', () => {
   it('returns shape with all expected keys', async () => {
     const result = await checkForMilestones(-1, 0, 0);
     expect(result).toHaveProperty('milestonesTriggered');
-    expect(result).toHaveProperty('traitsAssigned');
     expect(result).toHaveProperty('retirementTriggered');
   });
 
   it('returns fallback when newAge comparison throws (outer catch path lines 337-338)', async () => {
-    // previousAge=0 < 7 is true → short-circuit evaluates newAge >= 7
+    // previousAge=0 < 147 is true → short-circuit evaluates newAge >= 147
     // evil.valueOf() throws → propagates past inner try (not wrapped) → outer catch fires
     const evil = {
       valueOf() {
@@ -165,7 +167,6 @@ describe('checkForMilestones()', () => {
     };
     const result = await checkForMilestones(-1, 0, evil);
     expect(result.milestonesTriggered).toEqual([]);
-    expect(result.traitsAssigned).toEqual([]);
     expect(result.retirementTriggered).toBe(false);
   });
 });
@@ -306,14 +307,12 @@ describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-
     const result = await checkForMilestones(masHorseNotEligible.id, 13, 14);
     expect(Array.isArray(result.milestonesTriggered)).toBe(true);
     expect(result.retirementTriggered).toBe(false);
-    expect(result.traitsAssigned).toEqual([]);
   });
 
   it('enters if(horse) block and eligible+success branch (lines 254-296) when horse.age=2 game-years', async () => {
     const result = await checkForMilestones(masHorseEligible.id, 13, 14);
     expect(Array.isArray(result.milestonesTriggered)).toBe(true);
     expect(result.retirementTriggered).toBe(false);
-    expect(Array.isArray(result.traitsAssigned)).toBe(true);
   });
 });
 
@@ -447,60 +446,6 @@ describe('processHorseBirthdays() — dryRun else-branch (lines 416-417) (Equori
     expect(Array.isArray(result.results)).toBe(true);
     expect(result.results).toHaveLength(0);
     expect(typeof result.duration).toBe('number');
-  });
-});
-
-// ── checkForMilestones age_1 — if(horse) true path (Equoria-jkht) ─────────────
-// Lines 181-213: horse found → evaluateEpigeneticTagsFromFoalTasks with empty
-// taskLog → assignedTraits=[] → else branch (lines 209-213) fires.
-
-describe('checkForMilestones() — age_1 if(horse) true path, empty traits (Equoria-jkht)', () => {
-  let cm1User;
-  let cm1Horse;
-  const cleanup = createCleanupTracker();
-
-  beforeAll(async () => {
-    const ts = Date.now();
-    const rand = () => Math.random().toString(36).slice(2, 8);
-
-    cm1User = await prisma.user.create({
-      data: {
-        email: `cm1-${ts}-${rand()}@test.com`,
-        username: `cm1fix${ts}${rand()}`,
-        password: 'irrelevant-hash',
-        firstName: 'CM1',
-        lastName: 'Fixture',
-        money: 0,
-      },
-    });
-
-    cm1Horse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-CM1-${ts}`,
-        sex: 'Colt',
-        dateOfBirth: gameCalendarDate(new Date(), -8),
-        age: 0,
-        userId: cm1User.id,
-      },
-    });
-
-    // Scoped, fail-loud cleanup (Equoria-n7qa3): horses by name-prefix BEFORE
-    // the user (Horse.userId onDelete:Restrict, schema:282).
-    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-CM1-' } } }), 'horses');
-    cleanup.add(() => prisma.user.delete({ where: { id: cm1User.id } }), 'user');
-  }, 30000);
-
-  afterAll(() => cleanup.run(), 30000);
-
-  it('if(horse) true path: empty taskLog → assignedTraits=[] → else branch (lines 181, 183-187, 209-213)', async () => {
-    // previousAge=0 < 7, newAge=8 >= 7 → age_1 condition fires
-    // horse has no taskLog entries → evaluateEpigeneticTagsFromFoalTasks returns []
-    // → else branch at line 209 fires (no prisma.horse.update called)
-    const result = await checkForMilestones(cm1Horse.id, 0, 8);
-    expect(result.milestonesTriggered).toContain('age_1_trait_evaluation');
-    expect(result.traitsAssigned).toEqual([]);
-    expect(result.retirementTriggered).toBe(false);
   });
 });
 

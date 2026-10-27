@@ -5,13 +5,11 @@
  * 🎯 FEATURES:
  * - Automatic age calculation from dateOfBirth
  * - Daily aging process with birthday detection
- * - Trait milestone evaluation at age 1 (7 days)
  * - Retirement detection at age 21 (147 days)
  * - Integration with existing cron job system
  * - Batch processing for daily updates
  *
  * 🔧 DEPENDENCIES:
- * - traitEvaluation.mjs (milestone evaluation)
  * - foalTaskLogManager.mjs (task log utilities)
  * - prisma (database operations)
  * - logger (logging)
@@ -19,30 +17,23 @@
  * 📋 BUSINESS RULES:
  * - Age calculated as days since dateOfBirth (1 year = 7 days)
  * - Birthday triggers age increment and milestone checks
- * - Age 1 milestone (7 days) triggers trait evaluation from task history
  * - Horses retire at age 21 (147 days)
  * - Age affects training/competition eligibility
  * - Process runs daily via cron job integration
  *
  * 🎯 MILESTONES:
- * - Age 1 (7 days): Epigenetic trait evaluation from foal task history
  * - Age 21 (147 days): Retirement from competition
  */
 
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
-import { evaluateEpigeneticTagsFromFoalTasks } from './traitEvaluation.mjs';
 import {
   evaluateEnhancedMilestone,
   DEVELOPMENTAL_WINDOWS,
   MILESTONE_TYPES,
 } from './enhancedMilestoneEvaluationSystem.mjs';
 import { getHorseAgeDays } from './horseAge.mjs';
-import { setEpigeneticModifiersKey } from '../modules/traits/index.mjs';
 import { writeBirthdayTx } from '../modules/horses/index.mjs';
-
-/** The epigeneticModifiers key the age-1 milestone records its tags under. */
-export const ageOneTagsKey = 'epigenetic_tags';
 
 /**
  * GAME-DESIGN UNIT CONTRACT (Equoria-son6 / Equoria-j9ip):
@@ -110,21 +101,17 @@ const previousAgeInDays = storedAge => storedAge * DAYS_PER_GAME_YEAR;
 const crossesThreshold = (previousDays, newDays, threshold) =>
   previousDays < threshold && newDays >= threshold;
 
-const ageOneMilestoneDays = 7;
 const retirementMilestoneDays = 147;
 
 /**
  * Whether a birthday from `storedAge` to a horse now `ageInDays` old triggers an
- * age milestone (age-1 trait evaluation, retirement). Mirrors the day-threshold
+ * age milestone (retirement). Mirrors the day-threshold
  * tests in checkForMilestones; a horse that crosses neither needs only its age
  * column written.
  */
 function birthdayHasMilestone(storedAge, ageInDays) {
   const previousDays = previousAgeInDays(storedAge);
-  return (
-    crossesThreshold(previousDays, ageInDays, ageOneMilestoneDays) ||
-    crossesThreshold(previousDays, ageInDays, retirementMilestoneDays)
-  );
+  return crossesThreshold(previousDays, ageInDays, retirementMilestoneDays);
 }
 
 /**
@@ -190,7 +177,7 @@ export async function updateHorseAge(horseId, knownHorse = null) {
   // 147 days) keeps working at fine granularity. The previous day-equivalent
   // is `storedAge * DAYS_PER_GAME_YEAR` (lower bound of the previous game-year
   // bucket); the current day-equivalent is `ageInDays`.
-  let milestoneResult = { milestonesTriggered: [], traitsAssigned: [] };
+  let milestoneResult = { milestonesTriggered: [] };
   if (hadBirthday) {
     milestoneResult = await checkForMilestones(horseId, previousAgeInDays(storedAge), ageInDays);
   }
@@ -202,7 +189,6 @@ export async function updateHorseAge(horseId, knownHorse = null) {
     newAge: calculatedAge,
     hadBirthday,
     milestonesTriggered: milestoneResult.milestonesTriggered,
-    traitsAssigned: milestoneResult.traitsAssigned,
   };
 }
 
@@ -216,63 +202,11 @@ export async function updateHorseAge(horseId, knownHorse = null) {
 export async function checkForMilestones(horseId, previousAge, newAge) {
   try {
     const milestonesTriggered = [];
-    let traitsAssigned = [];
     let retirementTriggered = false;
 
     logger.info(
       `[horseAgingSystem.checkForMilestones] Checking milestones for horse ${horseId}: ${previousAge} → ${newAge} days`,
     );
-
-    // Age 1 milestone (7 days) - Trait evaluation
-    // Trigger when crossing the 7-day threshold
-    if (crossesThreshold(previousAge, newAge, ageOneMilestoneDays)) {
-      logger.info(
-        `[horseAgingSystem.checkForMilestones] Horse ${horseId} reached age 1 milestone - evaluating traits`,
-      );
-
-      try {
-        // Get horse data for trait evaluation
-        const horse = await prisma.horse.findUnique({
-          where: { id: horseId },
-          select: {
-            id: true,
-            name: true,
-            taskLog: true,
-            daysGroomedInARow: true,
-          },
-        });
-
-        if (horse) {
-          // Evaluate traits from foal task history
-          const assignedTraits = evaluateEpigeneticTagsFromFoalTasks(
-            horse.taskLog || {},
-            horse.daysGroomedInARow || 0,
-          );
-
-          if (assignedTraits.length > 0) {
-            // Equoria-m1sf8: set only this milestone's key, in one statement
-            // against the row's current value, so a trait revealed since the
-            // read above is kept.
-            await setEpigeneticModifiersKey(prisma, horseId, ageOneTagsKey, assignedTraits);
-
-            traitsAssigned = assignedTraits;
-            logger.info(
-              `[horseAgingSystem.checkForMilestones] Assigned ${assignedTraits.length} epigenetic traits to horse ${horse.name}: ${assignedTraits.join(', ')}`,
-            );
-          } else {
-            logger.info(
-              `[horseAgingSystem.checkForMilestones] No traits qualified for assignment to horse ${horse.name}`,
-            );
-          }
-        }
-
-        milestonesTriggered.push('age_1_trait_evaluation');
-      } catch (error) {
-        logger.error(
-          `[horseAgingSystem.checkForMilestones] Error in age 1 trait evaluation for horse ${horseId}: ${error.message}`,
-        );
-      }
-    }
 
     // Age 2/3 milestone trait evaluation (14/21 real-time days) is NOT handled
     // here. Equoria-bvddn.16: the code that used to live in this branch called
@@ -320,14 +254,12 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
 
     return {
       milestonesTriggered,
-      traitsAssigned,
       retirementTriggered,
     };
   } catch (error) {
     logger.error(`[horseAgingSystem.checkForMilestones] Error: ${error.message}`);
     return {
       milestonesTriggered: [],
-      traitsAssigned: [],
       retirementTriggered: false,
     };
   }
@@ -450,7 +382,6 @@ export async function processHorseBirthdays(options = {}) {
           newAge,
           hadBirthday,
           milestonesTriggered: [],
-          traitsAssigned: [],
         };
       }
     } catch (error) {
