@@ -2,15 +2,13 @@
  * Horse Genetics Controller
  *
  * Equoria-xod8b (child A of Equoria-mh937): extracted from horseController.mjs.
- * Owns temperament-definitions + genetics + color + breeding-color-prediction endpoints.
+ * Owns temperament-definitions + genetics + color endpoints. The breeding colour
+ * prediction was removed (owner ruling q91, Equoria-m13fh: players see no foal outcome).
  * No behavior changes — functions moved verbatim.
  */
 import { TEMPERAMENT_TYPES } from '../data/temperamentTypes.mjs';
 import { TEMPERAMENT_GROOM_SYNERGY } from '../services/temperamentService.mjs';
-import { predictBreedingColors } from '../services/breedingColorPredictionService.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { listedStudStatuses } from '../../../constants/schema.mjs';
 
 /**
  * Canonical groom personalities — defined once at module scope (not per-request).
@@ -286,135 +284,6 @@ export async function getColor(req, res) {
     return res.status(500).json({
       success: false,
       message: 'Internal server error while retrieving color data',
-      data: null,
-    });
-  }
-}
-
-/**
- * Validate that a colorGenotype value is a proper JSONB object.
- * Rejects null, undefined, arrays, and scalar values.
- *
- * @param {*} genotype - value from horse.colorGenotype
- * @returns {boolean}
- */
-function isValidGenotype(genotype) {
-  return (
-    genotype !== null &&
-    genotype !== undefined &&
-    typeof genotype === 'object' &&
-    !Array.isArray(genotype)
-  );
-}
-
-/**
- * Calculate breeding color prediction for two parent horses.
- * Returns a probability chart of possible offspring coat colors.
- * Controller handles DB fetching and ownership — calls pure-function service.
- *
- * @param {object} req - Express request with body { sireId, damId }. The foal's breed is
- *   always the dam's (parents share a breed; owner ruling 2026-10-20, Equoria-5nwwf).
- * @param {object} res - Express response
- */
-export async function getBreedingColorPrediction(req, res) {
-  try {
-    const { sireId, damId } = req.body;
-
-    // Self-cross guard (Equoria-eef8): reject sireId === damId with 400
-    // BEFORE any DB work — pattern documented in PATTERN_LIBRARY.md
-    // "Per-Locus Probability — Multi-Locus Genetics Calculation (31E-5)".
-    // Prevents both the obvious self-breeding bug and a class of wasted-DB
-    // work that would otherwise scale with attacker volume.
-    if (sireId === damId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Sire and dam cannot be the same horse',
-      });
-    }
-
-    // Fetch both horses with ownership validation
-    const [sire, dam] = await Promise.all([
-      prisma.horse.findUnique({
-        where: { id: sireId },
-        select: {
-          id: true,
-          name: true,
-          colorGenotype: true,
-          userId: true,
-          breedId: true,
-          studStatus: true,
-        },
-      }),
-      prisma.horse.findUnique({
-        where: { id: damId },
-        select: { id: true, name: true, colorGenotype: true, userId: true, breedId: true },
-      }),
-    ]);
-
-    // AC5: Ownership enforcement — 404 for both not-found and not-owned.
-    // Equoria-q4uem.9 slice 4 (owner ruling S9, 2026-10-15): the lethal-white
-    // and coat odds are also allowed for another player's stallion at public
-    // or private stud. The dam must always be the caller's.
-    const sireAvailable =
-      sire && (sire.userId === req.user.id || listedStudStatuses.includes(sire.studStatus));
-    if (!sireAvailable) {
-      return res.status(404).json({
-        success: false,
-        message: 'Horse not found',
-      });
-    }
-    if (!dam || dam.userId !== req.user.id) {
-      return res.status(404).json({
-        success: false,
-        message: 'Horse not found',
-      });
-    }
-
-    // AC6: Legacy horse handling — both parents must have genetics data
-    if (!isValidGenotype(sire.colorGenotype) || !isValidGenotype(dam.colorGenotype)) {
-      return res.status(200).json({
-        success: true,
-        message: 'Color prediction requires both parents to have genetics data',
-        data: null,
-      });
-    }
-
-    // The foal's breed profile is the dam's breed: nobody chooses a foal's breed.
-    let foalBreedProfile = null;
-    if (dam.breedId) {
-      // Use raw SQL to bypass stale Prisma client DMMF that may not include breedGeneticProfile
-      const breedRows = await prisma.$queryRaw`
-        SELECT "breedGeneticProfile" FROM breeds WHERE id = ${dam.breedId}
-      `;
-      foalBreedProfile = breedRows[0]?.breedGeneticProfile ?? null;
-    }
-
-    // Call the pure prediction service (statically imported at top — no circular dep).
-    // Pattern: PATTERN_LIBRARY.md "Per-Locus Probability — Multi-Locus Genetics Calculation".
-    const prediction = predictBreedingColors(
-      sire.colorGenotype,
-      dam.colorGenotype,
-      foalBreedProfile,
-    );
-
-    logger.info(
-      `[horseController.getBreedingColorPrediction] Predicted ${prediction.possibleColors.length} colors for sire=${sire.id} dam=${dam.id}`,
-    );
-
-    return res.status(200).json({
-      success: true,
-      message: 'Breeding color prediction calculated successfully',
-      data: {
-        sireId: sire.id,
-        damId: dam.id,
-        ...prediction,
-      },
-    });
-  } catch (error) {
-    logger.error(`[horseController.getBreedingColorPrediction] Error: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error while calculating breeding color prediction',
       data: null,
     });
   }

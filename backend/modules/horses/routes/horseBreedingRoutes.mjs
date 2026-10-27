@@ -2,44 +2,30 @@
  * Horse Breeding / Stud / Foaling Sub-Router (Equoria-y8u2j split)
  *
  * Extracted from backend/modules/horses/routes/horseRoutes.mjs as part of the
- * god-file split. Owns the breeding-action / stud-listing endpoints (foaling is
- * the nightly job only: there is no route that skips gestation, Equoria-6nl3j):
+ * god-file split. Owns the stud-listing endpoints (foaling is the nightly job
+ * only: there is no route that skips gestation, Equoria-6nl3j):
  *
- *   POST   /breeding/color-prediction  — offspring coat-color probabilities
  *   POST   /:id/stud-listing           — list a stallion at stud (set fee)
  *   DELETE /:id/stud-listing           — unlist a stallion from stud
- *   GET    /:id/breeding-data          — horse breeding data + trait predictions
  *   GET    /:id/offspring              — the horse's foals, id + name only
  *
+ * POST /breeding/color-prediction was removed (owner ruling q91, Equoria-m13fh):
+ * players see no foal outcome, and it leaked an untested horse's genotype.
+ *
  * Mounting: this router is mounted at the SAME path as the parent
- * (`router.use(horseBreedingRoutes)` in horseRoutes.mjs).
+ * (router.use(horseBreedingRoutes) in horseRoutes.mjs). Every route is
+ * /:id/<sub-path> (2 segments), so it cannot match the parent's GET /:id
+ * (1 segment); mount position is not load-bearing for Express path-matching.
  *
- *   - `POST /breeding/color-prediction` is /breeding/color-prediction
- *     (2 segments) — cannot match the parent's `GET /:id` (1 segment).
- *   - All other extracted routes are `/:id/<sub-path>` (2 segments) — same
- *     argument applies. Sub-router mount position is therefore not
- *     load-bearing for Express path-matching.
- *
- * Security:
- *   - POST /breeding/color-prediction: authenticated; controller validates
- *     ownership of both sire and dam.
- *   - All /:id/* routes: validateHorseId + requireOwnership('horse').
- *
- * Behaviour preserved verbatim from the original inline definitions, including
- * the body coercion (string → int) for the color-prediction endpoint and the
- * dynamic await import(...) of the breeding-prediction service.
+ * Security: every /:id/* route runs validateHorseId + requireOwnership('horse').
  */
 
 import express from 'express';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
 import { mutationRateLimiter, queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
-import {
-  getBreedingColorPrediction,
-  listHorseAtStud,
-  unlistHorseAtStud,
-} from '../controllers/horseController.mjs';
+import { listHorseAtStud, unlistHorseAtStud } from '../controllers/horseController.mjs';
 import { listOffspring } from '../services/horseRouteQueries.mjs';
 import logger from '../../../utils/logger.mjs';
 import { validateHorseId, rejectPollutedRequest, handleValidationErrors } from './_validators.mjs';
@@ -68,48 +54,6 @@ router.get(
     } catch (error) {
       logger.error(`[horseBreedingRoutes.GET /:id/offspring] Error: ${error.message}`);
       return res.status(500).json({ success: false, message: 'Internal server error' });
-    }
-  },
-);
-
-/**
- * POST /horses/breeding/color-prediction
- * Calculate breeding color prediction for two parent horses.
- * Returns probability chart of possible offspring coat colors.
- *
- * Security: Validates ownership of both sire and dam in controller.
- */
-router.post(
-  '/breeding/color-prediction',
-  mutationRateLimiter,
-  rejectPollutedRequest,
-  authenticateToken,
-  [
-    body('sireId').isInt({ min: 1 }).withMessage('sireId must be a positive integer'),
-    body('damId').isInt({ min: 1 }).withMessage('damId must be a positive integer'),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array(),
-      });
-    }
-
-    // Convert string body values to integers
-    req.body.sireId = parseInt(req.body.sireId, 10);
-    req.body.damId = parseInt(req.body.damId, 10);
-
-    try {
-      await getBreedingColorPrediction(req, res);
-    } catch (error) {
-      logger.error(`[horseBreedingRoutes] Error in breeding color prediction: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-      });
     }
   },
 );

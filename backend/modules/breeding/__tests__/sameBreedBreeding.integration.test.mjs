@@ -275,33 +275,4 @@ describe('sire and dam must be the same breed; the foal is born that breed (Equo
       expect((await dam(mare.id)).pendingFoalBreedId).toBeNull();
     });
   });
-
-  describe("no surface chooses a foal's breed", () => {
-    it("the colour prediction for a pair uses the dam's breed whatever foalBreedId is sent", async () => {
-      const sire = await horse({ ownerId: mareOwner.user.id, sex: 'Stallion' });
-      const mare = await horse({ ownerId: mareOwner.user.id, sex: 'Mare' });
-
-      const plain = await sendJson('post', '/api/v1/horses/breeding/color-prediction', mareOwner.token, {
-        sireId: sire.id,
-        damId: mare.id,
-      });
-      const withBreed = await sendJson('post', '/api/v1/horses/breeding/color-prediction', mareOwner.token, {
-        sireId: sire.id,
-        damId: mare.id,
-        foalBreedId: otherBreedRow.id,
-      });
-
-      // A foalBreedId is neither read nor validated any more.
-      const nonsense = await sendJson('post', '/api/v1/horses/breeding/color-prediction', mareOwner.token, {
-        sireId: sire.id,
-        damId: mare.id,
-        foalBreedId: -5,
-      });
-
-      expect(plain.status).toBe(200);
-      expect(withBreed.status).toBe(200);
-      expect(withBreed.body.data).toEqual(plain.body.data);
-      expect(nonsense.status).toBe(200);
-    });
-  });
 });

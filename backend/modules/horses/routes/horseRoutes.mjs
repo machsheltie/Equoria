@@ -242,11 +242,10 @@ router.get('/temperament-definitions', queryRateLimiter, getTemperamentDefinitio
 // conflict with this parent's GET /:id (1 segment) — mount position is not
 // load-bearing. Sub-router mounted at the bottom alongside horseFeedRoutes.
 
-// Breeding / stud / foaling routes (POST /breeding/color-prediction,
-// POST /:id/stud-listing, DELETE /:id/stud-listing, GET /:id/breeding-data)
-// extracted to horseBreedingRoutes.mjs as part of the
-// Equoria-y8u2j god-file split. All extracted routes are either
-// /breeding/<sub> or /:id/<sub-path> (2+ segments) so they don't conflict
+// Breeding / stud routes (POST /:id/stud-listing, DELETE /:id/stud-listing,
+// GET /:id/offspring) extracted to horseBreedingRoutes.mjs as part of the
+// Equoria-y8u2j god-file split (the colour prediction was removed, Equoria-m13fh).
+// All extracted routes are /:id/<sub-path> (2 segments) so they don't conflict
 // with this parent's GET /:id (1 segment). Sub-router mounted at the bottom
 // alongside the other sub-routers.
 

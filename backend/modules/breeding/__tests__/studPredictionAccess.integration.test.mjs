@@ -46,11 +46,6 @@ const ENDPOINTS = {
     sendJson('post', '/api/v1/genetics/inbreeding-analysis', token, { stallionId, mareId }),
   compatibility: (token, stallionId, mareId) =>
     sendJson('post', '/api/v1/genetics/breeding-compatibility', token, { stallionId, mareId }),
-  colorPrediction: (token, stallionId, mareId) =>
-    sendJson('post', '/api/v1/horses/breeding/color-prediction', token, {
-      sireId: stallionId,
-      damId: mareId,
-    }),
 };
 
 /** Drop values that legitimately change between two identical calls. */
