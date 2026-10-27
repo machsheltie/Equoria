@@ -127,7 +127,7 @@ describe('Marketplace all-horses search (Equoria-q4uem.9.1)', () => {
     await user.type(screen.getByLabelText(/min stud fee/i), '100');
     await user.type(screen.getByLabelText(/max sale price/i), '5000');
     await user.type(screen.getByLabelText(/^color$/i), 'bay');
-    await user.selectOptions(screen.getByLabelText(/sort listings/i), 'price_desc');
+    await user.selectOptions(screen.getByLabelText(/sort listings/i), 'priceDesc');
 
     await waitFor(() => {
       const p = last();
@@ -135,7 +135,7 @@ describe('Marketplace all-horses search (Equoria-q4uem.9.1)', () => {
       expect(p.get('minStudFee')).toBe('100');
       expect(p.get('maxPrice')).toBe('5000');
       expect(p.get('color')).toBe('bay');
-      expect(p.get('sort')).toBe('price_desc');
+      expect(p.get('sort')).toBe('priceDesc');
     });
   });
 

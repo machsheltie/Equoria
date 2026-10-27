@@ -21,7 +21,7 @@ import { minBreedingAgeYears, maxBreedingAgeYears } from '../../horses/index.mjs
 import { parseOr400 } from '../services/listingQueryParams.mjs';
 import { horseSearchWhere, parseHorseSearch } from '../services/horseSearchQuery.mjs';
 
-const MODE_BY_STATUS = Object.freeze({
+const modeByStatus = Object.freeze({
   [studStatuses.public]: 'public',
   [studStatuses.private]: 'private',
 });
@@ -31,7 +31,7 @@ function standsAtStud(row) {
   const born = new Date(row.dateOfBirth);
   return (
     row.sex === 'Stallion' &&
-    MODE_BY_STATUS[row.studStatus] !== undefined &&
+    modeByStatus[row.studStatus] !== undefined &&
     born <= birthDateForAge(minBreedingAgeYears) &&
     born > birthDateForAge(maxBreedingAgeYears + 1)
   );
@@ -62,7 +62,7 @@ function toSearchRow(view) {
     imageUrl: view.imageUrl,
     sale: view.forSale === true ? { price: view.salePrice ?? 0 } : null,
     stud: standsAtStud(view)
-      ? { mode: MODE_BY_STATUS[view.studStatus], fee: view.studFee ?? 0 }
+      ? { mode: modeByStatus[view.studStatus], fee: view.studFee ?? 0 }
       : null,
   };
 }

@@ -13,21 +13,14 @@
 import { studStatuses } from '../../../constants/schema.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { minBreedingAgeYears, maxBreedingAgeYears } from '../../horses/index.mjs';
-import {
-  CANONICAL_HORSE_SEX_VALUES,
-  horseSexFilterValues,
-} from '../../../../packages/database/horseSexCanonical.mjs';
-import {
-  BadQuery,
-  INT4_MAX,
-  MAX_AGE_YEARS,
-  boundedInt,
-  ownValue,
-  single,
-} from './listingQueryParams.mjs';
+import { horseSexFilterValues } from '../../../../packages/database/horseSexCanonical.mjs';
+import { BadQuery, boundedInt, ownValue, single } from './listingQueryParams.mjs';
 
-const MAX_TEXT = 100;
-const STUD_MODES = Object.freeze({ public: studStatuses.public, private: studStatuses.private });
+const maxText = 100;
+// Bounds that keep the query values valid for Prisma (int4) and for birthDateForAge.
+const int4Limit = 2147483647;
+const maxAgeLimit = 1000;
+const studModes = Object.freeze({ public: studStatuses.public, private: studStatuses.private });
 
 const idAsc = { key: 'id', dir: 'asc', type: 'int' };
 const saleCol = dir => ({ key: 'salePrice', dir, type: 'int', nullable: true });
@@ -53,8 +46,8 @@ function sortFor(name, { forSale, atStud }) {
   const table = {
     newest: () => [{ key: 'createdAt', dir: 'desc', type: 'date', nullable: true }, idAsc],
     youngest: () => [{ key: 'age', dir: 'asc', type: 'int', nullable: true }, idAsc],
-    price_asc: () => price('asc'),
-    price_desc: () => price('desc'),
+    priceAsc: () => price('asc'),
+    priceDesc: () => price('desc'),
   };
   return ownValue(table, name, 'sort')();
 }
@@ -72,7 +65,7 @@ function flag(query, key) {
 
 function text(query, key) {
   const value = single(query, key)?.trim();
-  if (value && value.length > MAX_TEXT) {
+  if (value && value.length > maxText) {
     throw new BadQuery(`${key} is too long`);
   }
   return value || undefined;
@@ -92,27 +85,27 @@ export function parseHorseSearch(query) {
     try {
       sexValues = horseSexFilterValues(sex);
     } catch {
-      throw new BadQuery(`sex must be one of: ${CANONICAL_HORSE_SEX_VALUES.join(', ')}`);
+      throw new BadQuery('That sex is not one the market offers');
     }
   }
   return {
     forSale,
     atStud,
     studStatuses: studMode
-      ? [ownValue(STUD_MODES, studMode, 'stud mode')]
-      : Object.values(STUD_MODES),
+      ? [ownValue(studModes, studMode, 'stud mode')]
+      : Object.values(studModes),
     name: text(query, 'name'),
-    breedId: boundedInt(query, 'breedId', INT4_MAX),
+    breedId: boundedInt(query, 'breedId', int4Limit),
     color: text(query, 'color'),
     sexValues,
-    minAge: boundedInt(query, 'minAge', MAX_AGE_YEARS),
-    maxAge: boundedInt(query, 'maxAge', MAX_AGE_YEARS),
-    minPrice: boundedInt(query, 'minPrice', INT4_MAX),
-    maxPrice: boundedInt(query, 'maxPrice', INT4_MAX),
-    minStudFee: boundedInt(query, 'minStudFee', INT4_MAX),
-    maxStudFee: boundedInt(query, 'maxStudFee', INT4_MAX),
-    page: boundedInt(query, 'page', INT4_MAX),
-    limit: boundedInt(query, 'limit', INT4_MAX),
+    minAge: boundedInt(query, 'minAge', maxAgeLimit),
+    maxAge: boundedInt(query, 'maxAge', maxAgeLimit),
+    minPrice: boundedInt(query, 'minPrice', int4Limit),
+    maxPrice: boundedInt(query, 'maxPrice', int4Limit),
+    minStudFee: boundedInt(query, 'minStudFee', int4Limit),
+    maxStudFee: boundedInt(query, 'maxStudFee', int4Limit),
+    page: boundedInt(query, 'page', int4Limit),
+    limit: boundedInt(query, 'limit', int4Limit),
     cursor: single(query, 'cursor'),
     sort: sortFor(single(query, 'sort') ?? 'newest', { forSale, atStud }),
   };

@@ -236,12 +236,12 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
     await horse({ label: 'f50', ...atStud(50) });
     await horse({ label: 'f800', ...atStud(800) });
 
-    expect(labels(await search('&forSale=true&sort=price_asc'))).toEqual(['s100', 's900']);
-    expect(labels(await search('&forSale=true&sort=price_desc'))).toEqual(['s900', 's100']);
-    expect(labels(await search('&atStud=true&sort=price_asc'))).toEqual(['f50', 'f800']);
-    expect(labels(await search('&atStud=true&sort=price_desc'))).toEqual(['f800', 'f50']);
-    expect(labels(await search('&forSale=true&atStud=true&sort=price_asc'))).toEqual(['s100', 's900', 'f50', 'f800']);
-    expect(labels(await search('&forSale=true&atStud=true&sort=price_desc'))).toEqual(['s900', 's100', 'f800', 'f50']);
+    expect(labels(await search('&forSale=true&sort=priceAsc'))).toEqual(['s100', 's900']);
+    expect(labels(await search('&forSale=true&sort=priceDesc'))).toEqual(['s900', 's100']);
+    expect(labels(await search('&atStud=true&sort=priceAsc'))).toEqual(['f50', 'f800']);
+    expect(labels(await search('&atStud=true&sort=priceDesc'))).toEqual(['f800', 'f50']);
+    expect(labels(await search('&forSale=true&atStud=true&sort=priceAsc'))).toEqual(['s100', 's900', 'f50', 'f800']);
+    expect(labels(await search('&forSale=true&atStud=true&sort=priceDesc'))).toEqual(['s900', 's100', 'f800', 'f50']);
   });
 
   it('pages by keyset cursor without repeating or skipping a horse', async () => {
@@ -249,20 +249,20 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
       await horse({ label: `p${i}`, ...forSale(i * 100) });
     }
     const first = await request(app)
-      .get(`/api/v1/marketplace/search?name=${run}&forSale=true&sort=price_asc&limit=2`)
+      .get(`/api/v1/marketplace/search?name=${run}&forSale=true&sort=priceAsc&limit=2`)
       .set('Authorization', `Bearer ${viewer.token}`);
     expect(labels(first)).toEqual(['p1', 'p2']);
     expect(first.body.data.pageInfo.hasMore).toBe(true);
 
     const second = await request(app)
       .get(
-        `/api/v1/marketplace/search?name=${run}&forSale=true&sort=price_asc&limit=2&cursor=${encodeURIComponent(first.body.data.pageInfo.nextCursor)}`,
+        `/api/v1/marketplace/search?name=${run}&forSale=true&sort=priceAsc&limit=2&cursor=${encodeURIComponent(first.body.data.pageInfo.nextCursor)}`,
       )
       .set('Authorization', `Bearer ${viewer.token}`);
     expect(labels(second)).toEqual(['p3', 'p4']);
     const third = await request(app)
       .get(
-        `/api/v1/marketplace/search?name=${run}&forSale=true&sort=price_asc&limit=2&cursor=${encodeURIComponent(second.body.data.pageInfo.nextCursor)}`,
+        `/api/v1/marketplace/search?name=${run}&forSale=true&sort=priceAsc&limit=2&cursor=${encodeURIComponent(second.body.data.pageInfo.nextCursor)}`,
       )
       .set('Authorization', `Bearer ${viewer.token}`);
     expect(labels(third)).toEqual(['p5']);

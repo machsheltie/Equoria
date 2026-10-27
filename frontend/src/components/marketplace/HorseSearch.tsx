@@ -23,29 +23,29 @@ import { useBreeds } from '@/hooks/api/useBreeds';
 import type { MarketplaceSearchFilters, MarketplaceSearchHorse } from '@/lib/api-client';
 
 // Debounce window for the text inputs (Equoria-gb2uq): one request per pause, not per key.
-const TEXT_DEBOUNCE_MS = 300;
+const textDebounceMs = 300;
 
-const SORT_OPTIONS = [
+const sortOptions = [
   { value: 'newest', label: 'Newest First' },
-  { value: 'price_asc', label: 'Price: Low → High' },
-  { value: 'price_desc', label: 'Price: High → Low' },
+  { value: 'priceAsc', label: 'Price: Low → High' },
+  { value: 'priceDesc', label: 'Price: High → Low' },
   { value: 'youngest', label: 'Youngest First' },
 ];
 
 // Sex values are sex GROUPS: the server matches Mare→{Mare,Filly} and Stallion→{Stallion,Colt}.
-const SEX_OPTIONS = [
+const sexOptions = [
   { value: '', label: 'Any Sex' },
   { value: 'Mare', label: 'Mares & Fillies' },
   { value: 'Stallion', label: 'Stallions & Colts' },
 ];
 
-const STUD_MODE_OPTIONS = [
+const studModeOptions = [
   { value: '', label: 'Public or Private' },
   { value: 'public', label: 'Public Stud' },
   { value: 'private', label: 'Private Stud' },
 ];
 
-const NUMBER_FILTERS = [
+const numberFilters = [
   { key: 'minAge', label: 'Min Age' },
   { key: 'maxAge', label: 'Max Age' },
   { key: 'minPrice', label: 'Min Sale Price' },
@@ -113,7 +113,7 @@ export const HorseSearch: React.FC<HorseSearchProps> = ({ userBalance, onPurchas
       setFilters((prev) =>
         prev.name === name && prev.color === color ? prev : { ...prev, name, color, page: 1 }
       );
-    }, TEXT_DEBOUNCE_MS);
+    }, textDebounceMs);
     return () => window.clearTimeout(handle);
   }, [nameInput, colorInput]);
 
@@ -157,7 +157,7 @@ export const HorseSearch: React.FC<HorseSearchProps> = ({ userBalance, onPurchas
           value={filters.sort ?? 'newest'}
           aria-label="Sort listings"
           onChange={(e) => update('sort', e.target.value as MarketplaceSearchFilters['sort'])}
-          options={SORT_OPTIONS}
+          options={sortOptions}
           className="w-auto"
         />
         <Button
@@ -192,7 +192,7 @@ export const HorseSearch: React.FC<HorseSearchProps> = ({ userBalance, onPurchas
                 {...fieldProps}
                 value={filters.sex ?? ''}
                 onChange={(e) => update('sex', e.target.value || undefined)}
-                options={SEX_OPTIONS}
+                options={sexOptions}
               />
             )}
           </FormField>
@@ -218,11 +218,11 @@ export const HorseSearch: React.FC<HorseSearchProps> = ({ userBalance, onPurchas
                     (e.target.value || undefined) as MarketplaceSearchFilters['studMode']
                   )
                 }
-                options={STUD_MODE_OPTIONS}
+                options={studModeOptions}
               />
             )}
           </FormField>
-          {NUMBER_FILTERS.map(({ key, label }) => (
+          {numberFilters.map(({ key, label }) => (
             <FormField key={key} label={label} htmlFor={`filter-${key}`}>
               {(fieldProps) => (
                 <Input

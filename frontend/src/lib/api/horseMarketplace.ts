@@ -102,7 +102,7 @@ export interface MarketplaceSearchFilters {
   minStudFee?: number;
   maxStudFee?: number;
   studMode?: 'public' | 'private';
-  sort?: 'price_asc' | 'price_desc' | 'newest' | 'youngest';
+  sort?: 'priceAsc' | 'priceDesc' | 'newest' | 'youngest';
   page?: number;
 }
 
