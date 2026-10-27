@@ -35,4 +35,4 @@ ALTER TABLE "rider_salary_payments"
     FOREIGN KEY ("riderId") REFERENCES "riders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "rider_salary_payments"
     ADD CONSTRAINT "rider_salary_payments_userId_fkey"
-    FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
