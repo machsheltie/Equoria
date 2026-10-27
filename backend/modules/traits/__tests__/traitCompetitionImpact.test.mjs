@@ -2,6 +2,14 @@
  * traitCompetitionImpact — unit tests (Equoria-rr7)
  *
  * Pure functions, no DB required.
+ *
+ * Owner ruling 2026-10-27 (q117, Equoria-2d55z) replaced the trait roster:
+ * entries for traits no longer on it (bold, intelligent, calm, athletic,
+ * nervous, stubborn, legendaryBloodline and the rest) were removed, so those
+ * names now apply nothing. The mechanics are exercised with the entries that
+ * remain (resilient, eagerLearner, fragile); where a test needs four or five
+ * applied traits it lists a remaining trait twice, because the calculator
+ * counts every listed trait.
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -29,7 +37,7 @@ describe('getTraitCompetitionEffect', () => {
   });
 
   it('returned effect has general.scoreModifier', () => {
-    const effect = getTraitCompetitionEffect('bold');
+    const effect = getTraitCompetitionEffect('eagerLearner');
     expect(typeof effect.general.scoreModifier).toBe('number');
   });
 });
@@ -44,11 +52,11 @@ describe('getAllTraitCompetitionEffects', () => {
     expect(Object.keys(effects).length).toBeGreaterThan(0);
   });
 
-  it('includes resilient, bold, and intelligent traits', () => {
+  it('holds exactly the roster traits that keep a competition effect', () => {
     const effects = getAllTraitCompetitionEffects();
-    expect(effects.resilient).toBeDefined();
-    expect(effects.bold).toBeDefined();
-    expect(effects.intelligent).toBeDefined();
+    expect(Object.keys(effects).sort()).toEqual(['eagerLearner', 'fragile', 'resilient']);
+    expect(getTraitCompetitionEffect('bold')).toBeNull();
+    expect(getTraitCompetitionEffect('intelligent')).toBeNull();
   });
 });
 
@@ -127,7 +135,7 @@ describe('calculateTraitCompetitionImpact', () => {
   });
 
   it('accumulates modifiers from multiple traits', () => {
-    const horse = makeHorse({ positive: ['resilient', 'bold'] });
+    const horse = makeHorse({ positive: ['resilient', 'eagerLearner'] });
     const result = calculateTraitCompetitionImpact(horse, 'Racing', 70);
     const singleTrait = calculateTraitCompetitionImpact(makeHorse({ positive: ['resilient'] }), 'Racing', 70);
     expect(result.totalScoreModifier).toBeGreaterThan(singleTrait.totalScoreModifier);
@@ -153,26 +161,43 @@ describe('calculateTraitCompetitionImpact', () => {
   // -------------------------------------------------------------------
   // calculateDiminishingReturns branch coverage (lines 411-419)
   // -------------------------------------------------------------------
-  it('applies 0.9 diminishing factor for 3 applied traits (line 411-413)', () => {
-    const horse = makeHorse({ positive: ['resilient', 'bold', 'intelligent'] });
+  // Racing modifiers: resilient +0.04 (specialised), eagerLearner +0.035
+  // (general), fragile -0.05 (specialised).
+  const sumOf = result => result.appliedTraits.reduce((sum, t) => sum + t.modifier, 0);
+
+  it('applies 0.9 diminishing factor for 3 applied traits', () => {
+    const horse = makeHorse({ positive: ['resilient', 'eagerLearner'], negative: ['fragile'] });
     const result = calculateTraitCompetitionImpact(horse, 'Racing', 70);
     expect(result.appliedTraits.length).toBe(3);
-    // diminishing factor 0.9 means modifier < sum of individual modifiers
+    expect(result.totalScoreModifier).toBeCloseTo(sumOf(result) * 0.9, 12);
     expect(result.totalScoreModifier).toBeGreaterThan(0);
   });
 
-  it('applies 0.85 diminishing factor for 4 applied traits (line 414-416)', () => {
-    const horse = makeHorse({ positive: ['resilient', 'bold', 'intelligent', 'calm'] });
+  it('applies 0.85 diminishing factor for 4 applied traits', () => {
+    const horse = makeHorse({
+      positive: ['resilient', 'eagerLearner', 'eagerLearner'],
+      negative: ['fragile'],
+    });
     const result = calculateTraitCompetitionImpact(horse, 'Racing', 70);
     expect(result.appliedTraits.length).toBe(4);
-    expect(result.totalScoreModifier).toBeGreaterThan(0);
+    expect(result.totalScoreModifier).toBeCloseTo(sumOf(result) * 0.85, 12);
   });
 
-  it('applies 0.8 diminishing factor for 5+ applied traits (line 417-419)', () => {
-    const horse = makeHorse({ positive: ['resilient', 'bold', 'intelligent', 'calm', 'athletic'] });
+  it('applies 0.8 diminishing factor for 5+ applied traits', () => {
+    const horse = makeHorse({
+      positive: ['resilient', 'eagerLearner', 'eagerLearner', 'resilient'],
+      negative: ['fragile'],
+    });
     const result = calculateTraitCompetitionImpact(horse, 'Racing', 70);
     expect(result.appliedTraits.length).toBe(5);
-    expect(result.totalScoreModifier).toBeGreaterThan(0);
+    expect(result.totalScoreModifier).toBeCloseTo(sumOf(result) * 0.8, 12);
+  });
+
+  it('a horse carrying only traits off the roster gets no competition modifier', () => {
+    const horse = makeHorse({ positive: ['bold', 'legendaryBloodline'], negative: ['nervous'] });
+    const result = calculateTraitCompetitionImpact(horse, 'Show Jumping', 70);
+    expect(result.appliedTraits).toEqual([]);
+    expect(result.totalScoreModifier).toBe(0);
   });
 
   // -------------------------------------------------------------------
@@ -198,49 +223,44 @@ describe('traitCompetitionImpact — exact modifiers & balance invariants (merge
     epigeneticModifiers: { positive, negative, hidden: [] },
   });
 
-  it('legendaryBloodline applies exact 0.10 Racing modifier', () => {
+  it('legendaryBloodline, no longer a trait, applies nothing', () => {
     const result = calculateTraitCompetitionImpact(mkHorse(['legendaryBloodline']), 'Racing', baseScore);
-    expect(result.appliedTraits).toHaveLength(1);
-    const [t] = result.appliedTraits;
-    expect(t.name).toBe('legendaryBloodline');
-    expect(t.isSpecialized).toBe(true);
-    expect(t.modifier).toBe(0.1);
-    expect(result.finalScoreAdjustment).toBe(10);
+    expect(result.appliedTraits).toHaveLength(0);
+    expect(result.finalScoreAdjustment).toBe(0);
   });
 
-  it('athletic uses specialized 0.06 for Cross Country, general 0.05 for Dressage', () => {
-    const cc = calculateTraitCompetitionImpact(mkHorse(['athletic']), 'Cross Country', baseScore);
-    const dressage = calculateTraitCompetitionImpact(mkHorse(['athletic']), 'Dressage', baseScore);
+  it('resilient uses specialized 0.05 for Cross Country, general 0.03 for Dressage', () => {
+    const cc = calculateTraitCompetitionImpact(mkHorse(['resilient']), 'Cross Country', baseScore);
+    const dressage = calculateTraitCompetitionImpact(mkHorse(['resilient']), 'Dressage', baseScore);
     expect(cc.appliedTraits[0].isSpecialized).toBe(true);
-    expect(cc.appliedTraits[0].modifier).toBe(0.06);
+    expect(cc.appliedTraits[0].modifier).toBe(0.05);
     expect(dressage.appliedTraits[0].isSpecialized).toBe(false);
-    expect(dressage.appliedTraits[0].modifier).toBe(0.05);
+    expect(dressage.appliedTraits[0].modifier).toBe(0.03);
   });
 
-  it('getTraitCompetitionEffect returns exact bold effect values', () => {
-    const bold = getTraitCompetitionEffect('bold');
-    expect(bold.name).toBe('Bold');
-    expect(bold.type).toBe('positive');
-    expect(bold.general.scoreModifier).toBe(0.04);
-    expect(bold.disciplines['Show Jumping'].scoreModifier).toBe(0.06);
+  it('getTraitCompetitionEffect returns exact eagerLearner effect values', () => {
+    const eager = getTraitCompetitionEffect('eagerLearner');
+    expect(eager.name).toBe('Eager Learner');
+    expect(eager.type).toBe('positive');
+    expect(eager.general.scoreModifier).toBe(0.035);
+    expect(eager.disciplines['Dressage'].scoreModifier).toBe(0.05);
   });
 
   it('hasSpecializedEffect: exact specialized and non-specialized combinations', () => {
-    expect(hasSpecializedEffect('bold', 'Show Jumping')).toBe(true);
-    expect(hasSpecializedEffect('intelligent', 'Dressage')).toBe(true);
+    expect(hasSpecializedEffect('eagerLearner', 'Dressage')).toBe(true);
+    expect(hasSpecializedEffect('fragile', 'Show Jumping')).toBe(true);
     expect(hasSpecializedEffect('resilient', 'Endurance')).toBe(true);
-    expect(hasSpecializedEffect('bold', 'Dressage')).toBe(false);
-    expect(hasSpecializedEffect('calm', 'Racing')).toBe(false);
+    expect(hasSpecializedEffect('eagerLearner', 'Racing')).toBe(false);
+    expect(hasSpecializedEffect('bold', 'Show Jumping')).toBe(false);
     expect(hasSpecializedEffect('unknownTrait', 'Show Jumping')).toBe(false);
   });
 
   describe('discipline-specific modifier matrix', () => {
     const cases = [
-      { trait: 'bold', discipline: 'Show Jumping', expectedModifier: 0.06 },
-      { trait: 'intelligent', discipline: 'Dressage', expectedModifier: 0.06 },
-      { trait: 'athletic', discipline: 'Racing', expectedModifier: 0.07 },
-      { trait: 'nervous', discipline: 'Show Jumping', expectedModifier: -0.05 },
-      { trait: 'stubborn', discipline: 'Dressage', expectedModifier: -0.06 },
+      { trait: 'resilient', discipline: 'Endurance', expectedModifier: 0.06 },
+      { trait: 'eagerLearner', discipline: 'Reining', expectedModifier: 0.045 },
+      { trait: 'fragile', discipline: 'Show Jumping', expectedModifier: -0.06 },
+      { trait: 'fragile', discipline: 'Cross Country', expectedModifier: -0.08 },
     ];
     cases.forEach(({ trait, discipline, expectedModifier }) => {
       it(`${trait} → ${discipline} = ${expectedModifier}`, () => {
@@ -273,14 +293,16 @@ describe('traitCompetitionImpact — exact modifiers & balance invariants (merge
     });
 
     it('stacking 7 powerful traits stays within ≤0.5 total / ≤50 point bonus', () => {
+      // Since q117 only resilient and eagerLearner give a bonus; each is listed
+      // several times so seven are stacked.
       const horse = mkHorse([
-        'bold',
         'resilient',
-        'intelligent',
-        'calm',
-        'athletic',
-        'trainability_boost',
-        'legendary_bloodline',
+        'eagerLearner',
+        'resilient',
+        'eagerLearner',
+        'resilient',
+        'eagerLearner',
+        'eager_learner',
       ]);
       const result = calculateTraitCompetitionImpact(horse, 'Show Jumping', 100);
       expect(result.totalScoreModifier).toBeLessThanOrEqual(0.5);

@@ -9,7 +9,8 @@
  *
  * Consumes the HorseTrait view model from useHorseTraits (real
  * /api/v1/traits/horse/:id data) — name, authoritative valence, description,
- * rarity, category. It deliberately does NOT render tier / per-discipline
+ * category. Never the rarity: players do not see how rare a trait is (owner
+ * ruling 2026-10-27, q112). It deliberately does NOT render tier / per-discipline
  * competition-impact matrix / epigenetic-flag chips because the backend trait
  * endpoint does not provide that data; surfacing fabricated values would
  * violate the no-fake-product-values doctrine.
@@ -25,7 +26,7 @@ import {
   GameDialogBody,
 } from '@/components/ui/game/GameDialog';
 import type { HorseTrait } from '@/hooks/useHorseTraits';
-import { traitCategoryLabel, traitRarityLabel } from '@/lib/traitLabels';
+import { traitCategoryLabel } from '@/lib/traitLabels';
 
 export interface LiveTraitDetailModalProps {
   isOpen: boolean;
@@ -90,11 +91,6 @@ const LiveTraitDetailModal: React.FC<LiveTraitDetailModalProps> = ({ isOpen, onC
 
             {/* Metadata */}
             <div className="flex flex-wrap gap-2">
-              {trait.rarity && (
-                <span className="text-xs px-2 py-1 rounded-full bg-[rgba(37,99,235,0.15)] text-[rgb(160,175,200)]">
-                  Rarity: {traitRarityLabel(trait.rarity)}
-                </span>
-              )}
               {trait.category && (
                 <span className="text-xs px-2 py-1 rounded-full bg-[rgba(37,99,235,0.15)] text-[rgb(160,175,200)]">
                   {traitCategoryLabel(trait.category)}

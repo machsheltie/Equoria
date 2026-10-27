@@ -53,18 +53,20 @@ describe('rare-trait roster — dropped traits have ZERO code presence (Equoria-
   });
 });
 
-describe('rare-trait roster — legendaryBloodline is the single canonical rare trait (Equoria-3hl8c)', () => {
+describe('rare-trait roster — legendaryBloodline (Equoria-3hl8c; off the roster since 2026-10-27)', () => {
   const competitionMap = getAllTraitCompetitionEffects();
   const effectsMap = getAllTraitEffects();
   const evaluationRare = EVALUATION_DEFS.rare;
 
-  it('legendaryBloodline resolves under ONE camelCase key in all four maps', () => {
-    expect(effectsMap.legendaryBloodline).toBeDefined();
-    expect(competitionMap.legendaryBloodline).toBeDefined();
-    expect(evaluationRare.legendaryBloodline).toBeDefined();
-    expect(getTraitDefinition('legendaryBloodline')).not.toBeNull();
-    // The competition effect is a real positive bonus.
-    expect(competitionMap.legendaryBloodline.general.scoreModifier).toBeGreaterThan(0);
+  // Old contract: legendaryBloodline resolved in all four maps with a positive
+  // competition bonus. Owner ruling 2026-10-27 (q117, Equoria-2d55z) replaced the
+  // trait roster without it, so it is no longer a horse trait: the roster
+  // definitions and the two effect maps drop it. (traitEvaluation's legacy
+  // table, used for age-1 tags and the admin reference list, is not the roster.)
+  it('legendaryBloodline is off the roster: no definition and no effect', () => {
+    expect(effectsMap.legendaryBloodline).toBeUndefined();
+    expect(competitionMap.legendaryBloodline).toBeUndefined();
+    expect(getTraitDefinition('legendaryBloodline')).toBeNull();
   });
 
   it('the snake_case legendary_bloodline spelling is GONE from every map', () => {

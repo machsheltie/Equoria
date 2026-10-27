@@ -18,7 +18,6 @@ const positiveTrait: HorseTrait = {
   name: 'Resilient',
   valence: 'positive',
   description: 'Takes challenges in stride.',
-  rarity: 'common',
   category: 'epigenetic',
 };
 
@@ -43,6 +42,14 @@ describe('LiveTraitDetailModal', () => {
     expect(screen.getByTestId('trait-detail-valence')).toHaveTextContent('Beneficial Trait');
     // name appears in the GameDialog title
     expect(screen.getAllByText('Resilient').length).toBeGreaterThan(0);
+  });
+
+  it('never shows a trait rarity to players (owner ruling 2026-10-27, q112)', () => {
+    // Even a stale payload that still carries a rarity must not surface it.
+    const withRarity = { ...positiveTrait, rarity: 'common' } as HorseTrait;
+    render(<LiveTraitDetailModal isOpen onClose={() => {}} trait={withRarity} />);
+    expect(screen.queryByText(/rarity/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^common$/i)).not.toBeInTheDocument();
   });
 
   it('renders a Detrimental banner for a negative trait', () => {

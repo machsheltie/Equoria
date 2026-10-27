@@ -1,21 +1,25 @@
 /**
- * Trait reveal settings that WAIT ON THE OWNER (Equoria-2d55z).
+ * Trait reveal settings (Equoria-2d55z). One object, read by
+ * modules/traits/services/traitRevealEngine.mjs.
  *
- * The owner ruled the shape of the trait reveal system on 2026-10-26 (q98, q87):
- * every trait starts hidden unless a parent had it active and revealed; rarer
- * positive traits need more days of grooming to reveal and turn on, rarer
- * negative traits more days of neglect; grooming can switch negatives off and
- * neglect can switch positives off; each day is a chance, never a guarantee.
+ * Owner rulings 2026-10-27 (q113-q116, q118):
+ *   - Rarity gates: 3 / 6 / 12 / 16 / 19 groomed days for Common / Uncommon /
+ *     Rare / Ultra Rare / Legendary. Reaching a gate is not a reveal: every
+ *     groomed day AFTER the gate rolls a chance for each trait at or below it.
+ *     Reaching the next gate adds the rarer traits; the commoner ones keep
+ *     rolling. Neglect mirrors this for negative traits.
+ *   - A flat 25% chance per qualifying day, whatever the rarity.
+ *   - The first 21 days of life only. The birth day is day 1.
+ *   - Switching a trait off needs the same day counts of the opposite care,
+ *     and grooming can switch off any active negative trait.
  *
- * She has NOT yet ruled the numbers below, so every one of them is null. While
- * any value is null the nightly engine refuses to run
- * (modules/traits/services/traitRevealEngine.mjs → runNightlyTraitReveal returns
- * { skipped: 'settingsPendingOwner' }), and the nightly job is not registered in
- * services/jobs/index.mjs at all. Tests pass their own settings.
- *
- * The comment on each entry is the recommendation sent to the owner, not a
- * decision. When she answers, fill in her values here, then register the job.
+ * NOT YET RULED (asked of the owner): the rarity of each of the 20 roster
+ * traits, and whether each acts positively or negatively. Until both are
+ * filled for a trait the engine never touches it, and while no trait has both
+ * the nightly job does nothing at all (it returns `skipped: 'noTraitsRuled'`).
  */
+
+import { traitRosterIds } from '../../../utils/epigeneticTraits.mjs';
 
 /** Rarity names the owner ruled (q98), as stored in this file. */
 export const traitRarities = Object.freeze([
@@ -26,63 +30,46 @@ export const traitRarities = Object.freeze([
   'legendary',
 ]);
 
-const pendingByRarity = () =>
-  Object.freeze({ common: null, uncommon: null, rare: null, ultraRare: null, legendary: null });
+/** Groomed (or neglected) days that open each rarity's gate (q113). */
+const gateDays = Object.freeze({ common: 3, uncommon: 6, rare: 12, ultraRare: 16, legendary: 19 });
 
-export const traitRevealSettingsPendingOwner = Object.freeze({
-  /**
-   * Days of grooming (positive traits) or of neglect (negative traits) a horse
-   * must have had before a hidden trait of that rarity gets its daily chance to
-   * reveal and turn on. Recommended for both: common 3, uncommon 6, rare 12,
-   * ultraRare 16, legendary 19 (of the 21-day window).
-   */
-  revealDays: Object.freeze({ positive: pendingByRarity(), negative: pendingByRarity() }),
+/** One null entry per roster trait: a value the owner has not ruled yet. */
+const pendingPerTrait = () =>
+  Object.freeze(Object.fromEntries(traitRosterIds.map(id => [id, null])));
 
+export const traitRevealSettings = Object.freeze({
   /**
-   * Days of neglect (active positive traits) or of grooming (active negative
-   * traits) before an active trait gets its daily chance to switch off.
-   * Recommended: the same table as revealDays.
+   * Days of grooming (positive traits) or of neglect (negative traits) that open
+   * a rarity's gate. Rolls start on the qualifying day after the gate is reached.
    */
-  switchOffDays: Object.freeze({ positive: pendingByRarity(), negative: pendingByRarity() }),
+  revealDays: Object.freeze({ positive: gateDays, negative: gateDays }),
 
-  /**
-   * Chance (0..1) rolled on each qualifying day once the day count is reached.
-   * Recommended: common 0.4, uncommon 0.3, rare 0.25, ultraRare 0.2, legendary 0.15.
-   */
-  dailyChance: pendingByRarity(),
+  /** The same counts of the opposite care switch an active trait off (q116). */
+  switchOffDays: Object.freeze({ positive: gateDays, negative: gateDays }),
 
-  /**
-   * The last day of life the engine evaluates. Recommended 21 (ages 0-3, the
-   * foal window). Infinity would mean "for life".
-   */
-  lastDayOfLife: null,
-
-  /**
-   * Rarity of each roster trait. The design bible states none of them.
-   * A trait whose rarity is null is never evaluated.
-   */
-  traitRarity: Object.freeze({
-    brave: null,
-    fearful: null,
-    confident: null,
-    insecure: null,
-    affectionate: null,
-    skittish: null,
-    resilient: null,
-    fragile: null,
-    highImmunity: null,
-    lowImmunity: null,
-    peopleTrusting: null,
-    showCalm: null,
-    crowdReady: null,
-    bonded: null,
-    eagerLearner: null,
-    social: null,
-    antisocial: null,
-    presentationBoosted: null,
-    legendaryBloodline: null,
-    phoenixBorn: null,
+  /** Chance rolled on each qualifying day, for every rarity (q114). */
+  dailyChance: Object.freeze({
+    common: 0.25,
+    uncommon: 0.25,
+    rare: 0.25,
+    ultraRare: 0.25,
+    legendary: 0.25,
   }),
+
+  /** The last day of life evaluated; the birth day is day 1 (q115). */
+  lastDayOfLife: 21,
+
+  /**
+   * Whether each roster trait acts positively or negatively: 'positive',
+   * 'negative' or null (not ruled yet; the trait is never evaluated).
+   */
+  traitPolarity: pendingPerTrait(),
+
+  /**
+   * Rarity of each roster trait: one of traitRarities, or null (not ruled yet;
+   * the trait is never evaluated).
+   */
+  traitRarity: pendingPerTrait(),
 });
 
-export default traitRevealSettingsPendingOwner;
+export default traitRevealSettings;

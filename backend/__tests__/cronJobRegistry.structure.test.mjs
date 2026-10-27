@@ -72,6 +72,9 @@ const EXPECTED_JOBS = [
   // Equoria-wbt8l: the game-written News entries at the start of the Eastern
   // game day (00:02, a free minute), appended last (reorders nothing).
   { jobName: 'dailyNewsPosting', schedule: '2 0 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
+  // Equoria-2d55z: the nightly trait reveal (00:40 Eastern, a free minute, after
+  // the game day ends), appended last (reorders nothing).
+  { jobName: 'nightlyTraitReveal', schedule: '40 0 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
 ];
 
 afterEach(() => {
@@ -133,6 +136,7 @@ describe('cron job registry structure (Equoria-fx4e7)', () => {
       staffCheckinRetention: 'purgeStaleStaffCheckins',
       emailOutboxDelivery: 'deliverEmailOutbox',
       dailyNewsPosting: 'postDailyNews',
+      nightlyTraitReveal: 'revealTraitsFromCare',
     };
 
     for (const job of CRON_JOB_REGISTRY) {

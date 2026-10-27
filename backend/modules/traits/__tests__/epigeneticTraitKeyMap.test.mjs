@@ -120,10 +120,15 @@ describe('normalizeEpigeneticModifiers — rewrites all three arrays', () => {
 
 describe('SENTINEL-POSITIVE: canonical keys resolve in traitEffects (proves the casing fix is real)', () => {
   const effects = getAllTraitEffects();
-  it('all six remapped canonical keys exist as traitEffects entries', () => {
-    for (const canonical of Object.values(LEGACY_TRAIT_KEY_MAP)) {
-      // legacyTalent/specializedLineage/lowImmunity/trainabilityBoost/eagerLearner/legendaryBloodline
-      expect(Object.prototype.hasOwnProperty.call(effects, canonical)).toBe(true);
+  // Old contract: all six remapped canonical keys had traitEffects entries.
+  // Owner ruling 2026-10-27 (q117) replaced the roster; of the six only
+  // eagerLearner is still a trait, so it alone keeps an entry and the other
+  // five (no longer traits) resolve to nothing.
+  it('the remapped canonical key still on the roster (eagerLearner) is a traitEffects entry; the rest are gone', () => {
+    const canonical = Object.values(LEGACY_TRAIT_KEY_MAP);
+    expect(canonical).toContain('eagerLearner');
+    for (const key of canonical) {
+      expect(Object.prototype.hasOwnProperty.call(effects, key)).toBe(key === 'eagerLearner');
     }
   });
   it('NO legacy snake key survives as a traitEffects entry (the rename is complete)', () => {

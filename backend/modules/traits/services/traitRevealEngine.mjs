@@ -1,6 +1,6 @@
 /**
  * Trait reveal engine: grooming and neglect days turn carried traits on and off
- * (owner ruling 2026-10-26, q98 + q87; Equoria-2d55z).
+ * (owner rulings 2026-10-26, q98 + q87, and 2026-10-27, q113-q118; Equoria-2d55z).
  *
  * A horse carries a trait or it doesn't. In Horse.epigeneticModifiers a carried
  * trait sits in exactly one array:
@@ -9,27 +9,30 @@
  * This engine never adds a trait a horse does not carry; it only moves carried
  * traits between those arrays.
  *
- * Each completed Eastern game day of a horse's life is either a GROOMED day
- * (the player pressed "groom horse") or a NEGLECTED day. On a groomed day:
- *   - a hidden POSITIVE trait whose rarity's grooming-day count is reached gets
- *     a chance to reveal and turn on;
- *   - an active NEGATIVE trait whose switch-off count is reached gets a chance
- *     to switch off.
- * On a neglected day the mirror image: hidden NEGATIVE traits may reveal and
- * active POSITIVE traits may switch off. Counts are days since birth within the
- * evaluated window. Every change is a roll, never a guarantee. A trait that
- * switches off goes back to `hidden`: carried, inactive, and able to turn on
- * again later.
+ * Each Eastern game day of a horse's first 21 days of life (the birth day is
+ * day 1) is either a GROOMED day (the player pressed "groom horse") or a
+ * NEGLECTED day. The counts are cumulative over the window.
  *
- * The numbers are not ruled yet: they live in ONE object,
- * modules/traits/config/traitRevealSettings.mjs, and while any is null
- * runNightlyTraitReveal does nothing. THE NIGHTLY JOB IS NOT REGISTERED in
- * services/jobs/index.mjs until the owner answers. Players can never trigger an
- * evaluation: there is no route to this engine.
+ * The ladder (q113): a rarity's gate opens once the horse has had that many
+ * groomed days (3 / 6 / 12 / 16 / 19 for Common .. Legendary). Opening a gate
+ * reveals nothing by itself: every groomed day AFTER the gate day rolls a chance
+ * (25%, q114) for each hidden positive trait at or below the opened gates, so a
+ * higher gate adds the rarer traits while the commoner ones keep rolling. On
+ * the same groomed days an active negative trait past its switch-off gate rolls
+ * to switch off (q116, q118: any active negative). A neglected day is the
+ * mirror image: hidden negative traits roll to reveal and active positive
+ * traits roll to switch off, counted in neglected days. A trait that switches
+ * off goes back to `hidden`: carried, inactive, and able to turn on again.
+ *
+ * Every number lives in modules/traits/config/traitRevealSettings.mjs. A trait
+ * whose rarity or polarity is not ruled there is never touched. Players can
+ * never trigger an evaluation: there is no route to this engine; the nightly
+ * job (services/jobs/nightlyTraitRevealJob.mjs) is the only caller.
  *
  * Grooming is READ here, never recorded. The default reader takes
- * GroomInteraction rows (the record the "groom horse" action writes); the
- * grooming write path is owned elsewhere, so the reader is injectable.
+ * GroomInteraction rows (the record the "groom horse" action writes, see the
+ * care API contract); the grooming write path is owned elsewhere, so the
+ * reader is injectable.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -39,42 +42,15 @@ import {
   gameDayIndex,
   startOfGameDayIndex,
 } from '../../../utils/gameTime.mjs';
-import { traitRarities, traitRevealSettingsPendingOwner } from '../config/traitRevealSettings.mjs';
+import { traitRarities, traitRevealSettings } from '../config/traitRevealSettings.mjs';
 import { logTraitAssignment } from './traitHistoryService.mjs';
-
-/**
- * Whether each roster trait acts positively or negatively (owner trait roster,
- * 2026-10-19/20, plus Phoenix-Born, which q98 placed in this system).
- */
-export const rosterPolarity = Object.freeze({
-  brave: 'positive',
-  fearful: 'negative',
-  confident: 'positive',
-  insecure: 'negative',
-  affectionate: 'positive',
-  skittish: 'negative',
-  resilient: 'positive',
-  fragile: 'negative',
-  highImmunity: 'positive',
-  lowImmunity: 'negative',
-  peopleTrusting: 'positive',
-  showCalm: 'positive',
-  crowdReady: 'positive',
-  bonded: 'positive',
-  eagerLearner: 'positive',
-  social: 'positive',
-  antisocial: 'negative',
-  presentationBoosted: 'positive',
-  legendaryBloodline: 'positive',
-  phoenixBorn: 'positive',
-});
 
 const isCount = v => Number.isInteger(v) && v >= 0;
 const isChance = v => typeof v === 'number' && v >= 0 && v <= 1;
 
 /**
- * True when every number the engine needs has been filled in. Trait rarities
- * may stay null individually: such a trait is simply never evaluated.
+ * True when every number the engine needs has been filled in. Per-trait rarity
+ * and polarity may stay null: such a trait is simply never evaluated.
  * @param {object} settings
  * @returns {boolean}
  */
@@ -103,11 +79,27 @@ export function traitArrays(raw) {
 }
 
 /**
+ * The traits the engine may evaluate: rarity and polarity both ruled.
+ * @param {object} settings
+ * @returns {Map<string, {rarity:string, polarity:'positive'|'negative'}>}
+ */
+export function ruledTraits(settings) {
+  const ruled = new Map();
+  for (const [trait, rarity] of Object.entries(settings?.traitRarity ?? {})) {
+    const polarity = settings?.traitPolarity?.[trait];
+    if (traitRarities.includes(rarity) && (polarity === 'positive' || polarity === 'negative')) {
+      ruled.set(trait, { rarity, polarity });
+    }
+  }
+  return ruled;
+}
+
+/**
  * Apply ONE completed game day to a horse's traits. Pure: no I/O.
  *
  * @param {{positive:string[], negative:string[], hidden:string[]}} traits
  * @param {{groomed:boolean, groomedDays:number, neglectedDays:number}} day -
- *   counts INCLUDE this day
+ *   counts INCLUDE this day, so a gate of N rolls first when the count is N + 1
  * @param {object} settings - a ready settings object (see revealSettingsReady)
  * @param {() => number} rng - returns [0, 1)
  * @returns {{traits: object, changes: Array<{trait:string, change:'revealed'|'switchedOff', polarity:string}>}}
@@ -115,19 +107,21 @@ export function traitArrays(raw) {
 export function applyTraitDay(traits, day, settings, rng) {
   const next = traitArrays(traits);
   const changes = [];
-  const rarityOf = trait => (rosterPolarity[trait] ? settings.traitRarity?.[trait] : null) ?? null;
+  const ruled = ruledTraits(settings);
   const roll = rarity => rng() < settings.dailyChance[rarity];
   const count = day.groomed ? day.groomedDays : day.neglectedDays;
+  // The gate day itself only opens the gate; the qualifying days after it roll.
+  const pastGate = gate => count > gate;
   // A groomed day reveals positives and switches negatives off; a neglected day the reverse.
   const revealPolarity = day.groomed ? 'positive' : 'negative';
   const switchOffPolarity = day.groomed ? 'negative' : 'positive';
 
   for (const trait of [...next.hidden].sort()) {
-    const rarity = rarityOf(trait);
-    if (!rarity || rosterPolarity[trait] !== revealPolarity) {
+    const rule = ruled.get(trait);
+    if (!rule || rule.polarity !== revealPolarity) {
       continue;
     }
-    if (count >= settings.revealDays[revealPolarity][rarity] && roll(rarity)) {
+    if (pastGate(settings.revealDays[revealPolarity][rule.rarity]) && roll(rule.rarity)) {
       next.hidden = next.hidden.filter(t => t !== trait);
       next[revealPolarity].push(trait);
       changes.push({ trait, change: 'revealed', polarity: revealPolarity });
@@ -136,14 +130,14 @@ export function applyTraitDay(traits, day, settings, rng) {
 
   const active = [...new Set([...next.positive, ...next.negative])].sort();
   for (const trait of active) {
-    const rarity = rarityOf(trait);
-    if (!rarity || rosterPolarity[trait] !== switchOffPolarity) {
+    const rule = ruled.get(trait);
+    if (!rule || rule.polarity !== switchOffPolarity) {
       continue;
     }
     if (changes.some(c => c.trait === trait)) {
       continue;
     }
-    if (count >= settings.switchOffDays[switchOffPolarity][rarity] && roll(rarity)) {
+    if (pastGate(settings.switchOffDays[switchOffPolarity][rule.rarity]) && roll(rule.rarity)) {
       next.positive = next.positive.filter(t => t !== trait);
       next.negative = next.negative.filter(t => t !== trait);
       next.hidden.push(trait);
@@ -207,7 +201,10 @@ export async function evaluateHorseTraitReveal(
         ? horse.epigeneticModifiers
         : {};
     const birthDay = calendarDateDayIndex(horse.dateOfBirth);
-    const lastCompletedDay = gameDayIndex(now) - 1 - birthDay;
+    // The birth day is day 1 (q115), so today is day (today - birthDay + 1) and
+    // the last completed day of life is the one before it.
+    const lastCompletedDay = gameDayIndex(now) - birthDay;
+    const calendarDayOf = dayOfLife => birthDay + dayOfLife - 1;
     const throughDay = Math.min(lastCompletedDay, settings.lastDayOfLife);
     const evaluatedThrough = Number.isInteger(stored[revealProgressKey])
       ? stored[revealProgressKey]
@@ -216,16 +213,20 @@ export async function evaluateHorseTraitReveal(
       return { horseId, daysEvaluated: 0, changes: [] };
     }
 
-    // Day 1 is the first whole day after birth; the birth day itself never counts.
-    const groomedDays = await readGroomedDays(tx, horseId, birthDay + 1, birthDay + throughDay);
+    const groomedDays = await readGroomedDays(
+      tx,
+      horseId,
+      calendarDayOf(1),
+      calendarDayOf(throughDay),
+    );
     let groomedCount = 0;
     for (let d = 1; d <= evaluatedThrough; d++) {
-      groomedCount += groomedDays.has(birthDay + d) ? 1 : 0;
+      groomedCount += groomedDays.has(calendarDayOf(d)) ? 1 : 0;
     }
     let traits = traitArrays(stored);
     const changes = [];
     for (let d = evaluatedThrough + 1; d <= throughDay; d++) {
-      const groomed = groomedDays.has(birthDay + d);
+      const groomed = groomedDays.has(calendarDayOf(d));
       groomedCount += groomed ? 1 : 0;
       const result = applyTraitDay(
         traits,
@@ -268,18 +269,18 @@ export async function evaluateHorseTraitReveal(
 }
 
 /**
- * Nightly pass over every horse still inside the evaluated window.
- * Not scheduled: see the file header.
+ * Nightly pass over every horse still inside the evaluated window
+ * (services/jobs/nightlyTraitRevealJob.mjs).
  *
  * @param {object} [opts]
- * @param {object} [opts.settings=traitRevealSettingsPendingOwner]
+ * @param {object} [opts.settings=traitRevealSettings]
  * @param {() => number} [opts.rng=Math.random]
  * @param {Date} [opts.now]
  * @param {number[]} [opts.horseIds] - restrict the pass (tests)
  * @param {Function} [opts.readGroomedDays]
  */
 export async function runNightlyTraitReveal({
-  settings = traitRevealSettingsPendingOwner,
+  settings = traitRevealSettings,
   rng = Math.random,
   now = new Date(),
   horseIds,
@@ -289,9 +290,18 @@ export async function runNightlyTraitReveal({
     logger.info('[traitRevealEngine] Skipped: trait reveal settings are waiting on the owner');
     return { skipped: 'settingsPendingOwner', horsesEvaluated: 0, changes: 0, errors: 0 };
   }
+  if (ruledTraits(settings).size === 0) {
+    // No trait has both a rarity and a polarity yet: nothing could change, so
+    // no horse's days are marked evaluated. Once the owner rules them, the days
+    // already lived in the window are rolled on the next night.
+    logger.info('[traitRevealEngine] Skipped: no trait has a ruled rarity and polarity yet');
+    return { skipped: 'noTraitsRuled', horsesEvaluated: 0, changes: 0, errors: 0 };
+  }
   const where = {};
   if (Number.isFinite(settings.lastDayOfLife)) {
-    // Born on or after (today - lastDayOfLife - 1): the window still has a day to evaluate.
+    // Born on or after (today - lastDayOfLife - 1): the window may still have a
+    // day to evaluate (day lastDayOfLife is calendar day birth + lastDayOfLife - 1,
+    // completed once today is birth + lastDayOfLife). One spare day of slack.
     where.dateOfBirth = {
       gte: new Date((gameDayIndex(now) - settings.lastDayOfLife - 1) * 86_400_000),
     };

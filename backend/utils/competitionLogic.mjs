@@ -6,6 +6,7 @@
  */
 
 import logger from './logger.mjs';
+import { isRosterTrait } from './epigeneticTraits.mjs';
 import { maxActiveAgeYears, minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
 import { DISCIPLINE_STATS } from '../modules/competition/index.mjs';
 
@@ -227,11 +228,14 @@ export function calculateHorseLevel(horse, discipline) {
     });
     baseStatScore = baseStatScore / 3; // Average of the 3 stats
 
-    // Legacy trait bonus (from epigenetic modifiers)
+    // Legacy trait bonus (from epigenetic modifiers). Only roster traits and the
+    // discipline trait count: a stored name off the roster has no effect (owner
+    // ruling 2026-10-27, q117; Equoria-2d55z).
     let legacyTraitBonus = 0;
     const traits = horse.epigeneticModifiers || horse.traits || {};
-    const positiveTraits = traits.positive || [];
-    const negativeTraits = traits.negative || [];
+    const counts = trait => isRosterTrait(trait) || String(trait).startsWith('disciplineAffinity');
+    const positiveTraits = (traits.positive || []).filter(counts);
+    const negativeTraits = (traits.negative || []).filter(counts);
 
     positiveTraits.forEach(trait => {
       if (disciplineMap.beneficial.includes(trait)) {

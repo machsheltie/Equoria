@@ -26,102 +26,16 @@ const TRAIT_COMPETITION_EFFECTS = {
     },
   },
 
-  bold: {
-    name: 'Bold',
-    type: 'positive',
-    general: {
-      scoreModifier: 0.04, // +4% to final score
-      adaptability: 0.2, // 20% better adaptation to new environments
-      description: 'Confident performance in challenging situations',
-    },
-    disciplines: {
-      'Show Jumping': { scoreModifier: 0.06, description: 'Fearless approach to obstacles' },
-      'Cross Country': { scoreModifier: 0.05, description: 'Brave navigation of varied terrain' },
-      Eventing: { scoreModifier: 0.05, description: 'Confident in multi-phase competitions' },
-    },
-  },
-
-  intelligent: {
-    name: 'Intelligent',
-    type: 'positive',
-    general: {
-      scoreModifier: 0.03, // +3% to final score
-      learningBonus: 0.25, // 25% faster skill acquisition
-      description: 'Quick to understand and respond to rider cues',
-    },
-    disciplines: {
-      Dressage: { scoreModifier: 0.06, description: 'Exceptional precision in complex movements' },
-      Reining: { scoreModifier: 0.05, description: 'Masters intricate patterns quickly' },
-      Eventing: { scoreModifier: 0.04, description: 'Adapts well to varied challenges' },
-    },
-  },
-
-  calm: {
-    name: 'Calm',
-    type: 'positive',
-    general: {
-      scoreModifier: 0.025, // +2.5% to final score
-      focusBonus: 0.2, // 20% better focus under pressure
-      description: 'Maintains composure under pressure',
-    },
-    disciplines: {
-      Dressage: { scoreModifier: 0.05, description: 'Perfect composure for precise movements' },
-      Driving: { scoreModifier: 0.04, description: 'Steady performance in harness work' },
-      Trail: { scoreModifier: 0.04, description: 'Unflappable on challenging trails' },
-    },
-  },
-
-  athletic: {
-    name: 'Athletic',
-    type: 'positive',
-    general: {
-      scoreModifier: 0.05, // +5% to final score
-      physicalBonus: 0.15, // 15% boost to physical performance
-      description: 'Superior physical capabilities and movement quality',
-    },
-    disciplines: {
-      Racing: { scoreModifier: 0.07, description: 'Exceptional speed and agility' },
-      'Show Jumping': { scoreModifier: 0.06, description: 'Powerful and precise jumping ability' },
-      'Cross Country': { scoreModifier: 0.06, description: 'Outstanding athletic performance' },
-    },
-  },
-
-  trainabilityBoost: {
-    name: 'Trainability Boost',
-    type: 'positive',
-    general: {
-      scoreModifier: 0.04, // +4% to final score
-      consistencyBonus: 0.3, // 30% more consistent performance
-      description: 'Exceptional responsiveness to training and rider aids',
-    },
-    disciplines: {
-      Dressage: { scoreModifier: 0.07, description: 'Masters complex movements with ease' },
-      Reining: { scoreModifier: 0.06, description: 'Executes precise patterns flawlessly' },
-      Driving: { scoreModifier: 0.05, description: 'Responds perfectly to driving cues' },
-    },
-  },
-
-  legendaryBloodline: {
-    name: 'Legendary Bloodline',
-    type: 'positive',
-    general: {
-      scoreModifier: 0.08, // +8% to final score
-      prestigeBonus: 0.25, // 25% bonus to all performance aspects
-      description: 'Exceptional heritage provides superior competitive edge',
-    },
-    disciplines: {
-      Racing: { scoreModifier: 0.1, description: 'Elite racing genetics' },
-      Dressage: { scoreModifier: 0.1, description: 'Noble bearing and exceptional movement' },
-      'Show Jumping': { scoreModifier: 0.1, description: 'Championship bloodlines show' },
-    },
-  },
-
   // Equoria-9o3n7.5 §E / Equoria-3hl8c: weatherImmunity + nightVision DO NOT
   // exist in the game (user decision 2026-05-26). Their definitions were
   // removed here, in epigeneticTraits.mjs TRAIT_DEFINITIONS, and in
   // traitEvaluation.mjs RARE trait reveals. No new fantasy/environmental
   // traits are invented in their place. fireResistance/waterPhobia never had
-  // entries. The only surviving rare trait is `legendaryBloodline`.
+  // entries.
+  //
+  // Owner ruling 2026-10-27 (q117; Equoria-2d55z): only roster traits keep an
+  // entry. Entries for traits no longer on the roster (legendaryBloodline, bold,
+  // calm, nervous and the rest) were removed; new roster traits carry no effects.
 
   eagerLearner: {
     name: 'Eager Learner',
@@ -138,53 +52,7 @@ const TRAIT_COMPETITION_EFFECTS = {
     },
   },
 
-  social: {
-    name: 'Social',
-    type: 'positive',
-    general: {
-      scoreModifier: 0.025, // +2.5% to final score
-      description: 'Thrives in social environments and enjoys interaction',
-    },
-    disciplines: {
-      'Show Jumping': { scoreModifier: 0.03, description: 'Comfortable performing for audiences' },
-      Dressage: { scoreModifier: 0.035, description: 'Enjoys the attention and presentation' },
-      'Western Pleasure': {
-        scoreModifier: 0.03,
-        description: 'Calm and confident in group settings',
-      },
-    },
-  },
-
   // Negative traits
-  nervous: {
-    name: 'Nervous',
-    type: 'negative',
-    general: {
-      scoreModifier: -0.04, // -4% to final score
-      description: 'Easily startled in competitive environments',
-    },
-    disciplines: {
-      'Show Jumping': { scoreModifier: -0.05, description: 'Hesitant at obstacles, may refuse' },
-      'Cross Country': { scoreModifier: -0.06, description: 'Spooked by unfamiliar terrain' },
-      Racing: { scoreModifier: -0.05, description: 'Affected by crowd noise and excitement' },
-    },
-  },
-
-  stubborn: {
-    name: 'Stubborn',
-    type: 'negative',
-    general: {
-      scoreModifier: -0.03, // -3% to final score
-      responsivenessPenalty: 0.2, // 20% slower response to aids
-      description: 'Resistant to rider cues and direction changes',
-    },
-    disciplines: {
-      Dressage: { scoreModifier: -0.06, description: 'Resists precise movements and transitions' },
-      Reining: { scoreModifier: -0.05, description: 'Reluctant to perform quick pattern changes' },
-      Driving: { scoreModifier: -0.04, description: 'Slow to respond to driving commands' },
-    },
-  },
-
   fragile: {
     name: 'Fragile',
     type: 'negative',
@@ -197,56 +65,6 @@ const TRAIT_COMPETITION_EFFECTS = {
       'Cross Country': { scoreModifier: -0.08, description: 'High risk on demanding terrain' },
       'Show Jumping': { scoreModifier: -0.06, description: 'Vulnerable to jumping strain' },
       Racing: { scoreModifier: -0.05, description: 'May not handle racing intensity' },
-    },
-  },
-
-  aggressive: {
-    name: 'Aggressive',
-    type: 'negative',
-    general: {
-      scoreModifier: -0.045, // -4.5% to final score
-      controlPenalty: 0.35, // 35% harder to control
-      description: 'Difficult to manage and may act unpredictably',
-    },
-    disciplines: {
-      Dressage: { scoreModifier: -0.08, description: 'Disrupts harmony and precision' },
-      Driving: { scoreModifier: -0.07, description: 'Dangerous in harness work' },
-      Trail: { scoreModifier: -0.06, description: 'May react aggressively to obstacles' },
-    },
-  },
-
-  lazy: {
-    name: 'Lazy',
-    type: 'negative',
-    general: {
-      scoreModifier: -0.03, // -3% to final score
-      motivationPenalty: 0.25, // 25% less motivated performance
-      description: 'Lacks drive and requires constant encouragement',
-    },
-    disciplines: {
-      Racing: { scoreModifier: -0.06, description: 'Lacks competitive drive' },
-      Endurance: { scoreModifier: -0.05, description: 'Gives up when tired' },
-      'Cross Country': { scoreModifier: -0.04, description: 'Loses motivation on long courses' },
-    },
-  },
-
-  antisocial: {
-    name: 'Antisocial',
-    type: 'negative',
-    general: {
-      scoreModifier: -0.035, // -3.5% to final score
-      description: 'Struggles in social environments and prefers isolation',
-    },
-    disciplines: {
-      Dressage: { scoreModifier: -0.05, description: 'Uncomfortable with audience attention' },
-      'Show Jumping': {
-        scoreModifier: -0.045,
-        description: 'Distracted by crowd noise and activity',
-      },
-      'Western Pleasure': {
-        scoreModifier: -0.04,
-        description: 'Uneasy in group competition settings',
-      },
     },
   },
 };

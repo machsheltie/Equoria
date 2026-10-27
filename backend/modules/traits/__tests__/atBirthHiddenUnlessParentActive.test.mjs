@@ -5,6 +5,10 @@
  * Pure tests on applyEpigeneticTraitsAtBirth. Which traits a foal CARRIES is
  * unchanged (inheritance odds and the birth stages stay as they were); only
  * whether a carried trait starts hidden or active is ruled here.
+ *
+ * Owner ruling 2026-10-27 (q117): the roster was replaced, so the positive
+ * example is now confident (legendaryBloodline is off the roster and can no
+ * longer be inherited, which the last test proves).
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -26,15 +30,15 @@ function bornCarrying(trait, args) {
 
 describe('at birth — hidden unless a parent had the trait active and revealed', () => {
   it('a trait inherited from a parent where it was ACTIVE is born active (positive)', () => {
-    const r = bornCarrying('legendaryBloodline', {
+    const r = bornCarrying('confident', {
       mare,
       lineage: [],
       feedQuality: 50,
-      damTraits: ['legendaryBloodline'],
-      parentActiveTraits: ['legendaryBloodline'],
+      damTraits: ['confident'],
+      parentActiveTraits: ['confident'],
     });
-    expect(r.positive).toContain('legendaryBloodline');
-    expect(r.hidden).not.toContain('legendaryBloodline');
+    expect(r.positive).toContain('confident');
+    expect(r.hidden).not.toContain('confident');
   });
 
   it('a negative trait inherited from a parent where it was active is born active (negative)', () => {
@@ -82,10 +86,25 @@ describe('at birth — hidden unless a parent had the trait active and revealed'
         mare,
         lineage: [],
         feedQuality: 50,
-        parentActiveTraits: ['legendaryBloodline'],
+        parentActiveTraits: ['confident'],
         seed,
       });
-      expect(carried(r)).not.toContain('legendaryBloodline');
+      expect(carried(r)).not.toContain('confident');
+    }
+  });
+
+  it('a parent trait off the roster is never inherited, active or hidden (q117)', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const r = applyEpigeneticTraitsAtBirth({
+        mare,
+        lineage: [],
+        feedQuality: 50,
+        sireTraits: ['legendaryBloodline', 'calm'],
+        damTraits: ['bold', 'lowImmunity'],
+        parentActiveTraits: ['legendaryBloodline', 'bold'],
+        seed,
+      });
+      expect(carried(r)).toEqual([]);
     }
   });
 });

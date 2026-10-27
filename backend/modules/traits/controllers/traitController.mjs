@@ -8,7 +8,7 @@
  * traits for themselves).
  */
 
-import { getTraitDefinition, getTraitsByType } from '../../../utils/epigeneticTraits.mjs';
+import { getTraitsByType, playerTraitDefinition } from '../../../utils/epigeneticTraits.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getCachedQuery, generateCacheKey } from '../../../utils/cacheHelper.mjs';
@@ -73,9 +73,10 @@ export async function getHorseTraits(req, res) {
       select: { settings: true },
     });
     const seen = seenTraitKeys(viewer?.settings, parsedHorseId);
+    // Players never see a trait's rarity (owner ruling 2026-10-27, q112).
     const withDefinition = trait => ({
       name: trait,
-      definition: getTraitDefinition(trait),
+      definition: playerTraitDefinition(trait),
       isNew: !seen.has(trait),
     });
 
@@ -186,9 +187,10 @@ export async function getTraitDefinitions(req, res) {
           traits = getTraitsByType('all');
         }
 
-        // Enhance with full definitions
+        // Enhance with the player view of each definition: never the rarity
+        // (owner ruling 2026-10-27, q112). Admin tooling keeps it.
         const definitions = traits.reduce((acc, trait) => {
-          const definition = getTraitDefinition(trait);
+          const definition = playerTraitDefinition(trait);
           if (definition) {
             const fullDef = { name: trait, ...definition };
             // Apply field selection if requested

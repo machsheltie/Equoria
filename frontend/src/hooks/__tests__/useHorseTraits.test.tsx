@@ -99,6 +99,28 @@ describe('useHorseTraits — pure mappers', () => {
       expect(view.totalTraits).toBe(4);
     });
 
+    it('shows the authored label and never carries the rarity (owner rulings 2026-10-23, 2026-10-27 q112)', () => {
+      const view = mapHorseTraits({
+        traits: {
+          positive: [
+            {
+              name: 'peopleTrusting',
+              definition: {
+                label: 'People Trusting',
+                type: null,
+                rarity: 'rare',
+                category: 'epigenetic',
+              },
+            },
+          ],
+          negative: [],
+          hiddenCount: 0,
+        },
+      });
+      expect(view.positive[0].name).toBe('People Trusting');
+      expect(view.positive[0]).not.toHaveProperty('rarity');
+    });
+
     it('is total/defensive on missing/null shapes', () => {
       expect(mapHorseTraits(null)).toEqual({
         positive: [],

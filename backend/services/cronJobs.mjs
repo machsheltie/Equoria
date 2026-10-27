@@ -23,6 +23,7 @@ import * as groomCareerProgressionImpl from './jobs/impl/groomCareerProgression.
 import { CRON_JOB_REGISTRY } from './jobs/index.mjs';
 import { runEmailOutbox } from '../modules/staff/index.mjs';
 import { postDailyNewsEntries } from '../modules/news/index.mjs';
+import { runNightlyTraitReveal } from '../modules/traits/index.mjs';
 // Equoria-urqic.3.5: the run-observability concern (heartbeat liveness,
 // CronRunLog persistence, the /api/admin/cron/health surface, and the
 // stale-alert debounce) is now a dedicated collaborator that this scheduler
@@ -381,6 +382,17 @@ class CronJobService {
    */
   async postDailyNews() {
     return postDailyNewsEntries();
+  }
+
+  /**
+   * Nightly trait reveal (Equoria-2d55z, owner rulings 2026-10-27): rolls each
+   * completed day of every foal's first 21 days against its grooming record.
+   * Each day is rolled once (progress is stored per horse). Does nothing while
+   * no trait has a ruled rarity and polarity.
+   * @returns {Promise<{ skipped: string|null, horsesEvaluated: number, changes: number, errors: number }>}
+   */
+  async revealTraitsFromCare() {
+    return runNightlyTraitReveal();
   }
 
   /**

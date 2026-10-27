@@ -26,14 +26,24 @@ const allNegative = result => [...result.negative, ...result.hidden];
 
 // Three ancestors with one id repeated 4 times: high inbreeding.
 const inbredLineage = Array.from({ length: 4 }, () => ({ id: 77 }));
+// One id repeated 3 times: moderate inbreeding (fragile at 0.5, so x1.25 and
+// x1.5 stay below certainty and each step can add foals).
+const moderateLineage = Array.from({ length: 3 }, () => ({ id: 78 }));
+
+// Old contract: these cases used the poor-feed lowImmunity roll and the
+// inbreeding reactive/lowImmunity rolls. Owner ruling 2026-10-27 (q117) took
+// those traits off the roster, so the rolls are gone; the multiplier is proven
+// on the negative rolls that remain (an inherited negative trait, and the
+// inbreeding fragile roll).
 
 describe('negative foal-trait rolls scale with the mare health multiplier', () => {
-  it('a poor-feed lowImmunity roll lands at least as often, and more often overall, with a x1.5 mare', () => {
+  it('an inherited negative trait lands at least as often, and more often overall, with a x1.5 mare', () => {
     let base = 0;
     let scaled = 0;
+    const parent = { feedQuality: 60, damTraits: ['fragile'] };
     for (const seed of SEEDS) {
-      const plain = allNegative(run(seed, { feedQuality: 20 })).includes('lowImmunity');
-      const bad = allNegative(run(seed, { feedQuality: 20, negativeRollMultiplier: 1.5 })).includes('lowImmunity');
+      const plain = allNegative(run(seed, parent)).includes('fragile');
+      const bad = allNegative(run(seed, { ...parent, negativeRollMultiplier: 1.5 })).includes('fragile');
       if (plain) {
         expect(bad).toBe(true);
         base += 1;
@@ -43,11 +53,11 @@ describe('negative foal-trait rolls scale with the mare health multiplier', () =
     expect(scaled).toBeGreaterThan(base);
   });
 
-  it('inbreeding fragile/reactive/lowImmunity rolls scale too', () => {
+  it('the inbreeding fragile roll scales too', () => {
     const count = multiplier =>
       SEEDS.reduce((sum, seed) => {
         const traits = allNegative(
-          run(seed, { feedQuality: 60, lineage: inbredLineage, negativeRollMultiplier: multiplier }),
+          run(seed, { feedQuality: 60, lineage: moderateLineage, negativeRollMultiplier: multiplier }),
         );
         return sum + traits.length;
       }, 0);

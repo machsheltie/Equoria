@@ -34,6 +34,12 @@
  *
  * 💡 TEST STRATEGY: Integration testing with minimal mocking to validate trait
  *    effects across multiple gameplay systems while ensuring predictable outcomes
+ *
+ * Owner ruling 2026-10-27 (q117, Equoria-2d55z) replaced the trait roster:
+ * social, calm, antisocial, nervous and lazy are no longer traits and carry no
+ * effects. peopleTrusting is the roster trait with bonding bonuses; no roster
+ * trait carries a bonding penalty any more, so the old penalty case became
+ * "off-roster traits change nothing".
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
@@ -54,7 +60,7 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
         id: 1,
         bondScore: 50,
         epigeneticModifiers: {
-          positive: ['social', 'calm'],
+          positive: ['peopleTrusting', 'resilient'],
           negative: [],
           hidden: [],
         },
@@ -63,12 +69,11 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
       const result = calculateBondingChange(horse, 'grooming', { duration: 60 });
 
       expect(result.modifiedChange).toBeGreaterThan(result.originalChange);
-      expect(result.appliedTraits).toContain('social');
-      expect(result.appliedTraits).toContain('calm');
+      expect(result.appliedTraits).toEqual(['peopleTrusting']);
       expect(result.traitModifier).toBeGreaterThan(1);
     });
 
-    it('should apply trait penalties to bonding for antisocial horses', () => {
+    it('traits off the roster (antisocial, nervous) no longer change bonding', () => {
       const horse = {
         id: 1,
         bondScore: 50,
@@ -81,10 +86,9 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
 
       const result = calculateBondingChange(horse, 'training', { success: true });
 
-      expect(result.modifiedChange).toBeLessThan(result.originalChange);
-      expect(result.appliedTraits).toContain('antisocial');
-      expect(result.appliedTraits).toContain('nervous');
-      expect(result.traitModifier).toBeLessThan(1);
+      expect(result.modifiedChange).toBe(result.originalChange);
+      expect(result.appliedTraits).toEqual([]);
+      expect(result.traitModifier).toBe(1);
     });
 
     it('should calculate competition bonding with placement modifiers', () => {
@@ -92,7 +96,7 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
         id: 1,
         bondScore: 70,
         epigeneticModifiers: {
-          positive: ['social'],
+          positive: ['peopleTrusting'],
           negative: [],
           hidden: [],
         },
@@ -101,13 +105,13 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
       const result = calculateBondingChange(horse, 'competition', { placement: '1st' });
 
       expect(result.modifiedChange).toBeGreaterThan(5); // Should be significant for 1st place
-      expect(result.traitModifier).toBeGreaterThan(1); // Social bonus applied
+      expect(result.traitModifier).toBeGreaterThan(1); // peopleTrusting bonus applied
     });
   });
 
   describe('Trait Effects Combination', () => {
     it('should combine multiple positive trait effects correctly', () => {
-      const traits = ['eagerLearner', 'resilient', 'social'];
+      const traits = ['eagerLearner', 'resilient', 'peopleTrusting'];
       const effects = getCombinedTraitEffects(traits);
 
       expect(effects.trainingXpModifier).toBeGreaterThan(0);
@@ -116,13 +120,15 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
     });
 
     it('should combine positive and negative trait effects', () => {
-      const traits = ['eagerLearner', 'lazy', 'social', 'nervous'];
+      const traits = ['eagerLearner', 'fragile', 'peopleTrusting'];
       const effects = getCombinedTraitEffects(traits);
 
       // Should have both positive and negative modifiers
       expect(effects.trainingXpModifier).toBeDefined();
       expect(effects.bondingBonus).toBeDefined();
-      // Net effect depends on specific trait values
+      expect(effects.injuryRisk).toBe(0.3); // fragile
+      // eagerLearner +0.02 and fragile -0.035
+      expect(effects.competitionScoreModifier).toBeLessThan(0);
     });
 
     it('should handle empty trait arrays', () => {

@@ -2,6 +2,11 @@
  * epigeneticTraits — unit tests (Equoria-rr7)
  *
  * No imports, no DB required — completely self-contained pure functions.
+ *
+ * Old contract: the examples were the 2026-10-19 roster's bold, nervous, lazy
+ * and bonded, with bond and situational categories. Owner ruling 2026-10-27
+ * (q117) replaced the roster with twenty traits in one category; the examples
+ * are now roster traits whose type was already defined (confident, fearful).
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -14,12 +19,10 @@ import {
 } from '../../../utils/epigeneticTraits.mjs';
 
 // Known valid traits from TRAIT_DEFINITIONS
-const RESILIENT = 'resilient'; // positive, common, epigenetic — conflicts: fragile, easilyOverwhelmed
-const BOLD = 'bold'; // positive, common, epigenetic — conflicts: nervous, fearful
-const BONDED = 'bonded'; // positive, common, bond
-const NERVOUS = 'nervous'; // negative, common, epigenetic — conflicts: bold, calm, confident
-const FRAGILE = 'fragile'; // negative, common, epigenetic — conflicts: resilient, athletic
-const LAZY = 'lazy'; // negative, common, epigenetic
+const RESILIENT = 'resilient'; // positive, common, epigenetic — conflicts: fragile
+const CONFIDENT = 'confident'; // positive, common, epigenetic — conflicts: fearful
+const FEARFUL = 'fearful'; // negative, common, epigenetic — conflicts: confident
+const FRAGILE = 'fragile'; // negative, common, epigenetic — conflicts: resilient
 
 // ---------------------------------------------------------------------------
 // getTraitDefinition
@@ -34,7 +37,7 @@ describe('getTraitDefinition', () => {
   });
 
   it('returns definition for a known negative trait', () => {
-    const def = getTraitDefinition(NERVOUS);
+    const def = getTraitDefinition(FEARFUL);
     expect(def).not.toBeNull();
     expect(def.type).toBe('negative');
   });
@@ -50,7 +53,7 @@ describe('getTraitDefinition', () => {
   });
 
   it('includes description string', () => {
-    const def = getTraitDefinition(BOLD);
+    const def = getTraitDefinition(CONFIDENT);
     expect(typeof def.description).toBe('string');
     expect(def.description.length).toBeGreaterThan(0);
   });
@@ -65,21 +68,21 @@ describe('getTraitsByType', () => {
     expect(Array.isArray(all)).toBe(true);
     expect(all.length).toBeGreaterThan(0);
     expect(all).toContain(RESILIENT);
-    expect(all).toContain(NERVOUS);
+    expect(all).toContain(FEARFUL);
   });
 
   it('returns only positive traits when type is "positive"', () => {
     const positives = getTraitsByType('positive');
     expect(positives).toContain(RESILIENT);
-    expect(positives).toContain(BOLD);
-    expect(positives).not.toContain(NERVOUS);
-    expect(positives).not.toContain(LAZY);
+    expect(positives).toContain(CONFIDENT);
+    expect(positives).not.toContain(FEARFUL);
+    expect(positives).not.toContain(FRAGILE);
   });
 
   it('returns only negative traits when type is "negative"', () => {
     const negatives = getTraitsByType('negative');
-    expect(negatives).toContain(NERVOUS);
-    expect(negatives).toContain(LAZY);
+    expect(negatives).toContain(FEARFUL);
+    expect(negatives).toContain(FRAGILE);
     expect(negatives).not.toContain(RESILIENT);
   });
 
@@ -102,26 +105,20 @@ describe('getTraitsByCategory', () => {
   it('returns epigenetic traits', () => {
     const epigenetic = getTraitsByCategory('epigenetic');
     expect(epigenetic).toContain(RESILIENT);
-    expect(epigenetic).toContain(NERVOUS);
+    expect(epigenetic).toContain(FEARFUL);
   });
 
-  it('returns bond traits', () => {
-    const bond = getTraitsByCategory('bond');
-    expect(bond).toContain(BONDED);
-    expect(bond).not.toContain(RESILIENT);
-  });
-
-  it('returns situational traits', () => {
-    const situational = getTraitsByCategory('situational');
-    expect(situational).toContain('showCalm');
-    expect(situational).not.toContain(RESILIENT);
+  it('every roster trait is a care (epigenetic) trait: no bond or situational traits remain', () => {
+    expect(getTraitsByCategory('epigenetic')).toHaveLength(20);
+    expect(getTraitsByCategory('bond')).toEqual([]);
+    expect(getTraitsByCategory('situational')).toEqual([]);
   });
 
   it('returns all traits when category is "all"', () => {
     const all = getTraitsByCategory('all');
     expect(all).toContain(RESILIENT);
-    expect(all).toContain(BONDED);
-    expect(all).toContain('showCalm');
+    expect(all).toContain('heart');
+    expect(all).toHaveLength(20);
   });
 
   it('returns empty array for unknown category', () => {
@@ -175,12 +172,12 @@ describe('checkTraitConflict', () => {
     expect(checkTraitConflict(FRAGILE, RESILIENT)).toBe(true);
   });
 
-  it('returns true for bold vs nervous', () => {
-    expect(checkTraitConflict(BOLD, NERVOUS)).toBe(true);
+  it('returns true for confident vs fearful', () => {
+    expect(checkTraitConflict(CONFIDENT, FEARFUL)).toBe(true);
   });
 
-  it('returns false for non-conflicting traits (resilient vs bold)', () => {
-    expect(checkTraitConflict(RESILIENT, BOLD)).toBe(false);
+  it('returns false for non-conflicting traits (resilient vs confident)', () => {
+    expect(checkTraitConflict(RESILIENT, CONFIDENT)).toBe(false);
   });
 
   it('returns false for unknown trait pairs', () => {

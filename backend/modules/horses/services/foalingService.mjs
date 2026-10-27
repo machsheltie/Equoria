@@ -73,18 +73,12 @@ const GESTATION_DAYS = 7;
 // traits with zero gameplay effect. Premium feed during pregnancy now biases
 // toward genuinely beneficial constitution traits; poor feed toward genuinely
 // detrimental ones, all of which have real effects in traitEffects.mjs.
-const PREGNANCY_BONUS_POSITIVE_TRAITS = Object.freeze([
-  'resilient',
-  'athletic',
-  'calm',
-  'peopleTrusting',
-]);
-const PREGNANCY_BONUS_NEGATIVE_TRAITS = Object.freeze([
-  'fragile',
-  'lowImmunity',
-  'nervous',
-  'reactive',
-]);
+//
+// Owner ruling 2026-10-27 (q117, Equoria-2d55z): only roster traits are ever
+// generated, so athletic, calm, lowImmunity, nervous and reactive (no longer
+// traits) left both pools. Order is unchanged for the names that remain.
+const PREGNANCY_BONUS_POSITIVE_TRAITS = Object.freeze(['resilient', 'peopleTrusting']);
+const PREGNANCY_BONUS_NEGATIVE_TRAITS = Object.freeze(['fragile']);
 
 /**
  * Collect the union of a horse's epigenetic traits (positive ∪ negative ∪

@@ -49,6 +49,7 @@ import groomCareerProgressionJob from './groomCareerProgressionJob.mjs';
 import staffCheckinRetentionJob from './staffCheckinRetentionJob.mjs';
 import emailOutboxJob from './emailOutboxJob.mjs';
 import dailyNewsPostingJob from './dailyNewsPostingJob.mjs';
+import nightlyTraitRevealJob from './nightlyTraitRevealJob.mjs';
 
 /**
  * Ordered registry. The first ten entries match the original `this.jobs.set(...)`
@@ -73,6 +74,7 @@ import dailyNewsPostingJob from './dailyNewsPostingJob.mjs';
  * staffCheckinRetention (STAFF-CR-18) is appended after it, reordering nothing.
  * emailOutboxDelivery (STAFF-CR-10) is appended after that, likewise.
  * dailyNewsPosting (Equoria-wbt8l) is appended after that, likewise.
+ * nightlyTraitReveal (Equoria-2d55z) is appended after that, likewise.
  */
 export const CRON_JOB_REGISTRY = Object.freeze([
   dailyTraitJob,
@@ -91,6 +93,7 @@ export const CRON_JOB_REGISTRY = Object.freeze([
   staffCheckinRetentionJob,
   emailOutboxJob,
   dailyNewsPostingJob,
+  nightlyTraitRevealJob,
 ]);
 
 export default CRON_JOB_REGISTRY;

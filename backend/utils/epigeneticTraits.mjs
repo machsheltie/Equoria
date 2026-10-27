@@ -5,178 +5,108 @@
  * removed with the owner ruling of 2026-10-26, Equoria-b76x0.
  */
 
-// Trait definitions and their properties
-const TRAIT_DEFINITIONS = {
-  // Positive traits - Common
-  resilient: {
-    type: 'positive',
-    rarity: 'common',
-    conflicts: ['fragile', 'easilyOverwhelmed'],
-    description: 'Takes challenges in stride.',
+/**
+ * THE trait roster (owner ruling 2026-10-27, q117; Equoria-2d55z). It replaces
+ * the 2026-10-19 roster. Only these twenty traits exist: generation at birth
+ * and inheritance use nothing else, and a stored name off this list has no
+ * effect.
+ *
+ * "Do not add what each actually does yet. We will address that later." So a
+ * trait new to this roster has no type, rarity or description here. The five
+ * that were already defined (resilient, confident, eagerLearner, fragile,
+ * fearful) keep the type, rarity and description they had, which the at-birth
+ * inheritance odds read; the owner has been asked to rule rarity and
+ * positive/negative for all twenty. The reveal engine reads its own rulings
+ * from modules/traits/config/traitRevealSettings.mjs, never these.
+ *
+ * `label` is the authored name players see; the key is the stored id.
+ * `rarity` is for the game and admin tooling only: players never see it
+ * (owner ruling 2026-10-27, q112), so player routes use playerTraitDefinition.
+ */
+const rosterTrait = (label, known = {}) =>
+  Object.freeze({
+    label,
+    type: known.type ?? null,
+    rarity: known.rarity ?? null,
+    conflicts: Object.freeze(known.conflicts ?? []),
+    description: known.description ?? null,
     category: 'epigenetic',
-  },
-  bold: {
-    type: 'positive',
-    rarity: 'common',
-    conflicts: ['nervous', 'fearful'],
-    description: 'Shows courage in challenging situations.',
-    category: 'epigenetic',
-  },
-  intelligent: {
-    type: 'positive',
-    rarity: 'common',
-    conflicts: ['lazy'],
-    description: 'Learns faster and retains training better.',
-    category: 'epigenetic',
-  },
-  athletic: {
-    type: 'positive',
-    rarity: 'common',
-    conflicts: ['fragile', 'lazy'],
-    description: 'Enhanced physical performance and stamina.',
-    category: 'epigenetic',
-  },
-  calm: {
-    type: 'positive',
-    rarity: 'common',
-    conflicts: ['nervous', 'aggressive', 'easilyOverwhelmed'],
-    description: 'Maintains composure under pressure.',
-    category: 'epigenetic',
-  },
+  });
 
-  // Positive traits - Epigenetic (from foal development)
-  confident: {
+const TRAIT_DEFINITIONS = Object.freeze({
+  brave: rosterTrait('Brave'),
+  confident: rosterTrait('Confident', {
     type: 'positive',
     rarity: 'common',
-    conflicts: ['nervous', 'fearful'],
+    conflicts: ['fearful'],
     description: 'This horse is brave in new situations.',
-    category: 'epigenetic',
-  },
-  bonded: {
+  }),
+  outgoing: rosterTrait('Outgoing'),
+  affectionate: rosterTrait('Affectionate'),
+  resilient: rosterTrait('Resilient', {
     type: 'positive',
     rarity: 'common',
-    conflicts: ['aggressive', 'antisocial'],
-    description: 'Forms deeper trust with specific handlers.',
-    category: 'bond',
-  },
-
-  // Positive traits - Situational (from specific training)
-  presentationBoosted: {
-    type: 'positive',
-    rarity: 'common',
-    conflicts: [],
-    description: 'Scores higher in appearance-based events.',
-    category: 'situational',
-  },
-  showCalm: {
-    type: 'positive',
-    rarity: 'common',
-    conflicts: ['nervous'],
-    description: 'Remains composed during competitions and shows.',
-    category: 'situational',
-  },
-  crowdReady: {
-    type: 'positive',
-    rarity: 'common',
-    conflicts: ['nervous'],
-    description: 'Comfortable performing in front of large audiences.',
-    category: 'situational',
-  },
-
-  // Positive traits - Rare
-  trainabilityBoost: {
-    type: 'positive',
-    rarity: 'rare',
-    conflicts: ['stubborn'],
-    description: 'Exceptional learning ability and training response.',
-    category: 'epigenetic',
-  },
-  eagerLearner: {
-    type: 'positive',
-    rarity: 'common',
-    conflicts: ['lazy', 'stubborn'],
-    description: 'Shows enthusiasm for learning new skills and training.',
-    category: 'epigenetic',
-  },
-  social: {
-    type: 'positive',
-    rarity: 'common',
-    conflicts: ['antisocial', 'aggressive'],
-    description: 'Enjoys interaction with other horses and humans.',
-    category: 'epigenetic',
-  },
-
-  // Negative traits
-  nervous: {
+    conflicts: ['fragile'],
+    description: 'Takes challenges in stride.',
+  }),
+  fearful: rosterTrait('Fearful', {
     type: 'negative',
     rarity: 'common',
-    conflicts: ['bold', 'calm', 'confident', 'showCalm', 'crowdReady'],
-    description: 'Easily startled by new situations.',
-    category: 'epigenetic',
-  },
-  stubborn: {
-    type: 'negative',
-    rarity: 'common',
-    conflicts: ['trainabilityBoost', 'eagerLearner'],
-    description: 'Resistant to training and new commands.',
-    category: 'epigenetic',
-  },
-  fragile: {
-    type: 'negative',
-    rarity: 'common',
-    conflicts: ['resilient', 'athletic'],
-    description: 'More susceptible to injury.',
-    category: 'epigenetic',
-  },
-  aggressive: {
-    type: 'negative',
-    rarity: 'common',
-    conflicts: ['calm', 'bonded', 'social'],
-    description: 'Difficult to handle and may show hostility.',
-    category: 'epigenetic',
-  },
-  lazy: {
-    type: 'negative',
-    rarity: 'common',
-    conflicts: ['intelligent', 'athletic', 'eagerLearner'],
-    description: 'Low motivation and energy for training.',
-    category: 'epigenetic',
-  },
-  antisocial: {
-    type: 'negative',
-    rarity: 'common',
-    conflicts: ['social', 'bonded'],
-    description: 'Prefers isolation and avoids interaction with others.',
-    category: 'epigenetic',
-  },
-  fearful: {
-    type: 'negative',
-    rarity: 'common',
-    conflicts: ['confident', 'bold'],
+    conflicts: ['confident'],
     description: 'Hesitation or spook-prone behavior under pressure.',
-    category: 'epigenetic',
-  },
-  easilyOverwhelmed: {
+  }),
+  insecure: rosterTrait('Insecure'),
+  aloof: rosterTrait('Aloof'),
+  fragile: rosterTrait('Fragile', {
     type: 'negative',
     rarity: 'common',
-    conflicts: ['resilient', 'calm'],
-    description: 'Slower recovery from mistakes or chaotic settings.',
-    category: 'epigenetic',
-  },
-
-  // Rare traits (usually hidden)
-  legendaryBloodline: {
+    conflicts: ['resilient'],
+    description: 'More susceptible to injury.',
+  }),
+  skittish: rosterTrait('Skittish'),
+  eagerLearner: rosterTrait('Eager Learner', {
     type: 'positive',
-    rarity: 'legendary',
-    conflicts: [],
-    description: 'Exceptional heritage with legendary performance potential.',
-    category: 'epigenetic',
-  },
-  // Equoria-9o3n7.5 §E / Equoria-3hl8c: weatherImmunity removed — it does NOT
-  // exist in the game (user decision 2026-05-26). nightVision/fireResistance/
-  // waterPhobia were never defined here. The only surviving rare trait is
-  // legendaryBloodline (above).
-};
+    rarity: 'common',
+    description: 'Shows enthusiasm for learning new skills and training.',
+  }),
+  peopleTrusting: rosterTrait('People Trusting'),
+  adaptable: rosterTrait('Adaptable'),
+  heart: rosterTrait('Heart'),
+  focused: rosterTrait('Focused'),
+  excitable: rosterTrait('Excitable'),
+  curious: rosterTrait('Curious'),
+  playful: rosterTrait('Playful'),
+  biddable: rosterTrait('Biddable'),
+  competitive: rosterTrait('Competitive'),
+});
+
+/** The twenty stored trait ids, in the owner's order. */
+export const traitRosterIds = Object.freeze(Object.keys(TRAIT_DEFINITIONS));
+
+/**
+ * True when `trait` is on the roster.
+ * @param {unknown} trait
+ * @returns {boolean}
+ */
+export function isRosterTrait(trait) {
+  return (
+    typeof trait === 'string' && Object.prototype.hasOwnProperty.call(TRAIT_DEFINITIONS, trait)
+  );
+}
+
+/**
+ * A trait definition as a player may see it: the authored label, type,
+ * description and category. Never the rarity (q112). Null off the roster.
+ * @param {string} trait
+ * @returns {{label:string, type:string|null, description:string|null, category:string, conflicts:string[]}|null}
+ */
+export function playerTraitDefinition(trait) {
+  if (!isRosterTrait(trait)) {
+    return null;
+  }
+  const { label, type, description, category, conflicts } = TRAIT_DEFINITIONS[trait];
+  return { label, type, description, category, conflicts: [...conflicts] };
+}
 
 /**
  * Determines if traits conflict with each other
@@ -185,8 +115,8 @@ const TRAIT_DEFINITIONS = {
  * @returns {boolean} True if traits conflict
  */
 function traitsConflict(trait1, trait2) {
-  const def1 = TRAIT_DEFINITIONS[trait1];
-  const def2 = TRAIT_DEFINITIONS[trait2];
+  const def1 = getTraitDefinition(trait1);
+  const def2 = getTraitDefinition(trait2);
 
   if (!def1 || !def2) {
     return false;
@@ -201,7 +131,7 @@ function traitsConflict(trait1, trait2) {
  * @returns {Object|null} Trait definition or null if not found
  */
 export function getTraitDefinition(trait) {
-  return TRAIT_DEFINITIONS[trait] || null;
+  return isRosterTrait(trait) ? TRAIT_DEFINITIONS[trait] : null;
 }
 
 /**
@@ -240,13 +170,14 @@ export function getTraitsByCategory(category = 'all') {
  * @returns {Object|null} Trait metadata or null if not found
  */
 export function getTraitMetadata(trait) {
-  const definition = TRAIT_DEFINITIONS[trait];
+  const definition = getTraitDefinition(trait);
   if (!definition) {
     return null;
   }
 
   return {
     name: trait,
+    label: definition.label,
     type: definition.type,
     category: definition.category,
     description: definition.description,

@@ -27,15 +27,14 @@ import { getTraitDefinition } from '../../../utils/epigeneticTraits.mjs';
 import { calculatePregnancyEpigeneticChances } from '../../../utils/pregnancyBonus.mjs';
 
 // Mirrors foalingService.PREGNANCY_BONUS_{POSITIVE,NEGATIVE}_TRAITS.
+// Old contract: the pool also held calm, bold, intelligent, nervous, lazy and
+// stubborn (this mirror had drifted from the source, which held athletic,
+// lowImmunity and reactive instead). Owner ruling 2026-10-27 (q117) replaced the
+// roster; only roster traits stay in the pools.
 const PREGNANCY_BONUS_POOL = [
   'resilient',
-  'calm',
-  'bold',
-  'intelligent', // positive
-  'fragile',
-  'nervous',
-  'lazy',
-  'stubborn', // negative
+  'peopleTrusting', // positive
+  'fragile', // negative
 ];
 
 const FORMER_DEAD_NAMES = ['wellNourished', 'vigorous', 'undernourished', 'weakImmunity', 'lowVigor'];

@@ -24,6 +24,22 @@ import { describe, it, expect } from '@jest/globals';
 import { updateConsecutiveDays } from '../../../utils/groomBondingSystem.mjs';
 import { evaluateEpigeneticTagsFromFoalTasks } from '../../../utils/traitEvaluation.mjs';
 import { getTraitMetadata } from '../../../utils/epigeneticTraits.mjs';
+import taskTraitInfluenceMap from '../../../config/taskInfluenceConfig.mjs';
+
+// Owner ruling 2026-10-27 (q117) replaced the trait roster. The age-1 tag
+// generator still draws from the legacy task map, which names traits the
+// roster removed (bonded, calm, showCalm, ...); re-keying it is Equoria-qw4kp.
+// Until then a tag is checked against the task map it comes from, and a tag
+// that IS on the roster must carry roster metadata.
+const taskMapTraits = new Set(Object.values(taskTraitInfluenceMap).flatMap(i => i.traits));
+function expectValidTag(trait) {
+  expect(taskMapTraits.has(trait)).toBe(true);
+  const metadata = getTraitMetadata(trait);
+  if (metadata) {
+    expect(metadata.name).toBe(trait);
+    expect(metadata.category).toBe('epigenetic');
+  }
+}
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -89,10 +105,7 @@ describe('Complete Foal Development Workflow', () => {
     const traits = evaluateEpigeneticTagsFromFoalTasks(taskLog, streak);
 
     for (const trait of traits) {
-      const metadata = getTraitMetadata(trait);
-      expect(metadata).not.toBeNull();
-      expect(metadata.description).toBeDefined();
-      expect(metadata.type).toBe('positive');
+      expectValidTag(trait);
     }
   });
 });
@@ -235,12 +248,7 @@ describe('Trait Assignment with Streak Bonuses', () => {
     const traits = evaluateEpigeneticTagsFromFoalTasks(taskLog, 10);
 
     for (const trait of traits) {
-      const metadata = getTraitMetadata(trait);
-      expect(metadata).not.toBeNull();
-      expect(metadata.name).toBe(trait);
-      expect(typeof metadata.description).toBe('string');
-      expect(['epigenetic', 'bond', 'situational']).toContain(metadata.category);
-      expect(metadata.type).toBe('positive');
+      expectValidTag(trait);
     }
   });
 });
@@ -286,9 +294,7 @@ describe('Real-World Player Scenarios', () => {
     expect(new Set(traits).size).toBe(traits.length);
 
     for (const trait of traits) {
-      const metadata = getTraitMetadata(trait);
-      expect(metadata).not.toBeNull();
-      expect(metadata.type).toBe('positive');
+      expectValidTag(trait);
     }
   });
 });

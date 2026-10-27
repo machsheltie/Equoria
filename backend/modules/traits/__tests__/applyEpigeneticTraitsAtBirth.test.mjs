@@ -6,10 +6,15 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
+import { isRosterTrait } from '../../../utils/epigeneticTraits.mjs';
 
 // Owner ruling 2026-10-26 (q98, Equoria-2d55z): traits from the birth stages are
 // born hidden, so "the foal gets X" means X is among the traits it carries.
 const carried = r => [...r.positive, ...r.negative, ...r.hidden];
+
+// Owner ruling 2026-10-27 (q117): only roster traits are generated; the
+// discipline trait (disciplineAffinity<Discipline>) is ruled separately.
+const offRoster = r => carried(r).filter(t => !isRosterTrait(t) && !t.startsWith('disciplineAffinity'));
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -93,20 +98,19 @@ describe('applyEpigeneticTraitsAtBirth — feed conditions', () => {
     expect(found).toBe(true);
   });
 
-  it('poor feed quality (<=30) can produce lowImmunity trait', () => {
-    let found = false;
-    for (let i = 0; i < 100; i++) {
+  // Old contract: poor feed (<=30) could produce lowImmunity. Owner ruling
+  // 2026-10-27 (q117) removed lowImmunity from the roster, so poor feed now
+  // produces no trait at all.
+  it('poor feed quality (<=30) produces no trait off the roster (lowImmunity is gone)', () => {
+    for (let seed = 1; seed <= 200; seed++) {
       const result = applyEpigeneticTraitsAtBirth({
         mare: baseMare(),
         lineage: emptyLineage(),
         feedQuality: 10,
+        seed,
       });
-      if (carried(result).includes('lowImmunity')) {
-        found = true;
-        break;
-      }
+      expect(carried(result)).toEqual([]);
     }
-    expect(found).toBe(true);
   });
 });
 
@@ -170,20 +174,32 @@ describe('applyEpigeneticTraitsAtBirth — discipline specialization', () => {
     expect(found).toBe(true);
   });
 
-  it('4+ ancestors with same discipline can produce legacyTalent', () => {
-    let found = false;
-    for (let i = 0; i < 100; i++) {
+  // Old contract: 4+ same-discipline ancestors could add legacyTalent. Owner
+  // ruling 2026-10-27 (q117) removed it from the roster.
+  it('4+ ancestors with same discipline never produce legacyTalent or any off-roster trait', () => {
+    for (let seed = 1; seed <= 200; seed++) {
       const result = applyEpigeneticTraitsAtBirth({
         mare: baseMare(),
         lineage: lineageWithDiscipline('Racing', 6),
         feedQuality: 50,
+        seed,
       });
-      if (carried(result).includes('legacyTalent')) {
-        found = true;
-        break;
-      }
+      expect(offRoster(result)).toEqual([]);
     }
-    expect(found).toBe(true);
+  });
+
+  it('high inbreeding and poor feed together still produce only roster traits', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const result = applyEpigeneticTraitsAtBirth({
+        mare: baseMare(),
+        lineage: lineageWithInbreeding(42, 5),
+        feedQuality: 10,
+        seed,
+      });
+      expect(offRoster(result)).toEqual([]);
+      expect(carried(result)).not.toContain('reactive');
+      expect(carried(result)).not.toContain('lowImmunity');
+    }
   });
 
   it('fewer than 3 ancestors with same discipline does not trigger specialization', () => {
@@ -464,7 +480,9 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
     expect(carried(result)).not.toContain('legacyTalent');
   });
 
-  it('assigns low_immunity trait with poor nutrition', () => {
+  // Old contract: poor nutrition assigned lowImmunity. Owner ruling 2026-10-27
+  // (q117) removed it from the roster: no seed produces it now.
+  it('never assigns lowImmunity with poor nutrition', () => {
     expect(
       traitAppears(
         seed =>
@@ -476,8 +494,9 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
           }),
         'lowImmunity',
         'negative',
+        200,
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('does not duplicate low_immunity even with repeated common ancestor', () => {

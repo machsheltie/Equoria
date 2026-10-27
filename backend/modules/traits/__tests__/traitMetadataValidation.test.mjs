@@ -16,7 +16,7 @@
  *
  * 📋 BUSINESS RULES TESTED:
  * - All traits have proper descriptions for UI display
- * - Traits are categorized correctly (epigenetic, bond, situational)
+ * - Every roster trait is a care (epigenetic) trait (owner roster 2026-10-27)
  * - Conflict relationships are bidirectional
  * - Task influence map references valid traits
  * - Required traits for foal development exist
@@ -41,51 +41,62 @@ const { getTraitDefinition, getTraitsByType, getTraitsByCategory, getTraitMetada
 const { TASK_TRAIT_INFLUENCE_MAP } = await import(join(__dirname, '../../../config/taskInfluenceConfig.mjs'));
 
 describe('Trait Metadata Validation', () => {
-  describe('Required Trait Structure', () => {
-    const requiredTraits = ['confident', 'resilient', 'presentationBoosted', 'bonded', 'fearful', 'easilyOverwhelmed'];
+  // Owner ruling 2026-10-27 (q117, Equoria-2d55z): the roster is twenty traits,
+  // all care (epigenetic) traits. "Do not add what each actually does yet": a
+  // trait new to the roster has no description, type or rarity until the owner
+  // rules them. The five traits already defined before (confident, resilient,
+  // fearful, fragile, eagerLearner) keep their type, rarity and description.
+  //
+  // Old contract (2026-10-19 roster): presentationBoosted, bonded,
+  // easilyOverwhelmed, calm, showCalm and crowdReady existed in bond and
+  // situational categories, every trait had a description, and the rarity
+  // spread included a legendary trait. The owner removed all of that.
+  const ROSTER = [
+    'brave',
+    'confident',
+    'outgoing',
+    'affectionate',
+    'resilient',
+    'fearful',
+    'insecure',
+    'aloof',
+    'fragile',
+    'skittish',
+    'eagerLearner',
+    'peopleTrusting',
+    'adaptable',
+    'heart',
+    'focused',
+    'excitable',
+    'curious',
+    'playful',
+    'biddable',
+    'competitive',
+  ];
+  const alreadyDefined = ['confident', 'resilient', 'fearful', 'fragile', 'eagerLearner'];
 
-    requiredTraits.forEach(trait => {
+  describe('Required Trait Structure', () => {
+    ROSTER.forEach(trait => {
       it(`should have complete metadata for ${trait}`, () => {
         const metadata = getTraitMetadata(trait);
 
         expect(metadata).not.toBeNull();
         expect(metadata.name).toBe(trait);
-        expect(metadata.description).toBeDefined();
-        expect(metadata.description.length).toBeGreaterThan(10);
-        expect(metadata.type).toMatch(/^(positive|negative)$/);
-        expect(metadata.category).toMatch(/^(epigenetic|bond|situational)$/);
-        expect(metadata.rarity).toMatch(/^(common|rare|legendary)$/);
+        expect(typeof metadata.label).toBe('string');
+        expect(metadata.label).toMatch(/^[A-Z][a-z]+( [A-Z][a-z]+)*$/);
+        expect([null, 'positive', 'negative']).toContain(metadata.type);
+        expect(metadata.category).toBe('epigenetic');
+        expect([null, 'common', 'uncommon', 'rare', 'ultraRare', 'legendary']).toContain(metadata.rarity);
         expect(Array.isArray(metadata.conflicts)).toBe(true);
       });
     });
   });
 
   describe('Trait Categories', () => {
-    it('should have epigenetic traits', () => {
-      const epigeneticTraits = getTraitsByCategory('epigenetic');
-
-      expect(epigeneticTraits).toContain('confident');
-      expect(epigeneticTraits).toContain('resilient');
-      expect(epigeneticTraits).toContain('calm');
-      expect(epigeneticTraits).toContain('fearful');
-      expect(epigeneticTraits).toContain('easilyOverwhelmed');
-      expect(epigeneticTraits.length).toBeGreaterThan(7);
-    });
-
-    it('should have bond traits', () => {
-      const bondTraits = getTraitsByCategory('bond');
-
-      expect(bondTraits).toContain('bonded');
-      expect(bondTraits.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('should have situational traits', () => {
-      const situationalTraits = getTraitsByCategory('situational');
-
-      expect(situationalTraits).toContain('presentationBoosted');
-      expect(situationalTraits).toContain('showCalm');
-      expect(situationalTraits).toContain('crowdReady');
-      expect(situationalTraits.length).toBeGreaterThanOrEqual(3);
+    it('every roster trait is a care (epigenetic) trait', () => {
+      expect(getTraitsByCategory('epigenetic')).toEqual(ROSTER);
+      expect(getTraitsByCategory('bond')).toEqual([]);
+      expect(getTraitsByCategory('situational')).toEqual([]);
     });
 
     it('should categorize all traits correctly', () => {
@@ -116,22 +127,6 @@ describe('Trait Metadata Validation', () => {
       expect(metadata.category).toBe('epigenetic');
     });
 
-    it('should have proper description format for presentationBoosted trait', () => {
-      const metadata = getTraitMetadata('presentationBoosted');
-
-      expect(metadata.description).toBe('Scores higher in appearance-based events.');
-      expect(metadata.type).toBe('positive');
-      expect(metadata.category).toBe('situational');
-    });
-
-    it('should have proper description format for bonded trait', () => {
-      const metadata = getTraitMetadata('bonded');
-
-      expect(metadata.description).toBe('Forms deeper trust with specific handlers.');
-      expect(metadata.type).toBe('positive');
-      expect(metadata.category).toBe('bond');
-    });
-
     it('should have proper description format for fearful trait', () => {
       const metadata = getTraitMetadata('fearful');
 
@@ -141,24 +136,18 @@ describe('Trait Metadata Validation', () => {
       expect(metadata.category).toBe('epigenetic');
     });
 
-    it('should have proper description format for easilyOverwhelmed trait', () => {
-      const metadata = getTraitMetadata('easilyOverwhelmed');
-
-      expect(metadata).not.toBeNull();
-      expect(metadata.description).toBe('Slower recovery from mistakes or chaotic settings.');
-      expect(metadata.type).toBe('negative');
-      expect(metadata.category).toBe('epigenetic');
-    });
-
-    it('should have descriptions for all traits', () => {
-      const allTraits = getTraitsByType('all');
-
-      allTraits.forEach(trait => {
+    it('already-defined traits keep a well-formed description; new traits have none yet', () => {
+      ROSTER.forEach(trait => {
         const metadata = getTraitMetadata(trait);
-        expect(metadata.description).toBeDefined();
-        expect(metadata.description.length).toBeGreaterThan(5);
-        expect(metadata.description).toMatch(/^[A-Z]/); // Starts with capital letter
-        expect(metadata.description).toMatch(/\.$/); // Ends with period
+        if (alreadyDefined.includes(trait)) {
+          expect(metadata.description.length).toBeGreaterThan(5);
+          expect(metadata.description).toMatch(/^[A-Z]/); // Starts with capital letter
+          expect(metadata.description).toMatch(/\.$/); // Ends with period
+        } else {
+          expect(metadata.description).toBeNull();
+          expect(metadata.type).toBeNull();
+          expect(metadata.rarity).toBeNull();
+        }
       });
     });
   });
@@ -179,15 +168,14 @@ describe('Trait Metadata Validation', () => {
     });
 
     it('should validate specific conflict relationships', () => {
-      expect(checkTraitConflict('confident', 'nervous')).toBe(true);
+      expect(checkTraitConflict('confident', 'fearful')).toBe(true);
       expect(checkTraitConflict('resilient', 'fragile')).toBe(true);
-      expect(checkTraitConflict('calm', 'aggressive')).toBe(true);
-      expect(checkTraitConflict('bonded', 'aggressive')).toBe(true);
 
       // Non-conflicting pairs
       expect(checkTraitConflict('confident', 'resilient')).toBe(false);
-      expect(checkTraitConflict('bonded', 'calm')).toBe(false);
-      expect(checkTraitConflict('presentation_boosted', 'show_calm')).toBe(false);
+      expect(checkTraitConflict('heart', 'curious')).toBe(false);
+      // Off-roster names conflict with nothing.
+      expect(checkTraitConflict('confident', 'nervous')).toBe(false);
     });
 
     it('should not have self-conflicts', () => {
@@ -200,7 +188,13 @@ describe('Trait Metadata Validation', () => {
   });
 
   describe('Task Influence Map Integration', () => {
-    it('should have all traits referenced in task influence map', () => {
+    // The legacy task map (age-1 tags, written to an inert key) still names
+    // traits the 2026-10-27 roster removed. Re-keying or retiring it is
+    // Equoria-qw4kp. SHRINK-ONLY baseline: a new off-roster name fails, and an
+    // entry that leaves the map must leave this list too.
+    const knownOffRosterTaskTraits = ['bonded', 'calm', 'presentationBoosted', 'showCalm', 'crowdReady'];
+
+    it('every trait the task map names is a roster trait, except the known legacy names', () => {
       const referencedTraits = new Set();
 
       Object.values(TASK_TRAIT_INFLUENCE_MAP).forEach(influence => {
@@ -209,11 +203,8 @@ describe('Trait Metadata Validation', () => {
         });
       });
 
-      referencedTraits.forEach(trait => {
-        const metadata = getTraitMetadata(trait);
-        expect(metadata).not.toBeNull();
-        expect(metadata.description).toBeDefined();
-      });
+      const offRoster = [...referencedTraits].filter(trait => getTraitMetadata(trait) === null);
+      expect(offRoster.sort()).toEqual([...knownOffRosterTaskTraits].sort());
     });
 
     it('should validate specific task-trait mappings', () => {
@@ -243,58 +234,11 @@ describe('Trait Metadata Validation', () => {
     });
   });
 
-  describe('Trait Type Distribution', () => {
-    it('should have balanced positive and negative traits', () => {
-      const positiveTraits = getTraitsByType('positive');
-      const negativeTraits = getTraitsByType('negative');
-
-      expect(positiveTraits.length).toBeGreaterThan(5);
-      expect(negativeTraits.length).toBeGreaterThan(3);
-
-      // Should have more positive traits than negative (game design choice)
-      expect(positiveTraits.length).toBeGreaterThan(negativeTraits.length);
-    });
-
-    it('should have appropriate rarity distribution', () => {
-      const allTraits = getTraitsByType('all');
-      const commonTraits = allTraits.filter(trait => getTraitMetadata(trait).rarity === 'common');
-      const rareTraits = allTraits.filter(trait => getTraitMetadata(trait).rarity === 'rare');
-      const legendaryTraits = allTraits.filter(trait => getTraitMetadata(trait).rarity === 'legendary');
-
-      expect(commonTraits.length).toBeGreaterThan(rareTraits.length);
-      expect(rareTraits.length).toBeGreaterThanOrEqual(legendaryTraits.length);
-      expect(legendaryTraits.length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  describe('Foal Development Integration', () => {
-    it('should support foal milestone evaluation traits', () => {
-      const foalTraits = ['confident', 'bonded', 'resilient', 'calm'];
-
-      foalTraits.forEach(trait => {
-        const metadata = getTraitMetadata(trait);
-        expect(metadata).not.toBeNull();
-        expect(metadata.type).toBe('positive');
-        expect(['epigenetic', 'bond'].includes(metadata.category)).toBe(true);
-      });
-    });
-
-    it('should support presentation and show traits', () => {
-      const showTraits = ['presentationBoosted', 'showCalm', 'crowdReady'];
-
-      showTraits.forEach(trait => {
-        const metadata = getTraitMetadata(trait);
-        expect(metadata).not.toBeNull();
-        expect(metadata.type).toBe('positive');
-        expect(metadata.category).toBe('situational');
-      });
-    });
-  });
-
   describe('Error Handling', () => {
     it('should handle invalid trait names gracefully', () => {
       expect(getTraitMetadata('invalidTrait')).toBeNull();
       expect(getTraitDefinition('nonexistent')).toBeNull();
+      expect(getTraitDefinition('toString')).toBeNull();
       expect(checkTraitConflict('invalid1', 'invalid2')).toBe(false);
     });
 

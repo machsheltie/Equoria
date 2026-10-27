@@ -84,18 +84,29 @@ describe('calculateBondingChange', () => {
     expect(result.modifiedChange).toBe(0);
   });
 
-  it('calm trait increases bonding via bondingBonus', () => {
-    const withCalm = horseWithTraits(['calm']);
+  // Owner ruling 2026-10-27 (q117, Equoria-2d55z): calm, social and nervous are
+  // no longer traits and lost their traitEffects entries. peopleTrusting is the
+  // roster trait that still carries bondingBonus + groomingBondingBonus; no
+  // remaining trait carries trainingBondingBonus or bondingPenalty.
+  it('peopleTrusting increases bonding via bondingBonus', () => {
+    const withTrusting = horseWithTraits(['peopleTrusting']);
     const without = horseWithTraits([]);
-    const calmResult = calculateBondingChange(withCalm, 'grooming', { duration: 30 });
+    const trustingResult = calculateBondingChange(withTrusting, 'grooming', { duration: 30 });
     const baseResult = calculateBondingChange(without, 'grooming', { duration: 30 });
-    expect(calmResult.modifiedChange).toBeGreaterThan(baseResult.modifiedChange);
+    expect(trustingResult.modifiedChange).toBeGreaterThan(baseResult.modifiedChange);
   });
 
   it('traitModifier reflects trait bonus', () => {
-    const withCalm = horseWithTraits(['calm']);
-    const result = calculateBondingChange(withCalm, 'grooming', { duration: 30 });
+    const withTrusting = horseWithTraits(['peopleTrusting']);
+    const result = calculateBondingChange(withTrusting, 'grooming', { duration: 30 });
     expect(result.traitModifier).toBeGreaterThan(1);
+  });
+
+  it('calm, no longer a trait, changes nothing', () => {
+    const calmResult = calculateBondingChange(horseWithTraits(['calm']), 'grooming', { duration: 30 });
+    const baseResult = calculateBondingChange(horseWithTraits([]), 'grooming', { duration: 30 });
+    expect(calmResult.modifiedChange).toBe(baseResult.modifiedChange);
+    expect(calmResult.traitModifier).toBe(1);
   });
 
   it('traitModifier is 1 for no-trait horse', () => {
@@ -244,12 +255,14 @@ describe('getBondingEfficiency', () => {
     expect(result.percentageChange).toBeGreaterThan(0);
   });
 
-  it('bondingPenalty from traitEffects reduces bonding (nervous via traitEffects)', () => {
+  // Old contract: nervous carried a traitEffects bondingPenalty. Owner ruling
+  // 2026-10-27 (q117) took nervous off the roster, so it no longer penalises.
+  it('nervous, no longer a trait, no longer reduces bonding through traitEffects', () => {
     const withNervous = horseWithTraits(['nervous']);
     const baseHorse = horseWithTraits([]);
     const nervousResult = calculateBondingChange(withNervous, 'grooming', { duration: 30 });
     const baseResult = calculateBondingChange(baseHorse, 'grooming', { duration: 30 });
-    expect(nervousResult.modifiedChange).toBeLessThan(baseResult.modifiedChange);
+    expect(nervousResult.modifiedChange).toBe(baseResult.modifiedChange);
   });
 });
 
@@ -257,29 +270,32 @@ describe('getBondingEfficiency', () => {
 // calculateBondingChange — additional trait branches
 // ---------------------------------------------------------------------------
 describe('calculateBondingChange — additional trait branches', () => {
-  it('social trait + grooming exercises groomingBondingBonus branch (line 80)', () => {
-    const withSocial = horseWithTraits(['social']);
+  // Old fixture: social (no longer a trait, q117). peopleTrusting carries the
+  // same bondingBonus + groomingBondingBonus pair.
+  it('peopleTrusting + grooming exercises the groomingBondingBonus branch', () => {
+    const withTrusting = horseWithTraits(['peopleTrusting']);
     const without = horseWithTraits([]);
-    const socialResult = calculateBondingChange(withSocial, 'grooming', { duration: 30 });
+    const trustingResult = calculateBondingChange(withTrusting, 'grooming', { duration: 30 });
     const baseResult = calculateBondingChange(without, 'grooming', { duration: 30 });
-    // social has both bondingBonus AND groomingBondingBonus → should be significantly higher
-    expect(socialResult.modifiedChange).toBeGreaterThan(baseResult.modifiedChange);
-    expect(socialResult.traitModifier).toBeGreaterThan(1);
+    // bondingBonus 0.3 then groomingBondingBonus 0.2: x1.3 x1.2 before the cap
+    expect(trustingResult.modifiedChange).toBeGreaterThan(baseResult.modifiedChange);
+    expect(trustingResult.traitModifier).toBeGreaterThan(1.3);
   });
 
-  it('social trait + training exercises trainingBondingBonus branch (line 87)', () => {
-    const withSocial = horseWithTraits(['social']);
+  it('peopleTrusting + training applies bondingBonus only (no grooming bonus, no trait has a training bonus)', () => {
+    const withTrusting = horseWithTraits(['peopleTrusting']);
     const without = horseWithTraits([]);
-    const socialResult = calculateBondingChange(withSocial, 'training', { success: true });
+    const trustingResult = calculateBondingChange(withTrusting, 'training', { success: true });
     const baseResult = calculateBondingChange(without, 'training', { success: true });
-    expect(socialResult.modifiedChange).toBeGreaterThan(baseResult.modifiedChange);
+    expect(trustingResult.modifiedChange).toBeGreaterThan(baseResult.modifiedChange);
   });
 
-  it('social trait does NOT exercise groomingBondingBonus for training activity', () => {
-    const withSocial = horseWithTraits(['social']);
-    // groomingBondingBonus branch requires activity === "grooming", so training should only apply bondingBonus + trainingBondingBonus
-    const result = calculateBondingChange(withSocial, 'training', { success: true });
-    expect(result.traitModifier).toBeGreaterThan(1);
+  it('peopleTrusting does NOT exercise groomingBondingBonus for training activity', () => {
+    const withTrusting = horseWithTraits(['peopleTrusting']);
+    const grooming = calculateBondingChange(withTrusting, 'grooming', { duration: 30 });
+    const training = calculateBondingChange(withTrusting, 'training', { success: true });
+    expect(training.traitModifier).toBeGreaterThan(1);
+    expect(training.traitModifier).toBeLessThan(grooming.traitModifier);
   });
 
   it('competition 2nd placement gives more bonding than 3rd', () => {

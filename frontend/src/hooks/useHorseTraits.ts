@@ -7,8 +7,8 @@
  * whose response shapes are documented inline:
  *
  *  - GET  /api/v1/traits/horse/:horseId           → authoritative positive /
- *      negative classification + a hidden COUNT + per-trait definition (description,
- *      rarity, category, type). This is the single source of truth for a
+ *      negative classification + a hidden COUNT + per-trait definition (label,
+ *      description, category, type). Never the rarity (owner ruling 2026-10-27, q112). This is the single source of truth for a
  *      trait's beneficial-vs-detrimental valence (definition.type / which
  *      bucket the name is in) — NOT a client-side stat-sign guess.
  *  - GET  /api/v1/traits/discovery-status/:horseId → discovery progress counts
@@ -37,8 +37,9 @@ import type { TraitDiscoveryStatus } from '@/types/traits';
 
 /** A trait definition as embedded by getTraitDefinition (epigeneticTraits.mjs). */
 export interface RawTraitDefinition {
-  type?: 'positive' | 'negative';
-  rarity?: string;
+  /** Authored player-facing name (owner ruling 2026-10-23). */
+  label?: string;
+  type?: 'positive' | 'negative' | null;
   description?: string;
   category?: string;
   conflicts?: string[];
@@ -103,8 +104,6 @@ export interface HorseTrait {
   valence: 'positive' | 'negative';
   /** Trait description from the backend definition (may be empty if undefined). */
   description: string;
-  /** Backend rarity tag if present (e.g. 'common', 'rare'). */
-  rarity?: string;
   /** Backend category if present (e.g. 'epigenetic', 'bond'). */
   category?: string;
   /** The viewer has not seen this revealed trait yet: it glows once (Equoria-lylhb). */
@@ -150,13 +149,15 @@ function mapBucket(
       const def = r.definition && typeof r.definition === 'object' ? r.definition : null;
       return {
         key: r.name as string,
-        name: humanizeTraitKey(r.name as string),
+        name:
+          typeof def?.label === 'string' && def.label.length > 0
+            ? def.label
+            : humanizeTraitKey(r.name as string),
         // The bucket the backend placed the trait in is authoritative; if a
         // definition.type disagrees we still trust the bucket (the bucket is
         // derived from horse.epigeneticModifiers, the persisted truth).
         valence,
         description: typeof def?.description === 'string' ? def.description : '',
-        rarity: typeof def?.rarity === 'string' ? def.rarity : undefined,
         category: typeof def?.category === 'string' ? def.category : undefined,
         isNew: r.isNew === true,
       };

@@ -27,8 +27,10 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // The pregnancy bonus pools in foalingService.mjs.
-const positiveBonusPool = /^(resilient|athletic|calm|peopleTrusting)$/;
-const negativeBonusPool = /^(fragile|lowImmunity|nervous|reactive)$/;
+// Owner ruling 2026-10-27 (q117): the bonus pools hold roster traits only
+// (athletic, calm, lowImmunity, nervous and reactive are no longer traits).
+const positiveBonusPool = /^(resilient|peopleTrusting)$/;
+const negativeBonusPool = /^fragile$/;
 
 const dayMs = 24 * 60 * 60 * 1000;
 

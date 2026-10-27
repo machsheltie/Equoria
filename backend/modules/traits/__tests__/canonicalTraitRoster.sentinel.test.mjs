@@ -11,8 +11,10 @@
  * the bad state):
  *   (a) §E — the four dropped names (weatherImmunity/nightVision/fireResistance/
  *       waterPhobia, any casing) appear in NONE of the three catalogs.
- *   (b) §E — legendaryBloodline is present and canonical (camelCase) in all
- *       three catalogs; no snake legendary_bloodline survives.
+ *   (b) Owner ruling 2026-10-27 (q117, Equoria-2d55z): TRAIT_DEFINITIONS is
+ *       exactly the twenty-trait roster, and the effect catalogs carry no trait
+ *       off it. Old contract: legendaryBloodline present in all three catalogs
+ *       (§E); the owner removed it from the roster, so it must now be absent.
  *   (c) §B — no groom-personality name leaks into the horse trait catalogs.
  *   (d) §C/§B — no snake_case key survives in the two camelCase catalogs
  *       (traitEffects + TRAIT_DEFINITIONS), EXCEPT the discipline_affinity_*
@@ -23,7 +25,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { getAllTraitEffects } from '../../../utils/traitEffects.mjs';
 import { getAllTraitCompetitionEffects } from '../../../utils/traitCompetitionImpact.mjs';
-import { getTraitsByType } from '../../../utils/epigeneticTraits.mjs';
+import { getTraitsByType, traitRosterIds } from '../../../utils/epigeneticTraits.mjs';
 
 const DROPPED = ['weatherimmunity', 'nightvision', 'fireresistance', 'waterphobia'];
 // The specific groom-personality / temperament "ghost" names the 2026-05-21
@@ -40,7 +42,8 @@ const GROOM_GHOSTS = [
   'friendly',
   'withdrawn',
   'hardy',
-  'adaptable',
+  // 'adaptable' was a groom-only name until the owner put Adaptable on the
+  // horse trait roster (2026-10-27, q117), so it is no longer a ghost.
   'sensitive',
   'dependent',
   'steady',
@@ -59,13 +62,41 @@ describe('canonical trait roster — §E dropped names', () => {
   });
 });
 
-describe('canonical trait roster — §E legendaryBloodline canonical everywhere', () => {
-  it('legendaryBloodline (camelCase) present in all three catalogs', () => {
-    expect(effectsKeys).toContain('legendaryBloodline');
-    expect(impactKeys).toContain('legendaryBloodline');
-    expect(definitionKeys).toContain('legendaryBloodline');
+describe('canonical trait roster — the owner roster of 2026-10-27 (q117)', () => {
+  const ROSTER = [
+    'brave',
+    'confident',
+    'outgoing',
+    'affectionate',
+    'resilient',
+    'fearful',
+    'insecure',
+    'aloof',
+    'fragile',
+    'skittish',
+    'eagerLearner',
+    'peopleTrusting',
+    'adaptable',
+    'heart',
+    'focused',
+    'excitable',
+    'curious',
+    'playful',
+    'biddable',
+    'competitive',
+  ];
+  it('TRAIT_DEFINITIONS holds exactly the twenty roster traits', () => {
+    expect(definitionKeys).toEqual(ROSTER);
+    expect([...traitRosterIds]).toEqual(ROSTER);
   });
-  it('no snake legendary_bloodline survives in any catalog', () => {
+  it('the effect catalogs carry no trait off the roster (discipline affinities aside)', () => {
+    const offRoster = [...effectsKeys, ...impactKeys].filter(
+      k => !ROSTER.includes(k) && !k.startsWith('disciplineAffinity'),
+    );
+    expect(offRoster).toEqual([]);
+  });
+  it('legendaryBloodline, in either casing, is in no catalog', () => {
+    expect(allKeys).not.toContain('legendaryBloodline');
     expect(allKeys).not.toContain('legendary_bloodline');
   });
 });

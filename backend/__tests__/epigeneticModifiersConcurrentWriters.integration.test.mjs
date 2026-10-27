@@ -44,12 +44,15 @@ const randHex = () => randomBytes(6).toString('hex');
 const barrierClient = createBarrierClient();
 
 const byRarity = n => ({ common: n, uncommon: n, rare: n, ultraRare: n, legendary: n });
-// Test values only; the owner has not ruled the real numbers.
+// Test values only (the reveal itself is not under test here). Since the
+// owner's 2026-10-27 rulings a trait's polarity is a setting too, so fearful's
+// is given alongside its rarity.
 const revealSettings = {
   revealDays: { positive: byRarity(1), negative: byRarity(1) },
   switchOffDays: { positive: byRarity(1), negative: byRarity(1) },
   dailyChance: byRarity(1),
   lastDayOfLife: 21,
+  traitPolarity: { fearful: 'negative' },
   traitRarity: { fearful: 'common' },
 };
 

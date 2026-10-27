@@ -83,24 +83,15 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       ).toBe(true);
     });
 
-    it('assigns reactive trait with moderate inbreeding (3 repeated ancestors)', () => {
-      expect(
-        traitAppears(
-          () => applyEpigeneticTraitsAtBirth({ mare, lineage: moderateLineage, feedQuality: 50 }),
-          'reactive',
-          'negative',
-        ),
-      ).toBe(true);
-    });
-
-    it('assigns lowImmunity trait with inbreeding', () => {
-      expect(
-        traitAppears(
-          () => applyEpigeneticTraitsAtBirth({ mare, lineage: moderateLineage, feedQuality: 50 }),
-          'lowImmunity',
-          'negative',
-        ),
-      ).toBe(true);
+    // Old contract: inbreeding could also assign reactive and lowImmunity. Owner
+    // ruling 2026-10-27 (q117) took both off the roster; fragile is the only
+    // inbreeding trait now.
+    it('never assigns reactive or lowImmunity, however inbred', () => {
+      for (let seed = 1; seed <= 200; seed++) {
+        const result = applyEpigeneticTraitsAtBirth({ mare, lineage: moderateLineage, feedQuality: 50, seed });
+        expect(carried(result)).not.toContain('reactive');
+        expect(carried(result)).not.toContain('lowImmunity');
+      }
     });
 
     it('assigns multiple negative traits with severe inbreeding', () => {
@@ -113,8 +104,9 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       ];
       const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage: severeLineage, feedQuality: 50 });
       expect(traitAppears(fn, 'fragile', 'negative')).toBe(true);
-      expect(traitAppears(fn, 'reactive', 'negative')).toBe(true);
-      expect(traitAppears(fn, 'lowImmunity', 'negative')).toBe(true);
+      // q117: reactive and lowImmunity are no longer traits.
+      expect(traitAppears(fn, 'reactive', 'negative')).toBe(false);
+      expect(traitAppears(fn, 'lowImmunity', 'negative')).toBe(false);
     });
 
     it('does not assign inbreeding traits without repeated ancestor IDs', () => {
@@ -131,7 +123,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
     });
   });
 
-  describe('3+ ancestors with same discipline → affinity + legacyTalent', () => {
+  describe('3+ ancestors with same discipline → affinity (legacyTalent removed, q117)', () => {
     const mare = { id: 1, name: 'Racing Mare' };
 
     it('assigns disciplineAffinityRacing with 3+ racing ancestors', () => {
@@ -149,7 +141,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       ).toBe(true);
     });
 
-    it('assigns legacyTalent with 4+ ancestors in same discipline', () => {
+    it('assigns the affinity, never legacyTalent, with 4+ ancestors in same discipline', () => {
       const lineage = [
         { id: 701, name: 'Show Jumper 1', mostCompetedDiscipline: 'Show Jumping' },
         { id: 702, name: 'Show Jumper 2', mostCompetedDiscipline: 'Show Jumping' },
@@ -159,7 +151,9 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       ];
       const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 65 });
       expect(traitAppears(fn, 'disciplineAffinityShowJumping')).toBe(true);
-      expect(traitAppears(fn, 'legacyTalent')).toBe(true);
+      // Old contract: legacyTalent also appeared. Owner ruling 2026-10-27 (q117)
+      // removed it from the roster.
+      expect(traitAppears(fn, 'legacyTalent')).toBe(false);
     });
 
     it('assigns disciplineAffinityDressage with dressage specialization', () => {

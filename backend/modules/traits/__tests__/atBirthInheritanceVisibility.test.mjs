@@ -12,6 +12,10 @@
  *     inherited trait is born hidden unless a parent had it active and
  *     revealed, for every seed.
  *   - the result always has the three-array shape.
+ *
+ * Owner ruling 2026-10-27 (q117) replaced the roster, so the examples use
+ * roster traits: confident / eagerLearner for the old intelligent / athletic,
+ * and heart for the old legendaryBloodline (all three are off the roster now).
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -44,12 +48,12 @@ describe('§A Stage-0 inheritance — parent traits can be inherited', () => {
         mare: goodMare,
         lineage: [],
         feedQuality: 90,
-        damTraits: ['intelligent'],
-        sireTraits: ['athletic'],
+        damTraits: ['confident'],
+        sireTraits: ['eagerLearner'],
         seed,
       });
       const all = unionTraits(r);
-      if (all.includes('intelligent') || all.includes('athletic')) {
+      if (all.includes('confident') || all.includes('eagerLearner')) {
         inherited = true;
       }
     }
@@ -69,8 +73,8 @@ describe('§A Stage-0 inheritance — parent traits can be inherited', () => {
         seed,
       });
       const all = unionTraits(r);
-      expect(all).not.toContain('intelligent');
-      expect(all).not.toContain('athletic');
+      expect(all).not.toContain('confident');
+      expect(all).not.toContain('eagerLearner');
     }
   });
 
@@ -98,9 +102,9 @@ describe('§A Stage-0 inheritance — parent traits can be inherited', () => {
 // Owner ruling 2026-10-26 (q98, Equoria-2d55z) replaced the §D rarity rolls
 // (legendary 90% / rare 70% / poor feed 30% born hidden, otherwise visible by
 // chance) with one rule: a carried trait is born hidden unless a parent had it
-// active and revealed. These two cases pin the new rule for the legendary trait
-// the old §D tests used.
-describe('visibility (q98) — an inherited legendary trait follows the parent, never a roll', () => {
+// active and revealed. These two cases pin the new rule for an inherited trait
+// (heart; the old §D tests used legendaryBloodline, which q117 removed).
+describe('visibility (q98) — an inherited trait follows the parent, never a roll', () => {
   it('inherited from parents where it was hidden: born hidden for every seed', () => {
     let inherited = 0;
     for (let seed = 1; seed <= 300; seed++) {
@@ -108,12 +112,12 @@ describe('visibility (q98) — an inherited legendary trait follows the parent, 
         mare: goodMare,
         lineage: [],
         feedQuality: 90,
-        damTraits: ['legendaryBloodline'],
-        sireTraits: ['legendaryBloodline'],
+        damTraits: ['heart'],
+        sireTraits: ['heart'],
         seed,
       });
-      expect(r.positive).not.toContain('legendaryBloodline');
-      inherited += r.hidden.includes('legendaryBloodline') ? 1 : 0;
+      expect(r.positive).not.toContain('heart');
+      inherited += r.hidden.includes('heart') ? 1 : 0;
     }
     expect(inherited).toBeGreaterThan(0);
   });
@@ -125,13 +129,13 @@ describe('visibility (q98) — an inherited legendary trait follows the parent, 
         mare: goodMare,
         lineage: [],
         feedQuality: 90,
-        damTraits: ['legendaryBloodline'],
-        sireTraits: ['legendaryBloodline'],
-        parentActiveTraits: ['legendaryBloodline'],
+        damTraits: ['heart'],
+        sireTraits: ['heart'],
+        parentActiveTraits: ['heart'],
         seed,
       });
-      expect(r.hidden).not.toContain('legendaryBloodline');
-      inherited += r.positive.includes('legendaryBloodline') ? 1 : 0;
+      expect(r.hidden).not.toContain('heart');
+      inherited += r.positive.includes('heart') ? 1 : 0;
     }
     expect(inherited).toBeGreaterThan(0);
   });
@@ -143,8 +147,8 @@ describe('seeded births', () => {
       mare: poorMare,
       lineage: [],
       feedQuality: 20,
-      damTraits: ['legendaryBloodline', 'intelligent'],
-      sireTraits: ['athletic'],
+      damTraits: ['heart', 'confident'],
+      sireTraits: ['eagerLearner'],
       seed: 42,
     };
     const a = applyEpigeneticTraitsAtBirth(args);

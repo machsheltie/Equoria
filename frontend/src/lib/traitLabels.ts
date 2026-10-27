@@ -1,17 +1,11 @@
 /**
  * Authored labels for the words a trait definition carries (Equoria-bdpvw).
  *
- * Owner ruling 2026-10-23: players never see a stored code name. The rarity and
- * category the trait definitions store are shown through these maps; a value
- * the maps have not been taught reads as a generic authored phrase.
+ * Owner ruling 2026-10-23: players never see a stored code name. The category
+ * the trait definitions store is shown through this map; a value the map has
+ * not been taught reads as a generic authored phrase. Rarity is never shown to
+ * players (owner ruling 2026-10-27, q112), so it has no label here.
  */
-
-const traitRarityLabels: Readonly<Record<string, string>> = Object.freeze({
-  common: 'Common',
-  uncommon: 'Uncommon',
-  rare: 'Rare',
-  legendary: 'Legendary',
-});
 
 const traitCategoryLabels: Readonly<Record<string, string>> = Object.freeze({
   epigenetic: 'Care Trait',
@@ -19,16 +13,10 @@ const traitCategoryLabels: Readonly<Record<string, string>> = Object.freeze({
   situational: 'Situational Trait',
 });
 
-export function traitRarityLabel(rarity: string | null | undefined): string {
-  if (typeof rarity !== 'string') return 'Unrecorded';
-  return traitRarityLabels[rarity.trim().toLowerCase()] ?? 'Unrecorded';
-}
-
 export function traitCategoryLabel(category: string | null | undefined): string {
   if (typeof category !== 'string') return 'Trait';
   return traitCategoryLabels[category.trim().toLowerCase()] ?? 'Trait';
 }
 
 /** Exported so the test can prove every stored value is covered. */
-export const knownTraitRarityLabels = traitRarityLabels;
 export const knownTraitCategoryLabels = traitCategoryLabels;

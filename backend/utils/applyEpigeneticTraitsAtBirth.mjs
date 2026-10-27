@@ -5,14 +5,13 @@
  * One ordered pipeline produces a foal's `{ positive, negative, hidden }`
  * epigenetic modifiers at birth:
  *
- *   Stage 0 — INHERITANCE (NEW, §A): each distinct sire/dam epigenetic trait is
- *     inherited with a per-trait probability (rarity- + dam-condition-adjusted,
- *     ported from epigeneticTraits.calculateEpigeneticTraits).
+ *   Stage 0 — INHERITANCE (NEW, §A): each distinct sire/dam epigenetic trait ON
+ *     THE ROSTER is inherited with a per-trait probability (rarity- +
+ *     dam-condition-adjusted, ported from epigeneticTraits.calculateEpigeneticTraits).
  *   Stage 1 — premium feed → resilient / peopleTrusting.
- *   Stage 2 — inbreeding → fragile / reactive / lowImmunity.
+ *   Stage 2 — inbreeding → fragile.
  *   Stage 3 — lineage discipline specialization → disciplineAffinity<Discipline>
- *     (+ legacyTalent for a strong 4+-ancestor lineage).
- *   Stage 4 — poor feed → lowImmunity.
+ *     (the discipline trait, ruled separately from the trait roster).
  *   Dedupe, then VISIBILITY (owner ruling 2026-10-26, q98; Equoria-2d55z):
  *     every trait the foal carries is born HIDDEN, unless a parent had that
  *     trait active and revealed (`parentActiveTraits`), in which case it is
@@ -21,6 +20,12 @@
  *     (modules/traits/services/traitRevealEngine.mjs). This replaced the
  *     rarity/feed visibility rolls (rare 70% / legendary 90% / poor feed 30%
  *     hidden), which made a store-bred foal's traits visible by chance.
+ *
+ * Only roster traits are generated (owner ruling 2026-10-27, q117: the
+ * twenty-trait roster in utils/epigeneticTraits.mjs replaces the old one).
+ * The rolls that produced names no longer on it were removed: reactive and
+ * lowImmunity from inbreeding, legacyTalent from a strong lineage, and
+ * lowImmunity from poor feed. A parent's off-roster trait is never inherited.
  *
  * A mare in Fair health multiplies EVERY negative-trait roll here by 1.25 and a
  * mare in Bad health by 1.5 (owner ruling 2026-10-26, Equoria-pw7cm): pass the
@@ -32,7 +37,7 @@
  */
 
 import logger from './logger.mjs';
-import { getTraitDefinition } from './epigeneticTraits.mjs';
+import { getTraitDefinition, isRosterTrait } from './epigeneticTraits.mjs';
 import { normalizeTraitKey, disciplineAffinityKey } from './epigeneticTraitKeyMap.mjs';
 
 /**
@@ -141,8 +146,8 @@ export function applyEpigeneticTraitsAtBirth({
 
   // ── Stage 0 — INHERITANCE (§A) ─────────────────────────────────────────────
   // Normalize incoming parent traits to canonical keys so legacy snake-case
-  // rows still inherit correctly, then inherit each distinct trait by its
-  // rarity/condition-adjusted probability.
+  // rows still inherit correctly, keep only roster traits (q117), then inherit
+  // each distinct trait by its rarity/condition-adjusted probability.
   const parentTraits = [
     ...new Set(
       [
@@ -150,7 +155,8 @@ export function applyEpigeneticTraitsAtBirth({
         ...(Array.isArray(damTraits) ? damTraits : []),
       ]
         .filter(t => typeof t === 'string' && t.length > 0)
-        .map(normalizeTraitKey),
+        .map(normalizeTraitKey)
+        .filter(isRosterTrait),
     ),
   ];
   for (const trait of parentTraits) {
@@ -200,28 +206,6 @@ export function applyEpigeneticTraitsAtBirth({
       addNegative('fragile');
       logger.info('[applyEpigeneticTraitsAtBirth] Applied fragile (inbreeding)');
     }
-
-    const reactiveChance =
-      inbreedingAnalysis.severity === 'high'
-        ? 0.7
-        : inbreedingAnalysis.severity === 'moderate'
-          ? 0.4
-          : 0.2;
-    if (rng() < negativeChance(reactiveChance)) {
-      addNegative('reactive');
-      logger.info('[applyEpigeneticTraitsAtBirth] Applied reactive (inbreeding)');
-    }
-
-    const immunityChance =
-      inbreedingAnalysis.severity === 'high'
-        ? 0.6
-        : inbreedingAnalysis.severity === 'moderate'
-          ? 0.35
-          : 0.15;
-    if (rng() < negativeChance(immunityChance)) {
-      addNegative('lowImmunity');
-      logger.info('[applyEpigeneticTraitsAtBirth] Applied lowImmunity (inbreeding)');
-    }
   }
 
   // ── Stage 3 — lineage discipline specialization ─────────────────────────────
@@ -242,21 +226,6 @@ export function applyEpigeneticTraitsAtBirth({
       addPositive(affinityTrait);
       logger.info(`[applyEpigeneticTraitsAtBirth] Applied ${affinityTrait}`);
     }
-
-    if (disciplineAnalysis.count >= 4 && rng() < 0.4) {
-      addPositive('legacyTalent');
-      logger.info('[applyEpigeneticTraitsAtBirth] Applied legacyTalent (strong lineage)');
-    }
-  }
-
-  // ── Stage 4 — poor feed ──────────────────────────────────
-  if (
-    currentFeedQuality <= 30 &&
-    rng() < negativeChance(0.3) &&
-    !negativeCandidates.has('lowImmunity')
-  ) {
-    addNegative('lowImmunity');
-    logger.info('[applyEpigeneticTraitsAtBirth] Applied lowImmunity (poor nutrition)');
   }
 
   // ── Dedupe + visibility (q98) ───────────────────────────────────────────────

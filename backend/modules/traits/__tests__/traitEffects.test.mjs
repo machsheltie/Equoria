@@ -2,6 +2,14 @@
  * traitEffects — unit tests (Equoria-rr7)
  *
  * Pure functions, no DB required.
+ *
+ * Owner ruling 2026-10-27 (q117, Equoria-2d55z) replaced the trait roster:
+ * effects keyed to traits no longer on it (calm, bold, intelligent, athletic,
+ * nervous, lazy, legendaryBloodline and the rest) were removed, so those names
+ * now resolve to no effects. The combination mechanics are exercised with the
+ * entries that remain (resilient, eagerLearner, peopleTrusting, fragile and the
+ * generated discipline affinities); the old per-trait value checks for removed
+ * traits became "has no effect" checks.
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -28,15 +36,15 @@ describe('getTraitEffects', () => {
     expect(effects.competitionScoreModifier).toBeGreaterThan(0);
   });
 
-  it('calm has bondingBonus', () => {
-    const effects = getTraitEffects('calm');
+  it('peopleTrusting has bondingBonus', () => {
+    const effects = getTraitEffects('peopleTrusting');
     expect(effects.bondingBonus).toBeDefined();
     expect(typeof effects.bondingBonus).toBe('number');
   });
 
-  it('bold has competitionNerveBonus', () => {
-    const effects = getTraitEffects('bold');
-    expect(effects.competitionNerveBonus).toBeDefined();
+  it('calm and bold, no longer traits, have no effects', () => {
+    expect(getTraitEffects('calm')).toBeNull();
+    expect(getTraitEffects('bold')).toBeNull();
   });
 
   it('returns null for an unknown trait', () => {
@@ -66,12 +74,15 @@ describe('getAllTraitEffects', () => {
     expect(Object.keys(all).length).toBeGreaterThan(0);
   });
 
-  it('includes resilient, calm, bold, intelligent', () => {
+  it('includes the roster traits that keep effects, and none of the removed ones', () => {
     const all = getAllTraitEffects();
     expect(all.resilient).toBeDefined();
-    expect(all.calm).toBeDefined();
-    expect(all.bold).toBeDefined();
-    expect(all.intelligent).toBeDefined();
+    expect(all.eagerLearner).toBeDefined();
+    expect(all.peopleTrusting).toBeDefined();
+    expect(all.fragile).toBeDefined();
+    expect(all.calm).toBeUndefined();
+    expect(all.bold).toBeUndefined();
+    expect(all.intelligent).toBeUndefined();
   });
 
   it('each entry is an object with at least one effect', () => {
@@ -134,20 +145,20 @@ describe('getCombinedTraitEffects', () => {
 
   it('combines numeric effects additively for two traits', () => {
     const single = getCombinedTraitEffects(['resilient']);
-    const double = getCombinedTraitEffects(['resilient', 'bold']);
+    const double = getCombinedTraitEffects(['resilient', 'eagerLearner']);
     // both have competitionScoreModifier → combined should be larger
     expect(double.competitionScoreModifier).toBeGreaterThan(single.competitionScoreModifier);
   });
 
   it('boolean effects: true if any trait has it', () => {
-    const combined = getCombinedTraitEffects(['resilient', 'calm']);
-    // Both have suppressTemperamentDrift: true
+    const combined = getCombinedTraitEffects(['fragile', 'resilient']);
+    // Only resilient has suppressTemperamentDrift: true
     expect(combined.suppressTemperamentDrift).toBe(true);
   });
 
   it('merges discipline-specific objects from multiple traits', () => {
-    const combined = getCombinedTraitEffects(['resilient', 'calm']);
-    // resilient has disciplineModifiers.Racing, calm has disciplineModifiers.Dressage
+    const combined = getCombinedTraitEffects(['resilient', 'disciplineAffinityDressage']);
+    // resilient has disciplineModifiers.Racing, the Dressage affinity has disciplineModifiers.Dressage
     expect(combined.disciplineModifiers).toBeDefined();
     expect(combined.disciplineModifiers.Racing).toBeDefined();
     expect(combined.disciplineModifiers.Dressage).toBeDefined();
@@ -158,13 +169,13 @@ describe('getCombinedTraitEffects', () => {
     expect(combined.competitionScoreModifier).toBeDefined();
   });
 
-  it('object effect overwrites prior non-object value for same key — line 699 else branch', () => {
-    // eager_learner.baseStatBoost = 1 (number) → stored directly (line 667)
-    // athletic.baseStatBoost = { stamina:2, agility:2, balance:1 } (object)
-    // combinedEffects.baseStatBoost = 1 (truthy, not object) → outer else-if fires at line 679
-    // inner if at 681 is FALSE (number ≠ object) → else at line 699 overwrites with spread
-    const combined = getCombinedTraitEffects(['eager_learner', 'athletic']);
-    expect(combined.baseStatBoost).toEqual({ stamina: 2, agility: 2, balance: 1 });
+  it('object effect overwrites prior non-object value for same key — the else branch', () => {
+    // eager_learner.baseStatBoost = 1 (number) → stored directly
+    // disciplineAffinityRacing.baseStatBoost = { speed: 3, stamina: 2 } (object)
+    // combinedEffects.baseStatBoost = 1 (truthy, not object) → outer else-if fires;
+    // the inner object check is FALSE (number ≠ object) → else overwrites with spread
+    const combined = getCombinedTraitEffects(['eager_learner', 'disciplineAffinityRacing']);
+    expect(combined.baseStatBoost).toEqual({ speed: 3, stamina: 2 });
   });
 });
 
@@ -173,23 +184,23 @@ describe('getCombinedTraitEffects', () => {
 // discipline-modifier sign checks not covered by the function-mechanics tests above.
 describe('traitEffects — exact per-trait definitions (merged from legacy backend/tests, Equoria-wvuin)', () => {
   describe('getCombinedTraitEffects — exact arithmetic', () => {
-    it('combines numeric modifiers additively (resilient 0.03 + athletic 0.05 = 0.08)', () => {
-      expect(getCombinedTraitEffects(['resilient', 'athletic']).competitionScoreModifier).toBe(0.08);
+    it('combines numeric modifiers additively (resilient 0.03 + eagerLearner 0.02 = 0.05)', () => {
+      expect(getCombinedTraitEffects(['resilient', 'eagerLearner']).competitionScoreModifier).toBe(0.05);
     });
 
-    it('merges object baseStatBoost across athletic + legendaryBloodline', () => {
-      const combined = getCombinedTraitEffects(['athletic', 'legendaryBloodline']);
-      expect(combined.baseStatBoost.stamina).toBe(5); // athletic 2 + legendary 3
-      expect(combined.baseStatBoost.agility).toBe(5); // athletic 2 + legendary 3
-      expect(combined.baseStatBoost.balance).toBe(3); // athletic 1 + legendary 2
-      expect(combined.baseStatBoost.focus).toBe(2); // only legendary 2
+    it('merges object baseStatBoost across the Racing and Endurance affinities', () => {
+      const combined = getCombinedTraitEffects(['disciplineAffinityRacing', 'disciplineAffinityEndurance']);
+      expect(combined.baseStatBoost.speed).toBe(3); // only Racing 3
+      expect(combined.baseStatBoost.stamina).toBe(5); // Racing 2 + Endurance 3
+      expect(combined.baseStatBoost.intelligence).toBe(2); // only Endurance 2
     });
 
-    it('combines resilient + intelligent effects from both traits', () => {
-      const combined = getCombinedTraitEffects(['resilient', 'intelligent']);
+    it('combines resilient + eagerLearner effects from both traits', () => {
+      const combined = getCombinedTraitEffects(['resilient', 'eagerLearner']);
       expect(combined.suppressTemperamentDrift).toBe(true); // resilient
-      expect(combined.trainingXpModifier).toBe(0.25); // intelligent
-      expect(combined.statGainChanceModifier).toBe(0.15); // intelligent
+      expect(combined.trainingXpModifier).toBe(0.25); // eagerLearner
+      expect(combined.statGainChanceModifier).toBe(0.1); // eagerLearner
+      expect(combined.trainingConsistencyBonus).toBe(0.25); // resilient 0.1 + eagerLearner 0.15
     });
   });
 
@@ -201,41 +212,32 @@ describe('traitEffects — exact per-trait definitions (merged from legacy backe
       expect(e.disciplineModifiers['Cross Country']).toBe(0.05);
     });
 
-    it('intelligent has correct effects', () => {
-      const e = getTraitEffects('intelligent');
+    it('eagerLearner has correct effects', () => {
+      const e = getTraitEffects('eagerLearner');
       expect(e.trainingXpModifier).toBe(0.25);
-      expect(e.statGainChanceModifier).toBe(0.15);
-      // Equoria-fjgzp: no cooldown effect (one training per horse per week).
-      expect(e.trainingTimeReduction).toBeUndefined();
-      expect(e.competitionScoreModifier).toBe(0.03);
-      expect(e.problemSolvingBonus).toBe(true);
-      expect(e.disciplineModifiers['Dressage']).toBe(0.06);
+      expect(e.statGainChanceModifier).toBe(0.1);
+      expect(e.baseStatBoost).toBe(1);
+      expect(e.competitionScoreModifier).toBe(0.02);
     });
 
-    it('athletic has correct effects', () => {
-      const e = getTraitEffects('athletic');
-      expect(e.physicalTrainingBonus).toBe(0.2);
-      expect(e.competitionScoreModifier).toBe(0.05);
-      expect(e.baseStatBoost.stamina).toBe(2);
-      expect(e.baseStatBoost.agility).toBe(2);
-      expect(e.disciplineModifiers['Racing']).toBe(0.07);
+    it('intelligent and athletic, no longer traits, have no effects', () => {
+      expect(getTraitEffects('intelligent')).toBeNull();
+      expect(getTraitEffects('athletic')).toBeNull();
     });
   });
 
   describe('negative traits — exact penalty values', () => {
-    it('nervous has correct penalties', () => {
-      const e = getTraitEffects('nervous');
-      expect(e.competitionScoreModifier).toBe(-0.04);
-      expect(e.disciplineModifiers['Racing']).toBe(-0.06);
+    it('fragile has correct penalties', () => {
+      const e = getTraitEffects('fragile');
+      expect(e.competitionScoreModifier).toBe(-0.035);
+      expect(e.injuryRisk).toBe(0.3);
+      expect(e.disciplineModifiers['Cross Country']).toBe(-0.08);
     });
 
-    it('lazy has correct penalties', () => {
-      const e = getTraitEffects('lazy');
-      expect(e.trainingXpModifier).toBe(-0.2);
-      expect(e.trainingMotivationPenalty).toBe(0.25);
-      expect(e.competitionScoreModifier).toBe(-0.035);
-      expect(e.activityAvoidance).toBe(true);
-      expect(e.disciplineModifiers['Endurance']).toBe(-0.08);
+    it('nervous and lazy, no longer traits, have no penalties', () => {
+      expect(getTraitEffects('nervous')).toBeNull();
+      expect(getTraitEffects('lazy')).toBeNull();
+      expect(getCombinedTraitEffects(['nervous', 'lazy'])).toEqual({});
     });
 
     // Owner ruling 2026-10-22 (Equoria-0d4wa) replaced the old contract (burnout
@@ -247,16 +249,9 @@ describe('traitEffects — exact per-trait definitions (merged from legacy backe
     });
   });
 
-  describe('rare traits — exact effect values', () => {
-    it('legendaryBloodline has powerful effects', () => {
-      const e = getTraitEffects('legendaryBloodline');
-      expect(e.trainingXpModifier).toBe(0.5);
-      expect(e.statGainChanceModifier).toBe(0.3);
-      expect(e.competitionScoreModifier).toBe(0.08);
-      expect(e.eliteTrainingAccess).toBe(true);
-      expect(e.baseStatBoost.stamina).toBe(3);
-      expect(e.breedingValueBonus).toBe(0.5);
-      expect(e.disciplineModifiers['Racing']).toBe(0.1);
+  describe('rare traits', () => {
+    it('legendaryBloodline, no longer a trait, has no effects', () => {
+      expect(getTraitEffects('legendaryBloodline')).toBeNull();
     });
   });
 
@@ -265,34 +260,33 @@ describe('traitEffects — exact per-trait definitions (merged from legacy backe
       const resilient = getTraitEffects('resilient');
       expect(resilient.disciplineModifiers['Cross Country']).toBeGreaterThan(0);
       expect(resilient.disciplineModifiers['Endurance']).toBeGreaterThan(0);
-      const bold = getTraitEffects('bold');
-      expect(bold.disciplineModifiers['Show Jumping']).toBeGreaterThan(0);
-      expect(bold.disciplineModifiers['Racing']).toBeGreaterThan(0);
+      expect(resilient.disciplineModifiers['Racing']).toBeGreaterThan(0);
     });
 
     it('negative traits have negative discipline penalties', () => {
-      const nervous = getTraitEffects('nervous');
-      expect(nervous.disciplineModifiers['Racing']).toBeLessThan(0);
-      expect(nervous.disciplineModifiers['Show Jumping']).toBeLessThan(0);
-      const lazy = getTraitEffects('lazy');
-      expect(lazy.disciplineModifiers['Endurance']).toBeLessThan(0);
-      expect(lazy.disciplineModifiers['Cross Country']).toBeLessThan(0);
+      const fragile = getTraitEffects('fragile');
+      expect(fragile.disciplineModifiers['Racing']).toBeLessThan(0);
+      expect(fragile.disciplineModifiers['Show Jumping']).toBeLessThan(0);
+      expect(fragile.disciplineModifiers['Cross Country']).toBeLessThan(0);
     });
   });
 
   describe('hasTraitEffect — additional known effects', () => {
-    it('lazy has trainingXpModifier and bold has competitionConfidenceBoost', () => {
-      expect(hasTraitEffect('lazy', 'trainingXpModifier')).toBe(true);
-      expect(hasTraitEffect('bold', 'competitionConfidenceBoost')).toBe(true);
+    it('eagerLearner has trainingXpModifier and peopleTrusting has groomingBondingBonus; removed traits have none', () => {
+      expect(hasTraitEffect('eagerLearner', 'trainingXpModifier')).toBe(true);
+      expect(hasTraitEffect('peopleTrusting', 'groomingBondingBonus')).toBe(true);
+      expect(hasTraitEffect('lazy', 'trainingXpModifier')).toBe(false);
+      expect(hasTraitEffect('bold', 'competitionConfidenceBoost')).toBe(false);
     });
   });
 
   describe('getAllTraitEffects — includes negative/rare categories', () => {
-    it('includes lazy, nervous, legendaryBloodline and no burnout (Equoria-0d4wa)', () => {
+    it('includes fragile; no lazy, nervous, legendaryBloodline (q117) and no burnout (Equoria-0d4wa)', () => {
       const all = getAllTraitEffects();
-      expect(all.lazy).toBeDefined();
-      expect(all.nervous).toBeDefined();
-      expect(all.legendaryBloodline).toBeDefined();
+      expect(all.fragile).toBeDefined();
+      expect(all.lazy).toBeUndefined();
+      expect(all.nervous).toBeUndefined();
+      expect(all.legendaryBloodline).toBeUndefined();
       expect(all.burnout).toBeUndefined();
     });
   });

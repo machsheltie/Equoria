@@ -12,6 +12,7 @@
 export { calculateTraitScore } from './services/legacyScoreTraitCalculator.mjs';
 export { sweepExpiredTemporaryFlags } from './services/temporaryFlagSystem.mjs';
 export { logTraitAssignment } from './services/traitHistoryService.mjs';
+export { runNightlyTraitReveal } from './services/traitRevealEngine.mjs';
 export { getTraitRevelationAnalytics } from './services/traitRevelationAnalyticsService.mjs';
 export { generateTraitTimeline } from './services/traitTimelineService.mjs';
 export { evaluateAndPersistUltraRareTraits } from './services/ultraRareTraitEvaluationService.mjs';

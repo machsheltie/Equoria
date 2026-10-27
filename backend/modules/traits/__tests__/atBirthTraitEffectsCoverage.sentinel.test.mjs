@@ -184,7 +184,10 @@ describe('at-birth-emittable trait → traitEffects coverage (sentinel, Equoria-
     expect(affinity.size).toBeGreaterThan(0);
     // Spot-check that known emitter literals are actually captured.
     expect(literal.has('resilient')).toBe(true);
-    expect(literal.has('legacyTalent')).toBe(true); // §C: canonical camelCase emitter literal
+    // Old spot-check: legacyTalent. Owner ruling 2026-10-27 (q117) removed it from
+    // the roster and the emitter; fragile (inbreeding) is a literal that remains.
+    expect(literal.has('fragile')).toBe(true);
+    expect(literal.has('legacyTalent')).toBe(false);
     expect(affinity.has('disciplineAffinityRacing')).toBe(true); // §F: canonical affinity key
   });
 

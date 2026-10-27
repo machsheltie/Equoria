@@ -200,7 +200,10 @@ describe('Trait Routes Integration Tests', () => {
         const firstTrait = response.body.data.traits[traitKeys[0]];
         expect(firstTrait).toHaveProperty('name');
         expect(firstTrait).toHaveProperty('type');
-        expect(firstTrait).toHaveProperty('rarity');
+        expect(firstTrait).toHaveProperty('label');
+        // Old contract: each definition carried its rarity. Owner ruling 2026-10-27
+        // (q112): players never see a trait's rarity.
+        expect(firstTrait).not.toHaveProperty('rarity');
       }
     });
 
