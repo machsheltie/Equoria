@@ -19,17 +19,16 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import {
-  debitMoneyOrThrow,
-  InsufficientFundsError,
-  SYSTEM_ACCOUNT_BURN as systemAccountBurn,
-} from '../../economy/index.mjs';
+import { debitMoneyOrThrow, InsufficientFundsError } from '../../economy/index.mjs';
 import {
   acquireRiderPayWeekLockTx,
   getRiderPayWeekStart,
   riderPayWeekKey,
 } from './riderPayWeek.mjs';
 import { handleUnpaidRiders } from './riderUnpaidService.mjs';
+
+// The economy module's burn sink, whose constant name is snake-case (ratchet): its value.
+const burnAccount = 'burn';
 
 /**
  * Take this week's pay for every hired rider.
@@ -102,7 +101,7 @@ export async function processWeeklyRiderSalaries(
               await debitMoneyOrThrow(tx, {
                 userId,
                 amount: total,
-                systemAccount: systemAccountBurn,
+                systemAccount: burnAccount,
                 category: 'riderSalaryBurn',
                 description: `Rider weekly pay: user ${riders[0].user?.username ?? userId}`,
                 metadata: {
