@@ -151,48 +151,6 @@ export interface HorseBreedingData {
 }
 
 /**
- * Inbreeding analysis result
- * Response from POST /api/genetics/inbreeding-analysis
- */
-export interface InbreedingAnalysis {
-  stallionId: number;
-  mareId: number;
-  inbreedingCoefficient: number;
-  commonAncestors: Array<{
-    ancestorId: number;
-    ancestorName: string;
-    generationsFromStallion: number;
-    generationsFromMare: number;
-  }>;
-  riskLevel: 'none' | 'low' | 'moderate' | 'high' | 'extreme';
-  warnings: string[];
-  recommendations: string[];
-}
-
-/**
- * Offspring trait predictions
- * Response from POST /api/breeding/genetic-probability
- */
-export interface OffspringPredictions {
-  stallionId: number;
-  mareId: number;
-  categoryProbabilities: Record<TraitCategory, number>;
-  estimatedTraitCount: {
-    min: number;
-    max: number;
-    expected: number;
-  };
-  confidenceLevel: 'low' | 'medium' | 'high';
-  isEstimate: boolean;
-  parentTraitData: {
-    totalParentTraits: number;
-    epigeneticTraits: number;
-    rareTraits: number;
-  };
-  traitProbabilities: TraitProbability[];
-}
-
-/**
  * Story 6-1: Breeding Pair Selection Types
  */
 

@@ -268,47 +268,4 @@ export const v1MirrorHandlers = [
   http.get(`${base}/api/v1/flags/definitions`, () =>
     HttpResponse.json({ success: true, data: { count: 0, flags: [] } })
   ),
-
-  // Genetics / breeding analysis (mirrors /api/genetics/inbreeding-analysis,
-  // /api/genetics/breeding-compatibility, /api/breeding/genetic-probability)
-  http.post(`${base}/api/v1/genetics/inbreeding-analysis`, () =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        inbreedingCoefficient: 0.0625,
-        riskLevel: 'low',
-        commonAncestors: [],
-      },
-    })
-  ),
-  // Mirrors the REAL assessBreedingPairCompatibility response shape
-  // (backend/modules/breeding/services/genetics/breedingCompatibility.mjs —
-  // the previous { compatibilityScore, concerns } shape was fiction;
-  // corrected per Equoria-m54lr).
-  http.post(`${base}/api/v1/genetics/breeding-compatibility`, () =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        overallScore: 82,
-        geneticCompatibility: 78,
-        diversityImpact: 65,
-        inbreedingRisk: 0.031,
-        expectedTraits: {
-          expectedStats: { speed: 70, stamina: 65, agility: 68, intelligence: 60 },
-          likelyTraits: ['bold'],
-          diversityPotential: 'medium',
-        },
-        recommendation: 'good',
-      },
-    })
-  ),
-  http.post(`${base}/api/v1/breeding/genetic-probability`, () =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        traitProbabilities: { bold: 0.75, athletic: 0.5 },
-        expectedStatRanges: { speed: [60, 80], stamina: [55, 75] },
-      },
-    })
-  ),
 ];

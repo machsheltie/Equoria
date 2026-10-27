@@ -1,6 +1,5 @@
 /**
- * breedingPredictionService + advancedLineageAnalysisService unit tests
- * (Equoria-rr7 coverage sprint).
+ * breedingPredictionService unit tests (Equoria-rr7 coverage sprint).
  *
  * Shared DB fixture: user + Stallion + Mare (no trait history, no lineage).
  * Tests exercise the zero-trait / missing-parent paths.
@@ -9,12 +8,6 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import { calculateTemperamentInfluence, generateBreedingData } from '../services/breedingPredictionService.mjs';
-import {
-  generateLineageTree,
-  calculateGeneticDiversityMetrics,
-  calculateInbreedingCoefficient,
-  generateLineageBreedingRecommendations,
-} from '../services/advancedLineageAnalysisService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -106,50 +99,5 @@ describe('generateBreedingData', () => {
     expect(typeof result.traitSummary).toBe('object');
     expect(typeof result.traitSummary.totalTraits).toBe('number');
     expect(result.traitSummary.totalTraits).toBe(0);
-  });
-});
-
-// ── advancedLineageAnalysisService ────────────────────────────────────────────
-
-describe('generateLineageTree', () => {
-  it('returns empty tree when parents have no lineage data', async () => {
-    const result = await generateLineageTree(stallion.id, mare.id, 2);
-    expect(typeof result.root).toBe('object');
-    expect(typeof result.totalHorses).toBe('number');
-    expect(typeof result.maxDepth).toBe('number');
-  });
-
-  it('returns empty structure for non-existent horses', async () => {
-    const result = await generateLineageTree(999999999, 999999998, 1);
-    expect(result.root.stallion).toBeNull();
-    expect(result.root.mare).toBeNull();
-    expect(result.totalHorses).toBe(0);
-  });
-});
-
-describe('calculateGeneticDiversityMetrics', () => {
-  it('returns diversity shape for empty generations array', async () => {
-    const result = await calculateGeneticDiversityMetrics([]);
-    expect(typeof result).toBe('object');
-  });
-});
-
-describe('calculateInbreedingCoefficient', () => {
-  it('returns a number between 0 and 1 for unrelated horses', async () => {
-    const result = await calculateInbreedingCoefficient(stallion.id, mare.id);
-    expect(typeof result).toBe('number');
-    expect(result).toBeGreaterThanOrEqual(0);
-    expect(result).toBeLessThanOrEqual(1);
-  });
-});
-
-describe('generateLineageBreedingRecommendations', () => {
-  it('returns recommendations shape for valid horse pair', async () => {
-    const result = await generateLineageBreedingRecommendations(stallion.id, mare.id);
-    expect(typeof result).toBe('object');
-    expect(typeof result.compatibility).toBe('object');
-    expect(Array.isArray(result.strengths)).toBe(true);
-    expect(Array.isArray(result.risks)).toBe(true);
-    expect(Array.isArray(result.suggestions)).toBe(true);
   });
 });

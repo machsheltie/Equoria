@@ -1,8 +1,10 @@
 /**
  * Advanced Breeding Genetics API Integration Tests
  *
- * Tests for API endpoints that integrate enhanced genetic probability calculations,
- * advanced lineage analysis, and genetic diversity tracking systems.
+ * Tests for the herd-level genetic diversity endpoints. The pair-prediction routes
+ * (genetic-probability, lineage-analysis, breeding-recommendations, inbreeding-analysis)
+ * are removed (owner ruling q91, Equoria-8grnh); their 404s are pinned in
+ * modules/breeding/__tests__/removedForecastRoutes.integration.test.mjs.
  *
  * Testing Approach: TDD with NO MOCKING - Real API validation
  * Business Rules: Complete breeding genetics workflow integration
@@ -181,138 +183,6 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
-  describe('🎯 Enhanced Genetic Probability API', () => {
-    test('POST /api/v1/breeding/genetic-probability should calculate breeding probabilities', async () => {
-      const response = await request(app)
-        .post('/api/v1/breeding/genetic-probability')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          stallionId: testStallion.id,
-          mareId: testMare.id,
-          includeLineage: true,
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('success', true);
-      expect(response.body.data).toHaveProperty('statProbabilities');
-      expect(response.body.data).toHaveProperty('traitProbabilities');
-      expect(response.body.data).toHaveProperty('compatibilityAnalysis');
-      expect(response.body.data).toHaveProperty('lineageAnalysis');
-
-      // Verify stat probabilities structure
-      expect(response.body.data.statProbabilities).toHaveProperty('speed');
-      expect(response.body.data.statProbabilities.speed).toHaveProperty('expectedRange');
-      expect(response.body.data.statProbabilities.speed).toHaveProperty('distribution');
-
-      // Verify compatibility analysis
-      expect(response.body.data.compatibilityAnalysis).toHaveProperty('overallScore');
-      expect(response.body.data.compatibilityAnalysis.overallScore).toBeGreaterThanOrEqual(0);
-      expect(response.body.data.compatibilityAnalysis.overallScore).toBeLessThanOrEqual(100);
-    });
-
-    test('POST /api/v1/breeding/genetic-probability should handle invalid horse IDs', async () => {
-      const response = await request(app)
-        .post('/api/v1/breeding/genetic-probability')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          stallionId: 99999,
-          mareId: testMare.id,
-        });
-
-      expect(response.status).toBe(404);
-      expect(response.body).toHaveProperty('success', false);
-      expect(response.body).toHaveProperty('error');
-    });
-
-    test('POST /api/v1/breeding/genetic-probability should require authentication', async () => {
-      const response = await request(app)
-        .post('/api/v1/breeding/genetic-probability')
-        .set('Origin', 'http://localhost:3000')
-        .send({
-          stallionId: testStallion.id,
-          mareId: testMare.id,
-        });
-
-      expect(response.status).toBe(401);
-    });
-  });
-
-  describe('🌳 Advanced Lineage Analysis API', () => {
-    test('GET /api/v1/breeding/lineage-analysis/:stallionId/:mareId should generate lineage tree', async () => {
-      const response = await request(app)
-        .get(`/api/v1/breeding/lineage-analysis/${testStallion.id}/${testMare.id}`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .query({ generations: 3 });
-
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('success', true);
-      expect(response.body.data).toHaveProperty('lineageTree');
-      expect(response.body.data).toHaveProperty('diversityMetrics');
-      expect(response.body.data).toHaveProperty('performanceAnalysis');
-      expect(response.body.data).toHaveProperty('visualizationData');
-
-      // Verify lineage tree structure
-      expect(response.body.data.lineageTree).toHaveProperty('root');
-      expect(response.body.data.lineageTree).toHaveProperty('generations');
-      expect(response.body.data.lineageTree).toHaveProperty('totalHorses');
-
-      // Verify visualization data
-      expect(response.body.data.visualizationData).toHaveProperty('nodes');
-      expect(response.body.data.visualizationData).toHaveProperty('edges');
-      expect(response.body.data.visualizationData).toHaveProperty('layout');
-    });
-
-    test('GET /api/v1/breeding/lineage-analysis should handle missing horses gracefully', async () => {
-      const response = await request(app)
-        .get('/api/v1/breeding/lineage-analysis/99999/99998')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken);
-
-      expect(response.status).toBe(404);
-      expect(response.body).toHaveProperty('success', false);
-    });
-
-    test('POST /api/v1/breeding/breeding-recommendations should generate comprehensive recommendations', async () => {
-      const response = await request(app)
-        .post('/api/v1/breeding/breeding-recommendations')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          stallionId: testStallion.id,
-          mareId: testMare.id,
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('success', true);
-      expect(response.body.data).toHaveProperty('compatibility');
-      expect(response.body.data).toHaveProperty('strengths');
-      expect(response.body.data).toHaveProperty('risks');
-      expect(response.body.data).toHaveProperty('suggestions');
-      expect(response.body.data).toHaveProperty('expectedOutcomes');
-
-      // Verify compatibility structure
-      expect(response.body.data.compatibility).toHaveProperty('score');
-      expect(response.body.data.compatibility).toHaveProperty('factors');
-      expect(typeof response.body.data.compatibility.score).toBe('number');
-
-      // Verify suggestions are actionable
-      expect(Array.isArray(response.body.data.suggestions)).toBe(true);
-    });
-  });
-
   describe('📊 Genetic Diversity Tracking API', () => {
     test('POST /api/v1/genetics/population-analysis should analyze population genetics', async () => {
       const horseIds = testPopulation.map(h => h.id);
@@ -342,35 +212,6 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       expect(response.body.data.populationHealth).toHaveProperty('overallHealth');
       expect(response.body.data.populationHealth.overallHealth).toHaveProperty('score');
       expect(response.body.data.populationHealth.overallHealth).toHaveProperty('grade');
-    });
-
-    test('POST /api/v1/genetics/inbreeding-analysis should calculate detailed inbreeding', async () => {
-      const response = await request(app)
-        .post('/api/v1/genetics/inbreeding-analysis')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          stallionId: testStallion.id,
-          mareId: testMare.id,
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('success', true);
-      expect(response.body.data).toHaveProperty('coefficient');
-      expect(response.body.data).toHaveProperty('commonAncestors');
-      expect(response.body.data).toHaveProperty('pathAnalysis');
-      expect(response.body.data).toHaveProperty('riskAssessment');
-      expect(response.body.data).toHaveProperty('recommendations');
-
-      // Verify coefficient is valid
-      expect(response.body.data.coefficient).toBeGreaterThanOrEqual(0);
-      expect(response.body.data.coefficient).toBeLessThanOrEqual(1);
-
-      // Verify risk assessment
-      expect(response.body.data.riskAssessment).toHaveProperty('level');
-      expect(['low', 'medium', 'high', 'critical']).toContain(response.body.data.riskAssessment.level);
     });
 
     test('GET /api/v1/genetics/diversity-report/:userId should generate comprehensive report', async () => {
@@ -533,11 +374,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
   describe('🔒 API Security and Validation', () => {
     test('All genetic endpoints should require authentication', async () => {
       const endpoints = [
-        { method: 'post', path: '/api/v1/breeding/genetic-probability' },
-        { method: 'get', path: `/api/v1/breeding/lineage-analysis/${testStallion.id}/${testMare.id}` },
-        { method: 'post', path: '/api/v1/breeding/breeding-recommendations' },
         { method: 'post', path: '/api/v1/genetics/population-analysis' },
-        { method: 'post', path: '/api/v1/genetics/inbreeding-analysis' },
         { method: 'get', path: `/api/v1/genetics/diversity-report/${testUser.id}` },
         { method: 'post', path: '/api/v1/genetics/optimal-breeding' },
       ];
@@ -549,31 +386,6 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     });
 
     test('Genetic endpoints should validate input parameters', async () => {
-      // Test missing required parameters
-      const response1 = await request(app)
-        .post('/api/v1/breeding/genetic-probability')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({});
-
-      expect(response1.status).toBe(400);
-
-      // Test invalid horse IDs
-      const response2 = await request(app)
-        .post('/api/v1/genetics/inbreeding-analysis')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          stallionId: 'invalid',
-          mareId: 'invalid',
-        });
-
-      expect(response2.status).toBe(400);
-
       // Test empty horse arrays
       const response3 = await request(app)
         .post('/api/v1/genetics/population-analysis')
@@ -644,15 +456,12 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       // gate and the 403 we assert is the OWNERSHIP denial, not a CSRF mismatch.
       const otherCsrf = await fetchCsrf(app, { extraCookies: [`accessToken=${otherToken}`] });
       const response = await request(app)
-        .post('/api/v1/breeding/genetic-probability')
+        .post('/api/v1/genetics/population-analysis')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${otherToken}`)
         .set('Cookie', otherCsrf.cookieHeader)
         .set('X-CSRF-Token', otherCsrf.csrfToken)
-        .send({
-          stallionId: testStallion.id,
-          mareId: testMare.id,
-        });
+        .send({ horseIds: [testStallion.id, testMare.id] });
 
       // The batch-ownership check maps "not yours / doesn't exist" → 404 (CWE-639:
       // an attacker cannot distinguish foreign from missing). The test user's

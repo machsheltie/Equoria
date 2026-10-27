@@ -4,12 +4,10 @@
  *
  * Owner ruling (Stacey, 2026-10-16/19, S-Q9): an UNREVEALED hidden trait stays
  * hidden from everyone, the horse's owner included; only revealed traits are
- * public. studPredictionAccess.integration.test.mjs proves that for the five
- * pair endpoints the breeding page calls. These three owner-only endpoints
- * compute over the caller's own horses and were the part of 3867b still
- * unproven at the real-DB level:
+ * public. The pair-prediction routes this once covered are removed (owner ruling
+ * q91, Equoria-8grnh). These two owner-only endpoints compute over the caller's
+ * own horses:
  *
- *   POST /breeding/breeding-recommendations
  *   POST /genetics/optimal-breeding
  *   GET  /genetics/population-health/:userId
  *
@@ -60,11 +58,6 @@ describe('owner-only genetics analytics: unrevealed hidden traits stay out (Equo
   let third;
 
   const endpoints = () => ({
-    breedingRecommendations: () =>
-      sendJson('post', '/api/v1/breeding/breeding-recommendations', owner.token, {
-        stallionId: stallion.id,
-        mareId: mare.id,
-      }),
     optimalBreeding: () =>
       sendJson('post', '/api/v1/genetics/optimal-breeding', owner.token, {
         horseIds: [stallion.id, mare.id, third.id],
@@ -103,7 +96,7 @@ describe('owner-only genetics analytics: unrevealed hidden traits stay out (Equo
     await cleanup.run();
   });
 
-  it.each(['breedingRecommendations', 'optimalBreeding', 'populationHealth'])(
+  it.each(['optimalBreeding', 'populationHealth'])(
     '%s: no unrevealed trait name in the response, and the response equals the one with every hidden list emptied',
     async name => {
       const withHidden = await endpoints()[name]();

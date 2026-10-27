@@ -3,8 +3,7 @@
  * Equoria-472l6 adjacent-locations finding.
  *
  * Files (per bd Equoria-sl48c; paths updated after module migrations):
- *   - backend/modules/breeding/services/enhancedGeneticProbabilityService.mjs
- *     (moved from backend/services/ — original sites :175,176,379,380)
+ *   - (removed with the foal-forecast routes, Equoria-8grnh) backend/modules/breeding/services/enhancedGeneticProbabilityService.mjs
  *   - backend/app/queries/horseOverviewQuery.mjs
  *     (the disciplineScores site was extracted from horseController.mjs:517
  *     into horseOverviewController.mjs per Equoria-xod8b, then moved with
@@ -37,7 +36,6 @@ const __dirname = dirname(__filename);
 const BACKEND_ROOT = resolve(__dirname, '..');
 
 const TARGET_FILES = [
-  resolve(BACKEND_ROOT, 'modules', 'breeding', 'services', 'enhancedGeneticProbabilityService.mjs'),
   // Equoria-q4uem.4 (WS4 S3): the disciplineScores site (getHorseOverview)
   // moved from modules/horses/controllers/horseOverviewController.mjs into the
   // application query layer; the entry follows the site. The controller has

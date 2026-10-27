@@ -1,7 +1,7 @@
 /**
  * typedNotFound404.integration.test.mjs
  *
- * Sentinel-positive integration coverage for Equoria-pwjs5 — the 7
+ * Sentinel-positive integration coverage for Equoria-pwjs5 — the
  * routes/controllers hardened by Equoria-4xwyi (96a3b92fd) which replaced the
  * fragile `error.message.includes('not found')` string-sniff with type-based
  * 404 detection: `AppError.isAppError(error) && error.statusCode === 404`.
@@ -21,11 +21,11 @@
  *       to one fixture foal), never a mock — see the (b) block.
  *
  * IMPORTANT — honest accounting of WHERE the 404 originates (read before
- * editing): EVERY one of the 7 hardened routes is fronted by a pre-handler
+ * editing): EVERY one of the hardened routes is fronted by a pre-handler
  * ownership gate — either `requireOwnership(...)` middleware (foal routes,
  * horseQueryRoutes (backend/app/queries, Equoria-q4uem.4) `/:id/breeding-data`, traitDiscoveryRoutes
  * `/progress|/check-conditions`) or an in-handler `validateBatchHorseOwnership`
- * check (advancedBreedingGeneticsRoutes POST routes). For a genuinely MISSING
+ * check. For a genuinely MISSING
  * id, that ownership gate returns the 404 BEFORE the hardened type-based catch
  * is ever reached. The catch's typed-404 branch is therefore defense-in-depth
  * for a "resource is owned but a downstream dependency throws a typed 404"
@@ -60,7 +60,6 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 // An id that is a valid positive int4 but will not exist in the canonical DB.
@@ -71,8 +70,6 @@ const MISSING_ID = 2_000_111_222;
 describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes (pwjs5)', () => {
   let owner;
   let ownerToken;
-  let ownerAccessCookie; // accessToken cookie for per-user CSRF binding on mutations
-  let ownedHorse; // an adult horse owned by `owner` (used for owned-path probes)
   let ownedGroom; // a groom owned by `owner`
   let ownedFoal; // a day-0 foal owned by `owner`, no development row (the (b) non-404 probe)
 
@@ -84,12 +81,6 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
     });
     owner = ownerData.user;
     ownerToken = ownerData.token;
-    ownerAccessCookie = `accessToken=${ownerToken}`;
-
-    ownedHorse = await createTestHorse({
-      name: `TestFixture-pwjs5-horse-${ts}`,
-      userId: owner.id,
-    });
 
     ownedGroom = await prisma.groom.create({
       data: {
@@ -127,11 +118,6 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
     }
     await cleanupTestData();
   }, 120000);
-
-  // ---- shared helper: authenticated CSRF for a mutation by THIS owner ----
-  async function ownerCsrf() {
-    return fetchCsrf(app, { origin: ORIGIN, extraCookies: ownerAccessCookie });
-  }
 
   // ===================================================================
   // (a) MISSING RESOURCE → 404 typed envelope (player-facing contract)
@@ -199,38 +185,6 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
 
       expect(res.status).toBe(404);
       expect(res.body).toMatchObject({ success: false });
-    });
-
-    it('POST /breeding/genetic-probability with a missing horse → 404 (in-handler batch-ownership; advancedBreedingGeneticsRoutes)', async () => {
-      const csrf = await ownerCsrf();
-      const res = await request(app)
-        .post('/api/v1/breeding/genetic-probability')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${ownerToken}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        // One real owned horse + one missing id → batch ownership returns null → 404.
-        .send({ stallionId: ownedHorse.id, mareId: MISSING_ID });
-
-      expect(res.status).toBe(404);
-      expect(res.body).toMatchObject({ success: false });
-      // This route's envelope uses `error` (not `message`) — assert the real shape.
-      expect(typeof res.body.error).toBe('string');
-    });
-
-    it('POST /breeding/breeding-recommendations with a missing horse → 404 (in-handler batch-ownership; advancedBreedingGeneticsRoutes)', async () => {
-      const csrf = await ownerCsrf();
-      const res = await request(app)
-        .post('/api/v1/breeding/breeding-recommendations')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${ownerToken}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ stallionId: ownedHorse.id, mareId: MISSING_ID });
-
-      expect(res.status).toBe(404);
-      expect(res.body).toMatchObject({ success: false });
-      expect(typeof res.body.error).toBe('string');
     });
   });
 

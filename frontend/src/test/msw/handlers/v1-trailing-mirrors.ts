@@ -117,7 +117,6 @@ export const v1TrailingMirrorHandlers = [
 
   // ── v1 Breeding prediction mirrors ────────────────────────────────────────
   // useHorseBreedingData calls /api/v1/horses/:id/breeding-data
-  // useLineageAnalysis calls /api/v1/breeding/lineage-analysis/:stallionId/:mareId
   http.get(`${base}/api/v1/horses/:id/breeding-data`, ({ params }) =>
     HttpResponse.json({
       success: true,
@@ -127,18 +126,6 @@ export const v1TrailingMirrorHandlers = [
         offspringCount: 0,
         lastBreedingDate: null,
         breedingCooldownEnd: null,
-      },
-    })
-  ),
-  http.get(`${base}/api/v1/breeding/lineage-analysis/:stallionId/:mareId`, () =>
-    // Real backend shape (Equoria-qfdf9) — mirrors the unversioned handler.
-    HttpResponse.json({
-      success: true,
-      data: {
-        lineageTree: { root: { stallion: null, mare: null } },
-        diversityMetrics: {},
-        performanceAnalysis: {},
-        visualizationData: {},
       },
     })
   ),

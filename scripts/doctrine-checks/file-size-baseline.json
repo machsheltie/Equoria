@@ -6,7 +6,6 @@
   "backend/middleware/rateLimiting.mjs": 884,
   "backend/middleware/requestBodySecurity.mjs": 884,
   "backend/modules/admin/controllers/adminController.mjs": 641,
-  "backend/modules/breeding/routes/advancedBreedingGeneticsRoutes.mjs": 643,
   "backend/modules/community/__tests__/clubController.test.mjs": 981,
   "backend/modules/competition/__tests__/showController.test.mjs": 921,
   "backend/modules/health/__tests__/session-lifecycle.test.mjs": 860,

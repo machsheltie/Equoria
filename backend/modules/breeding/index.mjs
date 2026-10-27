@@ -13,9 +13,3 @@ export { generateBreedingData } from './services/breedingPredictionService.mjs';
 // Equoria-q4uem.9 slice 5: the marketplace stud search shows other players' stallions through
 // the same projection the breeding predictions use (S-Q9 hidden traits; design §0 competition).
 export { withoutUnrevealedTraits } from './services/predictionHorseView.mjs';
-
-// Sentinel-asserted (same-module breedingBarrelRecommendationCollision.sentinel, Equoria-axad9.2):
-// kept per the WS4 design §4.1 rule 3 ("plus the few symbols existing sentinels assert on").
-// No production consumer outside breeding; these two lines retire with that sentinel.
-export { generateGeneticBreedingRecommendations } from './services/enhancedGeneticProbabilityService.mjs';
-export { generateLineageBreedingRecommendations } from './services/lineageBreedingRecommendations.mjs';

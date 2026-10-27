@@ -1,51 +1,24 @@
 /**
  * Advanced Breeding Genetics Routes
  *
- * API endpoints for enhanced genetic probability calculations, advanced lineage analysis,
- * and genetic diversity tracking systems for comprehensive breeding management.
+ * Herd-level genetic diversity reports for a player's own horses. The pair-prediction
+ * routes (genetic-probability, lineage-analysis, breeding-recommendations,
+ * inbreeding-analysis, breeding-compatibility) are removed: owner ruling q91
+ * (2026-10-26), players never see a predicted outcome for their foal (Equoria-8grnh).
  */
 
 import express from 'express';
-import { body, param, query, validationResult } from 'express-validator';
+import { body, param, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
-import { findOwnedResource as _findOwnedResource } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
-import AppError from '../../../errors/AppError.mjs';
 import { satisfiesRole } from '../../staff/index.mjs';
 import {
   validateBatchHorseOwnership,
   getUserHorseIds,
-  resolveBreedingPairAccess,
 } from '../services/breedingOwnershipQueries.mjs';
-import { queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
-import { mareIdInBody, mareIdInParams } from './_breedingPairValidators.mjs';
-
-// Import genetic services
-// Equoria-emkv6: all four genetics functions live in the module-local service
-// (`../services/...`). The genetic-probability handler previously dynamic-imported
-// calculateGeneticCompatibilityScore / calculateGeneticDiversityImpact /
-// calculateMultiGenerationalPredictions from `../../../services/...` (i.e.
-// backend/services/), a path that does NOT exist — every authed request to
-// POST /breeding/genetic-probability threw ERR_MODULE_NOT_FOUND and surfaced as
-// a 500. Imported statically from the correct path so the handler resolves them
-// at module load, matching calculateEnhancedGeneticProbabilities.
-import {
-  calculateEnhancedGeneticProbabilities,
-  calculateGeneticCompatibilityScore,
-  calculateGeneticDiversityImpact,
-  calculateMultiGenerationalPredictions,
-} from '../services/enhancedGeneticProbabilityService.mjs';
-import {
-  generateLineageTree,
-  calculateGeneticDiversityMetrics,
-  analyzeLineagePerformance,
-  createVisualizationData,
-  generateLineageBreedingRecommendations,
-} from '../services/advancedLineageAnalysisService.mjs';
 import {
   calculateAdvancedGeneticDiversity,
   trackPopulationGeneticHealth,
-  calculateDetailedInbreedingCoefficient,
   generateOptimalBreedingRecommendations,
   analyzeGeneticTrends,
   generateGeneticDiversityReport,
@@ -73,231 +46,6 @@ const validateRequest = (req, res, next) => {
  * Uses single-query atomic validation to prevent CWE-639
  */
 const validateBatchOwnership = (horseIds, userId) => validateBatchHorseOwnership(horseIds, userId);
-
-/** The pair 404: identical for a missing horse and one the caller may not analyse (CWE-639). */
-const pairNotFound = res =>
-  res.status(404).json({ success: false, error: 'One or both horses not found' });
-
-// ===== ENHANCED GENETIC PROBABILITY ROUTES =====
-
-/**
- * POST /api/breeding/genetic-probability
- * Calculate enhanced genetic probabilities for breeding pair
- *
- * Security: Validates stallion and mare ownership atomically
- */
-router.post(
-  '/breeding/genetic-probability',
-  queryRateLimiter,
-  authenticateToken,
-  [
-    body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
-    mareIdInBody(),
-    body('includeLineage').optional().isBoolean().withMessage('includeLineage must be boolean'),
-    body('generations').optional().isInt({ min: 1, max: 5 }).withMessage('generations must be 1-5'),
-  ],
-  validateRequest,
-  async (req, res) => {
-    try {
-      const { stallionId, mareId, includeLineage = false, generations = 3 } = req.body;
-      const userId = req.user.id;
-
-      logger.info(
-        `[advancedBreedingGeneticsRoutes.genetic-probability] User ${userId} calculating for stallion ${stallionId} and mare ${mareId}`,
-      );
-
-      // q4uem.9: mare = caller's; stallion = caller's or at stud (S9); hidden traits removed (S-Q9)
-      const access = await resolveBreedingPairAccess(stallionId, mareId, userId);
-      if (!access) {
-        return pairNotFound(res);
-      }
-
-      const { stallion, mare } = access;
-
-      const probabilities = calculateEnhancedGeneticProbabilities(stallion, mare);
-
-      // Calculate compatibility analysis (statically imported above — Equoria-emkv6)
-      const compatibilityAnalysis = calculateGeneticCompatibilityScore(stallion, mare);
-
-      // Add lineage analysis if requested
-      let lineageAnalysis = null;
-      if (includeLineage) {
-        const lineageTree = await generateLineageTree(+stallionId, +mareId, generations);
-        lineageAnalysis = {
-          diversityImpact: calculateGeneticDiversityImpact(stallion, mare, lineageTree),
-          multiGenerationalPredictions: calculateMultiGenerationalPredictions(
-            stallion,
-            mare,
-            lineageTree,
-          ),
-        };
-      }
-
-      const result = {
-        ...probabilities,
-        compatibilityAnalysis,
-        ...(lineageAnalysis && { lineageAnalysis }),
-      };
-
-      res.json({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      logger.error(`[advancedBreedingGeneticsRoutes.genetic-probability] Error: ${error.message}`);
-
-      // Equoria-4xwyi: TYPE-based 404 detection. The missing-horse case is already
-      // handled by the validateBatchOwnership 404 above; this catch's 404 only
-      // fires if a downstream service throws a typed AppError(404). Fail-closed:
-      // any other error surfaces as 500 rather than being string-matched into a
-      // misleading 404 (the Equoria-93lhj antipattern).
-      if (AppError.isAppError(error) && error.statusCode === 404) {
-        return res.status(404).json({
-          success: false,
-          error: 'One or both horses not found',
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        error: 'Failed to calculate genetic probabilities',
-      });
-    }
-  },
-);
-
-// ===== ADVANCED LINEAGE ANALYSIS ROUTES =====
-
-/**
- * GET /api/breeding/lineage-analysis/:stallionId/:mareId
- * Generate comprehensive lineage analysis
- *
- * Security: Validates stallion and mare ownership atomically
- */
-router.get(
-  '/breeding/lineage-analysis/:stallionId/:mareId',
-  queryRateLimiter,
-  authenticateToken,
-  [
-    param('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
-    mareIdInParams(),
-    query('generations')
-      .optional()
-      .isInt({ min: 1, max: 5 })
-      .withMessage('generations must be 1-5'),
-  ],
-  validateRequest,
-  async (req, res) => {
-    try {
-      const { stallionId, mareId } = req.params;
-      const generations = parseInt(req.query.generations) || 3;
-      const userId = req.user.id;
-
-      logger.info(
-        `[advancedBreedingGeneticsRoutes.lineage-analysis] User ${userId} analyzing lineage for stallion ${stallionId} and mare ${mareId}`,
-      );
-
-      // q4uem.9: mare = caller's; stallion = caller's or at stud (S9); hidden traits removed (S-Q9)
-      const access = await resolveBreedingPairAccess(stallionId, mareId, userId);
-      if (!access) {
-        return pairNotFound(res);
-      }
-
-      const { stallion, mare } = access;
-
-      const [lineageTree, diversityMetrics, performanceAnalysis, visualizationData] =
-        await Promise.all([
-          generateLineageTree(+stallionId, +mareId, generations),
-          calculateGeneticDiversityMetrics([{ generation: 0, horses: [stallion, mare] }]),
-          analyzeLineagePerformance([{ generation: 0, horses: [stallion, mare] }]),
-          createVisualizationData(+stallionId, +mareId, generations),
-        ]);
-
-      // A lineage analysis is a read. It no longer records a `_lineage_analysis`
-      // UltraRareTraitEvent for the caller's horses (Equoria-245bt signal removed
-      // by Equoria-gu8jk; owner ruling 2026-10-20: players never write traits or
-      // trait events).
-
-      res.json({
-        success: true,
-        data: {
-          lineageTree,
-          diversityMetrics,
-          performanceAnalysis,
-          visualizationData,
-        },
-      });
-    } catch (error) {
-      logger.error(`[advancedBreedingGeneticsRoutes.lineage-analysis] Error: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to analyze lineage',
-      });
-    }
-  },
-);
-
-/**
- * POST /api/breeding/breeding-recommendations
- * Generate comprehensive breeding recommendations
- *
- * Security: Validates stallion and mare ownership atomically
- */
-router.post(
-  '/breeding/breeding-recommendations',
-  authenticateToken,
-  [
-    body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
-    mareIdInBody(),
-  ],
-  validateRequest,
-  async (req, res) => {
-    try {
-      const { stallionId, mareId } = req.body;
-      const userId = req.user.id;
-
-      logger.info(
-        `[advancedBreedingGeneticsRoutes.breeding-recommendations] User ${userId} generating recommendations for stallion ${stallionId} and mare ${mareId}`,
-      );
-
-      // Validate ownership of both horses atomically
-      const horses = await validateBatchOwnership([stallionId, mareId], userId);
-      if (!horses) {
-        return res.status(404).json({
-          success: false,
-          error: 'One or both horses not found',
-        });
-      }
-
-      const recommendations = await generateLineageBreedingRecommendations(+stallionId, +mareId);
-
-      res.json({
-        success: true,
-        data: recommendations,
-      });
-    } catch (error) {
-      logger.error(
-        `[advancedBreedingGeneticsRoutes.breeding-recommendations] Error: ${error.message}`,
-      );
-
-      // Equoria-4xwyi: TYPE-based 404 detection. generateLineageBreedingRecommendations
-      // throws a typed AppError(404) for the missing-horse case. Fail-closed: any
-      // other error surfaces as 500 rather than being string-matched into a
-      // misleading 404 (the Equoria-93lhj antipattern).
-      if (AppError.isAppError(error) && error.statusCode === 404) {
-        return res.status(404).json({
-          success: false,
-          error: 'One or both horses not found',
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        error: 'Failed to generate breeding recommendations',
-      });
-    }
-  },
-);
 
 // ===== GENETIC DIVERSITY TRACKING ROUTES =====
 
@@ -357,55 +105,6 @@ router.post(
       res.status(500).json({
         success: false,
         error: 'Failed to analyze population genetics',
-      });
-    }
-  },
-);
-
-/**
- * POST /api/genetics/inbreeding-analysis
- * Calculate detailed inbreeding coefficient
- *
- * Security: Validates stallion and mare ownership atomically
- */
-router.post(
-  '/genetics/inbreeding-analysis',
-  queryRateLimiter,
-  authenticateToken,
-  [
-    body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
-    mareIdInBody(),
-  ],
-  validateRequest,
-  async (req, res) => {
-    try {
-      const { stallionId, mareId } = req.body;
-      const userId = req.user.id;
-
-      logger.info(
-        `[advancedBreedingGeneticsRoutes.inbreeding-analysis] User ${userId} analyzing inbreeding for stallion ${stallionId} and mare ${mareId}`,
-      );
-
-      // q4uem.9: mare = caller's; stallion = caller's or at stud (S9); hidden traits removed (S-Q9)
-      const access = await resolveBreedingPairAccess(stallionId, mareId, userId);
-      if (!access) {
-        return pairNotFound(res);
-      }
-
-      const inbreedingAnalysis = await calculateDetailedInbreedingCoefficient(
-        parseInt(stallionId),
-        parseInt(mareId),
-      );
-
-      res.json({
-        success: true,
-        data: inbreedingAnalysis,
-      });
-    } catch (error) {
-      logger.error(`[advancedBreedingGeneticsRoutes.inbreeding-analysis] Error: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to analyze inbreeding',
       });
     }
   },
@@ -507,61 +206,6 @@ router.post(
       res.status(500).json({
         success: false,
         error: 'Failed to generate optimal breeding recommendations',
-      });
-    }
-  },
-);
-
-/**
- * POST /api/genetics/breeding-compatibility
- * Assess breeding pair compatibility
- *
- * Security: Validates stallion and mare ownership atomically
- */
-router.post(
-  '/genetics/breeding-compatibility',
-  queryRateLimiter,
-  authenticateToken,
-  [
-    body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
-    mareIdInBody(),
-  ],
-  validateRequest,
-  async (req, res) => {
-    try {
-      const { stallionId, mareId } = req.body;
-      const userId = req.user.id;
-
-      logger.info(
-        `[advancedBreedingGeneticsRoutes.breeding-compatibility] User ${userId} assessing compatibility for stallion ${stallionId} and mare ${mareId}`,
-      );
-
-      // q4uem.9: mare = caller's; stallion = caller's or at stud (S9); hidden traits removed (S-Q9)
-      const access = await resolveBreedingPairAccess(stallionId, mareId, userId);
-      if (!access) {
-        return pairNotFound(res);
-      }
-
-      // Import the compatibility assessment function
-      const { assessBreedingPairCompatibility } =
-        await import('../services/genetics/geneticDiversityTrackingService.mjs');
-
-      const compatibility = await assessBreedingPairCompatibility(
-        parseInt(stallionId),
-        parseInt(mareId),
-      );
-
-      res.json({
-        success: true,
-        data: compatibility,
-      });
-    } catch (error) {
-      logger.error(
-        `[advancedBreedingGeneticsRoutes.breeding-compatibility] Error: ${error.message}`,
-      );
-      res.status(500).json({
-        success: false,
-        error: 'Failed to assess breeding compatibility',
       });
     }
   },

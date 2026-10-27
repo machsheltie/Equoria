@@ -34,8 +34,6 @@ export * from './traits';
 // `Horse` and `Foal` — they shadow the canonical ones above.
 export type {
   HorseBreedingData,
-  InbreedingAnalysis,
-  OffspringPredictions,
   BreedingRequest,
   BreedingResponse,
   TraitPrediction,

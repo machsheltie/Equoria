@@ -30,9 +30,6 @@
  * each request reached its handler (200/201/4xx with a handler body), so the
  * `Route not found` assertion fails there.
  *
- * GET /breeding/lineage-analysis stays (it is a read), but it no longer writes
- * a `_lineage_analysis` UltraRareTraitEvent row for the caller's horses.
- *
  * Real database, real HTTP, real CSRF. No mocks. Fixtures are uniquely named
  * and removed by id.
  */
@@ -53,7 +50,6 @@ describe('Player trait-write routes are removed (Equoria-gu8jk)', () => {
   let token;
   let csrf;
   let foal;
-  let sire;
   let groom;
   const horseIds = [];
 
@@ -88,17 +84,7 @@ describe('Player trait-write routes are removed (Equoria-gu8jk)', () => {
         epigeneticModifiers: { positive: [], negative: [], hidden: ['resilient', 'calm'] },
       },
     });
-    sire = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-gu8jk-sire-${suffix}`,
-        userId: player.id,
-        sex: 'Stallion',
-        age: 8,
-        dateOfBirth: new Date('2018-01-01'),
-      },
-    });
-    horseIds.push(foal.id, sire.id);
+    horseIds.push(foal.id);
 
     groom = await prisma.groom.create({
       data: {
@@ -221,22 +207,5 @@ describe('Player trait-write routes are removed (Equoria-gu8jk)', () => {
     expect(res.status).toBe(404);
     expect(res.body).toMatchObject({ success: false, message: 'Route not found' });
     expect(await snapshot()).toEqual(before);
-  });
-
-  it('GET /breeding/lineage-analysis still answers but writes no UltraRareTraitEvent row', async () => {
-    const before = await prisma.ultraRareTraitEvent.count({
-      where: { horseId: { in: horseIds } },
-    });
-
-    // The caller owns both horses; the old route recorded a `_lineage_analysis`
-    // event for each of them, which also surfaced as the newest "ultra-rare"
-    // event on the horse page.
-    const res = await request(app)
-      .get(`/api/v1/breeding/lineage-analysis/${sire.id}/${foal.id}?generations=1`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(await prisma.ultraRareTraitEvent.count({ where: { horseId: { in: horseIds } } })).toBe(before);
   });
 });

@@ -78,10 +78,6 @@
  * GET    /api/v1/foals/:id/development              development status
  * GET    /api/v1/foals/:id/activities              available activities
  * PUT    /api/v1/foals/:id/develop                  apply development milestone
- * POST   /api/v1/genetics/inbreeding-analysis       inbreeding coefficient
- * POST   /api/v1/genetics/breeding-compatibility    compatibility score
- * GET    /api/v1/breeding/lineage-analysis/:stallionId/:mareId  lineage tree
- * POST   /api/v1/breeding/genetic-probability       genetic probability calc
  * (deleted dead: /api/foals/breeding/breed — no api-client call, no test ref)
  *
  * ── Grooms ───────────────────────────────────────────────────────────────

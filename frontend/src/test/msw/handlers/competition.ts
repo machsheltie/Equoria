@@ -11,9 +11,7 @@ export const competitionHandlers = [
   // Advanced Horse Analysis
   // (Equoria-0fw18) Deleted dead unversioned /api/horses/:id/{environmental-analysis,
   // trait-interactions, developmental-timeline, forecast, breeding-data} and the
-  // unversioned genetics/breeding handlers (/api/genetics/inbreeding-analysis,
-  // /api/breeding/lineage-analysis/:s/:m, /api/breeding/genetic-probability,
-  // /api/genetics/breeding-compatibility) and unversioned /api/groom-marketplace
+  // unversioned genetics/breeding handlers and unversioned /api/groom-marketplace
   // (GET) — all served by their /api/v1/ mirrors in the v1-mirror block below.
 
   // Competition API - singular path (used by competitionsApi in api-client.ts)
