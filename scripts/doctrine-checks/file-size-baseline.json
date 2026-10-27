@@ -21,7 +21,6 @@
   "backend/services/apiDocumentationService.mjs": 676,
   "backend/services/memoryResourceManagementService.mjs": 633,
   "backend/utils/cacheHelper.mjs": 696,
-  "backend/utils/traitEffects.mjs": 707,
   "frontend/src/components/MyGroomsDashboard.tsx": 711,
   "frontend/src/components/competition/PrizeTransactionHistory.tsx": 824,
   "frontend/src/components/onboarding/BreedSelector.tsx": 746,

@@ -703,9 +703,7 @@ export const trainingRateLimiter = createRateLimiter({
  */
 export const queryRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  // Owner ruling 2026-10-27: players enter hundreds of shows and move around the game
-  // all day; the old production caps locked her out during ordinary play.
-  max: 5000, // 5000 requests per 15 minutes
+  max: 5000, // owner 2026-10-27: 100 per 15 minutes locked her out in ordinary play
   message: 'Query limit exceeded. Please slow down.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:query',
