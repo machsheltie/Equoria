@@ -46,7 +46,12 @@ const SELECT = {
 async function horse(label, data) {
   fixtures[label] = await createTestHorse(
     prisma,
-    { name: `TestFixture-traitRoster-${RUN}-${label}`, sex: 'Mare', ...data },
+    {
+      name: `TestFixture-traitRoster-${RUN}-${label}`,
+      sex: 'Mare',
+      dateOfBirth: new Date('2020-01-01T12:00:00Z'),
+      ...data,
+    },
     horseIds,
   );
 }
