@@ -419,7 +419,7 @@
   "backend/modules/economy/tackShop/__tests__/tackShopController.test.mjs": 2,
   "backend/modules/economy/tackShop/controllers/tackShopController.mjs": 10,
   "backend/modules/economy/tackShop/services/tackInventory.mjs": 8,
-  "backend/modules/economy/vet/__tests__/vetBookConcurrentRace.integration.test.mjs": 7,
+  "backend/modules/economy/vet/__tests__/vetBookConcurrentRace.integration.test.mjs": 6,
   "backend/modules/economy/vet/__tests__/vetBookLedgerMigration.integration.test.mjs": 9,
   "backend/modules/economy/vet/controllers/vetController.mjs": 5,
   "backend/modules/events/controllers/eventStreamController.mjs": 3,
