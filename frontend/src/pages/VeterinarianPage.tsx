@@ -33,7 +33,7 @@ import type { ServiceHorseOption } from '@/components/world/ServiceHorseBox';
 import { actionMessageFor } from '@/lib/http/actionMessage';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { useVetServices, useVetHorses, useBookVetAppointment } from '@/hooks/api/useVet';
-import type { VetHorse, VetService } from '@/hooks/api/useVet';
+import type { VetAppointmentResult, VetHorse, VetService } from '@/hooks/api/useVet';
 
 /** Why a horse is greyed out for a service, or undefined when it can take it. */
 function unavailableReason(service: VetService, horse: VetHorse): string | undefined {
@@ -41,6 +41,17 @@ function unavailableReason(service: VetService, horse: VetHorse): string | undef
     return horse.geneticsTested ? 'already tested' : undefined;
   }
   return horse.vetted ? 'already vetted' : undefined;
+}
+
+/** The hunger line for a vetted horse that is still unwell because it is hungry. */
+function hungerLine(name: string, horse: VetAppointmentResult['horse']): string | undefined {
+  const { feedHealth, displayedHealth } = horse;
+  if (!feedHealth || !displayedHealth || displayedHealth === 'Excellent') {
+    return undefined;
+  }
+  return feedHealth === 'Excellent'
+    ? undefined
+    : `${name} is hungry. Feed it to bring its health up.`;
 }
 
 interface Outcome {
@@ -64,9 +75,16 @@ const VeterinarianPage: React.FC = () => {
       { horseId, serviceId: service.id },
       {
         onSuccess: (result) => {
+          const name = result.horse.name;
+          const done =
+            service.id === 'genetic-testing'
+              ? `${name}'s colour panel is done.`
+              : `${name} is in Excellent health.`;
+          const hunger =
+            service.id === 'genetic-testing' ? undefined : hungerLine(name, result.horse);
           setOutcome({
             serviceId: service.id,
-            confirmation: `${service.name} done for ${result.horse.name}. Remaining balance: ${result.remainingMoney.toLocaleString('en-US')} coins.`,
+            confirmation: hunger ? `${done} ${hunger}` : done,
           });
         },
         onError: (error) => {
@@ -154,6 +172,9 @@ const VeterinarianPage: React.FC = () => {
             id: horse.id,
             name: horse.name,
             unavailableReason: unavailableReason(service, horse),
+            ...(service.id === 'health-check' && horse.healthCheckFee !== null
+              ? { cost: horse.healthCheckFee, detail: horse.vetHealth }
+              : {}),
           }));
           const mine = outcome?.serviceId === service.id ? outcome : null;
           return (
@@ -163,6 +184,7 @@ const VeterinarianPage: React.FC = () => {
               title={service.name}
               description={service.description}
               cost={service.cost}
+              costNote={service.costNote}
               actionLabel={service.actionLabel}
               horses={options}
               pending={bookingServiceId === service.id}
@@ -213,7 +235,8 @@ const VeterinarianPage: React.FC = () => {
         <Surface variant="panel" as="aside" className="mt-10 text-sm text-[var(--text-muted)]">
           <h3 className="font-semibold text-[var(--text-primary)] mb-2">About the Vet Clinic</h3>
           <ul className="space-y-1 list-disc list-inside">
-            <li>A health check keeps a horse Excellent for a week; health then slips with time</li>
+            <li>A health check restores a horse to Excellent; it slips again with time</li>
+            <li>The further a horse has slipped, the more the check costs</li>
             <li>A horse in poor health cannot train, breed or enter a show</li>
             <li>The genetics panel is run once per horse</li>
             <li>Retired horses are no longer seen here</li>

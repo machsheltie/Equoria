@@ -22,6 +22,10 @@ export interface ServiceHorseOption {
   name: string;
   /** Present when the horse cannot take this service now; shown greyed out with this reason. */
   unavailableReason?: string;
+  /** This horse's own price, when it differs from the box's base cost. */
+  cost?: number;
+  /** Shown after the name in the dropdown, e.g. the horse's health. */
+  detail?: string;
 }
 
 interface ServiceHorseBoxProps {
@@ -30,6 +34,8 @@ interface ServiceHorseBoxProps {
   title: string;
   description?: string;
   cost: number;
+  /** How the price varies by horse, shown under the description. */
+  costNote?: string;
   actionLabel: string;
   horses: ServiceHorseOption[];
   pending: boolean;
@@ -46,6 +52,7 @@ export const ServiceHorseBox: React.FC<ServiceHorseBoxProps> = ({
   title,
   description,
   cost,
+  costNote,
   actionLabel,
   horses,
   pending,
@@ -79,7 +86,12 @@ export const ServiceHorseBox: React.FC<ServiceHorseBoxProps> = ({
       >
         {title}
       </h2>
-      {description && <p className="text-sm text-[var(--text-secondary)] mb-4">{description}</p>}
+      {description && (
+        <p className={`text-sm text-[var(--text-secondary)] ${costNote ? 'mb-1' : 'mb-4'}`}>
+          {description}
+        </p>
+      )}
+      {costNote && <p className="text-xs text-[var(--text-muted)] mb-4">{costNote}</p>}
 
       <label
         htmlFor={selectId}
@@ -101,7 +113,11 @@ export const ServiceHorseBox: React.FC<ServiceHorseBoxProps> = ({
             value={String(horse.id)}
             disabled={Boolean(horse.unavailableReason)}
           >
-            {horse.unavailableReason ? `${horse.name} — ${horse.unavailableReason}` : horse.name}
+            {horse.unavailableReason
+              ? `${horse.name} — ${horse.unavailableReason}`
+              : horse.detail
+                ? `${horse.name} (${horse.detail})`
+                : horse.name}
           </option>
         ))}
       </Select>
@@ -116,7 +132,7 @@ export const ServiceHorseBox: React.FC<ServiceHorseBoxProps> = ({
         data-onboarding-target={onboardingTarget}
       >
         <span className="flex items-center justify-center gap-1.5">
-          {actionLabel} <Currency amount={cost} />
+          {actionLabel} <Currency amount={selectedHorse?.cost ?? cost} />
         </span>
       </Button>
 

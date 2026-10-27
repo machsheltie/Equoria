@@ -11,7 +11,10 @@
  * game days) gains nothing from another check, so it is greyed out.
  *
  * Old contract: four services (150/350/200/120), a vet visit could be booked
- * again at once, no genetics test existed.
+ * again at once, no genetics test existed. Owner ruling 2026-10-27 supersedes
+ * the flat 100: the health check costs 100 per vet-health level below Excellent
+ * (see vetHealthCheckFee.integration.test.mjs); the "due" fixture here was last
+ * vetted in 2024, so its vet health is Bad and the check costs 400.
  *
  * Real DB, real routes via supertest, scoped fixtures.
  */
@@ -117,17 +120,17 @@ describe('GET /vet/horses feeds the two dropdowns', () => {
 });
 
 describe('General Health Check', () => {
-  it('charges 100 and records today as the vet date', async () => {
+  it('charges the Bad-health fee (400) and records today as the vet date', async () => {
     const before = await money();
     const res = await book(horses.due.id, 'health-check');
     expect(res.status).toBe(200);
-    expect(before - (await money())).toBe(100);
+    expect(before - (await money())).toBe(400);
     const row = await prisma.horse.findUnique({ where: { id: horses.due.id } });
     expect(day(row.lastVettedDate)).toBe(day(gameCalendarDate()));
     const ledger = await prisma.userTransaction.findFirst({
       where: { userId: user.id, category: 'vetService' },
     });
-    expect(Number(ledger.amount)).toBe(100);
+    expect(Number(ledger.amount)).toBe(400);
   });
 
   it('now lists that horse as vetted, and refuses a second paid check without charging', async () => {

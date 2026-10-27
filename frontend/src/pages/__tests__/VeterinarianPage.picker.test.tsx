@@ -9,6 +9,11 @@
  * horses. A horse already vetted or already tested is greyed out (disabled
  * option); retired horses are not listed (the server leaves them out).
  *
+ * Owner ruling 2026-10-27 (old contract: a flat "Vet Horse 100" button, and a
+ * confirmation that stated the remaining balance): the health check costs 100 per
+ * vet-health level below Excellent, the button shows the chosen horse's fee, and
+ * the confirmation is one line with no balance (no receipts, ruling 2026-10-26).
+ *
  * The four honest async states of the old fourState suite are kept: a failed or
  * empty fetch never leaves a permanent loading dead-end.
  *
@@ -33,8 +38,9 @@ const services = [
   {
     id: 'health-check',
     name: 'General Health Check',
-    description: 'A full check of the horse.',
+    description: 'Restores a horse to Excellent health',
     cost: 100,
+    costNote: '100 coins at Very Good health, 100 more for each level below',
     actionLabel: 'Vet Horse',
   },
   {
@@ -47,9 +53,30 @@ const services = [
 ];
 
 const horses = [
-  { id: 1, name: 'Due Mare', vetted: false, geneticsTested: false },
-  { id: 2, name: 'Fresh Mare', vetted: true, geneticsTested: false },
-  { id: 3, name: 'Tested Mare', vetted: false, geneticsTested: true },
+  {
+    id: 1,
+    name: 'Due Mare',
+    vetted: false,
+    geneticsTested: false,
+    vetHealth: 'Bad',
+    healthCheckFee: 400,
+  },
+  {
+    id: 2,
+    name: 'Fresh Mare',
+    vetted: true,
+    geneticsTested: false,
+    vetHealth: 'Excellent',
+    healthCheckFee: null,
+  },
+  {
+    id: 3,
+    name: 'Tested Mare',
+    vetted: false,
+    geneticsTested: true,
+    vetHealth: 'Very Good',
+    healthCheckFee: 100,
+  },
 ];
 
 function stub(
@@ -69,15 +96,18 @@ function renderPage() {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  return render(
-    <QueryClientProvider client={qc}>
-      <MockAuthProvider>
-        <MemoryRouter>
-          <VeterinarianPage />
-        </MemoryRouter>
-      </MockAuthProvider>
-    </QueryClientProvider>
-  );
+  return {
+    queryClient: qc,
+    ...render(
+      <QueryClientProvider client={qc}>
+        <MockAuthProvider>
+          <MemoryRouter>
+            <VeterinarianPage />
+          </MemoryRouter>
+        </MockAuthProvider>
+      </QueryClientProvider>
+    ),
+  };
 }
 
 const optionNamed = (box: HTMLElement, text: RegExp) =>
@@ -98,6 +128,7 @@ describe('VeterinarianPage (Equoria-7dmzp)', () => {
     expect(screen.getAllByTestId(/^service-box-/)).toHaveLength(2);
     expect(screen.queryByRole('tab')).not.toBeInTheDocument();
     expect(screen.queryByText(/my horses/i)).not.toBeInTheDocument();
+    // Before a horse is chosen the button shows the base fee.
     expect(within(check).getByRole('button', { name: /vet horse/i })).toHaveTextContent('100');
     expect(within(panel).getByRole('button', { name: /run panel/i })).toHaveTextContent('500');
   });
@@ -140,7 +171,7 @@ describe('VeterinarianPage (Equoria-7dmzp)', () => {
               colorGeneticsTested: false,
             },
             service: services[0],
-            cost: 100,
+            cost: 400,
             remainingMoney: 900,
           },
         });
@@ -152,15 +183,89 @@ describe('VeterinarianPage (Equoria-7dmzp)', () => {
     const button = within(check).getByRole('button', { name: /vet horse/i });
     expect(button).toBeDisabled();
 
-    await user.selectOptions(within(check).getByRole('combobox'), 'Due Mare');
+    await user.selectOptions(within(check).getByRole('combobox'), '1');
     expect(button).toBeEnabled();
+    expect(button).toHaveTextContent('400');
     await user.click(button);
 
-    expect(
-      await within(check).findByText(/General Health Check done for Due Mare/)
-    ).toBeInTheDocument();
-    expect(within(check).getByText(/900 coins/)).toBeInTheDocument();
+    expect(await within(check).findByText('Due Mare is in Excellent health.')).toBeInTheDocument();
+    expect(within(check).queryByText(/remaining|balance|900/i)).not.toBeInTheDocument();
     expect(body).toEqual({ horseId: 1, serviceId: 'health-check' });
+  });
+
+  it('shows the fee of whichever horse is chosen on the Vet Horse button', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const check = await screen.findByTestId('service-box-health-check');
+    const button = within(check).getByRole('button', { name: /vet horse/i });
+    await user.selectOptions(within(check).getByRole('combobox'), '1');
+    expect(button).toHaveTextContent('400');
+    await user.selectOptions(within(check).getByRole('combobox'), '3');
+    expect(button).toHaveTextContent('100');
+    expect(button).not.toHaveTextContent('400');
+  });
+
+  it('tells the player to feed a vetted horse that is still unwell from hunger', async () => {
+    server.use(
+      http.post(BOOK, () =>
+        HttpResponse.json({
+          success: true,
+          data: {
+            horse: {
+              id: 1,
+              name: 'Due Mare',
+              lastVettedDate: '2026-10-27',
+              colorGeneticsTested: false,
+              vetHealth: 'Excellent',
+              feedHealth: 'Bad',
+              displayedHealth: 'Good',
+            },
+            service: services[0],
+            cost: 400,
+            remainingMoney: 900,
+          },
+        })
+      )
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const check = await screen.findByTestId('service-box-health-check');
+    await user.selectOptions(within(check).getByRole('combobox'), '1');
+    await user.click(within(check).getByRole('button', { name: /vet horse/i }));
+    expect(
+      await within(check).findByText(/Due Mare is hungry. Feed it to bring its health up./)
+    ).toBeInTheDocument();
+  });
+
+  it('refreshes the horse queries after a vet visit so the horse page shows the new health', async () => {
+    server.use(
+      http.post(BOOK, () =>
+        HttpResponse.json({
+          success: true,
+          data: {
+            horse: {
+              id: 1,
+              name: 'Due Mare',
+              lastVettedDate: '2026-10-27',
+              colorGeneticsTested: false,
+            },
+            service: services[0],
+            cost: 400,
+            remainingMoney: 900,
+          },
+        })
+      )
+    );
+    const user = userEvent.setup();
+    const { queryClient } = renderPage();
+    queryClient.setQueryData(['horses'], [{ id: 1 }]);
+    queryClient.setQueryData(['horses', 1], { id: 1 });
+    const check = await screen.findByTestId('service-box-health-check');
+    await user.selectOptions(within(check).getByRole('combobox'), '1');
+    await user.click(within(check).getByRole('button', { name: /vet horse/i }));
+    await within(check).findByText('Due Mare is in Excellent health.');
+    expect(queryClient.getQueryState(['horses'])?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(['horses', 1])?.isInvalidated).toBe(true);
   });
 
   it('greys the horse out after it is vetted, once the list is refreshed', async () => {
@@ -193,9 +298,9 @@ describe('VeterinarianPage (Equoria-7dmzp)', () => {
     const user = userEvent.setup();
     renderPage();
     const check = await screen.findByTestId('service-box-health-check');
-    await user.selectOptions(within(check).getByRole('combobox'), 'Due Mare');
+    await user.selectOptions(within(check).getByRole('combobox'), '1');
     await user.click(within(check).getByRole('button', { name: /vet horse/i }));
-    await within(check).findByText(/done for Due Mare/);
+    await within(check).findByText('Due Mare is in Excellent health.');
     await screen.findByRole('option', { name: /Due Mare — already vetted/ });
     expect(within(check).getByRole('button', { name: /vet horse/i })).toBeDisabled();
   });
@@ -209,7 +314,7 @@ describe('VeterinarianPage (Equoria-7dmzp)', () => {
     const user = userEvent.setup();
     renderPage();
     const panel = await screen.findByTestId('service-box-genetic-testing');
-    await user.selectOptions(within(panel).getByRole('combobox'), 'Due Mare');
+    await user.selectOptions(within(panel).getByRole('combobox'), '1');
     await user.click(within(panel).getByRole('button', { name: /run panel/i }));
     expect(await within(panel).findByRole('alert')).toHaveTextContent(
       'That horse has already been tested.'

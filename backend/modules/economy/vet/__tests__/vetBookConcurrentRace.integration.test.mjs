@@ -20,7 +20,7 @@ import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
-import { bookVetAppointment, VET_SERVICES } from '../controllers/vetController.mjs';
+import { bookVetAppointment, healthCheckFee, VET_SERVICES } from '../controllers/vetController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-6g8wm-vet';
 const N = 5;
@@ -50,9 +50,9 @@ beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
   const pw = await bcrypt.hash('TestPassword123!', 1);
 
-  // Seed user with EXACTLY one service cost — so a double-debit would
+  // Seed user with EXACTLY one health check fee (owner ruling 2026-10-27, old contract: flat
+  // 100; this never-vetted horse is Bad, so 400) — so a double-debit would
   // produce a negative balance, the sharpest possible signal.
-  const service = VET_SERVICES[0];
   user = await prisma.user.create({
     data: {
       username: `${FIXTURE_PREFIX}-${tag}`,
@@ -60,7 +60,7 @@ beforeAll(async () => {
       password: pw,
       firstName: 'Vet',
       lastName: 'Race',
-      money: service.cost,
+      money: healthCheckFee('Bad'),
     },
   });
   createdUserIds.push(user.id);
@@ -111,9 +111,16 @@ describe('vet bookVetAppointment concurrent-race sentinel (Equoria-6g8wm)', () =
     const successes = responses.filter(r => r.statusCode === 200);
     const failures = responses.filter(r => r.statusCode !== 200);
     expect(successes).toHaveLength(1);
+    // Owner ruling 2026-10-27 (old contract: every loser got 400 because the debit ran
+    // before any look at the horse): the fee now depends on the horse's vet health, so a
+    // loser that reads the horse after the winner committed finds it Excellent and is
+    // refused 409 before any charge; one that read it earlier reaches the debit and is
+    // refused 400 for lack of funds. Either way it is refused and never charged.
     for (const f of failures) {
-      expect(f.statusCode).toBe(400);
-      expect(String(f.body?.message ?? '')).toMatch(/insufficient funds/i);
+      expect([400, 409]).toContain(f.statusCode);
+      expect(String(f.body?.message ?? '')).toMatch(
+        f.statusCode === 400 ? /insufficient funds/i : /already been vetted/i,
+      );
     }
 
     // Wallet never goes negative — the entire point.

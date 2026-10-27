@@ -38,7 +38,7 @@ import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
-import { bookVetAppointment, VET_SERVICES } from '../controllers/vetController.mjs';
+import { bookVetAppointment, healthCheckFee, VET_SERVICES } from '../controllers/vetController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-2hfss-vet';
 const STARTING_MONEY = 10000;
@@ -117,7 +117,9 @@ afterAll(async () => {
 
 describe('vet bookVetAppointment recordTransactionTx migration sentinel (Equoria-2hfss)', () => {
   it('SENTINEL: ledger row balanceAfter is sourced from inside the tx (post-debit)', async () => {
-    const service = VET_SERVICES[0]; // health-check, 100 coins
+    // Owner ruling 2026-10-27 (old contract: flat 100): the fixture horse was last
+    // vetted in 2024, so its vet health is Bad and the check costs 400.
+    const service = { ...VET_SERVICES[0], cost: healthCheckFee('Bad') };
     const req = {
       user: { id: user.id },
       body: { horseId: horse.id, serviceId: service.id },

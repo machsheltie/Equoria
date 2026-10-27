@@ -2,8 +2,11 @@
  * Vet Controller (owner ruling 2026-10-26, q78, Equoria-7dmzp).
  *
  * The vet sells exactly two services, each acting on one horse:
- *   - General Health Check (100 coins): records today (Eastern game date) as the
- *     horse's lastVettedDate, which drives its vet health (utils/horseHealth).
+ *   - General Health Check: restores the horse to Excellent vet health by
+ *     recording today (Eastern game date) as its lastVettedDate (utils/horseHealth).
+ *     Owner ruling 2026-10-27: the fee is 100 for each level the horse's VET
+ *     health is below Excellent (Very Good 100, Good 200, Fair 300, Bad 400),
+ *     computed on the server from the fresh horse row.
  *   - Genetic Testing (500 coins): marks the horse colorGeneticsTested. Revealing
  *     the colour genetics on the Genetics tab is Equoria-8tz7p; this only records
  *     the paid test.
@@ -13,9 +16,8 @@
  * tested" means colorGeneticsTested. Retired horses (21+) are not listed by
  * GET /vet/horses.
  *
- * Old contract: four services (health check 150, treatment 350, dental 200,
- * vaccination 120); a health check set healthStatus and could be bought again
- * at once.
+ * Old contract: a flat 100-coin health check whatever the horse's health
+ * (before that, four services; 150/350/200/120).
  *
  * Routes:
  *   GET  /api/v1/vet/services          -> the two services
@@ -26,7 +28,12 @@
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 import { gameCalendarDate } from '../../../../utils/gameTime.mjs';
-import { getVetHealth } from '../../../../utils/horseHealth.mjs';
+import {
+  getVetHealth,
+  getFeedHealth,
+  getDisplayedHealth,
+  healthWords,
+} from '../../../../utils/horseHealth.mjs';
 import { retirementAgeYears } from '../../../../constants/horseAgePolicy.mjs';
 import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
 import {
@@ -45,8 +52,10 @@ export const VET_SERVICES = [
   {
     id: healthCheckId,
     name: 'General Health Check',
-    description: 'A full examination. Keeps a horse in Excellent health for a week.',
+    description: 'Restores a horse to Excellent health',
+    // Base price (a horse one level down). The fee for a horse is healthCheckFee().
     cost: 100,
+    costNote: '100 coins for a horse at Very Good health, and 100 more for each level below',
     actionLabel: 'Vet Horse',
   },
   {
@@ -59,6 +68,18 @@ export const VET_SERVICES = [
 ];
 
 class AlreadyDoneError extends Error {}
+class FeeChangedError extends Error {}
+
+const healthCheckStep = 100;
+
+/**
+ * The health check fee for a vet-health word: 100 per level below Excellent.
+ * Excellent (and retired) horses have nothing to restore: null.
+ */
+export function healthCheckFee(vetHealth) {
+  const level = healthWords.indexOf(vetHealth);
+  return level <= 0 ? null : level * healthCheckStep;
+}
 
 /** Vet health still Excellent: another health check would change nothing. */
 export function isAlreadyVetted(horse, now = new Date()) {
@@ -106,6 +127,8 @@ export async function getVetHorses(req, res) {
         id: horse.id,
         name: horse.name,
         vetted: isAlreadyVetted(horse, now),
+        vetHealth: getVetHealth(horse, now),
+        healthCheckFee: healthCheckFee(getVetHealth(horse, now)),
         geneticsTested: horse.colorGeneticsTested,
       })),
     });
@@ -147,9 +170,19 @@ export async function bookVetAppointment(req, res) {
 
     let updatedHorse;
     let updatedUser;
+    let charge = service.cost;
     try {
       ({ updatedHorse, updatedUser } = await withRetryableTxMapping(
         prisma.$transaction(async tx => {
+          // The health check fee depends on the horse's vet health, so the server
+          // prices it from the horse row, never from the client. The row is read
+          // again after the debit's User lock (below); a fee that moved between
+          // the two reads refuses the booking and rolls the debit back.
+          const fee = isPanel ? service.cost : healthCheckFee(getVetHealth(horse));
+          if (fee === null) {
+            throw new AlreadyDoneError();
+          }
+          charge = fee;
           // Equoria-6p398.9 lock ordering: the User row is written BEFORE the
           // Horse row. Every UPDATE holds its row write-lock until commit, so
           // the previous Horse-then-User order deadlocked against buyHorse
@@ -160,7 +193,7 @@ export async function bookVetAppointment(req, res) {
           // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
           const moneyAfter = await debitMoneyOrThrow(tx, {
             userId,
-            amount: service.cost,
+            amount: fee,
             systemAccount: SYSTEM_ACCOUNT_BURN,
             category: 'vetServiceBurn',
             description: `Vet fee — ${service.name} for ${horse.name}`,
@@ -177,6 +210,9 @@ export async function bookVetAppointment(req, res) {
           if (isPanel ? fresh.colorGeneticsTested : isAlreadyVetted(fresh)) {
             throw new AlreadyDoneError();
           }
+          if (!isPanel && healthCheckFee(getVetHealth(fresh)) !== fee) {
+            throw new FeeChangedError();
+          }
           const { count } = await tx.horse.updateMany({
             where: { id: horseId, userId },
             data: updateData,
@@ -186,7 +222,16 @@ export async function bookVetAppointment(req, res) {
           }
           const horseUpdate = await tx.horse.findUnique({
             where: { id: horseId },
-            select: { id: true, name: true, lastVettedDate: true, colorGeneticsTested: true },
+            select: {
+              id: true,
+              name: true,
+              age: true,
+              healthStatus: true,
+              lastVettedDate: true,
+              lastFedDate: true,
+              hungerSince: true,
+              colorGeneticsTested: true,
+            },
           });
           // Equoria-2hfss: migrated to recordTransactionTx(tx, opts). tx is
           // structurally required (first arg); the service reads the
@@ -198,7 +243,7 @@ export async function bookVetAppointment(req, res) {
           await recordTransactionTx(tx, {
             userId,
             type: 'debit',
-            amount: service.cost,
+            amount: fee,
             category: 'vetService',
             description: `${service.name} for ${horse.name}`,
             metadata: { horseId, serviceId },
@@ -217,18 +262,25 @@ export async function bookVetAppointment(req, res) {
           data: null,
         });
       }
+      if (txErr instanceof FeeChangedError) {
+        return res.status(409).json({
+          success: false,
+          message: `The fee for ${horse.name} has changed. Reload and try again.`,
+          data: null,
+        });
+      }
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient funds. ${service.name} costs ${service.cost} coins`,
-          data: { required: service.cost },
+          message: `Insufficient funds. ${service.name} for ${horse.name} costs ${charge} coins`,
+          data: { required: charge },
         });
       }
       throw txErr;
     }
 
     logger.info(
-      `[vetController] User ${userId} booked "${service.name}" for horse ${horseId} — cost ${service.cost}`,
+      `[vetController] User ${userId} booked "${service.name}" for horse ${horseId} — cost ${charge}`,
     );
 
     res.status(200).json({
@@ -240,9 +292,12 @@ export async function bookVetAppointment(req, res) {
           name: updatedHorse.name,
           lastVettedDate: updatedHorse.lastVettedDate,
           colorGeneticsTested: updatedHorse.colorGeneticsTested,
+          vetHealth: getVetHealth(updatedHorse),
+          feedHealth: getFeedHealth(updatedHorse),
+          displayedHealth: getDisplayedHealth(updatedHorse),
         },
         service,
-        cost: service.cost,
+        cost: charge,
         remainingMoney: updatedUser.money,
       },
     });
