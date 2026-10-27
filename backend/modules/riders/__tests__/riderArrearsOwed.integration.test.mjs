@@ -1,5 +1,5 @@
 /**
- * Rider owed weeks (owner q131, 2026-10-27): a rider's missed week is OWED, like grooms.
+ * Rider owed weeks (owner q131 and q142, 2026-10-27): a rider's missed week is OWED, like grooms.
  * The next payday collects the missed weeks in the same debit; a rider who leaves after a
  * full unpaid week has the debt written off. Real DB, real pay pass, real roster route
  * (supertest). Pay weeks are fixed dates in 2032 and every pass is scoped to this suite's
@@ -18,6 +18,7 @@ import config from '../../../config/config.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { processWeeklyRiderSalaries } from '../index.mjs';
 import { getRiderPayWeekStart } from '../services/riderPayWeek.mjs';
+import { riderRefusal } from '../../../utils/competitionEntryRules.mjs';
 import { handleUnpaidRiders } from '../services/riderUnpaidService.mjs';
 
 const PREFIX = 'TestFixture-riderArrears';
@@ -126,22 +127,47 @@ describe('rider owed weeks: a missed week is collected with the next payday', ()
     expect(await rows(user.id, 'missed')).toHaveLength(0);
   });
 
-  it('a wallet that covers this week but not the debt pays this week; the debt stays owed', async () => {
+  // Owner q142 (2026-10-27), "Owed weeks first": this week AND every owed week are one
+  // debit. The old contract (q131) fell back to this week alone and left the debt owed.
+  it('a wallet that covers this week but not the debt takes nothing; the week is missed and the rider cannot ride', async () => {
+    const { user } = await makeUser(250);
+    const rider = await makeRider(user.id, 200);
+    // An owed week with the rider not yet marked unpaid (a fixture row, not a pass).
+    await prisma.riderSalaryPayment.create({
+      data: {
+        riderId: rider.id,
+        userId: user.id,
+        amount: 200,
+        weekKey: '2032-03-01',
+        paymentDate: getRiderPayWeekStart(week1),
+        status: 'missed',
+      },
+    });
+
+    await pass(user.id, week2);
+
+    expect(await moneyOf(user.id)).toBe(250);
+    expect(await rows(user.id, 'paid')).toHaveLength(0);
+    expect((await rows(user.id, 'missed')).map(r => r.weekKey)).toEqual(['2032-03-01', '2032-03-08']);
+    const after = await prisma.rider.findUnique({ where: { id: rider.id } });
+    expect(after.retired).toBe(false);
+    expect(after.feeUnpaidSince).toEqual(getRiderPayWeekStart(week2));
+    expect(riderRefusal({ rider: after }, user.id)).toBe('riderFeeUnpaid');
+  });
+
+  it('a wallet that covers this week but not the debt, after a full unpaid week, sees the rider leave and the debt written off', async () => {
     const { user } = await makeUser(10);
     const rider = await makeRider(user.id, 200);
 
     await pass(user.id, week1);
     await setMoney(user.id, 250);
-    await pass(user.id, week2);
+    const result = await pass(user.id, week2);
 
-    expect(await moneyOf(user.id)).toBe(50);
-    expect(await rows(user.id, 'missed')).toHaveLength(1);
-    expect((await prisma.rider.findUnique({ where: { id: rider.id } })).feeUnpaidSince).toBeNull();
-
-    await setMoney(user.id, 1000);
-    await pass(user.id, week3);
-    expect(await moneyOf(user.id)).toBe(600);
+    expect(result.released).toBe(1);
+    expect(await moneyOf(user.id)).toBe(250);
     expect(await rows(user.id, 'missed')).toHaveLength(0);
+    expect(await rows(user.id, 'arrearsWrittenOff')).toHaveLength(1);
+    expect((await prisma.rider.findUnique({ where: { id: rider.id } })).retired).toBe(true);
   });
 
   it('a rider who leaves after a full unpaid week is not charged afterwards; the debt is written off', async () => {

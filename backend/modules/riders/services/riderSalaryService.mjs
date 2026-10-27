@@ -15,9 +15,10 @@
  *
  * Arrears (owner q131, 2026-10-27): a missed week is OWED, as for grooms. The next time
  * the rider is paid, the 'missed' rows for earlier pay weeks are collected in the same
- * single debit and marked 'arrearsSettled'. Like grooms, if the wallet covers this week
- * but not the weeks owed too, this week alone is taken (the rider rides again) and the
- * missed weeks stay owed. A rider who leaves has their owed weeks written off
+ * single debit and marked 'arrearsSettled'. Owed weeks first (q142, which differs from
+ * grooms): the rider cannot ride until this week AND every owed week are paid. If the
+ * wallet cannot cover the full amount nothing is taken, this week is also missed, and
+ * the rider stays unable to ride. A rider who leaves has their owed weeks written off
  * (riderUnpaidService). All or nothing still applies to the week itself (q132).
  */
 
@@ -117,41 +118,24 @@ export async function processWeeklyRiderSalaries(
               select: { id: true, amount: true },
             });
             const owedTotal = owedRows.reduce((sum, row) => sum + row.amount, 0);
-            // This week plus the debt in ONE debit; if the wallet cannot cover both,
-            // fall back to this week alone and leave the debt owed.
-            const attempts = [];
+            // Owed weeks first (owner q142): this week plus the debt in ONE debit. If the
+            // wallet cannot cover all of it nothing is taken (InsufficientFundsError), the
+            // week is missed, and the rider cannot ride.
+            const arrearsSettledNow = owedRows.length > 0;
             if (total + owedTotal > 0) {
-              attempts.push({ amount: total + owedTotal, withArrears: true });
-            }
-            if (owedTotal > 0 && total > 0) {
-              attempts.push({ amount: total, withArrears: false });
-            }
-            let arrearsSettledNow = false;
-            for (const [index, attempt] of attempts.entries()) {
-              try {
-                await debitMoneyOrThrow(tx, {
-                  userId,
-                  amount: attempt.amount,
-                  systemAccount: burnAccount,
-                  category: 'riderSalaryBurn',
-                  description: `Rider weekly pay: user ${riders[0].user?.username ?? userId}`,
-                  metadata: {
-                    riderCount: unpaid.length,
-                    totalSalary: total,
-                    arrears: attempt.withArrears ? owedTotal : 0,
-                    payWeekStart: payWeekStart.toISOString(),
-                  },
-                });
-                arrearsSettledNow = attempt.withArrears;
-                break;
-              } catch (debitError) {
-                if (
-                  !(debitError instanceof InsufficientFundsError) ||
-                  index === attempts.length - 1
-                ) {
-                  throw debitError;
-                }
-              }
+              await debitMoneyOrThrow(tx, {
+                userId,
+                amount: total + owedTotal,
+                systemAccount: burnAccount,
+                category: 'riderSalaryBurn',
+                description: `Rider weekly pay: user ${riders[0].user?.username ?? userId}`,
+                metadata: {
+                  riderCount: unpaid.length,
+                  totalSalary: total,
+                  arrears: owedTotal,
+                  payWeekStart: payWeekStart.toISOString(),
+                },
+              });
             }
             if (arrearsSettledNow && owedRows.length > 0) {
               await tx.riderSalaryPayment.updateMany({
