@@ -131,7 +131,7 @@ export async function requestPrivateStud(req, res) {
           if (!requester || Number(requester.money) < expectedStudFee) {
             throw new BookingRefusal(400, {
               success: false,
-              code: 'INSUFFICIENT_FUNDS',
+              code: 'insufficientFunds',
               message: `You need ${expectedStudFee} coins to ask for this stallion.`,
             });
           }

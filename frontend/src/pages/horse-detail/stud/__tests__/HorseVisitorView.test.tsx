@@ -41,7 +41,7 @@ const visit = {
     intelligence: 77,
     boldness: 62,
   },
-  revealedTraits: { positive: ['even_tempered'], negative: ['spooky'] },
+  revealedTraits: { positive: ['evenTempered'], negative: ['spooky'] },
   displayedHealth: 'Good',
   sire: { id: 50, name: 'Midnight Ledger' },
   dam: null,
@@ -92,7 +92,7 @@ describe('the horse page in visitor mode', () => {
     expect(screen.getByText('Private Stud')).toBeInTheDocument();
     expect(screen.getByText('Moonrise Sonata stands with Alder Hollow.')).toBeInTheDocument();
     expect(screen.getByText('Even Tempered')).toBeInTheDocument();
-    expect(screen.queryByText(/even_tempered/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/evenTempered/)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Midnight Ledger' })).toHaveAttribute(
       'href',
       '/horses/50'

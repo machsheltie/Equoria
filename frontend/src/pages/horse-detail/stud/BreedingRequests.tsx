@@ -21,7 +21,7 @@ import { requestAnswerRefusal } from './studBreeding';
 
 type Side = 'stallion' | 'mare';
 
-const STATUS_WORDS: Record<Side, Record<StudRequestStatus, string>> = {
+const statusWords: Record<Side, Record<StudRequestStatus, string>> = {
   stallion: {
     PENDING: 'Waiting on you',
     COMPLETED: 'Accepted',
@@ -84,7 +84,7 @@ const RequestEntry: React.FC<{ side: Side; request: StudRequest }> = ({ side, re
           </p>
         </>
       )}
-      <p className="stud-request__status">{STATUS_WORDS[side][request.status]}</p>
+      <p className="stud-request__status">{statusWords[side][request.status]}</p>
       {pending && side === 'stallion' && (
         <>
           <p className="stud-quiet">Open {request.dam.name} to see her before you answer.</p>

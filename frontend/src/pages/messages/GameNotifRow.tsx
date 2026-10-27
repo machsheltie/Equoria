@@ -438,7 +438,7 @@ const ConductWarningRow: React.FC<{ notif: GameNotification }> = ({ notif }) => 
  * (owner ruling q110, 2026-10-27). Decline reasons are read as codes for the
  * wording only; no stored code or server message reaches the screen.
  */
-const STUD_BADGES: Record<string, string> = {
+const studBadges: Record<string, string> = {
   studBooked: 'Stud Booking',
   studRequestReceived: 'Breeding Request',
   studRequestApproved: 'Request Accepted',
@@ -475,7 +475,7 @@ const StudNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) => (
     iconBg="bg-[var(--role-accent-bg)]"
     emoji=""
     icon={<StarMark />}
-    badgeLabel={STUD_BADGES[notif.type] ?? 'Breeding'}
+    badgeLabel={studBadges[notif.type] ?? 'Breeding'}
     badgeVariant="default"
     title="At stud"
     body={<p>{studSentence(notif)}</p>}

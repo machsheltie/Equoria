@@ -42,7 +42,7 @@ import {
 
 const PREFIX = 'TestFixture-q4uem9-studpage';
 const FEE = 400;
-const HIDDEN_TRAIT = 'zzSecretHiddenTraitQ4uem9';
+const hiddenTrait = 'zzSecretHiddenTraitQ4uem9';
 
 describe('breeding from the stallion page (Equoria-q4uem.9)', () => {
   const cleanup = createCleanupTracker();
@@ -149,7 +149,7 @@ describe('breeding from the stallion page (Equoria-q4uem.9)', () => {
     const res = await requestPrivateStud(poor.token, stud.id, { damId: mare.id, expectedStudFee: FEE });
 
     expect(res.status).toBe(400);
-    expect(res.body).toMatchObject({ success: false, code: 'INSUFFICIENT_FUNDS' });
+    expect(res.body).toMatchObject({ success: false, code: 'insufficientFunds' });
     expect(await prisma.breedingRecord.count({ where: { damId: mare.id } })).toBe(0);
     expect(await prisma.notification.count({ where: { userId: studOwner.user.id } })).toBe(0);
     expect(await moneyOf(poor.user.id)).toBe(FEE - 1);
@@ -161,7 +161,7 @@ describe('breeding from the stallion page (Equoria-q4uem.9)', () => {
 
     const booked = await bookStud(mareOwner.token, stud.id, { damId: mare.id, expectedStudFee: FEE });
     expect(booked.status).toBe(400);
-    expect(booked.body.code).toBe('OWN_STALLION');
+    expect(booked.body.message).toMatch(/your own stallion/i);
     expect(booked.body.message).not.toMatch(/breeding hall/i);
   });
 
@@ -193,7 +193,7 @@ describe('breeding from the stallion page (Equoria-q4uem.9)', () => {
       ownerId: studOwner.user.id,
       sex: 'Stallion',
       sireId: sire.id,
-      epigeneticModifiers: { positive: ['calm'], negative: ['spooky'], hidden: [HIDDEN_TRAIT] },
+      epigeneticModifiers: { positive: ['calm'], negative: ['spooky'], hidden: [hiddenTrait] },
       colorGenotype: { E_Extension: 'E/e' },
     });
     const listed = await listAtStud(studOwner.token, stud.id, { studFee: FEE, mode: 'private' });
@@ -216,7 +216,7 @@ describe('breeding from the stallion page (Equoria-q4uem.9)', () => {
     });
     expect(typeof view.stats.speed).toBe('number');
     const raw = JSON.stringify(res.body);
-    expect(raw).not.toContain(HIDDEN_TRAIT);
+    expect(raw).not.toContain(hiddenTrait);
     expect(raw).not.toContain('E/e');
     expect(view).not.toHaveProperty('userId');
     expect(view).not.toHaveProperty('epigeneticModifiers');

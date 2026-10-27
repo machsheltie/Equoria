@@ -56,7 +56,7 @@ describe('GameNotifRow — breeding at stud', () => {
     ],
     [
       'studRequestDeclined',
-      { ...base, declineReason: 'STALLION_UNAVAILABLE', message: 'RAW server words' },
+      { ...base, declineReason: 'stallionUnavailable', message: 'RAW server words' },
       'The request for Wren to Thunder Orchard could not go ahead.',
     ],
     ['studRequestCancelled', base, 'The request for Wren to Thunder Orchard was withdrawn.'],
@@ -65,7 +65,7 @@ describe('GameNotifRow — breeding at stud', () => {
     expect(el).toHaveTextContent(sentence);
     expect(el.querySelector('svg.stud-star')).not.toBeNull();
     expect(el).not.toHaveTextContent(type);
-    expect(el).not.toHaveTextContent(/REJECTED|STALLION_UNAVAILABLE|RAW server words/);
+    expect(el).not.toHaveTextContent(/REJECTED|stallionUnavailable|RAW server words/);
   });
 
   it('an unknown notification never shows its stored type', () => {

@@ -23,7 +23,6 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const pending = {
   id: 41,
   status: 'PENDING',
-  kind: 'PRIVATE_STUD',
   fee: 500,
   createdAt: new Date().toISOString(),
   resolvedAt: null,

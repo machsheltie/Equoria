@@ -14,8 +14,8 @@ import { actionMessageFor } from '@/lib/http/actionMessage';
 import type { BreedingKind } from '@/hooks/api/useStuds';
 
 /** Horses breed only at ages 3-20, both sexes (owner ruling 2026-10-23). */
-export const MIN_BREEDING_AGE = 3;
-export const MAX_BREEDING_AGE = 20;
+export const minBreedingAge = 3;
+export const maxBreedingAge = 20;
 
 export interface MareChoice {
   mare: BreedingHorse;
@@ -28,8 +28,8 @@ const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'A
 function whyNot(mare: BreedingHorse, stallionBreed: string | null, now: Date): string | null {
   if (mare.inFoal) return 'already in foal';
   if (mare.pendingStudRequest) return 'a request is already waiting';
-  if (mare.age < MIN_BREEDING_AGE) return 'under 3';
-  if (mare.age > MAX_BREEDING_AGE) return 'retired from breeding';
+  if (mare.age < minBreedingAge) return 'under 3';
+  if (mare.age > maxBreedingAge) return 'retired from breeding';
   if (mare.breedingCooldownEndsAt) {
     const ends = new Date(mare.breedingCooldownEndsAt);
     if (ends.getTime() > now.getTime()) return `resting until ${weekday.format(ends)}`;
@@ -77,16 +77,15 @@ export function breedingRefusal(error: unknown, stallionName: string): string {
   return actionMessageFor(
     error,
     {
-      400: `That mare can't be bred to ${stallionName} right now.`,
+      400: `That breeding couldn't go ahead. Check that the mare can go to ${stallionName} and that you have the stud fee.`,
       404: `${stallionName} is no longer standing at stud.`,
-      409: `${stallionName}'s stud terms changed. Please look again.`,
+      409: `${stallionName}'s stud terms or your mare changed. Please look again.`,
     },
     {
-      INSUFFICIENT_FUNDS: "You don't have enough coins for this stud fee.",
-      STUD_FEE_CHANGED: `${stallionName}'s stud fee has changed. Please look again.`,
-      MARE_HAS_PENDING_REQUEST: 'That mare already has a request waiting.',
-      OWN_STALLION: `${stallionName} is your own stallion.`,
-      STUD_OWNER_UNAVAILABLE: `${stallionName}'s owner can't take mares right now.`,
+      // The Private request refusal (owner ruling q106); the older stud codes
+      // are SCREAMING_CASE until the camelCase conversion (Equoria-pjvp8)
+      // reaches them, so they are covered by the status copy above.
+      insufficientFunds: "You don't have enough coins for this stud fee.",
     }
   );
 }
@@ -102,17 +101,8 @@ export function standingRefusal(error: unknown, horseName: string): string {
 
 /** A refused answer to a breeding request. */
 export function requestAnswerRefusal(error: unknown): string {
-  return actionMessageFor(
-    error,
-    {
-      404: 'That request is no longer here.',
-      409: 'This request has already been answered or withdrawn.',
-    },
-    {
-      REQUEST_NOT_PENDING: 'This request has already been answered or withdrawn.',
-      REQUEST_DECLINED: "The breeding couldn't go ahead, so the request was declined.",
-      INSUFFICIENT_FUNDS:
-        "The mare's owner can no longer pay the fee, so the request was declined.",
-    }
-  );
+  return actionMessageFor(error, {
+    404: 'That request is no longer here.',
+    409: "This request was already answered, withdrawn, or couldn't go ahead and was declined.",
+  });
 }

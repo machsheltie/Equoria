@@ -20,7 +20,7 @@ import RequestAnswer from './RequestAnswer';
 import { StarMark } from './StarMark';
 import '@/styles/studBreeding.css';
 
-const STAT_ORDER = [
+const statOrder = [
   'speed',
   'stamina',
   'agility',
@@ -148,12 +148,14 @@ const HorseVisitorView: React.FC<{ horse: HorseVisit }> = ({ horse }) => {
         </p>
 
         <dl className="stud-visit__stats" aria-label="Stats">
-          {STAT_ORDER.filter((key) => key in horse.stats).map((key) => (
-            <div key={key}>
-              <dt>{statLabel(key)}</dt>
-              <dd>{horse.stats[key]}</dd>
-            </div>
-          ))}
+          {statOrder
+            .filter((key) => key in horse.stats)
+            .map((key) => (
+              <div key={key}>
+                <dt>{statLabel(key)}</dt>
+                <dd>{horse.stats[key]}</dd>
+              </div>
+            ))}
         </dl>
 
         <h2 className="stud-visit__heading">Revealed traits</h2>

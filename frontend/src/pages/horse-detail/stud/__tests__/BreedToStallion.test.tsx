@@ -234,15 +234,16 @@ describe('BreedToStallion', () => {
   it('a refusal is said in authored words, never the server message or code, and her choice stays', async () => {
     serveHorses();
     server.use(
-      http.post(`${base}/api/v1/studs/99/bookings`, () =>
+      http.post(`${base}/api/v1/studs/99/requests`, () =>
         HttpResponse.json(
-          { success: false, code: 'INSUFFICIENT_FUNDS', message: 'SERVER-SIDE-TEXT you need 500' },
+          { success: false, code: 'insufficientFunds', message: 'SERVER-SIDE-TEXT you need 500' },
           { status: 400 }
         )
       )
     );
     const user = userEvent.setup();
-    renderBreed();
+    // The balance read said she could pay; the server, the authority, says no.
+    renderBreed({ kind: 'private' });
 
     await user.click(screen.getByRole('button', { name: /Breed to Moonrise Sonata/ }));
     const select = await screen.findByLabelText('Choose one of your mares');
@@ -251,7 +252,7 @@ describe('BreedToStallion', () => {
     expect(
       await screen.findByText("You don't have enough coins for this stud fee.")
     ).toBeInTheDocument();
-    expect(screen.queryByText(/SERVER-SIDE-TEXT|INSUFFICIENT_FUNDS/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/SERVER-SIDE-TEXT|insufficientFunds/)).not.toBeInTheDocument();
     expect((select as HTMLSelectElement).value).toBe('11');
   });
 

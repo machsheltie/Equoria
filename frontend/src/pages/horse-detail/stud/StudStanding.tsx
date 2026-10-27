@@ -12,9 +12,9 @@ import React, { useId, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { InlineError } from '@/components/ui/state';
 import { useSetStudStanding, type StudStanding as Standing } from '@/hooks/api/useStuds';
-import { MIN_BREEDING_AGE, standingRefusal } from './studBreeding';
+import { minBreedingAge, standingRefusal } from './studBreeding';
 
-const STANDING_OPTIONS: { value: Standing; label: string }[] = [
+const standingOptions: { value: Standing; label: string }[] = [
   { value: 'none', label: 'Not at stud' },
   { value: 'public', label: 'Public Stud' },
   { value: 'private', label: 'Private Stud' },
@@ -55,7 +55,7 @@ const StudStanding: React.FC<StudStandingProps> = ({
   const [feeInput, setFeeInput] = useState(typeof studFee === 'number' ? String(studFee) : '');
   const [feeProblem, setFeeProblem] = useState<string | null>(null);
   const setStanding = useSetStudStanding(horseId);
-  const tooYoung = ageYears !== null && ageYears < MIN_BREEDING_AGE;
+  const tooYoung = ageYears !== null && ageYears < minBreedingAge;
 
   const save = (standing: Standing) => {
     setFeeProblem(null);
@@ -79,7 +79,7 @@ const StudStanding: React.FC<StudStandingProps> = ({
         Stud standing
       </h3>
       <div className="stud-three" role="radiogroup" aria-label="Stud standing">
-        {STANDING_OPTIONS.map(({ value, label }) => (
+        {standingOptions.map(({ value, label }) => (
           <button
             key={value}
             type="button"

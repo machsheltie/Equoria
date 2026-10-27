@@ -14,7 +14,7 @@ import type { Horse } from './HorseDetailPageTypes';
 import StudStanding from './stud/StudStanding';
 import BreedToStallion from './stud/BreedToStallion';
 import BreedingRequests from './stud/BreedingRequests';
-import { MAX_BREEDING_AGE, MIN_BREEDING_AGE } from './stud/studBreeding';
+import { maxBreedingAge, minBreedingAge } from './stud/studBreeding';
 import '@/styles/studBreeding.css';
 
 interface StudSaleTabProps {
@@ -36,8 +36,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
     horse.gender?.toLowerCase() === 'mare' || horse.gender?.toLowerCase() === 'female';
 
   const ageYears = typeof horse.ageYears === 'number' ? horse.ageYears : null;
-  const canBreed =
-    ageYears === null || (ageYears >= MIN_BREEDING_AGE && ageYears <= MAX_BREEDING_AGE);
+  const canBreed = ageYears === null || (ageYears >= minBreedingAge && ageYears <= maxBreedingAge);
 
   return (
     <div className="space-y-6" data-testid="stud-sale-tab">
@@ -130,7 +129,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
             />
           ) : (
             <p className="stud-quiet">
-              {horse.name} can breed from age {MIN_BREEDING_AGE} to {MAX_BREEDING_AGE}.
+              {horse.name} can breed from age {minBreedingAge} to {maxBreedingAge}.
             </p>
           )}
           <BreedingRequests side="stallion" horseId={horse.id} horseName={horse.name} />

@@ -25,7 +25,7 @@ import { getHorseAgeYears } from '../../utils/horseAge.mjs';
 import { asFlagObject } from '../../utils/jsonbArrayGuard.mjs';
 import { withoutUnrevealedTraits } from '../../modules/breeding/index.mjs';
 
-const STUD_MODE_BY_STATUS = Object.freeze({
+const studModeByStatus = Object.freeze({
   [studStatuses.public]: 'public',
   [studStatuses.private]: 'private',
 });
@@ -69,7 +69,7 @@ export async function getHorseVisit(horseId, viewerId) {
   const view = withoutUnrevealedTraits(row);
   const traits = asFlagObject(view.epigeneticModifiers);
   const phenotype = asFlagObject(row.phenotype);
-  const studMode = STUD_MODE_BY_STATUS[row.studStatus] ?? null;
+  const studMode = studModeByStatus[row.studStatus] ?? null;
 
   return {
     id: row.id,
