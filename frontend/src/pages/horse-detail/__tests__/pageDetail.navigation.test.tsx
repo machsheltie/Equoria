@@ -61,7 +61,8 @@ describe('HorseDetailPage Component', () => {
       expect(screen.getByText('Disciplines')).toBeInTheDocument();
       expect(screen.getByText('Genetics')).toBeInTheDocument();
       expect(screen.getByText('Training')).toBeInTheDocument();
-      expect(screen.getByText('Competitions')).toBeInTheDocument();
+      expect(screen.getByText('Show Results')).toBeInTheDocument();
+      expect(screen.queryByText('Competitions')).not.toBeInTheDocument();
     });
 
     test('switches tabs when clicked', async () => {

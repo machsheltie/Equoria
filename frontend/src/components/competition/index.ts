@@ -38,16 +38,6 @@ export { default as CompetitionResultsModal } from './CompetitionResultsModal';
 export type { CompetitionResultsModalProps } from './CompetitionResultsModal';
 export type { CompetitionResults, ParticipantResult } from '@/lib/api/competitionResults';
 
-export { default as CompetitionHistory } from './CompetitionHistory';
-export type {
-  CompetitionHistoryProps,
-  CompetitionHistoryData,
-  CompetitionEntry,
-  CompetitionStatistics,
-  DateRangeFilter,
-  PlacementFilter,
-} from './CompetitionHistory';
-
 export { default as PrizeNotificationModal } from './PrizeNotificationModal';
 export type { PrizeNotificationModalProps, PrizeData } from './PrizeNotificationModal';
 

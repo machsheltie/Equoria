@@ -1,0 +1,235 @@
+/*
+ * ShowResultsTab — the horse's show record as a quiet ledger
+ * (Equoria-q4uem.10.1; DESIGN.md "Records / genetics / finance").
+ * Authored CSS on tokens only. Wide screens: aligned columns. Phone: each
+ * result stacks into one entry, so nothing scrolls sideways.
+ */
+
+.show-ledger {
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.show-ledger__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.show-ledger__head,
+.show-ledger__entry {
+  display: grid;
+  grid-template-columns:
+    minmax(7.5rem, 0.9fr) minmax(10rem, 2fr) minmax(7rem, 1fr) minmax(6.5rem, 0.9fr)
+    minmax(5rem, 0.8fr) minmax(6rem, 0.9fr) minmax(8rem, 1.1fr);
+  column-gap: 16px;
+  align-items: baseline;
+  padding: 12px 16px;
+}
+
+.show-ledger__head {
+  color: var(--text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.show-ledger__entry {
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.show-ledger__entry:last-child {
+  border-bottom: none;
+}
+
+.show-ledger__field {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Wide screens read the labels from the header row; keep them for screen readers. */
+.show-ledger__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.show-ledger__head [data-field='points'],
+.show-ledger__head [data-field='winnings'],
+.show-ledger__entry [data-field='points'],
+.show-ledger__entry [data-field='winnings'] {
+  text-align: right;
+}
+
+/* The Record Rule: a recorded date reads as a record. */
+.show-ledger__entry [data-field='date'] {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.show-ledger__entry [data-field='show'] {
+  font-weight: 600;
+}
+
+.show-ledger__pending {
+  color: var(--text-secondary);
+}
+
+/* Podium metals — always with the ordinal text, never colour alone. */
+.show-ledger__placement[data-podium] {
+  font-weight: 600;
+}
+
+.show-ledger__placement[data-podium]::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: currentColor;
+}
+
+.show-ledger__placement[data-podium='gold'] {
+  color: var(--tier-gold);
+}
+
+.show-ledger__placement[data-podium='silver'] {
+  color: var(--tier-silver);
+}
+
+.show-ledger__placement[data-podium='bronze'] {
+  color: var(--tier-bronze);
+}
+
+.show-ledger__message {
+  color: var(--text-secondary);
+  padding: 24px 0;
+}
+
+.show-ledger__message p {
+  margin-bottom: 12px;
+}
+
+.show-ledger__paging {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.show-ledger__page {
+  color: var(--text-secondary);
+}
+
+.show-ledger__button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-muted);
+  background: var(--bg-midnight);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.show-ledger__button:hover:not(:disabled) {
+  border-color: var(--gold-primary);
+}
+
+.show-ledger__button:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+.show-ledger__button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/*
+ * Phone: one stacked entry per result.
+ *   date ............................ placement
+ *   Show name (full width, wraps)
+ *   Discipline
+ *   Horse Points          Winnings
+ *   Stat gained
+ * Labels return for the figures that need them.
+ */
+@media (max-width: 767px) {
+  .show-ledger__head {
+    display: none;
+  }
+
+  .show-ledger__entry {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'date placement'
+      'show show'
+      'type type'
+      'points winnings'
+      'gain gain';
+    row-gap: 4px;
+    padding: 16px 4px;
+  }
+
+  .show-ledger__entry [data-field='date'] {
+    grid-area: date;
+    font-size: 0.8125rem;
+  }
+
+  .show-ledger__entry [data-field='placement'] {
+    grid-area: placement;
+    text-align: right;
+  }
+
+  .show-ledger__entry [data-field='show'] {
+    grid-area: show;
+    font-size: 1.0625rem;
+  }
+
+  .show-ledger__entry [data-field='type'] {
+    grid-area: type;
+    color: var(--text-secondary);
+  }
+
+  .show-ledger__entry [data-field='points'] {
+    grid-area: points;
+    text-align: left;
+    margin-top: 8px;
+  }
+
+  .show-ledger__entry [data-field='winnings'] {
+    grid-area: winnings;
+    text-align: right;
+    margin-top: 8px;
+  }
+
+  .show-ledger__entry [data-field='gain'] {
+    grid-area: gain;
+  }
+
+  .show-ledger__entry [data-field='points'] .show-ledger__label,
+  .show-ledger__entry [data-field='winnings'] .show-ledger__label,
+  .show-ledger__entry [data-field='gain'] .show-ledger__label {
+    position: static;
+    width: auto;
+    height: auto;
+    clip-path: none;
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+  }
+
+  .show-ledger__entry [data-field='gain'] .show-ledger__label {
+    display: inline;
+    margin-right: 8px;
+  }
+}

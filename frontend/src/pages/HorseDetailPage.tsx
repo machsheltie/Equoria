@@ -7,8 +7,7 @@
  * - Discipline scores
  * - Genetic traits
  * - Training system with discipline selection and session management
- * - Competition history (CompetitionHistory + CompetitionResultsModal —
- *   real data via useHorseCompetitionHistory; not a placeholder)
+ * - Show Results tab (ShowResultsTab — the horse's show record, paged)
  *
  * Story 3.2: Horse Detail View - AC-1 through AC-5
  * Story 4-1: Training Session Interface - Task 6
@@ -52,8 +51,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserRiders } from '@/hooks/api/useRiders';
 import { useDelistHorse } from '@/hooks/api/useMarketplace';
 // Competition history (Story 5-3)
-import CompetitionHistory from '@/components/competition/CompetitionHistory';
-import { useHorseCompetitionHistory } from '@/hooks/api/useHorseCompetitionHistory';
+import ShowResultsTab from './horse-detail/ShowResultsTab';
 import { useHorseUltraRareTraits } from '@/hooks/api/useUltraRareTraits';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
 import { hasSeenEvent, markEventSeen } from '@/lib/traitEventSeen';
@@ -125,13 +123,6 @@ const HorseDetailPage: React.FC = () => {
   // 0 here means "not pregnant or sire not yet known — skip the fetch."
   const pregnancySireId = horseRaw?.pregnancySireId ?? 0;
   const { data: sireHorse } = useHorse(Number(pregnancySireId) || 0);
-
-  // Fetch competition history — must be called before any early returns (Rules of Hooks).
-  // Disabled until horse is loaded and competition tab is active.
-  const { data: competitionHistoryData, isLoading: isCompHistoryLoading } =
-    useHorseCompetitionHistory(
-      !isLoading && !isError && !!horseRaw && activeTab === 'competition' ? Number(id) : null
-    );
 
   // Equoria-gt6j — surface UltraRareTraitEvent reveals. The backend
   // (Equoria-d4tl) auto-populates UltraRareTraitEvent rows on milestone
@@ -268,7 +259,7 @@ const HorseDetailPage: React.FC = () => {
     { id: 'gaits', label: 'Gaits', icon: <Wind className="w-4 h-4" /> },
     { id: 'progression', label: 'Progression', icon: <TrendingUp className="w-4 h-4" /> },
     { id: 'training', label: 'Training', icon: <Dumbbell className="w-4 h-4" /> },
-    { id: 'competition', label: 'Competitions', icon: <Award className="w-4 h-4" /> },
+    { id: 'show-results', label: 'Show Results', icon: <Award className="w-4 h-4" /> },
     { id: 'pedigree', label: 'Pedigree', icon: <GitBranch className="w-4 h-4" /> },
     { id: 'health', label: 'Health & Vet', icon: <Stethoscope className="w-4 h-4" /> },
     { id: 'tack', label: 'Tack', icon: <ShoppingCart className="w-4 h-4" /> },
@@ -347,7 +338,6 @@ const HorseDetailPage: React.FC = () => {
         <CareArea horseId={horse.id} horseName={horse.name} />
 
         {/* Tab Navigation + Content — CanonicalTabs underline variant (Equoria-o5hub.11).
-            Controlled: activeTab also gates the competition-history query above.
             Radix unmounts inactive TabsContent by default, preserving the prior
             lazy "render only the active tab" behavior. */}
         <Surface variant="panel" className="p-0 mb-6">
@@ -398,13 +388,8 @@ const HorseDetailPage: React.FC = () => {
                 <TrainingTab horse={horse} />
               </Suspense>
             </TabsContent>
-            <TabsContent value="competition" className="mt-0 p-6">
-              <CompetitionHistory
-                horseId={horse.id}
-                horseName={horse.name}
-                data={isCompHistoryLoading ? undefined : competitionHistoryData}
-                isLoading={isCompHistoryLoading}
-              />
+            <TabsContent value="show-results" className="mt-0 p-6">
+              <ShowResultsTab horseId={horse.id} />
             </TabsContent>
             <TabsContent value="pedigree" className="mt-0 p-6">
               <PedigreeTab horse={horse} />

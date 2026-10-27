@@ -9,6 +9,7 @@
  * Uses the centralized apiClient for authentication and error handling.
  */
 
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 
 /** A post-show stat gain, e.g. `{ stat: 'intelligence', gain: 1 }`. */
@@ -362,6 +363,82 @@ export async function markCompetitionResultsViewed(showIds: number[]): Promise<n
     { showIds }
   );
   return envelope?.markedCount ?? 0;
+}
+
+/** Rows per page of a horse's show record (A6; the route's default). */
+export const HORSE_SHOW_RESULTS_PAGE_SIZE = 50;
+
+/**
+ * One row of GET /api/v1/competition/results/horse/:horseId (owner ruling R7;
+ * backend competitionResultRecord.toHorseShowRow). Every show the horse was
+ * entered in, run and unrun. Unrecorded values are null, never 0.
+ */
+export interface HorseShowResultRow {
+  showId: number;
+  showName: string | null;
+  competitionType: { showType: string; discipline: string | null };
+  /** 'upcoming' before the show runs, 'running' while it settles, then 'completed'. */
+  status: 'upcoming' | 'running' | 'completed';
+  date: string | null;
+  placement: number | null;
+  horsePointsAwarded: number | null;
+  winnings: number | null;
+  /** The owner's post-show stat gain (the route is owner-only). */
+  statGain: StatGain | null;
+  conformationAward: ConformationAward | null;
+}
+
+/** The route's pagination block (backend utils/paginationHelper). */
+export interface HorseShowResultsPagination {
+  currentPage: number;
+  pageSize: number;
+  totalRecords: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+/** One page of a horse's show record. */
+export interface HorseShowResultsPage {
+  rows: HorseShowResultRow[];
+  pagination: HorseShowResultsPagination;
+}
+
+/**
+ * Fetch one page of a horse's show record (upcoming first, then newest first,
+ * as the server orders it).
+ */
+export async function fetchHorseShowResults(
+  horseId: number,
+  page: number
+): Promise<HorseShowResultsPage> {
+  const envelope = await apiClient.getEnvelope<{
+    data?: HorseShowResultRow[];
+    pagination?: HorseShowResultsPagination;
+  }>(
+    `/api/v1/competition/results/horse/${horseId}?page=${page}&limit=${HORSE_SHOW_RESULTS_PAGE_SIZE}`
+  );
+  return {
+    rows: envelope?.data ?? [],
+    pagination: envelope?.pagination ?? {
+      currentPage: page,
+      pageSize: HORSE_SHOW_RESULTS_PAGE_SIZE,
+      totalRecords: envelope?.data?.length ?? 0,
+      totalPages: 1,
+      hasNextPage: false,
+      hasPrevPage: page > 1,
+    },
+  };
+}
+
+/** One page of a horse's show record; keeps the previous page on screen while paging. */
+export function useHorseShowResults(horseId: number, page: number) {
+  return useQuery({
+    queryKey: ['horseShowResults', horseId, page],
+    queryFn: () => fetchHorseShowResults(horseId, page),
+    enabled: Number.isInteger(horseId) && horseId > 0,
+    placeholderData: keepPreviousData,
+  });
 }
 
 /**

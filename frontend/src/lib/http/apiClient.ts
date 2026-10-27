@@ -147,7 +147,9 @@ export async function getCsrfToken(): Promise<string> {
 export async function fetchWithAuth<T>(
   endpoint: string,
   options: RequestInit = {},
-  retryCount = 0
+  retryCount = 0,
+  /** Return the whole JSON envelope instead of its `data` (paged reads need `pagination`). */
+  envelope = false
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
@@ -193,7 +195,7 @@ export async function fetchWithAuth<T>(
         const refreshed = await refreshAccessToken();
         if (refreshed) {
           // Retry the original request
-          return fetchWithAuth<T>(endpoint, options, retryCount + 1);
+          return fetchWithAuth<T>(endpoint, options, retryCount + 1, envelope);
         }
       }
       // Refresh failed, throw 401 error. `sessionExpired` tells the app
@@ -214,7 +216,7 @@ export async function fetchWithAuth<T>(
         .catch(() => ({}));
       if (body?.code === 'INVALID_CSRF_TOKEN') {
         authSessionState.invalidate();
-        return fetchWithAuth<T>(endpoint, options, retryCount + 1);
+        return fetchWithAuth<T>(endpoint, options, retryCount + 1, envelope);
       }
     }
 
@@ -272,6 +274,9 @@ export async function fetchWithAuth<T>(
     const data: ApiResponse<T> = await response.json();
 
     // Return data property if it exists, otherwise return the whole response
+    if (envelope) {
+      return data as T;
+    }
     return (data.data !== undefined ? data.data : data) as T;
   } catch (error) {
     // Re-throw ApiError
@@ -300,6 +305,14 @@ export const apiClient = {
       method: 'GET',
       ...options,
     });
+  },
+
+  /**
+   * GET request returning the whole envelope (`{ success, data, pagination }`)
+   * rather than `data` alone, for paged reads.
+   */
+  getEnvelope: <T>(endpoint: string, options?: RequestInit): Promise<T> => {
+    return fetchWithAuth<T>(endpoint, { method: 'GET', ...options }, 0, true);
   },
 
   /**

@@ -31,7 +31,7 @@ export type TabType =
   | 'gaits'
   | 'progression'
   | 'training'
-  | 'competition'
+  | 'show-results'
   | 'pedigree'
   | 'health'
   | 'stud-sale'
