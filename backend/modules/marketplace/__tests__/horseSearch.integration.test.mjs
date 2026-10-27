@@ -85,6 +85,12 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
       .set('Authorization', `Bearer ${token}`);
   }
 
+  /** Like search, but the caller sets limit and page itself (a repeated limit is a 400). */
+  const pagedSearch = (query, token = viewer.token) =>
+    request(app)
+      .get(`/api/v1/marketplace/search?name=${run}&forSale=true&${query}`)
+      .set('Authorization', `Bearer ${token}`);
+
   const labels = res => res.body.data.horses.map(h => h.name.replace(`${PREFIX}-${run}-`, ''));
 
   beforeEach(async () => {
@@ -298,5 +304,34 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
   ])('refuses %s with a 400', async query => {
     const res = await search(`&forSale=true&${query}`);
     expect(res.status).toBe(400);
+  });
+
+  it('caps a huge limit and still numbers the pages with a total (carried over from the removed browse routes)', async () => {
+    for (let i = 1; i <= 5; i += 1) {
+      await horse({ label: `n${i}`, ...forSale(100) });
+    }
+    const capped = await pagedSearch('limit=5000');
+    expect(capped.status).toBe(200);
+    expect(capped.body.data.horses.length).toBeLessThanOrEqual(100);
+
+    const first = await pagedSearch('limit=2');
+    const second = await pagedSearch('limit=2&page=2');
+    expect(first.body.data.pagination).toMatchObject({ total: 5, totalPages: 3 });
+    expect(second.body.data.pagination.page).toBe(2);
+    expect(labels(second)).not.toEqual(labels(first));
+  });
+
+  it('walks tied prices page by page, each horse exactly once, ties in id order', async () => {
+    const created = [];
+    for (let i = 1; i <= 5; i += 1) {
+      created.push(await horse({ label: `t${i}`, ...forSale(500) }));
+    }
+    const seen = [];
+    for (let page = 1; page <= 3; page += 1) {
+      const res = await pagedSearch(`sort=priceAsc&limit=2&page=${page}`);
+      expect(res.status).toBe(200);
+      seen.push(...res.body.data.horses.map(h => h.id));
+    }
+    expect(seen).toEqual(created.map(h => h.id).sort((a, b) => a - b));
   });
 });

@@ -5,7 +5,7 @@
  *   - POST /horses/:id/stud-listing refuses a stallion under 3 with a 400 and
  *     a code, for a first listing and for a mode or fee change alike, and
  *     leaves the horse exactly as it was; at 3 the listing goes through.
- *   - GET /marketplace/studs never offers a stallion under 3, even one whose
+ *   - GET /marketplace/search (at stud) never offers a stallion under 3, even one whose
  *     listing was written before the guard existed (no data migration).
  *
  * Real DB, real HTTP, real CSRF, scoped fail-loud fixtures.
@@ -121,11 +121,11 @@ describe('a stallion stands at stud only from age 3 (Equoria-e7tgc.2)', () => {
     const oldEnough = await stallion(3, { studStatus: 'At Private Stud', studFee: 100 });
 
     const res = await request(app)
-      .get(`/api/v1/marketplace/studs?name=${encodeURIComponent(PREFIX)}&limit=100`)
+      .get(`/api/v1/marketplace/search?atStud=true&name=${encodeURIComponent(PREFIX)}&limit=100`)
       .set('Authorization', `Bearer ${viewer.token}`);
 
     expect(res.status).toBe(200);
-    const ids = res.body.data.studs.map(stud => stud.id);
+    const ids = res.body.data.horses.map(horse => horse.id);
     expect(ids).toContain(oldEnough.id);
     expect(ids).not.toContain(tooYoung.id);
   });

@@ -3,8 +3,8 @@
  * (Equoria-q4uem.9.1, owner ruling 2026-10-27 q104).
  *
  * Every row goes through withoutUnrevealedTraits before the DTO is built, and the
- * DTO carries only public facts: no owner id, no money, no hidden trait. The sale
- * browse (GET /marketplace) and the stud browse (GET /marketplace/studs) are untouched.
+ * DTO carries only public facts: no owner id, no money, no hidden trait. It replaced
+ * the sale browse (GET /marketplace) and the stud browse (GET /marketplace/studs), which are removed.
  */
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';

@@ -14,7 +14,6 @@ import { requireOwnership } from '../../../middleware/ownership.mjs';
 import { mutationRateLimiter, queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import { allowOnlyBodyFields } from '../../../middleware/bodyFieldAllowList.mjs';
 import {
-  browseListings,
   listHorse,
   delistHorse,
   buyHorse,
@@ -22,18 +21,12 @@ import {
   saleHistory,
   buyStoreHorse,
 } from '../controllers/marketplaceController.mjs';
-import { browseStudListings } from '../controllers/studListingsController.mjs';
 import { searchHorses } from '../controllers/horseSearchController.mjs';
 
 const router = express.Router();
 
 // All marketplace routes require authentication
 router.use(authenticateToken);
-
-// Browse listings
-router.get('/', browseListings);
-// Equoria-q4uem.9 slice 5: stud stallions (public and private) in the horse search.
-router.get('/studs', queryRateLimiter, browseStudListings);
 
 // Equoria-q4uem.9.1: the all-horses search (for sale and/or at stud).
 router.get('/search', queryRateLimiter, searchHorses);

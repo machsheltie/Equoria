@@ -2,7 +2,6 @@
  * Horse Marketplace API client (Equoria-jog8w, Equoria-aodym slice 2, Epic 21).
  *
  * Path registry:
- *   GET    /api/v1/marketplace            → browse listings
  *   GET    /api/v1/marketplace/search     → all-horses search (for sale and/or at stud)
  *   POST   /api/v1/marketplace/list       → list horse for sale
  *   DELETE /api/v1/marketplace/list/:id   → delist horse
@@ -40,28 +39,6 @@ export interface MarketplacePagination {
   limit: number;
   total: number;
   totalPages: number;
-}
-
-export interface MarketplaceBrowseResult {
-  listings: MarketplaceListing[];
-  pagination: MarketplacePagination;
-}
-
-export interface MarketplaceBrowseFilters {
-  /** Case-insensitive substring on horse name (Equoria-cvsfk). */
-  name?: string;
-  breed?: string;
-  /** Exact breed FK — sent by the breed Select; wins over `breed` server-side. */
-  breedId?: number;
-  /** Case-insensitive exact match, e.g. 'Mare' | 'Stallion' (Equoria-cvsfk). */
-  sex?: string;
-  minAge?: number;
-  maxAge?: number;
-  minPrice?: number;
-  maxPrice?: number;
-  sort?: 'price_asc' | 'price_desc' | 'newest' | 'youngest';
-  page?: number;
-  limit?: number;
 }
 
 /** One horse in the all-horses search: for sale, at stud, or both (Equoria-q4uem.9.1). */
@@ -134,24 +111,6 @@ export interface BuyHorseResult {
 }
 
 export const horseMarketplaceApi = {
-  browse: (filters?: MarketplaceBrowseFilters) => {
-    const params = new URLSearchParams();
-    if (filters?.name) params.set('name', filters.name);
-    if (filters?.breed) params.set('breed', filters.breed);
-    if (filters?.breedId !== undefined) params.set('breedId', String(filters.breedId));
-    if (filters?.sex) params.set('sex', filters.sex);
-    if (filters?.minAge !== undefined) params.set('minAge', String(filters.minAge));
-    if (filters?.maxAge !== undefined) params.set('maxAge', String(filters.maxAge));
-    if (filters?.minPrice !== undefined) params.set('minPrice', String(filters.minPrice));
-    if (filters?.maxPrice !== undefined) params.set('maxPrice', String(filters.maxPrice));
-    if (filters?.sort) params.set('sort', filters.sort);
-    if (filters?.page !== undefined) params.set('page', String(filters.page));
-    if (filters?.limit !== undefined) params.set('limit', String(filters.limit));
-    const qs = params.toString();
-    return apiClient.get<{ listings: MarketplaceListing[]; pagination: MarketplacePagination }>(
-      `/api/v1/marketplace${qs ? `?${qs}` : ''}`
-    );
-  },
   search: (filters: MarketplaceSearchFilters) => {
     const params = new URLSearchParams();
     params.set('forSale', String(filters.forSale));

@@ -136,8 +136,6 @@ export { horseMarketplaceApi } from './api/horseMarketplace.js';
 export type {
   MarketplaceListing,
   MarketplacePagination,
-  MarketplaceBrowseResult,
-  MarketplaceBrowseFilters,
   MarketplaceSearchHorse,
   MarketplaceSearchResult,
   MarketplaceSearchFilters,

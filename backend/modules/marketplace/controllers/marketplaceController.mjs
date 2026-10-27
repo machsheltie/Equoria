@@ -9,8 +9,8 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { InvalidCursorError, clampLimit } from '../../../utils/paginationHelper.mjs';
-import { findSaleHistoryPage, findSaleListingsPage } from '../services/saleListingPages.mjs';
+import { InvalidCursorError } from '../../../utils/paginationHelper.mjs';
+import { findSaleHistoryPage } from '../services/saleListingPages.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
@@ -24,13 +24,8 @@ import {
 // delay-only interleaving seam used by the finding-4 concurrency regressions.
 import { __TESTING_ONLY_awaitMarketplaceRaceBarrier as awaitRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
 import { reconcileHorseOnTransfer } from '../services/horseTransferReconciliation.mjs';
-import { parseOr400, parseSaleQuery } from '../services/listingQueryParams.mjs';
 
-import {
-  canonicalizeHorseSex,
-  horseSexFilterValues,
-  CANONICAL_HORSE_SEX_VALUES,
-} from '../../../../packages/database/horseSexCanonical.mjs';
+import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
 // Cross-module horses-domain imports go through the horses module barrel
 // (Equoria-v8l96.2): createHorse; generateStoreStats (shared with the perf
 // seed so test data matches real store horses — random-stat seed paths are
@@ -51,137 +46,6 @@ import {
 // ── Horse Trader store constants ──────────────────────────────────────────────
 
 const STORE_PRICE = 1000;
-
-/**
- * GET /api/v1/marketplace
- * Browse horses listed for sale (excludes requester's own horses).
- * Supports filters: name, breed, breedId, sex, minAge, maxAge, minPrice,
- * maxPrice, sort, page, limit (Equoria-cvsfk added name/sex/breedId).
- */
-export async function browseListings(req, res) {
-  try {
-    const userId = req.user.id;
-    const { params, sent } = parseOr400(res, parseSaleQuery, req.query);
-    if (sent) {
-      return undefined;
-    }
-    const { name, breed, breedId, sex, minAge, maxAge, minPrice, maxPrice, sort, cursor } = params;
-
-    const pageNum = Math.max(1, params.page || 1);
-    const pageSize = clampLimit(params.limit);
-    const skip = (pageNum - 1) * pageSize;
-
-    const where = {
-      forSale: true,
-      userId: { not: userId },
-    };
-
-    if (name) {
-      where.name = { contains: name, mode: 'insensitive' };
-    }
-    // breedId (exact FK, sent by the UI's breed Select) wins over the legacy
-    // `breed` name-substring param when both are present.
-    if (breedId !== undefined) {
-      where.breedId = breedId;
-    } else if (breed) {
-      where.breed = { name: { contains: breed, mode: 'insensitive' } };
-    }
-    // Sex filter matches the whole sex GROUP, not the exact stored string
-    // (Equoria-di2n5, user ruling): a filly IS a mare under three, a colt IS a
-    // stallion under three, so 'Mare' must match Filly rows and 'Stallion'
-    // must match Colt rows. Age is filtered separately below — that, not sex,
-    // is what excludes young horses from a browse.
-    if (sex) {
-      let sexValues;
-      try {
-        sexValues = horseSexFilterValues(sex);
-      } catch {
-        return res.status(400).json({
-          success: false,
-          message: `sex must be one of: ${CANONICAL_HORSE_SEX_VALUES.join(', ')}`,
-        });
-      }
-      // Per-value insensitive equality (not `{ in: [...] }`): Prisma has no
-      // case-insensitive `in`, and this filter was case-insensitive before the
-      // grouping change. Widening the result set must not smuggle in a
-      // narrowing — a row whose casing ever drifts from canonical (the
-      // prismaClient $extends interceptor canonicalizes writes, but raw SQL
-      // and pre-interceptor rows bypass it) must still match.
-      // Nested under AND rather than assigned to `where.OR`, so a future
-      // filter that needs its own OR cannot silently clobber this one.
-      where.AND = [
-        ...(where.AND ?? []),
-        { OR: sexValues.map(value => ({ sex: { equals: value, mode: 'insensitive' } })) },
-      ];
-    }
-    // Filter by dateOfBirth for accurate computed age (avoids stale stored age field).
-    // Equoria game-year convention: 1 game-year = 7 real days. At least minAge old means
-    // born on or before now - minAge*7 days; at most maxAge old means born AFTER
-    // now - (maxAge+1)*7 days (a horse is still maxAge until it turns maxAge+1).
-    // Calendar years would exclude every correctly-aged horse (dob only weeks ago).
-    if (minAge !== undefined) {
-      where.dateOfBirth = { ...where.dateOfBirth, lte: birthDateForAge(minAge) };
-    }
-    if (maxAge !== undefined) {
-      where.dateOfBirth = { ...where.dateOfBirth, gt: birthDateForAge(maxAge + 1) };
-    }
-    if (minPrice !== undefined) {
-      where.salePrice = { ...where.salePrice, gte: minPrice };
-    }
-    if (maxPrice !== undefined) {
-      where.salePrice = { ...where.salePrice, lte: maxPrice };
-    }
-
-    // Keyset page (Equoria-cmw85.21): `cursor` continues a list, `page` still works without one.
-    const { horses, pageInfo, total } = await findSaleListingsPage({
-      where,
-      sort,
-      pageSize,
-      cursor,
-      skip,
-    });
-
-    const listings = horses.map(h => ({
-      id: h.id,
-      name: h.name,
-      breed: h.breed?.name ?? 'Unknown',
-      age: h.age,
-      sex: h.sex,
-      salePrice: h.salePrice,
-      seller: h.user?.username ?? 'Unknown',
-      stats: {
-        speed: h.speed ?? 0,
-        stamina: h.stamina ?? 0,
-        agility: h.agility ?? 0,
-        precision: h.precision ?? 0,
-        strength: h.strength ?? 0,
-        intelligence: h.intelligence ?? 0,
-        boldness: h.boldness ?? 0,
-      },
-      imageUrl: h.imageUrl,
-    }));
-
-    return res.json({
-      success: true,
-      data: {
-        listings,
-        pagination: {
-          page: pageNum,
-          limit: pageSize,
-          total,
-          totalPages: total === undefined ? undefined : Math.ceil(total / pageSize),
-        },
-        pageInfo,
-      },
-    });
-  } catch (err) {
-    if (err instanceof InvalidCursorError) {
-      return res.status(400).json({ success: false, message: err.message });
-    }
-    logger.error('browseListings error:', err);
-    return res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-}
 
 /**
  * POST /api/v1/marketplace/list

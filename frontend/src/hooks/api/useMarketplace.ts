@@ -2,7 +2,7 @@
  * useMarketplace hooks (Epic 21)
  *
  * React Query hooks for the horse marketplace system.
- *   - useMarketplaceListings(filters?) → browse paginated listings
+ *   - useMarketplaceSearch(filters)    → the all-horses search (for sale and/or at stud)
  *   - useMyListings()                  → seller's active listings
  *   - useSaleHistory()                 → user's buy + sell history
  *   - useListHorse()                   → mutation: list a horse for sale
@@ -11,21 +11,9 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  horseMarketplaceApi,
-  MarketplaceBrowseFilters,
-  MarketplaceSearchFilters,
-} from '@/lib/api-client';
+import { horseMarketplaceApi, MarketplaceSearchFilters } from '@/lib/api-client';
 import { toast } from 'sonner';
 import { refreshOnConflict } from '@/lib/http/conflict';
-
-export function useMarketplaceListings(filters?: MarketplaceBrowseFilters) {
-  return useQuery({
-    queryKey: ['marketplace', 'listings', filters],
-    queryFn: () => horseMarketplaceApi.browse(filters),
-    staleTime: 60_000, // 1 minute
-  });
-}
 
 export function useMarketplaceSearch(filters: MarketplaceSearchFilters) {
   return useQuery({

@@ -1,7 +1,7 @@
 /**
  * marketplaceController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: browseListings, listHorse, delistHorse, myListings, saleHistory,
+ * Covers: listHorse, delistHorse, myListings, saleHistory,
  * buyStoreHorse.
  * Routes live under authRouter → real auth + real CSRF for POST/DELETE.
  *
@@ -127,29 +127,6 @@ describe('marketplaceController integration', () => {
   }, 30000);
 
   afterEach(() => cleanup.run(), 30000);
-
-  // ─── GET /api/marketplace ─────────────────────────────────────────────────
-
-  describe('GET /api/marketplace', () => {
-    it('returns 200 with listings and pagination', async () => {
-      const res = await request(app)
-        .get('/api/v1/marketplace')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data).toHaveProperty('listings');
-      expect(Array.isArray(res.body.data.listings)).toBe(true);
-      expect(res.body.data).toHaveProperty('pagination');
-    });
-
-    it('returns 401 without auth', async () => {
-      const res = await request(app).get('/api/v1/marketplace').set('Origin', ORIGIN);
-
-      expect(res.status).toBe(401);
-    });
-  });
 
   // ─── GET /api/marketplace/my-listings ─────────────────────────────────────
 

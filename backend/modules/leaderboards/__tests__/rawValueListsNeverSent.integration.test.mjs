@@ -38,7 +38,9 @@ describe('refusals do not enumerate stored values (Equoria-bdpvw)', () => {
   });
 
   it('a bad marketplace sort is refused without listing the sort keys', async () => {
-    const res = await request(app).get('/api/v1/marketplace?sort=bogus').set('Authorization', `Bearer ${token}`);
+    const res = await request(app)
+      .get('/api/v1/marketplace/search?forSale=true&sort=bogus')
+      .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(400);
     expect(JSON.stringify(res.body)).not.toMatch(/must be one of/);
     expect(JSON.stringify(res.body)).not.toMatch(/newest/);
