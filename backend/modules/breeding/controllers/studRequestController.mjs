@@ -108,8 +108,7 @@ export async function requestPrivateStud(req, res) {
             throw new BookingRefusal(400, {
               success: false,
               code: 'OWN_STALLION',
-              message:
-                'This is your own stallion. Breeding your own pair is free from the Breeding Hall.',
+              message: 'This is your own stallion. Breed your mare to him free from his page.',
             });
           }
           if (feeOf(sire) !== expectedStudFee) {
@@ -121,6 +120,20 @@ export async function requestPrivateStud(req, res) {
           const verdict = await validateBreedingPair({ sire, dam, client: tx });
           if (!verdict.ok) {
             throw new BookingRefusal(verdict.status, { success: false, message: verdict.message });
+          }
+
+          // Owner ruling q106 (2026-10-27): she needs the fee in hand to send the
+          // request. Advisory only — the money moves, and is proved, at approval (S6).
+          const requester = await tx.user.findUnique({
+            where: { id: requesterId },
+            select: { money: true },
+          });
+          if (!requester || Number(requester.money) < expectedStudFee) {
+            throw new BookingRefusal(400, {
+              success: false,
+              code: 'INSUFFICIENT_FUNDS',
+              message: `You need ${expectedStudFee} coins to ask for this stallion.`,
+            });
           }
 
           // ── Pins (design review I-2): both horses, ascending id ──
@@ -280,7 +293,7 @@ export async function approveStudRequest(req, res) {
           if (dam && dam.userId === approverId) {
             throw new Decline(
               'OWN_STALLION',
-              `You now own ${dam.name}; breed her free from the Breeding Hall.`,
+              `You now own ${dam.name}; breed her to your stallion free from his page.`,
             );
           }
           if (!sire || sire.userId !== approverId || sire.studStatus !== PRIVATE_STUD) {

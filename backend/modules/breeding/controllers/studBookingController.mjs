@@ -97,8 +97,7 @@ export async function bookPublicStud(req, res) {
             throw new BookingRefusal(400, {
               success: false,
               code: 'OWN_STALLION',
-              message:
-                'This is your own stallion. Breeding your own pair is free from the Breeding Hall.',
+              message: 'This is your own stallion. Breed your mare to him free from his page.',
             });
           }
           const fee = feeOf(sire);

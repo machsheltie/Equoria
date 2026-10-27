@@ -5,7 +5,7 @@
  *
  *   POST /:sireId/bookings          book a PUBLIC stud (completes at once)
  *   POST /:sireId/requests          ask a PRIVATE stud's owner
- *   GET  /requests                  the caller's queue (incoming | outgoing)
+ *   GET  /requests                  the caller's queue (incoming | outgoing; sireId / damId narrow it)
  *   POST /requests/:id/approve      stallion owner accepts (pinned fee moves)
  *   POST /requests/:id/reject       stallion owner refuses
  *   POST /requests/:id/cancel       mare owner withdraws
@@ -63,6 +63,9 @@ router.get(
       .optional()
       .isIn(['PENDING', 'COMPLETED', 'DECLINED', 'CANCELLED'])
       .withMessage('status must be PENDING, COMPLETED, DECLINED or CANCELLED'),
+    // Owner ruling q105 (2026-10-27): the requests button sits on one horse's page.
+    query('sireId').optional().isInt({ min: 1 }).withMessage('sireId must be a positive integer'),
+    query('damId').optional().isInt({ min: 1 }).withMessage('damId must be a positive integer'),
     query('page').optional().isInt({ min: 1 }).withMessage('page must be a positive integer'),
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('limit must be 1-100'),
   ],

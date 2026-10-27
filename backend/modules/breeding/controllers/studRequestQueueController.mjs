@@ -93,7 +93,7 @@ export function cancelStudRequest(req, res) {
 }
 
 /**
- * GET /api/v1/studs/requests?role=incoming|outgoing&status=&page=&limit=
+ * GET /api/v1/studs/requests?role=incoming|outgoing&status=&sireId=&damId=&page=&limit=
  * incoming: requests for the caller's stallions; outgoing: the caller's mares.
  */
 export async function listStudRequests(req, res) {
@@ -106,6 +106,8 @@ export async function listStudRequests(req, res) {
       kind: 'PRIVATE_STUD',
       ...(incoming ? { stallionOwnerId: callerId } : { mareOwnerId: callerId }),
       ...(req.query.status ? { status: req.query.status } : {}),
+      ...(req.query.sireId ? { sireId: Number.parseInt(req.query.sireId, 10) } : {}),
+      ...(req.query.damId ? { damId: Number.parseInt(req.query.damId, 10) } : {}),
     };
     const [rows, total] = await Promise.all([
       prisma.breedingRecord.findMany({

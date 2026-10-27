@@ -119,6 +119,10 @@ import {
 // for these reads. (The users half, GET /users/dashboard/:userId, was retired
 // by Equoria-oey96.40.)
 import horseQueryRoutes from './queries/horseQueryRoutes.mjs';
+// Equoria-q4uem.9 (owner ruling q90): GET /horses/:id/visit, any horse seen as a
+// visitor (public facts and revealed traits only). Its one two-segment path has
+// no competing pattern in horseQueryRoutes or horseRoutes.
+import horseVisitRoutes from './queries/horseVisitRoutes.mjs';
 // Equoria-q4uem.4 (WS4 S4): GET /users/transactions is bank's handler on the users
 // prefix; bank owns the route module (imported directly, like every route module
 // below after S4) and routers.mjs mounts it at /users ahead of userRoutes.
@@ -189,6 +193,7 @@ export function buildRouters() {
   //     /transactions ahead of GET /:id; mounting the bank router before
   //     userRoutes keeps /users/transactions from being claimed by /:id).
   authRouter.use('/horses', horseQueryRoutes);
+  authRouter.use('/horses', horseVisitRoutes);
   authRouter.use('/horses', horseRoutes);
   authRouter.use('/users', bankUserTransactionsRoutes);
   authRouter.use('/users', userRoutes);
