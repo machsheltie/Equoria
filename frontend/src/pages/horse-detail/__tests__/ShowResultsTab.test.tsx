@@ -22,7 +22,7 @@ import { describe, it, expect } from 'vitest';
 import { server } from '@/test/msw/server';
 import ShowResultsTab from '../ShowResultsTab';
 
-const HORSE_ID = 42;
+const horseId = 42;
 const ROUTE = '*/api/v1/competition/results/horse/:horseId';
 
 type Row = Record<string, unknown>;
@@ -88,7 +88,7 @@ function renderTab() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <ShowResultsTab horseId={HORSE_ID} />
+      <ShowResultsTab horseId={horseId} />
     </QueryClientProvider>
   );
 }

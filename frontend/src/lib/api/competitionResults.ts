@@ -366,7 +366,7 @@ export async function markCompetitionResultsViewed(showIds: number[]): Promise<n
 }
 
 /** Rows per page of a horse's show record (A6; the route's default). */
-export const HORSE_SHOW_RESULTS_PAGE_SIZE = 50;
+export const horseShowResultsPageSize = 50;
 
 /**
  * One row of GET /api/v1/competition/results/horse/:horseId (owner ruling R7;
@@ -415,14 +415,12 @@ export async function fetchHorseShowResults(
   const envelope = await apiClient.getEnvelope<{
     data?: HorseShowResultRow[];
     pagination?: HorseShowResultsPagination;
-  }>(
-    `/api/v1/competition/results/horse/${horseId}?page=${page}&limit=${HORSE_SHOW_RESULTS_PAGE_SIZE}`
-  );
+  }>(`/api/v1/competition/results/horse/${horseId}?page=${page}&limit=${horseShowResultsPageSize}`);
   return {
     rows: envelope?.data ?? [],
     pagination: envelope?.pagination ?? {
       currentPage: page,
-      pageSize: HORSE_SHOW_RESULTS_PAGE_SIZE,
+      pageSize: horseShowResultsPageSize,
       totalRecords: envelope?.data?.length ?? 0,
       totalPages: 1,
       hasNextPage: false,
