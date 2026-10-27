@@ -43,6 +43,10 @@ import {
   warnPlayer,
 } from '../controllers/staffConductController.mjs';
 import {
+  getFlaggedAddresses,
+  getLinkedAccounts,
+} from '../controllers/staffLinkedAccountsController.mjs';
+import {
   diagnoseShow,
   getQuarantinedShows,
   getShowScoreInputs,
@@ -80,6 +84,19 @@ router.post('/conduct/:userId/ban/device', requireStaffCapability('ban.device'),
 router.post('/conduct/:userId/lift/account', requireStaffCapability('conduct.lift'), liftAccount);
 router.post('/conduct/:userId/lift/ip', requireStaffCapability('conduct.lift'), liftIp);
 router.post('/conduct/:userId/lift/device', requireStaffCapability('conduct.lift'), liftDevice);
+
+// Owner and Admins (Equoria-x5n89, owner rulings q123-q125): accounts sharing a device
+// with a player, and addresses seen with more than four accounts. Flags never block.
+router.get(
+  '/conduct/:userId/linked-accounts',
+  requireStaffCapability('accounts.linked.view'),
+  getLinkedAccounts,
+);
+router.get(
+  '/flagged-addresses',
+  requireStaffCapability('accounts.linked.view'),
+  getFlaggedAddresses,
+);
 
 // Tickets: moderators file; both roles read and reply (a moderator only on
 // their own); only the admin changes status. Capability lists stay inline

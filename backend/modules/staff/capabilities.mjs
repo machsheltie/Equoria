@@ -56,6 +56,9 @@ const adminOnly = [
   // Equoria-4q02c (owner ruling q01): a show entry's recorded luck roll and
   // score inputs are for the Owner and Admins only, never moderators or players.
   'results.scoreInputs.view',
+  // Equoria-x5n89 (owner rulings q123-q125): which accounts share a device, and the
+  // internet addresses seen with more than four accounts. Never moderators or players.
+  'accounts.linked.view',
 ];
 const ownerOnly = [
   // Owner ruling q76 (2026-10-26, Equoria-i1hgt): only the owner manages ALL staff

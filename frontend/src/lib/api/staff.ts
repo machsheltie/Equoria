@@ -64,6 +64,27 @@ export interface ConductRecordView {
   records: ConductEntry[];
 }
 
+/** Equoria-x5n89: another account seen on a device this player used. */
+export interface LinkedAccount {
+  id: string;
+  username: string;
+  role: AccountRole;
+  sharedDevices: number;
+  lastSeenAt: string;
+}
+
+export interface LinkedAccountsView {
+  player: StaffMember;
+  accounts: LinkedAccount[];
+}
+
+/** An internet address seen with more than four accounts; a flag, never a block. */
+export interface FlaggedAddress {
+  ipAddress: string;
+  accountCount: number;
+  accounts: Array<{ id: string; username: string; role: AccountRole }>;
+}
+
 export interface StaffLogEntry {
   id: number;
   actorId: string;
@@ -225,6 +246,12 @@ export const staffApi = {
     apiClient.post<StaffMember>(`${BASE}/conduct/lookup`, { username }),
   conductRecord: (userId: string) =>
     apiClient.get<ConductRecordView>(`${BASE}/conduct/${encodeURIComponent(userId)}`),
+  linkedAccounts: (userId: string) =>
+    apiClient.get<LinkedAccountsView>(
+      `${BASE}/conduct/${encodeURIComponent(userId)}/linked-accounts`
+    ),
+  flaggedAddresses: () =>
+    apiClient.get<{ addresses: FlaggedAddress[] }>(`${BASE}/flagged-addresses`),
   conductAct: (userId: string, action: ConductAction, reason: string, days?: 1 | 3 | 7) =>
     apiClient.post<{ id: string }>(`${BASE}/conduct/${encodeURIComponent(userId)}/${action}`, {
       reason,

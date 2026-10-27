@@ -26,6 +26,8 @@ export const staffKeys = {
   logActors: ['staff', 'log', 'actors'] as const,
   roles: ['staff', 'roles'] as const,
   conduct: (userId: string) => ['staff', 'conduct', userId] as const,
+  linkedAccounts: (userId: string) => ['staff', 'linked-accounts', userId] as const,
+  flaggedAddresses: ['staff', 'flagged-addresses'] as const,
   tickets: ['staff', 'tickets'] as const,
   quarantinedShows: ['staff', 'quarantined-shows'] as const,
   ticket: (id: number) => ['staff', 'tickets', id] as const,
@@ -162,6 +164,17 @@ export function useConductRecord(userId: string) {
     queryKey: staffKeys.conduct(userId),
     queryFn: () => staffApi.conductRecord(userId),
   });
+}
+
+export function useLinkedAccounts(userId: string) {
+  return useQuery({
+    queryKey: staffKeys.linkedAccounts(userId),
+    queryFn: () => staffApi.linkedAccounts(userId),
+  });
+}
+
+export function useFlaggedAddresses() {
+  return useQuery({ queryKey: staffKeys.flaggedAddresses, queryFn: staffApi.flaggedAddresses });
 }
 
 export function useConductAction(userId: string) {

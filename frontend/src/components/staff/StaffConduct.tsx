@@ -20,6 +20,7 @@ import {
 import type { ConductAction, ConductEntry, StaffMember } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
+import { LinkedAccountsForPlayer } from './StaffLinkedAccounts';
 import { staffErrorMessage } from './staffMessages';
 import StaffSection from './StaffSection';
 
@@ -83,7 +84,15 @@ function standingLine(standing: { state: string; endsAt?: string }): string {
   return 'In good standing.';
 }
 
-function ConductPanel({ member, canLift }: { member: StaffMember; canLift: boolean }) {
+function ConductPanel({
+  member,
+  canLift,
+  canSeeLinked,
+}: {
+  member: StaffMember;
+  canLift: boolean;
+  canSeeLinked: boolean;
+}) {
   const record = useConductRecord(member.id);
   const act = useConductAction(member.id);
   const [action, setAction] = useState<ConductAction>('warn');
@@ -142,6 +151,7 @@ function ConductPanel({ member, canLift }: { member: StaffMember; canLift: boole
   return (
     <div className="mt-4 flex flex-col gap-4">
       <div>{history}</div>
+      {canSeeLinked && <LinkedAccountsForPlayer userId={member.id} />}
       <form onSubmit={confirm} className="flex flex-col gap-3" noValidate>
         <FormField label="Action">
           {(field) => (
@@ -205,9 +215,15 @@ export interface StaffConductProps {
   onCheckinRequired: () => void;
   /** The viewer holds conduct.lift (the owner and admins). */
   canLift?: boolean;
+  /** The viewer holds accounts.linked.view (the owner and admins). */
+  canSeeLinked?: boolean;
 }
 
-export function StaffConduct({ onCheckinRequired, canLift = false }: StaffConductProps) {
+export function StaffConduct({
+  onCheckinRequired,
+  canLift = false,
+  canSeeLinked = false,
+}: StaffConductProps) {
   const lookup = useLookupConductPlayer();
   const [username, setUsername] = useState('');
   const [found, setFound] = useState<StaffMember | null>(null);
@@ -257,7 +273,9 @@ export function StaffConduct({ onCheckinRequired, canLift = false }: StaffConduc
           <InlineError message={staffErrorMessage(lookup.error, lookupMessages)} />
         )}
       </form>
-      {found && <ConductPanel key={found.id} member={found} canLift={canLift} />}
+      {found && (
+        <ConductPanel key={found.id} member={found} canLift={canLift} canSeeLinked={canSeeLinked} />
+      )}
     </StaffSection>
   );
 }

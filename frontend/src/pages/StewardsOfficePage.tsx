@@ -24,6 +24,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import StaffActionLog from '@/components/staff/StaffActionLog';
 import StaffCheckIn from '@/components/staff/StaffCheckIn';
 import StaffConduct from '@/components/staff/StaffConduct';
+import { StaffFlaggedAddresses } from '@/components/staff/StaffLinkedAccounts';
 import StaffQuarantinedShows from '@/components/staff/StaffQuarantinedShows';
 import StaffRoles from '@/components/staff/StaffRoles';
 import StaffTickets from '@/components/staff/StaffTickets';
@@ -79,7 +80,14 @@ export default function StewardsOfficePage() {
             />
           )}
           {can('warn') && (
-            <StaffConduct onCheckinRequired={onCheckinRequired} canLift={can('conduct.lift')} />
+            <StaffConduct
+              onCheckinRequired={onCheckinRequired}
+              canLift={can('conduct.lift')}
+              canSeeLinked={can('accounts.linked.view')}
+            />
+          )}
+          {can('accounts.linked.view') && (
+            <StaffFlaggedAddresses onCheckinRequired={onCheckinRequired} />
           )}
           {can('roles.manage') && (
             <StaffRoles
