@@ -63,7 +63,6 @@ model User {
   updatedAt        DateTime          @updatedAt
   groomAssignments        GroomAssignment[]
   groomSalaryPayments     GroomSalaryPayment[]
-  groomPerformanceRecords GroomPerformanceRecord[]
   grooms                  Groom[]
   /// Equoria-ypb7d: this player's groom engagements, open and closed. `grooms`
   /// above is the LIVE staff (Groom.userId); this is the history.
@@ -279,7 +278,6 @@ model Horse {
   foalTrainingHistory     FoalTrainingHistory[]
   groomAssignments        GroomAssignment[]
   groomInteractions       GroomInteraction[]
-  groomPerformanceRecords GroomPerformanceRecord[]
   horseXpEvents           HorseXpEvent[]
   monthlyTotals           HorseMonthlyTotal[]
   traitHistoryLogs        TraitHistoryLog[]
@@ -595,8 +593,6 @@ model Groom {
   groomAssignments    GroomAssignment[]
   groomInteractions   GroomInteraction[]
   groomSalaryPayments GroomSalaryPayment[]
-  groomPerformanceRecords GroomPerformanceRecord[]
-  groomMetrics        GroomMetrics?
   traitHistoryLogs    TraitHistoryLog[]
   milestoneTraitLogs  MilestoneTraitLog[]
   ultraRareTraitEvents UltraRareTraitEvent[]
@@ -1357,83 +1353,6 @@ model GroomSalaryPayment {
   @@index([paymentDate])
   @@index([userId, paymentDate])
   @@map("groom_salary_payments")
-}
-
-model GroomPerformanceRecord {
-  /// Unique identifier for each performance record
-  id               Int      @id @default(autoincrement())
-  /// Groom being evaluated
-  groomId          Int
-  /// Equoria-ypb7d.2: the player whose STAFF this record belongs to. This said
-  /// "User who owns the groom", which contradicted lines 463 and 570 of this same
-  /// file — the schema disagreeing with itself about its own model. Players never
-  /// own grooms; they engage them. `///` comments are emitted into the generated
-  /// client, so this was the most visible copy of the false claim in the tree.
-  userId           String
-  /// Horse involved in the interaction
-  horseId          Int?
-  /// Type of interaction (grooming, training, show, etc.)
-  interactionType  String
-  /// Bond gain from this interaction
-  bondGain         Float    @default(0)
-  /// Whether the task was completed successfully
-  taskSuccess      Boolean  @default(true)
-  /// Impact on horse wellbeing (-10 to +10)
-  wellbeingImpact  Float    @default(0)
-  /// Duration of interaction in minutes
-  duration         Int      @default(0)
-  /// Player rating (1-5 stars, optional)
-  playerRating     Int?
-  /// When this performance was recorded
-  recordedAt       DateTime @default(now())
-  /// Timestamps
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  /// Relations
-  groom Groom  @relation(fields: [groomId], references: [id], onDelete: Cascade)
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  horse Horse? @relation(fields: [horseId], references: [id], onDelete: SetNull)
-
-  @@index([groomId])
-  @@index([userId])
-  @@index([recordedAt])
-  @@index([groomId, recordedAt])
-  @@map("groom_performance_records")
-}
-
-model GroomMetrics {
-  /// Unique identifier for each metrics record
-  id                   Int      @id @default(autoincrement())
-  /// Groom these metrics belong to
-  groomId              Int      @unique
-  /// Total number of interactions recorded
-  totalInteractions    Int      @default(0)
-  /// Bonding effectiveness score (0-100)
-  bondingEffectiveness Int      @default(50)
-  /// Task completion rate (0-100)
-  taskCompletion       Int      @default(75)
-  /// Horse wellbeing impact score (0-100)
-  horseWellbeing       Int      @default(50)
-  /// Show performance score (0-100)
-  showPerformance      Int      @default(50)
-  /// Consistency score (0-100)
-  consistency          Int      @default(50)
-  /// Player satisfaction score (0-100)
-  playerSatisfaction   Int      @default(75)
-  /// Overall reputation score (0-100)
-  reputationScore      Int      @default(50)
-  /// When metrics were last updated
-  lastUpdated          DateTime @default(now())
-  /// Timestamps
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-
-  /// Relations
-  groom Groom @relation(fields: [groomId], references: [id], onDelete: Cascade)
-
-  @@index([reputationScore])
-  @@map("groom_metrics")
 }
 
 model TraitHistoryLog {

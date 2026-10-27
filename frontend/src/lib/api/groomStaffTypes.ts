@@ -8,8 +8,6 @@
  * the groom-staff half of the shared block and nothing else references them.
  */
 
-import type { GroomMetrics } from './types';
-
 // Equoria-cbkw — GroomProfile response shape from GET /api/v1/grooms/:id/profile.
 export interface GroomProfile {
   id: number;
@@ -21,7 +19,6 @@ export interface GroomProfile {
   skillLevel: string;
   personality: string;
   sessionRate: number;
-  metrics: GroomMetrics | null;
   currentAssignments: number;
 }
 

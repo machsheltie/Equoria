@@ -664,7 +664,7 @@ describe('MyGroomsDashboard Component', () => {
     });
   });
 
-  // Equoria-cbkw — GroomMetrics + GroomAssignmentLog surfacing.
+  // Equoria-cbkw — GroomAssignmentLog surfacing.
   // No API mocking (per CLAUDE.md frontend testing philosophy): the panel is
   // collapsed by default so no request fires; clicking the toggle mounts the
   // panel which then renders its loading state (queryFn never resolves in
@@ -703,7 +703,7 @@ describe('MyGroomsDashboard Component', () => {
       expect(screen.queryByTestId('groom-detail-panel-1')).not.toBeInTheDocument();
     });
 
-    it('clicking the toggle mounts the detail panel with metrics + history sections', () => {
+    it('clicking the toggle mounts the detail panel with the history section', () => {
       const Wrapper = createTestWrapper();
       render(
         <MyGroomsDashboard
@@ -719,7 +719,6 @@ describe('MyGroomsDashboard Component', () => {
 
       const panel = screen.getByTestId('groom-detail-panel-1');
       expect(panel).toBeInTheDocument();
-      expect(within(panel).getByTestId('groom-metrics-section-1')).toBeInTheDocument();
       expect(within(panel).getByTestId('groom-assignment-log-section-1')).toBeInTheDocument();
       // toggle reflects expanded state
       expect(screen.getByTestId('groom-detail-toggle-1')).toHaveAttribute('aria-expanded', 'true');

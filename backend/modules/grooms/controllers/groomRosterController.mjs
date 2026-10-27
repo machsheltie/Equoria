@@ -492,7 +492,6 @@ export async function getGroomProfile(req, res) {
     const groom = await prisma.groom.findUnique({
       where: { id: groomId },
       include: {
-        groomMetrics: true,
         groomAssignments: {
           where: { isActive: true },
           include: {
@@ -557,7 +556,6 @@ export async function getGroomProfile(req, res) {
       isActive: groom.isActive,
       hiredDate: groom.hiredDate,
       availability: groom.availability,
-      metrics: groom.groomMetrics,
       currentAssignments: groom.groomAssignments.length,
       personalityCompatibility,
     };

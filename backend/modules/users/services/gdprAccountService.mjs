@@ -581,7 +581,6 @@ export async function eraseUserAccount(userId) {
       // of this transaction; refresh tokens go with the user row below
       // (Equoria-6p398.17 — see there).
       await tx.groomSalaryPayment.deleteMany({ where: { userId } });
-      await tx.groomPerformanceRecord.deleteMany({ where: { userId } });
       await tx.facility.deleteMany({ where: { userId } });
 
       // ── Finally the user row ──────────────────────────────────────────────

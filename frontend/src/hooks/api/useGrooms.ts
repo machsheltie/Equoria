@@ -16,7 +16,6 @@ import {
   ApiError,
   Groom,
   GroomAssignment,
-  GroomProfile,
   GroomAssignmentLogEntry,
   MarketplaceData,
   SalarySummary,
@@ -167,21 +166,6 @@ export function useGroomHorseSynergy(groomId: number | null, horseId: number | n
     enabled: Boolean(groomId) && Boolean(horseId),
     staleTime: 5 * 60 * 1000, // 5 minutes — temperament + personality rarely change
     gcTime: 30 * 60 * 1000,
-  });
-}
-
-// Equoria-cbkw — GroomMetrics from GET /api/v1/grooms/:id/profile.
-// Backend wraps the profile in { success, groom } (no .data key), so the
-// api-client returns the whole body; we select `.groom` here.
-export function useGroomProfile(groomId: number | null, options: { enabled?: boolean } = {}) {
-  return useQuery<GroomProfile, ApiError>({
-    queryKey: groomKeys.profile(groomId as number),
-    queryFn: async () => {
-      const res = await groomsApi.getProfile(groomId as number);
-      return res.groom;
-    },
-    enabled: Boolean(groomId) && (options.enabled ?? true),
-    staleTime: 2 * 60 * 1000,
   });
 }
 

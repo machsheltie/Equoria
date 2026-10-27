@@ -1,17 +1,13 @@
 /**
  * GroomDetailPanel Component (Equoria-cbkw)
  *
- * Renders the previously-captured-but-never-surfaced groom data:
- *  - GroomMetrics: the 7 score fields (bondingEffectiveness, taskCompletion,
- *    horseWellbeing, showPerformance, consistency, playerSatisfaction,
- *    reputationScore) plus totalInteractions, aggregated on every
- *    performance-record write by the backend.
+ * Renders the groom's assignment history and talent tree. The groom reputation /
+ * performance scores were retired (owner ruling 2026-10-27, q128, Equoria-q4dko).
  *  - GroomAssignmentLog: past-assignment history (milestonesCompleted,
  *    traitsShaped chips) written on each unassign. xpGained is not shown:
  *    grooms are fixed NPCs with no XP (Equoria-dea06).
  *
  * Data sources (Equoria-wb7z backend half):
- *  - GET /api/v1/grooms/:id/profile          → metrics
  *  - GET /api/v1/grooms/:id/assignment-logs  → assignment history
  *
  * The panel is lazy: hooks are only enabled when `enabled` is true, so a
@@ -21,9 +17,8 @@
 import { actionMessageFor } from '@/lib/http/actionMessage';
 import React from 'react';
 import { formatDate } from '@/lib/formatDate';
-import { TrendingUp, History, Award } from 'lucide-react';
+import { History, Award } from 'lucide-react';
 import {
-  useGroomProfile,
   useGroomAssignmentLogs,
   useGroomTalents,
   useSelectTalent,
@@ -46,22 +41,6 @@ interface GroomDetailPanelProps {
   enabled: boolean;
 }
 
-const SCORE_FIELDS: { key: string; label: string }[] = [
-  { key: 'bondingEffectiveness', label: 'Bonding' },
-  { key: 'taskCompletion', label: 'Task Completion' },
-  { key: 'horseWellbeing', label: 'Horse Wellbeing' },
-  { key: 'showPerformance', label: 'Show Performance' },
-  { key: 'consistency', label: 'Consistency' },
-  { key: 'playerSatisfaction', label: 'Player Satisfaction' },
-  { key: 'reputationScore', label: 'Reputation' },
-];
-
-function scoreColor(value: number): string {
-  if (value >= 70) return 'text-emerald-400';
-  if (value >= 40) return 'text-amber-400';
-  return 'text-red-400';
-}
-
 const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({
   groomId,
   groomName,
@@ -69,11 +48,6 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({
   groomPersonality,
   enabled,
 }) => {
-  const {
-    data: profile,
-    isLoading: profileLoading,
-    error: profileError,
-  } = useGroomProfile(groomId, { enabled });
   const {
     data: logs,
     isLoading: logsLoading,
@@ -87,8 +61,6 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({
     error: talentsError,
   } = useGroomTalents(groomId, { enabled });
   const selectTalent = useSelectTalent();
-
-  const metrics = profile?.metrics ?? null;
 
   // Equoria-oey96.6 — map the list-row groom fields + backend selections into
   // the shape GroomTalentTree consumes. `talentSelections: null` is the honest
@@ -105,71 +77,8 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({
     <div
       className="mt-3 rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-4 space-y-5"
       data-testid={`groom-detail-panel-${groomId}`}
-      aria-label={`Performance metrics and assignment history for groom ${groomId}`}
+      aria-label={`Assignment history and talents for groom ${groomId}`}
     >
-      {/* ---- Performance metrics ---- */}
-      <section data-testid={`groom-metrics-section-${groomId}`}>
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-1">
-          <TrendingUp className="w-3 h-3" aria-hidden="true" />
-          Performance Metrics
-        </h4>
-
-        {profileLoading && (
-          <p
-            className="text-xs text-slate-400 italic"
-            data-testid={`groom-metrics-loading-${groomId}`}
-          >
-            Loading metrics…
-          </p>
-        )}
-
-        {!profileLoading && profileError && (
-          <p className="text-xs text-red-400" data-testid={`groom-metrics-error-${groomId}`}>
-            Could not load performance metrics.
-          </p>
-        )}
-
-        {!profileLoading && !profileError && !metrics && (
-          <p
-            className="text-xs text-slate-400 italic"
-            data-testid={`groom-metrics-empty-${groomId}`}
-          >
-            No metrics recorded yet — they accumulate as this groom completes interactions.
-          </p>
-        )}
-
-        {!profileLoading && !profileError && metrics && (
-          <div className="grid grid-cols-2 gap-2" data-testid={`groom-metrics-grid-${groomId}`}>
-            {SCORE_FIELDS.map((f) => {
-              const value = (metrics as unknown as Record<string, number>)[f.key] ?? 0;
-              return (
-                <div
-                  key={f.key}
-                  className="flex items-center justify-between bg-[rgba(15,35,70,0.4)] rounded px-3 py-2 border border-[rgba(37,99,235,0.3)]"
-                >
-                  <span className="text-xs text-slate-400">{f.label}</span>
-                  <span
-                    className={`text-sm font-semibold ${scoreColor(value)}`}
-                    data-testid={`groom-metric-${f.key}-${groomId}`}
-                  >
-                    {value}
-                  </span>
-                </div>
-              );
-            })}
-            <div className="flex items-center justify-between bg-[rgba(15,35,70,0.4)] rounded px-3 py-2 border border-[rgba(37,99,235,0.3)]">
-              <span className="text-xs text-slate-400">Interactions</span>
-              <span
-                className="text-sm font-semibold text-[rgb(220,235,255)]"
-                data-testid={`groom-metric-totalInteractions-${groomId}`}
-              >
-                {metrics.totalInteractions}
-              </span>
-            </div>
-          </div>
-        )}
-      </section>
-
       {/* ---- Assignment history ---- */}
       <section data-testid={`groom-assignment-log-section-${groomId}`}>
         <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-1">

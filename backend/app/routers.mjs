@@ -70,7 +70,6 @@ import enhancedGroomRoutes from '../modules/grooms/routes/enhancedGroomRoutes.mj
 import groomAssignmentRoutes from '../modules/grooms/routes/groomAssignmentRoutes.mjs';
 import groomHandlerRoutes from '../modules/grooms/routes/groomHandlerRoutes.mjs';
 import groomSalaryRoutes from '../modules/grooms/routes/groomSalaryRoutes.mjs';
-import groomPerformanceRoutes from '../modules/grooms/routes/groomPerformanceRoutes.mjs';
 import dynamicCompatibilityRoutes from '../modules/grooms/routes/dynamicCompatibilityRoutes.mjs';
 import leaderboardRoutes from '../modules/leaderboards/routes/leaderboardRoutes.mjs';
 // Equoria-q4uem.4 (WS4 S1): the former labs module was dissolved into traits,
@@ -238,7 +237,6 @@ export function buildRouters() {
   authRouter.use('/groom-assignments', groomAssignmentRoutes);
   authRouter.use('/groom-handlers', groomHandlerRoutes);
   authRouter.use('/groom-salaries', groomSalaryRoutes);
-  authRouter.use('/groom-performance', groomPerformanceRoutes);
   authRouter.use('/groom-marketplace', groomMarketplaceRoutes);
 
   // Advanced game features

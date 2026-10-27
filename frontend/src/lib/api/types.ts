@@ -375,22 +375,6 @@ export interface GroomAssignment {
   startDate: string;
 }
 
-// Equoria-cbkw — GroomMetrics aggregated on every performance-record write
-// (backend groomPerformanceService). 7 score fields, 0-100 each.
-export interface GroomMetrics {
-  id: number;
-  groomId: number;
-  totalInteractions: number;
-  bondingEffectiveness: number;
-  taskCompletion: number;
-  horseWellbeing: number;
-  showPerformance: number;
-  consistency: number;
-  playerSatisfaction: number;
-  reputationScore: number;
-  lastUpdated: string;
-}
-
 // Groom staff shapes (profile, assignment history, marketplace, weekly fee) live in
 // ./groomStaffTypes.ts and are re-exported here, so every existing importer is
 // unchanged. Equoria-95yrv split them out under the file-size ratchet.
@@ -493,6 +477,8 @@ export interface Rider {
   prestige: number; // 0–100
   isActive: boolean;
   retired: boolean;
+  /** Pay week (ISO, the Eastern Monday) the rider went unpaid; null when paid up. */
+  feeUnpaidSince?: string | null;
   assignedHorseId?: number | null;
   bio: string;
   hiredDate: string; // ISO timestamp (backend createdAt)

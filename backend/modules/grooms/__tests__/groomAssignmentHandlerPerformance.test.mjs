@@ -1,5 +1,5 @@
 /**
- * groomAssignmentService, groomHandlerService, groomPerformanceService unit tests
+ * groomAssignmentService, groomHandlerService unit tests
  * (Equoria-rr7 coverage sprint).
  *
  * Shared DB fixture: user + Filly foal + groom.
@@ -19,7 +19,6 @@ import {
   getAssignedHandler,
   validateHandlerEligibility,
 } from '../services/groomHandlerService.mjs';
-import { getGroomPerformanceSummary, getTopPerformingGrooms } from '../services/groomPerformanceService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -177,28 +176,5 @@ describe('validateHandlerEligibility', () => {
     const result = await validateHandlerEligibility(horse.id, user.id, 'Foals/Youngstock');
     expect(result.eligible).toBe(false);
     expect(result.isConformationShow).toBe(true);
-  });
-});
-
-// ── groomPerformanceService ───────────────────────────────────────────────────
-
-describe('getGroomPerformanceSummary', () => {
-  it('throws for non-existent groom', async () => {
-    await expect(getGroomPerformanceSummary(999999999)).rejects.toThrow();
-  });
-
-  it('returns default performance shape for new groom with no interactions', async () => {
-    const result = await getGroomPerformanceSummary(groom.id);
-    expect(result.groom.id).toBe(groom.id);
-    expect(typeof result.metrics).toBe('object');
-    expect(result.hasReliableReputation).toBe(false);
-    expect(Array.isArray(result.recentRecords)).toBe(true);
-  });
-});
-
-describe('getTopPerformingGrooms', () => {
-  it('returns array for user (may include our fixture groom)', async () => {
-    const result = await getTopPerformingGrooms(user.id, 5);
-    expect(Array.isArray(result)).toBe(true);
   });
 });

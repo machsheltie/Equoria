@@ -324,7 +324,6 @@ async function executeScopedPurge(userIds, horseIds) {
     await tx.passwordResetToken.deleteMany({ where: { userId: { in: userIds } } });
     await tx.emailVerificationToken.deleteMany({ where: { userId: { in: userIds } } });
     await tx.groomSalaryPayment.deleteMany({ where: { userId: { in: userIds } } });
-    await tx.groomPerformanceRecord.deleteMany({ where: { userId: { in: userIds } } });
     await tx.facility.deleteMany({ where: { userId: { in: userIds } } });
 
     // ── Finally the matched user rows ─────────────────────────────────────────

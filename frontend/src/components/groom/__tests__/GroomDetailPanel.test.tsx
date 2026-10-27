@@ -1,9 +1,8 @@
 /**
  * GroomDetailPanel Component Tests (Equoria-cbkw, Equoria-oey96.6)
  *
- * Verifies the metrics + assignment-history + talent-tree panel surfaces
- * backend data:
- *  - 7 GroomMetrics score fields + totalInteractions render with values
+ * Verifies the assignment-history + talent-tree panel surfaces
+ * backend data (the groom reputation metrics were retired, owner q128):
  *  - assignment-log rows render milestones / traitsShaped chips (no XP:
  *    grooms are fixed NPCs, Equoria-dea06)
  *  - loading / error / empty states render their honest placeholders
@@ -46,30 +45,15 @@ function selectStub(over: Partial<MutationStub> = {}): MutationStub {
   return { mutate: vi.fn(), isPending: false, isError: false, error: null, ...over };
 }
 
-const fullMetrics = {
-  id: 1,
-  groomId: 7,
-  totalInteractions: 42,
-  bondingEffectiveness: 88,
-  taskCompletion: 75,
-  horseWellbeing: 55,
-  showPerformance: 30,
-  consistency: 60,
-  playerSatisfaction: 90,
-  reputationScore: 50,
-};
-
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 function spyHooks(
-  profile: Q<unknown>,
   logs: Q<unknown>,
   talents: Q<unknown> = profileResult({ data: null }),
   select: MutationStub = selectStub()
 ) {
-  vi.spyOn(useGroomsModule, 'useGroomProfile').mockReturnValue(profile as never);
   vi.spyOn(useGroomsModule, 'useGroomAssignmentLogs').mockReturnValue(logs as never);
   vi.spyOn(useGroomsModule, 'useGroomTalents').mockReturnValue(talents as never);
   vi.spyOn(useGroomsModule, 'useSelectTalent').mockReturnValue(select as never);
@@ -89,21 +73,6 @@ function renderPanel(props: Partial<React.ComponentProps<typeof GroomDetailPanel
 }
 
 describe('GroomDetailPanel (Equoria-cbkw)', () => {
-  it('renders all 7 metric fields + totalInteractions with their values', () => {
-    spyHooks(profileResult({ data: { metrics: fullMetrics } }), profileResult({ data: [] }));
-    renderPanel();
-
-    const grid = screen.getByTestId('groom-metrics-grid-7');
-    expect(within(grid).getByTestId('groom-metric-bondingEffectiveness-7')).toHaveTextContent('88');
-    expect(within(grid).getByTestId('groom-metric-taskCompletion-7')).toHaveTextContent('75');
-    expect(within(grid).getByTestId('groom-metric-horseWellbeing-7')).toHaveTextContent('55');
-    expect(within(grid).getByTestId('groom-metric-showPerformance-7')).toHaveTextContent('30');
-    expect(within(grid).getByTestId('groom-metric-consistency-7')).toHaveTextContent('60');
-    expect(within(grid).getByTestId('groom-metric-playerSatisfaction-7')).toHaveTextContent('90');
-    expect(within(grid).getByTestId('groom-metric-reputationScore-7')).toHaveTextContent('50');
-    expect(within(grid).getByTestId('groom-metric-totalInteractions-7')).toHaveTextContent('42');
-  });
-
   // Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs and never
   // gain XP. Old contract: each log row showed "XP gained: n". New: no XP row.
   it('renders assignment-log rows with milestones and trait chips, and no XP', () => {
@@ -120,7 +89,7 @@ describe('GroomDetailPanel (Equoria-cbkw)', () => {
         traitsShaped: ['brave', 'calm'],
       },
     ];
-    spyHooks(profileResult({ data: { metrics: fullMetrics } }), profileResult({ data: logs }));
+    spyHooks(profileResult({ data: logs }));
     renderPanel();
 
     const row = screen.getByTestId('groom-log-11');
@@ -133,35 +102,22 @@ describe('GroomDetailPanel (Equoria-cbkw)', () => {
     expect(within(traits).getByText('calm')).toBeInTheDocument();
   });
 
-  it('shows the empty metrics state (no grid) when metrics is null', () => {
-    spyHooks(profileResult({ data: { metrics: null } }), profileResult({ data: [] }));
-    renderPanel();
-    expect(screen.getByTestId('groom-metrics-empty-7')).toBeInTheDocument();
-    expect(screen.queryByTestId('groom-metrics-grid-7')).not.toBeInTheDocument();
-  });
-
   it('shows the empty assignment-history state (no list) when logs are empty', () => {
-    spyHooks(profileResult({ data: { metrics: fullMetrics } }), profileResult({ data: [] }));
+    spyHooks(profileResult({ data: [] }));
     renderPanel();
     expect(screen.getByTestId('groom-logs-empty-7')).toBeInTheDocument();
     expect(screen.queryByTestId('groom-logs-list-7')).not.toBeInTheDocument();
   });
 
-  it('shows loading placeholders while either query is loading', () => {
-    spyHooks(profileResult({ isLoading: true }), profileResult({ isLoading: true }));
+  it('shows the assignment-history loading placeholder while the query is loading', () => {
+    spyHooks(profileResult({ isLoading: true }));
     renderPanel();
-    expect(screen.getByTestId('groom-metrics-loading-7')).toBeInTheDocument();
     expect(screen.getByTestId('groom-logs-loading-7')).toBeInTheDocument();
-    expect(screen.queryByTestId('groom-metrics-grid-7')).not.toBeInTheDocument();
   });
 
-  it('shows error placeholders when either query errors', () => {
-    spyHooks(
-      profileResult({ error: new Error('boom') }),
-      profileResult({ error: new Error('boom') })
-    );
+  it('shows the assignment-history error placeholder when the query errors', () => {
+    spyHooks(profileResult({ error: new Error('boom') }));
     renderPanel();
-    expect(screen.getByTestId('groom-metrics-error-7')).toBeInTheDocument();
     expect(screen.getByTestId('groom-logs-error-7')).toBeInTheDocument();
   });
 });
@@ -169,7 +125,6 @@ describe('GroomDetailPanel (Equoria-cbkw)', () => {
 describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
   it('renders the talent tree from backend-sourced selections (tier1 selected)', () => {
     spyHooks(
-      profileResult({ data: { metrics: fullMetrics } }),
       profileResult({ data: [] }),
       // BACKEND is the source of truth: tier1 is selected server-side.
       profileResult({ data: { tier1: 'playtime_pro', tier2: null, tier3: null } })
@@ -188,11 +143,7 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
   });
 
   it('renders an honest empty tree (no selections) when the backend returns none', () => {
-    spyHooks(
-      profileResult({ data: { metrics: fullMetrics } }),
-      profileResult({ data: [] }),
-      profileResult({ data: null })
-    );
+    spyHooks(profileResult({ data: [] }), profileResult({ data: null }));
     renderPanel({ groomLevel: 5, groomPersonality: 'energetic' });
 
     const tree = screen.getByTestId('groom-talent-tree');
@@ -204,22 +155,14 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
   });
 
   it('shows the talents loading placeholder while the talents query loads (no tree)', () => {
-    spyHooks(
-      profileResult({ data: { metrics: fullMetrics } }),
-      profileResult({ data: [] }),
-      profileResult({ isLoading: true })
-    );
+    spyHooks(profileResult({ data: [] }), profileResult({ isLoading: true }));
     renderPanel();
     expect(screen.getByTestId('groom-talents-loading-7')).toBeInTheDocument();
     expect(screen.queryByTestId('groom-talent-tree')).not.toBeInTheDocument();
   });
 
   it('shows the talents error placeholder when the talents query errors (no tree)', () => {
-    spyHooks(
-      profileResult({ data: { metrics: fullMetrics } }),
-      profileResult({ data: [] }),
-      profileResult({ error: new Error('boom') })
-    );
+    spyHooks(profileResult({ data: [] }), profileResult({ error: new Error('boom') }));
     renderPanel();
     expect(screen.getByTestId('groom-talents-error-7')).toBeInTheDocument();
     expect(screen.queryByTestId('groom-talent-tree')).not.toBeInTheDocument();
@@ -227,7 +170,6 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
 
   it('surfaces a rejected selection as an error state — not silently swallowed (AC5)', () => {
     spyHooks(
-      profileResult({ data: { metrics: fullMetrics } }),
       profileResult({ data: [] }),
       profileResult({ data: null }),
       // The select mutation rejected (e.g. locked/invalid tier). Equoria-mr1kq
@@ -252,12 +194,7 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
 
   it('wires an available-talent selection to the select mutation', () => {
     const select = selectStub();
-    spyHooks(
-      profileResult({ data: { metrics: fullMetrics } }),
-      profileResult({ data: [] }),
-      profileResult({ data: null }),
-      select
-    );
+    spyHooks(profileResult({ data: [] }), profileResult({ data: null }), select);
     renderPanel({ groomLevel: 5, groomPersonality: 'energetic' });
 
     // Level 5, no prerequisites for tier1 → playtime_pro is available and has a
