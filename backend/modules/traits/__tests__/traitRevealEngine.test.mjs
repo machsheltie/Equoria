@@ -1,53 +1,26 @@
 /**
  * Trait reveal engine — the per-day rule (owner rulings 2026-10-26, q98, and
- * 2026-10-27, q113-q118; Equoria-2d55z).
+ * 2026-10-27, q113-q118, q134, q135, q139; Equoria-2d55z).
  *
- * Pure tests of applyTraitDay and the shipped settings. The numbers are the
- * owner's (gates 3/6/12/16/19, 25% a day, first 21 days). The per-trait rarity
- * and polarity are test values: the owner has not ruled them yet.
+ * Pure tests of applyTraitDay and the shipped settings, which now carry every
+ * owner number: gates 3/6/12/16/19, 25% a day, first 21 days, and each roster
+ * trait's rarity and polarity.
  *
- * Old contract (2026-10-26, numbers pending): every number was null, polarity
- * was hard-coded for the old roster, and a trait rolled on the day its count
- * was reached. The owner ruled on 2026-10-27 that rolls start on the
- * qualifying days after the gate (q113) and replaced the roster (q117).
+ * Old contracts and the rulings that changed them:
+ *   - 2026-10-27 morning: a trait first rolled on the qualifying day AFTER its
+ *     gate (the gate day only opened it). Owner ruling 2026-10-27 (q139): the
+ *     day a gate opens also rolls.
+ *   - 2026-10-27 morning: no roster trait had a rarity or polarity, so these
+ *     tests used made-up test values and the shipped settings touched nothing
+ *     (skipped: 'noTraitsRuled'). Owner rulings 2026-10-27 (q134 rarity, q135
+ *     polarity) filled all twenty, so the tests use the shipped values.
  */
 
 import { describe, it, expect } from '@jest/globals';
-import {
-  applyTraitDay,
-  revealSettingsReady,
-  ruledTraits,
-  runNightlyTraitReveal,
-} from '../services/traitRevealEngine.mjs';
-import { traitRevealSettings } from '../config/traitRevealSettings.mjs';
+import { applyTraitDay, revealSettingsReady, ruledTraits } from '../services/traitRevealEngine.mjs';
+import { traitRevealSettings as settings } from '../config/traitRevealSettings.mjs';
 import { traitRosterIds } from '../../../utils/epigeneticTraits.mjs';
 import { seededRng } from '../../../__tests__/helpers/seededRng.mjs';
-
-const settings = Object.freeze({
-  ...traitRevealSettings,
-  traitPolarity: {
-    ...traitRevealSettings.traitPolarity,
-    brave: 'positive',
-    confident: 'positive',
-    adaptable: 'positive',
-    heart: 'positive',
-    resilient: 'positive',
-    fearful: 'negative',
-    fragile: 'negative',
-    insecure: 'negative',
-  },
-  traitRarity: {
-    ...traitRevealSettings.traitRarity,
-    brave: 'common',
-    confident: 'uncommon',
-    adaptable: 'rare',
-    heart: 'legendary',
-    resilient: 'common',
-    fearful: 'common',
-    fragile: 'common',
-    insecure: null,
-  },
-});
 
 const always = () => 0;
 const never = () => 0.999;
@@ -58,17 +31,51 @@ const neglectedDay = neglectedDays => ({ groomed: false, groomedDays: 0, neglect
 describe('traitRevealSettings — the owner numbers', () => {
   it('holds the ruled gates, chance and window, and is ready', () => {
     const gates = { common: 3, uncommon: 6, rare: 12, ultraRare: 16, legendary: 19 };
-    expect(traitRevealSettings.revealDays).toEqual({ positive: gates, negative: gates });
-    expect(traitRevealSettings.switchOffDays).toEqual({ positive: gates, negative: gates });
-    expect(Object.values(traitRevealSettings.dailyChance)).toEqual([0.25, 0.25, 0.25, 0.25, 0.25]);
-    expect(traitRevealSettings.lastDayOfLife).toBe(21);
-    expect(revealSettingsReady(traitRevealSettings)).toBe(true);
+    expect(settings.revealDays).toEqual({ positive: gates, negative: gates });
+    expect(settings.switchOffDays).toEqual({ positive: gates, negative: gates });
+    expect(Object.values(settings.dailyChance)).toEqual([0.25, 0.25, 0.25, 0.25, 0.25]);
+    expect(settings.lastDayOfLife).toBe(21);
+    expect(revealSettingsReady(settings)).toBe(true);
   });
 
-  it('has a rarity and polarity slot for exactly the 20 roster traits, none ruled yet', () => {
-    expect(Object.keys(traitRevealSettings.traitRarity)).toEqual([...traitRosterIds]);
-    expect(Object.keys(traitRevealSettings.traitPolarity)).toEqual([...traitRosterIds]);
-    expect(ruledTraits(traitRevealSettings).size).toBe(0);
+  it('holds the owner rarity for each of the 20 roster traits (q134)', () => {
+    expect(Object.keys(settings.traitRarity)).toEqual([...traitRosterIds]);
+    const byRarity = rarity =>
+      Object.entries(settings.traitRarity)
+        .filter(([, r]) => r === rarity)
+        .map(([t]) => t)
+        .sort();
+    expect(byRarity('common')).toEqual(
+      [
+        'brave',
+        'confident',
+        'affectionate',
+        'curious',
+        'playful',
+        'fearful',
+        'insecure',
+        'skittish',
+        'excitable',
+      ].sort(),
+    );
+    expect(byRarity('uncommon')).toEqual(
+      ['outgoing', 'peopleTrusting', 'eagerLearner', 'adaptable', 'biddable', 'aloof', 'fragile'].sort(),
+    );
+    expect(byRarity('rare')).toEqual(['focused', 'resilient']);
+    expect(byRarity('ultraRare')).toEqual(['competitive']);
+    expect(byRarity('legendary')).toEqual(['heart']);
+  });
+
+  it('holds the owner polarity (q135): six negative traits, every other positive', () => {
+    expect(Object.keys(settings.traitPolarity)).toEqual([...traitRosterIds]);
+    const negative = Object.entries(settings.traitPolarity)
+      .filter(([, p]) => p === 'negative')
+      .map(([t]) => t)
+      .sort();
+    expect(negative).toEqual(['aloof', 'excitable', 'fearful', 'fragile', 'insecure', 'skittish']);
+    const positive = Object.values(settings.traitPolarity).filter(p => p === 'positive');
+    expect(positive).toHaveLength(14);
+    expect(ruledTraits(settings).size).toBe(20);
   });
 
   it('one missing number makes settings not ready', () => {
@@ -80,40 +87,37 @@ describe('traitRevealSettings — the owner numbers', () => {
     ).toBe(false);
     expect(revealSettingsReady({ ...settings, lastDayOfLife: null })).toBe(false);
   });
-
-  it('runNightlyTraitReveal with the shipped settings touches nothing and says why', async () => {
-    const result = await runNightlyTraitReveal({ horseIds: [] });
-    expect(result).toEqual({ skipped: 'noTraitsRuled', horsesEvaluated: 0, changes: 0, errors: 0 });
-  });
 });
 
 describe('applyTraitDay — the ladder on groomed days', () => {
-  it('the gate day opens the gate but does not roll; the next groomed day does', () => {
+  it('the gate day itself rolls (q139): a common trait can reveal on the third groomed day', () => {
     const traits = { ...empty(), hidden: ['brave'] };
-    expect(applyTraitDay(traits, groomedDay(3), settings, always).changes).toEqual([]);
-    const { traits: next, changes } = applyTraitDay(traits, groomedDay(4), settings, always);
+    expect(applyTraitDay(traits, groomedDay(2), settings, always).changes).toEqual([]);
+    const { traits: next, changes } = applyTraitDay(traits, groomedDay(3), settings, always);
     expect(next.positive).toEqual(['brave']);
     expect(next.hidden).toEqual([]);
     expect(changes).toEqual([{ trait: 'brave', change: 'revealed', polarity: 'positive' }]);
   });
 
-  it('each rarity rolls only after its own gate: 3, 6, 12, 19 groomed days', () => {
+  it('each rarity rolls from its own gate day: 3, 6, 12, 16, 19 groomed days', () => {
     const rolled = count =>
       applyTraitDay(
-        { ...empty(), hidden: ['adaptable', 'brave', 'confident', 'heart'] },
+        { ...empty(), hidden: ['adaptable', 'brave', 'competitive', 'heart', 'resilient'] },
         groomedDay(count),
         settings,
         always,
       ).changes.map(c => c.trait);
-    expect(rolled(3)).toEqual([]);
-    expect(rolled(4)).toEqual(['brave']);
-    expect(rolled(6)).toEqual(['brave']);
-    expect(rolled(7)).toEqual(['brave', 'confident']);
-    expect(rolled(12)).toEqual(['brave', 'confident']);
+    expect(rolled(2)).toEqual([]);
+    expect(rolled(3)).toEqual(['brave']);
+    expect(rolled(5)).toEqual(['brave']);
+    expect(rolled(6)).toEqual(['adaptable', 'brave']);
+    expect(rolled(11)).toEqual(['adaptable', 'brave']);
     // The commoner traits keep rolling once a rarer gate opens.
-    expect(rolled(13)).toEqual(['adaptable', 'brave', 'confident']);
-    expect(rolled(19)).toEqual(['adaptable', 'brave', 'confident']);
-    expect(rolled(20)).toEqual(['adaptable', 'brave', 'confident', 'heart']);
+    expect(rolled(12)).toEqual(['adaptable', 'brave', 'resilient']);
+    expect(rolled(15)).toEqual(['adaptable', 'brave', 'resilient']);
+    expect(rolled(16)).toEqual(['adaptable', 'brave', 'competitive', 'resilient']);
+    expect(rolled(18)).toEqual(['adaptable', 'brave', 'competitive', 'resilient']);
+    expect(rolled(19)).toEqual(['adaptable', 'brave', 'competitive', 'heart', 'resilient']);
   });
 
   it('is a chance, not a guarantee: a losing roll leaves the trait hidden', () => {
@@ -121,31 +125,53 @@ describe('applyTraitDay — the ladder on groomed days', () => {
     expect(applyTraitDay(traits, groomedDay(15), settings, never).changes).toEqual([]);
   });
 
-  it('switches any active negative trait off on groomed days after its gate', () => {
-    const traits = { ...empty(), negative: ['fragile'] };
-    expect(applyTraitDay(traits, groomedDay(3), settings, always).traits.negative).toEqual(['fragile']);
-    const { traits: next, changes } = applyTraitDay(traits, groomedDay(4), settings, always);
-    expect(next.negative).toEqual([]);
-    expect(next.hidden).toEqual(['fragile']);
-    expect(changes).toEqual([{ trait: 'fragile', change: 'switchedOff', polarity: 'negative' }]);
+  it('switches an active negative trait off from its gate day, by its own rarity', () => {
+    // fragile is uncommon (q134): its switch-off gate is 6 groomed days.
+    const traits = { ...empty(), negative: ['fragile', 'skittish'] };
+    expect(applyTraitDay(traits, groomedDay(2), settings, always).changes).toEqual([]);
+    const third = applyTraitDay(traits, groomedDay(3), settings, always);
+    expect(third.traits).toEqual({ positive: [], negative: ['fragile'], hidden: ['skittish'] });
+    expect(third.changes).toEqual([{ trait: 'skittish', change: 'switchedOff', polarity: 'negative' }]);
+    expect(applyTraitDay(traits, groomedDay(5), settings, always).traits.negative).toEqual(['fragile']);
+    const sixth = applyTraitDay(traits, groomedDay(6), settings, always);
+    expect(sixth.traits).toEqual({ positive: [], negative: [], hidden: ['fragile', 'skittish'] });
   });
 
   it('a groomed day never reveals a negative or switches off a positive', () => {
-    const traits = { positive: ['resilient'], negative: [], hidden: ['fearful'] };
+    const traits = { positive: ['brave'], negative: [], hidden: ['fearful', 'aloof', 'excitable'] };
     expect(applyTraitDay(traits, groomedDay(20), settings, always).changes).toEqual([]);
   });
 });
 
-describe('applyTraitDay — neglected days mirror grooming', () => {
-  it('reveals a hidden negative and switches an active positive off after the gate', () => {
-    const traits = { positive: ['resilient'], negative: [], hidden: ['fearful', 'brave'] };
-    expect(applyTraitDay(traits, neglectedDay(3), settings, always).changes).toEqual([]);
-    const { traits: next, changes } = applyTraitDay(traits, neglectedDay(4), settings, always);
-    expect(next).toEqual({ positive: [], negative: ['fearful'], hidden: ['brave', 'resilient'] });
+describe('applyTraitDay — neglected days mirror grooming, driven by polarity', () => {
+  it('reveals a hidden negative and switches an active positive off from the gate day', () => {
+    const traits = { positive: ['confident'], negative: [], hidden: ['fearful', 'brave'] };
+    expect(applyTraitDay(traits, neglectedDay(2), settings, always).changes).toEqual([]);
+    const { traits: next, changes } = applyTraitDay(traits, neglectedDay(3), settings, always);
+    expect(next).toEqual({ positive: [], negative: ['fearful'], hidden: ['brave', 'confident'] });
     expect(changes).toEqual([
       { trait: 'fearful', change: 'revealed', polarity: 'negative' },
-      { trait: 'resilient', change: 'switchedOff', polarity: 'positive' },
+      { trait: 'confident', change: 'switchedOff', polarity: 'positive' },
     ]);
+  });
+
+  it('every one of the six negative traits reveals on neglect, never on grooming', () => {
+    const negatives = ['aloof', 'excitable', 'fearful', 'fragile', 'insecure', 'skittish'];
+    const traits = { ...empty(), hidden: negatives };
+    const neglected = applyTraitDay(traits, neglectedDay(6), settings, always);
+    expect(neglected.traits.negative.sort()).toEqual(negatives);
+    expect(neglected.traits.hidden).toEqual([]);
+    expect(applyTraitDay(traits, groomedDay(6), settings, always).changes).toEqual([]);
+  });
+
+  it('a rare positive switches off only after 12 neglected days', () => {
+    const traits = { ...empty(), positive: ['resilient'] };
+    expect(applyTraitDay(traits, neglectedDay(11), settings, always).changes).toEqual([]);
+    expect(applyTraitDay(traits, neglectedDay(12), settings, always).traits).toEqual({
+      positive: [],
+      negative: [],
+      hidden: ['resilient'],
+    });
   });
 
   it('counts neglected days for neglect, not groomed days', () => {
@@ -155,9 +181,9 @@ describe('applyTraitDay — neglected days mirror grooming', () => {
   });
 });
 
-describe('applyTraitDay — traits outside the rule are never touched', () => {
-  it('leaves a trait with no ruled rarity or polarity, or off the roster, exactly where it is', () => {
-    const traits = { positive: ['curious', 'calm'], negative: [], hidden: ['insecure', 'bold'] };
+describe('applyTraitDay — traits outside the roster are never touched', () => {
+  it('leaves an off-roster name exactly where it is', () => {
+    const traits = { positive: ['calm'], negative: ['nervous'], hidden: ['bold'] };
     const groomed = applyTraitDay(traits, groomedDay(20), settings, always);
     const neglected = applyTraitDay(traits, neglectedDay(20), settings, always);
     expect(groomed.changes).toEqual([]);
@@ -171,12 +197,12 @@ describe('applyTraitDay — traits outside the rule are never touched', () => {
 });
 
 describe('applyTraitDay — seeded rolls are reproducible and land near 25%', () => {
-  it('the same seed gives the same outcome; about a quarter of qualifying days reveal', () => {
+  it('the same seed gives the same outcome; about a quarter of gate days reveal', () => {
     const run = seed => {
       const rng = seededRng(seed);
       let revealed = 0;
       for (let i = 0; i < 4000; i++) {
-        revealed += applyTraitDay({ ...empty(), hidden: ['brave'] }, groomedDay(5), settings, rng).changes.length;
+        revealed += applyTraitDay({ ...empty(), hidden: ['brave'] }, groomedDay(3), settings, rng).changes.length;
       }
       return revealed;
     };

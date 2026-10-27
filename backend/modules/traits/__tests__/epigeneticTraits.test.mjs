@@ -7,6 +7,9 @@
  * and bonded, with bond and situational categories. Owner ruling 2026-10-27
  * (q117) replaced the roster with twenty traits in one category; the examples
  * are now roster traits whose type was already defined (confident, fearful).
+ *
+ * Old contract: resilient was rarity 'common'. Owner ruling 2026-10-27 (q134)
+ * made it 'rare' (and fragile 'uncommon').
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -19,10 +22,10 @@ import {
 } from '../../../utils/epigeneticTraits.mjs';
 
 // Known valid traits from TRAIT_DEFINITIONS
-const RESILIENT = 'resilient'; // positive, common, epigenetic — conflicts: fragile
+const RESILIENT = 'resilient'; // positive, rare, epigenetic — conflicts: fragile
 const CONFIDENT = 'confident'; // positive, common, epigenetic — conflicts: fearful
 const FEARFUL = 'fearful'; // negative, common, epigenetic — conflicts: confident
-const FRAGILE = 'fragile'; // negative, common, epigenetic — conflicts: resilient
+const FRAGILE = 'fragile'; // negative, uncommon, epigenetic — conflicts: resilient
 
 // ---------------------------------------------------------------------------
 // getTraitDefinition
@@ -32,7 +35,7 @@ describe('getTraitDefinition', () => {
     const def = getTraitDefinition(RESILIENT);
     expect(def).not.toBeNull();
     expect(def.type).toBe('positive');
-    expect(def.rarity).toBe('common');
+    expect(def.rarity).toBe('rare');
     expect(def.category).toBe('epigenetic');
   });
 
@@ -143,7 +146,7 @@ describe('getTraitMetadata', () => {
     expect(meta.type).toBe('positive');
     expect(meta.category).toBe('epigenetic');
     expect(typeof meta.description).toBe('string');
-    expect(meta.rarity).toBe('common');
+    expect(meta.rarity).toBe('rare');
     expect(Array.isArray(meta.conflicts)).toBe(true);
   });
 

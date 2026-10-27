@@ -39,9 +39,13 @@ const { getTraitDefinition, getTraitsByType, getTraitsByCategory, getTraitMetada
 describe('Trait Metadata Validation', () => {
   // Owner ruling 2026-10-27 (q117, Equoria-2d55z): the roster is twenty traits,
   // all care (epigenetic) traits. "Do not add what each actually does yet": a
-  // trait new to the roster has no description, type or rarity until the owner
-  // rules them. The five traits already defined before (confident, resilient,
-  // fearful, fragile, eagerLearner) keep their type, rarity and description.
+  // trait new to the roster has no description. The five traits already
+  // defined before (confident, resilient, fearful, fragile, eagerLearner) keep
+  // their description (q137).
+  //
+  // Old contract (2026-10-27 morning): a trait new to the roster also had no
+  // type or rarity. Owner rulings 2026-10-27 (q134 rarity, q135 polarity) gave
+  // every roster trait both, so every trait now has a type and a rarity.
   //
   // Old contract (2026-10-19 roster): presentationBoosted, bonded,
   // easilyOverwhelmed, calm, showCalm and crowdReady existed in bond and
@@ -80,9 +84,9 @@ describe('Trait Metadata Validation', () => {
         expect(metadata.name).toBe(trait);
         expect(typeof metadata.label).toBe('string');
         expect(metadata.label).toMatch(/^[A-Z][a-z]+( [A-Z][a-z]+)*$/);
-        expect([null, 'positive', 'negative']).toContain(metadata.type);
+        expect(['positive', 'negative']).toContain(metadata.type);
         expect(metadata.category).toBe('epigenetic');
-        expect([null, 'common', 'uncommon', 'rare', 'ultraRare', 'legendary']).toContain(metadata.rarity);
+        expect(['common', 'uncommon', 'rare', 'ultraRare', 'legendary']).toContain(metadata.rarity);
         expect(Array.isArray(metadata.conflicts)).toBe(true);
       });
     });
@@ -141,8 +145,6 @@ describe('Trait Metadata Validation', () => {
           expect(metadata.description).toMatch(/\.$/); // Ends with period
         } else {
           expect(metadata.description).toBeNull();
-          expect(metadata.type).toBeNull();
-          expect(metadata.rarity).toBeNull();
         }
       });
     });

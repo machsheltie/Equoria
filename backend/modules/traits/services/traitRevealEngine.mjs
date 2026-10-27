@@ -1,6 +1,7 @@
 /**
  * Trait reveal engine: grooming and neglect days turn carried traits on and off
- * (owner rulings 2026-10-26, q98 + q87, and 2026-10-27, q113-q118; Equoria-2d55z).
+ * (owner rulings 2026-10-26, q98 + q87, and 2026-10-27, q113-q118, q134,
+ * q135, q139; Equoria-2d55z).
  *
  * A horse carries a trait or it doesn't. In Horse.epigeneticModifiers a carried
  * trait sits in exactly one array:
@@ -14,18 +15,20 @@
  * NEGLECTED day. The counts are cumulative over the window.
  *
  * The ladder (q113): a rarity's gate opens once the horse has had that many
- * groomed days (3 / 6 / 12 / 16 / 19 for Common .. Legendary). Opening a gate
- * reveals nothing by itself: every groomed day AFTER the gate day rolls a chance
- * (25%, q114) for each hidden positive trait at or below the opened gates, so a
- * higher gate adds the rarer traits while the commoner ones keep rolling. On
+ * groomed days (3 / 6 / 12 / 16 / 19 for Common .. Legendary). The groomed day
+ * that opens a gate rolls (q139), and so does every groomed day after it: a
+ * chance (25%, q114) for each hidden positive trait at or below the opened
+ * gates, so a higher gate adds the rarer traits while the commoner ones keep
+ * rolling. On
  * the same groomed days an active negative trait past its switch-off gate rolls
  * to switch off (q116, q118: any active negative). A neglected day is the
  * mirror image: hidden negative traits roll to reveal and active positive
  * traits roll to switch off, counted in neglected days. A trait that switches
  * off goes back to `hidden`: carried, inactive, and able to turn on again.
  *
- * Every number lives in modules/traits/config/traitRevealSettings.mjs. A trait
- * whose rarity or polarity is not ruled there is never touched. Players can
+ * Every number lives in modules/traits/config/traitRevealSettings.mjs, and each
+ * trait's rarity (q134) and polarity (q135) come from the roster. A name off
+ * the roster has neither and is never touched. Players can
  * never trigger an evaluation: there is no route to this engine; the nightly
  * job (services/jobs/nightlyTraitRevealJob.mjs) is the only caller.
  *
@@ -99,7 +102,7 @@ export function ruledTraits(settings) {
  *
  * @param {{positive:string[], negative:string[], hidden:string[]}} traits
  * @param {{groomed:boolean, groomedDays:number, neglectedDays:number}} day -
- *   counts INCLUDE this day, so a gate of N rolls first when the count is N + 1
+ *   counts INCLUDE this day, so a gate of N rolls first when the count is N (q139)
  * @param {object} settings - a ready settings object (see revealSettingsReady)
  * @param {() => number} rng - returns [0, 1)
  * @returns {{traits: object, changes: Array<{trait:string, change:'revealed'|'switchedOff', polarity:string}>}}
@@ -110,8 +113,8 @@ export function applyTraitDay(traits, day, settings, rng) {
   const ruled = ruledTraits(settings);
   const roll = rarity => rng() < settings.dailyChance[rarity];
   const count = day.groomed ? day.groomedDays : day.neglectedDays;
-  // The gate day itself only opens the gate; the qualifying days after it roll.
-  const pastGate = gate => count > gate;
+  // The qualifying day that opens a gate rolls, and so does every one after it (q139).
+  const gateOpen = gate => count >= gate;
   // A groomed day reveals positives and switches negatives off; a neglected day the reverse.
   const revealPolarity = day.groomed ? 'positive' : 'negative';
   const switchOffPolarity = day.groomed ? 'negative' : 'positive';
@@ -121,7 +124,7 @@ export function applyTraitDay(traits, day, settings, rng) {
     if (!rule || rule.polarity !== revealPolarity) {
       continue;
     }
-    if (pastGate(settings.revealDays[revealPolarity][rule.rarity]) && roll(rule.rarity)) {
+    if (gateOpen(settings.revealDays[revealPolarity][rule.rarity]) && roll(rule.rarity)) {
       next.hidden = next.hidden.filter(t => t !== trait);
       next[revealPolarity].push(trait);
       changes.push({ trait, change: 'revealed', polarity: revealPolarity });
@@ -137,7 +140,7 @@ export function applyTraitDay(traits, day, settings, rng) {
     if (changes.some(c => c.trait === trait)) {
       continue;
     }
-    if (pastGate(settings.switchOffDays[switchOffPolarity][rule.rarity]) && roll(rule.rarity)) {
+    if (gateOpen(settings.switchOffDays[switchOffPolarity][rule.rarity]) && roll(rule.rarity)) {
       next.positive = next.positive.filter(t => t !== trait);
       next.negative = next.negative.filter(t => t !== trait);
       next.hidden.push(trait);

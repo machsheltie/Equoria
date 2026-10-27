@@ -5,9 +5,11 @@
  * One ordered pipeline produces a foal's `{ positive, negative, hidden }`
  * epigenetic modifiers at birth:
  *
- *   Stage 0 — INHERITANCE (NEW, §A): each distinct sire/dam epigenetic trait ON
- *     THE ROSTER is inherited with a per-trait probability (rarity- +
- *     dam-condition-adjusted, ported from epigeneticTraits.calculateEpigeneticTraits).
+ *   Stage 0 — INHERITANCE (§A): each distinct sire/dam epigenetic trait ON THE
+ *     ROSTER is inherited at a flat 25% (owner ruling 2026-10-27, q138). A
+ *     trait both parents carry is one carried trait and rolls once. This
+ *     replaced the rarity- and dam-bond-adjusted rates (common 50%, rare 15%,
+ *     legendary 5%, otherwise 40%).
  *   Stage 1 — premium feed → resilient / peopleTrusting.
  *   Stage 2 — inbreeding → fragile.
  *   Stage 3 — lineage discipline specialization → disciplineAffinity<Discipline>
@@ -56,38 +58,10 @@ function makeRng(seed) {
   };
 }
 
-/**
- * Per-trait inheritance probability, rarity- and dam-condition-adjusted.
- * Ported from epigeneticTraits.calculateInheritanceProbability so the live
- * birth path and the (previously orphaned) model agree.
- */
-function inheritanceProbability(trait, bondScore) {
-  const def = getTraitDefinition(trait);
-  let base = 0.4; // unknown-trait default
-  if (def) {
-    switch (def.rarity) {
-      case 'common':
-        base = 0.5;
-        break;
-      case 'rare':
-        base = 0.15;
-        break;
-      case 'legendary':
-        base = 0.05;
-        break;
-      default:
-        base = 0.4;
-    }
-    if (def.type === 'positive') {
-      base += (bondScore - 50) * 0.004;
-    } else if (def.type === 'negative') {
-      base -= (bondScore - 50) * 0.003;
-    }
-  }
-  return Math.max(0, Math.min(1, base));
-}
+/** Chance that a foal inherits a trait a parent carries (owner ruling 2026-10-27, q138). */
+const inheritanceChance = 0.25;
 
-/** Whether a carried trait acts positively or negatively, by its definition, else by the stage that produced it. */
+/** Whether a carried trait acts positively or negatively (q135), else by the stage that produced it. */
 function traitPolarity(trait, fallbackType) {
   const def = getTraitDefinition(trait);
   if (def?.type === 'positive' || def?.type === 'negative') {
@@ -137,7 +111,6 @@ export function applyEpigeneticTraitsAtBirth({
   const addNegative = t => negativeCandidates.add(t);
 
   const currentFeedQuality = feedQuality !== undefined ? feedQuality : 50;
-  const damBondScore = typeof mare.bondScore === 'number' ? mare.bondScore : 50;
 
   // A negative roll's chance, scaled by the mare's health and capped at certainty.
   const negativeChance = chance => Math.min(1, chance * negativeRollMultiplier);
@@ -147,7 +120,8 @@ export function applyEpigeneticTraitsAtBirth({
   // ── Stage 0 — INHERITANCE (§A) ─────────────────────────────────────────────
   // Normalize incoming parent traits to canonical keys so legacy snake-case
   // rows still inherit correctly, keep only roster traits (q117), then inherit
-  // each distinct trait by its rarity/condition-adjusted probability.
+  // each distinct trait at the flat rate (q138). A negative trait's roll still
+  // takes the mare-health multiplier (Equoria-pw7cm).
   const parentTraits = [
     ...new Set(
       [
@@ -161,10 +135,7 @@ export function applyEpigeneticTraitsAtBirth({
   ];
   for (const trait of parentTraits) {
     const def = getTraitDefinition(trait);
-    const p =
-      def?.type === 'negative'
-        ? negativeChance(inheritanceProbability(trait, damBondScore))
-        : inheritanceProbability(trait, damBondScore);
+    const p = def?.type === 'negative' ? negativeChance(inheritanceChance) : inheritanceChance;
     if (rng() < p) {
       if (def?.type === 'negative') {
         addNegative(trait);
