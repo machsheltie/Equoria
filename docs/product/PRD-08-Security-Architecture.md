@@ -6,10 +6,10 @@ It is not security or product authority. Use `.claude/rules/SECURITY.md`, live c
 
 The following rows exist only for the legacy source-text sentinel. The enforced contract is `docs/api-contracts-backend/rate-limiting.md` and `backend/middleware/rateLimiting.mjs`.
 
-| Compatibility key | Limit     | Window     |
-| ----------------- | --------- | ---------- |
-| **Training**      | 20 failed | 1 minute   |
-| **Breeding**      | 10        | 5 minutes  |
-| **Financial**     | 20        | 15 minutes |
+| Compatibility key | Limit      | Window     |
+| ----------------- | ---------- | ---------- |
+| **Training**      | 120 failed | 1 minute   |
+| **Breeding**      | 300        | 5 minutes  |
+| **Financial**     | 1000       | 15 minutes |
 
 Equoria-ftjm is resolved; the dedicated financial limiter exists in live source.

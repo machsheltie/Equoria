@@ -690,7 +690,7 @@ export const authRateLimiter = createRateLimiter({
  */
 export const trainingRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
-  max: 20, // 20 training actions per minute
+  max: 120, // 120 training actions per minute (owner 2026-10-27)
   message: 'Training limit exceeded. Please wait a moment before training again.',
   skipSuccessfulRequests: true, // Only count failed attempts (eligibility failures)
   keyPrefix: 'rl:training',
@@ -703,7 +703,9 @@ export const trainingRateLimiter = createRateLimiter({
  */
 export const queryRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per 15 minutes
+  // Owner ruling 2026-10-27: players enter hundreds of shows and move around the game
+  // all day; the old production caps locked her out during ordinary play.
+  max: 5000, // 5000 requests per 15 minutes
   message: 'Query limit exceeded. Please slow down.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:query',
@@ -719,7 +721,7 @@ export const queryRateLimiter = createRateLimiter({
  */
 export const profileRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
-  max: process.env.NODE_ENV === 'development' ? 200 : 30,
+  max: process.env.NODE_ENV === 'development' ? 200 : 300, // owner 2026-10-27
   message: 'Too many profile requests. Please slow down.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:profile',
@@ -751,13 +753,13 @@ export const profileRateLimiter = createRateLimiter({
 export const MUTATION_RATE_LIMIT_MAX_BY_ENV = {
   // Tests already short-circuit via TEST_RATE_LIMIT_* env knobs when
   // useEnvOverride:true is set — no test entry needed here.
-  beta: 120, // 2 mutations/sec sustained — fits Playwright suite without trip
-  development: 60,
-  production: 30,
+  beta: 600, // owner 2026-10-27: never below production
+  development: 600,
+  production: 600, // owner 2026-10-27: hundreds of show entries, feeds, grooms
 };
 export const mutationRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
-  max: MUTATION_RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 30,
+  max: MUTATION_RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 600,
   message: 'Too many actions. Please wait a moment.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:mutation',
@@ -783,7 +785,7 @@ export const adminRateLimiter = createRateLimiter({
  */
 export const foalRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
-  max: 15, // 15 foal actions per minute
+  max: 300, // 300 foal actions per minute (owner 2026-10-27)
   message: 'Foal action limit exceeded. Please wait a moment.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:foal',
@@ -796,7 +798,7 @@ export const foalRateLimiter = createRateLimiter({
  */
 export const breedingRateLimiter = createRateLimiter({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 10, // 10 breeding operations per 5 minutes
+  max: 300, // 300 breeding operations per 5 minutes (owner 2026-10-27)
   message: 'Breeding limit exceeded. Please wait before starting another breeding.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:breeding',
@@ -818,7 +820,7 @@ export const breedingRateLimiter = createRateLimiter({
  */
 export const competitionRateLimiter = createRateLimiter({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 20, // 20 competition entries per 5 minutes
+  max: 1000, // 1000 competition entries per 5 minutes (owner 2026-10-27: hundreds of shows)
   message: 'Competition entry limit exceeded.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:competition',
@@ -863,7 +865,7 @@ export const competitionRateLimiter = createRateLimiter({
  */
 export const financialRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // 20 financial mutations per 15 minutes per user
+  max: 1000, // 1000 financial mutations per 15 minutes per user (owner 2026-10-27)
   message: 'Financial action limit exceeded. Please wait before making more economy actions.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:financial',

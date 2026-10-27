@@ -154,27 +154,29 @@ describe('Beta-readiness env sentinel (Equoria-aih8)', () => {
     const appSrc = read('backend/app.mjs');
     const rlSrc = read('backend/middleware/rateLimiting.mjs');
 
-    it('app.mjs RATE_LIMIT_MAX_BY_ENV still has beta:3000 and beta-readiness:1000', () => {
-      expect(appSrc).toMatch(/beta:\s*3000/);
+    // Owner ruling 2026-10-27: production and beta caps raised for ordinary play.
+    it('app.mjs RATE_LIMIT_MAX_BY_ENV has beta:10000, production:10000 and beta-readiness:1000', () => {
+      expect(appSrc).toMatch(/beta:\s*10000/);
+      expect(appSrc).toMatch(/production:\s*10000/);
       expect(appSrc).toMatch(/'beta-readiness':\s*1000/);
     });
 
-    it('rateLimiting.mjs MUTATION_RATE_LIMIT_MAX_BY_ENV still has beta:120 / production:30 and NO beta-readiness key', () => {
+    it('rateLimiting.mjs MUTATION_RATE_LIMIT_MAX_BY_ENV has beta:600 / production:600 and NO beta-readiness key', () => {
       const block = rlSrc.slice(
         rlSrc.indexOf('const MUTATION_RATE_LIMIT_MAX_BY_ENV'),
         rlSrc.indexOf('export const mutationRateLimiter'),
       );
-      expect(block).toMatch(/beta:\s*120/);
-      expect(block).toMatch(/production:\s*30/);
-      // beta-readiness intentionally absent → inherits production 30/min.
+      expect(block).toMatch(/beta:\s*600/);
+      expect(block).toMatch(/production:\s*600/);
+      // beta-readiness intentionally absent → inherits production 600/min.
       expect(block).not.toMatch(/beta-readiness/);
     });
 
     it('app.mjs carries the cap-divergence rationale with numbers matching the code', () => {
       expect(appSrc).toContain('Per-environment cap divergence rationale (Equoria-aih8)');
       // The documented table values must match the code constants above.
-      expect(appSrc).toMatch(/3000\s+1000\s+100/); // apiLimiter row
-      expect(appSrc).toMatch(/120\s+\(none → 30\)\s+30/); // mutation row
+      expect(appSrc).toMatch(/10000\s+1000\s+10000/); // apiLimiter row
+      expect(appSrc).toMatch(/600\s+\(none → 600\)\s+600/); // mutation row
       // The bypass-safety invariant must be stated in the tracked comment.
       expect(appSrc).toMatch(/HIGHER CAP, never a BYPASS/);
     });

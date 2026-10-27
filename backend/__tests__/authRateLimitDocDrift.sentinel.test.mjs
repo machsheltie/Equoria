@@ -105,58 +105,59 @@ describe('Auth rate-limit code ↔ docs drift sentinel (Equoria-wfz1)', () => {
     // Training: 20 / 1 min, only failed requests counted.
     const training = block('trainingRateLimiter');
     expect(training).toMatch(/windowMs:\s*60\s*\*\s*1000/);
-    expect(training).toMatch(/max:\s*20\b/);
+    // Owner ruling 2026-10-27 raised the gameplay caps.
+    expect(training).toMatch(/max:\s*120\b/);
     expect(training).toMatch(/skipSuccessfulRequests:\s*true/);
 
     // Competition: 20 / 5 min.
     const competition = block('competitionRateLimiter');
     expect(competition).toMatch(/windowMs:\s*5\s*\*\s*60\s*\*\s*1000/);
-    expect(competition).toMatch(/max:\s*20\b/);
+    expect(competition).toMatch(/max:\s*1000\b/);
 
     // Breeding: 10 / 5 min.
     const breeding = block('breedingRateLimiter');
     expect(breeding).toMatch(/windowMs:\s*5\s*\*\s*60\s*\*\s*1000/);
-    expect(breeding).toMatch(/max:\s*10\b/);
+    expect(breeding).toMatch(/max:\s*300\b/);
 
     // Foal: 15 / 1 min.
     const foal = block('foalRateLimiter');
     expect(foal).toMatch(/windowMs:\s*60\s*\*\s*1000/);
-    expect(foal).toMatch(/max:\s*15\b/);
+    expect(foal).toMatch(/max:\s*300\b/);
 
     // Mutation: production cap 30 / 1 min (beta/dev overrides allowed).
     const mutation = block('mutationRateLimiter');
     expect(mutation).toMatch(/windowMs:\s*60\s*\*\s*1000/);
-    expect(src).toMatch(/production:\s*30\b/);
+    expect(src).toMatch(/production:\s*600\b/);
 
     // Financial (Equoria-ftjm): dedicated economy-mutation limiter,
     // 20 / 15 min. Locks the cap so a tightening/loosening without a
     // doc update fails here.
     const financial = block('financialRateLimiter');
     expect(financial).toMatch(/windowMs:\s*15\s*\*\s*60\s*\*\s*1000/);
-    expect(financial).toMatch(/max:\s*20\b/);
+    expect(financial).toMatch(/max:\s*1000\b/);
     expect(financial).toMatch(/skipSuccessfulRequests:\s*false/);
   });
 
   it('the two canonical limiter tables state the reconciled non-auth values and no stale ones (c9y4)', () => {
     const rl = read('docs/api-contracts-backend/rate-limiting.md');
     // Reconciled rows present.
-    expect(rl).toMatch(/Training\s*\|\s*20 failed requests\s*\|\s*1 minute/);
-    expect(rl).toMatch(/Competition\s*\|\s*20 entries\s*\|\s*5 minutes/);
-    expect(rl).toMatch(/Breeding\s*\|\s*10 operations\s*\|\s*5 minutes/);
+    expect(rl).toMatch(/Training\s*\|\s*120 failed requests\s*\|\s*1 minute/);
+    expect(rl).toMatch(/Competition\s*\|\s*1000 entries\s*\|\s*5 minutes/);
+    expect(rl).toMatch(/Breeding\s*\|\s*300 operations\s*\|\s*5 minutes/);
     // Stale claims gone.
     expect(rl).not.toMatch(/Training\s*\|\s*10 requests\s*\|\s*1 minute/);
     expect(rl).not.toMatch(/Competition\s*\|\s*20 entries\s*\|\s*1 hour/);
     // Equoria-ftjm: financial limiter row now exists and states 20/15min.
-    expect(rl).toMatch(/Financial\s*\|\s*20 mutations\s*\|\s*15 minutes/);
+    expect(rl).toMatch(/Financial\s*\|\s*1000 mutations\s*\|\s*15 minutes/);
 
     const prd = read('docs/product/PRD-08-Security-Architecture.md');
-    expect(prd).toMatch(/\*\*Training\*\*\s*\|\s*20 failed\s*\|\s*1 minute/);
-    expect(prd).toMatch(/\*\*Breeding\*\*\s*\|\s*10\s*\|\s*5 minutes/);
+    expect(prd).toMatch(/\*\*Training\*\*\s*\|\s*120 failed\s*\|\s*1 minute/);
+    expect(prd).toMatch(/\*\*Breeding\*\*\s*\|\s*300\s*\|\s*5 minutes/);
     // Equoria-ftjm decision (b): the financial limiter is now REAL, so the
     // row must state the real value and the prior "no dedicated financial
     // rate limiter" posture note must be gone (replaced by the resolved
     // note). Flipped from the c9y4 negative assertions.
-    expect(prd).toMatch(/\*\*Financial\*\*\s*\|\s*20\s*\|\s*15 minutes/);
+    expect(prd).toMatch(/\*\*Financial\*\*\s*\|\s*1000\s*\|\s*15 minutes/);
     expect(prd).not.toMatch(/no dedicated\s*\n?>?\s*financial rate limiter/i);
     expect(prd).toMatch(/Equoria-ftjm[\s\S]*?resolved/i);
   });

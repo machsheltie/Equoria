@@ -14,12 +14,18 @@ E2E-only overrides exist.
 | Endpoint Type  | Limit               | Window     |
 | -------------- | ------------------- | ---------- |
 | Authentication | 200 failed requests | 15 minutes |
-| Training       | 20 failed requests  | 1 minute   |
-| Competition    | 20 entries          | 5 minutes  |
-| Breeding       | 10 operations       | 5 minutes  |
-| Foal           | 15 actions          | 1 minute   |
-| Mutation       | 30 requests (prod)  | 1 minute   |
-| Financial      | 20 mutations        | 15 minutes |
+| Training       | 120 failed requests | 1 minute   |
+| Competition    | 1000 entries        | 5 minutes  |
+| Breeding       | 300 operations      | 5 minutes  |
+| Foal           | 300 actions         | 1 minute   |
+| Mutation       | 600 requests (prod) | 1 minute   |
+| Financial      | 1000 mutations      | 15 minutes |
+| Query          | 5000 requests       | 15 minutes |
+| Global (/api/) | 10000 requests      | 15 minutes |
+
+Owner ruling 2026-10-27: players enter hundreds of shows and move around the game all
+day; the earlier caps (global 100, query 100 per 15 minutes) locked the owner out
+during ordinary play.
 
 These rows intentionally preserve the exact source-to-document assertions in
 the drift sentinel. They are selected limiter defaults, not a complete list:

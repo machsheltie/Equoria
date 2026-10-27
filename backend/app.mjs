@@ -161,8 +161,10 @@ const RATE_LIMIT_MAX_BY_ENV = {
   // headroom for the suite to grow without re-tripping. A 15-min window of
   // 3000 reqs = 3.3 req/sec sustained, which is consistent with a human
   // beta tester pattern and easily exceeded by automated scraping.
-  beta: 3000,
-  development: 500,
+  beta: 10000,
+  development: 10000,
+  // Owner ruling 2026-10-27: 100 per 15 minutes locked her out in ordinary play.
+  production: 10000,
 };
 //
 // ─── Per-environment cap divergence rationale (Equoria-aih8) ─────────────────
@@ -173,8 +175,8 @@ const RATE_LIMIT_MAX_BY_ENV = {
 // so it cannot silently drift or collapse into a bypass.
 //
 //   Limiter            Source                              Window  beta  beta-readiness  production
-//   apiLimiter         app.mjs RATE_LIMIT_MAX_BY_ENV        15min  3000  1000            100
-//   mutationRateLimiter rateLimiting.mjs                     1min  120   (none → 30)     30
+//   apiLimiter         app.mjs RATE_LIMIT_MAX_BY_ENV        15min  10000 1000            10000
+//   mutationRateLimiter rateLimiting.mjs                     1min  600   (none → 600)    600
 //   authRateLimiter    rateLimiting.mjs                     15min  200f  200f            200f
 //
 // Why they diverge:
@@ -218,7 +220,7 @@ const apiLimiter = createRateLimiter({
   max: resolveE2eRateLimitMax({
     nodeEnv: process.env.NODE_ENV,
     envValue: process.env.E2E_RATE_LIMIT_MAX,
-    configuredMax: RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 100,
+    configuredMax: RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 10000,
   }),
   keyPrefix: 'rl:global',
   useEnvOverride: false, // Don't let tests override the global limit
@@ -236,7 +238,7 @@ logger.info('[rateLimit] effective ceilings at boot', {
   e2eRateLimitMax: process.env.E2E_RATE_LIMIT_MAX ?? '(unset)',
   overrideActive: applyE2eRateLimitOverride(1) !== 1 && process.env.NODE_ENV !== 'production',
   effectiveMax: {
-    'rl:global': applyE2eRateLimitOverride(RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 100),
+    'rl:global': applyE2eRateLimitOverride(RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 10000),
     'rl:auth': applyE2eRateLimitOverride(200), // authRateLimiter base (rateLimiting.mjs)
     'rl:mutation': applyE2eRateLimitOverride(
       MUTATION_RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 30,

@@ -50,7 +50,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import { randomBytes } from 'node:crypto';
 
-const FINANCIAL_CAP = 20; // financialRateLimiter real configured max / 15-min
+const FINANCIAL_CAP = 1000; // owner ruling 2026-10-27 (was 20) // financialRateLimiter real configured max / 15-min
 
 // Sanctioned test-env cap control (see header doc). Must be set BEFORE the
 // app.mjs import below so the limiter's per-request max() reads it. This is
