@@ -23,6 +23,7 @@ import {
   buyStoreHorse,
 } from '../controllers/marketplaceController.mjs';
 import { browseStudListings } from '../controllers/studListingsController.mjs';
+import { searchHorses } from '../controllers/horseSearchController.mjs';
 
 const router = express.Router();
 
@@ -33,6 +34,9 @@ router.use(authenticateToken);
 router.get('/', browseListings);
 // Equoria-q4uem.9 slice 5: stud stallions (public and private) in the horse search.
 router.get('/studs', queryRateLimiter, browseStudListings);
+
+// Equoria-q4uem.9.1: the all-horses search (for sale and/or at stud).
+router.get('/search', queryRateLimiter, searchHorses);
 
 // Seller flow
 // CWE-639: requireOwnership with from:'body' validates horseId from req.body,
