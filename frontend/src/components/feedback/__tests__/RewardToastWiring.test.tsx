@@ -64,10 +64,6 @@ describe('RewardToast event wiring (55bo.1)', () => {
     });
   });
 
-  // (c) breeding milestone is covered end-to-end (real component + real
-  // onSuccess path through RewardToastProvider) in
-  // pages/breeding/__tests__/BreedingPairSelection.story-6-1.test.tsx
-  // ("should call breeding API when confirmed" — asserts role=status toast).
-  // It is not duplicated here because that suite already mocks api-client
-  // (pre-existing, allowed) to drive the real breed mutation.
+  // (c) the breeding milestone toast went with the Breeding Hall (owner ruling
+  // q89, Equoria-q4uem.9): breeding is said in place on the stallion's page.
 });

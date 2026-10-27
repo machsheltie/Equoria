@@ -157,9 +157,8 @@ const StableView = () => {
             variant="first-use"
             icon={<Star className="w-8 h-8" />}
             title="Your stable is empty"
-            description="Breed or purchase your first horse to get started."
-            primaryAction={{ label: 'Go to Breeding', onClick: () => navigate('/breeding') }}
-            secondaryAction={{
+            description="Buy your first horse to get started."
+            primaryAction={{
               label: 'Browse Marketplace',
               onClick: () => navigate('/marketplace/horses'),
             }}

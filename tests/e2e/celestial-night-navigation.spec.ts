@@ -41,7 +41,8 @@ test.describe('Celestial Night Navigation — Authenticated', () => {
     // 'My Stable' → 'Stable'. 'Training' remains excluded (not a top-level
     // nav item — Training Grounds is reached via /world per Epic 13).
     // exact: true forces accessible-name equality.
-    const expectedNavLinks = ['Home', 'Competitions', 'Breeding', 'World'];
+    // Owner ruling q89 (Equoria-q4uem.9): no Breeding link; the hall is gone.
+    const expectedNavLinks = ['Home', 'Competitions', 'World'];
 
     for (const linkName of expectedNavLinks) {
       const link = navContainer.getByRole('link', { name: linkName, exact: true }).first();

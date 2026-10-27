@@ -30,6 +30,9 @@ export interface Horse {
   breed: string;
   breedId?: number;
   age: number;
+  // Age in game years (1 game year = 7 days), from the server; breeding and
+  // standing at stud go by it (owner ruling 2026-10-23: ages 3-20).
+  ageYears?: number;
   gender: string;
   dateOfBirth: string;
   healthStatus: string;

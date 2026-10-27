@@ -39,6 +39,7 @@ export type BreedingHorse = Pick<
   | 'displayedHealth'
   | 'breedingCooldownEndsAt'
   | 'inFoal'
+  | 'pendingStudRequest'
 > & {
   age: number;
   sex: HorseSex;
@@ -85,6 +86,7 @@ export function toBreedingHorse(horse: HorseListItemDto): BreedingHorse | null {
     // gates read these; without them a mare on cooldown looked breedable.
     breedingCooldownEndsAt: horse.breedingCooldownEndsAt,
     inFoal: horse.inFoal,
+    pendingStudRequest: horse.pendingStudRequest,
   };
 }
 

@@ -236,6 +236,9 @@ export interface HorseSummary {
   // cooldown; stallions never have one) and whether she is in foal.
   breedingCooldownEndsAt?: string | null;
   inFoal?: boolean;
+  // The mare's waiting Private Stud request (owner ruling S-Q4: she cannot be
+  // bred elsewhere until it is answered or withdrawn). Own horses only.
+  pendingStudRequest?: { id: number; stallionId: number; stallionName: string } | null;
   // Earnings fields (API may return either name)
   totalEarnings?: number;
   earnings?: number;

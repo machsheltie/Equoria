@@ -21,6 +21,7 @@ import { GameBadge, type GameBadgeProps } from '@/components/ui/game';
 import type { GameNotification } from '@/lib/api-client';
 import { groomSpecialtyLabel } from '@/lib/groomSpecialtyLabels';
 import { relativeTime } from './constants';
+import { StarMark } from '@/pages/horse-detail/stud/StarMark';
 
 // Row shell shared across notification renderers — keeps unread dot, layout,
 // and timestamp consistent so dispatch only varies the icon/label/body.
@@ -28,11 +29,13 @@ const GameNotifShell: React.FC<{
   notif: GameNotification;
   iconBg: string;
   emoji: string;
+  /** An authored icon drawn in place of the emoji (the breeding star, q110). */
+  icon?: React.ReactNode;
   badgeLabel: string;
   badgeVariant: GameBadgeProps['variant'];
   title: string;
   body: React.ReactNode;
-}> = ({ notif, iconBg, emoji, badgeLabel, badgeVariant, title, body }) => (
+}> = ({ notif, iconBg, emoji, icon, badgeLabel, badgeVariant, title, body }) => (
   <Surface
     variant="panel"
     className={!notif.isRead ? 'border-[var(--role-info-border)]' : undefined}
@@ -52,7 +55,7 @@ const GameNotifShell: React.FC<{
         className={`flex-shrink-0 w-8 h-8 rounded-full ${iconBg} flex items-center justify-center border border-[var(--glass-border)]`}
         aria-hidden="true"
       >
-        <span className="text-xs">{emoji}</span>
+        {icon ?? <span className="text-xs">{emoji}</span>}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -430,12 +433,61 @@ const ConductWarningRow: React.FC<{ notif: GameNotification }> = ({ notif }) => 
   );
 };
 
+/**
+ * Equoria-q4uem.9: breeding at stud, said in plain words. A gold star for now
+ * (owner ruling q110, 2026-10-27). Decline reasons are read as codes for the
+ * wording only; no stored code or server message reaches the screen.
+ */
+const STUD_BADGES: Record<string, string> = {
+  studBooked: 'Stud Booking',
+  studRequestReceived: 'Breeding Request',
+  studRequestApproved: 'Request Accepted',
+  studRequestDeclined: 'Request Declined',
+  studRequestCancelled: 'Request Withdrawn',
+};
+
+function studSentence(notif: GameNotification): string {
+  const p = notif.payload ?? {};
+  const text = (value: unknown, fallback: string) =>
+    typeof value === 'string' && value.length > 0 ? value : fallback;
+  const dam = text(p.damName, 'a mare');
+  const sire = text(p.sireName, 'your stallion');
+  const fee = typeof p.fee === 'number' ? p.fee.toLocaleString() : null;
+  switch (notif.type) {
+    case 'studBooked':
+      return `${text(p.mareOwnerName, 'A player')} bred ${dam} to ${sire}.${fee ? ` You earned ${fee}.` : ''}`;
+    case 'studRequestReceived':
+      return `${text(p.mareOwnerName, 'A player')} asks to breed ${dam} to ${sire}.`;
+    case 'studRequestApproved':
+      return `Accepted. ${dam} is in foal to ${sire}, due in 7 days.`;
+    case 'studRequestDeclined':
+      return p.declineReason === 'REJECTED'
+        ? `The request for ${dam} to ${sire} was declined.`
+        : `The request for ${dam} to ${sire} could not go ahead.`;
+    default:
+      return `The request for ${dam} to ${sire} was withdrawn.`;
+  }
+}
+
+const StudNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) => (
+  <GameNotifShell
+    notif={notif}
+    iconBg="bg-[var(--role-accent-bg)]"
+    emoji=""
+    icon={<StarMark />}
+    badgeLabel={STUD_BADGES[notif.type] ?? 'Breeding'}
+    badgeVariant="default"
+    title="At stud"
+    body={<p>{studSentence(notif)}</p>}
+  />
+);
+
 const UnknownNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) => (
   <GameNotifShell
     notif={notif}
     iconBg="bg-[var(--role-neutral-bg)]"
     emoji="✉️"
-    badgeLabel={String(notif.type || 'event')}
+    badgeLabel="Notice"
     badgeVariant="secondary"
     title="New notification"
     body={<p className="text-role-muted">An update for your stable.</p>}
@@ -464,6 +516,12 @@ export const GameNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) =
       return <StaffTicketRow notif={notif} />;
     case 'staffTicketUpdate':
       return <StaffTicketUpdateRow notif={notif} />;
+    case 'studBooked':
+    case 'studRequestReceived':
+    case 'studRequestApproved':
+    case 'studRequestDeclined':
+    case 'studRequestCancelled':
+      return <StudNotifRow notif={notif} />;
     case 'conductWarning':
       return <ConductWarningRow notif={notif} />;
     default:

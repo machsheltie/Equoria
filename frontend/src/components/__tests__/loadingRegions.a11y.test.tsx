@@ -29,8 +29,6 @@ import UserRankDashboard from '../leaderboard/UserRankDashboard';
 import LeaderboardHorseDetailModal from '../leaderboard/LeaderboardHorseDetailModal';
 import TrainingHistoryTable from '../training/TrainingHistoryTable';
 import XpHistoryTimeline from '../horse/XpHistoryTimeline';
-import CompatibilityPreview from '../breeding/CompatibilityPreview';
-import ColorPredictionChart from '../breeding/ColorPredictionChart';
 import ScoreProgressionPanel from '../training/ScoreProgressionPanel';
 import StatHistoryGraph from '../horse/StatHistoryGraph';
 import { NextActionsBar } from '../hub/NextActionsBar';
@@ -121,17 +119,6 @@ describe('loading skeletons expose a live region (Equoria-2fzcy)', () => {
 
   it('XpHistoryTimeline', () => {
     render(<XpHistoryTimeline horseId={1} horseName="Moonflower" entries={[]} isLoading />);
-    expectOneBusyStatus();
-  });
-
-  it('CompatibilityPreview', () => {
-    render(<CompatibilityPreview mareName="Mare" stallionName="Stallion" data={null} isLoading />);
-    expectOneBusyStatus();
-  });
-
-  it('ColorPredictionChart', () => {
-    holdEveryRequest();
-    withProviders(<ColorPredictionChart sireId={1} damId={2} />);
     expectOneBusyStatus();
   });
 

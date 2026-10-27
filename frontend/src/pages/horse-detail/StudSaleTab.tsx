@@ -1,15 +1,21 @@
 /**
- * StudSaleTab — listing-options panel (stud + sale + conformation-title
- * surfacing + marketplace link). Story 12-4 / 15-5 / Equoria-q072.
+ * StudSaleTab — the horse's Stud / Sale area. Story 12-4 / 15-5 / Equoria-q072.
  * Equoria-kdduk: extracted from HorseDetailPage.tsx.
+ *
+ * Equoria-q4uem.9 (owner rulings q89-q95, q104-q110): a stallion's stud
+ * standing is one three-way choice with the fee beside it; "Breed to <name>"
+ * breeds one of her mares to her own stallion, free and at once; a
+ * "Breeding requests" button lists the requests for this horse. There is no
+ * Breeding Hall and no Marketplace link here (q105).
  */
 
-import React, { useState } from 'react';
-import { Link } from 'react-router';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { useListAtStud, useUnlistAtStud } from '@/hooks/api/useStudListing';
+import React from 'react';
 import type { Horse } from './HorseDetailPageTypes';
+import StudStanding from './stud/StudStanding';
+import BreedToStallion from './stud/BreedToStallion';
+import BreedingRequests from './stud/BreedingRequests';
+import { MAX_BREEDING_AGE, MIN_BREEDING_AGE } from './stud/studBreeding';
+import '@/styles/studBreeding.css';
 
 interface StudSaleTabProps {
   horse: Horse;
@@ -29,37 +35,16 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
   const isFemale =
     horse.gender?.toLowerCase() === 'mare' || horse.gender?.toLowerCase() === 'female';
 
-  // Equoria-q072: real stud listing wiring (replaces toast.info placeholder)
-  const listAtStud = useListAtStud();
-  const unlistAtStud = useUnlistAtStud();
-  const [showStudForm, setShowStudForm] = useState(false);
-  const [studFeeInput, setStudFeeInput] = useState('');
-  const isAtStud = typeof horse.studStatus === 'string' && horse.studStatus !== 'Not at Stud';
-
-  const handleSubmitStudListing = (e: React.FormEvent) => {
-    e.preventDefault();
-    const fee = Number(studFeeInput);
-    if (!Number.isInteger(fee) || fee < 0) {
-      toast.error('Stud fee must be a non-negative integer');
-      return;
-    }
-    listAtStud.mutate(
-      { horseId: horse.id, studFee: fee },
-      {
-        onSuccess: () => {
-          setShowStudForm(false);
-          setStudFeeInput('');
-        },
-      }
-    );
-  };
+  const ageYears = typeof horse.ageYears === 'number' ? horse.ageYears : null;
+  const canBreed =
+    ageYears === null || (ageYears >= MIN_BREEDING_AGE && ageYears <= MAX_BREEDING_AGE);
 
   return (
     <div className="space-y-6" data-testid="stud-sale-tab">
       <div>
-        <h3 className="type-section-heading mb-2">Listing Options</h3>
+        <h3 className="type-section-heading mb-2">Stud &amp; Sale</h3>
         <p className="fantasy-body text-[var(--text-secondary)] text-sm">
-          List {horse.name} for outright sale, manage active listings, and browse the marketplace.
+          {horse.name}'s place at stud and on the sale list.
         </p>
       </div>
 
@@ -75,15 +60,6 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
               : 'Listed for sale'
             : 'Not Listed'}
         </p>
-        {isAtStud && (
-          <p
-            className="fantasy-body text-[var(--text-secondary)] text-sm mt-1"
-            data-testid="stud-current-status"
-          >
-            At stud · Fee:{' '}
-            {typeof horse.studFee === 'number' ? `${horse.studFee.toLocaleString()} coins` : '—'}
-          </p>
-        )}
       </div>
 
       {/* Equoria-8xfo (31F-FE-2) — Conformation Titles block. Hidden when
@@ -137,98 +113,34 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
         </div>
       )}
 
+      {isMale && (
+        <div data-testid="stud-area">
+          <StudStanding
+            horseId={horse.id}
+            horseName={horse.name}
+            ageYears={ageYears}
+            studStatus={horse.studStatus}
+            studFee={horse.studFee}
+          />
+          {canBreed ? (
+            <BreedToStallion
+              stallion={{ id: horse.id, name: horse.name, breed: horse.breed || null }}
+              kind="own"
+              fee={0}
+            />
+          ) : (
+            <p className="stud-quiet">
+              {horse.name} can breed from age {MIN_BREEDING_AGE} to {MAX_BREEDING_AGE}.
+            </p>
+          )}
+          <BreedingRequests side="stallion" horseId={horse.id} horseName={horse.name} />
+        </div>
+      )}
+
+      {isFemale && <BreedingRequests side="mare" horseId={horse.id} horseName={horse.name} />}
+
       {/* Listing Type Buttons */}
       <div className="space-y-3">
-        {isMale && !isAtStud && !showStudForm && (
-          <button
-            type="button"
-            onClick={() => setShowStudForm(true)}
-            className="w-full flex items-center justify-between p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)] text-left hover:border-[var(--glass-hover)] transition-colors"
-            title="List this stallion at public stud"
-            data-testid="stud-listing-btn"
-          >
-            <div>
-              <p className="font-semibold text-[var(--text-primary)] text-sm">
-                Offer as Stud Service
-              </p>
-              <p className="fantasy-body text-[var(--text-secondary)] text-xs mt-0.5">
-                Other players can pay a breeding fee to use {horse.name}
-              </p>
-            </div>
-            <span className="text-xs fantasy-caption text-[var(--text-secondary)]">Breeding</span>
-          </button>
-        )}
-
-        {isMale && showStudForm && (
-          <form
-            onSubmit={handleSubmitStudListing}
-            className="p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)] space-y-3"
-            data-testid="stud-listing-form"
-          >
-            <label className="block">
-              <span className="fantasy-caption text-[var(--text-secondary)] text-xs uppercase tracking-wider">
-                Stud fee (coins)
-              </span>
-              <input
-                type="number"
-                min={0}
-                step={1}
-                inputMode="numeric"
-                value={studFeeInput}
-                onChange={(e) => setStudFeeInput(e.target.value)}
-                placeholder="e.g. 5000"
-                className="mt-1 w-full p-2 bg-[var(--bg-midnight)] rounded border border-[var(--glass-border)] text-[var(--text-primary)]"
-                data-testid="stud-fee-input"
-                required
-              />
-            </label>
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={listAtStud.isPending}
-                className="flex-1 px-3 py-2 bg-[var(--accent-primary)] text-white rounded font-semibold text-sm disabled:opacity-50"
-                data-testid="stud-listing-submit"
-              >
-                {listAtStud.isPending ? 'Listing…' : 'List at Stud'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowStudForm(false);
-                  setStudFeeInput('');
-                }}
-                disabled={listAtStud.isPending}
-                className="flex-1 px-3 py-2 bg-[var(--glass-surface-subtle-bg)] rounded font-semibold text-sm border border-[var(--glass-border)]"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        )}
-
-        {isMale && isAtStud && (
-          <button
-            type="button"
-            onClick={() => unlistAtStud.mutate(horse.id)}
-            disabled={unlistAtStud.isPending}
-            className="w-full flex items-center justify-between p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)] text-left hover:border-[var(--glass-hover)] transition-colors"
-            title="Remove stud listing"
-            data-testid="stud-unlist-btn"
-          >
-            <div>
-              <p className="font-semibold text-[var(--text-primary)] text-sm">
-                Remove Stud Listing
-              </p>
-              <p className="fantasy-body text-[var(--text-secondary)] text-xs mt-0.5">
-                Take {horse.name} off the public stud roster
-              </p>
-            </div>
-            <span className="text-xs fantasy-caption text-[var(--text-secondary)]">
-              {unlistAtStud.isPending ? 'Saving…' : 'Unlist'}
-            </span>
-          </button>
-        )}
-
         {!isFemale && !isMale && (
           <div className="p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)]">
             <p className="fantasy-body text-[var(--text-secondary)] text-sm italic">
@@ -259,19 +171,6 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
             {isDelisting ? 'Saving...' : horse.forSale ? 'Delist' : 'Set Price'}
           </span>
         </button>
-      </div>
-
-      {/* Marketplace Link */}
-      <div className="p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)] flex items-center justify-between">
-        <div>
-          <p className="font-semibold text-[var(--text-primary)] text-sm">Browse the Marketplace</p>
-          <p className="fantasy-body text-[var(--text-secondary)] text-sm">
-            See horses listed for sale by other players.
-          </p>
-        </div>
-        <Button asChild>
-          <Link to="/marketplace/horses">Marketplace</Link>
-        </Button>
       </div>
     </div>
   );

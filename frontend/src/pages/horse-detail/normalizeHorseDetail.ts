@@ -119,6 +119,7 @@ export function normalizeHorseDetail(raw: HorseSummary): Horse {
     breed,
     breedId: raw.breedId,
     age: raw.age,
+    ageYears: raw.ageYears,
     gender,
     // Equoria-gncv — null for legacy horses with no temperament.
     temperament: raw.temperament ?? null,

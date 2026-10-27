@@ -62,14 +62,16 @@ function renderTab(extra: Record<string, unknown>) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <StudSaleTab
-          horse={{ ...baseHorse, ...extra } as unknown as TabHorse}
-          onListForSale={() => {}}
-          onDelist={() => {}}
-          isDelisting={false}
-        />
-      </MemoryRouter>
+      <MockAuthProvider>
+        <MemoryRouter>
+          <StudSaleTab
+            horse={{ ...baseHorse, ...extra } as unknown as TabHorse}
+            onListForSale={() => {}}
+            onDelist={() => {}}
+            isDelisting={false}
+          />
+        </MemoryRouter>
+      </MockAuthProvider>
     </QueryClientProvider>
   );
 }
@@ -99,16 +101,17 @@ describe('StudSaleTab status (Equoria-qqhwh)', () => {
     expect(screen.getByText('Listed for 9,000 coins')).toBeInTheDocument();
   });
 
-  it('shows an unknown stud fee as "—", not "0 coins"', () => {
-    renderTab({ studStatus: 'At Stud' });
-    const status = screen.getByTestId('stud-current-status');
-    expect(status).toHaveTextContent('Fee: —');
-    expect(status).not.toHaveTextContent('0 coins');
+  // Owner ruling q93 (2026-10-26, Equoria-q4uem.9): a stallion's standing is one
+  // three-way choice with the fee beside it. Old contract: an "At stud · Fee"
+  // status line. The honesty rule is unchanged: unknown is not 0, 0 stays 0.
+  it('shows an unknown stud fee as an empty fee, not 0', () => {
+    renderTab({ gender: 'Stallion', ageYears: 6, studStatus: 'At Public Stud' });
+    expect(screen.getByLabelText('Stud fee')).toHaveValue(null);
   });
 
   it('keeps a genuine stud fee of 0 as 0', () => {
-    renderTab({ studStatus: 'At Stud', studFee: 0 });
-    expect(screen.getByTestId('stud-current-status')).toHaveTextContent('Fee: 0 coins');
+    renderTab({ gender: 'Stallion', ageYears: 6, studStatus: 'At Public Stud', studFee: 0 });
+    expect(screen.getByLabelText('Stud fee')).toHaveValue(0);
   });
 });
 

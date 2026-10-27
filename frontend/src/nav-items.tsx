@@ -100,6 +100,8 @@ export const navItems = [
     Page: StaffPage,
   },
   {
+    // Route only: the Breeding Hall was removed (owner ruling q89); old links
+    // land in the stable.
     title: 'Breeding',
     to: '/breeding',
     icon: <HeartHandshake className="h-4 w-4" />,

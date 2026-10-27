@@ -70,7 +70,8 @@ const ICONS: Record<NextAction['type'], React.ReactNode> = {
 const ACTION_LINKS: Record<NextAction['type'], string> = {
   train: '/training',
   compete: '/competitions',
-  breed: '/breeding',
+  // Breeding starts from a stallion's page (owner ruling q89); the stable lists them.
+  breed: '/stable',
   // The horse's own Care area (owner ruling q67), never Groom Quarters.
   'groom-foal': '/horses',
   'claim-prize': '/competitions',

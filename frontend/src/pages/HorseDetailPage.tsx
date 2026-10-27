@@ -39,6 +39,10 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useHorse } from '../hooks/api/useHorses';
+// Equoria-q4uem.9 (owner ruling q90): another player's horse opens this same
+// page in visitor mode — public facts and revealed traits only.
+import { useHorseVisit } from '../hooks/api/useStuds';
+import HorseVisitorView from './horse-detail/stud/HorseVisitorView';
 // Canonical Radix-backed tabs (Equoria-o5hub.11, DECISIONS.md §6)
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import ConformationTab from '../components/horse/ConformationTab';
@@ -118,6 +122,11 @@ const HorseDetailPage: React.FC = () => {
   // keeping all downstream JSX references unchanged.
   const { data: horseRaw, isLoading, isError, error, refetch } = useHorse(Number(id));
 
+  // Not the player's own horse (the owner-only read answers 404): read the
+  // visitor view instead. A missing horse is 404 there too.
+  const notOwn = isError && error?.statusCode === 404;
+  const visit = useHorseVisit(Number(id), notOwn);
+
   // Sire lookup for the in-foal panel (B6, Equoria-ta4s). useHorse() is
   // disabled when its argument is falsy (`enabled: Boolean(horseId)`), so
   // 0 here means "not pregnant or sire not yet known — skip the fetch."
@@ -188,7 +197,7 @@ const HorseDetailPage: React.FC = () => {
   }, [ultraRareReveal]);
 
   // Loading state — detail page skeleton (portrait left + tab area right)
-  if (isLoading) {
+  if (isLoading || (notOwn && visit.isPending)) {
     return (
       <div className="min-h-screen" aria-label="Loading horse details">
         <PageContainer variant="wide">
@@ -224,8 +233,22 @@ const HorseDetailPage: React.FC = () => {
   // through to ErrorCard (Equoria-o5hub ratchet: retryLabel/goHomeLabel
   // passthrough), so this flow keeps its "Retry" / "Back to Horse List" copy.
   // Retry is omitted for the 404 case (retrying a non-existent id is a no-op).
+  if (notOwn && visit.data) {
+    return (
+      <div className="min-h-screen">
+        <PageContainer variant="wide">
+          <HorseVisitorView horse={visit.data} />
+        </PageContainer>
+      </div>
+    );
+  }
+
   if (isError || !horseRaw) {
-    const isNotFound = error?.message === 'Horse not found';
+    // A horse that is not hers was looked up as a visitor: only that read's
+    // own 404 means the horse does not exist.
+    const isNotFound = notOwn
+      ? visit.error?.statusCode === 404
+      : error?.message === 'Horse not found';
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <ErrorState
@@ -236,7 +259,11 @@ const HorseDetailPage: React.FC = () => {
               ? 'The horse you are looking for does not exist or has been removed.'
               : 'An error occurred while loading the horse details. Please try again.'
           }
-          retry={isNotFound ? undefined : { label: 'Retry', onClick: () => refetch() }}
+          retry={
+            isNotFound
+              ? undefined
+              : { label: 'Retry', onClick: () => (notOwn ? visit.refetch() : refetch()) }
+          }
           backLink={{ label: 'Back to Horse List', onClick: () => navigate('/stable') }}
           className="w-full"
         />

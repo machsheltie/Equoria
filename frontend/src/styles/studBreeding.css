@@ -1,0 +1,459 @@
+/**
+ * Stud breeding on the one horse page (Equoria-q4uem.9; owner rulings
+ * q89-q95, q104-q110). Authored CSS over the Celestial Night tokens, after the
+ * approved mockup views a, b and d: a horse-led visitor page, an engraved
+ * "Standing at stud" plaque, a three-way standing choice, and the breeding
+ * requests as a quiet ledger of entries. No cards, no tiles.
+ */
+
+/* ── Shared ─────────────────────────────────────────────────────────── */
+
+.stud-quiet {
+  margin: var(--space-1) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  max-width: 62ch;
+}
+
+.stud-link {
+  color: var(--gold-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.stud-link:hover {
+  color: var(--gold-light);
+}
+
+.stud-star {
+  display: inline-block;
+  vertical-align: -2px;
+  color: var(--gold-primary);
+}
+
+.stud-field {
+  min-height: 48px;
+  width: 100%;
+  max-width: 28rem;
+  padding: 0 var(--space-3);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: var(--radius-md);
+  background: var(--bg-midnight);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.stud-field:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+.stud-field--fee {
+  width: 9rem;
+  font-family: var(--font-mono);
+}
+
+/* ── The plaque ─────────────────────────────────────────────────────── */
+
+.stud-plaque {
+  margin: var(--space-6) 0 var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border: 1px solid var(--gold-dim);
+  border-radius: 6px 6px 22px 22px;
+  background: linear-gradient(180deg, #14213f, #0c1630);
+  box-shadow:
+    inset 0 0 0 4px #0c1630,
+    inset 0 0 0 5px rgba(139, 118, 53, 0.4),
+    0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.stud-plaque__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-family: var(--font-entity);
+  font-size: var(--text-xl);
+  font-weight: 400;
+  color: var(--gold-light);
+}
+
+.stud-plaque__accent {
+  margin: var(--space-1) 0 var(--space-3);
+  font-family: var(--font-accent);
+  font-size: var(--text-xl);
+  line-height: 1.3;
+  color: var(--gold-light);
+}
+
+.stud-plaque__terms {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-6);
+  margin: 0;
+}
+
+.stud-plaque__terms dt {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.stud-plaque__terms dd {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.stud-plaque__fee {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  color: var(--gold-bright) !important;
+}
+
+.stud-mode {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border: 1px solid;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.stud-mode--public {
+  color: #9be8b6;
+  border-color: rgba(34, 197, 94, 0.45);
+}
+
+.stud-mode--private {
+  color: var(--gold-light);
+  border-color: rgba(200, 168, 78, 0.55);
+}
+
+/* ── Breed to <stallion> ────────────────────────────────────────────── */
+
+.stud-breed {
+  margin-top: var(--space-4);
+}
+
+.stud-breed__picker {
+  margin-top: var(--space-3);
+  animation: stud-rise var(--duration-normal) ease-out;
+}
+
+.stud-breed__label {
+  display: block;
+  margin-bottom: var(--space-1);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.stud-breed__picker-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.stud-breed__done {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid rgba(139, 118, 53, 0.4);
+  animation: stud-rise var(--duration-slow) ease-out;
+}
+
+.stud-breed__done-line {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-accent);
+  font-size: var(--text-2xl);
+  line-height: 1.25;
+  color: var(--gold-bright);
+}
+
+@keyframes stud-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stud-breed__picker,
+  .stud-breed__done {
+    animation: none;
+  }
+}
+
+/* ── Stud standing (the owner's own stallion) ───────────────────────── */
+
+.stud-three {
+  display: flex;
+  max-width: 36rem;
+  margin-top: var(--space-3);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.stud-three button {
+  flex: 1;
+  min-height: 48px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-right: 1px solid rgba(139, 118, 53, 0.35);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) ease-out,
+    color var(--duration-fast) ease-out;
+}
+
+.stud-three button:last-child {
+  border-right: 0;
+}
+
+.stud-three button[aria-checked='true'] {
+  background: rgba(200, 168, 78, 0.15);
+  color: var(--gold-bright);
+  font-weight: 600;
+  box-shadow: inset 0 -3px 0 var(--gold-primary);
+}
+
+.stud-three button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.stud-three button:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: -2px;
+}
+
+.stud-explain {
+  margin: var(--space-3) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  max-width: 56ch;
+}
+
+.stud-feeset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.stud-feeset__label {
+  color: var(--text-secondary);
+}
+
+.stud-saved {
+  margin: var(--space-3) 0 0;
+  color: var(--gold-light);
+}
+
+/* ── Breeding requests ──────────────────────────────────────────────── */
+
+.stud-requests-area {
+  margin-top: var(--space-5);
+}
+
+.stud-requests-area__list {
+  margin-top: var(--space-3);
+}
+
+.stud-requests {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stud-request {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.stud-request__name {
+  margin: 0;
+  font-family: var(--font-entity);
+  font-size: var(--text-xl);
+  font-weight: 400;
+  color: var(--gold-light);
+}
+
+.stud-request__status {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.stud-request[data-status='pending'] .stud-request__status {
+  color: var(--status-warning);
+}
+
+.stud-request[data-status='completed'] .stud-request__status {
+  color: var(--status-success);
+}
+
+.stud-request[data-status='declined'] .stud-request__status,
+.stud-request[data-status='cancelled'] .stud-request__status {
+  color: #f3b0b0;
+}
+
+.stud-answer {
+  margin-top: var(--space-3);
+}
+
+.stud-answer__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* ── The visitor page ───────────────────────────────────────────────── */
+
+.stud-visit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .stud-visit {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: var(--space-7);
+  }
+}
+
+.stud-visit__portrait {
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border: 1px solid var(--gold-dim);
+  border-radius: 50% 50% 14px 14px / 38% 38% 14px 14px;
+  background: radial-gradient(ellipse at 50% 15%, #2a3d78 0, #0f2346 45%, #070b18 100%);
+  box-shadow:
+    0 10px 40px rgba(201, 162, 39, 0.15),
+    inset 0 0 40px rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 768px) {
+  .stud-visit__portrait {
+    max-width: none;
+  }
+}
+
+.stud-visit__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stud-visit__portrait-empty {
+  width: 100%;
+  height: 100%;
+}
+
+.stud-visit__facts {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.stud-visit__readonly {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 1px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.stud-visit__name {
+  margin: var(--space-1) 0 var(--space-1);
+  font-family: var(--font-announcer);
+  font-size: clamp(2rem, 5vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--gold-bright);
+  text-wrap: balance;
+}
+
+.stud-visit__heading {
+  margin: var(--space-5) 0 var(--space-2);
+  font-family: var(--font-entity);
+  font-size: var(--text-lg);
+  font-weight: 400;
+  color: var(--gold-light);
+}
+
+.stud-visit__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0 var(--space-6);
+  margin: var(--space-5) 0 0;
+  font-family: var(--font-mono);
+}
+
+.stud-visit__stats div {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  border-bottom: 1px dotted rgba(148, 163, 184, 0.25);
+}
+
+.stud-visit__stats dt {
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+}
+
+.stud-visit__stats dd {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.stud-traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stud-trait {
+  padding: 6px 12px;
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-full);
+  background: rgba(201, 162, 39, 0.15);
+  color: var(--gold-light);
+  font-size: var(--text-sm);
+}
+
+.stud-trait--hinders {
+  border-color: #7c5656;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f0b4b4;
+}
+
+.stud-visit__lineage {
+  margin-top: var(--space-3);
+}
+
+.stud-visit__request {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid rgba(139, 118, 53, 0.4);
+}

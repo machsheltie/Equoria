@@ -20,7 +20,7 @@ import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { gameDateKey } from '@/lib/gameTime';
 import { formatHealth } from '@/lib/healthWords';
-import { Backpack, Brush, Dumbbell, Heart, Tag, Users, Wheat, Wrench, X } from 'lucide-react';
+import { Backpack, Brush, Dumbbell, Tag, Users, Wheat, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
 import { useHorseTrainer } from '@/hooks/api/useTrainers';
@@ -145,16 +145,6 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
           ) : (
             'Train'
           )}
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => navigate(`/breeding?horseId=${horse.id}`)}
-          data-testid="action-breed"
-        >
-          <Heart className="w-3.5 h-3.5" />
-          Breed
         </Button>
         <Button
           type="button"

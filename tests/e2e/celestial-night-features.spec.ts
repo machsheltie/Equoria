@@ -8,7 +8,6 @@
  * Pages tested:
  *  - Competition Browser (/competitions)
  *  - Training Dashboard (/training)
- *  - Breeding Hall (/breeding)
  *  - Community Hub (/community)
  *  - Messages (/messages)
  *  - Marketplace (/marketplace)
@@ -69,28 +68,8 @@ test.describe('Celestial Night Feature Pages', () => {
     await expect(page.getByText('Training Grounds').first()).toBeVisible({ timeout: 10000 });
   });
 
-  // ── Breeding Hall ────────────────────────────────────────────────────────
-  test('Breeding Hall loads with heading', async ({ page }) => {
-    await page.goto('/breeding', { waitUntil: 'domcontentloaded' });
-
-    // BreedingPage PageHero title is "Breeding Hall"
-    await expect(page.locator('h1')).toContainText('Breeding Hall', { timeout: 15000 });
-  });
-
-  test('Breeding Hall shows breeding pair selection', async ({ page }) => {
-    await page.goto('/breeding', { waitUntil: 'domcontentloaded' });
-
-    await expect(page.locator('h1')).toContainText('Breeding Hall', { timeout: 15000 });
-
-    // BreedingPairSelection renders mare/stallion selector cards. Equoria-th9a:
-    // the previous assertion looked for tabs/selects from the legacy form-
-    // based UI which no longer exists. The current cards picker exposes
-    // 'Sire (Stallion)' and 'Dam (Mare)' section labels (BreedingPairSelection
-    // .tsx:327, :338).
-    const hasTabs = await page.getByText('Sire (Stallion)').count();
-    const hasSelects = await page.getByText('Dam (Mare)').count();
-    expect(hasTabs + hasSelects).toBeGreaterThan(0);
-  });
+  // The Breeding Hall was removed (owner ruling q89, Equoria-q4uem.9): breeding
+  // happens on a stallion's page. Old contract: /breeding showed the hall.
 
   // ── Community Hub ────────────────────────────────────────────────────────
   test('Community Hub loads with heading', async ({ page }) => {

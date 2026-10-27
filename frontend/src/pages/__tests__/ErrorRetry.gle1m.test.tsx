@@ -17,8 +17,6 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/msw/server';
 import { MockAuthProvider } from '@/test/utils';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { RewardToastProvider } from '@/components/feedback';
-import BreedingPairSelection from '../breeding/BreedingPairSelection';
 import ConformationShowsPanel from '@/components/competition/ConformationShowsPanel';
 import CompetitionResultsPage from '../CompetitionResultsPage';
 import TrainingDashboard from '@/components/training/TrainingDashboard';
@@ -45,50 +43,6 @@ function newClient() {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
 }
-
-// ── 1. BreedingPairSelection ──────────────────────────────────────────────
-
-describe('BreedingPairSelection horses error (Equoria-gle1m #1)', () => {
-  it('offers Try Again and recovers to the horse list', async () => {
-    const horse = {
-      id: 1,
-      name: 'Thunder',
-      age: 5,
-      ageYears: 5,
-      sex: 'Stallion',
-      breed: 'Thoroughbred',
-      breedName: 'Thoroughbred',
-      healthStatus: 'Healthy',
-      dateOfBirth: '2019-01-01',
-      level: 10,
-      stats: { speed: 85, stamina: 80, agility: 75, strength: 78, intelligence: 70, health: 90 },
-      disciplineScores: {},
-      traits: [],
-    };
-    const f = failOnce(() => HttpResponse.json({ success: true, data: [horse] }));
-    server.use(http.get(`${base}/api/v1/horses`, f.handler));
-
-    const user = userEvent.setup();
-    render(
-      <QueryClientProvider client={newClient()}>
-        <MockAuthProvider>
-          <RewardToastProvider>
-            <MemoryRouter>
-              <BreedingPairSelection userId="test-user-123" />
-            </MemoryRouter>
-          </RewardToastProvider>
-        </MockAuthProvider>
-      </QueryClientProvider>
-    );
-
-    expect(await screen.findByText(/Failed to load horses/i)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /try again/i }));
-
-    expect(await screen.findByText('Thunder')).toBeInTheDocument();
-    expect(screen.queryByText(/Failed to load horses/i)).not.toBeInTheDocument();
-    expect(f.calls()).toBeGreaterThanOrEqual(2);
-  });
-});
 
 // ── 2. ConformationShowsPanel ─────────────────────────────────────────────
 

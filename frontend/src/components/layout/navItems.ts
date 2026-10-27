@@ -10,7 +10,6 @@ import {
   Building2,
   Package,
   Trophy,
-  Dna,
   Globe,
   ShoppingCart,
   BarChart3,
@@ -42,7 +41,6 @@ export const NAV_SECTIONS: NavItem[] = [
   // Equoria-kd2dd: the new player guide. Owner ruling 2026-10-23 (q20): its link goes in the sidebar.
   { name: 'Guide', href: '/guide', Icon: BookOpen },
   { name: 'Competitions', href: '/competitions', Icon: Trophy, shortName: 'Compete' },
-  { name: 'Breeding', href: '/breeding', Icon: Dna, shortName: 'Breed' },
   { name: 'World', href: '/world', Icon: Globe },
   { name: 'Marketplace', href: '/marketplace', Icon: ShoppingCart },
   { name: 'Leaderboards', href: '/leaderboards', Icon: BarChart3 },
@@ -75,7 +73,10 @@ export const BOTTOM_NAV_ITEMS: NavItem[] = [
   { name: 'Home', href: '/', Icon: Home },
   { name: 'Horses', href: '/stable', Icon: Building2 },
   { name: 'Compete', href: '/competitions', Icon: Trophy },
-  { name: 'Breed', href: '/breeding', Icon: Dna },
+  // The Breeding Hall is gone (owner ruling q89): breeding lives on the
+  // stallion's page and studs are found in the Marketplace, one of the five
+  // approved realms (PRODUCT.md, Approved global navigation).
+  { name: 'Market', href: '/marketplace', Icon: ShoppingCart },
   { name: 'More', href: '#more', Icon: MoreHorizontal },
 ];
 

@@ -26,8 +26,6 @@ import StatHistoryGraph from '@/components/horse/StatHistoryGraph';
 import StatProgressionChart from '@/components/horse/StatProgressionChart';
 import XpProgressBar from '@/components/horse/XpProgressBar';
 import TemperamentReferenceModal from '@/components/horse/TemperamentReferenceModal';
-import ColorPredictionChart from '@/components/breeding/ColorPredictionChart';
-import BreedingPredictionsPanel from '@/pages/breeding/BreedingPredictionsPanel';
 import MilestoneEvaluationDisplay from '@/components/foal/MilestoneEvaluationDisplay';
 import CompetitionResultsModal from '@/components/competition/CompetitionResultsModal';
 
@@ -65,8 +63,6 @@ const surfaces: Array<[string, () => React.ReactElement]> = [
     'TemperamentReferenceModal',
     () => <TemperamentReferenceModal isOpen onClose={() => undefined} />,
   ],
-  ['ColorPredictionChart', () => <ColorPredictionChart sireId={1} damId={2} />],
-  ['BreedingPredictionsPanel', () => <BreedingPredictionsPanel sireId={1} damId={2} />],
   ['MilestoneEvaluationDisplay', () => <MilestoneEvaluationDisplay foalId={1} />],
   [
     'CompetitionResultsModal',

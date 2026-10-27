@@ -29,7 +29,9 @@ describe('NavPanel — full exposure', () => {
     expect(screen.getByRole('link', { name: /^stable$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /inventory/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /competitions/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /breeding/i })).toBeInTheDocument();
+    // Owner ruling 2026-10-26 (q89, Equoria-q4uem.9): the Breeding Hall is gone; breeding
+    // happens on a stallion's page. Old contract: Breeding was a nav link.
+    expect(screen.queryByRole('link', { name: /breeding/i })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /marketplace/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /messages/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /bank/i })).toBeInTheDocument();

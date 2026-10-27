@@ -83,7 +83,6 @@ export const staticRoutes: BaselineRoute[] = [
 
   // ── Workflow pages ─────────────────────────────────────────────────────
   { path: '/training', slug: 'training', family: 'workflow', auth: true },
-  { path: '/breeding', slug: 'breeding', family: 'workflow', auth: true },
   { path: '/competitions', slug: 'competition-browser', family: 'workflow', auth: true },
   { path: '/competition-results', slug: 'competition-results', family: 'workflow', auth: true },
   {

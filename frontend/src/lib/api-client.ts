@@ -241,21 +241,8 @@ export type {
   ConformationShowTitlesResult,
 } from './api/conformationShows.js';
 
-// -- Breeding Prediction --
-// Extracted to ./api/breedingPrediction (Equoria-rfsml). Re-exported for barrel compat.
-export { breedingPredictionApi } from './api/breedingPrediction.js';
-export type {
-  InbreedingAnalysis,
-  InbreedingCommonAncestor,
-  LineageTreeNode,
-  LineageAnalysis,
-  GeneticProbability,
-  StatProbability,
-  TraitProbability,
-  BreedingCompatibility,
-  BreedingColorPredictionEntry,
-  BreedingColorPredictionResult,
-} from './api/breedingPrediction.js';
+// -- Breeding Prediction -- removed (owner ruling q91, Equoria-m13fh): players see no
+// foal outcome preview.
 
 /**
  * Authentication API endpoints

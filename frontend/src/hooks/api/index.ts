@@ -3,7 +3,6 @@ export * from './useTraining';
 export * from './useBreeding';
 export * from './useHorses';
 export * from './useHorseXP';
-export * from './useBreedingPrediction';
 export * from './useCompetitionsFiltered';
 export * from './useCompetitionDetails';
 export * from './useHorseEligibility';

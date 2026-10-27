@@ -10,7 +10,6 @@
   "frontend/src/hooks/api/useCrafting.ts": { "sonner": 1, "toast()": 2 },
   "frontend/src/hooks/api/useGrooms.ts": { "sonner": 1, "toast()": 2 },
   "frontend/src/hooks/api/useMarketplace.ts": { "sonner": 1, "toast()": 5 },
-  "frontend/src/hooks/api/useStudListing.ts": { "sonner": 1, "toast()": 4 },
   "frontend/src/hooks/api/useTrainers.ts": { "sonner": 1, "toast()": 2 },
   "frontend/src/hooks/useAuth.ts": { "sonner": 1, "toast()": 2 },
   "frontend/src/pages/FeedShopPage.tsx": { "sonner": 1, "toast()": 2 },
@@ -19,7 +18,6 @@
   "frontend/src/pages/SettingsPage.tsx": { "sonner": 1, "toast()": 10 },
   "frontend/src/pages/horse-detail/HorseActionBar.tsx": { "sonner": 1, "toast()": 3 },
   "frontend/src/pages/horse-detail/RiderPickerModal.tsx": { "sonner": 1, "toast()": 2 },
-  "frontend/src/pages/horse-detail/StudSaleTab.tsx": { "sonner": 1, "toast()": 1 },
   "frontend/src/pages/horses/HorseEquipPage.tsx": { "sonner": 1, "toast()": 8 },
   "frontend/src/pages/tack-shop/ShopTab.tsx": { "sonner": 1, "toast()": 2 }
 }
