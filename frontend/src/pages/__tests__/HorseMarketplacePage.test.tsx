@@ -22,15 +22,25 @@ import React from 'react';
 
 const LISTING_FIXTURE = {
   id: 4242,
-  horseId: 4242,
   name: 'TestFixture-ga4l-listing',
   breed: 'Thoroughbred',
   age: 4,
   sex: 'Mare',
-  salePrice: 50_000,
-  seller: 'TestFixture-ga4l-seller',
+  color: 'Bay',
+  owner: { username: 'TestFixture-ga4l-seller' },
   imageUrl: null,
-  stats: { speed: 50, stamina: 50, agility: 50 },
+  stats: {
+    speed: 50,
+    stamina: 50,
+    agility: 50,
+    precision: 50,
+    strength: 50,
+    intelligence: 50,
+    boldness: 50,
+  },
+  revealedTraits: { positive: [], negative: [] },
+  sale: { price: 50_000 },
+  stud: null,
 };
 
 function makeProfileHandler(money: number) {
@@ -53,11 +63,11 @@ function makeProfileHandler(money: number) {
 }
 
 function makeMarketplaceHandler() {
-  return http.get('*/api/v1/marketplace', () =>
+  return http.get('*/api/v1/marketplace/search', () =>
     HttpResponse.json({
       success: true,
       data: {
-        listings: [LISTING_FIXTURE],
+        horses: [LISTING_FIXTURE],
         pagination: { page: 1, totalPages: 1, total: 1 },
       },
     })
@@ -86,8 +96,10 @@ describe('HorseMarketplacePage — real balance wiring (Equoria-ga4l)', () => {
     renderPage();
 
     // Wait for listing to appear
-    const listingCard = await screen.findByText(/TestFixture-ga4l-listing/i);
-    await user.click(listingCard);
+    await screen.findByText(/TestFixture-ga4l-listing/i);
+    await user.click(
+      await screen.findByRole('button', { name: /^buy testfixture-ga4l-listing$/i })
+    );
 
     // The detail modal should show insufficient-funds warning because real balance (1000) < 50000
     await waitFor(() => {
@@ -106,8 +118,10 @@ describe('HorseMarketplacePage — real balance wiring (Equoria-ga4l)', () => {
     const user = userEvent.setup();
     renderPage();
 
-    const listingCard = await screen.findByText(/TestFixture-ga4l-listing/i);
-    await user.click(listingCard);
+    await screen.findByText(/TestFixture-ga4l-listing/i);
+    await user.click(
+      await screen.findByRole('button', { name: /^buy testfixture-ga4l-listing$/i })
+    );
 
     // Wait for modal to render
     const buyButton = await screen.findByRole('button', { name: /buy now/i });

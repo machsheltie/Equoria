@@ -2,7 +2,7 @@
  * HorseMarketplacePage — Epic 21: Horse Marketplace
  *
  * Three-tab layout:
- *   Browse       — paginated horse listings with filter panel
+ *   Browse       — all-horses search: for sale and/or at stud, with filters
  *   My Listings  — seller's active listings with Delist button
  *   Sale History — completed transactions (bought + sold)
  *
@@ -15,66 +15,29 @@
  * primitives; empty states via EmptyState.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { formatDate } from '@/lib/formatDate';
 import { Link } from 'react-router';
-import {
-  ShoppingCart,
-  Search,
-  SlidersHorizontal,
-  History,
-  Tag,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { ShoppingCart, History, Tag } from 'lucide-react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
-import { Input, Select, FormField } from '@/components/ui/form';
 import { Skeleton, ErrorState } from '@/components/ui/state';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
-import { ListingDetailDialog } from '@/components/marketplace/ListingDetailDialog';
-import {
-  useMarketplaceListings,
-  useMyListings,
-  useSaleHistory,
-  useDelistHorse,
-} from '@/hooks/api/useMarketplace';
+import { HorseSearch } from '@/components/marketplace/HorseSearch';
+import { useMyListings, useSaleHistory, useDelistHorse } from '@/hooks/api/useMarketplace';
 import { useProfile } from '@/hooks/useAuth';
-import { useBreeds } from '@/hooks/api/useBreeds';
-import type { MarketplaceListing, MarketplaceBrowseFilters, MyListing } from '@/lib/api-client';
+import type { MyListing } from '@/lib/api-client';
 import { getHorseImage } from '@/lib/breed-images';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type MarketplaceTab = 'browse' | 'my-listings' | 'history';
-
-// Debounce window for the Browse name search (Equoria-gb2uq). 300ms is the
-// value the retired Story 3-6 HorseSearchBar used for the same input.
-const NAME_SEARCH_DEBOUNCE_MS = 300;
-
-const SORT_OPTIONS = [
-  { value: 'newest', label: 'Newest First' },
-  { value: 'price_asc', label: 'Price: Low → High' },
-  { value: 'price_desc', label: 'Price: High → Low' },
-  { value: 'youngest', label: 'Youngest First' },
-] as const;
-
-// Sex filter values are sex GROUPS, not exact stored strings (Equoria-di2n5):
-// the server matches Mare→{Mare,Filly} and Stallion→{Stallion,Colt}, because a
-// filly is a mare under three and a colt is a stallion under three. The labels
-// say so, so a buyer is never surprised by a young horse in the results — the
-// Min/Max Age fields are what narrow by age.
-const SEX_OPTIONS = [
-  { value: '', label: 'Any Sex' },
-  { value: 'Mare', label: 'Mares & Fillies' },
-  { value: 'Stallion', label: 'Stallions & Colts' },
-] as const;
 
 // ─── Skeleton Card ─────────────────────────────────────────────────────────────
 
@@ -108,262 +71,6 @@ const TabErrorState: React.FC<{ error: unknown; onRetry: () => void }> = ({ erro
       message={message}
       retry={retryable ? { label: 'Try Again', onClick: onRetry } : undefined}
     />
-  );
-};
-
-// ─── Listing Card ─────────────────────────────────────────────────────────────
-
-interface ListingCardProps {
-  listing: MarketplaceListing;
-  onSelect: (_listing: MarketplaceListing) => void;
-}
-
-const ListingCard: React.FC<ListingCardProps> = ({ listing, onSelect }) => (
-  // SurfaceProps doesn't surface button-only attributes like `type`; this
-  // button is not inside a form, so the implicit type cannot trigger a submit.
-  <Surface
-    variant="interactive"
-    as="button"
-    onClick={() => onSelect(listing)}
-    className="w-full text-left"
-  >
-    <div className="flex gap-4 items-start">
-      <div className="w-20 h-20 rounded-[var(--radius-md)] overflow-hidden bg-[var(--glass-surface-subtle-bg)] flex-shrink-0 border border-[var(--glass-border)]">
-        <img
-          src={getHorseImage(listing.imageUrl, listing.breed)}
-          alt={listing.name}
-          className="w-full h-full object-cover"
-        />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-bold text-[var(--text-primary)] text-base truncate">
-            {listing.name}
-          </h3>
-          <Currency
-            amount={listing.salePrice}
-            className="text-[var(--role-success-text)] font-bold text-sm whitespace-nowrap flex-shrink-0"
-          />
-        </div>
-        <p className="text-xs text-[var(--text-muted)] mb-2">
-          {listing.breed} · {listing.age ?? '?'} yr · {listing.sex} · Seller: {listing.seller}
-        </p>
-        <div className="flex gap-3 text-xs text-[var(--text-muted)]">
-          <span>Spd {listing.stats.speed}</span>
-          <span>Sta {listing.stats.stamina}</span>
-          <span>Agi {listing.stats.agility}</span>
-        </div>
-      </div>
-    </div>
-  </Surface>
-);
-
-// ─── Browse Tab (Story 21-2) ──────────────────────────────────────────────────
-
-interface BrowseTabProps {
-  userBalance: number;
-  onPurchased: (_horseName: string) => void;
-}
-
-const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
-  const [filters, setFilters] = useState<MarketplaceBrowseFilters>({ sort: 'newest', page: 1 });
-  // Name search is debounced before it reaches the query key (Equoria-gb2uq).
-  // `nameInput` is the live, controlled input value so typing stays instant;
-  // `filters.name` — the value the React Query key is built from — only
-  // catches up 300ms after the last keystroke, so a nine-letter search costs
-  // one server request instead of nine. Same shape as BreedSelector's
-  // Equoria-4rz4b debounce.
-  const [nameInput, setNameInput] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
-
-  const { data, isLoading, isError, error, refetch } = useMarketplaceListings(filters);
-  const listings = data?.listings ?? [];
-  const pagination = data?.pagination;
-
-  // Breed Select options — fed by the real breed list (Equoria-cvsfk replaced
-  // the typo-prone free-text breed box; the id goes to the server as an exact
-  // FK filter).
-  const { data: breedsData } = useBreeds();
-  const breedOptions = [
-    { value: '', label: 'All Breeds' },
-    ...(breedsData ?? []).map((b) => ({ value: String(b.id), label: b.name })),
-  ];
-
-  const updateFilter = useCallback(
-    <K extends keyof MarketplaceBrowseFilters>(key: K, value: MarketplaceBrowseFilters[K]) => {
-      setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
-    },
-    []
-  );
-
-  useEffect(() => {
-    const trimmed = nameInput.trim();
-    const handle = window.setTimeout(() => {
-      setFilters((prev) => {
-        const next = trimmed || undefined;
-        // Same value (including the first mount's empty→undefined) returns the
-        // previous object identity, so no re-render and no extra query.
-        if (prev.name === next) return prev;
-        return { ...prev, name: next, page: 1 };
-      });
-    }, NAME_SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(handle);
-  }, [nameInput]);
-
-  return (
-    <div>
-      {/* Search/filter toolbar — canonical form controls (D-13) */}
-      <div className="flex items-center gap-2 mb-4">
-        <div className="flex-1 relative">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none"
-            aria-hidden="true"
-          />
-          <Input
-            type="text"
-            placeholder="Search by name…"
-            aria-label="Search horses by name"
-            value={nameInput}
-            onChange={(e) => setNameInput(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select
-          value={filters.sort ?? 'newest'}
-          aria-label="Sort listings"
-          onChange={(e) => updateFilter('sort', e.target.value as MarketplaceBrowseFilters['sort'])}
-          options={SORT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-          className="w-auto"
-        />
-        <Button
-          type="button"
-          variant={showFilters ? 'secondary' : 'outline'}
-          size="sm"
-          onClick={() => setShowFilters((v) => !v)}
-          aria-label="Advanced filters"
-          aria-pressed={showFilters}
-        >
-          <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
-        </Button>
-      </div>
-
-      {/* Advanced filter panel */}
-      {showFilters && (
-        <Surface variant="panel" className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <FormField label="Breed" htmlFor="filter-breedId">
-            {(fieldProps) => (
-              <Select
-                {...fieldProps}
-                value={filters.breedId !== undefined ? String(filters.breedId) : ''}
-                onChange={(e) =>
-                  updateFilter('breedId', e.target.value ? Number(e.target.value) : undefined)
-                }
-                options={breedOptions}
-              />
-            )}
-          </FormField>
-          <FormField label="Sex" htmlFor="filter-sex">
-            {(fieldProps) => (
-              <Select
-                {...fieldProps}
-                value={filters.sex ?? ''}
-                onChange={(e) => updateFilter('sex', e.target.value || undefined)}
-                options={SEX_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-              />
-            )}
-          </FormField>
-          {[
-            { key: 'minAge' as const, label: 'Min Age' },
-            { key: 'maxAge' as const, label: 'Max Age' },
-            { key: 'minPrice' as const, label: 'Min Price' },
-            { key: 'maxPrice' as const, label: 'Max Price' },
-          ].map(({ key, label }) => (
-            <FormField key={key} label={label} htmlFor={`filter-${key}`}>
-              {(fieldProps) => (
-                <Input
-                  {...fieldProps}
-                  type="number"
-                  min={0}
-                  value={filters[key] ?? ''}
-                  onChange={(e) =>
-                    updateFilter(key, e.target.value ? Number(e.target.value) : undefined)
-                  }
-                />
-              )}
-            </FormField>
-          ))}
-        </Surface>
-      )}
-
-      {/* Listings */}
-      {isLoading ? (
-        <div className="space-y-3" role="status" aria-label="Loading listings">
-          {[...Array(4)].map((_, i) => (
-            <ListingCardSkeleton key={i} />
-          ))}
-        </div>
-      ) : isError ? (
-        // ERROR before EMPTY (doctrine §1): a failed browse fetch must never
-        // render "No horses listed for sale right now".
-        <TabErrorState error={error} onRetry={() => refetch()} />
-      ) : listings.length === 0 ? (
-        <EmptyState
-          variant="no-results"
-          icon={<ShoppingCart className="h-8 w-8" aria-hidden="true" />}
-          title="No horses listed for sale right now"
-          description="Check back soon!"
-        />
-      ) : (
-        <div className="space-y-3">
-          {listings.map((l) => (
-            <ListingCard key={l.id} listing={l} onSelect={setSelectedListing} />
-          ))}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-6" data-testid="pagination">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={(filters.page ?? 1) <= 1}
-            onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page ?? 1) - 1 }))}
-            aria-label="Previous page"
-          >
-            <ChevronLeft className="w-4 h-4" aria-hidden="true" />
-          </Button>
-          <span className="text-sm text-[var(--text-muted)]">
-            Page {filters.page ?? 1} of {pagination.totalPages}
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={(filters.page ?? 1) >= pagination.totalPages}
-            onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page ?? 1) + 1 }))}
-            aria-label="Next page"
-          >
-            <ChevronRight className="w-4 h-4" aria-hidden="true" />
-          </Button>
-        </div>
-      )}
-
-      {/* Detail dialog */}
-      {selectedListing && (
-        <ListingDetailDialog
-          listing={selectedListing}
-          userBalance={userBalance}
-          onClose={() => setSelectedListing(null)}
-          onPurchased={(name) => {
-            setSelectedListing(null);
-            onPurchased(name);
-          }}
-        />
-      )}
-    </div>
   );
 };
 
@@ -543,7 +250,7 @@ const HorseMarketplacePage: React.FC = () => {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="browse">
-            <BrowseTab userBalance={userBalance} onPurchased={handlePurchased} />
+            <HorseSearch userBalance={userBalance} onPurchased={handlePurchased} />
           </TabsContent>
           <TabsContent value="my-listings">
             <MyListingsTab />

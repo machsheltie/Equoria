@@ -50,12 +50,12 @@ function makeHandlers() {
         count: 2,
       })
     ),
-    http.get('*/api/v1/marketplace', ({ request }) => {
+    http.get('*/api/v1/marketplace/search', ({ request }) => {
       capturedParams.push(new URL(request.url).searchParams);
       return HttpResponse.json({
         success: true,
         data: {
-          listings: [],
+          horses: [],
           pagination: { page: 1, totalPages: 1, total: 0 },
         },
       });

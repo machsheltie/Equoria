@@ -28,10 +28,10 @@ function profileHandler() {
 }
 
 function browseHandler() {
-  return http.get('*/api/v1/marketplace', () =>
+  return http.get('*/api/v1/marketplace/search', () =>
     HttpResponse.json({
       success: true,
-      data: { listings: [], pagination: { page: 1, totalPages: 1, total: 0 } },
+      data: { horses: [], pagination: { page: 1, totalPages: 1, total: 0 } },
     })
   );
 }

@@ -24,22 +24,32 @@ import { server } from '@/test/msw/server';
 import HorseMarketplacePage from '../HorseMarketplacePage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const MARKETPLACE = `${base}/api/v1/marketplace`;
+const MARKETPLACE = `${base}/api/v1/marketplace/search`;
 const MY_LISTINGS = `${base}/api/v1/marketplace/my-listings`;
 const HISTORY = `${base}/api/v1/marketplace/history`;
 const PROFILE = `${base}/api/v1/auth/profile`;
 
 const sampleListing = {
   id: 4242,
-  horseId: 4242,
   name: 'TestFixture-l22ki-listing',
   breed: 'Thoroughbred',
   age: 4,
   sex: 'Mare',
-  salePrice: 5000,
-  seller: 'TestFixture-seller',
+  color: 'Bay',
+  owner: { username: 'TestFixture-seller' },
   imageUrl: null,
-  stats: { speed: 50, stamina: 50, agility: 50 },
+  stats: {
+    speed: 50,
+    stamina: 50,
+    agility: 50,
+    precision: 50,
+    strength: 50,
+    intelligence: 50,
+    boldness: 50,
+  },
+  revealedTraits: { positive: [], negative: [] },
+  sale: { price: 5000 },
+  stud: null,
 };
 
 const sampleMyListing = {
@@ -67,7 +77,7 @@ function stubProfile() {
 function browseEnvelope(listings: Array<Record<string, unknown>>) {
   return {
     success: true,
-    data: { listings, pagination: { page: 1, totalPages: 1, total: listings.length } },
+    data: { horses: listings, pagination: { page: 1, totalPages: 1, total: listings.length } },
   };
 }
 
@@ -101,7 +111,7 @@ describe('HorseMarketplacePage — Browse tab four-state (Equoria-l22ki)', () =>
     renderPage();
 
     expect(await screen.findByRole('status', { name: /loading listings/i })).toBeInTheDocument();
-    expect(screen.queryByText('No horses listed for sale right now')).not.toBeInTheDocument();
+    expect(screen.queryByText('No horses for sale or at stud right now')).not.toBeInTheDocument();
   });
 
   it('renders an error state with retry (not a false empty) when the browse fetch fails', async () => {
@@ -115,7 +125,7 @@ describe('HorseMarketplacePage — Browse tab four-state (Equoria-l22ki)', () =>
 
     const alert = await screen.findByRole('alert');
     expect(within(alert).getByRole('button', { name: /try again/i })).toBeInTheDocument();
-    expect(screen.queryByText('No horses listed for sale right now')).not.toBeInTheDocument();
+    expect(screen.queryByText('No horses for sale or at stud right now')).not.toBeInTheDocument();
     expect(screen.queryByText(/market boom detail/i)).not.toBeInTheDocument();
   });
 
@@ -124,7 +134,7 @@ describe('HorseMarketplacePage — Browse tab four-state (Equoria-l22ki)', () =>
 
     renderPage();
 
-    expect(await screen.findByText('No horses listed for sale right now')).toBeInTheDocument();
+    expect(await screen.findByText('No horses for sale or at stud right now')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
@@ -134,7 +144,7 @@ describe('HorseMarketplacePage — Browse tab four-state (Equoria-l22ki)', () =>
     renderPage();
 
     expect(await screen.findByText('TestFixture-l22ki-listing')).toBeInTheDocument();
-    expect(screen.queryByText('No horses listed for sale right now')).not.toBeInTheDocument();
+    expect(screen.queryByText('No horses for sale or at stud right now')).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 

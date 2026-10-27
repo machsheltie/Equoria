@@ -3,6 +3,7 @@
  *
  * Path registry:
  *   GET    /api/v1/marketplace            → browse listings
+ *   GET    /api/v1/marketplace/search     → all-horses search (for sale and/or at stud)
  *   POST   /api/v1/marketplace/list       → list horse for sale
  *   DELETE /api/v1/marketplace/list/:id   → delist horse
  *   POST   /api/v1/marketplace/buy/:id    → purchase horse
@@ -63,6 +64,48 @@ export interface MarketplaceBrowseFilters {
   limit?: number;
 }
 
+/** One horse in the all-horses search: for sale, at stud, or both (Equoria-q4uem.9.1). */
+export interface MarketplaceSearchHorse {
+  id: number;
+  name: string;
+  breed: string;
+  age: number | null;
+  sex: string;
+  color: string | null;
+  owner: { username: string };
+  stats: MarketplaceListing['stats'];
+  /** Revealed traits only; the server never sends a hidden one. */
+  revealedTraits: { positive: string[]; negative: string[] };
+  imageUrl: string | null;
+  sale: { price: number } | null;
+  stud: { mode: 'public' | 'private'; fee: number } | null;
+}
+
+export interface MarketplaceSearchResult {
+  horses: MarketplaceSearchHorse[];
+  pagination: MarketplacePagination;
+}
+
+export interface MarketplaceSearchFilters {
+  /** At least one of forSale / atStud must be true. */
+  forSale: boolean;
+  atStud: boolean;
+  name?: string;
+  breedId?: number;
+  /** 'Mare' | 'Stallion' (the server matches the whole sex group). */
+  sex?: string;
+  color?: string;
+  minAge?: number;
+  maxAge?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  minStudFee?: number;
+  maxStudFee?: number;
+  studMode?: 'public' | 'private';
+  sort?: 'price_asc' | 'price_desc' | 'newest' | 'youngest';
+  page?: number;
+}
+
 export interface MyListing {
   id: number;
   name: string;
@@ -107,6 +150,32 @@ export const horseMarketplaceApi = {
     const qs = params.toString();
     return apiClient.get<{ listings: MarketplaceListing[]; pagination: MarketplacePagination }>(
       `/api/v1/marketplace${qs ? `?${qs}` : ''}`
+    );
+  },
+  search: (filters: MarketplaceSearchFilters) => {
+    const params = new URLSearchParams();
+    params.set('forSale', String(filters.forSale));
+    params.set('atStud', String(filters.atStud));
+    const optional: Array<[string, string | number | undefined]> = [
+      ['name', filters.name],
+      ['breedId', filters.breedId],
+      ['sex', filters.sex],
+      ['color', filters.color],
+      ['minAge', filters.minAge],
+      ['maxAge', filters.maxAge],
+      ['minPrice', filters.minPrice],
+      ['maxPrice', filters.maxPrice],
+      ['minStudFee', filters.minStudFee],
+      ['maxStudFee', filters.maxStudFee],
+      ['studMode', filters.studMode],
+      ['sort', filters.sort],
+      ['page', filters.page],
+    ];
+    for (const [key, value] of optional) {
+      if (value !== undefined && value !== '') params.set(key, String(value));
+    }
+    return apiClient.get<MarketplaceSearchResult>(
+      `/api/v1/marketplace/search?${params.toString()}`
     );
   },
   listHorse: (data: { horseId: number; price: number }) =>

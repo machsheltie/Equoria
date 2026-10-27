@@ -11,7 +11,11 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { horseMarketplaceApi, MarketplaceBrowseFilters } from '@/lib/api-client';
+import {
+  horseMarketplaceApi,
+  MarketplaceBrowseFilters,
+  MarketplaceSearchFilters,
+} from '@/lib/api-client';
 import { toast } from 'sonner';
 import { refreshOnConflict } from '@/lib/http/conflict';
 
@@ -20,6 +24,16 @@ export function useMarketplaceListings(filters?: MarketplaceBrowseFilters) {
     queryKey: ['marketplace', 'listings', filters],
     queryFn: () => horseMarketplaceApi.browse(filters),
     staleTime: 60_000, // 1 minute
+  });
+}
+
+export function useMarketplaceSearch(filters: MarketplaceSearchFilters) {
+  return useQuery({
+    queryKey: ['marketplace', 'search', filters],
+    queryFn: () => horseMarketplaceApi.search(filters),
+    // Neither box ticked is not a search: the page asks the player to tick one.
+    enabled: filters.forSale || filters.atStud,
+    staleTime: 60_000,
   });
 }
 

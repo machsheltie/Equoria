@@ -41,10 +41,10 @@ describe('HorseMarketplacePage — sibling Delist buttons (Equoria-ib96u)', () =
           data: { user: { id: 1, username: 't', email: 't@e.com', role: 'user', money: 10_000 } },
         })
       ),
-      http.get('*/api/v1/marketplace', () =>
+      http.get('*/api/v1/marketplace/search', () =>
         HttpResponse.json({
           success: true,
-          data: { listings: [], pagination: { page: 1, totalPages: 1, total: 0 } },
+          data: { horses: [], pagination: { page: 1, totalPages: 1, total: 0 } },
         })
       ),
       http.get('*/api/v1/marketplace/my-listings', () =>
