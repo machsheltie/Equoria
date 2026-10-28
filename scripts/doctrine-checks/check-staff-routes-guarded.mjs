@@ -238,10 +238,11 @@ function registrationViolation(expr, b) {
   if (!isStringLiteral(first)) return `${routeKey}: the path must be a string literal`;
   const guard = args.length >= 3 ? recognizeGuard(args[1], b.guards) : null;
   // STAFF-RR-09: the exempt check-in paths take the role guard and nothing else.
-  if (ROLE_ONLY_ALLOWED.has(routeKey) && guard?.kind !== 'role') {
+  const roleOnly = ROLE_ONLY_ALLOWED.has(routeKey);
+  if (roleOnly && guard?.kind !== 'role') {
     return `${routeKey} must start with requireStaffRole (a staff member who is not checked in has no capabilities)`;
   }
-  const guardOk = guard && (guard.kind === 'capability' || ROLE_ONLY_ALLOWED.has(routeKey));
+  const guardOk = guard && (guard.kind === 'capability' || roleOnly);
   if (!guardOk) {
     const later = args.slice(2).some((a) => recognizeGuard(a, b.guards));
     return (
@@ -414,8 +415,8 @@ export function scanRouteImporters(backendRoot = BACKEND_DIR) {
 
 const CAPABILITY_GUARD_NAMES = new Set(['requireStaffCapability', 'requireAnyStaffCapability']);
 // STAFF-RR-13: the capability names and their route paths, in any text.
-const FRESH_PROOF_TEXT_RE = /time-back|jobs[./]hold/;
-const CAPABILITY_MAP_REL = path.join('modules', 'staff', 'capabilities.mjs');
+const freshProofTextRe = /time-back|jobs[./]hold/;
+const capabilityMapRel = path.join('modules', 'staff', 'capabilities.mjs');
 
 /** Backend source files outside tests and node_modules. */
 function backendSourceFiles(dir, out = []) {
@@ -438,12 +439,12 @@ function backendSourceFiles(dir, out = []) {
  */
 export function scanFreshProofCapabilityUse(backendRoot = BACKEND_DIR) {
   const failures = [];
-  const capabilityMap = path.join(backendRoot, CAPABILITY_MAP_REL);
+  const capabilityMap = path.join(backendRoot, capabilityMapRel);
   for (const file of backendSourceFiles(backendRoot)) {
     const src = fs.readFileSync(file, 'utf8');
     // Every route to a guard - import, alias or member - spells its name; every
     // other mention of the two capabilities spells one of them (STAFF-RR-13).
-    if (!src.includes('StaffCapability') && !FRESH_PROOF_TEXT_RE.test(src)) continue;
+    if (!src.includes('StaffCapability') && !freshProofTextRe.test(src)) continue;
     let parsed;
     try {
       parsed = load(file);
@@ -536,7 +537,7 @@ export function scanFreshProofCapabilityUse(backendRoot = BACKEND_DIR) {
           : n.type === 'TemplateElement'
             ? n.value.cooked
             : null;
-        if (text && FRESH_PROOF_TEXT_RE.test(text) && !insideGuardCall(n)) {
+        if (text && freshProofTextRe.test(text) && !insideGuardCall(n)) {
           failures.push({
             file,
             line: n.loc.start.line,
