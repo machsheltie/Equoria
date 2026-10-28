@@ -46,7 +46,9 @@ export const DISCIPLINE_STATS = Object.freeze({
 });
 
 /** The 24 competition disciplines, in bible order. */
-export const COMPETITION_DISCIPLINES = Object.freeze(Object.keys(DISCIPLINE_STATS));
+export const competitionDisciplines = Object.freeze(Object.keys(DISCIPLINE_STATS));
+/** The same list under its older name; new code reads competitionDisciplines (Equoria-pjvp8). */
+export const COMPETITION_DISCIPLINES = competitionDisciplines;
 
 /**
  * @param {string} discipline

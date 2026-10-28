@@ -53,7 +53,8 @@ describe('XpProgressBar reads the allocation threshold from the server (C15)', (
     renderBar();
     const bar = await screen.findByRole('progressbar');
     expect(bar).toHaveAttribute('aria-valuenow', '45');
-    expect(screen.getByText('450 / 1000 Horse Points')).toBeInTheDocument();
+    // Owner wording 2026-10-28 (Equoria-a0fim): "X / 1000 Points" (was "Horse Points").
+    expect(screen.getByText('450 / 1000 Points')).toBeInTheDocument();
   });
 
   it('progress counts from the last threshold, not from the stat points still unspent', async () => {

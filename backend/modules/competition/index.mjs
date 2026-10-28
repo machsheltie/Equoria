@@ -10,11 +10,16 @@
  */
 
 export { applyRiderCompatibility } from './services/competitionScoring.mjs';
+// A horse's discipline score before show-day percentages, from the nightly
+// scorer's own flat-score function: the horse page's Discipline Scores read it
+// (app layer, Equoria-a0fim).
+export { disciplineStandingScore } from './services/competitionScoring.mjs';
 // The competition discipline stat map (Equoria-576c0 B3): the bible's 24-discipline
 // table. The shared stat-gain and competition-config helpers read it.
 export {
   DISCIPLINE_STATS,
   COMPETITION_DISCIPLINES,
+  competitionDisciplines,
   isKnownDiscipline,
   getDisciplineStats,
   TEMPERAMENTS,

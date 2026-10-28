@@ -73,6 +73,35 @@ export function weightedDisciplineBase(horse, discipline) {
 }
 
 /**
+ * A horse's flat score in a ridden discipline: the 50/30/20 base plus the
+ * trained value in that discipline (owner decision B) plus the saddle and
+ * bridle points (decisions A and D), before any show-day percentage (luck,
+ * rider, temperament, health). The nightly scorer and the horse page's
+ * Discipline Scores both read it (Equoria-a0fim), so the page shows exactly
+ * the number a show starts from.
+ * @param {Object} horse - Horse row: the ten stats, disciplineScores and tack.
+ * @param {string} discipline - One of the 24 competition disciplines.
+ * @returns {{ base: number, trainingPoints: number, tackPoints: number, total: number }}
+ */
+export function disciplineFlatScore(horse, discipline) {
+  const base = weightedDisciplineBase(horse, discipline);
+  const trainingPoints = disciplineTrainingPoints(horse.disciplineScores, discipline);
+  const tackBonus = tackPoints(horse.tack, discipline);
+  return { base, trainingPoints, tackPoints: tackBonus, total: base + trainingPoints + tackBonus };
+}
+
+/**
+ * The horse's discipline score as the player sees it (Equoria-a0fim): the flat
+ * score rounded the way a show score is (x.5 up), with no show-day percentage.
+ * @param {Object} horse - Horse row: the ten stats, disciplineScores and tack.
+ * @param {string} discipline - One of the 24 competition disciplines.
+ * @returns {number} Non-negative whole score.
+ */
+export function disciplineStandingScore(horse, discipline) {
+  return applyPercentTerms(disciplineFlatScore(horse, discipline).total, []);
+}
+
+/**
  * One luck roll: +1..+10% in whole percents, never zero or negative (owner
  * ruling C1; Equoria-576c0 B5). Clamped so a seam returning 1 or less than 0
  * still yields a legal roll.
@@ -196,9 +225,22 @@ export function scoreShowEntries({
     // a bug masked by the fact that no production path ever inserted
     // NULL. The schema lock makes that impossible; the readers stop
     // pretending NULL is meaningful.
-    const base = weighted
-      ? weightedDisciplineBase(h, show.discipline)
-      : (h.speed + h.stamina + h.agility + h.precision + h.boldness) / 5;
+    // Flat points join the base before the percentages: the trained value
+    // (decision B) and the saddle and bridle (decisions A and D), read by the
+    // same disciplineFlatScore the horse page's Discipline Scores show
+    // (Equoria-a0fim). A legacy discipline keeps its pre-B4a scoring, so it
+    // gets none of these.
+    const {
+      base,
+      trainingPoints,
+      tackPoints: tackBonus,
+    } = weighted
+      ? disciplineFlatScore(h, show.discipline)
+      : {
+          base: (h.speed + h.stamina + h.agility + h.precision + h.boldness) / 5,
+          trainingPoints: 0,
+          tackPoints: 0,
+        };
     const luckPercent = rollLuckPercent(rng); // one roll per horse per competition (C1)
 
     // Apply rider modifiers if an active rider is assigned to this horse.
@@ -227,14 +269,7 @@ export function scoreShowEntries({
       }
     }
 
-    // Flat points join the base before the percentages: the trained value
-    // (decision B) and the saddle and bridle (decisions A and D). Health is a
-    // percent term (decision C). A legacy discipline keeps its pre-B4a
-    // scoring, so it gets none of these.
-    const trainingPoints = weighted
-      ? disciplineTrainingPoints(h.disciplineScores, show.discipline)
-      : 0;
-    const tackBonus = weighted ? tackPoints(h.tack, show.discipline) : 0;
+    // Health is a percent term (decision C).
     const healthPercent = weighted ? healthScorePercent(h, now) : 0;
 
     // C2: each modifier as a percent, summed, applied once.

@@ -119,6 +119,10 @@ import horseQueryRoutes from './queries/horseQueryRoutes.mjs';
 // visitor (public facts and revealed traits only). Its one two-segment path has
 // no competing pattern in horseQueryRoutes or horseRoutes.
 import horseVisitRoutes from './queries/horseVisitRoutes.mjs';
+// Equoria-a0fim: GET /horses/:id/discipline-scores, the owner's Discipline Scores
+// (the show scorer's flat score and its level). Its one two-segment path has no
+// competing pattern in the routers around it.
+import horseDisciplineScoresRoutes from './queries/horseDisciplineScoresRoutes.mjs';
 // Equoria-q4uem.4 (WS4 S4): GET /users/transactions is bank's handler on the users
 // prefix; bank owns the route module (imported directly, like every route module
 // below after S4) and routers.mjs mounts it at /users ahead of userRoutes.
@@ -190,6 +194,7 @@ export function buildRouters() {
   //     userRoutes keeps /users/transactions from being claimed by /:id).
   authRouter.use('/horses', horseQueryRoutes);
   authRouter.use('/horses', horseVisitRoutes);
+  authRouter.use('/horses', horseDisciplineScoresRoutes);
   authRouter.use('/horses', horseRoutes);
   authRouter.use('/users', bankUserTransactionsRoutes);
   authRouter.use('/users', userRoutes);

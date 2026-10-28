@@ -58,6 +58,25 @@ export interface HorseOffspring {
   name: string;
 }
 
+/**
+ * One line of GET /api/v1/horses/:id/discipline-scores (Equoria-a0fim): the
+ * horse's score in a discipline (its three stats 50/30/20, its training there
+ * and its saddle and bridle; no show-day modifiers) and that score's level.
+ * `discipline` is the authored discipline name ('Show Jumping').
+ */
+export interface HorseDisciplineScore {
+  discipline: string;
+  score: number;
+  level: number;
+}
+
+/** POST /api/v1/horses/:id/allocate-stat answer. */
+export interface AllocateStatResult {
+  statName: string;
+  newStatValue: number;
+  remainingStatPoints: number;
+}
+
 export const horsesApi = {
   // NOTE (Equoria-6p398.2, 2026-09-05 audit Finding 2): there is deliberately
   // no `create` here. `POST /api/v1/horses` handed any authenticated player a
@@ -80,6 +99,13 @@ export const horsesApi = {
   getBreedingData: (horseId: number) =>
     apiClient.get<HorseBreedingData>(`/api/v1/horses/${horseId}/breeding-data`),
   getXP: (horseId: number) => apiClient.get<HorseXP>(`/api/v1/horses/${horseId}/xp`),
+  getDisciplineScores: (horseId: number) =>
+    apiClient.get<{ disciplines: HorseDisciplineScore[] }>(
+      `/api/v1/horses/${horseId}/discipline-scores`
+    ),
+  /** Spend one earned stat allocation on `statName` (every 1,000 Horse Points earns one). */
+  allocateStat: (horseId: number, statName: string) =>
+    apiClient.post<AllocateStatResult>(`/api/v1/horses/${horseId}/allocate-stat`, { statName }),
   getXPHistory: (horseId: number, options?: { limit?: number; offset?: number }) => {
     const params = new URLSearchParams();
     if (options?.limit) params.append('limit', options.limit.toString());

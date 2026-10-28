@@ -1,201 +1,161 @@
 /**
- * XpProgressBar Component
+ * XpProgressBar — the horse's Points toward its next stat (Equoria-a0fim).
  *
- * Displays horse XP progress with:
- * - Current level display
- * - Progress bar to next stat point
- * - XP breakdown tooltip
- * - Visual milestone markers
+ * Owner ruling 2026-10-28: Horse Points do NOT equal a level. They are a
+ * bankable currency: every 1,000 earns one stat point the player allocates to
+ * the stat of her choice (bible Vol 13, LOCKED). So the bar reads
+ * "X / 1000 Points" toward the next stat, says plainly how many stats are
+ * ready when banked points have earned some, and offers Allocate Stats.
+ * Old contract (Story 3-4): a "Level N" header, a level-up tooltip and reward
+ * toasts at 25/50/75/100% — all gone with the level framing.
  *
- * Story 3-4: XP & Progression Display - Task 1
+ * The threshold comes from the server (`pointsPerStatPoint`); the bar holds no
+ * number of its own (Equoria-576c0 B13).
  */
 
+import { useId, useState } from 'react';
 import { userMessageFor } from '@/lib/http/userMessage';
-import { useEffect, useRef, useState } from 'react';
-import { useHorseXP } from '@/hooks/api/useHorseXP';
+import { useAllocateStat, useHorseXP } from '@/hooks/api/useHorseXP';
 import FenceJumpBar from '@/components/ui/FenceJumpBar';
-import { useRewardToast } from '@/components/feedback';
+import { Button } from '@/components/ui/button';
+import { InlineError, SectionLoading } from '@/components/ui/state';
+import '@/styles/horseProgression.css';
 
 interface XpProgressBarProps {
   horseId: number;
 }
 
-/** FenceJumpBar fence markers — Spec 11.3.10 "threshold crossed (25/50/75/100%)". */
-const FENCE_THRESHOLDS = [25, 50, 75, 100] as const;
+/** The ten competition stats a point may go to, with their authored names. */
+const allocatableStats: { value: string; label: string }[] = [
+  { value: 'speed', label: 'Speed' },
+  { value: 'stamina', label: 'Stamina' },
+  { value: 'agility', label: 'Agility' },
+  { value: 'balance', label: 'Balance' },
+  { value: 'precision', label: 'Precision' },
+  { value: 'intelligence', label: 'Intelligence' },
+  { value: 'boldness', label: 'Boldness' },
+  { value: 'flexibility', label: 'Flexibility' },
+  { value: 'obedience', label: 'Obedience' },
+  { value: 'focus', label: 'Focus' },
+];
 
-/** Highest fence threshold at or below a given progress %, else 0. */
-function highestThresholdReached(pct: number): number {
-  let reached = 0;
-  for (const t of FENCE_THRESHOLDS) {
-    if (pct >= t) reached = t;
-  }
-  return reached;
+const statLabel = (value: string): string =>
+  allocatableStats.find((stat) => stat.value === value)?.label ?? 'The stat';
+
+/** "1 stat is ready to allocate." / "3 stats are ready to allocate." */
+export function statsReadyLine(ready: number): string {
+  return ready === 1 ? '1 stat is ready to allocate.' : `${ready} stats are ready to allocate.`;
+}
+
+/** The stat picker and its one button; shown once Allocate Stats is opened. */
+function AllocateStats({ horseId, ready }: { horseId: number; ready: number }) {
+  const selectId = useId();
+  const [statName, setStatName] = useState(allocatableStats[0].value);
+  const allocate = useAllocateStat(horseId);
+
+  return (
+    <div className="horse-allocate" data-testid="allocate-stats">
+      {ready > 0 && (
+        <>
+          <label htmlFor={selectId} className="fantasy-caption text-[var(--text-secondary)]">
+            Stat
+          </label>
+          <div className="horse-allocate__row">
+            <select
+              id={selectId}
+              className="horse-allocate__field"
+              value={statName}
+              disabled={allocate.isPending}
+              onChange={(event) => setStatName(event.target.value)}
+            >
+              {allocatableStats.map((stat) => (
+                <option key={stat.value} value={stat.value}>
+                  {stat.label}
+                </option>
+              ))}
+            </select>
+            <Button
+              type="button"
+              variant="secondary"
+              pending={allocate.isPending}
+              onClick={() => allocate.mutate(statName)}
+            >
+              Allocate
+            </Button>
+          </div>
+        </>
+      )}
+      {allocate.isError && <InlineError message={userMessageFor(allocate.error).message} />}
+      {allocate.isSuccess && (
+        <p className="fantasy-body text-[var(--text-primary)]" role="status">
+          {statLabel(allocate.data.statName)} is now {allocate.data.newStatValue}.
+        </p>
+      )}
+    </div>
+  );
 }
 
 const XpProgressBar = ({ horseId }: XpProgressBarProps) => {
-  const { data: xpData, isLoading, error, isError, refetch } = useHorseXP(horseId);
-  const [showTooltip, setShowTooltip] = useState(false);
-  const { notify } = useRewardToast();
+  const { data: xpData, isPending, error, isError, refetch } = useHorseXP(horseId);
+  const [allocateOpen, setAllocateOpen] = useState(false);
+  const allocateRegionId = useId();
 
-  // Derived progress (only valid once data has loaded).
-  const hasData = Boolean(xpData);
-  const level = xpData ? xpData.availableStatPoints + 1 : 0;
-  // Progress since the last allocation threshold. The threshold comes from the
-  // server (owner ruling C15: 1,000 Horse Points per allocation); the bar holds
-  // no number of its own (Equoria-576c0 B13).
-  const pointsPerStatPoint = xpData?.pointsPerStatPoint ?? 0;
-  const xpInCurrentLevel = xpData ? pointsPerStatPoint - xpData.xpToNextStatPoint : 0;
-  const progressPercentage =
-    xpData && pointsPerStatPoint > 0
-      ? Math.round((xpInCurrentLevel / pointsPerStatPoint) * 100)
-      : 0;
-  const xpToNext = xpData ? xpData.xpToNextStatPoint : Number.POSITIVE_INFINITY;
-
-  // Meaningful-progress triggers (Spec 11.3.10), sourced from REAL useHorseXP
-  // data. Fire only on an actual fence-threshold crossing or when within
-  // 10 XP of the next level — routine +5 XP that does not cross a fence
-  // produces NO toast (the provider also drops non-meaningful items).
-  const prevThresholdRef = useRef<number | null>(null);
-  const approachingNotifiedRef = useRef(false);
-  useEffect(() => {
-    if (!hasData) return;
-    const reached = highestThresholdReached(progressPercentage);
-    const prev = prevThresholdRef.current;
-
-    // Initialise baseline on first real data without toasting (avoids a
-    // spurious toast just for opening the page on an in-progress bar).
-    if (prev === null) {
-      prevThresholdRef.current = reached;
-      approachingNotifiedRef.current = xpToNext <= 10;
-      return;
-    }
-
-    if (reached > prev) {
-      prevThresholdRef.current = reached;
-      notify({
-        type: reached === 100 ? 'level-up' : 'milestone',
-        title:
-          reached === 100 ? `Level ${level + 1} reached!` : `${reached}% to Level ${level + 1}`,
-        message:
-          reached === 100
-            ? `${xpData?.currentXP ?? 0} Horse Points — a new stat point is ready.`
-            : `Keep going — ${xpToNext} Horse Points to the next level.`,
-        meaningful: true,
-      });
-    } else if (reached < prev) {
-      // Bar reset after a level-up — re-arm for the new level.
-      prevThresholdRef.current = reached;
-      approachingNotifiedRef.current = false;
-    }
-
-    // Approaching level-up (within 10 XP) — fire once per level.
-    if (xpToNext <= 10 && !approachingNotifiedRef.current) {
-      approachingNotifiedRef.current = true;
-      notify({
-        type: 'level-up',
-        title: `Almost Level ${level + 1}!`,
-        message: `Just ${xpToNext} Horse Points to go.`,
-        meaningful: true,
-      });
-    } else if (xpToNext > 10) {
-      approachingNotifiedRef.current = false;
-    }
-  }, [hasData, progressPercentage, xpToNext, level, notify, xpData]);
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="rounded-lg border border-[var(--alpha-celestial-primary-30)] bg-[rgba(15,35,70,0.5)] p-4 shadow-sm">
-        <div className="text-center text-sm text-[var(--text-secondary)]">
-          Loading Horse Points...
-        </div>
-      </div>
-    );
+  if (isPending) {
+    return <SectionLoading label="Loading Points" minHeight="64px" />;
   }
 
-  // Error state
   if (isError || !xpData) {
     return (
-      <div className="rounded-lg border border-rose-500/30 bg-[rgba(239,68,68,0.1)] p-4 shadow-sm">
-        <div className="text-sm text-rose-400">{userMessageFor(error).message}</div>
+      <div className="flex items-center gap-3" data-testid="horse-points-error">
+        <InlineError message={userMessageFor(error).message} />
         <button
+          type="button"
+          className="fantasy-caption underline text-[var(--text-secondary)]"
           onClick={() => refetch()}
-          className="mt-2 rounded bg-rose-600 px-3 py-1 text-sm text-[var(--text-primary)] hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
         >
-          Retry
+          Try Again
         </button>
       </div>
     );
   }
 
-  // level / xpInCurrentLevel / progressPercentage are computed once at the
-  // top of the component (so the meaningful-progress effect can read them).
-  // After the early returns xpData is guaranteed defined, so those hoisted
-  // values are final here.
+  const perStat = xpData.pointsPerStatPoint;
+  const towardNext = perStat - xpData.xpToNextStatPoint;
+  const percent = perStat > 0 ? Math.round((towardNext / perStat) * 100) : 0;
+  const ready = xpData.availableStatPoints;
 
   return (
-    <div className="rounded-lg border border-[var(--alpha-celestial-primary-30)] bg-[rgba(15,35,70,0.5)] p-4 shadow-sm">
-      {/* Header: Level Display */}
-      <div className="mb-3 flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">Level</p>
-          <h3 className="text-2xl font-bold text-[var(--celestial-secondary)]">Level {level}</h3>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-[var(--text-secondary)]">Horse Points</p>
-          <p className="text-sm font-medium text-[var(--text-primary)]">
-            {xpData.currentXP} / {xpData.nextStatPointAt} Horse Points
+    <section className="horse-points" aria-labelledby="horse-points-heading">
+      <h3 id="horse-points-heading" className="type-section-heading mb-3">
+        Points
+      </h3>
+      <FenceJumpBar
+        value={percent}
+        label={`${towardNext} of ${perStat} Points toward the next stat`}
+      />
+      <p className="horse-points__count fantasy-body" data-testid="horse-points-count">
+        {towardNext} / {perStat} Points
+      </p>
+      {ready > 0 && (
+        <>
+          <p className="fantasy-body text-[var(--text-primary)]" data-testid="stats-ready">
+            {statsReadyLine(ready)}
           </p>
-        </div>
+          <Button
+            type="button"
+            variant="link"
+            aria-expanded={allocateOpen}
+            aria-controls={allocateRegionId}
+            onClick={() => setAllocateOpen((open) => !open)}
+          >
+            Allocate Stats
+          </Button>
+        </>
+      )}
+      <div id={allocateRegionId}>
+        {allocateOpen && <AllocateStats horseId={horseId} ready={ready} />}
       </div>
-
-      {/* Progress Bar */}
-      <div
-        className="relative"
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-        onFocus={() => setShowTooltip(true)}
-        onBlur={() => setShowTooltip(false)}
-        tabIndex={0}
-      >
-        <FenceJumpBar
-          value={progressPercentage}
-          label={`Level ${level} progress: ${xpData.currentXP} of ${xpData.nextStatPointAt} Horse Points to next stat point`}
-        />
-
-        {/* Tooltip */}
-        {showTooltip && (
-          <div className="absolute left-1/2 top-full z-[var(--z-raised)] mt-2 w-64 -translate-x-1/2 rounded-lg border border-[var(--alpha-celestial-primary-30)] bg-[rgba(15,35,70,0.5)] p-3 shadow-lg">
-            <div className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
-              Horse Points Breakdown
-            </div>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-[var(--text-secondary)]">Current Horse Points:</span>
-                <span className="font-medium text-[var(--text-primary)]">{xpData.currentXP}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[var(--text-secondary)]">Stat Points Earned:</span>
-                <span className="font-medium text-[var(--text-primary)]">
-                  {xpData.availableStatPoints}
-                </span>
-              </div>
-              <div className="flex justify-between border-t border-[var(--alpha-celestial-primary-30)] pt-1">
-                <span className="text-[var(--text-secondary)]">Next Stat Point:</span>
-                <span className="font-medium text-[var(--celestial-secondary)]">
-                  {xpData.xpToNextStatPoint} Horse Points
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Next Level Info */}
-      <div className="mt-2 text-center text-xs text-[var(--text-secondary)]">
-        {xpData.xpToNextStatPoint} Horse Points to Level {level + 1}
-      </div>
-    </div>
+    </section>
   );
 };
 

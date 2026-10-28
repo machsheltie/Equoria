@@ -7,14 +7,29 @@ import {
   HorseTrainingAnalytics,
   horsesApi,
 } from '@/lib/api-client';
-import type { HorseOffspring } from '@/lib/api/horses';
+import type { HorseDisciplineScore, HorseOffspring } from '@/lib/api/horses';
 
 const horseKeys = {
   all: ['horses'] as const,
   detail: (horseId: number) => ['horses', horseId] as const,
   trainingHistory: (horseId: number) => ['horses', horseId, 'training-history'] as const,
   offspring: (horseId: number) => ['horses', horseId, 'offspring'] as const,
+  disciplineScores: (horseId: number) => ['horses', horseId, 'discipline-scores'] as const,
 };
+
+/**
+ * The horse's Discipline Scores (Equoria-a0fim): every discipline's score and
+ * level, computed by the server with the show scorer's own flat score. Under
+ * the ['horses', id] prefix, so anything that refreshes the horse (a stat
+ * allocation, new tack) refreshes these too.
+ */
+export const useHorseDisciplineScores = (horseId: number) =>
+  useQuery<HorseDisciplineScore[], ApiError>({
+    queryKey: horseKeys.disciplineScores(horseId),
+    queryFn: async () => (await horsesApi.getDisciplineScores(horseId)).disciplines,
+    enabled: Boolean(horseId),
+    staleTime: 60 * 1000,
+  });
 
 export const useHorses = () =>
   useQuery<HorseListItemDto[], ApiError>({
