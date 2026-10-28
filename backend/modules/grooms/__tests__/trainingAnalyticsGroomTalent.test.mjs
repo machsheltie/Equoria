@@ -180,24 +180,24 @@ describe('getGroomTalentSelections', () => {
 });
 
 describe('validateTalentSelection', () => {
-  it('returns groom_not_found for non-existent groom', async () => {
+  it('returns groomNotFound for non-existent groom', async () => {
     const result = await validateTalentSelection(999999999, 'tier1', 'someTalent');
     expect(result.valid).toBe(false);
-    expect(result.reason).toBe('groom_not_found');
+    expect(result.reason).toBe('groomNotFound');
   });
 
-  it('returns invalid_tier for unknown tier', async () => {
+  it('returns invalidTier for unknown tier', async () => {
     const result = await validateTalentSelection(groom.id, 'tier99', 'someTalent');
     expect(result.valid).toBe(false);
-    expect(result.reason).toBe('invalid_tier');
+    expect(result.reason).toBe('invalidTier');
   });
 
-  it('returns insufficient_level for fresh groom (level 0) attempting tier1', async () => {
+  it('returns insufficientLevel for fresh groom (level 0) attempting tier1', async () => {
     const trees = getTalentTreeDefinitions();
     const firstTalentId = trees.gentle?.tier1?.[0]?.id ?? 'anyTalent';
     const result = await validateTalentSelection(groom.id, 'tier1', firstTalentId);
     expect(result.valid).toBe(false);
-    expect(['insufficient_level', 'invalid_talent', 'invalid_personality_tier'].includes(result.reason)).toBe(true);
+    expect(['insufficientLevel', 'invalidTalent', 'invalidPersonalityTier'].includes(result.reason)).toBe(true);
   });
 });
 
@@ -249,15 +249,15 @@ describe('trainingAnalyticsService.calculateTrainingFrequency — old session ex
 });
 
 // ── groomTalentService — branch coverage (Equoria-jkht) ──────────────────────
-// Covers: validateTalentSelection invalid_talent / invalid_personality_tier /
-//         tier_already_selected / prerequisite_required tier2 / valid=true;
+// Covers: validateTalentSelection invalidTalent / invalidPersonalityTier /
+//         tierAlreadySelected / prerequisiteRequired tier2 / valid=true;
 //         applyTalentEffects with non-null selections (bondingBonus applied).
 
 describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
   let ttUser;
   let ttGroomCalmL5; // personality='calm', level=5, tier1 selected in beforeAll
   let ttGroomCalmL5Fresh; // personality='calm', level=5, no talent selections
-  let ttGroomGentleL3; // personality='gentle', level=3 → invalid_personality_tier
+  let ttGroomGentleL3; // personality='gentle', level=3 → invalidPersonalityTier
   // Equoria-1ohys: fail-loud scoped cleanup for this describe's fixtures.
   const ttCleanup = createCleanupTracker();
 
@@ -307,9 +307,9 @@ describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
         }),
     ]);
 
-    // Seed a tier1 selection for ttGroomCalmL5 so tier_already_selected branch fires
+    // Seed a tier1 selection for ttGroomCalmL5 so tierAlreadySelected branch fires
     await prisma.groomTalentSelections.create({
-      data: { groomId: ttGroomCalmL5.id, tier1: 'gentle_hands' },
+      data: { groomId: ttGroomCalmL5.id, tier1: 'gentleHands' },
     });
 
     // Register scoped, FK-ordered cleanup: groom* child (talent selections,
@@ -328,41 +328,41 @@ describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
 
   afterAll(() => ttCleanup.run(), 30000);
 
-  it('invalid_talent: talentId not in personality tree for valid tier', async () => {
+  it('invalidTalent: talentId not in personality tree for valid tier', async () => {
     const result = await validateTalentSelection(ttGroomCalmL5.id, 'tier1', 'nonexistentXyz');
     expect(result.valid).toBe(false);
-    expect(result.reason).toBe('invalid_talent');
+    expect(result.reason).toBe('invalidTalent');
   });
 
-  it('invalid_personality_tier: personality not in TALENT_TREES (gentle)', async () => {
-    // gentle personality → TALENT_TREES.gentle is undefined → invalid_personality_tier
+  it('invalidPersonalityTier: personality not in TALENT_TREES (gentle)', async () => {
+    // gentle personality → TALENT_TREES.gentle is undefined → invalidPersonalityTier
     const result = await validateTalentSelection(ttGroomGentleL3.id, 'tier1', 'anyTalent');
     expect(result.valid).toBe(false);
-    expect(result.reason).toBe('invalid_personality_tier');
+    expect(result.reason).toBe('invalidPersonalityTier');
   });
 
-  it('tier_already_selected: tier1 already has a selection', async () => {
-    const result = await validateTalentSelection(ttGroomCalmL5.id, 'tier1', 'gentle_hands');
+  it('tierAlreadySelected: tier1 already has a selection', async () => {
+    const result = await validateTalentSelection(ttGroomCalmL5.id, 'tier1', 'gentleHands');
     expect(result.valid).toBe(false);
-    expect(result.reason).toBe('tier_already_selected');
+    expect(result.reason).toBe('tierAlreadySelected');
   });
 
   // Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): no 1-10 level, and stars open
   // no tier for now, so with the prerequisite met the level check is what refuses.
   // Old contract: a level-5 groom got valid=true here.
   it('tier2 with tier1 prerequisite met is refused by level: stars open no tier (q244)', async () => {
-    const result = await validateTalentSelection(ttGroomCalmL5.id, 'tier2', 'empathic_sync');
-    expect(result).toEqual({ valid: false, reason: 'insufficient_level', requiredStarLevel: 'intermediate' });
+    const result = await validateTalentSelection(ttGroomCalmL5.id, 'tier2', 'empathicSync');
+    expect(result).toEqual({ valid: false, reason: 'insufficientLevel', requiredStarLevel: 'intermediate' });
   });
 
-  it('prerequisite_required tier1: attempting tier2 with no prior selections', async () => {
-    const result = await validateTalentSelection(ttGroomCalmL5Fresh.id, 'tier2', 'empathic_sync');
+  it('prerequisiteRequired tier1: attempting tier2 with no prior selections', async () => {
+    const result = await validateTalentSelection(ttGroomCalmL5Fresh.id, 'tier2', 'empathicSync');
     expect(result.valid).toBe(false);
-    expect(result.reason).toBe('prerequisite_required');
+    expect(result.reason).toBe('prerequisiteRequired');
     expect(result.prerequisite).toBe('tier1');
   });
 
-  it('applyTalentEffects: bondingBonus from gentle_hands talent increases bondingChange', async () => {
+  it('applyTalentEffects: bondingBonus from gentleHands talent increases bondingChange', async () => {
     const baseInteraction = { bondingChange: 5 };
     const result = await applyTalentEffects(ttGroomCalmL5.id, baseInteraction);
     expect(result.talentBonuses.length).toBeGreaterThan(0);
@@ -379,7 +379,7 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
   let st2User;
   let st2GroomCalmL3; // calm, level=3 — selectTalent valid path
   let st2GroomCalmL8; // calm, level=8, no selections — tier3 prerequisite 'tier1' branch
-  let st2GroomQuality; // energetic, tier1='enthusiasm_boost' seeded — qualityBonus path
+  let st2GroomQuality; // energetic, tier1='enthusiasmBoost' seeded — qualityBonus path
   // Equoria-1ohys: fail-loud scoped cleanup for this describe's fixtures.
   const st2Cleanup = createCleanupTracker();
 
@@ -433,7 +433,7 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
     await createSequentially([
       () =>
         prisma.groomTalentSelections.create({
-          data: { groomId: st2GroomQuality.id, tier1: 'enthusiasm_boost' },
+          data: { groomId: st2GroomQuality.id, tier1: 'enthusiasmBoost' },
         }),
     ]);
 
@@ -460,30 +460,30 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
   // Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): stars open no tier for now.
   // Old contract: a level-3 groom selected tier 1 here.
   it('selectTalent: a tier 1 choice is refused by level and writes nothing (q244)', async () => {
-    await expect(selectTalent(st2GroomCalmL3.id, 'tier1', 'gentle_hands')).rejects.toThrow('Invalid talent selection');
+    await expect(selectTalent(st2GroomCalmL3.id, 'tier1', 'gentleHands')).rejects.toThrow('Invalid talent selection');
     await expect(prisma.groomTalentSelections.count({ where: { groomId: st2GroomCalmL3.id } })).resolves.toBe(0);
   });
 
   it('selectTalent: validation-fail throws "Invalid talent selection" (lines 283-284)', async () => {
-    // tier2 with no tier1 → prerequisite_required
-    await expect(selectTalent(st2GroomCalmL3.id, 'tier2', 'empathic_sync')).rejects.toThrow('Invalid talent selection');
+    // tier2 with no tier1 → prerequisiteRequired
+    await expect(selectTalent(st2GroomCalmL3.id, 'tier2', 'empathicSync')).rejects.toThrow('Invalid talent selection');
   });
 
   it('tier3 prerequisite: no selections → prerequisite="tier1" (line 256 false arm)', async () => {
     // st2GroomCalmL8 has no selections; requesting tier3 hits the condition
     // selections?.tier1 is undefined (falsy) → 'tier1' branch
-    const result = await validateTalentSelection(st2GroomCalmL8.id, 'tier3', 'master_bonding');
+    const result = await validateTalentSelection(st2GroomCalmL8.id, 'tier3', 'masterBonding');
     expect(result.valid).toBe(false);
-    expect(result.reason).toBe('prerequisite_required');
+    expect(result.reason).toBe('prerequisiteRequired');
     expect(result.prerequisite).toBe('tier1');
   });
 
-  it('applyTalentEffects: qualityBonus from enthusiasm_boost sets qualityModifier (lines 365-368)', async () => {
+  it('applyTalentEffects: qualityBonus from enthusiasmBoost sets qualityModifier (lines 365-368)', async () => {
     const baseInteraction = { bondingChange: 5 };
     const result = await applyTalentEffects(st2GroomQuality.id, baseInteraction);
-    // enthusiasm_boost has qualityBonus=0.15 → qualityModifier = 1 + 0.15 = 1.15
+    // enthusiasmBoost has qualityBonus=0.15 → qualityModifier = 1 + 0.15 = 1.15
     expect(typeof result.qualityModifier).toBe('number');
     expect(result.qualityModifier).toBeGreaterThan(1);
-    expect(result.talentBonuses.some(b => b.talentId === 'enthusiasm_boost')).toBe(true);
+    expect(result.talentBonuses.some(b => b.talentId === 'enthusiasmBoost')).toBe(true);
   });
 });

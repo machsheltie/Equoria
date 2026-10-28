@@ -189,7 +189,7 @@ describe('Groom Legacy Service', () => {
       const eligibility = await checkLegacyEligibility(activeGroom.id);
 
       expect(eligibility.eligible).toBe(false);
-      expect(eligibility.reason).toBe('not_retired');
+      expect(eligibility.reason).toBe('notRetired');
 
       // Cleanup
       await prisma.groom.deleteMany({ where: { id: activeGroom.id } });
@@ -212,7 +212,7 @@ describe('Groom Legacy Service', () => {
       const eligibility = await checkLegacyEligibility(lowLevelGroom.id);
 
       expect(eligibility.eligible).toBe(false);
-      expect(eligibility.reason).toBe('insufficient_level');
+      expect(eligibility.reason).toBe('insufficientLevel');
 
       // Cleanup
       await prisma.groom.deleteMany({ where: { id: lowLevelGroom.id } });
@@ -235,14 +235,14 @@ describe('Groom Legacy Service', () => {
         data: {
           retiredGroomId: retiredGroom.id,
           legacyGroomId: protege.id,
-          inheritedPerk: 'gentle_hands',
+          inheritedPerk: 'gentleHands',
         },
       });
 
       const eligibility = await checkLegacyEligibility(retiredGroom.id);
 
       expect(eligibility.eligible).toBe(false);
-      expect(eligibility.reason).toBe('legacy_already_created');
+      expect(eligibility.reason).toBe('legacyAlreadyCreated');
 
       // Cleanup
       await prisma.groomLegacyLog.deleteMany({

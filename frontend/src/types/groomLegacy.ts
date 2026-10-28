@@ -67,19 +67,19 @@ export const LEGACY_CONSTANTS = {
 export const LEGACY_PERKS_BY_PERSONALITY: Record<string, LegacyPerk[]> = {
   calm: [
     {
-      id: 'gentle_hands',
+      id: 'gentleHands',
       name: 'Gentle Hands',
       description: 'Inherited gentle touch technique',
       effect: { bondingBonus: 0.05 },
     },
     {
-      id: 'empathic_sync',
+      id: 'empathicSync',
       name: 'Empathic Sync',
       description: 'Natural ability to read horse emotions',
       effect: { milestoneAccuracy: 0.1, reactiveHorseBonus: 0.15 },
     },
     {
-      id: 'patience_mastery',
+      id: 'patienceMastery',
       name: 'Patience Mastery',
       description: 'Exceptional patience with difficult horses',
       effect: { consistencyBonus: 0.1 },
@@ -87,19 +87,19 @@ export const LEGACY_PERKS_BY_PERSONALITY: Record<string, LegacyPerk[]> = {
   ],
   energetic: [
     {
-      id: 'playtime_pro',
+      id: 'playtimePro',
       name: 'Playtime Pro',
       description: 'Expert at engaging horses through play',
       effect: { milestoneVariety: 0.1, curiosityBonus: 0.15 },
     },
     {
-      id: 'fear_buster',
+      id: 'fearBuster',
       name: 'Fear Buster',
       description: 'Specialized in building horse confidence',
       effect: { braveryChance: 0.15, confidenceBonus: 0.2 },
     },
     {
-      id: 'energy_channeling',
+      id: 'energyChanneling',
       name: 'Energy Channeling',
       description: 'Ability to direct horse energy positively',
       effect: { hyperactiveBonus: 0.2, focusImprovement: 0.1 },
@@ -107,19 +107,19 @@ export const LEGACY_PERKS_BY_PERSONALITY: Record<string, LegacyPerk[]> = {
   ],
   methodical: [
     {
-      id: 'data_driven',
+      id: 'dataDriven',
       name: 'Data Driven',
       description: 'Systematic approach to trait development',
       effect: { traitAccuracy: 0.05, analysisBonus: 0.1 },
     },
     {
-      id: 'routine_mastery',
+      id: 'routineMastery',
       name: 'Routine Mastery',
       description: 'Perfect consistency in grooming routines',
       effect: { consistencyBonus: 0.15, taskEfficiency: 0.1 },
     },
     {
-      id: 'precision_touch',
+      id: 'precisionTouch',
       name: 'Precision Touch',
       description: 'Exact and careful handling technique',
       effect: { groomingQuality: 0.15, injuryPrevention: 0.1 },
@@ -127,19 +127,19 @@ export const LEGACY_PERKS_BY_PERSONALITY: Record<string, LegacyPerk[]> = {
   ],
   playful: [
     {
-      id: 'enrichment_expert',
+      id: 'enrichmentExpert',
       name: 'Enrichment Expert',
       description: 'Master of fun and stimulating activities',
       effect: { enrichmentBonus: 0.2, bondingSpeed: 0.1 },
     },
     {
-      id: 'curiosity_spark',
+      id: 'curiositySpark',
       name: 'Curiosity Spark',
       description: 'Encourages natural horse curiosity',
       effect: { explorationBonus: 0.15, learningRate: 0.1 },
     },
     {
-      id: 'joy_of_work',
+      id: 'joyOfWork',
       name: 'Joy of Work',
       description: 'Infectious enthusiasm for horse care',
       effect: { wellbeingBonus: 0.15, motivationBonus: 0.1 },
@@ -147,19 +147,19 @@ export const LEGACY_PERKS_BY_PERSONALITY: Record<string, LegacyPerk[]> = {
   ],
   strict: [
     {
-      id: 'discipline_focus',
+      id: 'disciplineFocus',
       name: 'Discipline Focus',
       description: 'Clear boundaries and structure for horses',
       effect: { obedienceBonus: 0.2, structureBonus: 0.1 },
     },
     {
-      id: 'excellence_standard',
+      id: 'excellenceStandard',
       name: 'Excellence Standard',
       description: 'High standards in all grooming activities',
       effect: { qualityBonus: 0.15, showReadiness: 0.15 },
     },
     {
-      id: 'performance_push',
+      id: 'performancePush',
       name: 'Performance Push',
       description: 'Drives horses to achieve peak performance',
       effect: { competitionBonus: 0.15, peakPerformance: 0.1 },

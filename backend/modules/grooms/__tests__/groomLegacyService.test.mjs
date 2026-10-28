@@ -5,10 +5,10 @@
  *   getLegacyPerks — known personalities (calm/energetic/methodical) + unknown → []
  *
  * DB-fixture branch coverage (checkLegacyEligibility):
- *   non-existent groomId → groom_not_found
- *   active groom (not retired) → not_retired
- *   retired, existing legacy → legacy_already_created
- *   retired, no legacy, any stars → insufficient_level
+ *   non-existent groomId → groomNotFound
+ *   active groom (not retired) → notRetired
+ *   retired, existing legacy → legacyAlreadyCreated
+ *   retired, no legacy, any stars → insufficientLevel
  *
  * Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): the old 1-10 level is gone and
  * the mentoring level is the old level 1 (staffCareerStarLevel) for every groom, below
@@ -16,7 +16,7 @@
  * contract: a retired level-8 groom was eligible and generated a protégé.
  *
  * generateLegacyProtege:
- *   mentor at Expert stars → throws insufficient_level, creates nothing
+ *   mentor at Expert stars → throws insufficientLevel, creates nothing
  *   ineligible mentor (not retired) → throws
  *
  * getUserLegacyHistory:
@@ -76,10 +76,10 @@ describe('getLegacyPerks — pure function', () => {
 // ── checkLegacyEligibility — non-existent groom ───────────────────────────────
 
 describe('checkLegacyEligibility — non-existent groom', () => {
-  it('returns groom_not_found for non-existent groomId', async () => {
+  it('returns groomNotFound for non-existent groomId', async () => {
     const result = await checkLegacyEligibility(999999999);
     expect(result.eligible).toBe(false);
-    expect(result.reason).toBe('groom_not_found');
+    expect(result.reason).toBe('groomNotFound');
   });
 });
 
@@ -97,10 +97,10 @@ describe('getUserLegacyHistory — non-existent user', () => {
 
 describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () => {
   let glsUser;
-  let glsGroomActive; // not retired → not_retired
-  let glsGroomLowLevel; // retired, Rookie → insufficient_level
-  let glsGroomEligible; // retired, Expert → still insufficient_level (q244)
-  let glsGroomHasLegacy; // retired, existing legacy → legacy_already_created
+  let glsGroomActive; // not retired → notRetired
+  let glsGroomLowLevel; // retired, Rookie → insufficientLevel
+  let glsGroomEligible; // retired, Expert → still insufficientLevel (q244)
+  let glsGroomHasLegacy; // retired, existing legacy → legacyAlreadyCreated
   let glsProtegeStub; // stub groom as legacyGroomId for pre-created legacy log
   const cleanup = createCleanupTracker();
 
@@ -172,12 +172,12 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
       },
     });
 
-    // Pre-create a legacy log so glsGroomHasLegacy hits the 'legacy_already_created' branch
+    // Pre-create a legacy log so glsGroomHasLegacy hits the 'legacyAlreadyCreated' branch
     await prisma.groomLegacyLog.create({
       data: {
         retiredGroomId: glsGroomHasLegacy.id,
         legacyGroomId: glsProtegeStub.id,
-        inheritedPerk: 'playtime_pro',
+        inheritedPerk: 'playtimePro',
       },
     });
 
@@ -207,33 +207,33 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('checkLegacyEligibility: active groom (not retired) → not_retired', async () => {
+  it('checkLegacyEligibility: active groom (not retired) → notRetired', async () => {
     const result = await checkLegacyEligibility(glsGroomActive.id);
     expect(result.eligible).toBe(false);
-    expect(result.reason).toBe('not_retired');
+    expect(result.reason).toBe('notRetired');
     expect(result.starLevel).toBe('rookie');
   });
 
-  it('checkLegacyEligibility: retired Rookie → insufficient_level', async () => {
+  it('checkLegacyEligibility: retired Rookie → insufficientLevel', async () => {
     const result = await checkLegacyEligibility(glsGroomLowLevel.id);
     expect(result.eligible).toBe(false);
-    expect(result.reason).toBe('insufficient_level');
+    expect(result.reason).toBe('insufficientLevel');
     expect(result.starLevel).toBe('rookie');
     expect(result.requiredStarLevel).toBe(LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL);
   });
 
-  it('checkLegacyEligibility: existing legacy → legacy_already_created', async () => {
+  it('checkLegacyEligibility: existing legacy → legacyAlreadyCreated', async () => {
     const result = await checkLegacyEligibility(glsGroomHasLegacy.id);
     expect(result.eligible).toBe(false);
-    expect(result.reason).toBe('legacy_already_created');
+    expect(result.reason).toBe('legacyAlreadyCreated');
     expect(typeof result.existingLegacyId).toBe('number');
   });
 
-  it('checkLegacyEligibility: retired Expert, no legacy → insufficient_level (q244)', async () => {
+  it('checkLegacyEligibility: retired Expert, no legacy → insufficientLevel (q244)', async () => {
     const result = await checkLegacyEligibility(glsGroomEligible.id);
     expect(result).toEqual({
       eligible: false,
-      reason: 'insufficient_level',
+      reason: 'insufficientLevel',
       starLevel: 'expert',
       requiredStarLevel: 'advanced',
     });
@@ -247,7 +247,7 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
       speciality: 'general',
     };
     await expect(generateLegacyProtege(glsGroomEligible.id, protegeData, glsUser.id)).rejects.toThrow(
-      'insufficient_level',
+      'insufficientLevel',
     );
     await expect(prisma.groom.count({ where: { name: protegeData.name } })).resolves.toBe(0);
     await expect(prisma.groomLegacyLog.count({ where: { retiredGroomId: glsGroomEligible.id } })).resolves.toBe(0);

@@ -41,15 +41,15 @@ const level8Groom: GroomTalentData = { ...baseGroom, starLevel: 'advanced' };
 
 const withTier1Selected: GroomTalentData = {
   ...level5Groom,
-  talentSelections: { tier1: 'gentle_hands' },
+  talentSelections: { tier1: 'gentleHands' },
 };
 
 const withAllSelected: GroomTalentData = {
   ...level8Groom,
   talentSelections: {
-    tier1: 'gentle_hands',
-    tier2: 'empathic_sync',
-    tier3: 'master_bonding',
+    tier1: 'gentleHands',
+    tier2: 'empathicSync',
+    tier3: 'masterBonding',
   },
 };
 
@@ -131,19 +131,19 @@ describe('countAllocatedTalents', () => {
   });
 
   it('returns 1 with only tier1', () => {
-    expect(countAllocatedTalents({ tier1: 'gentle_hands' })).toBe(1);
+    expect(countAllocatedTalents({ tier1: 'gentleHands' })).toBe(1);
   });
 
   it('returns 2 with tier1 and tier2', () => {
-    expect(countAllocatedTalents({ tier1: 'gentle_hands', tier2: 'empathic_sync' })).toBe(2);
+    expect(countAllocatedTalents({ tier1: 'gentleHands', tier2: 'empathicSync' })).toBe(2);
   });
 
   it('returns 3 with all tiers', () => {
     expect(
       countAllocatedTalents({
-        tier1: 'gentle_hands',
-        tier2: 'empathic_sync',
-        tier3: 'master_bonding',
+        tier1: 'gentleHands',
+        tier2: 'empathicSync',
+        tier3: 'masterBonding',
       })
     ).toBe(3);
   });
@@ -207,33 +207,33 @@ describe('getTalentTiersWithState', () => {
   });
 
   it('tier2 available after tier1 selected', () => {
-    const tiers = getTalentTiersWithState('calm', 'intermediate', { tier1: 'gentle_hands' });
+    const tiers = getTalentTiersWithState('calm', 'intermediate', { tier1: 'gentleHands' });
     expect(tiers[1].prerequisiteMet).toBe(true);
     tiers[1].talents.forEach((t) => expect(t.isLocked).toBe(false));
   });
 
   it('selected talent has isSelected=true', () => {
-    const tiers = getTalentTiersWithState('calm', 'novice', { tier1: 'gentle_hands' });
-    const gentleHands = tiers[0].talents.find((t) => t.id === 'gentle_hands')!;
+    const tiers = getTalentTiersWithState('calm', 'novice', { tier1: 'gentleHands' });
+    const gentleHands = tiers[0].talents.find((t) => t.id === 'gentleHands')!;
     expect(gentleHands.isSelected).toBe(true);
   });
 
   it('non-selected talent in same tier has isSelected=false', () => {
-    const tiers = getTalentTiersWithState('calm', 'novice', { tier1: 'gentle_hands' });
-    const patienceVirtue = tiers[0].talents.find((t) => t.id === 'patience_virtue')!;
+    const tiers = getTalentTiersWithState('calm', 'novice', { tier1: 'gentleHands' });
+    const patienceVirtue = tiers[0].talents.find((t) => t.id === 'patienceVirtue')!;
     expect(patienceVirtue.isSelected).toBe(false);
   });
 
   it('talents unavailable when tier already has selection', () => {
-    const tiers = getTalentTiersWithState('calm', 'novice', { tier1: 'gentle_hands' });
-    // patience_virtue should not be available (already selected in this tier)
-    const patienceVirtue = tiers[0].talents.find((t) => t.id === 'patience_virtue')!;
+    const tiers = getTalentTiersWithState('calm', 'novice', { tier1: 'gentleHands' });
+    // patienceVirtue should not be available (already selected in this tier)
+    const patienceVirtue = tiers[0].talents.find((t) => t.id === 'patienceVirtue')!;
     expect(patienceVirtue.isAvailable).toBe(false);
   });
 
   it('selectedTalentId reflects current selection', () => {
-    const tiers = getTalentTiersWithState('calm', 'intermediate', { tier1: 'gentle_hands' });
-    expect(tiers[0].selectedTalentId).toBe('gentle_hands');
+    const tiers = getTalentTiersWithState('calm', 'intermediate', { tier1: 'gentleHands' });
+    expect(tiers[0].selectedTalentId).toBe('gentleHands');
     expect(tiers[1].selectedTalentId).toBeNull();
   });
 });
@@ -270,18 +270,18 @@ describe('AC1: All tiers and talents displayed', () => {
 
   it('shows all calm tier1 talents', () => {
     render(<GroomTalentTree groom={level8Groom} />);
-    expect(screen.getByTestId('talent-card-gentle_hands')).toBeInTheDocument();
-    expect(screen.getByTestId('talent-card-patience_virtue')).toBeInTheDocument();
+    expect(screen.getByTestId('talent-card-gentleHands')).toBeInTheDocument();
+    expect(screen.getByTestId('talent-card-patienceVirtue')).toBeInTheDocument();
   });
 
   it('shows all calm tier2 talents', () => {
     render(<GroomTalentTree groom={level8Groom} />);
-    expect(screen.getByTestId('talent-card-empathic_sync')).toBeInTheDocument();
+    expect(screen.getByTestId('talent-card-empathicSync')).toBeInTheDocument();
   });
 
   it('shows tier3 talent', () => {
     render(<GroomTalentTree groom={level8Groom} />);
-    expect(screen.getByTestId('talent-card-master_bonding')).toBeInTheDocument();
+    expect(screen.getByTestId('talent-card-masterBonding')).toBeInTheDocument();
   });
 
   it('shows unknown personality fallback', () => {
@@ -303,40 +303,40 @@ describe('AC1: All tiers and talents displayed', () => {
 describe('AC2: Available talents highlighted', () => {
   it('shows available icon for accessible talent at Novice', () => {
     render(<GroomTalentTree groom={level3Groom} />);
-    expect(screen.getByTestId('talent-available-icon-gentle_hands')).toBeInTheDocument();
-    expect(screen.getByTestId('talent-available-icon-patience_virtue')).toBeInTheDocument();
+    expect(screen.getByTestId('talent-available-icon-gentleHands')).toBeInTheDocument();
+    expect(screen.getByTestId('talent-available-icon-patienceVirtue')).toBeInTheDocument();
   });
 
   it('does not show available icon for locked talent', () => {
     render(<GroomTalentTree groom={level3Groom} />);
     // tier2 is locked at Novice
-    expect(screen.queryByTestId('talent-available-icon-empathic_sync')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('talent-available-icon-empathicSync')).not.toBeInTheDocument();
   });
 
   it('shows selected icon for chosen talent', () => {
     render(<GroomTalentTree groom={withTier1Selected} />);
-    expect(screen.getByTestId('talent-selected-icon-gentle_hands')).toBeInTheDocument();
+    expect(screen.getByTestId('talent-selected-icon-gentleHands')).toBeInTheDocument();
   });
 
   it('shows selected badge for chosen talent', () => {
     render(<GroomTalentTree groom={withTier1Selected} />);
-    expect(screen.getByTestId('talent-selected-badge-gentle_hands')).toHaveTextContent('Selected');
+    expect(screen.getByTestId('talent-selected-badge-gentleHands')).toHaveTextContent('Selected');
   });
 
   it('shows select button for available talent', () => {
     render(<GroomTalentTree groom={level3Groom} />);
-    expect(screen.getByTestId('talent-select-btn-gentle_hands')).toBeInTheDocument();
+    expect(screen.getByTestId('talent-select-btn-gentleHands')).toBeInTheDocument();
   });
 
   it('does not show select button for locked talent', () => {
     render(<GroomTalentTree groom={level3Groom} />);
-    expect(screen.queryByTestId('talent-select-btn-empathic_sync')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('talent-select-btn-empathicSync')).not.toBeInTheDocument();
   });
 
   it('shows locked icon for tier below level requirement', () => {
     render(<GroomTalentTree groom={baseGroom} />);
     // Rookie → tier1 locked
-    expect(screen.getByTestId('talent-locked-icon-gentle_hands')).toBeInTheDocument();
+    expect(screen.getByTestId('talent-locked-icon-gentleHands')).toBeInTheDocument();
   });
 });
 
@@ -347,25 +347,25 @@ describe('AC2: Available talents highlighted', () => {
 describe('AC3: Talent effects clearly explained', () => {
   it('shows talent name', () => {
     render(<GroomTalentTree groom={level8Groom} />);
-    expect(screen.getByTestId('talent-name-gentle_hands')).toHaveTextContent('Gentle Hands');
+    expect(screen.getByTestId('talent-name-gentleHands')).toHaveTextContent('Gentle Hands');
   });
 
   it('shows talent description', () => {
     render(<GroomTalentTree groom={level8Groom} />);
-    expect(screen.getByTestId('talent-description-gentle_hands')).toHaveTextContent(
+    expect(screen.getByTestId('talent-description-gentleHands')).toHaveTextContent(
       '+5% bond gain from all interactions'
     );
   });
 
   it('shows talent effects formatted', () => {
     render(<GroomTalentTree groom={level8Groom} />);
-    const effectsContainer = screen.getByTestId('talent-effects-gentle_hands');
+    const effectsContainer = screen.getByTestId('talent-effects-gentleHands');
     expect(effectsContainer).toHaveTextContent('+5% Bonding Bonus');
   });
 
-  it('shows the consistency effect for patience_virtue and no burnout', () => {
+  it('shows the consistency effect for patienceVirtue and no burnout', () => {
     render(<GroomTalentTree groom={level8Groom} />);
-    const effectsContainer = screen.getByTestId('talent-effects-patience_virtue');
+    const effectsContainer = screen.getByTestId('talent-effects-patienceVirtue');
     expect(effectsContainer).toHaveTextContent('+10% Consistency Bonus');
     // Owner ruling 2026-10-22 (Equoria-0d4wa): there is no burnout, so the talent
     // no longer claims a burnout resistance (old contract: '+15% Burnout Resistance').
@@ -448,26 +448,26 @@ describe('AC5: Talent point allocation', () => {
   it('calls onSelectTalent when available talent select button clicked', () => {
     const mockSelect = vi.fn();
     render(<GroomTalentTree groom={level3Groom} onSelectTalent={mockSelect} />);
-    fireEvent.click(screen.getByTestId('talent-select-btn-gentle_hands'));
-    expect(mockSelect).toHaveBeenCalledWith('tier1', 'gentle_hands');
+    fireEvent.click(screen.getByTestId('talent-select-btn-gentleHands'));
+    expect(mockSelect).toHaveBeenCalledWith('tier1', 'gentleHands');
   });
 
-  it('calls onSelectTalent for patience_virtue', () => {
+  it('calls onSelectTalent for patienceVirtue', () => {
     const mockSelect = vi.fn();
     render(<GroomTalentTree groom={level3Groom} onSelectTalent={mockSelect} />);
-    fireEvent.click(screen.getByTestId('talent-select-btn-patience_virtue'));
-    expect(mockSelect).toHaveBeenCalledWith('tier1', 'patience_virtue');
+    fireEvent.click(screen.getByTestId('talent-select-btn-patienceVirtue'));
+    expect(mockSelect).toHaveBeenCalledWith('tier1', 'patienceVirtue');
   });
 
   it('shows saving state when isSaving=true', () => {
     render(<GroomTalentTree groom={level3Groom} isSaving />);
-    expect(screen.getByTestId('talent-saving-btn-gentle_hands')).toBeInTheDocument();
-    expect(screen.queryByTestId('talent-select-btn-gentle_hands')).not.toBeInTheDocument();
+    expect(screen.getByTestId('talent-saving-btn-gentleHands')).toBeInTheDocument();
+    expect(screen.queryByTestId('talent-select-btn-gentleHands')).not.toBeInTheDocument();
   });
 
   it('saving button is disabled', () => {
     render(<GroomTalentTree groom={level3Groom} isSaving />);
-    expect(screen.getByTestId('talent-saving-btn-gentle_hands')).toBeDisabled();
+    expect(screen.getByTestId('talent-saving-btn-gentleHands')).toBeDisabled();
   });
 
   it('shows completion message when all 3 tiers selected', () => {
@@ -488,7 +488,7 @@ describe('AC5: Talent point allocation', () => {
 
   it('does not show select button for already-selected talent', () => {
     render(<GroomTalentTree groom={withTier1Selected} />);
-    expect(screen.queryByTestId('talent-select-btn-gentle_hands')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('talent-select-btn-gentleHands')).not.toBeInTheDocument();
   });
 
   it('works for energetic personality talent', () => {
@@ -498,7 +498,7 @@ describe('AC5: Talent point allocation', () => {
     };
     const mockSelect = vi.fn();
     render(<GroomTalentTree groom={energeticGroom} onSelectTalent={mockSelect} />);
-    fireEvent.click(screen.getByTestId('talent-select-btn-playtime_pro'));
-    expect(mockSelect).toHaveBeenCalledWith('tier1', 'playtime_pro');
+    fireEvent.click(screen.getByTestId('talent-select-btn-playtimePro'));
+    expect(mockSelect).toHaveBeenCalledWith('tier1', 'playtimePro');
   });
 });

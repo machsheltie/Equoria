@@ -81,13 +81,13 @@ describe('checkLegacyEligibility', () => {
   it('returns not_found for non-existent groom', async () => {
     const result = await checkLegacyEligibility(999999999);
     expect(result.eligible).toBe(false);
-    expect(result.reason).toBe('groom_not_found');
+    expect(result.reason).toBe('groomNotFound');
   });
 
-  it('returns not_retired for fresh active groom', async () => {
+  it('returns notRetired for fresh active groom', async () => {
     const result = await checkLegacyEligibility(groom.id);
     expect(result.eligible).toBe(false);
-    expect(result.reason).toBe('not_retired');
+    expect(result.reason).toBe('notRetired');
   });
 });
 

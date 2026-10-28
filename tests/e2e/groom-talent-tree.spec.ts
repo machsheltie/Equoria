@@ -47,10 +47,10 @@ async function getPrisma(): Promise<any> {
   return client;
 }
 
-// Backend TALENT_TREES.energetic tier1 talents: playtime_pro / enthusiasm_boost.
+// Backend TALENT_TREES.energetic tier1 talents: playtimePro / enthusiasmBoost.
 const SEED_PERSONALITY = 'energetic';
 const SEED_STAR_LEVEL = 'expert'; // the top level; still opens no tier (q244)
-const TIER1_TALENT_ID = 'playtime_pro';
+const TIER1_TALENT_ID = 'playtimePro';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let prisma: any;

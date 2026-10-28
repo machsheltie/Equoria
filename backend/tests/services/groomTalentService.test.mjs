@@ -121,9 +121,9 @@ describe('Groom Talent Service', () => {
   describe('Talent Selection Validation', () => {
     test('refuses an otherwise valid selection: stars open no tier for now (q244)', async () => {
       await prisma.groom.update({ where: { id: testGroom.id }, data: { starLevel: 'expert' } });
-      const validation = await validateTalentSelection(testGroom.id, 'tier1', 'gentle_hands');
+      const validation = await validateTalentSelection(testGroom.id, 'tier1', 'gentleHands');
 
-      expect(validation).toEqual({ valid: false, reason: 'insufficient_level', requiredStarLevel: 'novice' });
+      expect(validation).toEqual({ valid: false, reason: 'insufficientLevel', requiredStarLevel: 'novice' });
     });
 
     test('should reject selection for insufficient level', async () => {
@@ -139,10 +139,10 @@ describe('Groom Talent Service', () => {
         },
       });
 
-      const validation = await validateTalentSelection(lowLevelGroom.id, 'tier1', 'gentle_hands');
+      const validation = await validateTalentSelection(lowLevelGroom.id, 'tier1', 'gentleHands');
 
       expect(validation.valid).toBe(false);
-      expect(validation.reason).toBe('insufficient_level');
+      expect(validation.reason).toBe('insufficientLevel');
       expect(validation.requiredStarLevel).toBe('novice');
 
       // Cleanup
@@ -150,29 +150,29 @@ describe('Groom Talent Service', () => {
     });
 
     test('should reject invalid talent for personality', async () => {
-      const validation = await validateTalentSelection(testGroom.id, 'tier1', 'invalid_talent');
+      const validation = await validateTalentSelection(testGroom.id, 'tier1', 'invalidTalent');
 
       expect(validation.valid).toBe(false);
-      expect(validation.reason).toBe('invalid_talent');
+      expect(validation.reason).toBe('invalidTalent');
     });
 
     test('should reject selection if tier already selected', async () => {
       // A tier 1 selection made before q244
-      await writeSelections(testGroom.id, { tier1: 'gentle_hands' });
+      await writeSelections(testGroom.id, { tier1: 'gentleHands' });
 
       // Try to select a different talent in the same tier
-      const validation = await validateTalentSelection(testGroom.id, 'tier1', 'patience_virtue');
+      const validation = await validateTalentSelection(testGroom.id, 'tier1', 'patienceVirtue');
 
       expect(validation.valid).toBe(false);
-      expect(validation.reason).toBe('tier_already_selected');
+      expect(validation.reason).toBe('tierAlreadySelected');
     });
 
     test('should require prerequisite tiers', async () => {
       // Try to select tier 2 without tier 1
-      const validation = await validateTalentSelection(testGroom.id, 'tier2', 'empathic_sync');
+      const validation = await validateTalentSelection(testGroom.id, 'tier2', 'empathicSync');
 
       expect(validation.valid).toBe(false);
-      expect(validation.reason).toBe('prerequisite_required');
+      expect(validation.reason).toBe('prerequisiteRequired');
     });
   });
 
@@ -180,7 +180,7 @@ describe('Groom Talent Service', () => {
     test('an Expert groom cannot select a tier 1 talent, and nothing is written (q244)', async () => {
       await prisma.groom.update({ where: { id: testGroom.id }, data: { starLevel: 'expert' } });
 
-      await expect(selectTalent(testGroom.id, 'tier1', 'gentle_hands')).rejects.toThrow('insufficient_level');
+      await expect(selectTalent(testGroom.id, 'tier1', 'gentleHands')).rejects.toThrow('insufficientLevel');
 
       const selections = await prisma.groomTalentSelections.findUnique({
         where: { groomId: testGroom.id },
@@ -190,13 +190,13 @@ describe('Groom Talent Service', () => {
 
     test('with tier 1 already chosen, tier 2 is still closed by level (q244)', async () => {
       await prisma.groom.update({ where: { id: testGroom.id }, data: { starLevel: 'expert' } });
-      await writeSelections(testGroom.id, { tier1: 'gentle_hands' });
+      await writeSelections(testGroom.id, { tier1: 'gentleHands' });
 
-      await expect(selectTalent(testGroom.id, 'tier2', 'empathic_sync')).rejects.toThrow('insufficient_level');
+      await expect(selectTalent(testGroom.id, 'tier2', 'empathicSync')).rejects.toThrow('insufficientLevel');
     });
 
     test('should reject invalid talent selection', async () => {
-      await expect(selectTalent(testGroom.id, 'tier1', 'invalid_talent')).rejects.toThrow('Invalid talent selection');
+      await expect(selectTalent(testGroom.id, 'tier1', 'invalidTalent')).rejects.toThrow('Invalid talent selection');
     });
 
     test('should reject selection for insufficient level', async () => {
@@ -212,7 +212,7 @@ describe('Groom Talent Service', () => {
         },
       });
 
-      await expect(selectTalent(lowLevelGroom.id, 'tier1', 'gentle_hands')).rejects.toThrow('insufficient_level');
+      await expect(selectTalent(lowLevelGroom.id, 'tier1', 'gentleHands')).rejects.toThrow('insufficientLevel');
 
       // Cleanup
       await prisma.groom.deleteMany({ where: { id: lowLevelGroom.id } });
@@ -222,7 +222,7 @@ describe('Groom Talent Service', () => {
   describe('Talent Effects', () => {
     test('should apply talent effects to groom interactions', async () => {
       // A talent with bonding bonus, chosen before q244
-      await writeSelections(testGroom.id, { tier1: 'gentle_hands' });
+      await writeSelections(testGroom.id, { tier1: 'gentleHands' });
 
       // Apply talent effects to a mock interaction
       const baseInteraction = {
@@ -239,7 +239,7 @@ describe('Groom Talent Service', () => {
 
     test('should handle multiple talent effects', async () => {
       // Two talents chosen before q244
-      await writeSelections(testGroom.id, { tier1: 'gentle_hands', tier2: 'empathic_sync' });
+      await writeSelections(testGroom.id, { tier1: 'gentleHands', tier2: 'empathicSync' });
 
       const baseInteraction = {
         bondingChange: 5,
@@ -268,13 +268,13 @@ describe('Groom Talent Service', () => {
   describe('Talent Retrieval', () => {
     test('should get groom talent selections', async () => {
       // A talent chosen before q244
-      await writeSelections(testGroom.id, { tier1: 'gentle_hands' });
+      await writeSelections(testGroom.id, { tier1: 'gentleHands' });
 
       const selections = await getGroomTalentSelections(testGroom.id);
 
       expect(selections).toBeDefined();
       expect(selections.groomId).toBe(testGroom.id);
-      expect(selections.tier1).toBe('gentle_hands');
+      expect(selections.tier1).toBe('gentleHands');
       expect(selections.tier2).toBeNull();
       expect(selections.tier3).toBeNull();
     });

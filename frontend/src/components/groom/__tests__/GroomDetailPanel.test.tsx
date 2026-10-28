@@ -129,15 +129,15 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
     spyHooks(
       profileResult({ data: [] }),
       // BACKEND is the source of truth: tier1 is selected server-side.
-      profileResult({ data: { tier1: 'playtime_pro', tier2: null, tier3: null } })
+      profileResult({ data: { tier1: 'playtimePro', tier2: null, tier3: null } })
     );
     renderPanel({ groomPersonality: 'energetic' });
 
     const section = screen.getByTestId('groom-talents-section-7');
     const tree = within(section).getByTestId('groom-talent-tree');
     expect(tree).toBeInTheDocument();
-    // energetic tree → tier1 talents playtime_pro / enthusiasm_boost.
-    expect(within(tree).getByTestId('talent-selected-badge-playtime_pro')).toBeInTheDocument();
+    // energetic tree → tier1 talents playtimePro / enthusiasmBoost.
+    expect(within(tree).getByTestId('talent-selected-badge-playtimePro')).toBeInTheDocument();
     expect(within(tree).getByTestId('talent-allocated-count')).toHaveTextContent('1 / 3 allocated');
     expect(within(tree).getByTestId('talent-personality-label')).toHaveTextContent(
       'Energetic specialization'
@@ -151,9 +151,7 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
     const tree = screen.getByTestId('groom-talent-tree');
     expect(within(tree).getByTestId('talent-allocated-count')).toHaveTextContent('0 / 3 allocated');
     // No selected badge exists in the empty state.
-    expect(
-      within(tree).queryByTestId('talent-selected-badge-playtime_pro')
-    ).not.toBeInTheDocument();
+    expect(within(tree).queryByTestId('talent-selected-badge-playtimePro')).not.toBeInTheDocument();
   });
 
   it('shows the talents loading placeholder while the talents query loads (no tree)', () => {
@@ -196,7 +194,7 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
 
   // Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): the groom's old 1-10 level is
   // gone and stars open no talent tier for now, so the panel offers no choice whatever
-  // the groom's stars. Old contract: a level-5 groom's panel offered playtime_pro and
+  // the groom's stars. Old contract: a level-5 groom's panel offered playtimePro and
   // clicking it fired the select mutation (the click wiring is still covered in
   // GroomTalentTree.story-7-6).
   it('offers no talent to choose: stars open no tier for now (q244)', () => {
@@ -204,7 +202,7 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
     spyHooks(profileResult({ data: [] }), profileResult({ data: null }), select);
     renderPanel({ groomPersonality: 'energetic' });
 
-    expect(screen.queryByTestId('talent-select-btn-playtime_pro')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('talent-select-btn-playtimePro')).not.toBeInTheDocument();
     for (const tier of ['tier1', 'tier2', 'tier3']) {
       expect(screen.getByTestId(`tier-requirement-${tier}`)).toHaveTextContent('Not open yet');
     }

@@ -197,7 +197,7 @@ const sampleMentorInfo: MentorInfo = {
   mentorStarLevel: 'advanced',
   mentorPersonality: 'calm',
   inheritedPerk: {
-    id: 'gentle_hands',
+    id: 'gentleHands',
     name: 'Gentle Hands',
     description: 'Inherited gentle touch technique',
     effect: { bondingBonus: 0.05 },
@@ -209,7 +209,7 @@ const sampleProtégéInfo: ProtégéInfo = {
   protégéId: 20,
   protégéName: 'Jamie Chen',
   inheritedPerk: {
-    id: 'precision_touch',
+    id: 'precisionTouch',
     name: 'Precision Touch',
     description: 'Exact and careful handling technique',
     effect: { groomingQuality: 0.15, injuryPrevention: 0.1 },
@@ -235,9 +235,9 @@ describe('AC1: Skills and traits transfer displayed', () => {
 
   it('shows inherited perk name', () => {
     render(<GroomLegacyPanel groom={activeGroom} mentorInfo={sampleMentorInfo} />);
-    // Use within() because gentle_hands also appears in trait-inheritance-preview
+    // Use within() because gentleHands also appears in trait-inheritance-preview
     const inheritedSection = screen.getByTestId('inherited-perk-section');
-    expect(within(inheritedSection).getByTestId('perk-name-gentle_hands')).toHaveTextContent(
+    expect(within(inheritedSection).getByTestId('perk-name-gentleHands')).toHaveTextContent(
       'Gentle Hands'
     );
   });
@@ -245,7 +245,7 @@ describe('AC1: Skills and traits transfer displayed', () => {
   it('shows perk description', () => {
     render(<GroomLegacyPanel groom={activeGroom} mentorInfo={sampleMentorInfo} />);
     const inheritedSection = screen.getByTestId('inherited-perk-section');
-    expect(within(inheritedSection).getByTestId('perk-description-gentle_hands')).toHaveTextContent(
+    expect(within(inheritedSection).getByTestId('perk-description-gentleHands')).toHaveTextContent(
       'Inherited gentle touch technique'
     );
   });
@@ -253,12 +253,12 @@ describe('AC1: Skills and traits transfer displayed', () => {
   it('shows perk effects', () => {
     render(<GroomLegacyPanel groom={activeGroom} mentorInfo={sampleMentorInfo} />);
     const inheritedSection = screen.getByTestId('inherited-perk-section');
-    expect(within(inheritedSection).getByTestId('perk-effects-gentle_hands')).toBeInTheDocument();
+    expect(within(inheritedSection).getByTestId('perk-effects-gentleHands')).toBeInTheDocument();
   });
 
   it('shows inherited badge on the perk card', () => {
     render(<GroomLegacyPanel groom={activeGroom} mentorInfo={sampleMentorInfo} />);
-    expect(screen.getByTestId('perk-inherited-badge-gentle_hands')).toHaveTextContent('Inherited');
+    expect(screen.getByTestId('perk-inherited-badge-gentleHands')).toHaveTextContent('Inherited');
   });
 
   it('does NOT show inherited perk section without mentorInfo', () => {
@@ -362,9 +362,9 @@ describe('AC3: Trait inheritance preview', () => {
 
   it('shows all 3 calm personality perks in preview', () => {
     render(<GroomLegacyPanel groom={activeGroom} />);
-    expect(screen.getByTestId('perk-card-gentle_hands')).toBeInTheDocument();
-    expect(screen.getByTestId('perk-card-empathic_sync')).toBeInTheDocument();
-    expect(screen.getByTestId('perk-card-patience_mastery')).toBeInTheDocument();
+    expect(screen.getByTestId('perk-card-gentleHands')).toBeInTheDocument();
+    expect(screen.getByTestId('perk-card-empathicSync')).toBeInTheDocument();
+    expect(screen.getByTestId('perk-card-patienceMastery')).toBeInTheDocument();
   });
 
   it('shows personality label in inheritance preview', () => {
@@ -374,8 +374,8 @@ describe('AC3: Trait inheritance preview', () => {
 
   it('shows methodical perks for methodical groom', () => {
     render(<GroomLegacyPanel groom={retiredSeniorGroom} />);
-    expect(screen.getByTestId('perk-card-data_driven')).toBeInTheDocument();
-    expect(screen.getByTestId('perk-card-routine_mastery')).toBeInTheDocument();
+    expect(screen.getByTestId('perk-card-dataDriven')).toBeInTheDocument();
+    expect(screen.getByTestId('perk-card-routineMastery')).toBeInTheDocument();
   });
 
   it('hides transferable perks when groom has already created a protégé', () => {
@@ -385,8 +385,8 @@ describe('AC3: Trait inheritance preview', () => {
 
   it('perks in preview are NOT marked as inherited', () => {
     render(<GroomLegacyPanel groom={activeGroom} />);
-    // gentle_hands perk in preview should not have inherited badge
-    expect(screen.queryByTestId('perk-inherited-badge-gentle_hands')).not.toBeInTheDocument();
+    // gentleHands perk in preview should not have inherited badge
+    expect(screen.queryByTestId('perk-inherited-badge-gentleHands')).not.toBeInTheDocument();
   });
 });
 
@@ -448,7 +448,7 @@ describe('AC4: Mentorship period displayed', () => {
         hasCreatedProtégé
       />
     );
-    expect(screen.getByTestId('perk-card-precision_touch')).toBeInTheDocument();
+    expect(screen.getByTestId('perk-card-precisionTouch')).toBeInTheDocument();
   });
 });
 

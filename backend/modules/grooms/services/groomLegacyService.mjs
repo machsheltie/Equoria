@@ -62,19 +62,19 @@ function meetsMentorLevel() {
 export const LEGACY_PERKS = {
   calm: [
     {
-      id: 'gentle_hands',
+      id: 'gentleHands',
       name: 'Gentle Hands',
       description: 'Inherited gentle touch technique',
       effect: { bondingBonus: 0.05 },
     },
     {
-      id: 'empathic_sync',
+      id: 'empathicSync',
       name: 'Empathic Sync',
       description: 'Natural ability to read horse emotions',
       effect: { milestoneAccuracy: 0.1, reactiveHorseBonus: 0.15 },
     },
     {
-      id: 'patience_mastery',
+      id: 'patienceMastery',
       name: 'Patience Mastery',
       description: 'Exceptional patience with difficult horses',
       effect: { consistencyBonus: 0.1 },
@@ -82,19 +82,19 @@ export const LEGACY_PERKS = {
   ],
   energetic: [
     {
-      id: 'playtime_pro',
+      id: 'playtimePro',
       name: 'Playtime Pro',
       description: 'Expert at engaging horses through play',
       effect: { milestoneVariety: 0.1, curiosityBonus: 0.15 },
     },
     {
-      id: 'fear_buster',
+      id: 'fearBuster',
       name: 'Fear Buster',
       description: 'Specialized in building horse confidence',
       effect: { braveryChance: 0.15, confidenceBonus: 0.2 },
     },
     {
-      id: 'energy_channeling',
+      id: 'energyChanneling',
       name: 'Energy Channeling',
       description: 'Ability to direct horse energy positively',
       effect: { hyperactiveBonus: 0.2, focusImprovement: 0.1 },
@@ -102,19 +102,19 @@ export const LEGACY_PERKS = {
   ],
   methodical: [
     {
-      id: 'data_driven',
+      id: 'dataDriven',
       name: 'Data Driven',
       description: 'Systematic approach to trait development',
       effect: { traitAccuracy: 0.05, analysisBonus: 0.1 },
     },
     {
-      id: 'memory_builder',
+      id: 'memoryBuilder',
       name: 'Memory Builder',
       description: 'Exceptional at building horse-groom synergy',
       effect: { synergyRate: 0.2, memoryBonus: 0.15 },
     },
     {
-      id: 'precision_training',
+      id: 'precisionTraining',
       name: 'Precision Training',
       description: 'Meticulous attention to training details',
       effect: { taskQuality: 0.1, precisionBonus: 0.15 },
@@ -138,7 +138,7 @@ export async function checkLegacyEligibility(groomId) {
   if (!groom) {
     return {
       eligible: false,
-      reason: 'groom_not_found',
+      reason: 'groomNotFound',
     };
   }
 
@@ -146,7 +146,7 @@ export async function checkLegacyEligibility(groomId) {
   if (!groom.retired) {
     return {
       eligible: false,
-      reason: 'not_retired',
+      reason: 'notRetired',
       starLevel: groom.starLevel,
     };
   }
@@ -159,7 +159,7 @@ export async function checkLegacyEligibility(groomId) {
   if (existingLegacy) {
     return {
       eligible: false,
-      reason: 'legacy_already_created',
+      reason: 'legacyAlreadyCreated',
       existingLegacyId: existingLegacy.id,
     };
   }
@@ -169,7 +169,7 @@ export async function checkLegacyEligibility(groomId) {
   if (!meetsMentorLevel()) {
     return {
       eligible: false,
-      reason: 'insufficient_level',
+      reason: 'insufficientLevel',
       starLevel: groom.starLevel,
       requiredStarLevel: LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL,
     };

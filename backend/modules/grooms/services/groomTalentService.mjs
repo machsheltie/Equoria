@@ -36,13 +36,13 @@ export const TALENT_TREES = {
   calm: {
     tier1: [
       {
-        id: 'gentle_hands',
+        id: 'gentleHands',
         name: 'Gentle Hands',
         description: '+5% bond gain from all interactions',
         effect: { bondingBonus: 0.05 },
       },
       {
-        id: 'patience_virtue',
+        id: 'patienceVirtue',
         name: 'Patience Virtue',
         description: '+10% consistency',
         effect: { consistencyBonus: 0.1 },
@@ -50,7 +50,7 @@ export const TALENT_TREES = {
     ],
     tier2: [
       {
-        id: 'empathic_sync',
+        id: 'empathicSync',
         name: 'Empathic Sync',
         description: 'Bonus with reactive foals, +15% milestone accuracy',
         effect: { reactiveHorseBonus: 0.15, milestoneAccuracy: 0.1 },
@@ -58,7 +58,7 @@ export const TALENT_TREES = {
     ],
     tier3: [
       {
-        id: 'master_bonding',
+        id: 'masterBonding',
         name: 'Master Bonding',
         description: '+10% bond gain, +25% synergy building rate',
         effect: { bondingBonus: 0.1, synergyRate: 0.25 },
@@ -68,13 +68,13 @@ export const TALENT_TREES = {
   energetic: {
     tier1: [
       {
-        id: 'playtime_pro',
+        id: 'playtimePro',
         name: 'Playtime Pro',
         description: '+10% milestone variety score',
         effect: { milestoneVariety: 0.1 },
       },
       {
-        id: 'enthusiasm_boost',
+        id: 'enthusiasmBoost',
         name: 'Enthusiasm Boost',
         description: '+15% interaction quality, +5% XP gain',
         effect: { qualityBonus: 0.15, xpBonus: 0.05 },
@@ -82,13 +82,13 @@ export const TALENT_TREES = {
     ],
     tier2: [
       {
-        id: 'fear_buster',
+        id: 'fearBuster',
         name: 'Fear Buster',
         description: '+15% bravery trait chance, +20% confidence building',
         effect: { braveryChance: 0.15, confidenceBonus: 0.2 },
       },
       {
-        id: 'energy_channeling',
+        id: 'energyChanneling',
         name: 'Energy Channeling',
         description: '+20% effectiveness with hyperactive horses',
         effect: { hyperactiveBonus: 0.2, focusImprovement: 0.1 },
@@ -96,7 +96,7 @@ export const TALENT_TREES = {
     ],
     tier3: [
       {
-        id: 'inspiration_master',
+        id: 'inspirationMaster',
         name: 'Inspiration Master',
         description: '+30% chance for exceptional interaction outcomes',
         effect: { exceptionalChance: 0.3, motivationBonus: 0.2 },
@@ -106,13 +106,13 @@ export const TALENT_TREES = {
   methodical: {
     tier1: [
       {
-        id: 'data_driven',
+        id: 'dataDriven',
         name: 'Data Driven',
         description: '+5% trait shaping accuracy',
         effect: { traitAccuracy: 0.05 },
       },
       {
-        id: 'systematic_approach',
+        id: 'systematicApproach',
         name: 'Systematic Approach',
         description: '+10% task completion efficiency',
         effect: { taskEfficiency: 0.1, timeBonus: 0.05 },
@@ -120,13 +120,13 @@ export const TALENT_TREES = {
     ],
     tier2: [
       {
-        id: 'memory_builder',
+        id: 'memoryBuilder',
         name: 'Memory Builder',
         description: '+20% synergy building rate, improved pattern recognition',
         effect: { synergyRate: 0.2, memoryBonus: 0.15 },
       },
       {
-        id: 'precision_training',
+        id: 'precisionTraining',
         name: 'Precision Training',
         description: '+10% interaction quality, +15% precision bonus',
         effect: { taskQuality: 0.1, precisionBonus: 0.15 },
@@ -134,7 +134,7 @@ export const TALENT_TREES = {
     ],
     tier3: [
       {
-        id: 'analytical_mastery',
+        id: 'analyticalMastery',
         name: 'Analytical Mastery',
         description: '+15% trait accuracy, +25% milestone evaluation precision',
         effect: { traitAccuracy: 0.15, milestoneAccuracy: 0.25 },
@@ -183,7 +183,7 @@ export async function validateTalentSelection(groomId, tier, talentId) {
   if (!groom) {
     return {
       valid: false,
-      reason: 'groom_not_found',
+      reason: 'groomNotFound',
     };
   }
 
@@ -191,7 +191,7 @@ export async function validateTalentSelection(groomId, tier, talentId) {
   if (!requiredStarLevel) {
     return {
       valid: false,
-      reason: 'invalid_tier',
+      reason: 'invalidTier',
     };
   }
 
@@ -200,7 +200,7 @@ export async function validateTalentSelection(groomId, tier, talentId) {
   if (!personalityTree || !personalityTree[tier]) {
     return {
       valid: false,
-      reason: 'invalid_personality_tier',
+      reason: 'invalidPersonalityTier',
     };
   }
 
@@ -209,7 +209,7 @@ export async function validateTalentSelection(groomId, tier, talentId) {
   if (!talentExists) {
     return {
       valid: false,
-      reason: 'invalid_talent',
+      reason: 'invalidTalent',
     };
   }
 
@@ -218,7 +218,7 @@ export async function validateTalentSelection(groomId, tier, talentId) {
   if (selections && selections[tier]) {
     return {
       valid: false,
-      reason: 'tier_already_selected',
+      reason: 'tierAlreadySelected',
       currentSelection: selections[tier],
     };
   }
@@ -227,7 +227,7 @@ export async function validateTalentSelection(groomId, tier, talentId) {
   if (tier === 'tier2' && (!selections || !selections.tier1)) {
     return {
       valid: false,
-      reason: 'prerequisite_required',
+      reason: 'prerequisiteRequired',
       prerequisite: 'tier1',
     };
   }
@@ -235,7 +235,7 @@ export async function validateTalentSelection(groomId, tier, talentId) {
   if (tier === 'tier3' && (!selections || !selections.tier1 || !selections.tier2)) {
     return {
       valid: false,
-      reason: 'prerequisite_required',
+      reason: 'prerequisiteRequired',
       prerequisite: selections?.tier1 ? 'tier2' : 'tier1',
     };
   }
@@ -247,7 +247,7 @@ export async function validateTalentSelection(groomId, tier, talentId) {
   if (!staffLevelAtLeast(staffCareerStarLevel, requiredStarLevel)) {
     return {
       valid: false,
-      reason: 'insufficient_level',
+      reason: 'insufficientLevel',
       requiredStarLevel,
     };
   }

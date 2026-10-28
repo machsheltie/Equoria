@@ -259,7 +259,7 @@ describe('Groom Retirement Routes', () => {
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           tier: 'tier1',
-          talentId: 'gentle_hands',
+          talentId: 'gentleHands',
         })
         .expect(200);
 
@@ -279,7 +279,7 @@ describe('Groom Retirement Routes', () => {
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           tier: 'tier1',
-          talentId: 'gentle_hands',
+          talentId: 'gentleHands',
         })
         .expect(400);
 
@@ -335,8 +335,8 @@ describe('Groom Retirement Routes', () => {
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
-          tier: 'invalid_tier',
-          talentId: 'gentle_hands',
+          tier: 'invalidTier',
+          talentId: 'gentleHands',
         })
         .expect(400);
     });
