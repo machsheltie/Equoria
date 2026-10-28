@@ -118,11 +118,15 @@ async function resolvePlayer(tx, staff, { targetId, targetUsername }) {
   return { id: locked.id };
 }
 
-// The authoritative row for each non-player target (STAFF-CR-07).
-const TARGET_TABLES = {
-  horse: tx => tx.horse,
-  show: tx => tx.show,
-  post: tx => tx.forumPost,
+/**
+ * The authoritative row for each non-player target (STAFF-CR-07), read under
+ * FOR KEY SHARE (STAFF-RR-03): a delete already in flight is waited for and
+ * then seen as gone, and a delete that starts later waits for the filing.
+ */
+const lockedTargetRow = {
+  horse: (tx, id) => tx.$queryRaw`SELECT id FROM horses WHERE id = ${id} FOR KEY SHARE`,
+  show: (tx, id) => tx.$queryRaw`SELECT id FROM shows WHERE id = ${id} FOR KEY SHARE`,
+  post: (tx, id) => tx.$queryRaw`SELECT id FROM "ForumPost" WHERE id = ${id} FOR KEY SHARE`,
 };
 
 /**
@@ -131,15 +135,15 @@ const TARGET_TABLES = {
  * NO_TARGET, so the answer never says which.
  */
 async function resolveTarget(tx, targetType, targetId) {
-  const table = TARGET_TABLES[targetType];
-  if (!table) {
+  const lockRow = lockedTargetRow[targetType];
+  if (!lockRow) {
     throw new Error(`[staff] unknown ticket target type: ${targetType}`);
   }
   const id = parseTicketId(targetId);
   if (id === null) {
     return NO_TARGET;
   }
-  const row = await table(tx).findUnique({ where: { id }, select: { id: true } });
+  const [row] = await lockRow(tx, id);
   return row ? { id: String(row.id) } : NO_TARGET;
 }
 

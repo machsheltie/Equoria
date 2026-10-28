@@ -21,6 +21,8 @@ const STATUSES = new Set(['open', 'inProgress', 'resolved', 'declined']);
 
 const invalid = (res, message) => res.status(400).json({ success: false, message });
 const missing = res => res.status(404).json({ success: false, message: 'Ticket not found' });
+const noTarget = res =>
+  res.status(404).json({ success: false, message: 'Nothing by that ID', code: 'NO_TARGET' });
 const badCursor = res => invalid(res, 'That page link is not valid. Reload and try again.');
 
 /** An absent cursor is null; a present one must decode, else undefined (refuse). */
@@ -79,21 +81,24 @@ export async function createTicket(req, res, next) {
     if (!category || !note) {
       return invalid(res, 'category and note are required and must fit their limits');
     }
-    // A present-but-unusable value (blank, overlong, not text) is refused, not ignored.
-    if (
-      (body.targetId !== undefined && body.targetId !== null && !targetId) ||
-      (body.targetUsername !== undefined && body.targetUsername !== null && !targetUsername)
-    ) {
-      return invalid(res, 'The player or target is not valid');
-    }
+    const present = value => value !== undefined && value !== null;
     if (targetType === 'user') {
+      // A present-but-unusable value (blank, overlong, not text) is refused, not ignored.
+      if (
+        (present(body.targetId) && !targetId) ||
+        (present(body.targetUsername) && !targetUsername)
+      ) {
+        return invalid(res, 'The player or target is not valid');
+      }
       if (!targetId && !targetUsername) {
         return invalid(res, 'Name the player by username or by ID');
       }
-    } else if (body.targetUsername !== undefined && body.targetUsername !== null) {
+    } else if (present(body.targetUsername)) {
       return invalid(res, 'A username can only name a player');
     } else if (!targetId) {
-      return invalid(res, 'targetId, category and note are required and must fit their limits');
+      // STAFF-RR-04: a missing, blank, overlong or non-text horse, show or post
+      // ID gets the same answer as an unknown one, so the answer never says which.
+      return noTarget(res);
     }
     const result = await fileTicket(req.staff, {
       targetType,
@@ -115,9 +120,7 @@ export async function createTicket(req, res, next) {
       });
     }
     if (result.error === 'no_target') {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Nothing by that ID', code: 'NO_TARGET' });
+      return noTarget(res);
     }
     if (result.error === 'name_id_mismatch') {
       return invalid(res, 'The name and ID point to different players');

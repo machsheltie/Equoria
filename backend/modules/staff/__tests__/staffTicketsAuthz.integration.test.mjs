@@ -373,8 +373,6 @@ describe('Filing a ticket', () => {
   it.each([
     ['unknown targetType', { targetType: 'planet' }],
     ['missing targetType', { targetType: undefined }],
-    ['blank targetId', { targetId: '   ' }],
-    ['overlong targetId', { targetId: 'x'.repeat(65) }],
     ['blank category', { category: '' }],
     ['overlong category', { category: 'c'.repeat(41) }],
     ['blank note', { note: ' ' }],
