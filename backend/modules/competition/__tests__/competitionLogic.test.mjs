@@ -6,9 +6,9 @@ import {
   getDisciplineConfig,
   checkAgeRequirements,
   calculateHorseLevel,
-  checkTraitRequirements,
   calculateStatGain,
 } from '../../../utils/competitionLogic.mjs';
+import { breedAllowsDiscipline } from '../../../utils/gaitedBreed.mjs';
 
 describe('calculatePrizeAmount', () => {
   it('gives 50% to 1st place', () => {
@@ -243,33 +243,35 @@ describe('calculateHorseLevel', () => {
   });
 });
 
-// ─── checkTraitRequirements ───────────────────────────────────────────────────
+// ─── Gaited is gated by the breed (Equoria-uszhf) ─────────────────────────────
+// Old contract: checkTraitRequirements let a horse into Gaited when its
+// epigenetic positives held 'gaited'. Owner ruling 2026-10-19: Gaited is a
+// breed property that alone decides; the trait check was deleted.
 
-describe('checkTraitRequirements', () => {
-  it('returns true for discipline with no requiresTrait (Racing)', () => {
-    const horse = { epigeneticModifiers: { positive: [], negative: [] } };
-    expect(checkTraitRequirements(horse, 'Racing')).toBe(true);
+describe('breedAllowsDiscipline', () => {
+  it('opens every non-Gaited discipline to every breed', () => {
+    expect(breedAllowsDiscipline({ breedGeneticProfile: { ratingProfiles: { isGaitedBreed: false } } }, 'Racing')).toBe(
+      true,
+    );
+    expect(breedAllowsDiscipline(null, 'Dressage')).toBe(true);
   });
 
-  it('returns true for Gaited when horse has gaited trait', () => {
-    const horse = { epigeneticModifiers: { positive: ['gaited'], negative: [] } };
-    expect(checkTraitRequirements(horse, 'Gaited')).toBe(true);
+  it('opens Gaited to a gaited breed', () => {
+    expect(breedAllowsDiscipline({ breedGeneticProfile: { ratingProfiles: { isGaitedBreed: true } } }, 'Gaited')).toBe(
+      true,
+    );
   });
 
-  it('returns false for Gaited when horse lacks gaited trait', () => {
-    const horse = { epigeneticModifiers: { positive: ['fast'], negative: [] } };
-    expect(checkTraitRequirements(horse, 'Gaited')).toBe(false);
+  it('closes Gaited to a non-gaited, unprofiled or missing breed', () => {
+    expect(breedAllowsDiscipline({ breedGeneticProfile: { ratingProfiles: { isGaitedBreed: false } } }, 'Gaited')).toBe(
+      false,
+    );
+    expect(breedAllowsDiscipline({ breedGeneticProfile: null }, 'Gaited')).toBe(false);
+    expect(breedAllowsDiscipline(null, 'Gaited')).toBe(false);
   });
 
-  it('uses horse.traits fallback when epigeneticModifiers is absent', () => {
-    const horse = { traits: { positive: ['gaited'], negative: [] } };
-    expect(checkTraitRequirements(horse, 'Gaited')).toBe(true);
-  });
-
-  it('returns false for Gaited when horse has no trait data', () => {
-    // horse.epigeneticModifiers undefined, horse.traits undefined → {} → positiveTraits = []
-    const horse = {};
-    expect(checkTraitRequirements(horse, 'Gaited')).toBe(false);
+  it('the Gaited discipline config carries no trait requirement', () => {
+    expect(getDisciplineConfig('Gaited')).not.toHaveProperty('requiresTrait');
   });
 });
 
@@ -335,14 +337,6 @@ describe('calculateHorseLevel — catch block (lines 488-489)', () => {
 describe('checkAgeRequirements — catch block (lines 504-505)', () => {
   it('returns false when null horse causes property access TypeError', () => {
     const result = checkAgeRequirements(null);
-    expect(result).toBe(false);
-  });
-});
-
-describe('checkTraitRequirements — catch block (lines 529-530)', () => {
-  it('returns false when null horse causes property access TypeError', () => {
-    // 'Gaited' has requiresTrait:'gaited' so execution reaches horse.epigeneticModifiers
-    const result = checkTraitRequirements(null, 'Gaited');
     expect(result).toBe(false);
   });
 });

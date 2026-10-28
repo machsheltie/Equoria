@@ -223,8 +223,11 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.discipline).toBe('Gaited');
-      expect(response.body.data.eligibility.traitEligible).toBe(false); // Horse doesn't have 'gaited' trait
-      expect(response.body.data.eligibility.requiredTrait).toBe('gaited');
+      // Old contract: refused for lacking a 'gaited' trait (requiredTrait 'gaited').
+      // Owner ruling 2026-10-19 (Equoria-uszhf): Gaited is a breed property; the
+      // fixture is a Thoroughbred, so it is refused for its breed.
+      expect(response.body.data.eligibility.traitEligible).toBe(false);
+      expect(response.body.data.eligibility.refusal.code).toBe('gaitedBreedRequired');
     });
 
     test('should reject invalid discipline', async () => {

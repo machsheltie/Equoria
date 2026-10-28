@@ -22,6 +22,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { DISCIPLINES } from '../../../constants/schema.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
+import { isGaitedBreedProfile } from '../../../utils/gaitedBreed.mjs';
 
 /** The trained value a horse is born with in its birth discipline. */
 export const birthDisciplineTrainedValue = 5;
@@ -29,13 +30,8 @@ export const birthDisciplineTrainedValue = 5;
 const gaitedDiscipline = DISCIPLINES.GAITED;
 const knownDisciplines = new Set(Object.values(DISCIPLINES));
 
-/**
- * @param {unknown} breedGeneticProfile - breeds.breedGeneticProfile (JSONB).
- * @returns {boolean} Whether the breed is gaited (ratingProfiles.isGaitedBreed).
- */
-export function isGaitedBreedProfile(breedGeneticProfile) {
-  return breedGeneticProfile?.ratingProfiles?.isGaitedBreed === true;
-}
+// The one gaited-breed rule (Equoria-uszhf); re-exported for existing callers.
+export { isGaitedBreedProfile };
 
 /**
  * The discipline a breed's store and starter horses are born with.

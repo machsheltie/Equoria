@@ -77,8 +77,8 @@ export async function getCompetitionEligibilitySummary(
       horseLevel: calculateHorseLevel(horse, discipline),
       ageEligible: ageRefusal(horse.dateOfBirth, now) === null,
       riderEligible: riderRefusal(assignment, userId) === null,
-      traitEligible: gaitingRefusal(discipline, horse.gaitScores) === null,
-      requiredTrait: disciplineConfig.requiresTrait || null,
+      // Gaited: a gaited breed with named special gaits (Equoria-uszhf).
+      traitEligible: gaitingRefusal(discipline, horse.gaitScores, horse.breed) === null,
       disciplineStats: disciplineConfig.stats,
       currentAge: getHorseAgeYears(horse.dateOfBirth, now),
       healthStatus: horse.healthStatus,
@@ -97,7 +97,6 @@ export async function getCompetitionEligibilitySummary(
       ageEligible: false,
       riderEligible: false,
       traitEligible: false,
-      requiredTrait: null,
       disciplineStats: [],
       currentAge: 0,
       healthStatus: 'Unknown',

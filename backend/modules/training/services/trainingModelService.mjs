@@ -2,7 +2,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
-import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
+import { breedAllowsDiscipline } from '../../../utils/gaitedBreed.mjs';
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import { getUserWithHorses } from '../../users/index.mjs';
@@ -256,7 +256,7 @@ async function getTrainableHorses(userId) {
       return [];
     }
 
-    // All 24 disciplines — Gaited filtered per horse trait
+    // All 24 disciplines — Gaited filtered per horse breed
     const allDisciplines = getAllDisciplines();
 
     const allHorses = [];
@@ -276,9 +276,10 @@ async function getTrainableHorses(userId) {
         const effectiveAge =
           horse.age !== null && horse.age !== undefined ? horse.age : (computedAge ?? 0);
 
-        // Gaited is only available if horse has the required trait
-        const availableDisciplines = allDisciplines.filter(
-          d => d !== 'Gaited' || checkTraitRequirements(horse, 'Gaited'),
+        // Gaited is only available to gaited breeds (owner ruling 2026-10-19,
+        // Equoria-uszhf); the same rule the train call applies.
+        const availableDisciplines = allDisciplines.filter(d =>
+          breedAllowsDiscipline(horse.breed, d),
         );
 
         // Equoria-lvjy: ageYears is computed from dateOfBirth at response

@@ -17,7 +17,7 @@
  * 🎯 FUNCTIONALITY TESTED:
  * 1. calculateHorseLevel() - Complete level calculation with stats, traits, training
  * 2. checkAgeRequirements() - Age validation for competition eligibility
- * 3. checkTraitRequirements() - Trait validation for discipline-specific requirements
+ * 3. breedAllowsDiscipline() - Gaited is a breed property, never a trait (Equoria-uszhf)
  * 4. calculateStatGain() - Placement-based stat increase probability system
  * 5. getAllDisciplines() - Complete discipline list validation (24 disciplines)
  * 6. getDisciplineConfig() - Discipline-specific stat weightings and requirements
@@ -37,12 +37,15 @@ import { describe, expect, test, afterEach } from '@jest/globals';
 import {
   calculateHorseLevel,
   checkAgeRequirements,
-  checkTraitRequirements,
   calculateStatGain,
   getAllDisciplines,
   getDisciplineConfig,
   calculatePrizeAmount,
 } from '../../../utils/competitionLogic.mjs';
+import { breedAllowsDiscipline } from '../../../utils/gaitedBreed.mjs';
+
+const gaitedBreed = { breedGeneticProfile: { ratingProfiles: { isGaitedBreed: true } } };
+const plainBreed = { breedGeneticProfile: { ratingProfiles: { isGaitedBreed: false } } };
 
 describe('🏆 UNIT: Enhanced Competition Logic - Complete Competition System Validation', () => {
   describe('📊 Horse Level Calculation', () => {
@@ -116,37 +119,18 @@ describe('🏆 UNIT: Enhanced Competition Logic - Complete Competition System Va
     });
   });
 
-  describe('🧬 Trait Requirements', () => {
-    test('should require Gaited trait for Gaited competitions', () => {
-      const horseWithGaited = {
-        epigeneticModifiers: {
-          positive: ['gaited', 'calm'],
-          negative: [],
-        },
-      };
-
-      const horseWithoutGaited = {
-        epigeneticModifiers: {
-          positive: ['fast', 'athletic'],
-          negative: [],
-        },
-      };
-
-      expect(checkTraitRequirements(horseWithGaited, 'Gaited')).toBe(true);
-      expect(checkTraitRequirements(horseWithoutGaited, 'Gaited')).toBe(false);
+  // Old contract: a 'gaited' epigenetic trait opened Gaited. Owner ruling
+  // 2026-10-19 (Equoria-uszhf): Gaited is a breed property that alone decides.
+  describe('🧬 Gaited Breed Requirement', () => {
+    test('only a gaited breed may do Gaited', () => {
+      expect(breedAllowsDiscipline(gaitedBreed, 'Gaited')).toBe(true);
+      expect(breedAllowsDiscipline(plainBreed, 'Gaited')).toBe(false);
     });
 
-    test('should not require special traits for most disciplines', () => {
-      const horse = {
-        epigeneticModifiers: {
-          positive: ['fast', 'athletic'],
-          negative: [],
-        },
-      };
-
-      expect(checkTraitRequirements(horse, 'Racing')).toBe(true);
-      expect(checkTraitRequirements(horse, 'Dressage')).toBe(true);
-      expect(checkTraitRequirements(horse, 'Show Jumping')).toBe(true);
+    test('every other discipline is open to every breed', () => {
+      expect(breedAllowsDiscipline(plainBreed, 'Racing')).toBe(true);
+      expect(breedAllowsDiscipline(plainBreed, 'Dressage')).toBe(true);
+      expect(breedAllowsDiscipline(plainBreed, 'Show Jumping')).toBe(true);
     });
   });
 
@@ -226,10 +210,10 @@ describe('🏆 UNIT: Enhanced Competition Logic - Complete Competition System Va
       expect(getDisciplineConfig('Gaited').stats).toEqual(['flexibility', 'balance', 'obedience']);
     });
 
-    test('should have Gaited trait requirement for Gaited discipline', () => {
+    test('Gaited discipline carries no trait requirement (Equoria-uszhf)', () => {
       const gaitedConfig = getDisciplineConfig('Gaited');
 
-      expect(gaitedConfig.requiresTrait).toBe('gaited');
+      expect(gaitedConfig).not.toHaveProperty('requiresTrait');
     });
   });
 
@@ -239,14 +223,14 @@ describe('🏆 UNIT: Enhanced Competition Logic - Complete Competition System Va
 
       expect(() => calculateHorseLevel(incompleteHorse, 'Racing')).not.toThrow();
       expect(() => checkAgeRequirements(incompleteHorse)).not.toThrow();
-      expect(() => checkTraitRequirements(incompleteHorse, 'Racing')).not.toThrow();
+      expect(() => breedAllowsDiscipline(incompleteHorse.breed, 'Racing')).not.toThrow();
     });
 
     test('should handle invalid discipline gracefully', () => {
       const horse = { age: 5 };
 
       expect(() => calculateHorseLevel(horse, 'InvalidDiscipline')).not.toThrow();
-      expect(() => checkTraitRequirements(horse, 'InvalidDiscipline')).not.toThrow();
+      expect(() => breedAllowsDiscipline(horse.breed, 'InvalidDiscipline')).not.toThrow();
     });
   });
 });

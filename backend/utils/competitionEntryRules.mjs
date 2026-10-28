@@ -26,6 +26,7 @@
 import { getHorseAgeYears } from './horseAge.mjs';
 import { hasBadHealth } from './horseHealth.mjs';
 import { checkGroomMayWork } from './groomWorkRules.mjs';
+import { breedAllowsDiscipline } from './gaitedBreed.mjs';
 import { maxActiveAgeYears, minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
 
 // The ridden entry window is the horse age policy's active window (Equoria-2nacc).
@@ -66,6 +67,12 @@ export const ENTRY_REFUSALS = Object.freeze({
     status: 400,
     message:
       "This horse's rider has not been paid this week and cannot ride. Pay day is Monday morning.",
+  }),
+  // Owner ruling 2026-10-19 (Equoria-uszhf): Gaited is a breed property. camelCase: new
+  // codes may not add snake-case names (Equoria-pjvp8 ratchet).
+  gaitedBreedRequired: Object.freeze({
+    status: 400,
+    message: 'Only gaited breeds can show in Gaited',
   }),
   GAITING_REQUIRED: Object.freeze({
     status: 400,
@@ -215,6 +222,8 @@ export const ENTRY_RULE_HORSE_SELECT = Object.freeze({
   dateOfBirth: true,
   healthStatus: true,
   gaitScores: true,
+  // The gaited-breed rule (utils/gaitedBreed.mjs, Equoria-uszhf).
+  breed: { select: { breedGeneticProfile: true } },
   // Displayed health (utils/horseHealth.mjs) for the bad-health rule.
   age: true,
   lastFedDate: true,
@@ -312,8 +321,19 @@ export function disciplineTypeRefusal(show, activeTypes = []) {
   return activeTypes.length >= MAX_ACTIVE_DISCIPLINE_TYPES ? 'DISCIPLINE_TYPE_LIMIT' : null;
 }
 
-/** C12 Gaited rule: a refusal code or null. */
-export function gaitingRefusal(discipline, gaitScores) {
+/**
+ * C12 Gaited rule: a refusal code or null. Only a gaited breed may show Gaited
+ * (owner ruling 2026-10-19, Equoria-uszhf: the breed alone decides, never a
+ * trait), and the horse must have named special gaits to be judged on.
+ *
+ * @param {string} discipline
+ * @param {object|null|undefined} gaitScores - horse.gaitScores
+ * @param {{ breedGeneticProfile?: unknown }|null|undefined} breed - horse.breed
+ */
+export function gaitingRefusal(discipline, gaitScores, breed) {
+  if (!breedAllowsDiscipline(breed, discipline)) {
+    return 'gaitedBreedRequired';
+  }
   return discipline === 'Gaited' && !hasGaiting(gaitScores) ? 'GAITING_REQUIRED' : null;
 }
 
@@ -364,7 +384,7 @@ export function evaluateEntryRules({
     ageRefusal(horse?.dateOfBirth, now) ??
     healthRefusal(horse, now) ??
     riderRefusal(assignment, userId) ??
-    gaitingRefusal(show.discipline, horse?.gaitScores) ??
+    gaitingRefusal(show.discipline, horse?.gaitScores, horse?.breed) ??
     disciplineTypeRefusal(show, activeTypes)
   );
 }

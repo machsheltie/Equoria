@@ -93,6 +93,19 @@ async function makeShow(discipline = 'Dressage', level = { levelMin: 1, levelMax
 }
 
 /** A horse owned by the entrant; `rider` false leaves it without one. */
+// Equoria-uszhf: the seeded breeds the Gaited breed rule is judged on.
+async function seededGaitedAndPlainBreeds() {
+  const gaited = await prisma.breed.findUnique({ where: { name: 'American Saddlebred' } });
+  const plain = await prisma.breed.findUnique({ where: { name: 'Thoroughbred' } });
+  if (gaited?.breedGeneticProfile?.ratingProfiles?.isGaitedBreed !== true) {
+    throw new Error('American Saddlebred must be seeded as a gaited breed; refusing to skip.');
+  }
+  if (plain?.breedGeneticProfile?.ratingProfiles?.isGaitedBreed !== false) {
+    throw new Error('Thoroughbred must be seeded as a non-gaited breed; refusing to skip.');
+  }
+  return { gaited, plain };
+}
+
 async function makeHorse({ years = 7, rider = {}, assignment = {}, withRider = true, ...fields } = {}) {
   const horse = await createTestHorse(
     prisma,
@@ -188,9 +201,16 @@ describe.each(PATHS)('%s applies the entry rules', (_label, enter) => {
     await expectRefused(show.id, horse.id, 400, 'RIDER_NOT_EMPLOYED', "This horse's rider is not employed by you");
   });
 
+  // Equoria-uszhf (owner ruling 2026-10-19): Gaited is a breed property, so the
+  // horse that may enter is now of a gaited breed. Old contract: any breed with
+  // gaitScores.gaiting was accepted.
   it('refuses a Gaited show for a horse without gaiting (C12), and accepts one with it', async () => {
+    const { gaited: gaitedBreed } = await seededGaitedAndPlainBreeds();
     const show = await makeShow('Gaited');
-    const noGait = await makeHorse({ gaitScores: { walk: 60, trot: 60, canter: 60, gallop: 60, gaiting: null } });
+    const noGait = await makeHorse({
+      breedId: gaitedBreed.id,
+      gaitScores: { walk: 60, trot: 60, canter: 60, gallop: 60, gaiting: null },
+    });
     await expectRefused(
       show.id,
       noGait.id,
@@ -198,7 +218,7 @@ describe.each(PATHS)('%s applies the entry rules', (_label, enter) => {
       'GAITING_REQUIRED',
       'Gaited shows require a horse with gaiting ability',
     );
-    const unrecorded = await makeHorse();
+    const unrecorded = await makeHorse({ breedId: gaitedBreed.id });
     await expectRefused(
       show.id,
       unrecorded.id,
@@ -207,9 +227,25 @@ describe.each(PATHS)('%s applies the entry rules', (_label, enter) => {
       'Gaited shows require a horse with gaiting ability',
     );
     const gaited = await makeHorse({
+      breedId: gaitedBreed.id,
       gaitScores: { walk: 60, trot: 60, canter: 60, gallop: 60, gaiting: [{ name: 'Rack', score: 70 }] },
     });
     expect((await enter(show.id, gaited.id)).status).toBe(201);
+  });
+
+  it('refuses a Gaited show to a non-gaited breed, even with gaiting and a stray Gaited trait (Equoria-uszhf)', async () => {
+    const { plain } = await seededGaitedAndPlainBreeds();
+    const show = await makeShow('Gaited');
+    const stray = await makeHorse({
+      breedId: plain.id,
+      gaitScores: { walk: 60, trot: 60, canter: 60, gallop: 60, gaiting: [{ name: 'Rack', score: 70 }] },
+      epigeneticModifiers: { positive: ['gaited', 'Gaited'], negative: [], hidden: [] },
+    });
+    await expectRefused(show.id, stray.id, 400, 'gaitedBreedRequired', 'Only gaited breeds can show in Gaited');
+    const breedless = await makeHorse({
+      gaitScores: { walk: 60, trot: 60, canter: 60, gallop: 60, gaiting: [{ name: 'Rack', score: 70 }] },
+    });
+    await expectRefused(show.id, breedless.id, 400, 'gaitedBreedRequired', 'Only gaited breeds can show in Gaited');
   });
 
   it('refuses a second entry of the same horse in one show', async () => {

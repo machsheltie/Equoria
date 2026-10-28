@@ -139,10 +139,11 @@ function getDisciplineConfigurations() {
       beneficial: ['focused'],
       detrimental: [],
     },
+    // Gaited is gated by the breed, never a trait (owner ruling 2026-10-19,
+    // Equoria-uszhf): utils/gaitedBreed.mjs.
     Gaited: {
       beneficial: [],
       detrimental: [],
-      requiresTrait: 'gaited',
     },
     Gymkhana: {
       beneficial: ['focused'],
@@ -255,30 +256,6 @@ export function checkAgeRequirements(horse) {
 }
 
 /**
- * Check if horse has required trait for discipline (e.g., Gaited)
- * @param {Object} horse - Horse object
- * @param {string} discipline - Competition discipline
- * @returns {boolean} Whether horse has required trait
- */
-export function checkTraitRequirements(horse, discipline) {
-  try {
-    const disciplineMap = configFor(discipline);
-
-    if (!disciplineMap.requiresTrait) {
-      return true; // No special trait required
-    }
-
-    const traits = horse.epigeneticModifiers || horse.traits || {};
-    const positiveTraits = traits.positive || [];
-
-    return positiveTraits.includes(disciplineMap.requiresTrait);
-  } catch (error) {
-    logger.error('[competitionLogic.checkTraitRequirements] Error:', error.message);
-    return false;
-  }
-}
-
-/**
  * Calculate random stat gain for competition winners
  * @param {number} placement - Competition placement (1st, 2nd, 3rd)
  * @param {string} discipline - Competition discipline
@@ -338,7 +315,6 @@ export default {
   calculatePlacements,
   calculateHorseLevel,
   checkAgeRequirements,
-  checkTraitRequirements,
   calculateStatGain,
   getAllDisciplines,
   getDisciplineConfig,

@@ -54,6 +54,19 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 60000);
 
+// Equoria-uszhf: the seeded breeds the Gaited breed rule is judged on.
+async function seededGaitedAndPlainBreeds() {
+  const gaited = await prisma.breed.findUnique({ where: { name: 'American Saddlebred' } });
+  const plain = await prisma.breed.findUnique({ where: { name: 'Thoroughbred' } });
+  if (gaited?.breedGeneticProfile?.ratingProfiles?.isGaitedBreed !== true) {
+    throw new Error('American Saddlebred must be seeded as a gaited breed; refusing to skip.');
+  }
+  if (plain?.breedGeneticProfile?.ratingProfiles?.isGaitedBreed !== false) {
+    throw new Error('Thoroughbred must be seeded as a non-gaited breed; refusing to skip.');
+  }
+  return { gaited, plain };
+}
+
 async function makeHorse({ years = 7, rider = true, ...fields } = {}) {
   const horse = await createTestHorse(
     prisma,
@@ -119,17 +132,37 @@ describe('GET /competition/eligibility follows the entry rules (B9)', () => {
     });
   });
 
+  // Equoria-uszhf (owner ruling 2026-10-19): Gaited is a breed property, so the
+  // eligible horse is now of a gaited breed. Old contract: any breed with
+  // gaitScores.gaiting was eligible.
   it('Gaited needs gaiting (C12)', async () => {
-    const noGait = await makeHorse();
+    const { gaited: gaitedBreed } = await seededGaitedAndPlainBreeds();
+    const noGait = await makeHorse({ breedId: gaitedBreed.id });
     expect(await summary(noGait.id, 'Gaited')).toMatchObject({
       eligible: false,
       traitEligible: false,
       refusal: { code: 'GAITING_REQUIRED' },
     });
     const gaited = await makeHorse({
+      breedId: gaitedBreed.id,
       gaitScores: { walk: 60, trot: 60, canter: 60, gallop: 60, gaiting: [{ name: 'Rack', score: 70 }] },
     });
     expect(await summary(gaited.id, 'Gaited')).toMatchObject({ eligible: true, traitEligible: true });
+  });
+
+  it('a non-gaited breed is not eligible for Gaited, even with gaiting and a stray Gaited trait (Equoria-uszhf)', async () => {
+    const { plain } = await seededGaitedAndPlainBreeds();
+    const stray = await makeHorse({
+      breedId: plain.id,
+      gaitScores: { walk: 60, trot: 60, canter: 60, gallop: 60, gaiting: [{ name: 'Rack', score: 70 }] },
+      epigeneticModifiers: { positive: ['gaited', 'Gaited'], negative: [], hidden: [] },
+    });
+    expect(await summary(stray.id, 'Gaited')).toMatchObject({
+      eligible: false,
+      traitEligible: false,
+      refusal: { code: 'gaitedBreedRequired', message: 'Only gaited breeds can show in Gaited' },
+    });
+    expect(await summary(stray.id, 'Dressage')).toMatchObject({ eligible: true });
   });
 
   // Equoria-576c0 B10: at most 3 discipline types active at once.

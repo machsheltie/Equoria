@@ -8,7 +8,7 @@ import {
 import { getHorseById } from '../../horses/index.mjs';
 import { commitTrainingSession, trainingFeeFor } from '../services/trainingSessionTx.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
-import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
+import { breedAllowsDiscipline } from '../../../utils/gaitedBreed.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -104,17 +104,16 @@ async function computeCanTrain(parsedHorseId, discipline) {
     return { eligible: false, reason: noTrainer, code: trainingRefusal.trainerRequired };
   }
 
-  // Check trait requirements for specific disciplines (e.g., Gaited)
-  if (discipline === 'Gaited') {
-    if (!checkTraitRequirements(horse, discipline)) {
-      logger.info(
-        `[trainingController.canTrain] Horse ${parsedHorseId} lacks required trait for ${discipline} training`,
-      );
-      return {
-        eligible: false,
-        reason: 'Horse must have the Gaited trait to train in Gaited discipline',
-      };
-    }
+  // Gaited is a breed property: only gaited breeds train Gaited, whatever
+  // traits the horse carries (owner ruling 2026-10-19, Equoria-uszhf).
+  if (!breedAllowsDiscipline(horse.breed, discipline)) {
+    logger.info(
+      `[trainingController.canTrain] Horse ${parsedHorseId} is not a gaited breed; cannot train ${discipline}`,
+    );
+    return {
+      eligible: false,
+      reason: 'Only gaited breeds can train in Gaited',
+    };
   }
 
   // Cooldown (one training per horse per week, any discipline): Horse.trainingCooldown

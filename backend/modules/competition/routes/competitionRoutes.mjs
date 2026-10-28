@@ -491,7 +491,8 @@ router.get(
       .isLength({ min: 1 })
       .withMessage('Discipline must be a non-empty string'),
   ],
-  requireOwnership('horse', { idParam: 'horseId' }),
+  // The breed is the Gaited rule's input (Equoria-uszhf).
+  requireOwnership('horse', { idParam: 'horseId', include: ['breed'] }),
   async (req, res) => {
     try {
       // Check for validation errors
