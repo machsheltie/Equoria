@@ -600,9 +600,11 @@ async function main() {
   if (chosen.backend.selected.length > 0) {
     const pkgJson = JSON.parse(readFileSync(path.join(repoRoot, 'backend/package.json'), 'utf8'));
     const argv = profileArgv(pkgJson.scripts?.['test:backend:targeted']);
-    if (!argv) {
+    // The laptop heap budget (CONTRIBUTING.md 'Test-Run Resource Budget'):
+    // refuse a profile that drifted off it rather than run jest unbounded.
+    if (!argv || !argv.includes('--max-old-space-size=1536') || !argv.includes('--runInBand')) {
       log(
-        'FAILED: backend/package.json test:backend:targeted is not the expected `node ... jest.js` command'
+        'FAILED: backend/package.json test:backend:targeted is not the expected `node --max-old-space-size=1536 ... jest.js --runInBand` command'
       );
       return 1;
     }
