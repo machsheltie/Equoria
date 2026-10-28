@@ -212,6 +212,9 @@ beforeAll(async () => {
     inFoalSinceDate: new Date(Date.now() - 3 * dayMs),
     pregnancySireId: sire.id,
     equippedFeedType: 'elite',
+    // Vetted 10 days ago: Very Good vet care, so a health check has something to
+    // restore (owner ruling 2026-10-27: the vet refuses a horse already Excellent).
+    lastVettedDate: daysAgo(10),
   });
   await staffHorse('h21', turning21);
   await staffHorse('h20', turning20);
