@@ -95,7 +95,7 @@ const RidersPage: React.FC = () => {
           <li>
             <strong>Level = visibility, not quality</strong> — a rookie rider may secretly excel
           </li>
-          <li>Legacy riders with high prestige may earn contract extensions</li>
+          <li>Each rider costs a weekly fee at their star level, charged one week at a time</li>
         </ul>
       </Surface>
     </PageContainer>

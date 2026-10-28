@@ -112,11 +112,20 @@ const GroomsPage: React.FC = () => {
       <Surface variant="panel" as="aside" className="mt-10 text-sm text-[var(--text-muted)]">
         <h3 className="font-semibold text-[var(--text-primary)] mb-2">About Grooms</h3>
         <ul className="space-y-1 list-disc list-inside">
-          <li>Grooms perform daily care tasks: feeding, brushing, and bonding activities</li>
+          <li>
+            A groom never works on their own: each day, press Groom Horse for each horse in their
+            care and choose the activity
+          </li>
           <li>Foals benefit most from consistent groom care during development</li>
-          <li>Each groom has a personality that influences their task effectiveness</li>
-          <li>Grooms gain XP through assignments and unlock career milestones</li>
-          <li>Experienced grooms with high prestige may pass on skills as legacy mentors</li>
+          <li>
+            Every groom starts as a Rookie and climbs a star level as they complete shows. A Rookie
+            shows you only their personality, and each new level reveals more of their hidden likes
+            and dislikes
+          </li>
+          <li>
+            Each groom costs one weekly fee at their star level, however many horses they look after
+          </li>
+          <li>Grooms who retire at Advanced or above may pass on skills as legacy mentors</li>
         </ul>
       </Surface>
     </PageContainer>

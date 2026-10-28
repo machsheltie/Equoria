@@ -78,12 +78,15 @@ const TrainersPage: React.FC = () => {
         <h3 className="font-semibold text-[var(--text-primary)] mb-2">About Trainers</h3>
         <ul className="space-y-1 list-disc list-inside">
           <li>Trainers are assigned to horses and boost training session effectiveness</li>
-          <li>Each trainer has hidden specializations revealed through training sessions</li>
+          <li>Each trainer has hidden specialties</li>
           <li>
-            <strong>Level = visibility, not quality</strong> — a novice trainer may secretly excel
+            <strong>Level = visibility, not quality</strong> — a Rookie trainer may secretly excel
             at your horse&apos;s discipline
           </li>
-          <li>Trainers gain XP over time and can unlock legacy certifications at Level 7+</li>
+          <li>
+            Trainers keep the star level they came with. Their level sets the fee you pay each time
+            you train with them
+          </li>
           <li>Mandatory retirement at 80 weeks — plan your succession</li>
         </ul>
       </Surface>
