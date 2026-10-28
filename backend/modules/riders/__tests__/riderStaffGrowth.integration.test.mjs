@@ -194,7 +194,7 @@ describe('rider growth (Equoria-xlw03)', () => {
       ['Horse traits', 4, 0],
       ['Disciplines', 4, 0],
       ['Temperaments', 2, 0],
-      ['Favourite breeds', 2, 0],
+      ['Favorite breeds', 2, 0],
     ]);
     // No hidden value, and no stored code name, reaches the player.
     // Only authored words: no stored kind codes on the categories.

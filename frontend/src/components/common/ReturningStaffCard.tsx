@@ -39,7 +39,7 @@ export interface ReturningStaffCardProps {
 }
 
 function noteModifier(item: StaffGrowthItem): string {
-  if (item.note === 'Favourite') return 'favourite';
+  if (item.note === 'Favorite') return 'favorite';
   return item.sign === 'negative' ? 'weakness' : 'strength';
 }
 

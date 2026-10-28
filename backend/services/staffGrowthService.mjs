@@ -54,7 +54,7 @@ const kindLabels = Object.freeze({
   trait: 'Horse traits',
   discipline: 'Disciplines',
   temperament: 'Temperaments',
-  breed: 'Favourite breeds',
+  breed: 'Favorite breeds',
 });
 
 /**
@@ -201,7 +201,7 @@ export async function revealedGrowthViews(client, staffType, staffRows) {
   };
 
   const noteFor = item =>
-    item.kind === 'breed' ? 'Favourite' : item.sign === 'negative' ? 'Weakness' : 'Strength';
+    item.kind === 'breed' ? 'Favorite' : item.sign === 'negative' ? 'Weakness' : 'Strength';
 
   const views = new Map();
   for (const staff of staffRows) {

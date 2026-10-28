@@ -237,9 +237,9 @@ describe('GroomDetailPanel — discoveries (Equoria-xlw03)', () => {
         },
         { label: 'Temperaments', total: 2, revealed: [] },
         {
-          label: 'Favourite breeds',
+          label: 'Favorite breeds',
           total: 2,
-          revealed: [{ label: 'Arabian', sign: 'positive', note: 'Favourite' }],
+          revealed: [{ label: 'Arabian', sign: 'positive', note: 'Favorite' }],
         },
       ],
     };
@@ -266,7 +266,7 @@ describe('GroomDetailPanel — discoveries (Equoria-xlw03)', () => {
       within(screen.getByTestId('discovery-category-2')).getAllByText('Not yet discovered')
     ).toHaveLength(2);
     expect(
-      within(screen.getByTestId('discovery-category-3')).getByText('Favourite')
+      within(screen.getByTestId('discovery-category-3')).getByText('Favorite')
     ).toBeInTheDocument();
     expect(screen.queryByText(/more competition/i)).not.toBeInTheDocument();
   });

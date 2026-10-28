@@ -49,7 +49,7 @@ const novice = {
       total: 2,
       revealed: [{ label: 'Calm', sign: 'positive', note: 'Strength' }],
     },
-    { label: 'Favourite breeds', total: 2, revealed: [] },
+    { label: 'Favorite breeds', total: 2, revealed: [] },
   ],
 };
 

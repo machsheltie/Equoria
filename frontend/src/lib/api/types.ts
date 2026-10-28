@@ -522,7 +522,7 @@ export interface RiderMarketplaceData {
 export interface StaffGrowthItem {
   label: string;
   sign: 'positive' | 'negative';
-  /** Authored: "Strength", "Weakness" or "Favourite". */
+  /** Authored: "Strength", "Weakness" or "Favorite". */
   note: string;
 }
 

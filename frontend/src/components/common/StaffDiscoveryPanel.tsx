@@ -3,7 +3,7 @@
  *
  * Owner rulings 2026-10-28 (q160, q177): every rider and groom carries twelve hidden
  * items — 4 horse traits, 4 disciplines and 2 temperaments (each a strength or a
- * weakness) and 2 favourite breeds. A Rookie shows its personality only; each level-up
+ * weakness) and 2 favorite breeds. A Rookie shows its personality only; each level-up
  * reveals 3; an Expert shows everything. The server sends only revealed items, as
  * authored labels; the rest appear here as "?" slots. There is no "N more shows" hint
  * (the old discovery hint line was removed by the same ruling).
@@ -35,7 +35,7 @@ const CategoryBlock: React.FC<{ category: StaffGrowthCategory; index: number }> 
       </h4>
       <ul className="space-y-2">
         {category.revealed.map((item) => {
-          const meta = item.note === 'Favourite' ? null : signMeta[item.sign];
+          const meta = item.note === 'Favorite' ? null : signMeta[item.sign];
           return (
             <li
               key={item.label}

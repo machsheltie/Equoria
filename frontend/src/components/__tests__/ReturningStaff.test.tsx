@@ -50,9 +50,9 @@ const growth = (starLevel: string) => ({
     },
     { label: 'Temperaments', total: 2, revealed: [] },
     {
-      label: 'Favourite breeds',
+      label: 'Favorite breeds',
       total: 2,
-      revealed: [{ label: 'Thoroughbred', sign: 'positive', note: 'Favourite' }],
+      revealed: [{ label: 'Thoroughbred', sign: 'positive', note: 'Favorite' }],
     },
   ],
 });
@@ -129,7 +129,7 @@ describe('ReturningRiders — riders back for hire (Equoria-266h7)', () => {
     expect(reveals).toHaveTextContent('Show Jumping');
     expect(reveals).toHaveTextContent('(Weakness)');
     expect(reveals).toHaveTextContent('Thoroughbred');
-    expect(reveals).toHaveTextContent('(Favourite)');
+    expect(reveals).toHaveTextContent('(Favorite)');
     // Only what was revealed: no empty kinds, no undiscovered slots.
     expect(reveals).not.toHaveTextContent('Temperaments');
     expect(reveals).not.toHaveTextContent(/not yet discovered|\?/i);
