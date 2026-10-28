@@ -11,6 +11,7 @@
 import { cn } from '@/lib/utils';
 import { getOrdinal } from '@/lib/activity-utils';
 import { isBadHealth } from '@/lib/healthWords';
+import { competitionDisciplineLabel } from '@/lib/utils/training-utils';
 
 type ChipVariant = 'ready' | 'active' | 'cooldown' | 'neutral' | 'warning';
 
@@ -193,7 +194,7 @@ export function deriveLatestChapter(
     const at = chapterTs(data.latestEvent.date);
     if (at !== null) {
       const place = data.latestEvent.placement;
-      const disc = data.latestEvent.discipline;
+      const disc = competitionDisciplineLabel(data.latestEvent.discipline);
       const label =
         place === 1
           ? `Won the ${disc} show`

@@ -48,6 +48,7 @@ export interface PrizeTransactionRowProps {
 // Equoria-2dnd2: date formatting + honest invalid-date fallback now live in the
 // shared util (was a duplicated, unguarded component-local formatDate).
 import { formatDate } from '@/lib/formatDate';
+import { competitionDisciplineLabel } from '@/lib/utils/training-utils';
 
 /**
  * Get ordinal suffix for a number
@@ -203,7 +204,7 @@ const TableRowLayout = memo(
             className="inline-flex items-center px-2 py-0.5 rounded-[var(--radius-sm)] text-xs font-medium bg-[var(--badge-info-bg)] text-[var(--status-info)]"
             data-testid="discipline-badge"
           >
-            {transaction.discipline}
+            {competitionDisciplineLabel(transaction.discipline)}
           </span>
         </td>
 
@@ -300,7 +301,7 @@ const CardLayout = memo(
                 className="inline-flex items-center px-2 py-0.5 rounded-[var(--radius-sm)] text-xs font-medium bg-[var(--badge-info-bg)] text-[var(--status-info)]"
                 data-testid="discipline-badge"
               >
-                {transaction.discipline}
+                {competitionDisciplineLabel(transaction.discipline)}
               </span>
             </div>
           </div>

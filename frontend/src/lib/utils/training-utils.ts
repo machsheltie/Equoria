@@ -260,6 +260,19 @@ export function disciplineLabel(value: string | null | undefined): string {
 }
 
 /**
+ * A show's or a show result's discipline as its authored name. Conformation and
+ * parade results store their show type in the discipline column ('conformation'),
+ * so those read as the show's name; every other value goes through
+ * disciplineLabel (owner ruling 2026-10-23, Equoria-q4pb8).
+ */
+export function competitionDisciplineLabel(value: string | null | undefined): string {
+  const key = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (key === 'conformation') return 'Conformation';
+  if (key === 'parade') return 'Parade';
+  return disciplineLabel(value);
+}
+
+/**
  * Check if a horse is eligible for training
  *
  * Requirements:

@@ -90,6 +90,7 @@ const EntryFee = ({ amount }: { amount: number }) => <Currency amount={amount} z
 // Equoria-2dnd2: date formatting + honest invalid-date fallback now live in the
 // shared util (was a duplicated, unguarded component-local formatDate).
 import { formatDate } from '@/lib/formatDate';
+import { competitionDisciplineLabel } from '@/lib/utils/training-utils';
 
 /**
  * EntryConfirmationModal Component
@@ -221,7 +222,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
                       className="inline-block px-2 py-0.5 bg-[rgba(37,99,235,0.1)] text-blue-400 text-xs font-medium rounded-full border border-blue-500/30"
                       data-testid="competition-discipline"
                     >
-                      {competition.discipline}
+                      {competitionDisciplineLabel(competition.discipline)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center" data-testid="competition-date">

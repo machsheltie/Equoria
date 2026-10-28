@@ -14,6 +14,7 @@
 
 import React, { useState } from 'react';
 import Currency from '@/components/ui/Currency';
+import { competitionDisciplineLabel } from '@/lib/utils/training-utils';
 import { Users, Eye, EyeOff } from 'lucide-react';
 import { CooldownTimer } from '@/components/common/CooldownTimer';
 import { ScoreBreakdownRadar } from './ScoreBreakdownRadar';
@@ -147,13 +148,13 @@ export function CompetitionFieldPreview({
             {show.name}
           </h3>
           <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-[var(--font-body)] flex-shrink-0">
-            {show.discipline}
+            {competitionDisciplineLabel(show.discipline)}
           </span>
         </div>
       ) : (
         <div>
           <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest font-[var(--font-body)] mb-0.5">
-            {show.discipline}
+            {competitionDisciplineLabel(show.discipline)}
           </p>
           <h3
             className="text-base font-bold text-[var(--text-primary)]"

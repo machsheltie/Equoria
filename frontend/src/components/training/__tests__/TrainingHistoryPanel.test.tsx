@@ -138,3 +138,22 @@ describe('TrainingHistoryPanel — Invalid Date handling (Equoria-krjw5)', () =>
     expect(screen.queryByText(/Invalid Date/i)).not.toBeInTheDocument();
   });
 });
+
+/** Equoria-q4pb8 — a stored discipline id never reaches the player raw. */
+describe('TrainingHistoryPanel — discipline names', () => {
+  it('shows the authored discipline name for a stored discipline id', async () => {
+    server.use(
+      http.get(`${base}/api/v1/training/status/:horseId`, () =>
+        HttpResponse.json({
+          success: true,
+          data: [{ discipline: 'showJumping', score: 42, nextEligibleDate: null }],
+        })
+      )
+    );
+
+    renderPanel();
+
+    expect(await screen.findByText('Show Jumping')).toBeInTheDocument();
+    expect(screen.queryByText(/showJumping/)).not.toBeInTheDocument();
+  });
+});

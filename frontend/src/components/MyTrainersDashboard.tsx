@@ -44,6 +44,7 @@ import Currency from '@/components/ui/Currency';
 // error into user-safe copy so a raw server body message is never rendered (§3).
 import { userMessageFor } from '@/lib/http/userMessage';
 import { skillLevelLabel } from '@/lib/staffLabels';
+import { disciplineLabel } from '@/lib/utils/training-utils';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -315,7 +316,11 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
                   <dt className="text-[10px] text-role-muted uppercase tracking-wider">
                     Speciality
                   </dt>
-                  <dd className="text-role-primary">{trainer.speciality}</dd>
+                  <dd className="text-role-primary">
+                    {trainer.skillLevel === 'expert' && trainer.speciality.trim().length > 0
+                      ? disciplineLabel(trainer.speciality)
+                      : 'Not yet known'}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-[10px] text-role-muted uppercase tracking-wider">

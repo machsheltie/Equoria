@@ -17,6 +17,7 @@
 import { useState, type ReactNode } from 'react';
 import Currency from '@/components/ui/Currency';
 import { formatDate } from '@/lib/formatDate';
+import { competitionDisciplineLabel } from '@/lib/utils/training-utils';
 import { useHorseShowResults, type HorseShowResultRow } from '@/lib/api/competitionResults';
 import './ShowResultsTab.css';
 
@@ -53,7 +54,8 @@ function competitionTypeLabel(row: HorseShowResultRow): string {
   if (row.competitionType.showType === 'parade') {
     return 'Parade';
   }
-  return row.competitionType.discipline ?? UNKNOWN;
+  const discipline = row.competitionType.discipline;
+  return discipline ? competitionDisciplineLabel(discipline) : UNKNOWN;
 }
 
 function PlacementCell({ row }: { row: HorseShowResultRow }) {

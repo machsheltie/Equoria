@@ -94,6 +94,7 @@ const CoinAmount = ({ amount }: { amount: number }) => (
 // Equoria-2dnd2: date formatting + honest invalid-date fallback now live in the
 // shared util (was a duplicated, unguarded component-local formatDate).
 import { formatDate } from '@/lib/formatDate';
+import { competitionDisciplineLabel } from '@/lib/utils/training-utils';
 
 /**
  * Calculate prize distribution (50%/30%/20%)
@@ -209,7 +210,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                 className="inline-block px-3 py-1 bg-[var(--alpha-celestial-primary-10)] text-blue-400 text-sm font-medium rounded-full border border-blue-500/30"
                 data-testid="competition-discipline"
               >
-                {competition.discipline}
+                {competitionDisciplineLabel(competition.discipline)}
               </span>
 
               {/* Equoria-lfkw1 — real scouting field (expanded variant in the

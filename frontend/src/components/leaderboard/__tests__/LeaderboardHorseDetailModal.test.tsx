@@ -331,3 +331,30 @@ describe('LeaderboardHorseDetailModal', () => {
     });
   });
 });
+
+/** Equoria-q4pb8 — a conformation result stores its show type as the discipline. */
+describe('LeaderboardHorseDetailModal — discipline names', () => {
+  it('shows a conformation result as Conformation, never the stored code', () => {
+    const conformationResult = {
+      ...mockHorseData.competitionHistory.recentCompetitions[0],
+      competitionId: 9,
+      competitionName: 'Autumn Conformation',
+      discipline: 'conformation',
+    };
+    render(
+      <LeaderboardHorseDetailModal
+        {...defaultProps}
+        horseData={{
+          ...mockHorseData,
+          competitionHistory: {
+            ...mockHorseData.competitionHistory,
+            recentCompetitions: [conformationResult],
+          },
+        }}
+      />
+    );
+
+    expect(screen.getByText('Conformation')).toBeInTheDocument();
+    expect(screen.queryByText('conformation')).not.toBeInTheDocument();
+  });
+});

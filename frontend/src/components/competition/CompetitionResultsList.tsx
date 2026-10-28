@@ -17,7 +17,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { Trophy, Medal, Star, Calendar, Coins, Filter, X } from 'lucide-react';
 import Currency from '@/components/ui/Currency';
 import { Surface } from '@/components/ui/Surface';
-import { DISCIPLINES } from '@/lib/utils/training-utils';
+import { DISCIPLINES, competitionDisciplineLabel } from '@/lib/utils/training-utils';
 import { Select } from '@/components/ui/form';
 import { Skeleton, ErrorState } from '@/components/ui/state';
 import EmptyState from '@/components/ui/EmptyState';
@@ -201,9 +201,8 @@ const ResultCard = memo(
       onClick(result.competitionId);
     }, [onClick, result.competitionId]);
 
-    // Get discipline display name
-    const disciplineInfo = DISCIPLINES.find((d) => d.id === result.discipline);
-    const disciplineName = disciplineInfo?.name || result.discipline;
+    // The discipline as its authored name, never the stored value (Equoria-q4pb8)
+    const disciplineName = competitionDisciplineLabel(result.discipline);
 
     // Total prize won and recorded Horse Points (null = unknown, shown as a dash)
     const totalPrize = result.userResults.reduce((sum, r) => sum + r.prizeWon, 0);

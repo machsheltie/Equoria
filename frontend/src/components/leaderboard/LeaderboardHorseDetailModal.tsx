@@ -117,6 +117,7 @@ export interface LeaderboardHorseDetailModalProps {
 // Equoria-2dnd2: date formatting + honest invalid-date fallback consolidated
 // into the shared util (was a duplicated, unguarded module-local formatDate).
 import { formatDate } from '@/lib/formatDate';
+import { competitionDisciplineLabel } from '@/lib/utils/training-utils';
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -275,7 +276,7 @@ const LeaderboardHorseDetailModal = ({
                     )}
                     {horseData.primaryDiscipline && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--bg-midnight)] text-purple-300">
-                        {horseData.primaryDiscipline}
+                        {competitionDisciplineLabel(horseData.primaryDiscipline)}
                       </span>
                     )}
                   </div>
@@ -377,7 +378,7 @@ const LeaderboardHorseDetailModal = ({
                               {comp.competitionName}
                             </td>
                             <td className="px-3 py-2 text-[var(--text-primary)]">
-                              {comp.discipline}
+                              {competitionDisciplineLabel(comp.discipline)}
                             </td>
                             <td className="px-3 py-2 text-right text-[var(--text-primary)]">
                               {comp.rank}/{comp.totalParticipants}

@@ -7,6 +7,7 @@
 import { Trophy, Calendar, Users } from 'lucide-react';
 import Currency from '@/components/ui/Currency';
 import { formatDate } from '@/lib/formatDate';
+import { competitionDisciplineLabel } from '@/lib/utils/training-utils';
 import type { CompetitionResults } from '@/lib/api/competitionResults';
 
 interface ResultsSummaryProps {
@@ -22,7 +23,7 @@ export default function ResultsSummary({ results }: ResultsSummaryProps) {
           className="inline-block px-3 py-1 bg-[rgba(37,99,235,0.1)] text-blue-400 text-sm font-medium rounded-full border border-blue-500/30"
           data-testid="competition-discipline"
         >
-          {results?.discipline || '—'}
+          {results?.discipline ? competitionDisciplineLabel(results.discipline) : '—'}
         </span>
         <div className="flex items-center text-sm text-slate-400" data-testid="competition-date">
           <Calendar className="h-4 w-4 mr-1" aria-hidden="true" />

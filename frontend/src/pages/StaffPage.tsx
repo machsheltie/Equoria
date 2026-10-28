@@ -33,12 +33,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState, SectionLoading } from '@/components/ui/state';
 import { groomSpecialtyLabel } from '@/lib/groomSpecialtyLabels';
+import { skillLevelLabel } from '@/lib/staffLabels';
 import { userMessageFor } from '@/lib/http/userMessage';
-
-function capitalise(word: string | undefined): string {
-  if (!word) return '';
-  return word.charAt(0).toUpperCase() + word.slice(1);
-}
 
 function coins(amount: number): string {
   return amount.toLocaleString();
@@ -213,7 +209,7 @@ const StaffPage: React.FC = () => {
                       key={groom.id}
                       testId={`staff-groom-${groom.id}`}
                       name={groom.name}
-                      line={`${capitalise(groom.skillLevel)} · ${groomSpecialtyLabel(groom.specialty)}`}
+                      line={`${skillLevelLabel(groom.skillLevel)} · ${groomSpecialtyLabel(groom.specialty)}`}
                       side={
                         pay ? (
                           <>
@@ -287,7 +283,7 @@ const StaffPage: React.FC = () => {
                   key={rider.id}
                   testId={`staff-rider-${rider.id}`}
                   name={rider.name || `${rider.firstName} ${rider.lastName}`}
-                  line={capitalise(rider.skillLevel)}
+                  line={skillLevelLabel(rider.skillLevel)}
                   side={
                     <>
                       <p className="text-[var(--text-secondary)]">
@@ -353,7 +349,7 @@ const StaffPage: React.FC = () => {
                   key={trainer.id}
                   testId={`staff-trainer-${trainer.id}`}
                   name={trainer.name || `${trainer.firstName} ${trainer.lastName}`}
-                  line={capitalise(trainer.skillLevel)}
+                  line={skillLevelLabel(trainer.skillLevel)}
                   side={
                     <p className="text-[var(--text-secondary)]">
                       {coins(trainer.sessionRate)} coins a session

@@ -114,3 +114,27 @@ describe('HorseEquipPage — equipped feed card', () => {
     expect(screen.getByTestId('unequip-feed-button')).toBeInTheDocument();
   });
 });
+
+/** Equoria-q4pb8 — a tack item's stored category code never reaches the player. */
+describe('HorseEquipPage — tack category names', () => {
+  it('names a stored category code with its authored word', async () => {
+    const storedCategory = ['saddle', 'pad'].join('_');
+    renderAt(5, {
+      tack: [
+        {
+          id: 'inv-1',
+          itemId: 'quiltedPad',
+          category: storedCategory as EquippableResponse['tack'][number]['category'],
+          name: 'Quilted Pad',
+          quantity: 1,
+          equippedToHorseId: null,
+        },
+      ],
+      feed: [],
+    });
+
+    const card = await screen.findByTestId('tack-item-inv-1');
+    expect(card).toHaveTextContent('Saddle Pad');
+    expect(card).not.toHaveTextContent(storedCategory);
+  });
+});

@@ -39,6 +39,7 @@ import { useEquipFeed, useUnequipFeed } from '@/hooks/api/useEquipFeed';
 import { useEquipItem, useUnequipItem } from '@/hooks/api/useInventory';
 import { useFeedCatalog } from '@/hooks/api/useFeedShop';
 import { FeedItem } from '@/lib/api-client';
+import { tackCategoryLabel } from '@/lib/tackLabels';
 
 const FEED_IMAGES: Record<FeedItem['id'], string> = {
   basic: '/images/feed/basicfeed.png',
@@ -204,7 +205,7 @@ const HorseEquipPage: React.FC = () => {
                     }
                     titlePrefix={isEquipped ? EQUIPPED_STAR : undefined}
                     title={item.name}
-                    subtitle={<span className="capitalize">{item.category}</span>}
+                    subtitle={<span>{tackCategoryLabel(item.category)}</span>}
                     description={description}
                     selected={isEquipped}
                     onClick={

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { TrainingResult } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/formatDate';
+import { disciplineLabel } from '@/lib/utils/training-utils';
 
 interface TrainingResultsDisplayProps {
   result: TrainingResult;
@@ -41,7 +42,9 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
       {/* Discipline */}
       <div className="mb-4">
         <p className="text-sm font-medium text-role-secondary">Discipline</p>
-        <p className="text-base font-semibold text-[var(--text-primary)]">{result.discipline}</p>
+        <p className="text-base font-semibold text-[var(--text-primary)]">
+          {disciplineLabel(result.discipline)}
+        </p>
       </div>
 
       {/* Score Display */}

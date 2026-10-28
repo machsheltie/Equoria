@@ -78,6 +78,15 @@ describe('TrainingHistoryPanel scores (Equoria-da2fw)', () => {
           },
         })
       ),
+      // Equoria-q4pb8: the shared history fixture's stored 'dressage' now reads as
+      // "Dressage" too, so this test serves no history and its lookups stay on the
+      // discipline status rows it is about.
+      http.get(`${base}/api/v1/horses/:id/training-history`, () =>
+        HttpResponse.json({
+          success: true,
+          data: { trainingHistory: [], disciplineBalance: {}, trainingFrequency: {} },
+        })
+      ),
       http.get(`${base}/api/v1/horses/:id`, () =>
         HttpResponse.json({
           success: true,

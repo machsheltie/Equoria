@@ -14,6 +14,7 @@
 
 import { type JSX, useMemo, useState } from 'react';
 import { formatDate } from '@/lib/formatDate';
+import { competitionDisciplineLabel } from '@/lib/utils/training-utils';
 import { useCompetitions } from '@/hooks/api/useCompetitions';
 import { useHorses } from '@/hooks/api/useHorses';
 import ConformationEntryModal from '@/components/competition/ConformationEntryModal';
@@ -96,7 +97,7 @@ const ConformationShowsPanel = (): JSX.Element => {
             <option value="">Select a show…</option>
             {conformationShows.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name} — {s.discipline}
+                {s.name} — {competitionDisciplineLabel(s.discipline)}
               </option>
             ))}
           </select>
@@ -152,7 +153,7 @@ const ConformationShowsPanel = (): JSX.Element => {
                 <div>
                   <div className="font-medium text-gray-900">{s.name}</div>
                   <div className="text-gray-500">
-                    {s.discipline} · {formatDate(s.date)}
+                    {competitionDisciplineLabel(s.discipline)} · {formatDate(s.date)}
                   </div>
                 </div>
                 {/* Equoria-wgfbf: entry debits this fee (Equoria-mwjst). */}

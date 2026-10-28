@@ -206,4 +206,15 @@ describe('StaffPage', () => {
     expect(await screen.findByRole('button', { name: /try again/i })).toBeInTheDocument();
     expect(screen.queryByText(/boom/)).not.toBeInTheDocument();
   });
+
+  // Equoria-q4pb8: a skill level the label map has not been taught reads as an authored
+  // word, never as the stored value with its first letter raised.
+  it('never shows a stored skill level raw', async () => {
+    serveStaff({ riders: [{ ...rider, skillLevel: 'seasonedPro' }] });
+    renderPage();
+
+    const riderRow = await screen.findByTestId('staff-rider-5');
+    expect(within(riderRow).getByText('Unrated')).toBeInTheDocument();
+    expect(within(riderRow).queryByText(/seasonedPro/i)).not.toBeInTheDocument();
+  });
 });

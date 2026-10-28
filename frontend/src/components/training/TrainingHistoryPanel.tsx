@@ -1,6 +1,7 @@
 import { useTrainingOverview } from '@/hooks/api/useTraining';
 import { useHorse, useHorseTrainingHistory } from '@/hooks/api/useHorses';
 import { userMessageFor } from '@/lib/http/userMessage';
+import { disciplineLabel } from '@/lib/utils/training-utils';
 
 interface TrainingHistoryPanelProps {
   horseId?: number;
@@ -65,7 +66,7 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
           >
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-[var(--text-primary)]">
-                {entry.discipline.replace(/_/g, ' ')}
+                {disciplineLabel(entry.discipline)}
               </span>
               <span className="text-xs text-role-secondary">
                 Score: {horse?.disciplineScores?.[entry.discipline] ?? '—'}
@@ -101,7 +102,9 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
               className="rounded-md border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm"
             >
               <div className="flex items-center justify-between">
-                <span className="font-semibold">{entry.discipline ?? 'Discipline'}</span>
+                <span className="font-semibold">
+                  {entry.discipline ? disciplineLabel(entry.discipline) : 'Discipline'}
+                </span>
                 <span className="text-xs text-role-secondary">
                   {entry.trainedAt ? formatDateTime(entry.trainedAt) : 'Timestamp pending'}
                 </span>
