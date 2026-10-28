@@ -144,7 +144,9 @@ export async function debitMoneyOrThrow(
  * error, not a silent miss.
  */
 export const SYSTEM_ACCOUNT_SHOW_ESCROW = 'showEscrow';
-export const SYSTEM_ACCOUNT_BURN = 'burn';
+/** The fee/purchase sink. camelCase name for new code (Equoria-pjvp8); same value. */
+export const systemAccountBurn = 'burn';
+export const SYSTEM_ACCOUNT_BURN = systemAccountBurn;
 
 /**
  * Equoria-si69u: thrown when a debit against a SystemAccount would drive its

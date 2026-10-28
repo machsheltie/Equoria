@@ -17,11 +17,16 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 // Equoria-fby1t (owner, 2026-09-14): the player may SEE a groom's age —
 // `groomAgeYears` turns the stored `startAge` + `careerWeeks` into the one
 // number a player reads.
 import { groomAgeYears } from '../services/groomAgeService.mjs';
 import { staffLabels } from '../../../utils/staffPublicView.mjs';
+import {
+  ensureGrowthProfileTx,
+  revealedGrowthView,
+} from '../../../services/staffGrowthService.mjs';
 
 const GROOM_LIST_SELECT = {
   id: true,
@@ -205,6 +210,16 @@ export async function getGroomProfile(req, res) {
       personalityCompatibility,
       // Equoria-no441: authored words beside the stored values.
       ...staffLabels('groom', groom),
+      // Owner rulings 2026-10-28 (q160, Equoria-xlw03): the groom's level, personality
+      // and only the hidden items its level has revealed. A groom made before growth
+      // existed gets its profile now, revealed to match its level.
+      growth: await (async () => {
+        await withRetryableTxMapping(
+          prisma.$transaction(tx => ensureGrowthProfileTx(tx, 'groom', groom.id)),
+          { message: 'Grooms are busy right now, please retry in a moment.' },
+        );
+        return revealedGrowthView(prisma, 'groom', groom);
+      })(),
     };
 
     logger.info(`[groomController.getGroomProfile] Retrieved profile for groom ${groomId}`);

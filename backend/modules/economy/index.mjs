@@ -14,6 +14,7 @@ export {
   InsufficientFundsError,
   SYSTEM_ACCOUNT_BURN,
   SYSTEM_ACCOUNT_SHOW_ESCROW,
+  systemAccountBurn,
   creditSystemAccount,
   debitMoneyOrThrow,
   debitSystemAccountOrThrow,

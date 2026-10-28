@@ -52,8 +52,11 @@ afterEach(() => {
 function spyHooks(
   logs: Q<unknown>,
   talents: Q<unknown> = profileResult({ data: null }),
-  select: MutationStub = selectStub()
+  select: MutationStub = selectStub(),
+  // Equoria-xlw03: the panel also reads the groom's profile for its discoveries.
+  profile: Q<unknown> = profileResult({ isLoading: true })
 ) {
+  vi.spyOn(useGroomsModule, 'useGroomProfile').mockReturnValue(profile as never);
   vi.spyOn(useGroomsModule, 'useGroomAssignmentLogs').mockReturnValue(logs as never);
   vi.spyOn(useGroomsModule, 'useGroomTalents').mockReturnValue(talents as never);
   vi.spyOn(useGroomsModule, 'useSelectTalent').mockReturnValue(select as never);
@@ -207,5 +210,75 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
     }
     expect(screen.queryByText(/Level \d/)).not.toBeInTheDocument();
     expect(select.mutate).not.toHaveBeenCalled();
+  });
+});
+
+// Owner rulings 2026-10-28 (q160, Equoria-xlw03): the panel shows what the groom has
+// revealed of its hidden items, with the rest as undiscovered slots.
+describe('GroomDetailPanel — discoveries (Equoria-xlw03)', () => {
+  it('shows only the revealed items, by kind, and the rest as undiscovered', () => {
+    const growth = {
+      starLevel: 'novice',
+      stars: 2,
+      levelLabel: 'Novice',
+      personality: 'gentle',
+      totalItems: 12,
+      revealedCount: 3,
+      categories: [
+        {
+          label: 'Horse traits',
+          total: 4,
+          revealed: [{ label: 'Brave', sign: 'positive', note: 'Strength' }],
+        },
+        {
+          label: 'Disciplines',
+          total: 4,
+          revealed: [{ label: 'Dressage', sign: 'negative', note: 'Weakness' }],
+        },
+        { label: 'Temperaments', total: 2, revealed: [] },
+        {
+          label: 'Favourite breeds',
+          total: 2,
+          revealed: [{ label: 'Arabian', sign: 'positive', note: 'Favourite' }],
+        },
+      ],
+    };
+    spyHooks(
+      profileResult({ data: [] }),
+      undefined,
+      undefined,
+      profileResult({ data: { growth } })
+    );
+    renderPanel();
+
+    const panel = screen.getByTestId('groom-discovery-panel');
+    expect(within(panel).getByText('3 / 12 revealed')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('discovery-category-0')).getByText('Brave')
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('discovery-category-0')).getAllByText('Not yet discovered')
+    ).toHaveLength(3);
+    expect(
+      within(screen.getByTestId('discovery-category-1')).getByText('Weakness')
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('discovery-category-2')).getAllByText('Not yet discovered')
+    ).toHaveLength(2);
+    expect(
+      within(screen.getByTestId('discovery-category-3')).getByText('Favourite')
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/more competition/i)).not.toBeInTheDocument();
+  });
+
+  it('says so when the discoveries cannot be loaded', () => {
+    spyHooks(
+      profileResult({ data: [] }),
+      undefined,
+      undefined,
+      profileResult({ error: new Error('boom') })
+    );
+    renderPanel();
+    expect(screen.getByTestId('groom-discovery-error-7')).toBeInTheDocument();
   });
 });

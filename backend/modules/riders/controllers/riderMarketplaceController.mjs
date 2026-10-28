@@ -37,6 +37,7 @@ import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
 import { removeMarketplaceOfferCas } from '../../../utils/staffMarketplaceOfferCas.mjs';
 import { offerAtLevelPrice, offerLevelAndFee } from '../../../constants/staffLevels.mjs';
 import { publicStaffRow } from '../../../utils/staffPublicView.mjs';
+import { ensureGrowthProfileTx } from '../../../services/staffGrowthService.mjs';
 
 const STAFF_TYPE = 'rider';
 
@@ -337,6 +338,9 @@ export async function hireRiderFromMarketplace(req, res) {
           // The hidden retirement age (40-65), rolled once at generation. The
           // value is never read back here: nothing in a response can carry it.
           await ensureRiderRetirementSchedule(tx, rider.id);
+          // Owner rulings 2026-10-28 (q160, Equoria-xlw03): the rider's hidden growth
+          // items are drawn now, once, in their own table; a Rookie shows none of them.
+          await ensureGrowthProfileTx(tx, 'rider', rider.id);
           // Equoria-hjzwt: shared atomic debit helper.
           // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
           const moneyAfter = await debitMoneyOrThrow(tx, {

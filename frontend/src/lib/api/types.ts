@@ -504,7 +504,6 @@ export interface MarketplaceRider {
   weeklyRate: number;
   bio: string;
   availability: boolean;
-  knownAffinities: string[]; // only visible for 'experienced' skill level
 }
 
 export interface RiderMarketplaceData {
@@ -515,24 +514,38 @@ export interface RiderMarketplaceData {
   canRefreshFree: boolean;
 }
 
-export interface RiderDiscoveryData {
+/**
+ * What a rider or groom has revealed of its twelve hidden items (owner rulings
+ * 2026-10-28, q160/q177; Equoria-xlw03). Only revealed items are sent, as authored labels;
+ * `total` per kind is how many exist, so the rest show as undiscovered.
+ */
+export interface StaffGrowthItem {
+  label: string;
+  sign: 'positive' | 'negative';
+  /** Authored: "Strength", "Weakness" or "Favourite". */
+  note: string;
+}
+
+export interface StaffGrowthCategory {
+  /** Authored heading, e.g. "Horse traits". */
+  label: string;
+  total: number;
+  revealed: StaffGrowthItem[];
+}
+
+export interface StaffGrowthView {
+  starLevel: string;
+  stars: number;
+  levelLabel: string;
+  personality: string;
+  /** Authored personality word (Equoria-no441). */
+  personalityLabel?: string;
+  totalItems: number;
+  revealedCount: number;
+  categories: StaffGrowthCategory[];
+}
+
+/** GET /api/v1/riders/:id/discovery */
+export interface RiderDiscoveryData extends StaffGrowthView {
   riderId: number;
-  totalSlots: number;
-  discoveredCount: number;
-  slots: Array<{
-    slotIndex: number;
-    category: string;
-    discovered: boolean;
-    trait?: {
-      id: string;
-      category: string;
-      label: string;
-      value: string;
-      strength: string;
-      discoveredAt?: string;
-      icon: string;
-      description: string;
-    };
-  }>;
-  nextDiscoveryAt?: number;
 }

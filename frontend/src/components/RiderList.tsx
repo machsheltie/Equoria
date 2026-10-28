@@ -315,25 +315,9 @@ const RiderList: React.FC<RiderListProps> = ({
                     </div>
                   </div>
 
-                  {/* Known Affinities (experienced only) */}
-                  {rider.skillLevel === 'experienced' && rider.knownAffinities.length > 0 && (
-                    <div className="mb-4">
-                      <p className="type-label text-[10px] text-[var(--text-muted)] mb-1">
-                        Known Affinities
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {rider.knownAffinities.map((a) => (
-                          <span
-                            key={a}
-                            className="px-1.5 py-0.5 bg-[var(--role-success-bg)] text-[var(--role-success-text)] text-[10px] rounded-[var(--radius-sm)]"
-                          >
-                            {a}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
+                  {/* Equoria-xlw03 (owner rulings 2026-10-28): the old "Known Affinities"
+                      hint is gone; every new rider is a Rookie whose hidden items are
+                      revealed only as it levels up. */}
                   {/* Bio */}
                   <p className="text-xs text-[var(--text-muted)] italic mb-4 line-clamp-2">
                     "{rider.bio}"

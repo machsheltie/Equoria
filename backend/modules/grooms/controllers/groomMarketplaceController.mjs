@@ -42,6 +42,7 @@ import { ensureRetirementSchedule } from '../services/groomRetirementScheduleSer
 import { drawStartAge } from '../services/groomAgeService.mjs';
 // Equoria-ypb7d.2: hiring OPENS AN ENGAGEMENT. Players never own grooms.
 import { openEngagementTx } from '../services/groomEngagementService.mjs';
+import { ensureGrowthProfileTx } from '../../../services/staffGrowthService.mjs';
 // Equoria-95yrv: the weekly fee's rate and cap, published with the offer list.
 import { MAX_HORSES_PER_GROOM } from '../services/groomSalaryService.mjs';
 
@@ -362,6 +363,10 @@ export async function hireFromMarketplace(req, res) {
           // hire. Writes to `groom_retirement_schedules`; returns the age, which
           // is deliberately NOT propagated into the hire response.
           await ensureRetirementSchedule(tx, groom.id);
+
+          // Owner rulings 2026-10-28 (q160, Equoria-xlw03): the groom's hidden growth
+          // items are drawn now, once, in their own table; a Rookie shows none.
+          await ensureGrowthProfileTx(tx, 'groom', groom.id);
 
           // Equoria-ypb7d.2: hiring opens an ENGAGEMENT, not an ownership. Same
           // transaction, so a rolled-back hire leaves no orphan row.

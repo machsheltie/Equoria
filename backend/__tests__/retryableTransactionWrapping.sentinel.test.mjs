@@ -71,7 +71,11 @@ const MIGRATED = [
   // file at HEAD (3 `prisma.$transaction(` sites at lines 138/246/365, each
   // directly inside a `withRetryableTxMapping(` call, plus the shared import).
   // Pinned here so the new boundaries cannot be silently un-wrapped.
-  ['modules/riders/controllers/riderController.mjs', { wrapped: 3, totalTx: 3 }],
+  // Equoria-xlw03 bumped this to 4: the discovery read draws a missing growth profile
+  // in its own wrapped transaction.
+  ['modules/riders/controllers/riderController.mjs', { wrapped: 4, totalTx: 4 }],
+  // Equoria-xlw03: hiring a rider from the riders-for-hire pool.
+  ['modules/riders/controllers/riderFreeAgentController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/trainers/controllers/trainerMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
   // Equoria-bvddn.8: assignTrainer and dismissTrainer became transactional —
   // read-then-write races (both concurrent assign requests passing the
@@ -81,7 +85,9 @@ const MIGRATED = [
   ['modules/trainers/controllers/trainerController.mjs', { wrapped: 2, totalTx: 2 }],
   // groomRosterController.mjs left this list with Equoria-bvddn.7: its only
   // $transaction was the player-built hire (hireGroom), now retired, so the file
-  // holds no transaction to pin.
+  // holds no transaction to pin. Equoria-xlw03 brought it back: the profile read draws a
+  // missing growth profile in one wrapped transaction.
+  ['modules/grooms/controllers/groomRosterController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/grooms/controllers/groomMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
   // createShow wrapped → wrapped 1 / totalTx 1. executeClosedShows' 1 remaining
   // executor-path $transaction (per-entry prize payout) is intentionally unwrapped

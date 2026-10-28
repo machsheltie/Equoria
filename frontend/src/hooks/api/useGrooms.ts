@@ -17,6 +17,7 @@ import {
   Groom,
   GroomAssignment,
   GroomAssignmentLogEntry,
+  GroomProfile,
   MarketplaceData,
   SalarySummary,
 } from '@/lib/api-client';
@@ -176,6 +177,18 @@ export function useGroomAssignmentLogs(
       const res = await groomsApi.getAssignmentLogs(groomId as number);
       return res.logs ?? [];
     },
+    enabled: Boolean(groomId) && (options.enabled ?? true),
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+// Equoria-xlw03 — the groom's profile from GET /grooms/:id/profile, read for its
+// growth: level, personality and only the revealed hidden items (owner rulings
+// 2026-10-28, q160). Talent selections invalidate this key too (useSelectTalent).
+export function useGroomProfile(groomId: number | null, options: { enabled?: boolean } = {}) {
+  return useQuery<GroomProfile, ApiError>({
+    queryKey: groomKeys.profile(groomId as number),
+    queryFn: async () => (await groomsApi.getProfile(groomId as number)).groom,
     enabled: Boolean(groomId) && (options.enabled ?? true),
     staleTime: 2 * 60 * 1000,
   });

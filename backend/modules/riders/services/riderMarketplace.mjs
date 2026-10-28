@@ -3,8 +3,10 @@
  * Handles generation and management of available riders for hire.
  *
  * Generates riders with personality, skill level, star level, weekly rate, and bio.
- * The weekly rate is the star level's price (owner ruling 2026-10-28, Equoria-nawn5;
- * backend/constants/staffLevels.mjs).
+ * Every new rider is a Rookie (owner rulings 2026-10-28, q160/q177, Equoria-xlw03): it
+ * earns its higher stars by shows, and its hidden modifiers are drawn when it is hired
+ * (backend/services/staffGrowthService.mjs), so an offer carries none. The weekly rate is
+ * the star level's price (Equoria-nawn5; backend/constants/staffLevels.mjs).
  * Mirrors the Groom marketplace pattern (groomMarketplace.mjs).
  */
 
@@ -133,7 +135,10 @@ function generateBio(firstName, skillLevel, specialty) {
  * @returns {Object} Marketplace rider data
  */
 export function generateRandomRider() {
-  const { skillLevel, starLevel } = drawStaffLevel('rider');
+  // The old skill word keeps its odds (it still feeds the rider modifiers, which the
+  // rulings did not change); the star level is always Rookie (q160).
+  const { skillLevel } = drawStaffLevel('rider');
+  const starLevel = 'rookie';
   const { SPECIALTIES } = RIDER_MARKETPLACE_CONFIG;
   const specialty = SPECIALTIES[Math.floor(Math.random() * SPECIALTIES.length)];
   const personality = PERSONALITIES[Math.floor(Math.random() * PERSONALITIES.length)];
@@ -146,9 +151,6 @@ export function generateRandomRider() {
         : Math.floor(Math.random() * 100) + 50;
   const firstName = generateFirstName();
   const lastName = generateLastName();
-
-  // Experienced riders reveal one affinity hint
-  const knownAffinities = skillLevel === 'experienced' ? [specialty] : [];
 
   return {
     marketplaceId: `mkt_rider_${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random()}`}`,
@@ -164,7 +166,6 @@ export function generateRandomRider() {
     // Owner ruling 2026-10-23 (Equoria-or2ua): a random age of 18-25.
     startAge: drawRiderStartAge(),
     availability: true,
-    knownAffinities,
   };
 }
 
@@ -185,7 +186,6 @@ function generateStarterRider() {
     bio: generateBio(firstName, 'rookie', specialty),
     startAge: drawRiderStartAge(),
     availability: true,
-    knownAffinities: [],
   };
 }
 

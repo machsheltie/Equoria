@@ -11,7 +11,7 @@
  *   getRefreshCost — needsRefresh=true → 0; needsRefresh=false → PREMIUM_REFRESH_COST
  *
  * riderMarketplace:
- *   generateRandomRider — rookie has experience=0 + knownAffinities=[]
+ *   generateRandomRider — rookie has experience=0 and no affinity hint (Equoria-xlw03)
  *   generateRiderMarketplace — starter rider at index 0
  *   riderMarketplaceNeedsRefresh — same 3 branches as groomMarketplace
  *   getRiderRefreshCost — same 2 branches
@@ -141,7 +141,8 @@ describe('riderMarketplace — generateRiderMarketplace', () => {
     expect(starter.personality).toBe('methodical');
     expect(starter.speciality).toBe('Dressage');
     expect(starter.experience).toBe(0);
-    expect(starter.knownAffinities).toEqual([]);
+    // Equoria-xlw03 (owner rulings 2026-10-28): the old affinity hint is gone.
+    expect(starter).not.toHaveProperty('knownAffinities');
   });
 
   it('returns array of requested size', () => {

@@ -76,7 +76,7 @@ describe('generateRandomRider', () => {
     expect(rider).toHaveProperty('experience');
     expect(rider).toHaveProperty('bio');
     expect(rider).toHaveProperty('availability');
-    expect(rider).toHaveProperty('knownAffinities');
+    expect(rider).not.toHaveProperty('knownAffinities');
   });
 
   it('marketplaceId starts with mkt_rider_', () => {
@@ -108,15 +108,13 @@ describe('generateRandomRider', () => {
     }
   });
 
-  it('the star level sits inside the rider skill tier', () => {
-    const tierLevels = {
-      rookie: ['rookie', 'novice'],
-      developing: ['intermediate', 'advanced'],
-      experienced: ['expert'],
-    };
+  // Owner rulings 2026-10-28 (q160/q177, Equoria-xlw03) changed this contract: every new
+  // rider is a Rookie, and the old affinity hint (knownAffinities, the specialty shown for
+  // experienced riders) is gone — hidden items are revealed only by levelling up.
+  it('every new rider is a Rookie, whatever its skill tier', () => {
     for (let i = 0; i < 50; i++) {
       const rider = generateRandomRider();
-      expect(tierLevels[rider.skillLevel]).toContain(rider.starLevel);
+      expect(rider.starLevel).toBe('rookie');
     }
   });
 
@@ -187,34 +185,17 @@ describe('generateRandomRider', () => {
     expect(foundExperienced).toBe(true);
   });
 
-  it('experienced riders have knownAffinities with their specialty', () => {
+  // Owner rulings 2026-10-28 (q160/q177, Equoria-xlw03) changed this contract: every new
+  // rider is a Rookie, and the old affinity hint (knownAffinities, the specialty shown for
+  // experienced riders) is gone — hidden items are revealed only by levelling up.
+  it('no offer carries an affinity hint, experienced riders included', () => {
     let foundExperienced = false;
     for (let i = 0; i < 100; i++) {
       const rider = generateRandomRider();
-      if (rider.skillLevel === 'experienced') {
-        expect(Array.isArray(rider.knownAffinities)).toBe(true);
-        expect(rider.knownAffinities).toHaveLength(1);
-        expect(rider.knownAffinities[0]).toBe(rider.speciality);
-        foundExperienced = true;
-        break;
-      }
+      expect(rider).not.toHaveProperty('knownAffinities');
+      foundExperienced = foundExperienced || rider.skillLevel === 'experienced';
     }
-    // Equoria-ftaqy: hard fail if not found.
     expect(foundExperienced).toBe(true);
-  });
-
-  it('rookie and developing riders have empty knownAffinities', () => {
-    const checkedBoth = { rookie: false, developing: false };
-    for (let i = 0; i < 100; i++) {
-      const rider = generateRandomRider();
-      if (rider.skillLevel === 'rookie' || rider.skillLevel === 'developing') {
-        expect(rider.knownAffinities).toEqual([]);
-        checkedBoth[rider.skillLevel] = true;
-      }
-      if (checkedBoth.rookie && checkedBoth.developing) {
-        break;
-      }
-    }
   });
 
   it('generates unique marketplaceIds on repeated calls', () => {
@@ -259,10 +240,10 @@ describe('generateRiderMarketplace', () => {
     expect(starter.experience).toBe(0);
   });
 
-  it('starter rider has empty knownAffinities', () => {
+  it('starter rider carries no affinity hint', () => {
     const marketplace = generateRiderMarketplace(6);
     const starter = marketplace[0];
-    expect(starter.knownAffinities).toEqual([]);
+    expect(starter).not.toHaveProperty('knownAffinities');
   });
 
   it('all riders have the required shape', () => {
@@ -273,7 +254,7 @@ describe('generateRiderMarketplace', () => {
       expect(rider).toHaveProperty('skillLevel');
       expect(rider).toHaveProperty('weeklyRate');
       expect(rider).toHaveProperty('availability');
-      expect(rider).toHaveProperty('knownAffinities');
+      expect(rider).not.toHaveProperty('knownAffinities');
     });
   });
 

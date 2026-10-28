@@ -33,7 +33,15 @@ const cleanup = createCleanupTracker();
 cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds } } }), 'notifications');
 cleanup.add(() => prisma.riderSalaryPayment.deleteMany({ where: { userId: { in: userIds } } }), 'payments');
 cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'ledger');
-cleanup.add(() => prisma.rider.deleteMany({ where: { userId: { in: userIds } } }), 'riders');
+// A rider who leaves for the hire pool (owner ruling 2026-10-28, q177) has no userId, so
+// this file's riders are also matched by their fixture first name.
+cleanup.add(
+  () =>
+    prisma.rider.deleteMany({
+      where: { OR: [{ userId: { in: userIds } }, { firstName: PREFIX }] },
+    }),
+  'riders',
+);
 cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
 afterAll(() => cleanup.run(), 30000);
 
@@ -178,7 +186,13 @@ describe('rider owed weeks: a missed week is collected with the next payday', ()
     expect(await moneyOf(user.id)).toBe(250);
     expect(await rows(user.id, 'missed')).toHaveLength(0);
     expect(await rows(user.id, 'arrearsWrittenOff')).toHaveLength(1);
-    expect((await prisma.rider.findUnique({ where: { id: rider.id } })).retired).toBe(true);
+    // Owner ruling 2026-10-28 (q177, Equoria-xlw03) changed this contract: a rider who
+    // leaves after a full unpaid week returns to the riders-for-hire pool (old contract:
+    // the rider was retired).
+    expect(await prisma.rider.findUnique({ where: { id: rider.id } })).toMatchObject({
+      retired: false,
+      userId: null,
+    });
   });
 
   it('a rider who leaves after a full unpaid week is not charged afterwards; the debt is written off', async () => {
@@ -195,7 +209,13 @@ describe('rider owed weeks: a missed week is collected with the next payday', ()
     await pass(user.id, week3);
     expect(await moneyOf(user.id)).toBe(1000);
     expect(await rows(user.id, 'paid')).toHaveLength(0);
-    expect((await prisma.rider.findUnique({ where: { id: rider.id } })).retired).toBe(true);
+    // Owner ruling 2026-10-28 (q177, Equoria-xlw03) changed this contract: a rider who
+    // leaves after a full unpaid week returns to the riders-for-hire pool (old contract:
+    // the rider was retired).
+    expect(await prisma.rider.findUnique({ where: { id: rider.id } })).toMatchObject({
+      retired: false,
+      userId: null,
+    });
   });
 
   it('a second pass in the collection week charges nothing more', async () => {

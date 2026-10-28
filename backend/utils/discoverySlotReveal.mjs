@@ -22,8 +22,9 @@
  *   L10 → 6    (all slots revealed at the cap — matches the PRD-05/PRD-06 AC)
  *
  * Reveal is monotonic (thresholds only increase) and naturally capped at 6 (the
- * table has exactly 6 entries). Shared by both the rider and trainer discovery
- * controllers so the two modules cannot drift apart on the cadence.
+ * table has exactly 6 entries). Read by the trainer discovery controller only: riders
+ * reveal hidden items by star level since owner rulings 2026-10-28 (Equoria-xlw03,
+ * backend/constants/staffGrowth.mjs).
  */
 
 /**

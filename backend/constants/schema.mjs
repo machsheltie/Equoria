@@ -68,7 +68,9 @@ export const HORSE_TEMPERAMENT = Object.freeze({
   AGGRESSIVE: 'Aggressive',
 });
 
-export const HORSE_TEMPERAMENT_VALUES = Object.freeze(Object.values(HORSE_TEMPERAMENT));
+/** The 12 temperaments as a list; camelCase name for new code (Equoria-pjvp8). */
+export const horseTemperamentValues = Object.freeze(Object.values(HORSE_TEMPERAMENT));
+export const HORSE_TEMPERAMENT_VALUES = horseTemperamentValues;
 
 /**
  * Horse health words (owner ruling 2026-10-23, Equoria-u0jop): exactly
@@ -129,7 +131,9 @@ export const CONFORMATION_CLASSES = {
   BREED_SPECIFIC: 'Breed-Specific',
 };
 
-export const DISCIPLINE_VALUES = Object.values(DISCIPLINES);
+/** Every competition discipline; camelCase name for new code (Equoria-pjvp8). */
+export const disciplineValues = Object.values(DISCIPLINES);
+export const DISCIPLINE_VALUES = disciplineValues;
 export const CONFORMATION_CLASS_VALUES = Object.values(CONFORMATION_CLASSES);
 
 /**
@@ -294,9 +298,9 @@ export const SCORE_RANGES = {
  * Validation helper functions
  */
 export const isValidHorseSex = sex => HORSE_SEX_VALUES.includes(sex);
-export const isValidTemperament = temperament => HORSE_TEMPERAMENT_VALUES.includes(temperament);
+export const isValidTemperament = temperament => horseTemperamentValues.includes(temperament);
 export const isValidHealthStatus = status => HORSE_HEALTH_STATUS_VALUES.includes(status);
-export const isValidDiscipline = discipline => DISCIPLINE_VALUES.includes(discipline);
+export const isValidDiscipline = discipline => disciplineValues.includes(discipline);
 export const isValidPlacement = placement => COMPETITION_PLACEMENT_VALUES.includes(placement);
 export const isValidGroomSpecialty = specialty => GROOM_SPECIALTY_VALUES.includes(specialty);
 export const isValidGroomSkillLevel = level => GROOM_SKILL_LEVEL_VALUES.includes(level);

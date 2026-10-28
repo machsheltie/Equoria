@@ -34,7 +34,6 @@ import {
 } from '@/hooks/api/useRiders';
 import { useHorses } from '@/hooks/api/useHorses';
 import { getBreedName } from '@/lib/utils';
-import { buildEmptyDiscoveryProfile } from '@/types/riderDiscovery';
 import { Button } from '@/components/ui/button';
 import StaffLevelStars from '@/components/common/StaffLevelStars';
 
@@ -393,9 +392,7 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
                     />
                   )}
 
-                  {expandedSection === 'discovery' && (
-                    <RiderDiscoveryPanel profile={buildEmptyDiscoveryProfile(rider.id)} />
-                  )}
+                  {expandedSection === 'discovery' && <RiderDiscoveryPanel riderId={rider.id} />}
                 </div>
               )}
             </div>

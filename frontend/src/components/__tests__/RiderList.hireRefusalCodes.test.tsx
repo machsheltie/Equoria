@@ -31,7 +31,6 @@ const marketplace = {
       personality: 'methodical',
       experience: 300,
       weeklyRate: 100,
-      knownAffinities: [],
       bio: 'Steady in the saddle.',
     },
   ],

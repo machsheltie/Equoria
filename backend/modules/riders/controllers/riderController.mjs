@@ -7,7 +7,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { hiredStaffFee, staffCareerLevel } from '../../../constants/staffLevels.mjs';
+import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
 import { publicStaffRow } from '../../../utils/staffPublicView.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 // Equoria-6p398.14 follow-up: a retired horse (21+, not in foal) is given no new rider.
@@ -16,9 +16,10 @@ import { liveHorseAgeYears } from '../../../utils/horseAge.mjs';
 import { minActiveAgeYears } from '../../../constants/horseAgePolicy.mjs';
 import { maxHorsesPerRider } from '../config/riderConfig.mjs';
 import {
-  getRevealedDiscoveryCount,
-  getNextDiscoveryRevealLevel,
-} from '../../../utils/discoverySlotReveal.mjs';
+  ensureGrowthProfileTx,
+  revealedGrowthView,
+} from '../../../services/staffGrowthService.mjs';
+import { returnRiderToPoolTx } from '../services/riderFreeAgentPool.mjs';
 
 /**
  * Build an error the assignment catch blocks turn into a specific HTTP status.
@@ -351,52 +352,35 @@ export async function deleteRiderAssignment(req, res) {
 
 /**
  * GET /api/riders/:id/discovery
- * Returns discovery slots for a rider (career affinity discoveries).
+ * The rider's discovery profile (owner rulings 2026-10-28, q160; Equoria-xlw03): its
+ * level, personality, and ONLY the hidden items its level has revealed, as authored
+ * labels. A Rookie shows its personality only; each level-up reveals 3; Expert all.
  */
 export async function getRiderDiscovery(req, res) {
   try {
     const userId = req.user.id;
     const riderId = parseInt(req.params.id, 10);
 
-    const rider = await prisma.rider.findFirst({ where: { id: riderId, userId } });
+    const rider = await prisma.rider.findFirst({
+      where: { id: riderId, userId },
+      select: { id: true, starLevel: true, personality: true },
+    });
     if (!rider) {
       return res.status(404).json({ success: false, message: 'Rider not found' });
     }
 
-    // Stepped reveal cadence (Equoria-oey96.25): slots unlock at career levels
-    // 2, 4, 6, 8, 9, 10. Every rider sits at level 1 (owner ruling 2026-10-28, q244:
-    // stars give nothing for now), so none is revealed until staff growth (xlw03).
-    const discoveredCount = getRevealedDiscoveryCount(staffCareerLevel);
-    const categories = ['discipline_affinity', 'temperament_compatibility', 'gait_affinity'];
-    const slots = Array.from({ length: 6 }, (_, i) => ({
-      slotIndex: i,
-      category: categories[Math.floor(i / 2)],
-      discovered: i < discoveredCount,
-      trait:
-        i < discoveredCount
-          ? {
-              id: `${categories[Math.floor(i / 2)]}_${i}`,
-              category: categories[Math.floor(i / 2)],
-              label: `${rider.speciality} Affinity`,
-              value: rider.speciality,
-              strength: i < 2 ? 'minor' : i < 4 ? 'moderate' : 'strong',
-              discoveredAt: rider.createdAt,
-              icon: '✨',
-              description: `Discovered ${rider.speciality} affinity through competitive experience.`,
-            }
-          : undefined,
-    }));
+    // A rider hired before growth existed gets its profile now, with as many items
+    // revealed as its level shows.
+    await withRetryableTxMapping(
+      prisma.$transaction(tx => ensureGrowthProfileTx(tx, 'rider', riderId)),
+      { message: 'Riders are busy right now, please retry in a moment.' },
+    );
+    const growth = await revealedGrowthView(prisma, 'rider', rider);
 
     res.status(200).json({
       success: true,
       message: 'Rider discovery data retrieved',
-      data: {
-        riderId,
-        totalSlots: 6,
-        discoveredCount,
-        slots,
-        nextDiscoveryAt: getNextDiscoveryRevealLevel(discoveredCount),
-      },
+      data: { riderId, ...growth },
     });
   } catch (error) {
     logger.error(`[riderController] getRiderDiscovery error: ${error.message}`);
@@ -406,7 +390,8 @@ export async function getRiderDiscovery(req, res) {
 
 /**
  * DELETE /api/riders/:id/dismiss
- * Dismiss (retire) a rider from the user's stable.
+ * Dismiss a rider from the user's stable. The rider returns to the riders-for-hire pool
+ * at its current level with its reveals intact (owner ruling 2026-10-28, q177).
  */
 export async function dismissRider(req, res) {
   const userId = req.user.id;
@@ -444,7 +429,10 @@ export async function dismissRider(req, res) {
           where: { riderId, isActive: true },
           data: { isActive: false },
         });
-        await tx.rider.update({ where: { id: riderId }, data: { retired: true } });
+        const moved = await returnRiderToPoolTx(tx, { riderId, userId });
+        if (moved !== 1) {
+          throw httpError(400, 'That rider has already retired');
+        }
       }),
       { message: 'Rider assignments are busy right now, please retry in a moment.' },
     );

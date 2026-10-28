@@ -61,6 +61,10 @@ import logger from '../../../utils/logger.mjs';
 import { jobNameToLockKey } from '../../../utils/cronLock.mjs';
 import { createNotificationTx } from '../../../utils/notificationService.mjs';
 import { checkGroomMayWork } from '../../../utils/groomWorkRules.mjs';
+import {
+  ensureGrowthProfileTx,
+  revealedGrowthViews,
+} from '../../../services/staffGrowthService.mjs';
 
 /**
  * Why an engagement ended. Written by the game only — no request reaches any of
@@ -306,6 +310,9 @@ export async function releaseGroomTx(tx, params) {
   }
 
   await endEngagementTx(tx, groomId, reason, now);
+  // Owner ruling 2026-10-28 (q177, Equoria-xlw03): the groom enters the pool at its
+  // current level with its reveals intact; its growth profile is made now if it had none.
+  await ensureGrowthProfileTx(tx, 'groom', groomId);
 
   // Read the assignments about to end BEFORE ending them: `updateMany` returns no
   // rows, and the notice names the horses the player has just lost care on. A
@@ -501,7 +508,9 @@ export async function listFreeAgents(client, options = {}) {
     }),
     client.groom.count({ where: FREE_AGENT_WHERE }),
   ]);
-  return { grooms, total };
+  // Owner ruling q177: a pool groom shows its level and only its revealed growth items.
+  const views = await revealedGrowthViews(client, 'groom', grooms);
+  return { grooms: grooms.map(g => ({ ...g, growth: views.get(g.id) })), total };
 }
 
 export default {

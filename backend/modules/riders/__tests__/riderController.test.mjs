@@ -107,6 +107,9 @@ async function createAssignment(riderId, horseId, userId) {
   });
 }
 
+// Riders dismissed into the hire pool (q177): no userId, so tracked by id for cleanup.
+const pooledRiderIds = [];
+
 async function cleanupSuite() {
   const users = await prisma.user.findMany({
     where: { id: { startsWith: SUITE_PREFIX } },
@@ -116,15 +119,18 @@ async function cleanupSuite() {
     return;
   }
   const userIds = users.map(u => u.id);
+  // A dismissed rider returns to the riders-for-hire pool with no userId (owner ruling
+  // 2026-10-28, q177, Equoria-xlw03), so dismissed riders are also cleaned up by id.
   const riders = await prisma.rider.findMany({
-    where: { userId: { in: userIds } },
+    where: { OR: [{ userId: { in: userIds } }, { id: { in: pooledRiderIds } }] },
     select: { id: true },
   });
   const riderIds = riders.map(r => r.id);
   if (riderIds.length > 0) {
     await prisma.riderAssignment.deleteMany({ where: { riderId: { in: riderIds } } });
   }
-  await prisma.rider.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.rider.deleteMany({ where: { id: { in: riderIds } } });
+  pooledRiderIds.length = 0;
   await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
 }
@@ -361,19 +367,23 @@ describe('riderController (real DB)', () => {
   });
 
   describe('dismissRider', () => {
-    it('marks rider retired and deactivates all active assignments', async () => {
+    // Owner ruling 2026-10-28 (q177, Equoria-xlw03) changed this contract: a dismissed
+    // rider returns to the riders-for-hire pool at its level (old contract: retired).
+    it('returns the rider to the hire pool and deactivates all active assignments', async () => {
       const user = await createUser();
       const horse = await createHorse(user.id);
       const rider = await createRider(user.id);
       const assignment = await createAssignment(rider.id, horse.id, user.id);
 
       const h = makeReqRes(user.id, { params: { id: String(rider.id) } });
+      pooledRiderIds.push(rider.id);
       await dismissRider(h.req, h.res);
 
       expect(h.res.statusValue).toBe(200);
 
       const riderAfter = await prisma.rider.findUnique({ where: { id: rider.id } });
-      expect(riderAfter.retired).toBe(true);
+      expect(riderAfter).toMatchObject({ retired: false, userId: null });
+      expect(riderAfter.freeAgentSince).not.toBeNull();
       const assignmentAfter = await prisma.riderAssignment.findUnique({ where: { id: assignment.id } });
       expect(assignmentAfter.isActive).toBe(false);
     });
@@ -393,30 +403,30 @@ describe('riderController (real DB)', () => {
     });
   });
 
-  // ── getRiderDiscovery reveal (Equoria-oey96.25) ──────────────────────────
-  // Owner rulings 2026-10-28: q229 dropped the old 1-10 level column, and q244 says stars
-  // give nothing for now, so every rider and trainer is at the old level 1
-  // (staffCareerLevel) and reveals no slot, whatever its stars, until staff growth
-  // (Equoria-xlw03). These cases used to set level 2-10 and see 1-6 slots; the stepped
-  // cadence itself is still pinned in __tests__/discoverySlotReveal.test.mjs.
+  // ── getRiderDiscovery reveal ─────────────────────────────────────────────
+  // Owner rulings 2026-10-28 (q160, Equoria-xlw03) changed this contract: a rider shows
+  // 3 hidden items per level above Rookie and all 12 at Expert (old contract: six slots,
+  // none revealed at any star level until growth existed).
   describe('getRiderDiscovery — reveal', () => {
-    it.each(['rookie', 'novice', 'intermediate', 'advanced', 'expert'])(
-      'a %s rider reveals no slot yet (q244)',
-      async starLevel => {
-        const user = await createUser();
-        const rider = await createRider(user.id, { starLevel });
+    it.each([
+      ['rookie', 0],
+      ['novice', 3],
+      ['intermediate', 6],
+      ['advanced', 9],
+      ['expert', 12],
+    ])('a %s rider shows %i hidden items', async (starLevel, shown) => {
+      const user = await createUser();
+      const rider = await createRider(user.id, { starLevel });
 
-        const h = makeReqRes(user.id, { params: { id: String(rider.id) } });
-        await getRiderDiscovery(h.req, h.res);
+      const h = makeReqRes(user.id, { params: { id: String(rider.id) } });
+      await getRiderDiscovery(h.req, h.res);
 
-        expect(h.res.statusValue).toBe(200);
-        const { data } = h.res.jsonValue;
-        expect(data.totalSlots).toBe(6);
-        expect(data.slots).toHaveLength(6);
-        expect(data.discoveredCount).toBe(0);
-        expect(data.slots.every(s => !s.discovered && s.trait === undefined)).toBe(true);
-        expect(data.nextDiscoveryAt).toBe(2); // the cadence's first slot is at level 2
-      },
-    );
+      expect(h.res.statusValue).toBe(200);
+      const { data } = h.res.jsonValue;
+      expect(data.totalItems).toBe(12);
+      expect(data.revealedCount).toBe(shown);
+      expect(data.categories.reduce((n, c) => n + c.revealed.length, 0)).toBe(shown);
+      expect(data.personality).toBe('methodical');
+    });
   });
 });

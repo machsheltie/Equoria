@@ -248,7 +248,7 @@ describe('generateRandomRider', () => {
     expect(typeof r.experience).toBe('number');
     expect(typeof r.bio).toBe('string');
     expect(r.availability).toBe(true);
-    expect(Array.isArray(r.knownAffinities)).toBe(true);
+    expect(r).not.toHaveProperty('knownAffinities');
   });
 
   it('marketplaceId starts with mkt_rider_', () => {
@@ -272,33 +272,15 @@ describe('generateRandomRider', () => {
     }
   });
 
-  it('experienced riders have at least one known affinity', () => {
-    let found = false;
+  // Owner rulings 2026-10-28 (q160/q177, Equoria-xlw03) changed this contract: the old
+  // affinity hint (knownAffinities, shown for experienced riders) is gone, and every new
+  // rider is a Rookie; its hidden items are revealed only by levelling up.
+  it('no offer carries an affinity hint, and every offer is a Rookie', () => {
     for (let i = 0; i < 50; i++) {
       const r = generateRandomRider();
-      if (r.skillLevel === 'experienced') {
-        expect(r.knownAffinities.length).toBeGreaterThan(0);
-        found = true;
-        break;
-      }
+      expect(r).not.toHaveProperty('knownAffinities');
+      expect(r.starLevel).toBe('rookie');
     }
-    if (!found) {
-      // If we didn't generate an experienced rider in 50 tries, skip the inner assertion
-      expect(true).toBe(true);
-    }
-  });
-
-  it('rookie has empty knownAffinities', () => {
-    let found = false;
-    for (let i = 0; i < 50; i++) {
-      const r = generateRandomRider();
-      if (r.skillLevel === 'rookie') {
-        expect(r.knownAffinities).toHaveLength(0);
-        found = true;
-        break;
-      }
-    }
-    expect(found).toBe(true);
   });
 });
 

@@ -8,6 +8,8 @@
  * the groom-staff half of the shared block and nothing else references them.
  */
 
+import type { StaffGrowthView } from './types';
+
 // Equoria-cbkw — GroomProfile response shape from GET /api/v1/grooms/:id/profile.
 export interface GroomProfile {
   id: number;
@@ -22,6 +24,8 @@ export interface GroomProfile {
   personality: string;
   sessionRate: number;
   currentAssignments: number;
+  /** Equoria-xlw03: the groom's level, personality and revealed growth items only. */
+  growth?: StaffGrowthView;
 }
 
 // Equoria-cbkw — GroomAssignmentLog rows from GET /api/v1/grooms/:id/assignment-logs.

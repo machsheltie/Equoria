@@ -22,7 +22,7 @@
  *   - skillLevel: rookie=-2%, developing=0%, experienced=+3% (bonus)
  *   - career level: +0.4% per level above 1. Every rider sits at level 1
  *     (staffCareerLevel; owner ruling 2026-10-28, q244: stars give no bonus for now),
- *     so this adds nothing until staff growth (Equoria-xlw03).
+ *     so this adds nothing, even for riders who have levelled up (Equoria-xlw03).
  *   - prestige (0–100): +0.04% per prestige point, capped at +4% bonus
  *   - discipline-personality affinity (from RIDER_PERSONALITY_DATA):
  *       high match: +2% bonus

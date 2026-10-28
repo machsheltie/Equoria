@@ -48,5 +48,4 @@ export * from './groomPersonality';
 export * from './groomTalent';
 export * from './groomTasks';
 export * from './riderCareer';
-export * from './riderDiscovery';
 export * from './riderPersonality';

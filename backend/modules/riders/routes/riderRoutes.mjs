@@ -25,6 +25,10 @@ import {
   hireRiderFromMarketplace,
 } from '../controllers/riderMarketplaceController.mjs';
 import {
+  listFreeAgentRidersHandler,
+  hireFreeAgentRider,
+} from '../controllers/riderFreeAgentController.mjs';
+import {
   getUserRiders,
   getRiderAssignments,
   assignRider,
@@ -91,6 +95,20 @@ router.post(
     handleValidationErrors,
   ],
   refreshRiderMarketplace,
+);
+
+// ── Riders-for-hire pool (owner ruling 2026-10-28, q177; Equoria-xlw03) ───────
+
+router.get('/free-agents', listFreeAgentRidersHandler);
+
+router.post(
+  '/free-agents/hire',
+  mutationRateLimiter,
+  [
+    body('riderId').isInt({ min: 1 }).withMessage('riderId must be a positive integer'),
+    handleValidationErrors,
+  ],
+  hireFreeAgentRider,
 );
 
 // ── Assignment routes ────────────────────────────────────────────────────────

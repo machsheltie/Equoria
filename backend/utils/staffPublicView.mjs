@@ -136,7 +136,6 @@ const allowedFields = Object.freeze({
     'totalWins',
     'totalCompetitions',
     'prestige',
-    'knownAffinities',
   ]),
   trainer: new Set([...sharedFields, 'sessionRate']),
 });

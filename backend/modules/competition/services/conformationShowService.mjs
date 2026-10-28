@@ -30,6 +30,7 @@ import { settleShowFeeEscrowInTx } from '../shows/showEscrowTx.mjs';
 import { badHealthMessage, hasBadHealth } from '../../../utils/horseHealth.mjs';
 import { checkGroomMayWork } from '../../../utils/groomWorkRules.mjs';
 import { EntryRefusalError } from './entryEligibility.mjs';
+import { recordStaffShowsTx } from '../../../services/staffGrowthService.mjs';
 
 import {
   CONFORMATION_SHOW_CONFIG,
@@ -506,6 +507,21 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
             breedingValueBoost: after.breedingValueBoost,
           };
         });
+
+        // Owner rulings 2026-10-28 (q160, Equoria-xlw03): each conformation show a groom
+        // presents a horse in counts toward its next star level (one per entry, as a rider
+        // counts one per horse ridden). Only live groom rows; a snapshot-only handler has no
+        // row to grow. Ascending ids (lock order).
+        const showsByGroom = new Map();
+        for (const { entry } of resolved) {
+          if (entry.groom?.id) {
+            showsByGroom.set(entry.groom.id, (showsByGroom.get(entry.groom.id) ?? 0) + 1);
+          }
+        }
+        for (const groomId of [...showsByGroom.keys()].sort((a, b) => a - b)) {
+          await tx.$queryRaw`SELECT "id" FROM "grooms" WHERE "id" = ${groomId} FOR UPDATE`;
+          await recordStaffShowsTx(tx, 'groom', groomId, showsByGroom.get(groomId));
+        }
 
         await tx.show.update({
           where: { id: showId },

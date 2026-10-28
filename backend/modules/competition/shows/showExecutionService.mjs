@@ -50,6 +50,7 @@ import {
 // fire-and-forget OUTSIDE the prize-payout tx (fail-soft).
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { recordRiddenResultTotals } from '../../../utils/monthlyTotals.mjs';
+import { recordStaffShowsTx } from '../../../services/staffGrowthService.mjs';
 import { invalidateHorseXpCaches } from '../../horses/index.mjs';
 
 // ── BA-4: Overnight show execution ────────────────────────────────────────────
@@ -154,6 +155,10 @@ export async function settleEntryInTx(
         ...(placement === 1 ? { totalWins: { increment: 1 } } : {}),
       },
     });
+    // Owner rulings 2026-10-28 (q160, Equoria-xlw03): each show a rider completes counts
+    // toward its next star level; a level-up reveals hidden items. Same transaction, after
+    // the rider row write above (which holds its lock).
+    await recordStaffShowsTx(tx, 'rider', riderId, 1);
   }
 
   // Equoria-oey96.4: award horse XP (ALL entrants) + owner XP & a

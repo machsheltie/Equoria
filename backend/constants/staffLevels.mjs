@@ -10,8 +10,9 @@
  *
  * Riders and grooms are priced per WEEK (hire charges one week; weekly payday);
  * trainers per training SESSION. The price comes from the level, never a random
- * draw. Staff are fixed NPCs (owner ruling 2026-10-21): a staff member's star level is
- * drawn once, when the game generates them, and never changes.
+ * draw. Riders and grooms start as Rookies and climb by shows completed (owner rulings
+ * 2026-10-28, q160/q177; backend/constants/staffGrowth.mjs); a trainer's star level is
+ * drawn once, when the game generates it, and never changes.
  *
  * The stored value is `starLevel` on riders, trainers and grooms (migration
  * 20261028120000_staff_star_levels). The older per-type `skillLevel` words stay as they
@@ -74,8 +75,9 @@ export function staffLevelLabel(level) {
  * Owner ruling 2026-10-28 (q244): stars give no bonus for now, so nothing changes from
  * before the old 1-10 level column was dropped (q229), when every game-made rider,
  * trainer and groom sat at level 1. That level term therefore adds no show bonus, no
- * training bonus, no revealed discovery slot, no open talent tier and no mentoring.
- * Staff growth (Equoria-xlw03) replaces this.
+ * training bonus, no open talent tier and no mentoring. Staff growth (Equoria-xlw03)
+ * raises riders' and grooms' star levels, but q244 still holds, so these modifiers keep
+ * reading this constant.
  */
 export const staffCareerLevel = 1;
 

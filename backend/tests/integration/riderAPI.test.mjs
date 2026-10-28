@@ -22,6 +22,9 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import app from '../../app.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+// Riders dismissed into the hire pool (q177): no userId, so tracked by id for cleanup.
+const pooledRiderIds = [];
+
 describe('🏇 INTEGRATION: Rider API', () => {
   // Equoria-rnbzn: per-user CSRF binding — issued AFTER the auth token exists
   // (in the dependent beforeAll below) and bound to testUser by forwarding its
@@ -66,7 +69,11 @@ describe('🏇 INTEGRATION: Rider API', () => {
     // user. All deletes are user-scoped, never a bare deleteMany. No silent
     // no-op catch arm: a cleanup failure must surface, not be swallowed.
     await prisma.riderAssignment.deleteMany({ where: { userId: testUser?.id } });
-    await prisma.rider.deleteMany({ where: { userId: testUser?.id } });
+    // A dismissed rider returns to the riders-for-hire pool with no userId (owner ruling
+    // 2026-10-28, q177, Equoria-xlw03), so dismissed riders are also cleaned up by id.
+    await prisma.rider.deleteMany({
+      where: { OR: [{ userId: testUser?.id }, { id: { in: pooledRiderIds } }] },
+    });
     await cleanupTestData();
   });
 
@@ -396,6 +403,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken);
+      pooledRiderIds.push(hiredRiderId);
       expect(dismissRes.status).toBe(200);
       expect(dismissRes.body.success).toBe(true);
     });

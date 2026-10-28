@@ -6,9 +6,10 @@
  * exactly one of three things happens:
  *
  *   already unpaid for a STRICTLY EARLIER pay week
- *     -> LEAVE. The rider is retired from the player's stable, active assignments
- *        end, and the player is told, all in one transaction. (Riders have no shared
- *        hire pool as grooms do; a leaving rider simply goes, like a dismissed one.)
+ *     -> LEAVE. The rider leaves the player's stable for the riders-for-hire pool at
+ *        its current level with its reveals intact (owner ruling 2026-10-28, q177;
+ *        riderFreeAgentPool.mjs), active assignments end, and the player is told, all
+ *        in one transaction.
  *   not yet marked unpaid
  *     -> GRACE. `feeUnpaidSince` is stamped with this pay week, the rider stays on
  *        the roster but cannot ride, and the player is told.
@@ -30,6 +31,7 @@ import {
   finalizeNotificationAfterCommit,
 } from '../../../utils/notificationService.mjs';
 import { acquireRiderPayWeekLockTx, riderPayWeekKey } from './riderPayWeek.mjs';
+import { returnRiderToPoolTx } from './riderFreeAgentPool.mjs';
 
 /** The player is told this rider cannot ride until the week's pay is taken. */
 export const riderFeeUnpaidNotificationType = 'riderFeeUnpaid';
@@ -66,11 +68,8 @@ async function leaveTx(tx, { rider, userId, payWeekStart }) {
   if (horseIds.length > 0) {
     await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ANY(${horseIds}) ORDER BY "id" FOR UPDATE`;
   }
-  const left = await tx.rider.updateMany({
-    where: { id: rider.id, userId, retired: false },
-    data: { retired: true, feeUnpaidSince: null },
-  });
-  if (left.count !== 1) {
+  const left = await returnRiderToPoolTx(tx, { riderId: rider.id, userId });
+  if (left !== 1) {
     throw new Error(`Rider ${rider.id} was no longer on user ${userId}'s roster when they left`);
   }
   await tx.riderAssignment.updateMany({

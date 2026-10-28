@@ -20,9 +20,11 @@ import { formatDate } from '@/lib/formatDate';
 import { History, Award } from 'lucide-react';
 import {
   useGroomAssignmentLogs,
+  useGroomProfile,
   useGroomTalents,
   useSelectTalent,
 } from '../../hooks/api/useGrooms';
+import StaffDiscoveryPanel from '@/components/common/StaffDiscoveryPanel';
 import GroomTalentTree from './GroomTalentTree';
 import type { GroomTalentData } from '../../types/groomTalent';
 import { staffCareerStarLevel } from '@/lib/staffLevels';
@@ -61,6 +63,12 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({
     error: talentsError,
   } = useGroomTalents(groomId, { enabled });
   const selectTalent = useSelectTalent();
+  // Equoria-xlw03 — what this groom has revealed of its hidden items.
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    error: profileError,
+  } = useGroomProfile(groomId, { enabled });
 
   // Equoria-oey96.6 — map the list-row groom fields + backend selections into
   // the shape GroomTalentTree consumes. `talentSelections: null` is the honest
@@ -148,6 +156,19 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      {/* ---- Discoveries (Equoria-xlw03) ---- */}
+      <section data-testid={`groom-discovery-section-${groomId}`}>
+        {profileLoading && <p className="text-xs text-slate-400 italic">Loading discoveries…</p>}
+        {!profileLoading && (profileError || !profile?.growth) && (
+          <p className="text-xs text-red-400" data-testid={`groom-discovery-error-${groomId}`}>
+            Could not load discoveries.
+          </p>
+        )}
+        {!profileLoading && !profileError && profile?.growth && (
+          <StaffDiscoveryPanel growth={profile.growth} staffKind="groom" />
         )}
       </section>
 

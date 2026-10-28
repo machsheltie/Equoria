@@ -76,7 +76,15 @@ beforeAll(async () => {
       }),
     'riderAssignment',
   );
-  cleanup.add(() => prisma.rider.deleteMany({ where: { userId: user.id } }), 'rider');
+  // A dismissed rider returns to the riders-for-hire pool with no userId (owner ruling
+  // 2026-10-28, q177, Equoria-xlw03), so dismissed riders are also cleaned up by id.
+  cleanup.add(
+    () =>
+      prisma.rider.deleteMany({
+        where: { OR: [{ userId: user.id }, { id: { in: pooledRiderIds } }] },
+      }),
+    'rider',
+  );
   cleanup.add(() => prisma.staffMarketplaceState.deleteMany({ where: { userId: user.id } }), 'staffMarketplaceState');
   cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
   cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
@@ -85,6 +93,9 @@ beforeAll(async () => {
 afterAll(() => cleanup.run(), 30000);
 
 // ─── GET /api/v1/riders/marketplace ─────────────────────────────────────────────
+
+// Riders dismissed into the hire pool (q177): no userId, so tracked by id for cleanup.
+const pooledRiderIds = [];
 
 describe('GET /api/v1/riders/marketplace', () => {
   it('returns 200 with marketplace data for authenticated user', async () => {
@@ -340,7 +351,9 @@ describe('GET /api/v1/riders/user/:userId', () => {
 // ─── GET /api/v1/riders/:id/discovery ───────────────────────────────────────────
 
 describe('GET /api/v1/riders/:id/discovery', () => {
-  it('returns 200 with discovery slots for owned rider', async () => {
+  // Owner rulings 2026-10-28 (q160, Equoria-xlw03) replaced the six discovery slots with
+  // the rider's level, personality and revealed growth items by kind.
+  it('returns 200 with the discovery profile for owned rider', async () => {
     const res = await request(app)
       .get(`/api/v1/riders/${rider.id}/discovery`)
       .set('Origin', ORIGIN)
@@ -350,7 +363,8 @@ describe('GET /api/v1/riders/:id/discovery', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeDefined();
     expect(res.body.data.riderId).toBe(rider.id);
-    expect(Array.isArray(res.body.data.slots)).toBe(true);
+    expect(Array.isArray(res.body.data.categories)).toBe(true);
+    expect(res.body.data.totalItems).toBe(12);
   });
 
   it('returns 404 for rider not owned by user', async () => {
@@ -397,6 +411,7 @@ describe('DELETE /api/v1/riders/:id/dismiss', () => {
         userId: user.id,
       },
     });
+    pooledRiderIds.push(disposable.id);
 
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)

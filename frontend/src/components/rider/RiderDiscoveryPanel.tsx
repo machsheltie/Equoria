@@ -1,137 +1,31 @@
 /**
- * RiderDiscoveryPanel Component (Epic 9C — Story 9C-3)
+ * RiderDiscoveryPanel — a hired rider's discoveries (Equoria-xlw03).
  *
- * Shows the 3-category discovery profile for a rider:
- * - Discipline Affinities (2 slots)
- * - Temperament Compatibility (2 slots)
- * - Gait Affinity (2 slots)
- *
- * Discovered traits show as labelled badges. Undiscovered show as "?" placeholders.
- * Alert appears when a new trait is first discovered.
+ * Loads GET /api/v1/riders/:id/discovery: the rider's level, personality and only the
+ * hidden items its level has revealed (owner rulings 2026-10-28, q160). Rendering is
+ * shared with grooms (StaffDiscoveryPanel). Before this the panel always showed an empty
+ * placeholder profile and a "competitions to the next reveal" hint (audit STAFF-08).
  */
 
 import React from 'react';
-import {
-  RiderDiscoveryProfile,
-  DISCOVERY_CATEGORY_META,
-  DISCOVERY_STRENGTH_META,
-  DiscoveryCategory,
-  DiscoverySlot,
-} from '@/types/riderDiscovery';
+import { useRiderDiscovery } from '@/hooks/api/useRiders';
+import { SectionLoading, InlineError } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
+import StaffDiscoveryPanel from '@/components/common/StaffDiscoveryPanel';
 
 interface RiderDiscoveryPanelProps {
-  profile: RiderDiscoveryProfile;
-  newlyDiscovered?: string; // trait id just revealed — shows alert
+  riderId: number;
 }
 
-const DiscoverySlotBadge: React.FC<{ slot: DiscoverySlot }> = ({ slot }) => {
-  if (!slot.discovered || !slot.trait) {
-    return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)] border-dashed">
-        <span className="text-role-disabled text-lg">?</span>
-        <span className="text-xs text-[var(--text-muted)] italic">Not yet discovered</span>
-      </div>
-    );
+const RiderDiscoveryPanel: React.FC<RiderDiscoveryPanelProps> = ({ riderId }) => {
+  const discovery = useRiderDiscovery(riderId);
+  if (discovery.isLoading) {
+    return <SectionLoading label="Loading discoveries" />;
   }
-
-  const { trait } = slot;
-  const strengthMeta =
-    DISCOVERY_STRENGTH_META[trait.strength as keyof typeof DISCOVERY_STRENGTH_META];
-
-  return (
-    <div
-      className="flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-hover)]"
-      data-testid={`discovery-trait-${trait.id}`}
-    >
-      <div className="flex items-center gap-2">
-        <span className="text-base">{trait.icon}</span>
-        <div>
-          <p className="text-sm text-[var(--text-primary)] font-medium">{trait.label}</p>
-          <p className="text-[10px] text-[var(--text-muted)]">{trait.description}</p>
-        </div>
-      </div>
-      <span
-        className={`text-xs font-bold ${strengthMeta?.colorClass ?? 'text-[var(--text-secondary)]'}`}
-        title={strengthMeta?.label}
-      >
-        {strengthMeta?.icon ?? '–'}
-      </span>
-    </div>
-  );
-};
-
-const RiderDiscoveryPanel: React.FC<RiderDiscoveryPanelProps> = ({ profile, newlyDiscovered }) => {
-  const categories: DiscoveryCategory[] = [
-    'discipline_affinity',
-    'temperament_compatibility',
-    'gait_affinity',
-  ];
-
-  const getSlotsForCategory = (category: DiscoveryCategory): DiscoverySlot[] =>
-    profile.slots.filter((s) => s.category === category);
-
-  const discoveryPercent = Math.round((profile.discoveredCount / profile.totalSlots) * 100);
-
-  return (
-    <div className="space-y-4" data-testid="rider-discovery-panel">
-      {/* Discovery Progress Header */}
-      <div className="flex items-center justify-between mb-1">
-        <h3 className="text-sm font-semibold text-[var(--text-primary)]">Trait Discovery</h3>
-        <span className="text-xs text-[var(--text-muted)]">
-          {profile.discoveredCount} / {profile.totalSlots} revealed
-        </span>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="h-1.5 bg-[var(--glass-surface-subtle-bg)] rounded-full overflow-hidden mb-3">
-        <div
-          className="h-full bg-[var(--alpha-gold-primary-70)] rounded-full transition-all duration-700"
-          style={{ width: `${discoveryPercent}%` }}
-        />
-      </div>
-
-      {/* New discovery alert */}
-      {newlyDiscovered && (
-        <div
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--alpha-gold-primary-10)] border border-[var(--alpha-gold-primary-30)] text-sm text-[var(--gold-primary)] animate-pulse"
-          data-testid="new-discovery-alert"
-        >
-          <span>🔍</span>
-          <span>New trait discovered!</span>
-        </div>
-      )}
-
-      {/* Next discovery hint */}
-      {profile.discoveredCount < profile.totalSlots && profile.nextDiscoveryAt && (
-        <p className="text-xs text-[var(--text-muted)] italic">
-          ~{profile.nextDiscoveryAt} more competition{profile.nextDiscoveryAt !== 1 ? 's' : ''} to
-          reveal the next trait
-        </p>
-      )}
-
-      {/* Category Sections */}
-      {categories.map((category) => {
-        const meta = DISCOVERY_CATEGORY_META[category];
-        const slots = getSlotsForCategory(category);
-
-        return (
-          <div key={category}>
-            <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-base">{meta.icon}</span>
-              <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                {meta.label}
-              </h4>
-            </div>
-            <div className="space-y-2">
-              {slots.map((slot) => (
-                <DiscoverySlotBadge key={slot.slotIndex} slot={slot} />
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+  if (discovery.error || !discovery.data) {
+    return <InlineError message={userMessageFor(discovery.error).message} />;
+  }
+  return <StaffDiscoveryPanel growth={discovery.data} staffKind="rider" />;
 };
 
 export default RiderDiscoveryPanel;

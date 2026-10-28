@@ -41,7 +41,15 @@ cleanup.add(() => prisma.riderAssignment.deleteMany({ where: { rider: { userId: 
 cleanup.add(() => prisma.riderSalaryPayment.deleteMany({ where: { userId: { in: userIds } } }), 'payments');
 cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'ledger');
 cleanup.add(() => prisma.staffMarketplaceState.deleteMany({ where: { userId: { in: userIds } } }), 'market');
-cleanup.add(() => prisma.rider.deleteMany({ where: { userId: { in: userIds } } }), 'riders');
+// A rider who leaves for the hire pool (owner ruling 2026-10-28, q177) has no userId, so
+// this file's riders are also matched by their fixture first name.
+cleanup.add(
+  () =>
+    prisma.rider.deleteMany({
+      where: { OR: [{ userId: { in: userIds } }, { firstName: PREFIX }] },
+    }),
+  'riders',
+);
 cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
 cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
 afterAll(() => cleanup.run(), 30000);
@@ -281,7 +289,11 @@ describe('rider payday: an unpaid rider cannot ride, then leaves', () => {
 
     expect(result.released).toBe(1);
     const after = await prisma.rider.findUnique({ where: { id: rider.id } });
-    expect(after.retired).toBe(true);
+    // Owner ruling 2026-10-28 (q177, Equoria-xlw03) changed this contract: a rider who
+    // leaves after a full unpaid week returns to the riders-for-hire pool (old contract:
+    // the rider was retired).
+    expect(after).toMatchObject({ retired: false, userId: null });
+    expect(after.freeAgentSince).not.toBeNull();
     expect(after.feeUnpaidSince).toBeNull();
     const assignment = await prisma.riderAssignment.findFirst({ where: { riderId: rider.id } });
     expect(assignment.isActive).toBe(false);

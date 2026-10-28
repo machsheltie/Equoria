@@ -85,7 +85,10 @@ const RidersPage: React.FC = () => {
         <ul className="space-y-1 list-disc list-inside">
           <li>Riders must be assigned before a horse can enter competitions</li>
           <li>Assignments persist until manually changed or the horse retires</li>
-          <li>Competing reveals hidden affinities — discipline, temperament, and gait</li>
+          <li>
+            Every show a rider completes counts toward its next level, and each new level reveals
+            hidden strengths and weaknesses
+          </li>
           <li>
             <strong>Level = visibility, not quality</strong> — a rookie rider may secretly excel
           </li>
