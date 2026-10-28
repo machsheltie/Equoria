@@ -79,7 +79,7 @@
   color: var(--text-secondary);
 }
 
-/* Podium metals — always with the ordinal text, never colour alone. */
+/* Podium metals — always with the ordinal text, never color alone. */
 .show-ledger__placement[data-podium] {
   font-weight: 600;
 }

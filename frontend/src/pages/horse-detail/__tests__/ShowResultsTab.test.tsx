@@ -220,7 +220,7 @@ describe('ShowResultsTab', () => {
     ]);
   });
 
-  it('marks the podium with metal and ordinal text, never colour alone', async () => {
+  it('marks the podium with metal and ordinal text, never color alone', async () => {
     server.use(
       http.get(ROUTE, () =>
         HttpResponse.json({ success: true, data: RECORD, pagination: pagination(1, 1, 5) })

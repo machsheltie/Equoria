@@ -2,7 +2,7 @@
  * GeneticsTab — lazy sub-panel for HorseDetailPage (Equoria-r22q)
  *
  * Owner ruling 2026-10-26 (q72): the Genetics tab shows the horse's revealed
- * traits plus its colour genetics, and nothing else. Colour genetics stay
+ * traits plus its color genetics, and nothing else. Color genetics stay
  * hidden until the player pays for the Veterinarian's Genetic Testing, and the
  * server withholds the genotype until then (Equoria-8tz7p).
  *
@@ -28,7 +28,7 @@ import { useHorseTraits, useMarkTraitsSeen, type HorseTrait } from '../../hooks/
 import type { Horse } from './HorseDetailPageTypes';
 import { userMessageFor } from '../../lib/http/userMessage';
 import TraitDiscovery from './genetics/TraitDiscovery';
-import ColourGeneticsSection from './genetics/ColourGeneticsSection';
+import ColorGeneticsSection from './genetics/ColorGeneticsSection';
 
 /** Normalize a trait name/key to a comparable token. */
 function normalizeTraitToken(value: string): string {
@@ -102,7 +102,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         />
       )}
 
-      <ColourGeneticsSection horseId={horse.id} />
+      <ColorGeneticsSection horseId={horse.id} />
 
       <LiveTraitDetailModal
         isOpen={selectedTrait !== null}

@@ -9,7 +9,7 @@
  *   and opens its detail. One revealed since the owner last looked glows once
  *   (Equoria-lylhb).
  * - A switched-off (dormant) trait is greyed out and still shows its name,
- *   with the word "Inactive" so the state never rests on colour alone.
+ *   with the word "Inactive" so the state never rests on color alone.
  *
  * Rarity is never shown; names are the authored labels the server sends.
  */

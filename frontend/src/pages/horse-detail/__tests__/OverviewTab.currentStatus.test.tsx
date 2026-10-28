@@ -99,7 +99,7 @@ describe('OverviewTab Horse Details (Equoria-2w4yo)', () => {
       'Last Groomed',
     ]);
 
-    // The visible colour from the phenotype, the breed by name, the markings in
+    // The visible color from the phenotype, the breed by name, the markings in
     // their authored words, the temperament as stored and shown before.
     expect(screen.getByTestId('horse-detail-color')).toHaveTextContent(/^Dapple Grey$/);
     expect(screen.getByTestId('horse-detail-breed')).toHaveTextContent(/^Thoroughbred$/);
@@ -115,7 +115,7 @@ describe('OverviewTab Horse Details (Equoria-2w4yo)', () => {
     expect(screen.getByTestId('horse-detail-color')).toHaveTextContent(/^Bay — Dark$/);
   });
 
-  it('says "not recorded" for a legacy horse with no colour, markings or temperament', () => {
+  it('says "not recorded" for a legacy horse with no color, markings or temperament', () => {
     overview({ lastShod: null, lastTrainedAt: null, lastGroomed: null });
     renderTab({ ...HORSE, phenotype: null, markings: null, temperament: null });
     expect(screen.getByTestId('horse-detail-color')).toHaveTextContent(/^not recorded$/);
@@ -188,7 +188,7 @@ describe('OverviewTab Horse Details care status (Equoria-0l0tq)', () => {
     renderTab();
     expect(await screen.findByTestId('last-trained')).toHaveAttribute('data-glow', 'ready');
     expect(screen.getByTestId('last-groomed')).toHaveAttribute('data-glow', 'none');
-    // Colour is never the only signal.
+    // Color is never the only signal.
     expect(screen.getByTestId('last-trained')).toHaveTextContent('(ready now)');
   });
 

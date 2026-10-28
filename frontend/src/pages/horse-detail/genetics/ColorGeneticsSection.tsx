@@ -1,7 +1,7 @@
 /**
- * ColourGeneticsSection: the horse's colour genotype, locus by locus.
+ * ColorGeneticsSection: the horse's color genotype, locus by locus.
  *
- * Owner ruling 2026-10-26 (q72): colour genetics stay hidden until the player
+ * Owner ruling 2026-10-26 (q72): color genetics stay hidden until the player
  * pays for the Veterinarian's Genetic Testing. The server withholds the
  * genotype for an untested horse (Equoria-8tz7p); this section shows an
  * invitation instead. Locus names are authored labels, never stored codes.
@@ -65,32 +65,32 @@ function locusLabel(locus: string): string {
   );
 }
 
-const ColourGeneticsSection: React.FC<{ horseId: number | string }> = ({ horseId }) => {
+const ColorGeneticsSection: React.FC<{ horseId: number | string }> = ({ horseId }) => {
   const query = useHorseCoatGenetics(horseId);
 
   return (
-    <section data-testid="colour-genetics-section">
-      <h3 className="type-section-heading mb-3">Colour Genetics</h3>
+    <section data-testid="color-genetics-section">
+      <h3 className="type-section-heading mb-3">Color Genetics</h3>
       {query.isLoading && (
         <div role="status" className="flex items-center gap-2 py-4 text-[var(--text-secondary)]">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-          <span>Loading colour genetics...</span>
+          <span>Loading color genetics...</span>
         </div>
       )}
       {query.isError && (
         <ErrorState
-          message="Could not load colour genetics."
+          message="Could not load color genetics."
           retry={{ label: 'Try Again', onClick: () => query.refetch() }}
         />
       )}
       {query.isSuccess && query.data === null && (
         <p className="text-[var(--text-secondary)]">
-          No colour genetics are recorded for this horse.
+          No color genetics are recorded for this horse.
         </p>
       )}
       {query.isSuccess && query.data && !query.data.colorGeneticsTested && (
-        <p data-testid="colour-genetics-untested" className="text-[var(--text-secondary)]">
-          This horse&apos;s colour genetics are a secret until they are tested. The Veterinarian
+        <p data-testid="color-genetics-untested" className="text-[var(--text-secondary)]">
+          This horse&apos;s color genetics are a secret until they are tested. The Veterinarian
           offers Genetic Testing.{' '}
           <Link to="/vet" className="text-[var(--gold-primary)] underline">
             Visit the Vet Clinic
@@ -99,7 +99,7 @@ const ColourGeneticsSection: React.FC<{ horseId: number | string }> = ({ horseId
       )}
       {query.isSuccess && query.data && query.data.colorGeneticsTested && (
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm" data-testid="colour-genotype-table">
+          <table className="min-w-full text-sm" data-testid="color-genotype-table">
             <thead>
               <tr className="text-left text-[var(--text-secondary)]">
                 <th className="px-3 py-2">Gene</th>
@@ -132,4 +132,4 @@ const ColourGeneticsSection: React.FC<{ horseId: number | string }> = ({ horseId
   );
 };
 
-export default ColourGeneticsSection;
+export default ColorGeneticsSection;

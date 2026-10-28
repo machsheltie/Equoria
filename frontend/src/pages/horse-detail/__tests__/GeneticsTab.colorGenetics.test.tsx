@@ -1,6 +1,6 @@
 /**
- * Genetics tab, owner ruling 2026-10-26 (q72): traits plus colour genetics;
- * colour genetics stay hidden until the Vet's Genetic Testing is paid for; the
+ * Genetics tab, owner ruling 2026-10-26 (q72): traits plus color genetics;
+ * color genetics stay hidden until the Vet's Genetic Testing is paid for; the
  * invented numbers and the Behavioral Flags panel are gone.
  * Old contract: Genetic Potential / Average Trait Strength / Breeding Value /
  * "prime breeding candidate" tiles, per-trait strength and rarity, and a flags
@@ -22,7 +22,7 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const horse = {
   id: 79,
-  name: 'TestFixture-Colour',
+  name: 'TestFixture-Color',
   breed: 'Thoroughbred',
   age: 4,
   gender: 'Mare',
@@ -66,12 +66,12 @@ function renderTab() {
   );
 }
 
-describe('GeneticsTab colour genetics (q72)', () => {
-  it('keeps colour genetics hidden for an untested horse and points to the Vet', async () => {
+describe('GeneticsTab color genetics (q72)', () => {
+  it('keeps color genetics hidden for an untested horse and points to the Vet', async () => {
     stub({ horseId: 79, horseName: 'x', colorGeneticsTested: false });
     renderTab();
-    expect(await screen.findByTestId('colour-genetics-untested')).toBeInTheDocument();
-    expect(screen.queryByTestId('colour-genotype-table')).toBeNull();
+    expect(await screen.findByTestId('color-genetics-untested')).toBeInTheDocument();
+    expect(screen.queryByTestId('color-genotype-table')).toBeNull();
     expect(screen.getByRole('link', { name: /vet clinic/i })).toHaveAttribute('href', '/vet');
   });
 
@@ -84,11 +84,11 @@ describe('GeneticsTab colour genetics (q72)', () => {
       phenotype: null,
     });
     renderTab();
-    expect(await screen.findByTestId('colour-genotype-table')).toBeInTheDocument();
+    expect(await screen.findByTestId('color-genotype-table')).toBeInTheDocument();
     expect(screen.getByText('Extension')).toBeInTheDocument();
     expect(screen.getByText('E/e')).toBeInTheDocument();
     expect(screen.queryByText(/E_Extension/)).toBeNull();
-    expect(screen.queryByTestId('colour-genetics-untested')).toBeNull();
+    expect(screen.queryByTestId('color-genetics-untested')).toBeNull();
   });
 
   it('lists the horse traits without strength, rarity or invented scores, and no flags panel', async () => {

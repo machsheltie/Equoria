@@ -220,7 +220,7 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
 
   /* An unnamed horse is an invitation, not an error — same h1, same type role
      (Basteleur Moonlight via .type-entity-title), held back in the secondary
-     text colour so the word reads as a blank waiting to be filled rather than a
+     text color so the word reads as a blank waiting to be filled rather than a
      name someone chose. The line beneath says what to do; the pencil beside it
      does it. */
   const unnamedTitle = (
