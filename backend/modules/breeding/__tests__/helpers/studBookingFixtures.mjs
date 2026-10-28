@@ -296,6 +296,12 @@ export function registerCleanup(cleanup, { userIds, horseIds }) {
     () => prisma.horseSale.deleteMany({ where: { horseId: { in: horseIds } } }),
     'horseSales',
   );
+  // /api/v1/studs mutations are on the audit trail (Equoria-e7tgc.7); the rows
+  // these fixture users wrote are owned by the suite.
+  cleanup.add(
+    () => prisma.auditLog.deleteMany({ where: { userId: { in: userIds } } }),
+    'auditLogs',
+  );
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
 }

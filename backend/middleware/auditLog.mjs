@@ -177,7 +177,7 @@ export function sanitizeLogData(data, depth = 0, ancestors = new Set()) {
  * SECURITY.md A09). The classifier maps the prefix to a stable `action`.
  *
  * Path coverage rationale: auth (account/session), bank + transactions
- * (financial), breeding/breed, training, admin, and groom mutations are the
+ * (financial), breeding/breed/studs, training, admin, and groom mutations are the
  * highest-value sensitive surfaces. Both the unversioned (`/api/...`) and
  * versioned (`/api/v1/...`) mounts are covered because authRouter is mounted
  * at BOTH in app.mjs.
@@ -194,6 +194,9 @@ const SENSITIVE_AUDIT_PREFIXES = [
   { match: p => p.startsWith('bank'), action: 'transaction' },
   { match: p => p.startsWith('transactions'), action: 'transaction' },
   { match: p => p.startsWith('breeding') || p.startsWith('breed'), action: 'breeding' },
+  // Stud bookings and private stud requests (Equoria-e7tgc.7): approval moves
+  // a stud fee between two players and starts a pregnancy.
+  { match: p => p.startsWith('studs'), action: 'breeding' },
   { match: p => p.startsWith('training'), action: 'training' },
   { match: p => p.startsWith('admin'), action: 'adminOperation' },
   { match: p => p.startsWith('grooms') || p.startsWith('groom-'), action: 'groomOperation' },
