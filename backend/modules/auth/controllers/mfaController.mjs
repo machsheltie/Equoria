@@ -154,7 +154,7 @@ function refuseChallenge(res, status, code, message, extra = {}) {
 }
 
 /** How many times a recovery-code claim re-reads after losing a write race. */
-const RECOVERY_CLAIM_ATTEMPTS = 3;
+const recoveryClaimAttempts = 3;
 
 /**
  * Equoria-ov8ny (ACC-02): spend one recovery code, exactly once.
@@ -170,7 +170,7 @@ const RECOVERY_CLAIM_ATTEMPTS = 3;
  */
 async function consumeRecoveryCode(userId, candidate, initialCodes) {
   let stored = initialCodes;
-  for (let attempt = 0; attempt < RECOVERY_CLAIM_ATTEMPTS; attempt += 1) {
+  for (let attempt = 0; attempt < recoveryClaimAttempts; attempt += 1) {
     const codes = Array.isArray(stored) ? stored : [];
     const result = await mfaService.verifyRecoveryCode(candidate, codes);
     if (!result.valid) {

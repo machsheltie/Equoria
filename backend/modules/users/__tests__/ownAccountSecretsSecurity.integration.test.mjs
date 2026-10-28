@@ -22,7 +22,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const SECRET_KEYS = ['password', 'passwordChangedAt', 'mfaSecret', 'mfaRecoveryCodes'];
+const secretKeys = ['password', 'passwordChangedAt', 'mfaSecret', 'mfaRecoveryCodes'];
 
 const cleanup = createCleanupTracker();
 let user;
@@ -53,7 +53,7 @@ afterAll(() => cleanup.run(), 30_000);
 function expectNoSecrets(data) {
   expect(data).toBeTruthy();
   expect(data.id).toBe(user.id);
-  for (const key of SECRET_KEYS) {
+  for (const key of secretKeys) {
     expect(Object.keys(data)).not.toContain(key);
   }
   const serialized = JSON.stringify(data);
