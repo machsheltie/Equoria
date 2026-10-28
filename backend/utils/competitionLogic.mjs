@@ -6,9 +6,8 @@
  */
 
 import logger from './logger.mjs';
-import { isRosterTrait } from './epigeneticTraits.mjs';
 import { maxActiveAgeYears, minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
-import { DISCIPLINE_STATS } from '../modules/competition/index.mjs';
+import { DISCIPLINE_STATS, disciplineStandingScore } from '../modules/competition/index.mjs';
 
 /**
  * Calculate prize distribution based on placement
@@ -211,58 +210,23 @@ export function levelForScore(totalScore) {
 }
 
 /**
- * Calculate horse level based on stats, traits, and training
- * @param {Object} horse - Horse object with stats and traits
- * @param {string} discipline - Competition discipline
- * @returns {number} Horse level for the discipline
+ * A horse's level in a ridden discipline: the one level table applied to the
+ * nightly show scorer's own flat score (`disciplineStandingScore`: the
+ * discipline's three stats weighted 50/30/20, plus the trained value in that
+ * discipline, plus saddle and bridle points, rounded x.5 up). The horse page's
+ * Discipline Scores, the show's entered field and the eligibility summary all
+ * read this level, so they cannot disagree (Equoria-n56bt). Traits add nothing
+ * until the trait rework (owner ruling 2026-10-23).
+ *
+ * Old contract: an equal average of the three stats, plus trait bonuses counted
+ * twice, plus training, with no tack.
+ * @param {Object} horse - Horse row: the ten stats, disciplineScores and tack.
+ * @param {string} discipline - One of the 24 competition disciplines.
+ * @returns {number} Level 1-20; 1 when the score cannot be computed.
  */
 export function calculateHorseLevel(horse, discipline) {
   try {
-    const disciplineMap = configFor(discipline);
-    const { stats } = disciplineMap;
-
-    // Calculate base stat score (weighted average of 3 discipline stats)
-    let baseStatScore = 0;
-    stats.forEach(stat => {
-      baseStatScore += horse[stat] || 0;
-    });
-    baseStatScore = baseStatScore / 3; // Average of the 3 stats
-
-    // Legacy trait bonus (from epigenetic modifiers). Only roster traits and the
-    // discipline trait count: a stored name off the roster has no effect (owner
-    // ruling 2026-10-27, q117; Equoria-2d55z).
-    let legacyTraitBonus = 0;
-    const traits = horse.epigeneticModifiers || horse.traits || {};
-    const counts = trait => isRosterTrait(trait) || String(trait).startsWith('disciplineAffinity');
-    const positiveTraits = (traits.positive || []).filter(counts);
-    const negativeTraits = (traits.negative || []).filter(counts);
-
-    positiveTraits.forEach(trait => {
-      if (disciplineMap.beneficial.includes(trait)) {
-        legacyTraitBonus += 5; // +5 points per beneficial trait
-      } else {
-        legacyTraitBonus += 2; // +2 points for other positive traits
-      }
-    });
-
-    negativeTraits.forEach(trait => {
-      if (disciplineMap.detrimental.includes(trait)) {
-        legacyTraitBonus -= 8; // -8 points per detrimental trait
-      } else {
-        legacyTraitBonus -= 3; // -3 points for other negative traits
-      }
-    });
-
-    // Discipline affinity bonus (same as legacy trait bonus for now)
-    const disciplineAffinityBonus = legacyTraitBonus;
-
-    // Training score for this specific discipline
-    const trainingScore = horse.disciplineScores?.[discipline] || 0;
-
-    // Calculate total score
-    const totalScore = baseStatScore + legacyTraitBonus + disciplineAffinityBonus + trainingScore;
-
-    return levelForScore(totalScore);
+    return levelForScore(disciplineStandingScore(horse, discipline));
   } catch (error) {
     logger.error('[competitionLogic.calculateHorseLevel] Error:', error.message);
     return 1;

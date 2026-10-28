@@ -67,7 +67,6 @@ export function getShowEntriesWithHorseStats(showId) {
         select: {
           id: true,
           name: true,
-          epigeneticModifiers: true,
           breed: { select: { name: true } },
           user: { select: { id: true, username: true } },
           precision: true,
@@ -82,6 +81,10 @@ export function getShowEntriesWithHorseStats(showId) {
           flexibility: true,
           obedience: true,
           focus: true,
+          // The level reads the scorer's flat score: training and tack count
+          // (Equoria-n56bt).
+          disciplineScores: true,
+          tack: true,
         },
       },
     },

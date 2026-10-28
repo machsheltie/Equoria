@@ -69,7 +69,10 @@ import { tackPoints } from '../rules/tackScoring.mjs';
  */
 export function weightedDisciplineBase(horse, discipline) {
   const [primary, secondary, tertiary] = DISCIPLINE_STATS[discipline];
-  return (5 * horse[primary] + 3 * horse[secondary] + 2 * horse[tertiary]) / 10;
+  // A stat column is a non-null Int (default 0); a row read without one counts
+  // it as 0, never NaN (the level read, Equoria-n56bt).
+  const stat = name => (Number.isFinite(horse[name]) ? horse[name] : 0);
+  return (5 * stat(primary) + 3 * stat(secondary) + 2 * stat(tertiary)) / 10;
 }
 
 /**

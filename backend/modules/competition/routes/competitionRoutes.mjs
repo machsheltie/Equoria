@@ -148,9 +148,9 @@ router.get(
         const h = e.horse;
         const allStats = STAT_KEYS.map(k => ({ name: k, value: h?.[k] ?? 0 }));
         const topStats = [...allStats].sort((a, b) => b.value - a.value).slice(0, 3);
-        // Real, discipline-relative competitive level — the same
-        // calculateHorseLevel() the entry-eligibility check uses, so the
-        // scouted level matches what gates entry (no fabricated number).
+        // The horse's level in this show's discipline: the same
+        // calculateHorseLevel() the eligibility summary and the horse page's
+        // Discipline Scores use (the scorer's flat score; Equoria-n56bt).
         let level;
         try {
           level = h ? calculateHorseLevel(h, show.discipline) : null;
