@@ -101,4 +101,26 @@ describe('GroomList — marketplace refresh', () => {
     await waitFor(() => expect(posts).toEqual([false]));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+
+  // Owner ruling q161: an error shows next to the button that failed, in plain
+  // words. Old contract: a floating toast (useRefreshMarketplace onError).
+  it('a refused refresh says why beside the refresh button, never the server text', async () => {
+    server.use(
+      http.get(MARKETPLACE, () => HttpResponse.json({ success: true, data: marketplace(true) })),
+      http.post(REFRESH, () =>
+        HttpResponse.json({ success: false, message: 'RAW-SERVER-TEXT leak' }, { status: 400 })
+      )
+    );
+    const user = userEvent.setup();
+    renderList();
+
+    await user.click(await screen.findByRole('button', { name: /^refresh \(50 coins\)$/i }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(
+      "The marketplace couldn't be refreshed. Your balance may not cover the fee."
+    );
+    expect(screen.getByTestId('refresh-error')).toContainElement(alert);
+    expect(screen.queryByText(/RAW-SERVER-TEXT/)).not.toBeInTheDocument();
+  });
 });

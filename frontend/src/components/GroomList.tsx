@@ -28,7 +28,12 @@ import { Select } from '@/components/ui/form';
 import { Surface } from '@/components/ui/Surface';
 import Currency from '@/components/ui/Currency';
 import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
-import { actionMessageFor, hireRefusalCodes, hireRefused } from '@/lib/http/actionMessage';
+import {
+  actionMessageFor,
+  hireRefusalCodes,
+  hireRefused,
+  refreshRefused,
+} from '@/lib/http/actionMessage';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { groomSpecialtyTitle } from '@/lib/staffLabels';
 import StaffLevelStars from '@/components/common/StaffLevelStars';
@@ -210,6 +215,13 @@ const GroomList: React.FC<GroomListProps> = ({
           {refreshLabel}
         </Button>
       </div>
+
+      {/* A refused refresh says why beside the button (owner ruling q161). */}
+      {refreshMutation.isError && (
+        <div data-testid="refresh-error" className="-mt-3 lg:text-right">
+          <InlineError message={actionMessageFor(refreshMutation.error, refreshRefused)} />
+        </div>
+      )}
 
       {/* User Info & Refresh Status */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

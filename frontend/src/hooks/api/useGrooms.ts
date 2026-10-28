@@ -114,12 +114,9 @@ export function useRefreshMarketplace() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groomKeys.marketplace() });
     },
-    // Equoria-mljz9 — visible failure feedback (§2); no raw server leak (§3).
-    onError: (error) => {
-      toast.error('Could not refresh the marketplace', {
-        description: userMessageFor(error).message,
-      });
-    },
+    // NO hook onError on purpose: GroomList shows a refused refresh beside the
+    // refresh button (owner ruling q161: errors show next to the button that
+    // failed, in plain words). Old contract: a floating toast (Equoria-mljz9).
   });
 }
 
