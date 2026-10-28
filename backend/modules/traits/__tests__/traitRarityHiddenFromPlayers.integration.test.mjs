@@ -98,14 +98,9 @@ describe('trait rarity stays off player routes (q112)', () => {
       });
     });
 
-    // Owner ruling 2026-10-28 (q150): the rare-trait score is hidden from players.
-    it('the legacy score sends no rare-trait points', async () => {
-      const res = await get(`/api/v1/horses/${historyHorse.id}/legacy-score`);
-      expect(res.status).toBe(200);
-      const { traitScore } = res.body.data.legacyScore.components;
-      expect(traitScore.breakdown).not.toHaveProperty('rareTraits');
-      expect(JSON.stringify(res.body)).not.toMatch(/isRare|rareTraits|rarity/i);
-    });
+    // Old contract (q150): the legacy score sent no rare-trait points. Owner
+    // ruling 2026-10-28 (q242): the legacy-score route is removed, so it sends
+    // nothing; legacyScoreRouteRemoved pins the 404.
 
     it('the breeding summary sends no rare-trait count', async () => {
       const res = await get(`/api/v1/horses/${historyHorse.id}/breeding-data`);

@@ -208,10 +208,7 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
     });
   });
 
-  describe('trait history (TraitHistoryLog rows naming a still-hidden trait)', () => {
-    it('GET /horses/:id/legacy-score names no hidden trait', async () => {
-      const res = await get(`/api/v1/horses/${foal.id}/legacy-score`);
-      expectNoHiddenNames(res);
-    });
-  });
+  // Old contract: GET /horses/:id/legacy-score had to name no hidden trait from
+  // the TraitHistoryLog rows. Owner ruling 2026-10-28 (q242): the route is
+  // removed, so it sends nothing; legacyScoreRouteRemoved pins the 404.
 });

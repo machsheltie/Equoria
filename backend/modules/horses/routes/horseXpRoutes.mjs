@@ -10,7 +10,7 @@
  *   GET    /:id/xp-history          — REMOVED, unmounted (404; Equoria-fly7a)
  *   POST   /:id/award-xp            — REMOVED, 410 Gone (Equoria-6p398.3)
  *   GET    /:id/personality-impact  — groom-compatibility ranking
- *   GET    /:id/legacy-score        — legacy-score calculation
+ *   GET    /:id/legacy-score        — REMOVED, unmounted (404; owner ruling q242)
  *
  * Mounting: this router is mounted at the SAME path as the parent
  * (`router.use(horseXpRoutes)` in horseRoutes.mjs). All routes start with
@@ -24,10 +24,6 @@
  * controller relies on. The one exception is the hard-deprecated
  * `POST /:id/award-xp`, which answers 410 for every authenticated caller and
  * therefore performs no ownership lookup (Equoria-6p398.3, audit Finding 3).
- *
- * Note: legacy-score uses a dynamic `await import(...)` to load
- * its service — preserved exactly because removing the laziness without
- * profiling startup cost would be a behavioural change.
  */
 
 import express from 'express';
@@ -36,7 +32,6 @@ import { requireOwnership } from '../../../middleware/ownership.mjs';
 import { getHorsePersonalityImpact } from '../controllers/horseController.mjs';
 import * as horseXpController from '../controllers/horseXpController.mjs';
 import { validateHorseId } from './_validators.mjs';
-import AppError from '../../../errors/AppError.mjs';
 // Equoria-jk9oj.2: declare auth at the router that OWNS these mutations rather
 // than inferring it from the authRouter mount comment. Idempotent with the
 // mount-level authenticateToken; the guard travels with the file if re-mounted.
@@ -157,81 +152,6 @@ router.get(
   validateHorseId,
   requireOwnership('horse'),
   getHorsePersonalityImpact,
-);
-
-/**
- * @swagger
- * /api/horses/{id}/legacy-score:
- *   get:
- *     summary: Get horse legacy score with trait integration
- *     tags: [Horses]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Horse ID
- *     responses:
- *       200:
- *         description: Legacy score retrieved successfully
- *       404:
- *         description: Horse not found
- *       500:
- *         description: Internal server error
- *
- * Security: Validates horse ownership before calculating legacy score
- */
-router.get(
-  '/:id/legacy-score',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id, 10);
-
-      // Equoria-93lhj: legacyScoreCalculator was moved into the horses module
-      // (efonm wave 5). Import the same-module service via its relative deep path
-      // — the prior `../../../services/legacyScoreCalculator.mjs` resolved to the
-      // now-nonexistent backend/modules/services/, so the dynamic import rejected
-      // with ERR_MODULE_NOT_FOUND and the handler returned 500 for valid horses.
-      const { calculateLegacyScore } = await import('../services/legacyScoreCalculator.mjs');
-      const legacyScore = await calculateLegacyScore(horseId);
-
-      res.json({
-        success: true,
-        message: 'Legacy score retrieved successfully',
-        data: {
-          legacyScore,
-        },
-      });
-    } catch (error) {
-      // Equoria-vkzvx: TYPE-based 404 detection. The service throws a typed
-      // NotFoundError (AppError subclass, statusCode 404) for a missing horse,
-      // so we branch on the error's type/status — NOT on error.message.includes('not
-      // found'). The old string-sniffing (Equoria-93lhj) misclassified a
-      // 'Cannot find module' load failure: the message did not contain 'not found'
-      // so it correctly fell through to 500 in that case, but the broader risk is
-      // the inverse — any future internal error whose message happened to contain
-      // 'not found' would have masqueraded as a clean 404. Type-based dispatch is
-      // fail-closed: only a real typed 404 yields 404; every other error (including
-      // a future import/module-load failure) surfaces loudly as 500.
-      // AppError.isAppError survives module-cache duplication (see errors/AppError.mjs).
-      if (AppError.isAppError(error) && error.statusCode === 404) {
-        return res.status(404).json({
-          success: false,
-          message: error.message,
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        message: 'Failed to calculate legacy score',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-      });
-    }
-  },
 );
 
 export default router;

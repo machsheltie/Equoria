@@ -559,7 +559,6 @@
   "backend/modules/horses/__tests__/horseTemperamentAnalysis.test.mjs": 9,
   "backend/modules/horses/__tests__/horseXpAwardServerAuthoritative.integration.test.mjs": 8,
   "backend/modules/horses/__tests__/horseXpSystem.test.mjs": 6,
-  "backend/modules/horses/__tests__/horseXpTypedNotFound404.integration.test.mjs": 2,
   "backend/modules/horses/__tests__/inFoalFeedConservation.test.mjs": 5,
   "backend/modules/horses/__tests__/legacyScoreCalculator.bareDefaultGuard.sentinel.test.mjs": 4,
   "backend/modules/horses/__tests__/personalityEvolutionController.integration.test.mjs": 2,
