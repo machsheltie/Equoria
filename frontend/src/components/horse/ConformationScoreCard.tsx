@@ -4,7 +4,7 @@
  * Displays a single conformation region score with:
  * - Region name and description tooltip
  * - Numeric score (XX/100)
- * - Quality rating badge (color-coded: Excellent/Good/Poor)
+ * - Quality rating badge (the six quality words, color-coded)
  * - Progress bar visualization
  * - Breed comparison indicator (optional)
  * - Hover/click interactions

@@ -94,9 +94,10 @@ describe('ConformationScoreCard', () => {
       );
     });
 
-    it('should display Below Average for scores 50-59', () => {
+    // Owner ruling q251 (Equoria-y8vg9): the 50-59 band reads "Fair".
+    it('should display Fair for scores 50-59', () => {
       render(<ConformationScoreCard region="head" score={55} />);
-      expect(screen.getByText('Below Average')).toBeInTheDocument();
+      expect(screen.getByText('Fair')).toBeInTheDocument();
       expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-orange-400');
     });
 

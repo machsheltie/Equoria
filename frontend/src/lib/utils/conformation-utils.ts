@@ -2,7 +2,7 @@
  * Conformation Scoring Utilities
  *
  * Provides utility functions for horse conformation scoring system:
- * - Quality rating calculations (0-100 to Excellent/Good/Poor)
+ * - Quality rating calculations (0-100 to the six quality words)
  * - Overall score calculations (average of 7 regions)
  * - Breed comparison analysis
  * - Score formatting and display helpers
@@ -33,58 +33,69 @@ export interface ConformationScores {
   hooves: number;
 }
 
+export interface ConformationQualityBand extends QualityRating {
+  /** Lowest score (inclusive) that earns this word. */
+  min: number;
+}
+
 /**
- * Calculate quality rating from numeric score (0-100)
+ * The conformation quality words and their score bands — the one source of
+ * truth for every place that turns a conformation score into a word.
  *
- * Score ranges:
- * - 90-100: Excellent (green)
- * - 80-89: Very Good (blue)
- * - 70-79: Good (amber)
- * - 60-69: Average (gray)
- * - 50-59: Below Average (orange)
- * - 0-49: Poor (red)
+ * Owner ruling q251 (Equoria-y8vg9, 2026-10-28): six words —
+ * Excellent 90+, Very Good 80+, Good 70+, Average 60+, Fair 50+, Poor below 50.
+ * Ordered highest band first.
+ */
+export const conformationQualityBands: readonly ConformationQualityBand[] = Object.freeze([
+  {
+    min: 90,
+    label: 'Excellent',
+    color: 'text-emerald-400',
+    bgColor: 'bg-[rgba(16,185,129,0.1)] border-emerald-500/30',
+  },
+  {
+    min: 80,
+    label: 'Very Good',
+    color: 'text-[var(--gold-primary)]',
+    bgColor: 'bg-[var(--alpha-gold-primary-10)] border-[var(--alpha-gold-ember-30)]',
+  },
+  {
+    min: 70,
+    label: 'Good',
+    color: 'text-amber-400',
+    bgColor: 'bg-[rgba(245,158,11,0.1)] border-amber-500/30',
+  },
+  {
+    min: 60,
+    label: 'Average',
+    color: 'text-[var(--text-secondary)]',
+    bgColor: 'bg-slate-400/[0.08] border-slate-400/30',
+  },
+  {
+    min: 50,
+    label: 'Fair',
+    color: 'text-orange-400',
+    bgColor: 'bg-[rgba(249,115,22,0.1)] border-orange-500/30',
+  },
+  {
+    min: 0,
+    label: 'Poor',
+    color: 'text-rose-400',
+    bgColor: 'bg-[rgba(239,68,68,0.1)] border-rose-500/30',
+  },
+]);
+
+/**
+ * Calculate quality rating from numeric score (0-100), using
+ * `conformationQualityBands`.
  */
 export function getQualityRating(score: number): QualityRating {
   // Clamp score to valid range
   const clampedScore = Math.max(0, Math.min(100, score));
-
-  if (clampedScore >= 90) {
-    return {
-      label: 'Excellent',
-      color: 'text-emerald-400',
-      bgColor: 'bg-[rgba(16,185,129,0.1)] border-emerald-500/30',
-    };
-  } else if (clampedScore >= 80) {
-    return {
-      label: 'Very Good',
-      color: 'text-[var(--gold-primary)]',
-      bgColor: 'bg-[var(--alpha-gold-primary-10)] border-[var(--alpha-gold-ember-30)]',
-    };
-  } else if (clampedScore >= 70) {
-    return {
-      label: 'Good',
-      color: 'text-amber-400',
-      bgColor: 'bg-[rgba(245,158,11,0.1)] border-amber-500/30',
-    };
-  } else if (clampedScore >= 60) {
-    return {
-      label: 'Average',
-      color: 'text-[var(--text-secondary)]',
-      bgColor: 'bg-slate-400/[0.08] border-slate-400/30',
-    };
-  } else if (clampedScore >= 50) {
-    return {
-      label: 'Below Average',
-      color: 'text-orange-400',
-      bgColor: 'bg-[rgba(249,115,22,0.1)] border-orange-500/30',
-    };
-  } else {
-    return {
-      label: 'Poor',
-      color: 'text-rose-400',
-      bgColor: 'bg-[rgba(239,68,68,0.1)] border-rose-500/30',
-    };
-  }
+  const band =
+    conformationQualityBands.find((b) => clampedScore >= b.min) ??
+    conformationQualityBands[conformationQualityBands.length - 1];
+  return { label: band.label, color: band.color, bgColor: band.bgColor };
 }
 
 /**

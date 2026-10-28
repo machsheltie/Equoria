@@ -14,6 +14,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   getQualityRating,
+  conformationQualityBands,
   calculateOverallScore,
   getBreedComparison,
   formatScore,
@@ -53,11 +54,24 @@ describe('conformation-utils', () => {
       expect(getQualityRating(69.9).label).toBe('Average');
     });
 
-    it('should return Below Average for scores 50-59', () => {
-      expect(getQualityRating(50).label).toBe('Below Average');
-      expect(getQualityRating(55).label).toBe('Below Average');
-      expect(getQualityRating(59).label).toBe('Below Average');
-      expect(getQualityRating(59.9).label).toBe('Below Average');
+    // Owner ruling q251 (Equoria-y8vg9, 2026-10-28): six words, and the 50-59
+    // band is "Fair" (it was "Below Average").
+    it('should return Fair for scores 50-59', () => {
+      expect(getQualityRating(50).label).toBe('Fair');
+      expect(getQualityRating(55).label).toBe('Fair');
+      expect(getQualityRating(59).label).toBe('Fair');
+      expect(getQualityRating(59.9).label).toBe('Fair');
+    });
+
+    it('uses exactly the six owner-ruled words, in band order', () => {
+      expect(conformationQualityBands.map((b) => [b.min, b.label])).toEqual([
+        [90, 'Excellent'],
+        [80, 'Very Good'],
+        [70, 'Good'],
+        [60, 'Average'],
+        [50, 'Fair'],
+        [0, 'Poor'],
+      ]);
     });
 
     it('should return Poor for scores 0-49', () => {
