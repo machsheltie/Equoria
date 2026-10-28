@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router';
@@ -59,6 +59,9 @@ function handlers() {
         data: [{ id: 7, name: 'TestFixture-Arabian', description: null }],
         count: 1,
       })
+    ),
+    http.get('*/api/v1/marketplace/colors', () =>
+      HttpResponse.json({ success: true, data: ['Bay', 'Dark Bay', 'Steel Gray'] })
     ),
     http.get('*/api/v1/marketplace/search', ({ request }) => {
       captured.push(new URL(request.url).searchParams);
@@ -126,7 +129,9 @@ describe('Marketplace all-horses search (Equoria-q4uem.9.1)', () => {
     await user.selectOptions(screen.getByLabelText(/^stud$/i), 'private');
     await user.type(screen.getByLabelText(/min stud fee/i), '100');
     await user.type(screen.getByLabelText(/max sale price/i), '5000');
-    await user.type(screen.getByLabelText(/^color$/i), 'bay');
+    // Equoria-merxy (owner ruling 2026-10-28, q190): color was a text box; it is now a
+    // dropdown of every coat color in the game, so the player picks one instead of typing.
+    await user.selectOptions(await screen.findByLabelText(/^color$/i), 'Steel Gray');
     await user.selectOptions(screen.getByLabelText(/sort listings/i), 'priceDesc');
 
     await waitFor(() => {
@@ -134,9 +139,33 @@ describe('Marketplace all-horses search (Equoria-q4uem.9.1)', () => {
       expect(p.get('studMode')).toBe('private');
       expect(p.get('minStudFee')).toBe('100');
       expect(p.get('maxPrice')).toBe('5000');
-      expect(p.get('color')).toBe('bay');
+      expect(p.get('color')).toBe('Steel Gray');
       expect(p.get('sort')).toBe('priceDesc');
     });
+  });
+
+  it('the Color dropdown offers Any Color and every coat color the server lists (Equoria-merxy)', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: /advanced filters/i }));
+
+    const color = screen.getByLabelText(/^color$/i);
+    expect(color.tagName).toBe('SELECT');
+    await waitFor(() =>
+      expect(
+        within(color)
+          .getAllByRole('option')
+          .map((o) => o.textContent)
+      ).toEqual(['Any Color', 'Bay', 'Dark Bay', 'Steel Gray'])
+    );
+
+    await user.selectOptions(color, 'Bay');
+    await waitFor(() => expect(last().get('color')).toBe('Bay'));
+    await user.selectOptions(color, 'Steel Gray');
+    await waitFor(() => expect(last().get('color')).toBe('Steel Gray'));
+    // Any Color drops the filter (the unfiltered first page is served from the cache).
+    await user.selectOptions(color, '');
+    expect(color).toHaveValue('');
   });
 
   it('a row shows both terms, revealed traits as words, and the name opens the horse page', async () => {

@@ -456,6 +456,32 @@ function resolveChampagneColor(baseColor, hasCreamSingle, hasCreamDouble, hasDun
 // Pattern overlays
 // ---------------------------------------------------------------------------
 
+/** Appaloosa names for the full LP pattern (LP + PATN1), chosen by genotype hash. */
+export const appaloosaPatternNames = Object.freeze([
+  'Blanket',
+  'Leopard',
+  'Heavy Snowflake Leopard',
+  'Light Snowflake Leopard',
+  'Moderate Snowflake Leopard',
+  'Heavy Frost Roan Varnish',
+  'Light Frost Roan Varnish',
+  'Moderate Frost Roan Varnish',
+]);
+/** Appaloosa names for the minimal LP pattern (LP without PATN1). */
+export const appaloosaMinimalNames = Object.freeze(['Varnish Roan', 'Fewspot Leopard', 'Snowcap']);
+/** Gray names, chosen by genotype hash. Equoria-erfm: plain 'Gray' is the early-stage default. */
+export const grayColorNames = Object.freeze([
+  'Gray',
+  'Steel Gray',
+  'Rose Gray',
+  'White Gray',
+  'Fleabitten Gray',
+  'Steel Dark Dapple Gray',
+  'Steel Light Dapple Gray',
+  'Rose Dark Dapple Gray',
+  'Rose Light Dapple Gray',
+]);
+
 /**
  * Apply pattern overlays to the phenotype.
  * Patterns add boolean flags and may override colorName (gray, roan, appaloosa, dominant white).
@@ -497,43 +523,17 @@ function applyPatterns(genotype, colorName, genotypeHash) {
   if (hasLP) {
     result.isAppaloosa = true;
     if (hasPATN1) {
-      // Full pattern: Blanket, Leopard, or Snowflake subtypes
-      const lpPatterns = [
-        'Blanket',
-        'Leopard',
-        'Heavy Snowflake Leopard',
-        'Light Snowflake Leopard',
-        'Moderate Snowflake Leopard',
-        'Heavy Frost Roan Varnish',
-        'Light Frost Roan Varnish',
-        'Moderate Frost Roan Varnish',
-      ];
-      result.colorName = lpPatterns[genotypeHash % lpPatterns.length];
+      result.colorName = appaloosaPatternNames[genotypeHash % appaloosaPatternNames.length];
     } else {
-      // Minimal pattern: Varnish Roan, Fewspot, Snowcap
-      const lpMinimal = ['Varnish Roan', 'Fewspot Leopard', 'Snowcap'];
-      result.colorName = lpMinimal[genotypeHash % lpMinimal.length];
+      result.colorName = appaloosaMinimalNames[genotypeHash % appaloosaMinimalNames.length];
     }
   }
 
-  // --- Gray ---
-  // Equoria-erfm: 'Gray' included as the early-stage canonical name (e.g.
-  // young grays before progression). Equal-weighted with subtypes via hash.
+  // --- Gray --- (equal-weighted subtypes via hash)
   const g = genotype.G_Gray ?? 'g/g';
   if (g === 'G/g' || g === 'G/G') {
     result.isGray = true;
-    const grayOptions = [
-      'Gray', // Equoria-erfm: plain 'Gray' early-stage default
-      'Steel Gray',
-      'Rose Gray',
-      'White Gray',
-      'Fleabitten Gray',
-      'Steel Dark Dapple Gray',
-      'Steel Light Dapple Gray',
-      'Rose Dark Dapple Gray',
-      'Rose Light Dapple Gray',
-    ];
-    result.colorName = grayOptions[genotypeHash % grayOptions.length];
+    result.colorName = grayColorNames[genotypeHash % grayColorNames.length];
   }
 
   // --- Roan (applied after gray since gray overrides roan in display name) ---

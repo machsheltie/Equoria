@@ -55,6 +55,8 @@ export { analyzeHorseTemperament } from './services/horseTemperamentAnalysis.mjs
 export { addXpToHorseCore, invalidateHorseXpCaches } from './services/horseXpModelService.mjs';
 export { generateMarkings } from './services/markingGenerationService.mjs';
 export { calculatePhenotype } from './services/phenotypeCalculationService.mjs';
+// Equoria-merxy: every coat color in the game, for the Marketplace color dropdown.
+export { coatColorNames, canonicalCoatColorName } from './services/coatColorNames.mjs';
 export {
   DEFAULT_TEMPERAMENT_BREED,
   generateTemperamentWithDefault,

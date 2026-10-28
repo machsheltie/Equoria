@@ -7,12 +7,19 @@
  * only its own side. The shared filters (name, breed, gender, color, age) narrow
  * both. A horse that is both for sale and at stud appears once.
  *
+ * Owner ruling 2026-10-28 (q190, Equoria-merxy): color is a dropdown of every coat
+ * color in the game, so it is one exact coat color (any case), never part of a name.
+ *
  * Everything is validated here, before Prisma: a refusal throws BadQuery and the
  * controller answers with a 400 and the standard body.
  */
 import { studStatuses } from '../../../constants/schema.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
-import { minBreedingAgeYears, maxBreedingAgeYears } from '../../horses/index.mjs';
+import {
+  canonicalCoatColorName,
+  minBreedingAgeYears,
+  maxBreedingAgeYears,
+} from '../../horses/index.mjs';
 import { horseSexFilterValues } from '../../../../packages/database/horseSexCanonical.mjs';
 import { BadQuery, boundedInt, ownValue, single } from './listingQueryParams.mjs';
 
@@ -50,6 +57,19 @@ function sortFor(name, { forSale, atStud }) {
     priceDesc: () => price('desc'),
   };
   return ownValue(table, name, 'sort')();
+}
+
+/** The chosen coat color in its own spelling, or undefined for any color. */
+function coatColor(query) {
+  const value = text(query, 'color');
+  if (value === undefined) {
+    return undefined;
+  }
+  const color = canonicalCoatColorName(value);
+  if (!color) {
+    throw new BadQuery('That color is not a coat color in the game');
+  }
+  return color;
 }
 
 function flag(query, key) {
@@ -96,7 +116,7 @@ export function parseHorseSearch(query) {
       : Object.values(studModes),
     name: text(query, 'name'),
     breedId: boundedInt(query, 'breedId', int4Limit),
-    color: text(query, 'color'),
+    color: coatColor(query),
     sexValues,
     minAge: boundedInt(query, 'minAge', maxAgeLimit),
     maxAge: boundedInt(query, 'maxAge', maxAgeLimit),
@@ -127,7 +147,7 @@ export function horseSearchWhere(p, viewerId) {
     and.push({ breedId: p.breedId });
   }
   if (p.color) {
-    and.push({ phenotype: { path: ['colorName'], string_contains: p.color, mode: 'insensitive' } });
+    and.push({ phenotype: { path: ['colorName'], equals: p.color } });
   }
   if (p.sexValues) {
     and.push({ OR: p.sexValues.map(value => ({ sex: { equals: value, mode: 'insensitive' } })) });

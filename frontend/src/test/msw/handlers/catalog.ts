@@ -56,6 +56,11 @@ export const catalogHandlers = [
     });
   }),
 
+  // ── Marketplace: coat colors for the search's color dropdown (Equoria-merxy) ─
+  http.get(`${base}/api/v1/marketplace/colors`, () =>
+    HttpResponse.json({ success: true, data: ['Bay', 'Chestnut', 'Gray', 'Steel Gray'] })
+  ),
+
   // ── Marketplace: Horse Trader store purchase (Equoria-m1ck) ────────────────
   // POST /api/v1/marketplace/store/buy — buy a 3-year-old store horse.
   // Default handler returns the success envelope. Tests that need to exercise

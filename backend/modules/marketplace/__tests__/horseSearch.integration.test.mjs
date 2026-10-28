@@ -224,7 +224,7 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
       ageYears: 4,
       breedId: otherBreed.id,
       sex: 'Mare',
-      phenotype: { colorName: 'Dark Grey' },
+      phenotype: { colorName: 'Steel Gray' },
       ...forSale(500),
     });
     await horse({ label: 'filly', ageYears: 1, sex: 'Filly', ...forSale(500) });
@@ -233,7 +233,30 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
     expect(labels(await search('&forSale=true&maxAge=4&minAge=3')).sort()).toEqual(['a4', 'other']);
     expect(labels(await search(`&forSale=true&breedId=${otherBreed.id}`))).toEqual(['other']);
     expect(labels(await search('&forSale=true&sex=Mare')).sort()).toEqual(['filly', 'other']);
-    expect(labels(await search('&forSale=true&color=grey'))).toEqual(['other']);
+    // Equoria-merxy (owner ruling 2026-10-28, q190): color is a dropdown of every coat
+    // color, so it matches one color exactly (any case), never part of a name.
+    expect(labels(await search('&forSale=true&color=steel%20gray'))).toEqual(['other']);
+    expect(labels(await search('&forSale=true&color=Gray'))).toEqual([]);
+    expect(labels(await search('&forSale=true&color=Bay')).sort()).toEqual(['a10', 'a4', 'filly']);
+  });
+
+  it('refuses a color that is not a coat color in the game (Equoria-merxy)', async () => {
+    const res = await search('&forSale=true&color=grey');
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toBe('That color is not a coat color in the game');
+  });
+
+  it('GET /marketplace/colors lists every coat color for the dropdown (Equoria-merxy)', async () => {
+    const res = await request(app).get('/api/v1/marketplace/colors').set('Authorization', `Bearer ${viewer.token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    const colors = res.body.data;
+    expect(colors).toEqual(expect.arrayContaining(['Bay', 'Chestnut', 'Steel Gray', 'Cremello', 'Brindle']));
+    expect(colors).not.toContain('Unknown');
+    expect(colors.some(c => /grey|colour/i.test(c))).toBe(false);
+    expect([...colors].sort((a, b) => a.localeCompare(b, 'en'))).toEqual(colors);
+    expect((await request(app).get('/api/v1/marketplace/colors')).status).toBe(401);
   });
 
   it('sorts by price both ways; both ticked puts horses for sale first, then studs, by their own price', async () => {

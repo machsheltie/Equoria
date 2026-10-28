@@ -3,6 +3,7 @@
  *
  * Path registry:
  *   GET    /api/v1/marketplace/search     → all-horses search (for sale and/or at stud)
+ *   GET    /api/v1/marketplace/colors     → every coat color in the game (color dropdown)
  *   POST   /api/v1/marketplace/list       → list horse for sale
  *   DELETE /api/v1/marketplace/list/:id   → delist horse
  *   POST   /api/v1/marketplace/buy/:id    → purchase horse
@@ -137,6 +138,8 @@ export const horseMarketplaceApi = {
       `/api/v1/marketplace/search?${params.toString()}`
     );
   },
+  /** Every coat color in the game, alphabetical (Equoria-merxy). */
+  coatColors: () => apiClient.get<string[]>('/api/v1/marketplace/colors'),
   listHorse: (data: { horseId: number; price: number }) =>
     apiClient.post<{ horseId: number; salePrice: number }>('/api/v1/marketplace/list', data),
   delistHorse: (horseId: number) => apiClient.delete<void>(`/api/v1/marketplace/list/${horseId}`),

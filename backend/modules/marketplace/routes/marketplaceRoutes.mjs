@@ -21,7 +21,7 @@ import {
   saleHistory,
   buyStoreHorse,
 } from '../controllers/marketplaceController.mjs';
-import { searchHorses } from '../controllers/horseSearchController.mjs';
+import { listCoatColors, searchHorses } from '../controllers/horseSearchController.mjs';
 
 const router = express.Router();
 
@@ -30,6 +30,8 @@ router.use(authenticateToken);
 
 // Equoria-q4uem.9.1: the all-horses search (for sale and/or at stud).
 router.get('/search', queryRateLimiter, searchHorses);
+// Equoria-merxy: every coat color in the game, for the search's color dropdown.
+router.get('/colors', queryRateLimiter, listCoatColors);
 
 // Seller flow
 // CWE-639: requireOwnership with from:'body' validates horseId from req.body,

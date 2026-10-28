@@ -3,6 +3,7 @@
  *
  * React Query hooks for the horse marketplace system.
  *   - useMarketplaceSearch(filters)    → the all-horses search (for sale and/or at stud)
+ *   - useCoatColors()                  → every coat color in the game (color dropdown)
  *   - useMyListings()                  → seller's active listings
  *   - useSaleHistory()                 → user's buy + sell history
  *   - useListHorse()                   → mutation: list a horse for sale
@@ -22,6 +23,16 @@ export function useMarketplaceSearch(filters: MarketplaceSearchFilters) {
     // Neither box ticked is not a search: the page asks the player to tick one.
     enabled: filters.forSale || filters.atStud,
     staleTime: 60_000,
+  });
+}
+
+/** Every coat color in the game, for the search's color dropdown (Equoria-merxy). */
+export function useCoatColors() {
+  return useQuery({
+    // Not under ['marketplace']: buying or listing a horse never changes the colors.
+    queryKey: ['coat-colors'],
+    queryFn: () => horseMarketplaceApi.coatColors(),
+    staleTime: Infinity,
   });
 }
 

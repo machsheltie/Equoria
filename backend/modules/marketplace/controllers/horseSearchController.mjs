@@ -17,7 +17,7 @@ import { studStatuses } from '../../../constants/schema.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { withoutUnrevealedTraits } from '../../breeding/index.mjs';
-import { minBreedingAgeYears, maxBreedingAgeYears } from '../../horses/index.mjs';
+import { coatColorNames, minBreedingAgeYears, maxBreedingAgeYears } from '../../horses/index.mjs';
 import { parseOr400 } from '../services/listingQueryParams.mjs';
 import { horseSearchWhere, parseHorseSearch } from '../services/horseSearchQuery.mjs';
 
@@ -111,4 +111,9 @@ export async function searchHorses(req, res) {
     logger.error(`[horseSearch] searchHorses failed: ${err.message}`);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
+}
+
+/** GET /api/v1/marketplace/colors: every coat color in the game, for the color dropdown. */
+export function listCoatColors(_req, res) {
+  return res.json({ success: true, data: coatColorNames });
 }

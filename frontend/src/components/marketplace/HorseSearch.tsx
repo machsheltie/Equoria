@@ -18,11 +18,11 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { ListingDetailDialog } from '@/components/marketplace/ListingDetailDialog';
 import { HorseSearchRow, toListing } from '@/components/marketplace/HorseSearchRow';
-import { useMarketplaceSearch } from '@/hooks/api/useMarketplace';
+import { useCoatColors, useMarketplaceSearch } from '@/hooks/api/useMarketplace';
 import { useBreeds } from '@/hooks/api/useBreeds';
 import type { MarketplaceSearchFilters, MarketplaceSearchHorse } from '@/lib/api-client';
 
-// Debounce window for the text inputs (Equoria-gb2uq): one request per pause, not per key.
+// Debounce window for the name input (Equoria-gb2uq): one request per pause, not per key.
 const textDebounceMs = 300;
 
 const sortOptions = [
@@ -83,7 +83,6 @@ export const HorseSearch: React.FC<HorseSearchProps> = ({ userBalance, onPurchas
     page: 1,
   });
   const [nameInput, setNameInput] = useState('');
-  const [colorInput, setColorInput] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [buying, setBuying] = useState<MarketplaceSearchHorse | null>(null);
 
@@ -98,6 +97,13 @@ export const HorseSearch: React.FC<HorseSearchProps> = ({ userBalance, onPurchas
     ...(breedsData ?? []).map((b) => ({ value: String(b.id), label: b.name })),
   ];
 
+  // Owner ruling 2026-10-28 (q190, Equoria-merxy): color is a dropdown of every coat color.
+  const { data: coatColors } = useCoatColors();
+  const colorOptions = [
+    { value: '', label: 'Any Color' },
+    ...(coatColors ?? []).map((color) => ({ value: color, label: color })),
+  ];
+
   const update = useCallback(
     <K extends keyof MarketplaceSearchFilters>(key: K, value: MarketplaceSearchFilters[K]) => {
       setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
@@ -105,17 +111,14 @@ export const HorseSearch: React.FC<HorseSearchProps> = ({ userBalance, onPurchas
     []
   );
 
-  // Name and color reach the query key only after the player pauses typing.
+  // The name reaches the query key only after the player pauses typing.
   useEffect(() => {
     const name = nameInput.trim() || undefined;
-    const color = colorInput.trim() || undefined;
     const handle = window.setTimeout(() => {
-      setFilters((prev) =>
-        prev.name === name && prev.color === color ? prev : { ...prev, name, color, page: 1 }
-      );
+      setFilters((prev) => (prev.name === name ? prev : { ...prev, name, page: 1 }));
     }, textDebounceMs);
     return () => window.clearTimeout(handle);
-  }, [nameInput, colorInput]);
+  }, [nameInput]);
 
   return (
     <div>
@@ -198,12 +201,11 @@ export const HorseSearch: React.FC<HorseSearchProps> = ({ userBalance, onPurchas
           </FormField>
           <FormField label="Color" htmlFor="filter-color">
             {(fieldProps) => (
-              <Input
+              <Select
                 {...fieldProps}
-                type="text"
-                maxLength={100}
-                value={colorInput}
-                onChange={(e) => setColorInput(e.target.value)}
+                value={filters.color ?? ''}
+                onChange={(e) => update('color', e.target.value || undefined)}
+                options={colorOptions}
               />
             )}
           </FormField>
