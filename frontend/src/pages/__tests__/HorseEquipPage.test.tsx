@@ -138,3 +138,24 @@ describe('HorseEquipPage — tack category names', () => {
     expect(card).not.toHaveTextContent(storedCategory);
   });
 });
+
+describe('HorseEquipPage — Saddle Seat saddle image (Equoria-wa0xz)', () => {
+  it('shows the Saddle Seat saddle with its own picture, not the placeholder', async () => {
+    renderAt(5, {
+      tack: [
+        {
+          id: 'inv-ss',
+          itemId: 'saddleseat-saddle',
+          category: 'saddle',
+          name: 'Saddleseat Saddle',
+          quantity: 1,
+          equippedToHorseId: null,
+        },
+      ],
+      feed: [],
+    });
+
+    const card = await screen.findByTestId('tack-item-inv-ss');
+    expect(card.querySelector('img')).toHaveAttribute('src', '/images/tack/saddleseatsaddle.png');
+  });
+});

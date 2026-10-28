@@ -72,6 +72,7 @@ export const tackPrice = 500;
 
 const keptImage = Object.freeze({
   'dressage-saddle': '/images/tack/dressage-saddle.png',
+  'saddleseat-saddle': '/images/tack/saddleseatsaddle.png',
 });
 
 const slug = discipline => discipline.toLowerCase().replaceAll(' ', '-');

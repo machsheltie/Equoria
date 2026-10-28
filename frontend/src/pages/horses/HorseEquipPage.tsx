@@ -53,6 +53,7 @@ const TACK_IMAGES: Record<string, string> = {
   'dressage-saddle': '/images/tack/dressage-saddle.png',
   'dressage-bridle': '/images/tack/dressage-bridle.png',
   'all-purpose-saddle': '/images/tack/allpurposesaddle.png',
+  'saddleseat-saddle': '/images/tack/saddleseatsaddle.png',
 };
 
 const EQUIPPED_STAR = (

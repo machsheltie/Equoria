@@ -207,3 +207,32 @@ describe('InventoryPage — tack subtitle + no-badge (Equoria-qyjc)', () => {
     expect(within(card).queryByText(/in inventory$/)).not.toBeInTheDocument();
   });
 });
+
+describe('InventoryPage — Saddle Seat saddle image (Equoria-wa0xz)', () => {
+  it('shows the Saddle Seat saddle with its own picture, not the placeholder', async () => {
+    stubInventory([
+      {
+        id: 'inv-ss',
+        itemId: 'saddleseat-saddle',
+        category: 'saddle',
+        name: 'Saddleseat Saddle',
+        quantity: 1,
+        equippedToHorseId: null,
+        equippedToHorseName: null,
+      },
+    ]);
+
+    const Wrapper = createWrapper();
+    render(
+      <Wrapper>
+        <InventoryPage />
+      </Wrapper>
+    );
+
+    const card = await screen.findByTestId('inventory-item-inv-ss');
+    expect(within(card).getByRole('img', { name: 'Saddleseat Saddle' })).toHaveAttribute(
+      'src',
+      '/images/tack/saddleseatsaddle.png'
+    );
+  });
+});

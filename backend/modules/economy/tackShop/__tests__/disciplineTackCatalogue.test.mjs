@@ -117,3 +117,14 @@ describe('tack that does not score is Coming soon with no effect text (q32)', ()
     }
   });
 });
+
+describe('the Saddle Seat saddle shows the owner image (Equoria-wa0xz)', () => {
+  it('points the Saddleseat saddle at saddleseatsaddle.png, and the file is on disk', async () => {
+    const { existsSync } = await import('node:fs');
+    const { fileURLToPath } = await import('node:url');
+    const item = tackCatalogItems('saddle').find(i => i.disciplines.join() === 'Saddleseat');
+    expect(item.image).toBe('/images/tack/saddleseatsaddle.png');
+    const publicDir = new URL('../../../../../frontend/public/', import.meta.url);
+    expect(existsSync(fileURLToPath(new URL(item.image.slice(1), publicDir)))).toBe(true);
+  });
+});
