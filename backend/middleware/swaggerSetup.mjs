@@ -31,11 +31,13 @@ function loadSwaggerSpec() {
   const swaggerPath = join(__dirname, '../docs/swagger.yaml');
   const swaggerDocument = YAML.load(swaggerPath);
 
-  // Add dynamic server configuration based on environment
+  // Add dynamic server configuration based on environment. Equoria-713fu: the
+  // game API is mounted only under /api/v1 (Equoria-4bs3s removed /api/*), so
+  // "Try it out" must target it or every call answers 404.
   const baseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
   swaggerDocument.servers = [
     {
-      url: `${baseUrl}/api`,
+      url: `${baseUrl}/api/v1`,
       description:
         process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
     },

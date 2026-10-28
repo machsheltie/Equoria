@@ -11,8 +11,6 @@ info:
     schemaCount: 2
     generator: manual
 servers:
-  - url: 'http://localhost:3000/api'
-    description: 'Development server (legacy base path)'
   - url: 'http://localhost:3000/api/v1'
     description: 'Development server (v1 versioned path)'
   - url: 'https://equoria.up.railway.app/api/v1'
