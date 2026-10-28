@@ -134,7 +134,13 @@ export function normalizeHorseDetail(raw: HorseSummary): Horse {
     forSale: raw.forSale,
     salePrice: raw.salePrice,
     userId: raw.userId,
-    parentIds: raw.parentIds,
+    // Equoria-qi7rm: the detail read sends the row's sireId / damId; nothing
+    // on the server builds parentIds, so without these a bred horse showed
+    // "Store Horse" parents with no links and no View Parents.
+    parentIds: raw.parentIds ?? {
+      sireId: raw.sireId ?? undefined,
+      damId: raw.damId ?? undefined,
+    },
     tack: raw.tack,
     // Equoria-lsi5 + Equoria-iwy3: the render layer shows phenotype.colorName,
     // else 'not recorded'.

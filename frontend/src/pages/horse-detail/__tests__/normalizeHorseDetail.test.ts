@@ -130,6 +130,20 @@ describe('normalizeHorseDetail', () => {
     expect(normalizeHorseDetail(asArray).markings).toBeNull();
   });
 
+  // Equoria-qi7rm: a bred horse's parents come from the row's sireId / damId.
+  it("links a bred horse's sire and dam from the row's parent columns", () => {
+    expect(normalizeHorseDetail(detail({ sireId: 11, damId: 12 })).parentIds).toEqual({
+      sireId: 11,
+      damId: 12,
+    });
+  });
+
+  it('leaves a store horse with no parents', () => {
+    const parents = normalizeHorseDetail(detail({ sireId: null, damId: null })).parentIds;
+    expect(parents?.sireId).toBeUndefined();
+    expect(parents?.damId).toBeUndefined();
+  });
+
   it('does not mutate the cached payload', () => {
     const raw = detail({ phenotype: { colorName: 'Bay', faceMarking: 'star' } });
     const before = JSON.stringify(raw);

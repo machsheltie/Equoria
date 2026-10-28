@@ -225,6 +225,10 @@ export interface HorseSummary {
     sireId?: number;
     damId?: number;
   };
+  // The horse row's own parent columns (GET /horses/:id returns the whole row);
+  // null for a store horse (Equoria-qi7rm).
+  sireId?: number | null;
+  damId?: number | null;
   // Care & cooldown fields from Prisma
   lastFedDate?: string;
   lastVettedDate?: string;
