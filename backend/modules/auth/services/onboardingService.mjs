@@ -53,6 +53,7 @@ import {
   calculatePhenotype,
   generateMarkings,
   generateTemperamentWithDefault,
+  generateBreedPhysiqueOrNull,
   DEFAULT_TEMPERAMENT_BREED,
   horseNameMaxLength,
 } from '../../horses/index.mjs';
@@ -135,6 +136,13 @@ export async function createStarterHorseForNewUser(
       return;
     }
 
+    // Owner request 2026-10-28 (Equoria-vqz4b, Equoria-17zgu): conformation and gaits
+    // rolled from the starter breed's ranges. The breed step re-rolls them for the
+    // player's chosen breed. Null (breed without ranges) leaves the column defaults.
+    const physique = generateBreedPhysiqueOrNull(breedName, {
+      context: `registration starter horse for user ${user.id}`,
+    });
+
     const starterHorse = await prisma.horse.create({
       data: {
         name: starterHorseName(user.username),
@@ -164,6 +172,7 @@ export async function createStarterHorseForNewUser(
         endurance: 17,
         strength: 17,
         healthStatus: 'Excellent',
+        ...(physique ?? {}),
       },
     });
     logger.info('[onboardingService.createStarterHorseForNewUser] Starter horse created', {

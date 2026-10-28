@@ -24,15 +24,16 @@ const CONFORMATION_REGIONS = [
  * Box-Muller transform — generates a normally distributed random value.
  * @param {number} mean - Center of the distribution
  * @param {number} stdDev - Standard deviation
+ * @param {() => number} [random=Math.random] - Uniform [0, 1) source; injectable so tests can seed it
  * @returns {number} A normally distributed random value
  */
-export function normalRandom(mean, stdDev) {
+export function normalRandom(mean, stdDev, random = Math.random) {
   // Avoid Math.log(0) = -Infinity by clamping u1 away from 0
-  let u1 = Math.random();
+  let u1 = random();
   if (u1 === 0) {
     u1 = Number.EPSILON;
   }
-  const u2 = Math.random();
+  const u2 = random();
   const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
   // Guard against negative stdDev from corrupted profile data
   return mean + z * Math.abs(stdDev);
@@ -70,10 +71,11 @@ export function calculateOverallConformation(scores) {
  * Generate conformation scores for a horse based on its breed's genetic profile.
  * Each region score is drawn from a normal distribution using the breed's mean and stdDev.
  * @param {string} breedName - Breed display name
+ * @param {{ random?: () => number }} [options] - `random` is the uniform source (default Math.random)
  * @returns {Object} Object with 8 region scores (integers 0-100) and overallConformation
  * @throws {Error} if the breed is missing from breedProfiles.json or any region is absent
  */
-export function generateConformationScores(breedName) {
+export function generateConformationScores(breedName, { random = Math.random } = {}) {
   const profile = getBreedProfile(breedName);
   const conformation = profile.ratingProfiles?.conformation;
   if (!conformation) {
@@ -99,7 +101,7 @@ export function generateConformationScores(breedName) {
           'in ratingProfiles.conformation. All 8 regions require finite mean and non-negative stdDev.',
       );
     }
-    const rawScore = normalRandom(regionProfile.mean, regionProfile.stdDev);
+    const rawScore = normalRandom(regionProfile.mean, regionProfile.stdDev, random);
     scores[region] = clampScore(rawScore);
   }
 

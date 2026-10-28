@@ -58,6 +58,7 @@ import {
   calculatePhenotype,
   generateMarkings,
   generateTemperamentWithDefault,
+  generateBreedPhysiqueOrNull,
 } from '../../horses/index.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
@@ -357,11 +358,22 @@ export const advanceOnboarding = async (req, res, next) => {
             throw new AppError('Selected starter horse breed was not found.', 400);
           }
 
+          // Owner request 2026-10-28 (Equoria-vqz4b, Equoria-17zgu): conformation and
+          // gaits rolled from the CHOSEN breed's ranges, every region and gait
+          // individually. Both branches below write them, so a breed picked here
+          // replaces the registration roll before the starter horse is locked (the
+          // same boundary as the temperament, Equoria-8vwly). Null (breed without
+          // ranges) leaves the horse's existing scores, as its stats fall back too.
+          const physique = generateBreedPhysiqueOrNull(breed.name, {
+            context: `onboarding starter horse for user ${userId}`,
+          });
+
           const updateData = {
             name: suppliedHorseName,
             breedId: breed.id,
             sex: normalizedGender,
             ...generateStarterStats(breed.name),
+            ...(physique ?? {}),
           };
 
           const starterHorse = await tx.horse.findFirst({

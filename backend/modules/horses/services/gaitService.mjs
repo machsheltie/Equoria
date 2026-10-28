@@ -93,10 +93,11 @@ export function validateGaitScores(scores) {
  * Generate gait scores for a horse based on breed genetics and conformation influence.
  * @param {string} breedName - Breed display name
  * @param {Object} conformationScores - Horse's conformation scores for bonus calculation
+ * @param {{ random?: () => number }} [options] - `random` is the uniform source (default Math.random)
  * @returns {Object} Object with walk/trot/canter/gallop (integers 0-100) and gaiting (array or null)
  * @throws {Error} if the breed is missing from breedProfiles.json or any gait entry is absent
  */
-export function generateGaitScores(breedName, conformationScores) {
+export function generateGaitScores(breedName, conformationScores, { random = Math.random } = {}) {
   const profile = getBreedProfile(breedName);
   const gaits = profile.ratingProfiles?.gaits;
   if (!gaits) {
@@ -114,7 +115,7 @@ export function generateGaitScores(breedName, conformationScores) {
       );
     }
     const bonus = calculateConformationBonus(conformationScores, gait);
-    const rawScore = normalRandom(gaitProfile.mean, gaitProfile.stdDev) + bonus;
+    const rawScore = normalRandom(gaitProfile.mean, gaitProfile.stdDev, random) + bonus;
     scores[gait] = clampScore(rawScore);
   }
 
@@ -125,7 +126,7 @@ export function generateGaitScores(breedName, conformationScores) {
 
     const gaitedNames = profile.ratingProfiles.gaitedGaitRegistry || [];
     scores.gaiting = gaitedNames.map(name => {
-      const rawScore = normalRandom(gaitingProfile.mean, gaitingProfile.stdDev) + bonus;
+      const rawScore = normalRandom(gaitingProfile.mean, gaitingProfile.stdDev, random) + bonus;
       return { name, score: clampScore(rawScore) };
     });
   } else {

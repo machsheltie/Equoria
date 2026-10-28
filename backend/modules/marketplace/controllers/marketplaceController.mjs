@@ -36,9 +36,11 @@ import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCano
 // horses arrive with a populated colorGenotype + phenotype like foals); and
 // generateTemperamentWithDefault (Equoria-f5372: store horses must arrive
 // with a temperament populated, else the column is NULL and the frontend
-// shows 'not recorded').
+// shows 'not recorded'); generateBreedPhysiqueOrNull (owner request 2026-10-28,
+// Equoria-vqz4b / Equoria-17zgu: conformation and gaits from the breed's ranges).
 import {
   createHorse,
+  generateBreedPhysiqueOrNull,
   generateStoreStats,
   generateGenotype,
   calculatePhenotype,
@@ -441,6 +443,15 @@ export async function buyStoreHorse(req, res) {
     // Equoria-f5372: assign a permanent temperament from the breed's weights.
     const temperament = generateTemperamentWithDefault(breed.name);
 
+    // Owner request 2026-10-28 (Equoria-vqz4b, Equoria-17zgu): conformation and gaits
+    // rolled from the breed's ranges, every region and gait individually. Without them
+    // createHorse wrote the flat-20 placeholder and no gaits. A breed with no ranges
+    // (null here) still gets createHorse's flat-20 fallback: whether such a horse
+    // should be refused instead is an open owner question (q211), so not decided here.
+    const physique = generateBreedPhysiqueOrNull(breed.name, {
+      context: `Horse Trader purchase by user ${buyerId}`,
+    });
+
     // ── Atomic money + horse transaction (Equoria-gumnp) ──────────────────────
     // The debit, its paired SYSTEM_ACCOUNT_BURN credit, the purchase ledger row,
     // the horse INSERT, and the unvetted-flag update all commit or roll back
@@ -500,6 +511,7 @@ export async function buyStoreHorse(req, res) {
               colorGenotype,
               phenotype,
               temperament,
+              ...(physique ?? {}),
               ...stats,
             },
             tx,

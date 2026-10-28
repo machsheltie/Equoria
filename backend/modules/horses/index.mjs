@@ -36,6 +36,9 @@ export { runFoalingJob, createFoalFromPregnancy } from './services/foalingServic
 export { writeBirthdayTx, assertHorseTakesNewStaffTx } from './services/horseRetirementStaff.mjs';
 export { GENERIC_DEFAULTS, generateGenotype } from './services/genotypeGenerationService.mjs';
 export { createHorse } from './services/horseCreation.mjs';
+// Owner request 2026-10-28 (Equoria-vqz4b, Equoria-17zgu): marketplace's Horse Trader and auth's
+// onboarding roll conformation and gaits from the breed's ranges.
+export { generateBreedPhysique, generateBreedPhysiqueOrNull } from './services/breedPhysique.mjs';
 export { getHorseById } from './services/horseRouteQueries.mjs';
 // The horse-name rule (Equoria-zalyb): auth's onboarding writes a player-typed horse name and
 // meets the same rule; WS4 S4 took the routes out of this barrel, so the former module-root

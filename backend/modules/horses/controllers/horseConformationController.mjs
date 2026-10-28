@@ -307,16 +307,15 @@ export async function getGaits(req, res) {
     const horse = req.horse;
     const gaitScores = horse.gaitScores;
 
-    // Legacy horse without gait scores.
-    // Equoria-0hqg policy (Option A — null-forever for pre-31C.1 horses):
-    // The add-gait-scores-field migration intentionally left gaitScores nullable
-    // with no default. Pre-31C.1 horses have gaitScores=null forever and the
-    // 200/data:null response IS the final UX (NFR-06 backward compatibility).
-    // Backfill (Option B) was rejected because: (1) regenerating scores would
-    // alter existing horse balance and surprise players, (2) any future formula
-    // re-tune (see Equoria-22li) would require re-running the backfill, and
-    // (3) null is a meaningful "this horse predates the gait system" signal.
-    // Frontend MUST treat null as "data not generated yet" — not crash.
+    // A horse without gait scores. The gaitScores column is nullable with no default.
+    // History: Equoria-0hqg (an agent decision, never an owner ruling) chose to leave
+    // such horses null forever and never backfill. The owner overrode that on
+    // 2026-10-28 (Equoria-vqz4b, Equoria-17zgu): every horse is meant to carry gait
+    // scores rolled from its breed's ranges. Horse Trader and onboarding starter horses
+    // now get them at creation (horses/services/breedPhysique.mjs); whether existing
+    // null horses are backfilled is still the owner's call (decision q208).
+    // Until then this 200/data:null response remains, and the frontend treats null
+    // as "data not generated yet", never as a crash.
     if (!gaitScores) {
       return res.status(200).json({
         success: true,
