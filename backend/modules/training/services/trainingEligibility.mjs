@@ -17,6 +17,34 @@
 import { minActiveAgeYears, maxActiveAgeYears } from '../../../constants/horseAgePolicy.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { badHealthMessage, hasBadHealth } from '../../../utils/horseHealth.mjs';
+import { getAllDisciplines } from '../../../utils/competitionLogic.mjs';
+
+const disciplineKey = value =>
+  String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, ' ');
+
+/**
+ * The canonical discipline name ('Show Jumping', 'Gaited') for a requested one,
+ * whatever its case or separators ('show-jumping', 'gaited'), or null when it
+ * names no discipline (Equoria-i42xr). Every training read and write uses the
+ * canonical name, so the Gaited breed gate and the disciplineScores key always
+ * see the one spelling.
+ *
+ * @param {unknown} discipline
+ * @returns {string|null}
+ */
+export function canonicalTrainingDiscipline(discipline) {
+  if (typeof discipline !== 'string' || discipline.trim() === '') {
+    return null;
+  }
+  const wanted = disciplineKey(discipline);
+  return getAllDisciplines().find(name => disciplineKey(name) === wanted) ?? null;
+}
+
+/** The authored reason a request naming no discipline is refused. */
+export const unknownDisciplineReason = 'That is not a discipline a horse can train in';
 
 /**
  * @param {{ name?: string|null, healthStatus?: string|null }} horse - with the

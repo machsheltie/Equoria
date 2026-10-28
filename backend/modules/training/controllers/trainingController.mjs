@@ -14,9 +14,11 @@ import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { invalidateCache, invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 import {
+  canonicalTrainingDiscipline,
   trainerRefusalReason,
   trainingRefusal,
   trainingRefusalReason,
+  unknownDisciplineReason,
 } from '../services/trainingEligibility.mjs';
 
 /**
@@ -47,12 +49,18 @@ async function canTrain(horseId, discipline) {
       `[trainingController.canTrain] Checking training eligibility for horse ${parsedHorseId} in ${discipline}`,
     );
 
+    // One spelling for every gate and write: 'gaited' is Gaited (Equoria-i42xr).
+    const canonical = canonicalTrainingDiscipline(discipline);
+    if (!canonical) {
+      return { eligible: false, reason: unknownDisciplineReason };
+    }
+
     // Compute eligibility fresh from DB on every call. The underlying query
     // (get horse + get most recent training log) is a fast indexed lookup.
     // Caching eligibility results is unsafe: negative results ("cooldown active")
     // become stale as the cooldown expires, and the test infrastructure
     // manipulates trainingLog timestamps directly, bypassing cache invalidation.
-    return computeCanTrain(parsedHorseId, discipline);
+    return computeCanTrain(parsedHorseId, canonical);
   } catch (error) {
     logger.error(
       `[trainingController.canTrain] Error checking training eligibility: ${error.message}`,
@@ -163,7 +171,10 @@ const refusal = (reason, code = null) => ({
  * @returns {Object} - Training result with success status, updated horse, and next eligible date
  * @throws {Error} - If validation fails or training is not allowed
  */
-async function trainHorse(horseId, discipline) {
+async function trainHorse(horseId, requestedDiscipline) {
+  // The canonical name ('Gaited', not 'gaited') is what the gates check and the
+  // score is written under (Equoria-i42xr); an unknown name is refused below.
+  const discipline = canonicalTrainingDiscipline(requestedDiscipline) ?? requestedDiscipline;
   try {
     logger.info(
       `[trainingController.trainHorse] Attempting to train horse ${horseId} in ${discipline}`,
@@ -343,7 +354,9 @@ async function trainHorse(horseId, discipline) {
  * @returns {Object} - Training status with eligibility, last training date, and cooldown info
  * @throws {Error} - If validation fails or database error occurs
  */
-async function getTrainingStatus(horseId, discipline) {
+async function getTrainingStatus(horseId, requestedDiscipline) {
+  // Equoria-i42xr: the history lookup reads the canonical name the log stores.
+  const discipline = canonicalTrainingDiscipline(requestedDiscipline) ?? requestedDiscipline;
   try {
     logger.info(
       `[trainingController.getTrainingStatus] Getting training status for horse ${horseId} in ${discipline}`,
@@ -446,7 +459,9 @@ async function getTrainingStatus(horseId, discipline) {
  */
 async function trainRouteHandler(req, res) {
   try {
-    const { horseId, discipline } = req.body;
+    const { horseId } = req.body;
+    // The response reads the score under the canonical name (Equoria-i42xr).
+    const discipline = canonicalTrainingDiscipline(req.body.discipline) ?? req.body.discipline;
 
     logger.info(
       `[trainingController.trainRouteHandler] Training request for horse ${horseId} in ${discipline}`,
