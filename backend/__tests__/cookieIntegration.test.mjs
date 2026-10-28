@@ -194,10 +194,15 @@ describe('Cookie Integration Tests', () => {
       // 21R-AUTH-3: register now also seeds the CSRF cookie alongside
       // accessToken + refreshToken so the first mutation can skip the
       // separate /csrf-token round-trip.
-      expect(cookies).toHaveLength(3);
+      // Old contract: exactly these 3 cookies. Since Equoria-x5n89 (owner ruling
+      // 2026-10-23: a device that has used four accounts cannot create a fifth)
+      // sign-up and sign-in also issue the httpOnly equoriaDevice cookie to a
+      // browser that has none, so exactly four: these three plus the device.
+      expect(cookies).toHaveLength(4);
       expect(cookies.some(c => c.startsWith('accessToken='))).toBe(true);
       expect(cookies.some(c => c.startsWith('refreshToken='))).toBe(true);
       expect(cookies.some(c => c.startsWith('__Host-csrf=') || c.startsWith('_csrf='))).toBe(true);
+      expect(cookies.some(c => c.startsWith('equoriaDevice='))).toBe(true);
 
       // Clean up
       testUser = await prisma.user.findUnique({
@@ -249,10 +254,15 @@ describe('Cookie Integration Tests', () => {
       ];
       expect(cookies).toBeDefined();
       // 21R-AUTH-3: login now seeds the CSRF cookie alongside auth cookies.
-      expect(cookies).toHaveLength(3);
+      // Old contract: exactly these 3 cookies. Since Equoria-x5n89 (owner ruling
+      // 2026-10-23: a device that has used four accounts cannot create a fifth)
+      // sign-up and sign-in also issue the httpOnly equoriaDevice cookie to a
+      // browser that has none, so exactly four: these three plus the device.
+      expect(cookies).toHaveLength(4);
       expect(cookies.some(c => c.startsWith('accessToken='))).toBe(true);
       expect(cookies.some(c => c.startsWith('refreshToken='))).toBe(true);
       expect(cookies.some(c => c.startsWith('__Host-csrf=') || c.startsWith('_csrf='))).toBe(true);
+      expect(cookies.some(c => c.startsWith('equoriaDevice='))).toBe(true);
     });
 
     test('should set accessToken cookie with correct attributes on login', async () => {
