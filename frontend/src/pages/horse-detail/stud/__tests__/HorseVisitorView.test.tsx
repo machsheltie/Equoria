@@ -193,4 +193,11 @@ describe('the horse page in visitor mode', () => {
     expect(screen.getByTestId('trait-chip-inactive')).toHaveTextContent('Fearful');
     expect(screen.getByRole('button', { name: 'Even Tempered' })).toBeInTheDocument();
   });
+
+  // Owner ruling q239 (2026-10-28): the plain "standard" shade is not shown.
+  it('a horse with the plain "standard" shade reads just its color', async () => {
+    serve({ success: true, data: { ...visit, shade: 'standard' } });
+    renderAt('/horses/99');
+    expect(await screen.findByTestId('visit-color')).toHaveTextContent(/^Black$/);
+  });
 });

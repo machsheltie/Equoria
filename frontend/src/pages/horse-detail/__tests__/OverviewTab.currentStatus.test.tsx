@@ -115,6 +115,12 @@ describe('OverviewTab Horse Details (Equoria-2w4yo)', () => {
     expect(screen.getByTestId('horse-detail-color')).toHaveTextContent(/^Bay — Dark$/);
   });
 
+  it('hides the plain "standard" shade: Color reads just "Bay" (q239)', () => {
+    overview({ lastShod: null, lastTrainedAt: null, lastGroomed: null });
+    renderTab({ ...detailed, phenotype: { colorName: 'Bay', shade: 'standard' } });
+    expect(screen.getByTestId('horse-detail-color')).toHaveTextContent(/^Bay$/);
+  });
+
   it('says "not recorded" for a legacy horse with no color, markings or temperament', () => {
     overview({ lastShod: null, lastTrainedAt: null, lastGroomed: null });
     renderTab({ ...HORSE, phenotype: null, markings: null, temperament: null });
