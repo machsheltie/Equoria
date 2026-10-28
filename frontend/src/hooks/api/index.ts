@@ -9,7 +9,6 @@ export * from './useHorseEligibility';
 export * from './useEnterCompetition';
 export * from './usePrizeHistory';
 export * from './useHorsePrizeSummary';
-export * from './useXpHistory';
 export * from './useLeaderboard';
 export * from './useUserRankSummary';
 export * from './useLeaderboardRefresh';

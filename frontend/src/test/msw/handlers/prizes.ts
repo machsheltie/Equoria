@@ -189,7 +189,7 @@ export const prizeHandlers = [
   }),
 
   // (Equoria-0fw18) Deleted dead /api/horses/:horseId/level-info handler — no
-  // api-client call (horses.ts exposes getXP/getXPHistory, not level-info) and
+  // api-client call (horses.ts exposes getXP, not level-info) and
   // no test referenced it.
 
   // Horse Points status (GET /:id/xp, horseXpController.getHorseXpStatus shape):
@@ -208,62 +208,6 @@ export const prizeHandlers = [
       },
     })
   ),
-
-  // XP System - Horse XP History
-  http.get(`${base}/api/v1/horses/:horseId/xp-history`, ({ params, request }) => {
-    const horseId = Number(params.horseId);
-    const url = new URL(request.url);
-    url.searchParams.get('dateRange'); // read but not filtered — all dates returned
-    const source = url.searchParams.get('source');
-
-    // Return 404 for horse ID 999 (error test case)
-    if (horseId === 999) {
-      return HttpResponse.json({ status: 'error', message: 'Horse not found' }, { status: 404 });
-    }
-
-    let history = [
-      {
-        xpGainId: 'xp-1',
-        horseId,
-        horseName: 'Test Horse',
-        source: 'competition',
-        sourceId: 123,
-        sourceName: 'Show Jumping Classic',
-        xpAmount: 50,
-        timestamp: '2026-03-15T10:00:00Z',
-        oldLevel: 4,
-        newLevel: 5,
-        oldXp: 400,
-        newXp: 450,
-        leveledUp: true,
-      },
-      {
-        xpGainId: 'xp-2',
-        horseId,
-        horseName: 'Test Horse',
-        source: 'training',
-        sourceId: 456,
-        sourceName: 'Dressage Training',
-        xpAmount: 25,
-        timestamp: '2026-03-10T14:00:00Z',
-        oldLevel: 4,
-        newLevel: 4,
-        oldXp: 375,
-        newXp: 400,
-        leveledUp: false,
-      },
-    ];
-
-    // Apply source filter
-    if (source) {
-      history = history.filter((h) => h.source === source);
-    }
-
-    return HttpResponse.json({
-      success: true,
-      data: history,
-    });
-  }),
 
   // (Equoria-0fw18) Deleted dead /api/horses/add-xp handler — no api-client
   // call and no test referenced it (manual XP-add is a backend-only/admin path,

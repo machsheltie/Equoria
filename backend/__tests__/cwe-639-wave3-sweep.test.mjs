@@ -15,7 +15,8 @@
  * signal §2 sentinel-positive contract requires.
  *
  * Companion cleanup:
- *   horseXpController.mjs (3 branches: getHorseXpStatus, allocateStatPoint, getHorseXpHistory)
+ *   horseXpController.mjs (3 branches: getHorseXpStatus, allocateStatPoint, getHorseXpHistory —
+ *     the last went with its route, Equoria-fly7a)
  *   enhancedGroomController.mjs (1 branch: getRelationshipDetails)
  *   groomAssignmentService.mjs (1 branch: removeAssignment)
  */
@@ -211,30 +212,6 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ statName: 'speed' });
-
-      expect(resMissing.status).toBe(404);
-      expect(resMissing.body).toEqual(resCrossUser.body);
-    });
-  });
-
-  describe('GET /api/v1/horses/:id/xp-history (getHorseXpHistory)', () => {
-    it('returns 404 (not 403) for cross-user horse — middleware fires before controller', async () => {
-      const resCrossUser = await request(app)
-        .get(`/api/v1/horses/${horseB.id}/xp-history`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken);
-
-      expect(resCrossUser.status).toBe(404);
-      expect(JSON.stringify(resCrossUser.body)).not.toContain('not authorized');
-
-      const resMissing = await request(app)
-        .get(`/api/v1/horses/${NONEXISTENT_ID}/xp-history`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(resMissing.status).toBe(404);
       expect(resMissing.body).toEqual(resCrossUser.body);

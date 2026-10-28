@@ -28,9 +28,7 @@ import RankSummaryCard from '../leaderboard/RankSummaryCard';
 import UserRankDashboard from '../leaderboard/UserRankDashboard';
 import LeaderboardHorseDetailModal from '../leaderboard/LeaderboardHorseDetailModal';
 import TrainingHistoryTable from '../training/TrainingHistoryTable';
-import XpHistoryTimeline from '../horse/XpHistoryTimeline';
 import ScoreProgressionPanel from '../training/ScoreProgressionPanel';
-import StatHistoryGraph from '../horse/StatHistoryGraph';
 import { NextActionsBar } from '../hub/NextActionsBar';
 
 function withProviders(ui: React.ReactElement) {
@@ -117,20 +115,9 @@ describe('loading skeletons expose a live region (Equoria-2fzcy)', () => {
     expectOneBusyStatus();
   });
 
-  it('XpHistoryTimeline', () => {
-    render(<XpHistoryTimeline horseId={1} horseName="Moonflower" entries={[]} isLoading />);
-    expectOneBusyStatus();
-  });
-
   it('ScoreProgressionPanel', () => {
     holdEveryRequest();
     withProviders(<ScoreProgressionPanel horseId={1} />);
-    expectOneBusyStatus();
-  });
-
-  it('StatHistoryGraph', () => {
-    holdEveryRequest();
-    withProviders(<StatHistoryGraph horseId={1} />);
     expectOneBusyStatus();
   });
 

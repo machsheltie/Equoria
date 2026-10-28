@@ -20,7 +20,6 @@ import { server } from '@/test/msw/server';
 import { MemoryRouter } from 'react-router';
 import CareArea from '@/pages/horse-detail/CareArea';
 import TrainingHistoryPanel from '@/components/training/TrainingHistoryPanel';
-import XpHistoryTimeline from '@/components/horse/XpHistoryTimeline';
 import GeneticsTab from '@/pages/horse-detail/GeneticsTab';
 import type { Horse } from '@/pages/horse-detail/HorseDetailPageTypes';
 import { userMessageFor } from '@/lib/http/userMessage';
@@ -99,14 +98,6 @@ describe('server error text is mapped, never echoed (Equoria-0vm61)', () => {
     renderWithQuery(<GeneticsTab horse={horse} />);
 
     expect(await screen.findByText(serverFaultCopy)).toBeInTheDocument();
-    expect(screen.queryByText(/connection reset by 10\.0\.0\.7/)).not.toBeInTheDocument();
-  });
-
-  it('XpHistoryTimeline shows the mapped copy for the error it is handed', () => {
-    const error = Object.assign(new Error(sentinel), { statusCode: 500 });
-    render(<XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={[]} error={error} />);
-
-    expect(screen.getByText(serverFaultCopy)).toBeInTheDocument();
     expect(screen.queryByText(/connection reset by 10\.0\.0\.7/)).not.toBeInTheDocument();
   });
 });

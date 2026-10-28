@@ -1,10 +1,9 @@
 /**
- * Horse XP history and trait history on the keyset convention
- * (Equoria-cmw85.20).
+ * Trait history on the keyset convention (Equoria-cmw85.20).
  *
- * GET /api/v1/horses/:id/xp-history and GET /api/v1/epigenetic-traits/history/:id
- * both took a write per game action and paged by OFFSET on a timestamp with no
- * tiebreak. 105 rows TIED on the timestamp; a batch is inserted between page
+ * GET /api/v1/epigenetic-traits/history/:id took a write per game action and
+ * paged by OFFSET on a timestamp with no tiebreak. (GET /api/v1/horses/:id/xp-history
+ * was pinned here too until the owner removed the points history, Equoria-fly7a.) 105 rows TIED on the timestamp; a batch is inserted between page
  * fetches. Real backend, real auth, real database.
  */
 
@@ -27,7 +26,6 @@ let user;
 let horse;
 let token;
 
-const xpRow = i => ({ horseId: horse.id, amount: 5, reason: `TestFixture-XpKeyset-${i}`, timestamp: TIED });
 const traitRow = i => ({
   horseId: horse.id,
   traitName: `TestFixture-Trait-${i}`,
@@ -59,59 +57,15 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-  await prisma.horseXpEvent.createMany({ data: Array.from({ length: TOTAL }, (_, i) => xpRow(i)) });
   await prisma.traitHistoryLog.createMany({
     data: Array.from({ length: TOTAL }, (_, i) => traitRow(i)),
   });
-  cleanup.add(() => prisma.horseXpEvent.deleteMany({ where: { horseId: horse.id } }), 'xp events');
   cleanup.add(() => prisma.traitHistoryLog.deleteMany({ where: { horseId: horse.id } }), 'trait logs');
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 60_000);
 
 afterAll(() => cleanup.run(), 60_000);
-
-describe('GET /api/v1/horses/:id/xp-history keyset pages (Equoria-cmw85.20)', () => {
-  const get = query => auth(request(app).get(`/api/v1/horses/${horse.id}/xp-history`).query(query));
-
-  it('caps a huge ?limit at the shared maximum', async () => {
-    const res = await get({ limit: 5000 });
-    expect(res.status).toBe(200);
-    expect(res.body.data.events).toHaveLength(100);
-    expect(res.body.data.pageInfo.hasMore).toBe(true);
-  }, 60_000);
-
-  it('walks tied events by cursor: each once, newest-then-highest-id first, even as new ones arrive', async () => {
-    const { ids, sizes } = await walkPages({
-      fetchPage: async cursor => {
-        const res = await get({ limit: 40, ...(cursor ? { cursor } : {}) });
-        expect(res.status).toBe(200);
-        return res.body.data;
-      },
-      idsOf: data => data.events.map(e => e.id),
-      pageInfoOf: data => data.pageInfo,
-      afterFirstPage: () =>
-        prisma.horseXpEvent.createMany({ data: Array.from({ length: 3 }, (_, i) => xpRow(`late-${i}`)) }),
-    });
-    expect(sizes).toEqual([40, 40, 25]);
-    expect(new Set(ids).size).toBe(TOTAL);
-    expect([...ids].sort((a, b) => b - a)).toEqual(ids);
-  }, 60_000);
-
-  it('still answers the legacy ?offset', async () => {
-    const first = await get({ limit: 10 });
-    const second = await get({ limit: 10, offset: 10 });
-    expect(second.status).toBe(200);
-    expect(second.body.data.events[0].id).toBeLessThan(first.body.data.events.at(-1).id);
-    expect(second.body.data.pagination.offset).toBe(10);
-  }, 60_000);
-
-  it('answers 400 for a cursor the server did not issue', async () => {
-    const res = await get({ cursor: 'c1:nonsense' });
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  }, 60_000);
-});
 
 describe('GET /api/v1/epigenetic-traits/history/:id keyset pages (Equoria-cmw85.20)', () => {
   const get = query => auth(request(app).get(`/api/v1/epigenetic-traits/history/${horse.id}`).query(query));

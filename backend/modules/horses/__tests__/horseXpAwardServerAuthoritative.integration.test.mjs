@@ -33,7 +33,7 @@
  *   - The internal XP service still awards XP + derived stat points + the audit
  *     row atomically on a caller-supplied transaction client (the exact contract
  *     the competition award path composes with).
- *   - Owners keep XP reads, XP history, and spending of EARNED stat points, and
+ *   - Owners keep XP reads and spending of EARNED stat points, and
  *     concurrent allocation still cannot overspend (Equoria-wsj2i preserved).
  *
  * Real DB, real app, real CSRF. No mocks, no bypass headers. Fixtures are
@@ -280,17 +280,6 @@ describe('owners keep XP reads and earned-stat allocation', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.currentXP).toBe(P);
     expect(res.body.data.availableStatPoints).toBe(1);
-  }, 60000);
-
-  it('GET /:id/xp-history returns the server-side award', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${earnedHorse.id}/xp-history`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${ownerToken}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.data.events.length).toBe(1);
-    expect(res.body.data.events[0].amount).toBe(P);
   }, 60000);
 
   it('the owner can spend the earned stat point via POST /:id/allocate-stat', async () => {

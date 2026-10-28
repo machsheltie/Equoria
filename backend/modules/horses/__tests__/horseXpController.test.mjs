@@ -1,10 +1,11 @@
 /**
  * horseXpController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: getHorseXpStatus, getHorseXpHistory, allocateStatPoint, and the
+ * Covers: getHorseXpStatus, allocateStatPoint, the removed /xp-history route
+ * (404, Equoria-fly7a), and the
  * hard-deprecated /award-xp route (410 Gone, Equoria-6p398.3 — the controller
  * handler it used to call has been deleted).
- * Routes live under authRouter at /api/v1/horses/:id/xp, /xp-history, /award-xp,
+ * Routes live under authRouter at /api/v1/horses/:id/xp, /award-xp,
  * /allocate-stat.
  */
 
@@ -92,33 +93,22 @@ describe('GET /api/v1/horses/:id/xp', () => {
   });
 });
 
-// ─── GET /api/v1/horses/:id/xp-history ──────────────────────────────────────────
+// ─── GET /api/v1/horses/:id/xp-history — REMOVED ───────────────────────────────
+// Equoria-fly7a: the owner removed the horse points history on 2026-10-28
+// (Equoria-a0fim), and its last client (StatHistoryGraph / XpHistoryTimeline)
+// went with it. Old contract: an owner got 200 with paginated XP events. The
+// route is now unmounted, so even the horse's owner gets the app's JSON
+// "Route not found" 404; GET /:id/xp and POST /:id/allocate-stat stay.
 
-describe('GET /api/v1/horses/:id/xp-history', () => {
-  it('returns 200 with XP history for owned horse', async () => {
+describe('GET /api/v1/horses/:id/xp-history (removed, Equoria-fly7a)', () => {
+  it('answers the JSON route-not-found 404 even for the owner', async () => {
     const res = await request(app)
       .get(`/api/v1/horses/${horse.id}/xp-history`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
-  it('returns 404 for a horse not owned by user', async () => {
-    const res = await request(app)
-      .get('/api/v1/horses/999999999/xp-history')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
     expect(res.status).toBe(404);
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/horses/${horse.id}/xp-history`).set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
+    expect(res.body).toMatchObject({ success: false, message: 'Route not found' });
   });
 });
 

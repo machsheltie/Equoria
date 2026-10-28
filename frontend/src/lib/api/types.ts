@@ -324,23 +324,6 @@ export interface HorseTrainingAnalytics {
 /** GET /api/v1/horses/:id/xp — one shape, defined in ./xp (Equoria-576c0 B13). */
 export type { HorseLevelInfo as HorseXP } from './xp';
 
-export interface HorseXPEvent {
-  id: number;
-  amount: number;
-  reason: string;
-  timestamp: string;
-}
-
-export interface HorseXPHistory {
-  events: HorseXPEvent[];
-  count: number;
-  pagination: {
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
-}
-
 /**
  * Groom interfaces
  */

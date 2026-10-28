@@ -7,7 +7,7 @@
  * Endpoints:
  * - GET /api/horses/:horseId/xp - Get horse XP status
  * - POST /api/horses/:horseId/allocate-stat - Allocate stat point
- * - GET /api/horses/:horseId/xp-history - Get horse XP history
+ * - GET /api/horses/:horseId/xp-history - REMOVED with the points history (Equoria-fly7a)
  * - POST /api/horses/:horseId/award-xp - REMOVED, 410 Gone (Equoria-6p398.3)
  *
  * Security:
@@ -22,7 +22,6 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
 import { ValidationError, NotFoundError } from '../../../errors/index.mjs';
-import { InvalidCursorError, readKeysetParams } from '../../../utils/paginationHelper.mjs';
 
 /**
  * Get horse XP status
@@ -215,120 +214,6 @@ export async function allocateStatPoint(req, res) {
     res.status(500).json({
       success: false,
       error: 'Internal server error while allocating stat point',
-    });
-  }
-}
-
-/**
- * Get horse XP history
- * GET /api/horses/:horseId/xp-history
- */
-export async function getHorseXpHistory(req, res) {
-  try {
-    const { horseId } = req.params;
-    const userId = req.user.id;
-
-    // Parse query parameters
-    const { limit, cursor, skip } = readKeysetParams(req.query, { def: 50, max: 100 });
-    const offset = skip;
-
-    // Validate horse ID
-    const horseIdNum = parseInt(horseId);
-    if (isNaN(horseIdNum)) {
-      throw new ValidationError('Invalid horse ID');
-    }
-
-    const cacheKey = horseXpModel.horseXpHistoryCacheKey(
-      horseIdNum,
-      limit,
-      offset,
-      typeof cursor === 'string' ? cursor : '',
-    );
-    const result = await getCachedQuery(
-      cacheKey,
-      async () => {
-        // Verify horse ownership
-        const horse = await prisma.horse.findUnique({
-          where: { id: horseIdNum },
-          select: {
-            id: true,
-            userId: true,
-          },
-        });
-
-        if (!horse) {
-          return { error: 'NOT_FOUND' };
-        }
-
-        // CWE-639 hardening: ownership is enforced upstream by
-        // requireOwnership('horse') middleware in horseRoutes.mjs:1295, which
-        // returns 404 for both not-found and not-owned. Previous UNAUTHORIZED
-        // path was dead code; fold into NOT_FOUND for disclosure resistance
-        // in case middleware is ever bypassed.
-        if (horse.userId !== userId) {
-          return { error: 'NOT_FOUND' };
-        }
-
-        // Get XP history using model
-        const historyResult = await horseXpModel.getHorseXpHistory(horseIdNum, {
-          limit,
-          offset,
-          cursor,
-        });
-
-        if (!historyResult.success) {
-          return { error: historyResult.error };
-        }
-
-        return historyResult;
-      },
-      60,
-    );
-
-    if (result.error === 'NOT_FOUND') {
-      throw new NotFoundError('Horse');
-    }
-    // Note: UNAUTHORIZED branch removed — CWE-639 hardening folded the
-    // ownership-mismatch case into NOT_FOUND inside the cache function above.
-    if (result.error) {
-      throw new Error(result.error);
-    }
-
-    logger.info(
-      `[horseXpController.getHorseXpHistory] Retrieved ${result.events.length} XP events for horse ${horseId}`,
-    );
-
-    res.json({
-      success: true,
-      data: {
-        events: result.events,
-        count: result.count,
-        pagination: result.pagination,
-        pageInfo: result.pageInfo,
-      },
-    });
-  } catch (error) {
-    logger.error(`[horseXpController.getHorseXpHistory] Error: ${error.message}`);
-
-    if (error instanceof ValidationError || error.name === 'ValidationError') {
-      return res.status(400).json({ success: false, error: error.message });
-    }
-    if (error instanceof InvalidCursorError) {
-      return res.status(400).json({ success: false, error: error.message });
-    }
-    if (error instanceof NotFoundError || error.name === 'NotFoundError') {
-      return res.status(404).json({ success: false, error: error.message });
-    }
-    // CWE-639 hardening (Equoria-9ov8 wave 4): AuthorizationError catch
-    // branch removed — nothing in this controller throws AuthorizationError
-    // anymore (wave-3 converted ownership checks to NotFoundError so cross-
-    // user access surfaces as 404, not 403). The branch was dead code; if a
-    // future change reintroduces AuthorizationError, it would now fall
-    // through to 500 — which is the correct fail-closed default for an
-    // unexpected security-error type.
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error while retrieving horse XP history',
     });
   }
 }

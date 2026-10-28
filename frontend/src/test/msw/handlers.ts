@@ -48,7 +48,6 @@
  * GET    /api/v1/horses/:id/breeding-data           breeding stats
  * GET    /api/v1/horses/:id/competition-history     show results history
  * GET    /api/v1/horses/:horseId/prize-summary      prize earnings summary
- * GET    /api/v1/horses/:horseId/xp-history         XP gain history
  * POST   /api/v1/horses/foals                       create foal / start pregnancy
  * GET    /api/v1/horses/:id/conformation            conformation scores (8 regions)
  * GET    /api/v1/breeds/:id/conformation-averages   breed average conformation scores

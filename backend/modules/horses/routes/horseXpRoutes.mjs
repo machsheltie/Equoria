@@ -2,12 +2,12 @@
  * Horse XP / Personality / Trait-Card Sub-Router (Equoria-y8u2j split)
  *
  * Extracted from backend/modules/horses/routes/horseRoutes.mjs as part of the
- * god-file split. Owns the 7 owner-scoped, per-horse progression / personality
+ * god-file split. Owns the owner-scoped, per-horse progression / personality
  * endpoints:
  *
  *   GET    /:id/xp                  — XP status + progression
  *   POST   /:id/allocate-stat       — spend an unspent stat point
- *   GET    /:id/xp-history          — paginated XP event history
+ *   GET    /:id/xp-history          — REMOVED, unmounted (404; Equoria-fly7a)
  *   POST   /:id/award-xp            — REMOVED, 410 Gone (Equoria-6p398.3)
  *   GET    /:id/personality-impact  — groom-compatibility ranking
  *   GET    /:id/legacy-score        — legacy-score calculation
@@ -100,32 +100,6 @@ router.post(
 );
 
 /**
- * GET /horses/:id/xp-history
- * Get horse XP event history with pagination.
- *
- * Security: Validates horse ownership before returning XP history.
- */
-router.get(
-  '/:id/xp-history',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      // Map :id to :horseId for the controller
-      req.params.horseId = req.params.id;
-      await horseXpController.getHorseXpHistory(req, res);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-/**
  * POST /horses/:id/award-xp — REMOVED (Equoria-6p398.3, audit Finding 3, 410 Gone)
  *
  * This was labelled "system/admin XP grant" but its only authorization was
@@ -149,8 +123,9 @@ router.get(
  * (`horseXpModelService.addXpToHorseCore` / `addXpToHorse`), whose live caller
  * is `competitionAwards.awardPlacementProgression` under the overnight
  * `executeClosedShows` executor, which computes the amount from the owner-ruled
- * Horse Points table (R8: 10/5/3/1, competitionAwards.mjs) and server-side placement. Owners keep `GET /:id/xp`,
- * `GET /:id/xp-history`, and `POST /:id/allocate-stat` for EARNED points.
+ * Horse Points table (R8: 10/5/3/1, competitionAwards.mjs) and server-side placement. Owners keep `GET /:id/xp`
+ * and `POST /:id/allocate-stat` for EARNED points. (`GET /:id/xp-history` was
+ * removed with the points history the owner dropped on 2026-10-28, Equoria-fly7a.)
  *
  * 410 (not a silent 404) mirrors the established Equoria-kacla hard-deprecation
  * idiom for `POST /api/v1/competition/enter-show`: an unambiguous "this endpoint

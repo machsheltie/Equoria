@@ -21,7 +21,6 @@ import { server } from '@/test/msw/server';
 import { userMessageFor } from '@/lib/http/userMessage';
 import ConformationTab from '@/components/horse/ConformationTab';
 import GaitsTab from '@/components/horse/GaitsTab';
-import StatHistoryGraph from '@/components/horse/StatHistoryGraph';
 import XpProgressBar from '@/components/horse/XpProgressBar';
 import TemperamentReferenceModal from '@/components/horse/TemperamentReferenceModal';
 import MilestoneEvaluationDisplay from '@/components/foal/MilestoneEvaluationDisplay';
@@ -53,7 +52,6 @@ function renderWithProviders(ui: React.ReactElement) {
 const surfaces: Array<[string, () => React.ReactElement]> = [
   ['ConformationTab', () => <ConformationTab horseId={1} />],
   ['GaitsTab', () => <GaitsTab horseId={1} />],
-  ['StatHistoryGraph', () => <StatHistoryGraph horseId={1} />],
   ['XpProgressBar', () => <XpProgressBar horseId={1} />],
   [
     'TemperamentReferenceModal',

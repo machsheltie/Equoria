@@ -7,7 +7,7 @@
 
 import { apiClient } from '../http/apiClient.js';
 import type { HorseListItemDto } from './horseList.js';
-import type { HorseSummary, HorseTrainingAnalytics, HorseXP, HorseXPHistory } from './types.js';
+import type { HorseSummary, HorseTrainingAnalytics, HorseXP } from './types.js';
 
 /**
  * 31E-4 — coat-color genetics & color response types (Equoria-lsdb).
@@ -106,13 +106,6 @@ export const horsesApi = {
   /** Spend one earned stat allocation on `statName` (every 1,000 Horse Points earns one). */
   allocateStat: (horseId: number, statName: string) =>
     apiClient.post<AllocateStatResult>(`/api/v1/horses/${horseId}/allocate-stat`, { statName }),
-  getXPHistory: (horseId: number, options?: { limit?: number; offset?: number }) => {
-    const params = new URLSearchParams();
-    if (options?.limit) params.append('limit', options.limit.toString());
-    if (options?.offset) params.append('offset', options.offset.toString());
-    const queryString = params.toString() ? `?${params.toString()}` : '';
-    return apiClient.get<HorseXPHistory>(`/api/v1/horses/${horseId}/xp-history${queryString}`);
-  },
   // NOTE (Equoria-4fnro, owner ruling 2026-09-14): there is deliberately no
   // `update` here any more. It existed to carry `{ name }` to PUT
   // /api/v1/horses/:id; renaming now has its own endpoint (`rename` below) and
