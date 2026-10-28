@@ -36,7 +36,15 @@ export const guideSectionsWorld: readonly GuideSection[] = [
       },
       {
         kind: 'paragraph',
-        text: '**Bloodlines.** When three ancestors within three generations share the same most-competed discipline, the foal gets +2% on all 12 stats. Strong lines are worth building.',
+        text: "**A foal's stats come from its parents.** Each of its 12 stats starts at the average of its sire's and dam's, give or take up to 10%.",
+      },
+      {
+        kind: 'paragraph',
+        text: "**Bloodlines.** When three ancestors within three generations share the same most-competed discipline, the foal also gets a lineage bonus: 2% of its parents' average on each of its 12 stats. Strong lines are worth building.",
+      },
+      {
+        kind: 'paragraph',
+        text: "**A foal's birth discipline.** Every foal is born with **+5** in one discipline, picked from the disciplines its parents trained in. A foal of a gaited breed is always born **Gaited**.",
       },
     ],
   },
@@ -265,11 +273,31 @@ export const guideSectionsWorld: readonly GuideSection[] = [
     blocks: [
       {
         kind: 'paragraph',
-        text: "Horses retire on their 21st birthday. A retired horse no longer trains, shows or breeds, and it doesn't need feeding. Its staff are released from it.",
+        text: "Horses retire on their 21st birthday, and only then. You can't retire a horse early. A retired horse no longer trains, shows or breeds, and it doesn't need feeding. Its staff are released from it.",
       },
       {
         kind: 'paragraph',
         text: '**The one exception: a mare in foal.** A mare bred at 20 stays in foal past her 21st birthday. She keeps her groom, and you can feed and vet her until her foal arrives. After she foals, her staff and feeding stop.',
+      },
+    ],
+  },
+  {
+    id: 'hall-of-fame',
+    title: 'The Hall of Fame',
+    tagline: 'A place among the best of the best.',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: "The Hall of Fame is for the best of the best, so retiring doesn't put a horse in it. Players choose who joins, one horse a week:",
+      },
+      {
+        kind: 'list',
+        items: [
+          '**Nominate.** Once your horse has retired, a **Nominate horse to the Hall of Fame** button appears on its page. Each horse can be nominated **once, ever**.',
+          '**Vote.** Hall of Fame weeks start on Sunday, Eastern. Horses nominated one week are voted on the next, and every player has **one vote** per round, even for their own horse.',
+          '**Join.** The horse with the most votes joins the Hall of Fame, with the date it joined. A tie for the top goes to a one-day run-off between the tied horses.',
+          "The **Hall of Fame** page, under Community, shows this week's **Nominees** and every **Hall of Fame Horse**.",
+        ],
       },
     ],
   },
@@ -380,7 +408,7 @@ export const guideSectionsWorld: readonly GuideSection[] = [
         kind: 'list',
         items: [
           '**Feed Shop**, **Tack Shop** (saddles, bridles and decorations), **Vet Clinic**, **Farrier**, and the **Leathersmith** for crafting.',
-          '**Horse Trader** sells horses bred by the game. They come with no parents and no revealed traits, and their stats total 200, with each stat between 1 and 20.',
+          "**Horse Trader** sells horses bred by the game. They arrive in Excellent health and fully fed, with no parents and their breed's +5 birth discipline. Their stats total 200, with each stat between 1 and 20, and each carries between one and five hidden traits, none of them revealed.",
           '**Horse Marketplace** is where players sell to each other. The seller sets the price, and there are no listing fees or commissions. Its search covers every horse: tick **For sale**, **At stud**, or both.',
         ],
       },

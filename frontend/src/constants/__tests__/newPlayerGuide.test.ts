@@ -340,6 +340,51 @@ describe('NEW_PLAYER_GUIDE staff rulings of 2026-10-28', () => {
   });
 });
 
+describe('NEW_PLAYER_GUIDE horse rulings of 2026-10-28', () => {
+  const blocksOf = (id: string) =>
+    newPlayerGuide.find((section) => section.id === id)?.blocks ?? [];
+  const joined = newPlayerGuide.flatMap((section) => section.blocks.flatMap(textOf)).join(' ');
+
+  it('says horses retire only at 21 and players never retire them (Equoria-s9brd)', () => {
+    const retirement = blocksOf('retirement').flatMap(textOf).join(' ');
+    expect(retirement).toContain(
+      "Horses retire on their 21st birthday, and only then. You can't retire a horse early."
+    );
+  });
+
+  it('describes the Hall of Fame as weekly nominate-and-vote, once per horse (Equoria-vb1n0)', () => {
+    const hall = blocksOf('hall-of-fame').flatMap(textOf).join(' ');
+    expect(hall).toContain("retiring doesn't put a horse in it");
+    expect(hall).toContain('**Nominate horse to the Hall of Fame**');
+    expect(hall).toContain('**once, ever**');
+    expect(hall).toContain('Hall of Fame weeks start on Sunday, Eastern.');
+    expect(hall).toContain('**one vote** per round');
+    expect(hall).toContain('one-day run-off');
+  });
+
+  it("gives foals their parents' average stats, give or take 10%, plus the lineage bonus (Equoria-fq9ob)", () => {
+    const breeding = blocksOf('breeding').flatMap(textOf).join(' ');
+    expect(breeding).toContain(
+      "starts at the average of its sire's and dam's, give or take up to 10%"
+    );
+    expect(breeding).toContain("2% of its parents' average on each of its 12 stats");
+    expect(breeding).toContain('A foal of a gaited breed is always born **Gaited**.');
+  });
+
+  it('says Horse Trader horses arrive Excellent and fed with one to five hidden traits (Equoria-fd3f2, i366a)', () => {
+    expect(joined).toContain('They arrive in Excellent health and fully fed');
+    expect(joined).toContain('between one and five hidden traits');
+  });
+
+  it('points players to the show Level filter (Equoria-i33ow)', () => {
+    expect(blocksOf('competitions').flatMap(textOf).join(' ')).toContain('**Level**');
+  });
+
+  it('keeps US spelling for Color and favorite (Equoria-at90e)', () => {
+    expect(joined).not.toMatch(/colour|favourite|grey/i);
+  });
+});
+
 describe('parseGuideInline', () => {
   it('returns plain text as one part', () => {
     expect(parseGuideInline('Just words.')).toEqual([{ kind: 'text', text: 'Just words.' }]);

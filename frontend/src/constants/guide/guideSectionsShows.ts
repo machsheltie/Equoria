@@ -27,7 +27,10 @@ export const guideSectionsShows: readonly GuideSection[] = [
       },
       {
         kind: 'list',
-        items: ["**Show day.** A show runs **7 days after it's created**, in the nightly run."],
+        items: [
+          '**Finding a show.** Under **Compete**, **Ridden Shows** lists the open shows. Filter by discipline, date, entry fee and **Level** to see only the shows open to a horse at that level.',
+          "**Show day.** A show runs **7 days after it's created**, in the nightly run.",
+        ],
       },
       {
         kind: 'paragraph',
