@@ -1,12 +1,11 @@
 /**
- * Horse overview and competition-history reads (application query layer, Equoria-q4uem.4 / WS4 S3).
+ * Horse overview read (application query layer, Equoria-q4uem.4 / WS4 S3).
  *
  * These handlers compose horse data with competition results and training state, so they live
  * above the domain modules: Horses must not import Competition or Training. Moved verbatim from
  * backend/modules/horses/controllers/horseOverviewController.mjs; behaviour, responses and status
  * codes are unchanged.
  */
-import { getResultsByHorse, readRecordedAwards } from '../../modules/competition/index.mjs';
 import { activeTrainingCooldownEnd, getTrainingVerdict } from '../../modules/training/index.mjs';
 import { canGroomToday } from '../../modules/grooms/index.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
@@ -14,63 +13,6 @@ import logger from '../../utils/logger.mjs';
 import { getFeedHealth, getVetHealth, getDisplayedHealth } from '../../utils/horseHealth.mjs';
 import { getHorseAgeYears } from '../../utils/horseAge.mjs';
 import { asFlagObject } from '../../utils/jsonbArrayGuard.mjs';
-
-/**
- * Get competition history for a specific horse
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
-export async function getHorseHistory(req, res) {
-  try {
-    const { id } = req.params;
-
-    // Validate horse ID
-    const horseId = parseInt(id, 10);
-    if (isNaN(horseId) || horseId <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid horse ID. Must be a positive integer.',
-        data: null,
-      });
-    }
-
-    // Get competition results for the horse
-    const results = await getResultsByHorse(horseId);
-
-    // Transform results for frontend display
-    const history = results.map(result => ({
-      id: result.id,
-      showName: result.showName,
-      discipline: result.discipline,
-      placement: result.placement,
-      score: result.score,
-      prize: result.prizeWon,
-      // statGains holds a ridden stat gain or a conformation ribbon (an object; a
-      // JSON string on legacy rows). JSON.parse on the object answered 500.
-      ...readRecordedAwards(result.discipline, result.statGains),
-      runDate: result.runDate,
-      createdAt: result.createdAt,
-    }));
-
-    logger.info(
-      `[horseController.getHorseHistory] Retrieved ${history.length} competition results for horse ${horseId}`,
-    );
-
-    res.status(200).json({
-      success: true,
-      message: `Found ${history.length} competition results for horse ${horseId}`,
-      data: history,
-    });
-  } catch (error) {
-    logger.error('[horseController.getHorseHistory] Error retrieving horse history: %o', error);
-
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error while retrieving horse history',
-      data: null,
-    });
-  }
-}
 
 /**
  * Get horse overview data for detailed display

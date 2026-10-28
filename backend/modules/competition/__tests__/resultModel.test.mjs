@@ -22,7 +22,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { getResultsByHorse, getResultsByUser } from '../services/resultModelService.mjs';
+import { getResultsByUser } from '../services/resultModelService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -81,71 +81,7 @@ afterAll(async () => {
   await prisma.user.deleteMany({ where: { id: USER_ID } });
 });
 
-// ─── getResultsByHorse ────────────────────────────────────────────────────────
-
-describe('getResultsByHorse', () => {
-  it('throws for negative horseId', async () => {
-    await expect(getResultsByHorse(-1)).rejects.toThrow('Horse ID must be a positive integer');
-  });
-
-  it('throws for non-numeric string horseId', async () => {
-    await expect(getResultsByHorse('invalid')).rejects.toThrow('Horse ID must be a positive integer');
-  });
-
-  it('returns empty array when horse has no results', async () => {
-    const horse = await mkHorse('GBH1');
-    const results = await getResultsByHorse(horse.id);
-    expect(results).toEqual([]);
-  });
-
-  it('returns results ordered by runDate desc and includes horse + show relations', async () => {
-    const horse = await mkHorse('GBH2');
-    const show1 = await mkShow('GBH2a');
-    const show2 = await mkShow('GBH2b');
-    const earlier = new Date('2024-03-01');
-    const later = new Date('2024-06-01');
-    await prisma.competitionResult.create({
-      data: {
-        horseId: horse.id,
-        showId: show1.id,
-        score: 80,
-        placement: 2,
-        discipline: 'Racing',
-        runDate: earlier,
-        showName: show1.name,
-        prizeWon: 0,
-      },
-    });
-    await prisma.competitionResult.create({
-      data: {
-        horseId: horse.id,
-        showId: show2.id,
-        score: 90,
-        placement: 1,
-        discipline: 'Racing',
-        runDate: later,
-        showName: show2.name,
-        prizeWon: 0,
-      },
-    });
-
-    const results = await getResultsByHorse(horse.id);
-
-    expect(results.length).toBe(2);
-    expect(new Date(results[0].runDate) >= new Date(results[1].runDate)).toBe(true);
-    expect(results[0].horse).toBeDefined();
-    expect(results[0].show).toBeDefined();
-  });
-
-  it('accepts a string horse ID (converts to integer)', async () => {
-    const horse = await mkHorse('GBH3');
-    const results = await getResultsByHorse(String(horse.id));
-    expect(Array.isArray(results)).toBe(true);
-  });
-});
-
 // ─── getResultsByUser ─────────────────────────────────────────────────────────
-
 describe('getResultsByUser', () => {
   it('returns results for all horses owned by the user', async () => {
     const horse = await mkHorse('GBU1');

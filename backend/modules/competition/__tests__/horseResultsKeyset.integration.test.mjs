@@ -1,10 +1,10 @@
 /**
- * A horse's result list and career history on the keyset convention
- * (Equoria-cmw85.20, Equoria-cmw85.22).
+ * A horse's career history on the keyset convention (Equoria-cmw85.22).
  *
- * GET /api/v1/competition/horse/:horseId/results and
- * GET /api/v1/horses/:horseId/competition-history. One horse with 105 results TIED
- * on runDate (one per show); a result is added between page fetches. The career
+ * GET /api/v1/horses/:horseId/competition-history. Equoria-a7f1p (owner ruling
+ * 2026-10-28, q151): GET /competition/horse/:horseId/results was removed as a
+ * duplicate lookup, with its Equoria-cmw85.20 cases. One horse with 105 results TIED
+ * on runDate (one per show). The career
  * statistics must still count every result while the list is bounded.
  * Real backend, real auth, real database.
  */
@@ -17,7 +17,6 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { walkPages } from '../../../__tests__/helpers/keysetWalk.mjs';
 
 const RUN = randomBytes(5).toString('hex');
 const TIED = new Date('2026-03-07T05:00:00.000Z');
@@ -93,39 +92,6 @@ afterAll(async () => {
   cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
   await cleanup.run();
 }, 120_000);
-
-describe('GET /competition/horse/:horseId/results keyset pages (Equoria-cmw85.20)', () => {
-  const path = () => `/api/v1/competition/horse/${horse.id}/results`;
-
-  it('caps a huge ?limit at 100', async () => {
-    const res = await get(path(), { limit: 5000 });
-    expect(res.status).toBe(200);
-    expect(res.body.results).toHaveLength(100);
-    expect(res.body.pageInfo.hasMore).toBe(true);
-  }, 60_000);
-
-  it('walks tied results by cursor, each once, even as a result is added', async () => {
-    const { ids, sizes } = await walkPages({
-      fetchPage: async cursor => {
-        const res = await get(path(), { limit: 40, ...(cursor ? { cursor } : {}) });
-        expect(res.status).toBe(200);
-        return res.body;
-      },
-      idsOf: body => body.results.map(r => r.id),
-      pageInfoOf: body => body.pageInfo,
-      afterFirstPage: () => prisma.competitionResult.create({ data: resultData(shows[TOTAL]) }),
-    });
-    expect(sizes).toEqual([40, 40, 25]);
-    expect(new Set(ids).size).toBe(TOTAL);
-    expect([...ids].sort((a, b) => b - a)).toEqual(ids);
-  }, 120_000);
-
-  it('answers 400 for a cursor the server did not issue', async () => {
-    const res = await get(path(), { cursor: 'c1:nonsense' });
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  }, 60_000);
-});
 
 describe('GET /horses/:horseId/competition-history (Equoria-cmw85.22)', () => {
   const path = () => `/api/v1/horses/${horse.id}/competition-history`;

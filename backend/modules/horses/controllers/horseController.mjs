@@ -9,7 +9,6 @@
  * Domain ownership of the extracted symbols:
  *
  *   horseOverviewController.mjs
- *     - getHorseHistory
  *     - getHorseCompetitionHistory
  *     - getHorseOverview
  *     - getHorsePersonalityImpact
@@ -37,9 +36,9 @@
  * re-added here.
  */
 
-// Equoria-q4uem.4 (WS4 S3): getHorseHistory and getHorseOverview compose
-// Competition and Training data, so they moved above the domain into
-// backend/app/queries/horseOverviewQuery.mjs.
+// Equoria-q4uem.4 (WS4 S3): getHorseOverview composes Competition and Training
+// data, so it moved above the domain into backend/app/queries/horseOverviewQuery.mjs.
+// getHorseHistory went with GET /horses/:id/history (Equoria-a7f1p, q151).
 export {
   getHorseCompetitionHistory,
   getHorsePersonalityImpact,

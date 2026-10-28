@@ -91,14 +91,6 @@ describe('Competition Routes Rate Limiting Integration Tests', () => {
       expectRateLimitHeaders(response);
     });
 
-    it('should apply queryRateLimiter to GET /api/v1/competition/horse/:horseId/results', async () => {
-      // requireOwnership: 404 for not-found AND not-owned (no disclosure).
-      const response = await authedGet(`${BASE}/horse/${UNOWNED_HORSE_ID}/results`);
-
-      expect(response.status).toBe(404);
-      expectRateLimitHeaders(response);
-    });
-
     it('should apply queryRateLimiter to GET /api/v1/competition/eligibility/:horseId/:discipline', async () => {
       const response = await authedGet(`${BASE}/eligibility/${UNOWNED_HORSE_ID}/showjumping`);
 
@@ -167,12 +159,6 @@ describe('Competition Routes Rate Limiting Integration Tests', () => {
       expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
     });
 
-    it('should require auth for horse-specific endpoints', async () => {
-      const response = await request(app).get(`${BASE}/horse/${UNOWNED_HORSE_ID}/results`).set('Origin', ORIGIN);
-
-      expect(response.status).toBe(401);
-    });
-
     it('should require auth for competition entry endpoints', async () => {
       // authenticateToken runs BEFORE csrfProtection on the authRouter, so
       // an unauthenticated mutation is a 401 (not a CSRF 403).
@@ -211,14 +197,6 @@ describe('Competition Routes Rate Limiting Integration Tests', () => {
   });
 
   describe('Security Integration', () => {
-    it('should validate horse ownership before allowing results access', async () => {
-      const response = await authedGet(`${BASE}/horse/${UNOWNED_HORSE_ID}/results`);
-
-      // 404 for ownership violation or non-existent horse (no disclosure)
-      expect(response.status).toBe(404);
-      expectRateLimitHeaders(response);
-    });
-
     it('should rate limit the deprecated execution endpoint', async () => {
       const response = await authedPost(`${BASE}/execute`).send({ showId: 1 });
 

@@ -17,13 +17,14 @@
  * asserts that.
  *
  *   GET /trainable/:userId        — Training: horses eligible for training
- *   GET /:id/history              — Competition: results for a horse
  *   GET /:id/overview             — Horses + Training + Competition composition
  *   GET /:id/training-history     — Training: analytics for a horse
  *   GET /:id/breeding-data        — Breeding: breeding data + trait predictions
  *
  * Equoria-a7f1p: GET /:id/trait-card went with the trait reports (owner ruling
- * 2026-10-28, q152).
+ * 2026-10-28, q152). GET /:id/history went with the duplicate lookups (owner
+ * ruling 2026-10-28, q151): the Show Results tab reads
+ * GET /competition/results/horse/:horseId.
  */
 import express from 'express';
 import { param, validationResult } from 'express-validator';
@@ -38,7 +39,7 @@ import { getTrainableHorses, trainingAnalyticsService } from '../../modules/trai
 import { generateBreedingData } from '../../modules/breeding/index.mjs';
 import AppError from '../../errors/AppError.mjs';
 import logger from '../../utils/logger.mjs';
-import { getHorseHistory, getHorseOverview } from './horseOverviewQuery.mjs';
+import { getHorseOverview } from './horseOverviewQuery.mjs';
 
 const router = express.Router();
 
@@ -84,31 +85,6 @@ router.get(
         stack: error.stack,
       });
 
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-/**
- * GET /horses/:id/history
- * Get competition history for a specific horse
- *
- * Security: validates horse ownership before returning history.
- */
-router.get(
-  '/:id/history',
-  authenticateToken, // base pass-through of horseXpRoutes.mjs:48 (see header)
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      await getHorseHistory(req, res);
-    } catch (error) {
       res.status(500).json({
         success: false,
         message: 'Internal server error',

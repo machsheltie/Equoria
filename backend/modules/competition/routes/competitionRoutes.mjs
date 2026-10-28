@@ -2,7 +2,6 @@ import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import conformationShowRoutes from './conformationShowRoutes.mjs';
 import { getUserResultsSummary } from '../services/resultModelService.mjs';
-import { getHorseResults } from '../controllers/horseResultsController.mjs';
 import { getShowResultsView, toPlayerShowStatus } from '../services/competitionResultRecord.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 // Equoria-kacla: enterAndRunShow / executeEnhancedCompetition /
@@ -207,20 +206,9 @@ router.get(
   },
 );
 
-/**
- * GET /horse/:horseId/results
- * Get all competition results for a specific horse
- *
- * Security: Validates horse ownership before returning results
- */
-router.get(
-  '/horse/:horseId/results',
-  queryRateLimiter,
-  auth,
-  [param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer')],
-  requireOwnership('horse', { idParam: 'horseId' }),
-  getHorseResults,
-);
+// GET /horse/:horseId/results was removed with the duplicate lookups (owner ruling
+// 2026-10-28, q151, Equoria-a7f1p): the Show Results tab reads
+// GET /competition/results/horse/:horseId.
 
 /**
  * GET /api/v1/competition/user-results

@@ -1,118 +1,12 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
-import {
-  InvalidCursorError,
-  clampLimit,
-  findKeysetPage,
-} from '../../../utils/paginationHelper.mjs';
 
 // A player cannot meaningfully open more shows' results than this in one visit,
 // and the bound keeps an `IN (...)` list from growing without limit. The route's
 // validator rejects anything longer before this service is reached; the constant
 // lives here so the service is safe for any future caller too.
 const MAX_MARK_VIEWED_SHOWS = 100;
-
-/**
- * The most rows a horse's result list returns (Equoria-cmw85.12; a show's list
- * is bounded the same way in competitionResultRecord.getShowResultsView),
- * the same ceiling getResultsByUser applies.
- */
-const resultListLimit = 100;
-
-/**
- * What a result list returns per row (Equoria-cmw85.12): the result's own
- * columns, the horse's id, name and breed, and the show's public fields. Never
- * whole horse rows (genotype, colour genotype, epigenetic modifiers and the
- * other JSONB columns) or the show's settlement internals (staged ordering of
- * every entrant, escrow columns, creator).
- */
-const resultListRowSelect = {
-  id: true,
-  horseId: true,
-  showId: true,
-  score: true,
-  placement: true,
-  discipline: true,
-  runDate: true,
-  showName: true,
-  prizeWon: true,
-  horsePointsAwarded: true,
-  createdAt: true,
-  horse: { select: { id: true, name: true, breed: { select: { id: true, name: true } } } },
-  show: {
-    select: {
-      id: true,
-      name: true,
-      discipline: true,
-      showType: true,
-      status: true,
-      runDate: true,
-      executedAt: true,
-      prize: true,
-      entryFee: true,
-    },
-  },
-};
-
-/**
- * One keyset page of a horse's competition results (Equoria-cmw85.20): newest
- * first, ties on the run date broken by id, so a result written while the owner
- * pages is neither skipped nor repeated. `cursor` continues a list; `skip` is the
- * legacy offset. The page size is the shared clamp (default and maximum 100).
- *
- * @param {number} horseId - Horse ID
- * @param {{ limit?: unknown, cursor?: unknown, skip?: number }} [paging]
- * @returns {Promise<{ items: Array, pageInfo: { nextCursor: string|null, hasMore: boolean } }>}
- *   items carry each result's horse and show (scoped; statGains included: the
- *   callers are the horse's owner)
- * @throws {InvalidCursorError} on a cursor that cannot be decoded
- */
-async function getResultsPageByHorse(horseId, { limit, cursor = null, skip = 0 } = {}) {
-  // Validate horseId
-  const numericId = parseInt(horseId, 10);
-  if (isNaN(numericId) || numericId <= 0) {
-    throw new Error('Horse ID must be a positive integer');
-  }
-
-  try {
-    const page = await findKeysetPage(args => prisma.competitionResult.findMany(args), {
-      where: { horseId: numericId },
-      sort: [
-        { key: 'runDate', dir: 'desc', type: 'date' },
-        { key: 'id', dir: 'desc', type: 'int' },
-      ],
-      limit: clampLimit(limit, { def: resultListLimit, max: resultListLimit }),
-      cursor,
-      skip,
-      extra: { select: { ...resultListRowSelect, statGains: true } },
-    });
-
-    logger.info(
-      `[resultModel.getResultsPageByHorse] Found ${page.items.length} results for horse ${numericId}`,
-    );
-    return page;
-  } catch (error) {
-    if (error instanceof InvalidCursorError) {
-      throw error;
-    }
-    logger.error('[resultModel.getResultsPageByHorse] Database error: %o', error);
-    throw new Error(`Database error in getResultsByHorse: ${error.message}`, { cause: error });
-  }
-}
-
-/**
- * Get a horse's newest competition results (the first page of
- * getResultsPageByHorse)
- * @param {number} horseId - Horse ID
- * @returns {Array} - The horse's newest results (at most 100), newest first,
- *   each with its horse and show (scoped; statGains included — the callers are
- *   the horse's owner)
- */
-async function getResultsByHorse(horseId) {
-  const { items } = await getResultsPageByHorse(horseId);
-  return items;
-}
 
 /**
  * Get results by user ID
@@ -329,10 +223,4 @@ async function markUserResultsViewed(userId, showIds) {
   );
 }
 
-export {
-  getResultsByHorse,
-  getResultsPageByHorse,
-  getResultsByUser,
-  getUserResultsSummary,
-  markUserResultsViewed,
-};
+export { getResultsByUser, getUserResultsSummary, markUserResultsViewed };

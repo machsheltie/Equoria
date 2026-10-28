@@ -76,9 +76,9 @@ describe('horseRoutes mounting sentinel (Equoria-y8u2j)', () => {
     // GET /:id/prize-summary, GET /:horseId/competition-history (now in
     // horseHistoryRoutes), plus the four other sub-routers' contributions
     // (feed, genetics, xp, breeding) which keep their own pre-split paths.
-    // GET /trainable/:userId, GET /:id/history, GET /:id/overview and
-    // GET /:id/training-history are asserted by the app-level sentinel
-    // (Equoria-q4uem.4, see header).
+    // GET /trainable/:userId, GET /:id/overview and GET /:id/training-history
+    // are asserted by the app-level sentinel (Equoria-q4uem.4, see header);
+    // GET /:id/history was retired (Equoria-a7f1p, q151).
     const required = [
       'GET /',
       'POST /',

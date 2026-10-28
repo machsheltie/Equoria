@@ -145,7 +145,7 @@ const CLASS_1_FILES = [
   'modules/grooms/controllers/enhancedGroomController.mjs',
   'modules/horses/services/foalingService.mjs',
   'modules/horses/controllers/horseOverviewController.mjs',
-  // Equoria-q4uem.4 (WS4 S3): getHorseHistory/getHorseOverview moved out of
+  // Equoria-q4uem.4 (WS4 S3): getHorseOverview moved out of
   // horseOverviewController into the application query layer; keep both
   // halves of the original file under the guard.
   'app/queries/horseOverviewQuery.mjs',

@@ -179,39 +179,7 @@ describe('GET /api/v1/competition/show/:showId/results', () => {
   });
 });
 
-// ─── GET /api/v1/competition/horse/:horseId/results ─────────────────────────────
-
-describe('GET /api/v1/competition/horse/:horseId/results', () => {
-  it('returns 200 with results for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/competition/horse/${horse.id}/results`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(Array.isArray(res.body.results)).toBe(true);
-    expect(res.body.horseId).toBe(horse.id);
-  });
-
-  it('returns 404 for horse not owned by user', async () => {
-    const res = await request(app)
-      .get('/api/v1/competition/horse/999999999/results')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(404);
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/competition/horse/${horse.id}/results`).set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
 // ─── GET /api/v1/competition/eligibility/:horseId/:discipline ───────────────────
-
 describe('GET /api/v1/competition/eligibility/:horseId/:discipline', () => {
   it('returns 200 with eligibility for owned horse and valid discipline', async () => {
     const res = await request(app)

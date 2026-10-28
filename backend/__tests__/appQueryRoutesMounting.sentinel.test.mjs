@@ -4,9 +4,9 @@
  * The application query layer (backend/app/queries/) hosts the cross-domain
  * reads that used to live inside the horses and users module routers:
  *
- *   horseQueryRoutes  GET /trainable/:userId, GET /:id/history, GET /:id/overview,
- *                     GET /:id/training-history, GET /:id/breeding-data,
- *                     GET /:id/trait-card                     (mounted at /horses)
+ *   horseQueryRoutes  GET /trainable/:userId, GET /:id/overview,
+ *                     GET /:id/training-history, GET /:id/breeding-data
+ *                                                             (mounted at /horses)
  *
  * The users half (userQueryRoutes: GET /dashboard/:userId) was retired by
  * Equoria-oey96.40 (owner decision 2026-07-07: the orphaned dashboard endpoint
@@ -70,7 +70,6 @@ const sigsOf = router =>
 
 const HORSE_QUERY_ROUTES = [
   'GET /trainable/:userId',
-  'GET /:id/history',
   'GET /:id/overview',
   'GET /:id/training-history',
   'GET /:id/breeding-data',
@@ -80,6 +79,11 @@ const HORSE_QUERY_ROUTES = [
 // Old contract: GET /:id/trait-card (query router) and GET /trait-trends
 // (module router) were part of the inventories above; they are hosted nowhere.
 const retiredTraitReportRoutes = ['GET /:id/trait-card', 'GET /trait-trends'];
+
+// Owner ruling 2026-10-28 (q151, Equoria-a7f1p): duplicate lookups removed.
+// Old contract: GET /:id/history (query router) was in the inventories above; the
+// Show Results tab reads GET /competition/results/horse/:horseId instead.
+const retiredDuplicateRoutes = ['GET /:id/history'];
 
 // The full Equoria-y8u2j pre-split inventory (parent + sub-routers), now split
 // between the query router and the module router tree.
@@ -93,7 +97,6 @@ const PRE_SPLIT_HORSES_INVENTORY = [
   'GET /temperament-definitions',
   'GET /trainable/:userId',
   'POST /foals',
-  'GET /:id/history',
   'GET /:id/overview',
   'GET /:id/prize-summary',
   'GET /:id/training-history',
@@ -111,6 +114,13 @@ describe('application query routers mounting sentinel (Equoria-q4uem.4)', () => 
   it('RETIRED (q152): the trait card and trait trends are hosted by neither horses router', () => {
     const union = new Set([...sigsOf(horseQueryRoutes), ...sigsOf(horseRoutes)]);
     for (const sig of retiredTraitReportRoutes) {
+      expect(union.has(sig)).toBe(false);
+    }
+  });
+
+  it('RETIRED (q151): the duplicate horse history read is hosted by neither horses router', () => {
+    const union = new Set([...sigsOf(horseQueryRoutes), ...sigsOf(horseRoutes)]);
+    for (const sig of retiredDuplicateRoutes) {
       expect(union.has(sig)).toBe(false);
     }
   });
@@ -150,7 +160,7 @@ describe('application query routers mounting sentinel (Equoria-q4uem.4)', () => 
     const { authRouter } = buildRouters();
     const layerOf = router => authRouter.stack.find(l => l.name === 'router' && l.handle === router);
     const horsesLayer = layerOf(horseQueryRoutes);
-    expect(horsesLayer.regexp.test('/horses/42/history')).toBe(true);
+    expect(horsesLayer.regexp.test('/horses/42/overview')).toBe(true);
     expect(horsesLayer.regexp.test('/users/42')).toBe(false);
   });
 
