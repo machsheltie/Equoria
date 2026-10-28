@@ -89,6 +89,8 @@ beforeAll(async () => {
   await makeHorse('tested', { colorGeneticsTested: true });
   await makeHorse('retired', { age: 21 });
   await makeHorse('old20', { age: 20 });
+  // Equoria-1re40: a 21-year-old mare still in foal (owner ruling 2026-10-23).
+  await makeHorse('retiredInFoal', { age: 21, inFoalSinceDate: new Date() });
   // Horses were registered first, so they are cleaned before the user (FK Restrict).
   cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
@@ -116,6 +118,18 @@ describe('GET /vet/horses feeds the two dropdowns', () => {
     expect(byId[horses.due.id]).toMatchObject({ vetted: false, geneticsTested: false });
     expect(byId[horses.vettedToday.id]).toMatchObject({ vetted: true, geneticsTested: false });
     expect(byId[horses.tested.id]).toMatchObject({ vetted: false, geneticsTested: true });
+  });
+});
+
+describe('GET /vet/horses lists a 21-year-old mare still in foal (Equoria-1re40)', () => {
+  // Owner ruling 2026-10-23: a mare in foal when she turns 21 can still be vetted,
+  // because the foal depends on it. Her vet care is read as if she were not retired:
+  // last vetted in 2024, so Bad, and the health check costs 400.
+  it('lists her with her real vet health and its fee, not as retired', async () => {
+    const res = await authed(request(app).get('/api/v1/vet/horses'));
+    expect(res.status).toBe(200);
+    const mare = res.body.data.find(h => h.id === horses.retiredInFoal.id);
+    expect(mare).toMatchObject({ vetted: false, vetHealth: 'Bad', healthCheckFee: 400 });
   });
 });
 

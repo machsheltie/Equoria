@@ -14,14 +14,16 @@
  * "already vetted" means its vet health is still Excellent (vetted within the
  * last 7 Eastern game days, the Excellent band of getVetHealth); "already
  * tested" means colorGeneticsTested. Retired horses (21+) are not listed by
- * GET /vet/horses.
+ * GET /vet/horses, except a mare still in foal: owner ruling 2026-10-23 keeps her
+ * vetted until she foals, because the foal depends on it, so she is listed,
+ * priced and vetted on her care as if she were not retired (vetHealthOf).
  *
  * Old contract: a flat 100-coin health check whatever the horse's health
  * (before that, four services; 150/350/200/120).
  *
  * Routes:
  *   GET  /api/v1/vet/services          -> the two services
- *   GET  /api/v1/vet/horses            -> the player's horses under 21, with state
+ *   GET  /api/v1/vet/horses            -> the player's horses under 21 (or in foal), with state
  *   POST /api/v1/vet/book-appointment  -> { horseId, serviceId }
  */
 
@@ -81,13 +83,25 @@ export function healthCheckFee(vetHealth) {
   return level <= 0 ? null : level * healthCheckStep;
 }
 
-/** Vet health still Excellent: another health check would change nothing. */
-export function isAlreadyVetted(horse, now = new Date()) {
-  return getVetHealth(horse, now) === 'Excellent';
+/**
+ * The vet health the vet works from. A mare of 21 or over still in foal is read on
+ * the care underneath her retirement (owner ruling 2026-10-23, Equoria-1re40):
+ * getVetHealth would otherwise say 'retired', which has no fee, and the vet
+ * refused her as already vetted.
+ */
+export function vetHealthOf(horse, now = new Date()) {
+  return getVetHealth(horse.inFoalSinceDate ? { ...horse, age: null } : horse, now);
 }
 
-/** Prisma where-fragment: horses still active (age unknown counts as active). */
-const notRetiredWhere = { OR: [{ age: null }, { age: { lt: retirementAgeYears } }] };
+/** Vet health still Excellent: another health check would change nothing. */
+export function isAlreadyVetted(horse, now = new Date()) {
+  return vetHealthOf(horse, now) === 'Excellent';
+}
+
+/** Prisma where-fragment: horses the vet sees: under 21 (age unknown counts), or in foal. */
+const vetVisibleWhere = {
+  OR: [{ age: null }, { age: { lt: retirementAgeYears } }, { inFoalSinceDate: { not: null } }],
+};
 
 /**
  * GET /api/v1/vet/services
@@ -102,19 +116,20 @@ export async function getVetServices(_req, res) {
 
 /**
  * GET /api/v1/vet/horses
- * The dropdown list: the player's horses under 21, with whether each is
+ * The dropdown list: the player's horses under 21 or in foal, with whether each is
  * already vetted and already genetics-tested.
  */
 export async function getVetHorses(req, res) {
   try {
     const rows = await prisma.horse.findMany({
-      where: { userId: req.user.id, ...notRetiredWhere },
+      where: { userId: req.user.id, ...vetVisibleWhere },
       select: {
         id: true,
         name: true,
         age: true,
         healthStatus: true,
         lastVettedDate: true,
+        inFoalSinceDate: true,
         colorGeneticsTested: true,
       },
       orderBy: { name: 'asc' },
@@ -127,8 +142,8 @@ export async function getVetHorses(req, res) {
         id: horse.id,
         name: horse.name,
         vetted: isAlreadyVetted(horse, now),
-        vetHealth: getVetHealth(horse, now),
-        healthCheckFee: healthCheckFee(getVetHealth(horse, now)),
+        vetHealth: vetHealthOf(horse, now),
+        healthCheckFee: healthCheckFee(vetHealthOf(horse, now)),
         geneticsTested: horse.colorGeneticsTested,
       })),
     });
@@ -178,7 +193,7 @@ export async function bookVetAppointment(req, res) {
           // prices it from the horse row, never from the client. The row is read
           // again after the debit's User lock (below); a fee that moved between
           // the two reads refuses the booking and rolls the debit back.
-          const fee = isPanel ? service.cost : healthCheckFee(getVetHealth(horse));
+          const fee = isPanel ? service.cost : healthCheckFee(vetHealthOf(horse));
           if (fee === null) {
             throw new AlreadyDoneError();
           }
@@ -210,7 +225,7 @@ export async function bookVetAppointment(req, res) {
           if (isPanel ? fresh.colorGeneticsTested : isAlreadyVetted(fresh)) {
             throw new AlreadyDoneError();
           }
-          if (!isPanel && healthCheckFee(getVetHealth(fresh)) !== fee) {
+          if (!isPanel && healthCheckFee(vetHealthOf(fresh)) !== fee) {
             throw new FeeChangedError();
           }
           const { count } = await tx.horse.updateMany({
