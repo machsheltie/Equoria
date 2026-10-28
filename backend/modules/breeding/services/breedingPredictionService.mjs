@@ -20,6 +20,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { NotFoundError } from '../../../errors/index.mjs';
 import { hiddenTraitSet, publicTraitModifiers } from '../../../utils/publicTraitView.mjs';
+import { getTraitsAtOrAboveRarity, getTraitsByType } from '../../../utils/epigeneticTraits.mjs';
 
 // Constants for inheritance calculations
 const AGE_CUTOFF_DAYS = 1460; // 4 years in days
@@ -34,31 +35,13 @@ const TRAIT_CATEGORIES = {
   social: ['charismatic', 'friendly', 'leader', 'cooperative', 'outgoing'],
 };
 
-const RARE_TRAITS = [
-  'sensitive',
-  'noble',
-  'legacyTalent',
-  'exceptional',
-  'prodigy',
-  'natural_leader',
-  'empathic',
-  'intuitive',
-  'charismatic',
-  'legendary',
-];
+// Rare and negative traits, keyed on the twenty-trait roster's rarity (q134)
+// and polarity (q135) from utils/epigeneticTraits.mjs, their one source
+// (Equoria-qw4kp). "Rare" is a Rare, Ultra Rare or Legendary trait. The lists
+// used to name traits that are no longer on the roster.
+const RARE_TRAITS = Object.freeze(getTraitsAtOrAboveRarity('rare'));
 
-const NEGATIVE_TRAITS = [
-  'stubborn',
-  'anxious',
-  'aggressive',
-  'fearful',
-  'lazy',
-  'unpredictable',
-  'difficult',
-  'nervous',
-  'spooky',
-  'resistant',
-];
+const NEGATIVE_TRAITS = Object.freeze(getTraitsByType('negative'));
 
 /**
  * Calculate individual flag scores for a horse

@@ -143,6 +143,26 @@ export function getTraitsByType(type = 'all') {
   return traits.filter(trait => TRAIT_DEFINITIONS[trait].type === type);
 }
 
+/** The owner's rarities (q98), commonest first. */
+const rarityOrder = Object.freeze(['common', 'uncommon', 'rare', 'ultraRare', 'legendary']);
+
+/**
+ * Roster traits whose ruled rarity (q134) is `rarity` or rarer: 'rare' gives
+ * the Rare, Ultra Rare and Legendary traits. Game and admin use only; players
+ * never see rarity (q112).
+ * @param {string} rarity - one of common, uncommon, rare, ultraRare, legendary
+ * @returns {string[]} Array of trait names, in roster order
+ */
+export function getTraitsAtOrAboveRarity(rarity) {
+  const floor = rarityOrder.indexOf(rarity);
+  if (floor < 0) {
+    throw new Error(`Unknown trait rarity: ${rarity}`);
+  }
+  return Object.keys(TRAIT_DEFINITIONS).filter(
+    trait => rarityOrder.indexOf(TRAIT_DEFINITIONS[trait].rarity) >= floor,
+  );
+}
+
 /**
  * Get all available traits by category
  * @param {string} category - 'epigenetic', 'bond', 'situational', or 'all'

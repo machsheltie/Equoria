@@ -67,10 +67,12 @@ describe('getTraitScoringDefinitions()', () => {
     expect(defs.maxScores.total).toBe(30);
     expect(defs.ageCutoff.days).toBe(1460);
     expect(Array.isArray(defs.rareTraits)).toBe(true);
-    expect(defs.rareTraits).toContain('noble');
-    expect(Array.isArray(defs.negativeTraits)).toBe(true);
-    expect(defs.negativeTraits).toContain('anxious');
-    expect(typeof defs.negativeTraitPenalties.aggressive).toBe('number');
+    // Old contract: the lists named off-roster traits (noble, anxious,
+    // aggressive). Owner rulings 2026-10-27 (q134 rarity, q135 polarity;
+    // Equoria-qw4kp): they are the roster's Rare-or-rarer and negative traits.
+    expect(defs.rareTraits).toEqual(['resilient', 'heart', 'focused', 'competitive']);
+    expect(defs.negativeTraits).toEqual(['fearful', 'insecure', 'aloof', 'fragile', 'skittish', 'excitable']);
+    expect(defs.negativeTraitPenalties).toEqual({ fearful: -2 });
     expect(typeof defs.scoringRules.traitCount).toBe('string');
   });
 });
@@ -111,11 +113,13 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
       },
     });
 
-    // 3 rare traits from 3 different source types (< age 4 = < 1460 days)
+    // 3 rare traits from 3 different source types (< age 4 = < 1460 days).
+    // Roster traits ruled Rare / Ultra Rare / Legendary (q134; Equoria-qw4kp);
+    // the old fixture used off-roster names (noble, legacyTalent, exceptional).
     const exceptionalTraits = [
-      { traitName: 'noble', sourceType: 'milestone', ageInDays: 30 },
-      { traitName: 'legacyTalent', sourceType: 'groom', ageInDays: 200 },
-      { traitName: 'exceptional', sourceType: 'environmental', ageInDays: 500 },
+      { traitName: 'resilient', sourceType: 'milestone', ageInDays: 30 },
+      { traitName: 'competitive', sourceType: 'groom', ageInDays: 200 },
+      { traitName: 'heart', sourceType: 'environmental', ageInDays: 500 },
       // 4th trait adds 'genetic' source type → diversity = 4 unique types >= 4
       { traitName: 'curious', sourceType: 'genetic', ageInDays: 800 },
     ];
@@ -161,7 +165,7 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
       },
     });
 
-    // Weak horse: 2 negative traits only → penalty = -3+-1 = -4 < -3, traitCount=2 < 3
+    // Weak horse: 2 negative trait rows only → penalty = -2+-2 = -4 < -3, traitCount=2 < 3
     // No milestone data → groomCareConsistency = 0 < 2, rareTraits = 0
     lstWeakHorse = await prisma.horse.create({
       data: {
@@ -174,8 +178,9 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
       },
     });
 
-    // aggressive: -3 penalty, anxious: -1 penalty → total -4 < -3
-    for (const trait of ['aggressive', 'anxious']) {
+    // fearful logged twice (switched off, then back on): -2 each → total -4 < -3.
+    // The old fixture used off-roster aggressive (-3) + anxious (-1) (Equoria-qw4kp).
+    for (const trait of ['fearful', 'fearful']) {
       await prisma.traitHistoryLog.create({
         data: {
           horseId: lstWeakHorse.id,
@@ -221,8 +226,13 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
     expect(result.breakdown.traitsExcluded).toHaveLength(1); // 1 post-age-4 trait
     expect(result.breakdown.traitsExcluded[0].ageInDays).toBe(1500);
     expect(result.breakdown.traitsExcluded[0].reason).toMatch(/age 4/i);
-    expect(result.breakdown.rareTraitNames).toContain('noble');
-    expect(result.breakdown.rareTraitNames).toHaveLength(3);
+    // Old contract: the breakdown listed rareTraitNames and flagged each
+    // considered trait isRare. Owner ruling 2026-10-27 (q112): players never
+    // see a trait's rarity, and this breakdown is served to the horse's owner.
+    expect(result.breakdown).not.toHaveProperty('rareTraitNames');
+    for (const t of result.breakdown.traitsConsidered) {
+      expect(t).not.toHaveProperty('isRare');
+    }
     // rareTraitScore = min(3*3, 10) = 9
     expect(result.breakdown.rareTraits).toBe(9);
     expect(result.breakdown.diversity).toBe(4); // 4 unique source types
@@ -233,7 +243,7 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
   it('calculateTraitScore: weak horse — 2 negative traits, penalty=-4, no milestone', async () => {
     const result = await calculateTraitScore(lstWeakHorse.id);
     expect(result.breakdown.traitCount).toBe(2);
-    expect(result.breakdown.negativeTraitPenalty).toBe(-4); // aggressive(-3) + anxious(-1)
+    expect(result.breakdown.negativeTraitPenalty).toBe(-4); // fearful(-2) twice
     expect(result.breakdown.groomCareConsistency).toBe(0); // no milestone data
     expect(result.breakdown.rareTraits).toBe(0);
     expect(result.breakdown.traitsExcluded).toHaveLength(0);

@@ -46,10 +46,10 @@ describe('generateBreedingData — non-existent horse', () => {
 
 describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht)', () => {
   let bpsUser;
-  let bpsStallionCalm; // Stallion, temperament='calm', 4 traits: brave/sensitive/stubborn/bold
+  let bpsStallionCalm; // Stallion, temperament='calm', 4 traits: brave/focused/fearful/bold
   let bpsMareGentle; // Mare, temperament='gentle', 4 traits: brave/gentle/quick_learner/calm
   let bpsHorseNoTraits; // Mare, no traits → hasInsufficientData=true; temperament=null → unknown key
-  let bpsHorseRare; // Mare, 1 rare trait (charismatic) → parentTraitCounts=1 → low (not insufficient)
+  let bpsHorseRare; // Mare, 1 rare trait (heart) → parentTraitCounts=1 → low (not insufficient)
   const bpsHorseIds = [];
   const cleanup = createCleanupTracker();
 
@@ -116,11 +116,13 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
 
     bpsHorseIds.push(bpsStallionCalm.id, bpsMareGentle.id, bpsHorseNoTraits.id, bpsHorseRare.id);
 
-    // bpsStallionCalm traits: brave, sensitive (rare), stubborn (negative), bold
+    // bpsStallionCalm traits: brave, focused (rare), fearful (negative), bold.
+    // Rare and negative are the roster's ruled rarity (q134) and polarity (q135)
+    // (Equoria-qw4kp); the old fixture used off-roster sensitive and stubborn.
     for (const [traitName, extra] of [
       ['brave', {}],
-      ['sensitive', {}], // in RARE_TRAITS
-      ['stubborn', {}], // in NEGATIVE_TRAITS
+      ['focused', {}], // ruled Rare
+      ['fearful', {}], // ruled negative
       ['bold', {}],
     ]) {
       await prisma.traitHistoryLog.create({
@@ -156,7 +158,7 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
     await prisma.traitHistoryLog.create({
       data: {
         horseId: bpsHorseRare.id,
-        traitName: 'charismatic', // in RARE_TRAITS
+        traitName: 'heart', // ruled Legendary
         sourceType: 'groom',
         ageInDays: 100,
       },
@@ -200,8 +202,8 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
     expect(result.horseId).toBe(bpsStallionCalm.id);
     expect(result.hasInsufficientData).toBe(false);
     expect(result.traitSummary.totalTraits).toBe(4);
-    expect(result.traitSummary.rareTraits).toBe(1); // sensitive
-    expect(result.traitSummary.negativeTraits).toBe(1); // stubborn
+    expect(result.traitSummary.rareTraits).toBe(1); // focused
+    expect(result.traitSummary.negativeTraits).toBe(1); // fearful
     // score = 2 (traits≥4) + 1 (rare≥1) - 1 (negative) = 2 → 'fair'
     expect(result.breedingQuality).toBe('fair');
     expect(result.epigeneticFlags).toBeDefined();

@@ -17,6 +17,7 @@ import {
   getTraitDefinition,
   getTraitsByType,
   getTraitsByCategory,
+  getTraitsAtOrAboveRarity,
   getTraitMetadata,
   checkTraitConflict,
 } from '../../../utils/epigeneticTraits.mjs';
@@ -185,5 +186,23 @@ describe('checkTraitConflict', () => {
 
   it('returns false for unknown trait pairs', () => {
     expect(checkTraitConflict('unknownA', 'unknownB')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getTraitsAtOrAboveRarity (owner ruling 2026-10-27, q134; Equoria-qw4kp)
+// ---------------------------------------------------------------------------
+describe('getTraitsAtOrAboveRarity', () => {
+  it('rare gives the Rare, Ultra Rare and Legendary traits', () => {
+    expect(getTraitsAtOrAboveRarity('rare')).toEqual(['resilient', 'heart', 'focused', 'competitive']);
+  });
+
+  it('legendary gives heart alone; common gives the whole roster', () => {
+    expect(getTraitsAtOrAboveRarity('legendary')).toEqual(['heart']);
+    expect(getTraitsAtOrAboveRarity('common')).toEqual(getTraitsByType('all'));
+  });
+
+  it('refuses a rarity the owner never ruled', () => {
+    expect(() => getTraitsAtOrAboveRarity('epic')).toThrow('Unknown trait rarity: epic');
   });
 });

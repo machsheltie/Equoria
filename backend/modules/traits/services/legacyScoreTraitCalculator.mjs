@@ -23,6 +23,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { hiddenTraitSet } from '../../../utils/publicTraitView.mjs';
+import { getTraitsAtOrAboveRarity, getTraitsByType } from '../../../utils/epigeneticTraits.mjs';
 // Equoria-fe9k: canonical days→game-years conversion. The introspection
 // response previously divided AGE_CUTOFF_DAYS by 365 (calendar-years),
 // drifting from the game-year cadence used everywhere else.
@@ -35,45 +36,22 @@ const MAX_RARE_TRAIT_SCORE = 10;
 const MAX_GROOM_CARE_SCORE = 5;
 const AGE_CUTOFF_DAYS = 1460; // 4 years in days
 
-// Trait categorization
-const RARE_TRAITS = [
-  'sensitive',
-  'noble',
-  'legacyTalent',
-  'exceptional',
-  'prodigy',
-  'natural_leader',
-  'empathic',
-  'intuitive',
-  'charismatic',
-  'legendary',
-];
+// Trait categorization, keyed on the twenty-trait roster (owner rulings
+// 2026-10-27, q117 roster, q134 rarity, q135 polarity; Equoria-qw4kp). The
+// roster table in utils/epigeneticTraits.mjs is the one source. "Rare" is a
+// Rare, Ultra Rare or Legendary trait (resilient, focused, competitive, heart);
+// the negative traits are fearful, insecure, aloof, fragile, skittish and
+// excitable. The lists used to name traits that are no longer on the roster.
+const RARE_TRAITS = Object.freeze(getTraitsAtOrAboveRarity('rare'));
 
-const NEGATIVE_TRAITS = [
-  'stubborn',
-  'anxious',
-  'aggressive',
-  'fearful',
-  'lazy',
-  'unpredictable',
-  'difficult',
-  'nervous',
-  'spooky',
-  'resistant',
-];
+const NEGATIVE_TRAITS = Object.freeze(getTraitsByType('negative'));
 
-const NEGATIVE_TRAIT_PENALTIES = {
-  stubborn: -2,
-  anxious: -1,
-  aggressive: -3,
+// fearful keeps the -2 it had before the roster change (q137: carried-over
+// traits keep their old values); every other negative trait takes the -1
+// default applied below.
+const NEGATIVE_TRAIT_PENALTIES = Object.freeze({
   fearful: -2,
-  lazy: -2,
-  unpredictable: -3,
-  difficult: -2,
-  nervous: -1,
-  spooky: -1,
-  resistant: -2,
-};
+});
 
 /**
  * Calculate trait score for a horse's legacy score
@@ -144,6 +122,9 @@ export async function calculateTraitScore(horseId) {
   const hidden = hiddenTraitSet(horse?.epigeneticModifiers);
   const shown = rows => rows.filter(t => !hidden.has(t.traitName));
 
+  // The breakdown reaches the horse's owner (GET /horses/:id/legacy-score), so
+  // it never names which traits are rare: players never see a trait's rarity
+  // (owner ruling 2026-10-27, q112). Polarity is player-visible (q135).
   // Calculate total trait score
   const totalScore = Math.max(
     0,
@@ -164,7 +145,6 @@ export async function calculateTraitScore(horseId) {
         name: t.traitName,
         sourceType: t.sourceType,
         ageInDays: t.ageInDays,
-        isRare: RARE_TRAITS.includes(t.traitName),
         isNegative: NEGATIVE_TRAITS.includes(t.traitName),
       })),
       traitsExcluded: shown(traitsExcluded).map(t => ({
@@ -179,7 +159,6 @@ export async function calculateTraitScore(horseId) {
         bondScore: m.bondScore,
       })),
       sourceTypes: Array.from(sourceTypes),
-      rareTraitNames: shown(rareTraits).map(t => t.traitName),
       negativeTraitNames: shown(negativeTraits).map(t => t.traitName),
     },
   };
@@ -295,15 +274,15 @@ export function getTraitScoringDefinitions() {
       // which traits are scored, only the unit reported to clients.
       years: gameYearsFromDays(AGE_CUTOFF_DAYS),
     },
-    rareTraits: RARE_TRAITS,
-    negativeTraits: NEGATIVE_TRAITS,
-    negativeTraitPenalties: NEGATIVE_TRAIT_PENALTIES,
+    rareTraits: [...RARE_TRAITS],
+    negativeTraits: [...NEGATIVE_TRAITS],
+    negativeTraitPenalties: { ...NEGATIVE_TRAIT_PENALTIES },
     scoringRules: {
       traitCount: 'Each trait before age 4 = 1 point (max 10)',
       diversity: 'Each unique source type = 1 point (max 5)',
       rareTraits: 'Each rare trait = 3 points (max 10)',
       groomCare: 'Based on milestone consistency and bond scores (max 5)',
-      negativeTraits: 'Penalties range from -1 to -3 per negative trait',
+      negativeTraits: 'Penalties range from -1 to -2 per negative trait',
     },
   };
 }

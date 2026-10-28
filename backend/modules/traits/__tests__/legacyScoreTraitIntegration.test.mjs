@@ -137,10 +137,12 @@ describe('Legacy Score Trait Integration System', () => {
 
   describe('Trait Score Calculation', () => {
     it('should calculate trait score based on count, diversity, and rarity', async () => {
-      // Create diverse trait history for the horse (before age 4)
+      // Create diverse trait history for the horse (before age 4). The rare
+      // traits are roster traits ruled Rare / Legendary (q134; Equoria-qw4kp);
+      // the old fixture used off-roster sensitive and noble.
       const traitHistory = [
-        { traitName: 'sensitive', sourceType: 'milestone', isEpigenetic: true, ageInDays: 30 },
-        { traitName: 'noble', sourceType: 'groom', isEpigenetic: true, ageInDays: 60 },
+        { traitName: 'focused', sourceType: 'milestone', isEpigenetic: true, ageInDays: 30 },
+        { traitName: 'heart', sourceType: 'groom', isEpigenetic: true, ageInDays: 60 },
         { traitName: 'quick_learner', sourceType: 'milestone', isEpigenetic: true, ageInDays: 365 },
         { traitName: 'athletic', sourceType: 'environmental', isEpigenetic: false, ageInDays: 730 },
         { traitName: 'confident', sourceType: 'groom', isEpigenetic: true, ageInDays: 1095 }, // 3 years
@@ -168,7 +170,7 @@ describe('Legacy Score Trait Integration System', () => {
       // Expected scoring:
       // - Trait count: 5 traits = 5 points (max 10)
       // - Diversity: 3 different source types = 3 points (max 5)
-      // - Rare traits: 2 rare traits (sensitive, noble) = 6 points (max 10)
+      // - Rare traits: 2 rare traits (focused, heart) = 6 points (max 10)
       // - Groom care consistency: No milestone data = 0 points (max 5)
       // Total expected: ~14 points (max 25)
 
@@ -176,16 +178,17 @@ describe('Legacy Score Trait Integration System', () => {
       expect(traitScore.totalScore).toBeLessThanOrEqual(25);
       expect(traitScore.breakdown.traitCount).toBe(5);
       expect(traitScore.breakdown.diversity).toBeGreaterThanOrEqual(3);
-      expect(traitScore.breakdown.rareTraits).toBeGreaterThan(0);
+      expect(traitScore.breakdown.rareTraits).toBe(6);
       expect(traitScore.breakdown.groomCareConsistency).toBeGreaterThanOrEqual(0);
     });
 
     it('should apply negative trait penalties', async () => {
-      // Create trait history with negative traits
+      // Create trait history with negative traits: roster traits ruled negative
+      // (q135; Equoria-qw4kp); the old fixture used off-roster stubborn and anxious.
       const traitHistory = [
-        { traitName: 'sensitive', sourceType: 'milestone', isEpigenetic: true, ageInDays: 30 },
-        { traitName: 'stubborn', sourceType: 'milestone', isEpigenetic: true, ageInDays: 60 }, // negative trait
-        { traitName: 'anxious', sourceType: 'environmental', isEpigenetic: false, ageInDays: 365 }, // negative trait
+        { traitName: 'resilient', sourceType: 'milestone', isEpigenetic: true, ageInDays: 30 },
+        { traitName: 'fearful', sourceType: 'milestone', isEpigenetic: true, ageInDays: 60 }, // negative trait, -2
+        { traitName: 'skittish', sourceType: 'environmental', isEpigenetic: false, ageInDays: 365 }, // negative trait, -1
       ];
 
       for (const trait of traitHistory) {
@@ -198,7 +201,7 @@ describe('Legacy Score Trait Integration System', () => {
             ageInDays: trait.ageInDays,
             groomId: null,
             bondScore: 50,
-            influenceScore: trait.traitName === 'sensitive' ? 5 : -3,
+            influenceScore: trait.traitName === 'resilient' ? 5 : -3,
           },
         });
       }
@@ -208,7 +211,7 @@ describe('Legacy Score Trait Integration System', () => {
       const traitScore = await calculateTraitScore(testHorse.id);
 
       // Should have penalties for negative traits
-      expect(traitScore.breakdown.negativeTraitPenalty).toBeLessThan(0);
+      expect(traitScore.breakdown.negativeTraitPenalty).toBe(-3);
       expect(traitScore.totalScore).toBeLessThan(10); // Lower due to negative traits
     });
 
