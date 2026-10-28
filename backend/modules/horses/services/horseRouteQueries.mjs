@@ -66,6 +66,9 @@ export const HORSE_LIST_SELECT = Object.freeze({
   // Cooldown column and row portrait read these.
   lastShod: true,
   trainingCooldown: true,
+  // Equoria-y9kdl (STA-01): the Home and side-panel Needs Care counts read the
+  // groomed date; without it every listed horse counted as never groomed.
+  lastGroomed: true,
   imageUrl: true,
   // Equoria-q4uem.9 slice 6: the player's stud listing and the breeding state
   // the list derives breedingCooldownEndsAt / inFoal from.

@@ -14,7 +14,8 @@ import type { HorseSummary } from './types.js';
  * `description`, `traits`, `parentIds` or `tack`, and none of the other
  * detail-only care/pregnancy fields. It does send `imageUrl`, `lastShod` and
  * `trainingCooldown` (Equoria-9spb2, owner ruling 2026-10-23): the stable list
- * view's portrait, Shod chip and Cooldown column read them. Typing the list as HorseSummary let a list
+ * view's portrait, Shod chip and Cooldown column read them. It sends
+ * `lastGroomed` (Equoria-y9kdl): the Needs Care counts read it. Typing the list as HorseSummary let a list
  * consumer read any of those and get a silent `undefined`. The list is its own
  * type so a read of an absent field fails the type check.
  *
@@ -31,7 +32,6 @@ export type HorseListItemDto = Omit<
   | 'traits'
   | 'parentIds'
   | 'tack'
-  | 'lastGroomed'
   | 'earnings'
   | 'equippedFeedType'
   | 'pregnancySireId'

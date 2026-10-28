@@ -65,4 +65,42 @@ describe('horse list: shod date, training cooldown and portrait (Equoria-9spb2)'
     expect(row.imageUrl).toBe('/images/portraits/test-portrait.png');
     expect(row).not.toHaveProperty('level');
   }, 60000);
+
+  // Equoria-y9kdl (STA-01): the Home and side-panel Needs Care counts read the
+  // groomed date; without it in the list every horse counted as never groomed.
+  it('sends lastGroomed, so a horse groomed today is not counted as needing grooming', async () => {
+    const suffix = randomBytes(6).toString('hex');
+    const user = await prisma.user.create({
+      data: {
+        username: `${PREFIX}-g-${suffix}`,
+        email: `${PREFIX}-g-${suffix}@example.com`,
+        password: 'irrelevant-not-a-login-test',
+        firstName: 'List',
+        lastName: 'Groomed',
+        money: 1000,
+      },
+    });
+    const lastGroomed = new Date('2026-10-27T15:30:00.000Z');
+    const horse = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `${PREFIX}-groomed-${suffix}`,
+        sex: 'Mare',
+        dateOfBirth: gameCalendarDate(new Date(), -5 * 7),
+        age: 5,
+        userId: user.id,
+        lastGroomed,
+      },
+    });
+    cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
+    const token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+    const res = await request(app).get('/api/v1/horses').set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    const row = res.body.data.find(h => h.id === horse.id);
+    expect(row).toBeDefined();
+    expect(new Date(row.lastGroomed).toISOString()).toBe(lastGroomed.toISOString());
+  }, 60000);
 });
