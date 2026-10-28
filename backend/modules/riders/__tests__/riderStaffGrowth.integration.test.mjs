@@ -2,7 +2,7 @@
  * Rider growth (Equoria-xlw03) — owner rulings 2026-10-28 (q160, q177, q235, q244).
  *
  *   - Every rider is generated as a Rookie with 12 hidden items: 4 horse traits, 4
- *     disciplines and 2 temperaments, each positive or negative, and 2 favourite breeds
+ *     disciplines and 2 temperaments, each positive or negative, and 2 favorite breeds
  *     (positive only). A Rookie shows its personality only.
  *   - Shows completed level a rider up: 100 at Rookie, then 200, 300, 400 more (counted
  *     from the last level-up). Each level-up reveals 3 random items; Expert shows all.

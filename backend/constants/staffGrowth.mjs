@@ -5,7 +5,7 @@
  * Owner rulings 2026-10-28 (Stacey):
  *   q160 / q177  Every rider and groom is generated as a Rookie with hidden, active
  *                modifiers: a personality; 4 horse traits, each + or -; 4 disciplines,
- *                each + or -; 2 temperaments, each + or -; 2 favourite breeds (positive
+ *                each + or -; 2 temperaments, each + or -; 2 favorite breeds (positive
  *                only); everything else neutral. A Rookie shows its personality only.
  *                Each level-up reveals 3 random hidden items (no ordering preference);
  *                an Expert shows everything. Level-ups by shows completed: Rookie to

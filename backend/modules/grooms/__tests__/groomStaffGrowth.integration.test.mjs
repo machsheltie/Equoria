@@ -2,7 +2,7 @@
  * Groom growth (Equoria-xlw03) — owner rulings 2026-10-28 (q160, q177, q244).
  *
  *   - A hired groom is a Rookie with 12 hidden items (4 traits, 4 disciplines and 2
- *     temperaments, each + or -, and 2 favourite breeds); its profile shows its
+ *     temperaments, each + or -, and 2 favorite breeds); its profile shows its
  *     personality and nothing else.
  *   - (The conformation show count is tested beside the settlement:
  *     modules/competition/__tests__/conformationGroomGrowth.integration.test.mjs.)
