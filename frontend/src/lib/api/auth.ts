@@ -292,6 +292,8 @@ export const authApi = {
   updateProfile: (updates: {
     username?: string;
     bio?: string;
+    /** The stable's own name (Equoria-kgush); never renames the account. */
+    stableName?: string;
     avatarUrl?: string;
     notifications?: Record<string, boolean | string | number>;
     display?: Record<string, boolean | string | number>;
@@ -302,6 +304,7 @@ export const authApi = {
         username: string;
         email: string;
         bio?: string;
+        stableName?: string | null;
         avatarUrl?: string;
         notifications?: Record<string, boolean | string | number> | null;
         display?: Record<string, boolean | string | number> | null;

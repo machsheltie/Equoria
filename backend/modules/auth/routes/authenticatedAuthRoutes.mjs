@@ -58,6 +58,16 @@ router.put(
       .isLength({ max: 500 })
       .withMessage('Bio must be 500 characters or less')
       .escape(),
+    // Equoria-kgush (owner ruling 2026-10-28, q250): the stable's own name,
+    // separate from the username. Not escaped: an apostrophe ("Stacey's Barn")
+    // is a legitimate character; the controller strips markup instead.
+    body('stableName')
+      .optional()
+      .isString()
+      .withMessage('Stable name must be text')
+      .trim()
+      .isLength({ min: 3, max: 40 })
+      .withMessage('Stable name must be between 3 and 40 characters'),
     handleValidationErrors,
     sanitizeRequestData,
   ],

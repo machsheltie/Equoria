@@ -65,6 +65,20 @@ const stripControlChars = raw =>
     .join('');
 const sanitizeBio = raw => sanitizeInput(stripControlChars(raw));
 
+/** Stable-name length bounds (Equoria-kgush), checked after sanitizing. */
+const stableNameMinLength = 3;
+const stableNameMaxLength = 40;
+
+/**
+ * The stable's own name (Equoria-kgush, owner ruling 2026-10-28 q250): stored in
+ * User.settings JSONB beside bio, never in User.username. Null until the player
+ * names her stable.
+ */
+const readStableName = settings =>
+  typeof settings.stableName === 'string' && settings.stableName.length > 0
+    ? settings.stableName
+    : null;
+
 /**
  * Get current user profile.
  */
@@ -116,6 +130,7 @@ export const getProfile = async (req, res, next) => {
     // column — that field belongs to Groom/Rider). Stored/read here alongside
     // notifications + display, matching the existing profile-data pattern.
     const bio = typeof settings.bio === 'string' ? settings.bio : '';
+    const stableName = readStableName(settings);
 
     // Story 21S-5: flatten user preferences for the /settings page
     const preferences =
@@ -139,6 +154,7 @@ export const getProfile = async (req, res, next) => {
           // Equoria-pnd1z: bio (from settings JSONB); '' default so the
           // controlled profile input binds cleanly.
           bio,
+          stableName,
           money: user.money,
           level: user.level,
           xp: user.xp,
@@ -169,7 +185,7 @@ export const getProfile = async (req, res, next) => {
  */
 export const updateProfile = async (req, res, next) => {
   try {
-    const { username, email, bio, notifications, display } = req.body;
+    const { username, email, bio, stableName, notifications, display } = req.body;
 
     const hasPreferenceUpdate =
       (notifications !== undefined && notifications !== null) ||
@@ -177,10 +193,28 @@ export const updateProfile = async (req, res, next) => {
     // Equoria-pnd1z: bio is an editable identity field. `undefined` means "not
     // submitted" (leave unchanged); an empty string is a legitimate clear.
     const hasBioUpdate = bio !== undefined;
+    // Equoria-kgush: the stable name is its own field; it never touches username.
+    const hasStableNameUpdate = stableName !== undefined;
 
     // Validate input
-    if (!username && !email && !hasPreferenceUpdate && !hasBioUpdate) {
+    if (!username && !email && !hasPreferenceUpdate && !hasBioUpdate && !hasStableNameUpdate) {
       throw new ValidationError('At least one field is required');
+    }
+
+    let cleanStableName = null;
+    if (hasStableNameUpdate) {
+      if (typeof stableName !== 'string') {
+        throw new ValidationError('stableName must be a string');
+      }
+      cleanStableName = sanitizeBio(stableName);
+      if (
+        cleanStableName.length < stableNameMinLength ||
+        cleanStableName.length > stableNameMaxLength
+      ) {
+        throw new ValidationError(
+          `Stable name must be between ${stableNameMinLength} and ${stableNameMaxLength} characters`,
+        );
+      }
     }
 
     // Equoria-pnd1z: server-authoritative bio validation (string + 500-char
@@ -261,6 +295,9 @@ export const updateProfile = async (req, res, next) => {
     // concurrent changes to different fields of the same key both survive.
     const settingsSet = {};
     const settingsMerge = {};
+    if (hasStableNameUpdate) {
+      settingsSet.stableName = cleanStableName;
+    }
     if (hasPreferenceUpdate || hasBioUpdate) {
       if (notifications !== undefined && notifications !== null) {
         settingsMerge.notifications = notifications;
@@ -324,6 +361,7 @@ export const updateProfile = async (req, res, next) => {
           username: updatedUser.username,
           email: updatedUser.email,
           bio: typeof updatedSettings.bio === 'string' ? updatedSettings.bio : '',
+          stableName: readStableName(updatedSettings),
           createdAt: updatedUser.createdAt,
           updatedAt: updatedUser.updatedAt,
           notifications: updatedSettings.notifications ?? null,

@@ -39,6 +39,11 @@ export interface User {
   lastName?: string;
   /** User bio for profile (max 500 characters) */
   bio?: string;
+  /**
+   * The stable's own name, separate from the username (Equoria-kgush, owner
+   * ruling 2026-10-28 q250). Null until the player names her stable.
+   */
+  stableName?: string | null;
   /** URL to user's avatar image */
   avatarUrl?: string;
   money?: number;

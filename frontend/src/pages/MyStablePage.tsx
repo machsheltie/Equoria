@@ -3,8 +3,13 @@
  *
  * Displays the player's stable profile (name, banner, bio, stats) and a
  * Legacy Hall of Fame showcasing retired horses.
- * Distinct from ProfilePage (/profile) which handles account/auth settings.
  * Uses live horse/profile data and honest empty states.
+ *
+ * Equoria-kgush (owner ruling 2026-10-28, q250): the stable has its own name,
+ * separate from the username, and the player's page and the stable's page are
+ * one page — the stable name is edited on the Profile page (/profile). This
+ * page only shows it; it has no edit form, so nothing here can rename the
+ * account.
  *
  * Design-system migration (Equoria-o5hub.20): renamed "My Stable" →
  * "Stable Profile" per D-27 (DECISIONS.md §10); PageHeader + PageContainer
@@ -21,14 +26,12 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Surface } from '@/components/ui/Surface';
 import Currency from '@/components/ui/Currency';
-import { Input } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { CanonicalTabs } from '@/components/ui/game';
 import { SectionLoading, ErrorState } from '@/components/ui/state';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { GoldBorderFrame } from '@/components/ui/GoldBorderFrame';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUpdateProfile } from '@/hooks/useAuth';
 import { useHorses } from '@/hooks/api/useHorses';
 import { useUserCompetitionStats } from '@/hooks/api/useUserCompetitionStats';
 import {
@@ -93,27 +96,7 @@ const StableProfileTab: React.FC<{
   rosterError: unknown;
   onRetryRoster: () => void;
   isCareerStatsError: boolean;
-  isEditing: boolean;
-  draftStableName: string;
-  onDraftStableNameChange: (_value: string) => void;
-  onStartEditing: () => void;
-  onCancelEditing: () => void;
-  onSave: () => void;
-  isSaving: boolean;
-}> = ({
-  stable,
-  rosterStatus,
-  rosterError,
-  onRetryRoster,
-  isCareerStatsError,
-  isEditing,
-  draftStableName,
-  onDraftStableNameChange,
-  onStartEditing,
-  onCancelEditing,
-  onSave,
-  isSaving,
-}) => (
+}> = ({ stable, rosterStatus, rosterError, onRetryRoster, isCareerStatsError }) => (
   <div className="space-y-6" data-testid="stable-profile-tab">
     {/* Stable Banner — Surface panel + role tokens (white/NN opacity removed, D-12) */}
     <Surface variant="panel" className="flex items-center gap-5">
@@ -127,31 +110,11 @@ const StableProfileTab: React.FC<{
           {rosterStatus === 'loading' ? 'Loading stable records...' : stable.bio}
         </p>
       </div>
-      {isEditing ? (
-        <div className="flex flex-col sm:flex-row gap-2">
-          {/* Canonical Input (D-13) — preserves the aria-label + controlled value */}
-          <Input
-            type="text"
-            value={draftStableName}
-            onChange={(event) => onDraftStableNameChange(event.target.value)}
-            aria-label="Stable profile name"
-          />
-          <Button
-            type="button"
-            onClick={onSave}
-            disabled={isSaving || draftStableName.trim().length < 3}
-          >
-            {isSaving ? 'Saving...' : 'Save'}
-          </Button>
-          <Button type="button" variant="secondary" onClick={onCancelEditing} disabled={isSaving}>
-            Cancel
-          </Button>
-        </div>
-      ) : (
-        <Button type="button" onClick={onStartEditing}>
-          Edit Profile
-        </Button>
-      )}
+      {/* The stable is named on the Profile page, the one player-and-stable page
+          (Equoria-kgush); saving it there never renames the account. */}
+      <Button asChild>
+        <Link to="/profile">Name your stable</Link>
+      </Button>
     </Surface>
 
     {/* Stable Statistics */}
@@ -215,7 +178,7 @@ const StableProfileTab: React.FC<{
         <p className="text-sm font-medium text-role-primary">View Active Horses</p>
         <p className="text-xs text-role-muted mt-0.5">See all horses currently in your stable</p>
       </div>
-      {/* Secondary tier — the gold primary on this surface is Edit Profile (D-08) */}
+      {/* Secondary tier — the gold primary on this surface is Name your stable (D-08) */}
       <Button asChild variant="secondary">
         <Link to="/stable">
           Go to Stable
@@ -347,9 +310,6 @@ const HallOfFameCard: React.FC<{ entry: HallOfFameEntry; rank: number }> = ({ en
 const MyStablePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<StableTab>('profile');
   const { user } = useAuth();
-  const updateProfile = useUpdateProfile();
-  const [isEditingStable, setIsEditingStable] = useState(false);
-  const [draftStableName, setDraftStableName] = useState(user?.username ?? '');
   const {
     data: horsesData,
     isError: isHorsesError,
@@ -422,7 +382,8 @@ const MyStablePage: React.FC = () => {
   const rosterReady = rosterStatus === 'ready';
 
   const stable: StableProfile = {
-    name: user?.username ? `${user.username}'s Stable` : 'My Stable',
+    // The stable's own name (Equoria-kgush); until she names it, her username's.
+    name: user?.stableName || (user?.username ? `${user.username}'s Stable` : 'My Stable'),
     founded: 'active account',
     bio: !rosterReady
       ? ''
@@ -438,24 +399,6 @@ const MyStablePage: React.FC = () => {
       totalEarnings: rosterReady ? totalEarnings : null,
       breedingPairs: rosterReady ? breedingPairs : null,
     },
-  };
-
-  const handleStartEditing = () => {
-    setDraftStableName(user?.username ?? '');
-    setIsEditingStable(true);
-  };
-
-  const handleSaveStableProfile = () => {
-    const username = draftStableName.trim();
-    if (username.length < 3) return;
-    updateProfile.mutate(
-      { username },
-      {
-        onSuccess: () => {
-          setIsEditingStable(false);
-        },
-      }
-    );
   };
 
   return (
@@ -495,13 +438,6 @@ const MyStablePage: React.FC = () => {
                   rosterError={horsesError}
                   onRetryRoster={() => void refetchHorses()}
                   isCareerStatsError={isCompetitionStatsError}
-                  isEditing={isEditingStable}
-                  draftStableName={draftStableName}
-                  onDraftStableNameChange={setDraftStableName}
-                  onStartEditing={handleStartEditing}
-                  onCancelEditing={() => setIsEditingStable(false)}
-                  onSave={handleSaveStableProfile}
-                  isSaving={updateProfile.isPending}
                 />
               ),
             },
@@ -529,7 +465,9 @@ const MyStablePage: React.FC = () => {
             <li>Horses retire on their 21st birthday and join the Hall of Fame</li>
             <li>Hall of Fame horses can be shown in breeding lineages for prestige</li>
             <li>Total earnings and win count contribute to your stable ranking</li>
-            <li>Edit your stable display name from this profile panel</li>
+            <li>
+              Name your stable on your Profile; your stable name is separate from your username
+            </li>
           </ul>
         </Surface>
       </div>

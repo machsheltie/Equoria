@@ -196,6 +196,20 @@ export const bioSchema = z
   .optional()
   .or(z.literal(''));
 
+/**
+ * Stable name validation schema (Equoria-kgush, owner ruling 2026-10-28 q250)
+ *
+ * The stable's own name, separate from the username. Optional: an empty field
+ * leaves an unnamed stable unnamed. Bounds match PUT /api/v1/auth/profile.
+ */
+export const stableNameSchema = z
+  .string()
+  .trim()
+  .min(3, 'Stable name must be at least 3 characters')
+  .max(40, 'Stable name must be at most 40 characters')
+  .optional()
+  .or(z.literal(''));
+
 // =============================================================================
 // Form Schemas
 // =============================================================================
@@ -329,6 +343,7 @@ export const resetPasswordSchema = z
 export const profileSchema = z.object({
   username: displayNameSchema,
   bio: bioSchema,
+  stableName: stableNameSchema,
 });
 
 /**

@@ -21,10 +21,15 @@
  * - Balance → canonical Currency (variant="balance").
  * - Page-local copyright footer removed — the DashboardLayout shell owns the
  *   app footer; the duplicate was an auth-layout leftover.
+ *
+ * Equoria-kgush (owner ruling 2026-10-28, q250): the player's page and her
+ * stable's page are one page. The stable has its own name, edited here beside
+ * the username; saving it never renames the account. A failed save is shown
+ * at the form.
  */
 
 import React, { useState, useEffect } from 'react';
-import { User, FileText, Save, X } from 'lucide-react';
+import { User, FileText, Save, X, Home } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Surface } from '@/components/ui/Surface';
@@ -46,7 +51,13 @@ import { useUserCompetitionStats } from '../hooks/api/useUserCompetitionStats';
 
 const ProfilePage: React.FC = () => {
   const { data: profileData, isLoading, isError, refetch } = useProfile();
-  const { mutate: updateProfile, isPending } = useUpdateProfile();
+  const {
+    mutate: updateProfile,
+    isPending,
+    isError: isSaveError,
+    error: saveError,
+    reset: resetSave,
+  } = useUpdateProfile();
   const userId = profileData?.user?.id ?? 0;
   const {
     data: activityItems = [],
@@ -74,6 +85,7 @@ const ProfilePage: React.FC = () => {
   const [formData, setFormData] = useState<ProfileFormData>({
     username: '',
     bio: '',
+    stableName: '',
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
@@ -82,6 +94,7 @@ const ProfilePage: React.FC = () => {
       setFormData({
         username: profileData.user.username || '',
         bio: profileData.user.bio || '',
+        stableName: profileData.user.stableName ?? '',
       });
     }
   }, [profileData]);
@@ -111,7 +124,10 @@ const ProfilePage: React.FC = () => {
       setValidationErrors(errors);
       return;
     }
-    updateProfile(result.data);
+    // An empty stable name leaves an unnamed stable unnamed; it is never sent
+    // as the username (Equoria-kgush).
+    const { stableName, ...identity } = result.data;
+    updateProfile(stableName ? { ...identity, stableName } : identity);
   };
 
   const handleCancel = () => {
@@ -119,9 +135,11 @@ const ProfilePage: React.FC = () => {
       setFormData({
         username: profileData.user.username || '',
         bio: profileData.user.bio || '',
+        stableName: profileData.user.stableName ?? '',
       });
     }
     setValidationErrors({});
+    resetSave();
   };
 
   const bioCharactersRemaining = VALIDATION_RULES.bio.maxLength - (formData.bio?.length || 0);
@@ -192,6 +210,14 @@ const ProfilePage: React.FC = () => {
             </div>
 
             {/* Success and error feedback handled via toast notifications (AC-5, AC-6) */}
+
+            {/* The stable's own name (Equoria-kgush): this page is the stable's page */}
+            <Surface variant="subtle" className="px-3 py-2" data-testid="profile-stable-row">
+              <p className="type-label mb-0.5">Stable</p>
+              <p className="text-sm text-role-primary break-words">
+                {profileData?.user?.stableName || 'Not yet named'}
+              </p>
+            </Surface>
 
             {/* Email (read-only) */}
             <Surface variant="subtle" className="px-3 py-2" data-testid="profile-email-row">
@@ -331,6 +357,30 @@ const ProfilePage: React.FC = () => {
                 )}
               </FormField>
 
+              {/* Stable Name — the stable's own name, never the username (Equoria-kgush) */}
+              <FormField
+                label="Stable Name"
+                htmlFor="stableName"
+                error={validationErrors.stableName}
+              >
+                {(fieldProps) => (
+                  <div className="relative">
+                    <Home className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-role-muted pointer-events-none" />
+                    <Input
+                      {...fieldProps}
+                      name="stableName"
+                      type="text"
+                      placeholder="Name your stable"
+                      value={formData.stableName ?? ''}
+                      onChange={handleChange}
+                      maxLength={40}
+                      autoComplete="off"
+                      className="pl-10"
+                    />
+                  </div>
+                )}
+              </FormField>
+
               {/* Bio */}
               <div className="space-y-1">
                 <FormField
@@ -381,6 +431,11 @@ const ProfilePage: React.FC = () => {
                   {UI_TEXT.profile.saveButton}
                 </Button>
               </div>
+              {isSaveError && (
+                <InlineError
+                  message={`Your profile was not saved. ${userMessageFor(saveError).message}`}
+                />
+              )}
             </form>
           </Surface>
         </div>
