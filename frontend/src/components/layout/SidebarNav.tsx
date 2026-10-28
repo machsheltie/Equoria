@@ -36,6 +36,7 @@ function readStoredCollapsed(): boolean {
   try {
     return window.localStorage.getItem(storageKey) === 'true';
   } catch {
+    // swallowed-catch: storage-guard - blocked storage only loses the remembered collapse; start expanded.
     return false;
   }
 }
@@ -44,7 +45,7 @@ function writeStoredCollapsed(value: boolean): void {
   try {
     window.localStorage.setItem(storageKey, String(value));
   } catch {
-    /* storage blocked — non-fatal */
+    // swallowed-catch: storage-guard - blocked storage only forgets the collapse; the menu still collapses.
   }
 }
 
@@ -64,7 +65,7 @@ function writeStoredThread(realm: NavRealmId, value: boolean): void {
   try {
     window.localStorage.setItem(threadKey(realm), String(value));
   } catch {
-    /* storage blocked — non-fatal */
+    // swallowed-catch: storage-guard - blocked storage only forgets the open thread; it still opens.
   }
 }
 

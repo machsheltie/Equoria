@@ -19,9 +19,7 @@ import {
 } from '../../modules/horses/routes/_validators.mjs';
 import logger from '../../utils/logger.mjs';
 import { parsePaginationParams, buildPaginatedResponse } from '../../utils/paginationHelper.mjs';
-import { getHorseShowResults } from '../../modules/competition/index.mjs';
-import prisma from '../../../packages/database/prismaClient.mjs';
-import { getHorseVisit } from './horseVisitQuery.mjs';
+import { getHorseVisit, getHorseVisitShowResults } from './horseVisitQuery.mjs';
 
 const router = express.Router();
 
@@ -60,13 +58,12 @@ router.get(
   async (req, res) => {
     try {
       const horseId = Number.parseInt(req.params.id, 10);
-      const horse = await prisma.horse.findUnique({ where: { id: horseId }, select: { id: true } });
-      if (!horse) {
+      const { page, limit, skip } = parsePaginationParams(req, { defaultLimit: 50, maxLimit: 100 });
+      const ledger = await getHorseVisitShowResults(horseId, { skip, take: limit });
+      if (!ledger) {
         return res.status(404).json({ success: false, message: 'Horse not found', status: 'fail' });
       }
-      const { page, limit, skip } = parsePaginationParams(req, { defaultLimit: 50, maxLimit: 100 });
-      const { rows, total } = await getHorseShowResults(horseId, { skip, take: limit });
-      return buildPaginatedResponse(res, rows, { page, limit, total });
+      return buildPaginatedResponse(res, ledger.rows, { page, limit, total: ledger.total });
     } catch (error) {
       logger.error(`[horseVisitRoutes GET /:id/visit/show-results] ${error.message}`);
       return res.status(500).json({ success: false, message: 'Internal server error' });

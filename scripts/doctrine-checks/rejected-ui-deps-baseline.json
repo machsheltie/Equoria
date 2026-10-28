@@ -5,7 +5,7 @@
   "frontend/src/components/theme/__tests__/CelestialThemeProvider.test.tsx": { "sonner": 1 },
   "frontend/src/components/ui/sonner.tsx": { "sonner": 1 },
   "frontend/src/hooks/api/useCrafting.ts": { "sonner": 1, "toast()": 2 },
-  "frontend/src/hooks/api/useGrooms.ts": { "sonner": 1, "toast()": 2 },
+  "frontend/src/hooks/api/useGrooms.ts": { "sonner": 1, "toast()": 1 },
   "frontend/src/hooks/api/useMarketplace.ts": { "sonner": 1, "toast()": 5 },
   "frontend/src/hooks/api/useTrainers.ts": { "sonner": 1, "toast()": 2 },
   "frontend/src/hooks/useAuth.ts": { "sonner": 1, "toast()": 2 },

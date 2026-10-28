@@ -46,10 +46,5 @@ export function prefersReducedMotion(): boolean {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return false;
   }
-  try {
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  } catch {
-    // Environment guard: a browser that cannot evaluate the query has no OS preference to honour.
-    return false;
-  }
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }

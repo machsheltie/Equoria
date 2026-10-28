@@ -37,6 +37,7 @@ import { withHealth } from '../../utils/horseHealth.mjs';
 import { getHorseAgeYears } from '../../utils/horseAge.mjs';
 import { asFlagObject } from '../../utils/jsonbArrayGuard.mjs';
 import { withoutUnrevealedTraits } from '../../modules/breeding/index.mjs';
+import { getHorseShowResults } from '../../modules/competition/index.mjs';
 import { dormantTraitKeys, publicTraitModifiers } from '../../utils/publicTraitView.mjs';
 import { playerTraitDefinition } from '../../utils/epigeneticTraits.mjs';
 import { calculateOverallConformation } from '../../modules/horses/index.mjs';
@@ -294,4 +295,20 @@ export async function getHorseVisit(horseId, viewerId) {
     forSale: row.forSale === true,
     salePrice: row.forSale === true ? row.salePrice : null,
   };
+}
+
+/**
+ * One page of a horse's show ledger for a visitor, or null when there is no
+ * such horse (q205: the same rows and paging as the owner's ledger).
+ *
+ * @param {number} horseId
+ * @param {{ skip: number, take: number }} page
+ * @returns {Promise<{ rows: object[], total: number } | null>}
+ */
+export async function getHorseVisitShowResults(horseId, { skip, take }) {
+  const horse = await prisma.horse.findUnique({ where: { id: horseId }, select: { id: true } });
+  if (!horse) {
+    return null;
+  }
+  return getHorseShowResults(horseId, { skip, take });
 }
