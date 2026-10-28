@@ -66,15 +66,8 @@ export function buildSignedTokenPair(userId, familyId, role) {
   const timestamp = Date.now();
   const nanoTime = process.hrtime.bigint();
   const randomBytes = crypto.randomBytes(16).toString('hex');
-  const accessJti = `access-${timestamp}-${nanoTime}-${randomBytes}`;
   const refreshJti = `refresh-${timestamp}-${nanoTime}-${randomBytes}`;
-  const accessPayload = {
-    userId,
-    ...(role ? { role } : {}),
-    type: 'access',
-    jti: accessJti,
-    iat: Math.floor(Date.now() / 1000),
-  };
+  const accessToken = buildSignedAccessToken(userId, familyId, role);
   const refreshPayload = {
     userId,
     type: 'refresh',
@@ -82,15 +75,34 @@ export function buildSignedTokenPair(userId, familyId, role) {
     jti: refreshJti,
     iat: Math.floor(Date.now() / 1000),
   };
-  const accessToken = jwt.sign(accessPayload, process.env.JWT_SECRET, {
-    algorithm: 'HS256',
-    expiresIn: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY,
-  });
   const refreshToken = jwt.sign(refreshPayload, process.env.JWT_REFRESH_SECRET, {
     algorithm: 'HS256',
     expiresIn: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
   });
   return { accessToken, refreshToken };
+}
+
+/**
+ * Sign one access token for a sign-in. Pure — no DB I/O.
+ *
+ * Equoria-yrixa: the token names its sign-in (`familyId`, the refresh-token
+ * family), so ending that sign-in (logout, reuse, the oldest of more than five)
+ * also ends its access tokens — see utils/sessionFamilies.mjs.
+ */
+export function buildSignedAccessToken(userId, familyId, role) {
+  const randomBytes = crypto.randomBytes(16).toString('hex');
+  const accessPayload = {
+    userId,
+    ...(role ? { role } : {}),
+    type: 'access',
+    familyId,
+    jti: `access-${Date.now()}-${process.hrtime.bigint()}-${randomBytes}`,
+    iat: Math.floor(Date.now() / 1000),
+  };
+  return jwt.sign(accessPayload, process.env.JWT_SECRET, {
+    algorithm: 'HS256',
+    expiresIn: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY,
+  });
 }
 
 /**

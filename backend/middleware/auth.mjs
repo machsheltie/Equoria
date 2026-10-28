@@ -5,6 +5,7 @@ import { AppError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { MS_PER_WEEK } from '../constants/time.mjs';
+import { isSessionOpen } from '../utils/sessionFamilies.mjs';
 import { cachedAccountStanding, satisfiesRole, standingRefusal } from '../modules/staff/index.mjs';
 
 /**
@@ -300,6 +301,26 @@ export const authenticateToken = async (req, res, next) => {
           `[auth:${requestId}] Request refused: account ${standing.state} for user ${user.id}`,
         );
         return res.status(refusal.status).json(refusal.body);
+      }
+    }
+
+    // Equoria-yrixa / Equoria-wj4bc: refuse an access token whose session has
+    // ended (logout, reuse revocation, or the oldest of more than five). Tokens
+    // without a familyId claim (issued before this change) expire on their own
+    // 15-minute TTL. Fail closed on a lookup error.
+    if (typeof decoded.familyId === 'string' && typeof user.id === 'string' && user.id) {
+      let open;
+      try {
+        open = await isSessionOpen(decoded.familyId, user.id);
+      } catch (lookupError) {
+        logger.error(
+          `[auth:${requestId}] session lookup failed for user ${user.id}: ${lookupError.message}`,
+        );
+        return respondUnauthorized('Authentication unavailable. Please retry.');
+      }
+      if (!open) {
+        logger.warn(`[auth:${requestId}] Token rejected: session ended for user ${user.id}`);
+        return respondUnauthorized('Session ended. Please login again.');
       }
     }
 

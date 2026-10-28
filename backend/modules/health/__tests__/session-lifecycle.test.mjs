@@ -190,11 +190,12 @@ describe('Session Lifecycle Management', () => {
   }, 120000);
 
   describe('CWE-384: Token Regeneration on Login', () => {
-    it('should delete all existing refresh tokens on login', async () => {
-      // Create some existing tokens for the user
-      await createTokenPair(testUser.id);
-      await createTokenPair(testUser.id);
-      await createTokenPair(testUser.id);
+    // Equoria-wj4bc: was "a login deletes every earlier refresh token"; owner
+    // ruling q180 (2026-10-28): up to five sessions stay signed in.
+    it('should start a new session on login and leave the other devices signed in', async () => {
+      // Three other devices' sessions
+      const earlier = [await createTokenPair(testUser.id), await createTokenPair(testUser.id)];
+      earlier.push(await createTokenPair(testUser.id));
 
       // Verify tokens exist
       const tokensBefore = await prisma.refreshToken.count({
@@ -214,11 +215,11 @@ describe('Session Lifecycle Management', () => {
 
       expect(response.body.success).toBe(true);
 
-      // Verify only ONE new token exists (old ones deleted)
-      const tokensAfter = await prisma.refreshToken.count({
-        where: { userId: testUser.id },
-      });
-      expect(tokensAfter).toBe(1);
+      // Earlier sessions untouched; the login added a NEW family (CWE-384)
+      const tokensAfter = await prisma.refreshToken.findMany({ where: { userId: testUser.id } });
+      expect(tokensAfter.every(t => t.isActive && !t.isInvalidated)).toBe(true);
+      expect(new Set(tokensAfter.map(t => t.familyId)).size).toBe(4);
+      expect(tokensAfter.filter(t => earlier.some(p => p.familyId === t.familyId))).toHaveLength(3);
     });
 
     it('should create fresh token pair on login', async () => {
@@ -258,10 +259,11 @@ describe('Session Lifecycle Management', () => {
   });
 
   describe('CWE-613: Token Cleanup on Logout', () => {
-    it('should delete all refresh tokens on logout', async () => {
-      // Create tokens
-      await createTokenPair(testUser.id);
-      await createTokenPair(testUser.id);
+    // Equoria-wj4bc / yrixa: was "logout deletes every refresh token"; owner
+    // ruling q180: logout ends only the session it was sent from.
+    it("should delete the logged-out session's refresh tokens and keep the other devices'", async () => {
+      // Create tokens (two other devices)
+      const earlier = [await createTokenPair(testUser.id), await createTokenPair(testUser.id)];
 
       // Verify tokens exist
       const tokensBefore = await prisma.refreshToken.count({
@@ -302,11 +304,9 @@ describe('Session Lifecycle Management', () => {
 
       expect(response.body.success).toBe(true);
 
-      // Verify all tokens deleted
-      const tokensAfter = await prisma.refreshToken.count({
-        where: { userId: testUser.id },
-      });
-      expect(tokensAfter).toBe(0);
+      // The logged-out session's tokens are gone; the two other devices' remain
+      const tokensAfter = await prisma.refreshToken.findMany({ where: { userId: testUser.id } });
+      expect(tokensAfter.map(t => t.familyId).sort()).toEqual(earlier.map(p => p.familyId).sort());
     });
 
     it('should clear auth cookies on logout', async () => {
@@ -386,7 +386,7 @@ describe('Session Lifecycle Management', () => {
       const tokensBefore = await prisma.refreshToken.count({
         where: { userId: testUser.id },
       });
-      expect(tokensBefore).toBe(1); // Login creates 1 token (after deleting old ones)
+      expect(tokensBefore).toBe(3); // Equoria-wj4bc: login keeps the other sessions
 
       // Change password
       const newPassword = 'NewPassword456!';

@@ -10,9 +10,10 @@
  * construction.
  *
  * Security invariants this preserves:
- *   - CWE-384 (session fixation): existing refresh tokens for the user are
- *     deleted BEFORE the new token pair is created so the new login session
- *     is the only valid session.
+ *   - CWE-384 (session fixation): every login starts a NEW refresh-token
+ *     family and ends the session of the refresh cookie it replaces; other
+ *     devices stay signed in, at most five sessions (Equoria-wj4bc, owner
+ *     ruling q180 — see utils/sessionFamilies.mjs).
  *   - Equoria-ovp9: the role is passed into createTokenPair so requireRole()
  *     can skip a per-request DB lookup for admin-guarded routes.
  *   - Equoria-plw0h: the CSRF token is bound to user.id so the next
@@ -20,8 +21,7 @@
  *   - Brute-force rate-limit counter is reset on successful auth.
  */
 
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { createTokenPair } from '../../../utils/tokenRotationService.mjs';
+import { startSession } from '../../../utils/sessionFamilies.mjs';
 import { COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 import { issueCsrfToken } from '../../../middleware/csrf.mjs';
 import { resetAuthRateLimit } from '../../../middleware/authRateLimiter.mjs';
@@ -40,11 +40,11 @@ import { recordLoginSighting } from '../../staff/index.mjs';
 export async function issueAuthenticatedSession(req, res, user) {
   await recordLoginSighting(req, res, user.id);
 
-  // CWE-384: invalidate all existing sessions on a new login.
-  await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
-
-  // Equoria-ovp9: pass role so the access token carries it.
-  const tokenPair = await createTokenPair(user.id, undefined, user.role);
+  // CWE-384 / Equoria-wj4bc: a session of its own; Equoria-ovp9: the role
+  // rides in the access token.
+  const tokenPair = await startSession(user.id, user.role, {
+    presentedRefreshToken: req.cookies?.refreshToken,
+  });
   res.cookie('accessToken', tokenPair.accessToken, COOKIE_OPTIONS.accessToken);
   res.cookie('refreshToken', tokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
 

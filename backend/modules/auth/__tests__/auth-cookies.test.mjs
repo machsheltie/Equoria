@@ -11,6 +11,7 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
@@ -527,7 +528,14 @@ describe('Authentication with HttpOnly Cookies', () => {
       }
     });
 
-    it('should invalidate refresh tokens in database on logout', async () => {
+    // Equoria-wj4bc / yrixa: was "logout deletes every refresh token of the
+    // account"; owner ruling q180 (2026-10-28): other devices stay signed in,
+    // so logout deletes this session's refresh tokens only.
+    it("should delete this session's refresh tokens in database on logout", async () => {
+      const refreshCookie = authCookies.find(c => c.startsWith('refreshToken='));
+      const { familyId } = jwt.decode(refreshCookie.slice('refreshToken='.length));
+      expect(await prisma.refreshToken.count({ where: { familyId } })).toBe(1);
+
       await request(app)
         .post('/api/v1/auth/logout')
         .set('Origin', 'http://localhost:3000')
@@ -537,9 +545,9 @@ describe('Authentication with HttpOnly Cookies', () => {
         .set('X-Test-Email', testUserData.email)
         .expect(200);
 
-      // Verify refresh tokens are deleted
+      // Verify this session's refresh tokens are deleted
       const tokens = await prisma.refreshToken.findMany({
-        where: { userId: loggedInUser.id },
+        where: { userId: loggedInUser.id, familyId },
       });
 
       expect(tokens.length).toBe(0);

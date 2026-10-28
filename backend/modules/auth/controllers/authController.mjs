@@ -45,6 +45,7 @@ import {
   standingRefusal,
 } from '../../staff/index.mjs';
 import { createTokenPair, rotateRefreshToken } from '../../../utils/tokenRotationService.mjs';
+import { startSession, endSession } from '../../../utils/sessionFamilies.mjs';
 // Equoria-vhv3i: starter-horse creation extracted into
 // services/onboardingService.mjs (AC item 2). register() now calls
 // createStarterHorseForNewUser() instead of inlining the breed lookup +
@@ -372,16 +373,14 @@ export const login = async (req, res, next) => {
 
     await recordLoginSighting(req, res, user.id);
 
-    // ✅ CWE-384 MITIGATION: Invalidate ALL existing sessions for this user
-    // This prevents session fixation attacks by ensuring only the new login session is valid
-    await prisma.refreshToken.deleteMany({
-      where: { userId: user.id },
+    // Equoria-wj4bc (owner ruling q180): a new session of its own — a new
+    // refresh-token family, never an earlier session id (CWE-384). It replaces
+    // this browser's previous session; other devices stay signed in, up to five
+    // sessions, the oldest dropping off. Equoria-ovp9: the role rides in the
+    // access token so requireRole() can skip a DB lookup.
+    const tokenPair = await startSession(user.id, user.role, {
+      presentedRefreshToken: req.cookies?.refreshToken,
     });
-
-    // Create new token family for this login session.
-    // Equoria-ovp9: pass role so the access token carries it and requireRole()
-    // can skip the per-request DB lookup on admin-guarded routes.
-    const tokenPair = await createTokenPair(user.id, undefined, user.role);
 
     // Set httpOnly cookies for security (prevents XSS attacks)
     // Using centralized cookie configuration for consistency
@@ -472,9 +471,13 @@ export const refreshToken = async (req, res, next) => {
     const { newTokenPair } = rotationResult;
 
     // Set new tokens in httpOnly cookies
-    // Using centralized cookie configuration for consistency
+    // Using centralized cookie configuration for consistency. Equoria-wj4bc:
+    // the loser of a two-tab race gets an access token only; the winner's
+    // response carries the rotated refresh token into the shared cookie jar.
     res.cookie('accessToken', newTokenPair.accessToken, COOKIE_OPTIONS.accessToken);
-    res.cookie('refreshToken', newTokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
+    if (newTokenPair.refreshToken) {
+      res.cookie('refreshToken', newTokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
+    }
 
     // 21R-AUTH-3: rotate the CSRF cookie alongside the access/refresh
     // rotation and return the new token in the body so the next mutation
@@ -489,7 +492,7 @@ export const refreshToken = async (req, res, next) => {
       message: 'Token refreshed successfully',
       data: {
         // Tokens now in httpOnly cookies
-        rotated: true,
+        rotated: Boolean(newTokenPair.refreshToken),
         csrfToken,
       },
     });
@@ -512,9 +515,13 @@ export { getProfile, updateProfile, updateUserPreferences } from './profileContr
 
 export const logout = async (req, res, next) => {
   try {
+    // Equoria-wj4bc / Equoria-yrixa: end THIS session only — its refresh
+    // family and, through authenticateToken's session check, its access
+    // tokens. The player's other devices stay signed in.
     if (req.user && req.user.id) {
-      await prisma.refreshToken.deleteMany({
-        where: { userId: req.user.id },
+      await endSession(req.user.id, {
+        accessFamilyId: req.user.familyId,
+        presentedRefreshToken: req.cookies?.refreshToken,
       });
     }
 

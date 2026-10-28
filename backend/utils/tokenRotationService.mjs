@@ -28,6 +28,7 @@ import {
   buildSignedTokenPair,
   persistRefreshTokenWithRetry,
 } from './tokenCryptoHelpers.mjs';
+import { accessForConcurrentRotation, forgetSessions } from './sessionFamilies.mjs';
 
 // Re-export the token-crypto surface so existing consumers
 // (authController, cron tokenCleanupJob, the auth/groom/
@@ -293,6 +294,7 @@ export async function detectTokenReuse(token) {
  * Creates new token and invalidates old one
  */
 export async function rotateRefreshToken(oldToken) {
+  let validation = null;
   try {
     // First check for reuse
     const reuseDetection = await detectTokenReuse(oldToken);
@@ -317,7 +319,7 @@ export async function rotateRefreshToken(oldToken) {
     }
 
     // Validate old token
-    const validation = await validateRefreshToken(oldToken);
+    validation = await validateRefreshToken(oldToken);
 
     if (!validation.isValid) {
       return {
@@ -419,9 +421,29 @@ export async function rotateRefreshToken(oldToken) {
 
     // Concurrent-rotation race: a parallel request beat us to flipping
     // isActive. The other request already issued a fresh pair to the legit
-    // caller; the loser of the race returns a clean 401-equivalent without
+    // caller. Equoria-wj4bc: this request presented the token while it was
+    // still live (two tabs, one cookie jar), so it keeps its session with a
+    // new access token for the same family and no refresh token of its own.
+    // Without a live successor it returns a clean 401-equivalent, without
     // poisoning the audit log or invalidating the family.
     if (error?.code === 'CONCURRENT_ROTATION') {
+      const concurrent = await accessForConcurrentRotation(oldToken, validation?.decoded);
+      if (concurrent) {
+        logger.info('[TokenRotation] Concurrent rotation — the loser keeps its session', {
+          familyId: concurrent.familyId,
+        });
+        return {
+          success: true,
+          error: null,
+          newTokenPair: {
+            accessToken: concurrent.accessToken,
+            refreshToken: null,
+            familyId: concurrent.familyId,
+          },
+          userId: concurrent.userId,
+          familyInvalidated: false,
+        };
+      }
       logger.info('[TokenRotation] Concurrent rotation detected — losing request returns failure', {
         message: error.message,
       });
@@ -457,6 +479,8 @@ export async function invalidateTokenFamily(familyId) {
         isInvalidated: true,
       },
     });
+    // Equoria-wj4bc: the family's access tokens are refused from the next request.
+    forgetSessions([familyId]);
 
     // Get user info for logging
     const tokenRecord = await prisma.refreshToken.findFirst({
