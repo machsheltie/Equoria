@@ -6,6 +6,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import NotFoundError from '../../../errors/NotFoundError.mjs';
+import AppError from '../../../errors/AppError.mjs';
 // Equoria-95yrv: the cap, the rate and the refusal wording are the fee's, so they
 // are DEFINED with the fee and imported here. Two copies would drift.
 import {
@@ -41,6 +42,39 @@ export const ASSIGNMENT_CONFIG = {
   // The most horses one groom may be working at a time.
   MAX_HORSES_PER_GROOM,
 };
+
+/** Said to a player whose horse changed hands while the groom was being assigned. */
+export const horseNoLongerYours = 'That horse is no longer yours. Please reload your stable.';
+
+/**
+ * Re-check, inside the assignment transaction, that `userId` still owns the horse
+ * and still employs an active groom (Equoria-9e5ff, audit STAFF-15). The reads
+ * before the transaction can be stale: a horse sold (or a groom dismissed) between
+ * them and the create would otherwise be handed the former owner's groom.
+ *
+ * Locks the horse row, then the groom row (lock order Horse -> staff), so a sale
+ * or a dismissal either commits first and is seen here, or waits for the assignment.
+ *
+ * @param {object} tx - interactive transaction client
+ * @param {{ horseId: number, groomId: number, userId: string }} ids
+ * @returns {Promise<void>}
+ * @throws {AppError} statusCode 409 when the horse is no longer the caller's;
+ *   NotFoundError('Groom') when the groom is no longer theirs or no longer active
+ */
+export async function assertOwnerStillHoldsHorseAndGroomTx(tx, { horseId, groomId, userId }) {
+  const horse = await tx.$queryRaw`
+    SELECT "id" FROM "horses" WHERE "id" = ${horseId} AND "userId" = ${userId} FOR UPDATE`;
+  if (horse.length !== 1) {
+    throw new AppError(horseNoLongerYours, 409);
+  }
+  const groom = await tx.$queryRaw`
+    SELECT "id" FROM "grooms"
+    WHERE "id" = ${groomId} AND "userId" = ${userId} AND "isActive" = true AND "retired" = false
+    FOR UPDATE`;
+  if (groom.length !== 1) {
+    throw new NotFoundError('Groom');
+  }
+}
 
 /**
  * Get assignment limits for a groom
@@ -188,6 +222,9 @@ export async function createAssignment(groomId, horseId, userId, options = {}) {
       // Owner ruling 2026-10-23: no new staff for a retired horse. Locks the horse
       // row, so the nightly birthday release cannot slip between check and create.
       await assertHorseTakesNewStaffTx(tx, horseId);
+      // The reads above can be stale: the horse may have been sold, or the groom
+      // dismissed, since (Equoria-9e5ff).
+      await assertOwnerStillHoldsHorseAndGroomTx(tx, { horseId, groomId, userId });
       await assertGroomHasRoomForAnotherHorse(tx, groomId, validation.groom.name);
 
       // Replace existing assignment: end this horse's active groom assignments.

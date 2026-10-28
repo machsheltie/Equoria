@@ -72,6 +72,15 @@ export async function assignGroom(req, res) {
         data: null,
       });
     }
+    // A horse sold mid-request (409) or a groom no longer on staff (404), decided
+    // inside the assignment transaction (Equoria-9e5ff).
+    if (error?.statusCode === 409 || error?.statusCode === 404) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+        data: null,
+      });
+    }
     logger.error(`[groomController.assignGroom] Error: ${error.message}`);
     res.status(500).json({
       success: false,
