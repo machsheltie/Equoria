@@ -1,10 +1,14 @@
 /**
- * OverviewTab — Current Status ledger + trait chips.
+ * OverviewTab — Horse Details ledger + trait chips.
  * Equoria-kdduk: extracted from HorseDetailPage.tsx.
  *
- * Current Status (Equoria-0l0tq; owner rulings q71 2026-10-26): Health and
+ * Horse Details (Equoria-0l0tq; owner rulings q71 2026-10-26): Health and
  * Hunger bars and the Bond beside a care record of age, birth, sex and the Last
- * Shod / Last Trained / Last Groomed dates. A ledger, not a wall of tiles
+ * Shod / Last Trained / Last Groomed dates. Owner request 2026-10-28
+ * (Equoria-2w4yo): the section is titled "Horse Details" and, since the line
+ * under the horse's name is gone, carries Color, Breed (provisional, q206),
+ * Markings and Temperament directly below Gender — the same values the line
+ * showed: colour from the visible phenotype, never the hidden genotype. A ledger, not a wall of tiles
  * (PRODUCT.md structural anti-SaaS rules). Bond shows at every age; there is no
  * stress. The age reads in days while a horse is under 3 (Equoria-q4uzh).
  */
@@ -18,6 +22,9 @@ import { InlineError } from '@/components/ui/state';
 import { HealthLevelBar } from '@/components/horse/HealthLevelBar';
 import { useHorseCareStatus } from '@/hooks/api/useHorseCareStatus';
 import { userMessageFor } from '@/lib/http/userMessage';
+import { getBreedName } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import MarkingsPanel from '@/components/horse/MarkingsPanel';
 import type { Horse } from './HorseDetailPageTypes';
 import '@/styles/horseCare.css';
 
@@ -56,7 +63,10 @@ const CareDateRow: React.FC<{
 const isShoeOverdue = (lastShod: string | null | undefined): boolean =>
   !lastShod || gameDayIndex(new Date()) - gameDayIndex(lastShod) > 7;
 
-const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => {
+const OverviewTab: React.FC<{ horse: Horse; onOpenTemperamentReference?: () => void }> = ({
+  horse,
+  onOpenTemperamentReference,
+}) => {
   const careStatus = useHorseCareStatus(Number(horse.id));
   const care = careStatus.data;
 
@@ -64,7 +74,7 @@ const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     <div className="space-y-6" data-testid="horse-detail-overview">
       <section className="horse-status" aria-labelledby="horse-status-heading">
         <h3 id="horse-status-heading" className="type-section-heading mb-3">
-          Current Status
+          Horse Details
         </h3>
         <div className="horse-status__body">
           <div className="horse-status__condition">
@@ -118,6 +128,38 @@ const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             </LedgerRow>
             <LedgerRow label="Gender">
               <span className="capitalize">{horse.gender}</span>
+            </LedgerRow>
+            {/* Equoria-lsi5 + Equoria-iwy3 — phenotype.colorName is the visible
+                colour. Legacy horses (phenotype: null) never read 'Unknown';
+                'not recorded' is the honest fallback. */}
+            <LedgerRow label="Color" testId="horse-detail-color">
+              {horse.phenotype?.colorName ?? 'not recorded'}
+            </LedgerRow>
+            <LedgerRow label="Breed" testId="horse-detail-breed">
+              {getBreedName(horse.breed)}
+            </LedgerRow>
+            <LedgerRow label="Markings" testId="horse-detail-markings">
+              <MarkingsPanel markings={horse.markings} inline />
+            </LedgerRow>
+            {/* Equoria-8k7k + Equoria-876o — temperament with the reference
+                trigger; Equoria-1k4n — 'not recorded' for legacy horses. */}
+            <LedgerRow label="Temperament" testId="horse-temperament-line">
+              <span data-testid="horse-temperament-value">
+                {horse.temperament ?? 'not recorded'}
+              </span>
+              {onOpenTemperamentReference && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  onClick={onOpenTemperamentReference}
+                  className="text-xs h-auto p-0 ml-2"
+                  data-testid="temperament-reference-open"
+                  aria-label="Open temperament reference"
+                >
+                  Learn more
+                </Button>
+              )}
             </LedgerRow>
             {care && (
               <>

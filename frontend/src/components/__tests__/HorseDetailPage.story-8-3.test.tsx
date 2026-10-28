@@ -9,14 +9,15 @@
  * Uses MSW (Mock Service Worker) — no prop overrides or manual mocks.
  * Pattern follows Story 8.2 UserDashboard integration tests.
  *
- * NOTE: Text assertions use exact strings like 'Breed: Thoroughbred' rather
- * than broad regexes like /Thoroughbred/i to avoid matching parent container
- * elements that include the text as part of a longer string.
+ * Owner request 2026-10-28 (Equoria-2w4yo) removed the "Breed: … • Gender: …
+ * • Health: …" line under the horse's name; breed, gender and health are read
+ * from their rows in the Horse Details section instead, scoped by test id so a
+ * parent container never matches.
  */
 
 import React from 'react';
 import { describe, it, expect } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import HorseDetailPage from '../../pages/HorseDetailPage';
@@ -53,21 +54,21 @@ describe('HorseDetailPage — Story 8.3 Live Data', () => {
 
   it('renders horse breed from the API (AC: 2)', async () => {
     renderHorseDetailPage('1');
-    // The breed is rendered as "Breed: Thoroughbred" in a <span> element.
-    // Using exact string to avoid matching parent containers that also contain this text.
-    await waitFor(() => expect(screen.getByText('Breed: Thoroughbred')).toBeInTheDocument());
+    // Horse Details' Breed row.
+    expect(await screen.findByTestId('horse-detail-breed')).toHaveTextContent(/^Thoroughbred$/);
   });
 
   it('renders horse gender from the API (AC: 2)', async () => {
     renderHorseDetailPage('1');
-    // The gender is rendered as "Gender: stallion" in a <span> element.
-    await waitFor(() => expect(screen.getByText('Gender: stallion')).toBeInTheDocument());
+    // Horse Details' Gender row.
+    const details = await screen.findByRole('region', { name: 'Horse Details' });
+    expect(within(details).getByText('stallion')).toBeInTheDocument();
   });
 
   it('renders horse healthStatus from the API (AC: 2)', async () => {
     renderHorseDetailPage('1');
-    // The healthStatus is rendered as "Health: Good" in a <span> element.
-    await waitFor(() => expect(screen.getByText('Health: Good')).toBeInTheDocument());
+    // Horse Details' Health Status bar, always labelled in words.
+    expect(await screen.findByTestId('health-status-bar-label')).toHaveTextContent('Good');
   });
 
   it('renders a loading spinner before data arrives (AC: 6)', async () => {

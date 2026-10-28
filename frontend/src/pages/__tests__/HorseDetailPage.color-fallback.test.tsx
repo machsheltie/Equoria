@@ -1,7 +1,9 @@
 /**
  * HorseDetailPage — color readout fallback tests (Equoria-lsi5).
  *
- * Verifies the branches of the color readout on the page header:
+ * Verifies the branches of the color readout, which owner request 2026-10-28
+ * (Equoria-2w4yo) moved from the line under the horse's name into the Horse
+ * Details ledger's Color row (label in the row's <dt>, value in the <dd>):
  *   horse.phenotype?.colorName ?? 'not recorded'
  * (finalDisplayColor, the old fallback column, was dropped: Equoria-e66h.)
  *
@@ -113,8 +115,28 @@ describe('HorseDetailPage color readout fallback (Equoria-lsi5)', () => {
     });
     renderPage();
     const colorLine = await screen.findByTestId('horse-detail-color');
-    await waitFor(() => expect(colorLine).toHaveTextContent('Color: Bay'));
+    await waitFor(() => expect(colorLine).toHaveTextContent(/^Bay$/));
     expect(colorLine).not.toHaveTextContent('Unknown');
+  });
+
+  test('the line under the name is gone; colour and temperament read in Horse Details — Equoria-2w4yo', async () => {
+    // Owner request 2026-10-28: no "Breed: … • Color: … • Age: … • Gender: … •
+    // Health: …" line, temperament line or markings box under the horse's name.
+    global.fetch = makeFetch({
+      phenotype: { colorName: 'Bay', faceMarking: 'star' },
+      temperament: 'Spirited',
+    });
+    renderPage();
+    const details = await screen.findByRole('region', { name: 'Horse Details' });
+    await waitFor(() => expect(screen.getByTestId('horse-detail-color')).toHaveTextContent('Bay'));
+    expect(details).toContainElement(screen.getByTestId('horse-detail-color'));
+    expect(details).toContainElement(screen.getByTestId('horse-temperament-value'));
+    expect(details).toContainElement(screen.getByTestId('markings-face-value'));
+    for (const prefix of [/Breed:/, /Color:/, /Age:/, /Gender:/, /Health:/, /Temperament:/]) {
+      expect(screen.queryByText(prefix)).not.toBeInTheDocument();
+    }
+    expect(screen.queryByTestId('horse-detail-age')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('markings-panel-title')).not.toBeInTheDocument();
   });
 
   test("renders 'not recorded' (never 'Unknown') when the phenotype is absent — Equoria-iwy3", async () => {
@@ -126,7 +148,7 @@ describe('HorseDetailPage color readout fallback (Equoria-lsi5)', () => {
     });
     renderPage();
     const colorLine = await screen.findByTestId('horse-detail-color');
-    await waitFor(() => expect(colorLine).toHaveTextContent('Color: not recorded'));
+    await waitFor(() => expect(colorLine).toHaveTextContent(/^not recorded$/));
     // Sentinel-positive: the literal 'Unknown' must never appear in the color line.
     expect(colorLine).not.toHaveTextContent('Unknown');
   });
@@ -141,7 +163,7 @@ describe('HorseDetailPage color readout fallback (Equoria-lsi5)', () => {
     renderPage();
     const colorLine = await screen.findByTestId('horse-detail-color');
     // Should fall through to 'not recorded', NOT crash and NOT read [0].
-    await waitFor(() => expect(colorLine).toHaveTextContent('Color: not recorded'));
+    await waitFor(() => expect(colorLine).toHaveTextContent(/^not recorded$/));
   });
 
   // Equoria-1k4n — the temperament line in the same header block previously

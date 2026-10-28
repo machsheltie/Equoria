@@ -50,7 +50,6 @@ function renderCard(extra: Record<string, unknown>) {
           onStartEdit={() => {}}
           onCancelEdit={() => {}}
           onChangeEditName={() => {}}
-          onOpenTemperamentReference={() => {}}
           refetch={() => {}}
         />
       </MemoryRouter>

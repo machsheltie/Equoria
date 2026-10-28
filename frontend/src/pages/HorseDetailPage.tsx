@@ -252,7 +252,6 @@ const HorseDetailPage: React.FC = () => {
             }}
             onCancelEdit={() => setIsEditing(false)}
             onChangeEditName={setEditName}
-            onOpenTemperamentReference={() => setShowTemperamentReference(true)}
             refetch={refetch}
           />
         </div>
@@ -311,7 +310,10 @@ const HorseDetailPage: React.FC = () => {
               ))}
             </TabsList>
             <TabsContent value="overview" className="mt-0 p-6">
-              <OverviewTab horse={horse} />
+              <OverviewTab
+                horse={horse}
+                onOpenTemperamentReference={() => setShowTemperamentReference(true)}
+              />
             </TabsContent>
             <TabsContent value="disciplines" className="mt-0 p-6">
               <DisciplinesTab horse={horse} />

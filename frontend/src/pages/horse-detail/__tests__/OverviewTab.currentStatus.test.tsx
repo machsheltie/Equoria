@@ -1,7 +1,8 @@
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { server } from '../../../test/msw/server';
@@ -17,6 +18,11 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
  * Trained / Last Groomed dates. Shod more than a week ago glows red; Trained and
  * Groomed glow green when the SERVER says the horse can be trained / groomed now.
  * Driven against HTTP-level MSW overrides of the real /overview endpoint.
+ *
+ * Owner request 2026-10-28 (Equoria-2w4yo) changed this section's contract: the
+ * old heading "Current Status" is now "Horse Details", and the facts from the
+ * removed line under the horse's name (Color, Breed — provisional, q206 —
+ * Markings, Temperament) sit directly below Age / Date of Birth / Gender.
  */
 
 const HORSE: Horse = {
@@ -52,7 +58,79 @@ const renderTab = (horse: Horse = HORSE) => {
   );
 };
 
-describe('OverviewTab Current Status (Equoria-0l0tq)', () => {
+describe('OverviewTab Horse Details (Equoria-2w4yo)', () => {
+  const detailed: Horse = {
+    ...HORSE,
+    temperament: 'Spirited',
+    phenotype: { colorName: 'Dapple Grey' },
+    markings: { faceMarking: 'blaze', legMarkings: { frontLeft: 'sock' } },
+  };
+
+  it('is titled "Horse Details", no longer "Current Status"', () => {
+    overview({ lastShod: null, lastTrainedAt: null, lastGroomed: null });
+    renderTab(detailed);
+    expect(screen.getByRole('heading', { name: 'Horse Details' })).toBeInTheDocument();
+    expect(screen.queryByText('Current Status')).not.toBeInTheDocument();
+  });
+
+  it('lists Color, Breed, Markings and Temperament directly below Age, Date of Birth and Gender', async () => {
+    overview({ lastShod: null, lastTrainedAt: null, lastGroomed: null });
+    renderTab(detailed);
+    await screen.findByTestId('last-shod');
+
+    const section = screen.getByRole('region', { name: 'Horse Details' });
+    const labels = within(section)
+      .getAllByRole('term')
+      .map((dt) => dt.textContent);
+    expect(labels).toEqual([
+      'Age',
+      'Date of Birth',
+      'Gender',
+      'Color',
+      'Breed',
+      'Markings',
+      'Temperament',
+      'Last Shod',
+      'Last Trained',
+      'Last Groomed',
+    ]);
+
+    // The visible colour from the phenotype, the breed by name, the markings in
+    // their authored words, the temperament as stored and shown before.
+    expect(screen.getByTestId('horse-detail-color')).toHaveTextContent(/^Dapple Grey$/);
+    expect(screen.getByTestId('horse-detail-breed')).toHaveTextContent(/^Thoroughbred$/);
+    expect(screen.getByTestId('markings-face-value')).toHaveTextContent('Blaze');
+    expect(screen.getByTestId('markings-legs')).toHaveTextContent('FL: Sock');
+    expect(screen.queryByTestId('markings-panel-title')).not.toBeInTheDocument();
+    expect(screen.getByTestId('horse-temperament-value')).toHaveTextContent('Spirited');
+  });
+
+  it('says "not recorded" for a legacy horse with no colour, markings or temperament', () => {
+    overview({ lastShod: null, lastTrainedAt: null, lastGroomed: null });
+    renderTab({ ...HORSE, phenotype: null, markings: null, temperament: null });
+    expect(screen.getByTestId('horse-detail-color')).toHaveTextContent(/^not recorded$/);
+    expect(screen.getByTestId('horse-detail-markings')).toHaveTextContent(/^not recorded$/);
+    expect(screen.getByTestId('horse-temperament-value')).toHaveTextContent(/^not recorded$/);
+    expect(screen.queryByText(/unknown/i)).not.toBeInTheDocument();
+  });
+
+  it('opens the temperament reference from the Temperament row', async () => {
+    overview({ lastShod: null, lastTrainedAt: null, lastGroomed: null });
+    const onOpen = vi.fn();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <OverviewTab horse={detailed} onOpenTemperamentReference={onOpen} />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Open temperament reference' }));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('OverviewTab Horse Details care status (Equoria-0l0tq)', () => {
   it('shows the Health Status and Hunger Status bars filled by level, each labelled', async () => {
     overview({ lastShod: null, lastTrainedAt: null, lastGroomed: null });
     renderTab();

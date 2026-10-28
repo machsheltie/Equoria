@@ -114,8 +114,10 @@ describe('HorseDetailPage for a foal (Equoria-jaeot)', () => {
     servePage();
     renderPage();
 
-    expect(await screen.findByTestId('horse-detail-age')).toHaveTextContent('Age: 4 days');
-    expect(screen.getByTestId('horse-age')).toHaveTextContent('4 days old');
+    // Owner request 2026-10-28 (Equoria-2w4yo): the line under the name is gone,
+    // so the age is said once, in Horse Details.
+    expect(await screen.findByTestId('horse-age')).toHaveTextContent('4 days old');
+    expect(screen.queryByTestId('horse-detail-age')).not.toBeInTheDocument();
     expect(screen.getByTestId('horse-bond')).toHaveTextContent('15');
 
     const care = screen.getByTestId('horse-care');

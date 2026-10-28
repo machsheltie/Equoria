@@ -1,7 +1,9 @@
 /**
  * HorseProfileCard — top-of-page profile card (portrait, name + inline
- * rename, badges/ribbons, attribute line, temperament, markings, in-foal
- * panel, quick-stats summary).
+ * rename, badges/ribbons, in-foal panel, quick-stats summary).
+ * Owner request 2026-10-28 (Equoria-2w4yo): the line under the name that
+ * listed breed, color, age, gender, health, temperament and markings is gone;
+ * those facts live in the Overview tab's Horse Details ledger.
  * Equoria-kdduk: extracted from HorseDetailPage.tsx.
  *
  * Design-system migration (Equoria-o5hub.20): the identity block (portrait,
@@ -18,12 +20,8 @@ import { IconButton } from '@/components/ui/IconButton';
 import { EntityHeader } from '@/components/layout/EntityHeader';
 import { Surface } from '@/components/ui/Surface';
 import HealthBadge from '../../components/horse/HealthBadge';
-import { healthLabel } from '@/lib/healthWords';
-import MarkingsPanel from '../../components/horse/MarkingsPanel';
 import PregnancyFeedingPanel from '../../components/horse/PregnancyFeedingPanel';
 import { getHorseImage, getHorseImageStyle } from '@/lib/breed-images';
-import { getBreedName } from '@/lib/utils';
-import { horseAgeShort } from '@/lib/horseAgeWords';
 import { useRenameHorse } from '../../hooks/api/useHorses';
 import { InlineError } from '@/components/ui/state/InlineError';
 import {
@@ -44,7 +42,6 @@ interface HorseProfileCardProps {
   onStartEdit: () => void;
   onCancelEdit: () => void;
   onChangeEditName: (value: string) => void;
-  onOpenTemperamentReference: () => void;
   refetch: () => void;
 }
 
@@ -56,7 +53,6 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
   onStartEdit,
   onCancelEdit,
   onChangeEditName,
-  onOpenTemperamentReference,
   refetch,
 }) => {
   const renameHorseMutation = useRenameHorse();
@@ -156,52 +152,6 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
           </span>
         ) : null}
       </div>
-      <div className="flex flex-wrap gap-3 text-sm fantasy-body text-[var(--text-secondary)]">
-        <span>Breed: {getBreedName(horse.breed)}</span>
-        <span>•</span>
-        {/* Equoria-lsi5 + Equoria-iwy3 — phenotype.colorName is the canonical
-            genetics-derived color. Legacy horses (phenotype: null) must NEVER
-            render 'Unknown'; 'not recorded' is the honest fallback. */}
-        <span data-testid="horse-detail-color">
-          Color: {horse.phenotype?.colorName ?? 'not recorded'}
-        </span>
-        <span>•</span>
-        <span data-testid="horse-detail-age">
-          Age: {horseAgeShort(horse.age, horse.dateOfBirth)}
-        </span>
-        <span>•</span>
-        <span>Gender: {horse.gender}</span>
-        <span>•</span>
-        <span>Health: {healthLabel(horse.displayedHealth)}</span>
-      </div>
-      {/* Equoria-8k7k + Equoria-876o — temperament line w/ reference modal trigger */}
-      <div
-        className="flex flex-wrap items-center gap-2 text-sm fantasy-body text-[var(--text-secondary)]"
-        data-testid="horse-temperament-line"
-      >
-        <span>
-          Temperament:{' '}
-          <span
-            className="font-medium text-[var(--text-primary)]"
-            data-testid="horse-temperament-value"
-          >
-            {/* Equoria-1k4n — legacy horses have null temperament;
-                'not recorded' is the honest fallback. */}
-            {horse.temperament ?? 'not recorded'}
-          </span>
-        </span>
-        <Button
-          type="button"
-          variant="link"
-          size="sm"
-          onClick={onOpenTemperamentReference}
-          className="text-xs h-auto p-0"
-          data-testid="temperament-reference-open"
-          aria-label="Open temperament reference"
-        >
-          Learn more
-        </Button>
-      </div>
       {horse.forSale && (
         <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-[var(--badge-success-bg)] border border-[var(--role-success-border)] text-[var(--status-success)] text-xs w-fit">
           <ShoppingCart className="w-3 h-3" />
@@ -211,8 +161,6 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
             : 'For Sale'}
         </div>
       )}
-      {/* Equoria-ga5g — render markings (face / legs / advanced / modifiers) */}
-      <MarkingsPanel markings={horse.markings} />
     </div>
   );
 

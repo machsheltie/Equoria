@@ -53,7 +53,6 @@ function Harness({ name }: { name: string }) {
           }}
           onCancelEdit={() => setIsEditing(false)}
           onChangeEditName={setEditName}
-          onOpenTemperamentReference={() => {}}
           refetch={() => {}}
         />
       </MemoryRouter>

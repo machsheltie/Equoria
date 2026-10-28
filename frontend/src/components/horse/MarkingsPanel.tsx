@@ -12,6 +12,11 @@
  *
  * Returns null when the markings object is missing — legacy horses created
  * before the 31E-3 marking system have no marking data on phenotype.
+ *
+ * `inline` (Equoria-2w4yo, owner request 2026-10-28): the horse page's Horse
+ * Details ledger carries the markings in its own "Markings" row, so the lines
+ * render without the boxed panel and its heading, and a horse with nothing to
+ * show reads "not recorded" there instead of an empty row.
  */
 
 import React from 'react';
@@ -19,6 +24,8 @@ import type { HorseMarkings } from '@/pages/horse-detail/HorseDetailPageTypes';
 
 interface MarkingsPanelProps {
   markings?: HorseMarkings | null;
+  /** Lines only, no box or heading; "not recorded" when there is nothing. */
+  inline?: boolean;
 }
 
 function capitalize(word?: string): string {
@@ -46,8 +53,10 @@ const MODIFIER_LABELS: Record<keyof NonNullable<HorseMarkings['modifiers']>, str
   isRabicano: 'Rabicano',
 };
 
-const MarkingsPanel: React.FC<MarkingsPanelProps> = ({ markings }) => {
-  if (!markings) return null;
+const notRecorded = <span data-testid="markings-not-recorded">not recorded</span>;
+
+const MarkingsPanel: React.FC<MarkingsPanelProps> = ({ markings, inline = false }) => {
+  if (!markings) return inline ? notRecorded : null;
 
   const { faceMarking, legMarkings, advancedMarkings, modifiers } = markings;
 
@@ -70,7 +79,71 @@ const MarkingsPanel: React.FC<MarkingsPanelProps> = ({ markings }) => {
   const hasLegs = legMarkings && Object.values(legMarkings).some((v) => v !== undefined);
   const hasAdvanced = presentAdvanced.length > 0;
   const hasModifiers = presentModifiers.length > 0;
-  if (!hasFace && !hasLegs && !hasAdvanced && !hasModifiers) return null;
+  if (!hasFace && !hasLegs && !hasAdvanced && !hasModifiers) {
+    return inline ? notRecorded : null;
+  }
+
+  // In the ledger the value column is right-aligned, so the chip rows are too.
+  const chipRow = inline ? 'flex flex-wrap justify-end gap-1.5' : 'flex flex-wrap gap-1.5';
+
+  const lines = (
+    <div className={inline ? 'space-y-1' : 'space-y-2 text-sm fantasy-body'}>
+      {hasFace && (
+        <div data-testid="markings-face">
+          <span className="text-[var(--text-secondary)]">Face: </span>
+          <span
+            className="font-medium text-[var(--text-primary)]"
+            data-testid="markings-face-value"
+          >
+            {capitalize(faceMarking)}
+          </span>
+        </div>
+      )}
+
+      {hasLegs && legMarkings && (
+        <div data-testid="markings-legs">
+          <span className="text-[var(--text-secondary)]">Legs: </span>
+          <span className="font-medium text-[var(--text-primary)]">
+            {(Object.keys(LEG_LABELS) as Array<keyof typeof LEG_LABELS>)
+              .map((leg) => `${LEG_LABELS[leg]}: ${capitalize(legMarkings[leg])}`)
+              .join(', ')}
+          </span>
+        </div>
+      )}
+
+      {hasAdvanced && (
+        <div data-testid="markings-advanced" className={chipRow}>
+          {presentAdvanced.map(([key]) => (
+            <span
+              key={key}
+              data-testid={`markings-advanced-${key}`}
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-900/30 border border-amber-500/40 text-amber-300"
+            >
+              {ADVANCED_LABELS[key]}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {hasModifiers && (
+        <div data-testid="markings-modifiers" className={chipRow}>
+          {presentModifiers.map(([key]) => (
+            <span
+              key={key}
+              data-testid={`markings-modifier-${key}`}
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-800/50 border border-slate-500/40 text-slate-300"
+            >
+              {MODIFIER_LABELS[key]}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  if (inline) {
+    return <div data-testid="markings-panel">{lines}</div>;
+  }
 
   return (
     <div
@@ -83,59 +156,7 @@ const MarkingsPanel: React.FC<MarkingsPanelProps> = ({ markings }) => {
       >
         Markings
       </h3>
-
-      <div className="space-y-2 text-sm fantasy-body">
-        {hasFace && (
-          <div data-testid="markings-face">
-            <span className="text-[var(--text-secondary)]">Face: </span>
-            <span
-              className="font-medium text-[var(--text-primary)]"
-              data-testid="markings-face-value"
-            >
-              {capitalize(faceMarking)}
-            </span>
-          </div>
-        )}
-
-        {hasLegs && legMarkings && (
-          <div data-testid="markings-legs">
-            <span className="text-[var(--text-secondary)]">Legs: </span>
-            <span className="font-medium text-[var(--text-primary)]">
-              {(Object.keys(LEG_LABELS) as Array<keyof typeof LEG_LABELS>)
-                .map((leg) => `${LEG_LABELS[leg]}: ${capitalize(legMarkings[leg])}`)
-                .join(', ')}
-            </span>
-          </div>
-        )}
-
-        {hasAdvanced && (
-          <div data-testid="markings-advanced" className="flex flex-wrap gap-1.5">
-            {presentAdvanced.map(([key]) => (
-              <span
-                key={key}
-                data-testid={`markings-advanced-${key}`}
-                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-900/30 border border-amber-500/40 text-amber-300"
-              >
-                {ADVANCED_LABELS[key]}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {hasModifiers && (
-          <div data-testid="markings-modifiers" className="flex flex-wrap gap-1.5">
-            {presentModifiers.map(([key]) => (
-              <span
-                key={key}
-                data-testid={`markings-modifier-${key}`}
-                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-800/50 border border-slate-500/40 text-slate-300"
-              >
-                {MODIFIER_LABELS[key]}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      {lines}
     </div>
   );
 };
