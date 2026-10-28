@@ -49,6 +49,38 @@ export function tackBonusLabel(disciplines) {
   return `+${disciplineTackPoints} in ${names} shows`;
 }
 
+/**
+ * An item category as a word (Equoria-no441, owner rulings 2026-10-28
+ * q164/q165: players read names, not stored codes). Accepts either spelling of
+ * a two-word category (saddle_pad / saddlePad); an unknown one reads "Tack".
+ * Matches frontend/src/lib/tackLabels.ts.
+ */
+const tackCategoryWords = Object.freeze({
+  saddle: 'Saddle',
+  bridle: 'Bridle',
+  halter: 'Halter',
+  saddlePad: 'Saddle Pad',
+  legWraps: 'Leg Wraps',
+  reins: 'Reins',
+  girth: 'Girth',
+  breastplate: 'Breastplate',
+  decorative: 'Decorative',
+  feed: 'Feed',
+});
+
+export function tackCategoryLabel(category) {
+  if (typeof category !== 'string') {
+    return 'Tack';
+  }
+  const key = category.trim().replace(/_([a-z])/g, (_match, letter) => letter.toUpperCase());
+  return Object.hasOwn(tackCategoryWords, key) ? tackCategoryWords[key] : 'Tack';
+}
+
+/** An inventory or catalogue item with its category's word beside the code. */
+export function withCategoryLabel(item) {
+  return { ...item, categoryLabel: tackCategoryLabel(item?.category) };
+}
+
 // ── Discipline saddles, harnesses and bridles ───────────────────────────────
 
 /** The driving disciplines wear a harness in the saddle slot. */

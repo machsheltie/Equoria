@@ -18,7 +18,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { FEED_CATALOG } from '../../economy/index.mjs';
+import { FEED_CATALOG, withCategoryLabel } from '../../economy/index.mjs';
 import { feedHorse } from '../services/horseFeedService.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
@@ -168,7 +168,9 @@ export async function getEquippableHandler(req, res) {
           i.equippedToHorseId === null ||
           i.equippedToHorseId === undefined ||
           i.equippedToHorseId === horse.id,
-      );
+      )
+      // Equoria-no441: the category's word travels beside its code.
+      .map(withCategoryLabel);
 
     const feed = inventory
       .filter(i => i.category === 'feed')

@@ -33,4 +33,5 @@ export {
   tackBonusLabel,
   tackCatalogItems,
   tackEffectFields,
+  withCategoryLabel,
 } from './tackShop/services/tackInventory.mjs';

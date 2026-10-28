@@ -29,7 +29,7 @@ import {
 // Equoria-q4uem.4 (WS4 S4): the tack catalog and the tack-bonus policy live in
 // ../services/tackInventory.mjs (data/policy, not HTTP). Re-exported here so
 // same-module importers and tests keep their existing specifiers.
-import { TACK_INVENTORY, tackEffectFields } from '../services/tackInventory.mjs';
+import { TACK_INVENTORY, tackEffectFields, withCategoryLabel } from '../services/tackInventory.mjs';
 export { TACK_INVENTORY } from '../services/tackInventory.mjs';
 
 // ── Category display configuration ──────────────────────────────────────────
@@ -116,7 +116,8 @@ function returnDecorationToInventory(inventory, horseId, itemId) {
  * Returns full catalog grouped by category.
  */
 export async function getTackInventory(_req, res) {
-  const visibleItems = TACK_INVENTORY.filter(item => !item.isLegacyAlias);
+  // Equoria-no441: each item carries its category's word beside the code.
+  const visibleItems = TACK_INVENTORY.filter(item => !item.isLegacyAlias).map(withCategoryLabel);
   const categories = {};
   for (const item of visibleItems) {
     const key = item.category;
