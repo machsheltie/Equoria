@@ -47,7 +47,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
-import { readScannedFileSyncTolerant, walkFiles } from '../lib/doctrine-scan-patterns.mjs';
+import {
+  isReservedScratchPlantPathSegment,
+  readScannedFileSyncTolerant,
+  walkFiles,
+} from '../lib/doctrine-scan-patterns.mjs';
 
 const label = 'camelcase-naming';
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -144,11 +148,21 @@ function dropGitIgnored(files) {
   return files.filter((f) => !ignored.has(toRelKey(f)));
 }
 
+// This check's own sentinel plants under a directory carrying this token; every
+// OTHER reserved scratch/plant name belongs to a sibling sentinel that creates and
+// deletes it mid-run. Those are not Equoria's names, and scanning them raced the
+// sibling (a "skipped vanished file" notice on a concurrent CI run).
+const ownPlantTokens = [['', '', 'camelcase', 'sentinel', 'plant'].join('_')];
+const isForeignPlant = (name) => isReservedScratchPlantPathSegment(name, ownPlantTokens);
+
 function listFiles() {
   return dropGitIgnored(
     walkFiles(
       scanRoots.map((r) => path.join(repoRoot, r)),
-      { skipDir: (name) => skipDirNames.has(name), includeFile }
+      {
+        skipDir: (name) => skipDirNames.has(name) || isForeignPlant(name),
+        includeFile: (name, full) => !isForeignPlant(name) && includeFile(name, full),
+      }
     )
   );
 }
