@@ -37,7 +37,10 @@ async function testAPI() {
     'Arabian',
     'One of the oldest horse breeds, known for endurance and intelligence.',
   );
-  await createBreed('Quarter Horse', 'An American breed known for speed in quarter-mile races.');
+  await createBreed(
+    'American Quarter Horse',
+    'An American breed known for speed in quarter-mile races.',
+  );
   await createBreed('Akhal-Teke', 'A rare breed from Turkmenistan known for its metallic coat.');
 
   console.log('\n🎯 Test data creation complete!');

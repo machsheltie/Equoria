@@ -233,7 +233,7 @@ const seedHorses = async (prisma, users) => {
   const breedsData = [
     { name: 'Thoroughbred', description: 'Fast and athletic racing breed' },
     { name: 'Arabian', description: 'Enduring and intelligent desert breed' },
-    { name: 'Quarter Horse', description: 'Strong and versatile working breed' },
+    { name: 'American Quarter Horse', description: 'Strong and versatile working breed' },
     { name: 'Akhal-Teke', description: 'Rare and elegant metallic-coated breed' },
   ];
 

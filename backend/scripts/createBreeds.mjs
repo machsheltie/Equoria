@@ -21,7 +21,7 @@ async function createBreeds() {
         description: 'One of the oldest horse breeds, known for endurance and intelligence.',
       },
       {
-        name: 'Quarter Horse',
+        name: 'American Quarter Horse',
         description: 'An American breed known for speed in quarter-mile races.',
       },
       {
