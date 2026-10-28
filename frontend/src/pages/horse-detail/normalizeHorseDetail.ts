@@ -118,7 +118,9 @@ export function normalizeHorseDetail(raw: HorseSummary): Horse {
     name: raw.name,
     breed,
     breedId: raw.breedId,
-    age: raw.age,
+    // Equoria-55soj: the page shows the live age the server computes from the
+    // birth date (ageYears), not the stored age column, which can be stale.
+    age: typeof raw.ageYears === 'number' ? raw.ageYears : raw.age,
     ageYears: raw.ageYears,
     gender,
     // Equoria-gncv — null for legacy horses with no temperament.

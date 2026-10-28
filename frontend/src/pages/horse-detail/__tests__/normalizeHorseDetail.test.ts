@@ -151,6 +151,11 @@ describe('normalizeHorseDetail', () => {
     expect(horse.studFee).toBe(750);
   });
 
+  // Equoria-55soj: the live age, not the stored column.
+  it('shows the live age from the birth date, not the stale stored age', () => {
+    expect(normalizeHorseDetail(detail({ age: 5, ageYears: 8 })).age).toBe(8);
+  });
+
   it('does not mutate the cached payload', () => {
     const raw = detail({ phenotype: { colorName: 'Bay', faceMarking: 'star' } });
     const before = JSON.stringify(raw);
