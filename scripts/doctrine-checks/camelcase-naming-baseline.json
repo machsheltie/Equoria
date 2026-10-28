@@ -420,7 +420,7 @@
   "backend/modules/grooms/__tests__/groomFeeArrearsOwed.integration.test.mjs": 47,
   "backend/modules/grooms/__tests__/groomFeePerHorse.integration.test.mjs": 13,
   "backend/modules/grooms/__tests__/groomFeeUncollected.integration.test.mjs": 16,
-  "backend/modules/grooms/__tests__/groomFreeAgentEndpoint.integration.test.mjs": 14,
+  "backend/modules/grooms/__tests__/groomFreeAgentEndpoint.integration.test.mjs": 3,
   "backend/modules/grooms/__tests__/groomHireConcurrentRace.integration.test.mjs": 4,
   "backend/modules/grooms/__tests__/groomHorseCompatibilityTaskPolicy.integration.test.mjs": 49,
   "backend/modules/grooms/__tests__/groomLegacyAutoTriggerOnRetirement.integration.test.mjs": 5,
