@@ -663,41 +663,6 @@ paths:
       responses:
         '200': { description: 'Training status' }
 
-  /milestones/evaluate:
-    post:
-      tags: [Training]
-      summary: 'Evaluate training milestones for a horse'
-      security: [{ bearerAuth: [] }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [horseId]
-              properties:
-                horseId: { type: integer }
-      responses:
-        '200': { description: 'Milestone evaluation results' }
-
-  '/milestones/{horseId}':
-    get:
-      tags: [Training]
-      summary: 'Get milestones for a horse'
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - { name: horseId, in: path, required: true, schema: { type: integer } }
-      responses:
-        '200': { description: 'Milestone data' }
-
-  /milestones/milestone-definitions:
-    get:
-      tags: [Training]
-      summary: 'Get all milestone definitions'
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200': { description: 'Milestone definitions' }
-
   # ── Competition ───────────────────────────────────────────────────────────────
   /competition:
     get:
@@ -2030,26 +1995,6 @@ paths:
         '200': { description: 'Item crafted' }
 
   # ── Traits ───────────────────────────────────────────────────────────────────
-  '/trait-discovery/{horseId}':
-    post:
-      tags: [Traits]
-      summary: 'Trigger trait discovery for a horse'
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - { name: horseId, in: path, required: true, schema: { type: integer } }
-      responses:
-        '200': { description: 'Traits discovered' }
-
-  '/trait-discovery/{horseId}/status':
-    get:
-      tags: [Traits]
-      summary: 'Get trait discovery status for a horse'
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - { name: horseId, in: path, required: true, schema: { type: integer } }
-      responses:
-        '200': { description: 'Discovery status' }
-
   /traits/definitions:
     get:
       tags: [Traits]
@@ -2096,14 +2041,6 @@ paths:
       security: [{ bearerAuth: [] }]
       responses:
         '200': { description: 'Epigenetic trait definitions' }
-
-  /ultra-rare-traits/definitions:
-    get:
-      tags: [Traits]
-      summary: 'Get ultra-rare trait definitions'
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200': { description: 'Ultra-rare trait definitions' }
 
   # ── Admin ────────────────────────────────────────────────────────────────────
   /admin/cron/status:

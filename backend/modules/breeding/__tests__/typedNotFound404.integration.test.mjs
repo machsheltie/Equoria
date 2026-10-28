@@ -23,8 +23,9 @@
  * IMPORTANT — honest accounting of WHERE the 404 originates (read before
  * editing): EVERY one of the hardened routes is fronted by a pre-handler
  * ownership gate — either `requireOwnership(...)` middleware (foal routes,
- * horseQueryRoutes (backend/app/queries, Equoria-q4uem.4) `/:id/breeding-data`, traitDiscoveryRoutes
- * `/progress|/check-conditions`) or an in-handler `validateBatchHorseOwnership`
+ * horseQueryRoutes (backend/app/queries, Equoria-q4uem.4) `/:id/breeding-data`; the
+ * traitDiscoveryRoutes case left with those routes, Equoria-a7f1p) or an in-handler
+ * `validateBatchHorseOwnership`
  * check. For a genuinely MISSING
  * id, that ownership gate returns the 404 BEFORE the hardened type-based catch
  * is ever reached. The catch's typed-404 branch is therefore defense-in-depth
@@ -160,16 +161,6 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
     it('GET /horses/:id/training-history → 404 (ownership gate; horseHistoryRoutes)', async () => {
       const res = await request(app)
         .get(`/api/v1/horses/${MISSING_ID}/training-history`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${ownerToken}`);
-
-      expect(res.status).toBe(404);
-      expect(res.body).toMatchObject({ success: false });
-    });
-
-    it('GET /trait-discovery/progress/:horseId → 404 (ownership gate; traitDiscoveryRoutes)', async () => {
-      const res = await request(app)
-        .get(`/api/v1/trait-discovery/progress/${MISSING_ID}`)
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${ownerToken}`);
 

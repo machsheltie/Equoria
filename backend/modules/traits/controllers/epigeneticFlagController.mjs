@@ -15,7 +15,6 @@
  * - Supports admin operations for batch evaluation
  */
 
-import _prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import { batchEvaluateFlags as batchEvaluateFlagsEngine } from '../../../utils/flagEvaluationEngine.mjs';
@@ -26,11 +25,6 @@ import {
 } from '../../../config/epigeneticFlagDefinitions.mjs';
 import { analyzeCarePatterns } from '../../../utils/carePatternAnalysis.mjs';
 import { getFlagInfluenceSummary } from '../../../utils/epigeneticFlagInfluence.mjs';
-import {
-  analyzeTraitDistribution,
-  generateStableOverview,
-} from '../services/enhancedReportingService.mjs';
-import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
 import { satisfiesRole } from '../../staff/index.mjs';
 
 /**
@@ -259,105 +253,9 @@ export async function getCarePatterns(req, res) {
   }
 }
 
-/**
- * Get epigenetic-flag analytics aggregated across the caller's OWN horses.
- * GET /api/v1/flags/analytics  (CORE/beta surface — Equoria-yzqhj.7)
- *
- * Decision (Equoria-yzqhj.7): the flag-aggregation analytics previously
- * exposed ONLY behind the experimental reporting module (formerly the labs
- * reporting module, now modules/traits/routes/enhancedReportingRoutes.mjs) are
- * PROMOTED to the core
- * (beta) epigenetic-flag surface. This handler does NOT reimplement the
- * aggregation — it reuses the existing `analyzeTraitDistribution` +
- * `generateStableOverview` service functions from enhancedReportingService.
- *
- * Auth-scoped: aggregates ONLY horses owned by `req.user.id` (a non-owner's
- * horses are never included). The empty case (user owns 0 horses) returns a
- * valid empty aggregation, not a 500 — `generateStableOverview` divides by
- * horses.length, so it must NOT be called with an empty array.
- */
-export async function getFlagAnalytics(req, res) {
-  try {
-    const userId = req.user.id;
-
-    // Auth-scoped load: only the caller's own horses. Select just the fields
-    // the reused service functions read (id, name, dateOfBirth, bondScore,
-    // epigeneticFlags).
-    const horses = await _prisma.horse.findMany({
-      where: { userId },
-      select: {
-        id: true,
-        name: true,
-        dateOfBirth: true,
-        bondScore: true,
-        epigeneticFlags: true,
-      },
-    });
-
-    // Empty-case: a user with no horses gets a valid empty aggregation.
-    // generateStableOverview divides by horses.length, so guard before calling.
-    if (horses.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: 'Flag analytics retrieved successfully',
-        data: {
-          traitDistribution: {
-            totalTraits: 0,
-            uniqueTraits: 0,
-            traitFrequency: {},
-            commonTraits: [],
-            rareTraits: [],
-          },
-          stableOverview: {
-            totalHorses: 0,
-            ageDistribution: {},
-            traitCounts: {},
-            averageBondScore: 0,
-          },
-          horseCount: 0,
-        },
-      });
-    }
-
-    // JSONB-guard each epigeneticFlags read before handing rows to the
-    // aggregation service (the service itself also guards via asFlagArray,
-    // but normalize at the boundary per the JSONB type-guard convention).
-    const guardedHorses = horses.map(horse => ({
-      ...horse,
-      epigeneticFlags: asFlagArray(horse.epigeneticFlags),
-    }));
-
-    // Reuse the existing aggregation service functions — no duplicate logic.
-    const traitDistribution = analyzeTraitDistribution(guardedHorses);
-    const stableOverview = generateStableOverview(guardedHorses);
-
-    logger.info(
-      `[epigeneticFlagController.getFlagAnalytics] Aggregated flags for ${horses.length} horses owned by user ${userId}`,
-    );
-
-    return res.status(200).json({
-      success: true,
-      message: 'Flag analytics retrieved successfully',
-      data: {
-        traitDistribution,
-        stableOverview,
-        horseCount: horses.length,
-      },
-    });
-  } catch (error) {
-    logger.error(`[epigeneticFlagController.getFlagAnalytics] Error: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error retrieving flag analytics',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
-  }
-}
-
 export default {
   getHorseFlags,
   getFlagDefinitions,
   batchEvaluateFlags,
   getCarePatterns,
-  getFlagAnalytics,
 };

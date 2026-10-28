@@ -17,7 +17,11 @@
  * (owner ruling 2026-10-20: players never reveal traits), so the cases went
  * with them. The herd genetics report cases (population-analysis,
  * diversity-report) went with those routes (owner ruling q144, 2026-10-28,
- * Equoria-8grnh); removedHerdGeneticsRoutes.integration pins their 404.
+ * Equoria-8grnh); removedHerdGeneticsRoutes.integration pins their 404. The
+ * /trait-discovery progress, conditions and check-conditions cases went with
+ * those routes (Equoria-a7f1p; owner ruling 2026-10-27: traits reveal only
+ * through the grooming-day ladder); retiredTraitAdviceRoutes.integration pins
+ * their 404.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -27,7 +31,6 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser } from '../../../tests/helpers/testAuth.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
@@ -41,7 +44,6 @@ const VISIBLE = 'resilient';
 describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
   let user;
   let token;
-  let csrf;
   let breed;
   let foal;
 
@@ -64,14 +66,6 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
   }
 
   const get = path => request(app).get(path).set('Authorization', `Bearer ${token}`);
-  const post = (path, body) =>
-    request(app)
-      .post(path)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send(body);
 
   function expectNoHiddenNames(res, names = HIDDEN) {
     expect(res.status).toBe(200);
@@ -85,7 +79,6 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
     const auth = await createTestUser({ role: 'user' });
     user = auth.user;
     token = auth.token;
-    csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     breed = await prisma.breed.create({ data: { name: `HiddenTraitBreed ${tag()}_${tag()}` } });
     foal = await makeFoal();
     // History rows the nightly job writes: one for the visible trait, one for
@@ -172,36 +165,6 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
       expectNoHiddenNames(res);
       expect(res.body.data.summary.hiddenTraits).toBe(2);
       expect(res.body.data.traits.positive.map(t => t.name)).toEqual([VISIBLE]);
-    });
-
-    it('GET /trait-discovery/progress/:id names no hidden trait', async () => {
-      const res = await get(`/api/v1/trait-discovery/progress/${foal.id}`);
-      expectNoHiddenNames(res);
-      expect(res.body.data.hiddenTraitsCount).toBe(2);
-    });
-  });
-
-  // Owner ruling 2026-10-19 (fix round 1): the fixed per-condition trait-name
-  // hint lists ("revealableTraits") are not sent. They are not the horse's
-  // traits and read as hints about hidden ones.
-  describe('discovery responses carry no per-condition trait hint lists', () => {
-    it('GET /trait-discovery/progress/:id', async () => {
-      const res = await get(`/api/v1/trait-discovery/progress/${foal.id}`);
-      expect(res.status).toBe(200);
-      expect(JSON.stringify(res.body)).not.toContain('revealableTraits');
-    });
-
-    it('GET /trait-discovery/conditions', async () => {
-      const res = await get('/api/v1/trait-discovery/conditions');
-      expect(res.status).toBe(200);
-      expect(res.body.data.conditions.length).toBeGreaterThan(0);
-      expect(JSON.stringify(res.body)).not.toContain('revealableTraits');
-    });
-
-    it('POST /trait-discovery/check-conditions/:id', async () => {
-      const res = await post(`/api/v1/trait-discovery/check-conditions/${foal.id}`, {});
-      expect(res.status).toBe(200);
-      expect(JSON.stringify(res.body)).not.toContain('revealableTraits');
     });
   });
 

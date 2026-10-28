@@ -1,8 +1,9 @@
 /**
  * enhancedReportingRoutes integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: enhanced-trait-history, epigenetic-insights, trait-timeline,
- *         stable-epigenetic-report, compare-epigenetics, epigenetic-report-export.
+ * Covers: enhanced-trait-history, trait-timeline, stable-epigenetic-report,
+ *         compare-epigenetics, epigenetic-report-export. (epigenetic-insights
+ *         was removed, Equoria-a7f1p; pinned in retiredTraitAdviceRoutes.)
  * Routes are mounted at '/' in authRouter (backend/app/routers.mjs:183), and
  * authRouter is mounted at /api/v1 (backend/app.mjs:290), so paths are
  * /api/v1/horses/:id/..., /api/v1/users/:id/... (Equoria-vivsi: the unversioned
@@ -104,41 +105,6 @@ describe('GET /api/horses/:id/enhanced-trait-history', () => {
 
   it('returns 401 without auth', async () => {
     const res = await request(app).get(`/api/v1/horses/${horse1.id}/enhanced-trait-history`).set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── GET /api/v1/horses/:id/epigenetic-insights ───────────────────────────────
-
-describe('GET /api/horses/:id/epigenetic-insights', () => {
-  it('returns 200 with epigenetic insights for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${horse1.id}/epigenetic-insights`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.horseId).toBe(horse1.id);
-    // Owner ruling 2026-10-07 (Equoria-5ovgv): no advice or forecast (old contract: recommendations defined).
-    expect(res.body.data).not.toHaveProperty('recommendations');
-    expect(res.body.data).not.toHaveProperty('developmentalProgress');
-    expect(res.body.data).not.toHaveProperty('predictiveInsights');
-  });
-
-  it('returns 404 for a horse not owned by user', async () => {
-    const res = await request(app)
-      .get('/api/v1/horses/999999999/epigenetic-insights')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(404);
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/horses/${horse1.id}/epigenetic-insights`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });

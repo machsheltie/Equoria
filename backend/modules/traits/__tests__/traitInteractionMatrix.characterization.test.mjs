@@ -8,9 +8,11 @@
  *
  *   - service: generateInteractionMatrix(horseId) (also consumed by the
  *     enhanced-reporting routes) — pinned by snapshot
- *   - HTTP: GET /api/v1/horses/:id/trait-interactions, /trait-matrix,
- *     /trait-stability (real app, real auth, real ownership middleware) —
- *     asserted equal to the pinned matrix as JSON, or the sections they pick
+ *   - HTTP: GET /api/v1/horses/:id/trait-interactions (real app, real auth,
+ *     real ownership middleware) — asserted equal to the sections it picks from
+ *     the pinned matrix. The /trait-matrix and /trait-stability routes were
+ *     removed (Equoria-a7f1p; owner ruling 2026-10-27: trait effects not yet
+ *     ruled), so their wire cases left with them.
  *
  * The snapshots were written against the pre-refactor code and must stay green
  * after it. The one deliberate change since: an empty-trait horse's
@@ -159,15 +161,11 @@ describe('trait interaction analysis characterization (Equoria-q4uem.5)', () => 
       expect(normalize(matrix, horseIds[key])).toMatchSnapshot();
     });
 
-    // The wire carries exactly the pinned service matrix (as JSON), or the
-    // sections each subset route picks from it.
-    it('GET /api/v1/horses/:id/trait-matrix, /trait-interactions and /trait-stability serve the pinned matrix', async () => {
+    // The wire carries exactly the sections the route picks from the pinned
+    // service matrix (as JSON).
+    it('GET /api/v1/horses/:id/trait-interactions serves the pinned matrix sections', async () => {
       const id = horseIds[key];
       const pinned = normalize(JSON.parse(JSON.stringify(await generateInteractionMatrix(id))), id);
-
-      const matrix = await get(`/api/v1/horses/${id}/trait-matrix`);
-      expect(matrix.status).toBe(200);
-      expect(normalize(matrix.body, id)).toEqual({ success: true, data: pinned });
 
       const interactions = await get(`/api/v1/horses/${id}/trait-interactions`);
       expect(interactions.status).toBe(200);
@@ -181,14 +179,10 @@ describe('trait interaction analysis characterization (Equoria-q4uem.5)', () => 
           dominance: pinned.dominance,
         },
       });
-
-      const stability = await get(`/api/v1/horses/${id}/trait-stability`);
-      expect(stability.status).toBe(200);
-      expect(normalize(stability.body, id)).toEqual({ success: true, data: pinned.stability });
     });
   });
 
-  it.each(['trait-interactions', 'trait-matrix', 'trait-stability'])(
+  it.each(['trait-interactions'])(
     'GET /api/v1/horses/:id/%s is 404 for a missing horse and for a horse the user does not own',
     async route => {
       const missing = await get(`/api/v1/horses/2147483000/${route}`);

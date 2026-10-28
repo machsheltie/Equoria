@@ -237,25 +237,6 @@ describe('Enhanced Reporting API Routes', () => {
       expect(Array.isArray(response.body.data.insights)).toBe(true);
     }, 120000); // 120s — parallelised DB calls can still be slow under full-suite load
 
-    test('GET /api/v1/horses/:id/epigenetic-insights should return advanced epigenetic analysis', async () => {
-      const response = await request(app)
-        .get(`/api/v1/horses/${testHorses[2].id}/epigenetic-insights`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(response.body.data.horseId).toBe(testHorses[2].id);
-      expect(response.body.data.traitAnalysis).toBeDefined();
-      expect(response.body.data.environmentalInfluences).toBeDefined();
-      // Owner ruling 2026-10-07 (Equoria-5ovgv): no advice, no forecast, no milestone countdown.
-      // Old contract: developmentalProgress, predictiveInsights and recommendations were returned.
-      expect(response.body.data).not.toHaveProperty('developmentalProgress');
-      expect(response.body.data).not.toHaveProperty('predictiveInsights');
-      expect(response.body.data).not.toHaveProperty('recommendations');
-    });
-
     test('GET /api/v1/horses/:id/trait-timeline should return detailed trait development timeline', async () => {
       const response = await request(app)
         .get(`/api/v1/horses/${testHorses[1].id}/trait-timeline`)

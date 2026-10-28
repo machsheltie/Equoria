@@ -84,11 +84,6 @@ export { trainingApi } from './api/training.js';
 // RawFoalDevelopmentBody at the bottom of this barrel — for barrel compat.
 export { breedingApi } from './api/breeding.js';
 
-// -- Ultra-rare traits --
-// Extracted to ./api/ultraRareTraits (Equoria-rfsml). Re-exported for barrel compat.
-export { ultraRareTraitsApi } from './api/ultraRareTraits.js';
-export type { UltraRareTraitEvent, HorseUltraRareTraitsResponse } from './api/ultraRareTraits.js';
-
 // -- Horses --
 // Extracted to ./api/horses (Equoria-jog8w). Owns HorseGeneticsResponse +
 // HorseColorResponse (31E-4). Re-exported for barrel compat.

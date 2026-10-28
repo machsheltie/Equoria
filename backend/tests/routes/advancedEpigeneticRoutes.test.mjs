@@ -266,38 +266,6 @@ describe('Advanced Epigenetic API Routes', () => {
       expect(response.body.data.conflicts).toBeDefined();
       expect(response.body.data.dominance).toBeDefined();
     });
-
-    test('GET /api/v1/horses/:id/trait-matrix should return complete interaction matrix', async () => {
-      const response = await request(app)
-        .get(`/api/v1/horses/${testHorses[1].id}/trait-matrix`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(response.body.data.matrixVisualization).toBeDefined();
-      expect(response.body.data.summary).toBeDefined();
-      expect(response.body.data.summary.totalTraits).toBeDefined();
-      expect(response.body.data.summary.synergyCount).toBeDefined();
-      expect(response.body.data.summary.conflictCount).toBeDefined();
-    });
-
-    test('GET /api/v1/horses/:id/trait-stability should return interaction stability analysis', async () => {
-      const response = await request(app)
-        .get(`/api/v1/horses/${testHorses[1].id}/trait-stability`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(response.body.data.overallStability).toBeDefined();
-      expect(response.body.data.stabilityFactors).toBeDefined();
-      expect(response.body.data.volatilityRisks).toBeDefined();
-      // Owner ruling 2026-10-07 (no advice or recommendations; Equoria-5nxw0).
-      expect(response.body.data.recommendations).toBeUndefined();
-    });
   });
 
   describe('Input Validation', () => {

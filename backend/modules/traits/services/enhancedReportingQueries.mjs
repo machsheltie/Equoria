@@ -26,7 +26,7 @@ export async function findTraitHistoryByWhere(whereConditions) {
 
 /**
  * Fetch a horse + its traitHistoryLogs (newest first), used by the
- * epigenetic-insights and export-report endpoints.
+ * export-report endpoint.
  *
  * @param {number} horseId
  * @returns {Promise<object|null>}

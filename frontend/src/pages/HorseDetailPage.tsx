@@ -16,7 +16,7 @@
  *   `pages/**\/*.tsx` to prevent re-bloat.
  */
 
-import React, { lazy, Suspense, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { lazy, Suspense, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { PageContainer } from '@/components/layout/PageContainer';
@@ -56,9 +56,6 @@ import { useUserRiders } from '@/hooks/api/useRiders';
 import { useDelistHorse } from '@/hooks/api/useMarketplace';
 // Competition history (Story 5-3)
 import ShowResultsTab from './horse-detail/ShowResultsTab';
-import { useHorseUltraRareTraits } from '@/hooks/api/useUltraRareTraits';
-import CinematicMoment from '@/components/feedback/CinematicMoment';
-import { hasSeenEvent, markEventSeen } from '@/lib/traitEventSeen';
 import { isUnnamed } from '@/lib/horseNamePolicy';
 // Shared types for page + lazy tabs
 import type { Horse } from './horse-detail/HorseDetailPageTypes';
@@ -132,69 +129,6 @@ const HorseDetailPage: React.FC = () => {
   // 0 here means "not pregnant or sire not yet known — skip the fetch."
   const pregnancySireId = horseRaw?.pregnancySireId ?? 0;
   const { data: sireHorse } = useHorse(Number(pregnancySireId) || 0);
-
-  // Equoria-gt6j — surface UltraRareTraitEvent reveals. The backend
-  // (Equoria-d4tl) auto-populates UltraRareTraitEvent rows on milestone
-  // boundaries; here we show a one-time CinematicMoment for the most recent
-  // event the player hasn't seen yet. "Seen" is tracked in a single bounded
-  // localStorage key via traitEventSeen (Equoria-o7c0x L7) so storage cannot
-  // grow unboundedly (capped at URT_SEEN_MAX=100 ids, FIFO eviction).
-  const { data: ultraRareData } = useHorseUltraRareTraits(
-    !isLoading && !isError && !!horseRaw ? Number(id) : undefined
-  );
-
-  // Equoria-p30y1: the reveal is DERIVED state — useMemo on the
-  // latest event id, not setState-from-useEffect. This eliminates two
-  // stale-closure / re-pop bugs:
-  //   1) The old useEffect's dep array was [ultraRareData], so any
-  //      reference change (refetch, window-focus refetch) re-fired the
-  //      effect. The new memo keys on the SCALAR latest.id — re-derives
-  //      only when the newest event actually changes.
-  //   2) "Seen" was previously marked on dismiss. If the user navigated
-  //      away mid-reveal the modal re-popped on return because
-  //      hasSeenEvent was still false. Now we mark seen on display
-  //      (in a separate one-shot effect, below).
-  // `dismissedRevealId` separately tracks "user closed THIS id" so the
-  // memo suppresses re-render without depending on the localStorage
-  // write having happened-before the next render.
-  const latestUltraRareEventId: number | undefined = ultraRareData?.recentEvents?.[0]?.id;
-  const [dismissedRevealId, setDismissedRevealId] = useState<number | null>(null);
-
-  const ultraRareReveal = useMemo(() => {
-    const events = ultraRareData?.recentEvents;
-    if (!events || events.length === 0) return null;
-    // recentEvents is ordered by timestamp desc — index 0 is the newest.
-    const latest = events[0];
-    if (dismissedRevealId === latest.id) return null;
-    // hasSeenEvent reads a single bounded key (not one key per id).
-    // It is fail-safe: returns false if localStorage is unavailable.
-    if (hasSeenEvent(localStorage, latest.id)) return null;
-    return { id: latest.id, traitName: latest.traitName };
-    // Narrow dep array (AC #1): we key ONLY on the SCALAR latest-id
-    // (and the scalar dismissed-id) — NOT on ultraRareData itself. A
-    // refetch / window-focus refetch returns a new reference with an
-    // identical newest-event id; the memo intentionally returns the
-    // stale (but correct) cached result rather than re-deriving and
-    // re-firing the display-side effect. The trait name is immutable
-    // for a given event id, so the cached value is safe.
-  }, [latestUltraRareEventId, dismissedRevealId]);
-
-  // Mark seen the MOMENT the reveal is displayed, not on dismiss (AC #2).
-  // If the user navigates away mid-reveal, the next mount finds the id
-  // already in the seen-set and useMemo returns null — no re-pop.
-  useEffect(() => {
-    if (ultraRareReveal) {
-      // markEventSeen writes to a single bounded key (FIFO cap = 100 ids).
-      // It is fail-safe: silently skips on storage write error.
-      markEventSeen(localStorage, ultraRareReveal.id);
-    }
-  }, [ultraRareReveal]);
-
-  const dismissUltraRareReveal = useCallback(() => {
-    if (ultraRareReveal) {
-      setDismissedRevealId(ultraRareReveal.id);
-    }
-  }, [ultraRareReveal]);
 
   // Loading state — detail page skeleton (portrait left + tab area right)
   if (isLoading || (notOwn && visit.isPending)) {
@@ -299,15 +233,6 @@ const HorseDetailPage: React.FC = () => {
        --content-bottom-reserve (Equoria-o5hub.5) — the old pb-20 was the
        manual clearance for the bar's former fixed positioning. */
     <div className="min-h-screen">
-      {/* Equoria-gt6j — ultra-rare trait reveal cinematic moment */}
-      {ultraRareReveal && (
-        <CinematicMoment
-          variant="trait-discovery"
-          title="Ultra-Rare Trait Revealed!"
-          subtitle={ultraRareReveal.traitName}
-          onDismiss={dismissUltraRareReveal}
-        />
-      )}
       {/* PageContainer wide (D §1): replaces the local max-w-7xl + px wrapper —
           horizontal gutters belong to the DashboardLayout shell. */}
       <PageContainer variant="wide">

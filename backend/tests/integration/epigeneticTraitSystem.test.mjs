@@ -2,11 +2,12 @@
  * Integration tests for the Enhanced Epigenetic Trait System
  *
  * Tests the complete epigenetic trait development pipeline including:
- * - Epigenetic flag evaluation
- * - Enhanced milestone evaluation
  * - Trait history logging
- * - Breeding insights
- * - API endpoints
+ * - API endpoints (definitions, history, summary)
+ *
+ * The evaluate-milestone and breeding-insights routes were removed
+ * (Equoria-a7f1p; owner rulings 2026-10-27 grooming-day reveal ladder and
+ * 2026-10-07 no advice); their cases left with them.
  */
 
 // Jest is available globally in test environment
@@ -20,7 +21,7 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
-// Equoria-2gqir: the read-side endpoints (history/summary/breeding-insights)
+// Equoria-2gqir: the read-side endpoints (history/summary)
 // report a horse's REAL traitHistoryLog state. The beforeEach reset (Equoria-enles)
 // wipes inherited rows for order-independence, so each read test must seed its
 // OWN epigenetic trait via the real service before querying — not rely on a
@@ -234,30 +235,6 @@ describe('Epigenetic Trait System Integration Tests', () => {
       expect(response.body.data.groomPersonalities).toHaveProperty('GENTLE');
     });
 
-    test('POST /api/v1/epigenetic-traits/evaluate-milestone/:horseId should evaluate enhanced milestone', async () => {
-      const response = await request(app)
-        .post(`/api/v1/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          milestoneData: {
-            ageCategory: 'foal',
-            developmentalStage: 'socialization',
-          },
-          includeHistory: true,
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('horseId', testHorse.id);
-      expect(response.body.data).toHaveProperty('horseName', testHorse.name);
-      expect(response.body.data).toHaveProperty('currentGroom', testGroom.name);
-      expect(response.body.data).toHaveProperty('milestoneResult');
-      expect(response.body.data.careHistoryIncluded).toBe(true);
-    });
-
     test('GET /api/v1/epigenetic-traits/history/:horseId should return trait history', async () => {
       // Arrange: this horse must actually HAVE the epigenetic trait the
       // endpoint reports (beforeEach wiped any inherited rows).
@@ -321,47 +298,11 @@ describe('Epigenetic Trait System Integration Tests', () => {
       expect(summary.groomInfluencedTraits).toBeGreaterThan(0);
     });
 
-    test('GET /api/v1/epigenetic-traits/breeding-insights/:horseId should return breeding insights', async () => {
-      // Arrange: the epigeneticProfile is built from this horse's real
-      // epigenetic traitHistoryLog rows — seed the Affectionate trait first.
-      await seedAffectionateTrait();
-
-      const response = await request(app)
-        .get(`/api/v1/epigenetic-traits/breeding-insights/${testHorse.id}`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('horseName', testHorse.name);
-      expect(response.body.data).toHaveProperty('insights');
-
-      const { insights } = response.body.data;
-      expect(insights).toHaveProperty('horseId', testHorse.id);
-      expect(insights).toHaveProperty('epigeneticProfile');
-      expect(insights).toHaveProperty('inheritanceRisk');
-      // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: recommendedCarePatterns.
-      expect(insights).not.toHaveProperty('recommendedCarePatterns');
-      expect(insights).toHaveProperty('breedingNotes');
-
-      // Should have our Affectionate trait in the epigenetic profile
-      expect(insights.epigeneticProfile).toHaveProperty('Affectionate');
-      expect(insights.epigeneticProfile.Affectionate).toHaveProperty('source', 'groom');
-    });
-
     test('Should handle authentication errors properly', async () => {
       // No auth context → 401 BEFORE CSRF is even evaluated. These requests
       // are intentionally bare (no Authorization, no CSRF cookie/token).
       await request(app)
         .get(`/api/v1/epigenetic-traits/history/${testHorse.id}`)
-        .set('Origin', 'http://localhost:3000')
-
-        .expect(401);
-
-      await request(app)
-        .post(`/api/v1/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
@@ -408,69 +349,6 @@ describe('Epigenetic Trait System Integration Tests', () => {
       // The former POST /log-trait validation half was removed with that route
       // (Equoria-gu8jk; owner ruling 2026-10-20: players never write trait
       // history).
-    });
-  });
-
-  describe('Epigenetic Flag System', () => {
-    test('Should apply epigenetic flags based on care patterns', async () => {
-      // Create multiple positive interactions to trigger AFFECTIONATE flag
-      for (let i = 0; i < 7; i++) {
-        await prisma.groomInteraction.create({
-          data: {
-            foalId: testHorse.id,
-            groomId: testGroom.id,
-            interactionType: 'grooming',
-            duration: 30,
-            bondingChange: 2,
-            quality: 'excellent',
-            cost: 25.0,
-            timestamp: new Date(Date.now() - i * 24 * 60 * 60 * 1000), // Daily for past week
-          },
-        });
-      }
-
-      // Evaluate milestone with care history
-      const response = await request(app)
-        .post(`/api/v1/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          milestoneData: { ageCategory: 'foal' },
-          includeHistory: true,
-        })
-        .expect(200);
-
-      const { milestoneResult } = response.body.data;
-      expect(milestoneResult).toHaveProperty('epigeneticFlags');
-      expect(milestoneResult).toHaveProperty('careConsistencyBonus');
-      expect(milestoneResult).toHaveProperty('personalityBonuses');
-
-      // Care consistency bonus should be positive due to daily interactions
-      expect(milestoneResult.careConsistencyBonus).toBeGreaterThan(1.0);
-    });
-  });
-
-  describe('Enhanced Milestone Evaluation', () => {
-    test('Should factor in groom personality bonuses', async () => {
-      const response = await request(app)
-        .post(`/api/v1/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          milestoneData: { ageCategory: 'foal' },
-          includeHistory: true,
-        })
-        .expect(200);
-
-      const { milestoneResult } = response.body.data;
-      expect(milestoneResult).toHaveProperty('enhancementFactors');
-      expect(milestoneResult.enhancementFactors).toHaveProperty('epigeneticInfluenceType', 'gentle');
-      expect(milestoneResult.enhancementFactors).toHaveProperty('careQuality');
-      expect(milestoneResult.enhancementFactors).toHaveProperty('bondStability');
     });
   });
 });

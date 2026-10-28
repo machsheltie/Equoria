@@ -12,7 +12,6 @@ import {
   logTraitAssignment,
   getTraitHistory,
   getTraitDevelopmentSummary,
-  getBreedingInsights,
   analyzeTraitPatterns,
 } from '../services/traitHistoryService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -155,35 +154,6 @@ describe('getTraitDevelopmentSummary', () => {
     expect(typeof result.developmentalStages).toBe('object');
     expect(typeof result.sourceBreakdown).toBe('object');
     expect(typeof result.groomContributions).toBe('object');
-  });
-});
-
-// ── getBreedingInsights ────────────────────────────────────────────────────────
-
-describe('getBreedingInsights', () => {
-  it('returns insights object with low inheritance risk for horse with no traits', async () => {
-    const freshHorse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-TraitHistBreedHorse-${Date.now()}`,
-        sex: 'Filly',
-        dateOfBirth: new Date(),
-        age: 0,
-        userId: user.id,
-      },
-    });
-    // Equoria-1ohys: cleaned scoped + fail-loud by the top-level tracker (the prior
-    // per-test `finally` delete swallowed its error).
-    freshHorseIds.push(freshHorse.id);
-
-    const result = await getBreedingInsights(freshHorse.id);
-    expect(result).toBeDefined();
-    expect(result.horseId).toBe(freshHorse.id);
-    expect(result.inheritanceRisk).toBe('low');
-    expect(typeof result.epigeneticProfile).toBe('object');
-    // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: recommendedCarePatterns.
-    expect(result).not.toHaveProperty('recommendedCarePatterns');
-    expect(Array.isArray(result.breedingNotes)).toBe(true);
   });
 });
 
@@ -429,18 +399,6 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
     expect(result.developmentalStages['mature']).toBe(1);
     // Groom contributions present (3 entries linked to thGroom)
     expect(Object.keys(result.groomContributions).length).toBeGreaterThan(0);
-  });
-
-  it('getBreedingInsights returns inheritanceRisk=high for horse with 3 negative epigenetic traits', async () => {
-    const result = await getBreedingInsights(thHorse.id);
-    expect(result.inheritanceRisk).toBe('high');
-    expect(result.breedingNotes.length).toBeGreaterThan(0);
-    expect(result).not.toHaveProperty('recommendedCarePatterns');
-  });
-
-  it('getBreedingInsights returns inheritanceRisk=moderate for horse with 1 negative epigenetic trait', async () => {
-    const result = await getBreedingInsights(thModerateHorse.id);
-    expect(result.inheritanceRisk).toBe('moderate');
   });
 
   it('analyzeTraitPatterns with groom-linked entries → groomEffectiveness populated and no recommendation is given', async () => {

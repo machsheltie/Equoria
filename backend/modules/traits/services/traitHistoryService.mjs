@@ -238,50 +238,6 @@ export async function getTraitDevelopmentSummary(horseId) {
 }
 
 /**
- * Gets trait development insights for breeding decisions
- * @param {number} horseId - ID of the horse
- * @returns {Object} Breeding insights based on trait development
- */
-export async function getBreedingInsights(horseId) {
-  const history = await getTraitHistory(horseId, { isEpigenetic: true });
-
-  const insights = {
-    horseId,
-    epigeneticProfile: {},
-    inheritanceRisk: 'low',
-    breedingNotes: [],
-  };
-
-  // Analyze epigenetic profile
-  const epigeneticTraits = history.filter(h => h.isEpigenetic);
-  epigeneticTraits.forEach(trait => {
-    insights.epigeneticProfile[trait.traitName] = {
-      acquiredAt: trait.ageInDays,
-      source: trait.sourceType,
-      groomInfluence: trait.groom?.name,
-      influenceScore: trait.influenceScore,
-    };
-  });
-
-  // Assess inheritance risk
-  const negativeTraits = epigeneticTraits.filter(trait =>
-    ['Nervous', 'Skittish', 'Anxious', 'Insecure', 'Antisocial'].includes(trait.traitName),
-  );
-
-  if (negativeTraits.length > 2) {
-    insights.inheritanceRisk = 'high';
-    insights.breedingNotes.push(
-      'High concentration of negative epigenetic traits may affect offspring',
-    );
-  } else if (negativeTraits.length > 0) {
-    insights.inheritanceRisk = 'moderate';
-    insights.breedingNotes.push('Some negative traits present - consider mate selection carefully');
-  }
-
-  return insights;
-}
-
-/**
  * Analyzes trait development patterns across multiple horses
  * @param {Array} horseIds - Array of horse IDs to analyze
  * @returns {Object} Pattern analysis results

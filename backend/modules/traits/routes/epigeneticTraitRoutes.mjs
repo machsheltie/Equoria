@@ -1,15 +1,18 @@
 /**
  * Epigenetic Trait Routes
  *
- * API endpoints for managing the enhanced epigenetic trait system,
- * including milestone evaluation, trait history, and breeding insights.
+ * Read-only API endpoints for the epigenetic trait system: definitions, trait
+ * history and the development summary.
+ *
+ * Equoria-a7f1p: POST /evaluate-milestone/:horseId (owner ruling 2026-10-27:
+ * traits reveal only through the daily grooming-day ladder) and
+ * GET /breeding-insights/:horseId (owner ruling 2026-10-07: no advice) are gone.
  */
 
 import express from 'express';
-import { body, param, query, validationResult } from 'express-validator';
+import { param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
-import { evaluateEnhancedMilestone } from '../../../utils/enhancedMilestoneEvaluation.mjs';
 // No route here writes trait history (Equoria-gu8jk; owner ruling 2026-10-20:
 // players must never write traits for themselves). POST /log-trait, which let
 // an owner insert any TraitHistoryLog row, was removed; only the nightly foal
@@ -17,7 +20,6 @@ import { evaluateEnhancedMilestone } from '../../../utils/enhancedMilestoneEvalu
 import {
   getTraitHistoryPage,
   getTraitDevelopmentSummary,
-  getBreedingInsights,
 } from '../services/traitHistoryService.mjs';
 // Equoria-oey96.33: the flag roster served here is the CANONICAL one from the
 // live engine's single source of truth (config/epigeneticFlagDefinitions.mjs) —
@@ -29,10 +31,6 @@ import { EPIGENETIC_FLAG_DEFINITIONS } from '../../../config/epigeneticFlagDefin
 import { GROOM_PERSONALITIES } from '../../../utils/epigeneticFlags.mjs';
 import logger from '../../../utils/logger.mjs';
 import { InvalidCursorError } from '../../../utils/paginationHelper.mjs';
-import {
-  getHorseWithActiveGroomAssignments,
-  getGroomCareHistoryForHorse,
-} from '../services/epigeneticTraitQueries.mjs';
 
 const router = express.Router();
 
@@ -59,75 +57,6 @@ router.get('/definitions', (req, res) => {
     });
   }
 });
-
-/**
- * POST /api/epigenetic-traits/evaluate-milestone/:horseId
- * Evaluate enhanced milestone with epigenetic factors
- *
- * Security: Validates horse ownership using requireOwnership middleware (atomic, prevents CWE-639)
- */
-router.post(
-  '/evaluate-milestone/:horseId',
-  authenticateToken,
-  [
-    param('horseId').isInt().withMessage('Horse ID must be an integer'),
-    body('milestoneData').optional().isObject().withMessage('Milestone data must be an object'),
-    body('includeHistory').optional().isBoolean().withMessage('Include history must be boolean'),
-  ],
-  requireOwnership('horse', { idParam: 'horseId' }),
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation failed',
-          details: errors.array(),
-        });
-      }
-
-      const { horseId } = req.params;
-      const { milestoneData = {}, includeHistory = true } = req.body;
-
-      // Ownership already validated by middleware; service-layer fetch (Equoria-becrm)
-      const horse = await getHorseWithActiveGroomAssignments(parseInt(horseId));
-
-      // Get groom care history
-      let groomCareHistory = {};
-      if (includeHistory) {
-        groomCareHistory = await getGroomCareHistory(parseInt(horseId));
-      }
-
-      // Get current groom
-      const currentGroom = horse.groomAssignments[0]?.groom || null;
-
-      // Evaluate enhanced milestone
-      const milestoneResult = await evaluateEnhancedMilestone(
-        horse,
-        groomCareHistory,
-        currentGroom,
-        milestoneData,
-      );
-
-      res.json({
-        success: true,
-        data: {
-          horseId: parseInt(horseId),
-          horseName: horse.name,
-          currentGroom: currentGroom?.name || 'None assigned',
-          milestoneResult,
-          careHistoryIncluded: includeHistory,
-        },
-      });
-    } catch (error) {
-      logger.error('Error evaluating enhanced milestone:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to evaluate milestone',
-      });
-    }
-  },
-);
 
 /**
  * GET /api/epigenetic-traits/history/:horseId
@@ -253,57 +182,5 @@ router.get(
     }
   },
 );
-
-/**
- * GET /api/epigenetic-traits/breeding-insights/:horseId
- * Get breeding insights based on trait development
- *
- * Security: Validates horse ownership using requireOwnership middleware (atomic, prevents CWE-639)
- */
-router.get(
-  '/breeding-insights/:horseId',
-  authenticateToken,
-  [param('horseId').isInt().withMessage('Horse ID must be an integer')],
-  requireOwnership('horse', { idParam: 'horseId' }),
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation failed',
-          details: errors.array(),
-        });
-      }
-
-      const { horseId } = req.params;
-      const horse = req.horse; // Cached by middleware
-
-      // Get breeding insights
-      const insights = await getBreedingInsights(parseInt(horseId));
-
-      res.json({
-        success: true,
-        data: {
-          horseName: horse.name,
-          insights,
-        },
-      });
-    } catch (error) {
-      logger.error('Error fetching breeding insights:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch breeding insights',
-      });
-    }
-  },
-);
-
-/**
- * Helper function to get groom care history (delegates to service, Equoria-becrm)
- */
-async function getGroomCareHistory(horseId) {
-  return getGroomCareHistoryForHorse(horseId);
-}
 
 export default router;

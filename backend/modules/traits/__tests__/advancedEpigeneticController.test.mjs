@@ -87,62 +87,10 @@ describe('GET /api/v1/horses/:id/environmental-analysis', () => {
   });
 });
 
-describe('GET /api/v1/horses/:id/environmental-triggers', () => {
-  it('returns 200 for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${horse.id}/environmental-triggers`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-
-  it('returns 404 for non-owned horse', async () => {
-    const res = await request(app)
-      .get('/api/v1/horses/999999999/environmental-triggers')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(404);
-  });
-});
-
-describe('GET /api/v1/horses/:id/trigger-thresholds', () => {
-  it('returns 200 for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${horse.id}/trigger-thresholds`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-});
-
 describe('GET /api/v1/horses/:id/trait-interactions', () => {
   it('returns 200 for owned horse', async () => {
     const res = await request(app)
       .get(`/api/v1/horses/${horse.id}/trait-interactions`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-});
-
-describe('GET /api/v1/horses/:id/trait-matrix', () => {
-  it('returns 200 for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${horse.id}/trait-matrix`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-});
-
-describe('GET /api/v1/horses/:id/trait-stability', () => {
-  it('returns 200 for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${horse.id}/trait-stability`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);

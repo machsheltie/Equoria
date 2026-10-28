@@ -7,7 +7,8 @@
  * these CWE-639 tests, not just "404 instead of 403" tests.
  *
  * Companion child issues:
- *   - Equoria-m55h — ultraRareTraitRoutes /effects/calculate
+ *   - Equoria-m55h — ultraRareTraitRoutes /effects/calculate (route removed by
+ *     Equoria-a7f1p — the ultra-rare traits are gone — so its case went with it)
  *   - Equoria-qpeg — enhancedReportingRoutes /horses/compare-epigenetics
  *   - Equoria-msh4 — environmentalRoutes /environment/calculate-impact (route removed by
  *     Equoria-aq9ya — there is no weather — so its case went with it)
@@ -164,34 +165,6 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
   });
 
   afterEach(() => cleanup.run());
-
-  // ─── Equoria-m55h ────────────────────────────────────────────────────────
-  describe('ultraRareTraitRoutes POST /api/v1/auth/ultra-rare-traits/effects/calculate', () => {
-    it('returns 404 for cross-user horse with byte-identical response to not-exists', async () => {
-      const resNotOwned = await request(app)
-        .post('/api/v1/auth/ultra-rare-traits/effects/calculate')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ horseId: horseB.id, effectType: 'competition', baseValue: 1 });
-
-      expect(resNotOwned.status).toBe(404);
-      expect(resNotOwned.body.success).toBe(false);
-
-      const resMissing = await request(app)
-        .post('/api/v1/auth/ultra-rare-traits/effects/calculate')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ horseId: NONEXISTENT_ID, effectType: 'competition', baseValue: 1 });
-
-      expect(resMissing.status).toBe(404);
-      // Byte-identical sentinel — divergence allows ID enumeration.
-      expect(resMissing.body).toEqual(resNotOwned.body);
-    });
-  });
 
   // ─── Equoria-qpeg ────────────────────────────────────────────────────────
   describe('enhancedReportingRoutes POST /horses/compare-epigenetics', () => {

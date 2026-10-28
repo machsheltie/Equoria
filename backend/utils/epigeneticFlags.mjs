@@ -3,10 +3,9 @@
  *
  * This module exports the legacy EPIGENETIC_FLAGS roster and GROOM_PERSONALITIES
  * reference tables. The permanent-stub care-pattern flag evaluator and its
- * CARE_PATTERN_TRIGGERS table were deleted under Equoria-oey96.32 — the live
- * milestone path (utils/enhancedMilestoneEvaluation.mjs) now reads the horse's
- * canonical flags assigned by the weekly flagEvaluationEngine, and never
- * re-evaluates flags here.
+ * CARE_PATTERN_TRIGGERS table were deleted under Equoria-oey96.32. The on-demand
+ * milestone path that read this roster (utils/enhancedMilestoneEvaluation.mjs)
+ * was deleted with its route under Equoria-a7f1p.
  *
  * NOTE (Equoria-oey96.33 coordination): EPIGENETIC_FLAGS is the STALE roster
  * (includes antisocial/social/sensitive, which the live engine does not). The

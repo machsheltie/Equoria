@@ -115,7 +115,7 @@ describe('trait interaction analysis reads one horse snapshot (Equoria-q4uem.5)'
     request(app).get(path).set('Origin', 'http://localhost:3000').set('Authorization', `Bearer ${authToken}`);
 
   it('the counter observes the app: a request emits SQL through the observed client', async () => {
-    const { result, statements } = await measure(() => get(`/api/v1/horses/${horse.id}/trait-stability`));
+    const { result, statements } = await measure(() => get(`/api/v1/horses/${horse.id}/trait-interactions`));
     expect(result.status).toBe(200);
     expect(statements.some(sql => sql.includes('FROM "public"."horses"'))).toBe(true);
   });
@@ -125,7 +125,7 @@ describe('trait interaction analysis reads one horse snapshot (Equoria-q4uem.5)'
     expect(reads).toHaveLength(1);
   });
 
-  it.each(['trait-interactions', 'trait-matrix', 'trait-stability'])(
+  it.each(['trait-interactions'])(
     'GET /api/v1/horses/:id/%s performs exactly one horse query in total (ownership check included)',
     async route => {
       const { result, reads } = await measure(() => get(`/api/v1/horses/${horse.id}/${route}`));
@@ -133,27 +133,6 @@ describe('trait interaction analysis reads one horse snapshot (Equoria-q4uem.5)'
       expect(reads).toHaveLength(1);
     },
   );
-
-  it('every section of a trait-matrix response carries the same analysis timestamp', async () => {
-    const response = await get(`/api/v1/horses/${horse.id}/trait-matrix`);
-    expect(response.status).toBe(200);
-    const matrix = response.body.data;
-    const sections = [
-      'traitInteractions',
-      'synergies',
-      'conflicts',
-      'dominance',
-      'complexInteractions',
-      'stability',
-      'temporalModel',
-    ];
-    for (const section of sections) {
-      expect({ section, at: matrix[section].analysisTimestamp }).toEqual({
-        section,
-        at: matrix.analysisTimestamp,
-      });
-    }
-  });
 
   it('every section of a trait-interactions response carries the same analysis timestamp', async () => {
     const response = await get(`/api/v1/horses/${horse.id}/trait-interactions`);

@@ -50,17 +50,14 @@ import wyagRoutes from '../modules/users/routes/wyagRoutes.mjs';
 // Equoria-rgyv (ADR-011): authenticated SSE real-time event stream.
 import eventRoutes from '../modules/events/routes/eventRoutes.mjs';
 import trainingRoutes from '../modules/training/routes/trainingRoutes.mjs';
-import enhancedMilestoneRoutes from '../modules/training/routes/enhancedMilestoneRoutes.mjs';
 import competitionRoutes from '../modules/competition/routes/competitionRoutes.mjs';
 import competitionResultsRoutes from '../modules/competition/routes/competitionResultsRoutes.mjs';
 import showRoutes from '../modules/competition/shows/showRoutes.mjs';
 import foalRoutes from '../modules/breeding/routes/foalRoutes.mjs';
 import studBookingRoutes from '../modules/breeding/routes/studBookingRoutes.mjs';
 import traitRoutes from '../modules/traits/routes/traitRoutes.mjs';
-import traitDiscoveryRoutes from '../modules/traits/routes/traitDiscoveryRoutes.mjs';
 import epigeneticTraitRoutes from '../modules/traits/routes/epigeneticTraitRoutes.mjs';
 import epigeneticFlagRoutes from '../modules/traits/routes/epigeneticFlagRoutes.mjs';
-import ultraRareTraitRoutes from '../modules/traits/routes/ultraRareTraitRoutes.mjs';
 import advancedEpigeneticRoutes from '../modules/traits/routes/advancedEpigeneticRoutes.mjs';
 import groomRoutes from '../modules/grooms/routes/groomRoutes.mjs';
 import groomCareRoutes from '../modules/grooms/routes/groomCareRoutes.mjs';
@@ -209,7 +206,6 @@ export function buildRouters() {
   authRouter.use('/foals', foalRoutes);
   // Equoria-q4uem.9: stud bookings (public stud; private requests follow).
   authRouter.use('/studs', studBookingRoutes);
-  authRouter.use('/trait-discovery', traitDiscoveryRoutes);
   authRouter.use('/traits', traitRoutes);
 
   // Rider and trainer systems
@@ -246,8 +242,6 @@ export function buildRouters() {
   // Advanced game features
   authRouter.use('/epigenetic-traits', epigeneticTraitRoutes);
   authRouter.use('/flags', epigeneticFlagRoutes);
-  authRouter.use('/milestones', enhancedMilestoneRoutes);
-  authRouter.use('/ultra-rare-traits', ultraRareTraitRoutes);
   authRouter.use('/leaderboards', leaderboardRoutes);
 
   // Advanced epigenetic and genetics features

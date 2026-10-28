@@ -18,11 +18,10 @@ import { getFlagDefinition } from '../config/epigeneticFlagDefinitions.mjs';
 
 // NOTE (Equoria-yzqhj.1): the former `applyFlagInfluencesToTraitWeights`
 // export was DELETED here. It was a dead, never-wired second implementation
-// of flag→trait-weight influence that competed with the LIVE inline
-// `calculateEpigeneticFlagInfluence` in utils/enhancedMilestoneEvaluation.mjs
-// (which reads EPIGENETIC_FLAGS.effects.traitProbability and is the real
-// birth-time trait-generation path). Keeping both was an A/B trust landmine.
-// Trait-weight influence now has ONE source of truth: the inline milestone fn.
+// of flag→trait-weight influence that competed with the inline
+// `calculateEpigeneticFlagInfluence` in utils/enhancedMilestoneEvaluation.mjs.
+// Keeping both was an A/B trust landmine. That module was itself deleted with
+// its only caller, POST /epigenetic-traits/evaluate-milestone (Equoria-a7f1p).
 
 /**
  * Calculate behavior modifiers from epigenetic flags

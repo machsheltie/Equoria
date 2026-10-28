@@ -4,8 +4,9 @@
  * Thin wrapper around the ultra-rare trigger engine that also persists
  * UltraRareTraitEvent rows. Lets non-route callers (cron jobs, milestone
  * hooks, competition hooks) trigger ultra-rare evaluation without
- * duplicating the event-write logic that previously lived only in
- * ultraRareTraitRoutes.mjs.
+ * duplicating event-write logic. (The /ultra-rare-traits routes were all
+ * removed under Equoria-a7f1p; owner ruling 2026-10-19 removed the ultra-rare
+ * and exotic traits.)
  *
  * Equoria-d4tl: extracted so milestone evaluation can auto-trigger
  * ultra-rare checks at organic developmental boundaries instead of

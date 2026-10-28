@@ -1,17 +1,16 @@
 /**
  * Ultra-Rare & Exotic Traits System Tests
  * Comprehensive test suite for ultra-rare and exotic trait functionality
- * Tests trait definitions, trigger evaluation, mechanical effects, and API endpoints
+ * Tests trait definitions, trigger evaluation and mechanical effects. The
+ * /ultra-rare-traits API cases went with those routes (Equoria-a7f1p; owner
+ * ruling 2026-10-19 removed the ultra-rare and exotic traits).
  *
  * Testing Approach: TDD with real database operations (no mocking)
  * Focus: Business logic validation, trigger conditions, mechanical effects
  */
 
 // jest import removed - not used in this file
-import request from 'supertest';
-import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 import {
   getAllUltraRareTraits,
   getAllExoticTraits,
@@ -40,7 +39,6 @@ const TEST_EMAIL = `ultrararetester-${SUFFIX}@example.com`;
 
 describe('Ultra-Rare & Exotic Traits System', () => {
   let testUser;
-  let testToken;
   let testHorse;
   let testGroom;
 
@@ -74,12 +72,6 @@ describe('Ultra-Rare & Exotic Traits System', () => {
         xp: 1000,
         level: 5,
       },
-    });
-
-    testToken = generateTestToken({
-      id: testUser.id,
-      email: testUser.email,
-      role: 'user',
     });
 
     // Create test horse with comprehensive data
@@ -299,81 +291,6 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       expect(hasUltraRareAbility(horseWithIronWilled, 'burnout_immunity')).toBe(false);
 
       expect(hasUltraRareAbility(horseWithGhostwalker, 'burnout_immunity')).toBe(false);
-    });
-  });
-
-  describe('API Endpoints', () => {
-    test('GET /api/v1/ultra-rare-traits/definitions should return all trait definitions', async () => {
-      const response = await request(app)
-        .get('/api/v1/ultra-rare-traits/definitions')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${testToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.ultraRare).toBeDefined();
-      expect(response.body.data.exotic).toBeDefined();
-      expect(response.body.data.totalCount).toBe(10); // 5 ultra-rare + 5 exotic
-    });
-
-    test('GET /api/v1/ultra-rare-traits/horse/:horseId should return horse ultra-rare traits', async () => {
-      const response = await request(app)
-        .get(`/api/v1/ultra-rare-traits/horse/${testHorse.id}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${testToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.horse.id).toBe(testHorse.id);
-      expect(response.body.data.traits).toBeDefined();
-      expect(response.body.data.traits.ultraRare).toBeDefined();
-      expect(response.body.data.traits.exotic).toBeDefined();
-    });
-
-    test('should reject unauthorized access to horse traits', async () => {
-      await request(app)
-        .get(`/api/v1/ultra-rare-traits/horse/${testHorse.id}`)
-        .set('Origin', 'http://localhost:3000')
-
-        .expect(401);
-    });
-
-    test('should reject access to non-owned horse', async () => {
-      // Create another user's horse
-      const otherUserSuffix = Date.now();
-      const otherUser = await prisma.user.create({
-        data: {
-          id: `other-ultra-rare-${otherUserSuffix}`,
-          email: `other-ultra-rare-${otherUserSuffix}@example.com`,
-          username: `other-ultra-rare-${otherUserSuffix}`,
-          firstName: 'Other',
-          lastName: 'User',
-          password: 'TestPassword123!',
-          money: 1000,
-          xp: 0,
-          level: 1,
-        },
-      });
-
-      const otherHorse = await prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'Other Horse',
-          sex: 'Stallion',
-          dateOfBirth: new Date('2021-01-01'),
-          userId: otherUser.id,
-        },
-      });
-
-      await request(app)
-        .get(`/api/v1/ultra-rare-traits/horse/${otherHorse.id}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${testToken}`)
-        .expect(404);
-
-      // Clean up
-      await prisma.horse.deleteMany({ where: { id: otherHorse.id } });
-      await prisma.user.deleteMany({ where: { id: otherUser.id } });
     });
   });
 });

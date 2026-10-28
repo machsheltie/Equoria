@@ -28,16 +28,8 @@ import {
 } from '../services/enhancedReportingQueries.mjs';
 
 // Import advanced epigenetic services
-import {
-  environmentalReport,
-  generateEnvironmentalReport,
-  loadEnvironmentalTriggerSnapshot,
-} from '../services/environmentalTriggerSystem.mjs';
-import {
-  analyzeTraitSnapshot,
-  generateInteractionMatrix,
-  toTraitAnalysisSnapshot,
-} from '../services/traitInteractionMatrix.mjs';
+import { generateEnvironmentalReport } from '../services/environmentalTriggerSystem.mjs';
+import { generateInteractionMatrix } from '../services/traitInteractionMatrix.mjs';
 
 // Import enhanced reporting service functions
 import {
@@ -150,51 +142,6 @@ router.get(
       res.status(500).json({
         success: false,
         message: 'Failed to generate enhanced trait history',
-      });
-    }
-  },
-);
-
-/**
- * GET /api/horses/:id/epigenetic-insights
- * Get advanced epigenetic analysis and insights
- */
-router.get(
-  '/horses/:id/epigenetic-insights',
-  authenticateToken,
-  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-  handleValidationErrors,
-  requireOwnership('horse', { idParam: 'id' }),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id);
-
-      // Equoria-glgyw: requireOwnership already loaded the horse row into
-      // req.horse. Every analysis below runs on that row, and the groom
-      // interactions are read once and shared by the two analyses that need them.
-      const horse = req.horse;
-      const environmentalSnapshot = await loadEnvironmentalTriggerSnapshot(horseId, { horse });
-      const environmentalInfluences = environmentalReport(environmentalSnapshot);
-      const traitAnalysis = analyzeTraitSnapshot(toTraitAnalysisSnapshot(horse));
-
-      // Owner ruling 2026-10-07 (no advice, no forecasts, no milestone countdowns),
-      // enforced on this response by Equoria-5ovgv: it carries the trait and
-      // environment analyses only.
-      logger.info(`Epigenetic insights generated for horse ${horseId} by user ${req.user.id}`);
-
-      res.json({
-        success: true,
-        data: {
-          horseId,
-          traitAnalysis,
-          environmentalInfluences,
-        },
-      });
-    } catch (error) {
-      logger.error(`Error generating epigenetic insights for horse ${req.params.id}:`, error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to generate epigenetic insights',
       });
     }
   },

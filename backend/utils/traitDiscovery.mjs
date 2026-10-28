@@ -1,9 +1,11 @@
 /**
  * Trait Discovery — discovery conditions and progress (read side)
  *
- * Read-only helpers behind GET /traits/discovery-status and the
- * /trait-discovery routes: which discovery conditions a horse currently
- * meets, and its discovery progress. Nothing here writes a horse's traits.
+ * Read-only helpers behind GET /traits/discovery-status: which discovery
+ * conditions a horse currently meets, and its discovery progress. Nothing here
+ * writes a horse's traits. The /trait-discovery routes that read
+ * getDiscoveryProgress were removed under Equoria-a7f1p (owner ruling
+ * 2026-10-27: traits reveal only through the grooming-day ladder).
  *
  * Equoria-0w96q: revealTraits / batchRevealTraits (with selectTraitsToReveal,
  * updateHorseTraits and getDiscoveryReason) were deleted. They read
@@ -150,8 +152,8 @@ export async function getDiscoveryProgress(horseId) {
 
   if (!horse) {
     // Equoria-4xwyi: throw a TYPED NotFoundError (AppError subclass, statusCode
-    // 404) instead of a plain Error so the traitDiscoveryRoutes /progress and
-    // /check-conditions handlers can detect not-found by type
+    // 404) instead of a plain Error so callers (formerly the /trait-discovery
+    // /progress and /check-conditions handlers) can detect not-found by type
     // (AppError.isAppError + statusCode===404) rather than the fragile
     // error.message.includes('not found') string-sniff (the Equoria-93lhj
     // antipattern). NotFoundError('Horse', horseId) yields the identical message

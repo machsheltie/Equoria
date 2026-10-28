@@ -1,7 +1,8 @@
 /**
  * epigeneticTraitRoutes integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: definitions, history, summary, breeding-insights, evaluate-milestone.
+ * Covers: definitions, history, summary. (breeding-insights and evaluate-milestone
+ * were removed by Equoria-a7f1p; pinned in retiredTraitAdviceRoutes.)
  * (POST /log-trait was removed by Equoria-gu8jk — players never write trait history.)
  * Routes live under authRouter at /api/v1/epigenetic-traits.
  */
@@ -12,7 +13,6 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -143,88 +143,6 @@ describe('GET /api/v1/epigenetic-traits/summary/:horseId', () => {
 
   it('returns 401 without auth', async () => {
     const res = await request(app).get(`/api/v1/epigenetic-traits/summary/${horse.id}`).set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── GET /api/v1/epigenetic-traits/breeding-insights/:horseId ───────────────────
-
-describe('GET /api/v1/epigenetic-traits/breeding-insights/:horseId', () => {
-  it('returns 200 with breeding insights for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/epigenetic-traits/breeding-insights/${horse.id}`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.horseName).toBeDefined();
-    expect(res.body.data.insights).toBeDefined();
-  });
-
-  it('returns 404 for a horse not owned by user', async () => {
-    const res = await request(app)
-      .get('/api/v1/epigenetic-traits/breeding-insights/999999999')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(404);
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/epigenetic-traits/breeding-insights/${horse.id}`).set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── POST /api/v1/epigenetic-traits/evaluate-milestone/:horseId ─────────────────
-
-describe('POST /api/v1/epigenetic-traits/evaluate-milestone/:horseId', () => {
-  it('returns 404 for a horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/epigenetic-traits/evaluate-milestone/999999999')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    expect(res.status).toBe(404);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 200 when evaluating milestone for owned horse', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/epigenetic-traits/evaluate-milestone/${horse.id}`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ milestoneData: {}, includeHistory: false });
-
-    // 200 = evaluated; 500 = service error for edge case (no groom etc.)
-    expect([200, 500]).toContain(res.status);
-    if (res.status === 200) {
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.horseId).toBe(horse.id);
-    }
-  });
-
-  it('returns 401 without auth', async () => {
-    // No-auth request: bare CSRF (anonymous session). authenticateToken 401s
-    // before csrfProtection runs, so no accessToken-bound token is needed.
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post(`/api/v1/epigenetic-traits/evaluate-milestone/${horse.id}`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
 
     expect(res.status).toBe(401);
   });

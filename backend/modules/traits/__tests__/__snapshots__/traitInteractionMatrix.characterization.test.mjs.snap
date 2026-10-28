@@ -8,22 +8,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) GET /api/
 }
 `;
 
-exports[`trait interaction analysis characterization (Equoria-q4uem.5) GET /api/v1/horses/:id/trait-matrix is 404 for a missing horse and for a horse the user does not own 1`] = `
-{
-  "message": "Horse not found",
-  "status": "fail",
-  "success": false,
-}
-`;
-
-exports[`trait interaction analysis characterization (Equoria-q4uem.5) GET /api/v1/horses/:id/trait-stability is 404 for a missing horse and for a horse the user does not own 1`] = `
-{
-  "message": "Horse not found",
-  "status": "fail",
-  "success": false,
-}
-`;
-
 exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflictingLowBond horse generateInteractionMatrix output is unchanged 1`] = `
 {
   "analysisTimestamp": "<analysisTimestamp>",
