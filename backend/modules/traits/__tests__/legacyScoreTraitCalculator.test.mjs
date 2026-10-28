@@ -233,11 +233,14 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
     for (const t of result.breakdown.traitsConsidered) {
       expect(t).not.toHaveProperty('isRare');
     }
-    // rareTraitScore = min(3*3, 10) = 9
-    expect(result.breakdown.rareTraits).toBe(9);
+    // Old contract: breakdown.rareTraits sent the rare-trait points (9). Owner
+    // ruling 2026-10-28 (q150): players never see the rare-trait score. The
+    // points still count in the total: rareTraitScore = min(3*3, 10) = 9.
+    expect(result.breakdown).not.toHaveProperty('rareTraits');
     expect(result.breakdown.diversity).toBe(4); // 4 unique source types
     expect(result.breakdown.groomCareConsistency).toBe(5);
-    expect(result.totalScore).toBeGreaterThan(0);
+    const b = result.breakdown;
+    expect(result.totalScore).toBe(b.traitCount + b.diversity + 9 + b.groomCareConsistency + b.negativeTraitPenalty);
   });
 
   it('calculateTraitScore: weak horse — 2 negative traits, penalty=-4, no milestone', async () => {
@@ -245,16 +248,18 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
     expect(result.breakdown.traitCount).toBe(2);
     expect(result.breakdown.negativeTraitPenalty).toBe(-4); // fearful(-2) twice
     expect(result.breakdown.groomCareConsistency).toBe(0); // no milestone data
-    expect(result.breakdown.rareTraits).toBe(0);
+    expect(result.breakdown).not.toHaveProperty('rareTraits'); // q150
     expect(result.breakdown.traitsExcluded).toHaveLength(0);
   });
 
   // ── getTraitScoreSummary — strengths branches ────────────────────────────────
 
-  it('getTraitScoreSummary: exceptional horse — pushes strengths for rare>5, diversity>=4, groomCare>=4', async () => {
+  it('getTraitScoreSummary: exceptional horse — pushes strengths for diversity>=4, groomCare>=4', async () => {
     const summary = await getTraitScoreSummary(lstExceptionalHorse.id);
     expect(summary.horseId).toBe(lstExceptionalHorse.id);
-    expect(summary.strengths).toContain('Exceptional rare trait collection');
+    // Old contract: 'Exceptional rare trait collection' was pushed for rare>5.
+    // Owner ruling 2026-10-28 (q150): it hinted at which traits are rare.
+    expect(summary.strengths).not.toContain('Exceptional rare trait collection');
     expect(summary.strengths).toContain('Excellent trait source diversity');
     expect(summary.strengths).toContain('Outstanding groom care consistency');
     expect(summary.weaknesses).not.toContain('Significant negative trait burden');

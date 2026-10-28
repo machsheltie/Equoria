@@ -203,14 +203,32 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
     expect(result.hasInsufficientData).toBe(false);
     expect(result.traitSummary.totalTraits).toBe(4);
     // Old contract: traitSummary.rareTraits was sent (1, focused). Owner ruling
-    // 2026-10-27 (q112): players never see rarity (Equoria-qw4kp). The rare
-    // trait still counts toward the quality label below.
+    // 2026-10-27 (q112): players never see rarity (Equoria-qw4kp).
     expect(result.traitSummary).not.toHaveProperty('rareTraits');
     expect(result.traitSummary.negativeTraits).toBe(1); // fearful
-    // score = 2 (traits≥4) + 1 (rare≥1: focused) - 1 (negative) = 2 → 'fair'
+    // Old contract: +1 for a rare trait (focused) gave 2. Owner ruling
+    // 2026-10-28 (q170): no rare bonus. score = 2 (traits≥4) - 1 (negative) = 1 → 'fair'
     expect(result.breedingQuality).toBe('fair');
     expect(result.epigeneticFlags).toBeDefined();
     expect(result.temperamentInfluence.temperament).toBe('calm');
+  });
+
+  // Owner ruling 2026-10-28 (q170): the quality label gives no rare-trait
+  // points, which hinted at which traits are rare. Old code: one Legendary
+  // trait (heart) scored +1 → 'fair'.
+  it('generateBreedingData: a single Legendary trait earns no quality points → "poor"', async () => {
+    const result = await generateBreedingData(bpsHorseRare.id);
+    expect(result.traitSummary.totalTraits).toBe(1);
+    expect(result.breedingQuality).toBe('poor');
+  });
+
+  // Owner rulings 2026-10-28: no trait category counts (q169) and no breeding
+  // compatibility block (q167, Equoria-8grnh).
+  it('generateBreedingData: sends no trait category counts and no breeding compatibility', async () => {
+    const result = await generateBreedingData(bpsStallionCalm.id);
+    expect(result.traitSummary).not.toHaveProperty('traitsByCategory');
+    expect(result).not.toHaveProperty('flagInheritanceScore');
+    expect(result.temperamentInfluence).not.toHaveProperty('breedingCompatibility');
   });
 
   it('generateBreedingData: horse without traits → hasInsufficientData=true, quality="poor"', async () => {

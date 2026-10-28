@@ -75,17 +75,6 @@ export interface Horse {
 }
 
 /**
- * Trait category types for inheritance prediction
- */
-export type TraitCategory =
-  | 'empathy'
-  | 'boldness'
-  | 'intelligence'
-  | 'physical'
-  | 'temperament'
-  | 'social';
-
-/**
  * Trait probabil inheritance data. Never a trait's rarity: players do not see
  * how rare a trait is (owner ruling 2026-10-27, q112; Equoria-qw4kp).
  */
@@ -115,7 +104,7 @@ export interface HorseBreedingData {
     epigeneticTraits: number;
     // No rare-trait count: players never see rarity (q112, Equoria-qw4kp).
     negativeTraits: number;
-    traitsByCategory: Record<TraitCategory, number>;
+    // No trait category counts (owner ruling 2026-10-28, q169).
     traitsBySource: {
       milestone: number;
       groom: number;
@@ -124,12 +113,6 @@ export interface HorseBreedingData {
     };
     averageBondScore: number;
     averageInfluenceScore: number;
-  };
-  flagInheritanceScore: {
-    horseId: number;
-    flags: Record<TraitCategory, number>;
-    totalFlags: number;
-    dominantCategories: TraitCategory[];
   };
   epigeneticFlags: {
     positive: string[];
@@ -140,10 +123,7 @@ export interface HorseBreedingData {
   temperamentInfluence: {
     temperament: string;
     traitAffinities: Record<string, 'high' | 'medium' | 'low'>;
-    breedingCompatibility: {
-      bestMatches: string[];
-      worstMatches: string[];
-    };
+    // No breeding compatibility block (owner ruling 2026-10-28, q167).
   };
   hasInsufficientData: boolean;
   breedingQuality: 'exceptional' | 'excellent' | 'good' | 'fair' | 'poor';

@@ -178,7 +178,13 @@ describe('Legacy Score Trait Integration System', () => {
       expect(traitScore.totalScore).toBeLessThanOrEqual(25);
       expect(traitScore.breakdown.traitCount).toBe(5);
       expect(traitScore.breakdown.diversity).toBeGreaterThanOrEqual(3);
-      expect(traitScore.breakdown.rareTraits).toBe(6);
+      // Old contract: breakdown.rareTraits was 6. Owner ruling 2026-10-28
+      // (q150): the rare-trait points are not shown; they still count in the total.
+      expect(traitScore.breakdown).not.toHaveProperty('rareTraits');
+      const b = traitScore.breakdown;
+      expect(traitScore.totalScore).toBe(
+        Math.max(0, b.traitCount + b.diversity + 6 + b.groomCareConsistency + b.negativeTraitPenalty),
+      );
       expect(traitScore.breakdown.groomCareConsistency).toBeGreaterThanOrEqual(0);
     });
 

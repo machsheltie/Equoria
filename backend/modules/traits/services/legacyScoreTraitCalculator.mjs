@@ -123,8 +123,10 @@ export async function calculateTraitScore(horseId) {
   const shown = rows => rows.filter(t => !hidden.has(t.traitName));
 
   // The breakdown reaches the horse's owner (GET /horses/:id/legacy-score), so
-  // it never names which traits are rare: players never see a trait's rarity
-  // (owner ruling 2026-10-27, q112). Polarity is player-visible (q135).
+  // it never names which traits are rare and never shows the rare-trait points:
+  // players never see a trait's rarity (owner rulings 2026-10-27, q112;
+  // 2026-10-28, q150). The rare points still count in the total. Polarity is
+  // player-visible (q135).
   // Calculate total trait score
   const totalScore = Math.max(
     0,
@@ -138,7 +140,6 @@ export async function calculateTraitScore(horseId) {
     breakdown: {
       traitCount: traitCountScore,
       diversity: diversityScore,
-      rareTraits: rareTraitScore,
       groomCareConsistency: groomCareScore,
       negativeTraitPenalty,
       traitsConsidered: shown(traitsConsidered).map(t => ({
@@ -223,10 +224,8 @@ export async function getTraitScoreSummary(horseId) {
     weaknesses: [],
   };
 
-  // Identify strengths
-  if (traitScore.breakdown.rareTraits > 5) {
-    summary.strengths.push('Exceptional rare trait collection');
-  }
+  // Identify strengths. No rare-trait strength: it would hint at which traits
+  // are rare (owner ruling 2026-10-28, q150).
   if (traitScore.breakdown.diversity >= 4) {
     summary.strengths.push('Excellent trait source diversity');
   }

@@ -231,7 +231,9 @@ describe('Breeding Prediction System', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.breedingData).toBeDefined();
       expect(response.body.data.breedingData.traitSummary).toBeDefined();
-      expect(response.body.data.breedingData.flagInheritanceScore).toBeDefined();
+      // Old contract: flagInheritanceScore (six trait category counts) was sent.
+      // Owner ruling 2026-10-28 (q169): the category counts are removed.
+      expect(response.body.data.breedingData).not.toHaveProperty('flagInheritanceScore');
       expect(response.body.data.breedingData.epigeneticFlags).toBeDefined();
       expect(response.body.data.breedingData.temperamentInfluence).toBeDefined();
     });

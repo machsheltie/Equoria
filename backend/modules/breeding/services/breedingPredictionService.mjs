@@ -14,72 +14,28 @@
  * Business Rules:
  * - Only traits before age 4 are considered
  * - History rows of traits still hidden on the horse are not counted
- * - A trait's rarity is never sent: players do not see how rare a trait is
- *   (owner ruling 2026-10-27, q112; Equoria-qw4kp). The rare count only feeds
- *   the breeding-quality label.
+ * - A trait's rarity is never sent and never scored here: players do not see
+ *   how rare a trait is (owner ruling 2026-10-27, q112), and the breeding-
+ *   quality label gives no bonus for rare traits, which hinted at which traits
+ *   are rare (owner ruling 2026-10-28, q170; Equoria-qw4kp).
+ * - No trait category counts (owner ruling 2026-10-28, q169): the six old
+ *   categories did not fit the twenty-trait roster.
+ * - No breeding compatibility block (owner ruling 2026-10-28, q167; Equoria-
+ *   8grnh): no genetics reports for players.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { NotFoundError } from '../../../errors/index.mjs';
 import { hiddenTraitSet, publicTraitModifiers } from '../../../utils/publicTraitView.mjs';
-import { getTraitsAtOrAboveRarity, getTraitsByType } from '../../../utils/epigeneticTraits.mjs';
+import { getTraitsByType } from '../../../utils/epigeneticTraits.mjs';
 
 // Constants for inheritance calculations
 const AGE_CUTOFF_DAYS = 1460; // 4 years in days
 
-// Trait categorization for prediction
-const TRAIT_CATEGORIES = {
-  empathy: ['sensitive', 'empathic', 'gentle', 'caring', 'intuitive'],
-  boldness: ['bold', 'brave', 'confident', 'fearless', 'daring'],
-  intelligence: ['quick_learner', 'clever', 'smart', 'wise', 'analytical'],
-  physical: ['athletic', 'strong', 'agile', 'fast', 'enduring'],
-  temperament: ['calm', 'spirited', 'gentle', 'fiery', 'steady'],
-  social: ['charismatic', 'friendly', 'leader', 'cooperative', 'outgoing'],
-};
-
-// Rare and negative traits, keyed on the twenty-trait roster's rarity (q134)
-// and polarity (q135) from utils/epigeneticTraits.mjs, their one source
-// (Equoria-qw4kp). "Rare" is a Rare, Ultra Rare or Legendary trait. The lists
-// used to name traits that are no longer on the roster.
-const RARE_TRAITS = Object.freeze(getTraitsAtOrAboveRarity('rare'));
-
+// Negative traits, keyed on the twenty-trait roster's polarity (q135) from
+// utils/epigeneticTraits.mjs, their one source (Equoria-qw4kp).
 const NEGATIVE_TRAITS = Object.freeze(getTraitsByType('negative'));
-
-/**
- * Calculate individual flag scores for a horse
- * @param {number} horseId - ID of the horse
- * @param {string[]} hiddenTraits - traits hidden on the horse now; their history
- *   rows are not counted (owner ruling 2026-10-19, Equoria-6dace)
- * @returns {Object} Individual flag analysis
- */
-async function calculateIndividualFlags(horseId, hiddenTraits) {
-  const traits = await prisma.traitHistoryLog.findMany({
-    where: {
-      horseId,
-      ageInDays: { lt: AGE_CUTOFF_DAYS },
-      traitName: { notIn: hiddenTraits },
-    },
-  });
-
-  const flags = {};
-  Object.keys(TRAIT_CATEGORIES).forEach(category => {
-    flags[category] = traits.filter(trait =>
-      TRAIT_CATEGORIES[category].includes(trait.traitName),
-    ).length;
-  });
-
-  return {
-    horseId,
-    flags,
-    totalFlags: Object.values(flags).reduce((sum, count) => sum + count, 0),
-    dominantCategories: Object.entries(flags)
-      .filter(([, count]) => count > 0)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
-      .map(([category]) => category),
-  };
-}
 
 /**
  * Calculate temperament influence and compatibility
@@ -218,7 +174,6 @@ export async function generateBreedingData(horseId) {
     totalTraits: traitHistory.length,
     epigeneticTraits: traitHistory.filter(t => t.isEpigenetic).length,
     negativeTraits: traitHistory.filter(t => NEGATIVE_TRAITS.includes(t.traitName)).length,
-    traitsByCategory: {},
     traitsBySource: {
       milestone: traitHistory.filter(t => t.sourceType === 'milestone').length,
       groom: traitHistory.filter(t => t.sourceType === 'groom').length,
@@ -234,16 +189,6 @@ export async function generateBreedingData(horseId) {
         ? traitHistory.reduce((sum, t) => sum + (t.influenceScore || 0), 0) / traitHistory.length
         : 0,
   };
-
-  // Categorize traits
-  Object.keys(TRAIT_CATEGORIES).forEach(category => {
-    traitSummary.traitsByCategory[category] = traitHistory.filter(trait =>
-      TRAIT_CATEGORIES[category].includes(trait.traitName),
-    ).length;
-  });
-
-  // Calculate individual flag inheritance score
-  const flagInheritanceScore = await calculateIndividualFlags(horseId, hiddenTraits);
 
   // Unrevealed hidden traits: a count only, never named (Equoria-6dace).
   const { positive, negative, hiddenCount } = publicTraitModifiers(horse.epigeneticModifiers);
@@ -271,10 +216,6 @@ export async function generateBreedingData(horseId) {
       energy:
         horse.temperament === 'spirited' ? 'high' : horse.temperament === 'calm' ? 'low' : 'medium',
     },
-    breedingCompatibility: {
-      bestMatches: getCompatibleTemperaments(horse.temperament),
-      worstMatches: getIncompatibleTemperaments(horse.temperament),
-    },
   };
 
   const result = {
@@ -282,15 +223,10 @@ export async function generateBreedingData(horseId) {
     horseName: horse.name,
     sex: horse.sex,
     traitSummary,
-    flagInheritanceScore,
     epigeneticFlags,
     temperamentInfluence,
     hasInsufficientData: traitHistory.length === 0,
-    breedingQuality: calculateBreedingQuality(
-      traitSummary,
-      epigeneticFlags,
-      traitHistory.filter(t => RARE_TRAITS.includes(t.traitName)).length,
-    ),
+    breedingQuality: calculateBreedingQuality(traitSummary, epigeneticFlags),
     generatedAt: new Date(),
   };
 
@@ -302,42 +238,12 @@ export async function generateBreedingData(horseId) {
 }
 
 /**
- * Get compatible temperaments for breeding
- * @param {string} temperament - Horse temperament
- * @returns {Array} Compatible temperaments
- */
-function getCompatibleTemperaments(temperament) {
-  const compatibility = {
-    calm: ['gentle', 'calm', 'spirited'],
-    spirited: ['calm', 'spirited'],
-    gentle: ['calm', 'gentle'],
-  };
-  return compatibility[temperament] || ['calm', 'gentle'];
-}
-
-/**
- * Get incompatible temperaments for breeding
- * @param {string} temperament - Horse temperament
- * @returns {Array} Incompatible temperaments
- */
-function getIncompatibleTemperaments(temperament) {
-  const incompatibility = {
-    calm: [],
-    spirited: ['aggressive'],
-    gentle: ['aggressive'],
-  };
-  return incompatibility[temperament] || [];
-}
-
-/**
  * Calculate overall breeding quality score
  * @param {Object} traitSummary - Trait summary data
  * @param {Object} epigeneticFlags - Epigenetic flags data
- * @param {number} rareTraits - visible history rows of Rare-or-rarer traits;
- *   counted here, never sent (q112)
  * @returns {string} Breeding quality assessment
  */
-function calculateBreedingQuality(traitSummary, epigeneticFlags, rareTraits) {
+function calculateBreedingQuality(traitSummary, epigeneticFlags) {
   let score = 0;
 
   // Trait quantity (max 3 points)
@@ -349,12 +255,7 @@ function calculateBreedingQuality(traitSummary, epigeneticFlags, rareTraits) {
     score += 1;
   }
 
-  // Rare traits (max 2 points)
-  if (rareTraits >= 2) {
-    score += 2;
-  } else if (rareTraits >= 1) {
-    score += 1;
-  }
+  // No rare-trait points (owner ruling 2026-10-28, q170).
 
   // Epigenetic flags (max 2 points)
   if (epigeneticFlags.totalFlags >= 3) {
