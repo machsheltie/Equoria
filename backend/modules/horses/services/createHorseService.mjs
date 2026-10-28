@@ -39,7 +39,7 @@ import { generateConformationScores } from './conformationService.mjs';
 import { generateGaitScores } from './gaitService.mjs';
 import { generateTemperament } from './temperamentService.mjs';
 import { generateGenotype } from './genotypeGenerationService.mjs';
-import { calculatePhenotype } from './phenotypeCalculationService.mjs';
+import { calculateBreedPhenotype } from './phenotypeCalculationService.mjs';
 import { inheritColorGenotype } from './breedingColorInheritanceService.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import { generateMarkings, inheritMarkings } from './markingGenerationService.mjs';
@@ -168,7 +168,7 @@ export async function createHorseFromRequest(reqBody, userId) {
   }
 
   // Calculate phenotype (display color name + pattern flags) from genotype (31E-1b)
-  const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shadeBias ?? null);
+  const baseColor = calculateBreedPhenotype(colorGenotype, breedGeneticProfile);
 
   // Generate markings (31E-3): face, leg, advanced, modifiers
   // When sireId+damId: inherit markings from parent phenotypes (40/40/20 rule)

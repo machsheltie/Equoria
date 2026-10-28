@@ -58,9 +58,14 @@ export { generateStoreStats } from './services/horseStarterStats.mjs';
 export { analyzeHorseTemperament } from './services/horseTemperamentAnalysis.mjs';
 export { addXpToHorseCore, invalidateHorseXpCaches } from './services/horseXpModelService.mjs';
 export { generateMarkings } from './services/markingGenerationService.mjs';
-export { calculatePhenotype } from './services/phenotypeCalculationService.mjs';
+export {
+  calculateBreedPhenotype,
+  calculatePhenotype,
+} from './services/phenotypeCalculationService.mjs';
 // Equoria-merxy: every coat color in the game, for the Marketplace color dropdown.
 export { coatColorNames, canonicalCoatColorName } from './services/coatColorNames.mjs';
+// Equoria-de7ts: a breed's coat-color portrait, rolled once when the horse is created.
+export { defaultHorseImageUrl, rollCoatImageUrl } from './services/coatImageService.mjs';
 export {
   DEFAULT_TEMPERAMENT_BREED,
   generateTemperamentWithDefault,

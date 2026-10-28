@@ -9,8 +9,36 @@ import logger from '../../../utils/logger.mjs';
 import { validateConformationScores } from './conformationService.mjs';
 import { validateGaitScores } from './gaitService.mjs';
 import { generateGenotype } from './genotypeGenerationService.mjs';
-import { calculatePhenotype } from './phenotypeCalculationService.mjs';
+import { calculateBreedPhenotype } from './phenotypeCalculationService.mjs';
 import { generateMarkings } from './markingGenerationService.mjs';
+import { hasNoChosenPicture, rollCoatImageUrl } from './coatImageService.mjs';
+
+/** The breed id a createHorse call names, in any of its accepted shapes. */
+function breedIdOf(breedId, breed) {
+  if (typeof breedId === 'number') {
+    return breedId;
+  }
+  if (breed && typeof breed === 'object' && breed.connect && breed.connect.id) {
+    return breed.connect.id;
+  }
+  return typeof breed === 'number' ? breed : null;
+}
+
+/**
+ * Equoria-de7ts: a new horse of a breed with coat-color portraits rolls one
+ * variant of its color's portrait and keeps it. A caller-chosen imageUrl wins;
+ * a color with no portrait keeps the column default (the breed's one picture).
+ */
+async function chooseCoatImageUrl(client, resolvedBreedId, phenotype, imageUrl) {
+  if (!hasNoChosenPicture(imageUrl) || resolvedBreedId === null || !phenotype) {
+    return imageUrl;
+  }
+  const breedRow = await client.breed.findUnique({
+    where: { id: resolvedBreedId },
+    select: { name: true },
+  });
+  return (breedRow && rollCoatImageUrl(breedRow.name, phenotype)) || imageUrl;
+}
 
 async function createHorse(horseData, client = prisma) {
   try {
@@ -146,14 +174,7 @@ async function createHorse(horseData, client = prisma) {
       // Resolve the breed's breedGeneticProfile via raw SQL because the Prisma DMMF
       // may omit the JSONB column. Both call-shapes are supported: scalar breedId
       // or breed: { connect: { id } } / breed: number.
-      let resolvedBreedId = null;
-      if (typeof breedId === 'number') {
-        resolvedBreedId = breedId;
-      } else if (breed && typeof breed === 'object' && breed.connect && breed.connect.id) {
-        resolvedBreedId = breed.connect.id;
-      } else if (typeof breed === 'number') {
-        resolvedBreedId = breed;
-      }
+      const resolvedBreedId = breedIdOf(breedId, breed);
 
       let breedGeneticProfile = null;
       if (resolvedBreedId !== null && resolvedBreedId !== undefined) {
@@ -176,10 +197,7 @@ async function createHorse(horseData, client = prisma) {
         resolvedColorGenotype = generateGenotype(breedGeneticProfile);
       }
       if (resolvedPhenotype === null || resolvedPhenotype === undefined) {
-        const baseColor = calculatePhenotype(
-          resolvedColorGenotype,
-          breedGeneticProfile?.shadeBias ?? null,
-        );
+        const baseColor = calculateBreedPhenotype(resolvedColorGenotype, breedGeneticProfile);
         const markings = generateMarkings(
           breedGeneticProfile,
           baseColor.colorName,
@@ -189,6 +207,13 @@ async function createHorse(horseData, client = prisma) {
         resolvedPhenotype = { ...baseColor, ...markings };
       }
     }
+
+    const resolvedImageUrl = await chooseCoatImageUrl(
+      client,
+      breedIdOf(breedId, breed),
+      resolvedPhenotype,
+      imageUrl,
+    );
 
     // Create horse on `client` — caller's tx if passed, else global prisma (Equoria-gumnp).
     const horse = await client.horse.create({
@@ -203,7 +228,7 @@ async function createHorse(horseData, client = prisma) {
         ...(resolvedColorGenotype && { colorGenotype: resolvedColorGenotype }),
         ...(resolvedPhenotype && { phenotype: resolvedPhenotype }),
         ...(shade && { shade }),
-        ...(imageUrl && { imageUrl }),
+        ...(resolvedImageUrl && { imageUrl: resolvedImageUrl }),
         ...(trait && { trait }),
         ...(temperament && { temperament }),
         ...(precision !== undefined && { precision }),

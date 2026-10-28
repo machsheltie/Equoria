@@ -55,11 +55,13 @@ import {
   horseNameRejectionReason,
   firstHorseNameRejectionMessage,
   generateGenotype,
-  calculatePhenotype,
+  calculateBreedPhenotype,
   generateMarkings,
   generateTemperamentWithDefault,
   generateBreedPhysiqueOrRefuse,
   breedBirthDisciplineScores,
+  rollCoatImageUrl,
+  defaultHorseImageUrl,
 } from '../../horses/index.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { horseArrivalCare } from '../../../utils/horseArrivalCare.mjs';
@@ -338,10 +340,7 @@ export const advanceOnboarding = async (req, res, next) => {
       }
 
       starterColorGenotype = generateGenotype(breedGeneticProfile);
-      const starterBaseColor = calculatePhenotype(
-        starterColorGenotype,
-        breedGeneticProfile?.shadeBias ?? null,
-      );
+      const starterBaseColor = calculateBreedPhenotype(starterColorGenotype, breedGeneticProfile);
       const starterMarkings = generateMarkings(
         breedGeneticProfile,
         starterBaseColor.colorName,
@@ -383,6 +382,13 @@ export const advanceOnboarding = async (req, res, next) => {
             ...physique,
             // Equoria-tl5l8: born with the chosen breed's discipline at +5.
             disciplineScores: breedBirthDisciplineScores(breed) ?? {},
+            // Equoria-de7ts: the coat comes from the CHOSEN breed's genetics in both
+            // branches (the registration horse's coat was rolled before any breed was
+            // picked), and a breed with coat portraits rolls the horse's one portrait.
+            // A color with no portrait keeps the column default (the breed picture).
+            colorGenotype: starterColorGenotype,
+            phenotype: starterPhenotype,
+            imageUrl: rollCoatImageUrl(breed.name, starterPhenotype) ?? defaultHorseImageUrl,
           };
 
           const starterHorse = await tx.horse.findFirst({
@@ -432,8 +438,6 @@ export const advanceOnboarding = async (req, res, next) => {
                 // Owner ruling 2026-10-28 (Equoria-fd3f2): Excellent health and fully fed.
                 ...horseArrivalCare(),
                 temperament: generateTemperamentWithDefault(breed.name),
-                colorGenotype: starterColorGenotype,
-                phenotype: starterPhenotype,
               },
               include: { breed: { select: { id: true, name: true } } },
             });

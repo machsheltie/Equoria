@@ -2,9 +2,9 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
 ('American Saddlebred', 'Gaited', $json${
   "allowedAlleles": {
     "E_Extension": ["e/e", "E/e", "E/E"],
-    "A_Agouti": ["a/a", "A/a", "A/A"],
+    "A_Agouti": ["a/a", "A/a", "A/A", "A/At", "At/At", "At/a"],
     "Cr_Cream": ["n/n", "n/Cr", "Cr/Cr"],
-    "D_Dun": ["nd1/nd1", "nd1/nd2", "nd2/nd2"],
+    "D_Dun": ["nd2/nd2"],
     "Z_Silver": ["n/n"],
     "Ch_Champagne": ["n/n", "Ch/n", "Ch/Ch"],
     "G_Gray": ["g/g", "G/g", "G/G"],
@@ -26,9 +26,9 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
   },
   "alleleWeights": {
     "E_Extension": {"e/e": 0.34, "E/e": 0.45, "E/E": 0.21},
-    "A_Agouti": {"a/a": 0.30, "A/a": 0.45, "A/A": 0.25},
+    "A_Agouti": {"a/a": 0.268, "A/a": 0.370, "A/A": 0.220, "A/At": 0.036, "At/At": 0.010, "At/a": 0.096},
     "Cr_Cream": {"n/n": 0.930, "n/Cr": 0.063, "Cr/Cr": 0.007},
-    "D_Dun": {"nd1/nd1": 0.07, "nd1/nd2": 0.13, "nd2/nd2": 0.80},
+    "D_Dun": {"nd2/nd2": 1.0},
     "Z_Silver": {"n/n": 1.0},
     "Ch_Champagne": {"n/n": 0.965, "Ch/n": 0.030, "Ch/Ch": 0.005},
     "G_Gray": {"g/g": 0.910, "G/g": 0.085, "G/G": 0.005},
@@ -59,11 +59,13 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "pangare": 0.05,
     "rabicano": 0.07
   },
+  "shadeSelection": "rolled",
   "shadeBias": {
-    "Chestnut": {"light": 0.3, "medium": 0.4, "dark": 0.3},
-    "Bay": {"light": 0.3, "standard": 0.4, "dark": 0.3},
+    "Chestnut": {"light": 0.25, "medium": 0.25, "dark": 0.25, "golden": 0.25},
+    "Bay": {"light": 0.167, "standard": 0.167, "dark": 0.167, "blood": 0.167, "copper": 0.167, "wild": 0.167},
+    "Seal Brown": {"dark": 0.333, "light": 0.333, "sealskin": 0.333},
     "Black": {"standard": 0.5, "faded": 0.5},
-    "Palomino": {"pale": 0.3, "golden": 0.4, "copper": 0.3},
+    "Palomino": {"pale": 0.25, "golden": 0.25, "copper": 0.25, "chocolate": 0.25},
     "Buckskin": {"cream": 0.3, "golden": 0.4, "burnished": 0.3},
     "Smoky Black": {"faded": 0.5, "rich chocolate": 0.5},
     "Cremello": {"ice": 0.5, "peachy": 0.5},

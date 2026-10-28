@@ -8,6 +8,10 @@
  * Story: 31E-1b — Phenotype Calculation Engine
  */
 
+import { selectShade, shadeRollFor } from './coatShade.mjs';
+
+export { shadeRollFor };
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -26,25 +30,6 @@ function djb2Hash(str) {
     hash = hash & 0xffffffff; // keep 32-bit
   }
   return Math.abs(hash);
-}
-
-/**
- * Expand a shadeBias weight map into a flat array of shade strings for index-based selection.
- * Weights are scaled to 10 slots (0.1 precision).
- * E.g. { dark: 0.3, light: 0.3, standard: 0.4 } → 3×'dark', 3×'light', 4×'standard'
- *
- * @param {Object} shadeObj - { shadeName: probability }
- * @returns {string[]}
- */
-function expandShadesToArray(shadeObj) {
-  const arr = [];
-  for (const [shade, weight] of Object.entries(shadeObj)) {
-    const slots = Math.max(1, Math.round(weight * 10));
-    for (let i = 0; i < slots; i++) {
-      arr.push(shade);
-    }
-  }
-  return arr;
 }
 
 /**
@@ -295,7 +280,8 @@ function applyDilutions(baseColor, genotype) {
       case 'bay':
         return 'Perlino';
       case 'seal_brown':
-        return 'Sable Cream';
+        // Owner ruling 2026-10-28 (Equoria-de7ts): At + Cr/Cr is Seal Perlino.
+        return 'Seal Perlino';
       case 'black':
         return 'Smoky Cream';
     }
@@ -619,49 +605,20 @@ function applyPatterns(genotype, colorName, genotypeHash) {
 }
 
 // ---------------------------------------------------------------------------
-// Shade selection
-// ---------------------------------------------------------------------------
-
-/**
- * Select shade deterministically from breed shadeBias for the given colorName.
- * Uses genotypeHash for index-based deterministic selection.
- *
- * @param {string} colorName
- * @param {Object|null} shadeBias - breed's shadeBias map
- * @param {number} genotypeHash
- * @returns {string} shade string
- */
-function selectShade(colorName, shadeBias, genotypeHash) {
-  if (!shadeBias || typeof shadeBias !== 'object') {
-    return 'standard';
-  }
-
-  const shadeObj = shadeBias[colorName];
-  if (!shadeObj || typeof shadeObj !== 'object') {
-    return 'standard';
-  }
-
-  const shadeArray = expandShadesToArray(shadeObj);
-  if (shadeArray.length === 0) {
-    return 'standard';
-  }
-
-  return shadeArray[genotypeHash % shadeArray.length];
-}
-
-// ---------------------------------------------------------------------------
 // Main export
 // ---------------------------------------------------------------------------
 
 /**
  * Calculate the full coat color phenotype from a horse's color genotype.
- * Deterministic: same genotype + same shadeBias always returns identical output.
+ * Deterministic: same genotype + same shadeBias always returns identical output,
+ * unless a shadeRng is passed, which rolls the shade by its shadeBias weights.
  *
  * @param {Object} genotype - colorGenotype from genotypeGenerationService
  * @param {Object|null} shadeBias - breed's shadeBias map (from breedGeneticProfile.shadeBias)
+ * @param {(() => number)|null} [shadeRng] - see shadeRollFor
  * @returns {Object} phenotype
  */
-export function calculatePhenotype(genotype, shadeBias = null) {
+export function calculatePhenotype(genotype, shadeBias = null, shadeRng = null) {
   // Equoria-liy7c: full four-part JSONB guard. Adding the !Array.isArray check
   // (typeof [] === 'object') ensures an array-shaped colorGenotype on a legacy
   // row resolves to the safe 'Unknown' phenotype rather than silently reading
@@ -706,7 +663,7 @@ export function calculatePhenotype(genotype, shadeBias = null) {
   const patterns = applyPatterns(genotype, colorAfterDilutions, genotypeHash);
 
   // 4. Select shade
-  const shade = selectShade(patterns.colorName, shadeBias, genotypeHash);
+  const shade = selectShade(patterns.colorName, shadeBias, genotypeHash, shadeRng);
 
   return {
     colorName: patterns.colorName,
@@ -722,4 +679,20 @@ export function calculatePhenotype(genotype, shadeBias = null) {
     isBrindle: patterns.isBrindle,
     isFemaleOnly: patterns.isFemaleOnly,
   };
+}
+
+/**
+ * calculatePhenotype for a new horse of a breed: the breed's shade weights, and a
+ * rolled shade when the breed's profile asks for one (Equoria-de7ts).
+ *
+ * @param {Object} genotype
+ * @param {Object|null} breedGeneticProfile
+ * @returns {Object} phenotype
+ */
+export function calculateBreedPhenotype(genotype, breedGeneticProfile) {
+  return calculatePhenotype(
+    genotype,
+    breedGeneticProfile?.shadeBias ?? null,
+    shadeRollFor(breedGeneticProfile),
+  );
 }

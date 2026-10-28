@@ -38,7 +38,7 @@ import {
 } from './gaitService.mjs';
 import { generateTemperament } from './temperamentService.mjs';
 import { generateGenotype } from './genotypeGenerationService.mjs';
-import { calculatePhenotype } from './phenotypeCalculationService.mjs';
+import { calculateBreedPhenotype } from './phenotypeCalculationService.mjs';
 import { inheritColorGenotype } from './breedingColorInheritanceService.mjs';
 import { generateMarkings, inheritMarkings } from './markingGenerationService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -379,7 +379,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
       : generateGenotype(breedGeneticProfile, rng);
 
   // Phenotype: base color + markings (31E-1b / 31E-3).
-  const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shadeBias ?? null);
+  const baseColor = calculateBreedPhenotype(colorGenotype, breedGeneticProfile);
   const markingArgs = [breedGeneticProfile, baseColor.colorName, rng, colorGenotype];
   const markings =
     sirePhenotype && damPhenotype
