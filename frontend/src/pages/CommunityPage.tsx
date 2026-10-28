@@ -5,7 +5,7 @@
  * - Message Board (/message-board): General discussion, art, sales, services
  * - Clubs (/clubs): Discipline and breed associations with governance
  * - Messages/Inbox (/messages): Direct messaging between players
- * - Hall of Fame: nominated and inducted horses (Equoria-vb1n0)
+ * - Hall of Fame (/hall-of-fame): nominated and inducted horses (Equoria-vb1n0)
  *
  * Migrated to the canonical design system (Equoria-o5hub §4 community lane):
  * PageContainer(wide) + PageHeader, Surface semantics for cards/panels,
@@ -232,7 +232,8 @@ const CommunityPageContent: React.FC = () => {
       title: 'Hall of Fame',
       description:
         'The best of the best. Each week players vote one nominated retired horse into the Hall of Fame.',
-      href: '/my-stable',
+      // Equoria-631wc: the Hall of Fame has its own page (/my-stable redirects there).
+      href: '/hall-of-fame',
       icon: <Trophy />,
       role: 'warning',
       stats: [stats.inductees, stats.nominees],
