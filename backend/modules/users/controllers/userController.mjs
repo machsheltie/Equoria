@@ -256,6 +256,22 @@ export const getCommunityActivity = async (req, res, next) => {
 };
 
 /**
+ * Equoria-pt9dh (ACC-11): the player's own account as the API may show it.
+ * The password hash, its change stamp and the MFA secret and recovery codes
+ * never leave the server, not even to the account's owner.
+ */
+function toOwnAccountView(user) {
+  const {
+    password: _password,
+    passwordChangedAt: _passwordChangedAt,
+    mfaSecret: _mfaSecret,
+    mfaRecoveryCodes: _mfaRecoveryCodes,
+    ...visible
+  } = user;
+  return visible;
+}
+
+/**
  * Get user by ID
  * @route GET /api/user/:id
  */
@@ -280,7 +296,7 @@ export const getUser = async (req, res, next) => {
     });
 
     const userData = {
-      ...user,
+      ...toOwnAccountView(user),
       currentHorses: totalHorses,
       stableLimit: 10 + user.level * 2, // Example formula for stable limit
     };
@@ -488,7 +504,7 @@ export const updateUserController = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'User updated successfully',
-      data: user,
+      data: toOwnAccountView(user),
     });
   } catch (error) {
     logger.error(`[userController.updateUser] Error: ${error.message}`);
