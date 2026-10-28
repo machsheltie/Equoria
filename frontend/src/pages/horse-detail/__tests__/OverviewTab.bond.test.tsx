@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { server } from '../../../test/msw/server';
+import { MemoryRouter } from '../../../test/utils';
 import OverviewTab from '../OverviewTab';
 import type { Horse } from '../HorseDetailPageTypes';
 
@@ -34,9 +35,11 @@ const horseAged = (age: number, bondScore: number): Horse => ({
 const renderTab = (horse: Horse) => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={queryClient}>
-      <OverviewTab horse={horse} />
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <OverviewTab horse={horse} />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 };
 

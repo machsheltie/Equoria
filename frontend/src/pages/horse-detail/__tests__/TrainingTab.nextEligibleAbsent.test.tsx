@@ -2,10 +2,11 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { server } from '../../../test/msw/server';
+import { MemoryRouter } from '../../../test/utils';
 import TrainingTab from '../TrainingTab';
 import type { Horse } from '../HorseDetailPageTypes';
 import { GAME_TIME_ZONE } from '../../../lib/gameTime';
@@ -61,6 +62,32 @@ const HORSE: Horse = {
   traits: [],
 };
 
+// Owner ruling 2026-10-26 (q81, Equoria-r8a6h): a trainer is required to train;
+// a horse with none is offered "Assign Trainer" instead of the discipline picker.
+// These suites test an otherwise-eligible horse, so it has a fee-free fixture
+// trainer, as the backend training fixtures do since 751137281.
+const assignFixtureTrainer = () =>
+  server.use(
+    http.get(`${base}/api/v1/trainers/assignments`, () =>
+      HttpResponse.json({
+        success: true,
+        data: [
+          {
+            id: 1,
+            trainerId: 1,
+            horseId: HORSE.id,
+            horseName: HORSE.name,
+            trainerName: 'TestFixture-Trainer',
+            trainerPersonality: 'focused',
+            trainerSessionRate: 0,
+            startDate: '2026-01-01T00:00:00Z',
+            isActive: true,
+          },
+        ],
+      })
+    )
+  );
+
 const renderTab = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -69,9 +96,11 @@ const renderTab = () => {
     },
   });
   return render(
-    <QueryClientProvider client={queryClient}>
-      <TrainingTab horse={HORSE} />
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <TrainingTab horse={HORSE} />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 };
 
@@ -87,6 +116,8 @@ const NEXT_TRAINING_LOCALE_OPTS: Intl.DateTimeFormatOptions = {
 };
 
 describe('TrainingTab — absent server nextEligible (Equoria-gzvwa)', () => {
+  beforeEach(assignFixtureTrainer);
+
   it('renders "Date unavailable", NOT a fabricated now+7-days date, when the train response omits nextEligible', async () => {
     const user = userEvent.setup();
 
