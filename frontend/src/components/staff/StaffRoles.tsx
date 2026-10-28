@@ -152,7 +152,9 @@ export function StaffRoles({ onCheckinRequired, canAppointAdmin = false }: Staff
           <li key={member.id} className="flex items-center justify-between gap-3 py-3">
             <span className="text-[var(--text-primary)]">
               {member.username}{' '}
-              <span className="text-sm text-role-secondary">— {staffTitles[member.role]}</span>
+              <span className="text-sm text-role-secondary">
+                — {staffTitles[member.role] ?? 'Steward'}
+              </span>
             </span>
             <RoleControl member={member} onChange={setChange} canAppointAdmin={canAppointAdmin} />
           </li>
@@ -197,7 +199,7 @@ export function StaffRoles({ onCheckinRequired, canAppointAdmin = false }: Staff
       {found && (
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <p className="text-[var(--text-primary)]">
-            {found.username} is {ROLE_WORDS[found.role] ?? found.role}.
+            {found.username} is {ROLE_WORDS[found.role] ?? 'without a listed role'}.
           </p>
           <RoleControl member={found} onChange={setChange} canAppointAdmin={canAppointAdmin} />
         </div>

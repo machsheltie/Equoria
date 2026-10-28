@@ -97,15 +97,29 @@ function actorText(
   return nameOf(entry.actorId) ?? `${role} ${shortRef(entry.actorId)}`;
 }
 
+/** Ledger target kinds whose id is a player account (a conduct action on their IP or device too). */
+const PLAYER_TARGETS = new Set(['player', 'playerIp', 'playerDevice']);
+
+/** Target kinds the ledger names in words; anything else reads as "a record" (q165: no codes). */
+const TARGET_WORDS: Record<string, string> = {
+  ticket: 'ticket',
+  show: 'show',
+  device: 'a browser',
+};
+
 function targetText(entry: StaffLogEntry, nameOf: NameOf): string {
   const { targetType, targetId } = entry;
+  const word = TARGET_WORDS[targetType];
   if (targetId === null) {
-    return targetType;
+    return word ?? 'a record';
   }
-  if (targetType === 'player') {
+  if (PLAYER_TARGETS.has(targetType)) {
     return nameOf(targetId) ?? `player ${shortRef(targetId)}`;
   }
-  return `${targetType} #${targetId}`;
+  if (targetType === 'device') {
+    return 'a browser';
+  }
+  return `${word ?? 'record'} #${targetId}`;
 }
 
 /** One readable sentence for an entry: actor, action, target. */
@@ -137,8 +151,29 @@ function describeEntry(
       const word = STATUS_WORDS[String(after.status)];
       return word ? `${actor} marked ${target} ${word}` : `${actor} updated ${target}`;
     }
+    case 'warn':
+      return `${actor} warned ${target}`;
+    case 'freeze':
+      return `${actor} froze ${target}'s account`;
+    case 'ban.account':
+      return `${actor} banned ${target}'s account`;
+    case 'ban.ip':
+      return `${actor} banned the network ${target} last signed in from`;
+    case 'ban.device':
+      return `${actor} banned the device ${target} last signed in from`;
+    case 'conduct.lift':
+      if (entry.targetType === 'playerIp') {
+        return `${actor} lifted the network ban placed through ${target}`;
+      }
+      if (entry.targetType === 'playerDevice') {
+        return `${actor} lifted the device ban placed through ${target}`;
+      }
+      return `${actor} lifted ${target}'s freeze or ban`;
+    case 'shows.quarantine.resolve':
+      return `${actor} settled held ${target}`;
     default:
-      return `${actor} used ${entry.capability} on ${target}`;
+      // A staff tool the ledger has no sentence for yet: never show its stored code.
+      return `${actor} took a staff action on ${target}`;
   }
 }
 

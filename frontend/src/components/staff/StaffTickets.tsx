@@ -208,7 +208,7 @@ function subjectOf(ticket: StaffTicket): string {
   if (ticket.targetType === 'user') {
     return ticket.targetUsername ? `Player ${ticket.targetUsername}` : 'a former player';
   }
-  return `${TARGET_LABELS[ticket.targetType] ?? ticket.targetType} ${ticket.targetId}`;
+  return `${TARGET_LABELS[ticket.targetType] ?? 'Record'} ${ticket.targetId}`;
 }
 
 function TicketRow({
@@ -232,7 +232,7 @@ function TicketRow({
             {subjectOf(ticket)}
             {` · filed by ${ticket.filedBy?.username ?? FORMER_STEWARD}`} ·{' '}
             {formatDateTime(ticket.createdAt, STAFF_TIME_OPTIONS)} ·{' '}
-            {STATUS_LABELS[ticket.status] ?? ticket.status}
+            {STATUS_LABELS[ticket.status] ?? 'Status not listed'}
           </span>
         </GameCollapsibleTrigger>
         <CollapsibleContent className="mt-3">
