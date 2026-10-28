@@ -166,8 +166,7 @@ function assessFeedQualityFromMare(mare) {
  * @param {number} params.damId - id of the in-foal mare
  * @param {object} [params.options] - { name?, sex?, ownerId?,
  *   userId?, playerId?, stableId?, healthStatus?, positiveTraitChance?,
- *   negativeTraitChance?, rng?, statRng?, traitRng?, damSnapshot?, sireSnapshot?,
- *   dueBy? }.
+ *   negativeTraitChance?, rng?, statRng?, damSnapshot?, sireSnapshot?, dueBy? }.
  *   The bonus chance fields are produced by
  *   `calculatePregnancyEpigeneticChances()` and applied as independent rolls
  *   on top of `applyEpigeneticTraitsAtBirth`. `rng` is a () => number
@@ -206,21 +205,11 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   }
 
   // A foal is born with its mare's health and hunger (owner ruling 2026-10-23,
-  // Equoria-w4ivy). A caller's snapshot may not carry the care clocks or the
-  // dam's traits (Equoria-3ab0k: she passes them on like the sire); read them.
-  if (
-    dam.lastVettedDate === undefined ||
-    dam.lastFedDate === undefined ||
-    dam.epigeneticModifiers === undefined
-  ) {
+  // Equoria-w4ivy). A caller's snapshot may not carry the care clocks; read them.
+  if (dam.lastVettedDate === undefined || dam.lastFedDate === undefined) {
     const careRow = await prisma.horse.findUnique({
       where: { id: damId },
-      select: {
-        lastVettedDate: true,
-        lastFedDate: true,
-        hungerSince: true,
-        epigeneticModifiers: true,
-      },
+      select: { lastVettedDate: true, lastFedDate: true, hungerSince: true },
     });
     dam = { ...dam, ...careRow };
   }
@@ -239,10 +228,8 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   const lineage = await gatherLineage(sireId, damId, 3);
   const feedQuality = assessFeedQualityFromMare(mareStats);
 
-  // §A inheritance: pass the union of each parent's epigenetic traits
-  // (positive ∪ negative ∪ hidden) so the staged pipeline can inherit them.
-  // Optional `epigeneticSeed` makes the Stage-0 + §D visibility rolls
-  // deterministic (used by tests).
+  // §A inheritance: each parent's carried traits (positive ∪ negative ∪ hidden). Tests make
+  // the rolls deterministic with `epigeneticSeed` or `traitRng` (a () => number in [0,1)).
   const damTraits = collectEpigeneticTraits(dam.epigeneticModifiers);
   const sireTraits = collectEpigeneticTraits(sire.epigeneticModifiers);
   // Owner ruling 2026-10-26 (q98, Equoria-2d55z): a foal's traits are born
@@ -266,7 +253,6 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     damTraits,
     parentActiveTraits,
     seed: options.epigeneticSeed,
-    // Test seam: a () => number in [0,1) for the birth trait rolls (wins over the seed).
     rng: typeof options.traitRng === 'function' ? options.traitRng : undefined,
   });
   // §D: the pipeline now also returns hidden[]; carry it through to persistence.
@@ -365,11 +351,8 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
 
   const temperament = generateTemperament(breedName);
 
-  // Color genetics (31E-1a / 31E-2 / 31E-3) — wire color inheritance into
-  // pregnancy-based foaling. The runFoalingJob snapshot select only fetches a
-  // subset of columns, so we resolve colorGenotype + phenotype directly from
-  // the dam/sire records when missing. The service layer falls back gracefully
-  // (logs + random generation) when either parent's genotype is null.
+  // Color genetics (31E-1a / 31E-2 / 31E-3): read a parent's colorGenotype + phenotype
+  // when the snapshot lacks them; a null genotype falls back to random generation.
   let damColorGenotype = dam.colorGenotype ?? null;
   let damPhenotype = dam.phenotype ?? null;
   if (damColorGenotype === null || damPhenotype === null) {
@@ -431,7 +414,6 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     damId,
     sex: resolvedSex,
     ownerId: options.ownerId,
-    // userId is set inside the transaction: the mare's owner at birth (Equoria-x1t7q).
     playerId: options.playerId,
     stableId: options.stableId,
     healthStatus: options.healthStatus || 'Excellent',
@@ -486,10 +468,8 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
       lost.code = PREGNANCY_NOT_CLAIMABLE;
       throw lost;
     }
-    // The foal belongs to whoever owns the mare when it is born (owner ruling
-    // 2026-10-28, q253, Equoria-x1t7q). The claim above write-locked her row, so
-    // this read sees any sale that committed before it, and a sale still waiting
-    // on the lock lands after the birth. The caller's snapshot may predate a sale.
+    // The foal is the mare's owner's at birth (q253, Equoria-x1t7q): read on the row the
+    // claim just locked, so a sale before the birth is seen and one after it waits.
     const mareNow = await tx.horse.findUnique({ where: { id: damId }, select: { userId: true } });
     const ownerId = options.userId || mareNow?.userId || null;
     // A mare who turned 21 in foal kept her staff until now (owner ruling 2026-10-23).
@@ -534,8 +514,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
  * @param {Date}     [opts.now] - test seam; defaults to new Date().
  * @param {Function} [opts.rng] - test seam for the bonus rolls; defaults to
  *   Math.random. Each mare uses the same rng instance.
- * @param {Function} [opts.traitRng] - test seam for the birth trait rolls
- *   (inheritance and the other at-birth stages); defaults to Math.random.
+ * @param {Function} [opts.traitRng] - test seam for the birth trait rolls (options.traitRng).
  * @returns {Promise<{foalsBorn:number, errors:Array<{damId:number,error:string}>}>}
  */
 export async function runFoalingJob({ now = new Date(), rng = Math.random, traitRng } = {}) {
@@ -564,9 +543,7 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random, trait
       gaitScores: true,
       colorGenotype: true,
       phenotype: true,
-      // The dam's traits feed §A inheritance (Equoria-3ab0k): without them the
-      // snapshot read as trait-free and a foal never inherited from its dam.
-      epigeneticModifiers: true,
+      epigeneticModifiers: true, // the dam passes on her traits (Equoria-3ab0k)
       inFoalSinceDate: true,
       pregnancySireId: true,
       pregnancyFeedingsByTier: true,
