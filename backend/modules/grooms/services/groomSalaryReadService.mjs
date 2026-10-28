@@ -9,8 +9,10 @@
  * and both routes are unchanged.
  *
  * `calculateUserSalaryCost` MUST agree with what `processWeeklySalaries` actually
- * charges — 70 per horse in each groom's care — or the salary summary lies to the
- * player about `weeksAffordable`, which PRODUCT.md principle 7 forbids.
+ * charges — each groom's star-level price, once a week, however many horses they
+ * care for (owner ruling 2026-10-28, q228; Equoria-74up0: never a per-horse fee) —
+ * or the salary summary lies to the player about `weeksAffordable`, which
+ * PRODUCT.md principle 7 forbids.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';

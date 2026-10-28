@@ -295,9 +295,10 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       expect(hiredGroom.skillLevel).toBe(marketplaceGroom.skillLevel);
       expect(Number(hiredGroom.sessionRate)).toBe(marketplaceGroom.sessionRate);
 
-      // Check cost calculation (one week upfront)
-      const expectedCost = marketplaceGroom.sessionRate * 7;
-      expect(data.cost).toBe(expectedCost);
+      // Hiring charges one week of the groom's star-level price, the weeklyFee the
+      // marketplace card shows (owner rulings 2026-10-28, q226/q228; Equoria-74up0:
+      // one weekly fee, never per horse). Old contract: sessionRate x 7.
+      expect(data.cost).toBe(marketplaceGroom.weeklyFee);
     });
 
     it('should remove hired groom from marketplace', async () => {
@@ -360,15 +361,14 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       // Get marketplace for poor user. loadOrCreateMarketplace auto-generates a
       // fresh marketplace on first GET, so the subsequent hire reaches the
       // funds check rather than the 404 "Groom not found" path. The cheapest
-      // groom is a novice at $15/session ($105 for the one-week-upfront hire),
-      // so a groom whose 7×rate exceeds the poor user's $10 balance is always
-      // present.
+      // groom is a Rookie at 100 a week (the hire charges that one week), so a
+      // groom dearer than the poor user's $10 balance is always present.
       const marketplaceResponse = await request(app)
         .get('/api/v1/groom-marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${poorUserData.token}`);
 
-      const expensiveGroom = marketplaceResponse.body.data.grooms.find(g => g.sessionRate * 7 > 10); // Find groom that costs more than user has
+      const expensiveGroom = marketplaceResponse.body.data.grooms.find(g => g.weeklyFee > 10); // Find groom that costs more than user has
       // Guard the assertion from silently no-opping: every generated
       // marketplace contains a groom dearer than $10, so this must hold. If it
       // ever fails, fail loudly instead of skipping the funds-check assertions.
