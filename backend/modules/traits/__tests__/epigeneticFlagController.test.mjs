@@ -160,6 +160,55 @@ describe('GET /api/v1/flags/horses/:id/flags', () => {
   });
 });
 
+// ─── No advertised effects (Equoria-v6sp2, Equoria-rqz1z) ───────────────────────
+// Owner ruling 2026-10-27 (q117): trait names only — "Do not add what each
+// actually does yet." No live gameplay code consumed the flag registry's
+// competition/training/bonding/trait-weight modifiers, so the flag endpoints
+// must not tell a player a flag does anything: each flag is its name, its
+// authored name and its polarity, and the horse view carries no influence summary.
+
+describe('flag endpoints advertise no effects', () => {
+  it('GET /flags/definitions sends each flag as name, displayName and type only', async () => {
+    const res = await request(app)
+      .get('/api/v1/flags/definitions')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.flags.length).toBeGreaterThan(0);
+    for (const flag of res.body.data.flags) {
+      expect(Object.keys(flag).sort()).toEqual(['displayName', 'name', 'type']);
+    }
+  });
+
+  it('GET /flags/horses/:id/flags sends no influence summary and no flag effects', async () => {
+    const flagged = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-FlagNoEffect-${randomBytes(4).toString('hex')}`,
+        sex: 'Filly',
+        dateOfBirth: new Date('2022-01-01'),
+        age: 3,
+        userId: user.id,
+        epigeneticFlags: ['brave', 'fearful'],
+      },
+    });
+    horseIds.push(flagged.id);
+
+    const res = await request(app)
+      .get(`/api/v1/flags/horses/${flagged.id}/flags`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).not.toHaveProperty('influenceSummary');
+    expect(res.body.data.flags).toEqual([
+      { name: 'brave', displayName: 'Brave', type: 'positive' },
+      { name: 'fearful', displayName: 'Fearful', type: 'negative' },
+    ]);
+  });
+});
+
 // ─── GET /api/v1/flags/horses/:id/care-patterns ─────────────────────────────────
 
 describe('GET /api/v1/flags/horses/:id/care-patterns', () => {

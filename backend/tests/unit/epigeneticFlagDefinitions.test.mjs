@@ -84,7 +84,6 @@ describe('Epigenetic Flag Definitions', () => {
         expect(flag).toHaveProperty('description');
         expect(flag).toHaveProperty('type');
         expect(flag).toHaveProperty('sourceCategory');
-        expect(flag).toHaveProperty('influences');
         expect(flag).toHaveProperty('triggerConditions');
 
         // Validate types
@@ -93,27 +92,15 @@ describe('Epigenetic Flag Definitions', () => {
         expect(typeof flag.description).toBe('string');
         expect(Object.values(FLAG_TYPES)).toContain(flag.type);
         expect(Object.values(SOURCE_CATEGORIES)).toContain(flag.sourceCategory);
-        expect(typeof flag.influences).toBe('object');
         expect(typeof flag.triggerConditions).toBe('object');
       });
     });
 
-    test('each flag should have valid influences structure', () => {
+    // Equoria-v6sp2: the unconsumed modifier registry is gone; no flag
+    // advertises an effect until the owner rules one.
+    test('no flag carries an influences (effect) block', () => {
       Object.values(EPIGENETIC_FLAG_DEFINITIONS).forEach(flag => {
-        expect(flag.influences).toHaveProperty('traitWeightModifiers');
-        expect(flag.influences).toHaveProperty('behaviorModifiers');
-
-        // Trait weight modifiers should be numbers between -1 and 1
-        Object.values(flag.influences.traitWeightModifiers).forEach(modifier => {
-          expect(typeof modifier).toBe('number');
-          expect(modifier).toBeGreaterThanOrEqual(-1);
-          expect(modifier).toBeLessThanOrEqual(1);
-        });
-
-        // Behavior modifiers should be numbers
-        Object.values(flag.influences.behaviorModifiers).forEach(modifier => {
-          expect(typeof modifier).toBe('number');
-        });
+        expect(flag).not.toHaveProperty('influences');
       });
     });
   });
@@ -265,8 +252,6 @@ describe('Epigenetic Flag Definitions', () => {
       expect(brave.name).toBe('brave');
       expect(brave.type).toBe('positive');
       expect(brave.sourceCategory).toBe('novelty');
-      expect(brave.influences.traitWeightModifiers.bold).toBe(0.3);
-      expect(brave.influences.traitWeightModifiers.spooky).toBe(-0.4);
     });
 
     test('FEARFUL flag should have correct properties', () => {
@@ -274,8 +259,6 @@ describe('Epigenetic Flag Definitions', () => {
       expect(fearful.name).toBe('fearful');
       expect(fearful.type).toBe('negative');
       expect(fearful.sourceCategory).toBe('novelty');
-      expect(fearful.influences.traitWeightModifiers.spooky).toBe(0.4);
-      expect(fearful.influences.traitWeightModifiers.bold).toBe(-0.3);
     });
 
     test('RESILIENT flag should have correct properties', () => {

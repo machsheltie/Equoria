@@ -85,9 +85,11 @@ describe('EPIGENETIC_FLAG_DEFINITIONS', () => {
     }
   });
 
-  it('each flag has influences object', () => {
+  // Equoria-v6sp2: the unconsumed modifier registry is gone; no flag
+  // advertises an effect until the owner rules one.
+  it('no flag carries an influences (effect) block', () => {
     for (const [, flag] of Object.entries(EPIGENETIC_FLAG_DEFINITIONS)) {
-      expect(typeof flag.influences).toBe('object');
+      expect(flag).not.toHaveProperty('influences');
     }
   });
 });

@@ -9,11 +9,10 @@
  * flags (fearful, insecure, aloof, skittish, fragile) is less compatible, so
  * the rider's bonus is slightly reduced (and penalty slightly increased).
  *
- * 🔑 DISTINCT FROM yzqhj.1: this is NOT the flag→base-score modifier. The .1
- * path (`applyFlagInfluencesToCompetition` in epigeneticFlagInfluence.mjs,
- * wired at competitionScore.mjs:161) applies flag behaviorModifiers to the
- * BASE competition score. THIS module applies a SEPARATE, additional effect to
- * the RIDER bonus/penalty percentages only. The two never touch the same term.
+ * 🔑 This is the only flag term in show scoring: it scales the RIDER
+ * bonus/penalty percentages only. The old flag→base-score helper
+ * (applyFlagInfluencesToCompetition) never had a live caller and was deleted
+ * with the rest of the unconsumed flag-influence module (Equoria-rqz1z).
  *
  * Valence source of truth: the canonical flag definitions in
  * config/epigeneticFlagDefinitions.mjs (`getFlagDefinition(...).type` →

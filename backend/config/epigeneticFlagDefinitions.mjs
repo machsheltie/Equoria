@@ -2,8 +2,14 @@
  * Epigenetic Flag Definitions
  *
  * Defines epigenetic flags that can be applied to horses based on their care history,
- * environmental factors, and developmental milestones. These flags influence trait
- * development probabilities and behavioral characteristics.
+ * environmental factors, and developmental milestones.
+ *
+ * Equoria-v6sp2 / Equoria-rqz1z: the per-flag `influences` (trait-weight and
+ * competition/training/bonding/health modifiers) were removed. No live gameplay
+ * code read them, so they only advertised effects the game never applied, and
+ * the owner has not yet ruled what any trait does (2026-10-27, q117: "Do not
+ * add what each actually does yet"). Add an effect here only with her ruling
+ * and a live consumer.
  */
 
 export const FLAG_TYPES = {
@@ -34,18 +40,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.POSITIVE,
     sourceCategory: SOURCE_CATEGORIES.NOVELTY,
     description: 'Horse shows courage and confidence in new situations',
-    influences: {
-      traitWeightModifiers: {
-        bold: 0.3,
-        spooky: -0.4,
-        confident: 0.2,
-        fearful: -0.3,
-      },
-      behaviorModifiers: {
-        competitionBonus: 0.15,
-        statRecoveryBonus: 0.05,
-      },
-    },
     conflictsWith: ['fearful', 'anxious'],
     triggerConditions: {
       careConsistency: 0.7,
@@ -59,18 +53,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.POSITIVE,
     sourceCategory: SOURCE_CATEGORIES.BONDING,
     description: 'Horse displays self-assurance and composure',
-    influences: {
-      traitWeightModifiers: {
-        bold: 0.25,
-        insecure: -0.3,
-        self_assured: 0.3,
-        timid: -0.25,
-      },
-      behaviorModifiers: {
-        competitionBonus: 0.1,
-        trainingEfficiency: 0.05,
-      },
-    },
     conflictsWith: ['insecure', 'fearful'],
     triggerConditions: {
       strongBondGrowth: true,
@@ -85,19 +67,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.POSITIVE,
     sourceCategory: SOURCE_CATEGORIES.BONDING,
     description: 'Horse forms strong bonds with handlers and shows trust',
-    influences: {
-      traitWeightModifiers: {
-        social: 0.3,
-        antisocial: -0.4,
-        friendly: 0.25,
-        withdrawn: -0.3,
-      },
-      behaviorModifiers: {
-        bondingBonus: 0.2,
-        groomEffectiveness: 0.15,
-        bondingRate: 0.15,
-      },
-    },
     conflictsWith: ['antisocial', 'withdrawn'],
     triggerConditions: {
       frequentInteractions: true,
@@ -113,18 +82,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.POSITIVE,
     sourceCategory: SOURCE_CATEGORIES.ENVIRONMENT,
     description: 'Horse adapts well to challenges',
-    influences: {
-      traitWeightModifiers: {
-        hardy: 0.4,
-        fragile: -0.5,
-        adaptable: 0.3,
-        sensitive: -0.3,
-      },
-      behaviorModifiers: {
-        adaptability: 0.25,
-        healthBonus: 0.05,
-      },
-    },
     conflictsWith: ['fragile', 'sensitive'],
     triggerConditions: {
       adaptabilityShown: true,
@@ -139,17 +96,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.NEGATIVE,
     sourceCategory: SOURCE_CATEGORIES.NOVELTY,
     description: 'Horse shows excessive fear and anxiety in new situations',
-    influences: {
-      traitWeightModifiers: {
-        spooky: 0.4,
-        bold: -0.3,
-        timid: 0.2,
-        confident: -0.4,
-      },
-      behaviorModifiers: {
-        competitionPenalty: -0.15,
-      },
-    },
     conflictsWith: ['brave', 'confident'],
     triggerConditions: {
       careGaps: 'frequent',
@@ -163,18 +109,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.NEGATIVE,
     sourceCategory: SOURCE_CATEGORIES.BONDING,
     description: 'Horse lacks confidence and seeks constant reassurance',
-    influences: {
-      traitWeightModifiers: {
-        confident: -0.3,
-        dependent: 0.25,
-        timid: 0.3,
-        bold: -0.2,
-      },
-      behaviorModifiers: {
-        bondingDifficulty: 0.15,
-        competitionPenalty: -0.1,
-      },
-    },
     conflictsWith: ['confident', 'brave'],
     triggerConditions: {
       decliningBond: true,
@@ -190,19 +124,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.NEGATIVE,
     sourceCategory: SOURCE_CATEGORIES.BONDING,
     description: 'Horse maintains emotional distance and resists bonding',
-    influences: {
-      traitWeightModifiers: {
-        antisocial: 0.3,
-        friendly: -0.4,
-        withdrawn: 0.25,
-        social: -0.3,
-      },
-      behaviorModifiers: {
-        bondingDifficulty: 0.2,
-        groomEffectiveness: -0.15,
-        bondingResistance: 0.15,
-      },
-    },
     conflictsWith: ['affectionate', 'social'],
     triggerConditions: {
       avoidanceBehavior: true,
@@ -218,17 +139,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.NEGATIVE,
     sourceCategory: SOURCE_CATEGORIES.ENVIRONMENT,
     description: 'Horse is easily startled and overreacts to environmental stimuli',
-    influences: {
-      traitWeightModifiers: {
-        spooky: 0.4,
-        calm: -0.3,
-        reactive: 0.3,
-        steady: -0.25,
-      },
-      behaviorModifiers: {
-        environmentalSensitivity: 0.2,
-      },
-    },
     conflictsWith: ['calm', 'steady'],
     triggerConditions: {
       overreactions: 'frequent',
@@ -243,17 +153,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.NEGATIVE,
     sourceCategory: SOURCE_CATEGORIES.ENVIRONMENT,
     description: 'Horse is emotionally sensitive and easily overwhelmed',
-    influences: {
-      traitWeightModifiers: {
-        resilient: -0.3,
-        sensitive: 0.3,
-        hardy: -0.4,
-        delicate: 0.25,
-      },
-      behaviorModifiers: {
-        recoveryTime: 0.2,
-      },
-    },
     conflictsWith: ['resilient', 'hardy'],
     triggerConditions: {
       overwhelmingSituations: true,

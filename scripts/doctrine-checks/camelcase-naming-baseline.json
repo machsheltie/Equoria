@@ -206,7 +206,7 @@
   "backend/app.mjs": 5,
   "backend/config/config.mjs": 16,
   "backend/config/corsPolicy.mjs": 7,
-  "backend/config/epigeneticFlagDefinitions.mjs": 28,
+  "backend/config/epigeneticFlagDefinitions.mjs": 27,
   "backend/config/groomConfig.mjs": 22,
   "backend/config/healthHandlers.mjs": 1,
   "backend/constants/horseAgePolicy.mjs": 3,

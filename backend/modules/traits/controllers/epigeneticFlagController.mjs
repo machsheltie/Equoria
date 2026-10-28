@@ -22,7 +22,21 @@ import {
   getFlagsByType,
 } from '../../../config/epigeneticFlagDefinitions.mjs';
 import { analyzeCarePatterns } from '../../../utils/carePatternAnalysis.mjs';
-import { getFlagInfluenceSummary } from '../../../utils/epigeneticFlagInfluence.mjs';
+
+/**
+ * The player view of one flag: its stored name, authored name and polarity.
+ * No description, source or modifiers (Equoria-v6sp2, Equoria-rqz1z): no live
+ * gameplay code consumed the old competition/training/bonding/trait-weight
+ * modifiers, and the owner has not yet ruled what any trait does (2026-10-27,
+ * q117: "Do not add what each actually does yet"), so nothing here claims an
+ * effect.
+ * @param {{ name: string, displayName: string, type: string }} definition
+ */
+const publicFlagView = definition => ({
+  name: definition.name,
+  displayName: definition.displayName,
+  type: definition.type,
+});
 
 /**
  * Get epigenetic flags for a horse
@@ -49,33 +63,14 @@ export async function getHorseFlags(req, res) {
     const flagDetails = (horse.epigeneticFlags || []).map(flagName => {
       const definition = getFlagDefinition(flagName);
       return definition
-        ? {
-            name: definition.name,
-            displayName: definition.displayName,
-            description: definition.description,
-            type: definition.type,
-            sourceCategory: definition.sourceCategory,
-            influences: definition.influences,
-          }
-        : {
-            name: flagName,
-            displayName: flagName,
-            description: 'Unknown flag',
-            type: 'unknown',
-            sourceCategory: 'unknown',
-            influences: {},
-          };
+        ? publicFlagView(definition)
+        : { name: flagName, displayName: flagName, type: 'unknown' };
     });
 
     // Calculate horse age in canonical game-years (1 game-week = 1 game-year,
     // floor(ageDays / 7)) — consistent with horseController serializer and the
     // leaderboard /horse/:horseId route. NOT calendar-years (Equoria-8qu4).
     const ageInYears = getHorseAgeYears(horse.dateOfBirth);
-
-    // Equoria-yzqhj.1: aggregate the gameplay influence of the assigned flags
-    // (net trait-weight bias + net behavior modifiers) for display, so the
-    // frontend can show "what these flags actually do" alongside the list.
-    const influenceSummary = getFlagInfluenceSummary(horse.epigeneticFlags || []);
 
     return res.status(200).json({
       success: true,
@@ -87,7 +82,6 @@ export async function getHorseFlags(req, res) {
         currentBondScore: horse.bondScore || 0,
         flagCount: flagDetails.length,
         flags: flagDetails,
-        influenceSummary,
         maxFlags: 5,
         canReceiveMoreFlags: flagDetails.length < 5 && ageInYears < 3,
       },
@@ -118,14 +112,7 @@ export async function getFlagDefinitions(req, res) {
     }
 
     // Format for API response
-    const formattedDefinitions = flagDefinitions.map(flag => ({
-      name: flag.name,
-      displayName: flag.displayName,
-      description: flag.description,
-      type: flag.type,
-      sourceCategory: flag.sourceCategory,
-      influences: flag.influences,
-    }));
+    const formattedDefinitions = flagDefinitions.map(publicFlagView);
 
     return res.status(200).json({
       success: true,
