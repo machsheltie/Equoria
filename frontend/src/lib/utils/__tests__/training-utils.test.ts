@@ -7,7 +7,7 @@
  * Story 4-1: Training Session Interface - Task 1
  */
 
-import { describe, test, expect, beforeEach } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   DISCIPLINES,
   getDisciplinesByCategory,
@@ -282,7 +282,25 @@ describe('Training Utilities', () => {
     });
   });
 
+  // Equoria-i7phf: the cooldown helpers count whole 24-hour periods until an
+  // absolute instant (the backend sets trainingCooldown = trainedAt + MS_PER_WEEK).
+  // These tests build "+N days" with local-calendar setDate, which spans N days
+  // plus or minus an hour when a daylight-saving change falls inside the window
+  // (e.g. 1 Nov 2026 in Eastern). Pin the clock to a date with no DST change in
+  // the following fortnight so the assertions are deterministic.
+  const pinnedNow = new Date('2026-06-10T16:00:00Z');
+  const msPerDay = 24 * 60 * 60 * 1000;
+
   describe('formatCooldownDate', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(pinnedNow);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     test('should return "Available now" for null date', () => {
       expect(formatCooldownDate(null)).toBe('Available now');
     });
@@ -321,9 +339,25 @@ describe('Training Utilities', () => {
       tomorrow.setDate(tomorrow.getDate() + 1);
       expect(formatCooldownDate(tomorrow.toISOString())).toBe('1 day');
     });
+
+    test('shows "1 day" for a cooldown 24 hours away across the DST change', () => {
+      // 31 Oct 2026 noon Eastern; clocks fall back at 02:00 on 1 Nov.
+      vi.setSystemTime(new Date('2026-10-31T16:00:00Z'));
+      const cooldown = new Date(Date.now() + msPerDay);
+      expect(formatCooldownDate(cooldown.toISOString())).toBe('1 day');
+    });
   });
 
   describe('getDaysUntilAvailable', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(pinnedNow);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     test('should return 0 for null date', () => {
       expect(getDaysUntilAvailable(null)).toBe(0);
     });
@@ -350,6 +384,20 @@ describe('Training Utilities', () => {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 5);
       expect(getDaysUntilAvailable(futureDate.toISOString())).toBe(5);
+    });
+
+    test('shows 7 days for a weekly cooldown set in the week before the DST change', () => {
+      // 28 Oct 2026 noon Eastern; the backend cooldown (trainedAt + one week of
+      // milliseconds) ends after the 1 Nov fall-back and is still 7 days away.
+      vi.setSystemTime(new Date('2026-10-28T16:00:00Z'));
+      const cooldown = new Date(Date.now() + 7 * msPerDay);
+      expect(getDaysUntilAvailable(cooldown.toISOString())).toBe(7);
+    });
+
+    test('rounds up a cooldown one hour past whole days across the DST change', () => {
+      vi.setSystemTime(new Date('2026-10-28T16:00:00Z'));
+      const cooldown = new Date(Date.now() + 7 * msPerDay + 60 * 60 * 1000);
+      expect(getDaysUntilAvailable(cooldown)).toBe(8);
     });
   });
 
