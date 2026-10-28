@@ -130,13 +130,7 @@ const sharedFields = [
 /** Per kind, every field a screen reads from a hired row or an offer. */
 const allowedFields = Object.freeze({
   groom: new Set([...sharedFields, 'sessionRate', 'weeklyFee']),
-  rider: new Set([
-    ...sharedFields,
-    'weeklyRate',
-    'totalWins',
-    'totalCompetitions',
-    'prestige',
-  ]),
+  rider: new Set([...sharedFields, 'weeklyRate', 'totalWins', 'totalCompetitions', 'prestige']),
   trainer: new Set([...sharedFields, 'sessionRate']),
 });
 
