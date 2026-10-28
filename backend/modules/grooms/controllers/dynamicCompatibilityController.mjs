@@ -20,8 +20,6 @@ import {
   analyzeCompatibilityFactors,
   compatibilityTrends,
   loadCompatibilityInputs,
-  predictInteraction,
-  rankGrooms,
   scoreCompatibility,
 } from '../services/dynamicCompatibilityScoring.mjs';
 import {
@@ -127,124 +125,6 @@ export async function getCompatibilityFactors(req, res) {
     res.status(errorStatus(error)).json({
       success: false,
       message: 'Failed to analyze compatibility factors',
-      error: error.message,
-    });
-  }
-}
-
-/**
- * Predict interaction outcome
- * POST /api/compatibility/predict
- */
-export async function predictOutcome(req, res) {
-  try {
-    const { groomId, horseId, context } = req.body;
-    const userId = req.user.id;
-
-    logger.info(
-      `[dynamicCompatibilityController.predictOutcome] Predicting outcome for groom ${groomId} and horse ${horseId}`,
-    );
-
-    // Validate required fields
-    if (!groomId || !horseId || !context) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields: groomId, horseId, and context are required',
-      });
-    }
-
-    // Validate groom ownership (atomic)
-    const groom = await findOwnedResource('groom', parseInt(groomId), userId);
-    if (!groom) {
-      return res.status(404).json({
-        success: false,
-        message: 'Groom not found or not on your staff',
-      });
-    }
-
-    // Validate horse ownership (atomic)
-    const horse = await findOwnedResource('horse', parseInt(horseId), userId);
-    if (!horse) {
-      return res.status(404).json({
-        success: false,
-        message: 'Horse not found or you do not own this horse',
-      });
-    }
-
-    const prediction = predictInteraction(
-      await loadCompatibilityInputs(horseId, { groomIds: [groomId] }),
-      groomId,
-      context,
-    );
-
-    logger.info(
-      `[dynamicCompatibilityController.predictOutcome] Outcome predicted: ${prediction.predictedQuality} quality, ${prediction.successProbability.toFixed(2)} success probability`,
-    );
-
-    res.json({
-      success: true,
-      message: 'Interaction outcome predicted successfully',
-      data: prediction,
-    });
-  } catch (error) {
-    logger.error('[dynamicCompatibilityController.predictOutcome] Error:', error);
-    res.status(errorStatus(error)).json({
-      success: false,
-      message: 'Failed to predict interaction outcome',
-      error: error.message,
-    });
-  }
-}
-
-/**
- * Get optimal groom recommendations for a horse
- * POST /api/compatibility/recommendations
- */
-export async function getRecommendations(req, res) {
-  try {
-    const { horseId, context } = req.body;
-    const userId = req.user.id;
-
-    logger.info(
-      `[dynamicCompatibilityController.getRecommendations] Getting recommendations for horse ${horseId}`,
-    );
-
-    // Validate required fields
-    if (!horseId || !context) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields: horseId and context are required',
-      });
-    }
-
-    // Validate horse ownership (atomic)
-    const horse = await findOwnedResource('horse', parseInt(horseId), userId);
-    if (!horse) {
-      return res.status(404).json({
-        success: false,
-        message: 'Horse not found or you do not own this horse',
-      });
-    }
-
-    const recommendations = rankGrooms(
-      await loadCompatibilityInputs(horseId, { ownerGrooms: true }),
-      context,
-    );
-
-    logger.info(
-      `[dynamicCompatibilityController.getRecommendations] Found ${recommendations.rankedGrooms.length} groom recommendations`,
-    );
-
-    res.json({
-      success: true,
-      message: 'Groom recommendations generated successfully',
-      data: recommendations,
-    });
-  } catch (error) {
-    logger.error('[dynamicCompatibilityController.getRecommendations] Error:', error);
-    res.status(errorStatus(error)).json({
-      success: false,
-      message: 'Failed to generate groom recommendations',
       error: error.message,
     });
   }

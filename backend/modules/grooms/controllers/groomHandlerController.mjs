@@ -1,14 +1,15 @@
 /**
  * Groom Handler Controller
  * Manages groom assignments as competition handlers
+ *
+ * GET /recommendations/:horseId (best-handler ranking) was removed
+ * (Equoria-a7f1p; owner ruling 2026-10-07: the game never gives advice).
  */
 
-import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
   getAssignedHandler,
   validateHandlerEligibility,
-  calculateHandlerBonus,
   HANDLER_SKILL_BONUSES,
   PERSONALITY_DISCIPLINE_SYNERGY,
   SPECIALTY_DISCIPLINE_BONUSES,
@@ -184,105 +185,6 @@ export async function getHandlerConfig(req, res) {
     });
   } catch (error) {
     logger.error(`[groomHandlerController] Error getting handler config: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      data: null,
-    });
-  }
-}
-
-/**
- * GET /api/groom-handlers/recommendations/:horseId
- * Get handler recommendations for a horse
- */
-export async function getHandlerRecommendations(req, res) {
-  try {
-    const { horseId } = req.params;
-    const { className } = req.query;
-    const userId = req.user?.id;
-
-    logger.info(`[groomHandlerController] Getting handler recommendations for horse ${horseId}`);
-
-    // Validate horse ID
-    const parsedHorseId = parseInt(horseId);
-    if (isNaN(parsedHorseId) || parsedHorseId <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid horse ID',
-        data: null,
-      });
-    }
-
-    // Ownership validated by requireOwnership('horse') middleware on the route.
-    // req.horse is the validated, owned record (full fields from middleware).
-    const horse = req.horse;
-
-    // Get all user's grooms
-    const grooms = await prisma.groom.findMany({
-      where: {
-        userId,
-        isActive: true,
-      },
-      select: {
-        id: true,
-        name: true,
-        skillLevel: true,
-        speciality: true,
-        personality: true,
-        experience: true,
-      },
-    });
-
-    // Calculate potential bonuses for each groom
-    const recommendations = [];
-    for (const groom of grooms) {
-      const bonus = calculateHandlerBonus(groom, horse, className || 'Mares', { isActive: true });
-      recommendations.push({
-        groom,
-        bonus: bonus.handlerBonus,
-        bonusBreakdown: bonus.bonusBreakdown,
-        isCurrentHandler: false, // Will be updated below
-      });
-    }
-
-    // Sort by bonus (highest first)
-    recommendations.sort((a, b) => b.bonus - a.bonus);
-
-    // Check if any is the current handler
-    const currentHandler = await getAssignedHandler(parsedHorseId, userId);
-    if (currentHandler.hasHandler) {
-      const currentHandlerIndex = recommendations.findIndex(
-        r => r.groom.id === currentHandler.groom.id,
-      );
-      if (currentHandlerIndex >= 0) {
-        recommendations[currentHandlerIndex].isCurrentHandler = true;
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Handler recommendations retrieved successfully',
-      data: {
-        horse: {
-          id: horse.id,
-          name: horse.name,
-          bondScore: horse.bondScore,
-        },
-        className: className || 'General',
-        recommendations,
-        currentHandler: currentHandler.hasHandler
-          ? {
-              id: currentHandler.groom.id,
-              name: currentHandler.groom.name,
-            }
-          : null,
-      },
-    });
-  } catch (error) {
-    logger.error(
-      `[groomHandlerController] Error getting handler recommendations: ${error.message}`,
-    );
     res.status(500).json({
       success: false,
       message: 'Internal server error',

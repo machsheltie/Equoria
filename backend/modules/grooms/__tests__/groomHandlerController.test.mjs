@@ -2,7 +2,8 @@
  * groomHandlerController integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: getHandlerConfig, statistics (inline route), disciplines (inline route),
- * getHorseHandler, checkHandlerEligibility, getHandlerRecommendations.
+ * getHorseHandler, checkHandlerEligibility. (getHandlerRecommendations was
+ * removed, Equoria-a7f1p; owner ruling 2026-10-07: no advice.)
  * Routes live under authRouter at /api/groom-handlers.
  */
 
@@ -188,36 +189,6 @@ describe('GET /api/groom-handlers/eligibility/:horseId/:className', () => {
 
   it('returns 401 without auth', async () => {
     const res = await request(app).get(`/api/v1/groom-handlers/eligibility/${horse.id}/Hunter`).set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── GET /api/groom-handlers/recommendations/:horseId ────────────────────────
-
-describe('GET /api/groom-handlers/recommendations/:horseId', () => {
-  it('returns 200 with recommendations for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/groom-handlers/recommendations/${horse.id}`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
-  it('returns 404 for a horse not owned by user', async () => {
-    const res = await request(app)
-      .get('/api/v1/groom-handlers/recommendations/999999999')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(404);
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/groom-handlers/recommendations/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });

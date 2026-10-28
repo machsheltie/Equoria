@@ -223,6 +223,56 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
     expect(res.body.success).toBe(true);
   });
 
+  // Groom advice: best-groom recommendations, interaction-outcome predictions and
+  // best-handler rankings tell the player what to choose (owner ruling
+  // 2026-10-07: the game never gives advice). The compatibility calculate,
+  // factors, trends and config routes stay parked with their tables (owner
+  // ruling 2026-10-28), and the handler lookups stay pending owner question q154.
+  const groomAdvice = [
+    ...Object.entries(whose).map(([who, id]) => [
+      `GET /groom-handlers/recommendations/:horseId, ${who}`,
+      () => send('get', `/api/v1/groom-handlers/recommendations/${id()}`, owner.token),
+    ]),
+    ...Object.entries(whose).map(([who, id]) => [
+      `POST /compatibility/recommendations, ${who}`,
+      () =>
+        send('post', '/api/v1/compatibility/recommendations', owner.token, {
+          horseId: id(),
+          context: { taskType: 'desensitization' },
+        }),
+    ]),
+    ...Object.entries(whoseGroom).map(([who, id]) => [
+      `POST /compatibility/predict, ${who}`,
+      () =>
+        send('post', '/api/v1/compatibility/predict', owner.token, {
+          groomId: id(),
+          horseId: ownHorse.id,
+          context: { taskType: 'desensitization' },
+        }),
+    ]),
+  ];
+
+  it.each(groomAdvice)('%s answers the JSON route-not-found 404', async (_label, call) => {
+    const res = await call();
+
+    expect(res.status).toBe(404);
+    expect(res.body).toMatchObject({ success: false, message: 'Route not found' });
+  });
+
+  it.each([
+    ['GET /compatibility/config', () => '/api/v1/compatibility/config'],
+    [
+      'GET /compatibility/factors/:groomId/:horseId',
+      () => `/api/v1/compatibility/factors/${ownGroom.id}/${ownHorse.id}`,
+    ],
+    ['GET /groom-handlers/config', () => '/api/v1/groom-handlers/config'],
+  ])('%s still answers 200 for the owner', async (_label, path) => {
+    const res = await send('get', path(), owner.token);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+
   it('POST /flags/batch-evaluate stays and still refuses a non-admin with 403', async () => {
     const res = await send('post', '/api/v1/flags/batch-evaluate', owner.token, {
       horseIds: [ownHorse.id],

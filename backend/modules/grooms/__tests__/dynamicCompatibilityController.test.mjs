@@ -9,14 +9,15 @@
  * tested without running the full express stack.
  *
  * Equoria-rr7 coverage sprint — module controller branches.
+ *
+ * The predictOutcome and getRecommendations cases left with those handlers
+ * (Equoria-a7f1p; owner ruling 2026-10-07: no advice).
  */
 
 import { describe, it, expect } from '@jest/globals';
 import {
   calculateCompatibility,
   getCompatibilityFactors,
-  predictOutcome,
-  getRecommendations,
   getCompatibilityTrends,
   getCompatibilityConfig,
 } from '../controllers/dynamicCompatibilityController.mjs';
@@ -158,127 +159,6 @@ describe('calculateCompatibility guard clauses', () => {
     const res = makeRes();
 
     await calculateCompatibility(req, res);
-
-    expect([404, 500]).toContain(res.statusValue);
-    expect(res.bodyValue.success).toBe(false);
-  });
-});
-
-// ─── predictOutcome — missing fields guard ────────────────────────────────────
-
-describe('predictOutcome guard clauses', () => {
-  it('returns 400 when groomId is missing', async () => {
-    const req = {
-      body: { horseId: 1, context: { task: 'trust_building' } },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await predictOutcome(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-    expect(res.bodyValue.message).toMatch(/missing required fields/i);
-  });
-
-  it('returns 400 when horseId is missing', async () => {
-    const req = {
-      body: { groomId: 1, context: { task: 'trust_building' } },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await predictOutcome(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-  });
-
-  it('returns 400 when context is missing', async () => {
-    const req = {
-      body: { groomId: 1, horseId: 2 },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await predictOutcome(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-  });
-
-  it('returns 404 when groom not found (non-existent)', async () => {
-    const req = {
-      body: {
-        groomId: NON_EXISTENT_ID,
-        horseId: NON_EXISTENT_ID + 1,
-        context: { task: 'trust_building' },
-      },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await predictOutcome(req, res);
-
-    expect([404, 500]).toContain(res.statusValue);
-    expect(res.bodyValue.success).toBe(false);
-  });
-});
-
-// ─── getRecommendations — missing fields guard ────────────────────────────────
-
-describe('getRecommendations guard clauses', () => {
-  it('returns 400 when horseId is missing', async () => {
-    const req = {
-      body: { context: { task: 'trust_building' } },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await getRecommendations(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-    expect(res.bodyValue.message).toMatch(/missing required fields/i);
-  });
-
-  it('returns 400 when context is missing', async () => {
-    const req = {
-      body: { horseId: 1 },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await getRecommendations(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-  });
-
-  it('returns 400 when both horseId and context are missing', async () => {
-    const req = {
-      body: {},
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await getRecommendations(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-  });
-
-  it('returns 404 when horse not found (non-existent)', async () => {
-    const req = {
-      body: {
-        horseId: NON_EXISTENT_ID,
-        context: { task: 'trust_building' },
-      },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await getRecommendations(req, res);
 
     expect([404, 500]).toContain(res.statusValue);
     expect(res.bodyValue.success).toBe(false);

@@ -291,67 +291,12 @@ describe('Groom Handler System Integration Tests', () => {
     });
   });
 
-  describe('4. Handler Recommendations', () => {
-    it('should get handler recommendations for a horse', async () => {
-      // Create additional grooms for testing recommendations
-      const additionalGrooms = [];
-      const groomData = [
-        { name: 'Rec Groom 1', speciality: 'racing', skillLevel: 'novice', personality: 'energetic' },
-        { name: 'Rec Groom 2', speciality: 'western', skillLevel: 'intermediate', personality: 'patient' },
-      ];
-
-      for (const data of groomData) {
-        const groom = await prisma.groom.create({
-          data: {
-            ...data,
-            userId: testUser.id,
-            experience: 3,
-            sessionRate: 20.0,
-            bio: 'Test groom for recommendations',
-          },
-        });
-        additionalGrooms.push(groom);
-      }
-
-      try {
-        const response = await request(app)
-          .get(`/api/v1/groom-handlers/recommendations/${testHorse.id}?className=Mares`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Authorization', `Bearer ${authToken}`);
-
-        expect(response.status).toBe(200);
-        expect(response.body.success).toBe(true);
-        expect(response.body.data).toHaveProperty('recommendations');
-        expect(response.body.data).toHaveProperty('currentHandler');
-
-        const { recommendations, currentHandler } = response.body.data;
-        expect(Array.isArray(recommendations)).toBe(true);
-        expect(recommendations.length).toBeGreaterThanOrEqual(3); // Original + 2 additional
-
-        // Check if recommendations are sorted by bonus (highest first)
-        for (let i = 1; i < recommendations.length; i++) {
-          expect(recommendations[i - 1].bonus).toBeGreaterThanOrEqual(recommendations[i].bonus);
-        }
-
-        // Check current handler
-        expect(currentHandler).not.toBe(null);
-        expect(currentHandler.id).toBe(testGroom.id);
-      } finally {
-        // Clean up
-        for (const groom of additionalGrooms) {
-          await prisma.groom.deleteMany({ where: { id: groom.id } });
-        }
-      }
-    });
-  });
-
   describe('5. Authentication and Authorization', () => {
     it('should require authentication for all endpoints', async () => {
       const endpoints = [
         { method: 'get', path: `/api/v1/groom-handlers/horse/${testHorse.id}` },
         { method: 'get', path: `/api/v1/groom-handlers/eligibility/${testHorse.id}/Mares` },
         { method: 'get', path: '/api/v1/groom-handlers/config' },
-        { method: 'get', path: `/api/v1/groom-handlers/recommendations/${testHorse.id}` },
       ];
 
       for (const endpoint of endpoints) {

@@ -2,7 +2,9 @@
  * Dynamic Compatibility Routes
  *
  * API routes for advanced real-time compatibility analysis between groom personalities and horse temperaments.
- * Provides endpoints for compatibility scoring, factor analysis, outcome prediction, and recommendations.
+ * Provides endpoints for compatibility scoring and factor analysis. The outcome-prediction and
+ * groom-recommendation routes were removed (Equoria-a7f1p; owner ruling 2026-10-07: no advice);
+ * the compatibility tables themselves stay parked until trait effects are ruled (2026-10-28).
  *
  * Business Rules:
  * - Real-time compatibility scoring with contextual factors
@@ -21,8 +23,6 @@ import { requireOwnership } from '../../../middleware/ownership.mjs';
 import {
   calculateCompatibility,
   getCompatibilityFactors,
-  predictOutcome,
-  getRecommendations,
   getCompatibilityTrends,
   getCompatibilityConfig,
 } from '../controllers/dynamicCompatibilityController.mjs';
@@ -82,76 +82,6 @@ router.get(
   requireOwnership('groom', { idParam: 'groomId' }),
   requireOwnership('horse', { idParam: 'horseId' }),
   getCompatibilityFactors,
-);
-
-/**
- * POST /api/compatibility/predict
- * Predict interaction outcome based on compatibility
- */
-router.post(
-  '/predict',
-  [
-    body('groomId').isInt({ min: 1 }).withMessage('Groom ID must be a positive integer'),
-    body('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    body('context').isObject().withMessage('Context must be an object'),
-    body('context.taskType')
-      .isString()
-      .isIn(GROOM_HORSE_COMPATIBILITY_TASK_TYPES)
-      .withMessage('Task type must be a valid task type'),
-    body('context.duration')
-      .optional()
-      .isInt({ min: 5, max: 120 })
-      .withMessage('Duration must be between 5 and 120 minutes'),
-    body('context.timeOfDay')
-      .optional()
-      .isString()
-      .isIn(['morning', 'afternoon', 'evening'])
-      .withMessage('Time of day must be morning, afternoon, or evening'),
-    body('context.environmentalFactors')
-      .optional()
-      .isArray()
-      .withMessage('Environmental factors must be an array'),
-    body('context.environmentalFactors.*')
-      .isString()
-      .withMessage('Each environmental factor must be a string'),
-  ],
-  handleValidationErrors,
-  predictOutcome,
-);
-
-/**
- * POST /api/compatibility/recommendations
- * Get optimal groom recommendations for a horse
- */
-router.post(
-  '/recommendations',
-  [
-    body('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    body('context').isObject().withMessage('Context must be an object'),
-    body('context.taskType')
-      .isString()
-      .isIn(GROOM_HORSE_COMPATIBILITY_TASK_TYPES)
-      .withMessage('Task type must be a valid task type'),
-    body('context.timeOfDay')
-      .optional()
-      .isString()
-      .isIn(['morning', 'afternoon', 'evening'])
-      .withMessage('Time of day must be morning, afternoon, or evening'),
-    body('context.urgency')
-      .optional()
-      .isString()
-      .isIn(['low', 'normal', 'high', 'urgent'])
-      .withMessage('Urgency must be low, normal, high, or urgent'),
-    body('context.environmentalFactors')
-      .optional()
-      .isArray()
-      .withMessage('Environmental factors must be an array'),
-    body('context.environmentalFactors.*')
-      .isString()
-      .withMessage('Each environmental factor must be a string'),
-  ],
-  handleValidationErrors,
-  getRecommendations,
 );
 
 /**

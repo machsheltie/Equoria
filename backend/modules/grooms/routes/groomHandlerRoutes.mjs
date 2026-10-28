@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import { param, query, validationResult } from 'express-validator';
+import { param, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -18,7 +18,6 @@ import {
   getHorseHandler,
   checkHandlerEligibility,
   getHandlerConfig,
-  getHandlerRecommendations,
 } from '../controllers/groomHandlerController.mjs';
 
 const router = express.Router();
@@ -81,27 +80,6 @@ router.get(
  * Get handler configuration and bonuses
  */
 router.get('/config', getHandlerConfig);
-
-/**
- * GET /api/groom-handlers/recommendations/:horseId
- * Get handler recommendations for a horse in conformation shows
- *
- * Security: Validates horse ownership before providing recommendations
- */
-router.get(
-  '/recommendations/:horseId',
-  [
-    param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    query('className')
-      .optional()
-      .isString()
-      .isLength({ min: 1, max: 50 })
-      .withMessage('Class name must be a valid string'),
-  ],
-  handleValidationErrors,
-  requireOwnership('horse', { idParam: 'horseId' }),
-  getHandlerRecommendations,
-);
 
 /**
  * GET /api/groom-handlers/statistics
