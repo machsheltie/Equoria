@@ -18,7 +18,7 @@
 import logger from './logger.mjs';
 import fs from 'fs';
 import path from 'path';
-import nodemailer from 'nodemailer';
+import { createSmtpTransport } from './smtpTransport.mjs';
 import { createGmailApiTransport, readGmailConfig } from './gmailApiTransport.mjs';
 import { SUPPORT_EMAIL, generateEmailTemplate, generatePlainTextEmail } from './emailTemplates.mjs';
 import { maskEmailAddress, tokenLinkForLog } from './emailIdentityPolicy.mjs';
@@ -38,13 +38,6 @@ const EMAIL_CONFIG = {
   // Single source of truth lives with the templates that render it.
   SUPPORT_EMAIL,
 };
-
-/** SMTP connect, greeting and idle-socket limits, in ms. */
-const smtpTimeouts = Object.freeze({
-  connectionTimeout: 10_000,
-  greetingTimeout: 10_000,
-  socketTimeout: 30_000,
-});
 
 // Cached transporter (lazy-initialized so import-time doesn't fail).
 let cachedTransporter = null;
@@ -85,16 +78,8 @@ function getTransporter() {
     return null;
   }
 
-  cachedTransporter = nodemailer.createTransport({
-    host,
-    port: Number(port),
-    secure: Number(port) === 465,
-    auth: { user, pass },
-    // Explicit limits (STAFF-RR-06/08): nodemailer's defaults wait 2 minutes to
-    // connect, 30 s for the greeting and 10 minutes on an idle socket, which
-    // let one dead server hold the staff email outbox past its schedule.
-    ...smtpTimeouts,
-  });
+  // Explicit connect/greeting/idle limits (STAFF-RR-06/08), see smtpTransport.mjs.
+  cachedTransporter = createSmtpTransport({ host, port, user, pass });
   return cachedTransporter;
 }
 
