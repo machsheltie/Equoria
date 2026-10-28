@@ -153,6 +153,48 @@ function refuseChallenge(res, status, code, message, extra = {}) {
   return res.status(status).json({ success: false, code, message, ...extra });
 }
 
+/** How many times a recovery-code claim re-reads after losing a write race. */
+const RECOVERY_CLAIM_ATTEMPTS = 3;
+
+/**
+ * Equoria-ov8ny (ACC-02): spend one recovery code, exactly once.
+ *
+ * The "used" list is written back only if it is still the list this request
+ * matched against (a guarded updateMany on the stored JSON). A concurrent
+ * challenge that spent a code first changes the list, so this write affects
+ * no row; the request then re-reads and matches again. If the other request
+ * spent the SAME code, the fresh read no longer has it unused and the claim
+ * fails — one code, one session.
+ *
+ * @returns {Promise<boolean>} true when this request spent a valid code.
+ */
+async function consumeRecoveryCode(userId, candidate, initialCodes) {
+  let stored = initialCodes;
+  for (let attempt = 0; attempt < RECOVERY_CLAIM_ATTEMPTS; attempt += 1) {
+    const codes = Array.isArray(stored) ? stored : [];
+    const result = await mfaService.verifyRecoveryCode(candidate, codes);
+    if (!result.valid) {
+      return false;
+    }
+    const claim = await prisma.user.updateMany({
+      where: { id: userId, mfaEnabled: true, mfaRecoveryCodes: { equals: codes } },
+      data: { mfaRecoveryCodes: result.updatedCodes },
+    });
+    if (claim.count === 1) {
+      return true;
+    }
+    const fresh = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { mfaEnabled: true, mfaRecoveryCodes: true },
+    });
+    if (!fresh || !fresh.mfaEnabled) {
+      return false;
+    }
+    stored = fresh.mfaRecoveryCodes;
+  }
+  return false;
+}
+
 /**
  * POST /api/v1/auth/mfa/challenge  (public — second factor of login)
  *
@@ -253,16 +295,7 @@ export const mfaChallenge = async (req, res, next) => {
       }
     }
     if (!verified && recoveryCode) {
-      const stored = Array.isArray(user.mfaRecoveryCodes) ? user.mfaRecoveryCodes : [];
-      const result = await mfaService.verifyRecoveryCode(recoveryCode, stored);
-      if (result.valid) {
-        verified = true;
-        // Persist single-use consumption immediately.
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { mfaRecoveryCodes: result.updatedCodes },
-        });
-      }
+      verified = await consumeRecoveryCode(user.id, recoveryCode, user.mfaRecoveryCodes);
     }
 
     if (!verified) {
