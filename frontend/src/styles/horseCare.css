@@ -87,10 +87,6 @@
   text-shadow: var(--glow-text-danger);
 }
 
-.horse-status__trainer {
-  margin-top: var(--space-5);
-}
-
 /* ── Care area ─────────────────────────────────────────────────────── */
 
 .horse-care {

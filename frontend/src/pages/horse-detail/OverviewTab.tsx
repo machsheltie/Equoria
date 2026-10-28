@@ -11,13 +11,17 @@
  * showed: colour from the visible phenotype, never the hidden genotype. A ledger, not a wall of tiles
  * (PRODUCT.md structural anti-SaaS rules). Bond shows at every age; there is no
  * stress. The age reads in days while a horse is under 3 (Equoria-q4uzh).
+ *
+ * Care Team (owner request 2026-10-28, Equoria-a6t0u): the assigned trainer
+ * that sat at the foot of Horse Details is now its own Care Team section with
+ * the assigned trainer, groom and rider (CareTeamSection).
  */
 
 import React from 'react';
 import { formatDate } from '@/lib/formatDate';
 import { gameDayIndex } from '@/lib/gameTime';
 import { horseAgeWords } from '@/lib/horseAgeWords';
-import HorseTrainerPanel from './HorseTrainerPanel';
+import CareTeamSection from './CareTeamSection';
 import { InlineError } from '@/components/ui/state';
 import { HealthLevelBar } from '@/components/horse/HealthLevelBar';
 import { useHorseCareStatus } from '@/hooks/api/useHorseCareStatus';
@@ -63,10 +67,11 @@ const CareDateRow: React.FC<{
 const isShoeOverdue = (lastShod: string | null | undefined): boolean =>
   !lastShod || gameDayIndex(new Date()) - gameDayIndex(lastShod) > 7;
 
-const OverviewTab: React.FC<{ horse: Horse; onOpenTemperamentReference?: () => void }> = ({
-  horse,
-  onOpenTemperamentReference,
-}) => {
+const OverviewTab: React.FC<{
+  horse: Horse;
+  onOpenTemperamentReference?: () => void;
+  onAssignRider?: () => void;
+}> = ({ horse, onOpenTemperamentReference, onAssignRider }) => {
   const careStatus = useHorseCareStatus(Number(horse.id));
   const care = careStatus.data;
 
@@ -202,10 +207,9 @@ const OverviewTab: React.FC<{ horse: Horse; onOpenTemperamentReference?: () => v
             </button>
           </div>
         )}
-        <div className="horse-status__trainer">
-          <HorseTrainerPanel horseId={horse.id} />
-        </div>
       </section>
+
+      <CareTeamSection horseId={Number(horse.id)} onAssignRider={onAssignRider} />
 
       {horse.traits && horse.traits.length > 0 && (
         <div>

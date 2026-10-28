@@ -492,6 +492,8 @@ export interface RiderAssignment {
   riderId: number;
   horseId: number;
   horseName: string;
+  /** The rider's name; GET /api/v1/riders/assignments sends it with every row. */
+  riderName?: string;
   startDate: string;
   isActive: boolean;
 }

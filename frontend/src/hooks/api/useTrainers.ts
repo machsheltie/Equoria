@@ -80,6 +80,8 @@ export function useHorseTrainer(horseId: number) {
     fee,
     isLoading: query.isLoading,
     isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
   };
 }
 

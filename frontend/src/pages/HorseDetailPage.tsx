@@ -309,6 +309,7 @@ const HorseDetailPage: React.FC = () => {
               <OverviewTab
                 horse={horse}
                 onOpenTemperamentReference={() => setShowTemperamentReference(true)}
+                onAssignRider={() => setShowRiderPicker(true)}
               />
             </TabsContent>
             <TabsContent value="disciplines" className="mt-0 p-6">
