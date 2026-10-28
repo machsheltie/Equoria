@@ -173,7 +173,8 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
   // when the URL carries the param so the quick-action UX from
   // HorseListView lands on the right session.
   const [searchParams, setSearchParams] = useSearchParams();
-  const horseQueryParam = searchParams.get('horse');
+  // Equoria-vlpz4: the horse page and Next Actions send ?horseId=; older links send ?horse=.
+  const horseQueryParam = searchParams.get('horseId') ?? searchParams.get('horse');
   const autoSelectedRef = useRef(false);
 
   // Fetch horses
@@ -203,6 +204,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
+          next.delete('horseId');
           next.delete('horse');
           return next;
         },

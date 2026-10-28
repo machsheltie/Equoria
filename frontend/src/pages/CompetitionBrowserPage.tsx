@@ -88,7 +88,8 @@ const CompetitionBrowserPage = (): JSX.Element => {
   // selection and then navigated away/back would see the original
   // deep-linked horse re-selected on remount.
   const [searchParams, setSearchParams] = useSearchParams();
-  const horseQueryParam = searchParams.get('horse');
+  // Equoria-vlpz4: the horse page and Next Actions send ?horseId=; older links send ?horse=.
+  const horseQueryParam = searchParams.get('horseId') ?? searchParams.get('horse');
   const autoSelectedRef = useRef(false);
   useEffect(() => {
     if (autoSelectedRef.current) return;
@@ -103,6 +104,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
+          next.delete('horseId');
           next.delete('horse');
           return next;
         },
