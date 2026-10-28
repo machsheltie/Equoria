@@ -11,7 +11,8 @@
  *   it is void once the password or the verified email changes after it was
  *   issued, or the account stops being staff with a verified email. Password,
  *   email and role changes also retire outstanding codes in their own
- *   transactions (staffChallengeRetirement.mjs).
+ *   transactions (staffChallengeRetirement.mjs), and a retired code is refused
+ *   even if the server clock is later set back (q261, Equoria-8pzlg).
  * - Issuance and both verification steps run under a row lock on the account
  *   (`SELECT … FOR UPDATE`) and re-read it there; the middleware snapshot is
  *   never the final authority. So two parallel requests cannot both take the
@@ -151,7 +152,8 @@ async function newestLiveCodeTx(tx, account, now, { requireAttemptLeft }) {
     where: { userId: account.id },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
   });
-  if (!newest || newest.usedAt !== null || newest.expiresAt <= now) {
+  // A retired code is dead whatever the clock says (q261, Equoria-8pzlg).
+  if (!newest || newest.usedAt !== null || newest.retiredAt !== null || newest.expiresAt <= now) {
     return null;
   }
   if (requireAttemptLeft && newest.attempts >= CHECKIN_MAX_ATTEMPTS) {

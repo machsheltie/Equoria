@@ -26,7 +26,10 @@ export {
   createAccountWithinDeviceLimit,
 } from './services/deviceAccountLimitService.mjs';
 export { registerQuarantinedShowTools } from './services/quarantinedShowToolsPort.mjs';
-export { retireStaffCheckinCodesTx } from './services/staffChallengeRetirement.mjs';
+export {
+  retireStaffCheckinCodesTx,
+  revokeStaffTrustedDevicesTx,
+} from './services/staffChallengeRetirement.mjs';
 export { purgeStaleStaffCheckinRecords } from './services/staffCheckinRetentionService.mjs';
 export {
   purgeSettledEmails,

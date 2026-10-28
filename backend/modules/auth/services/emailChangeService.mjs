@@ -68,7 +68,7 @@ import { decryptField } from '../../../utils/fieldEncryption.mjs';
 import * as mfaService from './mfaService.mjs';
 import * as mfaLockoutService from './mfaLockoutService.mjs';
 import * as mfaReplayProtectionService from './mfaReplayProtectionService.mjs';
-import { retireStaffCheckinCodesTx } from '../../staff/index.mjs';
+import { retireStaffCheckinCodesTx, revokeStaffTrustedDevicesTx } from '../../staff/index.mjs';
 import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 
 /** Pending changes expire on the same 24h clock as signup verification. */
@@ -437,6 +437,8 @@ export async function confirmEmailChange({ rawToken, metadata = {} }) {
       // with it. Staff check-in codes lock User before code rows, so this
       // comes after the User write, never before it.
       await retireStaffCheckinCodesTx(tx, owner.id, now);
+      // q261 (Equoria-8pzlg): its checked-in staff browsers too, durably.
+      await revokeStaffTrustedDevicesTx(tx, owner.id, now);
 
       // (h) Equoria-8p6e6 (owner ruling 2026-09-22, Equoria-6p398.11): the
       // recovery address is the account-recovery control, so confirming a change

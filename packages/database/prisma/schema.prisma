@@ -2254,6 +2254,9 @@ model StaffCheckinCode {
   attempts  Int       @default(0)
   expiresAt DateTime
   usedAt    DateTime?
+  // Set when a password, email or role change cancels the code (q261, Equoria-8pzlg):
+  // a retired code never checks in, whatever the clock says.
+  retiredAt DateTime?
   createdAt DateTime  @default(now())
 
   @@index([userId, createdAt(sort: Desc)])

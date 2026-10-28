@@ -31,6 +31,9 @@ const respondNotFound = createNotFoundHandler({ spaHtml: null, logger });
 /** The refusal code a capability guard answers with when the role lacks the tool. */
 export const capabilityRequiredCode = 'STAFF_CAPABILITY_REQUIRED';
 
+/** The refusal code a capability guard answers with when this browser is not checked in. */
+export const checkinRequiredCode = 'STAFF_CHECKIN_REQUIRED';
+
 const respondGuardFailure = (res, error) => {
   logger.error(`[staff] guard lookup failed: ${error.message}`);
   return res.status(500).json({
@@ -74,7 +77,7 @@ function buildCapabilityGuard(capabilities) {
       if (!trusted) {
         return res.status(403).json({
           success: false,
-          code: 'STAFF_CHECKIN_REQUIRED',
+          code: checkinRequiredCode,
           message: "Check in to the Steward's Office on this browser first.",
         });
       }
