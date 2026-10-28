@@ -100,6 +100,21 @@ describe('check-staff-routes-guarded: guards', () => {
     expect(scan('c3.mjs', ok)).toEqual([]);
   });
 
+  // STAFF-RR-09 (Equoria-plbec): the three exempt paths take the role guard only.
+  // A capability guard there is the wrong kind and fails.
+  test('a capability guard on the three check-in paths fails (they take requireStaffRole only)', () => {
+    const failures = scan(
+      'c4.mjs',
+      file(
+        "router.post('/checkin/request', requireStaffCapability('ticket.file'), h);",
+        "router.post('/checkin/verify', requireAnyStaffCapability(['warn']), h);",
+        "router.get('/me', requireStaffCapability('warn'), h);",
+      ),
+    );
+    expect(lines(failures)).toEqual([5, 6, 7]);
+    expect(failures[0].reason).toContain('requireStaffRole');
+  });
+
   test('requireAnyStaffCapability with a literal list passes', () => {
     expect(scan('d.mjs', file("router.get('/t', requireAnyStaffCapability(['a', 'b']), h);"))).toEqual([]);
   });
@@ -498,6 +513,37 @@ describe('check-staff-routes-guarded: time-back and jobs.hold are mounted nowher
   test('an unparseable file naming a guard fails rather than passing vacuously', () => {
     const root = mirror({ 'modules/admin/broken.mjs': 'requireStaffCapability(\n' });
     expect(where(scanFreshProofCapabilityUse(root))).toHaveLength(1);
+  });
+
+  // STAFF-RR-13 (Equoria-8irhg): a file that never names a staff capability
+  // guard is scanned too, so an admin-only time-back route cannot slip past.
+  test.each([
+    ['path.mjs', "router.post('/time-back', requireRole('admin'), h);\n"],
+    ['hold.mjs', "router.post('/jobs/hold', requireRole('admin'), h);\n"],
+    ['template.mjs', 'router.post(`/admin/time-back`, h);\n'],
+    ['capname.mjs', "const cap = 'jobs.hold';\n"],
+  ])('%s: an admin-only route or name without any staff guard fails', (name, body) => {
+    const root = mirror({
+      [`modules/admin/routes/${name}`]: `import { requireRole } from '../../../middleware/auth.mjs';\n${body}`,
+    });
+    const failures = scanFreshProofCapabilityUse(root);
+    expect(where(failures)).toEqual([`${name}:2`]);
+    expect(failures[0].reason).toContain('requireFreshStaffProof');
+  });
+
+  test('a file that also uses staff guards cannot add an admin-only time-back route', () => {
+    const root = mirror({
+      'modules/admin/routes/mixed.mjs': `${IMPORT}router.post('/warn', requireStaffCapability('warn'), h);\nrouter.post('/time-back', requireRole('admin'), h);\n`,
+    });
+    expect(where(scanFreshProofCapabilityUse(root))).toEqual(['mixed.mjs:3']);
+  });
+
+  test('the capability map may define the names; comments naming them do not fail', () => {
+    const root = mirror({
+      'modules/staff/capabilities.mjs': "const adminOnly = ['jobs.hold', 'time-back'];\n",
+      'modules/admin/routes/note.mjs': '// no time-back route here until requireFreshStaffProof exists\nexport {};\n',
+    });
+    expect(scanFreshProofCapabilityUse(root)).toEqual([]);
   });
 
   test('the real backend mounts neither capability', () => {

@@ -38,6 +38,10 @@
 //    that is not a string literal (a const, a spread, a template with
 //    expressions), or a guard read other than as a call's callee (aliased,
 //    destructured, passed on, re-exported under another name).
+//    STAFF-RR-13: files that never name a staff guard are scanned too. Any
+//    string or template text naming 'time-back', 'jobs.hold' or '/jobs/hold'
+//    outside a guard call fails (an admin-only route at /time-back, say), except
+//    in modules/staff/capabilities.mjs, which defines the capability map.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -233,6 +237,10 @@ function registrationViolation(expr, b) {
   const routeKey = `${method.toUpperCase()} ${isStringLiteral(first) ? first.value : '<non-literal path>'}`;
   if (!isStringLiteral(first)) return `${routeKey}: the path must be a string literal`;
   const guard = args.length >= 3 ? recognizeGuard(args[1], b.guards) : null;
+  // STAFF-RR-09: the exempt check-in paths take the role guard and nothing else.
+  if (ROLE_ONLY_ALLOWED.has(routeKey) && guard?.kind !== 'role') {
+    return `${routeKey} must start with requireStaffRole (a staff member who is not checked in has no capabilities)`;
+  }
   const guardOk = guard && (guard.kind === 'capability' || ROLE_ONLY_ALLOWED.has(routeKey));
   if (!guardOk) {
     const later = args.slice(2).some((a) => recognizeGuard(a, b.guards));
@@ -405,6 +413,9 @@ export function scanRouteImporters(backendRoot = BACKEND_DIR) {
 }
 
 const CAPABILITY_GUARD_NAMES = new Set(['requireStaffCapability', 'requireAnyStaffCapability']);
+// STAFF-RR-13: the capability names and their route paths, in any text.
+const FRESH_PROOF_TEXT_RE = /time-back|jobs[./]hold/;
+const CAPABILITY_MAP_REL = path.join('modules', 'staff', 'capabilities.mjs');
 
 /** Backend source files outside tests and node_modules. */
 function backendSourceFiles(dir, out = []) {
@@ -427,10 +438,12 @@ function backendSourceFiles(dir, out = []) {
  */
 export function scanFreshProofCapabilityUse(backendRoot = BACKEND_DIR) {
   const failures = [];
+  const capabilityMap = path.join(backendRoot, CAPABILITY_MAP_REL);
   for (const file of backendSourceFiles(backendRoot)) {
     const src = fs.readFileSync(file, 'utf8');
-    // Every route to a guard - import, alias or member - spells its name.
-    if (!src.includes('StaffCapability')) continue;
+    // Every route to a guard - import, alias or member - spells its name; every
+    // other mention of the two capabilities spells one of them (STAFF-RR-13).
+    if (!src.includes('StaffCapability') && !FRESH_PROOF_TEXT_RE.test(src)) continue;
     let parsed;
     try {
       parsed = load(file);
@@ -461,6 +474,7 @@ export function scanFreshProofCapabilityUse(backendRoot = BACKEND_DIR) {
         line: n.loc.start.line,
         reason: `${why}; unable to prove it does not mount time-back or jobs.hold (Equoria-fvdru)`,
       });
+    const guardFailuresBefore = failures.length;
     for (const n of parsed.nodes) {
       // A guard read anywhere but as a call's callee (aliased, destructured,
       // passed on) is a call this scan cannot follow.
@@ -501,6 +515,36 @@ export function scanFreshProofCapabilityUse(backendRoot = BACKEND_DIR) {
             `capability '${hit}' must not be mounted on any route until requireFreshStaffProof exists ` +
             '(STAFF-CR-06; see docs/features/admin-time-back.md, "Blocking dependency")',
         });
+      }
+    }
+    // Text naming a fresh-proof capability or path outside a guard call. A
+    // guard call's own arguments are judged by the guard rule above, and a file
+    // that rule already failed is not reported twice.
+    const insideGuardCall = (n) => {
+      let arg = n.type === 'TemplateElement' ? parsed.parents.get(n) : n;
+      let p = parsed.parents.get(arg);
+      if (p?.type === 'ArrayExpression') {
+        arg = p;
+        p = parsed.parents.get(p);
+      }
+      return p?.type === 'CallExpression' && p.arguments.includes(arg) && isGuardRef(p.callee);
+    };
+    if (failures.length === guardFailuresBefore && !samePath(file, capabilityMap)) {
+      for (const n of parsed.nodes) {
+        const text = isStringLiteral(n)
+          ? n.value
+          : n.type === 'TemplateElement'
+            ? n.value.cooked
+            : null;
+        if (text && FRESH_PROOF_TEXT_RE.test(text) && !insideGuardCall(n)) {
+          failures.push({
+            file,
+            line: n.loc.start.line,
+            reason:
+              `'${text}' names time-back or jobs.hold outside the capability map; no route may serve either ` +
+              'until requireFreshStaffProof exists (STAFF-RR-13; see docs/features/admin-time-back.md)',
+          });
+        }
       }
     }
   }
