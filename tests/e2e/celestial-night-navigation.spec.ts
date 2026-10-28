@@ -9,7 +9,7 @@
  *  - Protected routes redirect unauthenticated users to /login
  */
 import { test, expect } from '@playwright/test';
-import { openHomeRooms, openNavPanel } from './helpers/nav';
+import { openHomeRooms, openNavPanel, openRealm } from './helpers/nav';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Authenticated Navigation Tests (uses storageState from global setup)
@@ -42,7 +42,9 @@ test.describe('Celestial Night Navigation — Authenticated', () => {
     // nav item — Training Grounds is reached via /world per Epic 13).
     // exact: true forces accessible-name equality.
     // Owner ruling q89 (Equoria-q4uem.9): no Breeding link; the hall is gone.
-    const expectedNavLinks = ['Home', 'Competitions', 'World'];
+    // Owner ruling q249 (Equoria-m5ml8): five realms; Compete has no page, so
+    // its shows are links beneath it. Old contract: a Competitions link.
+    const expectedNavLinks = ['Home', 'World', 'Community', 'Marketplace'];
 
     for (const linkName of expectedNavLinks) {
       const link = navContainer.getByRole('link', { name: linkName, exact: true }).first();
@@ -53,15 +55,18 @@ test.describe('Celestial Night Navigation — Authenticated', () => {
     // Inventory, Bank, Riders) were top-level sidebar links. Now Stable, Staff,
     // Inventory and Bank hang beneath Home on a thread the player lets down,
     // and the top-level Riders link is gone.
+    // q249 adds Settings and Profile under Home.
     await openHomeRooms(navContainer);
-    for (const room of ['Stable', 'Staff', 'Inventory', 'Bank']) {
+    for (const room of ['Stable', 'Staff', 'Inventory', 'Bank', 'Settings', 'Profile']) {
       await expect(navContainer.getByRole('link', { name: room, exact: true }).first()).toBeVisible(
         {
           timeout: 10000,
         }
       );
     }
-    await expect(navContainer.getByRole('link', { name: 'Riders', exact: true })).toHaveCount(0);
+    // q249: Riders is listed again, under Marketplace (all for hire).
+    await openRealm(navContainer, 'marketplace');
+    await expect(navContainer.getByRole('link', { name: 'Riders', exact: true })).toBeVisible();
   });
 
   test('World Hub loads with location cards', async ({ page }) => {

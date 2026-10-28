@@ -40,7 +40,13 @@ export async function openNavPanel(page: Page): Promise<Locator> {
 // On desktop this lets the thread down if it is up; in the mobile panel the
 // rooms are always listed under Home, so there is no arrow to press.
 export async function openHomeRooms(nav: Locator): Promise<void> {
-  const arrow = nav.getByTestId('home-thread-toggle');
+  await openRealm(nav, 'home');
+}
+
+// Equoria-m5ml8 (owner q249): every realm hangs its places on a thread in the
+// sidebar; the phone menu always lists them, so there is no arrow to press.
+export async function openRealm(nav: Locator, realm: string): Promise<void> {
+  const arrow = nav.getByTestId(`${realm}-thread-toggle`);
   if ((await arrow.count()) === 0) return;
   if ((await arrow.getAttribute('aria-expanded')) !== 'true') {
     await arrow.click();
