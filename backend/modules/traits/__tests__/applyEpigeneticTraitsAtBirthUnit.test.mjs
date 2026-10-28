@@ -130,10 +130,14 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
     });
   });
 
-  describe('3+ ancestors with same discipline → affinity (legacyTalent removed, q117)', () => {
+  // Owner rulings 2026-10-20/21 (Equoria-n7ph5): the +5 birth discipline is a horse's one
+  // discipline trait and replaces the 23 lineage discipline affinities, so no lineage gives
+  // a disciplineAffinity<Discipline> trait at birth. Old contract: 3+ same-discipline
+  // ancestors gave it 70% of the time.
+  describe('3+ ancestors with same discipline → no affinity (Equoria-n7ph5; legacyTalent removed, q117)', () => {
     const mare = { id: 1, name: 'Racing Mare' };
 
-    it('assigns disciplineAffinityRacing with 3+ racing ancestors', () => {
+    it('never assigns disciplineAffinityRacing with 3+ racing ancestors', () => {
       const lineage = [
         { id: 601, name: 'Racing Champion 1', mostCompetedDiscipline: 'Racing' },
         { id: 602, name: 'Racing Champion 2', mostCompetedDiscipline: 'Racing' },
@@ -145,10 +149,10 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
           () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 60 }),
           'disciplineAffinityRacing',
         ),
-      ).toBe(true);
+      ).toBe(false);
     });
 
-    it('assigns the affinity, never legacyTalent, with 4+ ancestors in same discipline', () => {
+    it('assigns neither the affinity nor legacyTalent with 4+ ancestors in same discipline', () => {
       const lineage = [
         { id: 701, name: 'Show Jumper 1', mostCompetedDiscipline: 'Show Jumping' },
         { id: 702, name: 'Show Jumper 2', mostCompetedDiscipline: 'Show Jumping' },
@@ -157,13 +161,13 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
         { id: 705, name: 'Racing Horse', mostCompetedDiscipline: 'Racing' },
       ];
       const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 65 });
-      expect(traitAppears(fn, 'disciplineAffinityShowJumping')).toBe(true);
+      expect(traitAppears(fn, 'disciplineAffinityShowJumping')).toBe(false);
       // Old contract: legacyTalent also appeared. Owner ruling 2026-10-27 (q117)
       // removed it from the roster.
       expect(traitAppears(fn, 'legacyTalent')).toBe(false);
     });
 
-    it('assigns disciplineAffinityDressage with dressage specialization', () => {
+    it('never assigns disciplineAffinityDressage with dressage specialization', () => {
       const lineage = [
         { id: 801, name: 'Dressage Master 1', mostCompetedDiscipline: 'Dressage' },
         { id: 802, name: 'Dressage Master 2', mostCompetedDiscipline: 'Dressage' },
@@ -176,7 +180,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
           () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 70 }),
           'disciplineAffinityDressage',
         ),
-      ).toBe(true);
+      ).toBe(false);
     });
 
     it('does not assign discipline traits without sufficient specialization', () => {
@@ -222,7 +226,8 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       ];
       const fn = seed => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 85, seed });
       expect(traitAppears(fn, 'resilient')).toBe(true);
-      expect(traitAppears(fn, 'disciplineAffinityRacing')).toBe(true);
+      // Equoria-n7ph5: no lineage affinity at birth. Old contract: true.
+      expect(traitAppears(fn, 'disciplineAffinityRacing')).toBe(false);
     });
   });
 });

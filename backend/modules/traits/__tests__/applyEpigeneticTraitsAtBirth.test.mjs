@@ -162,21 +162,20 @@ describe('applyEpigeneticTraitsAtBirth — inbreeding', () => {
 // Discipline specialization
 // ---------------------------------------------------------------------------
 describe('applyEpigeneticTraitsAtBirth — discipline specialization', () => {
-  it('3+ ancestors with same discipline can produce discipline affinity trait', () => {
-    let found = false;
-    for (let i = 0; i < 100; i++) {
+  // Owner rulings 2026-10-20/21 (Equoria-n7ph5): every horse has exactly one discipline
+  // trait, the +5 birth discipline, which replaces the 23 lineage discipline affinities, so
+  // no disciplineAffinity<Discipline> trait is given at birth any more. Old contract: a
+  // lineage of 3+ ancestors in one discipline gave it 70% of the time.
+  it('3+ ancestors with same discipline never produce a discipline affinity trait', () => {
+    for (let seed = 1; seed <= 200; seed++) {
       const result = applyEpigeneticTraitsAtBirth({
         mare: baseMare(),
         lineage: lineageWithDiscipline('Dressage', 4),
         feedQuality: 50,
+        seed,
       });
-      const hasAffinity = carried(result).some(t => t.includes('disciplineAffinity'));
-      if (hasAffinity) {
-        found = true;
-        break;
-      }
+      expect(carried(result).filter(t => t.includes('disciplineAffinity'))).toEqual([]);
     }
-    expect(found).toBe(true);
   });
 
   // Old contract: 4+ same-discipline ancestors could add legacyTalent. Owner
@@ -315,19 +314,14 @@ describe('applyEpigeneticTraitsAtBirth — analyzeDisciplineSpecialization branc
       id: i + 200,
       mostCompetedDiscipline: 'Racing',
     }));
-    let found = false;
-    for (let i = 0; i < 100; i++) {
-      const result = applyEpigeneticTraitsAtBirth({
-        mare: baseMare(),
-        lineage,
-        feedQuality: 50,
-      });
-      if (carried(result).some(t => t.includes('disciplineAffinity') || t === 'legacyTalent')) {
-        found = true;
-        break;
-      }
+    // Owner rulings 2026-10-20/21 (Equoria-n7ph5): every horse has exactly one discipline
+    // trait, the +5 birth discipline, which replaces the 23 lineage discipline affinities, so
+    // no disciplineAffinity<Discipline> trait is given at birth any more. Old contract: a
+    // lineage of 3+ ancestors in one discipline gave it 70% of the time.
+    for (let seed = 1; seed <= 200; seed++) {
+      const result = applyEpigeneticTraitsAtBirth({ mare: baseMare(), lineage, feedQuality: 50, seed });
+      expect(carried(result).some(t => t.includes('disciplineAffinity') || t === 'legacyTalent')).toBe(false);
     }
-    expect(found).toBe(true);
   });
 
   it('3 ancestors with disciplineScores exercises that true-branch and calls getHighestScoringDiscipline', () => {
@@ -335,19 +329,11 @@ describe('applyEpigeneticTraitsAtBirth — analyzeDisciplineSpecialization branc
       id: i + 300,
       disciplineScores: { Dressage: 90, Racing: 50 },
     }));
-    let found = false;
-    for (let i = 0; i < 100; i++) {
-      const result = applyEpigeneticTraitsAtBirth({
-        mare: baseMare(),
-        lineage,
-        feedQuality: 50,
-      });
-      if (carried(result).some(t => t.includes('disciplineAffinity'))) {
-        found = true;
-        break;
-      }
+    // Equoria-n7ph5: no lineage affinity at birth (see the discipline specialization block).
+    for (let seed = 1; seed <= 200; seed++) {
+      const result = applyEpigeneticTraitsAtBirth({ mare: baseMare(), lineage, feedQuality: 50, seed });
+      expect(carried(result).some(t => t.includes('disciplineAffinity'))).toBe(false);
     }
-    expect(found).toBe(true);
   });
 
   it('null ancestor exercises ancestor&&ancestor.discipline false-branch in analyzeDisciplineSpecialization', () => {
@@ -387,19 +373,11 @@ describe('applyEpigeneticTraitsAtBirth — getHighestScoringDiscipline branches'
       id: i + 500,
       disciplineScores: { Racing: 'fast', Dressage: 90 },
     }));
-    let found = false;
-    for (let i = 0; i < 100; i++) {
-      const result = applyEpigeneticTraitsAtBirth({
-        mare: baseMare(),
-        lineage,
-        feedQuality: 50,
-      });
-      if (carried(result).some(t => t.includes('disciplineAffinityDressage'))) {
-        found = true;
-        break;
-      }
+    // Equoria-n7ph5: no lineage affinity at birth (see the discipline specialization block).
+    for (let seed = 1; seed <= 200; seed++) {
+      const result = applyEpigeneticTraitsAtBirth({ mare: baseMare(), lineage, feedQuality: 50, seed });
+      expect(carried(result).some(t => t.includes('disciplineAffinity'))).toBe(false);
     }
-    expect(found).toBe(true);
   });
 });
 
@@ -468,7 +446,8 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
         seed => applyEpigeneticTraitsAtBirth({ mare: {}, lineage, feedQuality: 50, seed }),
         'disciplineAffinityRacing',
       ),
-    ).toBe(true);
+      // Equoria-n7ph5: no lineage affinity at birth. Old contract: true.
+    ).toBe(false);
   });
 
   it('does not assign discipline traits without sufficient specialization (deterministic)', () => {

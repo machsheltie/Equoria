@@ -15,8 +15,10 @@
  *     numbers, owner ruling 2026-10-28 q175). Replaced the unruled 75% resilient
  *     + 60% peopleTrusting bonus.
  *   Stage 2 — inbreeding → fragile.
- *   Stage 3 — lineage discipline specialization → disciplineAffinity<Discipline>
- *     (the discipline trait, ruled separately from the trait roster).
+ *   (The old Stage 3 gave a 70% lineage "disciplineAffinity<Discipline>" trait. Owner
+ *   rulings 2026-10-20/21 (Equoria-n7ph5): every horse has exactly one discipline
+ *   trait, the +5 birth discipline (modules/horses/services/birthDiscipline.mjs),
+ *   which replaces the 23 discipline affinities, so no affinity is given at birth.)
  *   Dedupe, then VISIBILITY (owner ruling 2026-10-26, q98; Equoria-2d55z):
  *     every trait the foal carries is born HIDDEN, unless a parent had that
  *     trait active and revealed (`parentActiveTraits`), in which case it is
@@ -46,7 +48,7 @@
 
 import logger from './logger.mjs';
 import { getTraitDefinition, isRosterTrait } from './epigeneticTraits.mjs';
-import { normalizeTraitKey, disciplineAffinityKey } from './epigeneticTraitKeyMap.mjs';
+import { normalizeTraitKey } from './epigeneticTraitKeyMap.mjs';
 
 /**
  * Small deterministic LCG so seeded runs are reproducible. Mirrors the
@@ -92,7 +94,7 @@ function traitPolarity(trait, fallbackType) {
  *
  * @param {Object} params
  * @param {Object} params.mare - Mare object (bondScore, ...)
- * @param {Array}  params.lineage - ancestor records (discipline info)
+ * @param {Array}  params.lineage - ancestor records (inbreeding check)
  * @param {number} params.feedQuality - 0-100
  * @param {number} [params.negativeRollMultiplier] - mare-health multiplier on every negative roll (default 1)
  * @param {string[]} [params.sireTraits] - sire's epigenetic traits (pos∪neg∪hidden)
@@ -123,7 +125,7 @@ export function applyEpigeneticTraitsAtBirth({
   const rng = typeof injectedRng === 'function' ? injectedRng : makeRng(seed);
 
   // Classify each candidate trait as 'positive' or 'negative' for visibility
-  // fallback when the trait has no definition (e.g. discipline-affinity keys).
+  // fallback when the trait has no definition.
   const positiveCandidates = new Set();
   const negativeCandidates = new Set();
   const addPositive = t => positiveCandidates.add(t);
@@ -199,26 +201,6 @@ export function applyEpigeneticTraitsAtBirth({
     }
   }
 
-  // ── Stage 3 — lineage discipline specialization ─────────────────────────────
-  const disciplineAnalysis = analyzeDisciplineSpecialization(lineage);
-  if (disciplineAnalysis.hasSpecialization) {
-    logger.info(
-      `[applyEpigeneticTraitsAtBirth] Discipline specialization: ${disciplineAnalysis.discipline} (${disciplineAnalysis.count} ancestors)`,
-    );
-
-    // §F (9o3n7.5): emit the canonical camelCase affinity key
-    // disciplineAffinity<Discipline>. The traitEffects map now has a rich
-    // effect for EVERY canonical discipline, so a born affinity trait always
-    // has a matching effect (resolves the historic jumping/show_jumping
-    // silent-miss where the emitter built _show_jumping but only _jumping
-    // had an effect).
-    const affinityTrait = disciplineAffinityKey(disciplineAnalysis.discipline);
-    if (affinityTrait && rng() < 0.7) {
-      addPositive(affinityTrait);
-      logger.info(`[applyEpigeneticTraitsAtBirth] Applied ${affinityTrait}`);
-    }
-  }
-
   // ── Dedupe + visibility (q98) ───────────────────────────────────────────────
   // Hidden unless a parent had the trait active and revealed.
   const activeOnParent = new Set(
@@ -286,73 +268,6 @@ function analyzeInbreeding(lineage) {
   }
 
   return { inbreedingDetected, severity, commonAncestors, ancestorCounts };
-}
-
-/**
- * Analyze lineage for discipline specialization
- */
-function analyzeDisciplineSpecialization(lineage) {
-  if (!lineage || lineage.length === 0) {
-    return { hasSpecialization: false, discipline: null, count: 0 };
-  }
-
-  const disciplineCounts = {};
-
-  lineage.forEach(ancestor => {
-    if (ancestor && ancestor.discipline) {
-      disciplineCounts[ancestor.discipline] = (disciplineCounts[ancestor.discipline] || 0) + 1;
-    }
-    if (ancestor && ancestor.mostCompetedDiscipline) {
-      disciplineCounts[ancestor.mostCompetedDiscipline] =
-        (disciplineCounts[ancestor.mostCompetedDiscipline] || 0) + 1;
-    }
-    if (ancestor && ancestor.disciplineScores) {
-      const highestDiscipline = getHighestScoringDiscipline(ancestor.disciplineScores);
-      if (highestDiscipline) {
-        disciplineCounts[highestDiscipline] = (disciplineCounts[highestDiscipline] || 0) + 1;
-      }
-    }
-  });
-
-  let mostCommonDiscipline = null;
-  let maxCount = 0;
-
-  Object.entries(disciplineCounts).forEach(([discipline, count]) => {
-    if (count > maxCount) {
-      maxCount = count;
-      mostCommonDiscipline = discipline;
-    }
-  });
-
-  const hasSpecialization = maxCount >= 3;
-
-  return {
-    hasSpecialization,
-    discipline: hasSpecialization ? mostCommonDiscipline : null,
-    count: maxCount,
-    disciplineBreakdown: disciplineCounts,
-  };
-}
-
-/**
- * Get the highest scoring discipline from discipline scores
- */
-function getHighestScoringDiscipline(disciplineScores) {
-  if (!disciplineScores || typeof disciplineScores !== 'object') {
-    return null;
-  }
-
-  let highestDiscipline = null;
-  let highestScore = -1;
-
-  Object.entries(disciplineScores).forEach(([discipline, score]) => {
-    if (typeof score === 'number' && score > highestScore) {
-      highestScore = score;
-      highestDiscipline = discipline;
-    }
-  });
-
-  return highestDiscipline;
 }
 
 export default applyEpigeneticTraitsAtBirth;
