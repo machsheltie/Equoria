@@ -61,6 +61,10 @@ beforeAll(async () => {
   // Horse.userId is onDelete:Restrict (schema:282), so the foal horse row must
   // be deleted BEFORE its owning user, or the user delete throws. Fail-loud:
   // if any of these fails, afterAll goes red so the leak is fixed at source.
+  // Before q153 the development read created a default groom and assignment for
+  // the user; these scoped deletes keep a red run from leaking them.
+  cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: user.id } }), 'groomAssignment');
+  cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'groom');
   cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: foal.id } }), 'foalActivity');
   cleanup.add(() => prisma.foalDevelopment.deleteMany({ where: { foalId: foal.id } }), 'foalDevelopment');
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: foal.id } }), 'horse');
@@ -81,6 +85,21 @@ describe('GET /api/v1/foals/:foalId/development', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeDefined();
+  });
+
+  // Owner ruling 2026-10-28 (q153): no foal is ever born with, or given, a groom;
+  // grooms come from the hiring pool. Old behaviour: this read called
+  // ensureDefaultGroomAssignment, which in test mode created a "Sarah Johnson"
+  // foal-care groom and an assignment for the foal.
+  it('reading a foal gives it no groom and creates no groom (q153)', async () => {
+    const res = await request(app)
+      .get(`/api/v1/foals/${foal.id}/development`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(await prisma.groomAssignment.count({ where: { foalId: foal.id } })).toBe(0);
+    expect(await prisma.groom.count({ where: { userId: user.id } })).toBe(0);
   });
 
   it('returns 404 for foal not owned by user', async () => {
@@ -122,6 +141,25 @@ describe('POST /api/v1/foals/:foalId/advance-day (retired)', () => {
     expect(res.status).toBe(404);
     const after = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
     expect(after?.currentDay ?? null).toBe(before?.currentDay ?? null);
+  });
+});
+
+// Owner ruling 2026-10-28 (q153). OLD CONTRACT: POST /api/v1/grooms/ensure-default/:foalId
+// gave an owned foal a default groom assignment (creating the groom in test mode).
+// NEW: the route is gone; an authenticated owner gets 404 and no groom is created.
+describe('POST /api/v1/grooms/ensure-default/:foalId (retired, q153)', () => {
+  it('returns 404 and creates no groom or assignment', async () => {
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    const res = await request(app)
+      .post(`/api/v1/grooms/ensure-default/${foal.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken);
+
+    expect(res.status).toBe(404);
+    expect(await prisma.groomAssignment.count({ where: { foalId: foal.id } })).toBe(0);
+    expect(await prisma.groom.count({ where: { userId: user.id } })).toBe(0);
   });
 });
 

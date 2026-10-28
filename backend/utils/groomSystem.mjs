@@ -3,16 +3,12 @@
  * Groom constants and assignment helpers. Bond is changed only by groomCareService (+5 per daily groom, cap 100).
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../config/groomConfig.mjs';
 // Equoria-95yrv fix round 1 (F1): the foal-assignment door moved to its own module
 // when it became transactional — see that file's header. Re-exported here so every
 // importer (the handlers, foalController, the suites) is unchanged.
-export {
-  assignGroomToFoal,
-  ensureDefaultGroomAssignment,
-} from '../modules/grooms/services/groomFoalAssignmentService.mjs';
+export { assignGroomToFoal } from '../modules/grooms/services/groomFoalAssignmentService.mjs';
 
 /**
  * Groom specialties and their bonding modifiers
@@ -163,36 +159,6 @@ export const DEFAULT_GROOMS = [
     },
   },
 ];
-
-/**
- * Get or create a default groom for a user
- * @deprecated This function is disabled to increase player engagement. Players must manually hire grooms.
- * @param {string} userId - ID of the user
- * @returns {Object} Groom object
- */
-export async function getOrCreateDefaultGroom(userId) {
-  logger.warn(
-    `[groomSystem.getOrCreateDefaultGroom] DEPRECATED: Auto-creation disabled for user ${userId}. Players must manually hire grooms.`,
-  );
-
-  // Check if user already has grooms
-  const existingGroom = await prisma.groom.findFirst({
-    where: {
-      userId,
-      isActive: true,
-      speciality: 'foalCare',
-    },
-  });
-
-  if (existingGroom) {
-    return existingGroom;
-  }
-
-  // No auto-creation - throw error to force manual hiring
-  throw new Error(
-    'No foal care groom found for user. Please hire a groom manually through the hiring system to increase player engagement.',
-  );
-}
 
 /**
  * Check if a foal has already completed a foal-specific task today

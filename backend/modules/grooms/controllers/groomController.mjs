@@ -9,8 +9,7 @@
  * response shapes are preserved exactly — this is a pure split, not a rewrite.
  *
  * Public surface (hireGroom retired by Equoria-bvddn.7):
- *   - assignment:    assignGroom, ensureDefaultAssignment, getFoalAssignments,
- *                    getGroomAssignmentLogs
+ *   - assignment:    assignGroom, getFoalAssignments, getGroomAssignmentLogs
  *   - interaction:   getGroomHorseSynergyPreview (grooming itself: groomCareController)
  *   - roster:        getUserGrooms, getGroomProfile, getGroomDefinitions
  *   - bonus-traits:  getGroomBonusTraits, updateGroomBonusTraits
@@ -18,7 +17,6 @@
 
 export {
   assignGroom,
-  ensureDefaultAssignment,
   getFoalAssignments,
   getGroomAssignmentLogs,
 } from './groomAssignmentHandlers.mjs';

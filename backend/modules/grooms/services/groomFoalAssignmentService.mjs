@@ -1,6 +1,10 @@
 /**
- * The foal-assignment door — `POST /api/grooms/assign` and the deprecated
- * default-assignment helper.
+ * The foal-assignment door — `POST /api/grooms/assign`.
+ *
+ * No foal is ever born with, or given, a groom by the game (owner ruling 2026-10-28,
+ * q153): the deprecated default-assignment helper, which created a "Sarah Johnson"
+ * groom and assignment in test mode, was deleted with its route. Players hire grooms
+ * from the hiring pool and assign them here.
  *
  * Split out of backend/utils/groomSystem.mjs by Equoria-95yrv fix round 1 (F1), which
  * made this door TRANSACTIONAL and pushed that file back over the 600-line cap. The
@@ -155,95 +159,4 @@ export async function assignGroomToFoal(foalId, groomId, userId, options = {}) {
   };
 }
 
-/**
- * Get or create default groom assignment for a foal
- * @deprecated This function is disabled to increase player engagement. Players must manually assign grooms.
- * @param {number} foalId - ID of the foal
- * @returns {Object} Assignment result
- */
-export async function ensureDefaultGroomAssignment(foalId, userId) {
-  logger.warn(
-    `[groomSystem.ensureDefaultGroomAssignment] DEPRECATED: Auto-assignment disabled for foal ${foalId}. Players must manually assign grooms.`,
-  );
-
-  // Check if foal already has an active assignment
-  const existingAssignment = await prisma.groomAssignment.findFirst({
-    where: {
-      foalId,
-      isActive: true,
-    },
-    include: {
-      groom: true,
-    },
-  });
-
-  if (existingAssignment) {
-    logger.info(
-      `[groomSystem.ensureDefaultGroomAssignment] Foal ${foalId} already has active assignment`,
-    );
-    return {
-      success: true,
-      assignment: existingAssignment,
-      message: 'Foal already has an assigned groom',
-      isExisting: true,
-    };
-  }
-
-  // For testing purposes, create a default assignment
-  // In production, this would be disabled to increase player engagement
-  if (process.env.NODE_ENV === 'test') {
-    // Create a default groom for testing
-    let groom = await prisma.groom.findFirst({
-      where: {
-        userId,
-        speciality: 'foalCare',
-        isActive: true,
-      },
-    });
-
-    if (!groom) {
-      groom = await prisma.groom.create({
-        data: {
-          name: 'Sarah Johnson',
-          speciality: 'foalCare',
-          skillLevel: 'intermediate',
-          starLevel: 'intermediate',
-          personality: 'gentle',
-          experience: 5,
-          sessionRate: 18.0,
-          userId,
-          isActive: true,
-        },
-      });
-    }
-
-    const assignment = await prisma.groomAssignment.create({
-      data: {
-        foalId,
-        groomId: groom.id,
-        userId,
-        priority: 1,
-        isDefault: true,
-        isActive: true,
-      },
-    });
-
-    return {
-      success: true,
-      assignment,
-      message: 'Default groom assigned to foal',
-      isNew: true,
-    };
-  }
-
-  // Return error - no auto-assignment to increase player engagement
-  return {
-    success: false,
-    message:
-      'No groom assigned to foal. Please hire and assign a groom manually to increase bonding.',
-    requiresManualAssignment: true,
-    foalId,
-  };
-}
-
-export default { assignGroomToFoal, ensureDefaultGroomAssignment };
+export default { assignGroomToFoal };

@@ -303,14 +303,25 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
     expect(foal.epigeneticModifiers).toHaveProperty('negative');
 
     // ── STEP 4: Groom Assignment & Care ─────────────────────────────────────
-    // Import groom system (real business logic)
-    const { ensureDefaultGroomAssignment } = await import('../../utils/groomSystem.mjs');
-
-    // Ensure foal has a groom assignment
-    const assignmentResult = await ensureDefaultGroomAssignment(foal.id, testUser.id);
+    // Owner ruling 2026-10-28 (q153): no foal is born with, or given, a groom. The
+    // foal starts with none; the player's own groom (a hired-groom fixture) is
+    // assigned through the real assignment door. The old step called the deleted
+    // ensureDefaultGroomAssignment, which created a default groom in test mode.
+    expect(await prisma.groomAssignment.count({ where: { foalId: foal.id } })).toBe(0);
+    const playerGroom = await prisma.groom.create({
+      data: {
+        name: 'Integration Test Groom',
+        speciality: 'foalCare',
+        personality: 'gentle',
+        userId: testUser.id,
+        isActive: true,
+      },
+    });
+    const { assignGroomToFoal } = await import('../../utils/groomSystem.mjs');
+    const assignmentResult = await assignGroomToFoal(foal.id, playerGroom.id, testUser.id);
 
     expect(assignmentResult.success).toBe(true);
-    expect(assignmentResult.assignment || assignmentResult.newAssignment).toBeDefined();
+    expect(assignmentResult.assignment).toBeDefined();
 
     // VERIFY: Assignment exists in database
     const dbAssignment = await prisma.groomAssignment.findFirst({

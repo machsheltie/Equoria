@@ -4,7 +4,7 @@
  *
  * Equoria-8mdpc god-file split: this parent keeps the foundational endpoints
  * (assign / interact / assignments / user / profile / synergy /
- * assignment-logs / bonus-traits / definitions / ensure-default) and mounts
+ * assignment-logs / bonus-traits / definitions) and mounts
  * three sub-domain sub-routers at the bottom (mirroring the Equoria-y8u2j
  * horseRoutes pattern):
  *   - groomRetirementRoutes.mjs  (/retirement/*, /:id/retirement/*)
@@ -25,7 +25,6 @@ import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import {
   assignGroom,
-  ensureDefaultAssignment,
   getFoalAssignments,
   getUserGrooms,
   getGroomDefinitions,
@@ -148,39 +147,6 @@ router.post(
     }
   },
   assignGroom,
-);
-
-/**
- * @swagger
- * /api/grooms/ensure-default/{foalId}:
- *   post:
- *     summary: Ensure a foal has a default groom assignment
- *     tags: [Grooms]
- *     parameters:
- *       - in: path
- *         name: foalId
- *         required: true
- *         schema:
- *           type: integer
- *           minimum: 1
- *         description: ID of the foal
- *     responses:
- *       200:
- *         description: Default assignment ensured
- *       400:
- *         description: Invalid foal ID
- *       500:
- *         description: Internal server error
- */
-router.post(
-  '/ensure-default/:foalId',
-  authenticateToken, // IDOR Protection: Require authentication
-  [
-    param('foalId').isInt({ min: 1 }).withMessage('foalId must be a positive integer'),
-    handleValidationErrors,
-  ],
-  requireOwnership('foal', { idParam: 'foalId' }), // IDOR Protection: Validate foal ownership
-  ensureDefaultAssignment,
 );
 
 /**

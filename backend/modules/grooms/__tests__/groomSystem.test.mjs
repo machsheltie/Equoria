@@ -17,15 +17,12 @@ import { randomBytes } from 'node:crypto';
 import {
   hasAlreadyCompletedFoalTaskToday,
   assignGroomToFoal,
-  ensureDefaultGroomAssignment,
-  getOrCreateDefaultGroom,
   GROOM_SPECIALTIES,
   SKILL_LEVELS,
   PERSONALITY_TRAITS,
 } from '../../../utils/groomSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
-const GHOST_UUID = '00000000-0000-0000-0000-ffffffffffff';
 import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../../../config/groomConfig.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -138,34 +135,6 @@ describe('assignGroomToFoal() — foal not found', () => {
   });
 });
 
-// ── ensureDefaultGroomAssignment — FK-fail in test mode (lines 295-381) ──────
-
-describe('ensureDefaultGroomAssignment() — FK violation on groom.create in test mode', () => {
-  it('rejects when userId is a ghost UUID (groom.create FK P2003 → catch + rethrow)', async () => {
-    let thrown = false;
-    try {
-      await ensureDefaultGroomAssignment(-1, GHOST_UUID);
-    } catch {
-      thrown = true;
-    }
-    expect(thrown).toBe(true);
-  });
-});
-
-// ── getOrCreateDefaultGroom — no-groom-found path (lines 390-416) ────────────
-
-describe('getOrCreateDefaultGroom() — no foalCare groom found for ghost userId', () => {
-  it('rejects when userId has no foalCare groom in DB (null → throw → catch + rethrow)', async () => {
-    let thrown = false;
-    try {
-      await getOrCreateDefaultGroom(GHOST_UUID);
-    } catch {
-      thrown = true;
-    }
-    expect(thrown).toBe(true);
-  });
-});
-
 // ── assignGroomToFoal — groom-not-found path (lines 194-209) ─────────────────
 //
 // Foal exists, but groomId=-1 does not exist → lines 194-208 (groom lookup) +
@@ -219,18 +188,15 @@ describe('assignGroomToFoal() — groom not found (foal exists, groom=-1)', () =
   });
 });
 
-// ── assignGroomToFoal success path + ensureDefault ────────
+// ── assignGroomToFoal success path ────────
 //
-// Fixture set for lines 219-278 (assignGroomToFoal success path),
-// lines 312-316 (ensureDefaultGroomAssignment existing assignment),
-// lines 351-368 (ensureDefaultGroomAssignment test-mode creation),
-// line 406 (getOrCreateDefaultGroom existing groom).
+// Fixture set for the assignGroomToFoal success path. Owner ruling 2026-10-28
+// (q153): no foal is given a default groom, so ensureDefaultGroomAssignment and
+// getOrCreateDefaultGroom were deleted with the tests that specified them.
 
 let successUser;
 let groomForSuccessAssign;
 let foalForSuccessAssign;
-let foalPreAssigned;
-let foalForEnsure;
 // Equoria-1ohys: fail-loud scoped cleanup. FK order: groom* children
 // (groomInteraction, groomAssignment — Cascade on Groom*) deleted first, then
 // the horses/groom (Horse.userId + Groom.userId Restrict), then the owning user
@@ -273,44 +239,13 @@ beforeAll(async () => {
     },
   });
 
-  foalPreAssigned = await prisma.horse.create({
-    data: {
-      ...fixtureColor(),
-      name: `TestFixture-PreAssignedFoal-${ts}`,
-      sex: 'Filly',
-      dateOfBirth: new Date(),
-      age: 0,
-      userId: successUser.id,
-    },
-  });
-  await prisma.groomAssignment.create({
-    data: {
-      foalId: foalPreAssigned.id,
-      groomId: groomForSuccessAssign.id,
-      userId: successUser.id,
-      priority: 1,
-      isActive: true,
-    },
-  });
-
-  foalForEnsure = await prisma.horse.create({
-    data: {
-      ...fixtureColor(),
-      name: `TestFixture-EnsureFoal-${ts}`,
-      sex: 'Colt',
-      dateOfBirth: new Date(),
-      age: 0,
-      userId: successUser.id,
-    },
-  });
-
   // Register scoped, FK-ordered cleanup: groom* children first (cascade-owned
   // by groom/foal), then horses + groom (Restrict on Horse.userId/Groom.userId),
   // then the owning user last.
   successCleanup.add(
     () =>
       prisma.groomAssignment.deleteMany({
-        where: { foalId: { in: [foalPreAssigned.id, foalForSuccessAssign.id, foalForEnsure.id] } },
+        where: { foalId: { in: [foalForSuccessAssign.id] } },
       }),
     'success groomAssignments',
   );
@@ -318,8 +253,6 @@ beforeAll(async () => {
     () => prisma.horse.delete({ where: { id: foalForSuccessAssign.id } }),
     'success foalForSuccessAssign',
   );
-  successCleanup.add(() => prisma.horse.delete({ where: { id: foalPreAssigned.id } }), 'success foalPreAssigned');
-  successCleanup.add(() => prisma.horse.delete({ where: { id: foalForEnsure.id } }), 'success foalForEnsure');
   successCleanup.add(() => prisma.groom.delete({ where: { id: groomForSuccessAssign.id } }), 'success groom');
   successCleanup.add(() => prisma.user.delete({ where: { id: successUser.id } }), 'success user');
 }, 30000);
@@ -332,29 +265,6 @@ describe('assignGroomToFoal() — success path (lines 219 false-branch, 228-282)
     expect(result.success).toBe(true);
     expect(result.assignment).toBeDefined();
     expect(typeof result.message).toBe('string');
-  });
-});
-
-describe('getOrCreateDefaultGroom() — existing foalCare groom path (line 406) (Equoria-rr7)', () => {
-  it('returns existing foalCare groom without creating a new one (line 406)', async () => {
-    const result = await getOrCreateDefaultGroom(successUser.id);
-    expect(result.id).toBe(groomForSuccessAssign.id);
-  });
-});
-
-describe('ensureDefaultGroomAssignment() — existing assignment early return (lines 312-316) (Equoria-rr7)', () => {
-  it('returns isExisting=true when foal already has active assignment (lines 312-316)', async () => {
-    const result = await ensureDefaultGroomAssignment(foalPreAssigned.id, successUser.id);
-    expect(result.success).toBe(true);
-    expect(result.isExisting).toBe(true);
-  });
-});
-
-describe('ensureDefaultGroomAssignment() — test-mode assignment creation (lines 351-368) (Equoria-rr7)', () => {
-  it('creates assignment for foal with no prior assignment in test mode (lines 351-368)', async () => {
-    const result = await ensureDefaultGroomAssignment(foalForEnsure.id, successUser.id);
-    expect(result.success).toBe(true);
-    expect(result.isNew).toBe(true);
   });
 });
 

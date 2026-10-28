@@ -29,7 +29,6 @@ import { validationResult } from 'express-validator';
 // Equoria-pq3oi: foalModel moved into the horses module; this cross-module
 // (breeding → horses) import now routes through the horses public-API barrel.
 import { getFoalDevelopment } from '../../horses/index.mjs';
-import { ensureDefaultGroomAssignment } from '../../../utils/groomSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { publicTraitModifiers } from '../../../utils/publicTraitView.mjs';
 import { computeAgeInWeeks, isFoalByBirthDate } from '../../../utils/foalAgeUtils.mjs';
@@ -54,18 +53,8 @@ export async function getFoalDevelopmentHandler(req, res) {
     const { foalId } = req.params;
     logger.info(`[foalController] GET /api/foals/${foalId}/development`);
 
+    // Reading a foal never assigns it a groom (owner ruling 2026-10-28, q153).
     const developmentData = await getFoalDevelopment(foalId);
-
-    // Ensure foal has a groom assignment (requires authenticated user)
-    if (req.user?.id) {
-      try {
-        await ensureDefaultGroomAssignment(parseInt(foalId, 10), req.user.id);
-      } catch (groomError) {
-        logger.warn(
-          `[foalController] Failed to ensure groom assignment for foal ${foalId}: ${groomError.message}`,
-        );
-      }
-    }
 
     res.json({ success: true, data: developmentData });
   } catch (error) {

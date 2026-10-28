@@ -6,11 +6,12 @@
  * route wiring are unchanged — groomController.mjs re-exports these so the
  * public import surface is identical.
  *
- * Handlers: assignGroom, ensureDefaultAssignment, getFoalAssignments,
- * getGroomAssignmentLogs.
+ * Handlers: assignGroom, getFoalAssignments, getGroomAssignmentLogs.
+ * (ensureDefaultAssignment was deleted: no foal is given a default groom, owner
+ * ruling 2026-10-28, q153.)
  */
 
-import { assignGroomToFoal, ensureDefaultGroomAssignment } from '../../../utils/groomSystem.mjs';
+import { assignGroomToFoal } from '../../../utils/groomSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { horseRetiredCode } from '../../../errors/HorseRetiredError.mjs';
@@ -79,77 +80,6 @@ export async function assignGroom(req, res) {
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
     return null;
-  }
-}
-
-/**
- * POST /api/grooms/ensure-default/:foalId
- * Ensure a foal has a default groom assignment
- */
-export async function ensureDefaultAssignment(req, res) {
-  try {
-    const { foalId } = req.params;
-    const userId = req.user?.id;
-
-    // Validate user authentication
-    if (!userId) {
-      logger.error('[groomController.ensureDefaultAssignment] No authenticated user ID found');
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required',
-        data: null,
-      });
-    }
-
-    // Validate foalId parameter
-    const parsedFoalId = parseInt(foalId, 10);
-    if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid foal ID. Must be a positive integer.',
-        data: null,
-      });
-    }
-
-    logger.info(
-      `[groomController.ensureDefaultAssignment] Ensuring default assignment for foal ${parsedFoalId}`,
-    );
-
-    // Ownership validated by requireOwnership('foal') middleware on the route.
-    // req.foal is the validated, owned record. The middleware returns 404 for
-    // both not-found and not-owned (CWE-639 disclosure resistance).
-
-    // Call the ensureDefaultGroomAssignment service
-    const result = await ensureDefaultGroomAssignment(parsedFoalId, userId);
-
-    // Handle the result based on success status
-    if (!result.success) {
-      return res.status(400).json({
-        success: false,
-        message: result.message,
-        data: {
-          requiresManualAssignment: result.requiresManualAssignment || false,
-          foalId: parsedFoalId,
-        },
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: result.message,
-      data: {
-        assignment: result.assignment,
-        isNew: result.isNew || false,
-        isExisting: result.isExisting || false,
-      },
-    });
-  } catch (error) {
-    logger.error(`[groomController.ensureDefaultAssignment] Error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to ensure default assignment',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-    });
   }
 }
 
