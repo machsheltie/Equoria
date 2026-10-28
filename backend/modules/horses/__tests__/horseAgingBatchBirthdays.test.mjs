@@ -6,8 +6,13 @@
  * from its scan, yet updateHorseAge() re-fetched the same row, then every plain
  * birthday did its own single-row UPDATE. The fix hands the scanned row to
  * updateHorseAge and groups birthdays with no milestone by new age into one
- * updateMany per age. Milestone horses (age 1 trait evaluation, age 21
- * retirement) keep their individual path — their writes differ per horse.
+ * updateMany per age. Milestone horses (age 21 retirement) keep their individual
+ * path — their writes differ per horse.
+ *
+ * Old contract: turning 1 (7 days) was a milestone too (age-1 trait evaluation),
+ * written one by one. Owner ruling 2026-10-27 (q117, new 20-trait roster) and
+ * Equoria-qw4kp removed that evaluation, so the 7-day mark is no milestone: the
+ * age-1 horse is now a plain birthday, batched with the others.
  *
  * Real database, real service. Prisma calls are counted through delegating
  * wrappers; nothing is mocked. The post-run rows and the result summary are the
@@ -71,8 +76,9 @@ beforeAll(async () => {
   await makeHorse('ahead5', { daysOld: 36, storedAge: 30 });
   // Already current: untouched.
   await makeHorse('current', { daysOld: 36, storedAge: 5 });
-  // Milestones keep their individual path.
+  // Plain birthday to game-year 1: no milestone since Equoria-qw4kp.
   await makeHorse('age1', { daysOld: 8, storedAge: 0 });
+  // The retirement milestone keeps its individual path.
   await makeHorse('retire', { daysOld: 147, storedAge: 20 });
 }, 60_000);
 
@@ -102,7 +108,7 @@ describe('processHorseBirthdays() (Equoria-cmw85.27)', () => {
     // Behaviour: result summary and persisted ages.
     expect(summary.totalProcessed).toBe(9);
     expect(summary.birthdaysFound).toBe(8); // every horse but 'current'
-    expect(summary.milestonesTriggered).toBe(2); // age1 + retire
+    expect(summary.milestonesTriggered).toBe(1); // retire only
     expect(summary.errors).toBe(0);
 
     const byId = Object.fromEntries(summary.results.map(r => [r.horseId, r]));
@@ -114,7 +120,6 @@ describe('processHorseBirthdays() (Equoria-cmw85.27)', () => {
         newAge: 3,
         hadBirthday: true,
         milestonesTriggered: [],
-        traitsAssigned: [],
       });
     }
     for (const key of ['plain5a', 'plain5b']) {
@@ -131,9 +136,12 @@ describe('processHorseBirthdays() (Equoria-cmw85.27)', () => {
       hadBirthday: false,
       milestonesTriggered: [],
     });
-    expect(byId[ids.age1]).toMatchObject({ newAge: 1, hadBirthday: true });
-    expect(byId[ids.age1].milestonesTriggered).toHaveLength(1);
-    expect(byId[ids.age1].milestonesTriggered).not.toContain('retirement');
+    expect(byId[ids.age1]).toMatchObject({
+      ageUpdated: true,
+      newAge: 1,
+      hadBirthday: true,
+      milestonesTriggered: [],
+    });
     expect(byId[ids.retire]).toMatchObject({ newAge: 21, hadBirthday: true });
     expect(byId[ids.retire].milestonesTriggered).toEqual(['retirement']);
     expect(byId[ids.current]).toBeUndefined();
@@ -153,12 +161,12 @@ describe('processHorseBirthdays() (Equoria-cmw85.27)', () => {
     expect(ageOf[ids.age1]).toBe(1);
     expect(ageOf[ids.retire]).toBe(21);
 
-    // Query shape: the only findUnique reads left are the two milestone reads
-    // (age-1 trait data, retirement log line) - none per scanned horse.
-    expect(counts.findUnique).toBeLessThanOrEqual(2);
+    // Query shape: the only findUnique read left is the retirement milestone's
+    // log line - none per scanned horse.
+    expect(counts.findUnique).toBeLessThanOrEqual(1);
     // Plain/corrective updates collapse to one updateMany per distinct new age
-    // (3 and 5); only the two milestone horses are written one by one.
-    expect(counts.updateMany).toBeLessThanOrEqual(2);
-    expect(counts.update).toBeLessThanOrEqual(2);
+    // (1, 3 and 5); only the milestone horse is written one by one.
+    expect(counts.updateMany).toBeLessThanOrEqual(3);
+    expect(counts.update).toBeLessThanOrEqual(1);
   }, 60_000);
 });

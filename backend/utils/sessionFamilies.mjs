@@ -20,6 +20,7 @@
 
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
+import { msPerWeek } from '../constants/time.mjs';
 import { withRetryableTxMapping } from './retryableTransaction.mjs';
 import {
   hashRefreshToken,
@@ -33,7 +34,7 @@ import {
 export const maxSessionsPerPlayer = 5;
 
 /** A refresh token lives 7 days, as in tokenRotationService. */
-const refreshLifetimeMs = 7 * 24 * 60 * 60 * 1000;
+const refreshLifetimeMs = msPerWeek;
 
 const sessionOpenCacheTtlMs = 30_000;
 /** familyId -> { userId, open, expiresAt } */

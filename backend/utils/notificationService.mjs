@@ -28,27 +28,28 @@ export const NOTIFICATION_RETENTION_COUNT = notificationRetentionCount;
  *
  * Uses a two-step approach (findMany ids past offset, then deleteMany by
  * id) so the deletion target is bounded by the read snapshot — a race with
- * a concurrent inserter cannot delete the newer row. Both steps run in one
- * short transaction.
+ * a concurrent inserter cannot delete the newer row. That snapshot is the whole
+ * safety argument, so the two steps are plain statements, not an interactive
+ * transaction: the prune runs fire-and-forget after a commit, and a transaction
+ * here held a second pool connection beside the nightly show settlement, whose
+ * contract is one transaction at a time (Equoria-cmw85.1).
  *
  * Returns the count of deleted rows. Never throws — failures are logged.
  */
 export async function pruneOldNotifications(userId, retentionCount = NOTIFICATION_RETENTION_COUNT) {
   try {
-    return await prisma.$transaction(async tx => {
-      const stale = await tx.notification.findMany({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
-        skip: retentionCount,
-        select: { id: true },
-      });
-      if (stale.length === 0) {
-        return 0;
-      }
-      const ids = stale.map(row => row.id);
-      const result = await tx.notification.deleteMany({ where: { id: { in: ids } } });
-      return result.count;
+    const stale = await prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      skip: retentionCount,
+      select: { id: true },
     });
+    if (stale.length === 0) {
+      return 0;
+    }
+    const ids = stale.map(row => row.id);
+    const result = await prisma.notification.deleteMany({ where: { id: { in: ids } } });
+    return result.count;
   } catch (err) {
     logger.error(`[notificationService] prune failed: ${err.message}`);
     return 0;
@@ -251,7 +252,7 @@ export const backfillTimeBudgetMs = 20_000;
  * one-time backfill), in bounded, resumable steps.
  *
  * Users are read in id order, `batchSize` at a time, starting after `cursor`.
- * Each user's prune is its own short transaction (pruneOldNotifications), so
+ * Each user's prune is its own short read and delete (pruneOldNotifications), so
  * no long transaction is ever held. Once `timeBudgetMs` has passed the scan
  * stops after the current user and returns `nextCursor` (the last user id it
  * processed); calling again with that cursor carries on. `nextCursor` is null

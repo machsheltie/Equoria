@@ -9,36 +9,31 @@
  * - Trait score calculation based on count, diversity, rarity, and groom care consistency
  * - Integration with existing trait history and milestone evaluation data
  * - Legacy score calculation with trait scoring component
- * - API endpoints for legacy score retrieval with trait breakdown
  * - Business rules enforcement (traits before age 4, negative trait penalties)
  *
  * Testing approach: Real database operations with zero mocking to validate actual business logic
+ *
+ * Old contract: an "API Endpoints" block also called GET /api/v1/horses/:id/legacy-score
+ * (200 with the trait breakdown, 401 without a token, 404 for a missing horse). Owner
+ * ruling q242 (2026-10-28, Equoria-qw4kp, b2fed58c4) removed that route — its breakdown
+ * let a player subtract to find a hidden rare trait's points — so the block is gone; the
+ * removal is pinned by modules/horses/__tests__/legacyScoreRouteRemoved.integration.test.mjs.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import request from 'supertest';
-import jwt from 'jsonwebtoken';
-import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 describe('Legacy Score Trait Integration System', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let testUser;
   let testHorse;
   let testBreed;
   let testGroom;
-  let authToken;
 
   beforeEach(async () => {
     // Fixture names use the `LegacyTraitTest_` / `legacytrait_` prefix to avoid
@@ -107,17 +102,6 @@ describe('Legacy Score Trait Integration System', () => {
         focus: 82,
       },
     });
-
-    // Create auth token
-    const tokenPayload = {
-      id: testUser.id,
-      username: testUser.username,
-      email: testUser.email,
-    };
-    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars', {
-      expiresIn: '1h',
-    });
-    authToken = `Bearer ${token}`;
   });
 
   afterEach(async () => {
@@ -340,53 +324,6 @@ describe('Legacy Score Trait Integration System', () => {
       expect(legacyScore.components.traitScore.score).toBe(0);
       expect(legacyScore.components.baseStats).toBeDefined();
       expect(legacyScore.components.achievements).toBeDefined();
-    });
-  });
-
-  describe('API Endpoints', () => {
-    it('should get horse legacy score via API', async () => {
-      // Create some trait history
-      await prisma.traitHistoryLog.create({
-        data: {
-          horseId: testHorse.id,
-          traitName: 'noble',
-          sourceType: 'milestone',
-          isEpigenetic: true,
-          ageInDays: 200,
-          groomId: testGroom.id,
-          bondScore: 85,
-          influenceScore: 6,
-        },
-      });
-
-      const response = await request(app)
-        .get(`/api/v1/horses/${testHorse.id}/legacy-score`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', authToken);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.legacyScore).toBeDefined();
-      expect(response.body.data.legacyScore.totalScore).toBeGreaterThan(0);
-      expect(response.body.data.legacyScore.components.traitScore).toBeDefined();
-    });
-
-    it('should require authentication for legacy score endpoint', async () => {
-      const response = await request(app)
-        .get(`/api/v1/horses/${testHorse.id}/legacy-score`)
-        .set('Origin', 'http://localhost:3000');
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should return 404 for non-existent horse', async () => {
-      const response = await request(app)
-        .get('/api/v1/horses/99999/legacy-score')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', authToken);
-
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
     });
   });
 });

@@ -29,8 +29,11 @@ const flat = v => ({
   obedience: v,
   focus: v,
 });
-// experienced +3%, level 10 +3.6%, prestige 60 +2.4%, no affinity = +9%.
-const RIDER_9 = { skillLevel: 'experienced', level: 10, prestige: 60, personality: 'gentle' };
+// experienced +3%, prestige 60 +2.4%, no affinity = +5.4%. The rider's level adds
+// nothing: owner ruling 2026-10-28 (q244, Equoria-nawn5/xlw03) — stars give no bonus
+// for now, so every rider scores at career level 1. Old contract: level 10 added +3.6%
+// (+9% in all, 115 below).
+const experiencedRider = { skillLevel: 'experienced', level: 10, prestige: 60, personality: 'gentle' };
 
 function score(base, temperament, { discipline = 'Dressage', rider = null } = {}) {
   const [{ score: s }] = scoreShowEntries({
@@ -75,8 +78,9 @@ describe('temperament is one percent term in the summed modifiers (R1, C2)', () 
   });
 
   it('is summed with luck and the rider, applied once', () => {
-    // 100 x (1 + 0.01 + 0.09 + 0.05) = 115 (separate multiplications would give 116.6...)
-    expect(score(100, 'Calm', { rider: RIDER_9 })).toBe(115);
+    // 100 x (1 + 0.01 + 0.054 + 0.05) = 111.4 -> 111 (separate multiplications would
+    // give 100 x 1.01 x 1.054 x 1.05 = 111.78 -> 112)
+    expect(score(100, 'Calm', { rider: experiencedRider })).toBe(111);
   });
 
   it('follows the discipline: the same temperament differs by discipline', () => {

@@ -9,8 +9,10 @@
  * Old contract: the categories came from the legacy trait table (intelligent and bold positive,
  * nervous negative, legendaryBloodline rare). Owner ruling 2026-10-27 (q117) replaced the roster
  * with twenty traits (Equoria-qw4kp): category is the roster polarity, and a trait with no ruled
- * polarity yet, or off the roster, is "unknown". The planted traits are roster traits now:
- * confident and resilient (positive), fearful (negative), brave (no polarity yet).
+ * polarity yet, or off the roster, is "unknown". Owner ruling 2026-10-27 (q134-q139) then gave
+ * the polarity: fearful, insecure, aloof, fragile, skittish, excitable negative, all others
+ * positive. The planted traits: confident, resilient and brave (positive), fearful (negative),
+ * and intelligent, a retired trait off the roster (unknown).
  *
  *   (a) the aggregate reflects PLANTED TraitHistoryLog rows exactly
  *       (per-trait, per-category, per-day, total) — sentinel-positive;
@@ -38,11 +40,11 @@ const ROUTE = '/api/v1/admin/traits/analytics';
 
 // A sourceType unique to this suite so the date-window assertions can scope to
 // ONLY this suite's planted rows and never see unrelated real-DB drift.
-const SUITE_SOURCE = `TestFixture-yznve-${randomBytes(8).toString('hex')}`;
+const suiteSource = `TestFixture-yznve-${randomBytes(8).toString('hex')}`;
 
 // Fixed UTC days so the byDate buckets are deterministic.
-const DAY_1 = '2024-01-10';
-const DAY_2 = '2024-01-12';
+const dayOne = '2024-01-10';
+const dayTwo = '2024-01-12';
 
 const createdHorseIds = [];
 const createdUserIds = [];
@@ -82,7 +84,7 @@ async function plantTrait(horseId, traitName, dayKey) {
     data: {
       horseId,
       traitName,
-      sourceType: SUITE_SOURCE,
+      sourceType: suiteSource,
       isEpigenetic: true,
       ageInDays: 5,
       timestamp: new Date(`${dayKey}T12:00:00.000Z`),
@@ -107,20 +109,22 @@ describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
     const horseA = await makeHorse(ownerA.id, 'horseA');
     const horseB = await makeHorse(ownerB.id, 'horseB');
 
-    // Plant a known distribution, scoped by SUITE_SOURCE:
-    //   confident (positive) × 2  → DAY_1, DAY_2
-    //   resilient (positive) × 1  → DAY_1
-    //   fearful   (negative) × 2  → DAY_1 (ownerA), DAY_2 (ownerB)
-    //   brave     (no polarity yet) × 1 → DAY_2
-    // Totals: 6 rows; positive 3, negative 2, unknown 1.
-    //   DAY_1: confident, resilient, fearful → 3
-    //   DAY_2: confident, fearful, brave     → 3
-    await plantTrait(horseA.id, 'confident', DAY_1);
-    await plantTrait(horseA.id, 'confident', DAY_2);
-    await plantTrait(horseA.id, 'resilient', DAY_1);
-    await plantTrait(horseA.id, 'fearful', DAY_1);
-    await plantTrait(horseB.id, 'fearful', DAY_2);
-    await plantTrait(horseB.id, 'brave', DAY_2);
+    // Plant a known distribution, scoped by suiteSource:
+    //   confident (positive) × 2  → dayOne, dayTwo
+    //   resilient (positive) × 1  → dayOne
+    //   fearful   (negative) × 2  → dayOne (ownerA), dayTwo (ownerB)
+    //   brave     (positive) × 1  → dayTwo
+    //   intelligent (off the roster → unknown) × 1 → dayTwo
+    // Totals: 7 rows; positive 4, negative 2, unknown 1.
+    //   dayOne: confident, resilient, fearful            → 3
+    //   dayTwo: confident, fearful, brave, intelligent   → 4
+    await plantTrait(horseA.id, 'confident', dayOne);
+    await plantTrait(horseA.id, 'confident', dayTwo);
+    await plantTrait(horseA.id, 'resilient', dayOne);
+    await plantTrait(horseA.id, 'fearful', dayOne);
+    await plantTrait(horseB.id, 'fearful', dayTwo);
+    await plantTrait(horseB.id, 'brave', dayTwo);
+    await plantTrait(horseB.id, 'intelligent', dayTwo);
   }, 120000);
 
   afterAll(async () => {
@@ -158,26 +162,30 @@ describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
   it('aggregates planted rows exactly (sentinel-positive), scoped by sourceType', async () => {
     const res = await request(app)
       .get(ROUTE)
-      .query({ sourceType: SUITE_SOURCE })
+      .query({ sourceType: suiteSource })
       .set('Authorization', `Bearer ${adminToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     const { data } = res.body;
 
-    // Total reflects exactly the 6 planted rows for this suite's sourceType.
-    expect(data.total).toBe(6);
+    // Total reflects exactly the 7 planted rows for this suite's sourceType.
+    expect(data.total).toBe(7);
 
     // By traitName
     expect(data.byTraitName.confident).toBe(2);
     expect(data.byTraitName.resilient).toBe(1);
     expect(data.byTraitName.fearful).toBe(2);
     expect(data.byTraitName.brave).toBe(1);
+    expect(data.byTraitName.intelligent).toBe(1);
 
-    // By definitional category (confident+resilient=positive, fearful=negative,
-    // brave=unknown until the owner rules its polarity). Hidden runtime flag is not
+    // By definitional category. Owner ruling 2026-10-27 (q134-q139): negative =
+    // fearful, insecure, aloof, fragile, skittish, excitable; all others positive,
+    // so brave is positive now (it was unknown before she ruled its polarity).
+    // confident+resilient+brave=positive, fearful=negative, intelligent (off the
+    // roster)=unknown. Hidden runtime flag is not
     // persisted — category is by trait definition (documented data-reality limitation).
-    expect(data.byCategory.positive).toBe(3);
+    expect(data.byCategory.positive).toBe(4);
     expect(data.byCategory.negative).toBe(2);
     expect(data.byCategory).not.toHaveProperty('rare');
     expect(data.byCategory.unknown).toBe(1);
@@ -187,19 +195,19 @@ describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
     expect(catSum).toBe(data.total);
 
     // Over-time buckets (UTC calendar day) — the data DOES support time-series.
-    expect(data.byDate[DAY_1]).toBe(3);
-    expect(data.byDate[DAY_2]).toBe(3);
+    expect(data.byDate[dayOne]).toBe(3);
+    expect(data.byDate[dayTwo]).toBe(4);
 
     // sourceType echoed back.
-    expect(data.sourceType).toBe(SUITE_SOURCE);
+    expect(data.sourceType).toBe(suiteSource);
   });
 
   it('date-range filter narrows to in-window rows', async () => {
-    // Window covering only DAY_1.
+    // Window covering only dayOne.
     const res = await request(app)
       .get(ROUTE)
       .query({
-        sourceType: SUITE_SOURCE,
+        sourceType: suiteSource,
         startDate: '2024-01-10T00:00:00.000Z',
         endDate: '2024-01-10T23:59:59.999Z',
       })
@@ -207,20 +215,20 @@ describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
 
     expect(res.status).toBe(200);
     const { data } = res.body;
-    expect(data.total).toBe(3); // DAY_1 only: confident, resilient, fearful
+    expect(data.total).toBe(3); // dayOne only: confident, resilient, fearful
     expect(data.byTraitName.confident).toBe(1);
     expect(data.byTraitName.resilient).toBe(1);
     expect(data.byTraitName.fearful).toBe(1);
     expect(data.byTraitName.brave).toBeUndefined();
-    expect(data.byDate[DAY_1]).toBe(3);
-    expect(data.byDate[DAY_2]).toBeUndefined();
+    expect(data.byDate[dayOne]).toBe(3);
+    expect(data.byDate[dayTwo]).toBeUndefined();
   });
 
   it('empty window returns zeroed aggregates (empty case)', async () => {
     const res = await request(app)
       .get(ROUTE)
       .query({
-        sourceType: SUITE_SOURCE,
+        sourceType: suiteSource,
         startDate: '2000-01-01T00:00:00.000Z',
         endDate: '2000-01-02T00:00:00.000Z',
       })
