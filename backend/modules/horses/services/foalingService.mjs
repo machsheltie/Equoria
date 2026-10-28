@@ -431,7 +431,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     damId,
     sex: resolvedSex,
     ownerId: options.ownerId,
-    userId: options.userId || dam.userId,
+    // userId is set inside the transaction: the mare's owner at birth (Equoria-x1t7q).
     playerId: options.playerId,
     stableId: options.stableId,
     healthStatus: options.healthStatus || 'Excellent',
@@ -466,8 +466,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   // short. Lock order: the tx write-locks only this mare's row, then inserts the foal and the
   // notification (FK checks take KEY SHARE on the user/sire rows). It never write-locks a User row,
   // so it cannot invert User -> Horse.
-  const notifUserId = options.userId || dam.userId;
-  const newFoal = await prisma.$transaction(async tx => {
+  const { foal: newFoal, ownerId: notifUserId } = await prisma.$transaction(async tx => {
     const claim = await tx.horse.updateMany({
       where: {
         id: damId,
@@ -487,13 +486,19 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
       lost.code = PREGNANCY_NOT_CLAIMABLE;
       throw lost;
     }
+    // The foal belongs to whoever owns the mare when it is born (owner ruling
+    // 2026-10-28, q253, Equoria-x1t7q). The claim above write-locked her row, so
+    // this read sees any sale that committed before it, and a sale still waiting
+    // on the lock lands after the birth. The caller's snapshot may predate a sale.
+    const mareNow = await tx.horse.findUnique({ where: { id: damId }, select: { userId: true } });
+    const ownerId = options.userId || mareNow?.userId || null;
     // A mare who turned 21 in foal kept her staff until now (owner ruling 2026-10-23).
     await releaseStaffIfRetiredTx(tx, damId);
-    const foal = await createHorse(horseData, tx);
-    if (notifUserId) {
-      await createNotificationTx(tx, notifUserId, 'foalBorn', foalBornPayload(foal, dam, sire));
+    const foal = await createHorse({ ...horseData, userId: ownerId }, tx);
+    if (ownerId) {
+      await createNotificationTx(tx, ownerId, 'foalBorn', foalBornPayload(foal, dam, sire));
     }
-    return foal;
+    return { foal, ownerId };
   });
 
   // Post-commit only: the real-time nudge and retention prune (never throws).
@@ -594,7 +599,6 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random, trait
           negativeTraitChance: negativeChance,
           rng,
           traitRng,
-          userId: snapshot.userId,
           name: snapshot.pendingFoalName ?? undefined,
         },
       });
