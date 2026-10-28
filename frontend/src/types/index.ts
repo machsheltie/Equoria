@@ -45,7 +45,6 @@ export type {
 export * from './groomBonusTrait';
 export * from './groomLegacy';
 export * from './groomPersonality';
-export * from './groomShowHandler';
 export * from './groomTalent';
 export * from './groomTasks';
 export * from './riderCareer';

@@ -1,6 +1,5 @@
 /**
  * Pure-export unit tests for:
- *  - groomHandlerService (constants + calculateHandlerBonus)
  *  - groomBonusTraitService (validateBonusTraits)
  *  - legacyScoreCalculator (getLegacyScoreDefinitions)
  *  - legacyScoreTraitCalculator (getTraitScoringDefinitions)
@@ -8,145 +7,17 @@
 
 import { describe, it, expect } from '@jest/globals';
 
-import {
-  HANDLER_SKILL_BONUSES,
-  PERSONALITY_DISCIPLINE_SYNERGY,
-  SPECIALTY_DISCIPLINE_BONUSES,
-  calculateHandlerBonus,
-} from '../modules/grooms/services/groomHandlerService.mjs';
-
 import { validateBonusTraits } from '../modules/grooms/services/groomBonusTraitService.mjs';
 
 import { getLegacyScoreDefinitions } from '../modules/horses/services/legacyScoreCalculator.mjs';
 
 import { getTraitScoringDefinitions } from '../modules/traits/services/legacyScoreTraitCalculator.mjs';
 
-// ─── HANDLER_SKILL_BONUSES ───────────────────────────────────────────────────
-
-describe('HANDLER_SKILL_BONUSES', () => {
-  it('has entries for novice, intermediate, expert, master', () => {
-    expect(HANDLER_SKILL_BONUSES).toHaveProperty('novice');
-    expect(HANDLER_SKILL_BONUSES).toHaveProperty('intermediate');
-    expect(HANDLER_SKILL_BONUSES).toHaveProperty('expert');
-    expect(HANDLER_SKILL_BONUSES).toHaveProperty('master');
-  });
-
-  it('baseBonus increases with skill level', () => {
-    expect(HANDLER_SKILL_BONUSES.novice.baseBonus).toBeLessThan(HANDLER_SKILL_BONUSES.intermediate.baseBonus);
-    expect(HANDLER_SKILL_BONUSES.intermediate.baseBonus).toBeLessThan(HANDLER_SKILL_BONUSES.expert.baseBonus);
-    expect(HANDLER_SKILL_BONUSES.expert.baseBonus).toBeLessThan(HANDLER_SKILL_BONUSES.master.baseBonus);
-  });
-
-  it('maxBonus increases with skill level', () => {
-    expect(HANDLER_SKILL_BONUSES.novice.maxBonus).toBeLessThan(HANDLER_SKILL_BONUSES.master.maxBonus);
-  });
-
-  it('each entry has baseBonus, maxBonus, experienceMultiplier', () => {
-    for (const level of ['novice', 'intermediate', 'expert', 'master']) {
-      expect(HANDLER_SKILL_BONUSES[level]).toHaveProperty('baseBonus');
-      expect(HANDLER_SKILL_BONUSES[level]).toHaveProperty('maxBonus');
-      expect(HANDLER_SKILL_BONUSES[level]).toHaveProperty('experienceMultiplier');
-    }
-  });
-});
-
-// ─── PERSONALITY_DISCIPLINE_SYNERGY ─────────────────────────────────────────
-
-describe('PERSONALITY_DISCIPLINE_SYNERGY', () => {
-  it('includes gentle, energetic, patient, strict, calm, confident', () => {
-    const expected = ['gentle', 'energetic', 'patient', 'strict', 'calm', 'confident'];
-    for (const p of expected) {
-      expect(PERSONALITY_DISCIPLINE_SYNERGY).toHaveProperty(p);
-    }
-  });
-
-  it('each entry has beneficial array and bonus number', () => {
-    for (const [, value] of Object.entries(PERSONALITY_DISCIPLINE_SYNERGY)) {
-      expect(Array.isArray(value.beneficial)).toBe(true);
-      expect(typeof value.bonus).toBe('number');
-      expect(value.bonus).toBeGreaterThan(0);
-    }
-  });
-
-  it('Dressage appears in gentle.beneficial', () => {
-    expect(PERSONALITY_DISCIPLINE_SYNERGY.gentle.beneficial).toContain('Dressage');
-  });
-
-  it('Racing appears in energetic.beneficial', () => {
-    expect(PERSONALITY_DISCIPLINE_SYNERGY.energetic.beneficial).toContain('Racing');
-  });
-});
-
-// ─── SPECIALTY_DISCIPLINE_BONUSES ────────────────────────────────────────────
-
-describe('SPECIALTY_DISCIPLINE_BONUSES', () => {
-  it('includes showHandling, racing, western, training, foalCare, general', () => {
-    const expected = ['showHandling', 'racing', 'western', 'training', 'foalCare', 'general'];
-    for (const s of expected) {
-      expect(SPECIALTY_DISCIPLINE_BONUSES).toHaveProperty(s);
-    }
-  });
-
-  it('each entry has disciplines array and bonus number', () => {
-    for (const [, value] of Object.entries(SPECIALTY_DISCIPLINE_BONUSES)) {
-      expect(Array.isArray(value.disciplines)).toBe(true);
-      expect(typeof value.bonus).toBe('number');
-      expect(value.bonus).toBeGreaterThan(0);
-    }
-  });
-
-  it('racing specialty has higher bonus than general', () => {
-    expect(SPECIALTY_DISCIPLINE_BONUSES.racing.bonus).toBeGreaterThan(SPECIALTY_DISCIPLINE_BONUSES.general.bonus);
-  });
-});
-
-// ─── calculateHandlerBonus ───────────────────────────────────────────────────
-
-describe('calculateHandlerBonus', () => {
-  const groom = {
-    name: 'Alice',
-    skillLevel: 'expert',
-    speciality: 'showHandling',
-    personality: 'gentle',
-  };
-  const horse = { id: 1, traits: [] };
-
-  it('returns zero bonus for non-conformation discipline', () => {
-    const result = calculateHandlerBonus(groom, horse, 'Racing');
-    expect(result.handlerBonus).toBe(0);
-    expect(result.isConformationShow).toBe(false);
-  });
-
-  it('returns positive bonus for a valid conformation class', () => {
-    // isValidConformationClass checks CONFORMATION_CLASSES from schema.mjs
-    // valid values: 'Foals/Youngstock', 'Mares', 'Stallions', 'Veterans', etc.
-    const result = calculateHandlerBonus(groom, horse, 'Mares');
-    expect(result.handlerBonus).toBeGreaterThan(0);
-    expect(result.isConformationShow).toBe(true);
-  });
-
-  it('includes groomName in result', () => {
-    const result = calculateHandlerBonus(groom, horse, 'Racing');
-    expect(result.groomName).toBe('Alice');
-  });
-
-  it('includes bonusBreakdown with totalBonus', () => {
-    const result = calculateHandlerBonus(groom, horse, 'Racing');
-    expect(result.bonusBreakdown).toHaveProperty('totalBonus');
-  });
-
-  it('non-conformation result has all breakdown keys as 0', () => {
-    const result = calculateHandlerBonus(groom, horse, 'Barrel Racing');
-    const { skillBonus, experienceBonus, personalityBonus, specialtyBonus, bondBonus, totalBonus } =
-      result.bonusBreakdown;
-    expect(skillBonus).toBe(0);
-    expect(experienceBonus).toBe(0);
-    expect(personalityBonus).toBe(0);
-    expect(specialtyBonus).toBe(0);
-    expect(bondBonus).toBe(0);
-    expect(totalBonus).toBe(0);
-  });
-});
+// Owner ruling 2026-10-28 q154 (Equoria-4fa7s): a show handler is the horse's
+// groom and any groom may handle in any class. Old contract: groomHandlerService's
+// bonus tables and calculateHandlerBonus judged a groom per conformation class
+// and priced per-discipline handler bonuses; they were removed with that
+// ruling, and so were their tests here.
 
 // ─── validateBonusTraits ─────────────────────────────────────────────────────
 

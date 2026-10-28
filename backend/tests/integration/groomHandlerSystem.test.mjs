@@ -233,69 +233,14 @@ describe('Groom Handler System Integration Tests', () => {
     });
   });
 
-  describe('2. Handler Eligibility', () => {
-    it('should check handler eligibility for a conformation class', async () => {
-      const response = await request(app)
-        .get(`/api/v1/groom-handlers/eligibility/${testHorse.id}/Mares`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('eligible');
-      expect(response.body.data).toHaveProperty('handlerBonus');
-      expect(response.body.data).toHaveProperty('bonusBreakdown');
-      expect(response.body.data).toHaveProperty('handler');
-      expect(response.body.data).toHaveProperty('isConformationShow');
-
-      expect(response.body.data.eligible).toBe(true);
-      expect(response.body.data.handlerBonus).toBeGreaterThan(0);
-      expect(response.body.data.handler.id).toBe(testGroom.id);
-      expect(response.body.data.handler.name).toBe(testGroom.name);
-      expect(response.body.data.isConformationShow).toBe(true);
-    });
-
-    it('should validate conformation class', async () => {
-      const response = await request(app)
-        .get(`/api/v1/groom-handlers/eligibility/${testHorse.id}/InvalidClass`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`);
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Invalid conformation class');
-    });
-  });
-
-  describe('3. Handler Configuration', () => {
-    it('should get handler configuration', async () => {
-      const response = await request(app)
-        .get('/api/v1/groom-handlers/config')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('skillBonuses');
-      expect(response.body.data).toHaveProperty('personalitySynergy');
-      expect(response.body.data).toHaveProperty('specialtyBonuses');
-      expect(response.body.data).toHaveProperty('description');
-
-      // Check skill bonuses structure
-      expect(response.body.data.skillBonuses).toHaveProperty('novice');
-      expect(response.body.data.skillBonuses).toHaveProperty('expert');
-      expect(response.body.data.skillBonuses.expert).toHaveProperty('baseBonus');
-      expect(response.body.data.skillBonuses.expert).toHaveProperty('maxBonus');
-    });
-  });
+  // 2. Handler Eligibility and 3. Handler Configuration were removed with owner
+  // ruling 2026-10-28 q154 (Equoria-4fa7s): the handler is the horse's groom,
+  // any groom may handle in any class, so there is no per-class eligibility
+  // and no handler bonus config.
 
   describe('5. Authentication and Authorization', () => {
     it('should require authentication for all endpoints', async () => {
-      const endpoints = [
-        { method: 'get', path: `/api/v1/groom-handlers/horse/${testHorse.id}` },
-        { method: 'get', path: `/api/v1/groom-handlers/eligibility/${testHorse.id}/Mares` },
-        { method: 'get', path: '/api/v1/groom-handlers/config' },
-      ];
+      const endpoints = [{ method: 'get', path: `/api/v1/groom-handlers/horse/${testHorse.id}` }];
 
       for (const endpoint of endpoints) {
         const response = await request(app)[endpoint.method](endpoint.path).set('Origin', 'http://localhost:3000');

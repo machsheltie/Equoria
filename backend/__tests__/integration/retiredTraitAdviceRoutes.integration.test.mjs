@@ -245,7 +245,10 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
   // best-handler rankings tell the player what to choose (owner ruling
   // 2026-10-07: the game never gives advice). The compatibility calculate,
   // factors, trends and config routes stay parked with their tables (owner
-  // ruling 2026-10-28), and the handler lookups stay pending owner question q154.
+  // ruling 2026-10-28). The handler is the horse's groom (owner ruling
+  // 2026-10-28 q154, Equoria-4fa7s): GET /groom-handlers/horse/:horseId stays;
+  // the per-class eligibility and the bonus config went with that ruling and
+  // are pinned in modules/grooms/__tests__/groomHandlerIsTheHorsesGroom.
   const groomAdvice = [
     ...Object.entries(whose).map(([who, id]) => [
       `GET /groom-handlers/recommendations/:horseId, ${who}`,
@@ -277,8 +280,8 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
     expect(res.body).toMatchObject({ success: false, message: 'Route not found' });
   });
 
-  it('GET /groom-handlers/config still answers 200 for the owner', async () => {
-    const res = await send('get', '/api/v1/groom-handlers/config', owner.token);
+  it('GET /groom-handlers/horse/:horseId still answers 200 for the owner', async () => {
+    const res = await send('get', `/api/v1/groom-handlers/horse/${ownHorse.id}`, owner.token);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);

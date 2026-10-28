@@ -13,11 +13,7 @@ import {
   validateAssignmentEligibility,
   getUserAssignments,
 } from '../services/groomAssignmentService.mjs';
-import {
-  calculateHandlerBonus,
-  getAssignedHandler,
-  validateHandlerEligibility,
-} from '../services/groomHandlerService.mjs';
+import { getAssignedHandler } from '../services/groomHandlerService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -110,40 +106,11 @@ describe('getUserAssignments', () => {
 
 // ── groomHandlerService ───────────────────────────────────────────────────────
 
-describe('calculateHandlerBonus', () => {
-  it('returns zero bonus for non-conformation discipline', () => {
-    const mockGroom = {
-      id: groom.id,
-      name: groom.name,
-      skillLevel: 'novice',
-      speciality: 'foalCare',
-      personality: 'gentle',
-      experience: 0,
-    };
-    const mockHorse = { id: horse.id, bondScore: 20 };
-    const result = calculateHandlerBonus(mockGroom, mockHorse, 'Dressage', null);
-    expect(result.handlerBonus).toBe(0);
-    expect(result.isConformationShow).toBe(false);
-  });
-
-  it('returns non-zero bonus for valid conformation class', () => {
-    const mockGroom = {
-      id: groom.id,
-      name: groom.name,
-      skillLevel: 'novice',
-      speciality: 'foalCare',
-      personality: 'gentle',
-      experience: 0,
-    };
-    const mockHorse = { id: horse.id, bondScore: 20 };
-    const result = calculateHandlerBonus(mockGroom, mockHorse, 'Foals/Youngstock', {
-      bondScore: 20,
-    });
-    expect(result.isConformationShow).toBe(true);
-    expect(typeof result.handlerBonus).toBe('number');
-    expect(typeof result.bonusBreakdown).toBe('object');
-  });
-});
+// Owner ruling 2026-10-28 q154 (Equoria-4fa7s): a show handler is the horse's
+// groom and any groom may handle in any class. Old contract:
+// calculateHandlerBonus and validateHandlerEligibility judged a groom per
+// conformation class and priced per-discipline handler bonuses; they were
+// removed with that ruling, and so were their tests here.
 
 describe('getAssignedHandler', () => {
   it('returns hasHandler:false for horse with no assignment', async () => {
@@ -151,20 +118,5 @@ describe('getAssignedHandler', () => {
     expect(result.hasHandler).toBe(false);
     expect(result.assignment).toBeNull();
     expect(result.groom).toBeNull();
-  });
-});
-
-describe('validateHandlerEligibility', () => {
-  it('returns eligible:true for non-conformation discipline (no handler needed)', async () => {
-    const result = await validateHandlerEligibility(horse.id, user.id, 'Dressage');
-    expect(result.eligible).toBe(true);
-    expect(result.isConformationShow).toBe(false);
-    expect(result.handlerBonus).toBe(0);
-  });
-
-  it('returns eligible:false for conformation class with no assigned handler', async () => {
-    const result = await validateHandlerEligibility(horse.id, user.id, 'Foals/Youngstock');
-    expect(result.eligible).toBe(false);
-    expect(result.isConformationShow).toBe(true);
   });
 });
