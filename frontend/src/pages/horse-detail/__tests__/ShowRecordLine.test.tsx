@@ -135,11 +135,10 @@ describe('Show record line under the horse name (Equoria-b4msy, q225)', () => {
     const record = await screen.findByTestId('show-record');
     const firstStat = screen.getByText('speed');
 
-    expect(name.compareDocumentPosition(record) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-
-    expect(
-      record.compareDocumentPosition(firstStat) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
+    // Document order: name, then the record line, then the stats.
+    const order = Array.from(document.querySelectorAll('*'));
+    expect(order.indexOf(name)).toBeLessThan(order.indexOf(record));
+    expect(order.indexOf(record)).toBeLessThan(order.indexOf(firstStat));
   });
 
   it('is no longer a Show Record section in the Overview tab', () => {
