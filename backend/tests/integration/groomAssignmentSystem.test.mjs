@@ -26,7 +26,6 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
   let authToken;
   let testUser;
   let testGroom1;
-  let testGroom2;
   let testHorse1;
   let testHorse2;
   // Equoria-jjzem: randomize fixture identifiers so a crashed prior run's
@@ -104,24 +103,12 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         bio: 'Test groom for assignment system',
       },
     });
-
-    testGroom2 = await prisma.groom.create({
-      data: {
-        name: 'Assignment Test Groom 2',
-        userId: testUser.id,
-        speciality: 'training',
-        skillLevel: 'expert',
-        personality: 'energetic',
-        experience: 8,
-        sessionRate: 35.0,
-        bio: 'Expert test groom for assignment system',
-      },
-    });
   });
 
   // Equoria-enles: reset MUTABLE assignment state between tests so the suite
-  // is order-independent. The fixture ROWS (user, horse, testGroom1,
-  // testGroom2) survive across tests for performance; what gets wiped is
+  // is order-independent. The fixture ROWS (user, horse, testGroom1) survive
+  // across tests for performance (testGroom2 went with the removed /validate
+  // case, Equoria-a7f1p q151); what gets wiped is
   // the groomAssignment table for THIS user. Previously, tests in section
   // 1 (Assignment Creation) created assignments that section 6 (Assignment
   // Removal) later deleted, with sections 2-5 silently depending on
@@ -395,51 +382,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         expect(assignment.groomId).toBe(testGroom1.id);
       });
     });
-
-    it('should get assignment dashboard', async () => {
-      const response = await request(app)
-        .get('/api/v1/groom-assignments/dashboard')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('assignments');
-      expect(response.body.data).toHaveProperty('salaryCosts');
-      expect(response.body.data).toHaveProperty('groomLimits');
-      expect(response.body.data).toHaveProperty('summary');
-
-      const { summary, salaryCosts } = response.body.data;
-      expect(summary.totalActiveAssignments).toBeGreaterThan(0);
-      expect(salaryCosts.totalWeeklyCost).toBeGreaterThan(0);
-    });
   });
 
   describe('3. Assignment Limits', () => {
-    it('should get groom assignment limits', async () => {
-      const response = await request(app)
-        .get(`/api/v1/groom-assignments/groom/${testGroom1.id}/limits`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('groom');
-      expect(response.body.data).toHaveProperty('limits');
-
-      const { limits } = response.body.data;
-      expect(limits).toHaveProperty('maxAssignments');
-      expect(limits).toHaveProperty('currentAssignments');
-      expect(limits).toHaveProperty('availableSlots');
-      expect(limits).toHaveProperty('canTakeMore');
-      // Equoria-95yrv: one cap per groom, the same for every skill level (the owner ruling 2026-10-26 (q68) raised the cap from ten to twenty).
-      expect(limits.maxAssignments).toBe(20);
-    });
-
     it('should enforce assignment limits', async () => {
       // Equoria-95yrv (owner ruling, 2026-09-14): one groom cares for at most TEN
       // horses, whatever their skill — the per-skill ladder (2/3/4/5) this case
@@ -498,79 +443,6 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
           await prisma.horse.deleteMany({ where: { id: horse.id } });
         }
       }
-    });
-  });
-
-  describe('4. Salary Calculations', () => {
-    // Equoria-2gqir: salary cost is derived from ACTIVE assignments. The
-    // Equoria-enles beforeEach wipes all of this user's assignments before
-    // each test, so seed one active assignment (real POST) to produce a
-    // non-zero weekly cost for the assertions below.
-    beforeEach(async () => {
-      const seed = await request(app)
-        .post('/api/v1/groom-assignments')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ groomId: testGroom1.id, horseId: testHorse1.id, priority: 1 });
-      expect(seed.status).toBe(201);
-    });
-
-    it('should calculate weekly salary costs', async () => {
-      const response = await request(app)
-        .get('/api/v1/groom-assignments/salary-costs')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('totalWeeklyCost');
-      expect(response.body.data).toHaveProperty('groomCosts');
-      expect(response.body.data).toHaveProperty('summary');
-
-      const { totalWeeklyCost, groomCosts } = response.body.data;
-      expect(totalWeeklyCost).toBeGreaterThan(0);
-      expect(Array.isArray(groomCosts)).toBe(true);
-      expect(groomCosts.length).toBeGreaterThan(0);
-
-      // Check groom cost structure
-      groomCosts.forEach(groomCost => {
-        expect(groomCost).toHaveProperty('groom');
-        expect(groomCost).toHaveProperty('assignmentCount');
-        expect(groomCost).toHaveProperty('baseSalary');
-        expect(groomCost).toHaveProperty('totalSalary');
-        expect(groomCost.totalSalary).toBeGreaterThan(0);
-      });
-    });
-  });
-
-  describe('5. Assignment Validation', () => {
-    it('should validate assignment eligibility', async () => {
-      const response = await request(app)
-        .post('/api/v1/groom-assignments/validate')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          groomId: testGroom2.id,
-          horseId: testHorse1.id,
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('valid');
-      expect(response.body.data).toHaveProperty('errors');
-      expect(response.body.data).toHaveProperty('groom');
-      expect(response.body.data).toHaveProperty('horse');
-
-      const { valid, groom, horse } = response.body.data;
-      expect(typeof valid).toBe('boolean');
-      expect(groom.id).toBe(testGroom2.id);
-      expect(horse.id).toBe(testHorse1.id);
     });
   });
 
@@ -638,25 +510,6 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
   });
 
   describe('7. Configuration and Statistics', () => {
-    it('should get assignment configuration', async () => {
-      const response = await request(app)
-        .get('/api/v1/groom-assignments/config')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      // Equoria-95yrv: one cap and one rate. The per-skill caps and the
-      // never-charged per-skill pay table are gone with the basis they served.
-      expect(response.body.data.maxHorsesPerGroom).toBe(20);
-      // Owner ruling 2026-10-28 (q228): no per-horse rate any more.
-      expect(response.body.data).not.toHaveProperty('feePerHorsePerWeek');
-      expect(response.body.data).not.toHaveProperty('maxAssignmentsBySkill');
-      expect(response.body.data).not.toHaveProperty('weeklySalaryBySkill');
-    });
-
     it('should get assignment statistics', async () => {
       const response = await request(app)
         .get('/api/v1/groom-assignments/statistics')
@@ -683,8 +536,6 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const endpoints = [
         { method: 'get', path: '/api/v1/groom-assignments' },
         { method: 'post', path: '/api/v1/groom-assignments' },
-        { method: 'get', path: '/api/v1/groom-assignments/dashboard' },
-        { method: 'get', path: '/api/v1/groom-assignments/salary-costs' },
       ];
 
       for (const endpoint of endpoints) {

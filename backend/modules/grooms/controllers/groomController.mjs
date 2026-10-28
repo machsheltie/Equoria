@@ -9,20 +9,20 @@
  * response shapes are preserved exactly — this is a pure split, not a rewrite.
  *
  * Public surface (hireGroom retired by Equoria-bvddn.7):
- *   - assignment:    assignGroom, getFoalAssignments, getGroomAssignmentLogs
+ *   - assignment:    assignGroom, getGroomAssignmentLogs
+ *                    (ensureDefaultAssignment deleted: no default groom, q153)
  *   - interaction:   getGroomHorseSynergyPreview (grooming itself: groomCareController)
- *   - roster:        getUserGrooms, getGroomProfile, getGroomDefinitions
- *   - bonus-traits:  getGroomBonusTraits, updateGroomBonusTraits
+ *   - roster:        getUserGrooms, getGroomProfile
+ *
+ * getFoalAssignments, getGroomDefinitions and the bonus-traits handlers went with
+ * their duplicate lookup routes (owner ruling 2026-10-28, q151, Equoria-a7f1p).
  */
 
 export {
   assignGroom,
-  getFoalAssignments,
   getGroomAssignmentLogs,
 } from './groomAssignmentHandlers.mjs';
 
 export { getGroomHorseSynergyPreview } from './groomInteractionController.mjs';
 
-export { getUserGrooms, getGroomProfile, getGroomDefinitions } from './groomRosterController.mjs';
-
-export { getGroomBonusTraits, updateGroomBonusTraits } from './groomBonusTraitsController.mjs';
+export { getUserGrooms, getGroomProfile } from './groomRosterController.mjs';

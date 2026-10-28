@@ -27,8 +27,10 @@
  * - An authenticated owner's PUT is 410 Gone and leaves `Groom.bonusTraitMap`
  *   completely unchanged (the audited exploit is dead).
  * - An anonymous caller still gets 401.
- * - GET /:id/bonus-traits (read-only, not part of the exploit) is untouched
- *   and still returns 200 with the groom's existing bonus traits.
+ *
+ * GET /:id/bonus-traits (read-only, not part of the exploit) was left by this
+ * fix; Equoria-a7f1p (owner ruling 2026-10-28, q151) later removed it as a duplicate lookup, with
+ * its case here.
  *
  * Before the fix, the first test in this file fails: the route answers 200
  * and persists the submitted (unearned) bonus traits, including three rare
@@ -149,23 +151,6 @@ describe('🔒 REGRESSION: PUT /api/v1/grooms/:id/bonus-traits is closed (Equori
       select: { bonusTraitMap: true },
     });
     expect(persisted.bonusTraitMap).toEqual({
-      sensitive: 0.2,
-      noble: 0.1,
-      quick_learner: 0.15,
-    });
-  });
-
-  it('leaves GET /:id/bonus-traits (read-only, not part of the exploit) working', async () => {
-    const response = await request(app)
-      .get(`/api/v1/grooms/${testGroom.id}/bonus-traits`)
-      .set('Authorization', authToken)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken);
-
-    expect(response.status).toBe(200);
-    expect(response.body.success).toBe(true);
-    expect(response.body.data.bonusTraits).toEqual({
       sensitive: 0.2,
       noble: 0.1,
       quick_learner: 0.15,

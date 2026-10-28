@@ -158,32 +158,6 @@ describe('Groom Salary System', () => {
       expect(response.body.data.weeksAffordable).toBe(10);
     });
 
-    it('should get groom salary', async () => {
-      const response = await request(app)
-        .get(`/api/v1/groom-salaries/groom/${testGroom.id}/salary`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.weeklySalary).toBe(100);
-      expect(response.body.data.assignedHorses).toBe(1);
-      expect(response.body.data.groom.name).toBe(groomName);
-    });
-
-    it('should get salary payment history', async () => {
-      const response = await request(app)
-        .get('/api/v1/groom-salaries/history')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('payments');
-      expect(response.body.data).toHaveProperty('count');
-      expect(Array.isArray(response.body.data.payments)).toBe(true);
-    });
-
     it('should get cron job status', async () => {
       const response = await request(app)
         .get('/api/v1/groom-salaries/status')
@@ -194,43 +168,6 @@ describe('Groom Salary System', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('totalJobs');
       expect(response.body.data).toHaveProperty('jobs');
-    });
-
-    it('should validate groom ownership', async () => {
-      // Create another user's groom
-      const uniqueSuffix = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${Math.floor(Math.random() * 10000)}`;
-      const otherUser = await prisma.user.create({
-        data: {
-          username: `otherSalaryUser_${uniqueSuffix}`,
-          email: `othersalary_${uniqueSuffix}@test.com`,
-          password: 'hashedPassword',
-          firstName: 'Other',
-          lastName: 'User',
-        },
-      });
-
-      const otherGroom = await prisma.groom.create({
-        data: {
-          name: 'Other User Groom',
-          skillLevel: 'novice',
-          speciality: 'general',
-          personality: 'gentle',
-          userId: otherUser.id,
-        },
-      });
-
-      const response = await request(app)
-        .get(`/api/v1/groom-salaries/groom/${otherGroom.id}/salary`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`);
-
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Groom not found');
-
-      // Clean up
-      await prisma.groom.deleteMany({ where: { id: otherGroom.id } });
-      await prisma.user.deleteMany({ where: { id: otherUser.id } });
     });
   });
 
@@ -339,20 +276,6 @@ describe('Groom Salary System', () => {
 
     it('should require authentication for GET /api/groom-salaries/summary', async () => {
       const response = await request(app).get('/api/v1/groom-salaries/summary').set('Origin', 'http://localhost:3000');
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should require authentication for GET /api/groom-salaries/history', async () => {
-      const response = await request(app).get('/api/v1/groom-salaries/history').set('Origin', 'http://localhost:3000');
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should require authentication for GET /api/groom-salaries/groom/:groomId/salary', async () => {
-      const response = await request(app)
-        .get(`/api/v1/groom-salaries/groom/${testGroom.id}/salary`)
-        .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });

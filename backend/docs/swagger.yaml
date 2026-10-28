@@ -1052,14 +1052,6 @@ paths:
       responses:
         '200': { description: 'Interaction recorded' }
 
-  /grooms/definitions:
-    get:
-      tags: [Grooms]
-      summary: 'Get groom system definitions and configurations'
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200': { description: 'Groom definitions' }
-
   '/grooms/user/{userId}':
     get:
       tags: [Grooms]
@@ -1069,16 +1061,6 @@ paths:
         - { name: userId, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: 'List of grooms' }
-
-  '/grooms/assignments/{foalId}':
-    get:
-      tags: [Grooms]
-      summary: 'Get all groom assignments for a foal'
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - { name: foalId, in: path, required: true, schema: { type: integer } }
-      responses:
-        '200': { description: 'List of assignments' }
 
   /groom-marketplace:
     get:
@@ -1118,14 +1100,6 @@ paths:
               type: object
       responses:
         '201': { description: 'Assignment created' }
-
-  /groom-assignments/dashboard:
-    get:
-      tags: [Grooms]
-      summary: 'Get assignment dashboard'
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200': { description: 'Dashboard data' }
 
   /groom-salaries/summary:
     get:

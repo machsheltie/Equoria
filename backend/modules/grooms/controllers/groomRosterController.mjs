@@ -6,19 +6,14 @@
  * route wiring are unchanged — groomController.mjs re-exports these so the
  * public import surface is identical.
  *
- * Handlers: getUserGrooms, getGroomProfile, getGroomDefinitions.
+ * Handlers: getUserGrooms, getGroomProfile. (getGroomDefinitions went with
+ * GET /grooms/definitions, owner ruling 2026-10-28, q151, Equoria-a7f1p.)
  *
  * Equoria-bvddn.7: the player-built hire (POST /grooms/hire, client-chosen
  * name, skill and experience) is gone. Players never create grooms (owner,
  * 2026-10-21); they hire the game's grooms through /groom-marketplace/hire.
  */
 
-import {
-  GROOM_SPECIALTIES,
-  SKILL_LEVELS,
-  PERSONALITY_TRAITS,
-  DEFAULT_GROOMS,
-} from '../../../utils/groomSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
@@ -112,34 +107,6 @@ export async function getUserGrooms(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve user grooms',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-    });
-  }
-}
-
-/**
- * GET /api/grooms/definitions
- * Get groom system definitions (specialties, skill levels, personalities)
- */
-export async function getGroomDefinitions(_req, res) {
-  try {
-    logger.info('[groomController.getGroomDefinitions] Getting groom system definitions');
-
-    res.status(200).json({
-      success: true,
-      message: 'Retrieved groom system definitions',
-      data: {
-        specialties: GROOM_SPECIALTIES,
-        skillLevels: SKILL_LEVELS,
-        personalities: PERSONALITY_TRAITS,
-        defaultGrooms: DEFAULT_GROOMS,
-      },
-    });
-  } catch (error) {
-    logger.error(`[groomController.getGroomDefinitions] Error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve definitions',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
   }

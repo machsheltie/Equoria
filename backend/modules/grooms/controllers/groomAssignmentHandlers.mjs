@@ -6,9 +6,10 @@
  * route wiring are unchanged — groomController.mjs re-exports these so the
  * public import surface is identical.
  *
- * Handlers: assignGroom, getFoalAssignments, getGroomAssignmentLogs.
+ * Handlers: assignGroom, getGroomAssignmentLogs.
  * (ensureDefaultAssignment was deleted: no foal is given a default groom, owner
- * ruling 2026-10-28, q153.)
+ * ruling 2026-10-28, q153. getFoalAssignments went with GET
+ * /grooms/assignments/:foalId, owner ruling 2026-10-28, q151, Equoria-a7f1p.)
  */
 
 import { assignGroomToFoal } from '../../../utils/groomSystem.mjs';
@@ -77,60 +78,6 @@ export async function assignGroom(req, res) {
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to assign groom',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-    });
-    return null;
-  }
-}
-
-/**
- * GET /api/grooms/assignments/:foalId
- * Get all assignments for a foal
- */
-export async function getFoalAssignments(req, res) {
-  try {
-    const { foalId } = req.params;
-
-    const parsedFoalId = parseInt(foalId, 10);
-    if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid foal ID. Must be a positive integer.',
-        data: null,
-      });
-    }
-
-    logger.info(
-      `[groomController.getFoalAssignments] Getting assignments for foal ${parsedFoalId}`,
-    );
-
-    const assignments = await prisma.groomAssignment.findMany({
-      where: { foalId: parsedFoalId },
-      include: {
-        groom: true,
-        foal: {
-          select: { id: true, name: true, bondScore: true },
-        },
-      },
-      orderBy: [{ isActive: 'desc' }, { priority: 'asc' }, { createdAt: 'desc' }],
-    });
-
-    res.status(200).json({
-      success: true,
-      message: `Retrieved ${assignments.length} assignments for foal`,
-      data: {
-        foalId: parsedFoalId,
-        assignments,
-        activeAssignments: assignments.filter(a => a.isActive),
-        totalAssignments: assignments.length,
-      },
-    });
-    return null;
-  } catch (error) {
-    logger.error(`[groomController.getFoalAssignments] Error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve foal assignments',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
     return null;

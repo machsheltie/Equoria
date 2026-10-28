@@ -341,23 +341,6 @@ describe('Groom Bonus Traits System', () => {
   });
 
   describe('API Endpoints', () => {
-    it('should get groom bonus traits via API', async () => {
-      const response = await request(app)
-        .get(`/api/v1/grooms/${testGroom.id}/bonus-traits`)
-        .set('Authorization', authToken)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.bonusTraits).toEqual({
-        sensitive: 0.2,
-        noble: 0.1,
-        quick_learner: 0.15,
-      });
-    });
-
     // Equoria-bvddn.3 (audit 2026-09-25): PUT /:id/bonus-traits let any owner
     // assign arbitrary bonus traits with no earning check (bond/coverage),
     // which also unlocked the rare-trait booster perk for free. OLD CONTRACT
@@ -366,7 +349,8 @@ describe('Groom Bonus Traits System', () => {
     // caller gets 410 Gone and Groom.bonusTraitMap is never written by this
     // route, regardless of body content. See
     // groomBonusTraitsRouteClosed.integration.test.mjs for the full regression
-    // suite (410 for owner + anonymous 401 + GET still 200).
+    // suite (410 for owner + anonymous 401). GET /:id/bonus-traits and its case
+    // were removed as a duplicate lookup (Equoria-a7f1p (owner ruling 2026-10-28, q151)).
     it('returns 410 Gone for PUT (bonus-trait assignment is closed)', async () => {
       const attemptedBonusTraits = {
         confident: 0.25,
@@ -414,9 +398,11 @@ describe('Groom Bonus Traits System', () => {
       expect(response.body.success).toBe(false);
     });
 
+    // Equoria-a7f1p (owner ruling 2026-10-28, q151): old contract probed the removed GET; the
+    // closed PUT is the bonus-trait route that remains.
     it('should require authentication for bonus trait endpoints', async () => {
       const response = await request(app)
-        .get(`/api/v1/grooms/${testGroom.id}/bonus-traits`)
+        .put(`/api/v1/grooms/${testGroom.id}/bonus-traits`)
         .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);

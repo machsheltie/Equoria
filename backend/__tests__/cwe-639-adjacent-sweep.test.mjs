@@ -169,10 +169,13 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
   afterEach(() => cleanup.run());
 
   // ─── Equoria-5w2v ────────────────────────────────────────────────────────
-  describe('groomAssignmentRoutes /api/v1/groom-assignments/validate', () => {
+  // Equoria-a7f1p (owner ruling 2026-10-28, q151): old contract drove POST /groom-assignments/validate,
+  // a duplicate lookup now removed. validateAssignmentEligibility also guards the
+  // create that remains (POST /groom-assignments), so the guarantee is held there.
+  describe('groomAssignmentRoutes POST /api/v1/groom-assignments', () => {
     it('errors do not distinguish exists-but-not-yours from doesnt-exist', async () => {
       const resForeignGroom = await request(app)
-        .post('/api/v1/groom-assignments/validate')
+        .post('/api/v1/groom-assignments')
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -180,7 +183,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
         .send({ groomId: groomB.id, horseId: horseA.id });
 
       const resMissingGroom = await request(app)
-        .post('/api/v1/groom-assignments/validate')
+        .post('/api/v1/groom-assignments')
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -189,13 +192,14 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
 
       // Status codes equal AND the errors array equal — disclosure-resistant.
       expect(resForeignGroom.status).toBe(resMissingGroom.status);
-      expect(resForeignGroom.body.data.errors).toEqual(resMissingGroom.body.data.errors);
+      expect(resForeignGroom.status).not.toBe(201);
+      expect(resForeignGroom.body).toEqual(resMissingGroom.body);
       // The 'You do not own this groom' message must NOT appear — that was
       // the leak vector.
       expect(JSON.stringify(resForeignGroom.body)).not.toContain('You do not own');
 
       const resForeignHorse = await request(app)
-        .post('/api/v1/groom-assignments/validate')
+        .post('/api/v1/groom-assignments')
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -203,14 +207,15 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
         .send({ groomId: groomA.id, horseId: horseB.id });
 
       const resMissingHorse = await request(app)
-        .post('/api/v1/groom-assignments/validate')
+        .post('/api/v1/groom-assignments')
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ groomId: groomA.id, horseId: NONEXISTENT_ID });
 
-      expect(resForeignHorse.body.data.errors).toEqual(resMissingHorse.body.data.errors);
+      expect(resForeignHorse.status).toBe(resMissingHorse.status);
+      expect(resForeignHorse.body).toEqual(resMissingHorse.body);
       expect(JSON.stringify(resForeignHorse.body)).not.toContain('You do not own');
     });
   });

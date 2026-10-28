@@ -5,15 +5,10 @@
  */
 
 import express from 'express';
-import { param, query } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
-import { requireOwnership } from '../../../middleware/ownership.mjs';
-import { handleValidationErrors } from '../../../middleware/validationErrorHandler.mjs';
 import { satisfiesRole } from '../../staff/index.mjs';
 import {
   getUserSalaryCost,
-  getSalaryHistory,
-  getGroomSalary,
   triggerSalaryProcessingEndpoint,
   getCronStatus,
   getSalarySummary,
@@ -36,35 +31,8 @@ router.get('/summary', getSalarySummary);
  */
 router.get('/cost', getUserSalaryCost);
 
-/**
- * GET /api/groom-salaries/history
- * Get salary payment history for the authenticated user
- */
-router.get(
-  '/history',
-  [
-    query('limit')
-      .optional()
-      .isInt({ min: 1, max: 100 })
-      .withMessage('Limit must be between 1 and 100'),
-  ],
-  handleValidationErrors,
-  getSalaryHistory,
-);
-
-/**
- * GET /api/groom-salaries/groom/:groomId/salary
- * Get weekly salary for a specific groom
- *
- * Security: Validates groom ownership before returning salary information
- */
-router.get(
-  '/groom/:groomId/salary',
-  [param('groomId').isInt({ min: 1 }).withMessage('Groom ID must be a positive integer')],
-  handleValidationErrors,
-  requireOwnership('groom', { idParam: 'groomId' }),
-  getGroomSalary,
-);
+// GET /history and GET /groom/:groomId/salary were removed with the duplicate
+// lookups (owner ruling 2026-10-28, q151, Equoria-a7f1p): the Staff page reads GET /groom-salaries/cost.
 
 /**
  * GET /api/groom-salaries/status

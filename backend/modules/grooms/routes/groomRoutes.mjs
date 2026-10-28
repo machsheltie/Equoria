@@ -3,8 +3,8 @@
  * API endpoints for groom assignments, interactions, and management.
  *
  * Equoria-8mdpc god-file split: this parent keeps the foundational endpoints
- * (assign / interact / assignments / user / profile / synergy /
- * assignment-logs / bonus-traits / definitions) and mounts
+ * (assign / interact / user / profile / synergy / assignment-logs /
+ * bonus-traits (closed PUT)) and mounts
  * three sub-domain sub-routers at the bottom (mirroring the Equoria-y8u2j
  * horseRoutes pattern):
  *   - groomRetirementRoutes.mjs  (/retirement/*, /:id/retirement/*)
@@ -25,12 +25,9 @@ import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import {
   assignGroom,
-  getFoalAssignments,
   getUserGrooms,
-  getGroomDefinitions,
   getGroomProfile,
   getGroomAssignmentLogs,
-  getGroomBonusTraits,
   getGroomHorseSynergyPreview,
 } from '../controllers/groomController.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -149,38 +146,10 @@ router.post(
   assignGroom,
 );
 
-/**
- * @swagger
- * /api/grooms/assignments/{foalId}:
- *   get:
- *     summary: Get all assignments for a foal
- *     tags: [Grooms]
- *     parameters:
- *       - in: path
- *         name: foalId
- *         required: true
- *         schema:
- *           type: integer
- *           minimum: 1
- *         description: ID of the foal
- *     responses:
- *       200:
- *         description: Assignments retrieved successfully
- *       400:
- *         description: Invalid foal ID
- *       500:
- *         description: Internal server error
- */
-router.get(
-  '/assignments/:foalId',
-  authenticateToken, // IDOR Protection: Require authentication
-  [
-    param('foalId').isInt({ min: 1 }).withMessage('foalId must be a positive integer'),
-    handleValidationErrors,
-  ],
-  requireOwnership('foal', { idParam: 'foalId' }), // IDOR Protection: Validate foal ownership
-  getFoalAssignments,
-);
+// GET /assignments/:foalId was removed with the duplicate lookups (owner ruling 2026-10-28,
+// q151, Equoria-a7f1p): the Staff page reads a player's assignments from
+// GET /api/v1/groom-assignments. (POST /ensure-default/:foalId was deleted earlier: no foal
+// is given a default groom, owner ruling q153.)
 
 /**
  * POST /api/grooms/interact — retired. "Groom horse" (POST /api/grooms/care/:horseId/groom)
@@ -240,19 +209,7 @@ router.get(
 // chosen name, skill and experience. Players never create grooms (owner,
 // 2026-10-21); they hire through /groom-marketplace/hire, so this path 404s.
 
-/**
- * @swagger
- * /api/grooms/definitions:
- *   get:
- *     summary: Get groom system definitions
- *     tags: [Grooms]
- *     responses:
- *       200:
- *         description: Definitions retrieved successfully
- *       500:
- *         description: Internal server error
- */
-router.get('/definitions', getGroomDefinitions);
+// GET /definitions was removed with the duplicate lookups (owner ruling 2026-10-28, q151, Equoria-a7f1p).
 
 /**
  * @swagger
@@ -333,33 +290,8 @@ router.get(
   getGroomAssignmentLogs,
 );
 
-/**
- * @swagger
- * /api/grooms/{id}/bonus-traits:
- *   get:
- *     summary: Get groom bonus traits
- *     tags: [Grooms]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Groom ID
- *     responses:
- *       200:
- *         description: Bonus traits retrieved successfully
- *       404:
- *         description: Groom not found
- *       500:
- *         description: Internal server error
- */
-router.get(
-  '/:id/bonus-traits',
-  param('id').isInt().withMessage('Groom ID must be an integer'),
-  requireOwnership('groom'),
-  getGroomBonusTraits,
-);
+// GET /:id/bonus-traits was removed with the duplicate lookups (owner ruling 2026-10-28, q151, Equoria-a7f1p):
+// the groom profile already carries bonusTraitMap.
 
 /**
  * PUT /:id/bonus-traits — REMOVED (Equoria-bvddn.3, audit 2026-09-25, mirrors
@@ -382,7 +314,8 @@ router.get(
  * it is untouched. `assignBonusTraits`/`updateGroomBonusTraits` are left in
  * place (service-level tests still exercise them directly) — removing dead
  * code is out of scope. GET /:id/bonus-traits (read-only, not part of the
- * exploit) is untouched too.
+ * exploit) was left too; it went later as a duplicate lookup (Equoria-a7f1p,
+ * q151), with the now-unused groomBonusTraitsController.
  *
  * 410 mirrors the established closed-route idiom. `authenticateToken` is
  * kept (file has no router-level auth) so anonymous still gets 401; the

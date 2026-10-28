@@ -167,16 +167,6 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
       expect(res.status).toBe(404);
       expect(res.body).toMatchObject({ success: false });
     });
-
-    it('GET /grooms/:id/bonus-traits → 404 (ownership gate; groomBonusTraitsController GET)', async () => {
-      const res = await request(app)
-        .get(`/api/v1/grooms/${MISSING_ID}/bonus-traits`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${ownerToken}`);
-
-      expect(res.status).toBe(404);
-      expect(res.body).toMatchObject({ success: false });
-    });
   });
 
   // ===================================================================

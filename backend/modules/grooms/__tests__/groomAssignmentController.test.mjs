@@ -1,9 +1,9 @@
 /**
  * groomAssignmentController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: getMyAssignments, getSalaryCosts, getAssignmentDashboard,
- * config endpoint, statistics endpoint, createGroomAssignment validation,
- * validateAssignment.
+ * Covers: getMyAssignments, statistics endpoint, createGroomAssignment validation.
+ * Equoria-a7f1p (owner ruling 2026-10-28, q151): the salary-costs, dashboard, config and validate
+ * cases went with those duplicate lookup routes.
  * Routes live under authRouter at /api/groom-assignments.
  */
 
@@ -67,77 +67,6 @@ describe('GET /api/groom-assignments', () => {
   });
 });
 
-// ─── GET /api/groom-assignments/salary-costs ──────────────────────────────────
-
-describe('GET /api/groom-assignments/salary-costs', () => {
-  it('returns 200 with zero costs for user with no assignments', async () => {
-    const res = await request(app)
-      .get('/api/v1/groom-assignments/salary-costs')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toHaveProperty('totalWeeklyCost');
-    expect(res.body.data.totalWeeklyCost).toBe(0);
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/groom-assignments/salary-costs').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── GET /api/groom-assignments/dashboard ─────────────────────────────────────
-
-describe('GET /api/groom-assignments/dashboard', () => {
-  it('returns 200 with dashboard data', async () => {
-    const res = await request(app)
-      .get('/api/v1/groom-assignments/dashboard')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/groom-assignments/dashboard').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── GET /api/groom-assignments/config ────────────────────────────────────────
-
-describe('GET /api/groom-assignments/config', () => {
-  it('returns 200 with assignment configuration', async () => {
-    const res = await request(app)
-      .get('/api/v1/groom-assignments/config')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    // Equoria-95yrv: one cap and one rate for every groom; the per-skill caps and
-    // the never-charged per-skill pay table are gone.
-    // The owner ruling 2026-10-26 (q68) raised the cap from ten to twenty.
-    expect(res.body.data.maxHorsesPerGroom).toBe(20);
-    // Owner ruling 2026-10-28 (q228): no per-horse rate; each groom costs their level.
-    expect(res.body.data).not.toHaveProperty('feePerHorsePerWeek');
-    expect(res.body.data).not.toHaveProperty('maxAssignmentsBySkill');
-    expect(res.body.data).not.toHaveProperty('weeklySalaryBySkill');
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/groom-assignments/config').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
 // ─── GET /api/groom-assignments/statistics ────────────────────────────────────
 
 describe('GET /api/groom-assignments/statistics', () => {
@@ -192,35 +121,6 @@ describe('POST /api/groom-assignments', () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
       .post('/api/v1/groom-assignments')
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ groomId: 1, horseId: 1 });
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── POST /api/groom-assignments/validate ─────────────────────────────────────
-
-describe('POST /api/groom-assignments/validate', () => {
-  it('returns 400 when groomId and horseId are missing from body', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/groom-assignments/validate')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    expect(res.status).toBe(400);
-  });
-
-  it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post('/api/v1/groom-assignments/validate')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)

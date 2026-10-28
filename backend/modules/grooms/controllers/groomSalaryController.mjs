@@ -10,8 +10,6 @@ import { gameDayIndex, startOfGameDayIndex, startOfGameWeek } from '../../../uti
 import {
   calculateUserSalaryCost,
   getSalaryPaymentHistory,
-  calculateWeeklyFee,
-  countActiveAssignments,
 } from '../services/groomSalaryService.mjs';
 import { triggerSalaryProcessing, getCronJobStatus } from '../../../services/cronJobService.mjs';
 
@@ -37,100 +35,6 @@ export async function getUserSalaryCost(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to get salary cost',
-      data: null,
-    });
-  }
-}
-
-/**
- * GET /api/groom-salaries/history
- * Get salary payment history for the authenticated user
- */
-export async function getSalaryHistory(req, res) {
-  try {
-    const userId = req.user?.id;
-    const limit = parseInt(req.query.limit) || 50;
-
-    logger.info(
-      `[groomSalaryController] Getting salary history for user ${userId}, limit: ${limit}`,
-    );
-
-    if (limit < 1 || limit > 100) {
-      return res.status(400).json({
-        success: false,
-        message: 'Limit must be between 1 and 100',
-        data: null,
-      });
-    }
-
-    const paymentHistory = await getSalaryPaymentHistory(userId, limit);
-
-    res.json({
-      success: true,
-      message: 'Salary history retrieved successfully',
-      data: {
-        payments: paymentHistory,
-        count: paymentHistory.length,
-      },
-    });
-  } catch (error) {
-    logger.error(`[groomSalaryController] Error getting salary history: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get salary history',
-      data: null,
-    });
-  }
-}
-
-/**
- * GET /api/groom-salaries/groom/:groomId/salary
- * Get weekly salary for a specific groom
- */
-export async function getGroomSalary(req, res) {
-  try {
-    const { groomId } = req.params;
-
-    logger.info(`[groomSalaryController] Getting salary for groom ${groomId}`);
-
-    // Validate groom ID
-    const parsedGroomId = parseInt(groomId);
-    if (isNaN(parsedGroomId) || parsedGroomId <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid groom ID',
-        data: null,
-      });
-    }
-
-    // Ownership validated by requireOwnership('groom') middleware on the route.
-    // req.groom is the validated, owned record (full fields from middleware).
-    const groom = req.groom;
-
-    // Owner ruling 2026-10-28 (q228): the groom's star level's price per week,
-    // however many horses they look after. The horse count is reported alongside.
-    const assignedHorses = (await countActiveAssignments(prisma, [groom.id])).get(groom.id) ?? 0;
-    const weeklySalary = calculateWeeklyFee(groom);
-
-    res.json({
-      success: true,
-      message: 'Groom salary retrieved successfully',
-      data: {
-        groom: {
-          id: groom.id,
-          name: groom.name,
-          skillLevel: groom.skillLevel,
-          speciality: groom.speciality,
-        },
-        assignedHorses,
-        weeklySalary,
-      },
-    });
-  } catch (error) {
-    logger.error(`[groomSalaryController] Error getting groom salary: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get groom salary',
       data: null,
     });
   }

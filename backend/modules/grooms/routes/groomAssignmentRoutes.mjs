@@ -12,10 +12,6 @@ import {
   createGroomAssignment,
   removeGroomAssignment,
   getMyAssignments,
-  getGroomLimits,
-  getSalaryCosts,
-  validateAssignment,
-  getAssignmentDashboard,
 } from '../controllers/groomAssignmentController.mjs';
 import { getAssignmentStatisticsRaw } from '../services/groomAssignmentService.mjs';
 
@@ -103,75 +99,9 @@ router.get(
   getMyAssignments,
 );
 
-/**
- * GET /api/groom-assignments/groom/:groomId/limits
- * Get assignment limits for a specific groom
- *
- * Security: Validates groom ownership before returning limits
- */
-router.get(
-  '/groom/:groomId/limits',
-  [param('groomId').isInt({ min: 1 }).withMessage('Groom ID must be a positive integer')],
-  handleValidationErrors,
-  requireOwnership('groom', { idParam: 'groomId' }),
-  getGroomLimits,
-);
-
-/**
- * GET /api/groom-assignments/salary-costs
- * Calculate weekly salary costs for all assignments
- */
-router.get('/salary-costs', getSalaryCosts);
-
-/**
- * POST /api/groom-assignments/validate
- * Validate assignment eligibility without creating assignment
- */
-router.post(
-  '/validate',
-  [
-    body('groomId').isInt({ min: 1 }).withMessage('Groom ID must be a positive integer'),
-    body('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-  ],
-  handleValidationErrors,
-  validateAssignment,
-);
-
-/**
- * GET /api/groom-assignments/dashboard
- * Get comprehensive assignment dashboard data
- */
-router.get('/dashboard', getAssignmentDashboard);
-
-/**
- * GET /api/groom-assignments/config
- * Get assignment configuration and limits
- */
-router.get('/config', async (req, res) => {
-  try {
-    const { ASSIGNMENT_CONFIG } = await import('../services/groomAssignmentService.mjs');
-
-    res.status(200).json({
-      success: true,
-      message: 'Assignment configuration retrieved successfully',
-      // One horse cap, the same for every groom. What a groom costs is their star
-      // level's price per week (owner ruling 2026-10-28, q228), shown on each groom.
-      data: {
-        maxHorsesPerGroom: ASSIGNMENT_CONFIG.MAX_HORSES_PER_GROOM,
-        description: {
-          maxHorsesPerGroom: 'The most horses one groom can be caring for at a time',
-        },
-      },
-    });
-  } catch (error) {
-    logger.error(`[groomAssignmentRoutes] Error getting config: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Error retrieving assignment configuration',
-      data: null,
-    });
-  }
-});
+// GET /groom/:groomId/limits, GET /salary-costs, POST /validate, GET /dashboard and
+// GET /config were removed with the duplicate lookups (owner ruling 2026-10-28, q151, Equoria-a7f1p):
+// the Staff page reads GET /groom-assignments and GET /groom-salaries/cost.
 
 /**
  * GET /api/groom-assignments/statistics

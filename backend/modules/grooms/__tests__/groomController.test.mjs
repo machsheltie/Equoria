@@ -1,8 +1,9 @@
 /**
  * groomController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: getGroomDefinitions, getUserGrooms, getFoalAssignments. (hireGroom and
- * its POST /grooms/hire cases were retired by Equoria-bvddn.7.)
+ * Covers: getUserGrooms. (hireGroom and its POST /grooms/hire cases were retired by
+ * Equoria-bvddn.7; the definitions and assignments/:foalId cases went with those
+ * duplicate lookups, Equoria-a7f1p (owner ruling 2026-10-28, q151).)
  * Real DB, real auth — no bypass headers.
  */
 
@@ -12,9 +13,6 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
-// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
@@ -55,30 +53,6 @@ describe('groomController integration', () => {
     cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
     await cleanup.run();
   }, 30000);
-
-  // ─── GET /api/grooms/definitions ─────────────────────────────────────────
-
-  describe('GET /api/grooms/definitions', () => {
-    it('returns 200 with specialties, skillLevels, personalities, defaultGrooms', async () => {
-      const res = await request(app)
-        .get('/api/v1/grooms/definitions')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data).toHaveProperty('specialties');
-      expect(res.body.data).toHaveProperty('skillLevels');
-      expect(res.body.data).toHaveProperty('personalities');
-      expect(res.body.data).toHaveProperty('defaultGrooms');
-    });
-
-    it('returns 401 without an auth token', async () => {
-      const res = await request(app).get('/api/v1/grooms/definitions').set('Origin', ORIGIN);
-
-      expect(res.status).toBe(401);
-    });
-  });
 
   // ─── GET /api/grooms/user/:userId ─────────────────────────────────────────
 
@@ -125,58 +99,6 @@ describe('groomController integration', () => {
       const res = await request(app).get(`/api/v1/grooms/user/${user.id}`).set('Origin', ORIGIN);
 
       expect(res.status).toBe(401);
-    });
-  });
-
-  // ─── GET /api/grooms/assignments/:foalId ──────────────────────────────────
-
-  describe('GET /api/grooms/assignments/:foalId', () => {
-    let horseId;
-    const horseCleanup = createCleanupTracker();
-
-    beforeEach(async () => {
-      const horse = await prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `TestFixture-GroomHorse${Date.now()}`,
-          sex: 'Filly',
-          dateOfBirth: new Date('2023-01-01'),
-          age: 1,
-          userId: user.id,
-        },
-      });
-      horseId = horse.id;
-    }, 30000);
-
-    afterEach(async () => {
-      // Scoped, fail-loud cleanup (Equoria-1ohys). Runs before the outer
-      // afterEach (afterEach is inner-first), so the per-test horse is deleted
-      // before its owning user — honouring Horse.userId onDelete:Restrict. A
-      // failed delete fails the suite instead of being swallowed.
-      horseCleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
-      await horseCleanup.run();
-    }, 30000);
-
-    it('returns 200 with empty assignments for a horse with no groom assigned', async () => {
-      const res = await request(app)
-        .get(`/api/v1/grooms/assignments/${horseId}`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.foalId).toBe(horseId);
-      expect(Array.isArray(res.body.data.assignments)).toBe(true);
-      expect(res.body.data.totalAssignments).toBe(0);
-    });
-
-    it('returns 400 for non-numeric foalId (express-validator rejects it)', async () => {
-      const res = await request(app)
-        .get('/api/v1/grooms/assignments/notanumber')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(res.status).toBe(400);
     });
   });
 });

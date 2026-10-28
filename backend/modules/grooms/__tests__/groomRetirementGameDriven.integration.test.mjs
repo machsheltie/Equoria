@@ -19,18 +19,19 @@
  *
  *   2. THE AGE IS NOT DISCOVERABLE.
  *
- *      WHAT THIS TEST ACTUALLY DRIVES — eight endpoints, each asserted to answer
+ *      WHAT THIS TEST ACTUALLY DRIVES — seven endpoints, each asserted to answer
  *      200 (so a 4xx cannot make the audit vacuous) and then walked for a
  *      `retirementAge` / `retirementSchedule` key at any depth:
  *        GET /api/v1/grooms/user/:userId               (roster list, whole groom rows)
  *        GET /api/v1/grooms/:id/profile
  *        GET /api/v1/grooms/:id/assignment-logs
- *        GET /api/v1/grooms/assignments/:foalId
  *        GET /api/v1/groom-assignments/?includeInactive=true
  *        GET /api/v1/grooms/retirement/statistics
  *        GET /api/v1/groom-marketplace/
  *        GET /api/v1/groom-handlers/horse/:horseId
- *      The sibling groomRetirementEndpointClosed suite drives a ninth,
+ *      (GET /api/v1/grooms/assignments/:foalId was an eighth until Equoria-a7f1p (owner ruling 2026-10-28, q151)
+ *      removed it as a duplicate lookup.)
+ *      The sibling groomRetirementEndpointClosed suite drives another,
  *      GET /:id/retirement/eligibility, and additionally asserts the absence of
  *      the two derived fields — `weeksUntilRetirement` and `noticeRequired` —
  *      that used to hand a client the age by subtraction.
@@ -421,7 +422,6 @@ describe('Equoria-m9lz1 — no player-visible groom response discloses the retir
       `/api/v1/grooms/user/${owner.id}`,
       `/api/v1/grooms/${groom.id}/profile`,
       `/api/v1/grooms/${groom.id}/assignment-logs`,
-      `/api/v1/grooms/assignments/${horse.id}`,
       '/api/v1/groom-assignments/?includeInactive=true',
       '/api/v1/grooms/retirement/statistics',
       '/api/v1/groom-marketplace/',
