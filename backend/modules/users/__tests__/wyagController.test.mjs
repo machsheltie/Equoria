@@ -351,6 +351,15 @@ describe('GET /api/v1/while-you-were-gone — six event-type aggregation (Equori
     expect(result.metadata.prize).toBe(500);
   });
 
+  // Equoria-jrgw9 (NAV-09): the result opened the list of shows to enter, not
+  // the result. It now opens that show's results (route from Equoria-iz7eu).
+  it('competition-result: links to that show’s results', async () => {
+    const items = await fetchItems();
+    const result = items.find(i => i.type === 'competition-result' && i.title.includes(show.name));
+    expect(result).toBeDefined();
+    expect(result.actionUrl).toBe(`/competition-results/${show.id}`);
+  });
+
   it('club-activity: emits a real new-member event with correct type/priority/timestamp', async () => {
     const items = await fetchItems();
     const clubItems = items.filter(i => i.type === 'club-activity');

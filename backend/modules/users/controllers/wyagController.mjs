@@ -71,7 +71,8 @@ export async function getWhileYouWereGone(req, res) {
           title: `${result.horse?.name ?? 'Your horse'} competed in ${result.show?.name ?? 'a show'}`,
           description: `Placed ${result.placement ?? '?'} — Prize: ${prizeWon} coins`,
           timestamp: result.createdAt.toISOString(),
-          actionUrl: '/competitions',
+          // Equoria-jrgw9: open this show's results, not the list of shows to enter.
+          actionUrl: `/competition-results/${result.showId}`,
           metadata: { resultId: result.id, placement: result.placement, prize: prizeWon },
         });
       }
