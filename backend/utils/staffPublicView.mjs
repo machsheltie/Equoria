@@ -16,7 +16,7 @@
  * The words match frontend/src/lib/staffLabels.ts.
  */
 
-import { DISCIPLINE_VALUES } from '../constants/schema.mjs';
+import { isValidDiscipline } from '../constants/schema.mjs';
 
 const skillLevelLabels = Object.freeze({
   novice: 'Novice',
@@ -50,8 +50,6 @@ const groomSpecialityLabels = Object.freeze({
   training: 'Training Support',
   medical: 'Medical Care',
 });
-
-const disciplineWords = new Set(DISCIPLINE_VALUES);
 
 function lookup(map, value, fallback) {
   if (typeof value !== 'string') {
@@ -87,7 +85,7 @@ export function staffSpecialityLabel(kind, speciality) {
   if (kind === 'groom') {
     return lookup(groomSpecialityLabels, speciality, 'Everyday Care');
   }
-  return typeof speciality === 'string' && disciplineWords.has(speciality)
+  return typeof speciality === 'string' && isValidDiscipline(speciality)
     ? speciality
     : 'Another Discipline';
 }

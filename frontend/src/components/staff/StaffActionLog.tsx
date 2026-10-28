@@ -98,10 +98,10 @@ function actorText(
 }
 
 /** Ledger target kinds whose id is a player account (a conduct action on their IP or device too). */
-const PLAYER_TARGETS = new Set(['player', 'playerIp', 'playerDevice']);
+const playerTargets = new Set(['player', 'playerIp', 'playerDevice']);
 
 /** Target kinds the ledger names in words; anything else reads as "a record" (q165: no codes). */
-const TARGET_WORDS: Record<string, string> = {
+const targetWords: Record<string, string> = {
   ticket: 'ticket',
   show: 'show',
   device: 'a browser',
@@ -109,11 +109,11 @@ const TARGET_WORDS: Record<string, string> = {
 
 function targetText(entry: StaffLogEntry, nameOf: NameOf): string {
   const { targetType, targetId } = entry;
-  const word = TARGET_WORDS[targetType];
+  const word = targetWords[targetType];
   if (targetId === null) {
     return word ?? 'a record';
   }
-  if (PLAYER_TARGETS.has(targetType)) {
+  if (playerTargets.has(targetType)) {
     return nameOf(targetId) ?? `player ${shortRef(targetId)}`;
   }
   if (targetType === 'device') {

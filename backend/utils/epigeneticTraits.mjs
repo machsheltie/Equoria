@@ -96,7 +96,7 @@ export function isRosterTrait(trait) {
  * @returns {string}
  */
 export function playerTraitLabel(trait) {
-  return isRosterTrait(trait) ? TRAIT_DEFINITIONS[trait].label : 'Unlisted Trait';
+  return playerTraitDefinition(trait)?.label ?? 'Unlisted Trait';
 }
 
 /**
