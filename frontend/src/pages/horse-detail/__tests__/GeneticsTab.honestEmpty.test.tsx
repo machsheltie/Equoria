@@ -83,11 +83,14 @@ describe('GeneticsTab — honest states (Equoria-kjlub)', () => {
     expect(screen.queryByText(/no traits match the current filters/i)).toBeNull();
   });
 
-  it('still celebrates when every trait the horse has is discovered', async () => {
+  // Old contract: an "All Traits Discovered!" banner. Owner rulings q174/q213
+  // (2026-10-28) replaced the discovery panel with one chip per carried trait.
+  it('shows the one revealed trait as its chip, with no Hidden chip and no empty line', async () => {
     stubTraits(['resilient'], 0);
     renderTab();
 
-    expect(await screen.findByText(/all traits discovered/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Resilient' })).toBeInTheDocument();
+    expect(screen.queryByTestId('trait-chip-hidden')).toBeNull();
     expect(screen.queryByText(/no traits discovered yet/i)).toBeNull();
   });
 });

@@ -63,6 +63,8 @@ export interface RawHorseTraits {
   traits?: {
     positive?: RawEnhancedTrait[];
     negative?: RawEnhancedTrait[];
+    /** Revealed but switched off (Equoria-nrto5; shown greyed out, owner ruling q213). */
+    dormant?: RawEnhancedTrait[];
     /** Count only: the backend never names an unrevealed trait (Equoria-6dace). */
     hiddenCount?: number;
   };
@@ -113,6 +115,8 @@ export interface HorseTrait {
 export interface HorseTraitsView {
   positive: HorseTrait[];
   negative: HorseTrait[];
+  /** Revealed traits that are switched off: still carried, no effect (q213). */
+  dormant: HorseTrait[];
   /** Hidden trait COUNT only — names are intentionally not revealed. */
   hiddenCount: number;
   totalTraits: number;
@@ -140,7 +144,7 @@ export function humanizeTraitKey(key: string): string {
 
 function mapBucket(
   rows: RawEnhancedTrait[] | undefined,
-  valence: 'positive' | 'negative'
+  valence: 'positive' | 'negative' | null
 ): HorseTrait[] {
   if (!Array.isArray(rows)) return [];
   return rows
@@ -156,7 +160,8 @@ function mapBucket(
         // The bucket the backend placed the trait in is authoritative; if a
         // definition.type disagrees we still trust the bucket (the bucket is
         // derived from horse.epigeneticModifiers, the persisted truth).
-        valence,
+        // A dormant trait has no bucket of its own valence: its definition says.
+        valence: valence ?? (def?.type === 'negative' ? 'negative' : 'positive'),
         description: typeof def?.description === 'string' ? def.description : '',
         category: typeof def?.category === 'string' ? def.category : undefined,
         isNew: r.isNew === true,
@@ -169,14 +174,16 @@ export function mapHorseTraits(raw: RawHorseTraits | null | undefined): HorseTra
   const buckets = raw?.traits;
   const positive = mapBucket(buckets?.positive, 'positive');
   const negative = mapBucket(buckets?.negative, 'negative');
+  const dormant = mapBucket(buckets?.dormant, null);
   const rawHidden = buckets?.hiddenCount;
   const hiddenCount =
     typeof rawHidden === 'number' && Number.isInteger(rawHidden) && rawHidden > 0 ? rawHidden : 0;
   return {
     positive,
     negative,
+    dormant,
     hiddenCount,
-    totalTraits: positive.length + negative.length + hiddenCount,
+    totalTraits: positive.length + negative.length + dormant.length + hiddenCount,
   };
 }
 

@@ -125,12 +125,16 @@ describe('useHorseTraits — pure mappers', () => {
       expect(mapHorseTraits(null)).toEqual({
         positive: [],
         negative: [],
+        // Dormant traits are shown since owner ruling q213 (2026-10-28).
+        dormant: [],
         hiddenCount: 0,
         totalTraits: 0,
       });
       expect(mapHorseTraits({})).toEqual({
         positive: [],
         negative: [],
+        // Dormant traits are shown since owner ruling q213 (2026-10-28).
+        dormant: [],
         hiddenCount: 0,
         totalTraits: 0,
       });

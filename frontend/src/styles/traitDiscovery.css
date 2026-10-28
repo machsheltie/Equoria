@@ -1,0 +1,86 @@
+/**
+ * Trait Discovery chips on the horse page's Genetics tab (owner rulings q174
+ * and q213, 2026-10-28). Authored CSS over the Celestial Night tokens, sharing
+ * the two button treatments the owner named: the quick-actions bar's dark blue
+ * secondary for a hidden trait, the centre gold primary for a revealed one.
+ * A dormant trait is the gold chip greyed out, its name still readable.
+ */
+
+.trait-discovery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trait-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-button);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+button.trait-chip {
+  cursor: pointer;
+}
+
+button.trait-chip:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--bg-deep-space),
+    0 0 0 4px var(--gold-bright);
+}
+
+/* Hidden: the quick-actions bar's secondary button. */
+.trait-chip--hidden {
+  background: var(--glass-surface-subtle-bg);
+  border: 1px solid var(--btn-secondary-border);
+  color: var(--cream);
+  box-shadow: var(--shadow-subtle);
+}
+
+/* Revealed: the centre gold primary (Train This Horse, Enter Competition). */
+.trait-chip--revealed {
+  background: linear-gradient(to right, var(--gold-primary), var(--gold-light));
+  border: 1px solid transparent;
+  color: var(--bg-deep-space);
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  box-shadow: var(--btn-default-shadow);
+}
+
+.trait-chip--revealed:hover {
+  filter: brightness(1.1);
+}
+
+/* Inactive (dormant): greyed out, the name still shown. */
+.trait-chip--inactive {
+  background: var(--border-muted);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  filter: grayscale(1);
+}
+
+.trait-chip__state {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.trait-discovery__empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .trait-chip--revealed {
+    transition: filter 150ms ease-out;
+  }
+}

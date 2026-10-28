@@ -12,21 +12,22 @@
  * repeated the trait list and showed "Unknown flag"); and the interactions,
  * timeline and lineage sections built on the same invented values
  * (Equoria-q4uem.14, Equoria-8v2y9).
+ *
+ * Owner rulings q174 / q213 (2026-10-28): Trait Discovery is one chip per
+ * trait the horse carries: "Hidden" for each hidden trait, gold for a revealed
+ * one, greyed "Inactive" for a switched-off one (TraitDiscovery). Old
+ * contract, replaced by that ruling: a separate "Traits (n)" list with
+ * helps/hinders lines, and a discovery panel with a progress bar, a hint and
+ * "All Traits Discovered!".
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import HiddenTraitIndicator from '../../components/traits/HiddenTraitIndicator';
 import LiveTraitDetailModal from '../../components/traits/LiveTraitDetailModal';
-import {
-  useHorseTraits,
-  useHorseTraitDiscoveryStatus,
-  useMarkTraitsSeen,
-  type HorseTrait,
-} from '../../hooks/useHorseTraits';
+import { useHorseTraits, useMarkTraitsSeen, type HorseTrait } from '../../hooks/useHorseTraits';
 import type { Horse } from './HorseDetailPageTypes';
 import { userMessageFor } from '../../lib/http/userMessage';
-import TraitList from './genetics/TraitList';
+import TraitDiscovery from './genetics/TraitDiscovery';
 import ColourGeneticsSection from './genetics/ColourGeneticsSection';
 
 /** Normalize a trait name/key to a comparable token. */
@@ -37,10 +38,6 @@ function normalizeTraitToken(value: string): string {
 const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   // Revealed traits only: the backend names no unrevealed trait (Equoria-6dace).
   const { data: classification, isLoading, error } = useHorseTraits(horse.id);
-
-  // Hidden-trait discovery status — Equoria-hriey. Read-only: players never
-  // reveal traits (Equoria-gu8jk; owner ruling 2026-10-20).
-  const { data: discoveryStatus } = useHorseTraitDiscoveryStatus(horse.id);
 
   // First-view glow (Equoria-lylhb): a revealed trait glows once, the first time
   // its owner views it. The new ones are captured the first time the trait list
@@ -94,24 +91,15 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
   return (
     <div className="space-y-8">
-      {traits.length > 0 && (
-        <section>
-          <h3 className="type-section-heading mb-2">Traits ({traits.length})</h3>
-          <TraitList
-            traits={traits}
-            glowTokens={glowTokens}
-            normalize={normalizeTraitToken}
-            onSelect={setSelectedTrait}
-          />
-        </section>
-      )}
-
-      {/* Hidden Traits & Discovery Section (Equoria-hriey) */}
-      {discoveryStatus && (
-        <div data-testid="hidden-traits-section">
-          <h3 className="type-enchanted-accent text-[var(--text-primary)] mb-4">Trait Discovery</h3>
-          <HiddenTraitIndicator discoveryStatus={discoveryStatus} />
-        </div>
+      {classification && (
+        <TraitDiscovery
+          revealed={traits}
+          dormant={classification.dormant}
+          hiddenCount={classification.hiddenCount}
+          glowTokens={glowTokens}
+          normalize={normalizeTraitToken}
+          onSelect={setSelectedTrait}
+        />
       )}
 
       <ColourGeneticsSection horseId={horse.id} />
