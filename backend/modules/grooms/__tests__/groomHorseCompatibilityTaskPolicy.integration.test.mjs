@@ -46,7 +46,9 @@ const EXPECTED_TASK_MODIFIERS = {
 };
 const FORMERLY_UNSCORED_TASKS = ['coat_check', 'tying_practice', 'early_touch'];
 const UNSUPPORTED_TASK = 'grooming';
-const TASK_ROUTES = ['/calculate', '/predict', '/recommendations'];
+// POST /predict and /recommendations were retired (Equoria-a7f1p); their cases went
+// with them (Equoria-ytwl7).
+const TASK_ROUTES = ['/calculate'];
 
 const sorted = values => [...values].sort();
 
@@ -357,28 +359,6 @@ describe('ownership is enforced on every compatibility route', () => {
     expect([g.status, h.status]).toEqual([404, 404]);
     expect(g.body.data).toBeUndefined();
     expect(h.body.data).toBeUndefined();
-  });
-
-  it('POST /predict rejects a foreign groom and a foreign horse with 404', async () => {
-    const g = await postWithCsrf('/predict', {
-      groomId: foreignGroom.id,
-      horseId: horse.id,
-      context: task,
-    });
-    const h = await postWithCsrf('/predict', {
-      groomId: groomsByPersonality.calm.id,
-      horseId: foreignHorse.id,
-      context: task,
-    });
-    expect([g.status, h.status]).toEqual([404, 404]);
-    expect(g.body.data).toBeUndefined();
-    expect(h.body.data).toBeUndefined();
-  });
-
-  it('POST /recommendations rejects a foreign horse with 404', async () => {
-    const res = await postWithCsrf('/recommendations', { horseId: foreignHorse.id, context: task });
-    expect(res.status).toBe(404);
-    expect(res.body.data).toBeUndefined();
   });
 
   it('GET /factors rejects a foreign groom and a foreign horse with 404', async () => {

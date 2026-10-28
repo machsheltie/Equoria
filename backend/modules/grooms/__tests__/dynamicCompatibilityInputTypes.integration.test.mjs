@@ -68,9 +68,9 @@ const badFactorLists = [[1], [{}], [null], ['quiet', 7]].map(list => [list]);
 
 describe('compatibility context element types', () => {
   describe.each([
+    // POST /predict and /recommendations were retired (Equoria-a7f1p, owner ruling
+    // 2026-10-07: no advice); their cases went with them (Equoria-ytwl7).
     ['calculate', { groomId: 1, horseId: 1 }],
-    ['predict', { groomId: 1, horseId: 1 }],
-    ['recommendations', { horseId: 1 }],
   ])('POST /%s', (path, ids) => {
     it.each(badFactorLists)('rejects environmentalFactors %j with 400', factors => {
       return post(path, {
@@ -80,38 +80,5 @@ describe('compatibility context element types', () => {
         expect(res.status).toBe(400);
       });
     });
-  });
-
-  it('POST /predict rejects an unknown timeOfDay with 400', async () => {
-    const res = await post('predict', {
-      groomId: 1,
-      horseId: 1,
-      context: { taskType, timeOfDay: 'midnight' },
-    });
-    expect(res.status).toBe(400);
-  });
-
-  it('POST /predict rejects a non-string timeOfDay with 400', async () => {
-    const res = await post('predict', {
-      groomId: 1,
-      horseId: 1,
-      context: { taskType, timeOfDay: 3 },
-    });
-    expect(res.status).toBe(400);
-  });
-
-  it('lets well-formed context through validation to the ownership check', async () => {
-    const res = await post('predict', {
-      groomId: 1,
-      horseId: 1,
-      context: {
-        taskType,
-        timeOfDay: 'morning',
-        environmentalFactors: ['quiet', 'familiar'],
-      },
-    });
-    // The groom id is not this user's, so the controller's ownership check answers
-    // 404: validation passed and the request reached it.
-    expect(res.status).toBe(404);
   });
 });
