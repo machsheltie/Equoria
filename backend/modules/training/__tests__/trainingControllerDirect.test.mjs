@@ -43,6 +43,7 @@ import { canTrain, trainHorse, getTrainingStatus, getTrainableHorses } from '../
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -54,6 +55,12 @@ let testHorseAdult;
 let testHorse4Years;
 let testHorseYoung;
 let testHorseRecentTraining;
+
+// Equoria-h40y6: every fixture's cleanup is registered the moment it exists, scoped
+// to this suite's own user and breed ids, so a setup that fails part-way still
+// removes what it created (the old afterAll read testHorseAdult.id and threw before
+// deleting anything, leaking the TrainingTestBreed_* row and its first horse).
+const cleanup = createCleanupTracker();
 
 describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', () => {
   beforeAll(async () => {
@@ -71,6 +78,13 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         money: 5000,
       },
     });
+    const testUserId = testUser.id;
+    // FK order: training logs, then horses (their trainer assignments cascade),
+    // then the breed the horses reference, then the user.
+    cleanup.add(() => prisma.trainingLog.deleteMany({ where: { horse: { userId: testUserId } } }), 'trainingLogs');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: testUserId } }), 'horses');
+    cleanup.add(() => (testBreedId ? prisma.breed.deleteMany({ where: { id: testBreedId } }) : undefined), 'breed');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: testUserId } }), 'user');
 
     // Create test breed (required for foreign key constraint)
     // Use a unique name to avoid collisions with parallel test suites
@@ -193,32 +207,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     });
   });
 
-  afterAll(async () => {
-    // Cleanup test data
-    await prisma.trainingLog.deleteMany({
-      where: {
-        horseId: {
-          in: [testHorseEligible.id, testHorseAdult.id, testHorseYoung.id, testHorseRecentTraining.id],
-        },
-      },
-    });
-
-    await prisma.horse.deleteMany({
-      where: {
-        OR: [{ userId: testUser.id }, { userId: testUser.id }],
-      },
-    });
-
-    await prisma.breed.deleteMany({
-      where: { id: testBreedId },
-    });
-
-    await prisma.user.deleteMany({
-      where: { id: testUser.id },
-    });
-    // Do NOT call prisma.$disconnect() here — the global teardown handles disconnection.
-    // Calling it mid-run disconnects the shared ESM client for all parallel suites.
-  });
+  afterAll(() => cleanup.run(), 60000);
 
   beforeEach(async () => {
     // Reset any state changes between tests
