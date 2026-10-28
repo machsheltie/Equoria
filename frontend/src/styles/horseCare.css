@@ -332,3 +332,30 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* ── Show record line under the horse's name (owner ruling q225) ───── */
+
+.horse-record-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-6);
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+}
+
+.horse-record-line > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.horse-record-line dt {
+  color: var(--text-secondary);
+}
+
+.horse-record-line dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}

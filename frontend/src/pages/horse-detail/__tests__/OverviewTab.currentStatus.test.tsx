@@ -23,6 +23,10 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
  * old heading "Current Status" is now "Horse Details", and the facts from the
  * removed line under the horse's name (Color, Breed — provisional, q206 —
  * Markings, Temperament) sit directly below Age / Date of Birth / Gender.
+ *
+ * Owner rulings 2026-10-28 changed it again: Breed moves above Age (q206, it
+ * was provisionally after Color), and the Color row carries the coat's shade,
+ * "Bay — Dark" (q214).
  */
 
 const HORSE: Horse = {
@@ -73,7 +77,7 @@ describe('OverviewTab Horse Details (Equoria-2w4yo)', () => {
     expect(screen.queryByText('Current Status')).not.toBeInTheDocument();
   });
 
-  it('lists Color, Breed, Markings and Temperament directly below Age, Date of Birth and Gender', async () => {
+  it('lists Breed above Age, and Color, Markings and Temperament below Age, Date of Birth and Gender', async () => {
     overview({ lastShod: null, lastTrainedAt: null, lastGroomed: null });
     renderTab(detailed);
     await screen.findByTestId('last-shod');
@@ -83,11 +87,11 @@ describe('OverviewTab Horse Details (Equoria-2w4yo)', () => {
       .getAllByRole('term')
       .map((dt) => dt.textContent);
     expect(labels).toEqual([
+      'Breed',
       'Age',
       'Date of Birth',
       'Gender',
       'Color',
-      'Breed',
       'Markings',
       'Temperament',
       'Last Shod',
@@ -103,6 +107,12 @@ describe('OverviewTab Horse Details (Equoria-2w4yo)', () => {
     expect(screen.getByTestId('markings-legs')).toHaveTextContent('FL: Sock');
     expect(screen.queryByTestId('markings-panel-title')).not.toBeInTheDocument();
     expect(screen.getByTestId('horse-temperament-value')).toHaveTextContent('Spirited');
+  });
+
+  it('reads the coat shade on the Color row, e.g. "Bay — Dark" (q214)', () => {
+    overview({ lastShod: null, lastTrainedAt: null, lastGroomed: null });
+    renderTab({ ...detailed, phenotype: { colorName: 'Bay', shade: 'dark' } });
+    expect(screen.getByTestId('horse-detail-color')).toHaveTextContent(/^Bay — Dark$/);
   });
 
   it('says "not recorded" for a legacy horse with no colour, markings or temperament', () => {

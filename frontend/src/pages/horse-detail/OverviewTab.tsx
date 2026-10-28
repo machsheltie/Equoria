@@ -16,8 +16,9 @@
  * that sat at the foot of Horse Details is now its own Care Team section with
  * the assigned trainer, groom and rider (CareTeamSection).
  *
- * Show Record (Equoria-b4msy, owner request 2026-10-28): Points, Wins / Places /
- * Shows and Winnings, below Horse Details (ShowRecordSection).
+ * The show record moved under the horse's name (owner ruling q225, 2026-10-28;
+ * ShowRecordLine in HorseProfileCard). Breed sits above Age (q206) and the
+ * Color row carries the coat's shade, "Bay — Dark" (q214).
  */
 
 import React from 'react';
@@ -32,7 +33,6 @@ import { userMessageFor } from '@/lib/http/userMessage';
 import { getBreedName } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import MarkingsPanel from '@/components/horse/MarkingsPanel';
-import ShowRecordSection from './ShowRecordSection';
 import type { Horse } from './HorseDetailPageTypes';
 import '@/styles/horseCare.css';
 
@@ -66,6 +66,16 @@ const CareDateRow: React.FC<{
     </dd>
   </div>
 );
+
+/** "Bay — Dark": the visible colour and its shade (owner ruling q214). */
+function colorWithShade(phenotype: Horse['phenotype']): string {
+  const colorName = phenotype?.colorName;
+  if (!colorName) return 'not recorded';
+  const shade = typeof phenotype?.shade === 'string' ? phenotype.shade.trim() : '';
+  if (!shade) return colorName;
+  const shadeWords = shade.replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return `${colorName} — ${shadeWords}`;
+}
 
 /** Shod more than a week ago, or never: the farrier is overdue. */
 const isShoeOverdue = (lastShod: string | null | undefined): boolean =>
@@ -125,6 +135,9 @@ const OverviewTab: React.FC<{
           </div>
 
           <dl className="horse-status__record">
+            <LedgerRow label="Breed" testId="horse-detail-breed">
+              {getBreedName(horse.breed)}
+            </LedgerRow>
             <LedgerRow label="Age" testId="horse-age">
               {horseAgeWords(horse.age, horse.dateOfBirth)}
             </LedgerRow>
@@ -142,10 +155,7 @@ const OverviewTab: React.FC<{
                 colour. Legacy horses (phenotype: null) never read 'Unknown';
                 'not recorded' is the honest fallback. */}
             <LedgerRow label="Color" testId="horse-detail-color">
-              {horse.phenotype?.colorName ?? 'not recorded'}
-            </LedgerRow>
-            <LedgerRow label="Breed" testId="horse-detail-breed">
-              {getBreedName(horse.breed)}
+              {colorWithShade(horse.phenotype)}
             </LedgerRow>
             <LedgerRow label="Markings" testId="horse-detail-markings">
               <MarkingsPanel markings={horse.markings} inline />
@@ -214,8 +224,6 @@ const OverviewTab: React.FC<{
       </section>
 
       <CareTeamSection horseId={Number(horse.id)} onAssignRider={onAssignRider} />
-
-      <ShowRecordSection horseId={horse.id} />
 
       {horse.traits && horse.traits.length > 0 && (
         <div>

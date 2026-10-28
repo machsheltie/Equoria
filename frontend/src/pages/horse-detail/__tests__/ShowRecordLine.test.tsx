@@ -1,14 +1,20 @@
 /**
- * The horse main page's Show Record (Equoria-b4msy; owner request 2026-10-28):
- * Points (the horse's cumulative Horse Points), Wins / Places / Shows (1st,
- * 2nd and 3rd place finishes) and Winnings (prize money of its results).
+ * The horse's show record (Equoria-b4msy): Win/Place/Show (1st, 2nd and 3rd
+ * place finishes, q224), Winnings (prize money of its results) and Points (its
+ * cumulative Horse Points).
  *
- * Real OverviewTab + ShowRecordSection, hooks and apiClient; MSW only at the
- * HTTP boundary, in the backend's response shapes.
+ * Owner ruling q225 (2026-10-28) changed where and how it reads: right under
+ * the horse's name, before the stats, as one line
+ * "Win/Place/Show: 4/3/1   Winnings: 12,500   Points: 2,350". Old contract: a
+ * "Show Record" section below Care Team in the Overview tab, "4 / 3 / 1".
+ *
+ * Real ShowRecordLine / OverviewTab, hooks and apiClient; MSW only at the HTTP
+ * boundary, in the backend's response shapes.
  */
 
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactNode } from 'react';
 import '@testing-library/jest-dom';
 import { describe, it, expect } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -16,6 +22,8 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/msw/server';
 import { MemoryRouter } from '@/test/utils';
 import OverviewTab from '../OverviewTab';
+import OwnShowRecord from '../ShowRecordLine';
+import HorseProfileCard from '../HorseProfileCard';
 import type { Horse } from '../HorseDetailPageTypes';
 
 const horseId = 41;
@@ -81,28 +89,65 @@ function stubRecord(fail = () => false) {
   );
 }
 
-function renderTab() {
+function renderInto(node: ReactNode) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <MemoryRouter>
-      <QueryClientProvider client={queryClient}>
-        <OverviewTab horse={horse} />
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{node}</QueryClientProvider>
     </MemoryRouter>
   );
 }
 
-describe('Show Record on the horse main page (Equoria-b4msy)', () => {
-  it('shows cumulative Points, Wins / Places / Shows and Winnings', async () => {
+const renderTab = () => renderInto(<OwnShowRecord horseId={horseId} />);
+
+describe('Show record line under the horse name (Equoria-b4msy, q225)', () => {
+  it('reads Win/Place/Show, then Winnings, then Points', async () => {
     stubXp(2350);
     stubRecord();
     renderTab();
     const record = await screen.findByTestId('show-record');
-    expect(within(record).getByText('Points')).toBeInTheDocument();
+    expect(await within(record).findByTestId('record-placings')).toHaveTextContent('4/3/1');
     expect(await within(record).findByTestId('record-points')).toHaveTextContent('2,350');
-    expect(await within(record).findByTestId('record-placings')).toHaveTextContent('4 / 3 / 1');
-    expect(within(record).getByText('Wins / Places / Shows')).toBeInTheDocument();
     expect(within(record).getByTestId('record-winnings')).toHaveTextContent('12,500');
+    expect(
+      within(record)
+        .getAllByRole('term')
+        .map((dt) => dt.textContent)
+    ).toEqual(['Win/Place/Show:', 'Winnings:', 'Points:']);
+  });
+
+  it('sits right under the horse name, before the stats', async () => {
+    stubXp(2350);
+    stubRecord();
+    renderInto(
+      <HorseProfileCard
+        horse={{ ...horse, stats: { speed: 60 } } as unknown as Horse}
+        sireName={null}
+        isEditing={false}
+        editName=""
+        onStartEdit={() => {}}
+        onCancelEdit={() => {}}
+        onChangeEditName={() => {}}
+        refetch={() => {}}
+      />
+    );
+    const name = screen.getByRole('heading', { level: 1 });
+    const record = await screen.findByTestId('show-record');
+    const firstStat = screen.getByText('speed');
+
+    expect(name.compareDocumentPosition(record) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    expect(
+      record.compareDocumentPosition(firstStat) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('is no longer a Show Record section in the Overview tab', () => {
+    stubXp(2350);
+    stubRecord();
+    renderInto(<OverviewTab horse={horse} />);
+    expect(screen.queryByText('Show Record')).toBeNull();
+    expect(screen.queryByTestId('show-record')).toBeNull();
   });
 
   it('while loading and after a failed read the values are an em dash, never a zero, and Try Again reads again', async () => {
@@ -116,7 +161,7 @@ describe('Show Record on the horse main page (Equoria-b4msy)', () => {
     expect(screen.getByTestId('record-winnings')).toHaveTextContent('—');
     fail = false;
     await user.click(within(error).getByRole('button', { name: 'Try Again' }));
-    expect(await screen.findByText('4 / 3 / 1')).toBeInTheDocument();
+    expect(await screen.findByText('4/3/1')).toBeInTheDocument();
     expect(screen.queryByTestId('record-results-error')).toBeNull();
   });
 
@@ -142,7 +187,7 @@ describe('Show Record on the horse main page (Equoria-b4msy)', () => {
       )
     );
     renderTab();
-    expect(await screen.findByText('0 / 0 / 0')).toBeInTheDocument();
+    expect(await screen.findByText('0/0/0')).toBeInTheDocument();
     expect(screen.getByTestId('record-points')).toHaveTextContent('0');
   });
 });

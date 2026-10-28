@@ -3,7 +3,9 @@
  * rename, badges/ribbons, in-foal panel, quick-stats summary).
  * Owner request 2026-10-28 (Equoria-2w4yo): the line under the name that
  * listed breed, color, age, gender, health, temperament and markings is gone;
- * those facts live in the Overview tab's Horse Details ledger.
+ * those facts live in the Overview tab's Horse Details ledger. Owner ruling
+ * q225 (2026-10-28): the show record line (Win/Place/Show, Winnings, Points)
+ * sits right under the name, before the stats.
  * Equoria-kdduk: extracted from HorseDetailPage.tsx.
  *
  * Design-system migration (Equoria-o5hub.20): the identity block (portrait,
@@ -32,6 +34,7 @@ import {
 } from '@/lib/horseNamePolicy';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { getStatColor, getStatIcon } from './statHelpers';
+import OwnShowRecord from './ShowRecordLine';
 import type { Horse } from './HorseDetailPageTypes';
 
 interface HorseProfileCardProps {
@@ -129,6 +132,7 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
   // Shared metadata block rendered inside the EntityHeader metadata slot.
   const identityMetadata = (
     <div className="min-w-0 space-y-1">
+      <OwnShowRecord horseId={horse.id} />
       {/* Badges row */}
       <div className="flex items-center gap-3 flex-wrap">
         {horse.displayedHealth && <HealthBadge band={horse.displayedHealth} showBadHealthWarning />}
