@@ -84,16 +84,9 @@ export function AsidePanel() {
         )}
       </div>
 
-      {/* Recent Activity */}
-      <div className="bg-[var(--glass-bg)] border border-[rgba(200,168,78,0.2)] rounded-[var(--radius-lg)] p-4 [backdrop-filter:blur(10px)_saturate(1.3)_brightness(1.2)] shadow-[0_0_12px_rgba(200,168,78,0.06)]">
-        <h3
-          className="text-[0.85rem] font-semibold text-[var(--text-primary)] mb-3 pb-2 border-b border-[var(--glass-border)]"
-          style={{ fontFamily: 'var(--font-body)' }}
-        >
-          Recent Activity
-        </h3>
-        <p className="text-xs text-[var(--text-muted)]">No recent activity</p>
-      </div>
+      {/* No Recent Activity block (Equoria-xsbit): it always said "No recent
+          activity" with nothing behind it. The player's real activity feed is
+          on her Profile page. */}
     </aside>
   );
 }
