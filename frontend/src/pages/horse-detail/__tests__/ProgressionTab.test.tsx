@@ -5,7 +5,7 @@
  * toward the next stat, a plain line when banked points have earned stats, and
  * Allocate Stats. Discipline Scores: each discipline on its own line with its
  * score and level, from the server. The Horse Points history chart and Recent
- * Gains are gone. (Training History stays for now, owner 2026-10-28.)
+ * Gains are gone, and so is Training History (owner ruling q217, 2026-10-28).
  *
  * Owner ruling q223 (2026-10-28): Allocate Stats is a separate page, linked
  * from here; the picker and its spend/refusal cases moved with it to
@@ -176,5 +176,16 @@ describe('Progression: Discipline Scores (Equoria-a0fim)', () => {
     await screen.findByTestId('discipline-score-Dressage');
     expect(screen.queryByText('Horse Points Progression')).toBeNull();
     expect(screen.queryByText('Recent Gains')).toBeNull();
+  });
+
+  // Owner ruling q217 (2026-10-28): Last Trained / Last Groomed stay in Horse
+  // Details; the Training History section on Progression is removed.
+  it('has no Training History section', async () => {
+    stubXp({ currentXP: 0, availableStatPoints: 0 });
+    stubScores();
+    renderTab();
+    await screen.findByTestId('discipline-score-Dressage');
+    expect(screen.queryByTestId('score-progression-section')).toBeNull();
+    expect(screen.queryByText(/training history/i)).toBeNull();
   });
 });
