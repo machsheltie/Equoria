@@ -15,7 +15,9 @@
  * POST /foals/:id/reveal-traits, /traits/batch-discover and
  * /trait-discovery/discover/batch; those routes were removed by Equoria-gu8jk
  * (owner ruling 2026-10-20: players never reveal traits), so the cases went
- * with them.
+ * with them. The herd genetics report cases (population-analysis,
+ * diversity-report) went with those routes (owner ruling q144, 2026-10-28,
+ * Equoria-8grnh); removedHerdGeneticsRoutes.integration pins their 404.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -232,16 +234,6 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
       expect(traitSummary.traitsByCategory).toMatchObject({ physical: 1, boldness: 0, empathy: 0 });
       expect(flagInheritanceScore.flags).toMatchObject({ physical: 1, boldness: 0, empathy: 0 });
       expect(flagInheritanceScore.dominantCategories).toEqual(['physical']);
-    });
-
-    it('POST /genetics/population-analysis names no hidden trait', async () => {
-      const res = await post('/api/v1/genetics/population-analysis', { horseIds: [foal.id] });
-      expectNoHiddenNames(res);
-    });
-
-    it('GET /genetics/diversity-report/:userId names no hidden trait', async () => {
-      const res = await get(`/api/v1/genetics/diversity-report/${user.id}`);
-      expectNoHiddenNames(res);
     });
   });
 

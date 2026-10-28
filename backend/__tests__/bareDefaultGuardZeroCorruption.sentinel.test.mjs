@@ -9,7 +9,7 @@
  *   horse.bondScore   || 50    -> an unbonded horse is read as neutral-50
  *   stallion.speed    || 50    -> an undeveloped stat is read as average
  *
- * Two arms, cross-module (utils + grooms + horses + breeding):
+ * Two arms, cross-module (utils + grooms + horses):
  *   1. REAL-DB behavioural arms: a horse row planted with 0 (not null, not
  *      undefined — the state where broken and fixed readers differ) flows
  *      through the live readers and must come out as 0.
@@ -35,8 +35,6 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { createTestHorse } from './helpers/createTestHorse.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { getDiscoveryProgress } from '../utils/traitDiscovery.mjs';
-import { assessBreedingPairCompatibility } from '../modules/breeding/services/genetics/breedingCompatibility.mjs';
-import { calculatePairwiseDistance } from '../modules/breeding/services/genetics/geneticDiversityMetrics.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -49,8 +47,6 @@ describe('Equoria-4maxb — legitimate 0 on NOT NULL Horse columns survives the 
   const horseIds = [];
   let userId;
   let calmUnbondedId;
-  let stallionId;
-  let mareId;
 
   beforeAll(async () => {
     const uniq = randomBytes(8).toString('hex');
@@ -67,7 +63,6 @@ describe('Equoria-4maxb — legitimate 0 on NOT NULL Horse columns survives the 
     userId = user.id;
 
     const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
-    const zeroStats = { speed: 0, stamina: 0, agility: 0, intelligence: 0 };
 
     const calmUnbonded = await createTestHorse(
       prisma,
@@ -82,34 +77,6 @@ describe('Equoria-4maxb — legitimate 0 on NOT NULL Horse columns survives the 
       horseIds,
     );
     calmUnbondedId = calmUnbonded.id;
-
-    const stallion = await createTestHorse(
-      prisma,
-      {
-        name: `TestFixture-4maxb-stallion-${uniq}`,
-        sex: 'Stallion',
-        dateOfBirth: fiveYearsAgo,
-        age: 5,
-        userId,
-        ...zeroStats,
-      },
-      horseIds,
-    );
-    stallionId = stallion.id;
-
-    const mare = await createTestHorse(
-      prisma,
-      {
-        name: `TestFixture-4maxb-mare-${uniq}`,
-        sex: 'Mare',
-        dateOfBirth: fiveYearsAgo,
-        age: 5,
-        userId,
-        ...zeroStats,
-      },
-      horseIds,
-    );
-    mareId = mare.id;
 
     // Scoped, fail-loud cleanup: horses (by the ids this suite created) before
     // the user (Horse.userId is onDelete:Restrict).
@@ -138,32 +105,6 @@ describe('Equoria-4maxb — legitimate 0 on NOT NULL Horse columns survives the 
     expect(met).not.toContain('HIGH_BOND');
     expect(met).not.toContain('PERFECT_CARE');
   }, 30000);
-
-  it('breeding compatibility averages undeveloped (0) parent stats to 0, not to 50', async () => {
-    const result = await assessBreedingPairCompatibility(stallionId, mareId);
-
-    // Defect: `stallion.speed || 50` etc. predicted an average-stat foal from
-    // two undeveloped parents.
-    expect(result.expectedTraits.expectedStats).toEqual({
-      speed: 0,
-      stamina: 0,
-      agility: 0,
-      intelligence: 0,
-    });
-  }, 30000);
-});
-
-// ── Arm 1b: pure reader in the same class ──────────────────────────────────
-
-describe('Equoria-4maxb — calculatePairwiseDistance keeps a 0 stat at 0', () => {
-  it('distance between an all-0 horse and an all-100 horse is the full stat distance', () => {
-    const undeveloped = { speed: 0, stamina: 0, agility: 0, intelligence: 0 };
-    const maxed = { speed: 100, stamina: 100, agility: 100, intelligence: 100 };
-    // No traits → trait distance 0; stat distance (4 × 1.0) / 4 = 1.0;
-    // combined (0 + 1.0) / 2 = 0.5. The defective `horse[stat] || 50` read
-    // the undeveloped horse as all-50 and produced 0.25.
-    expect(calculatePairwiseDistance(undeveloped, maxed)).toBe(0.5);
-  });
 });
 
 // ── Arm 2: grep sentinel over the Class-1 production files ─────────────────
@@ -206,16 +147,14 @@ const CLASS_1_FILES = [
   // horseOverviewController into the application query layer; keep both
   // halves of the original file under the guard.
   'app/queries/horseOverviewQuery.mjs',
-  'modules/breeding/services/genetics/breedingCompatibility.mjs',
-  'modules/breeding/services/genetics/geneticDiversityMetrics.mjs',
-  'modules/breeding/services/genetics/recommendationGenerators.mjs',
 ];
 
 const COLUMN_ALT = NOT_NULL_HORSE_COLUMNS.join('|');
 // `obj.col || <non-zero>` and `obj?.col || <non-zero>`.
 const DOTTED_PATTERN = new RegExp(`\\b\\w+(?:\\??\\.\\w+)*\\??\\.(?:${COLUMN_ALT})\\s*\\|\\|\\s*[1-9]\\d*\\b`, 'g');
-// `obj[stat] || <non-zero>` — the computed-member form found at
-// geneticDiversityMetrics.calculatePairwiseDistance (index named stat*).
+// `obj[stat] || <non-zero>` — the computed-member form once found in the herd
+// genetics distance reader (index named stat*; removed with the herd reports,
+// Equoria-8grnh). The detector keeps covering the form.
 const COMPUTED_PATTERN = /\b\w+\[\s*stat\w*\s*\]\s*\|\|\s*[1-9]\d*\b/g;
 
 function findZeroCorruptingGuards(source) {

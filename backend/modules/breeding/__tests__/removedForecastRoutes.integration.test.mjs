@@ -16,8 +16,8 @@
  * of these requests reached its handler (200, 400 or a handler-body 404), so the
  * `Route not found` assertion fails there.
  *
- * The herd-level routes that stayed (population-analysis, optimal-breeding) keep
- * the owner-only rule: a stud stallion the caller does not own is a 404.
+ * The herd-level genetics reports are removed too (owner ruling q144, 2026-10-28);
+ * their 404s are pinned in removedHerdGeneticsRoutes.integration.test.mjs.
  *
  * Real DB, real HTTP, real CSRF, scoped fail-loud fixtures.
  */
@@ -100,17 +100,5 @@ describe('foal-outcome forecast routes are removed (Equoria-8grnh)', () => {
       expect(res.status).toBe(404);
       expect(res.body).toMatchObject({ success: false, message: 'Route not found' });
     });
-  });
-
-  it('the herd-level routes that stayed keep the owner-only rule: a stud stallion the caller does not own is a 404', async () => {
-    const results = await Promise.all([
-      sendJson('post', '/api/v1/genetics/population-analysis', mareOwner.token, { horseIds: [stud.id, mare.id] }),
-      sendJson('post', '/api/v1/genetics/optimal-breeding', mareOwner.token, { horseIds: [stud.id, mare.id] }),
-    ]);
-    for (const res of results) {
-      expect(res.status).toBe(404);
-      expect(res.body).toMatchObject({ success: false });
-      expect(res.body.message).not.toBe('Route not found');
-    }
   });
 });

@@ -56,7 +56,6 @@ import competitionResultsRoutes from '../modules/competition/routes/competitionR
 import showRoutes from '../modules/competition/shows/showRoutes.mjs';
 import foalRoutes from '../modules/breeding/routes/foalRoutes.mjs';
 import studBookingRoutes from '../modules/breeding/routes/studBookingRoutes.mjs';
-import advancedBreedingGeneticsRoutes from '../modules/breeding/routes/advancedBreedingGeneticsRoutes.mjs';
 import traitRoutes from '../modules/traits/routes/traitRoutes.mjs';
 import traitDiscoveryRoutes from '../modules/traits/routes/traitDiscoveryRoutes.mjs';
 import epigeneticTraitRoutes from '../modules/traits/routes/epigeneticTraitRoutes.mjs';
@@ -254,7 +253,6 @@ export function buildRouters() {
   // Advanced epigenetic and genetics features
   authRouter.use('/', advancedEpigeneticRoutes); // Mounts horse-specific routes at /horses/:id/...
   authRouter.use('/', enhancedReportingRoutes); // Enhanced reporting endpoints
-  authRouter.use('/', advancedBreedingGeneticsRoutes); // Advanced breeding mechanics
 
   // Performance optimization and environmental systems
   // Equoria-rvmse (SECURITY P1): /optimization and /memory expose operational
