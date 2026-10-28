@@ -25,7 +25,8 @@ import React from 'react';
 import { formatDate } from '@/lib/formatDate';
 import { gameDayIndex } from '@/lib/gameTime';
 import { horseAgeWords } from '@/lib/horseAgeWords';
-import CareTeamSection from './CareTeamSection';
+import CareTeamSection, { VisitorCareTeam } from './CareTeamSection';
+import { useHorseVisitData } from './horseVisitContext';
 import { InlineError } from '@/components/ui/state';
 import { HealthLevelBar } from '@/components/horse/HealthLevelBar';
 import { useHorseCareStatus } from '@/hooks/api/useHorseCareStatus';
@@ -77,8 +78,11 @@ const OverviewTab: React.FC<{
   onOpenTemperamentReference?: () => void;
   onAssignRider?: () => void;
 }> = ({ horse, onOpenTemperamentReference, onAssignRider }) => {
-  const careStatus = useHorseCareStatus(Number(horse.id));
-  const care = careStatus.data;
+  // Visitor mode (q205): the care dates are the owner's read; a visitor's page
+  // shows the rest of Horse Details and the Care Team from the visit.
+  const visit = useHorseVisitData();
+  const careStatus = useHorseCareStatus(visit ? 0 : Number(horse.id));
+  const care = visit ? undefined : careStatus.data;
 
   return (
     <div className="space-y-6" data-testid="horse-detail-overview">
@@ -195,12 +199,12 @@ const OverviewTab: React.FC<{
             )}
           </dl>
         </div>
-        {careStatus.isPending && (
+        {!visit && careStatus.isPending && (
           <p className="fantasy-caption text-[var(--text-muted)] mt-3" role="status">
             Loading shoeing, training and grooming dates…
           </p>
         )}
-        {careStatus.isError && (
+        {!visit && careStatus.isError && (
           <div className="mt-3 flex items-center gap-3" data-testid="care-status-error">
             <InlineError message={userMessageFor(careStatus.error).message} />
             <button
@@ -214,7 +218,11 @@ const OverviewTab: React.FC<{
         )}
       </section>
 
-      <CareTeamSection horseId={Number(horse.id)} onAssignRider={onAssignRider} />
+      {visit ? (
+        <VisitorCareTeam careTeam={visit.careTeam ?? null} />
+      ) : (
+        <CareTeamSection horseId={Number(horse.id)} onAssignRider={onAssignRider} />
+      )}
 
       {horse.traits && horse.traits.length > 0 && (
         <div>

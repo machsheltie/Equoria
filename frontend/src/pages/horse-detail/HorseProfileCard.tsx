@@ -34,7 +34,8 @@ import {
 } from '@/lib/horseNamePolicy';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { getStatColor, getStatIcon } from './statHelpers';
-import OwnShowRecord from './ShowRecordLine';
+import OwnShowRecord, { ShowRecordLine } from './ShowRecordLine';
+import { useHorseVisitData } from './horseVisitContext';
 import type { Horse } from './HorseDetailPageTypes';
 
 interface HorseProfileCardProps {
@@ -59,6 +60,9 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
   refetch,
 }) => {
   const renameHorseMutation = useRenameHorse();
+  // Visitor mode (q205): the same card, read-only — no rename, and the show
+  // record comes from the visit.
+  const visit = useHorseVisitData();
   const [renameError, setRenameError] = React.useState<string | null>(null);
 
   // Focus goes back to the pencil when the form closes, whether she saved or
@@ -132,7 +136,16 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
   // Shared metadata block rendered inside the EntityHeader metadata slot.
   const identityMetadata = (
     <div className="min-w-0 space-y-1">
-      <OwnShowRecord horseId={horse.id} />
+      {visit ? (
+        <ShowRecordLine record={visit.showRecord ?? {}} />
+      ) : (
+        <OwnShowRecord horseId={horse.id} />
+      )}
+      {visit?.owner && (
+        <p className="fantasy-caption text-[var(--text-secondary)]" data-testid="horse-owner-line">
+          Owned by {visit.owner.username}
+        </p>
+      )}
       {/* Badges row */}
       <div className="flex items-center gap-3 flex-wrap">
         {horse.displayedHealth && <HealthBadge band={horse.displayedHealth} showBadHealthWarning />}
@@ -242,7 +255,9 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
           the edit action is hidden (the form carries its own cancel/save). */}
       <EntityHeader
         name={horse.name}
-        titleSlot={isEditing ? renameForm : horseIsUnnamed ? unnamedTitle : undefined}
+        titleSlot={
+          visit ? undefined : isEditing ? renameForm : horseIsUnnamed ? unnamedTitle : undefined
+        }
         backLink={{ to: '/stable', label: 'Back to Horse List' }}
         className="py-0"
         image={
@@ -260,7 +275,7 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
         }
         metadata={identityMetadata}
         actions={
-          isEditing ? undefined : (
+          isEditing || visit ? undefined : (
             <IconButton
               ref={pencilRef}
               type="button"

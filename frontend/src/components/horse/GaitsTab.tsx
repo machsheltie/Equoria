@@ -11,7 +11,8 @@
 
 import { userMessageFor } from '@/lib/http/userMessage';
 import { AlertCircle } from 'lucide-react';
-import { useHorseGaits } from '@/hooks/api/useGaits';
+import { useHorseGaits, type HorseGaitsResponse } from '@/hooks/api/useGaits';
+import { useHorseVisitData } from '@/pages/horse-detail/horseVisitContext';
 
 export interface GaitsTabProps {
   horseId: number;
@@ -59,7 +60,17 @@ const GaitRow = ({ label, score, testId }: GaitRowProps) => (
 );
 
 const GaitsTab = ({ horseId }: GaitsTabProps) => {
-  const { data, isLoading, error, refetch } = useHorseGaits(horseId);
+  // Visitor mode (q205): the gait scores come from the visit.
+  const visit = useHorseVisitData();
+  const own = useHorseGaits(visit ? '' : horseId);
+  const data: HorseGaitsResponse | null | undefined = visit
+    ? visit.gaitScores
+      ? ({ gaitScores: visit.gaitScores } as HorseGaitsResponse)
+      : null
+    : own.data;
+  const isLoading = !visit && own.isLoading;
+  const error = visit ? null : own.error;
+  const refetch = own.refetch;
 
   if (isLoading) {
     return (

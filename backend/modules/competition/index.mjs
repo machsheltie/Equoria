@@ -26,6 +26,9 @@ export {
   TEMPERAMENT_MATRIX,
   temperamentPercent,
 } from './rules/disciplineRules.mjs';
+// A horse's show ledger, paged: the visitor horse page reads it through
+// app/queries/horseVisitRoutes.mjs (q205: visitors see everything, read-only).
+export { getHorseShowResults } from './services/competitionResultRecord.mjs';
 export { isValidConformationClass } from './services/conformationShowScoring.mjs';
 // executeClosedShows is the overnight show executor: a service with an optional
 // Express (req, res) signature, called by the nightly jobs

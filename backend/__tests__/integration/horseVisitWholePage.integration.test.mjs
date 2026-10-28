@@ -47,6 +47,12 @@ describe('GET /horses/:id/visit shows the whole horse page (q205)', () => {
         temperament: 'Willing',
         dateOfBirth: gameCalendarDate(new Date(), -40),
         horseXp: 2350,
+        speed: 61,
+        focus: 47,
+        bondScore: 33,
+        conformationScores: { head: 70, neck: 72, legs: 55, overallConformation: 66 },
+        gaitScores: { walk: 60, trot: 62, canter: 64, gallop: 66, gaiting: null },
+        disciplineScores: { Dressage: 12 },
         breed: { connect: { id: breed.id } },
         user: { connect: { id: owner.user.id } },
         epigeneticModifiers: {
@@ -173,5 +179,42 @@ describe('GET /horses/:id/visit shows the whole horse page (q205)', () => {
     expect(body).not.toContain('rarity');
     expect(view).not.toHaveProperty('colorGenotype');
     expect(view).not.toHaveProperty('userId');
+  });
+
+  // Coordinator directive 2026-10-28 (q205): the visitor page is the owner's
+  // page read-only, so the visit carries every section's data.
+  it('carries every visitor tab: all stats, disciplines, conformation, gaits, health, offspring', async () => {
+    const res = await request(app)
+      .get(`/api/v1/horses/${horse.id}/visit`)
+      .set('Authorization', `Bearer ${visitor.token}`);
+
+    expect(res.status).toBe(200);
+    const view = res.body.data;
+    expect(Object.keys(view.stats)).toHaveLength(12);
+    expect(view.stats).toMatchObject({ speed: 61, focus: 47 });
+    expect(view.conformation).toEqual({ head: 70, neck: 72, legs: 55, overallConformation: 66 });
+    expect(view.gaitScores).toEqual({ walk: 60, trot: 62, canter: 64, gallop: 66, gaiting: null });
+    expect(view.disciplineScores).toEqual({ Dressage: 12 });
+    expect(view.bondScore).toBe(33);
+    expect(typeof view.displayedHealth).toBe('string');
+    expect(typeof view.feedHealth).toBe('string');
+    expect(view.breedId).toBe(breed.id);
+    expect(view.offspring).toEqual([]);
+  });
+
+  it('pages the show ledger for a visitor at /visit/show-results, and 404s a missing horse', async () => {
+    const res = await request(app)
+      .get(`/api/v1/horses/${horse.id}/visit/show-results?page=1&limit=50`)
+      .set('Authorization', `Bearer ${visitor.token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(5);
+    expect(res.body.data.map(row => row.placement).sort()).toEqual([1, 1, 2, 3, 5]);
+    expect(res.body.pagination).toMatchObject({ totalRecords: 5, totalPages: 1 });
+
+    const missing = await request(app)
+      .get('/api/v1/horses/2147483000/visit/show-results')
+      .set('Authorization', `Bearer ${visitor.token}`);
+    expect(missing.status).toBe(404);
   });
 });

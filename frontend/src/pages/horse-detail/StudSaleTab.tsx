@@ -15,6 +15,8 @@ import StudStanding from './stud/StudStanding';
 import BreedToStallion from './stud/BreedToStallion';
 import BreedingRequests from './stud/BreedingRequests';
 import { maxBreedingAge, minBreedingAge } from './stud/studBreeding';
+import VisitorStudSale from './stud/VisitorStudSale';
+import { useHorseVisitData } from './horseVisitContext';
 import '@/styles/studBreeding.css';
 
 interface StudSaleTabProps {
@@ -30,6 +32,10 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
   onDelist,
   isDelisting,
 }) => {
+  // Visitor mode (q205): the same tab, read-only; the visitor's own actions
+  // (breed to a stallion at stud, answer a request, buy a listed horse)
+  // replace the owner's stud and sale controls.
+  const visit = useHorseVisitData();
   const isMale =
     horse.gender?.toLowerCase() === 'stallion' || horse.gender?.toLowerCase() === 'male';
   const isFemale =
@@ -112,7 +118,9 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
         </div>
       )}
 
-      {isMale && (
+      {visit && <VisitorStudSale horse={visit} />}
+
+      {!visit && isMale && (
         <div data-testid="stud-area">
           <StudStanding
             horseId={horse.id}
@@ -136,41 +144,45 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
         </div>
       )}
 
-      {isFemale && <BreedingRequests side="mare" horseId={horse.id} horseName={horse.name} />}
+      {!visit && isFemale && (
+        <BreedingRequests side="mare" horseId={horse.id} horseName={horse.name} />
+      )}
 
       {/* Listing Type Buttons */}
-      <div className="space-y-3">
-        {!isFemale && !isMale && (
-          <div className="p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)]">
-            <p className="fantasy-body text-[var(--text-secondary)] text-sm italic">
-              Stud listing is only available for stallions.
-            </p>
-          </div>
-        )}
+      {!visit && (
+        <div className="space-y-3">
+          {!isFemale && !isMale && (
+            <div className="p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)]">
+              <p className="fantasy-body text-[var(--text-secondary)] text-sm italic">
+                Stud listing is only available for stallions.
+              </p>
+            </div>
+          )}
 
-        <button
-          type="button"
-          onClick={horse.forSale ? onDelist : onListForSale}
-          disabled={isDelisting}
-          className="w-full flex items-center justify-between p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)] text-left hover:border-[var(--glass-hover)] transition-colors"
-          title={horse.forSale ? 'Remove marketplace listing' : 'List horse for sale'}
-          data-testid="sale-listing-btn"
-        >
-          <div>
-            <p className="font-semibold text-[var(--text-primary)] text-sm">
-              {horse.forSale ? 'Remove Sale Listing' : 'List for Sale'}
-            </p>
-            <p className="fantasy-body text-[var(--text-secondary)] text-xs mt-0.5">
-              {horse.forSale
-                ? 'Take this horse off the Marketplace'
-                : `Place ${horse.name} on the Marketplace for other players to purchase`}
-            </p>
-          </div>
-          <span className="text-xs fantasy-caption text-[var(--text-secondary)]">
-            {isDelisting ? 'Saving...' : horse.forSale ? 'Delist' : 'Set Price'}
-          </span>
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={horse.forSale ? onDelist : onListForSale}
+            disabled={isDelisting}
+            className="w-full flex items-center justify-between p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)] text-left hover:border-[var(--glass-hover)] transition-colors"
+            title={horse.forSale ? 'Remove marketplace listing' : 'List horse for sale'}
+            data-testid="sale-listing-btn"
+          >
+            <div>
+              <p className="font-semibold text-[var(--text-primary)] text-sm">
+                {horse.forSale ? 'Remove Sale Listing' : 'List for Sale'}
+              </p>
+              <p className="fantasy-body text-[var(--text-secondary)] text-xs mt-0.5">
+                {horse.forSale
+                  ? 'Take this horse off the Marketplace'
+                  : `Place ${horse.name} on the Marketplace for other players to purchase`}
+              </p>
+            </div>
+            <span className="text-xs fantasy-caption text-[var(--text-secondary)]">
+              {isDelisting ? 'Saving...' : horse.forSale ? 'Delist' : 'Set Price'}
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

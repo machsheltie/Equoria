@@ -29,13 +29,16 @@ import type { Horse } from './HorseDetailPageTypes';
 import { userMessageFor } from '../../lib/http/userMessage';
 import TraitDiscovery from './genetics/TraitDiscovery';
 import ColorGeneticsSection from './genetics/ColorGeneticsSection';
+import { visitTraitDiscovery } from './genetics/visitTraitDiscovery';
+import { useHorseVisitData } from './horseVisitContext';
+import type { HorseVisit } from '@/lib/api/studs';
 
 /** Normalize a trait name/key to a comparable token. */
 function normalizeTraitToken(value: string): string {
   return value.toLowerCase().replace(/[\s_-]+/g, '');
 }
 
-const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
+const OwnerGeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   // Revealed traits only: the backend names no unrevealed trait (Equoria-6dace).
   const { data: classification, isLoading, error } = useHorseTraits(horse.id);
 
@@ -111,6 +114,41 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       />
     </div>
   );
+};
+
+const noGlow: ReadonlySet<string> = new Set();
+const sameToken = (value: string) => value;
+
+/**
+ * A visitor's Genetics tab (q205): the same Trait Discovery chips, read from
+ * the visit — revealed and dormant traits by name, hidden ones as a count. The
+ * colour genetics are the genotype, which no visitor is shown.
+ */
+const VisitorGeneticsTab: React.FC<{ visit: HorseVisit }> = ({ visit }) => {
+  const discovery = visitTraitDiscovery(visit);
+  const [selectedTrait, setSelectedTrait] = useState<HorseTrait | null>(null);
+  return (
+    <div className="space-y-8">
+      <TraitDiscovery
+        revealed={discovery.revealed}
+        dormant={discovery.dormant}
+        hiddenCount={discovery.hiddenCount}
+        glowTokens={noGlow}
+        normalize={sameToken}
+        onSelect={setSelectedTrait}
+      />
+      <LiveTraitDetailModal
+        isOpen={selectedTrait !== null}
+        onClose={() => setSelectedTrait(null)}
+        trait={selectedTrait}
+      />
+    </div>
+  );
+};
+
+const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
+  const visit = useHorseVisitData();
+  return visit ? <VisitorGeneticsTab visit={visit} /> : <OwnerGeneticsTab horse={horse} />;
 };
 
 export default GeneticsTab;

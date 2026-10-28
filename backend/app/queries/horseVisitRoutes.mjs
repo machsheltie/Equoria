@@ -18,6 +18,9 @@ import {
   rejectPollutedRequest,
 } from '../../modules/horses/routes/_validators.mjs';
 import logger from '../../utils/logger.mjs';
+import { parsePaginationParams, buildPaginatedResponse } from '../../utils/paginationHelper.mjs';
+import { getHorseShowResults } from '../../modules/competition/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import { getHorseVisit } from './horseVisitQuery.mjs';
 
 const router = express.Router();
@@ -37,6 +40,35 @@ router.get(
       return res.json({ success: true, data: visit });
     } catch (error) {
       logger.error(`[horseVisitRoutes GET /:id/visit] ${error.message}`);
+      return res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  },
+);
+
+/**
+ * GET /horses/:id/visit/show-results?page&limit — the horse's show ledger for
+ * the visitor page's Show Results tab (q205: visitors see everything on a
+ * horse's page, read-only). The same rows and paging as the owner's
+ * GET /competition/results/horse/:horseId; 404 when there is no such horse.
+ */
+router.get(
+  '/:id/visit/show-results',
+  queryRateLimiter,
+  authenticateToken,
+  rejectPollutedRequest,
+  validateHorseId,
+  async (req, res) => {
+    try {
+      const horseId = Number.parseInt(req.params.id, 10);
+      const horse = await prisma.horse.findUnique({ where: { id: horseId }, select: { id: true } });
+      if (!horse) {
+        return res.status(404).json({ success: false, message: 'Horse not found', status: 'fail' });
+      }
+      const { page, limit, skip } = parsePaginationParams(req, { defaultLimit: 50, maxLimit: 100 });
+      const { rows, total } = await getHorseShowResults(horseId, { skip, take: limit });
+      return buildPaginatedResponse(res, rows, { page, limit, total });
+    } catch (error) {
+      logger.error(`[horseVisitRoutes GET /:id/visit/show-results] ${error.message}`);
       return res.status(500).json({ success: false, message: 'Internal server error' });
     }
   },

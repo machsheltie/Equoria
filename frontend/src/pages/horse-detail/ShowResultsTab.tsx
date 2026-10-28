@@ -19,6 +19,7 @@ import Currency from '@/components/ui/Currency';
 import { formatDate } from '@/lib/formatDate';
 import { competitionDisciplineLabel } from '@/lib/utils/training-utils';
 import { useHorseShowResults, type HorseShowResultRow } from '@/lib/api/competitionResults';
+import { useHorseVisitData } from './horseVisitContext';
 import './ShowResultsTab.css';
 
 const UNKNOWN = '—';
@@ -100,7 +101,12 @@ interface ShowResultsTabProps {
 
 export default function ShowResultsTab({ horseId }: ShowResultsTabProps) {
   const [page, setPage] = useState(1);
-  const { data, isPending, isError, refetch, isFetching } = useHorseShowResults(horseId, page);
+  const asVisitor = useHorseVisitData() !== null;
+  const { data, isPending, isError, refetch, isFetching } = useHorseShowResults(
+    horseId,
+    page,
+    asVisitor
+  );
 
   if (isPending) {
     return (

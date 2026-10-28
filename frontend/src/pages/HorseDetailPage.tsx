@@ -38,10 +38,12 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useHorse } from '../hooks/api/useHorses';
-// Equoria-q4uem.9 (owner ruling q90): another player's horse opens this same
-// page in visitor mode — public facts and revealed traits only.
+// Visitor mode (owner ruling q205; coordinator directive 2026-10-28): another
+// player's horse opens this SAME page, formatted the same, read-only, with the
+// visitor tabs only. The sections read the visit through HorseVisitContext.
 import { useHorseVisit } from '../hooks/api/useStuds';
-import HorseVisitorView from './horse-detail/stud/HorseVisitorView';
+import { HorseVisitContext } from './horse-detail/horseVisitContext';
+import { normalizeHorseVisit } from './horse-detail/normalizeHorseVisit';
 // Canonical Radix-backed tabs (Equoria-o5hub.11, DECISIONS.md §6)
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import ConformationTab from '../components/horse/ConformationTab';
@@ -90,6 +92,17 @@ const lazyTabFallback = (
   </div>
 );
 
+const visitorTabs: ReadonlySet<TabType> = new Set<TabType>([
+  'overview',
+  'disciplines',
+  'genetics',
+  'conformation',
+  'gaits',
+  'show-results',
+  'pedigree',
+  'stud-sale',
+]);
+
 const HorseDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -124,6 +137,10 @@ const HorseDetailPage: React.FC = () => {
   // 0 here means "not pregnant or sire not yet known — skip the fetch."
   const pregnancySireId = horseRaw?.pregnancySireId ?? 0;
   const { data: sireHorse } = useHorse(Number(pregnancySireId) || 0);
+
+  // Visitor mode only for a horse that is not hers: a visit that says the
+  // horse is her own never opens the read-only page (it is an error below).
+  const visitData = notOwn && visit.data && !visit.data.isOwn ? visit.data : null;
 
   // Loading state — detail page skeleton (portrait left + tab area right)
   if (isLoading || (notOwn && visit.isPending)) {
@@ -162,17 +179,7 @@ const HorseDetailPage: React.FC = () => {
   // through to ErrorCard (Equoria-o5hub ratchet: retryLabel/goHomeLabel
   // passthrough), so this flow keeps its "Retry" / "Back to Horse List" copy.
   // Retry is omitted for the 404 case (retrying a non-existent id is a no-op).
-  if (notOwn && visit.data) {
-    return (
-      <div className="min-h-screen">
-        <PageContainer variant="wide">
-          <HorseVisitorView horse={visit.data} />
-        </PageContainer>
-      </div>
-    );
-  }
-
-  if (isError || !horseRaw) {
+  if (!visitData && (isError || !horseRaw)) {
     // A horse that is not hers was looked up as a visitor: only that read's
     // own 404 means the horse does not exist.
     const isNotFound = notOwn
@@ -202,10 +209,11 @@ const HorseDetailPage: React.FC = () => {
 
   // Normalize horse data — produces a NEW object so the React Query cache is never mutated.
   // Shadows `horseRaw` so all downstream JSX references stay unchanged.
-  const horse: Horse = normalizeHorseDetail(horseRaw);
+  const horse: Horse = visitData ? normalizeHorseVisit(visitData) : normalizeHorseDetail(horseRaw!);
+  const isVisitor = visitData !== null;
 
   // Tab configuration
-  const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
+  const allTabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Overview', icon: <Star className="w-4 h-4" /> },
     { id: 'disciplines', label: 'Disciplines', icon: <Trophy className="w-4 h-4" /> },
     { id: 'genetics', label: 'Genetics', icon: <Users className="w-4 h-4" /> },
@@ -222,183 +230,198 @@ const HorseDetailPage: React.FC = () => {
     { id: 'tack', label: 'Tack', icon: <ShoppingCart className="w-4 h-4" /> },
     { id: 'stud-sale', label: 'Stud / Sale', icon: <Tag className="w-4 h-4" /> },
   ];
+  // A visitor sees these tabs only (owner, 2026-10-28); Progression, Training,
+  // Health & Vet and Tack stay the owner's.
+  const tabs = isVisitor ? allTabs.filter((tab) => visitorTabs.has(tab.id)) : allTabs;
 
   return (
-    /* No bottom padding here: while HorseActionBar is registered, the
+    <HorseVisitContext.Provider value={visitData}>
+      {/* No bottom padding here: while HorseActionBar is registered, the
        DashboardLayout contextual slot reserves nav+actions space via
        --content-bottom-reserve (Equoria-o5hub.5) — the old pb-20 was the
-       manual clearance for the bar's former fixed positioning. */
-    <div className="min-h-screen">
-      {/* PageContainer wide (D §1): replaces the local max-w-7xl + px wrapper —
+       manual clearance for the bar's former fixed positioning. */}
+      <div className="min-h-screen">
+        {/* PageContainer wide (D §1): replaces the local max-w-7xl + px wrapper —
           horizontal gutters belong to the DashboardLayout shell. */}
-      <PageContainer variant="wide">
-        {/* Header — the back link now renders inside HorseProfileCard's
+        <PageContainer variant="wide">
+          {/* Header — the back link now renders inside HorseProfileCard's
             EntityHeader (D-01 identity header). */}
-        <div className="mb-6">
-          {/* Horse Profile Card */}
-          <HorseProfileCard
-            horse={horse}
-            sireName={sireHorse?.name ?? null}
-            isEditing={isEditing}
-            editName={editName}
-            onStartEdit={() => {
-              // Equoria-4fnro: an unnamed horse opens an EMPTY field.
-              setEditName(isUnnamed(horse.name) ? '' : horse.name);
-              setIsEditing(true);
-            }}
-            onCancelEdit={() => setIsEditing(false)}
-            onChangeEditName={setEditName}
-            refetch={refetch}
-          />
-        </div>
+          <div className="mb-6">
+            {/* Horse Profile Card */}
+            <HorseProfileCard
+              horse={horse}
+              sireName={sireHorse?.name ?? null}
+              isEditing={isEditing}
+              editName={editName}
+              onStartEdit={() => {
+                // Equoria-4fnro: an unnamed horse opens an EMPTY field.
+                setEditName(isUnnamed(horse.name) ? '' : horse.name);
+                setIsEditing(true);
+              }}
+              onCancelEdit={() => setIsEditing(false)}
+              onChangeEditName={setEditName}
+              refetch={refetch}
+            />
+          </div>
 
-        {/* Quick Actions Bar — the ONE sanctioned exception to D-08 / the One Gold
+          {/* Quick Actions Bar — the ONE sanctioned exception to D-08 / the One Gold
             Action Rule: Train and Enter Competition are both gold primaries here,
             because a horse's two co-equal destinations are training and competing
             and ranking one above the other misrepresents the product. View Parents
             stays secondary, and a third gold on this bar would still be wrong.
             Recorded in DESIGN.md under The One Gold Action Rule (user directive,
             confirmed 2026-08-14) — do not "fix" this to a single primary. */}
-        <div className="flex flex-wrap justify-center gap-3 mb-6">
-          <Button type="button" onClick={() => navigate(`/training?horseId=${horse.id}`)}>
-            <Dumbbell className="w-4 h-4" />
-            Train This Horse
-          </Button>
-          <Button type="button" onClick={() => navigate(`/competitions?horseId=${horse.id}`)}>
-            <Award className="w-4 h-4" />
-            Enter Competition
-          </Button>
-          {horse.parentIds?.sireId && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => navigate(`/horses/${horse.parentIds!.sireId}`)}
-            >
-              <Users className="w-4 h-4" />
-              View Parents
-            </Button>
-          )}
-        </div>
+          <div className="flex flex-wrap justify-center gap-3 mb-6">
+            {!isVisitor && (
+              <>
+                <Button type="button" onClick={() => navigate(`/training?horseId=${horse.id}`)}>
+                  <Dumbbell className="w-4 h-4" />
+                  Train This Horse
+                </Button>
+                <Button type="button" onClick={() => navigate(`/competitions?horseId=${horse.id}`)}>
+                  <Award className="w-4 h-4" />
+                  Enter Competition
+                </Button>
+              </>
+            )}
+            {horse.parentIds?.sireId && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => navigate(`/horses/${horse.parentIds!.sireId}`)}
+              >
+                <Users className="w-4 h-4" />
+                View Parents
+              </Button>
+            )}
+          </div>
 
-        {/* Tonight's care, at every age: one horse page for life (owner rulings
+          {/* Tonight's care, at every age: one horse page for life (owner rulings
             q67 / q71, 2026-10-26). Home reminders link here with #care. */}
-        <CareArea horseId={horse.id} horseName={horse.name} />
+          {!isVisitor && <CareArea horseId={horse.id} horseName={horse.name} />}
 
-        {/* Tab Navigation + Content — CanonicalTabs underline variant (Equoria-o5hub.11).
+          {/* Tab Navigation + Content — CanonicalTabs underline variant (Equoria-o5hub.11).
             Radix unmounts inactive TabsContent by default, preserving the prior
             lazy "render only the active tab" behavior. */}
-        <Surface variant="panel" className="p-0 mb-6">
-          <Tabs
-            value={activeTab}
-            onValueChange={(v) => {
-              const next = tabs.find((tab) => tab.id === v);
-              if (next) setActiveTab(next.id);
-            }}
-          >
-            <TabsList aria-label="Horse details tabs">
-              {tabs.map((tab) => (
-                <TabsTrigger key={tab.id} value={tab.id}>
-                  <span className="inline-flex items-center mr-2" aria-hidden="true">
-                    {tab.icon}
-                  </span>
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            <TabsContent value="overview" className="mt-0 p-6">
-              <OverviewTab
-                horse={horse}
-                onOpenTemperamentReference={() => setShowTemperamentReference(true)}
-                onAssignRider={() => setShowRiderPicker(true)}
-              />
-            </TabsContent>
-            <TabsContent value="disciplines" className="mt-0 p-6">
-              <DisciplinesTab horse={horse} />
-            </TabsContent>
-            <TabsContent value="genetics" className="mt-0 p-6">
-              <Suspense fallback={lazyTabFallback}>
-                <GeneticsTab horse={horse} />
-              </Suspense>
-            </TabsContent>
-            <TabsContent value="conformation" className="mt-0 p-6">
-              <ConformationTab horseId={horse.id} />
-            </TabsContent>
-            <TabsContent value="gaits" className="mt-0 p-6">
-              <GaitsTab horseId={horse.id} />
-            </TabsContent>
-            <TabsContent value="progression" className="mt-0 p-6">
-              <ProgressionTab horse={horse} />
-            </TabsContent>
-            <TabsContent value="training" className="mt-0 p-6">
-              <Suspense fallback={lazyTabFallback}>
-                <TrainingTab horse={horse} />
-              </Suspense>
-            </TabsContent>
-            <TabsContent value="show-results" className="mt-0 p-6">
-              <ShowResultsTab horseId={horse.id} />
-            </TabsContent>
-            <TabsContent value="pedigree" className="mt-0 p-6">
-              <PedigreeTab horse={horse} />
-            </TabsContent>
-            <TabsContent value="health" className="mt-0 p-6">
-              <HealthVetTab horse={horse} />
-            </TabsContent>
-            <TabsContent value="tack" className="mt-0 p-6">
-              <TackTab horse={horse} />
-            </TabsContent>
-            <TabsContent value="stud-sale" className="mt-0 p-6">
-              <StudSaleTab
-                horse={horse}
-                onListForSale={() => setShowListModal(true)}
-                onDelist={() =>
-                  delistHorseMutation.mutate(horse.id, { onSuccess: () => refetch() })
-                }
-                isDelisting={delistHorseMutation.isPending}
-              />
-            </TabsContent>
-          </Tabs>
-        </Surface>
-      </PageContainer>
+          <Surface variant="panel" className="p-0 mb-6">
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => {
+                const next = tabs.find((tab) => tab.id === v);
+                if (next) setActiveTab(next.id);
+              }}
+            >
+              <TabsList aria-label="Horse details tabs">
+                {tabs.map((tab) => (
+                  <TabsTrigger key={tab.id} value={tab.id}>
+                    <span className="inline-flex items-center mr-2" aria-hidden="true">
+                      {tab.icon}
+                    </span>
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              <TabsContent value="overview" className="mt-0 p-6">
+                <OverviewTab
+                  horse={horse}
+                  onOpenTemperamentReference={() => setShowTemperamentReference(true)}
+                  onAssignRider={isVisitor ? undefined : () => setShowRiderPicker(true)}
+                />
+              </TabsContent>
+              <TabsContent value="disciplines" className="mt-0 p-6">
+                <DisciplinesTab horse={horse} />
+              </TabsContent>
+              <TabsContent value="genetics" className="mt-0 p-6">
+                <Suspense fallback={lazyTabFallback}>
+                  <GeneticsTab horse={horse} />
+                </Suspense>
+              </TabsContent>
+              <TabsContent value="conformation" className="mt-0 p-6">
+                <ConformationTab horseId={horse.id} />
+              </TabsContent>
+              <TabsContent value="gaits" className="mt-0 p-6">
+                <GaitsTab horseId={horse.id} />
+              </TabsContent>
+              <TabsContent value="progression" className="mt-0 p-6">
+                <ProgressionTab horse={horse} />
+              </TabsContent>
+              <TabsContent value="training" className="mt-0 p-6">
+                <Suspense fallback={lazyTabFallback}>
+                  <TrainingTab horse={horse} />
+                </Suspense>
+              </TabsContent>
+              <TabsContent value="show-results" className="mt-0 p-6">
+                <ShowResultsTab horseId={horse.id} />
+              </TabsContent>
+              <TabsContent value="pedigree" className="mt-0 p-6">
+                <PedigreeTab horse={horse} />
+              </TabsContent>
+              <TabsContent value="health" className="mt-0 p-6">
+                <HealthVetTab horse={horse} />
+              </TabsContent>
+              <TabsContent value="tack" className="mt-0 p-6">
+                <TackTab horse={horse} />
+              </TabsContent>
+              <TabsContent value="stud-sale" className="mt-0 p-6">
+                <StudSaleTab
+                  horse={horse}
+                  onListForSale={() => setShowListModal(true)}
+                  onDelist={() =>
+                    delistHorseMutation.mutate(horse.id, { onSuccess: () => refetch() })
+                  }
+                  isDelisting={delistHorseMutation.isPending}
+                />
+              </TabsContent>
+            </Tabs>
+          </Surface>
+        </PageContainer>
 
-      {/* Equoria-876o — Temperament Reference Modal */}
-      <TemperamentReferenceModal
-        isOpen={showTemperamentReference}
-        onClose={() => setShowTemperamentReference(false)}
-        highlightTemperament={horse.temperament ?? null}
-      />
+        {/* Equoria-876o — Temperament Reference Modal */}
+        <TemperamentReferenceModal
+          isOpen={showTemperamentReference}
+          onClose={() => setShowTemperamentReference(false)}
+          highlightTemperament={horse.temperament ?? null}
+        />
 
-      {/* Rider Picker Modal (Story 15-5) */}
-      <RiderPickerModal
-        isOpen={showRiderPicker}
-        onClose={() => setShowRiderPicker(false)}
-        horseId={horse.id}
-        horseName={horse.name}
-        riders={riders}
-        isLoading={ridersLoading}
-      />
+        {/* Rider Picker Modal (Story 15-5) */}
+        {!isVisitor && (
+          <RiderPickerModal
+            isOpen={showRiderPicker}
+            onClose={() => setShowRiderPicker(false)}
+            horseId={horse.id}
+            horseName={horse.name}
+            riders={riders}
+            isLoading={ridersLoading}
+          />
+        )}
 
-      {/* Story 12-5 — Bottom Action Bar, registered into the DashboardLayout
+        {/* Story 12-5 — Bottom Action Bar, registered into the DashboardLayout
           contextual slot (Equoria-o5hub.5 / D-24). The slot positions it above
           BottomNav on mobile and at the viewport bottom on desktop; without a
           provider (test renders) the bar renders here in place. */}
-      <ContextualBottomActions>
-        <HorseActionBar
-          horse={horse}
-          onAssignRider={() => setShowRiderPicker(true)}
-          onListForSale={() => setShowListModal(true)}
-          refetch={refetch}
-        />
-      </ContextualBottomActions>
+        {!isVisitor && (
+          <ContextualBottomActions>
+            <HorseActionBar
+              horse={horse}
+              onAssignRider={() => setShowRiderPicker(true)}
+              onListForSale={() => setShowListModal(true)}
+              refetch={refetch}
+            />
+          </ContextualBottomActions>
+        )}
 
-      {/* List for Sale Modal */}
-      <ListForSaleModal
-        isOpen={showListModal}
-        onClose={() => setShowListModal(false)}
-        horseId={horse.id}
-        horseName={horse.name}
-        onSuccess={refetch}
-      />
-    </div>
+        {/* List for Sale Modal */}
+        {!isVisitor && (
+          <ListForSaleModal
+            isOpen={showListModal}
+            onClose={() => setShowListModal(false)}
+            horseId={horse.id}
+            horseName={horse.name}
+            onSuccess={refetch}
+          />
+        )}
+      </div>
+    </HorseVisitContext.Provider>
   );
 };
 

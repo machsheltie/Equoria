@@ -18,6 +18,9 @@
  */
 
 import { apiClient } from '../http/apiClient.js';
+import type { HealthBand } from '@/lib/healthWords';
+import type { HorseGaitScores } from '@/hooks/api/useGaits';
+import type { HorseConformation } from '@/hooks/api/useConformation';
 
 export type StudMode = 'public' | 'private';
 
@@ -52,6 +55,18 @@ export interface HorseVisitWholePage {
     dormant: VisitTrait[];
     hiddenCount: number;
   };
+  // The rest of the owner's page, read-only (q205; coordinator directive
+  // 2026-10-28): each section of the visitor page reads its data from here.
+  feedHealth?: HealthBand;
+  bondScore?: number | null;
+  breedId?: number | null;
+  disciplineScores?: Record<string, number>;
+  conformation?: HorseConformation | null;
+  gaitScores?: HorseGaitScores | null;
+  currentTitle?: string | null;
+  titlePoints?: number;
+  breedingValueBoost?: number;
+  offspring?: { id: number; name: string }[];
 }
 
 export interface HorseVisit extends HorseVisitWholePage {

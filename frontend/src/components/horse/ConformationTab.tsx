@@ -20,6 +20,7 @@ import {
   useBreedAverages,
   useConformationAnalysis,
 } from '@/hooks/api/useConformation';
+import { useHorseVisitData } from '@/pages/horse-detail/horseVisitContext';
 
 export interface ConformationTabProps {
   horseId: number;
@@ -28,13 +29,19 @@ export interface ConformationTabProps {
 
 const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
   const [showComparison, setShowComparison] = useState(true);
+  // Visitor mode (q205): the scores come from the visit; the owner-only reads
+  // stay idle (an empty id disables them).
+  const visit = useHorseVisitData();
 
   const {
-    data: conformation,
-    isLoading: conformationLoading,
-    error: conformationError,
+    data: ownConformation,
+    isLoading: ownConformationLoading,
+    error: ownConformationError,
     refetch: refetchConformation,
-  } = useHorseConformation(horseId);
+  } = useHorseConformation(visit ? '' : horseId);
+  const conformation = visit ? visit.conformation : ownConformation;
+  const conformationLoading = !visit && ownConformationLoading;
+  const conformationError = visit ? null : ownConformationError;
 
   const {
     data: breedData,
@@ -43,7 +50,8 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
   } = useBreedAverages(breedId || 0);
 
   // Equoria-ac5y — percentile analysis against same-breed population
-  const { data: analysisData } = useConformationAnalysis(horseId);
+  const { data: ownAnalysisData } = useConformationAnalysis(visit ? '' : horseId);
+  const analysisData = visit ? undefined : ownAnalysisData;
 
   // Loading state
   if (conformationLoading || (showComparison && breedId && breedLoading)) {

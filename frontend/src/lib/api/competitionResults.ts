@@ -414,12 +414,18 @@ export interface HorseShowResultsPage {
  */
 export async function fetchHorseShowResults(
   horseId: number,
-  page: number
+  page: number,
+  asVisitor = false
 ): Promise<HorseShowResultsPage> {
+  // A visitor reads the same ledger through the visit (q205); the owner's own
+  // route is owner-only.
+  const path = asVisitor
+    ? `/api/v1/horses/${horseId}/visit/show-results`
+    : `/api/v1/competition/results/horse/${horseId}`;
   const envelope = await apiClient.getEnvelope<{
     data?: HorseShowResultRow[];
     pagination?: HorseShowResultsPagination;
-  }>(`/api/v1/competition/results/horse/${horseId}?page=${page}&limit=${horseShowResultsPageSize}`);
+  }>(`${path}?page=${page}&limit=${horseShowResultsPageSize}`);
   return {
     rows: envelope?.data ?? [],
     pagination: envelope?.pagination ?? {
@@ -434,10 +440,10 @@ export async function fetchHorseShowResults(
 }
 
 /** One page of a horse's show record; keeps the previous page on screen while paging. */
-export function useHorseShowResults(horseId: number, page: number) {
+export function useHorseShowResults(horseId: number, page: number, asVisitor = false) {
   return useQuery({
-    queryKey: ['horseShowResults', horseId, page],
-    queryFn: () => fetchHorseShowResults(horseId, page),
+    queryKey: ['horseShowResults', horseId, page, asVisitor ? 'visit' : 'own'],
+    queryFn: () => fetchHorseShowResults(horseId, page, asVisitor),
     enabled: Number.isInteger(horseId) && horseId > 0,
     placeholderData: keepPreviousData,
   });

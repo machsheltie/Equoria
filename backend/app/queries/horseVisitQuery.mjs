@@ -20,35 +20,81 @@
  * It composes Horses data with the Breeding projection (withoutUnrevealedTraits)
  * and the Marketplace sale fields, so it lives above the domain modules.
  *
+ * Coordinator directive 2026-10-28 (q205): the visitor page is the owner's
+ * horse page, read-only, so this read also carries what each of that page's
+ * visitor tabs shows (Overview, Disciplines, Genetics, Conformation, Gaits,
+ * Show Results, Pedigree, Stud/Sale): all twelve stats, discipline scores,
+ * conformation, gaits, health bands and bond, conformation title, offspring.
+ * The show results ledger pages through GET /horses/:id/visit/show-results.
+ *
  * The view is an allow-list: nothing from the horse row reaches the response
  * unless it is named below. No owner id, no balance, no genotype, no hidden
- * trait name, no care or training state.
+ * trait name.
  */
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { studStatuses } from '../../constants/schema.mjs';
-import { getDisplayedHealth } from '../../utils/horseHealth.mjs';
+import { withHealth } from '../../utils/horseHealth.mjs';
 import { getHorseAgeYears } from '../../utils/horseAge.mjs';
 import { asFlagObject } from '../../utils/jsonbArrayGuard.mjs';
 import { withoutUnrevealedTraits } from '../../modules/breeding/index.mjs';
 import { dormantTraitKeys, publicTraitModifiers } from '../../utils/publicTraitView.mjs';
 import { playerTraitDefinition } from '../../utils/epigeneticTraits.mjs';
+import { calculateOverallConformation } from '../../modules/horses/index.mjs';
 
 const studModeByStatus = Object.freeze({
   [studStatuses.public]: 'public',
   [studStatuses.private]: 'private',
 });
 
-/** The horse's stats a visitor sees: the same seven as a sale or stud listing. */
+const statNames = Object.freeze([
+  'precision',
+  'strength',
+  'speed',
+  'agility',
+  'endurance',
+  'intelligence',
+  'stamina',
+  'balance',
+  'boldness',
+  'flexibility',
+  'obedience',
+  'focus',
+]);
+
+/** All twelve stats, as the owner's page shows them (q205: visitors see everything). */
 function publicStats(horse) {
+  return Object.fromEntries(statNames.map(name => [name, horse[name] ?? 0]));
+}
+
+/** A JSON column's numeric entries, or null when the column holds no object. */
+function numbersOf(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      ([, entry]) => typeof entry === 'number' && Number.isFinite(entry),
+    ),
+  );
+}
+
+/** Conformation as the owner's Conformation tab reads it; null for a horse without scores. */
+function conformationOf(row) {
+  const scores = numbersOf(row.conformationScores);
+  if (!scores || Object.keys(scores).length === 0) {
+    return null;
+  }
   return {
-    speed: horse.speed ?? 0,
-    stamina: horse.stamina ?? 0,
-    agility: horse.agility ?? 0,
-    precision: horse.precision ?? 0,
-    strength: horse.strength ?? 0,
-    intelligence: horse.intelligence ?? 0,
-    boldness: horse.boldness ?? 0,
+    ...scores,
+    overallConformation:
+      scores.overallConformation ?? calculateOverallConformation(row.conformationScores),
   };
+}
+
+/** Gait scores as the owner's Gaits tab reads them; null for a horse without them. */
+function gaitsOf(row) {
+  const gaits = row.gaitScores;
+  return gaits !== null && typeof gaits === 'object' && !Array.isArray(gaits) ? gaits : null;
 }
 
 function parentOf(row) {
@@ -199,7 +245,16 @@ export async function getHorseVisit(horseId, viewerId) {
   const traits = asFlagObject(view.epigeneticModifiers);
   const phenotype = asFlagObject(row.phenotype);
   const studMode = studModeByStatus[row.studStatus] ?? null;
-  const [showRecord, careTeam] = await Promise.all([showRecordOf(row), careTeamOf(row)]);
+  const health = withHealth(row);
+  const [showRecord, careTeam, offspring] = await Promise.all([
+    showRecordOf(row),
+    careTeamOf(row),
+    prisma.horse.findMany({
+      where: { OR: [{ sireId: row.id }, { damId: row.id }] },
+      select: { id: true, name: true },
+      orderBy: [{ dateOfBirth: 'asc' }, { id: 'asc' }],
+    }),
+  ]);
 
   return {
     id: row.id,
@@ -220,7 +275,17 @@ export async function getHorseVisit(horseId, viewerId) {
       positive: Array.isArray(traits.positive) ? traits.positive : [],
       negative: Array.isArray(traits.negative) ? traits.negative : [],
     },
-    displayedHealth: getDisplayedHealth(row),
+    displayedHealth: health.displayedHealth,
+    feedHealth: health.feedHealth,
+    bondScore: typeof row.bondScore === 'number' ? row.bondScore : null,
+    breedId: row.breedId ?? null,
+    disciplineScores: numbersOf(row.disciplineScores) ?? {},
+    conformation: conformationOf(row),
+    gaitScores: gaitsOf(row),
+    currentTitle: row.currentTitle ?? null,
+    titlePoints: row.titlePoints ?? 0,
+    breedingValueBoost: row.breedingValueBoost ?? 0,
+    offspring,
     sire: parentOf(row.sire),
     dam: parentOf(row.dam),
     owner: row.user ? { username: row.user.username } : null,

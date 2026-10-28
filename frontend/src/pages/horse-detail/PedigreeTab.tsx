@@ -14,10 +14,22 @@ import { SectionLoading, ErrorState } from '@/components/ui/state';
 import { useHorseOffspring } from '@/hooks/api/useHorses';
 import { userMessageFor } from '@/lib/http/userMessage';
 import type { Horse } from './HorseDetailPageTypes';
+import { useHorseVisitData } from './horseVisitContext';
 
 /** The Offspring section's four states: loading, error with retry, empty, list. */
 const OffspringList: React.FC<{ horse: Horse }> = ({ horse }) => {
-  const offspring = useHorseOffspring(horse.id);
+  // Visitor mode (q205): the offspring come from the visit.
+  const visit = useHorseVisitData();
+  const own = useHorseOffspring(visit ? 0 : horse.id);
+  const offspring = visit
+    ? {
+        isPending: false as const,
+        isError: false as const,
+        error: null,
+        data: visit.offspring ?? [],
+        refetch: own.refetch,
+      }
+    : own;
 
   if (offspring.isPending) {
     return <SectionLoading label={`Loading ${horse.name}'s offspring`} minHeight="64px" />;

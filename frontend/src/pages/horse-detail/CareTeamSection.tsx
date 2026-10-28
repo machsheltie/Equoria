@@ -63,6 +63,49 @@ const StaffRow: React.FC<{
 
 const assignLinkClass = 'text-[var(--gold-400)] hover:underline';
 
+type VisitCareTeam = Record<
+  'trainer' | 'groom' | 'rider',
+  { name: string; starLevel: string } | null
+>;
+
+const visitorRoles = [
+  { key: 'trainer', label: 'Assigned Trainer', none: 'No trainer assigned.' },
+  { key: 'groom', label: 'Assigned Groom', none: 'No groom assigned.' },
+  { key: 'rider', label: 'Assigned Rider', none: 'No rider assigned.' },
+] as const;
+
+/**
+ * The Care Team on a visitor's page (q205): the same three lines, read from
+ * the visit, with no assign links.
+ */
+export const VisitorCareTeam: React.FC<{ careTeam: VisitCareTeam | null }> = ({ careTeam }) => (
+  <section className="horse-status" aria-labelledby="care-team-heading" data-testid="care-team">
+    <h3 id="care-team-heading" className="type-section-heading mb-3">
+      Care Team
+    </h3>
+    <dl className="horse-status__record">
+      {visitorRoles.map((role) => {
+        const member = careTeam?.[role.key] ?? null;
+        return (
+          <div key={role.key} className="horse-status__row">
+            <dt>{role.label}</dt>
+            <dd data-testid={`care-team-${role.key}`}>
+              {member ? (
+                <span>
+                  {member.name}{' '}
+                  {isStaffLevel(member.starLevel) && <StaffLevelStars level={member.starLevel} />}
+                </span>
+              ) : (
+                <span className="text-[var(--text-secondary)]">{role.none}</span>
+              )}
+            </dd>
+          </div>
+        );
+      })}
+    </dl>
+  </section>
+);
+
 const CareTeamSection: React.FC<{ horseId: number; onAssignRider?: () => void }> = ({
   horseId,
   onAssignRider,
