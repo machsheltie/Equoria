@@ -80,6 +80,13 @@ const StableView = () => {
     return stored === 'grid' || stored === 'list' ? stored : 'grid';
   });
   const [currentPage, setCurrentPage] = useState(1);
+  // The page number belongs to one category: switching category starts at its
+  // first page (Equoria-t1vz2), so Next never steps from another tab's page.
+  const [activeCategory, setActiveCategory] = useState('all');
+  const handleCategoryChange = (category: string) => {
+    setActiveCategory(category);
+    setCurrentPage(1);
+  };
 
   const handleViewChange = (mode: 'grid' | 'list') => {
     setViewMode(mode);
@@ -309,7 +316,7 @@ const StableView = () => {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              onClick={() => setCurrentPage(Math.max(1, safePage - 1))}
               disabled={safePage === 1}
             >
               Previous
@@ -356,7 +363,7 @@ const StableView = () => {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => setCurrentPage(Math.min(totalPages, safePage + 1))}
               disabled={safePage === totalPages}
             >
               Next
@@ -462,7 +469,7 @@ const StableView = () => {
 
       {/* Main content — tabbed horse grid */}
       <div className="mt-2">
-        <CanonicalTabs tabs={tabs} defaultValue="all" />
+        <CanonicalTabs tabs={tabs} value={activeCategory} onValueChange={handleCategoryChange} />
       </div>
     </PageContainer>
   );
