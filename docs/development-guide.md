@@ -56,7 +56,8 @@ The current ports, proxy, public routes, and health endpoints live in `backend/.
 Run from the repository root unless the task says otherwise:
 
 ```bash
-npm run test:backend
+npm run test:backend:targeted -- <path-to-test>
+npm run test:backend:full
 npm run test:frontend
 npm run typecheck
 npm run lint
@@ -64,7 +65,7 @@ npm run test:e2e:beta-readiness
 bash scripts/doctrine-checks/run-all.sh
 ```
 
-The backend suite is serial by design. Use package scripts rather than reconstructing long Jest/Vitest/Playwright command lines from old reports.
+Use the targeted backend command while working. `test:backend:full` is the full suite: eight shards over two serial lanes, each lane on its own disposable database, and it is what the pre-push hook runs. The plain serial `npm run test:backend` runs out of its 1536 MB heap on the dev machine before it reports. Use package scripts rather than reconstructing long Jest/Vitest/Playwright command lines from old reports.
 
 ## Source ownership
 
