@@ -18,6 +18,11 @@ import { randomBytes } from 'node:crypto';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
+// Owner ruling 2026-10-28 (q211): onboarding refuses a breed with no conformation/gait
+// ranges. These tests used to take whatever breed row came first, which can be a
+// range-less fixture breed another suite left behind; they use a seeded breed instead.
+const onboardingBreedName = 'Thoroughbred';
+
 describe('POST /api/v1/auth/advance-onboarding', () => {
   // Equoria-plw0h: CSRF is per-user-session-bound. The mutations below
   // authenticate via the httpOnly accessToken COOKIE, so validation resolves
@@ -165,7 +170,10 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
   });
 
   it('should persist selected starter horse data transactionally and create no duplicate starter horses', async () => {
-    const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
+    const breed = await prisma.breed.findFirst({
+      where: { name: onboardingBreedName },
+      select: { id: true, name: true },
+    });
     expect(breed).toBeTruthy();
 
     await prisma.horse.create({
@@ -225,7 +233,10 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
   // the player on tour step 1; the tour's own advances (no horse payload) walk
   // her to step 10, which is the only place onboarding completes.
   it('finishing the wizard enters the tour at step 1 and the tour advances end at step 10 / completed true', async () => {
-    const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
+    const breed = await prisma.breed.findFirst({
+      where: { name: onboardingBreedName },
+      select: { id: true, name: true },
+    });
     expect(breed).toBeTruthy();
     await prisma.horse.deleteMany({ where: { userId: testUser.id } });
 
@@ -262,7 +273,10 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
   // temperament column NULL (the frontend would show 'not recorded').
   it('fills a NULL temperament on the existing starter horse during onboarding customization', async () => {
     const { TEMPERAMENT_TYPES } = await import('../../horses/data/temperamentTypes.mjs');
-    const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
+    const breed = await prisma.breed.findFirst({
+      where: { name: onboardingBreedName },
+      select: { id: true, name: true },
+    });
     expect(breed).toBeTruthy();
 
     // Existing starter horse with NULL temperament (fixtureColor spreads color
@@ -300,7 +314,10 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
   // with the user's chosen breed's weighted distribution at onboarding.
   it('SENTINEL: REASSIGNS the temperament from the chosen breed at onboarding (not preserved as the register-time placeholder, Equoria-8vwly)', async () => {
     const { TEMPERAMENT_TYPES } = await import('../../horses/data/temperamentTypes.mjs');
-    const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
+    const breed = await prisma.breed.findFirst({
+      where: { name: onboardingBreedName },
+      select: { id: true, name: true },
+    });
     expect(breed).toBeTruthy();
 
     // Plant a SENTINEL placeholder temperament that simulates a register-time
@@ -341,7 +358,10 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
 
   it('sets a temperament when onboarding creates the starter horse (no prior horse)', async () => {
     const { TEMPERAMENT_TYPES } = await import('../../horses/data/temperamentTypes.mjs');
-    const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
+    const breed = await prisma.breed.findFirst({
+      where: { name: onboardingBreedName },
+      select: { id: true, name: true },
+    });
     expect(breed).toBeTruthy();
 
     // No prior horse → onboarding hits the tx.horse.create branch.
@@ -371,7 +391,10 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
   // SENTINEL-POSITIVE: this test FAILS against the buggy code (NULL phenotype)
   // and PASSES after the fix.
   it('creates the starter horse with a non-NULL, well-formed colorGenotype + phenotype (no prior horse)', async () => {
-    const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
+    const breed = await prisma.breed.findFirst({
+      where: { name: onboardingBreedName },
+      select: { id: true, name: true },
+    });
     expect(breed).toBeTruthy();
 
     // No prior horse → onboarding hits the tx.horse.create branch.
@@ -420,7 +443,10 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
     const nameFor = length => `Z${'a'.repeat(length - 1)}`;
 
     async function postName(horseName) {
-      const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
+      const breed = await prisma.breed.findFirst({
+        where: { name: onboardingBreedName },
+        select: { id: true, name: true },
+      });
       expect(breed).toBeTruthy();
       return request(app)
         .post('/api/v1/auth/advance-onboarding')

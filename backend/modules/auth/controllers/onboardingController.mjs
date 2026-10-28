@@ -58,7 +58,7 @@ import {
   calculatePhenotype,
   generateMarkings,
   generateTemperamentWithDefault,
-  generateBreedPhysiqueOrNull,
+  generateBreedPhysiqueOrRefuse,
   breedBirthDisciplineScores,
 } from '../../horses/index.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
@@ -363,9 +363,9 @@ export const advanceOnboarding = async (req, res, next) => {
           // gaits rolled from the CHOSEN breed's ranges, every region and gait
           // individually. Both branches below write them, so a breed picked here
           // replaces the registration roll before the starter horse is locked (the
-          // same boundary as the temperament, Equoria-8vwly). Null (breed without
-          // ranges) leaves the horse's existing scores, as its stats fall back too.
-          const physique = generateBreedPhysiqueOrNull(breed.name, {
+          // same boundary as the temperament, Equoria-8vwly). A breed without ranges
+          // is refused with a 422 and nothing is written (owner ruling 2026-10-28, q211).
+          const physique = generateBreedPhysiqueOrRefuse(breed.name, {
             context: `onboarding starter horse for user ${userId}`,
           });
 
@@ -374,7 +374,7 @@ export const advanceOnboarding = async (req, res, next) => {
             breedId: breed.id,
             sex: normalizedGender,
             ...generateStarterStats(breed.name),
-            ...(physique ?? {}),
+            ...physique,
             // Equoria-tl5l8: born with the chosen breed's discipline at +5.
             disciplineScores: breedBirthDisciplineScores(breed) ?? {},
           };

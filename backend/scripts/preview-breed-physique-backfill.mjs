@@ -14,7 +14,7 @@
  *   - gaitScores IS NULL.
  * For each candidate it prints the old values and one sample re-roll from the
  * breed's ranges: new conformation where the old one is the placeholder (otherwise
- * kept), then gaits from that conformation where gaits are NULL (otherwise kept).
+ * kept), then gaits from the breed gait ranges where gaits are NULL (otherwise kept).
  * Every run draws a fresh sample, so the printed "new" values are illustrative.
  * Horses whose breed has no ranges are listed as skipped.
  *
@@ -25,7 +25,6 @@
 import { fileURLToPath } from 'node:url';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { preloadBreedProfiles, generateBreedPhysique } from '../modules/horses/index.mjs';
-import { generateGaitScores } from '../modules/horses/services/gaitService.mjs';
 
 const regions = ['head', 'neck', 'shoulders', 'back', 'hindquarters', 'legs', 'hooves', 'topline'];
 
@@ -79,11 +78,8 @@ async function main() {
       const conformationScores = rerollConformation
         ? rolled.conformationScores
         : h.conformationScores;
-      const gaitScores = rerollGaits
-        ? rerollConformation
-          ? rolled.gaitScores
-          : generateGaitScores(h.breedName, conformationScores)
-        : h.gaitScores;
+      // Gaits come only from the breed's gait ranges (owner ruling 2026-10-28, q210).
+      const gaitScores = rerollGaits ? rolled.gaitScores : h.gaitScores;
       previewed++;
       console.log(
         JSON.stringify({

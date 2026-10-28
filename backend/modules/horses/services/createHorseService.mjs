@@ -103,7 +103,7 @@ export async function createHorseFromRequest(reqBody, userId) {
     if (err?.cause) {
       throw err;
     }
-    logger.warn(
+    logger.error(
       `[createHorseService] No breed profile for "${breedName}" (id=${parsedBreedId}): ${err.message}`,
     );
     return {
@@ -117,8 +117,8 @@ export async function createHorseFromRequest(reqBody, userId) {
 
   // Generate conformation scores from breed genetics.
   const conformationScores = generateConformationScores(breedName);
-  // Generate gait scores from breed genetics + conformation influence.
-  const gaitScores = generateGaitScores(breedName, conformationScores);
+  // Gait scores from the breed's gait ranges only (owner ruling 2026-10-28, q210).
+  const gaitScores = generateGaitScores(breedName);
   // Generate temperament from breed-weighted random selection.
   const temperament = generateTemperament(breedName);
 

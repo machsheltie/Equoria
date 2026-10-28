@@ -13,18 +13,6 @@ import {
 // through the loader (DB-cache backed), the same source the service reads.
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
-// Helper: average conformation (bonus = 0)
-const avgConformation = {
-  head: 70,
-  neck: 70,
-  shoulders: 70,
-  back: 70,
-  hindquarters: 70,
-  legs: 70,
-  hooves: 70,
-  topline: 70,
-};
-
 // Helper: standard parent gait scores
 const sireGaits = { walk: 70, trot: 80, canter: 85, gallop: 95, gaiting: null };
 const damGaits = { walk: 68, trot: 76, canter: 82, gallop: 90, gaiting: null };
@@ -161,7 +149,7 @@ describe('generateInheritedGaitScores — corrupted parent data', () => {
     const gallopScores = [];
 
     for (let i = 0; i < 500; i++) {
-      const scores = generateInheritedGaitScores(breedName, sireWithNaN, damWithNaN, avgConformation);
+      const scores = generateInheritedGaitScores(breedName, sireWithNaN, damWithNaN);
       gallopScores.push(scores.gallop);
     }
 
@@ -173,7 +161,7 @@ describe('generateInheritedGaitScores — corrupted parent data', () => {
 
   test('string parent gait score falls back to breed mean', () => {
     const sireWithString = { ...sireGaits, walk: 'fast' };
-    const scores = generateInheritedGaitScores('Thoroughbred', sireWithString, damGaits, avgConformation);
+    const scores = generateInheritedGaitScores('Thoroughbred', sireWithString, damGaits);
     expect(Number.isInteger(scores.walk)).toBe(true);
     expect(scores.walk).toBeGreaterThanOrEqual(0);
     expect(scores.walk).toBeLessThanOrEqual(100);
@@ -181,7 +169,7 @@ describe('generateInheritedGaitScores — corrupted parent data', () => {
 
   test('Infinity parent gait score falls back to breed mean', () => {
     const sireWithInf = { ...sireGaits, trot: Infinity };
-    const scores = generateInheritedGaitScores('Thoroughbred', sireWithInf, damGaits, avgConformation);
+    const scores = generateInheritedGaitScores('Thoroughbred', sireWithInf, damGaits);
     expect(Number.isInteger(scores.trot)).toBe(true);
     expect(scores.trot).toBeGreaterThanOrEqual(0);
     expect(scores.trot).toBeLessThanOrEqual(100);
@@ -189,13 +177,13 @@ describe('generateInheritedGaitScores — corrupted parent data', () => {
 
   test('null parent gait value falls back to breed mean', () => {
     const sireWithNull = { ...sireGaits, canter: null };
-    const scores = generateInheritedGaitScores('Thoroughbred', sireWithNull, damGaits, avgConformation);
+    const scores = generateInheritedGaitScores('Thoroughbred', sireWithNull, damGaits);
     expect(Number.isInteger(scores.canter)).toBe(true);
   });
 
   test('partial parent gaits (missing some gaits) still produces valid foal', () => {
     const partialSire = { walk: 70, trot: 80 }; // missing canter, gallop
-    const scores = generateInheritedGaitScores('Thoroughbred', partialSire, damGaits, avgConformation);
+    const scores = generateInheritedGaitScores('Thoroughbred', partialSire, damGaits);
     for (const gait of STANDARD_GAITS) {
       expect(Number.isInteger(scores[gait])).toBe(true);
       expect(scores[gait]).toBeGreaterThanOrEqual(0);
@@ -206,7 +194,7 @@ describe('generateInheritedGaitScores — corrupted parent data', () => {
   test('both parents with string scores produce valid foal', () => {
     const sireStrings = { walk: 'fast', trot: 'slow', canter: 'medium', gallop: 'high' };
     const damStrings = { walk: 'ok', trot: 'good', canter: 'bad', gallop: 'great' };
-    const scores = generateInheritedGaitScores('Thoroughbred', sireStrings, damStrings, avgConformation);
+    const scores = generateInheritedGaitScores('Thoroughbred', sireStrings, damStrings);
     for (const gait of STANDARD_GAITS) {
       expect(Number.isInteger(scores[gait])).toBe(true);
       expect(scores[gait]).toBeGreaterThanOrEqual(0);
@@ -223,7 +211,7 @@ describe('Gaited gait independence', () => {
     const distinctPairCount = { same: 0, different: 0 };
 
     for (let i = 0; i < 200; i++) {
-      const scores = generateGaitScores('American Saddlebred', avgConformation);
+      const scores = generateGaitScores('American Saddlebred');
       if (scores.gaiting[0].score === scores.gaiting[1].score) {
         distinctPairCount.same++;
       } else {
@@ -261,7 +249,7 @@ describe('Gaited gait independence', () => {
     const distinctPairCount = { same: 0, different: 0 };
 
     for (let i = 0; i < 200; i++) {
-      const scores = generateInheritedGaitScores('American Saddlebred', gaitedSire, gaitedDam, avgConformation);
+      const scores = generateInheritedGaitScores('American Saddlebred', gaitedSire, gaitedDam);
       if (scores.gaiting[0].score === scores.gaiting[1].score) {
         distinctPairCount.same++;
       } else {
@@ -284,7 +272,7 @@ describe('Statistical validation — gait inheritance', () => {
     const foalScores = [];
 
     for (let i = 0; i < 1000; i++) {
-      const scores = generateInheritedGaitScores(breedName, highSire, highDam, avgConformation);
+      const scores = generateInheritedGaitScores(breedName, highSire, highDam);
       foalScores.push(scores.gallop);
     }
 
@@ -299,7 +287,7 @@ describe('Statistical validation — gait inheritance', () => {
     const walkScores = [];
 
     for (let i = 0; i < 1000; i++) {
-      const scores = generateInheritedGaitScores(breedName, lowSire, lowDam, avgConformation);
+      const scores = generateInheritedGaitScores(breedName, lowSire, lowDam);
       walkScores.push(scores.walk);
     }
 
@@ -314,7 +302,7 @@ describe('Statistical validation — gait inheritance', () => {
     const dam = { walk: 72, trot: 78, canter: 68, gallop: 82, gaiting: null };
 
     for (let i = 0; i < 50; i++) {
-      const scores = generateInheritedGaitScores(breedName, sire, dam, avgConformation);
+      const scores = generateInheritedGaitScores(breedName, sire, dam);
       for (const gait of STANDARD_GAITS) {
         expect(Number.isInteger(scores[gait])).toBe(true);
         expect(scores[gait]).toBeGreaterThanOrEqual(0);
@@ -334,8 +322,8 @@ describe('Statistical validation — gait inheritance', () => {
     const scoresA = [];
     const scoresB = [];
     for (let i = 0; i < 2000; i++) {
-      scoresA.push(generateInheritedGaitScores(breedName, sireA, damA, avgConformation).walk);
-      scoresB.push(generateInheritedGaitScores(breedName, sireB, damB, avgConformation).walk);
+      scoresA.push(generateInheritedGaitScores(breedName, sireA, damA).walk);
+      scoresB.push(generateInheritedGaitScores(breedName, sireB, damB).walk);
     }
 
     const avgA = scoresA.reduce((a, b) => a + b, 0) / scoresA.length;

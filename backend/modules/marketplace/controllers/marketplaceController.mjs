@@ -37,11 +37,11 @@ import { generateStoreHorseTraitRoster } from '../../traits/index.mjs';
 // horses arrive with a populated colorGenotype + phenotype like foals); and
 // generateTemperamentWithDefault (Equoria-f5372: store horses must arrive
 // with a temperament populated, else the column is NULL and the frontend
-// shows 'not recorded'); generateBreedPhysiqueOrNull (owner request 2026-10-28,
+// shows 'not recorded'); generateBreedPhysiqueOrRefuse (owner request 2026-10-28,
 // Equoria-vqz4b / Equoria-17zgu: conformation and gaits from the breed's ranges).
 import {
   createHorse,
-  generateBreedPhysiqueOrNull,
+  generateBreedPhysiqueOrRefuse,
   generateStoreStats,
   generateGenotype,
   calculatePhenotype,
@@ -383,6 +383,14 @@ export async function buyStoreHorse(req, res) {
       throw Object.assign(new Error('Breed not found'), { statusCode: 404 });
     }
 
+    // Owner request 2026-10-28 (Equoria-vqz4b, Equoria-17zgu): conformation and gaits
+    // rolled from the breed's ranges, every region and gait individually. Without them
+    // createHorse wrote the flat-20 placeholder and no gaits. A breed with no ranges is
+    // refused here with a 422, before any charge (owner ruling 2026-10-28, q211).
+    const physique = generateBreedPhysiqueOrRefuse(breed.name, {
+      context: `Horse Trader purchase by user ${buyerId}`,
+    });
+
     // Names are generated with a retry loop (up to 5 attempts) to guard against
     // unlikely collisions. Done here, before the tx, so a 409 exhaustion never
     // leaves a charge behind. The findFirst is inherently racy — there is no DB
@@ -445,15 +453,6 @@ export async function buyStoreHorse(req, res) {
     // Equoria-f5372: assign a permanent temperament from the breed's weights.
     const temperament = generateTemperamentWithDefault(breed.name);
 
-    // Owner request 2026-10-28 (Equoria-vqz4b, Equoria-17zgu): conformation and gaits
-    // rolled from the breed's ranges, every region and gait individually. Without them
-    // createHorse wrote the flat-20 placeholder and no gaits. A breed with no ranges
-    // (null here) still gets createHorse's flat-20 fallback: whether such a horse
-    // should be refused instead is an open owner question (q211), so not decided here.
-    const physique = generateBreedPhysiqueOrNull(breed.name, {
-      context: `Horse Trader purchase by user ${buyerId}`,
-    });
-
     const epigeneticModifiers = generateStoreHorseTraitRoster(); // hidden, 1-5 (i366a, q174)
     // ── Atomic money + horse transaction (Equoria-gumnp) ──────────────────────
     // The debit, its paired SYSTEM_ACCOUNT_BURN credit, the purchase ledger row,
@@ -515,7 +514,7 @@ export async function buyStoreHorse(req, res) {
               phenotype,
               temperament,
               epigeneticModifiers,
-              ...(physique ?? {}),
+              ...physique,
               ...stats,
               disciplineScores: breedBirthDisciplineScores(breedRecord),
             },

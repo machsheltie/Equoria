@@ -57,7 +57,15 @@ let createdHorseIds = [];
 
 beforeAll(async () => {
   const statsPath = resolve(__dirname, '../../../data/breedStarterStats.json');
-  const validBreedNames = Object.keys(JSON.parse(readFileSync(statsPath, 'utf8')));
+  // Owner ruling 2026-10-28 (q211): a breed with no conformation/gait ranges is refused,
+  // so the purchase breed must also have a breedProfiles.json entry (a legacy
+  // 'Quarter Horse' row has starter stats but no ranges).
+  const rangedNames = new Set(
+    Object.keys(JSON.parse(readFileSync(resolve(__dirname, '../../../data/breedProfiles.json'), 'utf8'))),
+  );
+  const validBreedNames = Object.keys(JSON.parse(readFileSync(statsPath, 'utf8'))).filter(name =>
+    rangedNames.has(name),
+  );
   const breed = await prisma.breed.findFirst({
     where: { name: { in: validBreedNames } },
     select: { id: true },

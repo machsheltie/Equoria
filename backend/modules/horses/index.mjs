@@ -38,7 +38,11 @@ export { GENERIC_DEFAULTS, generateGenotype } from './services/genotypeGeneratio
 export { createHorse } from './services/horseCreation.mjs';
 // Owner request 2026-10-28 (Equoria-vqz4b, Equoria-17zgu): marketplace's Horse Trader and auth's
 // onboarding roll conformation and gaits from the breed's ranges.
-export { generateBreedPhysique, generateBreedPhysiqueOrNull } from './services/breedPhysique.mjs';
+export {
+  generateBreedPhysique,
+  generateBreedPhysiqueOrRefuse,
+  breedScoresMissingCode,
+} from './services/breedPhysique.mjs';
 // Equoria-tl5l8: the birth discipline (+5 trained value) store and starter horses are born with.
 export { breedBirthDisciplineScores } from './services/birthDiscipline.mjs';
 export { getHorseById } from './services/horseRouteQueries.mjs';

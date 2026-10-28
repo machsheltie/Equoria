@@ -12,6 +12,10 @@
  *   3. POST /auth/advance-onboarding for a player with no horse and a non-gaited
  *      breed: the new horse is rolled from that breed (create branch).
  *
+ *   4. Owner ruling 2026-10-28 (q211): the breed step for a breed with no ranges is
+ *      refused (422) and creates no horse; before, it created one with the column
+ *      defaults (flat-20 conformation, no gaits).
+ *
  * Real app, real DB, real CSRF, no mocks. Cleanup is scoped to this file's rows.
  */
 
@@ -44,6 +48,7 @@ describe('Onboarding starter horse: conformation and gaits from the breed (Equor
   const createdUserIds = [];
   const cleanup = createCleanupTracker();
   const breedIds = {};
+  const createdBreedIds = [];
 
   cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: createdUserIds } } }), 'horse');
   cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }), 'refreshToken');
@@ -53,6 +58,7 @@ describe('Onboarding starter horse: conformation and gaits from the breed (Equor
   );
   cleanup.add(() => prisma.auditLog.deleteMany({ where: { userId: { in: createdUserIds } } }), 'auditLog');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'user');
+  cleanup.add(() => prisma.breed.deleteMany({ where: { id: { in: createdBreedIds } } }), 'breed');
 
   beforeAll(async () => {
     for (const name of [starterBreedName, 'American Saddlebred', 'Morgan USA']) {
@@ -151,5 +157,32 @@ describe('Onboarding starter horse: conformation and gaits from the breed (Equor
     expect(created).toHaveLength(1);
     expect(created[0].breedId).toBe(breedIds['Morgan USA']);
     expectBreedPhysique(created[0], 'Morgan USA');
+  }, 60000);
+
+  it('the breed step refuses a breed with no ranges and creates no horse (q211)', async () => {
+    const suffix = randomBytes(6).toString('hex');
+    const rangeless = await prisma.breed.create({ data: { name: `No Ranges q211 ${suffix}` } });
+    createdBreedIds.push(rangeless.id);
+    const user = await prisma.user.create({
+      data: {
+        email: `q211-onb-${suffix}@test.invalid`,
+        username: `q211onb${suffix}`,
+        password: 'irrelevant-hash',
+        firstName: 'Onboard',
+        lastName: 'Refused',
+        emailVerified: true,
+        settings: { completedOnboarding: false, onboardingStep: 0 },
+      },
+      select: { id: true, email: true },
+    });
+    createdUserIds.push(user.id);
+
+    const res = await advanceAs(user, {
+      horseName: 'Rangeless Star',
+      breedId: rangeless.id,
+      gender: 'Mare',
+    });
+    expect(res.status).toBe(422);
+    expect(await prisma.horse.count({ where: { userId: user.id } })).toBe(0);
   }, 60000);
 });

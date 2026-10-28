@@ -1,7 +1,10 @@
 // Gait quality score generation service.
 // Generates 4 standard gait scores + breed-specific gaited gaits for a horse.
 // Gait scores are permanent movement quality attributes generated at birth.
-// Scores are influenced by conformation regions via a mapping formula.
+// Owner ruling 2026-10-28 (q210, Equoria-17zgu): gaits come only from the breed's
+// gait ranges (and, for a foal, its parents' gaits); conformation never nudges them.
+// Owner ruling 2026-10-28 (q211): a breed with no gait range is refused, never
+// given a fallback score.
 
 import { normalRandom, clampScore } from './conformationService.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
@@ -9,15 +12,6 @@ import logger from '../../../utils/logger.mjs';
 
 // The 4 standard gaits every horse has
 export const STANDARD_GAITS = ['walk', 'trot', 'canter', 'gallop'];
-
-// Maps each gait to the conformation regions that influence it
-export const CONFORMATION_GAIT_MAPPING = {
-  walk: ['shoulders', 'back'],
-  trot: ['shoulders', 'hindquarters'],
-  canter: ['back', 'hindquarters'],
-  gallop: ['legs', 'hindquarters'],
-  gaiting: ['legs', 'back', 'hindquarters'],
-};
 
 // Default gait scores for unknown breeds (score 50 per gait, no gaiting)
 const DEFAULT_UNKNOWN_BREED_GAIT_SCORES = Object.freeze({
@@ -29,20 +23,28 @@ const DEFAULT_UNKNOWN_BREED_GAIT_SCORES = Object.freeze({
 });
 
 /**
- * Calculate the conformation bonus for a specific gait.
- * Bonus = (average of mapped conformation regions - 70) * 0.15
- * Missing regions fall back to 70 (neutral, zero bonus contribution).
- * @param {Object} conformationScores - Horse's 8 conformation region scores
- * @param {string} gaitKey - Gait to calculate bonus for (walk/trot/canter/gallop/gaiting)
- * @returns {number} Conformation bonus (can be positive or negative)
+ * A gaited breed's special-gait range and gait names. A gaited breed without them is a
+ * missing breed range: refused, never defaulted (owner ruling 2026-10-28, q211).
+ * @param {string} breedName
+ * @param {object} profile - the breed profile
+ * @returns {{ gaitingProfile: { mean: number, stdDev: number }, gaitedNames: string[] }}
+ * @throws {Error} when the range or the gait names are missing
  */
-export function calculateConformationBonus(conformationScores, gaitKey) {
-  const regions = CONFORMATION_GAIT_MAPPING[gaitKey];
-  if (!regions || !conformationScores) {
-    return 0;
+function requireGaitedRange(breedName, profile) {
+  const gaitingProfile = profile.ratingProfiles.gaits?.gaiting;
+  const gaitedNames = profile.ratingProfiles.gaitedGaitRegistry;
+  if (
+    !gaitingProfile ||
+    !Number.isFinite(gaitingProfile.mean) ||
+    !Array.isArray(gaitedNames) ||
+    gaitedNames.length === 0
+  ) {
+    throw new Error(
+      `breedProfiles.json entry for gaited breed "${breedName}" is missing its special-gait range ` +
+        '(ratingProfiles.gaits.gaiting and gaitedGaitRegistry).',
+    );
   }
-  const avg = regions.reduce((sum, r) => sum + (conformationScores[r] ?? 70), 0) / regions.length;
-  return (avg - 70) * 0.15;
+  return { gaitingProfile, gaitedNames };
 }
 
 /**
@@ -90,14 +92,14 @@ export function validateGaitScores(scores) {
 }
 
 /**
- * Generate gait scores for a horse based on breed genetics and conformation influence.
+ * Generate gait scores for a horse from its breed's gait ranges.
  * @param {string} breedName - Breed display name
- * @param {Object} conformationScores - Horse's conformation scores for bonus calculation
  * @param {{ random?: () => number }} [options] - `random` is the uniform source (default Math.random)
  * @returns {Object} Object with walk/trot/canter/gallop (integers 0-100) and gaiting (array or null)
  * @throws {Error} if the breed is missing from breedProfiles.json or any gait entry is absent
+ *   (a gaited breed without its special-gait range included)
  */
-export function generateGaitScores(breedName, conformationScores, { random = Math.random } = {}) {
+export function generateGaitScores(breedName, { random = Math.random } = {}) {
   const profile = getBreedProfile(breedName);
   const gaits = profile.ratingProfiles?.gaits;
   if (!gaits) {
@@ -114,21 +116,16 @@ export function generateGaitScores(breedName, conformationScores, { random = Mat
           'in ratingProfiles.gaits. All 4 standard gaits (walk/trot/canter/gallop) are required.',
       );
     }
-    const bonus = calculateConformationBonus(conformationScores, gait);
-    const rawScore = normalRandom(gaitProfile.mean, gaitProfile.stdDev, random) + bonus;
-    scores[gait] = clampScore(rawScore);
+    scores[gait] = clampScore(normalRandom(gaitProfile.mean, gaitProfile.stdDev, random));
   }
 
   // Generate gaited gait entries for gaited breeds — each named gait gets an independent roll
-  if (profile.ratingProfiles.isGaitedBreed && gaits.gaiting) {
-    const gaitingProfile = gaits.gaiting;
-    const bonus = calculateConformationBonus(conformationScores, 'gaiting');
-
-    const gaitedNames = profile.ratingProfiles.gaitedGaitRegistry || [];
-    scores.gaiting = gaitedNames.map(name => {
-      const rawScore = normalRandom(gaitingProfile.mean, gaitingProfile.stdDev, random) + bonus;
-      return { name, score: clampScore(rawScore) };
-    });
+  if (profile.ratingProfiles.isGaitedBreed) {
+    const { gaitingProfile, gaitedNames } = requireGaitedRange(breedName, profile);
+    scores.gaiting = gaitedNames.map(name => ({
+      name,
+      score: clampScore(normalRandom(gaitingProfile.mean, gaitingProfile.stdDev, random)),
+    }));
   } else {
     scores.gaiting = null;
   }
@@ -137,28 +134,21 @@ export function generateGaitScores(breedName, conformationScores, { random = Mat
 }
 
 /**
- * Generate inherited gait scores for a foal based on parent gait scores, breed genetics,
- * and conformation influence.
- * Formula per gait: baseValue = (parentAvg * 0.6 + breedMean * 0.4) + conformationBonus
+ * Generate inherited gait scores for a foal based on parent gait scores and breed genetics.
+ * Formula per gait: baseValue = parentAvg * 0.6 + breedMean * 0.4
  * Falls back to breed-only generation if either parent's gait scores are null/missing.
  * @param {string} breedName - Breed display name
  * @param {Object|null} sireGaitScores - Sire's gait scores
  * @param {Object|null} damGaitScores - Dam's gait scores
- * @param {Object} conformationScores - Foal's conformation scores for bonus calculation
  * @returns {Object} Object with walk/trot/canter/gallop (integers 0-100) and gaiting (array or null)
  */
-export function generateInheritedGaitScores(
-  breedName,
-  sireGaitScores,
-  damGaitScores,
-  conformationScores,
-) {
+export function generateInheritedGaitScores(breedName, sireGaitScores, damGaitScores) {
   // Fall back to breed-only generation if either parent's scores are missing
   if (!sireGaitScores || !damGaitScores) {
     logger.info(
       `[gaitService] Missing parent gait scores, falling back to breed-only generation for breed "${breedName}"`,
     );
-    return generateGaitScores(breedName, conformationScores);
+    return generateGaitScores(breedName);
   }
 
   const profile = getBreedProfile(breedName);
@@ -191,15 +181,13 @@ export function generateInheritedGaitScores(
 
     const parentAvg = ((sireVal ?? gaitProfile.mean) + (damVal ?? gaitProfile.mean)) / 2;
     const baseValue = parentAvg * 0.6 + gaitProfile.mean * 0.4;
-    const bonus = calculateConformationBonus(conformationScores, gait);
-    scores[gait] = clampScore(normalRandom(baseValue, gaitProfile.stdDev) + bonus);
+    scores[gait] = clampScore(normalRandom(baseValue, gaitProfile.stdDev));
   }
 
   // Gaited gait availability depends on FOAL's breed, not parents
   // Each named gait gets an independent variance roll
-  if (profile.ratingProfiles.isGaitedBreed && gaits.gaiting) {
-    const gaitingProfile = gaits.gaiting;
-    const bonus = calculateConformationBonus(conformationScores, 'gaiting');
+  if (profile.ratingProfiles.isGaitedBreed) {
+    const { gaitingProfile, gaitedNames } = requireGaitedRange(breedName, profile);
 
     // GAIT-2: average ALL named gaiting scores per parent rather than using only index 0.
     // Breeds with multiple named gaits (e.g. American Saddlebred: Slow Gait + Rack) would
@@ -227,13 +215,10 @@ export function generateInheritedGaitScores(
       inheritedBaseValue = gaitingProfile.mean;
     }
 
-    const gaitedNames = profile.ratingProfiles.gaitedGaitRegistry || [];
-    scores.gaiting = gaitedNames.map(name => {
-      const gaitingScore = clampScore(
-        normalRandom(inheritedBaseValue, gaitingProfile.stdDev) + bonus,
-      );
-      return { name, score: gaitingScore };
-    });
+    scores.gaiting = gaitedNames.map(name => ({
+      name,
+      score: clampScore(normalRandom(inheritedBaseValue, gaitingProfile.stdDev)),
+    }));
   } else {
     scores.gaiting = null;
   }

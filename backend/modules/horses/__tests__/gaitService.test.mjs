@@ -8,8 +8,6 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   STANDARD_GAITS,
-  CONFORMATION_GAIT_MAPPING,
-  calculateConformationBonus,
   hasValidGaitScores,
   validateGaitScores,
   generateGaitScores,
@@ -29,63 +27,6 @@ describe('STANDARD_GAITS', () => {
     expect(STANDARD_GAITS).toContain('trot');
     expect(STANDARD_GAITS).toContain('canter');
     expect(STANDARD_GAITS).toContain('gallop');
-  });
-});
-
-describe('CONFORMATION_GAIT_MAPPING', () => {
-  it('has entries for all 4 standard gaits plus gaiting', () => {
-    for (const gait of [...STANDARD_GAITS, 'gaiting']) {
-      expect(CONFORMATION_GAIT_MAPPING[gait]).toBeDefined();
-    }
-  });
-
-  it('each entry is a non-empty array', () => {
-    for (const regions of Object.values(CONFORMATION_GAIT_MAPPING)) {
-      expect(Array.isArray(regions)).toBe(true);
-      expect(regions.length).toBeGreaterThan(0);
-    }
-  });
-});
-
-// ---------------------------------------------------------------------------
-// calculateConformationBonus
-// ---------------------------------------------------------------------------
-describe('calculateConformationBonus', () => {
-  it('returns 0 when conformationScores is null', () => {
-    expect(calculateConformationBonus(null, 'walk')).toBe(0);
-  });
-
-  it('returns 0 for unknown gait key', () => {
-    expect(calculateConformationBonus({ shoulders: 80, back: 80 }, 'unknownGait')).toBe(0);
-  });
-
-  it('returns 0 when all mapped regions are at neutral baseline (70)', () => {
-    const scores = { shoulders: 70, back: 70 };
-    expect(calculateConformationBonus(scores, 'walk')).toBeCloseTo(0, 5);
-  });
-
-  it('returns positive bonus when mapped regions are above 70', () => {
-    const scores = { shoulders: 100, back: 100 };
-    // avg = 100, bonus = (100 - 70) * 0.15 = 4.5
-    expect(calculateConformationBonus(scores, 'walk')).toBeCloseTo(4.5, 5);
-  });
-
-  it('returns negative bonus when mapped regions are below 70', () => {
-    const scores = { shoulders: 40, back: 40 };
-    // avg = 40, bonus = (40 - 70) * 0.15 = -4.5
-    expect(calculateConformationBonus(scores, 'walk')).toBeCloseTo(-4.5, 5);
-  });
-
-  it('uses 70 as default for missing regions', () => {
-    // Only shoulders provided for walk (needs shoulders + back)
-    // back defaults to 70 → avg = (100 + 70) / 2 = 85 → bonus = (85 - 70) * 0.15 = 2.25
-    const scores = { shoulders: 100 };
-    expect(calculateConformationBonus(scores, 'walk')).toBeCloseTo(2.25, 5);
-  });
-
-  it('handles gallop correctly (uses legs + hindquarters)', () => {
-    const scores = { legs: 100, hindquarters: 100 };
-    expect(calculateConformationBonus(scores, 'gallop')).toBeCloseTo(4.5, 5);
   });
 });
 
@@ -343,19 +284,8 @@ describe('validateGaitScores', () => {
 // generateGaitScores (breed profile backed — file, not DB)
 // ---------------------------------------------------------------------------
 describe('generateGaitScores', () => {
-  const neutralConformation = {
-    head: 70,
-    neck: 70,
-    shoulders: 70,
-    back: 70,
-    hindquarters: 70,
-    legs: 70,
-    hooves: 70,
-    topline: 70,
-  };
-
   it('returns all 4 standard gaits for a valid breed', () => {
-    const result = generateGaitScores('Thoroughbred', neutralConformation);
+    const result = generateGaitScores('Thoroughbred');
     for (const gait of STANDARD_GAITS) {
       expect(typeof result[gait]).toBe('number');
       expect(result[gait]).toBeGreaterThanOrEqual(0);
@@ -364,23 +294,23 @@ describe('generateGaitScores', () => {
   });
 
   it('returns gaiting=null for non-gaited breed (Thoroughbred)', () => {
-    const result = generateGaitScores('Thoroughbred', neutralConformation);
+    const result = generateGaitScores('Thoroughbred');
     expect(result.gaiting).toBeNull();
   });
 
   it('all scores are integers', () => {
-    const result = generateGaitScores('Arabian', neutralConformation);
+    const result = generateGaitScores('Arabian');
     for (const gait of STANDARD_GAITS) {
       expect(Number.isInteger(result[gait])).toBe(true);
     }
   });
 
   it('throws for unknown breed', () => {
-    expect(() => generateGaitScores('NotARealBreed_xyz', neutralConformation)).toThrow();
+    expect(() => generateGaitScores('NotARealBreed_xyz')).toThrow();
   });
 
   it('generates gait scores for a named breed (Thoroughbred)', () => {
-    const result = generateGaitScores('Thoroughbred', neutralConformation);
+    const result = generateGaitScores('Thoroughbred');
     expect(typeof result.walk).toBe('number');
   });
 });
@@ -389,38 +319,28 @@ describe('generateGaitScores', () => {
 // generateInheritedGaitScores
 // ---------------------------------------------------------------------------
 describe('generateInheritedGaitScores', () => {
-  const neutralConformation = {
-    head: 70,
-    neck: 70,
-    shoulders: 70,
-    back: 70,
-    hindquarters: 70,
-    legs: 70,
-    hooves: 70,
-    topline: 70,
-  };
   const sireGaits = { walk: 80, trot: 75, canter: 85, gallop: 90, gaiting: null };
   const damGaits = { walk: 70, trot: 65, canter: 75, gallop: 80, gaiting: null };
 
   it('returns all 4 standard gaits', () => {
-    const result = generateInheritedGaitScores('Thoroughbred', sireGaits, damGaits, neutralConformation);
+    const result = generateInheritedGaitScores('Thoroughbred', sireGaits, damGaits);
     for (const gait of STANDARD_GAITS) {
       expect(typeof result[gait]).toBe('number');
     }
   });
 
   it('falls back to breed-only when sire gait scores are null', () => {
-    const result = generateInheritedGaitScores('Thoroughbred', null, damGaits, neutralConformation);
+    const result = generateInheritedGaitScores('Thoroughbred', null, damGaits);
     expect(typeof result.walk).toBe('number');
   });
 
   it('falls back to breed-only when dam gait scores are null', () => {
-    const result = generateInheritedGaitScores('Thoroughbred', sireGaits, null, neutralConformation);
+    const result = generateInheritedGaitScores('Thoroughbred', sireGaits, null);
     expect(typeof result.walk).toBe('number');
   });
 
   it('all scores are integers in [0, 100]', () => {
-    const result = generateInheritedGaitScores('Arabian', sireGaits, damGaits, neutralConformation);
+    const result = generateInheritedGaitScores('Arabian', sireGaits, damGaits);
     for (const gait of STANDARD_GAITS) {
       expect(Number.isInteger(result[gait])).toBe(true);
       expect(result[gait]).toBeGreaterThanOrEqual(0);
@@ -429,6 +349,6 @@ describe('generateInheritedGaitScores', () => {
   });
 
   it('throws for unknown breed', () => {
-    expect(() => generateInheritedGaitScores('NotARealBreed_xyz', sireGaits, damGaits, neutralConformation)).toThrow();
+    expect(() => generateInheritedGaitScores('NotARealBreed_xyz', sireGaits, damGaits)).toThrow();
   });
 });

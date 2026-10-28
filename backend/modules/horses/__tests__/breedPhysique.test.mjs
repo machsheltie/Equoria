@@ -1,15 +1,25 @@
 // Owner request 2026-10-28 (Equoria-vqz4b, Equoria-17zgu): a store or starter horse's
 // conformation and gaits are rolled from its breed's ranges, each region and each gait
 // individually from its OWN range. With the uniform source fixed, every Box-Muller draw
-// has the same z, so each score must equal round(ownMean + z * ownStdDev) (+ the
-// existing conformation-to-gait adjustment for gaits); one generic value across the
-// board, or one region's range reused for another, fails these exact checks.
+// has the same z, so each score must equal round(ownMean + z * ownStdDev); one generic
+// value across the board, or one region's range reused for another, fails these exact
+// checks.
+//
+// Owner ruling 2026-10-28 (q210) changed the gait contract: the old one added a
+// conformation-to-gait adjustment, (average of the mapped regions - 70) * 0.15, to every
+// gait. Gaits now come only from the breed's gait ranges, so a gait score is exactly
+// round(gaitMean + z * gaitStdDev) whatever the conformation. Owner ruling q211 changed
+// the missing-breed contract: the old OrNull form returned null and the horse kept its
+// placeholder scores; now the horse is refused.
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { generateBreedPhysique, generateBreedPhysiqueOrNull } from '../services/breedPhysique.mjs';
-import { calculateConformationBonus } from '../services/gaitService.mjs';
+import {
+  generateBreedPhysique,
+  generateBreedPhysiqueOrRefuse,
+  breedScoresMissingCode,
+} from '../services/breedPhysique.mjs';
 import { seededRng as seeded } from '../../../__tests__/helpers/seededRng.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -21,8 +31,7 @@ const regions = ['head', 'neck', 'shoulders', 'back', 'hindquarters', 'legs', 'h
 // the mean, so a region that borrowed another region's range would land elsewhere.
 const fixedU = 0.1;
 const fixedZ = Math.sqrt(-2 * Math.log(fixedU)) * Math.cos(2 * Math.PI * fixedU);
-const expectedScore = (mean, stdDev, bonus = 0) =>
-  Math.round(Math.min(100, Math.max(0, mean + fixedZ * stdDev + bonus)));
+const expectedScore = (mean, stdDev) => Math.round(Math.min(100, Math.max(0, mean + fixedZ * stdDev)));
 
 describe('generateBreedPhysique (Equoria-vqz4b, Equoria-17zgu)', () => {
   test.each(['American Saddlebred', 'Morgan USA'])(
@@ -41,24 +50,21 @@ describe('generateBreedPhysique (Equoria-vqz4b, Equoria-17zgu)', () => {
     },
   );
 
-  test('gaited breed: each standard gait and each named special gait is rolled separately', () => {
+  test('gaited breed: each standard gait and each named special gait comes from its gait range only (q210)', () => {
     const rating = profiles['American Saddlebred'].ratingProfiles;
     const { conformationScores, gaitScores } = generateBreedPhysique('American Saddlebred', {
       random: () => fixedU,
     });
+    // The rolled conformation is far from the old neutral 70, so the removed
+    // adjustment would have moved every gait off its own range.
+    const gallopRegions = (conformationScores.legs + conformationScores.hindquarters) / 2;
+    expect(Math.abs(gallopRegions - 70) * 0.15).toBeGreaterThanOrEqual(0.5);
     for (const gait of standardGaits) {
-      expect(gaitScores[gait]).toBe(
-        expectedScore(
-          rating.gaits[gait].mean,
-          rating.gaits[gait].stdDev,
-          calculateConformationBonus(conformationScores, gait),
-        ),
-      );
+      expect(gaitScores[gait]).toBe(expectedScore(rating.gaits[gait].mean, rating.gaits[gait].stdDev));
     }
     expect(gaitScores.gaiting.map(g => g.name)).toEqual(rating.gaitedGaitRegistry);
-    const gaitingBonus = calculateConformationBonus(conformationScores, 'gaiting');
     for (const entry of gaitScores.gaiting) {
-      expect(entry.score).toBe(expectedScore(rating.gaits.gaiting.mean, rating.gaits.gaiting.stdDev, gaitingBonus));
+      expect(entry.score).toBe(expectedScore(rating.gaits.gaiting.mean, rating.gaits.gaiting.stdDev));
     }
   });
 
@@ -85,8 +91,16 @@ describe('generateBreedPhysique (Equoria-vqz4b, Equoria-17zgu)', () => {
     expect(differs).toBe(true);
   });
 
-  test('a breed without ranges: generateBreedPhysique throws, the OrNull form returns null', () => {
+  test('a breed without ranges is refused, never given fallback scores (q211)', () => {
     expect(() => generateBreedPhysique('No Such Breed vqz4b')).toThrow();
-    expect(generateBreedPhysiqueOrNull('No Such Breed vqz4b')).toBeNull();
+    let refusal;
+    try {
+      generateBreedPhysiqueOrRefuse('No Such Breed vqz4b');
+    } catch (err) {
+      refusal = err;
+    }
+    expect(refusal).toBeDefined();
+    expect(refusal.code).toBe(breedScoresMissingCode);
+    expect(refusal.statusCode).toBe(422);
   });
 });

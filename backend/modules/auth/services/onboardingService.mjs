@@ -53,7 +53,8 @@ import {
   calculatePhenotype,
   generateMarkings,
   generateTemperamentWithDefault,
-  generateBreedPhysiqueOrNull,
+  generateBreedPhysiqueOrRefuse,
+  breedScoresMissingCode,
   breedBirthDisciplineScores,
   DEFAULT_TEMPERAMENT_BREED,
   horseNameMaxLength,
@@ -141,10 +142,20 @@ export async function createStarterHorseForNewUser(
 
     // Owner request 2026-10-28 (Equoria-vqz4b, Equoria-17zgu): conformation and gaits
     // rolled from the starter breed's ranges. The breed step re-rolls them for the
-    // player's chosen breed. Null (breed without ranges) leaves the column defaults.
-    const physique = generateBreedPhysiqueOrNull(breedName, {
-      context: `registration starter horse for user ${user.id}`,
-    });
+    // player's chosen breed. A breed without ranges is refused (owner ruling 2026-10-28,
+    // q211): no starter horse is created, as for a missing breed above, and the
+    // onboarding breed step creates it from the player's chosen breed.
+    let physique;
+    try {
+      physique = generateBreedPhysiqueOrRefuse(breedName, {
+        context: `registration starter horse for user ${user.id}`,
+      });
+    } catch (refusal) {
+      if (refusal?.code === breedScoresMissingCode) {
+        return;
+      }
+      throw refusal;
+    }
 
     const starterHorse = await prisma.horse.create({
       data: {
@@ -175,7 +186,7 @@ export async function createStarterHorseForNewUser(
         endurance: 17,
         strength: 17,
         healthStatus: 'Excellent',
-        ...(physique ?? {}),
+        ...physique,
         // Equoria-tl5l8: born with the starter breed's discipline at +5.
         ...(starterDisciplineScores && { disciplineScores: starterDisciplineScores }),
       },
