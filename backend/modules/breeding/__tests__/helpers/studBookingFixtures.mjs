@@ -193,7 +193,9 @@ export async function disconnectLockClient() {
  * @param {() => Promise<T>} action - the request(s) under test
  * `whileBlocked`, if given, runs after the wait is observed and BEFORE the
  * held transaction commits — e.g. a cancel that must land while an approval
- * is parked on the mare row.
+ * is parked on the mare row. It receives `{ waitForBlocked(n, promise?) }` to
+ * queue a SECOND action behind the first before the commit, which pins the
+ * order the two reach the held row's lock queue.
  *
  * @param {{ blockedSessions?: number, whileBlocked?: () => Promise<unknown> }} [options]
  * @returns {Promise<T>}
@@ -212,37 +214,52 @@ export async function holdRowLockUntil(
         settled = true;
       });
       const ownPid = (await tx.$queryRaw`SELECT pg_backend_pid() AS pid`)[0].pid;
-      const deadline = Date.now() + LOCK_WAIT_TIMEOUT_MS;
-      for (;;) {
-        const waiting = await tx.$queryRaw`
-          WITH RECURSIVE queued(pid) AS (
-            SELECT l.pid
-              FROM pg_locks l
-             WHERE NOT l.granted
-               AND ${ownPid} = ANY(pg_blocking_pids(l.pid))
-            UNION
-            SELECT l.pid
-              FROM pg_locks l
-              JOIN queued q ON q.pid = ANY(pg_blocking_pids(l.pid))
-             WHERE NOT l.granted
-          )
-          SELECT count(*)::int AS n FROM queued`;
-        if (waiting[0].n >= blockedSessions || settled) {
-          break;
+      const waitForBlocked = async (wanted, isSettled) => {
+        const deadline = Date.now() + LOCK_WAIT_TIMEOUT_MS;
+        for (;;) {
+          const waiting = await tx.$queryRaw`
+            WITH RECURSIVE queued(pid) AS (
+              SELECT l.pid
+                FROM pg_locks l
+               WHERE NOT l.granted
+                 AND ${ownPid} = ANY(pg_blocking_pids(l.pid))
+              UNION
+              SELECT l.pid
+                FROM pg_locks l
+                JOIN queued q ON q.pid = ANY(pg_blocking_pids(l.pid))
+               WHERE NOT l.granted
+            )
+            SELECT count(*)::int AS n FROM queued`;
+          if (waiting[0].n >= wanted || isSettled()) {
+            return;
+          }
+          if (Date.now() > deadline) {
+            const sessions = await tx.$queryRaw`
+              SELECT l.pid, l.locktype, l.granted, pg_blocking_pids(l.pid) AS blockers
+                FROM pg_locks l
+               WHERE NOT l.granted`;
+            throw new Error(
+              `holdRowLockUntil: ${wanted} blocked session(s) never appeared; sessions: ${JSON.stringify(sessions)}`,
+            );
+          }
+          await new Promise(resolve => setTimeout(resolve, 25));
         }
-        if (Date.now() > deadline) {
-          const sessions = await tx.$queryRaw`
-            SELECT l.pid, l.locktype, l.granted, pg_blocking_pids(l.pid) AS blockers
-              FROM pg_locks l
-             WHERE NOT l.granted`;
-          throw new Error(
-            `holdRowLockUntil: ${blockedSessions} blocked session(s) never appeared; sessions: ${JSON.stringify(sessions)}`,
-          );
-        }
-        await new Promise(resolve => setTimeout(resolve, 25));
-      }
+      };
+      await waitForBlocked(blockedSessions, () => settled);
       if (whileBlocked) {
-        await whileBlocked();
+        await whileBlocked({
+          // Start a second action yourself, then wait until `wanted` sessions in
+          // total are queued behind the held row (directly or through another
+          // waiter), or until `promise` settles (code that never blocks).
+          waitForBlocked: (wanted, promise) => {
+            let done = false;
+            const mark = () => {
+              done = true;
+            };
+            promise?.then(mark, mark);
+            return waitForBlocked(wanted, () => done);
+          },
+        });
       }
     },
     { timeout: LOCK_WAIT_TIMEOUT_MS + 10000 },
