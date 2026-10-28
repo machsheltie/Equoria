@@ -14,3 +14,4 @@ export { logTraitAssignment } from './services/traitHistoryService.mjs';
 export { runNightlyTraitReveal } from './services/traitRevealEngine.mjs';
 export { getTraitRevelationAnalytics } from './services/traitRevelationAnalyticsService.mjs';
 export { appendEpigeneticTraits } from './services/epigeneticModifiersWrites.mjs';
+export { generateStoreHorseTraitRoster } from './services/storeHorseTraitRoster.mjs';

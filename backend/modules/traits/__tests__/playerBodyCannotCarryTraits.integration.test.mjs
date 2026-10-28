@@ -40,6 +40,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { isRosterTrait } from '../../../utils/epigeneticTraits.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -187,7 +188,15 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
       orderBy: { id: 'desc' },
       select: Object.fromEntries(Object.keys(PROTECTED_HORSE_FIELDS).map(k => [k, true])),
     });
-    expect(bought.epigeneticModifiers).toEqual({ positive: [], negative: [], hidden: [] });
+    // Old contract: the store horse came with no traits at all. Owner rulings
+    // 2026-10-22 and 2026-10-28 (q174, Equoria-i366a): the server gives it 1-5
+    // hidden roster traits of its own; still nothing visible, nothing the body
+    // named.
+    expect(bought.epigeneticModifiers.positive).toEqual([]);
+    expect(bought.epigeneticModifiers.negative).toEqual([]);
+    expect(bought.epigeneticModifiers.hidden.length).toBeGreaterThanOrEqual(1);
+    expect(bought.epigeneticModifiers.hidden.length).toBeLessThanOrEqual(5);
+    expect(bought.epigeneticModifiers.hidden.every(isRosterTrait)).toBe(true);
     expect(bought.epigeneticFlags).toEqual([]);
     expect(bought.ultraRareTraits).toEqual({ ultraRare: [], exotic: [] });
   });
