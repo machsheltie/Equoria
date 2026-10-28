@@ -603,7 +603,9 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
       const response = await trainingRequest().send({
         horseId: xpTestHorse.id,
-        discipline: 'Trail',
+        // Equoria-i42xr: the train call refuses a name that is no discipline. Old
+        // contract: 'Trail' (not one of the 24) trained and wrote a 'Trail' score.
+        discipline: 'Western Pleasure',
       });
 
       expect(response.status).toBe(200);
@@ -613,7 +615,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       const updatedHorse = await prisma.horse.findUnique({
         where: { id: xpTestHorse.id },
       });
-      expect(updatedHorse.disciplineScores.Trail).toBeGreaterThanOrEqual(5);
+      expect(updatedHorse.disciplineScores['Western Pleasure']).toBeGreaterThanOrEqual(5);
 
       // VERIFY: Player received XP (base amount is 5 XP for training)
       const finalPlayer = await prisma.user.findUnique({
@@ -763,7 +765,8 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
       const response = await trainingRequest().send({
         horseId: dateTestHorse.id,
-        discipline: 'Driving',
+        // Equoria-i42xr: a real discipline; 'Driving' is not one of the 24 (old contract).
+        discipline: 'Combined Driving',
       });
 
       expect(response.status).toBe(200);
