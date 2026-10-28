@@ -288,6 +288,9 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       .expect(200);
 
     expect(firstTrainingResponse.body.success).toBe(true);
+    // Each session pays the trainer's star-level fee (owner rulings q163/q226), so
+    // the player's coins fall by exactly the fees the train calls report.
+    let trainingFeesPaid = firstTrainingResponse.body.trainingFee;
 
     // Verify progress updated correctly
     const afterFirstTrainResponse = await request(app)
@@ -305,7 +308,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       xpForNextLevel: 100,
       xpForCurrentLevel: 0,
       progressPercentage: 5, // 5/100 * 100
-      totalEarnings: 10000, // STARTER_MONEY 10000 + 0 bonus (economy ruling 18287a273, 2026-07-07)
+      totalEarnings: 10000 - trainingFeesPaid, // STARTER_MONEY 10000 less the trainer fees paid
       // Equoria-oey96.2 additive Game-Statistics fields (values covered by
       // userProgressStats.integration.test.mjs).
       totalHorses: expect.any(Number),
@@ -349,12 +352,13 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       // Train in different discipline
       const discipline = i % 2 === 0 ? 'Dressage' : 'Show Jumping';
-      await trainingRequest()
+      const sessionResponse = await trainingRequest()
         .send({
           horseId: testHorse.id,
           discipline,
         })
         .expect(200);
+      trainingFeesPaid += sessionResponse.body.trainingFee;
     }
 
     // Verify accumulated XP (should be 55 total, still level 1 - appropriate pacing)
@@ -413,6 +417,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       .expect(200);
 
     expect(levelUpTrainingResponse.body.success).toBe(true);
+    trainingFeesPaid += levelUpTrainingResponse.body.trainingFee;
 
     // Verify level-up occurred
     const afterLevelUpResponse = await request(app)
@@ -430,7 +435,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       xpForNextLevel: 200, // Level 3 requires 200 XP total
       xpForCurrentLevel: 100, // Level 2 required 100 XP total
       progressPercentage: 0, // 0/100 progress toward level 3
-      totalEarnings: 10000, // STARTER_MONEY 10000 + 0 bonus (economy ruling 18287a273, 2026-07-07)
+      totalEarnings: 10000 - trainingFeesPaid, // STARTER_MONEY 10000 less the trainer fees paid
       // Equoria-oey96.2 additive Game-Statistics fields (values covered by
       // userProgressStats.integration.test.mjs).
       totalHorses: expect.any(Number),
@@ -469,7 +474,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       xpForNextLevel: 400,
       xpForCurrentLevel: 300, // Level 4 threshold
       progressPercentage: 50, // 50/100 * 100 = 50% progress toward level 4
-      totalEarnings: 10000, // STARTER_MONEY 10000 + 0 bonus (economy ruling 18287a273, 2026-07-07)
+      totalEarnings: 10000 - trainingFeesPaid, // STARTER_MONEY 10000 less the trainer fees paid
       // Equoria-oey96.2 additive Game-Statistics fields (values covered by
       // userProgressStats.integration.test.mjs).
       totalHorses: expect.any(Number),

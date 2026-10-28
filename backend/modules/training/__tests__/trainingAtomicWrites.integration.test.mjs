@@ -68,7 +68,9 @@ beforeAll(async () => {
       password: 'irrelevant-hash',
       firstName: 'Atomic',
       lastName: 'Training',
-      money: 0,
+      // The trainer's star-level fee is charged per session (q226); fund it so
+      // the session, not the purse, decides each case.
+      money: 10000,
     },
   });
 }, 60000);
