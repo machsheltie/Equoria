@@ -28,7 +28,7 @@ import { Surface } from '@/components/ui/Surface';
 import Currency from '@/components/ui/Currency';
 import { Button } from '@/components/ui/button';
 import { CanonicalTabs } from '@/components/ui/game';
-import { SectionLoading, ErrorState } from '@/components/ui/state';
+import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { GoldBorderFrame } from '@/components/ui/GoldBorderFrame';
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,6 +59,13 @@ interface HallOfFameEntry {
     wins: number | null;
     earnings: number;
   };
+  /**
+   * Where this horse's career history stands (Equoria-l8w4t): the figures read
+   * "—" until 'ready', and the entry says which of loading / failed it is.
+   */
+  careerStatus: 'loading' | 'error' | 'ready';
+  /** Re-runs this horse's real history query. */
+  onRetryCareer: () => void;
   icon: string;
 }
 
@@ -289,6 +296,20 @@ const HallOfFameCard: React.FC<{ entry: HallOfFameEntry; rank: number }> = ({ en
               <p className="text-xs text-role-muted">Coins Earned</p>
             </Surface>
           </div>
+          {/* Loading and failed are told apart, with a real retry (Equoria-l8w4t). */}
+          {entry.careerStatus === 'loading' && (
+            <p role="status" aria-busy="true" className="text-xs text-role-muted mt-2">
+              Loading career record...
+            </p>
+          )}
+          {entry.careerStatus === 'error' && (
+            <div className="flex flex-wrap items-center gap-3 mt-2">
+              <InlineError message={`${entry.name}'s career record could not be loaded.`} />
+              <Button type="button" variant="secondary" size="sm" onClick={entry.onRetryCareer}>
+                Try Again
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </Surface>
@@ -330,18 +351,21 @@ const MyStablePage: React.FC = () => {
 
   // Story 21S-4: parallel per-horse career history for the Hall of Fame
   // list. Uses useQueries so N retired horses don't serialize on first paint.
+  // Fetched only once the Hall of Fame tab is open (Equoria-l8w4t).
   const retiredHorseHistories = useQueries({
     queries: retiredHorses.map((horse) => ({
       queryKey: horseCompetitionHistoryQueryKeys.history(horse.id),
       queryFn: () => fetchHorseCompetitionHistory(horse.id),
       staleTime: 5 * 60 * 1000,
       gcTime: 10 * 60 * 1000,
+      enabled: activeTab === 'legacy',
     })),
   });
 
   const hallOfFameEntries: HallOfFameEntry[] = retiredHorses.map((horse, index) => {
     // history stays undefined while pending or failed → career figures render "—"
-    const history = retiredHorseHistories[index]?.data as CompetitionHistoryData | undefined;
+    const historyQuery = retiredHorseHistories[index];
+    const history = historyQuery?.data as CompetitionHistoryData | undefined;
     return {
       id: String(horse.id),
       name: horse.name,
@@ -359,6 +383,8 @@ const MyStablePage: React.FC = () => {
         // by the schema migration tracked with this PR.
         earnings: Number(horse.totalEarnings ?? 0),
       },
+      careerStatus: history ? 'ready' : historyQuery?.isError ? 'error' : 'loading',
+      onRetryCareer: () => void historyQuery?.refetch(),
       icon: '*',
     };
   });
