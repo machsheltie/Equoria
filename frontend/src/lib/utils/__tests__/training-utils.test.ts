@@ -334,6 +334,20 @@ describe('Training Utilities', () => {
       expect(formatted).not.toContain('Invalid Date');
     });
 
+    test('formats dates beyond a week with the caller-supplied date options', () => {
+      // TrainingTab shows "Saturday, June 20" for a week-long wait; the options
+      // reach the shared formatDate unchanged (game clock Eastern).
+      const futureDate = new Date(pinnedNow.getTime() + 10 * msPerDay);
+      expect(
+        formatCooldownDate(futureDate.toISOString(), {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+        })
+      ).toBe('Saturday, June 20');
+      expect(formatCooldownDate(new Date(pinnedNow.getTime() + 3 * msPerDay), {})).toBe('3 days');
+    });
+
     test('should handle string dates', () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);

@@ -361,9 +361,13 @@ export function getDisciplineScore(horse: Horse, disciplineId: string): number {
 }
 
 /**
- * Format a date for display (used for cooldown dates)
+ * Format a cooldown for display: "Available now", "1 day", "N days", or, a week
+ * or more away, the date in `dateOptions` (formatDate's default when omitted).
  */
-export function formatCooldownDate(date: Date | string | null): string {
+export function formatCooldownDate(
+  date: Date | string | null,
+  dateOptions?: Intl.DateTimeFormatOptions
+): string {
   if (!date) return 'Available now';
 
   const cooldownDate = new Date(date);
@@ -384,7 +388,7 @@ export function formatCooldownDate(date: Date | string | null): string {
     return `${diffDays} days`;
   }
 
-  return formatDate(cooldownDate);
+  return formatDate(cooldownDate, dateOptions);
 }
 
 /**

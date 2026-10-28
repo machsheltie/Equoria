@@ -16,7 +16,6 @@
 import { actionMessageFor, trainRefused, trainRefusalCodes } from '@/lib/http/actionMessage';
 import React, { useState } from 'react';
 import { Link } from 'react-router';
-import { formatDate } from '@/lib/formatDate';
 import { AlertCircle, Loader2, Dumbbell, Clock, CheckCircle } from 'lucide-react';
 import DisciplinePicker from '../../components/training/DisciplinePicker';
 import TrainingConfirmModal from '../../components/training/TrainingConfirmModal';
@@ -24,7 +23,12 @@ import TrainingResultModal from '../../components/training/TrainingResultModal';
 import { ErrorState } from '@/components/ui/state';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { useTrainHorse, useTrainingOverview } from '../../hooks/api/useTraining';
-import { formatDisciplineName, canTrain, getDisciplineScore } from '../../lib/utils/training-utils';
+import {
+  formatDisciplineName,
+  canTrain,
+  getDisciplineScore,
+  formatCooldownDate,
+} from '../../lib/utils/training-utils';
 import { isBadHealth } from '../../lib/healthWords';
 import { useHorseTrainer } from '../../hooks/api/useTrainers';
 import HorseTrainerPanel from './HorseTrainerPanel';
@@ -197,23 +201,11 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     setTrainingError(null);
   };
 
-  // Format cooldown date for display
-  function formatCooldownDisplay(dateStr: string | null): string {
-    if (!dateStr) return 'Available now';
-
-    const date = new Date(dateStr);
-    const now = new Date();
-
-    if (date <= now) return 'Available now';
-
-    const diffMs = date.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 1) return '1 day';
-    if (diffDays < 7) return `${diffDays} days`;
-
-    return formatDate(date, { weekday: 'long', month: 'long', day: 'numeric' });
-  }
+  const cooldownDateOptions: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  };
 
   const globalCooldown = getGlobalCooldown(trainingOverview);
   const disabledDisciplines = getDisabledDisciplines();
@@ -260,8 +252,9 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             <Clock className="w-5 h-5 mr-2" />
             <span>
               Next training available in:{' '}
-              {formatCooldownDisplay(
-                globalCooldown || (eligibility.reason?.match(/until (.+)$/)?.[1] ?? null)
+              {formatCooldownDate(
+                globalCooldown || (eligibility.reason?.match(/until (.+)$/)?.[1] ?? null),
+                cooldownDateOptions
               )}
             </span>
           </div>
