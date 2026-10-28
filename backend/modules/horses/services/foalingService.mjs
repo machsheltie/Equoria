@@ -11,6 +11,8 @@
  *   - lineage gathering (3 generations)
  *   - epigenetic-trait roll at birth (lineage + feed quality + mare health)
  *   - conformation, gait, temperament generation (or inherited)
+ *   - stats: 0 base plus the lineage stat bonus (Equoria-fq9ob). The owner's base
+ *     stat inheritance formula is not in the bible, so no base is inherited yet.
  *   - the actual `createHorse()` insert
  *   - clearing the dam's pregnancy, in the same transaction as the insert, and
  *     releasing a retired (21+) dam's staff there too (Equoria-6p398.14)
@@ -22,6 +24,7 @@ import { createHorse } from './horseCreation.mjs';
 import { birthDisciplineScores, resolveFoalBirthDiscipline } from './birthDiscipline.mjs';
 import { getHorseById } from './horseRouteQueries.mjs';
 import { gatherLineage } from './foalLineage.mjs';
+import { resolveFoalLineageStatBonus } from './foalLineageStatBonus.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
 import {
   generateConformationScores,
@@ -62,22 +65,10 @@ const GESTATION_DAYS = 7;
  * the regular at-birth pipeline. The first trait NOT already present is
  * added so duplicates are avoided.
  *
- * Equoria-9o3n7.4: repointed at APPROVED, effect-backed traits only. The
- * former pool had wellNourished/vigorous (positive) and undernourished/
- * weakImmunity/lowVigor (negative) — none had a traitEffects entry OR a
- * TRAIT_DEFINITIONS entry, so a premium-feed roll produced a trait that did
- * NOTHING in competition/training. Every trait below resolves in
- * traitEffects.mjs (so the bonus is mechanically real) and is a canonical
- * roster member per the 9o3n7 spec §B. The feed-tier mechanic is unchanged —
- * premium feed still raises positiveChance and biases toward these traits.
+ * Equoria-9o3n7.4: repointed at APPROVED, effect-backed traits only (the
+ * former wellNourished/vigorous/undernourished/weakImmunity/lowVigor pool had
+ * no traitEffects entry and no definition, so its rolls did nothing).
  */
-// §B4 (9o3n7.4): repointed at approved, effect-backed canonical traits. The
-// previous pool (wellNourished/vigorous/undernourished/weakImmunity/lowVigor)
-// had NO traitEffects entry and NO definition — those rolls produced dead
-// traits with zero gameplay effect. Premium feed during pregnancy now biases
-// toward genuinely beneficial constitution traits; poor feed toward genuinely
-// detrimental ones, all of which have real effects in traitEffects.mjs.
-//
 // Owner ruling 2026-10-27 (q117, Equoria-2d55z): only roster traits are ever
 // generated, so athletic, calm, lowImmunity, nervous and reactive (no longer
 // traits) left both pools. Order is unchanged for the names that remain.
@@ -352,12 +343,18 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
 
   const sireGaitScores = sire.gaitScores;
   const damGaitScores = dam.gaitScores;
+  // Gaits: parents' gaits and the breed's gait ranges only; conformation never
+  // nudges them (owner ruling 2026-10-28, q210).
   const gaitScores =
     hasValidGaitScores(sireGaitScores) && hasValidGaitScores(damGaitScores)
-      ? generateInheritedGaitScores(breedName, sireGaitScores, damGaitScores, conformationScores)
-      : generateGaitScores(breedName, conformationScores);
+      ? generateInheritedGaitScores(breedName, sireGaitScores, damGaitScores)
+      : generateGaitScores(breedName);
 
   const temperament = generateTemperament(breedName);
+
+  // Equoria-fq9ob: 2% of the parents' average on each stat when 3+ ancestors share
+  // a most-competed discipline; null (no bonus) otherwise. Base stats stay 0.
+  const lineageStats = await resolveFoalLineageStatBonus({ sireId, damId, lineage });
 
   // Color genetics (31E-1a / 31E-2 / 31E-3) — wire color inheritance into
   // pregnancy-based foaling. The runFoalingJob snapshot select only fetches a
@@ -432,6 +429,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     gaitScores,
     temperament,
     disciplineScores: birthDisciplineScores(birthDiscipline),
+    ...lineageStats,
     colorGenotype,
     phenotype,
     epigeneticModifiers: {
