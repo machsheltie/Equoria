@@ -40,13 +40,13 @@ const TraitDiscovery: React.FC<TraitDiscoveryProps> = ({
 
   return (
     <section aria-labelledby="trait-discovery-heading" data-testid="hidden-traits-section">
-      <h3 id="trait-discovery-heading" className="type-section-heading mb-2">
+      <h3 id="trait-discovery-heading" className="type-section-heading trait-discovery__heading">
         Trait Discovery
       </h3>
       {carried === 0 ? (
         <div className="trait-discovery__empty">
-          <p className="fantasy-body text-[var(--text-primary)]">No traits discovered yet</p>
-          <p className="fantasy-caption text-[var(--text-secondary)]">
+          <p className="fantasy-body">No traits discovered yet</p>
+          <p className="fantasy-caption trait-discovery__quiet">
             Traits emerge from how a horse is raised and cared for. They will appear here as they
             are discovered.
           </p>
