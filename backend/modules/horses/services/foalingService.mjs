@@ -19,6 +19,7 @@
  */
 
 import { createHorse } from './horseCreation.mjs';
+import { birthDisciplineScores, resolveFoalBirthDiscipline } from './birthDiscipline.mjs';
 import { getHorseById } from './horseRouteQueries.mjs';
 import { gatherLineage } from './foalLineage.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
@@ -317,7 +318,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   // Raw SQL is used for breedGeneticProfile because the Prisma DMMF may not
   // include the JSONB column on every code path; mirrors horseRoutes.mjs.
   const breedRows = await prisma.$queryRaw`
-    SELECT name, "breedGeneticProfile"
+    SELECT name, "breedGeneticProfile", "defaultTrait"
     FROM breeds
     WHERE id = ${requestedBreedId}
   `;
@@ -404,6 +405,16 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   // options.sex; the foaling job does not, so randomize 50/50 using rng.
   const resolvedSex = options.sex ? options.sex : rng() < 0.5 ? 'Filly' : 'Colt';
 
+  // Equoria-tl5l8: the foal is born with a discipline at +5 trained value
+  // (q216 open: see resolveFoalBirthDiscipline). Drawn after every other rng
+  // use so seeded sequences for colour and sex are unchanged.
+  const birthDiscipline = await resolveFoalBirthDiscipline({
+    sireId,
+    damId,
+    foalBreed: breedRecord,
+    rng,
+  });
+
   const horseData = {
     // Equoria-4fnro (ruling 2026-09-14): unnamed at birth — see horseNamePolicy.
     name: options.name || dam.pendingFoalName || UNNAMED_HORSE_NAME,
@@ -424,6 +435,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     conformationScores,
     gaitScores,
     temperament,
+    disciplineScores: birthDisciplineScores(birthDiscipline),
     colorGenotype,
     phenotype,
     epigeneticModifiers: {

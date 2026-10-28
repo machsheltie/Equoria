@@ -54,6 +54,7 @@ import {
   generateMarkings,
   generateTemperamentWithDefault,
   generateBreedPhysiqueOrNull,
+  breedBirthDisciplineScores,
   DEFAULT_TEMPERAMENT_BREED,
   horseNameMaxLength,
 } from '../../horses/index.mjs';
@@ -114,12 +115,14 @@ export async function createStarterHorseForNewUser(
     // no surface can set her breed). Registration still succeeds; the
     // onboarding breed-selection step creates the horse from the chosen breed.
     let starterBreedId = null;
+    let starterDisciplineScores;
     try {
       const starterBreed = await prisma.breed.findUnique({
         where: { name: breedName },
-        select: { id: true },
+        select: { id: true, defaultTrait: true, breedGeneticProfile: true },
       });
       starterBreedId = starterBreed?.id ?? null;
+      starterDisciplineScores = breedBirthDisciplineScores(starterBreed);
     } catch (breedLookupError) {
       logger.error(
         '[onboardingService.createStarterHorseForNewUser] FAILED to resolve the starter breed — NOT creating a starter horse (a breedless horse is worse than none):',
@@ -173,6 +176,8 @@ export async function createStarterHorseForNewUser(
         strength: 17,
         healthStatus: 'Excellent',
         ...(physique ?? {}),
+        // Equoria-tl5l8: born with the starter breed's discipline at +5.
+        ...(starterDisciplineScores && { disciplineScores: starterDisciplineScores }),
       },
     });
     logger.info('[onboardingService.createStarterHorseForNewUser] Starter horse created', {

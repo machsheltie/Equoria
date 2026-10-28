@@ -59,6 +59,7 @@ import {
   generateMarkings,
   generateTemperamentWithDefault,
   generateBreedPhysiqueOrNull,
+  breedBirthDisciplineScores,
 } from '../../horses/index.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
@@ -351,7 +352,7 @@ export const advanceOnboarding = async (req, res, next) => {
         if (hasHorseCustomization) {
           const breed = await tx.breed.findUnique({
             where: { id: normalizedBreedId },
-            select: { id: true, name: true },
+            select: { id: true, name: true, defaultTrait: true, breedGeneticProfile: true },
           });
 
           if (!breed) {
@@ -374,6 +375,8 @@ export const advanceOnboarding = async (req, res, next) => {
             sex: normalizedGender,
             ...generateStarterStats(breed.name),
             ...(physique ?? {}),
+            // Equoria-tl5l8: born with the chosen breed's discipline at +5.
+            disciplineScores: breedBirthDisciplineScores(breed) ?? {},
           };
 
           const starterHorse = await tx.horse.findFirst({

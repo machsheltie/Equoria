@@ -57,6 +57,7 @@ async function createHorse(horseData, client = prisma) {
       hungerSince,
       tack,
       gaitScores,
+      disciplineScores,
     } = horseData;
 
     // Validate required fields
@@ -232,6 +233,8 @@ async function createHorse(horseData, client = prisma) {
           horseData.conformationScores || defaultConformationScores,
         ),
         ...(gaitScores && { gaitScores: validateGaitScores(gaitScores) }),
+        // Birth discipline +5 (Equoria-tl5l8): see services/birthDiscipline.mjs.
+        ...(disciplineScores && { disciplineScores }),
       },
       // Equoria-q4uem.7: the owner's user row (password hash, MFA secret) is
       // never loaded; no caller reads it.

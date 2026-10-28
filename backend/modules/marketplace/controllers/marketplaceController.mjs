@@ -46,6 +46,7 @@ import {
   calculatePhenotype,
   generateMarkings,
   generateTemperamentWithDefault,
+  breedBirthDisciplineScores,
 } from '../../horses/index.mjs';
 
 // ── Horse Trader store constants ──────────────────────────────────────────────
@@ -513,6 +514,7 @@ export async function buyStoreHorse(req, res) {
               temperament,
               ...(physique ?? {}),
               ...stats,
+              disciplineScores: breedBirthDisciplineScores(breedRecord),
             },
             tx,
           );
