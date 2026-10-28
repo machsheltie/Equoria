@@ -79,11 +79,34 @@ describe('ForgotPasswordPage — refused request (Equoria-mr1kq)', () => {
 });
 
 describe('FarrierPage — failed shoeing (Equoria-mr1kq; one weekly action since Equoria-zmqzf)', () => {
+  // Owner ruling 2026-10-26 (q78, Equoria-zz14s): the Farrier is a service box
+  // with a dropdown of the player's horses and one priced button. Old contract:
+  // a horse-card grid (click horse-card-1, then "Shoe horse").
   const shoe = async () => {
+    server.use(
+      http.get(`${base}/api/v1/farrier/shoe-types`, () =>
+        HttpResponse.json({
+          success: true,
+          data: [
+            {
+              id: 'basic-shoes',
+              name: 'Basic Shoes',
+              description: 'A standard set of shoes.',
+              cost: 50,
+              actionLabel: 'Shoe Horse',
+            },
+          ],
+        })
+      ),
+      http.get(`${base}/api/v1/farrier/horses`, () =>
+        HttpResponse.json({ success: true, data: [{ id: 1, name: 'Starlight', shod: false }] })
+      )
+    );
     const user = userEvent.setup();
     renderWith(<FarrierPage />);
-    await user.click(await screen.findByTestId('horse-card-1'));
-    await user.click(screen.getByRole('button', { name: /shoe horse/i }));
+    const box = await screen.findByTestId('service-box-basic-shoes');
+    await user.selectOptions(within(box).getByRole('combobox'), 'Starlight');
+    await user.click(within(box).getByRole('button', { name: /shoe horse/i }));
   };
 
   it('shows mapped copy for a server fault', async () => {

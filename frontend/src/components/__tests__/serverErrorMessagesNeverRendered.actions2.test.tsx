@@ -146,7 +146,10 @@ describe('TrainingTab — failed training (Equoria-mr1kq)', () => {
     const user = userEvent.setup();
     renderWith(<TrainingTab horse={horse} />);
     await user.click(await screen.findByRole('button', { name: /select dressage discipline/i }));
-    await user.click(await screen.findByRole('button', { name: /^confirm training$/i }));
+    // Owner ruling q163 (2026-10-28, Equoria-tjh8k): picking the discipline only
+    // selects it; one "Train — <fee>" button trains. Old contract: a Confirm
+    // Training dialog.
+    await user.click(await screen.findByTestId('train-button'));
   };
 
   it('shows mapped copy for a server fault', async () => {
