@@ -1,0 +1,168 @@
+/**
+ * Riders and grooms back for hire (Equoria-266h7; owner rulings 2026-10-28 q153,
+ * q177, q230). A section of the Rider Hall and Groom Quarters hire tabs, below the
+ * newly generated staff. Authored CSS over the Celestial Night tokens; it repeats the
+ * hire cards' shape so the two lists read as one hiring board.
+ */
+
+.returning-staff {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--alpha-gold-primary-30);
+}
+
+.returning-staff__intro {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.returning-staff__list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 768px) {
+  .returning-staff__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .returning-staff__list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.returning-staff__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  height: 100%;
+}
+
+.returning-staff__name {
+  font-family: var(--font-entity);
+  font-size: var(--text-lg);
+  color: var(--text-primary);
+}
+
+.returning-staff__identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.returning-staff__speciality {
+  color: var(--text-secondary);
+}
+
+.returning-staff__reveals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-block: 1px solid var(--glass-border);
+  font-size: var(--text-sm);
+}
+
+.returning-staff__reveals-heading {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.returning-staff__reveal-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+}
+
+.returning-staff__reveal-kind {
+  color: var(--text-muted);
+}
+
+.returning-staff__reveal-kind::after {
+  content: ':';
+}
+
+.returning-staff__reveal-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+}
+
+.returning-staff__reveal {
+  color: var(--text-primary);
+}
+
+.returning-staff__reveal-note {
+  margin-left: var(--space-1);
+  color: var(--text-secondary);
+}
+
+.returning-staff__reveal-note--strength {
+  color: var(--role-success-text);
+}
+
+.returning-staff__reveal-note--weakness {
+  color: var(--role-danger-text);
+}
+
+.returning-staff__reveal-note--favourite {
+  color: var(--gold-primary);
+}
+
+.returning-staff__nothing {
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.returning-staff__bio {
+  font-size: var(--text-sm);
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.returning-staff__hire {
+  margin-top: auto;
+}
+
+.returning-staff__hire-button {
+  width: 100%;
+}
+
+.returning-staff__price {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.returning-staff__error {
+  margin-top: var(--space-3);
+}
+
+.returning-staff__short {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.returning-staff__more {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}

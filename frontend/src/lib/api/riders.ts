@@ -11,10 +11,13 @@
  *   DELETE /api/v1/riders/assignments/:id   → { success }
  *   DELETE /api/v1/riders/:id/dismiss       → { success }
  *   GET  /api/v1/riders/:id/discovery       → RiderDiscoveryData
+ *   GET  /api/v1/riders/free-agents         → PoolRiderList (riders back for hire)
+ *   POST /api/v1/riders/free-agents/hire    → { rider, cost, remainingMoney }
  */
 
 import { apiClient } from '../http/apiClient.js';
 import type { Rider, RiderAssignment, RiderDiscoveryData, RiderMarketplaceData } from './types.js';
+import { staffPoolPageSize, type PoolRiderList } from './staffPoolTypes.js';
 
 export const ridersApi = {
   getUserRiders: (userId: string | number) =>
@@ -36,4 +39,13 @@ export const ridersApi = {
     apiClient.delete<{ success: boolean }>(`/api/v1/riders/${riderId}/dismiss`),
   getDiscovery: (riderId: number) =>
     apiClient.get<RiderDiscoveryData>(`/api/v1/riders/${riderId}/discovery`),
+  // Equoria-266h7: riders other players let go, back for hire (owner ruling q177).
+  getFreeAgents: () =>
+    apiClient.get<PoolRiderList>(`/api/v1/riders/free-agents?limit=${staffPoolPageSize}`),
+  hireFreeAgent: (riderId: number) =>
+    apiClient.post<{
+      rider: { id: number; name: string; starLevel: string };
+      cost: number;
+      remainingMoney: number;
+    }>('/api/v1/riders/free-agents/hire', { riderId }),
 };

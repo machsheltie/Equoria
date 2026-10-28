@@ -225,6 +225,10 @@ export const clubHandlers = [
   http.get(`${base}/api/v1/riders/marketplace`, () =>
     HttpResponse.json({ success: true, data: { riders: [], refreshedAt: null } })
   ),
+  // Equoria-266h7: the riders-for-hire pool on the Rider Hall's Hire tab; empty by default.
+  http.get(`${base}/api/v1/riders/free-agents`, () =>
+    HttpResponse.json({ success: true, data: { riders: [], total: 0 } })
+  ),
 
   http.post(`${base}/api/v1/clubs/:id/elections`, async ({ request, params }) => {
     const body = (await request.json()) as {

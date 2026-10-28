@@ -18,6 +18,7 @@ import { Link } from 'react-router';
 import { Users, ShoppingBag, Swords } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import RiderList from '@/components/RiderList';
+import ReturningRiders from '@/components/rider/ReturningRiders';
 import MyRidersDashboard from '@/components/MyRidersDashboard';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -75,6 +76,8 @@ const RidersPage: React.FC = () => {
           </TabsContent>
           <TabsContent value="hire">
             <RiderList />
+            {/* Equoria-266h7: riders other stables let go, back for hire (q153, q177). */}
+            <ReturningRiders />
           </TabsContent>
         </Tabs>
       </div>

@@ -18,6 +18,7 @@ import { Link, useSearchParams } from 'react-router';
 import { Users, ShoppingBag, Leaf } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import GroomList from '@/components/GroomList';
+import ReturningGrooms from '@/components/groom/ReturningGrooms';
 import MyGroomsDashboard from '@/components/MyGroomsDashboard';
 import AssignGroomModal from '@/components/AssignGroomModal';
 import { useUserGrooms } from '@/hooks/api/useGrooms';
@@ -89,6 +90,8 @@ const GroomsPage: React.FC = () => {
           </TabsContent>
           <TabsContent value="hire">
             <GroomList />
+            {/* Equoria-266h7: grooms other stables let go, back for hire (q153, q177). */}
+            <ReturningGrooms />
           </TabsContent>
         </Tabs>
       </div>

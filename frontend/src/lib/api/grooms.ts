@@ -14,6 +14,8 @@
  *   GET    /api/v1/grooms/:groomId/horses/:horseId/synergy    → synergy preview
  *   GET    /api/v1/grooms/:groomId/profile                    → { success, groom }
  *   GET    /api/v1/grooms/:groomId/assignment-logs            → { success, logs }
+ *   GET    /api/v1/groom-marketplace/free-agents              → PoolGroomList (grooms back for hire)
+ *   POST   /api/v1/groom-marketplace/free-agents/hire         → { groom, cost, remainingMoney }
  */
 
 import { apiClient } from '../http/apiClient.js';
@@ -30,6 +32,7 @@ import type {
 // component types module (mirrors the backend groomTalentService). Reuse it so
 // the api layer and the GroomTalentTree component agree on one contract.
 import type { TalentSelections } from '../../types/groomTalent.js';
+import { staffPoolPageSize, type PoolGroomList } from './staffPoolTypes.js';
 
 export const groomsApi = {
   // Equoria-j2a51: the real backend returns { success, grooms: [...], ... }
@@ -79,6 +82,16 @@ export const groomsApi = {
     ),
   refreshMarketplace: (force: boolean = false) =>
     apiClient.post<MarketplaceData>('/api/v1/groom-marketplace/refresh', { force }),
+  // Equoria-266h7: grooms other players let go, back for hire (owner rulings q153/q177).
+  getFreeAgents: () =>
+    apiClient.get<PoolGroomList>(
+      `/api/v1/groom-marketplace/free-agents?limit=${staffPoolPageSize}`
+    ),
+  hireFreeAgent: (groomId: number) =>
+    apiClient.post<{ groom: Groom; cost: number; remainingMoney: number }>(
+      '/api/v1/groom-marketplace/free-agents/hire',
+      { groomId }
+    ),
   assignGroom: (data: { groomId: number; horseId: number; replacePrimary?: boolean }) =>
     apiClient.post<{ success: boolean }>('/api/v1/groom-assignments', data),
   deleteAssignment: (assignmentId: number) =>

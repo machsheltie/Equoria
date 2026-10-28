@@ -40,6 +40,10 @@ export const groomHandlers = [
   // the v1 mirrors in the v1-mirror block below (groomsApi.* calls /api/v1/...).
   // /api/groom-marketplace/refresh is kept here, versioned to /api/v1/, because
   // it has no v1 mirror below (groomsApi.refreshMarketplace calls it).
+  // Equoria-266h7: the grooms-for-hire pool on Groom Quarters' Hire tab; empty by default.
+  http.get(`${base}/api/v1/groom-marketplace/free-agents`, () =>
+    HttpResponse.json({ success: true, data: { grooms: [], total: 0 } })
+  ),
   http.post(`${base}/api/v1/groom-marketplace/refresh`, () =>
     HttpResponse.json({
       success: true,
