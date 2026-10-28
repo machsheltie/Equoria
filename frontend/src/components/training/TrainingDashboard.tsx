@@ -416,10 +416,8 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
           horse={selectedHorse}
           onClose={() => setSelectedHorse(null)}
           onCompleted={() => {
-            // Trigger data refresh. Do NOT close the modal here — the modal
-            // stays open showing the training results so the user can read
-            // them. The Close button inside the results view calls onClose,
-            // which sets selectedHorse to null and unmounts the modal.
+            // The modal closes itself after a session (owner ruling q173: no
+            // popups); refetch so this horse's row shows its new state.
             refetch();
           }}
           // Equoria-9zluc — "No dead ends": feed the real trainable list so

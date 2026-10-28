@@ -1,52 +1,44 @@
 import { expect, type Page } from '@playwright/test';
 
 /**
- * Equoria-8gwtm: assert the RENDERED "Next Training:" date VALUE in the
- * TrainingResultsDisplay is a real date — not the static label, and not either
- * invalid-date sentinel.
+ * Train a horse from the Training Center and assert the result shows on the
+ * page itself (owner ruling q173, 2026-10-28: no popups, no log).
  *
- * WHY: the date <p> (TrainingResultsDisplay.tsx, the <p> immediately following
- * the "Next Training:" label) rendered the literal 'Invalid Date' pre-fix; the
- * shared formatDateTime guard (frontend/src/lib/formatDate.ts) now yields the
- * 'Date unavailable' fallback for a null / unparseable nextEligibleDate. BOTH
- * are regressions that the previous label-only assertions
- * (`getByText('Next Training:')`) shipped green. This helper fails if the
- * normalizer regresses to either.
+ * Old contract (Equoria-8gwtm): the session popup turned into a "Training
+ * Results" view, and this helper read its rendered "Next Training:" date. That
+ * view is removed: the popup closes and the horse's row moves to On Cooldown.
+ * The 8gwtm guard (the next-eligible date is real, never 'Invalid Date' or the
+ * 'Date unavailable' fallback) now reads the real train response, the value
+ * the row's cooldown is built from.
  *
- * Shared by core-game-flows.spec.ts (AC4) and training-flow.spec.ts so the
- * locator + format expectations live in exactly one place.
+ * Shared by core-game-flows.spec.ts (AC4) and training-flow.spec.ts.
  */
-export async function assertValidNextTrainingDate(page: Page): Promise<void> {
-  const nextTrainingValue = page
-    .getByText('Next Training:', { exact: false })
-    .locator('xpath=following-sibling::p[1]');
-  await expect(nextTrainingValue).toBeVisible({ timeout: 5000 });
+export async function trainAndAssertInPlace(page: Page, horseId: number): Promise<void> {
+  const startBtn = page.getByRole('button', { name: /start training|train horse/i });
+  await expect(startBtn).toBeVisible({ timeout: 10000 });
 
-  // Normalise the narrow / no-break spaces (U+202F / U+00A0) some ICU builds
-  // insert before AM/PM so parsing + matching are locale-build robust.
-  const text = ((await nextTrainingValue.textContent()) ?? '')
-    .replace(/[\u202F\u00A0]/g, ' ')
-    .trim();
-
-  expect(text, 'Next Training date must not be empty').not.toBe('');
-  expect(
-    text.toLowerCase(),
-    'Next Training must not render the literal "Invalid Date"'
-  ).not.toContain('invalid date');
-  expect(
-    text,
-    'Next Training must not render the Date-unavailable fallback (null/invalid nextEligibleDate)'
-  ).not.toBe('Date unavailable');
-
-  // Must be a real parseable date in a sane window around now. env.beta sets
-  // TRAINING_COOLDOWN_DAYS=0 so nextEligibleDate ~ now; production's 7-day
-  // cooldown puts it ~+7d. The generous [-2d, +30d] window is robust to the
-  // cooldown config while still rejecting epoch / 1970 / garbage timestamps.
-  const parsed = new Date(text);
-  expect(Number.isNaN(parsed.getTime()), `Next Training "${text}" must parse as a real date`).toBe(
-    false
+  const trainResp = page.waitForResponse(
+    (r) => r.url().includes('/api/v1/training/train') && r.request().method() === 'POST',
+    { timeout: 20000 }
   );
+  await startBtn.click();
+  const resp = await trainResp;
+  expect(resp.status(), 'POST /api/v1/training/train must succeed').toBe(200);
+  const body = await resp.json();
+  const data = body?.data ?? body;
+  const next = String(data?.nextEligibleDate ?? data?.nextEligible ?? '');
+
+  expect(next, 'the next-eligible date must not be empty').not.toBe('');
+  const parsed = new Date(next);
+  expect(Number.isNaN(parsed.getTime()), `next-eligible "${next}" must be a real date`).toBe(false);
   const nowMs = Date.now();
   expect(parsed.getTime()).toBeGreaterThan(nowMs - 2 * 864e5);
   expect(parsed.getTime()).toBeLessThan(nowMs + 30 * 864e5);
+
+  // No popup: the session dialog closes, and the horse's row moves on the page.
+  await expect(page.getByRole('dialog')).toBeHidden({ timeout: 10000 });
+  await expect(page.getByText(/training results|training complete/i)).toHaveCount(0);
+  await expect(
+    page.locator(`[data-testid="section-cooldown"] [data-testid="horse-card-${horseId}"]`)
+  ).toBeVisible({ timeout: 15000 });
 }

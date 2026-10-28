@@ -14,7 +14,7 @@ import { seedOwnedHorse } from './fixtures/ownedHorses';
 import { createSeededPlayerSession } from './fixtures/seededPlayer';
 import { markHorseFedTwoDaysAgo } from './fixtures/feedHistory';
 import { readTestCredentials } from './helpers/credentials';
-import { assertValidNextTrainingDate } from './helpers/training';
+import { trainAndAssertInPlace } from './helpers/training';
 
 /** Read saved credentials persisted by global-setup into process.env. */
 function readCredentials() {
@@ -187,7 +187,10 @@ test.describe('AC4: Training Session', () => {
     });
   });
 
-  test('confirming training shows Training Results', async ({ page }) => {
+  // Owner ruling q173 (2026-10-28): no popup after training. Old contract: a
+  // "Training Results" view with the next date and score; now the popup
+  // closes and the horse's row moves to On Cooldown.
+  test('training closes the popup and the horse moves to On Cooldown', async ({ page }) => {
     expect(trainingHorseId).not.toBeNull();
 
     await page.goto('/training', { waitUntil: 'domcontentloaded' });
@@ -197,30 +200,7 @@ test.describe('AC4: Training Session', () => {
     await expect(trainBtn).toBeVisible({ timeout: 15000 });
     await trainBtn.click();
 
-    // Modal opens — click Start Training
-    const startBtn = page.getByRole('button', { name: 'Start Training' });
-    await expect(startBtn).toBeVisible({ timeout: 10000 });
-    await startBtn.click();
-
-    // Training Results must appear — if not, the training execution is broken
-    await expect(page.getByText('Training Results')).toBeVisible({ timeout: 20000 });
-    await expect(page.getByText('Next Training:')).toBeVisible({ timeout: 5000 });
-
-    // Equoria-8gwtm: assert the RENDERED next-training date VALUE, not just
-    // the static "Next Training:" label. The old label-only assertion shipped an
-    // Invalid Date green (and would ship the Date-unavailable fallback green).
-    await assertValidNextTrainingDate(page);
-
-    // Optional (8gwtm): updatedScore renders as a numeric value in the Score
-    // block — confirm it is a number, not a placeholder / NaN / empty.
-    const scoreText = (
-      (await page
-        .getByText('Score', { exact: true })
-        .first()
-        .locator('xpath=following-sibling::div[1]//span[1]')
-        .textContent()) ?? ''
-    ).trim();
-    expect(scoreText, `updatedScore "${scoreText}" must be numeric`).toMatch(/^\d+$/);
+    await trainAndAssertInPlace(page, trainingHorseId as number);
   });
 });
 

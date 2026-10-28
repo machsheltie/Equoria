@@ -6,13 +6,15 @@
  * - View current training status and scores
  * - Check eligibility before training
  * - Execute training sessions
- * - View training results
  *
  * Features:
  * - Discipline selection
  * - The flat +5 a session adds (owner ruling 2026-10-23: no trait or trainer scaling)
  * - Eligibility checking with server-side validation
- * - Training execution with result display
+ * - Training execution; on success the popup closes and the Training Center
+ *   row updates in place (owner ruling q173, 2026-10-28: no popups, no log).
+ *   Old contract: a "Training Complete" results view (TrainingResultsDisplay,
+ *   removed) stayed open until Close.
  * - Error handling with user-friendly messages
  * - The assigned trainer's fee on the train button (Equoria-yucph; owner rulings
  *   2026-10-22 and 2026-10-26: one click, one advertised charge, no receipt)
@@ -40,7 +42,6 @@ import Currency from '@/components/ui/Currency';
 import type { TrainableHorse, TrainingResult } from '@/lib/api-client';
 import DisciplineSelector from './DisciplineSelector';
 import HorseStatsCard from './HorseStatsCard';
-import TrainingResultsDisplay from './TrainingResultsDisplay';
 import EligibilityAlternatives from './EligibilityAlternatives';
 
 interface TrainingSessionModalProps {
@@ -79,8 +80,6 @@ const TrainingSessionModal = ({
 }: TrainingSessionModalProps) => {
   const [discipline, setDiscipline] = useState<string>('Barrel Racing');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [trainingResult, setTrainingResult] = useState<TrainingResult | null>(null);
-  const [previousScore, setPreviousScore] = useState<number | undefined>(undefined);
 
   // Owner ruling 2026-10-07: no discipline ranking or recommendation — the
   // player chooses.
@@ -129,25 +128,13 @@ const TrainingSessionModal = ({
   const handleTrain = async () => {
     try {
       setErrorMessage(null);
-      // Save current score before training
-      setPreviousScore(status?.score);
-      // Run training
       const result = await runTraining({ horseId: horse.id, discipline });
-      // Save result to display
-      setTrainingResult(result);
-      // Call parent callback if provided
-      if (onCompleted) {
-        onCompleted(result);
-      }
+      onCompleted?.(result);
+      // The popup closes; the row on the page shows the new state (q173).
+      onClose();
     } catch (error) {
       setErrorMessage(actionMessageFor(error, trainRefused));
     }
-  };
-
-  const handleTrainAgain = () => {
-    setTrainingResult(null);
-    setPreviousScore(undefined);
-    setErrorMessage(null);
   };
 
   return (
@@ -167,151 +154,122 @@ const TrainingSessionModal = ({
         noDescription
         hideCloseButton
       >
-        {/* Show training results if available */}
-        {trainingResult ? (
-          <div>
-            <div className="mb-4 flex items-start justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-role-secondary">
-                  Training Complete
-                </p>
-                <GameDialogTitle className="text-xl font-bold text-[var(--text-primary)]">
-                  {horse.name}
-                </GameDialogTitle>
-              </div>
-              <button
-                type="button"
-                className="rounded-lg px-3 py-1.5 text-sm font-semibold text-role-secondary hover:text-[var(--text-primary)] hover:bg-[var(--glass-glow)] transition-colors"
-                onClick={onClose}
-              >
-                Close
-              </button>
+        <>
+          {/* Training Form */}
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-role-secondary">
+                Training Session
+              </p>
+              <GameDialogTitle className="text-xl font-bold text-[var(--text-primary)]">
+                {horse.name}
+              </GameDialogTitle>
+              <p className="text-sm text-role-secondary">
+                Choose a discipline to train. Eligibility and cooldown are enforced server-side.
+              </p>
             </div>
-            <TrainingResultsDisplay
-              result={trainingResult}
-              previousScore={previousScore}
-              onClose={onClose}
-              onTrainAgain={handleTrainAgain}
+            <button
+              type="button"
+              className="rounded-lg px-3 py-1.5 text-sm font-semibold text-role-secondary hover:text-[var(--text-primary)] hover:bg-[var(--glass-glow)] transition-colors"
+              onClick={onClose}
+            >
+              Close
+            </button>
+          </div>
+
+          {/* Horse Stats Display */}
+          <div className="mt-4">
+            <HorseStatsCard horse={horse} />
+          </div>
+
+          {/* Use new DisciplineSelector component */}
+          <div className="mt-4">
+            <DisciplineSelector
+              selectedDiscipline={discipline}
+              onDisciplineChange={setDiscipline}
             />
           </div>
-        ) : (
-          <>
-            {/* Training Form */}
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-role-secondary">
-                  Training Session
-                </p>
-                <GameDialogTitle className="text-xl font-bold text-[var(--text-primary)]">
-                  {horse.name}
-                </GameDialogTitle>
-                <p className="text-sm text-role-secondary">
-                  Choose a discipline to train. Eligibility and cooldown are enforced server-side.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="rounded-lg px-3 py-1.5 text-sm font-semibold text-role-secondary hover:text-[var(--text-primary)] hover:bg-[var(--glass-glow)] transition-colors"
-                onClick={onClose}
-              >
-                Close
-              </button>
-            </div>
 
-            {/* Horse Stats Display */}
-            <div className="mt-4">
-              <HorseStatsCard horse={horse} />
-            </div>
+          <div className="mt-3 rounded-md border border-[var(--role-neutral-border)] bg-[var(--role-neutral-bg)] px-3 py-2 text-sm text-[var(--text-primary)]">
+            {statusSummary}
+          </div>
 
-            {/* Use new DisciplineSelector component */}
-            <div className="mt-4">
-              <DisciplineSelector
-                selectedDiscipline={discipline}
-                onDisciplineChange={setDiscipline}
-              />
-            </div>
+          {/* Expected Score Display */}
+          <div
+            className="mt-3 rounded-md border border-[var(--alpha-gold-light-20)] bg-[var(--alpha-gold-light-5)] px-3 py-2 text-sm text-[var(--gold-300)]"
+            data-testid="expected-score-display"
+          >
+            <span className="font-semibold">Expected New Score:</span>{' '}
+            <span data-testid="expected-score-value">{expectedNewScore}</span>
+            <span className="text-[var(--gold-400)] ml-2">
+              (Current: {currentScore} + {TRAINING_GAIN})
+            </span>
+          </div>
 
-            <div className="mt-3 rounded-md border border-[var(--role-neutral-border)] bg-[var(--role-neutral-bg)] px-3 py-2 text-sm text-[var(--text-primary)]">
-              {statusSummary}
-            </div>
-
-            {/* Expected Score Display */}
+          {eligibility && (
             <div
-              className="mt-3 rounded-md border border-[var(--alpha-gold-light-20)] bg-[var(--alpha-gold-light-5)] px-3 py-2 text-sm text-[var(--gold-300)]"
-              data-testid="expected-score-display"
+              className={`mt-3 rounded-md px-3 py-2 text-sm ${
+                eligibility.eligible
+                  ? 'border border-[var(--role-success-border)] bg-[var(--role-success-bg)] text-[var(--role-success-text)]'
+                  : 'border border-[var(--role-warning-border)] bg-[var(--role-warning-bg)] text-[var(--role-warning-text)]'
+              }`}
             >
-              <span className="font-semibold">Expected New Score:</span>{' '}
-              <span data-testid="expected-score-value">{expectedNewScore}</span>
-              <span className="text-[var(--gold-400)] ml-2">
-                (Current: {currentScore} + {TRAINING_GAIN})
-              </span>
+              {eligibility.eligible
+                ? 'Eligible to train'
+                : eligibility.reason || 'Not eligible to train'}
             </div>
+          )}
 
-            {eligibility && (
-              <div
-                className={`mt-3 rounded-md px-3 py-2 text-sm ${
-                  eligibility.eligible
-                    ? 'border border-[var(--role-success-border)] bg-[var(--role-success-bg)] text-[var(--role-success-text)]'
-                    : 'border border-[var(--role-warning-border)] bg-[var(--role-warning-bg)] text-[var(--role-warning-text)]'
-                }`}
-              >
-                {eligibility.eligible
-                  ? 'Eligible to train'
-                  : eligibility.reason || 'Not eligible to train'}
-              </div>
-            )}
-
-            {/* Equoria-9zluc — "No dead ends": when this horse is ineligible,
+          {/* Equoria-9zluc — "No dead ends": when this horse is ineligible,
                 suggest the user's real currently-eligible horses instead of
                 stopping at the reason. */}
-            {eligibility && !eligibility.eligible && onSwitchHorse && (
-              <EligibilityAlternatives
-                blockedHorseId={horse.horseId ?? horse.id}
-                trainableHorses={trainableHorses}
-                isLoading={trainableHorsesLoading}
-                onSelectAlternative={onSwitchHorse}
-              />
-            )}
+          {eligibility && !eligibility.eligible && onSwitchHorse && (
+            <EligibilityAlternatives
+              blockedHorseId={horse.horseId ?? horse.id}
+              trainableHorses={trainableHorses}
+              isLoading={trainableHorsesLoading}
+              onSelectAlternative={onSwitchHorse}
+            />
+          )}
 
-            {errorMessage && (
-              <div className="mt-3 rounded-md border border-[var(--role-danger-border)] bg-[var(--role-danger-bg)] px-3 py-2 text-sm text-[var(--role-danger-text)]">
-                {errorMessage}
-              </div>
-            )}
-
-            <div className="mt-5 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleCheckEligibility}
-                disabled={checking || isTraining}
-                className="rounded-lg border border-[var(--btn-secondary-border)] px-4 py-2 text-sm font-semibold text-role-secondary hover:text-[var(--text-primary)] hover:border-[var(--btn-secondary-border-hover)] hover:bg-[var(--btn-secondary-bg-hover)] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {checking ? 'Checking...' : 'Check Eligibility'}
-              </button>
-              <button
-                type="button"
-                onClick={handleTrain}
-                disabled={isTraining}
-                className="rounded-lg px-5 py-2 text-sm font-semibold transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] disabled:cursor-not-allowed disabled:opacity-70"
-                style={{
-                  background:
-                    'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
-                  color: 'var(--bg-deep-space)',
-                }}
-              >
-                {isTraining ? (
-                  'Training...'
-                ) : trainerFee > 0 ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    Train Horse <Currency amount={trainerFee} />
-                  </span>
-                ) : (
-                  'Start Training'
-                )}
-              </button>
+          {errorMessage && (
+            <div className="mt-3 rounded-md border border-[var(--role-danger-border)] bg-[var(--role-danger-bg)] px-3 py-2 text-sm text-[var(--role-danger-text)]">
+              {errorMessage}
             </div>
-          </>
-        )}
+          )}
+
+          <div className="mt-5 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={handleCheckEligibility}
+              disabled={checking || isTraining}
+              className="rounded-lg border border-[var(--btn-secondary-border)] px-4 py-2 text-sm font-semibold text-role-secondary hover:text-[var(--text-primary)] hover:border-[var(--btn-secondary-border-hover)] hover:bg-[var(--btn-secondary-bg-hover)] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {checking ? 'Checking...' : 'Check Eligibility'}
+            </button>
+            <button
+              type="button"
+              onClick={handleTrain}
+              disabled={isTraining}
+              className="rounded-lg px-5 py-2 text-sm font-semibold transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] disabled:cursor-not-allowed disabled:opacity-70"
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+                color: 'var(--bg-deep-space)',
+              }}
+            >
+              {isTraining ? (
+                'Training...'
+              ) : trainerFee > 0 ? (
+                <span className="inline-flex items-center gap-1.5">
+                  Train Horse <Currency amount={trainerFee} />
+                </span>
+              ) : (
+                'Start Training'
+              )}
+            </button>
+          </div>
+        </>
       </GameDialogContent>
     </GameDialog>
   );
