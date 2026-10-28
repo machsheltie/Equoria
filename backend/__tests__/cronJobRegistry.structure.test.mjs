@@ -77,6 +77,9 @@ const EXPECTED_JOBS = [
   // Equoria-2d55z: the nightly trait reveal (00:40 Eastern, a free minute, after
   // the game day ends), appended last (reorders nothing).
   { jobName: 'nightlyTraitReveal', schedule: '40 0 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
+  // Equoria-vb1n0: Hall of Fame rounds, hourly at :13 (a free minute), so a
+  // one-day run-off is decided within the hour after it ends; appended last.
+  { jobName: 'hallOfFameRounds', schedule: '13 * * * *', staleAfterMs: 2 * 60 * 60 * 1000 },
 ];
 
 afterEach(() => {
@@ -137,6 +140,7 @@ describe('cron job registry structure (Equoria-fx4e7)', () => {
       emailOutboxDelivery: 'deliverEmailOutbox',
       dailyNewsPosting: 'postDailyNews',
       nightlyTraitReveal: 'revealTraitsFromCare',
+      hallOfFameRounds: 'runHallOfFameRounds',
     };
 
     for (const job of CRON_JOB_REGISTRY) {

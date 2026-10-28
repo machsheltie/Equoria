@@ -30,8 +30,10 @@ describe('shared retirement age (Equoria-iehtc)', () => {
   });
 
   it.each([
-    ['CommunityPage', '../../pages/CommunityPage.tsx'],
-    ['MyStablePage', '../../pages/MyStablePage.tsx'],
+    // Equoria-vb1n0: the Hall of Fame no longer derives its horses from age
+    // (CommunityPage reads the real Hall of Fame; MyStablePage is gone); the
+    // nomination button is the surface that decides "retired".
+    ['NominateHallOfFameButton', '../../components/horse/NominateHallOfFameButton.tsx'],
     ['StableView', '../../pages/StableView.tsx'],
   ])('%s imports the shared constant instead of declaring or hardcoding it', (_name, path) => {
     const source = read(path);

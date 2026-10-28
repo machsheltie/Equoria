@@ -1,0 +1,102 @@
+/**
+ * Hall of Fame (Equoria-vb1n0) — authored CSS over Celestial Night tokens.
+ *
+ * A commemorative register, not a card wall: two named sections of horses on
+ * the page band, each horse a line of the register.
+ */
+
+.hall-of-fame {
+  padding: var(--space-6) 0 var(--space-8);
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+.hall-of-fame__hero {
+  margin-bottom: var(--space-6);
+  text-align: center;
+}
+
+.hall-of-fame__title {
+  margin: 0;
+  color: var(--gold-primary);
+  font-family: var(--font-entity);
+  font-size: var(--text-h1);
+  line-height: 1.18;
+}
+
+.hall-of-fame__lede {
+  margin: var(--space-3) auto 0;
+  max-width: 34rem;
+  color: var(--text-secondary);
+}
+
+.hall-of-fame__section {
+  margin-top: var(--space-8);
+}
+
+.hall-of-fame__heading {
+  margin: 0 0 var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--glass-border);
+  color: var(--gold-light);
+  font-family: var(--font-entity);
+  font-size: var(--text-h3);
+}
+
+.hall-of-fame__round + .hall-of-fame__round {
+  margin-top: var(--space-6);
+}
+
+.hall-of-fame__round-note,
+.hall-of-fame__empty {
+  margin: var(--space-3) 0;
+  color: var(--text-secondary);
+}
+
+.hall-of-fame__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hall-of-fame__entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.hall-of-fame__horse {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.hall-of-fame__name {
+  color: var(--text-primary);
+  font-family: var(--font-entity);
+  font-size: 1.125rem;
+  text-decoration: none;
+}
+
+.hall-of-fame__name:hover,
+.hall-of-fame__name:focus-visible {
+  color: var(--gold-light);
+  text-decoration: underline;
+}
+
+.hall-of-fame__meta {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.hall-of-fame__voted,
+.hall-of-fame__date {
+  color: var(--gold-light);
+  font-size: 0.9rem;
+}

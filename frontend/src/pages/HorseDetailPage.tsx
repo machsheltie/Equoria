@@ -74,6 +74,7 @@ import StudSaleTab from './horse-detail/StudSaleTab';
 import RiderPickerModal from './horse-detail/RiderPickerModal';
 import HorseActionBar from './horse-detail/HorseActionBar';
 import ListForSaleModal from './horse-detail/ListForSaleModal';
+import NominateHallOfFameButton from '@/components/horse/NominateHallOfFameButton';
 // Equoria-o5hub.5 (D-24) — contextual bottom-action slot owned by
 // DashboardLayout. Falls back to in-place rendering when no layout provider
 // is mounted (direct page renders in tests).
@@ -245,6 +246,13 @@ const HorseDetailPage: React.FC = () => {
           {/* Header — the back link now renders inside HorseProfileCard's
             EntityHeader (D-01 identity header). */}
           <div className="mb-6">
+            {/* Equoria-vb1n0: a retired horse's owner may nominate it to the Hall
+                of Fame, once (owner view only; the visitor view never renders this). */}
+            <NominateHallOfFameButton
+              horseId={horse.id}
+              horseName={horse.name}
+              ageYears={horse.ageYears}
+            />
             {/* Horse Profile Card */}
             <HorseProfileCard
               horse={horse}

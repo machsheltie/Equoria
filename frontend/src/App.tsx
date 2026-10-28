@@ -3,7 +3,7 @@ import { Toaster as Sonner } from '@/components/ui/sonner';
 import { GameTooltipProvider as TooltipProvider } from '@/components/ui/game';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createAppQueryClient } from './lib/queryClient';
-import { BrowserRouter, Routes, Route } from 'react-router';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { navItems } from './nav-items';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth';
@@ -143,6 +143,8 @@ const App = () => (
                       <Route path="/horses/:id/equip" element={<HorseEquipPage />} />
                       <Route path="/horses/:id/allocate-stats" element={<AllocateStatsPage />} />
                       <Route path="/foals/:id" element={<FoalLinkRedirect />} />
+                      {/* Equoria-vb1n0: the Hall of Fame moved; old links land on it. */}
+                      <Route path="/my-stable" element={<Navigate to="/hall-of-fame" replace />} />
                       {navItems.map(({ to, Page }) => (
                         <Route key={to} path={to} element={<Page />} />
                       ))}

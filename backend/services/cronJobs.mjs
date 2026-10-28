@@ -21,6 +21,7 @@ import { CRON_JOB_REGISTRY } from './jobs/index.mjs';
 import { runEmailOutbox } from '../modules/staff/index.mjs';
 import { postDailyNewsEntries } from '../modules/news/index.mjs';
 import { runNightlyTraitReveal } from '../modules/traits/index.mjs';
+import { runHallOfFameRounds } from '../modules/community/index.mjs';
 // Equoria-urqic.3.5: the run-observability concern (heartbeat liveness,
 // CronRunLog persistence, the /api/admin/cron/health surface, and the
 // stale-alert debounce) is now a dedicated collaborator that this scheduler
@@ -390,6 +391,16 @@ class CronJobService {
    */
   async revealTraitsFromCare() {
     return runNightlyTraitReveal();
+  }
+
+  /**
+   * Hall of Fame rounds (Equoria-vb1n0, owner rulings 2026-10-28): decides due
+   * rounds (induction or a one-day run-off of tied horses) and opens this
+   * week's round of last week's nominations.
+   * @returns {Promise<{ closed: number, inducted: number, runoffs: number, nomineesOpened: number }>}
+   */
+  async runHallOfFameRounds() {
+    return runHallOfFameRounds();
   }
 
   /**

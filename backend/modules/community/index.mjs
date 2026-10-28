@@ -9,6 +9,7 @@
  * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-// No production consumer imports this module through the barrel today.
+// services/cronJobs.mjs imports the Hall of Fame rounds step through this barrel.
 
-export {};
+// Equoria-vb1n0: the Hall of Fame rounds step, run by the hourly cron job.
+export { runHallOfFameRounds } from './services/hallOfFameService.mjs';

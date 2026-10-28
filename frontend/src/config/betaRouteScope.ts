@@ -73,6 +73,8 @@ export const BETA_SCOPE: Record<string, BetaScope> = {
   '/reset-password': 'beta-live',
   '/crafting': 'beta-live',
   '/my-stable': 'beta-live',
+  // Equoria-vb1n0: the Hall of Fame (/my-stable redirects here).
+  '/hall-of-fame': 'beta-live',
   '/community': 'beta-live',
   // Equoria-kd2dd: the in-game new player guide.
   '/guide': 'beta-live',

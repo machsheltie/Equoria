@@ -42,7 +42,7 @@ const BankPage = lazy(() => import('./pages/BankPage'));
 const InventoryPage = lazy(() => import('./pages/InventoryPage'));
 // Equoria-rdg0d — Staff: the grooms, riders and trainers a player has hired
 const StaffPage = lazy(() => import('./pages/StaffPage'));
-const MyStablePage = lazy(() => import('./pages/MyStablePage'));
+const HallOfFamePage = lazy(() => import('./pages/HallOfFamePage'));
 // Epic 13 — Trainer System (World sub-location, route-only)
 const TrainersPage = lazy(() => import('./pages/TrainersPage'));
 const TrainerPage = lazy(() => import('./pages/TrainerPage'));
@@ -209,11 +209,13 @@ export const navItems = [
     Page: TrainingPage,
   },
   {
-    // D-27 (DECISIONS.md §10): /my-stable is the profile & hall of fame — "Stable Profile".
-    title: 'Stable Profile',
-    to: '/my-stable',
+    // Equoria-vb1n0 (owner rulings 2026-10-28): the Hall of Fame. The former
+    // Stable Profile view is gone (the player's page is the stable's page,
+    // /profile); old /my-stable links redirect here (App.tsx).
+    title: 'Hall of Fame',
+    to: '/hall-of-fame',
     icon: null,
-    Page: MyStablePage,
+    Page: HallOfFamePage,
   },
   // Epic 13 — Trainer System (World sub-location, accessible via World Hub card)
   {

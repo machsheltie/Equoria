@@ -79,7 +79,8 @@ export const staticRoutes: BaselineRoute[] = [
 
   // ── Stable / entity ────────────────────────────────────────────────────
   { path: '/stable', slug: 'stable', family: 'stable-entity', auth: true },
-  { path: '/my-stable', slug: 'stable-profile', family: 'stable-entity', auth: true },
+  // Equoria-vb1n0: the Hall of Fame (/my-stable redirects here).
+  { path: '/hall-of-fame', slug: 'hall-of-fame', family: 'stable-entity', auth: true },
 
   // ── Workflow pages ─────────────────────────────────────────────────────
   { path: '/training', slug: 'training', family: 'workflow', auth: true },

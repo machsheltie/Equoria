@@ -24,7 +24,9 @@ const read = (relative: string) => readFileSync(join(__dirname, relative), 'utf8
 const SITES: Array<[string, string]> = [
   ['HorseCard', '../../components/horse/HorseCard.tsx'],
   ['StableView', '../../pages/StableView.tsx'],
-  ['MyStablePage', '../../pages/MyStablePage.tsx'],
+  // Equoria-vb1n0: MyStablePage is gone (owner ruling 2026-10-28); the nomination
+  // button reads the horse page's ageYears.
+  ['NominateHallOfFameButton', '../../components/horse/NominateHallOfFameButton.tsx'],
   ['CommunityPage', '../../pages/CommunityPage.tsx'],
 ];
 

@@ -48,6 +48,7 @@ import staffCheckinRetentionJob from './staffCheckinRetentionJob.mjs';
 import emailOutboxJob from './emailOutboxJob.mjs';
 import dailyNewsPostingJob from './dailyNewsPostingJob.mjs';
 import nightlyTraitRevealJob from './nightlyTraitRevealJob.mjs';
+import hallOfFameRoundsJob from './hallOfFameRoundsJob.mjs';
 
 /**
  * Ordered registry. The first ten entries match the original `this.jobs.set(...)`
@@ -73,6 +74,7 @@ import nightlyTraitRevealJob from './nightlyTraitRevealJob.mjs';
  * emailOutboxDelivery (STAFF-CR-10) is appended after that, likewise.
  * dailyNewsPosting (Equoria-wbt8l) is appended after that, likewise.
  * nightlyTraitReveal (Equoria-2d55z) is appended after that, likewise.
+ * hallOfFameRounds (Equoria-vb1n0) is appended after that, likewise.
  *
  * weeklyFlagEvaluation (Mondays 00:30) was removed (Equoria-koxep; owner rulings
  * 2026-10-27, q112-q118): it turned a foal's weekly care pattern into traits,
@@ -96,6 +98,7 @@ export const CRON_JOB_REGISTRY = Object.freeze([
   emailOutboxJob,
   dailyNewsPostingJob,
   nightlyTraitRevealJob,
+  hallOfFameRoundsJob,
 ]);
 
 export default CRON_JOB_REGISTRY;

@@ -86,6 +86,7 @@ import forumRoutes from '../modules/community/routes/forumRoutes.mjs';
 import messageRoutes from '../modules/community/routes/messageRoutes.mjs';
 import helpRoutes from '../modules/community/routes/helpRoutes.mjs';
 import clubRoutes from '../modules/community/routes/clubRoutes.mjs';
+import hallOfFameRoutes from '../modules/community/routes/hallOfFameRoutes.mjs';
 import marketplaceRoutes from '../modules/marketplace/routes/marketplaceRoutes.mjs';
 import bankRoutes from '../modules/bank/routes/bankRoutes.mjs';
 import craftingRoutes from '../modules/crafting/routes/craftingRoutes.mjs';
@@ -223,6 +224,7 @@ export function buildRouters() {
   authRouter.use('/messages', messageRoutes);
   authRouter.use('/help', helpRoutes);
   authRouter.use('/clubs', clubRoutes);
+  authRouter.use('/hall-of-fame', hallOfFameRoutes);
   authRouter.use('/marketplace', marketplaceRoutes);
   authRouter.use('/next-actions', nextActionsRoutes);
   authRouter.use('/while-you-were-gone', wyagRoutes);

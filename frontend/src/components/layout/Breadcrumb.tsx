@@ -25,7 +25,7 @@ const PATH_LABEL_OVERRIDES: Record<string, string> = {
 
 /** Map route segments to display names */
 const ROUTE_LABELS: Record<string, string> = {
-  // D-27 (DECISIONS.md §10): /stable → "Stable", /my-stable → "Stable Profile"
+  // D-27 (DECISIONS.md §10): /stable → "Stable"; /hall-of-fame → "Hall of Fame" (Equoria-vb1n0)
   stable: 'Stable',
   training: 'Training',
   competitions: 'Competitions',
@@ -46,7 +46,7 @@ const ROUTE_LABELS: Record<string, string> = {
   trainers: 'Trainers',
   'message-board': 'Message Board',
   clubs: 'Clubs',
-  'my-stable': 'Stable Profile',
+  'hall-of-fame': 'Hall of Fame',
   'feed-shop': 'Feed Shop',
   'tack-shop': 'Tack Shop',
   'premium-shop': 'Premium Shop',

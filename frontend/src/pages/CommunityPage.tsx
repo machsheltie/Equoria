@@ -5,7 +5,7 @@
  * - Message Board (/message-board): General discussion, art, sales, services
  * - Clubs (/clubs): Discipline and breed associations with governance
  * - Messages/Inbox (/messages): Direct messaging between players
- * - Hall of Fame (/my-stable): Retired champions (MyStablePage legacy tab)
+ * - Hall of Fame: nominated and inducted horses (Equoria-vb1n0)
  *
  * Migrated to the canonical design system (Equoria-o5hub §4 community lane):
  * PageContainer(wide) + PageHeader, Surface semantics for cards/panels,
@@ -16,14 +16,14 @@
  * pending → skeleton, error → "—" + a visible error bar with a wired retry,
  * success → the real number INCLUDING a real 0. The "Elections open" badge is
  * gated on real election state (GET /api/v1/clubs/elections/open-count) and
- * the Hall of Fame stats reuse MyStablePage's real retired-horse + career
- * history queries. No stub literals, no unconditional badges.
+ * the Hall of Fame stats come from the real Hall of Fame (GET
+ * /api/v1/hall-of-fame, Equoria-vb1n0): its inducted horses and this week's
+ * nominees, never every retired horse. No stub literals, no unconditional badges.
  */
 
 import React from 'react';
 import { Link } from 'react-router';
 import { MessageSquare, Users, Mail, Trophy, ArrowRight, Globe } from 'lucide-react';
-import { useQueries } from '@tanstack/react-query';
 import PageHeader from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Surface } from '@/components/ui/Surface';
@@ -31,17 +31,11 @@ import { IconBox } from '@/components/ui/IconBox';
 import { GameBadge } from '@/components/ui/game';
 import { Skeleton, InlineError, ErrorState } from '@/components/ui/state';
 import { forumSections } from '@/lib/api-client';
-import { retirementAgeYears } from '@/lib/horseAgePolicy';
 import { useThreads } from '@/hooks/api/useForum';
 import { useUnreadCount, useConversationsCount } from '@/hooks/api/useMessages';
 import { useClubs, useOpenElectionsCount } from '@/hooks/api/useClubs';
 import { useCommunityActivity } from '@/hooks/api/useUserProgress';
-import { useHorses } from '@/hooks/api/useHorses';
-import {
-  fetchHorseCompetitionHistory,
-  type CompetitionHistoryData,
-} from '@/lib/api/competitionResults';
-import { horseCompetitionHistoryQueryKeys } from '@/hooks/api/useHorseCompetitionHistory';
+import { useHallOfFame } from '@/hooks/api/useHallOfFame';
 import ActivityFeed from '../components/ActivityFeed';
 import { ActivityType, type Activity } from '../lib/activity-utils';
 
@@ -94,36 +88,18 @@ const CommunityPageContent: React.FC = () => {
   const clubsQuery = useClubs();
   const openElectionsQuery = useOpenElectionsCount();
   const activityQuery = useCommunityActivity();
-  const horsesQuery = useHorses();
-
-  // Hall of Fame: retired horses + their real career histories. Reuses
-  // MyStablePage's exact query keys so the caches are shared between the hub
-  // card and the destination page.
-  const horses = horsesQuery.data ?? [];
-  const retiredHorses = horses.filter((horse) => horse.ageYears >= retirementAgeYears);
-  const hofHistories = useQueries({
-    queries: retiredHorses.map((horse) => ({
-      queryKey: horseCompetitionHistoryQueryKeys.history(horse.id),
-      queryFn: () => fetchHorseCompetitionHistory(horse.id),
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-      // Owner ruling 2026-10-23 (Equoria-m00gp, option a): offline ends in the
-      // error bar with Try again, never a paused (endless) loading stat.
-      networkMode: 'always' as const,
-    })),
-  });
+  // Hall of Fame (Equoria-vb1n0, owner rulings 2026-10-28): the inducted horses
+  // and this week's nominees, from the real Hall of Fame. A retired horse is not
+  // an inductee; the Hall of Fame started empty.
+  const hallQuery = useHallOfFame();
 
   const threadsError = Boolean(threadsQuery.error);
   const clubs = clubsQuery.data?.clubs;
   const disciplineCount = clubs?.filter((c) => c.type === 'discipline').length ?? 0;
   const breedCount = clubs?.filter((c) => c.type === 'breed').length ?? 0;
 
-  const hofPending = horsesQuery.isPending || hofHistories.some((q) => q.isPending);
-  const hofError = horsesQuery.isError || hofHistories.some((q) => q.isError);
-  const hofWins = hofHistories.reduce(
-    (sum, q) => sum + ((q.data as CompetitionHistoryData | undefined)?.statistics.wins ?? 0),
-    0
-  );
+  const hofNominees =
+    hallQuery.data?.rounds.reduce((sum, round) => sum + round.nominees.length, 0) ?? 0;
 
   const stats: Record<string, HubStat> = {
     sections: staticStat('Sections', forumSections.length),
@@ -159,15 +135,15 @@ const CommunityPageContent: React.FC = () => {
     },
     inductees: {
       label: 'Inductees',
-      isPending: horsesQuery.isPending,
-      isError: horsesQuery.isError,
-      value: retiredHorses.length,
+      isPending: hallQuery.isPending,
+      isError: hallQuery.isError,
+      value: hallQuery.data?.inductees.length ?? 0,
     },
-    totalWins: {
-      label: 'Total wins',
-      isPending: hofPending,
-      isError: hofError,
-      value: hofWins,
+    nominees: {
+      label: 'Nominees',
+      isPending: hallQuery.isPending,
+      isError: hallQuery.isError,
+      value: hofNominees,
     },
   };
 
@@ -187,8 +163,7 @@ const CommunityPageContent: React.FC = () => {
     { isError: unreadQuery.isError, refetch: unreadQuery.refetch },
     { isError: conversationsQuery.isError, refetch: conversationsQuery.refetch },
     { isError: openElectionsQuery.isError, refetch: openElectionsQuery.refetch },
-    { isError: horsesQuery.isError, refetch: horsesQuery.refetch },
-    ...hofHistories.map((q) => ({ isError: q.isError, refetch: q.refetch })),
+    { isError: hallQuery.isError, refetch: hallQuery.refetch },
   ];
   const erroredStatQueries = statQueries.filter((q) => q.isError);
   const hasStatsError = erroredStatQueries.length > 0;
@@ -256,11 +231,11 @@ const CommunityPageContent: React.FC = () => {
     {
       title: 'Hall of Fame',
       description:
-        'Celebrate your greatest horses. Retired champions immortalized with career highlights and legacy records.',
+        'The best of the best. Each week players vote one nominated retired horse into the Hall of Fame.',
       href: '/my-stable',
       icon: <Trophy />,
       role: 'warning',
-      stats: [stats.inductees, stats.totalWins],
+      stats: [stats.inductees, stats.nominees],
     },
   ];
 

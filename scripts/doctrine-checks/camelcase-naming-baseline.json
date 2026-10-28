@@ -1059,8 +1059,6 @@
   "frontend/src/pages/__tests__/RegisterPage.test.tsx": 5,
   "frontend/src/pages/__tests__/ResetPasswordPage.test.tsx": 5,
   "frontend/src/pages/__tests__/StewardsOfficePage.test.tsx": 7,
-  "frontend/src/pages/__tests__/my-stable-page-career-stats.test.tsx": 14,
-  "frontend/src/pages/__tests__/my-stable-page-champion-frame.test.tsx": 12,
   "frontend/src/pages/__tests__/pagesMaxLinesDoctrine.sentinel.test.tsx": 13,
   "frontend/src/pages/clubs/constants.tsx": 4,
   "frontend/src/pages/horse-detail/HorseProfileCard.tsx": 5,

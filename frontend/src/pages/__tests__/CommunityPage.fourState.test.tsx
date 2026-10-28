@@ -19,8 +19,12 @@
  *   - GET /api/v1/messages/conversations-count → { success, data: { count } }
  *   - GET /api/v1/clubs/elections/open-count   → { success, data: { count } }
  *   - GET /api/v1/users/community/activity  → { success, data: [...] }
- *   - GET /api/v1/horses (?t=)              → { success, data: [...] }
- *   - GET /api/v1/horses/:id/competition-history → BARE object (no envelope)
+ *   - GET /api/v1/hall-of-fame              → { success, data: { rounds, inductees } }
+ *
+ * Equoria-vb1n0 (owner rulings 2026-10-28): the Hall of Fame card's figures
+ * are its inducted horses and this week's nominees from the real Hall of Fame.
+ * Old contract (replaced): "Inductees" counted every retired horse and "Total
+ * wins" summed their career wins.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -39,8 +43,7 @@ const UNREAD = `${base}/api/v1/messages/unread-count`;
 const CONVERSATIONS = `${base}/api/v1/messages/conversations-count`;
 const OPEN_ELECTIONS = `${base}/api/v1/clubs/elections/open-count`;
 const ACTIVITY = `${base}/api/v1/users/community/activity`;
-const HORSES = `${base}/api/v1/horses`;
-const HISTORY = `${base}/api/v1/horses/:id/competition-history`;
+const HALL = `${base}/api/v1/hall-of-fame`;
 
 const club = (id: number, type: 'discipline' | 'breed') => ({
   id,
@@ -53,28 +56,31 @@ const club = (id: number, type: 'discipline' | 'breed') => ({
   createdAt: '2026-01-01T00:00:00Z',
 });
 
-const retiredHorse = {
-  id: 42,
-  name: 'Old Champ',
-  breed: 'Thoroughbred',
-  age: 22,
-  ageYears: 22,
-  gender: 'Mare',
-  dateOfBirth: '2020-01-01T00:00:00Z',
-  healthStatus: 'Excellent',
-  stats: {},
-  disciplineScores: {},
-  totalEarnings: 0,
+const hofHorse = (id: number) => ({
+  horseId: id,
+  horseName: `Horse ${id}`,
+  breedName: 'Thoroughbred',
+  ownerName: 'owner',
+});
+
+/** One inducted horse and two nominees this week. */
+const hallWithHorses = {
+  rounds: [
+    {
+      roundId: 1,
+      isRunoff: false,
+      endsAt: '2026-11-08T05:00:00.000Z',
+      myVoteCandidateId: null,
+      nominees: [
+        { candidateId: 11, ...hofHorse(43) },
+        { candidateId: 12, ...hofHorse(44) },
+      ],
+    },
+  ],
+  inductees: [{ ...hofHorse(42), inductedAt: '2026-11-01T05:13:00.000Z' }],
 };
 
-const activeHorse = { ...retiredHorse, id: 43, name: 'Young Star', age: 5, ageYears: 5 };
-
-const historyFor = (horseId: number, wins: number) => ({
-  horseId,
-  horseName: `Horse ${horseId}`,
-  statistics: { totalCompetitions: wins + 2, wins, placings: 0, totalEarnings: 0 },
-  competitions: [],
-});
+const emptyHall = { rounds: [], inductees: [] };
 
 /**
  * Stub every endpoint the hub touches with a successful, populated response.
@@ -86,15 +92,13 @@ function stubHappy({
   unread = 3,
   conversations = 4,
   openElections = 1,
-  horses = [retiredHorse, activeHorse],
-  wins = 5,
+  hall = hallWithHorses,
 }: {
   total?: number;
   unread?: number;
   conversations?: number;
   openElections?: number;
-  horses?: Array<Record<string, unknown>>;
-  wins?: number;
+  hall?: typeof hallWithHorses | typeof emptyHall;
 } = {}) {
   server.use(
     http.get(THREADS, () =>
@@ -114,8 +118,7 @@ function stubHappy({
       HttpResponse.json({ success: true, data: { count: openElections } })
     ),
     http.get(ACTIVITY, () => HttpResponse.json({ success: true, data: [] })),
-    http.get(HORSES, () => HttpResponse.json({ success: true, data: horses })),
-    http.get(HISTORY, ({ params }) => HttpResponse.json(historyFor(Number(params.id), wins)))
+    http.get(HALL, () => HttpResponse.json({ success: true, data: hall }))
   );
 }
 
@@ -181,7 +184,7 @@ describe('CommunityPage — hub stats four-state (Equoria-r4cyk)', () => {
     // Discipline clubs = 2, breed clubs = 1 (+ Inductees also 1).
     expect(screen.getAllByText('2').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('1').length).toBeGreaterThanOrEqual(1);
-    // Unread = 3, Conversations = 4, Total wins (retired horse's real wins) = 5.
+    // Unread = 3, Conversations = 4, Nominees = 2 (Sections = 5).
     expect(screen.getAllByText('3').length).toBeGreaterThanOrEqual(1);
     expect(await screen.findAllByText('4')).not.toHaveLength(0);
     expect(await screen.findAllByText('5')).not.toHaveLength(0);
@@ -191,14 +194,14 @@ describe('CommunityPage — hub stats four-state (Equoria-r4cyk)', () => {
 
   // SUCCESS + ZERO — a real 0 renders as "0", not as the old '…' conflation.
   it('renders a real 0 (not "…") when a stat is genuinely zero', async () => {
-    stubHappy({ total: 0, unread: 0, conversations: 0, openElections: 0, horses: [] });
+    stubHappy({ total: 0, unread: 0, conversations: 0, openElections: 0, hall: emptyHall });
     server.use(http.get(CLUBS, () => HttpResponse.json({ success: true, data: { clubs: [] } })));
 
     renderPage();
 
     const zeros = await screen.findAllByText('0');
     // Sections(5) stays 5; everything else — threads, clubs ×2 (card+banner),
-    // unread ×2, conversations, inductees, wins — is an honest zero.
+    // unread ×2, conversations, inductees, nominees — is an honest zero.
     expect(zeros.length).toBeGreaterThanOrEqual(6);
     expect(screen.queryByText('…')).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -305,8 +308,7 @@ describe('CommunityPage — hub stats four-state (Equoria-r4cyk)', () => {
       http.get(CONVERSATIONS, offline),
       http.get(`${base}/api/v1/clubs/elections/open-count`, offline),
       http.get(ACTIVITY, offline),
-      http.get(HORSES, offline),
-      http.get(HISTORY, offline)
+      http.get(HALL, offline)
     );
 
     onlineManager.setOnline(false);

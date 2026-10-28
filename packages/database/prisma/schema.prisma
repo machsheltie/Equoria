@@ -88,6 +88,8 @@ model User {
   clubMemberships         ClubMembership[]         @relation("ClubMemberships")
   candidacies             ClubCandidate[]          @relation("ElectionCandidacies")
   ballots                 ClubBallot[]             @relation("CastBallots")
+  hallOfFameNominations   HallOfFameNomination[]   @relation("HallOfFameNominations")
+  hallOfFameVotes         HallOfFameVote[]         @relation("HallOfFameVotes")
   horsesSold              HorseSale[]              @relation("HorseSalesSold")
   horsesBought            HorseSale[]              @relation("HorseSalesBought")
   showsCreated            Show[]                   @relation("ShowCreator")
@@ -306,6 +308,8 @@ model Horse {
   showEntries             ShowEntry[]
   breedingRecordsAsSire   BreedingRecord[]      @relation("BreedingRecordSire")
   breedingRecordsAsDam    BreedingRecord[]      @relation("BreedingRecordDam")
+  hallOfFameNomination    HallOfFameNomination?
+  hallOfFameInduction     HallOfFameInduction?
 
   @@index([userId])
   @@index([breedId])
@@ -2545,4 +2549,97 @@ model HorseMonthlyTotal {
   @@index([month, category, value(sort: Desc), horseId])
   @@index([horseId])
   @@map("horse_monthly_totals")
+}
+
+/// Hall of Fame (Equoria-vb1n0, owner rulings 2026-10-28, q257-q259). The Hall
+/// of Fame is for the best of the best, not every retired horse: an owner
+/// nominates a retired horse (21+) once, ever; that week's nominations are the
+/// next Eastern week's nominees; every player has one vote per round and may
+/// vote for any nominee, her own included; the round's top horse is inducted.
+/// A tied top vote opens a one-game-day run-off between the tied horses, like
+/// club elections, repeating until one wins. A horse that is not inducted has
+/// used its one chance. The Hall of Fame started empty.
+enum HallOfFameRoundOutcome {
+  /// One nominee had the most votes; inductedHorseId was inducted.
+  inducted
+  /// The top vote count was tied; `runoff` is the round deciding it.
+  runoff
+  /// No votes were cast (or the round had no nominees): nobody was inducted.
+  none
+}
+
+/// One nomination: a horse can be nominated once, ever (horseId is unique).
+model HallOfFameNomination {
+  id            Int      @id @default(autoincrement())
+  horseId       Int      @unique
+  horse         Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
+  nominatedById String
+  nominatedBy   User     @relation("HallOfFameNominations", fields: [nominatedById], references: [id], onDelete: Cascade)
+  /// 00:00 Eastern on the Sunday that starts the game week (owner ruling q265) the nomination was made in;
+  /// the horse is a nominee in the round of the following week.
+  weekStart     DateTime
+  createdAt     DateTime @default(now())
+  candidacies   HallOfFameCandidate[]
+
+  @@index([weekStart])
+}
+
+/// A voting round: the weekly round, or a one-day run-off of a tied round.
+model HallOfFameRound {
+  id              Int                     @id @default(autoincrement())
+  /// The game week a weekly round belongs to (00:00 Eastern Sunday); NULL for a run-off.
+  weekStart       DateTime?               @unique
+  startsAt        DateTime
+  endsAt          DateTime
+  /// Set when the closing job decides the round; NULL while it is open.
+  closedAt        DateTime?
+  outcome         HallOfFameRoundOutcome?
+  /// A run-off round points at the tied round it decides.
+  runoffOfId      Int?                    @unique
+  runoffOf        HallOfFameRound?        @relation("HallOfFameRunoff", fields: [runoffOfId], references: [id], onDelete: SetNull)
+  runoff          HallOfFameRound?        @relation("HallOfFameRunoff")
+  candidates      HallOfFameCandidate[]
+  votes           HallOfFameVote[]
+  induction       HallOfFameInduction?
+
+  @@index([closedAt, endsAt])
+}
+
+/// A nominated horse standing in one round.
+model HallOfFameCandidate {
+  id           Int                  @id @default(autoincrement())
+  roundId      Int
+  round        HallOfFameRound      @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  nominationId Int
+  nomination   HallOfFameNomination @relation(fields: [nominationId], references: [id], onDelete: Cascade)
+  votes        HallOfFameVote[]
+
+  @@unique([roundId, nominationId])
+  @@index([nominationId])
+}
+
+/// One player's one vote in one round.
+model HallOfFameVote {
+  id          Int                 @id @default(autoincrement())
+  roundId     Int
+  round       HallOfFameRound     @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  candidateId Int
+  candidate   HallOfFameCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  voterId     String
+  voter       User                @relation("HallOfFameVotes", fields: [voterId], references: [id], onDelete: Cascade)
+  createdAt   DateTime            @default(now())
+
+  @@unique([roundId, voterId])
+  @@index([candidateId])
+  @@index([voterId])
+}
+
+/// A horse in the Hall of Fame, with the date it joined.
+model HallOfFameInduction {
+  id         Int             @id @default(autoincrement())
+  horseId    Int             @unique
+  horse      Horse           @relation(fields: [horseId], references: [id], onDelete: Cascade)
+  roundId    Int             @unique
+  round      HallOfFameRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  inductedAt DateTime
 }
