@@ -9,15 +9,16 @@
  * every existing importer is unchanged.
  */
 
-// Equoria-95yrv fix round 1 (F1): the ten-horse cap is enforced under the same
+// Equoria-95yrv fix round 1 (F1): the per-groom horse cap is enforced under the same
 // transaction-scoped advisory lock the weekly fee pass uses.
 import { jobNameToLockKey } from '../../../utils/cronLock.mjs';
 import { retirementAgeYears } from '../../../constants/horseAgePolicy.mjs';
 
 /**
  * Equoria-95yrv, owner ruling 2026-09-14 10:23: "Charge the player per horse
- * assigned to a groom per week: $70 per horse per week, up to 10 horses per
- * groom."
+ * assigned to a groom per week: $70 per horse per week." The per-groom cap that
+ * ruling set (10 horses) was raised by owner ruling 2026-10-26 (q68) to twenty
+ * horses per groom — see MAX_HORSES_PER_GROOM below.
  *
  * The fee no longer depends on WHO the groom is. The skill/specialty rate table
  * (50/75/100/150 plus 0/10/15) is gone with the per-groom-on-staff basis it
