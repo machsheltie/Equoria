@@ -257,6 +257,14 @@ export const navItems = [
     icon: null,
     Page: CompetitionResultsPage,
   },
+  // Equoria-iz7eu: one show's results, opened straight from its address
+  // (While You Were Away, shared links). The page reads :competitionId.
+  {
+    title: 'Show Results',
+    to: '/competition-results/:competitionId',
+    icon: null,
+    Page: CompetitionResultsPage,
+  },
   // Equoria-e0cn — Conformation shows entry surface (route-only)
   {
     title: 'Conformation Shows',
