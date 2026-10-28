@@ -29,8 +29,6 @@ import { __TESTING_ONLY_awaitMarketplaceRaceBarrier as awaitRaceBarrier } from '
 import { reconcileHorseOnTransfer } from '../services/horseTransferReconciliation.mjs';
 
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
-// Equoria-i366a: the hidden traits a store horse carries (owner rulings
-// 2026-10-22 and 2026-10-28, q174), drawn by the traits module.
 import { generateStoreHorseTraitRoster } from '../../traits/index.mjs';
 // Cross-module horses-domain imports go through the horses module barrel
 // (Equoria-v8l96.2): createHorse; generateStoreStats (shared with the perf
@@ -456,12 +454,7 @@ export async function buyStoreHorse(req, res) {
       context: `Horse Trader purchase by user ${buyerId}`,
     });
 
-    // Equoria-i366a: a real carried trait roster, every trait hidden (owner
-    // rulings 2026-10-22 and 2026-10-28, q174: a random number, up to 5). Drawn
-    // before the transaction and written with the horse, so the charge and the
-    // traits commit together. The response guard sends only the hidden count.
-    const epigeneticModifiers = generateStoreHorseTraitRoster();
-
+    const epigeneticModifiers = generateStoreHorseTraitRoster(); // hidden, 1-5 (i366a, q174)
     // ── Atomic money + horse transaction (Equoria-gumnp) ──────────────────────
     // The debit, its paired SYSTEM_ACCOUNT_BURN credit, the purchase ledger row,
     // the horse INSERT, and the unvetted-flag update all commit or roll back
