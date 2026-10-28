@@ -18,8 +18,6 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { releaseShowEscrow } from '../../../__tests__/helpers/releaseShowEscrow.mjs';
 import * as eligible from '../../../__tests__/helpers/eligibleCompetitor.mjs'; // B9 entry rules
-
-// Deletes a fixture show's entries, hands back its escrow, then deletes it (Equoria-r3mv2).
 async function dropShow(id) {
   if (!id) {
     return;
