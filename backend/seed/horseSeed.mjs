@@ -40,7 +40,6 @@ const sampleHorses = [
     },
     shade: 'Dark',
     imageUrl: '/images/midnight_comet.jpg',
-    trait: 'Agile',
     temperament: 'Spirited',
     precision: 75,
     strength: 80,
@@ -68,7 +67,6 @@ const sampleHorses = [
     phenotype: { colorName: 'Champagne Sabino', markings: { face: 'Star', legs: ['Coronet'] } },
     shade: 'Golden',
     imageUrl: '/images/golden_dawn.jpg',
-    trait: 'Graceful',
     temperament: 'Calm',
     precision: 80,
     strength: 70,
@@ -96,7 +94,6 @@ const sampleHorses = [
     phenotype: { colorName: 'Silver Bay', markings: { face: 'None', legs: [] } },
     shade: 'Light',
     imageUrl: '/images/shadowfax_spirit.jpg',
-    trait: 'Fast Learner',
     // Equoria-hlnik: 'Curious' is NOT a canonical temperament type. Was mapped
     // to 'Playful'; owner ruling 2026-10-21 renamed Playful to Driven. sampleHorses
     // is a static export consumed by tests, so a deterministic canonical literal

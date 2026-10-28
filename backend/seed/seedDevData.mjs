@@ -128,7 +128,6 @@ const HORSES = [
     age: 5,
     breed: 'Thoroughbred',
     userIdx: 0,
-    trait: 'Speed Demon',
   },
   {
     name: 'Golden Thunder',
@@ -136,7 +135,6 @@ const HORSES = [
     age: 4,
     breed: 'Arabian',
     userIdx: 0,
-    trait: 'Iron Will',
   },
   {
     name: 'Silver Mist',
@@ -144,7 +142,6 @@ const HORSES = [
     age: 3,
     breed: 'American Saddlebred',
     userIdx: 0,
-    trait: 'Quick Learner',
   },
   {
     name: 'Eclipse',
@@ -152,7 +149,6 @@ const HORSES = [
     age: 6,
     breed: 'Lusitano',
     userIdx: 0,
-    trait: 'Gentle Giant',
   },
   // player2's horses
   {
@@ -161,7 +157,6 @@ const HORSES = [
     age: 4,
     breed: 'Andalusian',
     userIdx: 1,
-    trait: 'Show Stopper',
   },
   {
     name: 'Storm Chaser',
@@ -169,9 +164,8 @@ const HORSES = [
     age: 5,
     breed: 'Paint Horse',
     userIdx: 1,
-    trait: 'Speed Demon',
   },
-  { name: 'Daisy Belle', sex: 'Mare', age: 2, breed: 'Appaloosa', userIdx: 1, trait: null },
+  { name: 'Daisy Belle', sex: 'Mare', age: 2, breed: 'Appaloosa', userIdx: 1 },
   // newplayer's starter horse
   {
     name: 'Lucky Clover',
@@ -179,7 +173,6 @@ const HORSES = [
     age: 3,
     breed: 'American Quarter Horse',
     userIdx: 2,
-    trait: null,
   },
 ];
 
@@ -323,7 +316,6 @@ async function seedHorses(users, breeds) {
         dateOfBirth: gameYearsAgo(horseData.age),
         breedId: breedMap[horseData.breed] ?? null,
         userId: owner.id,
-        trait: horseData.trait,
         // Equoria-o7pnn: permanent breed-weighted temperament, assigned once at
         // creation (mirrors authController register/advanceOnboarding). Only set
         // here on create — never overwritten for an existing horse above.
