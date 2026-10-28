@@ -12,8 +12,9 @@
  *
  * Formula:
  *   bonus   = SKILL_BONUS[skillLevel]                    // novice .02 | developing .05 | expert .10
- *           + (careerLevel − 1) · 0.005                   // +0.5%/level above 1, max +4.5%
- *             (careerLevel = star level, two per star: owner ruling 2026-10-28, q229)
+ *           + (careerLevel − 1) · 0.005                   // +0.5%/level above 1
+ *             (careerLevel = 1 for every trainer, owner ruling 2026-10-28 q244: stars
+ *             give no bonus for now; staff growth, Equoria-xlw03, replaces it)
  *           + (speciality === discipline ? 0.05 : 0)     // discipline match
  *           + max(0,  COMPAT[personality][temperament])  // positive compat
  *   penalty = max(0, −COMPAT[personality][temperament])  // negative compat
@@ -119,7 +120,7 @@ function clamp(value, min, max) {
  * Compute a trainer's training bonus/penalty percentages.
  *
  * @param {Object} params
- * @param {Object|null} params.trainer - Trainer row (skillLevel, starLevel,
+ * @param {Object|null} params.trainer - Trainer row (skillLevel,
  *   speciality, personality, retired) or null.
  * @param {string} params.discipline - The training discipline (e.g. "Dressage").
  * @param {string|null} params.horseTemperament - One of the 12 temperaments, or null.
@@ -143,9 +144,9 @@ export function computeTrainerModifiers({ trainer, discipline, horseTemperament 
     typeof trainer.skillLevel === 'string' ? trainer.skillLevel.trim().toLowerCase() : '';
   bonus += TRAINER_SKILL_BONUS[skillLevel] ?? 0;
 
-  // ── career level (1–10): +0.5%/level above 1 (this term maxes at +4.5%) ─────────
-  // The old 1-10 level is now the star level, two per star (q229).
-  const level = staffCareerLevel(trainer.starLevel);
+  // ── career level: +0.5%/level above 1 ───────────────────────────────────
+  // Level 1 for every trainer (q244), so 0 until staff growth (Equoria-xlw03).
+  const level = staffCareerLevel;
   bonus += (level - 1) * 0.005;
 
   // ── discipline speciality match ──────────────────────────────────────────

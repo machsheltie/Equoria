@@ -102,7 +102,8 @@ export interface TrainerDiscoveryData {
 /** GET /api/v1/trainers/roster-cap — the limit the hire path enforces (q222). */
 export interface TrainerRosterLimit {
   rosterCap: number;
-  stableLevel: number;
+  /** The player's level (User.level), which the limit follows (q245). */
+  playerLevel: number;
   activeTrainers: number;
 }
 

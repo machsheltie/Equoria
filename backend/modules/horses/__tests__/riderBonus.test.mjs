@@ -104,12 +104,18 @@ describe('computeRiderModifiers (Equoria-5bkh)', () => {
     expect(result.penaltyPercent).toBe(0);
   });
 
-  // Owner ruling 2026-10-28 (q229): the old 1-10 level is the star level, two per star
-  // (staffCareerLevel), so an Expert is the old level 10.
-  it('an Expert (old level 10) contributes +3.6% bonus', () => {
-    const rider = { personality: 'methodical', skillLevel: 'developing', starLevel: 'expert', prestige: 0 };
-    const result = computeRiderModifiers({ rider, discipline: 'Endurance' });
-    expect(result.bonusPercent).toBeCloseTo(0.036);
+  // Owner rulings 2026-10-28: q229 dropped the old 1-10 level column, and q244 says stars
+  // give no bonus for now, so every rider/trainer is at the old level 1
+  // (staffCareerLevel) and the level term adds nothing.
+  // This case used to assert that level 10 gave +3.6%; the rulings changed it.
+  it('no level term: an Expert, or a stray old level 10, adds nothing', () => {
+    for (const extra of [{ starLevel: 'expert' }, { level: 10 }]) {
+      const rider = { personality: 'methodical', skillLevel: 'developing', prestige: 0, ...extra };
+      expect(computeRiderModifiers({ rider, discipline: 'Endurance' })).toEqual({
+        bonusPercent: 0,
+        penaltyPercent: 0,
+      });
+    }
   });
 
   it('prestige 100 contributes +4% bonus', () => {
@@ -135,9 +141,9 @@ describe('computeRiderModifiers (Equoria-5bkh)', () => {
     expect(computeRiderModifiers({ rider, discipline: 'Racing' }).bonusPercent).toBe(0);
   });
 
-  it('elite rider (max all categories) caps at BONUS_CAP 10%', () => {
-    // experienced (+0.03) + Expert, level 10 (+0.036) + prestige 100 (+0.04) + high affinity (+0.02)
-    // = 0.126, capped to 0.10
+  it('elite rider (max all categories) sums to 9%, inside BONUS_CAP 10%', () => {
+    // experienced (+0.03) + prestige 100 (+0.04) + high affinity (+0.02) = 0.09. The
+    // level term (up to +0.036) adds nothing (q229/q244), so the cap is not reached.
     const rider = {
       personality: 'methodical',
       skillLevel: 'experienced',
@@ -145,7 +151,7 @@ describe('computeRiderModifiers (Equoria-5bkh)', () => {
       prestige: 100,
     };
     const result = computeRiderModifiers({ rider, discipline: 'Dressage' });
-    expect(result.bonusPercent).toBe(0.1);
+    expect(result.bonusPercent).toBeCloseTo(0.09);
     expect(result.penaltyPercent).toBe(0);
   });
 

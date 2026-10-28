@@ -129,7 +129,7 @@ beforeAll(() => {
 
 afterAll(() => cleanup.run(), 30000);
 
-// Owner ruling 2026-10-28 (q222, Equoria-asmsy) raised the stable-level-1 trainer cap
+// Owner ruling 2026-10-28 (q222, Equoria-asmsy) (with q245) raised the level-1 trainer cap
 // from 1 to 2; these cases now seat one more trainer to reach it.
 describe('POST /api/v1/trainers/marketplace/hire — refusal codes (Equoria-dosig)', () => {
   it('a full roster answers 400 with code rosterCapReached and the cap counts', async () => {

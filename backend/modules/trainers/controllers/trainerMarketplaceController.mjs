@@ -20,9 +20,8 @@ import {
   SYSTEM_ACCOUNT_BURN,
 } from '../../economy/index.mjs';
 // Equoria-oey96.8: roster-cap enforcement. Same-module config deep import;
-// getStableLevel via the users barrel (cross-module); shared roster-cap error.
+// Shared roster-cap error. The cap keys on the player's level (q245).
 import { getTrainerRosterCap } from '../config/trainerConfig.mjs';
-import { getStableLevel } from '../../users/index.mjs';
 import { RosterCapExceededError, StaleOfferError } from '../../../errors/index.mjs';
 import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
 import { offerAtLevelPrice, offerLevelAndFee } from '../../../constants/staffLevels.mjs';
@@ -278,18 +277,18 @@ export async function hireTrainerFromMarketplace(req, res) {
       return res.status(404).json({ success: false, message: 'User not found', data: null });
     }
 
-    // Equoria-oey96.8: roster cap scales by stable level (getStableLevel derives
-    // it from User.level). Fast-path reject for an already-full user so we don't
+    // Equoria-oey96.8: the roster cap scales by the player's level (User.level; owner
+    // ruling 2026-10-28, q245). Fast-path reject for an already-full user so we don't
     // open a tx for a hire that can't land. TOCTOU on its own — the authoritative
     // guard is the in-tx post-lock re-count below; this only avoids the tx for the
     // common sequential at-cap case.
-    const rosterCap = getTrainerRosterCap(getStableLevel(user));
+    const rosterCap = getTrainerRosterCap(user.level);
     const activeTrainerCount = await prisma.trainer.count({ where: { userId, retired: false } });
     if (activeTrainerCount >= rosterCap) {
       return res.status(400).json({
         success: false,
         code: staffHireRefusal.rosterCapReached,
-        message: `You have reached your trainer roster cap of ${rosterCap}. Retire a trainer or raise your stable level before hiring another.`,
+        message: `You have reached your trainer roster cap of ${rosterCap}. Retire a trainer or raise your level before hiring another.`,
         data: { currentCount: activeTrainerCount, maxAllowed: rosterCap },
       });
     }
@@ -339,7 +338,7 @@ export async function hireTrainerFromMarketplace(req, res) {
         const rosterCountInTx = await tx.trainer.count({ where: { userId, retired: false } });
         if (rosterCountInTx > rosterCap) {
           throw new RosterCapExceededError(
-            `You have reached your trainer roster cap of ${rosterCap}. Retire a trainer or raise your stable level before hiring another.`,
+            `You have reached your trainer roster cap of ${rosterCap}. Retire a trainer or raise your level before hiring another.`,
           );
         }
         // Equoria-bvddn.19: remove the hired offer from the persisted list

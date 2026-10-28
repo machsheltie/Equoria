@@ -2,8 +2,8 @@
  * MyTrainersDashboard — the trainer limit comes from the server (Equoria-asmsy).
  *
  * Owner report 2026-10-28: the page said "of 4 trainer slots" while the hire path
- * refused a second trainer at stable level 1. Owner ruling q222: "2 for level 1, then
- * +1 per level, up to 10". The page now shows GET /api/v1/trainers/roster-cap, the
+ * refused a second trainer at stable level 1. Owner rulings q222/q245: "2 for level 1,
+ * then +1 per level, up to 10", by the player's level. The page now shows GET /api/v1/trainers/roster-cap, the
  * number the hire path enforces, and never a number of its own.
  *
  * Real hooks and api-client; only the network boundary is stubbed (MSW).
@@ -67,7 +67,7 @@ describe('MyTrainersDashboard — trainer limit (q222)', () => {
     serve(() =>
       HttpResponse.json({
         success: true,
-        data: { rosterCap: 2, stableLevel: 1, activeTrainers: 1 },
+        data: { rosterCap: 2, playerLevel: 1, activeTrainers: 1 },
       })
     );
     renderDashboard();
@@ -76,16 +76,16 @@ describe('MyTrainersDashboard — trainer limit (q222)', () => {
     expect(screen.getByText(/trainer slots used/i).textContent).toMatch(/1\s+of\s+2\s+trainer/);
   });
 
-  it('follows the stable level the server reports', async () => {
+  it('follows the player level the server reports', async () => {
     serve(() =>
       HttpResponse.json({
         success: true,
-        data: { rosterCap: 6, stableLevel: 5, activeTrainers: 1 },
+        data: { rosterCap: 10, playerLevel: 9, activeTrainers: 1 },
       })
     );
     renderDashboard();
 
-    expect(await screen.findByTestId('trainer-slot-cap')).toHaveTextContent('6');
+    expect(await screen.findByTestId('trainer-slot-cap')).toHaveTextContent('10');
   });
 
   it('shows a dash, never a made-up number, when the limit cannot be read', async () => {

@@ -327,9 +327,9 @@ export async function getRiderDiscovery(req, res) {
     }
 
     // Stepped reveal cadence (Equoria-oey96.25): slots unlock at career levels
-    // 2, 4, 6, 8, 9, 10. The career level is the rider's star level, two old levels
-    // per star (owner ruling 2026-10-28, q229; staffCareerLevel).
-    const discoveredCount = getRevealedDiscoveryCount(staffCareerLevel(rider.starLevel));
+    // 2, 4, 6, 8, 9, 10. Every rider sits at level 1 (owner ruling 2026-10-28, q244:
+    // stars give nothing for now), so none is revealed until staff growth (xlw03).
+    const discoveredCount = getRevealedDiscoveryCount(staffCareerLevel);
     const categories = ['discipline_affinity', 'temperament_compatibility', 'gait_affinity'];
     const slots = Array.from({ length: 6 }, (_, i) => ({
       slotIndex: i,

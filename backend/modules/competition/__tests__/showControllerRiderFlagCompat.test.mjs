@@ -91,16 +91,18 @@ const STAT_BASE = {
 // Rider config producing an EXACT bonus of 0.090 (below the 0.10 BONUS_CAP so
 // the positive-flag factor of 1.08 has headroom and does not clamp):
 //   experienced            -> +0.030
-//   Expert, level 10 (level-1)*0.004 -> +0.036 (q229: two old levels per star)
-//   prestige 60 *0.0004     -> +0.024   (total 0.090)
-//   personality 'gentle' has NO Dressage affinity -> +0.000
+//   prestige 100 *0.0004    -> +0.040
+//   personality 'methodical' has HIGH Dressage affinity -> +0.020   (total 0.090)
+// (It used to reach 0.090 through the old level 10 term. Owner rulings 2026-10-28: q229
+// dropped the old 1-10 level column, and q244 says stars give no bonus for now, so every
+// rider/trainer is at the old level 1 (staffCareerLevel) and the level term adds
+// nothing.)
 const RIDER_CONFIG = {
   firstName: 'TestFixture',
-  personality: 'gentle',
+  personality: 'methodical',
   skillLevel: 'experienced',
   speciality: 'Dressage',
-  starLevel: 'expert',
-  prestige: 60,
+  prestige: 100,
 };
 
 const POSITIVE_FLAGS = ['brave', 'confident', 'affectionate', 'resilient']; // net +4 -> factor 1.08

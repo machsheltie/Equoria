@@ -15,13 +15,14 @@
  *
  *   - `computeRiderModifiers({ rider, discipline })`
  *       Derives `{ bonusPercent, penaltyPercent }` from a Rider row
- *       (`personality`, `skillLevel`, `starLevel`, `prestige`) plus the
+ *       (`personality`, `skillLevel`, `prestige`) plus the
  *       competition discipline. Caps results at the validated ranges.
  *
  * Formula for computeRiderModifiers (Equoria-5bkh):
  *   - skillLevel: rookie=-2%, developing=0%, experienced=+3% (bonus)
- *   - career level (1–10, the star level: two per star, owner ruling 2026-10-28 q229):
- *     +0.4% per level above 1, capped at +3.6% bonus
+ *   - career level: +0.4% per level above 1. Every rider sits at level 1
+ *     (staffCareerLevel; owner ruling 2026-10-28, q244: stars give no bonus for now),
+ *     so this adds nothing until staff growth (Equoria-xlw03).
  *   - prestige (0–100): +0.04% per prestige point, capped at +4% bonus
  *   - discipline-personality affinity (from RIDER_PERSONALITY_DATA):
  *       high match: +2% bonus
@@ -125,7 +126,7 @@ function applyRiderModifiers(score, bonusPercent = 0, penaltyPercent = 0) {
  * Output is always within `applyRiderModifiers`' validated range.
  *
  * @param {Object} params
- * @param {Object|null} params.rider - Rider row (personality, skillLevel, starLevel, prestige, retired)
+ * @param {Object|null} params.rider - Rider row (personality, skillLevel, prestige, retired)
  * @param {string} params.discipline - The show's discipline (e.g. "Dressage")
  * @returns {{ bonusPercent: number, penaltyPercent: number }}
  */
@@ -147,9 +148,9 @@ function computeRiderModifiers({ rider, discipline } = {}) {
   }
   // 'developing' = neutral
 
-  // ── career level (1–10) contribution: +0.4% per level above 1, max +3.6% ─────
-  // The old 1-10 level is now the star level, two per star (q229).
-  const level = staffCareerLevel(rider.starLevel);
+  // ── career level contribution: +0.4% per level above 1 ─────────────────
+  // Level 1 for every rider (q244), so 0 until staff growth (Equoria-xlw03).
+  const level = staffCareerLevel;
   bonus += (level - 1) * 0.004;
 
   // ── prestige (0–100) contribution: +0.04% per point, max +4% ──────────

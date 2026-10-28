@@ -40,11 +40,11 @@ export const v1MirrorHandlers = [
     HttpResponse.json({ success: true, data: [] })
   ),
 
-  // The trainer limit (owner ruling 2026-10-28, q222): stable level 1 holds 2.
+  // The trainer limit (owner rulings 2026-10-28, q222/q245): player level 1 holds 2.
   http.get(`${base}/api/v1/trainers/roster-cap`, () =>
     HttpResponse.json({
       success: true,
-      data: { rosterCap: 2, stableLevel: 1, activeTrainers: 0 },
+      data: { rosterCap: 2, playerLevel: 1, activeTrainers: 0 },
     })
   ),
 

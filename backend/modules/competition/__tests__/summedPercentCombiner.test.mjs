@@ -33,12 +33,12 @@ const flat = v => ({
   obedience: v,
   focus: v,
 });
-// Owner ruling 2026-10-28 (q229): the old 1-10 level is the star level, two per star
-// (staffCareerLevel), so an Expert is the old level 10.
-// computeRiderModifiers: experienced +3%, Expert (level 10) +3.6%, prestige 60 +2.4%, no affinity = +9%.
-const RIDER_9 = { skillLevel: 'experienced', starLevel: 'expert', prestige: 60, personality: 'gentle' };
-// experienced +3%, Expert +3.6%, prestige 100 +4%, methodical/Dressage +2% = 12.6%, capped at +10%.
-const RIDER_10 = { skillLevel: 'experienced', starLevel: 'expert', prestige: 100, personality: 'methodical' };
+// Owner rulings 2026-10-28: q229 dropped the old 1-10 level column, and q244 says stars
+// give no bonus for now, so every rider/trainer is at the old level 1 (staffCareerLevel)
+// and the level term adds nothing.
+// These fixtures used to reach 9% and the 10% cap through that level term.
+// computeRiderModifiers: experienced +3%, prestige 100 +4%, methodical/Dressage +2% = +9%.
+const RIDER_9 = { skillLevel: 'experienced', prestige: 100, personality: 'methodical' };
 // experienced +3% bonus, retired -8% penalty = -5%.
 const RIDER_RETIRED = { skillLevel: 'experienced', prestige: 0, personality: 'gentle', retired: true };
 
@@ -98,8 +98,8 @@ describe('modifiers are summed and applied once (C2)', () => {
   it('the rider percent is added to luck, not multiplied after it', () => {
     // 100 x (1 + 0.01 + 0.09) = 110. (Old: (100 - 9) x 1.09 = 99.19 -> 99.)
     expect(score(100, { rng: () => 0, rider: RIDER_9 })).toBe(110);
-    // 50 x (1 + 0.10 + 0.10) = 60; applying the two separately would give 50 x 1.1 x 1.1 = 60.5 -> 61.
-    expect(score(50, { rng: () => 0.999999, rider: RIDER_10 })).toBe(60);
+    // 100 x (1 + 0.10 + 0.09) = 119; applying the two separately would give 100 x 1.1 x 1.09 = 119.9 -> 120.
+    expect(score(100, { rng: () => 0.999999, rider: RIDER_9 })).toBe(119);
   });
 
   it('a rider penalty is a negative term in the same sum', () => {

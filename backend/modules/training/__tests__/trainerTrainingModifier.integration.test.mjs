@@ -284,18 +284,20 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
     });
   });
 
-  // Owner ruling 2026-10-28 (q229): the old 1-10 level is the star level, two per star
-  // (staffCareerLevel), so an Expert is the old level 10.
-  it('T4 (cap sentinel): expert 5-star (L10) matched patient+Stubborn (raw 0.235) → net == +20% exactly', () => {
+  // Owner rulings 2026-10-28: q229 dropped the old 1-10 level column, and q244 says stars
+  // give no bonus for now, so every rider/trainer is at the old level 1
+  // (staffCareerLevel) and the level term adds nothing.
+  // So the best trainer no longer reaches the cap (it used to: 0.235 with level 10).
+  it('T4 (cap sentinel): expert matched patient+Stubborn (raw 0.19) stays within the +20% cap', () => {
     const result = computeTrainerModifiers({
-      trainer: { skillLevel: 'expert', starLevel: 'expert', speciality: 'Dressage', personality: 'patient' },
+      trainer: { skillLevel: 'expert', starLevel: 'expert', level: 10, speciality: 'Dressage', personality: 'patient' },
       discipline: 'Dressage',
       horseTemperament: 'Stubborn',
     });
-    // 0.10 + 0.045 + 0.05 + 0.04 = 0.235 → clamp to the 0.20 cap.
-    expect(result.bonusPercent).toBeCloseTo(TRAINER_BONUS_CAP, 10);
+    // 0.10 + 0.05 + 0.04 = 0.19; neither the stars nor a stray old level add anything.
+    expect(result.bonusPercent).toBeCloseTo(0.19, 10);
+    expect(result.bonusPercent).toBeLessThanOrEqual(TRAINER_BONUS_CAP);
     expect(result.penaltyPercent).toBe(0);
-    expect(result.bonusPercent - result.penaltyPercent).toBeCloseTo(0.2, 10);
   });
 
   it('T5 (canonical-set guard): a typo personality/temperament never leaks a compat value', () => {
@@ -323,8 +325,7 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
 
   // Owner ruling 2026-10-21: Driven keeps Playful's trainer fit (focused +0.03,
   // encouraging +0.02); Willing fits encouraging (+0.04) and technical (+0.03).
-  // A novice, unmatched trainer with no star level (old level 1) is +0.02, so the
-  // compat is the rest.
+  // A novice, unmatched trainer is +0.02, so the compat is the rest.
   it.each([
     ['focused', 'Driven', 0.05],
     ['encouraging', 'Driven', 0.04],
@@ -363,14 +364,14 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
 
   it('a valid-but-unlisted personality×temperament pair legitimately contributes 0 compat', () => {
     // patient has no Bold entry → compat 0 (not a typo, just no synergy). Skill
-    // + level + match still apply.
+    // + match still apply; the level term adds nothing (q229/q244).
     const result = computeTrainerModifiers({
       trainer: { skillLevel: 'developing', starLevel: 'novice', speciality: 'Dressage', personality: 'patient' },
       discipline: 'Dressage',
       horseTemperament: 'Bold',
     });
-    // 0.05 + (4-1)*0.005 + 0.05 + 0 = 0.115 (a Novice is the old level 4, q229)
-    expect(result.bonusPercent).toBeCloseTo(0.115, 10);
+    // 0.05 + 0.05 + 0 = 0.10
+    expect(result.bonusPercent).toBeCloseTo(0.1, 10);
     expect(result.penaltyPercent).toBe(0);
   });
 

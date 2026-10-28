@@ -365,12 +365,17 @@ describe('trainerController (real DB)', () => {
       expect(h.res.statusValue).toBe(404);
     });
 
-    it('returns 6 slots with unique, non-generic trait labels', async () => {
+    // Owner rulings 2026-10-28: q229 dropped the old 1-10 level column, and q244 says stars
+    // give nothing for now, so every rider and trainer is at the old level 1
+    // (staffCareerLevel) and reveals no slot, whatever its stars, until staff growth
+    // (Equoria-xlw03). These cases used to set level 2-10 and see 1-6 slots; the stepped
+    // cadence itself is still pinned in __tests__/discoverySlotReveal.test.mjs.
+    it('returns 6 slots and persists 6 unique, non-generic trait labels', async () => {
       const user = await createUser();
       const trainer = await createTrainer(user.id, {
         speciality: 'Dressage',
         personality: 'patient',
-        starLevel: 'novice',
+        starLevel: 'expert',
       });
 
       const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
@@ -381,69 +386,54 @@ describe('trainerController (real DB)', () => {
       expect(data.totalSlots).toBe(6);
       expect(data.slots).toHaveLength(6);
 
-      // The 2 discovered slots must have meaningful labels (not the old generic "X Focus" pattern)
-      const discovered = data.slots.filter(s => s.discovered);
-      expect(discovered).toHaveLength(2);
-      discovered.forEach(s => {
-        expect(s.trait).toBeDefined();
-        expect(s.trait.label).not.toMatch(/Focus$/);
-        expect(s.trait.icon).not.toBe('🎓');
-        expect(s.trait.description).toBeTruthy();
+      // The persisted pool has meaningful labels (not the old generic "X Focus" pattern).
+      const row = await prisma.trainer.findUnique({ where: { id: trainer.id }, select: { discoverySlots: true } });
+      expect(row.discoverySlots).toHaveLength(6);
+      row.discoverySlots.forEach(s => {
+        expect(s.label).not.toMatch(/Focus$/);
+        expect(s.icon).not.toBe('🎓');
+        expect(s.description).toBeTruthy();
       });
     });
 
-    it('persists slots so repeated calls return identical trait labels', async () => {
+    it('persists slots so repeated calls keep identical trait labels', async () => {
       const user = await createUser();
-      const trainer = await createTrainer(user.id, {
-        speciality: 'Dressage',
-        personality: 'patient',
-        starLevel: 'novice',
-      });
+      const trainer = await createTrainer(user.id, { speciality: 'Dressage', personality: 'patient' });
+      const pool = async () =>
+        (await prisma.trainer.findUnique({ where: { id: trainer.id }, select: { discoverySlots: true } }))
+          .discoverySlots;
 
       const h1 = makeReqRes(user.id, { params: { id: String(trainer.id) } });
       await getTrainerDiscovery(h1.req, h1.res);
+      const first = await pool();
 
       const h2 = makeReqRes(user.id, { params: { id: String(trainer.id) } });
       await getTrainerDiscovery(h2.req, h2.res);
 
-      const slots1 = h1.res.jsonValue.data.slots;
-      const slots2 = h2.res.jsonValue.data.slots;
-
-      // Discovered slot labels must be identical across both calls
-      slots1
-        .filter(s => s.discovered)
-        .forEach((s, i) => {
-          expect(s.trait.label).toBe(slots2.filter(x => x.discovered)[i].trait.label);
-          expect(s.trait.icon).toBe(slots2.filter(x => x.discovered)[i].trait.icon);
-        });
+      expect(first).toHaveLength(6);
+      expect(await pool()).toEqual(first);
     });
 
-    it('respects the threshold — a Rookie (old level 2) reveals exactly 1 slot', async () => {
+    it.each(['rookie', 'novice', 'intermediate', 'advanced', 'expert'])(
+      'a %s trainer reveals no slot yet (q244)',
+      async starLevel => {
+        const user = await createUser();
+        const trainer = await createTrainer(user.id, { starLevel });
+
+        const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
+        await getTrainerDiscovery(h.req, h.res);
+
+        expect(h.res.statusValue).toBe(200);
+        const { data } = h.res.jsonValue;
+        expect(data.discoveredCount).toBe(0);
+        expect(data.slots.every(s => !s.discovered && s.trait === undefined)).toBe(true);
+      },
+    );
+
+    it('persists different discipline trait labels for different specialities', async () => {
       const user = await createUser();
-      const trainer = await createTrainer(user.id, { starLevel: 'rookie' });
-
-      const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
-      await getTrainerDiscovery(h.req, h.res);
-
-      expect(h.res.statusValue).toBe(200);
-      const { data } = h.res.jsonValue;
-      expect(data.discoveredCount).toBe(1);
-      expect(data.slots.filter(s => s.discovered)).toHaveLength(1);
-      expect(data.slots.filter(s => s.trait === undefined)).toHaveLength(5);
-    });
-
-    it('uses different discipline trait labels for different specialities', async () => {
-      const user = await createUser();
-      const dressage = await createTrainer(user.id, {
-        speciality: 'Dressage',
-        personality: 'patient',
-        starLevel: 'rookie',
-      });
-      const jumping = await createTrainer(user.id, {
-        speciality: 'Show Jumping',
-        personality: 'patient',
-        starLevel: 'rookie',
-      });
+      const dressage = await createTrainer(user.id, { speciality: 'Dressage', personality: 'patient' });
+      const jumping = await createTrainer(user.id, { speciality: 'Show Jumping', personality: 'patient' });
 
       const hD = makeReqRes(user.id, { params: { id: String(dressage.id) } });
       await getTrainerDiscovery(hD.req, hD.res);
@@ -451,10 +441,11 @@ describe('trainerController (real DB)', () => {
       const hJ = makeReqRes(user.id, { params: { id: String(jumping.id) } });
       await getTrainerDiscovery(hJ.req, hJ.res);
 
-      const dSlot0 = hD.res.jsonValue.data.slots[0].trait;
-      const jSlot0 = hJ.res.jsonValue.data.slots[0].trait;
-
-      expect(dSlot0.label).not.toBe(jSlot0.label);
+      const slot0 = async id =>
+        (await prisma.trainer.findUnique({ where: { id }, select: { discoverySlots: true } })).discoverySlots.find(
+          s => s.slotIndex === 0,
+        );
+      expect((await slot0(dressage.id)).label).not.toBe((await slot0(jumping.id)).label);
     });
 
     it('includes nextDiscoveryAt when slots remain undiscovered', async () => {
@@ -467,116 +458,32 @@ describe('trainerController (real DB)', () => {
       expect(h.res.jsonValue.data.nextDiscoveryAt).toBeDefined();
     });
 
-    // ── Reveal cadence (Equoria-oey96.25) ──────────────────────────────────
-    // Prior formula `Math.min(Math.floor(level/2), 6)` topped out at
-    // floor(10/2)=5, so the 6th slot was NEVER revealable at the level-10 cap.
-    // New stepped cadence [2,4,6,8,9,10] reveals all 6 by level 10.
-    // Owner ruling 2026-10-28 (q229): the old 1-10 level is the star level, two per
-    // star, so these cases set the star level that stands for the old level.
-
-    it('reveals ALL 6 slots for an Expert trainer (the old level-10 cap)', async () => {
+    // ── A persisted pool is kept verbatim (Equoria-oey96.25) ──────────────
+    // Trap: trainer slot CONTENT is persisted at generation; the reveal COUNT is a
+    // separate concern and is 0 for now (q244). A read must never regenerate or
+    // corrupt a persisted pool. (The level-cadence cases that stood here, Expert/level
+    // 10 revealing all 6, went with the old level; the cadence is pinned in
+    // __tests__/discoverySlotReveal.test.mjs.)
+    it('keeps a pre-seeded persisted 6-slot array verbatim and reveals none of it', async () => {
       const user = await createUser();
       const trainer = await createTrainer(user.id, { starLevel: 'expert' });
-
-      const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
-      await getTrainerDiscovery(h.req, h.res);
-
-      expect(h.res.statusValue).toBe(200);
-      const { data } = h.res.jsonValue;
-      expect(data.discoveredCount).toBe(6); // FAILS pre-fix: floor(10/2)=5
-      expect(data.slots).toHaveLength(6);
-      expect(data.slots.every(s => s.discovered)).toBe(true);
-      expect(data.slots.every(s => s.trait !== undefined)).toBe(true);
-      // The 6th slot (slotIndex 5) — the one that was unreachable — is now revealed.
-      const sixth = data.slots.find(s => s.slotIndex === 5);
-      expect(sixth.discovered).toBe(true);
-      expect(data.nextDiscoveryAt).toBeUndefined(); // no further reveals at the cap
-    });
-
-    it('reveals a pre-seeded persisted 6-slot array without corrupting its content at level 10', async () => {
-      // Trap (Equoria-oey96.25): trainer slot CONTENT is persisted at generation;
-      // the reveal COUNT is a separate concern. Revealing more slots must expose
-      // the existing persisted content verbatim, never regenerate/corrupt it.
-      const user = await createUser();
-      const trainer = await createTrainer(user.id, { starLevel: 'expert' });
-
-      const seeded = [
-        {
-          slotIndex: 0,
-          category: 'discipline_specialization',
-          label: 'Seed-A',
-          description: 'da',
-          icon: '🅰️',
-          strength: 'mild',
-        },
-        {
-          slotIndex: 1,
-          category: 'discipline_specialization',
-          label: 'Seed-B',
-          description: 'db',
-          icon: '🅱️',
-          strength: 'moderate',
-        },
-        { slotIndex: 2, category: 'training_method', label: 'Seed-C', description: 'dc', icon: '🇨', strength: 'mild' },
-        {
-          slotIndex: 3,
-          category: 'training_method',
-          label: 'Seed-D',
-          description: 'dd',
-          icon: '🇩',
-          strength: 'moderate',
-        },
-        {
-          slotIndex: 4,
-          category: 'horse_compatibility',
-          label: 'Seed-E',
-          description: 'de',
-          icon: '🇪',
-          strength: 'mild',
-        },
-        {
-          slotIndex: 5,
-          category: 'horse_compatibility',
-          label: 'Seed-F',
-          description: 'df',
-          icon: '🇫',
-          strength: 'strong',
-        },
-      ];
+      const seeded = Array.from({ length: 6 }, (_, i) => ({
+        slotIndex: i,
+        category: ['discipline_specialization', 'training_method', 'horse_compatibility'][Math.floor(i / 2)],
+        label: `Seed-${i}`,
+        description: `d${i}`,
+        icon: '✨',
+        strength: i === 5 ? 'strong' : 'mild',
+      }));
       await prisma.trainer.update({ where: { id: trainer.id }, data: { discoverySlots: seeded } });
 
       const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
       await getTrainerDiscovery(h.req, h.res);
 
       expect(h.res.statusValue).toBe(200);
-      const { data } = h.res.jsonValue;
-      expect(data.discoveredCount).toBe(6);
-      // The previously-unreachable 6th slot now reveals the exact persisted content.
-      const sixth = data.slots.find(s => s.slotIndex === 5);
-      expect(sixth.discovered).toBe(true);
-      expect(sixth.trait.label).toBe('Seed-F');
-      expect(sixth.trait.strength).toBe('strong');
-      // And the persisted array on the row is untouched (no regeneration).
+      expect(h.res.jsonValue.data.discoveredCount).toBe(0);
       const row = await prisma.trainer.findUnique({ where: { id: trainer.id }, select: { discoverySlots: true } });
-      expect(row.discoverySlots).toHaveLength(6);
-      expect(row.discoverySlots[5].label).toBe('Seed-F');
-    });
-
-    it('follows the stepped cadence by star level (1★→1, 2★→2, 3★→3, 4★→4, 5★→6)', async () => {
-      const user = await createUser();
-      const cases = [
-        { starLevel: 'rookie', expected: 1 },
-        { starLevel: 'novice', expected: 2 },
-        { starLevel: 'intermediate', expected: 3 },
-        { starLevel: 'advanced', expected: 4 },
-        { starLevel: 'expert', expected: 6 }, // FAILS pre-fix: floor(10/2)=5
-      ];
-      for (const { starLevel, expected } of cases) {
-        const trainer = await createTrainer(user.id, { starLevel });
-        const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
-        await getTrainerDiscovery(h.req, h.res);
-        expect(h.res.jsonValue.data.discoveredCount).toBe(expected);
-      }
+      expect(row.discoverySlots).toEqual(seeded);
     });
   });
 });

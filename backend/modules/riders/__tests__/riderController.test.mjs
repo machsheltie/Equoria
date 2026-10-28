@@ -391,63 +391,30 @@ describe('riderController (real DB)', () => {
     });
   });
 
-  // ── getRiderDiscovery reveal cadence (Equoria-oey96.25) ────────────────────
-  // Prior formula `Math.min(Math.floor(level/2), 6)` topped out at floor(10/2)=5,
-  // so the 6th slot was NEVER revealable at the level-10 cap. New stepped cadence
-  // [2,4,6,8,9,10] reveals all 6 by level 10.
-  // Owner ruling 2026-10-28 (q229) changed the input: the old 1-10 level is the star
-  // level, two per star, so Rookie = 2 ... Expert = 10. These cases used the old level
-  // column; they now set the star level that stands for it.
-  describe('getRiderDiscovery — reveal cadence', () => {
-    it('reveals ALL 6 slots for an Expert rider (the old level-10 cap)', async () => {
-      const user = await createUser();
-      const rider = await createRider(user.id, { starLevel: 'expert' });
-
-      const h = makeReqRes(user.id, { params: { id: String(rider.id) } });
-      await getRiderDiscovery(h.req, h.res);
-
-      expect(h.res.statusValue).toBe(200);
-      const { data } = h.res.jsonValue;
-      expect(data.totalSlots).toBe(6);
-      expect(data.discoveredCount).toBe(6); // FAILS pre-fix: floor(10/2)=5
-      expect(data.slots).toHaveLength(6);
-      expect(data.slots.every(s => s.discovered)).toBe(true);
-      expect(data.slots.every(s => s.trait !== undefined)).toBe(true);
-      const sixth = data.slots.find(s => s.slotIndex === 5);
-      expect(sixth.discovered).toBe(true);
-      expect(data.nextDiscoveryAt).toBeNull(); // no further reveals at the cap
-    });
-
-    it('reveals 1 slot for a Rookie rider (old level 2)', async () => {
-      const user = await createUser();
-      const rider = await createRider(user.id, { starLevel: 'rookie' });
-
-      const h = makeReqRes(user.id, { params: { id: String(rider.id) } });
-      await getRiderDiscovery(h.req, h.res);
-
-      expect(h.res.statusValue).toBe(200);
-      const { data } = h.res.jsonValue;
-      expect(data.discoveredCount).toBe(1);
-      expect(data.slots.filter(s => s.discovered)).toHaveLength(1);
-      expect(data.slots.filter(s => s.trait === undefined)).toHaveLength(5);
-      expect(data.nextDiscoveryAt).toBe(4); // the next slot is at the old level 4
-    });
-
-    it('follows the stepped cadence by star level (1★→1, 2★→2, 3★→3, 4★→4, 5★→6)', async () => {
-      const user = await createUser();
-      const cases = [
-        { starLevel: 'rookie', expected: 1 },
-        { starLevel: 'novice', expected: 2 },
-        { starLevel: 'intermediate', expected: 3 },
-        { starLevel: 'advanced', expected: 4 },
-        { starLevel: 'expert', expected: 6 }, // FAILS pre-fix: floor(10/2)=5
-      ];
-      for (const { starLevel, expected } of cases) {
+  // ── getRiderDiscovery reveal (Equoria-oey96.25) ──────────────────────────
+  // Owner rulings 2026-10-28: q229 dropped the old 1-10 level column, and q244 says stars
+  // give nothing for now, so every rider and trainer is at the old level 1
+  // (staffCareerLevel) and reveals no slot, whatever its stars, until staff growth
+  // (Equoria-xlw03). These cases used to set level 2-10 and see 1-6 slots; the stepped
+  // cadence itself is still pinned in __tests__/discoverySlotReveal.test.mjs.
+  describe('getRiderDiscovery — reveal', () => {
+    it.each(['rookie', 'novice', 'intermediate', 'advanced', 'expert'])(
+      'a %s rider reveals no slot yet (q244)',
+      async starLevel => {
+        const user = await createUser();
         const rider = await createRider(user.id, { starLevel });
+
         const h = makeReqRes(user.id, { params: { id: String(rider.id) } });
         await getRiderDiscovery(h.req, h.res);
-        expect(h.res.jsonValue.data.discoveredCount).toBe(expected);
-      }
-    });
+
+        expect(h.res.statusValue).toBe(200);
+        const { data } = h.res.jsonValue;
+        expect(data.totalSlots).toBe(6);
+        expect(data.slots).toHaveLength(6);
+        expect(data.discoveredCount).toBe(0);
+        expect(data.slots.every(s => !s.discovered && s.trait === undefined)).toBe(true);
+        expect(data.nextDiscoveryAt).toBe(2); // the cadence's first slot is at level 2
+      },
+    );
   });
 });

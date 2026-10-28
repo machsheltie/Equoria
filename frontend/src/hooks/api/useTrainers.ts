@@ -49,8 +49,8 @@ export const trainerKeys = {
 // Hooks
 
 /**
- * How many trainers the player may hold (owner ruling 2026-10-28, q222: 2 at stable
- * level 1, one more per level, up to 10). Read from the server, which enforces the
+ * How many trainers the player may hold (owner rulings 2026-10-28, q222/q245: 2 at
+ * player level 1, one more per level, up to 10). Read from the server, which enforces the
  * same number at hire, so the page and a refusal never disagree.
  */
 export function useTrainerRosterLimit() {

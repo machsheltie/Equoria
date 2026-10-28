@@ -75,7 +75,7 @@ beforeAll(async () => {
     data: { ...horseStats, name: `TestFixture-${TAG}-NoRider` },
   });
 
-  // Create an elite rider: experienced + max level/prestige + matching discipline
+  // Create an elite rider: experienced + max prestige + matching discipline
   elitRider = await prisma.rider.create({
     data: {
       firstName: 'TestFixture',
@@ -83,7 +83,6 @@ beforeAll(async () => {
       personality: 'methodical', // Dressage affinity = high (+2%)
       skillLevel: 'experienced', // +3%
       speciality: 'Dressage',
-      starLevel: 'expert', // old level 10 (q229): +3.6%
       prestige: 100, // +4%
       userId: user.id,
     },
@@ -143,12 +142,15 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
    * Model of each independent head-to-head run (both horses base = 70; B5,
    * owner rulings C1/C2):
    *   noRider score = round(70 * (1 + L1/100)),       L1 uniform on 1..10
-   *   rider  score  = round(70 * (1 + (L2 + 10)/100)), L2 uniform on 1..10
-   * The elite rider's modifier is experienced(+3%) + Expert/level10(+3.6%) +
-   * prestige100(+4%) + methodical/Dressage-high(+2%) = 12.6%, capped at the
-   * BONUS_CAP of 10% by computeRiderModifiers. Exact enumeration of the 100
-   * (L1, L2) pairs: the rider always wins (lowest rider 77.7 -> 78 beats the
-   * highest no-rider 77), so P(rider strictly wins) = 1 and riderWins = 300.
+   *   rider  score  = round(70 * (1 + (L2 + 9)/100)), L2 uniform on 1..10
+   * The elite rider's modifier is experienced(+3%) + prestige100(+4%) +
+   * methodical/Dressage-high(+2%) = 9%. (It used to add a level-10 +3.6% and hit the
+   * 10% cap; Owner rulings 2026-10-28: q229 dropped the old 1-10 level column, and q244
+   * says stars give no bonus for now, so every rider/trainer is at the old level 1
+   * (staffCareerLevel) and the level term adds nothing.) Exact enumeration of the 100
+   * (L1, L2) pairs: the lowest rider
+   * score, 70 x 1.10 = 77, only ties the highest no-rider 77, so
+   * P(rider strictly wins) = 99/100 and riderWins averages 297.
    *
    * Under the null hypothesis of NO edge (broken modifier, rider term 0),
    * exact enumeration gives P(strict win) = 0.42 (ties are common with
@@ -165,7 +167,7 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
    */
   it('elite rider wins a statistically-bounded majority of head-to-head runs vs no-rider horse', async () => {
     const RUNS = 300;
-    // Binomial bound: the healthy model wins all 300 (p = 1, B5); the no-edge
+    // Binomial bound: the healthy model wins ~297 of 300 (p = 0.99, B5); the no-edge
     // null averages 126, ≈ 8.5σ below this threshold.
     // Far below the rider's expected wins, far above the no-edge null (150).
     const MIN_RIDER_WINS = 199;

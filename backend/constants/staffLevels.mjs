@@ -67,18 +67,15 @@ export function staffLevelLabel(level) {
 }
 
 /**
- * The old 1-10 career level, in stars (owner ruling 2026-10-28, q229: "replace the old
- * level with equivalent stars"). Each star is two of the old levels, so Expert (5 stars)
- * is the old top level 10 and Rookie is level 2. The rider and trainer modifiers and the
- * discovery-slot reveal read this, so the star level is the only level a rider or trainer
- * has. A row without a valid star level counts as the old bottom level, 1.
+ * The career level the rider and trainer modifiers and the discovery-slot reveal use:
+ * the old bottom level, 1, for every rider and trainer.
  *
- * @param {string|null|undefined} level - one of `staffLevels`
- * @returns {number} 1-10
+ * Owner ruling 2026-10-28 (q244): stars give no bonus for now, so nothing changes from
+ * before the old 1-10 level column was dropped (q229), when every rider and trainer
+ * sat at level 1. That level term therefore adds no show bonus, no training bonus and
+ * no revealed discovery slot. Staff growth (Equoria-xlw03) replaces this.
  */
-export function staffCareerLevel(level) {
-  return isStaffLevel(level) ? staffLevelTable[level].stars * 2 : 1;
-}
+export const staffCareerLevel = 1;
 
 /**
  * How each staff type's older skill words sit on the five levels. A tier with two
