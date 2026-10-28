@@ -24,7 +24,8 @@ import { canTrain } from '../controllers/trainingController.mjs';
 
 const TAG = randomBytes(4).toString('hex');
 const PREFIX = `TestFixture-r8a6h-${TAG}`;
-const FEE = 90;
+// Owner ruling 2026-10-28 (q226): the fee is the trainer's star level price (Rookie, 100).
+const FEE = 100;
 
 const userIds = [];
 const horseIds = [];
@@ -75,6 +76,7 @@ async function stable({ trainer }) {
         lastName: `Req${seq}`,
         personality: 'focused',
         skillLevel: 'novice',
+        starLevel: 'rookie',
         speciality: 'Dressage',
         sessionRate: FEE,
         retired: trainer === 'retired',

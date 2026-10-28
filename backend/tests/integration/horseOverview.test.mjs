@@ -190,8 +190,9 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
           lastName: `TestFixture-97se-${randomBytes(4).toString('hex')}`,
           personality: 'daring',
           skillLevel: 'experienced',
+          starLevel: 'advanced',
           speciality: 'Dressage',
-          weeklyRate: 200,
+          weeklyRate: 400,
           userId: testUser.id,
         },
       });
@@ -264,7 +265,9 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       expect(data.rider).toEqual({
         id: overviewRider.id,
         name: `${overviewRider.firstName} ${overviewRider.lastName}`,
-        level: 4,
+        // Owner ruling 2026-10-28 (q229) changed this contract: the rider's old 1-10
+        // level gave way to the star level.
+        starLevel: 'advanced',
         speciality: 'Dressage',
       });
 

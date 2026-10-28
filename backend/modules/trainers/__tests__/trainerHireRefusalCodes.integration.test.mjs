@@ -129,17 +129,19 @@ beforeAll(() => {
 
 afterAll(() => cleanup.run(), 30000);
 
+// Owner ruling 2026-10-28 (q222, Equoria-asmsy) raised the stable-level-1 trainer cap
+// from 1 to 2; these cases now seat one more trainer to reach it.
 describe('POST /api/v1/trainers/marketplace/hire — refusal codes (Equoria-dosig)', () => {
   it('a full roster answers 400 with code rosterCapReached and the cap counts', async () => {
     const { user, token } = await makeUser({ level: 1, money: 1000 });
-    await seedTrainers(user.id, 1); // level 1 -> cap 1
+    await seedTrainers(user.id, 2); // level 1 -> cap 2
     const [mid] = await seedMarketplace(user.id, 1);
 
     const res = await hire(token, mid);
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('rosterCapReached');
-    expect(res.body.data).toEqual({ currentCount: 1, maxAllowed: 1 });
+    expect(res.body.data).toEqual({ currentCount: 2, maxAllowed: 2 });
     expect(await moneyOf(user.id)).toBe(1000);
   });
 
@@ -158,6 +160,7 @@ describe('POST /api/v1/trainers/marketplace/hire — refusal codes (Equoria-dosi
 
   it('a racing hire that loses the last slot still carries rosterCapReached', async () => {
     const { user, token } = await makeUser({ level: 1, money: 1000 });
+    await seedTrainers(user.id, 1); // level 1 -> cap 2: one slot left
     const ids = await seedMarketplace(user.id, 2); // one slot, two competing hires
 
     const results = await Promise.all(ids.map(mid => hire(token, mid)));

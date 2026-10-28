@@ -22,8 +22,10 @@
  * Equoria-3kegj. OLD CONTRACT: each hire cost sessionRate * 4, the buyer held
  * exactly one hire's worth, and the money debit was the guard. NEW RULING
  * (owner, 2026-10-22): hiring a trainer is free. The same-buyer race is now
- * guarded by the roster cap re-count under the User row lock: a level-1 buyer
- * (cap 1) firing N concurrent hires gets at most one trainer, and no coins move.
+ * guarded by the roster cap re-count under the User row lock: a level-1 buyer with
+ * one slot left firing N concurrent hires gets at most one trainer, and no coins
+ * move. (Owner ruling 2026-10-28, q222, raised the level-1 cap from 1 to 2, so the
+ * buyer now starts with one trainer already on staff.)
  *
  * Real DB, no mocks, scoped fixtures.
  */
@@ -71,8 +73,19 @@ async function makeUser(suffix, money) {
 }
 
 beforeAll(async () => {
-  // A level-1 buyer (trainer roster cap 1) with no coins: hiring is free.
+  // A level-1 buyer (trainer roster cap 2, q222) with no coins and one trainer
+  // already on staff, so exactly one slot is left: hiring is free.
   ({ user: buyer, token: buyerToken } = await makeUser('buyer', 0));
+  await prisma.trainer.create({
+    data: {
+      userId: buyer.id,
+      firstName: 'Seated',
+      lastName: `Trainer-${randomBytes(3).toString('hex')}`,
+      personality: 'patient',
+      skillLevel: 'novice',
+      speciality: 'Dressage',
+    },
+  });
 
   marketplaceIds = Array.from({ length: N_HIRES }, () => `mid-${randomBytes(4).toString('hex')}`);
   const offers = marketplaceIds.map((mid, i) => ({
@@ -120,9 +133,9 @@ beforeAll(async () => {
 afterAll(() => cleanup.run(), 30000);
 
 describe('POST /api/trainers/marketplace/hire — concurrent-race sentinel (Equoria-kyrqo)', () => {
-  it('SENTINEL: N parallel hires from a cap-1 buyer: at most one trainer, no coins move', async () => {
+  it('SENTINEL: N parallel hires from a buyer with one slot left: at most one trainer, no coins move', async () => {
     // Fire N concurrent hire requests for N different marketplaceIds.
-    // The buyer's roster cap is 1 — only ONE may succeed.
+    // The buyer has one slot left under the cap — only ONE may succeed.
     // Each request needs a CSRF token (real production middleware, no bypass).
     const csrfPerReq = await Promise.all(marketplaceIds.map(() => fetchCsrf(app)));
     const results = await Promise.all(
@@ -157,8 +170,8 @@ describe('POST /api/trainers/marketplace/hire — concurrent-race sentinel (Equo
     expect(Number(after.money)).toBe(0);
     expect(await prisma.userTransaction.count({ where: { userId: buyer.id } })).toBe(0);
 
-    // Number of trainer rows created == number of successes.
+    // Number of trainer rows created == number of successes (plus the seated one).
     const trainerCount = await prisma.trainer.count({ where: { userId: buyer.id } });
-    expect(trainerCount).toBe(successes.length);
+    expect(trainerCount).toBe(successes.length + 1);
   });
 });

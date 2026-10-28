@@ -69,7 +69,9 @@ async function seedMarketplace(userId, count) {
     firstName: 'Offer',
     lastName: `Rider${i}`,
     personality: 'calm',
-    skillLevel: 'experienced',
+    skillLevel: 'rookie',
+    // Owner ruling 2026-10-28 (q226): the hire charges the offer's star level price.
+    starLevel: 'rookie',
     speciality: 'Show Jumping',
     weeklyRate: offerRate,
     experience: 5,

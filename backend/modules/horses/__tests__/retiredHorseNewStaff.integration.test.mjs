@@ -258,13 +258,14 @@ describe('Equoria-6p398.14 — a mare who is 21 and in foal is not retired from 
   });
 
   it('her groom is charged the normal weekly fee while she is in foal', async () => {
-    // 70 per horse per week (Equoria-95yrv); she is this groom's one horse.
+    // Owner ruling 2026-10-28 (q228): the groom's star level price per week (a Rookie,
+    // 100), however many horses; it was 70 per horse under Equoria-95yrv.
     const results = await processWeeklySalaries(new Date(), { userId: user.id });
     expect(results.errors).toEqual([]);
     const payment = await prisma.groomSalaryPayment.findFirst({
       where: { userId: user.id, groomId: groomForInFoal.id },
       select: { amount: true, status: true },
     });
-    expect(payment).toEqual({ amount: 70, status: 'paid' });
+    expect(payment).toEqual({ amount: 100, status: 'paid' });
   }, 60_000);
 });

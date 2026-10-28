@@ -74,7 +74,9 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
         firstName: 'Trainer',
         lastName: 'Modifier',
         password: 'hashedpassword',
-        money: 1000,
+        // Owner ruling 2026-10-28 (q226): an Expert trainer charges 500 a session, so the
+        // fixture player holds enough for every training this file runs.
+        money: 10000,
         level: 1,
         xp: 0,
         settings: { theme: 'light' },

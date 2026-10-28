@@ -83,10 +83,13 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
   it('scores, places, pays 50/30/20 and awards Horse Points 10/5/3 exactly', async () => {
     const { creator, showId } = await fixtures.createFundedShow({ prize: PRIZE, entryFee });
 
+    // Every rider here is a Rookie (the column default): owner ruling 2026-10-28
+    // (q229) made the star level the old 1-10 level, two per star, so a Rookie is the
+    // old level 2, +0.4%. (Before the ruling every rider sat at level 1, +0%.)
     // A: base 0.5*80 + 0.3*70 + 0.2*60 = 73; three weeks of Dressage +15;
     // Dressage saddle + Dressage bridle +10 -> 98. Luck +6, rider experienced
-    // (+3) and methodical in Dressage (+2) = +5, Calm in Dressage +5, Excellent
-    // health +5 -> +21%. 98 x 1.21 = 118.58 -> 119. Its revealed Dressage
+    // (+3), Rookie (+0.4) and methodical in Dressage (+2) = +5.4, Calm in Dressage
+    // +5, Excellent health +5 -> +21.4%. 98 x 1.214 = 118.97 -> 119. Its revealed Dressage
     // trait and positive flags add nothing.
     const a = await makeCompetitor({
       stats: { precision: 80, focus: 70, obedience: 60 },
@@ -101,9 +104,9 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
       rider: { skillLevel: 'experienced', personality: 'methodical' },
     });
     // B: base 70; trained only in Racing, so 0 here; All Purpose saddle +
-    // bridle +4 -> 74. Luck +6, rider rookie (penalty 1) with no Dressage
-    // affinity = -1, Nervous in Dressage -5, Fair health -3 -> -3%.
-    // 74 x 0.97 = 71.78 -> 72. Its hidden trait adds nothing.
+    // bridle +4 -> 74. Luck +6, rider rookie (penalty 1, Rookie stars +0.4) with no
+    // Dressage affinity = -0.6, Nervous in Dressage -5, Fair health -3 -> -2.6%.
+    // 74 x 0.974 = 72.08 -> 72. Its hidden trait adds nothing.
     const b = await makeCompetitor({
       stats: { precision: 70, focus: 70, obedience: 70 },
       traits: {
@@ -117,8 +120,8 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
     });
     // C: base 76; one week of Dressage +5; Jump saddle (not Dressage) 0 +
     // Snaffle bridle (Dressage, Show Jumping) +5 -> 86. Luck +6, rider
-    // developing with no Dressage affinity 0, Steady in Dressage +5, Good
-    // health 0 -> +11%. 86 x 1.11 = 95.46 -> 95.
+    // developing with no Dressage affinity 0 plus Rookie stars +0.4, Steady in
+    // Dressage +5, Good health 0 -> +11.4%. 86 x 1.114 = 95.80 -> 96 (95 before q229).
     const c = await makeCompetitor({
       stats: { precision: 76, focus: 76, obedience: 76 },
       traits: {},
@@ -156,7 +159,7 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
       };
     };
     expect(resultOf(a)).toEqual({ score: 119, placement: 1, prizeWon: 500, horsePointsAwarded: 10 });
-    expect(resultOf(c)).toEqual({ score: 95, placement: 2, prizeWon: 300, horsePointsAwarded: 5 });
+    expect(resultOf(c)).toEqual({ score: 96, placement: 2, prizeWon: 300, horsePointsAwarded: 5 });
     expect(resultOf(b)).toEqual({ score: 72, placement: 3, prizeWon: 200, horsePointsAwarded: 3 });
 
     const horses = await prisma.horse.findMany({
