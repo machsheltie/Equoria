@@ -34,6 +34,12 @@ export const v1MirrorHandlers = [
     });
   }),
 
+  // Trainer assignments (trainersApi.getAssignments). The train surfaces read the
+  // horse's assigned trainer and its fee from here (Equoria-yucph); default none.
+  http.get(`${base}/api/v1/trainers/assignments`, () =>
+    HttpResponse.json({ success: true, data: [] })
+  ),
+
   // Breeding / foals — pregnancy-started response (B3 delayed foaling).
   // Mirrors the /api/horses/foals handler above; both paths exist because
   // the backend mounts authRouter on both /api and /api/v1. See the

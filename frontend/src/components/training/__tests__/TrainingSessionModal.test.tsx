@@ -202,3 +202,54 @@ describe('TrainingSessionModal — flat +5, no trait chips (Equoria-576c0.1)', (
     expect(screen.getByTestId('expected-score-value')).toHaveTextContent('45');
   });
 });
+
+/**
+ * Equoria-yucph — the trainer's fee is on the train button (owner rulings
+ * 2026-10-22 and 2026-10-26: one click, one advertised charge, the fee on the
+ * button, no receipt or balance preview). The fee comes from the real
+ * trainer-assignments endpoint, the same source the horse page uses.
+ */
+describe('TrainingSessionModal — trainer fee on the train button (Equoria-yucph)', () => {
+  const assignment = (overrides: Record<string, unknown> = {}) => ({
+    id: 7,
+    trainerId: 31,
+    horseId: mockHorse.id,
+    horseName: mockHorse.name,
+    trainerName: 'Alice Thornton',
+    trainerPersonality: 'patient',
+    trainerSessionRate: 250,
+    startDate: '2026-10-01T00:00:00Z',
+    isActive: true,
+    ...overrides,
+  });
+
+  it("reads 'Train Horse' with the assigned trainer's fee", async () => {
+    server.use(
+      http.get(`${base}/api/v1/trainers/assignments`, () =>
+        HttpResponse.json({ success: true, data: [assignment()] })
+      )
+    );
+
+    renderModal();
+
+    const button = await screen.findByRole('button', { name: /Train Horse\s*250/ });
+    expect(button).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /Start Training/i })).not.toBeInTheDocument();
+  });
+
+  it('ignores a trainer assigned to a different horse', async () => {
+    server.use(
+      http.get(`${base}/api/v1/trainers/assignments`, () =>
+        HttpResponse.json({ success: true, data: [assignment({ horseId: 99 })] })
+      )
+    );
+
+    renderModal();
+
+    await screen.findByRole('dialog');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Start Training/i })).toBeInTheDocument()
+    );
+    expect(screen.queryByRole('button', { name: /Train Horse/i })).not.toBeInTheDocument();
+  });
+});

@@ -14,6 +14,8 @@
  * - Eligibility checking with server-side validation
  * - Training execution with result display
  * - Error handling with user-friendly messages
+ * - The assigned trainer's fee on the train button (Equoria-yucph; owner rulings
+ *   2026-10-22 and 2026-10-26: one click, one advertised charge, no receipt)
  *
  * Story: Training Trait Modifiers - Task 4
  * Migrated from hand-rolled `fixed inset-0` portal overlay → GameDialog
@@ -33,6 +35,8 @@ import {
   useTrainingSession,
   useTrainingStatus,
 } from '@/hooks/api/useTraining';
+import { useHorseTrainer } from '@/hooks/api/useTrainers';
+import Currency from '@/components/ui/Currency';
 import type { TrainableHorse, TrainingResult } from '@/lib/api-client';
 import DisciplineSelector from './DisciplineSelector';
 import HorseStatsCard from './HorseStatsCard';
@@ -87,6 +91,10 @@ const TrainingSessionModal = ({
     refetch: checkEligibility,
   } = useTrainingEligibility(horse.id, discipline);
   const { mutateAsync: runTraining, isPending: isTraining } = useTrainingSession();
+  // Equoria-yucph: the assigned trainer's per-session fee is the one charge this
+  // click makes, so it goes on the button. No trainer read yet (or none assigned)
+  // shows no price; the server stays the authority on what is charged.
+  const { fee: trainerFee } = useHorseTrainer(horse.id);
 
   // Owner ruling 2026-10-23: a weekly session adds a flat +5 to the trained
   // discipline, whatever the horse's traits or trainer.
@@ -291,7 +299,15 @@ const TrainingSessionModal = ({
                   color: 'var(--bg-deep-space)',
                 }}
               >
-                {isTraining ? 'Training...' : 'Start Training'}
+                {isTraining ? (
+                  'Training...'
+                ) : trainerFee > 0 ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    Train Horse <Currency amount={trainerFee} />
+                  </span>
+                ) : (
+                  'Start Training'
+                )}
               </button>
             </div>
           </>
