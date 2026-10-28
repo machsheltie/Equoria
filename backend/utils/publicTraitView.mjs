@@ -56,6 +56,20 @@ export function publicTraitModifiers(modifiers) {
 }
 
 /**
+ * The horse's dormant trait keys: revealed, switched off and still carried
+ * (Equoria-nrto5). Revealed, so their names may be sent; owner ruling q213
+ * (2026-10-28) shows them on the horse page, greyed out. A key that is also
+ * still hidden is left out, so a malformed row can never name a hidden trait.
+ *
+ * @param {unknown} modifiers
+ * @returns {string[]}
+ */
+export function dormantTraitKeys(modifiers) {
+  const hidden = hiddenTraitSet(modifiers);
+  return asFlagArray(asFlagObject(modifiers).dormant).filter(key => !hidden.has(key));
+}
+
+/**
  * The visible trait keys (positive then negative) of a horse.
  *
  * @param {unknown} modifiers

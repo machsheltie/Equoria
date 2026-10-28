@@ -12,7 +12,11 @@ import { getTraitsByType, playerTraitDefinition } from '../../../utils/epigeneti
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getCachedQuery, generateCacheKey } from '../../../utils/cacheHelper.mjs';
-import { publicTraitModifiers, visibleTraitKeys } from '../../../utils/publicTraitView.mjs';
+import {
+  dormantTraitKeys,
+  publicTraitModifiers,
+  visibleTraitKeys,
+} from '../../../utils/publicTraitView.mjs';
 import { markTraitsSeen, seenTraitKeys } from '../services/traitSeenService.mjs';
 
 // TTL constants (in seconds)
@@ -80,11 +84,22 @@ export async function getHorseTraits(req, res) {
       isNew: !seen.has(trait),
     });
 
+    // Dormant traits are revealed and switched off: named, greyed out on the
+    // horse page (owner ruling q213, 2026-10-28). Seen before they went
+    // dormant, so they never glow.
     const enhancedTraits = {
       positive: traits.positive.map(withDefinition),
       negative: traits.negative.map(withDefinition),
+      dormant: dormantTraitKeys(horse.epigeneticModifiers).map(trait => ({
+        ...withDefinition(trait),
+        isNew: false,
+      })),
       hiddenCount: traits.hiddenCount,
     };
+    const visibleCount =
+      enhancedTraits.positive.length +
+      enhancedTraits.negative.length +
+      enhancedTraits.dormant.length;
 
     res.status(200).json({
       success: true,
@@ -96,9 +111,8 @@ export async function getHorseTraits(req, res) {
         age: horse.age,
         traits: enhancedTraits,
         summary: {
-          totalTraits:
-            enhancedTraits.positive.length + enhancedTraits.negative.length + traits.hiddenCount,
-          visibleTraits: enhancedTraits.positive.length + enhancedTraits.negative.length,
+          totalTraits: visibleCount + traits.hiddenCount,
+          visibleTraits: visibleCount,
           hiddenTraits: traits.hiddenCount,
         },
       },
