@@ -11,8 +11,8 @@
  *   - lineage gathering (3 generations)
  *   - epigenetic-trait roll at birth (lineage + feed quality + mare health)
  *   - conformation, gait, temperament generation (or inherited)
- *   - stats: 0 base plus the lineage stat bonus (Equoria-fq9ob). The owner's base
- *     stat inheritance formula is not in the bible, so no base is inherited yet.
+ *   - stats: the parents' average +/-10% per stat, plus the lineage stat bonus
+ *     (Equoria-fq9ob; owner rulings q204, q247)
  *   - the actual `createHorse()` insert
  *   - clearing the dam's pregnancy, in the same transaction as the insert, and
  *     releasing a retired (21+) dam's staff there too (Equoria-6p398.14)
@@ -24,7 +24,7 @@ import { createHorse } from './horseCreation.mjs';
 import { birthDisciplineScores, resolveFoalBirthDiscipline } from './birthDiscipline.mjs';
 import { getHorseById } from './horseRouteQueries.mjs';
 import { gatherLineage } from './foalLineage.mjs';
-import { resolveFoalLineageStatBonus } from './foalLineageStatBonus.mjs';
+import { resolveFoalBirthStats } from './foalBirthStats.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
 import {
   generateConformationScores,
@@ -166,7 +166,7 @@ function assessFeedQualityFromMare(mare) {
  * @param {number} params.damId - id of the in-foal mare
  * @param {object} [params.options] - { name?, sex?, ownerId?,
  *   userId?, playerId?, stableId?, healthStatus?, positiveTraitChance?,
- *   negativeTraitChance?, rng?, damSnapshot?, sireSnapshot?, dueBy? }.
+ *   negativeTraitChance?, rng?, statRng?, damSnapshot?, sireSnapshot?, dueBy? }.
  *   The bonus chance fields are produced by
  *   `calculatePregnancyEpigeneticChances()` and applied as independent rolls
  *   on top of `applyEpigeneticTraitsAtBirth`. `rng` is a () => number
@@ -352,10 +352,6 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
 
   const temperament = generateTemperament(breedName);
 
-  // Equoria-fq9ob: 2% of the parents' average on each stat when 3+ ancestors share
-  // a most-competed discipline; null (no bonus) otherwise. Base stats stay 0.
-  const lineageStats = await resolveFoalLineageStatBonus({ sireId, damId, lineage });
-
   // Color genetics (31E-1a / 31E-2 / 31E-3) — wire color inheritance into
   // pregnancy-based foaling. The runFoalingJob snapshot select only fetches a
   // subset of columns, so we resolve colorGenotype + phenotype directly from
@@ -408,6 +404,11 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     rng,
   });
 
+  // Equoria-fq9ob (q247): parents' average +/-10% per stat, plus the lineage bonus.
+  // Drawn last so seeded colour/sex/discipline rolls are unchanged; statRng is a test seam.
+  const statRng = typeof options.statRng === 'function' ? options.statRng : rng;
+  const birthStats = await resolveFoalBirthStats({ sireId, damId, lineage, rng: statRng });
+
   const horseData = {
     // Equoria-4fnro (ruling 2026-09-14): unnamed at birth — see horseNamePolicy.
     name: options.name || dam.pendingFoalName || UNNAMED_HORSE_NAME,
@@ -429,7 +430,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     gaitScores,
     temperament,
     disciplineScores: birthDisciplineScores(birthDiscipline),
-    ...lineageStats,
+    ...birthStats,
     colorGenotype,
     phenotype,
     epigeneticModifiers: {

@@ -14,12 +14,11 @@
  *   - Tied top disciplines: the ancestor contributes each tied discipline
  *     (controller ruling, not the owner's).
  *   - Rounding: Math.round, so an exact half rounds up (2% of an average of 25 is
- *     0.5, which gives +1). The owner has not ruled on the half case.
+ *     0.5, which gives +1). Kept by the owner (q248).
  *   - No trait is attached to lineage.
  *
- * The bonus is added on top of the foal's base stats. The base inheritance
- * formula is not decided (the bible has none), so foalingService passes 0 as the
- * base today; see the module doc there.
+ * The bonus is added on top of the foal's inherited base stats (the parents'
+ * average +/-10%, owner ruling q247); see foalBirthStats.mjs.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';

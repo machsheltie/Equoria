@@ -1,12 +1,15 @@
 /**
- * Lineage stat bonus through real foaling (Equoria-fq9ob; owner rulings
- * 2026-10-20 Q1, 2026-10-21 Q6, 2026-10-28).
+ * Birth stats and the lineage stat bonus through real foaling (Equoria-fq9ob;
+ * owner rulings 2026-10-20 Q1, 2026-10-21 Q6, 2026-10-28 q204/q247/q248).
  *
  * Before: createFoalFromPregnancy passed no stats, so every foal was born with all
- * 12 stats at 0 whatever its pedigree. Now a foal whose lineage has 3+ distinct
- * ancestors sharing a most-competed discipline gets 2% of its parents' average on
- * each stat. The base inheritance formula is not decided, so the base is 0 and the
- * stored stat equals the bonus.
+ * 12 stats at 0 whatever its pedigree. Each stat is now the parents' average
+ * varied by -10%..+10% (rounded, half up), plus 2% of that average when 3+
+ * distinct ancestors share a most-competed discipline.
+ *
+ * The owner changed this file's contract on 2026-10-28 (q247): it used to pin a
+ * base of 0, so the stored stat equalled the bonus. statRng fixes the variation
+ * (0.5 gives a factor of exactly 1) where an exact value is asserted.
  *
  * Real database, real foaling service, no mocks. Fixtures are test-owned and
  * removed fail-loud.
@@ -31,6 +34,10 @@ let breed;
 const showIds = [];
 
 const zeroStats = () => Object.fromEntries(horseStats.map(stat => [stat, 0]));
+const noVariation = { statRng: () => 0.5 };
+const sireStats = { ...zeroStats(), precision: 100, speed: 100, stamina: 30, agility: 20, focus: 25 };
+const damStats = { ...zeroStats(), precision: 100, speed: 50, stamina: 30, agility: 20, focus: 25 };
+const parentAverage = () => Object.fromEntries(horseStats.map(stat => [stat, (sireStats[stat] + damStats[stat]) / 2]));
 
 async function horse(label, data) {
   const row = await prisma.horse.create({
@@ -91,8 +98,6 @@ async function family(label, grandparentResults) {
       await results(grandparents[i].id, discipline, count);
     }
   }
-  const sireStats = { ...zeroStats(), precision: 100, speed: 100, stamina: 30, agility: 20, focus: 25 };
-  const damStats = { ...zeroStats(), precision: 100, speed: 50, stamina: 30, agility: 20, focus: 25 };
   const sire = await horse(`${label}-Sire`, {
     sex: 'Stallion',
     sireId: gsire.id,
@@ -110,8 +115,8 @@ async function family(label, grandparentResults) {
   return { sire, dam };
 }
 
-async function foalStats(damId) {
-  const { foal } = await createFoalFromPregnancy({ damId });
+async function foalStats(damId, options = {}) {
+  const { foal } = await createFoalFromPregnancy({ damId, options });
   horseIds.push(foal.id);
   const select = Object.fromEntries(horseStats.map(stat => [stat, true]));
   return prisma.horse.findUnique({ where: { id: foal.id }, select });
@@ -146,25 +151,43 @@ beforeAll(async () => {
 afterAll(() => cleanup.run(), 60000);
 
 describe('foaling: lineage stat bonus (Equoria-fq9ob)', () => {
-  it('3 grandparents sharing a most-competed discipline: each stat gets 2% of the parents’ average', async () => {
+  it('3 grandparents sharing a most-competed discipline: each stat is the parents’ average plus 2% of it', async () => {
     // The dam's sire ties Dressage with Racing, so he counts for Dressage too.
     const { dam } = await family('qualifies', [{ Dressage: 2 }, { Dressage: 1 }, { Dressage: 1, Racing: 1 }]);
-    const stats = await foalStats(dam.id);
-    expect(stats.precision).toBe(2); // average 100
-    expect(stats.speed).toBe(2); // average 75 -> 1.5
-    expect(stats.stamina).toBe(1); // 30 -> 0.6
-    expect(stats.agility).toBe(0); // 20 -> 0.4
-    expect(stats.focus).toBe(1); // 25 -> 0.5, rounds up
+    const stats = await foalStats(dam.id, noVariation);
+    expect(stats.precision).toBe(102); // average 100, bonus 2
+    expect(stats.speed).toBe(77); // average 75, bonus 1.5 -> 2
+    expect(stats.stamina).toBe(31); // 30, bonus 0.6 -> 1
+    expect(stats.agility).toBe(20); // 20, bonus 0.4 -> 0
+    expect(stats.focus).toBe(26); // 25, bonus 0.5 rounds up -> 1
     expect(stats.boldness).toBe(0); // parents 0
   }, 60000);
 
-  it('only 2 ancestors share it (the third has no results): no bonus', async () => {
+  it('only 2 ancestors share it (the third has no results): the parents’ average, no bonus', async () => {
     const { dam } = await family('twoonly', [{ Dressage: 2 }, { Dressage: 1 }, {}]);
-    expect(await foalStats(dam.id)).toEqual(zeroStats());
+    expect(await foalStats(dam.id, noVariation)).toEqual(parentAverage());
   }, 60000);
 
-  it('3 ancestors whose most-competed disciplines differ: no bonus', async () => {
+  it('3 ancestors whose most-competed disciplines differ: the parents’ average, no bonus', async () => {
     const { dam } = await family('differ', [{ Dressage: 2 }, { Racing: 1 }, { Hunter: 3, Dressage: 1 }]);
-    expect(await foalStats(dam.id)).toEqual(zeroStats());
+    expect(await foalStats(dam.id, noVariation)).toEqual(parentAverage());
+  }, 60000);
+
+  it('the lowest variation roll gives 90% of the average, the highest close to 110% (q247)', async () => {
+    const low = await family('low', [{}, {}, {}]);
+    expect((await foalStats(low.dam.id, { statRng: () => 0 })).precision).toBe(90);
+    const high = await family('high', [{}, {}, {}]);
+    expect((await foalStats(high.dam.id, { statRng: () => 0.999999 })).precision).toBe(110);
+  }, 60000);
+
+  it('a foal born the ordinary way has every stat within 10% of its parents’ average, never all 0', async () => {
+    const { dam } = await family('random', [{}, {}, {}]);
+    const stats = await foalStats(dam.id);
+    const average = parentAverage();
+    for (const stat of horseStats) {
+      expect(stats[stat]).toBeGreaterThanOrEqual(Math.round(average[stat] * 0.9));
+      expect(stats[stat]).toBeLessThanOrEqual(Math.round(average[stat] * 1.1));
+    }
+    expect(stats).not.toEqual(zeroStats());
   }, 60000);
 });
