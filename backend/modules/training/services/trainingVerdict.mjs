@@ -5,7 +5,7 @@
  * health, an assigned trainer, and the weekly cooldown), so the page never recomputes it.
  */
 
-import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
+import { liveHorseAgeYears } from '../../../utils/horseAge.mjs';
 import { activeTrainingCooldownEnd, getAnyRecentTraining } from './trainingModelService.mjs';
 import { trainerRefusalReason, trainingRefusalReason } from './trainingEligibility.mjs';
 
@@ -17,10 +17,8 @@ import { trainerRefusalReason, trainingRefusalReason } from './trainingEligibili
  */
 export async function getTrainingVerdict(horse, now = new Date()) {
   const lastTrainedAt = await getAnyRecentTraining(horse.id);
-  const effectiveAge =
-    horse.age !== null && horse.age !== undefined
-      ? horse.age
-      : (getHorseAgeYears(horse.dateOfBirth) ?? 0);
+  // The live age (Equoria-5b2nj), the same rule the train call applies.
+  const effectiveAge = liveHorseAgeYears(horse, now);
   const canTrainNow =
     trainingRefusalReason(horse, effectiveAge) === null &&
     (await trainerRefusalReason(horse)) === null &&

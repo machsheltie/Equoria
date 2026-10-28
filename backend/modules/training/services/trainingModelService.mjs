@@ -1,6 +1,6 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
+import { getHorseAgeYears, liveHorseAgeYears } from '../../../utils/horseAge.mjs';
 import { breedAllowsDiscipline } from '../../../utils/gaitedBreed.mjs';
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
@@ -265,15 +265,9 @@ async function getTrainableHorses(userId) {
 
     for (const horse of player.horses) {
       try {
-        // Compute age from dateOfBirth — used as primary age signal when dateOfBirth is set
-        const computedAge = await getHorseAge(horse.id);
-
-        // Effective age: prefer the stored integer `age` field (the "game age") when
-        // computedAge would incorrectly under-count due to a wrong dateOfBirth (e.g.
-        // horses created before the dateOfBirth-from-age fix).  Fall back to computedAge
-        // if horse.age is absent, then default to 0.
-        const effectiveAge =
-          horse.age !== null && horse.age !== undefined ? horse.age : (computedAge ?? 0);
+        // The live age (Equoria-5b2nj): a birthday the nightly job has not
+        // recorded yet counts at once; the same rule the train call applies.
+        const effectiveAge = liveHorseAgeYears(horse);
 
         // Gaited is only available to gaited breeds (owner ruling 2026-10-19,
         // Equoria-uszhf); the same rule the train call applies.

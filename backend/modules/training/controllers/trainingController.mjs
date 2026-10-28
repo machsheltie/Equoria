@@ -9,6 +9,7 @@ import { getHorseById } from '../../horses/index.mjs';
 import { commitTrainingSession, trainingFeeFor } from '../services/trainingSessionTx.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { breedAllowsDiscipline } from '../../../utils/gaitedBreed.mjs';
+import { liveHorseAgeYears } from '../../../utils/horseAge.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -84,13 +85,10 @@ async function computeCanTrain(parsedHorseId, discipline) {
     };
   }
 
-  // Compute effective age: prefer stored game-year field over calendar-based fallback.
-  // Consistent with getTrainableHorses() — handles the case where dateOfBirth is set
-  // to the creation date while horse.age holds the correct game age (e.g. adult horses
-  // whose dateOfBirth was not back-dated, or horses aged via the horseAgingSystem cron).
-  const computedAge = await getHorseAge(parsedHorseId);
-  const effectiveAge =
-    horse.age !== null && horse.age !== undefined ? horse.age : (computedAge ?? 0);
+  // The live age (Equoria-5b2nj, utils/horseAge.mjs): a birthday the nightly job
+  // has not recorded yet counts at once, so a horse that turned 21 today is retired
+  // now. The same rule as getTrainableHorses() and the training verdict.
+  const effectiveAge = liveHorseAgeYears(horse);
 
   // Age window 3..20 (retires at 21), injury and Fair-or-better health: one shared
   // rule set with the trainable-horses list (services/trainingEligibility.mjs,
@@ -168,10 +166,13 @@ const refusal = (reason, code = null) => ({
  * Train a horse in a specific discipline (with eligibility validation and trait effects)
  * @param {number} horseId - ID of the horse to train
  * @param {string} discipline - Discipline to train in
+ * @param {{ actorUserId?: string }} [options] - actorUserId: the player who pressed
+ *   Train. They pay, and the session runs only while they still own the horse
+ *   (Equoria-kiwe5). Omitted by internal callers: the horse's owner is used.
  * @returns {Object} - Training result with success status, updated horse, and next eligible date
  * @throws {Error} - If validation fails or training is not allowed
  */
-async function trainHorse(horseId, requestedDiscipline) {
+async function trainHorse(horseId, requestedDiscipline, { actorUserId = null } = {}) {
   // The canonical name ('Gaited', not 'gaited') is what the gates check and the
   // score is written under (Equoria-i42xr); an unknown name is refused below.
   const discipline = canonicalTrainingDiscipline(requestedDiscipline) ?? requestedDiscipline;
@@ -255,7 +256,9 @@ async function trainHorse(horseId, requestedDiscipline) {
     // floor 1.) Horses never earn XP from training.
     const baseXp = trainingPlayerXp;
 
-    const ownerId = horse.userId ?? null;
+    // The player who pressed Train pays (Equoria-kiwe5). The owner read above can be
+    // stale; the claim below re-checks ownership on the locked row.
+    const ownerId = actorUserId ?? horse.userId ?? null;
     if (!ownerId) {
       logger.warn(
         `[trainingController.trainHorse] Horse ${horse.id} (${horse.name}) has no userId - XP cannot be awarded`,
@@ -468,7 +471,7 @@ async function trainRouteHandler(req, res) {
     );
 
     // Call the existing trainHorse function
-    const result = await trainHorse(horseId, discipline);
+    const result = await trainHorse(horseId, discipline, { actorUserId: req.user?.id ?? null });
 
     if (result.success) {
       // Extract the updated score for the specific discipline

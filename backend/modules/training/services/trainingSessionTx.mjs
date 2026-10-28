@@ -56,11 +56,18 @@ export function trainingFeeFor(trainer) {
 // Thrown inside the transaction when the atomic cooldown claim loses the race,
 // so every write already made in it rolls back; caught by identity below.
 const cooldownClaimLost = Symbol('trainingCooldownClaimLost');
+// Thrown when the horse changed hands before the claim (Equoria-kiwe5).
+const ownershipLost = Symbol('trainingOwnershipLost');
+
+/** Said to a player whose horse was sold while the session was being recorded. */
+export const horseNoLongerYoursReason = 'That horse is no longer yours. Please reload your stable.';
 
 /**
  * @param {object} p
  * @param {number} p.horseId - parsed integer horse id
- * @param {string|null} p.ownerId - user to receive XP (null: no XP award)
+ * @param {string|null} p.ownerId - the paying player: receives the XP, pays the
+ *   trainer fee, and must still own the horse for the claim to succeed (null: no
+ *   XP, no fee, no ownership check)
  * @param {string} p.horseName
  * @param {string} p.discipline
  * @param {number} p.xpAmount - owner XP (>= 1)
@@ -130,14 +137,27 @@ export async function commitTrainingSession({
 
         // Equoria-0ihyi: atomic cooldown claim. Only the first racer flips
         // trainingCooldown forward and gets count===1; a loser rolls back.
+        // Equoria-kiwe5: the claim also requires the payer to still own the
+        // horse, so a horse sold mid-request is not trained on the seller's
+        // coins and the buyer's week is not used.
         const claim = await tx.horse.updateMany({
           where: {
             id: horseId,
+            ...(ownerId ? { userId: ownerId } : {}),
             OR: [{ trainingCooldown: null }, { trainingCooldown: { lte: cooldownNow } }],
           },
           data: { trainingCooldown: nextEligible },
         });
         if (claim.count === 0) {
+          if (ownerId) {
+            const current = await tx.horse.findUnique({
+              where: { id: horseId },
+              select: { userId: true },
+            });
+            if (current?.userId !== ownerId) {
+              throw ownershipLost;
+            }
+          }
           throw cooldownClaimLost;
         }
 
@@ -184,6 +204,9 @@ export async function commitTrainingSession({
   } catch (txError) {
     if (txError === cooldownClaimLost) {
       return null;
+    }
+    if (txError === ownershipLost) {
+      return { refused: horseNoLongerYoursReason };
     }
     if (txError instanceof InsufficientFundsError && trainerFee) {
       return {
