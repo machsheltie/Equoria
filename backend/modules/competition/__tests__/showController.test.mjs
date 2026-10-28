@@ -87,10 +87,7 @@ beforeAll(async () => {
   });
   execToken = generateTestToken({ id: execUser.id, email: execUser.email, role: 'user' });
 
-  // Equoria-619ik: POST /api/v1/shows/execute is now ADMIN-ONLY. Create a real
-  // admin user (role persisted in the DB row, not just the token) so the
-  // happy-path execute tests authenticate as an admin. The non-admin `execUser`
-  // above is reused to prove the 403 gate fires for an ordinary player.
+  // Equoria-619ik: execute is admin-only; a real admin row runs the happy path (execUser proves the 403).
   execAdminUser = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -554,7 +551,6 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
   });
 
   it('returns 402 when user has insufficient funds for entry fee (line 209-212)', async () => {
-    // Create a user with 0 money
     const brokeUser = await prisma.user.create({
       data: {
         emailVerified: true,

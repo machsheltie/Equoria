@@ -324,12 +324,7 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      // Equoria-plw0h: mint the CSRF pair bound to THIS authenticated
-      // identity (fetched with the accessToken cookie attached) — an
-      // anonymous pair is correctly 403'd by per-user CSRF binding.
-      // 21R-AUTH-3: register/login/refresh also seed a CSRF cookie alongside
-      // auth cookies; strip it so the bound pair's cookie wins (the cookie
-      // parser keeps the first match).
+      // Bound CSRF pair, auth cookies stripped (Equoria-plw0h, 21R-AUTH-3; see the first logout test).
       const boundCsrf = await csrfBoundToCookies(cookies);
       const __allCookies__ = [
         ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
