@@ -34,6 +34,7 @@ const horseIds = [];
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `eflag-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `eflag${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',

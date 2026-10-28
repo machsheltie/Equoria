@@ -51,6 +51,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
     const hashedPassword = await bcrypt.hash(testUserData.password, 1);
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: testUserData.username,
         email: testUserData.email,
         password: hashedPassword,

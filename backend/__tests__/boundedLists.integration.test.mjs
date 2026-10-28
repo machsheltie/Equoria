@@ -77,6 +77,7 @@ async function expectCapAndWalk({ path, query, rowsOf, pageInfoOf, insertLate })
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `bounded-${RUN}@test.com`,
       username: `bounded${RUN}`,
       password: 'irrelevant-hash',
@@ -197,6 +198,7 @@ describe('GET /marketplace/history (Equoria-cmw85.22)', () => {
   it('is capped, walkable by cursor and answers 400 for a bad cursor', async () => {
     const other = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `boundedsale-${RUN}@test.com`,
         username: `boundedsale${RUN}`,
         password: 'irrelevant-hash',

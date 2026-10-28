@@ -26,6 +26,7 @@ describe('Trait History Service', () => {
     // Create minimal test data for service tests
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `serviceTestUser_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         email: `service_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
         password: 'hashedPassword',

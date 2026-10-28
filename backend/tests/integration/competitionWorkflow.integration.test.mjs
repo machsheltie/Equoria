@@ -52,6 +52,7 @@ import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mj
 // (owner entry rules + C10); horses that enter get a game-age dateOfBirth and a
 // rider. Fixture-only; no assertion changed.
 import { competitionDateOfBirth, giveEligibleRider } from '../../__tests__/helpers/eligibleCompetitor.mjs';
+import { confirmEmail } from '../helpers/confirmEmail.mjs';
 /**
  * Extract cookie value from Set-Cookie header array
  */
@@ -219,6 +220,8 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       .expect(201);
 
     const testUser = registerResponse.body.data.user;
+    // Equoria-voasj: no play until the email is confirmed.
+    await confirmEmail(testUser.id);
 
     // Extract accessToken from httpOnly cookie
     const cookies = registerResponse.headers['set-cookie'];

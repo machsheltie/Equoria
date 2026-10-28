@@ -70,6 +70,7 @@ beforeAll(async () => {
   });
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `${PREFIX}@test.com`,
       username: PREFIX.slice(0, 30),
       password: 'irrelevant-hash',

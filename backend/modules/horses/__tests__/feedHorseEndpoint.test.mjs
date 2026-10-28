@@ -37,6 +37,7 @@ describe('POST /api/v1/horses/:id/feed', () => {
   beforeEach(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `feed-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
         username: `feed${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',

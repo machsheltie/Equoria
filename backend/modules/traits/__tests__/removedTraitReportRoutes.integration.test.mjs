@@ -41,6 +41,7 @@ describe('trait report routes are removed (Equoria-a7f1p, q152)', () => {
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${PREFIX}-owner`,
         email: `${PREFIX}-owner@example.com`,
         password: 'irrelevant-not-a-login-test',

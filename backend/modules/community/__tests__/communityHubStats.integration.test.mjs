@@ -51,6 +51,7 @@ async function createFixtureUser(tag) {
   const hex = randomBytes(6).toString('hex');
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `hubstats-${tag}-${hex}@test.com`,
       username: `hubstats${tag}${hex}`,
       password: 'irrelevant-hash',

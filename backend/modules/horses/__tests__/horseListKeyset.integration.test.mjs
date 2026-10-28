@@ -37,6 +37,7 @@ const auth = req => req.set('Authorization', `Bearer ${token}`);
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `TFkeyset-${RUN}`,
       email: `tfkeyset-${RUN}@example.com`,
       password: await bcrypt.hash('TestPassword123!', 1),

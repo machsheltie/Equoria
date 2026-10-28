@@ -48,6 +48,7 @@ describe('Training Analytics Service', () => {
       async tx => {
         testUser = await tx.user.create({
           data: {
+            emailVerified: true,
             username: `training_test_user_${timestamp}`,
             email: `training_${timestamp}@test.com`,
             password: 'testPassword',

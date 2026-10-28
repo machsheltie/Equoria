@@ -95,6 +95,7 @@ describe('trait interaction analysis characterization (Equoria-q4uem.5)', () => 
     const suffix = `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `ws5char${suffix}`,
         email: `ws5char-${suffix}@test.com`,
         password: 'irrelevant-hash',
@@ -105,6 +106,7 @@ describe('trait interaction analysis characterization (Equoria-q4uem.5)', () => 
     });
     otherUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `ws5charother${suffix}`,
         email: `ws5char-other-${suffix}@test.com`,
         password: 'irrelevant-hash',

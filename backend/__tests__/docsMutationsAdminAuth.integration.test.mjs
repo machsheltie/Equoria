@@ -71,6 +71,7 @@ describe('API-documentation mutation access control (Equoria-7osu4)', () => {
     const pw = await bcrypt.hash('AdminPassword123!', 1);
     admin = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `7osu4_admin_${ts}`,
         email: `7osu4_admin_${ts}@example.com`,
         password: pw,
@@ -82,6 +83,7 @@ describe('API-documentation mutation access control (Equoria-7osu4)', () => {
     });
     member = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `7osu4_member_${ts}`,
         email: `7osu4_member_${ts}@example.com`,
         password: pw,

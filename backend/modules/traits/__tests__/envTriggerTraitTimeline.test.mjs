@@ -31,6 +31,7 @@ const cleanup = createCleanupTracker();
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `envtrigger-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `envtrigger${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -153,6 +154,7 @@ describe('age-bracket branches (Equoria-jkht)', () => {
 
     ageUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `et-ageb-${ts}-${rand()}@test.com`,
         username: `etageb${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -223,6 +225,7 @@ describe('poor-quality interactions (Equoria-jkht)', () => {
 
     harshUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `et-hsh-${ts}-${rand()}@test.com`,
         username: `ethsh${ts}${rand()}`,
         password: 'irrelevant-hash',

@@ -67,6 +67,7 @@ describe('INTEGRATION: onboarding starter horse is fail-closed on breed (Equoria
     const username = uniq('TestFixture-BreedFailClosed-');
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username,
         email: `${username}@test.com`,
         // Fixture only — never authenticated with. Registration is covered by

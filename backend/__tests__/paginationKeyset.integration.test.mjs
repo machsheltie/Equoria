@@ -124,6 +124,7 @@ describe('findKeysetPage against the real database (Equoria-cmw85.19)', () => {
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `keyset-${RUN}@test.com`,
         username: `keyset${RUN}`,
         password: 'irrelevant-hash',

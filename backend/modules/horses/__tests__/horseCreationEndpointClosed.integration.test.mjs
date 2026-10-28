@@ -105,6 +105,7 @@ describe('Finding 2 — POST /api/v1/horses is closed to players', () => {
     // complete (settings carries no onboarding markers).
     player = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: uniqueEmail(),
         username: uniqueUsername(),
         password: 'irrelevant-hash',
@@ -189,6 +190,7 @@ describe('Finding 2 — POST /api/v1/horses is closed to players', () => {
 
     const otherUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: uniqueEmail(),
         username: uniqueUsername(),
         password: 'irrelevant-hash',
@@ -288,6 +290,7 @@ describe('Finding 2 — the legitimate paid acquisition path is untouched', () =
     createdHorseIds = [];
     buyer = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: uniqueEmail(),
         username: uniqueUsername(),
         password: 'irrelevant-hash',
@@ -345,6 +348,7 @@ describe('Finding 2 — the legitimate paid acquisition path is untouched', () =
   it('leaves no partial purchase when the buyer cannot afford the horse', async () => {
     const broke = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: uniqueEmail(),
         username: uniqueUsername(),
         password: 'irrelevant-hash',
@@ -382,6 +386,7 @@ describe('Finding 2 — internal createHorse callers still work', () => {
     createdHorseIds = [];
     owner = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: uniqueEmail(),
         username: uniqueUsername(),
         password: 'irrelevant-hash',

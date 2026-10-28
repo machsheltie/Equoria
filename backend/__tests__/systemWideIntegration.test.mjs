@@ -45,6 +45,7 @@ describe('System-Wide Data Integrity', () => {
     const timestamp = Date.now();
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `swi${timestamp.toString().slice(-6)}`,
         email: `swi${timestamp}@test.com`,
         password: 'TestPassword123!',

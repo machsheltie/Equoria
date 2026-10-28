@@ -37,6 +37,7 @@ describe('Equoria-bvddn.7 — the player-built groom hire is retired', () => {
     const suffix = randomBytes(6).toString('hex');
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${fixturePrefix}-${suffix}`,
         email: `${fixturePrefix}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',

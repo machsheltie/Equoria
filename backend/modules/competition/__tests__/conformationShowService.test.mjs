@@ -424,6 +424,7 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
 
     cssUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `css-${ts}-${rand()}@test.com`,
         username: `css${ts}${rand()}`,
         password: 'irrelevant-hash',

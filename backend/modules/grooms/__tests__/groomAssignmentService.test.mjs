@@ -78,6 +78,7 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
 
     gasUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `gas-${ts}-${rand()}@test.com`,
         username: `gas${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -89,6 +90,7 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
 
     gasUser2 = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `gas2-${ts}-${rand()}@test.com`,
         username: `gas2${ts}${rand()}`,
         password: 'irrelevant-hash',

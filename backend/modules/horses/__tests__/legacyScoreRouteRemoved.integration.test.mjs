@@ -34,6 +34,7 @@ describe('the legacy-score route is removed (q242)', () => {
   beforeAll(async () => {
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${PREFIX}-owner`,
         email: `${PREFIX}-owner@example.com`,
         password: 'irrelevant-not-a-login-test',

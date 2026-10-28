@@ -43,6 +43,7 @@ import { register, login, refreshToken } from '../controllers/authController.mjs
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../../middleware/validationErrorHandler.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { confirmEmail } from '../../../tests/helpers/confirmEmail.mjs';
 
 /**
  * Extract cookie value from Set-Cookie header
@@ -181,6 +182,8 @@ describe('🔐 Authentication System Integration Tests', () => {
       .send(userData);
 
     expect(registerResponse.status).toBe(201);
+    // Equoria-voasj: no play until the email is confirmed.
+    await confirmEmail(registerResponse.body.data.user.id);
     expect(registerResponse.body.success).toBe(true);
 
     testUser = registerResponse.body.data.user;

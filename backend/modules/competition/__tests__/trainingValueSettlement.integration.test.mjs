@@ -33,6 +33,7 @@ describe('nightly settlement adds the trained value in the show discipline (deci
   it('adds the accumulated discipline training as flat points before the percentages', async () => {
     const owner = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `k1p62-train-${uid()}@test.local`,
         username: `k1r${uid()}`.slice(0, 30),
         password: 'irrelevant-hash',

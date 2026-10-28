@@ -150,6 +150,7 @@ const groomNotFoundCleanup = createCleanupTracker();
 beforeAll(async () => {
   groomNotFoundUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `groomsys-gnf-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `groomsysgnf${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -209,6 +210,7 @@ beforeAll(async () => {
 
   successUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `groomsys-succ-${ts}-${rand()}@test.com`,
       username: `groomsyssucc${ts}${rand()}`,
       password: 'irrelevant-hash',

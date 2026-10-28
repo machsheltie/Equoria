@@ -53,6 +53,7 @@ beforeAll(async () => {
   knownEmail = `${EMAIL_PREFIX}-${tag}@example.com`;
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `TestFixture-jeci6floor-${tag}`,
       email: knownEmail,
       password: await bcrypt.hash('FloorPass123!', 1),

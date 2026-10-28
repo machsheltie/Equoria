@@ -77,6 +77,7 @@ beforeAll(async () => {
 
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `dcompat-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `dcompat${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -174,6 +175,7 @@ beforeAll(async () => {
 
   foreignUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `dcompat-foreign-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `dcompatf${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',

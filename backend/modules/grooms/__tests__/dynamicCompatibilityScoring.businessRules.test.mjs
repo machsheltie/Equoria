@@ -40,6 +40,7 @@ describe('Dynamic Compatibility Scoring', () => {
         // Create test user
         testUser = await tx.user.create({
           data: {
+            emailVerified: true,
             username: `compatibility_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             email: `compatibility_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
             password: 'testHash',

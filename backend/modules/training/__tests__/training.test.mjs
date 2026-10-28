@@ -137,6 +137,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
     // Create a test Player (for XP system and userId relationship)
     testPlayer = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: 'TrainingTestPlayer',
         email: 'training-test-player@example.com',
         firstName: 'Training',

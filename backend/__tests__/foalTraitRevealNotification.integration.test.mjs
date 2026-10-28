@@ -41,6 +41,7 @@ describe('INTEGRATION: daily trait reveal notification (Equoria-yy1a5)', () => {
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `tf-yy1a5-${randHex()}`,
         email: `tf-yy1a5-${randHex()}@example.com`,
         password: 'x',

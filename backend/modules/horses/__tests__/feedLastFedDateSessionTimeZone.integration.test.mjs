@@ -36,6 +36,7 @@ describe('feedHorse lastFedDate is UTC regardless of the session TimeZone (Equor
     const tag = `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `feed-tz-${tag}@test.com`,
         username: `feedtz${tag}`,
         password: 'irrelevant-test-hash',

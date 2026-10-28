@@ -40,6 +40,7 @@ describe('executeConformationShow — no fabricated groom (Equoria-axad9.1)', ()
 
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `axad-${ts}-${rand()}@test.com`,
         username: `axad${ts}${rand()}`,
         password: 'irrelevant-hash',

@@ -43,6 +43,7 @@ beforeAll(async () => {
   await prisma.user.deleteMany({ where: { id: USER_ID } });
   await prisma.user.create({
     data: {
+      emailVerified: true,
       id: USER_ID,
       username: 'horsexpSysUser',
       email: 'horsexpsys@example.com',

@@ -75,6 +75,7 @@ async function runPass(foalId) {
 beforeAll(async () => {
   owner = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: PREFIX,
       email: `${PREFIX}@example.com`,
       password: 'irrelevant-hash',

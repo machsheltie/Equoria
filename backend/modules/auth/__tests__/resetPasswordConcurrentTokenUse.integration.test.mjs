@@ -96,6 +96,7 @@ describe('Equoria-bvddn.9 — reset-password token cannot be consumed by two con
     const hashedOriginal = await bcrypt.hash(originalPassword, 1);
     await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${EMAIL_PREFIX}lock_${timestamp}`,
         email,
         password: hashedOriginal,

@@ -43,6 +43,7 @@ async function makeUser(label) {
   const name = `${runTag}-${label}`;
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `${name}@test.com`,
       username: name,
       password: 'irrelevant-not-a-login-test',

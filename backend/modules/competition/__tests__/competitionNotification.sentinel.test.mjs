@@ -27,6 +27,7 @@ describe('SENTINEL: competition placement → competitionStatGain Notification',
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `comp_notif_${Date.now()}@test.com`,
         username: `comp_notif_${Date.now()}`,
         password: 'irrelevant',

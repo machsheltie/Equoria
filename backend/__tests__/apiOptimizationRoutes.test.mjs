@@ -34,6 +34,7 @@ describe('API Optimization Routes', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `apiOptimizationTestUser_${testRunId}`,
         email: `apioptimization_${testRunId}@test.com`,
         password: 'testPassword123',

@@ -52,6 +52,7 @@ describe('settings: concurrent writes to the same nested key both survive (Equor
     const tag = randomBytes(6).toString('hex');
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `${fixturePrefix}-${tag}@example.com`,
         username: `${fixturePrefix}-${tag}`.slice(0, 30),
         password: 'irrelevant-hash',

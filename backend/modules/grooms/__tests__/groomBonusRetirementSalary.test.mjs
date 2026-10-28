@@ -34,6 +34,7 @@ const cleanup = createCleanupTracker();
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `groombonus-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `groombonus${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -209,6 +210,7 @@ describe('calculateUserSalaryCost', () => {
   it('returns zero for a user with no grooms at all', async () => {
     const stranger = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `groombonus-none-${randomBytes(4).toString('hex')}@test.com`,
         username: `groombonusnone${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-hash',

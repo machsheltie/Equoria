@@ -681,6 +681,7 @@ describe('createHorseFromRequest — phenotype integration', () => {
     const hashedPassword = await bcrypt.hash(testUserData.password, 10);
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: testUserData.username,
         email: testUserData.email,
         password: hashedPassword,

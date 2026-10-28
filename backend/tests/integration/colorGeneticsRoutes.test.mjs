@@ -44,6 +44,7 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
     // Two users so we can exercise the cross-user (not-owned) path.
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `cg_user_${ts}`,
         email: `cg_user_${ts}@test.com`,
         password: 'pwhash',
@@ -55,6 +56,7 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
 
     otherUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `cg_other_${ts}`,
         email: `cg_other_${ts}@test.com`,
         password: 'pwhash',

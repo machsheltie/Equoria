@@ -70,6 +70,7 @@ describe('Horse weekly aging — integration regression (Equoria-j6jv)', () => {
     const tag = `${randomBytes(6).toString('hex')}`;
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         id: `agingreg-user-${tag}`,
         username: `agingreguser_${tag}`,
         email: `agingreg_${tag}@example.com`,

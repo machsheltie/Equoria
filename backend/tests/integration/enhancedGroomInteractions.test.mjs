@@ -53,6 +53,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username,
         email,
         password: 'hashedpassword',
@@ -318,6 +319,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const otherSuffix = randomBytes(6).toString('hex');
       const otherUser = await prisma.user.create({
         data: {
+          emailVerified: true,
           username: `TestFixture-jjzem-enhanced-other-${otherSuffix}`,
           email: `testfixture-jjzem-enhanced-other-${otherSuffix}@example.com`,
           password: 'hashedpassword',

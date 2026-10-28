@@ -47,6 +47,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
     const timestamp = Date.now();
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `TestFixture-oey96-15-user-${timestamp}`,
         email: `testfixture-oey96-15-${timestamp}@test.com`,
         password: 'hashedPassword',

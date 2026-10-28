@@ -62,6 +62,7 @@ export function createFundedShowFixtures(prefix) {
     const tag = uid();
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         // The unique tag must survive the 30-character cut: truncate the readable
         // prefix, never the tag (Equoria-63ifs).
         username: `${`${prefix}-${role}`.slice(0, 30 - tag.length - 1).replace(/-+$/, '')}-${tag}`,

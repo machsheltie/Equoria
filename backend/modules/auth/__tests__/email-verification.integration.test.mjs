@@ -75,6 +75,8 @@ describe('Email Verification System - Integration Tests', () => {
     const userData = await createTestUser({
       username: `emailint_${timestamp}`,
       email: `emailint_${timestamp}@example.com`,
+      // This suite exercises the confirmation flow, so its player starts unconfirmed.
+      emailVerified: false,
     });
     testUser = userData;
     _testPassword = userData.plainPassword;

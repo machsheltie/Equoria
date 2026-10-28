@@ -170,6 +170,7 @@ describe("POST /horses/foals — breed-data outage reports 500, not the breed's 
 
     player = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `task20_outage_${ts}`,
         email: `task20_outage_${ts}@example.com`,
         password: hashedPassword,

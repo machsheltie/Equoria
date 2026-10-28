@@ -185,6 +185,7 @@ describe('updateHorseAge() — DB-fixture paths (lines 95-135) (Equoria-jkht)', 
     const ts = Date.now();
     fixtureUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `has-fixture-${ts}-${Math.random().toString(36).slice(2, 8)}@test.com`,
         username: `hasfix${ts}${Math.random().toString(36).slice(2, 6)}`,
         password: 'irrelevant-hash',
@@ -264,6 +265,7 @@ describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-
     const rand = () => Math.random().toString(36).slice(2, 8);
     masUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `mas-fixture-${ts}-${rand()}@test.com`,
         username: `masfix${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -334,6 +336,7 @@ describe('checkForMilestones() — Equoria-bvddn.16 age-2/3 dead path removal', 
     const rand = () => Math.random().toString(36).slice(2, 8);
     bvUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `bvddn16-${ts}-${rand()}@test.com`,
         username: `bvddn16${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -410,6 +413,7 @@ describe('processHorseBirthdays() — dryRun else-branch (lines 416-417) (Equori
     const rand = () => Math.random().toString(36).slice(2, 8);
     pbUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `pb-fixture-${ts}-${rand()}@test.com`,
         username: `pbfix${ts}${rand()}`,
         password: 'irrelevant-hash',

@@ -44,6 +44,7 @@ describe('Environmental Trigger System', () => {
         // Create test user
         testUser = await tx.user.create({
           data: {
+            emailVerified: true,
             username: `env_trigger_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             email: `env_trigger_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
             password: 'testHash',

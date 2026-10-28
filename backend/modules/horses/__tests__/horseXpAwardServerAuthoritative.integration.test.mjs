@@ -79,6 +79,7 @@ async function makeUser(tag) {
   const uniq = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
+      emailVerified: true,
       email: `testfixture-6p398-${tag}-${uniq}@test.com`,
       username: `TestFixture6p398${tag}${uniq}`,
       password: 'irrelevant-hash',

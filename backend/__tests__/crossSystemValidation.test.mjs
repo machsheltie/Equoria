@@ -38,6 +38,7 @@ describe('Cross-System Boundary Validation', () => {
 
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `csbUser${suffix}`,
         email: `csb${timestamp}@test.com`,
         password: 'testPassword123',

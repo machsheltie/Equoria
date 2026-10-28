@@ -124,6 +124,7 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
 
     grsUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `grs-${ts}-${rand()}@test.com`,
         username: `grs${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -424,6 +425,7 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
 
     wcpUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `wcp-${ts}-${rand()}@test.com`,
         username: `wcp${ts}${rand()}`,
         password: 'irrelevant-hash',

@@ -77,6 +77,7 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
 
     player = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `sixw3ur_player_${ts}`,
         email: `sixw3ur_player_${ts}@example.com`,
         password: hashedPassword,
@@ -87,6 +88,7 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
     });
     otherPlayer = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `sixw3ur_other_${ts}`,
         email: `sixw3ur_other_${ts}@example.com`,
         password: hashedPassword,

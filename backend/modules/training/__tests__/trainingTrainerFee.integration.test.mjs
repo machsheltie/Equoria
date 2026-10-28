@@ -54,6 +54,7 @@ async function stable({ money, trainer = true }) {
   seq += 1;
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `${PREFIX}-${seq}@test.com`,
       username: `tf3kegj${TAG}${seq}`,
       password: 'irrelevant-hash',

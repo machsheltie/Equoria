@@ -39,6 +39,7 @@ let horse;
 async function makeUser(role) {
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `TestFixture-kiwe5-${role}-${rand()}`,
       email: `testfixture-kiwe5-${role}-${rand()}@test.local`,
       password: 'irrelevant-hash',

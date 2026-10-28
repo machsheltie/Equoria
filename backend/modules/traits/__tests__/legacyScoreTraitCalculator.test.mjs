@@ -91,6 +91,7 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
 
     lstUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `lst-${ts}-${rand()}@test.com`,
         username: `lst${ts}${rand()}`,
         password: 'irrelevant-hash',

@@ -44,6 +44,7 @@ export async function makePlayer(prefix, role, money) {
   const suffix = tag();
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${prefix}-${role}-${suffix}`,
       email: `${prefix}-${role}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',

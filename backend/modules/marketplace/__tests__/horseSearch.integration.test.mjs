@@ -45,6 +45,7 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
     const suffix = tag();
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${PREFIX}-${role}-${suffix}`,
         email: `${PREFIX}-${role}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',

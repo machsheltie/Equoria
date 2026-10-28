@@ -45,6 +45,7 @@ describe('nightly settlement scores temperament as a percent term (B6)', () => {
   it('Calm +5%, Nervous -5%, and a null temperament settles with 0 in the same run', async () => {
     const owner = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `b6-${uid()}@test.local`,
         username: `b6${uid()}`.slice(0, 30),
         password: 'irrelevant-hash',

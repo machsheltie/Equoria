@@ -26,6 +26,7 @@ import request from 'supertest';
 import { randomBytes } from 'node:crypto';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { confirmEmail } from '../../../tests/helpers/confirmEmail.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const PREFIX = 'csrfbind-';
@@ -49,6 +50,8 @@ async function registerUser(suffix) {
     dateOfBirth: '1990-01-01',
   });
   expect(res.status).toBe(201);
+  // Equoria-voasj: no play until the email is confirmed.
+  await confirmEmail(res.body.data.user.id);
   const accessCookie = extractCookie(res.headers['set-cookie'], 'accessToken');
   const refreshCookie = extractCookie(res.headers['set-cookie'], 'refreshToken');
   const csrfCookieName = process.env.NODE_ENV === 'production' ? '__Host-csrf' : '_csrf';

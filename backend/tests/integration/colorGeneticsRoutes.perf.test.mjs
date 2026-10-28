@@ -68,6 +68,7 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
     const ts = randomBytes(8).toString('hex');
     perfUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `cgperf_${ts}`,
         email: `cgperf_${ts}@test.com`,
         password: 'pwhash',

@@ -45,6 +45,7 @@ describe('POST /marketplace/store/buy: the horse carries hidden roster traits (E
     const tag = randomBytes(6).toString('hex');
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `i366a-${tag}@test.com`,
         username: `i366a${tag}`,
         password: 'irrelevant-hash',

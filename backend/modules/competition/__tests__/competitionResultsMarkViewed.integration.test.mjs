@@ -63,6 +63,7 @@ describe('POST /api/v1/competition/results/viewed (Equoria-oey96.28)', () => {
   async function makeUser(label) {
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `markviewed-${label}-${rand()}@test.com`,
         username: `markviewed${label}${rand()}`,
         password: 'irrelevant-hash',

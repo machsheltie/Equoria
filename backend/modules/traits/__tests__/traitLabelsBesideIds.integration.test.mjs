@@ -45,6 +45,7 @@ describe('trait ids travel with their authored names', () => {
     cleanup.add(() => (viewer ? prisma.user.deleteMany({ where: { id: viewer.id } }) : null), 'viewer');
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${fixturePrefix}-${run}`.slice(0, 30),
         email: `${fixturePrefix}-${run}@example.com`,
         password: 'irrelevant-not-a-login-test',
@@ -57,6 +58,7 @@ describe('trait ids travel with their authored names', () => {
     // The search lists other players' horses, so another player looks.
     viewer = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${fixturePrefix}-v-${run}`.slice(0, 30),
         email: `${fixturePrefix}-v-${run}@example.com`,
         password: 'irrelevant-not-a-login-test',

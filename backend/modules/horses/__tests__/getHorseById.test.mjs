@@ -25,6 +25,7 @@ beforeAll(async () => {
 
   hmUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `hm-db-${ts}-${rand()}@test.com`,
       username: `hmdb${ts}${rand()}`,
       password: 'irrelevant-hash',

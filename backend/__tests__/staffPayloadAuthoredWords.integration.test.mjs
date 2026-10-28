@@ -92,6 +92,7 @@ describe('staff reads send authored words, never hidden fields', () => {
 
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${fixturePrefix}-${suffix}`.slice(0, 30),
         email: `${fixturePrefix}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',

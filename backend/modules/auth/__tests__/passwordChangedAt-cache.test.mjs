@@ -71,6 +71,7 @@ describe('Equoria-2bbf — passwordChangedAt cache', () => {
     const ts = randomBytes(8).toString('hex');
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${SUITE_PREFIX}${ts}`,
         email: `${SUITE_PREFIX}${ts}@example.com`,
         password: await bcrypt.hash('TestPassword123!', 1),

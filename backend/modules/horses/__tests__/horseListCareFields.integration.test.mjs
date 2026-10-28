@@ -28,6 +28,7 @@ describe('horse list: shod date, training cooldown and portrait (Equoria-9spb2)'
     const suffix = randomBytes(6).toString('hex');
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${PREFIX}-${suffix}`,
         email: `${PREFIX}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',
@@ -72,6 +73,7 @@ describe('horse list: shod date, training cooldown and portrait (Equoria-9spb2)'
     const suffix = randomBytes(6).toString('hex');
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${PREFIX}-g-${suffix}`,
         email: `${PREFIX}-g-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',

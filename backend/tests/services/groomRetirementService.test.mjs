@@ -64,6 +64,7 @@ describe('Groom Retirement Service', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `testuser_retirement_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         email: `test_retirement_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,
         password: 'hashedpassword123',

@@ -39,6 +39,7 @@ const fx = {};
 async function makeUser(label) {
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${PREFIX}-${label}`,
       email: `${PREFIX}-${label}@example.com`.toLowerCase(),
       password: 'irrelevant-not-a-login-test',

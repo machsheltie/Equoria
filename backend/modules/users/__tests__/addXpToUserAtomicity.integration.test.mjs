@@ -59,6 +59,7 @@ async function makeUser(xp) {
   const uniq = randomBytes(8).toString('hex');
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `testfixture-jvi3u-${uniq}@test.com`,
       username: `TestFixturejvi3u${uniq}`,
       password: 'irrelevant-hash',

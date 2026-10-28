@@ -35,6 +35,7 @@ describe('31D-4 (Equoria-ictn): GET /api/grooms/:groomId/horses/:horseId/synergy
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `${TAG}@test.com`,
         username: TAG,
         password: 'irrelevant',

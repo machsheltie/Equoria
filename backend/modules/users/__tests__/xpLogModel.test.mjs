@@ -36,6 +36,7 @@ beforeAll(async () => {
   await prisma.user.deleteMany({ where: { id: USER_ID } });
   await prisma.user.create({
     data: {
+      emailVerified: true,
       id: USER_ID,
       username: 'xpLogTestUser',
       email: 'xplog@example.com',
@@ -108,6 +109,7 @@ describe('getUserXpEvents', () => {
     await prisma.user.deleteMany({ where: { id: uid } });
     await prisma.user.create({
       data: {
+        emailVerified: true,
         id: uid,
         username: 'xpEventsUser',
         email: 'xpevents@example.com',
@@ -144,6 +146,7 @@ describe('getUserXpEvents', () => {
     await prisma.user.deleteMany({ where: { id: uid } });
     await prisma.user.create({
       data: {
+        emailVerified: true,
         id: uid,
         username: 'xpDateFilterUser',
         email: 'xpdatefilter@example.com',
@@ -188,6 +191,7 @@ describe('getUserXpSummary', () => {
     await prisma.user.deleteMany({ where: { id: uid } });
     await prisma.user.create({
       data: {
+        emailVerified: true,
         id: uid,
         username: 'xpSummaryUser',
         email: 'xpsummary@example.com',
@@ -225,6 +229,7 @@ describe('getUserXpSummary', () => {
     await prisma.user.deleteMany({ where: { id: uid } });
     await prisma.user.create({
       data: {
+        emailVerified: true,
         id: uid,
         username: 'xpEmptyUser',
         email: 'xpempty@example.com',
@@ -252,6 +257,7 @@ describe('getUserXpSummary', () => {
     await prisma.user.deleteMany({ where: { id: uid } });
     await prisma.user.create({
       data: {
+        emailVerified: true,
         id: uid,
         username: 'xpSumDateUser',
         email: 'xpsumdate@example.com',

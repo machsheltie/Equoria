@@ -32,6 +32,7 @@ async function makeFixtureUser(initialMoney = 1000) {
   const suffix = `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `TestFixture-pqp69-${suffix}@test.com`,
       username: `tfpqp69${suffix}`,
       password: 'irrelevant-hash',

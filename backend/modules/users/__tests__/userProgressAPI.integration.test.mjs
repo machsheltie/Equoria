@@ -58,6 +58,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { confirmEmail } from '../../../tests/helpers/confirmEmail.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -165,6 +166,8 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
     expect(registerResponse.body.success).toBe(true);
     const testUser = registerResponse.body.data.user;
+    // Equoria-voasj: no play until the email is confirmed.
+    await confirmEmail(testUser.id);
 
     // Login to get auth token
     const loginResponse = await request(app)
@@ -561,6 +564,8 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       .expect(201);
 
     const edgeUser = registerResponse.body.data.user;
+    // Equoria-voasj: no play until the email is confirmed.
+    await confirmEmail(edgeUser.id);
 
     const loginResponse = await request(app)
       .post('/api/v1/auth/login')

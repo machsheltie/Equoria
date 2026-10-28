@@ -30,6 +30,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         id: `test-user-epigenetic-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         username: `testuser${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         email: `test${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,

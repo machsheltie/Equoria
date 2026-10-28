@@ -51,6 +51,7 @@ beforeAll(async () => {
   const tag = randomBytes(8).toString('hex');
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `tackinv-${tag}@test.com`,
       username: `tackinv${tag}`,
       password: 'irrelevant-hash',

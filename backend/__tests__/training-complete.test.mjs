@@ -50,6 +50,7 @@ import { createSequentially } from '../tests/helpers/createSequentially.mjs'; //
 // Equoria-d3ena: fail-loud, scoped teardown so a cleanup failure turns the
 // suite RED instead of leaking fixtures into the canonical DB (CLAUDE.md §2).
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
+import { confirmEmail } from '../tests/helpers/confirmEmail.mjs';
 
 /**
  * Extract cookie value from Set-Cookie header array
@@ -203,6 +204,8 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
     const cookies = registerResponse.headers['set-cookie'];
     authToken = extractCookie(cookies, 'accessToken');
     testUser = registerResponse.body.data.user;
+    // Equoria-voasj: no play until the email is confirmed.
+    await confirmEmail(testUser.id);
 
     expect(authToken).toBeDefined();
 

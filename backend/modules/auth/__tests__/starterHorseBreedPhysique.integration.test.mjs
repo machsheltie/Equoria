@@ -28,6 +28,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { expectBreedPhysique } from '../../../__tests__/helpers/expectBreedPhysique.mjs';
+import { confirmEmail } from '../../../tests/helpers/confirmEmail.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 // Registration seeds the placeholder starter with the default breed (onboardingService).
@@ -101,6 +102,8 @@ describe('Onboarding starter horse: conformation and gaits from the breed (Equor
         dateOfBirth: dobYearsAgo(25),
       });
     expect(res.status).toBe(201);
+    // Equoria-voasj: no play until the email is confirmed.
+    await confirmEmail(res.body.data.user.id);
     const userId = res.body?.data?.user?.id;
     expect(userId).toBeTruthy();
     createdUserIds.push(userId);

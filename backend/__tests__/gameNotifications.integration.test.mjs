@@ -15,6 +15,7 @@ describe('INTEGRATION: game-notifications endpoints', () => {
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `notif_api_${Date.now()}@test.com`,
         username: `notif_api_${Date.now()}`,
         password: 'irrelevant',

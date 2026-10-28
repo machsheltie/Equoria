@@ -56,6 +56,7 @@ beforeAll(async () => {
   const pw = await bcrypt.hash('BreedAuthz123!', 1);
   adminUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `TestFixture-7p4xe-admin-${UNIQUE}`,
       email: `testfixture-7p4xe-admin-${UNIQUE}@example.com`,
       password: pw,
@@ -67,6 +68,7 @@ beforeAll(async () => {
   });
   normalUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `TestFixture-7p4xe-user-${UNIQUE}`,
       email: `testfixture-7p4xe-user-${UNIQUE}@example.com`,
       password: pw,

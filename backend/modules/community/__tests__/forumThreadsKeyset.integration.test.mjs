@@ -44,6 +44,7 @@ const thread = (i, isPinned) => ({
 beforeAll(async () => {
   author = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `forumkeyset-${RUN}@test.com`,
       username: `forumkeyset${RUN}`,
       password: 'irrelevant-hash',

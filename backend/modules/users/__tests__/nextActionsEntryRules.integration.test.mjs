@@ -47,6 +47,7 @@ cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'u
 async function makeUser() {
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `b9na-${rand()}@test.local`,
       username: `b9na${rand()}`,
       password: 'irrelevant-hash',

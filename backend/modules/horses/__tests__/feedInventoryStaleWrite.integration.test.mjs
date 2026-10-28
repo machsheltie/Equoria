@@ -198,6 +198,7 @@ describe('Equoria-bvddn.13 — feeding never overwrites the feed inventory with 
     const tag = uniq();
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `${FIXTURE_PREFIX}-${tag}@example.com`,
         username: `${FIXTURE_PREFIX}-${tag}`,
         password: 'irrelevant-hash',

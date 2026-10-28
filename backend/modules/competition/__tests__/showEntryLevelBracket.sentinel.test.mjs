@@ -102,6 +102,7 @@ async function post(path, body) {
 beforeAll(async () => {
   entrant = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `g8qg0-entrant-${uid()}@test.com`,
       username: `g8e${uid()}`,
       password: 'irrelevant-hash',

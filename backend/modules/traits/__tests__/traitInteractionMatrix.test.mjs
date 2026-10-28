@@ -28,6 +28,7 @@ const cleanup = createCleanupTracker();
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `traitmatrix-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `traitmatrix${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -142,6 +143,7 @@ describe('generateInteractionMatrix temporalModel section (was modelTemporalInte
     const rand = () => randomBytes(3).toString('hex');
     const matureUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `rjs2n-${rand()}-${rand()}@test.com`,
         username: `rjs2n${rand()}${rand()}`,
         password: 'irrelevant-hash',
@@ -217,6 +219,7 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
 
     tiUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `tim-${ts}-${rand()}@test.com`,
         username: `tim${ts}${rand()}`,
         password: 'irrelevant-hash',

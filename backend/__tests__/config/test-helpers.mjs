@@ -55,6 +55,9 @@ export const createTestUser = async (overrides = {}) => {
 
   const user = await prisma.user.create({
     data: {
+      // Equoria-voasj: players must confirm their email before they can play, so
+      // fixtures are confirmed unless a test asks for an unconfirmed account.
+      emailVerified: userData.emailVerified ?? true,
       username: userData.username,
       email: userData.email,
       password: hashedPassword,

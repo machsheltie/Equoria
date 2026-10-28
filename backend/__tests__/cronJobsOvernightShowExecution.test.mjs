@@ -38,6 +38,7 @@ beforeAll(async () => {
 
   execUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `${FIXTURE_PREFIX}-${uid}@test.com`,
       username: `${FIXTURE_PREFIX}-${uid}`,
       password: 'irrelevant-hash',

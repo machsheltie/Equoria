@@ -23,6 +23,7 @@ async function makePlayer() {
   const suffix = randomBytes(5).toString('hex');
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `kgush_${suffix}`,
       email: `${PREFIX}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',

@@ -45,6 +45,7 @@ async function makeUser(money = 5000) {
   const t = tag();
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${fixturePrefix}-${t}`,
       email: `${fixturePrefix}-${t}@example.com`,
       password: await bcrypt.hash('TestPassword123!', 1),

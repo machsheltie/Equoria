@@ -70,6 +70,7 @@ describe('Equoria-tfo3c — a real grooming session writes no price and takes no
     const suffix = tag();
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${FIXTURE_PREFIX}-${suffix}`.slice(0, 30),
         email: `${FIXTURE_PREFIX}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',

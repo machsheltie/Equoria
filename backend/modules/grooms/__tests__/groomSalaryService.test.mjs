@@ -82,6 +82,7 @@ describe('calculateUserSalaryCost — DB fixture (Equoria-jkht)', () => {
 
     gssUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `gss-${ts}-${rand()}@test.com`,
         username: `gss${ts}${rand()}`,
         password: 'irrelevant-hash',

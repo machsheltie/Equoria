@@ -82,6 +82,7 @@ describe('trait interaction analysis reads one horse snapshot (Equoria-q4uem.5)'
     const suffix = `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `ws5reads${suffix}`,
         email: `ws5reads-${suffix}@test.com`,
         password: 'irrelevant-hash',

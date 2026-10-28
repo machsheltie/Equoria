@@ -32,6 +32,7 @@ beforeAll(async () => {
   const suffix = `${uid()}${uid()}`;
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `testfixture-massassign-${suffix}@test.com`,
       username: `TestFixture-massassign-${suffix}`,
       password: '$2b$12$originalHashThatShouldNeverChange.XXXXXXXXXXXXXXXXXXXXX',

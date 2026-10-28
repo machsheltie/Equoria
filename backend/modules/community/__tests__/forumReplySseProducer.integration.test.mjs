@@ -67,6 +67,7 @@ describe('INTEGRATION: forum-reply SSE producer (Equoria-pwwuz)', () => {
 
     author = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `pwwuz-author-${randomBytes(4).toString('hex')}@test.com`,
         username: `pwwuzAuthor${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-hash',
@@ -76,6 +77,7 @@ describe('INTEGRATION: forum-reply SSE producer (Equoria-pwwuz)', () => {
     });
     replier = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `pwwuz-replier-${randomBytes(4).toString('hex')}@test.com`,
         username: `pwwuzReplier${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-hash',

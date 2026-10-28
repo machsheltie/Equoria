@@ -183,6 +183,7 @@ describe('createTokenPair() — with real DB user (Equoria-rr7 gap coverage)', (
     const rand = randomBytes(8).toString('hex');
     gapUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `trs-gap-${rand}@test.invalid`,
         username: `trsgap${rand}`.slice(0, 50),
         password: 'test-hash',

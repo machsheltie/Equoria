@@ -60,6 +60,7 @@ describe('Memory Management Routes', () => {
     // now require the admin role).
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: fixtureUsername,
         email: fixtureEmail,
         password: 'testPassword123',

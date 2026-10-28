@@ -59,6 +59,7 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
 
     bpsUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `bps-${ts}-${rand()}@test.com`,
         username: `bps${ts}${rand()}`,
         password: 'irrelevant-hash',

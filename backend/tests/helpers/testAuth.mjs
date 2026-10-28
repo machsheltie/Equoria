@@ -130,6 +130,7 @@ export async function createTestUser(userData = {}) {
   try {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         ...defaultData,
         password: hashedPassword,
       },
@@ -226,6 +227,7 @@ export async function createTestHorse(horseData = {}) {
 
       await prisma.user.create({
         data: {
+          emailVerified: true,
           id: defaultData.userId,
           username: `recovery_${userSuffix}`,
           email: `recovery_${userSuffix}@example.com`,

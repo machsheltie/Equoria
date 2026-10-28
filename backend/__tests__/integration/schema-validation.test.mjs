@@ -61,6 +61,7 @@ describe('Schema Validation', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         id: uniqueId,
         username: `schematestuser${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         email: `schema-test-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,

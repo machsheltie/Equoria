@@ -45,6 +45,7 @@ describe('createFoal — delayed pregnancy (B3)', () => {
     const hashed = await bcrypt.hash('TestPassword123!', 1);
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `b3_${ts}`,
         email: `b3_${ts}@test.com`,
         password: hashed,

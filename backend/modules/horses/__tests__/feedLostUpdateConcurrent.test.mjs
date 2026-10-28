@@ -186,6 +186,7 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
     // machinery of the feed-shop purchase path — irrelevant to this invariant).
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `kv2gz_${ts}`,
         email: `kv2gz_${ts}@test.com`,
         password: hashed,

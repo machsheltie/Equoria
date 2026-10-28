@@ -73,6 +73,7 @@ beforeAll(async () => {
   const pw = await bcrypt.hash('BreedAdmin123!', 1);
   adminUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `TestFixture-jv7ur-admin-${UNIQUE}`,
       email: `testfixture-jv7ur-admin-${UNIQUE}@example.com`,
       password: pw,

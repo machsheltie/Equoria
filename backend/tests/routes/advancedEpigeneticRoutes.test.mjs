@@ -88,6 +88,7 @@ describe('Advanced Epigenetic API Routes', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `adv_epi_api_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         email: `adv_epi_api_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
         password: 'testHash',
@@ -219,6 +220,7 @@ describe('Advanced Epigenetic API Routes', () => {
       // fails before this test's end.
       const otherUser = await prisma.user.create({
         data: {
+          emailVerified: true,
           username: `other_user_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           email: `other_user_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
           password: 'testHash',

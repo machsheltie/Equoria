@@ -66,6 +66,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `foalcreation_user_${ts}`,
         email: `foalcreation_${ts}@example.com`,
         password: hashedPassword,

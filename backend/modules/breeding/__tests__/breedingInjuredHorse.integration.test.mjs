@@ -33,6 +33,7 @@ let breed;
 beforeAll(async () => {
   owner = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `brinj-${uid()}@test.local`,
       username: `brinj${uid()}`,
       password: 'irrelevant-hash',

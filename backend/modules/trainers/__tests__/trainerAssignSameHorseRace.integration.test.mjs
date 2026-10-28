@@ -47,6 +47,7 @@ describe('trainer assign: two trainers, one horse (Equoria-j8s5c)', () => {
     const suffix = tag();
     owner = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${fixturePrefix}-${suffix}`,
         email: `${fixturePrefix}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',

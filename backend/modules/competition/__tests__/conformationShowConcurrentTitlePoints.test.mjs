@@ -80,6 +80,7 @@ describe('executeConformationShow — concurrent results for the same horse (Equ
 
     tpUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `cftp-${ts}-${rand()}@test.com`,
         username: `cftp${ts}${rand()}`,
         password: 'irrelevant-hash',

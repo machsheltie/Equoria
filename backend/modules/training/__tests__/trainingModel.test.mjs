@@ -39,6 +39,7 @@ describe('Training Model', () => {
 
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: 'training-model-test@fixture.test',
         username: 'trainingmodeltestuser',
         firstName: 'Training',

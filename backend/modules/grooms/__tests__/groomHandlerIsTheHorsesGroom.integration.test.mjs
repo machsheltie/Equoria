@@ -37,6 +37,7 @@ const get = path =>
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `handlergroom-${tag}@test.com`,
       username: `handlergroom${tag}`,
       password: 'irrelevant-hash',

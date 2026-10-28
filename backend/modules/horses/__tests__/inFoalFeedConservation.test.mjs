@@ -109,6 +109,7 @@ describe('feedHorse — in-foal feed conservation, exact equality (Equoria-qi1ns
     // Two tiers in inventory so we can prove per-tier counter tracking sums right.
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `qi1ns_${ts}`,
         email: `qi1ns_${ts}@test.com`,
         password: hashed,

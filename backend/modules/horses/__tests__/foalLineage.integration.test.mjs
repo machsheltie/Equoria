@@ -46,6 +46,7 @@ async function makeHorse(key, sex, extra = {}) {
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `foallin-${RUN}@test.com`,
       username: `foallin${RUN}`,
       password: 'irrelevant-hash',

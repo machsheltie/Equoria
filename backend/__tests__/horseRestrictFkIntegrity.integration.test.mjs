@@ -54,6 +54,7 @@ describe('Equoria-v58ta — horse FK Restrict integrity', () => {
     const tag = randHex();
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${PREFIX}-owner-${tag}`,
         email: `${PREFIX}-owner-${tag}@test.local`,
         password: await bcrypt.hash('test-password-not-real', 4),
@@ -111,6 +112,7 @@ describe('Equoria-v58ta — horse FK Restrict integrity', () => {
     const tag = randHex();
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${PREFIX}-sireown-${tag}`,
         email: `${PREFIX}-sireown-${tag}@test.local`,
         password: await bcrypt.hash('test-password-not-real', 4),

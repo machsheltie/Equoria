@@ -117,6 +117,7 @@ function horseData(name, ownerId, extra = {}) {
 async function makeUser(suffix, extra = {}) {
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${PREFIX}-${suffix}`,
       email: `${PREFIX}-${suffix}@example.com`,
       password: passwordHash,

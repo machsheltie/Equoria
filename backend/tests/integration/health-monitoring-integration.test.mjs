@@ -53,6 +53,7 @@ import {
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 import { randomBytes } from 'node:crypto';
+import { confirmEmail } from '../helpers/confirmEmail.mjs';
 
 // Create test app with health monitoring
 const createTestApp = () => {
@@ -213,6 +214,8 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       .send(userData);
 
     expect(registerResponse.status).toBe(201);
+    // Equoria-voasj: no play until the email is confirmed.
+    await confirmEmail(registerResponse.body.data.user.id);
     _testUser = registerResponse.body.data.user;
 
     // Generate JWT token for authentication using test helper

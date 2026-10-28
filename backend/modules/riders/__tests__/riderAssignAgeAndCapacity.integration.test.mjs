@@ -80,6 +80,7 @@ beforeAll(async () => {
   breedId = (await prisma.breed.findFirst({ select: { id: true } })).id;
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${prefix}-${rand()}`,
       email: `${prefix}-${rand()}@example.com`,
       password: 'irrelevant-not-a-login-test',

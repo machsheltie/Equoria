@@ -45,6 +45,7 @@ const cleanup = createCleanupTracker();
 beforeAll(async () => {
   fixtureUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `TestFixture-search-${SUFFIX}@sentinel.test`,
       username: TEST_USERNAME,
       password: 'irrelevant-hash',

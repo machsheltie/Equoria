@@ -27,6 +27,7 @@ async function makeUserWithHorse() {
   const tag = randomBytes(4).toString('hex');
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `${SENTINEL}-${tag}@test.com`,
       username: `${SENTINEL}_${tag}`,
       password: 'irrelevant-hash',

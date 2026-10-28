@@ -34,6 +34,7 @@ describe('POST /api/v1/feed-shop/purchase (bulk pack purchase)', () => {
   beforeEach(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `feed-bulk-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
         username: `feedbulk${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',

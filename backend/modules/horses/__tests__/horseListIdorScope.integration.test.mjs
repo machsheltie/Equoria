@@ -50,6 +50,7 @@ async function makeUser(suffix, role = 'user') {
   const pw = await bcrypt.hash('TestPassword123!', 1); // low rounds for test speed
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${FIXTURE_PREFIX}-${suffix}-${tag}`,
       email: `${FIXTURE_PREFIX}-${suffix}-${tag}@example.com`,
       password: pw,

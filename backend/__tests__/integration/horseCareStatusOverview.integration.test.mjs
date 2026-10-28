@@ -57,6 +57,7 @@ const makeHorse = async (fields = {}) => {
 beforeAll(async () => {
   owner = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `0l0tq-${uid()}@test.local`,
       username: `0l0tq${uid()}`,
       password: 'irrelevant-hash',

@@ -39,6 +39,7 @@ describe('Equoria-27xvj: Prisma namespace and shared client are one runtime copy
     const tag = randomBytes(5).toString('hex');
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `TestFixture-27xvj-${tag}`,
         email: `TestFixture-27xvj-${tag}@example.com`,
         password: 'irrelevant-not-a-login-test',

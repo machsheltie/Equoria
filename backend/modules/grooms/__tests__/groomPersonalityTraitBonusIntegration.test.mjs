@@ -55,6 +55,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     // Create test user with real database operations
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `testuser_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         firstName: 'Test',
         lastName: 'User',

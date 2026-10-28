@@ -46,6 +46,7 @@ describe('traits contribute nothing to a ridden show score (owner ruling 2026-10
   it('a horse with any traits or flags scores exactly what the same horse scores without them', async () => {
     const owner = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `k1p62-traits-${uid()}@test.local`,
         username: `k1n${uid()}`.slice(0, 30),
         password: 'irrelevant-hash',

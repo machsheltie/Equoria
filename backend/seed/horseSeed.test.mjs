@@ -41,6 +41,7 @@ describe('Horse Seed Integration Tests', () => {
       const userTag = `TestSeed_${Date.now().toString(36)}_${randomBytes(4).toString('hex')}`;
       const testUser = await prisma.user.create({
         data: {
+          emailVerified: true,
           username: userTag,
           email: `${userTag}@example.com`,
           password: 'password',

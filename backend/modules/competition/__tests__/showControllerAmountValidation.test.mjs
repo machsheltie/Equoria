@@ -43,6 +43,7 @@ describe('POST /api/v1/shows/create — non-integer amounts rejected at the 400 
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `showint-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
         username: `showint${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-hash',

@@ -40,6 +40,7 @@ const createdIds = [];
 beforeAll(async () => {
   suiteUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `dm1i-helper-${randHex(6)}@test.com`,
       username: `dm1ihelper${randHex(5)}`,
       password: 'irrelevant-hash',

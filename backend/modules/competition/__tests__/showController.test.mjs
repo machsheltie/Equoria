@@ -47,6 +47,7 @@ let pastShowNoEntriesId; // show with closeDate in the past, no entries
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `show-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `show${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -73,6 +74,7 @@ beforeAll(async () => {
   // ── executeClosedShows fixtures ────────────────────────────────────────────
   execUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `showexec-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `showexec${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -91,6 +93,7 @@ beforeAll(async () => {
   // above is reused to prove the 403 gate fires for an ordinary player.
   execAdminUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `showexecadmin-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `showexecadmin${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -554,6 +557,7 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
     // Create a user with 0 money
     const brokeUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `showbroke-${Date.now()}@test.com`,
         username: `showbroke${Date.now()}`.slice(0, 30),
         password: 'irrelevant-hash',

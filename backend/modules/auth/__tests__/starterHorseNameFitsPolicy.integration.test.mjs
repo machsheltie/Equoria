@@ -38,6 +38,7 @@ describe('INTEGRATION: the generated starter horse name fits the horse-name poli
   async function makeUser(username) {
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username,
         email: `${username}@test.com`,
         password: 'not-a-real-hash-fixture-only',

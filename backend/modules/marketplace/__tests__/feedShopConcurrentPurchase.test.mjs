@@ -40,6 +40,7 @@ describe('POST /api/v1/feed-shop/purchase — concurrent purchase race (Equoria-
   beforeEach(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `feed-race-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
         username: `feedrace${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',

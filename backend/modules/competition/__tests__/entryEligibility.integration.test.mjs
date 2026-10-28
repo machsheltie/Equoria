@@ -44,6 +44,7 @@ let token;
 beforeAll(async () => {
   entrant = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `b9-e-${uid()}@test.local`,
       username: `b9e${uid()}`,
       password: 'irrelevant-hash',
@@ -54,6 +55,7 @@ beforeAll(async () => {
   });
   otherUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `b9-o-${uid()}@test.local`,
       username: `b9o${uid()}`,
       password: 'irrelevant-hash',

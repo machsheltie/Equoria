@@ -41,6 +41,7 @@ describe('INTEGRATION: foalDevelopment.currentDay auto-advance (Equoria-3lb8q)',
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `tf-3lb8q-${randHex()}`,
         email: `tf-3lb8q-${randHex()}@example.com`,
         password: 'x',

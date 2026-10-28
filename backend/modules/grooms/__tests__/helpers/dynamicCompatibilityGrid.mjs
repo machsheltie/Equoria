@@ -179,6 +179,7 @@ export async function buildCompatibilityFixtures(prisma, token, colour) {
   for (const owner of ['A', 'B', 'C']) {
     owners[owner] = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `dyncompat-${owner}-${token}@test.com`,
         username: `dyncompat${owner}${token}`,
         password: 'irrelevant-hash',

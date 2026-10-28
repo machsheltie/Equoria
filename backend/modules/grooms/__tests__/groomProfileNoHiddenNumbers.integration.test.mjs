@@ -59,6 +59,7 @@ describe('GET /grooms/:id/profile sends no compatibility numbers or tables', () 
     cleanup.add(() => (user ? prisma.user.delete({ where: { id: user.id } }) : null), 'user');
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${fixturePrefix}-${suffix}`.slice(0, 30),
         email: `${fixturePrefix}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',

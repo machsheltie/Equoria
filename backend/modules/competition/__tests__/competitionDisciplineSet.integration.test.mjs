@@ -30,6 +30,7 @@ let horse;
 beforeAll(async () => {
   owner = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `b3set-${uid()}@test.local`,
       username: `b3set${uid()}`,
       password: 'irrelevant-hash',

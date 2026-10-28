@@ -46,6 +46,7 @@ function fixtures() {
     const uid = randomBytes(6).toString('hex');
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `vb1n0_${uid}`,
         email: `${PREFIX}-${uid}@example.com`,
         password: 'irrelevant-not-a-login-test',

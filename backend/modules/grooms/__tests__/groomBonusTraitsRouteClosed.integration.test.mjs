@@ -56,6 +56,7 @@ describe('🔒 REGRESSION: PUT /api/v1/grooms/:id/bonus-traits is closed (Equori
   beforeEach(async () => {
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `bvddn3_${uid()}`,
         firstName: 'Test',
         lastName: 'User',

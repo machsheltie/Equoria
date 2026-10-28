@@ -97,6 +97,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
     // Create test user (TestFixture-scoped via unique email/username).
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `agingint_${randHex()}_${randHex()}`,
         email: `agingint_${randHex()}_${randHex()}@example.com`,
         password: 'TestPassword123!',

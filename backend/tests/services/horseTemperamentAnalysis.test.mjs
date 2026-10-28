@@ -37,6 +37,7 @@ describe('Horse Temperament Analysis', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `temperament_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         email: `temperament_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
         password: 'testHash',

@@ -46,6 +46,7 @@ describe('rider retirement ends the assignment on the horse (Equoria-r9u5k)', ()
     const suffix = tag();
     owner = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${fixturePrefix}-${suffix}`,
         email: `${fixturePrefix}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',

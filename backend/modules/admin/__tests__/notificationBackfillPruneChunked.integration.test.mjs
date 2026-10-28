@@ -49,6 +49,7 @@ describe('Admin notification backfill-prune, chunked and resumable (Equoria-ctyi
   const makeUser = async (label, extra = {}) => {
     const u = await prisma.user.create({
       data: {
+        emailVerified: true,
         ...extra,
         username: `TestFixture-ctyia-${label}-${tag}`,
         email: `TestFixture-ctyia-${label}-${tag}@example.com`,

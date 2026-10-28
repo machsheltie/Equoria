@@ -32,6 +32,7 @@ import {
   backfillCraftingMaterials,
   STARTER_CRAFTING_MATERIALS,
 } from '../../../scripts/backfill-crafting-materials.mjs';
+import { confirmEmail } from '../../../tests/helpers/confirmEmail.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -75,6 +76,8 @@ describe('INTEGRATION: backfill craftingMaterials for pre-fix accounts (Equoria-
         dateOfBirth: '1990-01-01', // Equoria-iqzn: COPPA age gate (adult DOB)
       });
     expect(res.status).toBe(201);
+    // Equoria-voasj: no play until the email is confirmed.
+    await confirmEmail(res.body.data.user.id);
     const userId = res.body?.data?.user?.id;
     createdUserIds.push(userId);
     return { userId, setCookies: res.headers['set-cookie'] || [] };

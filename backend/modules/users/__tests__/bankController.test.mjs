@@ -31,6 +31,7 @@ describe('bankController integration', () => {
   beforeEach(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: uniqueEmail(),
         username: uniqueUsername(),
         password: 'irrelevant-hash',
@@ -86,6 +87,7 @@ describe('bankController integration', () => {
       // The controller's findUnique returns null, hitting the !user 404 branch
       const tempUser = await prisma.user.create({
         data: {
+          emailVerified: true,
           email: uniqueEmail('bankghost'),
           username: uniqueUsername('bankghost'),
           password: 'irrelevant-hash',
@@ -205,6 +207,7 @@ describe('bankController integration', () => {
       // then findUnique also returns null — hits the !user 404 branch (line 107)
       const tempUser = await prisma.user.create({
         data: {
+          emailVerified: true,
           email: uniqueEmail('bankghost2'),
           username: uniqueUsername('bankghost2'),
           password: 'irrelevant-hash',

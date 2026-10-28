@@ -44,6 +44,7 @@ const rename = async name => {
 beforeAll(async () => {
   owner = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `renamerace${tag}`,
       email: `renamerace-${tag}@example.com`,
       password: 'irrelevant-not-a-login-test',

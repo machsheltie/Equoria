@@ -83,6 +83,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         const hashed = await bcrypt.hash('TestPassword123!', saltRounds);
         __testUser = await prisma.user.create({
           data: {
+            emailVerified: true,
             id: testUserId,
             username: `${fixtureTag}-user-${randomBytes(4).toString('hex')}`,
             email: `${fixtureTag}-${randomBytes(4).toString('hex')}@example.com`,

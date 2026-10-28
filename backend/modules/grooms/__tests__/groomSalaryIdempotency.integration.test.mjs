@@ -119,6 +119,7 @@ async function makeUser(money) {
   const tag = uniq();
   const u = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `${FIXTURE_PREFIX}-${tag}@test.com`,
       username: `${FIXTURE_PREFIX}-${tag}`.slice(0, 30),
       password: 'irrelevant-hash',

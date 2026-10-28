@@ -83,6 +83,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
 
     etsUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `ets-${ts}-${rand()}@test.com`,
         username: `ets${ts}${rand()}`,
         password: 'irrelevant-hash',

@@ -55,6 +55,7 @@ const runDate = new Date('2026-10-10T07:00:00.000Z');
 async function makeUser(tag) {
   return prisma.user.create({
     data: {
+      emailVerified: true,
       email: `q10a2-${tag}-${uid()}@test.local`,
       username: `q10a2${tag}${uid()}`,
       password: 'irrelevant-hash',

@@ -38,6 +38,7 @@ describe('Simple Database Test', () => {
 
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         id,
         username,
         email,

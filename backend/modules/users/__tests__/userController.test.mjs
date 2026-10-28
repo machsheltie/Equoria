@@ -36,6 +36,7 @@ const transientNotificationIds = [];
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `uc-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `uc${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -164,6 +165,7 @@ describe('GET /api/v1/users/:id', () => {
   it('returns 403 when accessing another user', async () => {
     const other = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `uc-other-${Date.now()}@test.com`,
         username: `ucother${Date.now()}`,
         password: 'hash',
@@ -261,6 +263,7 @@ describe('GET /api/v1/users/:userId/competition-stats — with results', () => {
   beforeAll(async () => {
     statsUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `stats-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
         username: `stats${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'hash',
@@ -450,6 +453,7 @@ describe('PUT /api/v1/users/:id', () => {
   it('returns 403 when updating another user', async () => {
     const other = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `put-other-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
         username: `putother${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'hash',

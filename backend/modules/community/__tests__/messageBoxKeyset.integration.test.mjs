@@ -29,6 +29,7 @@ let token;
 const mkUser = async tag =>
   prisma.user.create({
     data: {
+      emailVerified: true,
       email: `msgkeyset-${tag}-${RUN}@test.com`,
       username: `msgkeyset${tag}${RUN}`,
       password: 'irrelevant-hash',

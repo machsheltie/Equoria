@@ -17,6 +17,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { confirmEmail } from '../../../tests/helpers/confirmEmail.mjs';
 
 _jest.setTimeout(120000);
 
@@ -52,6 +53,8 @@ describe('welcome note flag (User.settings.welcomeSeen)', () => {
         dateOfBirth: '1990-01-01',
       });
     expect(res.status).toBe(201);
+    // Equoria-voasj: no play until the email is confirmed.
+    await confirmEmail(res.body.data.user.id);
     accessCookie = extractAccessCookie(res.headers['set-cookie']);
     expect(accessCookie).toBeTruthy();
 

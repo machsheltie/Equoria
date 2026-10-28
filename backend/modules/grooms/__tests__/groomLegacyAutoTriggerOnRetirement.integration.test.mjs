@@ -34,6 +34,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
   beforeEach(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `${TAG}-${randomBytes(2).toString('hex')}@test.com`,
         username: `${TAG}-${randomBytes(2).toString('hex')}`,
         password: 'irrelevant',

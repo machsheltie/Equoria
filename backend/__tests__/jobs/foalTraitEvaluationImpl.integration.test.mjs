@@ -33,6 +33,7 @@ describe('INTEGRATION: foalTraitEvaluation impl module (Equoria-urqic.3)', () =>
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `tf-urqic3-${randHex()}`,
         email: `tf-urqic3-${randHex()}@example.com`,
         password: 'x',

@@ -56,6 +56,7 @@ describe('craftItem — one material spend can never yield two crafted items (Eq
     const tag = randomBytes(6).toString('hex');
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `${fixturePrefix}-${tag}@example.com`,
         username: `${fixturePrefix}-${tag}`,
         password: 'irrelevant-hash',

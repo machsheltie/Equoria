@@ -51,6 +51,7 @@ async function makeUser(label) {
   const uid = `${label}_${randomBytes(8).toString('hex')}`;
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `TestFixture-yznve-${uid}`,
       email: `testfixture_yznve_${uid}@example.com`,
       password: 'x'.repeat(60), // not used (token is signed directly)

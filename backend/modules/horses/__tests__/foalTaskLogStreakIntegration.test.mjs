@@ -68,6 +68,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
     await prisma.$transaction(async tx => {
       testUser = await tx.user.create({
         data: {
+          emailVerified: true,
           id: testUserId,
           username: 'integrationuser',
           email: 'integration@example.com',

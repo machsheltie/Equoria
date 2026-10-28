@@ -32,6 +32,7 @@ describe('groomController integration', () => {
   beforeEach(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: uniqueEmail('groomctrl'),
         username: uniqueUsername('groomctrl'),
         password: 'irrelevant-hash',
@@ -72,6 +73,7 @@ describe('groomController integration', () => {
     it("returns 404 when requesting another user's grooms (IDOR protection)", async () => {
       const otherUser = await prisma.user.create({
         data: {
+          emailVerified: true,
           email: uniqueEmail('groomidor'),
           username: uniqueUsername('groomidor'),
           password: 'hash',

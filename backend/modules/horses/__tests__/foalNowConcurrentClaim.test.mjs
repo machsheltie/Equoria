@@ -105,6 +105,7 @@ describe('createFoalFromPregnancy — direct-branch atomic claim (Equoria-wgw5k,
     const hashed = await bcrypt.hash('TestPassword123!', 1);
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `wgw_${ts}`,
         email: `wgw_${ts}@test.com`,
         password: hashed,

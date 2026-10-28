@@ -82,6 +82,7 @@ describe('Auth — Password Reset Integration', () => {
     const hashedOriginal = await bcrypt.hash(originalPassword, 1);
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${EMAIL_PREFIX}${timestamp}`,
         email,
         password: hashedOriginal,
@@ -186,6 +187,7 @@ describe('Auth — Password Reset Integration', () => {
     const hashedOriginal = await bcrypt.hash(originalPassword, 1);
     await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${EMAIL_PREFIX}cwe613_${timestamp}`,
         email,
         password: hashedOriginal,
@@ -249,6 +251,7 @@ describe('Auth — Password Reset Integration', () => {
     const hashedOriginal = await bcrypt.hash(originalPassword, 1);
     await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${EMAIL_PREFIX}replay_${timestamp}`,
         email,
         password: hashedOriginal,
@@ -291,6 +294,7 @@ describe('Auth — Password Reset Integration', () => {
     const hashedOriginal = await bcrypt.hash(originalPassword, 1);
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${EMAIL_PREFIX}expired_${timestamp}`,
         email,
         password: hashedOriginal,
@@ -360,6 +364,7 @@ describe('Auth — Password Reset Integration', () => {
     const hashedOriginal = await bcrypt.hash(originalPassword, 1);
     await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${EMAIL_PREFIX}weakpw_${timestamp}`,
         email,
         password: hashedOriginal,

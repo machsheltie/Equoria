@@ -48,6 +48,7 @@ function registerCleanup({ showIds = [], horseIds = [], userIds = [] }) {
 async function makeOwner(tag) {
   return prisma.user.create({
     data: {
+      emailVerified: true,
       email: `q4uem10-${tag}-${uid()}@test.local`,
       username: `q10${tag}${uid()}`.slice(0, 30),
       password: 'irrelevant-hash',

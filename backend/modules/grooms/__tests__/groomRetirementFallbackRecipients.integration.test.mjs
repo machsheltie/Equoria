@@ -50,6 +50,7 @@ async function makeUser(label) {
   const suffix = tag();
   return prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${fixturePrefix}-${label}-${suffix}`,
       email: `${fixturePrefix}-${label}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',

@@ -40,6 +40,7 @@ async function makeUser(suffix) {
   const tag = randomBytes(4).toString('hex');
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${PREFIX}-${suffix}-${tag}`,
       email: `${PREFIX}-${suffix}-${tag}@example.com`,
       password: await bcrypt.hash('TestPassword123!', 1),

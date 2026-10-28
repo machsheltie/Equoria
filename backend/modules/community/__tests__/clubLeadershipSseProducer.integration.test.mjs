@@ -76,6 +76,7 @@ describe('INTEGRATION: club leadership-transfer SSE producer (Equoria-pwwuz)', (
 
     president = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `pwwuz-pres-${randomBytes(4).toString('hex')}@test.com`,
         username: `pwwuzPres${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-hash',
@@ -85,6 +86,7 @@ describe('INTEGRATION: club leadership-transfer SSE producer (Equoria-pwwuz)', (
     });
     promoted = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `pwwuz-promoted-${randomBytes(4).toString('hex')}@test.com`,
         username: `pwwuzPromoted${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-hash',

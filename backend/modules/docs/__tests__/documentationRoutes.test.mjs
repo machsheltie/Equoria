@@ -39,6 +39,7 @@ describe('Documentation Routes', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: 'docTestUser',
         email: 'docs@test.com',
         password: 'testPassword123',

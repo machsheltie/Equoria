@@ -32,6 +32,7 @@ afterAll(() => cleanup.run(), 60000);
 async function makeOwner() {
   return prisma.user.create({
     data: {
+      emailVerified: true,
       email: `b4a-${uid()}@test.local`,
       username: `b4a${uid()}`.slice(0, 30),
       password: 'irrelevant-hash',

@@ -29,6 +29,7 @@ describe('SENTINEL: marketplace purchase → horsePurchased + horseSold Notifica
   beforeAll(async () => {
     seller = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `mp_seller_${Date.now()}@test.com`,
         username: `mp_seller_${Date.now()}`,
         password: 'irrelevant',
@@ -40,6 +41,7 @@ describe('SENTINEL: marketplace purchase → horsePurchased + horseSold Notifica
 
     buyer = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `mp_buyer_${Date.now()}@test.com`,
         username: `mp_buyer_${Date.now()}`,
         password: 'irrelevant',

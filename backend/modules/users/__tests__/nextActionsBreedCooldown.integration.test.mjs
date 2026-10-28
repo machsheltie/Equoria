@@ -76,6 +76,7 @@ async function ownerOf(now, sex, bredDaysAgo) {
   seq += 1;
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `kha18-nextact-${TAG}-${seq}@test.com`,
       username: `kha18nextact${TAG}${seq}`,
       password: 'irrelevant-hash',

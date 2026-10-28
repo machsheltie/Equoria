@@ -62,6 +62,7 @@ describe('SENTINEL: marketplace purchase TOCTOU (Equoria-alei5)', () => {
   beforeEach(async () => {
     seller = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: uniqueEmail('mpToctouSeller'),
         username: uniqueUsername('mptocs'),
         password: 'irrelevant',
@@ -72,6 +73,7 @@ describe('SENTINEL: marketplace purchase TOCTOU (Equoria-alei5)', () => {
     });
     buyerA = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: uniqueEmail('mpToctouBuyerA'),
         username: uniqueUsername('mptocb'),
         password: 'irrelevant',
@@ -82,6 +84,7 @@ describe('SENTINEL: marketplace purchase TOCTOU (Equoria-alei5)', () => {
     });
     buyerB = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: uniqueEmail('mpToctouBuyerB'),
         username: uniqueUsername('mptoctb'),
         password: 'irrelevant',

@@ -94,6 +94,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
     // Create test user
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username,
         firstName: 'Test',
         lastName: 'User',

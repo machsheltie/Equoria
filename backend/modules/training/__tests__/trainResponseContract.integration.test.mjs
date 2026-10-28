@@ -79,6 +79,7 @@ describe('🏋️ INTEGRATION: POST /train response contract (Equoria-o1x6g)', (
   beforeAll(async () => {
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `testfixture-o1x6g-train-contract-${suffix}@example.com`,
         username: `tf${suffix}`,
         firstName: 'Train',

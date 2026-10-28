@@ -28,6 +28,7 @@ const topCleanup = createCleanupTracker();
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `horsetemper-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `horsetemper${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -250,6 +251,7 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
 
     interUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `ht-inter-${ts}-${rand()}@test.com`,
         username: `htinter${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -376,6 +378,7 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
 
     rbrUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `hta-rbr-${ts}-${rand()}@test.com`,
         username: `htarbr${ts}${rand()}`,
         password: 'irrelevant-hash',

@@ -94,6 +94,7 @@ describe('INTEGRATION: retentionMaintenance impl (Equoria-urqic.3.3) — real DB
 
       execUser = await prisma.user.create({
         data: {
+          emailVerified: true,
           email: `${FIXTURE_PREFIX}-${uid}@test.com`,
           username: `${FIXTURE_PREFIX}-${uid}`,
           password: 'irrelevant-hash',

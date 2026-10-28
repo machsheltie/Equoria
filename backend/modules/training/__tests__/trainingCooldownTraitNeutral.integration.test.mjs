@@ -38,6 +38,7 @@ describe('INTEGRATION: training cooldown is seven days whatever the horse traits
   beforeAll(async () => {
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `testfixture-fjgzp-${SUFFIX}@example.com`,
         username: `tffjgzp${SUFFIX}`,
         firstName: 'Cooldown',

@@ -34,6 +34,7 @@ describe('GET /api/v1/horses/:id/equippable', () => {
   beforeEach(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `eq-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
         username: `eq${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',
@@ -235,6 +236,7 @@ describe('GET /api/v1/horses/:id/equippable', () => {
     // A separate user must not be able to query horse A's equippable list.
     const other = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `eqother-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
         username: `eqother${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',

@@ -47,6 +47,7 @@ const day = iso => new Date(iso);
 async function makeUser(tag) {
   return prisma.user.create({
     data: {
+      emailVerified: true,
       email: `q10a3-${tag}-${uid()}@test.local`,
       username: `q10a3${tag}${uid()}`,
       password: 'irrelevant-hash',

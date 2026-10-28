@@ -52,6 +52,7 @@ describe('Equoria-4maxb — legitimate 0 on NOT NULL Horse columns survives the 
     const uniq = randomBytes(8).toString('hex');
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `4maxb-${uniq}@example.com`,
         username: `4maxb-${uniq}`,
         password: 'irrelevant-hash',

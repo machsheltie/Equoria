@@ -58,6 +58,7 @@ const vettedDaysAgo = days => gameCalendarDate(new Date(), -days);
 beforeAll(async () => {
   owner = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `hioc-${uid()}@test.local`,
       username: `hioc${uid()}`,
       password: 'irrelevant-hash',

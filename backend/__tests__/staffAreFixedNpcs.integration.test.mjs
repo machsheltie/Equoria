@@ -74,6 +74,7 @@ beforeAll(async () => {
   const suffix = tag();
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${PREFIX}-${suffix}`.slice(0, 30),
       email: `${PREFIX}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',

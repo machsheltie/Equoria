@@ -44,6 +44,7 @@ beforeAll(async () => {
   const recipe = findRecipe('basic-halter');
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${fixturePrefix}-${tag}`,
       email: `${fixturePrefix}-${tag}@example.com`,
       password: await bcrypt.hash('TestPassword123!', 1),

@@ -48,6 +48,7 @@ beforeAll(async () => {
   // material check is a separate pre-tx guard outside the helper's scope).
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${FIXTURE_PREFIX}-${tag}`,
       email: `${FIXTURE_PREFIX}-${tag}@example.com`,
       password: pw,

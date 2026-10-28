@@ -43,6 +43,7 @@ describe('grooms carry star levels, not the old 1-10 level (Equoria-2xxvd)', () 
     const suffix = tag();
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${fixturePrefix}-${suffix}`,
         email: `${fixturePrefix}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',

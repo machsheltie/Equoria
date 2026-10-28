@@ -48,6 +48,7 @@ async function findListed(showId) {
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `listview-${tag}@test.com`,
       username: `listview${tag}`,
       password: 'irrelevant-hash',

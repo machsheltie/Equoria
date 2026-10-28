@@ -50,6 +50,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
     const hashedPassword = await bcrypt.hash('TestPw123!', 1);
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `mhdul_user_${ts}`,
         email: `mhdul_${ts}@example.com`,
         password: hashedPassword,

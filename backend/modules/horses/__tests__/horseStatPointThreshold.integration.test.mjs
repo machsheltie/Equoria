@@ -34,6 +34,7 @@ let token;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `b13-${rand()}@test.local`,
       username: `b13${rand()}`,
       password: 'irrelevant-hash',

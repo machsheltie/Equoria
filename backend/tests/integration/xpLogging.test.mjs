@@ -36,6 +36,7 @@ beforeAll(async () => {
 
   testUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `xp_int_${UNIQUE}`,
       firstName: 'XP',
       lastName: 'Test',

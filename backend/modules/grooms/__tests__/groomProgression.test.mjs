@@ -74,6 +74,7 @@ describe('Groom Progression System', () => {
     await prisma.$transaction(async tx => {
       testUser = await tx.user.create({
         data: {
+          emailVerified: true,
           id: testUserId,
           username: 'progressiontest',
           email: 'progression@test.com',

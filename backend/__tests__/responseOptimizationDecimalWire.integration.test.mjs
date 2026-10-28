@@ -174,6 +174,7 @@ describe('Equoria-6ftvc — GET /api/v1/grooms/:id/profile over real HTTP', () =
 
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${FIXTURE_PREFIX}-${suffix}`,
         email: `${FIXTURE_PREFIX}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',

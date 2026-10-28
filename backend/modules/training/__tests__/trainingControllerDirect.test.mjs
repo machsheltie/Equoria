@@ -68,6 +68,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     const timestamp = Date.now();
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `test-training-user-${timestamp}`,
         email: `training-${timestamp}@test.com`,
         password: 'hashedPassword',
@@ -634,6 +635,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       // Create a user with no horses for this test scenario
       const userWithNoHorses = await prisma.user.create({
         data: {
+          emailVerified: true,
           username: 'nohorsesuser',
           email: 'nohorsesuser@example.com',
           password: 'hashedpassword',

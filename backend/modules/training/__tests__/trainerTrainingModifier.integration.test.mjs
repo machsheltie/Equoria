@@ -70,6 +70,7 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
   beforeAll(async () => {
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `testfixture-oey967-${SUFFIX}@example.com`,
         username: `tf967${SUFFIX}`,
         firstName: 'Trainer',

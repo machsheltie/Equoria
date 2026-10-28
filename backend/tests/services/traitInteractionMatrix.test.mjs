@@ -33,6 +33,7 @@ describe('Trait Interaction Matrix', () => {
     const testSuffix = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${Math.random().toString(16).slice(2, 8)}`;
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `trait_matrix_${testSuffix}`,
         email: `trait_matrix_${testSuffix}@test.com`,
         password: 'testHash',

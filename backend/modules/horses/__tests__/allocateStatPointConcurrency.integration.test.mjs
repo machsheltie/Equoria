@@ -70,6 +70,7 @@ beforeAll(async () => {
   const uniq = randomBytes(8).toString('hex');
   const owner = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `testfixture-wsj2i-${uniq}@test.com`,
       username: `TestFixturewsj2i${uniq}`,
       password: 'irrelevant-hash',

@@ -110,6 +110,7 @@ const POSITIVE_FLAGS = ['brave', 'confident', 'affectionate', 'resilient']; // n
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `${TAG}@test.local`,
       username: `${TAG}-u`.slice(0, 30),
       password: 'irrelevant-hash',

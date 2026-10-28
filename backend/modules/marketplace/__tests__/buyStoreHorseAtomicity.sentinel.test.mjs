@@ -86,6 +86,7 @@ describe('buyStoreHorse — money+horse atomicity (Equoria-gumnp)', () => {
     createdHorseIds.length = 0;
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: uniqueEmail(),
         username: uniqueUsername(),
         password: 'irrelevant-hash',

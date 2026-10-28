@@ -22,6 +22,7 @@ import { createTokenPair, hashRefreshToken } from '../../../utils/tokenRotationS
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { confirmEmail } from '../../../tests/helpers/confirmEmail.mjs';
 
 describe('Session Lifecycle Management', () => {
   /**
@@ -117,6 +118,7 @@ describe('Session Lifecycle Management', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: testUserData.username,
         email: testUserData.email,
         password: hashedTestPassword,
@@ -148,6 +150,7 @@ describe('Session Lifecycle Management', () => {
     } else {
       testUser = await prisma.user.create({
         data: {
+          emailVerified: true,
           username: testUserData.username,
           email: testUserData.email,
           password: hashedTestPassword,
@@ -744,6 +747,8 @@ describe('Session Lifecycle Management', () => {
       }
 
       const newUserId = registerResponse.body.data.user.id;
+      // Equoria-voasj: no play until the email is confirmed.
+      await confirmEmail(newUserId);
       let cookies = registerResponse.headers['set-cookie'];
 
       // Step 2: Verify session works

@@ -29,6 +29,7 @@ const get = path => request(app).get(path).set('Origin', ORIGIN).set('Authorizat
 beforeAll(async () => {
   owner = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `c7mx01-${uid()}@test.local`,
       username: `c7mx01${uid()}`,
       password: 'irrelevant-hash',

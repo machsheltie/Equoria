@@ -28,6 +28,7 @@ describe('nightly foal pass invents no traits (Equoria-2d55z)', () => {
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `tf-noinvent-${RUN}`,
         email: `tf-noinvent-${RUN}@example.com`,
         password: 'x',

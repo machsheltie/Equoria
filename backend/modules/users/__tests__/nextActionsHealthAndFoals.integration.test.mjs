@@ -52,6 +52,7 @@ afterAll(() => cleanup.run(), 60000);
 async function makeUser() {
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `na3tna6-${rand()}@test.local`,
       username: `na3tna6${rand()}`,
       password: 'irrelevant-hash',

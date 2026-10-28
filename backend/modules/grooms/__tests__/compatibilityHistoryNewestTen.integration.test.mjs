@@ -44,6 +44,7 @@ function expectedModifier(rows) {
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `${SCOPE}-${RUN}@test.com`,
       username: `ld219${RUN}`,
       password: 'irrelevant-hash',

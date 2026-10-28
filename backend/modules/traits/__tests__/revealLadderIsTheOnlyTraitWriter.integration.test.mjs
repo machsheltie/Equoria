@@ -40,6 +40,7 @@ const horseIds = [];
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `tf-onlywriter-${RUN}`,
       email: `tf-onlywriter-${RUN}@example.com`,
       password: 'x',

@@ -41,6 +41,7 @@ async function persisted(id) {
 beforeAll(async () => {
   owner = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `hc-${TOKEN}@test.com`,
       username: `hc${TOKEN}`,
       password: 'irrelevant-hash',

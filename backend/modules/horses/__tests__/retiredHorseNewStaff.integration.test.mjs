@@ -155,6 +155,7 @@ beforeAll(async () => {
   breedId = breed.id;
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `${scope}-${run}@test.com`,
       username: `newstaff${run}`,
       password: 'irrelevant-hash',

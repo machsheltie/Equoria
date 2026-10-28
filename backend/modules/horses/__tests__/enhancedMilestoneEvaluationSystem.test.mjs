@@ -212,6 +212,7 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
     const ts = Date.now();
     fixtureUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `emes-fixture-${ts}-${Math.random().toString(36).slice(2, 8)}@test.com`,
         username: `emesfix${ts}${Math.random().toString(36).slice(2, 6)}`,
         password: 'irrelevant-hash',
@@ -346,6 +347,7 @@ describe('evaluateEnhancedMilestone() — personality effects + interaction bran
 
     personalityUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `emes-personality-${ts}-${rand()}@test.com`,
         username: `emespersonality${ts}${rand()}`,
         password: 'irrelevant-hash',

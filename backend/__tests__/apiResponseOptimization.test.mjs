@@ -49,6 +49,7 @@ describe('API Response Optimization System', () => {
     // Create test user
     const testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `optimizationTestUser_${testRunId}`,
         email: `optimization_${testRunId}@test.com`,
         password: 'testPassword123',

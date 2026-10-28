@@ -45,6 +45,7 @@ afterAll(() => cleanup.run(), 60000);
 async function makeUser(tag, money) {
   return prisma.user.create({
     data: {
+      emailVerified: true,
       email: `b3unk-${tag}-${uid()}@test.local`,
       username: `b3u${tag}${uid()}`.slice(0, 30),
       password: 'irrelevant-hash',

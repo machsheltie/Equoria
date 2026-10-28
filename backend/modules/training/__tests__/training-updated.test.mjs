@@ -92,6 +92,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
     const hashedPw = await bcrypt.hash('TestPassword123!', 1);
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `trainupd_${ts}`,
         email: `trainupd_${ts}@example.com`,
         password: hashedPw,

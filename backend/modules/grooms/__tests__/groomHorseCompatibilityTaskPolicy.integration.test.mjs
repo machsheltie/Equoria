@@ -134,6 +134,7 @@ beforeAll(async () => {
 
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `cpolicy-${uid}@test.com`,
       username: `cpolicy${uid.replace('_', '')}`,
       password: 'irrelevant-hash',
@@ -147,6 +148,7 @@ beforeAll(async () => {
   });
   foreignUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `cpolicyf-${uid}@test.com`,
       username: `cpolicyf${uid.replace('_', '')}`,
       password: 'irrelevant-hash',

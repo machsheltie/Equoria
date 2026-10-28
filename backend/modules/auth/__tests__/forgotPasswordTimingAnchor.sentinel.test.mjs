@@ -69,6 +69,7 @@ describe('🔒 Sentinel — forgotPassword constant-time bcrypt anchor (Equoria-
     const password = await bcrypt.hash('AnchorPass1!', 1);
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${USERNAME_PREFIX}-${tag}`,
         email: knownEmail,
         password,

@@ -35,6 +35,7 @@ const moduleCleanup = createCleanupTracker();
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `dyncompat-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `dyncompat${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -197,6 +198,7 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
 
     trendUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `dc-trend-${ts}-${rand()}@test.com`,
         username: `dctrend${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -380,6 +382,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
     branchUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `dc-branch-${ts}-${rand()}@test.com`,
         username: `dcbranch${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -614,6 +617,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
 
     rr7User = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `rr7-${ts}-${rand()}@test.com`,
         username: `rr7${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -625,6 +629,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
 
     rr7NoGroomUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `rr7ng-${ts}-${rand()}@test.com`,
         username: `rr7ng${ts}${rand()}`,
         password: 'irrelevant-hash',

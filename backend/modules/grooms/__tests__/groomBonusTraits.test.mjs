@@ -56,6 +56,7 @@ describe('Groom Bonus Traits System', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `testuser_${uid()}`,
         firstName: 'Test',
         lastName: 'User',

@@ -39,6 +39,8 @@ describe('Email Verification Service - Unit Tests', () => {
     const userData = await createTestUser({
       username: `emailtest_${uniqueId}`,
       email: `emailtest_${uniqueId}@example.com`,
+      // This suite exercises the confirmation flow, so its player starts unconfirmed.
+      emailVerified: false,
     });
     testUser = userData;
   });

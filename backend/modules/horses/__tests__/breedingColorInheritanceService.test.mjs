@@ -757,6 +757,7 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
     const hashedPassword = await bcrypt.hash(testUserData.password, 1);
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: testUserData.username,
         email: testUserData.email,
         password: hashedPassword,
@@ -970,6 +971,7 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
     const otherPasswordHash = await bcrypt.hash('Pass123!', 10);
     const otherUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `otherUser_${timestamp}`,
         email: otherEmail,
         password: otherPasswordHash,
@@ -1020,6 +1022,7 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
     const otherPasswordHash = await bcrypt.hash('Pass123!', 10);
     const otherUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `otherUser2_${timestamp}`,
         email: otherEmail,
         password: otherPasswordHash,

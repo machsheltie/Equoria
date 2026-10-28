@@ -218,6 +218,7 @@ describe('createTokenPair() — familyId auto-generation branch (lines 147-149) 
     const rand = () => Math.random().toString(36).slice(2, 8);
     trsUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `trs-ctp-${ts}-${rand()}@test.com`,
         username: `trsctp${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -264,6 +265,7 @@ describe('validateRefreshToken() — DB record status checks (lines 282-305) (Eq
 
     vrtUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `trs-vrt-${ts}-${rand()}@test.com`,
         username: `trsvrt${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -347,6 +349,7 @@ describe('rotateRefreshToken + validateRefreshToken happy-path + detectTokenReus
     const rand = () => Math.random().toString(36).slice(2, 8);
     rtUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `trs-rot-${ts}-${rand()}@test.com`,
         username: `trsrot${ts}${rand()}`,
         password: 'irrelevant-hash',

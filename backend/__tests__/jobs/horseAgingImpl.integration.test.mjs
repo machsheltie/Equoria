@@ -47,6 +47,7 @@ describe('INTEGRATION: horseAging impl module (Equoria-urqic.3.1) — real DB', 
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `tf-urqic31-${randHex()}`,
         email: `tf-urqic31-${randHex()}@example.com`,
         password: 'x',

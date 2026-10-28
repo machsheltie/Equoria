@@ -44,6 +44,7 @@ beforeAll(async () => {
   const suffix = `${uid()}${uid()}`;
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `testfixture-settingsshape-${suffix}@test.com`,
       username: `TestFixture-settingsshape-${suffix}`,
       password: '$2b$12$originalHashThatShouldNeverChange.XXXXXXXXXXXXXXXXXXXXX',
@@ -107,6 +108,7 @@ describe('PUT /api/v1/users/:id — settings write atomicity (Equoria-6p398.1)',
     const suffix = `${uid()}${uid()}`;
     const other = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `testfixture-settingsatomic-${suffix}@test.com`,
         username: `TestFixture-settingsatomic-${suffix}`,
         password: '$2b$12$originalHashThatShouldNeverChange.XXXXXXXXXXXXXXXXXXXXX',

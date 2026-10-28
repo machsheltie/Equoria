@@ -54,6 +54,7 @@ function barrier() {
 function makeUser(suffix) {
   return prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${TAG}-${suffix}`,
       email: `${TAG}-${suffix}@example.com`,
       password: 'irrelevant-hash',

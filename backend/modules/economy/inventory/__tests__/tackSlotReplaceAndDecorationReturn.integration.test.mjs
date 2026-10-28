@@ -103,6 +103,7 @@ describe('Horse.tack replace / decoration return / equip-vs-purchase (Equoria-6p
     const tag = uniq();
     owner = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${fixturePrefix}-${tag}`,
         email: `${fixturePrefix}-${tag}@example.com`,
         password: 'irrelevant-not-a-login-test',

@@ -26,6 +26,7 @@ async function makeUser(role, lastActiveAt = null) {
   const tag = unique();
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `needhelp-${tag}@test.com`,
       username: `needhelp${tag}`,
       password: 'irrelevant-hash',

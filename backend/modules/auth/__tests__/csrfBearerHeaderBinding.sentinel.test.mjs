@@ -43,6 +43,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { confirmEmail } from '../../../tests/helpers/confirmEmail.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const PREFIX = 'csrfbearer-';
@@ -66,6 +67,8 @@ async function registerCookieUser(suffix) {
     dateOfBirth: '1990-01-01',
   });
   expect(res.status).toBe(201);
+  // Equoria-voasj: no play until the email is confirmed.
+  await confirmEmail(res.body.data.user.id);
   const csrfCookieName = process.env.NODE_ENV === 'production' ? '__Host-csrf' : '_csrf';
   return {
     email,

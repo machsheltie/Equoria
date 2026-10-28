@@ -49,6 +49,7 @@ const barrierClient = new PrismaClient({
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `b10-${rand()}@test.local`,
       username: `b10${rand()}`,
       password: 'irrelevant-hash',

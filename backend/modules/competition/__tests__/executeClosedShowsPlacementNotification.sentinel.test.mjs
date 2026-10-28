@@ -50,6 +50,7 @@ let show;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       id: `${PREFIX}${uid()}`,
       username: `execnotif_${uid()}`,
       email: `${PREFIX}${uid()}@test.com`,

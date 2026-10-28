@@ -62,6 +62,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     const hashedPassword = await bcrypt.hash(testUserData.password, 1);
     _testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: testUserData.username,
         email: testUserData.email,
         password: hashedPassword,
@@ -670,6 +671,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
       const user = await prisma.user.create({
         data: {
+          emailVerified: true,
           username: `${SUITE_PREFIX}_fb${uniqueSuffix}`,
           email: fallbackEmail,
           password: hashedPassword,

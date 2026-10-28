@@ -26,6 +26,7 @@ const cleanup = createCleanupTracker();
 beforeAll(async () => {
   sender = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `msgsend-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `msgsend${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -36,6 +37,7 @@ beforeAll(async () => {
   });
   recipient = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `msgrecv-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `msgrecv${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',

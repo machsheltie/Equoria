@@ -39,6 +39,7 @@ beforeAll(async () => {
   const rand = Math.random().toString(36).slice(2, 8);
   guardUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `g9sa-guard-${ts}-${rand}@test.com`,
       username: `g9saguard${ts}${rand}`,
       password: 'irrelevant-hash',

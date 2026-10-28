@@ -65,6 +65,7 @@ describe('Equoria-fby1t — the player can see how old their groom is', () => {
     const suffix = tag();
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${FIXTURE_PREFIX}-${suffix}`.slice(0, 30),
         email: `${FIXTURE_PREFIX}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',

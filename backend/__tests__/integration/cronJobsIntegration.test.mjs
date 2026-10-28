@@ -55,6 +55,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
     const hashedPassword = await bcrypt.hash('AdminPassword123!', 1);
     adminUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `cron_admin_${ts}`,
         email: `cron_admin_${ts}@example.com`,
         password: hashedPassword,

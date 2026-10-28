@@ -68,6 +68,7 @@ describe('Foal Task Log Storage', () => {
     const uniqueSuffix = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${Math.floor(Math.random() * 100000)}`;
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         id: `test-user-task-log-${uniqueSuffix}`,
         username: `taskloguser_${uniqueSuffix}`,
         email: `tasklog_${uniqueSuffix}@example.com`,

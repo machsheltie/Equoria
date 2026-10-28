@@ -105,6 +105,7 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
     const suffix = tag();
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${PREFIX}-${role}-${suffix}`,
         email: `${PREFIX}-${role}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',

@@ -136,6 +136,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
     // Create test users
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: 'controller-test-user@example.com',
         username: 'controllertestuser',
         firstName: 'Controller',
@@ -150,6 +151,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
 
     userWithHorses = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: 'controller-multi-user@example.com',
         username: 'controllermultiuser',
         firstName: 'Multi',

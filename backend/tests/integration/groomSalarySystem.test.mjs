@@ -33,6 +33,7 @@ describe('Groom Salary System', () => {
 
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `salaryTestUser_${testSuffix}`,
         email: `salary_${testSuffix}@test.com`,
         password: 'hashedPassword',

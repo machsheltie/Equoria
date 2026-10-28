@@ -36,6 +36,7 @@ const hostingRequest = () => authed(request(app).get('/api/v1/shows/hosting'));
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `hoststat-${uid()}@test.com`,
       username: `hst${uid()}`,
       password: 'irrelevant-hash',
@@ -81,6 +82,7 @@ describe('GET /api/v1/shows/hosting', () => {
   it('does not count last week or another host', async () => {
     const other = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `hostother-${uid()}@test.com`,
         username: `hso${uid()}`,
         password: 'irrelevant-hash',

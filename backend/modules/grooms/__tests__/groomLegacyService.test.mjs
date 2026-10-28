@@ -110,6 +110,7 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
 
     glsUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `gls-${ts}-${rand()}@test.com`,
         username: `gls${ts}${rand()}`,
         password: 'irrelevant-hash',

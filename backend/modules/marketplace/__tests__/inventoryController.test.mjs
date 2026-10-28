@@ -75,6 +75,7 @@ describe('inventoryController integration', () => {
     createdHorseIds = [];
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: uniqueEmail(),
         username: uniqueUsername(),
         password: 'irrelevant-hash',

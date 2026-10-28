@@ -235,6 +235,7 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
     const tag = uniq();
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `${FIXTURE_PREFIX}-${tag}@example.com`,
         username: `${FIXTURE_PREFIX}-${tag}`,
         password: 'irrelevant-hash',
@@ -455,6 +456,7 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
     const tag = uniq();
     const newOwner = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `${FIXTURE_PREFIX}-new-${tag}@example.com`,
         username: `${FIXTURE_PREFIX}-new-${tag}`,
         password: 'irrelevant-hash',

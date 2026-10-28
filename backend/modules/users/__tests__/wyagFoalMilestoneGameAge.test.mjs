@@ -31,6 +31,7 @@ let grownName;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `wyagfoal-${hex()}-${hex()}@test.com`,
       username: `wyagfoal${hex()}${hex()}`,
       password: 'irrelevant-hash',

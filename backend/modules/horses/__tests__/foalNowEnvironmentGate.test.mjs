@@ -61,6 +61,7 @@ describe('POST /horses/:id/foal-now — the gestation bypass is gone (Equoria-6n
     const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `bhf6n_${ts}`,
         email: `bhf6n_${ts}@test.com`,
         password: await bcrypt.hash('TestPassword123!', 1),

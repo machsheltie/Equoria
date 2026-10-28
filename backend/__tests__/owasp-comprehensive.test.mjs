@@ -78,6 +78,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
     const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `owasp-test-user-${randomBytes(8).toString('hex')}`,
         email: `owasp-test-${randomBytes(8).toString('hex')}@test.com`,
         password: hashedPassword,
@@ -484,6 +485,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
         // Create another user's horse
         const otherUser = await prisma.user.create({
           data: {
+            emailVerified: true,
             username: `otheruser${randomBytes(8).toString('hex')}`,
             email: `other-${randomBytes(8).toString('hex')}@test.com`,
             password: await bcrypt.hash('TestPassword123!', 1),

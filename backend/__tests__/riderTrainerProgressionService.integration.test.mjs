@@ -98,6 +98,7 @@ describe('Equoria-r1nr: rider/trainer progression service', () => {
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `${TAG}@test.com`,
         username: TAG,
         password: 'irrelevant',

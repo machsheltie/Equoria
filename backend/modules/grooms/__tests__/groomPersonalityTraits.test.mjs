@@ -33,6 +33,7 @@ const topCleanup = createCleanupTracker();
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `groompersonality-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `groompersonality${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -173,6 +174,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
 
     gptUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `gpt-branch-${ts}-${rand()}@test.com`,
         username: `gptbranch${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -308,6 +310,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
 
     gpUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `gp-branch-${ts}-${rand()}@test.com`,
         username: `gpbranch${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -520,6 +523,7 @@ describe('groomPersonalityTraits — remaining branches (Equoria-rr7)', () => {
 
     rbrUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `rbr-${ts}-${rand()}@test.com`,
         username: `rbr${ts}${rand()}`,
         password: 'irrelevant-hash',

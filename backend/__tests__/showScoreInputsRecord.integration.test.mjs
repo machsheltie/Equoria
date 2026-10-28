@@ -67,6 +67,7 @@ let nervous;
 beforeAll(async () => {
   owner = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `q01-${uid()}@test.local`,
       username: `q01${uid()}`.slice(0, 30),
       password: 'irrelevant-hash',

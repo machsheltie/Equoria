@@ -38,6 +38,7 @@ describe('groom validation refusals carry no value lists (Equoria-bdpvw)', () =>
     const suffix = `bdpvw-${randomBytes(5).toString('hex')}`;
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `${suffix}@test.com`,
         username: suffix,
         password: 'irrelevant-not-a-login-test',

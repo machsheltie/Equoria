@@ -26,6 +26,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { confirmEmail } from '../../../tests/helpers/confirmEmail.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -70,6 +71,8 @@ describe('INTEGRATION: register with explicit settings still seeds crafting star
         ...(settingsBody !== undefined ? { settings: settingsBody } : {}),
       });
     expect(res.status).toBe(201);
+    // Equoria-voasj: no play until the email is confirmed.
+    await confirmEmail(res.body.data.user.id);
     if (res.body?.data?.user?.id) {
       createdUserIds.push(res.body.data.user.id);
     }

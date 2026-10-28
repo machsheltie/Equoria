@@ -226,6 +226,7 @@ describe('trainingAnalyticsService.getTrainingHistory', () => {
 
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `trainanalytics-${rand}@test.com`,
         username: `trainanalytics${rand}`,
         password: 'irrelevant-hash',

@@ -34,6 +34,7 @@ describe('nightly settlement applies the health modifier (decision C)', () => {
   it('Excellent +5%, Good 0, Fair -3%, Poor and Critical -5% (Bad)', async () => {
     const owner = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `k1p62-health-${uid()}@test.local`,
         username: `k1h${uid()}`.slice(0, 30),
         password: 'irrelevant-hash',

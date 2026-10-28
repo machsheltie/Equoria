@@ -55,6 +55,7 @@ describe('Breeding Prediction System', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `testuser_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         firstName: 'Test',
         lastName: 'User',

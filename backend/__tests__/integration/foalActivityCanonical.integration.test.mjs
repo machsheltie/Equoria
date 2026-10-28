@@ -40,6 +40,7 @@ let foal;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `2emg-${randomBytes(4).toString('hex')}@test.com`,
       username: `u2emg${randomBytes(5).toString('hex')}`,
       password: 'irrelevant-hash',

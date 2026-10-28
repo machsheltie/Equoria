@@ -40,6 +40,7 @@ describe('response cache default (Equoria-cmw85.28)', () => {
     const tag = randomBytes(5).toString('hex');
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `cmw85-${tag}@test.local`,
         username: `cmw85${tag}`,
         password: 'irrelevant-hash',

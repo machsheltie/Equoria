@@ -56,6 +56,7 @@ const xpForLevel = level => (level - 1) * 100;
 async function makeUser(userIds) {
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `nextact-${rand()}-${rand()}@test.com`,
       username: `nextact${rand()}${rand()}`,
       password: 'irrelevant-hash',

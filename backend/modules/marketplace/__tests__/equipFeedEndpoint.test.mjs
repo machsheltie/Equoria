@@ -30,6 +30,7 @@ describe('Equip / Unequip feed endpoints', () => {
   beforeEach(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `equip-feed-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
         username: `eqfeed${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',
@@ -223,6 +224,7 @@ describe('Equip / Unequip feed endpoints', () => {
     // 404 envelope is the same whether the horse is missing or simply not-owned.
     const other = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `other-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
         username: `other${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',

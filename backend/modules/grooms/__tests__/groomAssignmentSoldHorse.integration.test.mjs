@@ -38,6 +38,7 @@ let groom;
 async function makeUser(role) {
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `TestFixture-9e5ff-${role}-${rand()}`,
       email: `testfixture-9e5ff-${role}-${rand()}@test.local`,
       password: 'irrelevant-hash',

@@ -95,6 +95,7 @@ describe('Groom Workflow Integration Tests', () => {
 
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         id: `user-groom-int-${suffix}`,
         username: `groomtestuser_${suffix}`,
         email: `groomtest_${suffix}@example.com`,
@@ -284,6 +285,7 @@ describe('Groom Workflow Integration Tests', () => {
     it('returns 500 when the groom belongs to a different user (service-level ownership check)', async () => {
       const otherUser = await prisma.user.create({
         data: {
+          emailVerified: true,
           id: `other-user-groom-${Date.now()}`,
           username: `otheruser_${Date.now()}`,
           email: `other_${Date.now()}@example.com`,

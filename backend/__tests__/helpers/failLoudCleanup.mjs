@@ -52,7 +52,7 @@
  *   const userIds = [];
  *
  *   beforeAll(async () => {
- *     const user = await prisma.user.create({ data: { ... } });
+ *     const user = await prisma.user.create({ data: { emailVerified: true, ... } });
  *     userIds.push(user.id);
  *     // register a scoped cleanup; runs in afterAll, fails loud on error
  *     cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }));

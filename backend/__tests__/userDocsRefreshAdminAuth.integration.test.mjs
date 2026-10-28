@@ -55,6 +55,7 @@ describe('User-documentation refresh access control (Equoria-bs6fc)', () => {
     const pw = await bcrypt.hash('AdminPassword123!', 1);
     admin = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `bs6fc_admin_${ts}`,
         email: `bs6fc_admin_${ts}@example.com`,
         password: pw,

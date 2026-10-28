@@ -27,6 +27,7 @@ describe('SENTINEL: foal born → foalBorn Notification', () => {
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `foal_notif_${Date.now()}@test.com`,
         username: `foal_notif_${Date.now()}`,
         password: 'irrelevant',

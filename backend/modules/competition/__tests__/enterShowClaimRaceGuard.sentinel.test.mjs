@@ -60,6 +60,7 @@ const cleanup = createCleanupTracker();
 async function makeUser(money, suffix) {
   const u = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${PREFIX}-${suffix}-${uid()}`.slice(0, 30),
       email: `${PREFIX}-${suffix}-${uid()}@test.com`,
       password: 'irrelevant-hash',

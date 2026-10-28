@@ -107,6 +107,7 @@ beforeAll(async () => {
   expect(prisma).toBe(appClientHandle);
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `${PREFIX}-${tag}@test.local`,
       username: `${PREFIX}-${tag}`.slice(0, 30),
       password: 'irrelevant-hash',

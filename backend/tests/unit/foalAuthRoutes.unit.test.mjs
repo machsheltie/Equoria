@@ -55,6 +55,7 @@ beforeAll(async () => {
 
   testUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `foalAuthTest_${ts}`,
       email: `foalAuthTest_${ts}@test.com`,
       password: hashed,
@@ -64,6 +65,7 @@ beforeAll(async () => {
   });
   rateLimitActivityUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `foalAuthRLA_${ts}`,
       email: `foalAuthRLA_${ts}@test.com`,
       password: hashed,
@@ -73,6 +75,7 @@ beforeAll(async () => {
   });
   rateLimitRecordUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `foalAuthRLE_${ts}`,
       email: `foalAuthRLE_${ts}@test.com`,
       password: hashed,

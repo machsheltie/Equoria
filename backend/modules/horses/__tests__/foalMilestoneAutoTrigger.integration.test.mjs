@@ -48,6 +48,7 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `${TAG}@test.com`,
         username: TAG,
         password: 'irrelevant',

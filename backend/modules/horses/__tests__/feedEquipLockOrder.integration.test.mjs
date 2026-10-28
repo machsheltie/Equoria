@@ -61,6 +61,7 @@ describe('feedHorse locks User before Horse (Equoria-lmer7)', () => {
     const tag = uniq();
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `${fixturePrefix}-${tag}@example.com`,
         username: `${fixturePrefix}-${tag}`,
         password: 'irrelevant-hash',

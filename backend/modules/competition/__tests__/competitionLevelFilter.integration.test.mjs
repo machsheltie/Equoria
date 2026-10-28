@@ -46,6 +46,7 @@ async function listedIds(query) {
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `levelfilter-${tag}@test.com`,
       username: `levelfilter${tag}`,
       password: 'irrelevant-hash',

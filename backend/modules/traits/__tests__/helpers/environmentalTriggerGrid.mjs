@@ -230,6 +230,7 @@ export async function buildTriggerFixtures(prisma, token, colour) {
   const now = Date.now();
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `envtrig-${token}@test.com`,
       username: `envtrig${token}`,
       password: 'irrelevant-hash',

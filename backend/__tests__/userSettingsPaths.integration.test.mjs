@@ -31,6 +31,7 @@ describe('updateUserSettingsPaths', () => {
     const tag = randomBytes(6).toString('hex');
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `${FIXTURE_PREFIX}-${tag}@example.com`,
         username: `${FIXTURE_PREFIX}-${tag}`,
         password: 'irrelevant-hash',

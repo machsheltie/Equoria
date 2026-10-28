@@ -30,6 +30,7 @@ async function makeStaff(label, role) {
   const t = tag();
   return prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${PREFIX}-${label}-${t}`,
       email: `${PREFIX}-${label}-${t}@example.com`.toLowerCase(),
       password: 'irrelevant-not-a-login-test',

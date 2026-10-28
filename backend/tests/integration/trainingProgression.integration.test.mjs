@@ -46,6 +46,7 @@ import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mj
 import { randomBytes } from 'node:crypto';
 import { assignTestTrainer, cleanupTestTrainers } from '../helpers/assignTrainer.mjs';
 import { birthDateForAge } from '../../utils/horseAge.mjs';
+import { confirmEmail } from '../helpers/confirmEmail.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -204,6 +205,8 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       .expect(201);
 
     const testUser = registerResponse.body.data.user;
+    // Equoria-voasj: no play until the email is confirmed.
+    await confirmEmail(testUser.id);
 
     // Extract accessToken from httpOnly cookie
     const cookies = registerResponse.headers['set-cookie'];

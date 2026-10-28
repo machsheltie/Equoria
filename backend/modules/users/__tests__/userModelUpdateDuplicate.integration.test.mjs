@@ -40,6 +40,7 @@ let userB;
 beforeAll(async () => {
   userA = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${PREFIX}_a`,
       email: `${PREFIX.toLowerCase()}_a@test.invalid`,
       password: 'x',
@@ -51,6 +52,7 @@ beforeAll(async () => {
 
   userB = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${PREFIX}_b`,
       email: `${PREFIX.toLowerCase()}_b@test.invalid`,
       password: 'x',

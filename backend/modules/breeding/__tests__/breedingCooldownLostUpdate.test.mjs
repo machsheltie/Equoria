@@ -65,6 +65,7 @@ describe('createFoal — breeding-cooldown lost-update guard (Equoria-9gsxg, rea
     const hashed = await bcrypt.hash('TestPassword123!', 1);
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `bcooldown_${ts}`,
         email: `bcooldown_${ts}@test.com`,
         password: hashed,

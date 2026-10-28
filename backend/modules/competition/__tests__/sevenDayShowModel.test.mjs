@@ -53,6 +53,7 @@ const uid = () => `${randomBytes(4).toString('hex')}${randomBytes(4).toString('h
 beforeAll(async () => {
   creator = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `nx8-creator-${uid()}@test.com`,
       username: `nx8c${uid()}`,
       password: 'irrelevant-hash',
@@ -65,6 +66,7 @@ beforeAll(async () => {
 
   entrant = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `nx8-entrant-${uid()}@test.com`,
       username: `nx8e${uid()}`,
       password: 'irrelevant-hash',
@@ -281,6 +283,7 @@ describe('R5: prize charged to creator at creation; insufficient funds rejected'
   it('rejects creation with 400 when creator cannot afford the prize', async () => {
     const poor = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `nx8-poor-${uid()}@test.com`,
         username: `nx8p${uid()}`,
         password: 'irrelevant-hash',

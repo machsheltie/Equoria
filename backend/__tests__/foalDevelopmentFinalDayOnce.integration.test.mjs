@@ -50,6 +50,7 @@ describe('INTEGRATION: a foal development day is evaluated once (Equoria-mwjst)'
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `tf-dayonce-${randHex()}`,
         email: `tf-dayonce-${randHex()}@example.com`,
         password: 'x',

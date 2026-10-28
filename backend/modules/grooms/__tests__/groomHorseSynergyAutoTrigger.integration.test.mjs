@@ -49,6 +49,7 @@ describe('Equoria-5v6g: groom horse auto-updates GroomHorseSynergy', () => {
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `${TAG}@test.com`,
         username: TAG,
         password: 'irrelevant',

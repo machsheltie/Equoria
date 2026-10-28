@@ -32,6 +32,7 @@ describe('craftingController integration', () => {
   beforeEach(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: uniqueEmail(),
         username: uniqueUsername(),
         password: 'irrelevant-hash',
@@ -228,6 +229,7 @@ describe('craftItem — controller-direct happy path (merged from legacy backend
     ({ craftItem } = await import('../controllers/craftingController.mjs'));
     craftUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `craftDirect${randomBytes(6).toString('hex')}`,
         email: `craftdirect-${randomBytes(6).toString('hex')}@test.com`,
         password: 'irrelevant-hash',

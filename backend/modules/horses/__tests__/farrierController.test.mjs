@@ -52,6 +52,7 @@ afterAll(() => cleanup.run(), 30000);
 async function makePlayer(money = 10000, horseData = {}) {
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `farrier-${uid()}@test.com`,
       username: `farrier${uid()}`,
       password: 'irrelevant-hash',

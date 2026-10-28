@@ -30,6 +30,7 @@ import { jest as _jest } from '@jest/globals';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { randomBytes } from 'node:crypto';
+import { confirmEmail } from '../../../tests/helpers/confirmEmail.mjs';
 
 _jest.setTimeout(120000);
 
@@ -77,6 +78,8 @@ describe('CSRF protection — real browser flow', () => {
     });
 
     expect(res.status).toBe(201);
+    // Equoria-voasj: no play until the email is confirmed.
+    await confirmEmail(res.body.data.user.id);
     accessCookie = extractAccessCookie(res.headers['set-cookie']);
     expect(accessCookie).toBeTruthy();
 

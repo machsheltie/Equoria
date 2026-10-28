@@ -41,6 +41,7 @@ describe('POST /marketplace/store/buy: the horse arrives Excellent and fed (Equo
     const tag = randomBytes(6).toString('hex');
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `fd3f2-${tag}@test.com`,
         username: `fd3f2${tag}`,
         password: 'irrelevant-hash',

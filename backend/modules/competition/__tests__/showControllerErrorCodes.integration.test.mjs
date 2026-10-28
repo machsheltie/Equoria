@@ -29,6 +29,7 @@ let show;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `b9err-${rand()}@test.local`,
       username: `b9err${rand()}`,
       password: 'irrelevant-hash',

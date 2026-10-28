@@ -53,6 +53,7 @@ beforeAll(async () => {
   breedId = (await prisma.breed.findUnique({ where: { name: 'Thoroughbred' } })).id;
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `TestFixture-5b2nj-${rand()}`,
       email: `testfixture-5b2nj-${rand()}@test.local`,
       password: 'irrelevant-hash',

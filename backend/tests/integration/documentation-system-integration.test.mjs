@@ -52,6 +52,7 @@ import os from 'os';
 import { getApiDocumentationService } from '../../services/apiDocumentationService.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
+import { confirmEmail } from '../helpers/confirmEmail.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -230,6 +231,8 @@ describe('📚 Documentation System Integration Tests', () => {
       .send(userData);
 
     expect(registerResponse.status).toBe(201);
+    // Equoria-voasj: no play until the email is confirmed.
+    await confirmEmail(registerResponse.body.data.user.id);
     testUser = registerResponse.body.data.user;
 
     // Generate JWT token for authentication using test helper

@@ -144,6 +144,7 @@ describe('feedHorse service — stat-boost integration (real DB)', () => {
   beforeEach(async () => {
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `svc-feed-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
         username: `svcfeed${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',
@@ -280,6 +281,7 @@ describe('feedHorse service — pregnancy feeding counter (Phase B4, real DB)', 
   beforeEach(async () => {
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `pf-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
         username: `pf${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',
@@ -389,6 +391,7 @@ describe('feedHorse service — sequential-feed guard (Equoria-nsr7 / Equoria-5g
   beforeEach(async () => {
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `conc-feed-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
         username: `concfeed${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',
@@ -484,6 +487,7 @@ describe('feedHorse — optimistic-concurrency lost-update guard (Equoria-zvp4, 
   beforeEach(async () => {
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `opt-feed-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
         username: `optfeed${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',

@@ -32,6 +32,7 @@ const topCleanup = createCleanupTracker();
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `groomprogress-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `groomprogress${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -125,6 +126,7 @@ describe('updateGroomSynergy — branch coverage (Equoria-jkht)', () => {
 
     sgUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `gp-sg-${ts}-${rand()}@test.com`,
         username: `gpsg${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -203,6 +205,7 @@ describe('logGroomAssignment — branch coverage (Equoria-jkht)', () => {
 
     laUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `gp-la-${ts}-${rand()}@test.com`,
         username: `gpla${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -290,6 +293,7 @@ describe('calculateSynergyEffects via getGroomProfile — branch coverage (Equor
 
     seUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `gp-se-${ts}-${rand()}@test.com`,
         username: `gpse${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -375,6 +379,7 @@ describe('logGroomAssignment — default-param + null-coalesce fallback branches
 
     la2User = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `gp-la2-${ts}-${rand()}@test.com`,
         username: `gpla2${ts}${rand()}`,
         password: 'irrelevant-hash',

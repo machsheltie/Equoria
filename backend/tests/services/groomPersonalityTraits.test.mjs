@@ -39,6 +39,7 @@ describe('Groom Personality Trait System', () => {
         // Create test user
         testUser = await tx.user.create({
           data: {
+            emailVerified: true,
             username: `groomtraits_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             email: `groomtraits_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
             password: 'testHash',

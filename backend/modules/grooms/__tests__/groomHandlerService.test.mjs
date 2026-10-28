@@ -32,6 +32,7 @@ describe('groomHandlerService — DB fixture branch coverage (Equoria-rr7)', () 
 
     ghsUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `ghs-${ts}-${rand()}@test.com`,
         username: `ghs${ts}${rand()}`,
         password: 'irrelevant-hash',

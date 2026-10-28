@@ -84,6 +84,7 @@ describe('Groom Retirement Routes', () => {
     const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `testuser_routes_${ts}`,
         email: `test_routes_${ts}@example.com`,
         password: 'hashedpassword123',

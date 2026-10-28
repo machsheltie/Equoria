@@ -38,6 +38,7 @@ async function createUser(suffix) {
   const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${suffix}`;
   return prisma.user.create({
     data: {
+      emailVerified: true,
       username: `b5_${ts}`,
       email: `b5_${ts}@test.com`,
       password: 'pwhash',

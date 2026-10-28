@@ -52,6 +52,7 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
     const pw = await bcrypt.hash('AdminPassword123!', 1);
     const u = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `TestFixture-uuhq1-${overrides.tag}-${ts}`,
         email: `TestFixture-uuhq1-${overrides.tag}-${ts}@example.com`,
         password: pw,

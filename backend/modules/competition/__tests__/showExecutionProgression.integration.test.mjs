@@ -100,6 +100,7 @@ describe('executeClosedShows progression awards (Equoria-oey96.4)', () => {
   it('A: awards horse XP (all entrants), user XP + stat roll (top-3), inside the tx; does not double-award rider XP', async () => {
     const owner = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `oey96.4-A-${uid()}@test.local`,
         username: `o4A${uid()}`.slice(0, 30),
         password: 'irrelevant-hash',
@@ -263,6 +264,7 @@ describe('executeClosedShows progression awards (Equoria-oey96.4)', () => {
   it('B: two concurrent executeClosedShows award progression exactly once (claim is the mutex)', async () => {
     const owner = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `oey96.4-B-${uid()}@test.local`,
         username: `o4B${uid()}`.slice(0, 30),
         password: 'irrelevant-hash',
@@ -357,6 +359,7 @@ describe('executeClosedShows progression awards (Equoria-oey96.4)', () => {
   it('C: a planted P2002 on competitionResult.create rolls back XP, owner XP, stat, and money together', async () => {
     const owner = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `oey96.4-C-${uid()}@test.local`,
         username: `o4C${uid()}`.slice(0, 30),
         password: 'irrelevant-hash',

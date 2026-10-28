@@ -35,6 +35,7 @@ describe('INTEGRATION: daily cron persists revealed traits to TraitHistoryLog (E
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `tf-bfo1t-${randHex()}`,
         email: `tf-bfo1t-${randHex()}@example.com`,
         password: 'x',

@@ -64,6 +64,7 @@ beforeAll(async () => {
   // detect whether the response carries real names vs the username handle.
   fixtureUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `pii-sentinel-${RNG}@testfixture.invalid`,
       username: FIXTURE_USERNAME,
       password: 'irrelevant-hash',

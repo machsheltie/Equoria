@@ -55,6 +55,7 @@ beforeAll(async () => {
   // produce a negative balance, the sharpest possible signal.
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${FIXTURE_PREFIX}-${tag}`,
       email: `${FIXTURE_PREFIX}-${tag}@example.com`,
       password: pw,

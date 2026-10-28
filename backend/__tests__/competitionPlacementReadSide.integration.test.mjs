@@ -51,6 +51,7 @@ cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'u
 beforeAll(async () => {
   owner = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `${PREFIX}-${tag}@test.local`,
       username: `${PREFIX}-${tag}`.slice(0, 30),
       password: 'irrelevant-hash',

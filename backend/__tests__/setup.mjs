@@ -154,7 +154,7 @@ export async function createTestUser(overrides = {}) {
   };
 
   return prisma.user.create({
-    data: { ...defaultUser, ...overrides },
+    data: { emailVerified: true, ...defaultUser, ...overrides },
   });
 }
 

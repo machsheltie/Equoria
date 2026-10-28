@@ -95,6 +95,7 @@ beforeAll(async () => {
   const happyTag = randomBytes(4).toString('hex');
   happyUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${FIXTURE_PREFIX}-happy-${happyTag}`,
       email: `${FIXTURE_PREFIX}-happy-${happyTag}@example.com`,
       password: pw,
@@ -112,6 +113,7 @@ beforeAll(async () => {
   const brokeTag = randomBytes(4).toString('hex');
   brokeUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${FIXTURE_PREFIX}-broke-${brokeTag}`,
       email: `${FIXTURE_PREFIX}-broke-${brokeTag}@example.com`,
       password: pw,

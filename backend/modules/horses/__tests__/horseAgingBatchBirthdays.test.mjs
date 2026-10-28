@@ -48,6 +48,7 @@ async function makeHorse(key, { daysOld, storedAge }) {
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `agingbatch-${RUN}@test.com`,
       username: `agingbatch${RUN}`,
       password: 'irrelevant-hash',

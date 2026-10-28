@@ -24,6 +24,7 @@ const cleanup = createCleanupTracker();
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `wyag-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `wyag${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -125,6 +126,7 @@ describe('GET /api/v1/while-you-were-gone — six event-type aggregation (Equori
 
     player = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `wyag6-player-${hex()}-${hex()}@test.com`,
         username: `wyag6p${hex()}${hex()}`,
         password: 'irrelevant-hash',
@@ -135,6 +137,7 @@ describe('GET /api/v1/while-you-were-gone — six event-type aggregation (Equori
     });
     otherUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `wyag6-other-${hex()}-${hex()}@test.com`,
         username: `wyag6o${hex()}${hex()}`,
         password: 'irrelevant-hash',

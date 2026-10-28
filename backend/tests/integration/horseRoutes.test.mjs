@@ -41,6 +41,7 @@ describe('Horse Routes Integration Tests', () => {
     const txResult = await prisma.$transaction(async tx => {
       const u = await tx.user.create({
         data: {
+          emailVerified: true,
           username: `testuser_hr_${ts}`,
           email: `testuser_hr_${ts}@example.com`,
           password: 'hashedpassword123',
@@ -146,6 +147,7 @@ describe('Horse Routes Integration Tests', () => {
       const otherTs = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_other`;
       const otherUser = await prisma.user.create({
         data: {
+          emailVerified: true,
           username: `other_hr_${otherTs}`,
           email: `other_hr_${otherTs}@example.com`,
           password: 'hashedpassword123',

@@ -66,6 +66,7 @@ beforeAll(async () => {
   }
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `TestFixture-uszhf-${rand()}`,
       email: `testfixture-uszhf-${rand()}@test.local`,
       password: 'irrelevant-hash',

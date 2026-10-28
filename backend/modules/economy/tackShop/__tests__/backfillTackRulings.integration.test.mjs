@@ -97,6 +97,7 @@ const staleInventory = () => [
 async function makeUser(settings) {
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `cv3if-${uid()}@test.local`,
       username: `cv3${uid()}`.slice(0, 30),
       password: 'irrelevant-hash',

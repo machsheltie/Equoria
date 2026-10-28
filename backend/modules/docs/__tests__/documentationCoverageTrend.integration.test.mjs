@@ -37,6 +37,7 @@ describe('Documentation Coverage Trend (Equoria-zr9kl)', () => {
   beforeAll(async () => {
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `TestFixture-zr9kl-${Math.random().toString(16).slice(2, 10)}`,
         email: `testfixture-zr9kl-${Math.random().toString(16).slice(2, 10)}@test.com`,
         password: 'testPassword123',

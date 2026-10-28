@@ -42,6 +42,7 @@ let testHorse;
 beforeAll(async () => {
   testUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       id: `${PREFIX}user`,
       email: `${PREFIX}user@test.local`,
       username: `${PREFIX}user`,

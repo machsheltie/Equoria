@@ -99,6 +99,7 @@ async function main() {
 
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `LoadFixture-cron-${stamp}`,
         email: `loadfixture-cron-${stamp}@example.test`,
         password: 'x'.repeat(60), // bcrypt-length placeholder; never logged in

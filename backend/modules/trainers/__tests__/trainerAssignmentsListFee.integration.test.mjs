@@ -57,6 +57,7 @@ describe('GET /api/v1/trainers/assignments — fee and personality (Equoria-r8a6
     const tag = randomBytes(4).toString('hex');
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${fixturePrefix}-${tag}`,
         email: `${fixturePrefix}-${tag}@example.com`,
         password: await bcrypt.hash('TestPassword123!', 1),

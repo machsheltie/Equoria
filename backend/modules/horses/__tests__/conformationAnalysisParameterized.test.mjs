@@ -78,6 +78,7 @@ beforeAll(async () => {
   const hashed = await bcrypt.hash('TestPassword123!', 1);
   testUser = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `lnbluConfUser_${ts}`,
       email: `lnbluconf_${ts}@test.com`,
       password: hashed,

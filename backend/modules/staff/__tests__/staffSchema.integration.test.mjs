@@ -22,6 +22,7 @@ describe('Staff foundation schema (Equoria-puj1e.1)', () => {
   const makeUser = async (tag, role) => {
     const u = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `TestFixture-puj1e1-${tag}-${ts}`,
         email: `TestFixture-puj1e1-${tag}-${ts}@example.com`,
         password: 'not-a-real-hash',

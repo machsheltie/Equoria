@@ -105,6 +105,7 @@ describe('passwordController — parameterized raw queries (Equoria-nz94y)', () 
     const hashedOriginal = await bcrypt.hash(originalPassword, 1);
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${FIXTURE_PREFIX}-${tag}`,
         email,
         password: hashedOriginal,
@@ -179,6 +180,7 @@ describe('passwordController — parameterized raw queries (Equoria-nz94y)', () 
     const hashedOriginal = await bcrypt.hash(originalPassword, 1);
     const user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${FIXTURE_PREFIX}-ua-${tag}`,
         email,
         password: hashedOriginal,

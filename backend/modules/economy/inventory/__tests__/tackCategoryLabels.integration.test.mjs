@@ -47,6 +47,7 @@ describe('tack and feed items carry their category word', () => {
     cleanup.add(() => (user ? prisma.user.deleteMany({ where: { id: user.id } }) : null), 'user');
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `${fixturePrefix}-${run}`.slice(0, 30),
         email: `${fixturePrefix}-${run}@example.com`,
         password: 'irrelevant-not-a-login-test',

@@ -56,6 +56,7 @@ let user;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `hqifix-${randomBytes(6).toString('hex')}@test.com`,
       username: `hqifix${randomBytes(6).toString('hex')}`,
       password: 'irrelevant-hash',

@@ -87,6 +87,7 @@ async function makeFoal({ suffix, days, ageYears, bondScore = 0, epigeneticModif
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `${TAG}@test.com`,
       username: TAG,
       password: 'irrelevant-hash',

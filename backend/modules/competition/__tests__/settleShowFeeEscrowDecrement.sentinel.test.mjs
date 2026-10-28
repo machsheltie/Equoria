@@ -47,6 +47,7 @@ const cleanup = createCleanupTracker();
 beforeAll(async () => {
   creator = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${PREFIX}-creator-${uid()}`.slice(0, 30),
       email: `${PREFIX}-creator-${uid()}@test.com`,
       password: 'irrelevant-hash',

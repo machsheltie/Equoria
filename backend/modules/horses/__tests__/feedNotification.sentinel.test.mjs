@@ -33,6 +33,7 @@ describe('SENTINEL: feed → statGain Notification', () => {
   beforeAll(async () => {
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `feed_notif_${Date.now()}@test.com`,
         username: `feed_notif_${Date.now()}`,
         password: 'irrelevant',

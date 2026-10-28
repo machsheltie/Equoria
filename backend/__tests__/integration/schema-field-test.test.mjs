@@ -47,6 +47,7 @@ describe('Schema Field Test', () => {
     // Create test user
     const testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         id: TEST_USER_ID,
         username: TEST_USERNAME,
         email: TEST_EMAIL,

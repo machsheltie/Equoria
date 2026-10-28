@@ -49,6 +49,7 @@ describe('groom_salary_payments weekKey (Equoria-h7518)', () => {
     const suffix = tag();
     user = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `${fixturePrefix}-${suffix}@test.com`,
         username: `${fixturePrefix}-${suffix}`.slice(0, 30),
         password: 'irrelevant-hash',

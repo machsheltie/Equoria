@@ -36,6 +36,7 @@ const sharedCleanup = createCleanupTracker();
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `traintalent-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
       username: `traintalent${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
@@ -266,6 +267,7 @@ describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
 
     ttUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `tt-branch-${ts}-${rand()}@test.com`,
         username: `ttbranch${ts}${rand()}`,
         password: 'irrelevant-hash',
@@ -387,6 +389,7 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
 
     st2User = await prisma.user.create({
       data: {
+        emailVerified: true,
         email: `st2-${ts}-${rand()}@test.com`,
         username: `st2${ts}${rand()}`,
         password: 'irrelevant-hash',

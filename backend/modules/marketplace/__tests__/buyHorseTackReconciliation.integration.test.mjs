@@ -74,6 +74,7 @@ async function makeUser(role, money) {
   const suffix = tag();
   const user = await prisma.user.create({
     data: {
+      emailVerified: true,
       username: `${FIXTURE_PREFIX}-${role}-${suffix}`,
       email: `${FIXTURE_PREFIX}-${role}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',

@@ -53,6 +53,7 @@ function showRow(name, createdAt) {
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
+      emailVerified: true,
       email: `wklimit-${uid()}@test.com`,
       username: `wkl${uid()}`,
       password: 'irrelevant-hash',

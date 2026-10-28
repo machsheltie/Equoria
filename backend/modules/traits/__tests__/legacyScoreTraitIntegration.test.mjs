@@ -57,6 +57,7 @@ describe('Legacy Score Trait Integration System', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `legacytrait_user_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         firstName: 'Test',
         lastName: 'User',

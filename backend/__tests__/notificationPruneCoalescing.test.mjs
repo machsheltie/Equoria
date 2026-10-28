@@ -42,6 +42,7 @@ describe('notification prune coalescing (Equoria-y9n99)', () => {
   const makeUser = async label => {
     const u = await prisma.user.create({
       data: {
+        emailVerified: true,
         username: `TestFixture-y9n99-${label}-${tag}`,
         email: `TestFixture-y9n99-${label}-${tag}@example.com`,
         password: await bcrypt.hash('NotifPrune123!', 1),
