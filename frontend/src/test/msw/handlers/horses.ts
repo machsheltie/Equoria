@@ -97,6 +97,20 @@ export const horseHandlers = [
       },
     });
   }),
+  // Visitor view (studsApi.visit → GET /api/v1/horses/:id/visit). HorseDetailPage
+  // reads it when the owner-only detail read above answers 404 (Equoria-d3tzl).
+  // Id 999 does not exist, so the visitor read 404s too, with the shape
+  // backend/app/queries/horseVisitRoutes.mjs sends for a missing horse.
+  // Other ids fall through: tests that visit a horse stub their own view.
+  http.get(`${base}/api/v1/horses/:id/visit`, ({ params }) => {
+    if (params.id === '999') {
+      return HttpResponse.json(
+        { success: false, message: 'Horse not found', status: 'fail' },
+        { status: 404 }
+      );
+    }
+    return undefined;
+  }),
   // (Equoria-0fw18) Deleted dead unversioned /api/horses/:id/training-history —
   // v1 mirror below serves horsesApi.getTrainingHistory.
   // v1 training-history (horsesApi.getTrainingHistory → GET /api/v1/horses/:id/training-history)
