@@ -207,6 +207,7 @@ export async function ensureDefaultGroomAssignment(foalId, userId) {
           name: 'Sarah Johnson',
           speciality: 'foalCare',
           skillLevel: 'intermediate',
+          starLevel: 'intermediate',
           personality: 'gentle',
           experience: 5,
           sessionRate: 18.0,

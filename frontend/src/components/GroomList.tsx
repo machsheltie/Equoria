@@ -39,7 +39,13 @@ import {
   GameDialogBody,
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
-import { groomSpecialtyTitle, skillLevelLabel } from '@/lib/staffLabels';
+import { groomSpecialtyTitle } from '@/lib/staffLabels';
+import StaffLevelStars from '@/components/common/StaffLevelStars';
+import { staffLevelLabel, staffLevelOrder } from '@/lib/staffLevels';
+
+// Equoria-nawn5: one week at the star-level price (weeklyFee); older offers cost 7 sessions.
+const calculateHiringCost = (groom: MarketplaceGroom): number =>
+  typeof groom.weeklyFee === 'number' ? groom.weeklyFee : groom.sessionRate * 7;
 
 interface GroomListProps {
   onGroomHired?: (_groom: MarketplaceGroom) => void;
@@ -55,7 +61,7 @@ const GroomList: React.FC<GroomListProps> = ({
   const [selectedGroom, setSelectedGroom] = useState<MarketplaceGroom | null>(null);
   const [showHireModal, setShowHireModal] = useState(false);
   const [showRefreshConfirm, setShowRefreshConfirm] = useState(false);
-  const [filterSkillLevel, setFilterSkillLevel] = useState<string>('all');
+  const [filterStarLevel, setFilterStarLevel] = useState<string>('all');
   const [filterSpecialty, setFilterSpecialty] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
   const [layout, setLayout] = useState<'mobile' | 'desktop'>('desktop');
@@ -99,8 +105,8 @@ const GroomList: React.FC<GroomListProps> = ({
     let filtered = [...grooms];
 
     // Apply filters
-    if (filterSkillLevel !== 'all') {
-      filtered = filtered.filter((g) => g.skillLevel === filterSkillLevel);
+    if (filterStarLevel !== 'all') {
+      filtered = filtered.filter((g) => g.starLevel === filterStarLevel);
     }
     if (filterSpecialty !== 'all') {
       filtered = filtered.filter((g) => g.specialty === filterSpecialty);
@@ -110,9 +116,9 @@ const GroomList: React.FC<GroomListProps> = ({
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'price-asc':
-          return a.sessionRate - b.sessionRate;
+          return calculateHiringCost(a) - calculateHiringCost(b);
         case 'price-desc':
-          return b.sessionRate - a.sessionRate;
+          return calculateHiringCost(b) - calculateHiringCost(a);
         case 'experience-asc':
           return a.experience - b.experience;
         case 'experience-desc':
@@ -124,17 +130,12 @@ const GroomList: React.FC<GroomListProps> = ({
     });
 
     return filtered;
-  }, [marketplaceData, filterSkillLevel, filterSpecialty, sortBy]);
-
-  // Calculate hiring cost (1 week upfront)
-  const calculateHiringCost = (sessionRate: number) => {
-    return sessionRate * 7;
-  };
+  }, [marketplaceData, filterStarLevel, filterSpecialty, sortBy]);
 
   // Check if user can afford groom
-  const canAffordGroom = (sessionRate: number) => {
+  const canAffordGroom = (groom: MarketplaceGroom) => {
     if (!user) return false;
-    return (user.money || 0) >= calculateHiringCost(sessionRate);
+    return (user.money || 0) >= calculateHiringCost(groom);
   };
 
   // Handle hire button click
@@ -268,23 +269,24 @@ const GroomList: React.FC<GroomListProps> = ({
           {/* Skill Level Filter */}
           <div>
             <label
-              htmlFor="skill-level-filter"
+              htmlFor="star-level-filter"
               className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2"
             >
-              Skill Level
+              Level
             </label>
             <Select
-              id="skill-level-filter"
-              data-testid="skill-level-filter"
-              value={filterSkillLevel}
-              onChange={(e) => setFilterSkillLevel(e.target.value)}
+              id="star-level-filter"
+              data-testid="star-level-filter"
+              value={filterStarLevel}
+              onChange={(e) => setFilterStarLevel(e.target.value)}
               className="w-full"
             >
               <option value="all">All Levels</option>
-              <option value="novice">Novice</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="expert">Expert</option>
-              <option value="master">Master</option>
+              {staffLevelOrder.map((level) => (
+                <option key={level} value={level}>
+                  {staffLevelLabel(level)}
+                </option>
+              ))}
             </Select>
           </div>
 
@@ -355,8 +357,8 @@ const GroomList: React.FC<GroomListProps> = ({
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {filteredAndSortedGrooms.map((groom) => {
-              const hiringCost = calculateHiringCost(groom.sessionRate);
-              const canAfford = canAffordGroom(groom.sessionRate);
+              const hiringCost = calculateHiringCost(groom);
+              const canAfford = canAffordGroom(groom);
 
               return (
                 <Surface
@@ -372,9 +374,7 @@ const GroomList: React.FC<GroomListProps> = ({
                         {groom.firstName} {groom.lastName}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="px-2 py-0.5 bg-[var(--role-info-bg)] text-[var(--role-info-text)] text-xs font-bold rounded-[var(--radius-sm)] uppercase border border-[var(--role-info-border)]">
-                          {skillLevelLabel(groom.skillLevel)}
-                        </span>
+                        <StaffLevelStars level={groom.starLevel} />
                         <span className="px-2 py-0.5 bg-[var(--role-success-bg)] text-[var(--role-success-text)] text-xs font-bold rounded-[var(--radius-sm)] uppercase border border-[var(--role-success-border)]">
                           {groomSpecialtyTitle(groom.specialty)}
                         </span>
@@ -494,10 +494,7 @@ const GroomList: React.FC<GroomListProps> = ({
                   <span className="text-sm font-bold text-[var(--text-secondary)]">
                     Total Upfront:
                   </span>
-                  <Currency
-                    amount={calculateHiringCost(selectedGroom.sessionRate)}
-                    variant="balance"
-                  />
+                  <Currency amount={calculateHiringCost(selectedGroom)} variant="balance" />
                 </div>
               </Surface>
               {hireMutation.isError && (

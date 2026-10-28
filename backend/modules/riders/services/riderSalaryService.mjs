@@ -25,6 +25,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { debitMoneyOrThrow, InsufficientFundsError } from '../../economy/index.mjs';
+import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
 import {
   acquireRiderPayWeekLockTx,
   getRiderPayWeekStart,
@@ -75,6 +76,7 @@ export async function processWeeklyRiderSalaries(
         firstName: true,
         lastName: true,
         weeklyRate: true,
+        starLevel: true,
         userId: true,
         feeUnpaidSince: true,
         user: { select: { username: true } },
@@ -82,7 +84,10 @@ export async function processWeeklyRiderSalaries(
       orderBy: { id: 'asc' },
     });
     const byUser = new Map();
-    for (const rider of roster) {
+    for (const row of roster) {
+      // Equoria-nawn5: the week's pay. Owner question q226 decides whether a rider hired
+      // before star levels keeps the rate they were hired at (hiredStaffFee).
+      const rider = { ...row, weeklyRate: hiredStaffFee(row, row.weeklyRate) };
       if (!byUser.has(rider.userId)) {
         byUser.set(rider.userId, []);
       }

@@ -25,6 +25,7 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 // backstop without saying so is how an invariant quietly stops being one.
 import { drawStartAge } from './groomAgeService.mjs';
 import { openEngagementTx } from './groomEngagementService.mjs';
+import { legacyStaffLevel } from '../../../constants/staffLevels.mjs';
 
 /**
  * Legacy system constants
@@ -213,6 +214,8 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
           name: protegeData.name,
           personality: protegeData.personality,
           skillLevel: protegeData.skillLevel,
+          // Equoria-nawn5: the star level that matches the protégé's skill word.
+          starLevel: legacyStaffLevel('groom', protegeData.skillLevel, experienceBonus),
           speciality: protegeData.speciality,
           userId,
           experience: experienceBonus,

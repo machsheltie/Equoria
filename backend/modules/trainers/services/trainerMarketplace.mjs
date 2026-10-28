@@ -3,30 +3,23 @@
  * Handles generation of available trainers for hire.
  *
  * Trainers: 5 personalities (focused/encouraging/technical/competitive/patient),
- * 3 skill levels (novice/developing/expert), session rate pricing.
+ * 3 skill levels (novice/developing/expert) and a star level; the session rate is the
+ * star level's price (owner ruling 2026-10-28, Equoria-nawn5; backend/constants/staffLevels.mjs).
  */
 
 import crypto from 'crypto';
 import { DISCIPLINE_VALUES } from '../../../constants/schema.mjs';
+import { drawStaffLevel, staffLevelFee, staffSkillOdds } from '../../../constants/staffLevels.mjs';
 
 export const TRAINER_MARKETPLACE_CONFIG = {
   DEFAULT_MARKETPLACE_SIZE: 6,
   REFRESH_INTERVAL_HOURS: 24,
   PREMIUM_REFRESH_COST: 50,
 
-  // Session rate ranges by skill level
-  SESSION_RATE_RANGES: {
-    novice: { min: 100, max: 200 },
-    developing: { min: 200, max: 350 },
-    expert: { min: 350, max: 600 },
-  },
-
-  // Skill level distribution
-  SKILL_DISTRIBUTION: {
-    novice: 45,
-    developing: 40,
-    expert: 15,
-  },
+  // Skill level distribution. Owner ruling 2026-10-28 (Equoria-nawn5): these odds, and
+  // the session price (the star level's), live with the star levels in
+  // backend/constants/staffLevels.mjs.
+  SKILL_DISTRIBUTION: staffSkillOdds('trainer'),
 
   // Discipline specialties: an even pick across every competition discipline
   // (owner ruling 2026-10-21), so a new discipline appears without an edit here.
@@ -34,18 +27,6 @@ export const TRAINER_MARKETPLACE_CONFIG = {
 };
 
 const PERSONALITIES = ['focused', 'encouraging', 'technical', 'competitive', 'patient'];
-
-function selectByDistribution(distribution) {
-  const random = Math.random() * 100;
-  let cumulative = 0;
-  for (const [item, percentage] of Object.entries(distribution)) {
-    cumulative += percentage;
-    if (random <= cumulative) {
-      return item;
-    }
-  }
-  return Object.keys(distribution)[0];
-}
 
 function generateFirstName() {
   const names = [
@@ -141,12 +122,11 @@ function generateBio(firstName, skillLevel, specialty) {
  * @returns {Object}
  */
 export function generateRandomTrainer() {
-  const skillLevel = selectByDistribution(TRAINER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION);
+  const { skillLevel, starLevel } = drawStaffLevel('trainer');
   const { SPECIALTIES } = TRAINER_MARKETPLACE_CONFIG;
   const specialty = SPECIALTIES[Math.floor(Math.random() * SPECIALTIES.length)];
   const personality = PERSONALITIES[Math.floor(Math.random() * PERSONALITIES.length)];
-  const { min, max } = TRAINER_MARKETPLACE_CONFIG.SESSION_RATE_RANGES[skillLevel];
-  const sessionRate = Math.floor(Math.random() * (max - min + 1)) + min;
+  const sessionRate = staffLevelFee(starLevel);
   const firstName = generateFirstName();
   const lastName = generateLastName();
 
@@ -155,6 +135,7 @@ export function generateRandomTrainer() {
     firstName,
     lastName,
     skillLevel,
+    starLevel,
     personality,
     speciality: specialty,
     sessionRate,
@@ -172,9 +153,10 @@ function generateStarterTrainer() {
     firstName,
     lastName: generateLastName(),
     skillLevel: 'novice',
+    starLevel: 'rookie',
     personality: 'patient',
     speciality: specialty,
-    sessionRate: TRAINER_MARKETPLACE_CONFIG.SESSION_RATE_RANGES.novice.min,
+    sessionRate: staffLevelFee('rookie'),
     bio: generateBio(firstName, 'novice', specialty),
     availability: true,
   };

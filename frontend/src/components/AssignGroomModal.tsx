@@ -36,13 +36,17 @@ import {
   GameDialogTitle,
 } from '@/components/ui/game';
 import { Checkbox, Select, Textarea } from '@/components/ui/form';
-import { groomSpecialtyTitle, skillLevelLabel } from '@/lib/staffLabels';
+import { groomSpecialtyTitle } from '@/lib/staffLabels';
+import StaffLevelStars from '@/components/common/StaffLevelStars';
+import { staffLevelPhrase } from '@/lib/staffLevels';
 
 // Type definitions
 interface Groom {
   id: number;
   name: string;
   skillLevel: string;
+  /** Equoria-nawn5: the groom's star level. */
+  starLevel?: string;
   specialty: string;
   personality: string;
   experience: number;
@@ -268,7 +272,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                         onChange={() => setSelectedGroomId(groom.id)}
                         disabled={groom.availableSlots === 0}
                         className="mt-1 mr-3"
-                        aria-label={`${groom.name} - ${groom.skillLevel} - ${groom.availableSlots} ${groom.availableSlots === 1 ? 'slot' : 'slots'} available`}
+                        aria-label={`${groom.name} - ${staffLevelPhrase(groom.starLevel)} - ${groom.availableSlots} ${groom.availableSlots === 1 ? 'slot' : 'slots'} available`}
                       />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
@@ -280,8 +284,8 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                             {horseTemperament ? (
                               <SynergyBadge groomId={groom.id} horseId={horseId} />
                             ) : null}
-                            <span className="text-sm text-role-secondary capitalize">
-                              {skillLevelLabel(groom.skillLevel)}
+                            <span className="text-sm text-role-secondary">
+                              <StaffLevelStars level={groom.starLevel} />
                             </span>
                           </div>
                         </div>

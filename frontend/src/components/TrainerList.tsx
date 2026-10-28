@@ -59,29 +59,18 @@ import {
   GameDialogBody,
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
+import StaffLevelStars from '@/components/common/StaffLevelStars';
+import { staffLevelLabel, staffLevelOrder } from '@/lib/staffLevels';
 import { disciplineLabel } from '@/lib/utils/training-utils';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const SKILL_LEVEL_LABELS: Record<
-  string,
-  { label: string; colorClass: string; visibility: string }
-> = {
-  novice: {
-    label: 'Novice',
-    colorClass: 'bg-[var(--role-neutral-bg)] text-[var(--role-neutral-text)]',
-    visibility: 'Stats hidden — unknown potential',
-  },
-  developing: {
-    label: 'Developing',
-    colorClass: 'bg-[var(--role-info-bg)] text-[var(--role-info-text)]',
-    visibility: 'Some specializations revealed',
-  },
-  expert: {
-    label: 'Expert',
-    colorClass: 'bg-[var(--role-warning-bg)] text-[var(--role-warning-text)]',
-    visibility: 'All specializations visible',
-  },
+// How much of a trainer's specialization the card reveals still follows the
+// trainer's skill tier. The level the player sees is the star level (Equoria-nawn5).
+const specializationVisibility: Record<string, string> = {
+  novice: 'Stats hidden — unknown potential',
+  developing: 'Some specializations revealed',
+  expert: 'All specializations visible',
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -97,7 +86,7 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
   const { user } = useAuth();
   const [selectedTrainer, setSelectedTrainer] = useState<MarketplaceTrainer | null>(null);
   const [showHireModal, setShowHireModal] = useState(false);
-  const [filterSkillLevel, setFilterSkillLevel] = useState<string>('all');
+  const [filterStarLevel, setFilterStarLevel] = useState<string>('all');
   const [filterPersonality, setFilterPersonality] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
   // The horse picked in the dialog when no horse is in view.
@@ -116,8 +105,8 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
     const trainers: MarketplaceTrainer[] = data?.trainers ?? [];
     let filtered = [...trainers];
 
-    if (filterSkillLevel !== 'all') {
-      filtered = filtered.filter((t) => t.skillLevel === filterSkillLevel);
+    if (filterStarLevel !== 'all') {
+      filtered = filtered.filter((t) => t.starLevel === filterStarLevel);
     }
     if (filterPersonality !== 'all') {
       filtered = filtered.filter((t) => t.personality === filterPersonality);
@@ -135,7 +124,7 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
     });
 
     return filtered;
-  }, [data, filterSkillLevel, filterPersonality, sortBy]);
+  }, [data, filterStarLevel, filterPersonality, sortBy]);
 
   const handleHireClick = (trainer: MarketplaceTrainer) => {
     // A refusal belongs to the attempt that earned it; don't carry it to the next.
@@ -230,20 +219,22 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
         className="grid grid-cols-1 sm:grid-cols-3 gap-3"
       >
         <div>
-          <label htmlFor="skill-level-filter" className="type-label block mb-1.5">
-            Skill Level
+          <label htmlFor="star-level-filter" className="type-label block mb-1.5">
+            Level
           </label>
           <Select
-            id="skill-level-filter"
-            data-testid="skill-level-filter"
-            value={filterSkillLevel}
-            onChange={(e) => setFilterSkillLevel(e.target.value)}
+            id="star-level-filter"
+            data-testid="star-level-filter"
+            value={filterStarLevel}
+            onChange={(e) => setFilterStarLevel(e.target.value)}
             className="w-full"
           >
             <option value="all">All Levels</option>
-            <option value="novice">Novice</option>
-            <option value="developing">Developing</option>
-            <option value="expert">Expert</option>
+            {staffLevelOrder.map((level) => (
+              <option key={level} value={level}>
+                {staffLevelLabel(level)}
+              </option>
+            ))}
           </Select>
         </div>
         <div>
@@ -310,7 +301,6 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
           >
             {filteredAndSortedTrainers.map((trainer) => {
-              const skillMeta = SKILL_LEVEL_LABELS[trainer.skillLevel] ?? SKILL_LEVEL_LABELS.novice;
               const showSpeciality =
                 trainer.skillLevel === 'expert' && trainer.speciality.trim().length > 0;
 
@@ -334,11 +324,7 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
                         </Link>
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <span
-                          className={`px-2 py-0.5 text-xs font-bold rounded-[var(--radius-sm)] uppercase ${skillMeta.colorClass}`}
-                        >
-                          {skillMeta.label}
-                        </span>
+                        <StaffLevelStars level={trainer.starLevel} />
                         <TrainerPersonalityBadge personality={trainer.personality} size="sm" />
                       </div>
                     </div>
@@ -356,7 +342,8 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
                     <div className="flex justify-between items-center">
                       <span className="text-[var(--text-muted)]">Specializations:</span>
                       <span className="text-[10px] text-[var(--text-muted)] italic">
-                        {skillMeta.visibility}
+                        {specializationVisibility[trainer.skillLevel] ??
+                          specializationVisibility.novice}
                       </span>
                     </div>
                   </div>

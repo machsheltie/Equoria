@@ -32,6 +32,7 @@ import { CapExceededError } from '../groomErrors.mjs';
 import { removeMarketplaceOfferCas } from '../../../utils/staffMarketplaceOfferCas.mjs';
 import { StaleOfferError } from '../../../errors/index.mjs';
 import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
+import { offerLevelAndFee } from '../../../constants/staffLevels.mjs';
 // Equoria-m9lz1: draw the groom's HIDDEN retirement age at hire, inside the
 // hire transaction, so a hired groom always has a schedule and a rolled-back
 // hire leaves no orphan schedule row.
@@ -292,7 +293,15 @@ export async function hireFromMarketplace(req, res) {
     }
 
     const groomData = offers[groomIndex];
-    const hiringCost = groomData.sessionRate * 7; // One week upfront
+    // Owner ruling 2026-10-28 (Equoria-nawn5): hiring charges one week at the groom's
+    // star-level price. An offer generated before star levels costs the week it
+    // advertised (seven sessions).
+    const { starLevel, fee: hiringCost } = offerLevelAndFee(
+      'groom',
+      groomData,
+      groomData.sessionRate * 7,
+      groomData.experience,
+    );
 
     // Equoria-hduc5: fast-path roster-cap reject (mirrors hireGroom). Previously
     // hireFromMarketplace enforced NO cap at all — a user could exceed
@@ -328,6 +337,7 @@ export async function hireFromMarketplace(req, res) {
               name: `${groomData.firstName} ${groomData.lastName}`,
               speciality: groomData.specialty,
               skillLevel: groomData.skillLevel,
+              starLevel,
               personality: groomData.personality,
               experience: groomData.experience,
               sessionRate: Number(groomData.sessionRate),

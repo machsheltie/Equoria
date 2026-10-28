@@ -25,6 +25,7 @@ import { getTrainerRosterCap } from '../config/trainerConfig.mjs';
 import { getStableLevel } from '../../users/index.mjs';
 import { RosterCapExceededError, StaleOfferError } from '../../../errors/index.mjs';
 import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
+import { offerLevelAndFee } from '../../../constants/staffLevels.mjs';
 // Equoria-1poxi: a hire may carry a horseId; the assignment commits with the hire.
 import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
 // Equoria-bvddn.19: remove the hired offer INSIDE the hire transaction via a
@@ -259,6 +260,14 @@ export async function hireTrainerFromMarketplace(req, res) {
     }
 
     const trainerData = offers[trainerIndex];
+    // Owner ruling 2026-10-28 (Equoria-nawn5): the trainer's per-session fee is its
+    // star level's price. An offer generated before star levels keeps the session
+    // rate it advertised.
+    const { starLevel, fee: sessionFee } = offerLevelAndFee(
+      'trainer',
+      trainerData,
+      trainerData.sessionRate,
+    );
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -311,8 +320,9 @@ export async function hireTrainerFromMarketplace(req, res) {
             lastName: trainerData.lastName,
             personality: trainerData.personality,
             skillLevel: trainerData.skillLevel,
+            starLevel,
             speciality: trainerData.speciality,
-            sessionRate: trainerData.sessionRate,
+            sessionRate: sessionFee,
             bio: trainerData.bio,
           },
         });

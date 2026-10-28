@@ -7,6 +7,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 // Equoria-6p398.14 follow-up: a retired horse (21+, not in foal) is given no new rider.
 import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
@@ -65,6 +66,9 @@ export async function getUserRiders(req, res) {
 
     const formatted = riders.map(r => ({
       ...r,
+      // Equoria-nawn5: what this rider costs a week (owner question q226 decides
+      // whether a rider hired before star levels keeps the rate they were hired at).
+      weeklyRate: hiredStaffFee(r, r.weeklyRate),
       name: `${r.firstName} ${r.lastName}`,
       assignedHorseId: r.assignments[0]?.horseId ?? null,
       hiredDate: r.createdAt?.toISOString?.() ?? r.createdAt,
@@ -93,7 +97,7 @@ export async function getRiderAssignments(req, res) {
     const assignments = await prisma.riderAssignment.findMany({
       where: { userId, isActive: true },
       include: {
-        rider: { select: { id: true, firstName: true, lastName: true } },
+        rider: { select: { id: true, firstName: true, lastName: true, starLevel: true } },
         horse: { select: { id: true, name: true } },
       },
       orderBy: { startDate: 'desc' },
@@ -105,6 +109,8 @@ export async function getRiderAssignments(req, res) {
       horseId: a.horseId,
       horseName: a.horse.name,
       riderName: `${a.rider.firstName} ${a.rider.lastName}`,
+      // Equoria-nawn5: the horse page's Care Team shows the rider's star level.
+      riderStarLevel: a.rider.starLevel,
       startDate: a.startDate,
       isActive: a.isActive,
     }));

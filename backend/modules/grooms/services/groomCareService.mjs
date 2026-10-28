@@ -41,6 +41,8 @@ export class GroomCareRefusal extends Error {
 const groomSelect = {
   id: true,
   name: true,
+  // Equoria-nawn5: the Care Team shows the groom's star level with the name.
+  starLevel: true,
   userId: true,
   retired: true,
   isActive: true,
@@ -121,7 +123,13 @@ function buildCareStatus(horse, assignment, todaysInteraction, now) {
     groomedToday: Boolean(todaysInteraction),
     canGroomToday: refusal === null,
     refusal: refusal ? { code: refusal.code, message: refusal.message } : null,
-    groom: assignment ? { id: assignment.groom.id, name: assignment.groom.name } : null,
+    groom: assignment
+      ? {
+          id: assignment.groom.id,
+          name: assignment.groom.name,
+          starLevel: assignment.groom.starLevel,
+        }
+      : null,
     foal: foalCare
       ? { ...foalCare, todaysActivity: todaysActivityFor(foalCare, todaysInteraction) }
       : null,

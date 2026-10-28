@@ -34,6 +34,7 @@ const mockMarketplaceData = {
       lastName: 'Johnson',
       specialty: 'foalCare',
       skillLevel: 'expert',
+      starLevel: 'advanced',
       personality: 'gentle',
       experience: 8,
       sessionRate: 100,
@@ -46,6 +47,7 @@ const mockMarketplaceData = {
       lastName: 'Rodriguez',
       specialty: 'general',
       skillLevel: 'intermediate',
+      starLevel: 'intermediate',
       personality: 'patient',
       experience: 5,
       sessionRate: 75,
@@ -58,6 +60,7 @@ const mockMarketplaceData = {
       lastName: 'Thompson',
       specialty: 'medical',
       skillLevel: 'master',
+      starLevel: 'expert',
       personality: 'energetic',
       experience: 12,
       sessionRate: 150,
@@ -196,7 +199,9 @@ describe('GroomList Component', () => {
         // Use more specific selector to avoid matching bio text
         const specialtyElement = within(sarahCard).getAllByText(/foal\s+care/i)[0];
         expect(specialtyElement).toBeInTheDocument();
-        expect(within(sarahCard).getByText(/expert/i)).toBeInTheDocument();
+        // OLD CONTRACT: the card showed the skill word. OWNER RULING 2026-10-28 (Equoria-nawn5):
+        // staff show their star level (an expert-tier groom is Advanced, 4 stars).
+        expect(within(sarahCard).getByText('Advanced')).toBeInTheDocument();
         expect(within(sarahCard).getByText(/8.*years/i)).toBeInTheDocument();
         // Equoria-95yrv (owner ruling, 2026-09-14): the offer states the RULE —
         // the weekly fee is charged per horse in the groom's care — rather than a
@@ -220,7 +225,10 @@ describe('GroomList Component', () => {
   });
 
   describe('Filtering and Sorting', () => {
-    test('filters grooms by skill level', async () => {
+    // OLD CONTRACT: the filter offered the groom skill words (novice..master).
+    // OWNER RULING 2026-10-28 (Equoria-nawn5): staff show and filter by the five star
+    // levels (Rookie..Expert), so the filter is the star level.
+    test('filters grooms by star level', async () => {
       render(
         <TestWrapper>
           <GroomList userId={1} marketplaceData={mockMarketplaceData} />
@@ -228,8 +236,8 @@ describe('GroomList Component', () => {
       );
 
       await waitFor(() => {
-        const skillFilter = screen.getByTestId('skill-level-filter');
-        fireEvent.change(skillFilter, { target: { value: 'expert' } });
+        const levelFilter = screen.getByTestId('star-level-filter');
+        fireEvent.change(levelFilter, { target: { value: 'advanced' } });
       });
 
       await waitFor(() => {

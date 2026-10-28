@@ -1,0 +1,31 @@
+/**
+ * A staff member's star level (Equoria-nawn5): the label in the surrounding
+ * text colour, the stars in Lantern Gold. The label always travels with the
+ * stars, so the level never rests on colour or glyphs alone.
+ */
+
+.staff-level {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35em;
+  white-space: nowrap;
+}
+
+.staff-level__stars {
+  color: var(--gold-primary);
+  letter-spacing: 0.05em;
+}
+
+/* The spoken ", 4 stars" after the label: read by assistive technology, not drawn. */
+.staff-level__phrase {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

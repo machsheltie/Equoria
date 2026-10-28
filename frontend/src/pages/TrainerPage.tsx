@@ -47,19 +47,20 @@ import {
   hireRefusalCodes,
   hireRefused,
 } from '@/lib/http/actionMessage';
-import { skillLevelLabel } from '@/lib/staffLabels';
+import StaffLevelStars from '@/components/common/StaffLevelStars';
+import { staffLevelLabel } from '@/lib/staffLevels';
 import { disciplineLabel } from '@/lib/utils/training-utils';
 
 /** What the page shows of one trainer, whether hired or on offer. */
 interface TrainerView {
   name: string;
   skillLevel: string;
+  starLevel?: string;
   personality: string;
   speciality: string;
   sessionRate: number;
   bio?: string;
   /** Hired trainers only. */
-  level?: number;
   careerWeeks?: number;
   retired?: boolean;
 }
@@ -100,11 +101,11 @@ const TrainerPage: React.FC = () => {
     ? {
         name: hiredTrainer.name ?? `${hiredTrainer.firstName} ${hiredTrainer.lastName}`,
         skillLevel: hiredTrainer.skillLevel,
+        starLevel: hiredTrainer.starLevel,
         personality: hiredTrainer.personality,
         speciality: hiredTrainer.speciality,
         sessionRate: hiredTrainer.sessionRate,
         bio: hiredTrainer.bio,
-        level: hiredTrainer.level,
         careerWeeks: hiredTrainer.careerWeeks,
         retired: hiredTrainer.retired,
       }
@@ -112,6 +113,7 @@ const TrainerPage: React.FC = () => {
       ? {
           name: `${offer.firstName} ${offer.lastName}`,
           skillLevel: offer.skillLevel,
+          starLevel: offer.starLevel,
           personality: offer.personality,
           speciality: offer.speciality,
           sessionRate: offer.sessionRate,
@@ -203,7 +205,7 @@ const TrainerPage: React.FC = () => {
     <PageContainer variant="wide" padded={false} className="pb-8">
       <PageHeader
         title={trainer?.name ?? 'Trainer'}
-        subtitle={trainer ? `${skillLevelLabel(trainer.skillLevel)} trainer` : undefined}
+        subtitle={trainer ? `${staffLevelLabel(trainer.starLevel)} trainer` : undefined}
         icon={<GraduationCap className="w-6 h-6 text-[var(--gold-400)]" />}
         breadcrumbs={crumbs}
       />
@@ -240,9 +242,9 @@ const TrainerPage: React.FC = () => {
 
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
                 <div className="flex justify-between gap-4">
-                  <dt className="text-[var(--text-muted)]">Skill level</dt>
-                  <dd className="text-[var(--text-primary)]">
-                    {skillLevelLabel(trainer.skillLevel)}
+                  <dt className="text-[var(--text-muted)]">Level</dt>
+                  <dd className="text-[var(--text-primary)]" data-testid="trainer-level">
+                    <StaffLevelStars level={trainer.starLevel} />
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
@@ -260,12 +262,6 @@ const TrainerPage: React.FC = () => {
                     <Currency amount={trainer.sessionRate} /> per session
                   </dd>
                 </div>
-                {trainer.level !== undefined && (
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-[var(--text-muted)]">Level</dt>
-                    <dd className="text-[var(--text-primary)]">{trainer.level}</dd>
-                  </div>
-                )}
                 {trainer.careerWeeks !== undefined && (
                   <div className="flex justify-between gap-4">
                     <dt className="text-[var(--text-muted)]">Weeks on the job</dt>

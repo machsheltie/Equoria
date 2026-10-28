@@ -17,6 +17,8 @@ export interface GroomProfile {
   speciality: string;
   experience: number;
   skillLevel: string;
+  /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw. */
+  starLevel?: string;
   personality: string;
   sessionRate: number;
   currentAssignments: number;
@@ -41,6 +43,10 @@ export interface MarketplaceGroom {
   lastName: string;
   specialty: string;
   skillLevel: string;
+  /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw. */
+  starLevel?: string;
+  /** Equoria-nawn5: hiring costs one week at the star level's price (absent on older offers). */
+  weeklyFee?: number;
   personality: string;
   experience: number;
   sessionRate: number;

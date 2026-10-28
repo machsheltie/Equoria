@@ -36,7 +36,7 @@ import { useHorses } from '@/hooks/api/useHorses';
 import { getBreedName } from '@/lib/utils';
 import { buildEmptyDiscoveryProfile } from '@/types/riderDiscovery';
 import { Button } from '@/components/ui/button';
-import { skillLevelLabel } from '@/lib/staffLabels';
+import StaffLevelStars from '@/components/common/StaffLevelStars';
 
 interface MyRidersDashboardProps {
   // Auth user id is a UUID string (Equoria-ai6pw / phv9p). It is forwarded
@@ -266,7 +266,7 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
                     </h3>
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className="text-xs text-role-muted">
-                        {skillLevelLabel(rider.skillLevel)}
+                        <StaffLevelStars level={rider.starLevel} />
                       </span>
                       <span className="text-role-disabled text-xs">·</span>
                       <span className="text-xs text-role-muted">

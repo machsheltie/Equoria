@@ -21,6 +21,8 @@ const trainer = {
   lastName: 'Thornton',
   name: 'Alice Thornton',
   skillLevel: 'expert',
+  // Equoria-nawn5: the card shows the star level (an expert-tier trainer is Expert).
+  starLevel: 'expert',
   personality: 'focused',
   speciality: 'Dressage',
   sessionRate: 250,

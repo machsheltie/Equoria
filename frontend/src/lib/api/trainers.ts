@@ -21,6 +21,8 @@ export interface TrainerEntry {
   lastName: string;
   name: string;
   skillLevel: string; // novice | developing | expert
+  /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw. */
+  starLevel?: string;
   personality: string; // focused | encouraging | technical | competitive | patient
   speciality: string;
   sessionRate: number;
@@ -37,6 +39,8 @@ export interface MarketplaceTrainer {
   firstName: string;
   lastName: string;
   skillLevel: string;
+  /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw. */
+  starLevel?: string;
   personality: string;
   speciality: string;
   sessionRate: number;
@@ -61,6 +65,8 @@ export interface TrainerAssignmentEntry {
   /** Equoria-r8a6h: the trainer's personality and per-session fee. */
   trainerPersonality: string;
   trainerSessionRate: number;
+  /** Equoria-nawn5: the trainer's star level. */
+  trainerStarLevel?: string;
   startDate: string;
   isActive: boolean;
 }

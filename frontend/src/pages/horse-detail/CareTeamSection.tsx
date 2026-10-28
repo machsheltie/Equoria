@@ -18,6 +18,8 @@ import { Link } from 'react-router';
 import Currency from '@/components/ui/Currency';
 import { InlineError } from '@/components/ui/state';
 import TrainerPersonalityBadge from '@/components/trainer/TrainerPersonalityBadge';
+import StaffLevelStars from '@/components/common/StaffLevelStars';
+import { isStaffLevel } from '@/lib/staffLevels';
 import { useHorseTrainer } from '@/hooks/api/useTrainers';
 import { useCareStatus } from '@/hooks/api/useGroomCare';
 import { useRiderAssignments } from '@/hooks/api/useRiders';
@@ -99,6 +101,9 @@ const CareTeamSection: React.FC<{ horseId: number; onAssignRider?: () => void }>
               >
                 {trainer.assignment.trainerName}
               </Link>
+              {isStaffLevel(trainer.assignment.trainerStarLevel) && (
+                <StaffLevelStars level={trainer.assignment.trainerStarLevel} />
+              )}
               <TrainerPersonalityBadge
                 personality={trainer.assignment.trainerPersonality}
                 size="sm"
@@ -126,7 +131,10 @@ const CareTeamSection: React.FC<{ horseId: number; onAssignRider?: () => void }>
           onRetry={() => care.refetch()}
         >
           {groom ? (
-            <span>{groom.name}</span>
+            <span>
+              {groom.name}{' '}
+              {isStaffLevel(groom.starLevel) && <StaffLevelStars level={groom.starLevel} />}
+            </span>
           ) : (
             <span className="text-[var(--text-secondary)]">
               No groom assigned.{' '}
@@ -146,7 +154,12 @@ const CareTeamSection: React.FC<{ horseId: number; onAssignRider?: () => void }>
           onRetry={() => riderAssignments.refetch()}
         >
           {riderAssignment ? (
-            <span>{riderAssignment.riderName ?? '—'}</span>
+            <span>
+              {riderAssignment.riderName ?? '—'}{' '}
+              {isStaffLevel(riderAssignment.riderStarLevel) && (
+                <StaffLevelStars level={riderAssignment.riderStarLevel} />
+              )}
+            </span>
           ) : (
             <span className="text-[var(--text-secondary)]">
               No rider assigned.{' '}

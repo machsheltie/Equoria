@@ -51,7 +51,7 @@ const trainerAssignment = {
   isActive: true,
 };
 
-const careStatus = (groom: { id: number; name: string } | null) => ({
+const careStatus = (groom: { id: number; name: string; starLevel?: string } | null) => ({
   horseId: 7,
   horseName: 'TestFixture-Comet',
   bond: 0,
@@ -77,7 +77,7 @@ const riderAssignment = {
 
 const staff = ({
   trainers = [] as unknown[],
-  groom = null as { id: number; name: string } | null,
+  groom = null as { id: number; name: string; starLevel?: string } | null,
   riders = [] as unknown[],
 } = {}) =>
   server.use(
@@ -152,6 +152,34 @@ describe('OverviewTab Care Team (Equoria-a6t0u)', () => {
 
     expect(await screen.findByText('TestFixture-Maya Reyes')).toBeInTheDocument();
     expect(screen.getByTestId('care-team-rider')).toHaveTextContent(/^TestFixture-Maya Reyes$/);
+  });
+
+  // Owner ruling 2026-10-28 (Equoria-nawn5): staff show their star level with the name,
+  // as the authored label and stars; assistive technology hears e.g. "Advanced, 4 stars".
+  it("shows each staff member's star level beside the name", async () => {
+    staff({
+      trainers: [{ ...trainerAssignment, trainerStarLevel: 'advanced' }],
+      groom: { id: 3, name: 'TestFixture-Rosa Bell', starLevel: 'rookie' },
+      riders: [{ ...riderAssignment, riderStarLevel: 'expert' }],
+    });
+    renderTab();
+
+    await screen.findByTestId('care-team-trainer-link');
+    const trainerLine = screen.getByTestId('care-team-trainer');
+    expect(within(trainerLine).getByTestId('staff-level')).toHaveTextContent(
+      'Advanced★★★★, 4 stars'
+    );
+    expect(within(trainerLine).getByText('★★★★')).toHaveAttribute('aria-hidden', 'true');
+
+    await screen.findByText('TestFixture-Rosa Bell');
+    const groomLine = screen.getByTestId('care-team-groom');
+    expect(within(groomLine).getByTestId('staff-level')).toHaveTextContent('Rookie★, 1 star');
+
+    await screen.findByText('TestFixture-Maya Reyes');
+    const riderLine = screen.getByTestId('care-team-rider');
+    expect(within(riderLine).getByTestId('staff-level')).toHaveTextContent('Expert★★★★★, 5 stars');
+    // Never the stored word.
+    expect(screen.queryByText(/advanced|rookie|expert/)).not.toBeInTheDocument();
   });
 
   it("shows only this horse's rider, never another horse's", async () => {

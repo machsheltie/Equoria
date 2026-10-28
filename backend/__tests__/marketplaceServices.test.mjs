@@ -179,7 +179,7 @@ describe('riderMarketplace — RIDER_MARKETPLACE_CONFIG export', () => {
   it('has expected constants', () => {
     expect(RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBe(6);
     expect(RIDER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBe(50);
-    expect(RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES.rookie.min).toBe(150);
+    // Equoria-nawn5: weekly rates are now the star level's price (constants/staffLevels.mjs).
     expect(RIDER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION.rookie).toBe(45);
   });
 });
@@ -251,7 +251,7 @@ describe('trainerMarketplace — TRAINER_MARKETPLACE_CONFIG export', () => {
   it('has expected constants', () => {
     expect(TRAINER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBe(6);
     expect(TRAINER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBe(50);
-    expect(TRAINER_MARKETPLACE_CONFIG.SESSION_RATE_RANGES.novice.min).toBe(100);
+    // Equoria-nawn5: session rates are now the star level's price (constants/staffLevels.mjs).
     expect(TRAINER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION.novice).toBe(45);
   });
 });

@@ -2,12 +2,15 @@
  * Rider Marketplace Service
  * Handles generation and management of available riders for hire.
  *
- * Generates riders with personality, skill level, weekly rate, and bio.
+ * Generates riders with personality, skill level, star level, weekly rate, and bio.
+ * The weekly rate is the star level's price (owner ruling 2026-10-28, Equoria-nawn5;
+ * backend/constants/staffLevels.mjs).
  * Mirrors the Groom marketplace pattern (groomMarketplace.mjs).
  */
 
 import crypto from 'crypto';
 import { DISCIPLINE_VALUES } from '../../../constants/schema.mjs';
+import { drawStaffLevel, staffLevelFee, staffSkillOdds } from '../../../constants/staffLevels.mjs';
 import { drawRiderStartAge } from './riderRetirementScheduleService.mjs';
 
 // Marketplace configuration
@@ -16,19 +19,10 @@ export const RIDER_MARKETPLACE_CONFIG = {
   REFRESH_INTERVAL_HOURS: 24,
   PREMIUM_REFRESH_COST: 50,
 
-  // Weekly rate ranges by skill level
-  WEEKLY_RATE_RANGES: {
-    rookie: { min: 150, max: 300 },
-    developing: { min: 300, max: 500 },
-    experienced: { min: 500, max: 800 },
-  },
-
-  // Skill level distribution (percentages)
-  SKILL_DISTRIBUTION: {
-    rookie: 45,
-    developing: 40,
-    experienced: 15,
-  },
+  // Skill level distribution (percentages). Owner ruling 2026-10-28 (Equoria-nawn5):
+  // these odds, and the weekly price (the star level's), live with the star levels in
+  // backend/constants/staffLevels.mjs.
+  SKILL_DISTRIBUTION: staffSkillOdds('rider'),
 
   // Discipline specialties: an even pick across every competition discipline
   // (owner ruling 2026-10-21), so a new discipline appears without an edit here.
@@ -36,23 +30,6 @@ export const RIDER_MARKETPLACE_CONFIG = {
 };
 
 const PERSONALITIES = ['daring', 'methodical', 'intuitive', 'competitive'];
-
-/**
- * Select a value based on percentage distribution.
- * @param {Object} distribution - { key: percentage }
- * @returns {string}
- */
-function selectByDistribution(distribution) {
-  const random = Math.random() * 100;
-  let cumulative = 0;
-  for (const [item, percentage] of Object.entries(distribution)) {
-    cumulative += percentage;
-    if (random <= cumulative) {
-      return item;
-    }
-  }
-  return Object.keys(distribution)[0];
-}
 
 function generateFirstName() {
   const names = [
@@ -156,12 +133,11 @@ function generateBio(firstName, skillLevel, specialty) {
  * @returns {Object} Marketplace rider data
  */
 export function generateRandomRider() {
-  const skillLevel = selectByDistribution(RIDER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION);
+  const { skillLevel, starLevel } = drawStaffLevel('rider');
   const { SPECIALTIES } = RIDER_MARKETPLACE_CONFIG;
   const specialty = SPECIALTIES[Math.floor(Math.random() * SPECIALTIES.length)];
   const personality = PERSONALITIES[Math.floor(Math.random() * PERSONALITIES.length)];
-  const { min, max } = RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES[skillLevel];
-  const weeklyRate = Math.floor(Math.random() * (max - min + 1)) + min;
+  const weeklyRate = staffLevelFee(starLevel);
   const experience =
     skillLevel === 'rookie'
       ? 0
@@ -179,6 +155,7 @@ export function generateRandomRider() {
     firstName,
     lastName,
     skillLevel,
+    starLevel,
     personality,
     speciality: specialty,
     weeklyRate,
@@ -200,9 +177,10 @@ function generateStarterRider() {
     firstName,
     lastName: generateLastName(),
     skillLevel: 'rookie',
+    starLevel: 'rookie',
     personality: 'methodical',
     speciality: specialty,
-    weeklyRate: RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES.rookie.min,
+    weeklyRate: staffLevelFee('rookie'),
     experience: 0,
     bio: generateBio(firstName, 'rookie', specialty),
     startAge: drawRiderStartAge(),

@@ -491,6 +491,11 @@ model Groom {
   level             Int                @default(1)
   /// Skill level
   skillLevel        String             @default("novice")
+  /// Star level (owner ruling 2026-10-28, Equoria-nawn5): rookie | novice | intermediate |
+  /// advanced | expert (1-5 stars). Drawn once when the game generates the groom; the
+  /// price comes from it (backend/constants/staffLevels.mjs). The allowed words are a CHECK
+  /// constraint in migration 20261028120000_staff_star_levels.
+  starLevel         String             @default("rookie")
   /// Canonical groom personality (gentle | energetic | patient | strict).
   /// Used by groom synergy (Epic 31D-4), temperament compatibility,
   /// groomPersonalityEffects, getTemperamentGroomSynergy(), and
@@ -1590,6 +1595,11 @@ model Rider {
   personality  String
   /// Skill level (rookie | developing | experienced)
   skillLevel   String
+  /// Star level (owner ruling 2026-10-28, Equoria-nawn5): rookie | novice | intermediate |
+  /// advanced | expert (1-5 stars). Drawn once when the game generates the rider; the
+  /// price comes from it (backend/constants/staffLevels.mjs). The allowed words are a CHECK
+  /// constraint in migration 20261028120000_staff_star_levels.
+  starLevel    String            @default("rookie")
   /// Preferred discipline specialty
   speciality   String
   /// Weekly rate in game currency
@@ -1733,6 +1743,11 @@ model Trainer {
   personality  String
   /// Skill level (novice | developing | expert)
   skillLevel   String
+  /// Star level (owner ruling 2026-10-28, Equoria-nawn5): rookie | novice | intermediate |
+  /// advanced | expert (1-5 stars). Drawn once when the game generates the trainer; the
+  /// price comes from it (backend/constants/staffLevels.mjs). The allowed words are a CHECK
+  /// constraint in migration 20261028120000_staff_star_levels.
+  starLevel    String              @default("rookie")
   /// Preferred discipline specialty
   speciality   String
   /// Session rate in game currency

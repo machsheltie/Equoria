@@ -29,6 +29,7 @@ const mockAvailableGrooms = [
     id: 1,
     name: 'Sarah Johnson',
     skillLevel: 'expert',
+    starLevel: 'advanced',
     specialty: 'foalCare',
     personality: 'gentle',
     experience: 8,
@@ -42,6 +43,7 @@ const mockAvailableGrooms = [
     id: 2,
     name: 'Mike Rodriguez',
     skillLevel: 'intermediate',
+    starLevel: 'intermediate',
     specialty: 'general',
     personality: 'patient',
     experience: 5,
@@ -55,6 +57,7 @@ const mockAvailableGrooms = [
     id: 3,
     name: 'Emma Thompson',
     skillLevel: 'master',
+    starLevel: 'expert',
     specialty: 'showHandling',
     personality: 'energetic',
     experience: 12,
@@ -260,7 +263,9 @@ describe('AssignGroomModal Component', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/expert/i)).toBeInTheDocument();
+        // OLD CONTRACT: the card showed the skill word. OWNER RULING 2026-10-28 (Equoria-nawn5):
+        // staff show their star level (an expert-tier groom is Advanced, 4 stars).
+        expect(screen.getByText('Advanced')).toBeInTheDocument();
         expect(screen.getByText(/foal care/i)).toBeInTheDocument();
       });
     });

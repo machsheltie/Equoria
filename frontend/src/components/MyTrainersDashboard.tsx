@@ -43,7 +43,7 @@ import Currency from '@/components/ui/Currency';
 // Equoria-8cnzr — single error-taxonomy mapping point. Turns a thrown transport
 // error into user-safe copy so a raw server body message is never rendered (§3).
 import { userMessageFor } from '@/lib/http/userMessage';
-import { skillLevelLabel } from '@/lib/staffLabels';
+import StaffLevelStars from '@/components/common/StaffLevelStars';
 import { disciplineLabel } from '@/lib/utils/training-utils';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
@@ -282,7 +282,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
                     </h3>
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className="text-xs text-role-muted">
-                        {skillLevelLabel(trainer.skillLevel)}
+                        <StaffLevelStars level={trainer.starLevel} />
                       </span>
                       <span className="text-role-disabled text-xs">·</span>
                       <span className="text-xs text-role-muted">

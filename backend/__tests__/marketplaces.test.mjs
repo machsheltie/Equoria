@@ -26,6 +26,7 @@ import {
   trainerMarketplaceNeedsRefresh,
   getTrainerRefreshCost,
 } from '../modules/trainers/services/trainerMarketplace.mjs';
+import { staffLevelFee } from '../constants/staffLevels.mjs';
 
 // ---------------------------------------------------------------------------
 // MARKETPLACE_CONFIG (groom)
@@ -223,9 +224,11 @@ describe('RIDER_MARKETPLACE_CONFIG', () => {
     expect(RIDER_MARKETPLACE_CONFIG.SPECIALTIES).toContain('Pleasure Driving');
   });
 
-  it('has WEEKLY_RATE_RANGES for all skill levels', () => {
+  // OLD CONTRACT: a random rate inside a per-skill range. OWNER RULING 2026-10-28
+  // (Equoria-nawn5): the price is the star level's (Rookie 100 ... Expert 500).
+  it('has a skill distribution for all skill levels', () => {
     for (const level of ['rookie', 'developing', 'experienced']) {
-      expect(RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES[level]).toBeDefined();
+      expect(RIDER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION[level]).toBeDefined();
     }
   });
 });
@@ -260,12 +263,12 @@ describe('generateRandomRider', () => {
     }
   });
 
-  it('weeklyRate is within skill level range', () => {
+  // OLD CONTRACT: a random rate inside a per-skill range. OWNER RULING 2026-10-28
+  // (Equoria-nawn5): the price is the star level's (Rookie 100 ... Expert 500).
+  it('weeklyRate is the star level price', () => {
     for (let i = 0; i < 30; i++) {
       const r = generateRandomRider();
-      const range = RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES[r.skillLevel];
-      expect(r.weeklyRate).toBeGreaterThanOrEqual(range.min);
-      expect(r.weeklyRate).toBeLessThanOrEqual(range.max);
+      expect(r.weeklyRate).toBe(staffLevelFee(r.starLevel));
     }
   });
 
@@ -393,12 +396,12 @@ describe('generateRandomTrainer', () => {
     expect(t.marketplaceId.startsWith('mkt_trainer_')).toBe(true);
   });
 
-  it('sessionRate is within skill level range', () => {
+  // OLD CONTRACT: a random rate inside a per-skill range. OWNER RULING 2026-10-28
+  // (Equoria-nawn5): the price is the star level's (Rookie 100 ... Expert 500).
+  it('sessionRate is the star level price', () => {
     for (let i = 0; i < 30; i++) {
       const t = generateRandomTrainer();
-      const range = TRAINER_MARKETPLACE_CONFIG.SESSION_RATE_RANGES[t.skillLevel];
-      expect(t.sessionRate).toBeGreaterThanOrEqual(range.min);
-      expect(t.sessionRate).toBeLessThanOrEqual(range.max);
+      expect(t.sessionRate).toBe(staffLevelFee(t.starLevel));
     }
   });
 

@@ -51,7 +51,9 @@ import {
   feeForGroom as feeForGroomIn,
   filterAndSortGrooms,
 } from './groom/myGroomsRoster';
-import { groomSpecialtyTitle, skillLevelLabel } from '@/lib/staffLabels';
+import { groomSpecialtyTitle } from '@/lib/staffLabels';
+import StaffLevelStars from '@/components/common/StaffLevelStars';
+import { staffLevelLabel, staffLevelOrder } from '@/lib/staffLevels';
 
 interface MyGroomsDashboardProps {
   userId: string | number;
@@ -344,7 +346,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
               htmlFor="skill-filter"
               className="type-label block text-[var(--text-secondary)] mb-2"
             >
-              Filter by Skill Level
+              Filter by Level
             </label>
             <Select
               id="skill-filter"
@@ -353,10 +355,11 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
               className="w-full"
             >
               <option value="all">All Levels</option>
-              <option value="novice">Novice</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="expert">Expert</option>
-              <option value="master">Master</option>
+              {staffLevelOrder.map((level) => (
+                <option key={level} value={level}>
+                  {staffLevelLabel(level)}
+                </option>
+              ))}
             </Select>
           </div>
 
@@ -427,7 +430,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                 </h3>
                 <div className="flex items-center gap-2 mt-3">
                   <span className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-[var(--radius-sm)] bg-[var(--role-neutral-bg)] text-[var(--role-neutral-text)] border border-[var(--role-neutral-border)]">
-                    {skillLevelLabel(groom.skillLevel)}
+                    <StaffLevelStars level={groom.starLevel} />
                   </span>
                   <span className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-[var(--radius-sm)] bg-[var(--role-success-bg)] text-[var(--role-success-text)] border border-[var(--role-success-border)]">
                     {groomSpecialtyTitle(groom.specialty)}

@@ -35,6 +35,7 @@ import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
 // compare-and-swap on the persisted offer list, instead of a post-commit
 // read-filter-write against a pre-transaction snapshot.
 import { removeMarketplaceOfferCas } from '../../../utils/staffMarketplaceOfferCas.mjs';
+import { offerLevelAndFee } from '../../../constants/staffLevels.mjs';
 
 const STAFF_TYPE = 'rider';
 
@@ -246,7 +247,13 @@ export async function hireRiderFromMarketplace(req, res) {
     }
 
     const riderData = offers[riderIndex];
-    const hiringCost = riderData.weeklyRate; // One week upfront
+    // Owner ruling 2026-10-28 (Equoria-nawn5): one week at the rider's star-level price.
+    // An offer generated before star levels costs the weekly rate it advertised.
+    const { starLevel, fee: hiringCost } = offerLevelAndFee(
+      'rider',
+      riderData,
+      riderData.weeklyRate,
+    );
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -310,8 +317,9 @@ export async function hireRiderFromMarketplace(req, res) {
               lastName: riderData.lastName,
               personality: riderData.personality,
               skillLevel: riderData.skillLevel,
+              starLevel,
               speciality: riderData.speciality,
-              weeklyRate: riderData.weeklyRate,
+              weeklyRate: hiringCost,
               experience: riderData.experience,
               bio: riderData.bio,
               // Owner ruling 2026-10-23 (Equoria-or2ua): the age rolled at

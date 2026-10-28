@@ -72,7 +72,8 @@ export function filterAndSortGrooms(
 ): Groom[] {
   return grooms
     .filter((groom) => {
-      if (skillLevelFilter !== 'all' && groom.skillLevel !== skillLevelFilter) return false;
+      // Equoria-nawn5: the level filter is the star level.
+      if (skillLevelFilter !== 'all' && groom.starLevel !== skillLevelFilter) return false;
       if (specialtyFilter !== 'all' && groom.specialty !== specialtyFilter) return false;
       return true;
     })

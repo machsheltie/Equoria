@@ -21,6 +21,7 @@ import {
   getTrainerRefreshCost,
 } from '../modules/trainers/services/trainerMarketplace.mjs';
 import { DISCIPLINE_VALUES } from '../constants/schema.mjs';
+import { staffLevelFee, staffLevels } from '../constants/staffLevels.mjs';
 
 // ─── TRAINER_MARKETPLACE_CONFIG ───────────────────────────────────────────────
 
@@ -37,17 +38,15 @@ describe('TRAINER_MARKETPLACE_CONFIG', () => {
     expect(TRAINER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBe(50);
   });
 
-  it('has SESSION_RATE_RANGES for all skill levels', () => {
-    const ranges = TRAINER_MARKETPLACE_CONFIG.SESSION_RATE_RANGES;
-    expect(ranges).toHaveProperty('novice');
-    expect(ranges).toHaveProperty('developing');
-    expect(ranges).toHaveProperty('expert');
-
-    // Each range must have min < max
-    Object.values(ranges).forEach(({ min, max }) => {
-      expect(min).toBeGreaterThan(0);
-      expect(max).toBeGreaterThan(min);
-    });
+  // OLD CONTRACT: a random session rate inside a per-skill range.
+  // OWNER RULING 2026-10-28 (Equoria-nawn5): the price is the star level's (Rookie 100 ...
+  // Expert 500), drawn inside the old skill tier.
+  it('prices every trainer session from its star level', () => {
+    for (let i = 0; i < 20; i++) {
+      const trainer = generateRandomTrainer();
+      expect(staffLevels).toContain(trainer.starLevel);
+      expect(trainer.sessionRate).toBe(staffLevelFee(trainer.starLevel));
+    }
   });
 
   it('SKILL_DISTRIBUTION percentages sum to 100', () => {
@@ -107,12 +106,15 @@ describe('generateRandomTrainer', () => {
     }
   });
 
-  it('sessionRate is within range for the trainer skill level', () => {
-    for (let i = 0; i < 20; i++) {
+  it('the star level sits inside the trainer skill tier', () => {
+    const tierLevels = {
+      novice: ['rookie', 'novice'],
+      developing: ['intermediate', 'advanced'],
+      expert: ['expert'],
+    };
+    for (let i = 0; i < 50; i++) {
       const trainer = generateRandomTrainer();
-      const range = TRAINER_MARKETPLACE_CONFIG.SESSION_RATE_RANGES[trainer.skillLevel];
-      expect(trainer.sessionRate).toBeGreaterThanOrEqual(range.min);
-      expect(trainer.sessionRate).toBeLessThanOrEqual(range.max);
+      expect(tierLevels[trainer.skillLevel]).toContain(trainer.starLevel);
     }
   });
 
@@ -166,10 +168,11 @@ describe('generateTrainerMarketplace', () => {
     expect(starter.speciality).toBe('Dressage');
   });
 
-  it('starter trainer sessionRate equals novice minimum', () => {
+  it('starter trainer is a Rookie at the Rookie price', () => {
     const marketplace = generateTrainerMarketplace(6);
     const starter = marketplace[0];
-    expect(starter.sessionRate).toBe(TRAINER_MARKETPLACE_CONFIG.SESSION_RATE_RANGES.novice.min);
+    expect(starter.starLevel).toBe('rookie');
+    expect(starter.sessionRate).toBe(100);
   });
 
   it('all trainers have the required shape', () => {
@@ -257,12 +260,10 @@ describe('getTrainerRefreshCost', () => {
 // Multi-iteration rate sweep, bio-content, statistical distribution sweep, and
 // config range/positivity invariants not covered above.
 describe('trainerMarketplace — distribution, bio & config invariants (merged from legacy backend/tests, Equoria-wvuin)', () => {
-  it('session rate is within the configured range for each generated skill level (50-run sweep)', () => {
+  it('session rate is the star level price (50-run sweep)', () => {
     for (let i = 0; i < 50; i++) {
       const trainer = generateRandomTrainer();
-      const range = TRAINER_MARKETPLACE_CONFIG.SESSION_RATE_RANGES[trainer.skillLevel];
-      expect(trainer.sessionRate).toBeGreaterThanOrEqual(range.min);
-      expect(trainer.sessionRate).toBeLessThanOrEqual(range.max);
+      expect(trainer.sessionRate).toBe(staffLevelFee(trainer.starLevel));
     }
   });
 
@@ -288,11 +289,8 @@ describe('trainerMarketplace — distribution, bio & config invariants (merged f
     });
   });
 
-  it('config SESSION_RATE_RANGES all have 0 < min < max', () => {
-    Object.values(TRAINER_MARKETPLACE_CONFIG.SESSION_RATE_RANGES).forEach(range => {
-      expect(range.min).toBeGreaterThan(0);
-      expect(range.max).toBeGreaterThan(range.min);
-    });
+  it('session prices run 100 to 500 by star level', () => {
+    expect(staffLevels.map(staffLevelFee)).toEqual([100, 200, 300, 400, 500]);
   });
 
   it('config marketplace size and premium cost are positive', () => {

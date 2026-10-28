@@ -5,6 +5,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 // Equoria-6p398.14 follow-up: a retired horse (21+, not in foal) is given no new trainer.
 import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
@@ -50,6 +51,9 @@ export async function getUserTrainers(req, res) {
 
     const formatted = trainers.map(t => ({
       ...t,
+      // Equoria-nawn5: what one session costs (owner question q226 decides whether a
+      // trainer hired before star levels keeps the rate they were hired at).
+      sessionRate: hiredStaffFee(t, t.sessionRate),
       name: `${t.firstName} ${t.lastName}`,
       assignedHorseId: t.assignments[0]?.horseId ?? null,
     }));
@@ -81,6 +85,7 @@ export async function getTrainerAssignments(req, res) {
             lastName: true,
             personality: true,
             sessionRate: true,
+            starLevel: true,
           },
         },
         horse: { select: { id: true, name: true } },
@@ -96,7 +101,9 @@ export async function getTrainerAssignments(req, res) {
       trainerName: `${a.trainer.firstName} ${a.trainer.lastName}`,
       // Equoria-r8a6h: the horse page shows who trains it and the per-session fee.
       trainerPersonality: a.trainer.personality,
-      trainerSessionRate: a.trainer.sessionRate,
+      trainerSessionRate: hiredStaffFee(a.trainer, a.trainer.sessionRate),
+      // Equoria-nawn5: the trainer's star level, shown with the name.
+      trainerStarLevel: a.trainer.starLevel,
       startDate: a.startDate,
       isActive: a.isActive,
     }));

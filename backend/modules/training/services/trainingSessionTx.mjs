@@ -22,6 +22,7 @@
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import { addXpToUserCore } from '../../users/index.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
 import {
   debitMoneyOrThrow,
   InsufficientFundsError,
@@ -39,13 +40,16 @@ import {
  * @returns {{trainerId:number, trainerName:string, amount:number}|null}
  */
 export function trainingFeeFor(trainer) {
-  if (!trainer || trainer.retired === true || !(Number(trainer.sessionRate) > 0)) {
+  // Equoria-nawn5: the per-session price; owner question q226 decides whether a trainer
+  // hired before star levels keeps the rate they were hired at (hiredStaffFee).
+  const fee = trainer ? hiredStaffFee(trainer, trainer.sessionRate) : 0;
+  if (!trainer || trainer.retired === true || !(fee > 0)) {
     return null;
   }
   return {
     trainerId: trainer.id,
     trainerName: `${trainer.firstName} ${trainer.lastName}`,
-    amount: Number(trainer.sessionRate),
+    amount: fee,
   };
 }
 

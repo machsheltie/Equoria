@@ -11,6 +11,7 @@
  */
 
 import crypto from 'crypto';
+import { drawStarLevelInTier, staffLevelFee } from '../../../constants/staffLevels.mjs';
 
 // Marketplace configuration
 export const MARKETPLACE_CONFIG = {
@@ -78,6 +79,9 @@ const _SKILL_LEVELS = ['novice', 'intermediate', 'expert', 'master'];
 export function generateRandomGroom() {
   // Select skill level based on distribution
   const skillLevel = selectByDistribution(MARKETPLACE_CONFIG.QUALITY_DISTRIBUTION);
+  // Owner ruling 2026-10-28 (Equoria-nawn5): the star level, drawn inside the skill tier;
+  // hiring costs one week of its price (backend/constants/staffLevels.mjs).
+  const starLevel = drawStarLevelInTier('groom', skillLevel);
 
   // Select specialty based on distribution
   const specialty = selectByDistribution(MARKETPLACE_CONFIG.SPECIALTY_DISTRIBUTION);
@@ -108,6 +112,8 @@ export function generateRandomGroom() {
     lastName,
     specialty,
     skillLevel,
+    starLevel,
+    weeklyFee: staffLevelFee(starLevel),
     personality,
     experience,
     sessionRate,

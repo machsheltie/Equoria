@@ -21,6 +21,7 @@ import {
   getRiderRefreshCost,
 } from '../modules/riders/services/riderMarketplace.mjs';
 import { DISCIPLINE_VALUES } from '../constants/schema.mjs';
+import { staffLevelFee, staffLevels } from '../constants/staffLevels.mjs';
 
 // ─── RIDER_MARKETPLACE_CONFIG ─────────────────────────────────────────────────
 
@@ -37,17 +38,15 @@ describe('RIDER_MARKETPLACE_CONFIG', () => {
     expect(RIDER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBe(50);
   });
 
-  it('has WEEKLY_RATE_RANGES for all skill levels', () => {
-    const ranges = RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES;
-    expect(ranges).toHaveProperty('rookie');
-    expect(ranges).toHaveProperty('developing');
-    expect(ranges).toHaveProperty('experienced');
-
-    // Each range must have min < max
-    Object.values(ranges).forEach(({ min, max }) => {
-      expect(min).toBeGreaterThan(0);
-      expect(max).toBeGreaterThan(min);
-    });
+  // OLD CONTRACT: a random weekly rate inside a per-skill range.
+  // OWNER RULING 2026-10-28 (Equoria-nawn5): the price is the star level's (Rookie 100 ...
+  // Expert 500), drawn inside the old skill tier.
+  it('prices every rider from its star level', () => {
+    for (let i = 0; i < 20; i++) {
+      const rider = generateRandomRider();
+      expect(staffLevels).toContain(rider.starLevel);
+      expect(rider.weeklyRate).toBe(staffLevelFee(rider.starLevel));
+    }
   });
 
   it('SKILL_DISTRIBUTION percentages sum to 100', () => {
@@ -109,12 +108,15 @@ describe('generateRandomRider', () => {
     }
   });
 
-  it('weeklyRate is within range for the rider skill level', () => {
-    for (let i = 0; i < 20; i++) {
+  it('the star level sits inside the rider skill tier', () => {
+    const tierLevels = {
+      rookie: ['rookie', 'novice'],
+      developing: ['intermediate', 'advanced'],
+      experienced: ['expert'],
+    };
+    for (let i = 0; i < 50; i++) {
       const rider = generateRandomRider();
-      const range = RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES[rider.skillLevel];
-      expect(rider.weeklyRate).toBeGreaterThanOrEqual(range.min);
-      expect(rider.weeklyRate).toBeLessThanOrEqual(range.max);
+      expect(tierLevels[rider.skillLevel]).toContain(rider.starLevel);
     }
   });
 
@@ -244,10 +246,11 @@ describe('generateRiderMarketplace', () => {
     expect(starter.speciality).toBe('Dressage');
   });
 
-  it('starter rider weeklyRate equals rookie minimum', () => {
+  it('starter rider is a Rookie at the Rookie price', () => {
     const marketplace = generateRiderMarketplace(6);
     const starter = marketplace[0];
-    expect(starter.weeklyRate).toBe(RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES.rookie.min);
+    expect(starter.starLevel).toBe('rookie');
+    expect(starter.weeklyRate).toBe(100);
   });
 
   it('starter rider has experience of 0', () => {
@@ -349,12 +352,10 @@ describe('getRiderRefreshCost', () => {
 // Statistical distribution sweep, bio-content, multi-iteration rate sweep,
 // non-negative experience, and config range/positivity invariants not covered above.
 describe('riderMarketplace — distribution, bio & config invariants (merged from legacy backend/tests, Equoria-wvuin)', () => {
-  it('weekly rate is within the configured range for each generated skill level (50-run sweep)', () => {
+  it('weekly rate is the star level price (50-run sweep)', () => {
     for (let i = 0; i < 50; i++) {
       const rider = generateRandomRider();
-      const range = RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES[rider.skillLevel];
-      expect(rider.weeklyRate).toBeGreaterThanOrEqual(range.min);
-      expect(rider.weeklyRate).toBeLessThanOrEqual(range.max);
+      expect(rider.weeklyRate).toBe(staffLevelFee(rider.starLevel));
     }
   });
 
@@ -386,11 +387,8 @@ describe('riderMarketplace — distribution, bio & config invariants (merged fro
     });
   });
 
-  it('config WEEKLY_RATE_RANGES all have 0 < min < max', () => {
-    Object.values(RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES).forEach(range => {
-      expect(range.min).toBeGreaterThan(0);
-      expect(range.max).toBeGreaterThan(range.min);
-    });
+  it('weekly prices run 100 to 500 by star level', () => {
+    expect(staffLevels.map(staffLevelFee)).toEqual([100, 200, 300, 400, 500]);
   });
 
   it('config marketplace size and premium cost are positive', () => {

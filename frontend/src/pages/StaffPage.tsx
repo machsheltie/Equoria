@@ -33,7 +33,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState, SectionLoading } from '@/components/ui/state';
 import { groomSpecialtyLabel } from '@/lib/groomSpecialtyLabels';
-import { skillLevelLabel } from '@/lib/staffLabels';
+import StaffLevelStars from '@/components/common/StaffLevelStars';
 import { userMessageFor } from '@/lib/http/userMessage';
 
 function coins(amount: number): string {
@@ -72,7 +72,7 @@ function Row({
   testId,
 }: {
   name: string;
-  line: string;
+  line: React.ReactNode;
   side: React.ReactNode;
   note?: React.ReactNode;
   testId: string;
@@ -84,7 +84,7 @@ function Row({
     >
       <div className="min-w-0">
         <p className="truncate text-base font-semibold text-[var(--text-primary)]">{name}</p>
-        <p className="text-sm text-[var(--text-secondary)]">{line}</p>
+        <div className="text-sm text-[var(--text-secondary)]">{line}</div>
       </div>
       <div className="mt-2 text-sm sm:mt-0 sm:text-right">{side}</div>
       {note && <div className="mt-2 w-full sm:basis-full">{note}</div>}
@@ -209,7 +209,12 @@ const StaffPage: React.FC = () => {
                       key={groom.id}
                       testId={`staff-groom-${groom.id}`}
                       name={groom.name}
-                      line={`${skillLevelLabel(groom.skillLevel)} · ${groomSpecialtyLabel(groom.specialty)}`}
+                      line={
+                        <>
+                          <StaffLevelStars level={groom.starLevel} /> ·{' '}
+                          {groomSpecialtyLabel(groom.specialty)}
+                        </>
+                      }
                       side={
                         pay ? (
                           <>
@@ -283,7 +288,7 @@ const StaffPage: React.FC = () => {
                   key={rider.id}
                   testId={`staff-rider-${rider.id}`}
                   name={rider.name || `${rider.firstName} ${rider.lastName}`}
-                  line={skillLevelLabel(rider.skillLevel)}
+                  line={<StaffLevelStars level={rider.starLevel} />}
                   side={
                     <>
                       <p className="text-[var(--text-secondary)]">
@@ -349,7 +354,7 @@ const StaffPage: React.FC = () => {
                   key={trainer.id}
                   testId={`staff-trainer-${trainer.id}`}
                   name={trainer.name || `${trainer.firstName} ${trainer.lastName}`}
-                  line={skillLevelLabel(trainer.skillLevel)}
+                  line={<StaffLevelStars level={trainer.starLevel} />}
                   side={
                     <p className="text-[var(--text-secondary)]">
                       {coins(trainer.sessionRate)} coins a session

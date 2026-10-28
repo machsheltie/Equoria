@@ -28,7 +28,8 @@ export interface CareStatus {
   groomedToday: boolean;
   canGroomToday: boolean;
   refusal: { code: CareRefusalCode; message: string } | null;
-  groom: { id: number; name: string } | null;
+  /** starLevel: Equoria-nawn5, the groom's star level. */
+  groom: { id: number; name: string; starLevel?: string } | null;
   foal: {
     day: number;
     band: { id: string; label: string; firstDay: number; lastDay: number };

@@ -49,31 +49,20 @@ import {
   GameDialogBody,
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
+import StaffLevelStars from '@/components/common/StaffLevelStars';
+import { staffLevelLabel, staffLevelOrder } from '@/lib/staffLevels';
 
 interface RiderListProps {
   onRiderHired?: (_rider: MarketplaceRider) => void;
   marketplaceData?: RiderMarketplaceData;
 }
 
-const SKILL_LEVEL_LABELS: Record<
-  string,
-  { label: string; colorClass: string; visibility: string }
-> = {
-  rookie: {
-    label: 'Rookie',
-    colorClass: 'bg-[var(--role-neutral-bg)] text-[var(--role-neutral-text)]',
-    visibility: 'Stats hidden — unknown potential',
-  },
-  developing: {
-    label: 'Developing',
-    colorClass: 'bg-[var(--role-info-bg)] text-[var(--role-info-text)]',
-    visibility: 'Some stats revealed',
-  },
-  experienced: {
-    label: 'Experienced',
-    colorClass: 'bg-[var(--role-warning-bg)] text-[var(--role-warning-text)]',
-    visibility: 'All stats visible',
-  },
+// How much of a rider's ability the card reveals still follows the rider's
+// skill tier. The level the player sees is the star level (Equoria-nawn5).
+const statsVisibility: Record<string, string> = {
+  rookie: 'Stats hidden — unknown potential',
+  developing: 'Some stats revealed',
+  experienced: 'All stats visible',
 };
 
 const RiderList: React.FC<RiderListProps> = ({
@@ -83,7 +72,7 @@ const RiderList: React.FC<RiderListProps> = ({
   const { user } = useAuth();
   const [selectedRider, setSelectedRider] = useState<MarketplaceRider | null>(null);
   const [showHireModal, setShowHireModal] = useState(false);
-  const [filterSkillLevel, setFilterSkillLevel] = useState<string>('all');
+  const [filterStarLevel, setFilterStarLevel] = useState<string>('all');
   const [filterPersonality, setFilterPersonality] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
 
@@ -101,8 +90,8 @@ const RiderList: React.FC<RiderListProps> = ({
 
     let filtered = [...riders];
 
-    if (filterSkillLevel !== 'all') {
-      filtered = filtered.filter((r) => r.skillLevel === filterSkillLevel);
+    if (filterStarLevel !== 'all') {
+      filtered = filtered.filter((r) => r.starLevel === filterStarLevel);
     }
     if (filterPersonality !== 'all') {
       filtered = filtered.filter((r) => r.personality === filterPersonality);
@@ -122,7 +111,7 @@ const RiderList: React.FC<RiderListProps> = ({
     });
 
     return filtered;
-  }, [marketplaceData, filterSkillLevel, filterPersonality, sortBy]);
+  }, [marketplaceData, filterStarLevel, filterPersonality, sortBy]);
 
   // Hiring a rider charges one week's pay, once (owner ruling 2026-10-22,
   // Equoria-yw6w1); the server charges the same figure.
@@ -231,20 +220,22 @@ const RiderList: React.FC<RiderListProps> = ({
         className="grid grid-cols-1 sm:grid-cols-3 gap-3"
       >
         <div>
-          <label htmlFor="skill-level-filter" className="type-label block mb-1.5">
-            Skill Level
+          <label htmlFor="star-level-filter" className="type-label block mb-1.5">
+            Level
           </label>
           <Select
-            id="skill-level-filter"
-            data-testid="skill-level-filter"
-            value={filterSkillLevel}
-            onChange={(e) => setFilterSkillLevel(e.target.value)}
+            id="star-level-filter"
+            data-testid="star-level-filter"
+            value={filterStarLevel}
+            onChange={(e) => setFilterStarLevel(e.target.value)}
             className="w-full"
           >
             <option value="all">All Levels</option>
-            <option value="rookie">Rookie</option>
-            <option value="developing">Developing</option>
-            <option value="experienced">Experienced</option>
+            {staffLevelOrder.map((level) => (
+              <option key={level} value={level}>
+                {staffLevelLabel(level)}
+              </option>
+            ))}
           </Select>
         </div>
         <div>
@@ -302,7 +293,6 @@ const RiderList: React.FC<RiderListProps> = ({
             {filteredAndSortedRiders.map((rider) => {
               const hiringCost = calculateHiringCost(rider.weeklyRate);
               const affordable = canAfford(rider.weeklyRate);
-              const skillMeta = SKILL_LEVEL_LABELS[rider.skillLevel] ?? SKILL_LEVEL_LABELS.rookie;
 
               return (
                 <Surface
@@ -318,11 +308,7 @@ const RiderList: React.FC<RiderListProps> = ({
                         {rider.firstName} {rider.lastName}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <span
-                          className={`px-2 py-0.5 text-xs font-bold rounded-[var(--radius-sm)] uppercase ${skillMeta.colorClass}`}
-                        >
-                          {skillMeta.label}
-                        </span>
+                        <StaffLevelStars level={rider.starLevel} />
                         <RiderPersonalityBadge personality={rider.personality} size="sm" />
                       </div>
                     </div>
@@ -342,7 +328,7 @@ const RiderList: React.FC<RiderListProps> = ({
                     <div className="flex justify-between items-center">
                       <span className="text-[var(--text-muted)]">Stats:</span>
                       <span className="text-[10px] text-[var(--text-muted)] italic">
-                        {skillMeta.visibility}
+                        {statsVisibility[rider.skillLevel] ?? statsVisibility.rookie}
                       </span>
                     </div>
                   </div>

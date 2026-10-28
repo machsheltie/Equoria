@@ -37,6 +37,7 @@ const mockGroomsData = [
     name: 'Sarah Johnson',
     specialty: 'foalCare',
     skillLevel: 'expert',
+    starLevel: 'advanced',
     personality: 'gentle',
     experience: 8,
     ageYears: 34, // Equoria-fby1t — a groom's age is part of their identity
@@ -53,6 +54,7 @@ const mockGroomsData = [
     name: 'Mike Rodriguez',
     specialty: 'general',
     skillLevel: 'intermediate',
+    starLevel: 'intermediate',
     personality: 'energetic',
     experience: 5,
     ageYears: null, // predates the age model: unknown, not zero
@@ -69,6 +71,7 @@ const mockGroomsData = [
     name: 'Emma Thompson',
     specialty: 'training',
     skillLevel: 'master',
+    starLevel: 'expert',
     personality: 'patient',
     experience: 12,
     ageYears: 51,
@@ -228,7 +231,9 @@ describe('MyGroomsDashboard Component', () => {
       );
 
       const groomCard = screen.getByTestId('groom-card-1');
-      expect(within(groomCard).getByText(/expert/i)).toBeInTheDocument();
+      // OLD CONTRACT: the card showed the skill word. OWNER RULING 2026-10-28 (Equoria-nawn5):
+      // staff show their star level (an expert-tier groom is Advanced, 4 stars).
+      expect(within(groomCard).getByText('Advanced')).toBeInTheDocument();
       expect(within(groomCard).getByText(/foal care/i)).toBeInTheDocument();
       expect(within(groomCard).getByText(/8 years/i)).toBeInTheDocument();
       // Equoria-95yrv: the card shows the fee the player is actually billed —
@@ -389,7 +394,9 @@ describe('MyGroomsDashboard Component', () => {
         .map((el) => el.getAttribute('aria-label')!.replace(/^Groom:\s*/, ''));
     };
 
-    it('filters grooms by skill level — only matching grooms remain visible', () => {
+    // OLD CONTRACT: the filter offered the skill words. OWNER RULING 2026-10-28
+    // (Equoria-nawn5): it offers the five star levels.
+    it('filters grooms by star level — only matching grooms remain visible', () => {
       const Wrapper = createTestWrapper();
       render(
         <MyGroomsDashboard
@@ -406,9 +413,9 @@ describe('MyGroomsDashboard Component', () => {
         expect.arrayContaining(['Sarah Johnson', 'Mike Rodriguez', 'Emma Thompson'])
       );
 
-      // Select skill level = Expert → only Sarah (expert) should remain.
-      fireEvent.change(screen.getByLabelText(/filter by skill level/i), {
-        target: { value: 'expert' },
+      // Select level = Advanced → only Sarah (advanced) should remain.
+      fireEvent.change(screen.getByLabelText(/filter by level/i), {
+        target: { value: 'advanced' },
       });
 
       const names = visibleGroomNames();

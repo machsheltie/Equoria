@@ -331,6 +331,8 @@ export interface Groom {
   id: number;
   name: string;
   skillLevel: string;
+  /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw. */
+  starLevel?: string;
   specialty: string;
   personality: string;
   experience: number;
@@ -453,6 +455,8 @@ export interface Rider {
   firstName: string;
   lastName: string;
   skillLevel: string; // rookie | developing | experienced
+  /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw. */
+  starLevel?: string;
   personality: string; // daring | methodical | intuitive | competitive
   experience: number; // total XP
   level: number; // 1–10
@@ -477,6 +481,8 @@ export interface RiderAssignment {
   horseName: string;
   /** The rider's name; GET /api/v1/riders/assignments sends it with every row. */
   riderName?: string;
+  /** Equoria-nawn5: the rider's star level, sent with every row. */
+  riderStarLevel?: string;
   startDate: string;
   isActive: boolean;
 }
@@ -486,6 +492,8 @@ export interface MarketplaceRider {
   firstName: string;
   lastName: string;
   skillLevel: string;
+  /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw. */
+  starLevel?: string;
   personality: string;
   experience: number;
   weeklyRate: number;
