@@ -46,15 +46,18 @@
 # ─────────────────────────────────────────────────────────────────────────
 # NEEDS GRAPH AND THE SKIP SENTINEL (Equoria-axyem.7 / Equoria-gvslq)
 # ─────────────────────────────────────────────────────────────────────────
-# BEFORE (owner ruling 2026-09-14 changed one edge):
-#   security-gate: needs [lint, db-preflight]
-# AFTER:
-#   security-gate: needs [lint]
-# Everything else is unchanged:
-#   lint, db-preflight, burn-in         -> (no needs)
-#   backend-tests                       -> [lint, db-preflight]   (kept)
+# 2026-09-14 (owner ruling, Equoria-axyem.7):
+#   security-gate: needs [lint, db-preflight] -> [lint]
+# 2026-10-28 (owner ruling q233, Equoria-zstml: the full check runs only on
+# GitHub, so it must actually run): no test job waits for lint any more. From
+# 2026-10-28 10:21 UTC every master run had Lint & Format red on one Prettier
+# drift and therefore SKIPPED the whole backend matrix, the frontend suite and
+# the security gate — the full suite had not run on master since. A lint
+# failure stays red on its own job; it no longer hides test results.
+#   lint, db-preflight, burn-in,
 #   frontend-tests, performance-tests,
-#   load-contention                     -> [lint]
+#   load-contention, security-gate      -> (no needs)
+#   backend-tests                       -> [db-preflight]   (unmigrated DB = wasted run)
 #   coverage-gate                       -> [backend-tests]
 #   e2e-tests                           -> [backend-tests, frontend-tests]
 #   production-build                    -> [coverage-gate, frontend-tests]
@@ -266,7 +269,8 @@ jobs:
     name: 'Backend Tests (Shard ${{ matrix.shard }})'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [lint, db-preflight]
+    # Equoria-zstml: db-preflight only. A lint failure must not skip the suite.
+    needs: [db-preflight]
 
     services:
       postgres:
@@ -527,7 +531,7 @@ jobs:
     name: 'Frontend Tests (Vitest)'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [lint]
+    # Equoria-zstml: no needs. A lint failure must not skip the suite.
 
     steps:
       - uses: actions/checkout@v6
@@ -753,7 +757,7 @@ jobs:
     name: 'Performance Tests'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [lint]
+    # Equoria-zstml: no needs. A lint failure must not skip these tests.
 
     services:
       postgres:
@@ -849,7 +853,7 @@ jobs:
     name: 'Load Contention (advisory)'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [lint]
+    # Equoria-zstml: no needs. A lint failure must not skip this job.
 
     services:
       postgres:
@@ -936,9 +940,11 @@ jobs:
     # that a migration-check failure silently SKIPPED the security gate, so a
     # database problem hid a security problem for 18 days. Accepted trade-off:
     # the security gate now spends a few minutes on runs that are already
-    # failing. backend-tests deliberately KEEPS `needs: [lint, db-preflight]` —
+    # failing. backend-tests deliberately KEEPS `needs: [db-preflight]` —
     # testing against an unmigrated database is wasted time, not hidden signal.
-    needs: [lint]
+    # Equoria-zstml (owner ruling q233, 2026-10-28): the [lint] edge went too,
+    # for the same reason — one Prettier drift skipped this gate on every
+    # master run from 2026-10-28 10:21 UTC.
 
     services:
       postgres:
