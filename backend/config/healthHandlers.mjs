@@ -122,20 +122,22 @@ export const apiInfoHandler = (req, res) => {
     message: 'Equoria API v1.0',
     documentation: '/api-docs',
     versioned: '/api/v1',
+    // Equoria-ccjj7: only the real /api/v1 mounts (Equoria-4bs3s removed the
+    // unversioned /api/* ones; trait-discovery and milestones are gone).
+    // backend/__tests__/apiInfoAdvertisedRoutes.test.mjs walks the app's mount
+    // tree and fails on any address here that only reaches the 404 handler.
     endpoints: {
-      auth: '/api/auth',
-      horses: '/api/horses',
-      users: '/api/users',
-      training: '/api/training',
-      competition: '/api/competition',
-      breeds: '/api/breeds',
-      foals: '/api/foals',
-      traits: '/api/traits',
-      traitDiscovery: '/api/trait-discovery',
-      milestones: '/api/milestones',
-      grooms: '/api/grooms',
-      leaderboards: '/api/leaderboards',
-      admin: '/api/admin',
+      auth: '/api/v1/auth',
+      horses: '/api/v1/horses',
+      users: '/api/v1/users',
+      training: '/api/v1/training',
+      competition: '/api/v1/competition',
+      breeds: '/api/v1/breeds',
+      foals: '/api/v1/foals',
+      traits: '/api/v1/traits',
+      grooms: '/api/v1/grooms',
+      leaderboards: '/api/v1/leaderboards',
+      admin: '/api/v1/admin',
     },
     health: '/health',
   });

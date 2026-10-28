@@ -40,7 +40,9 @@ describe('phantom labs references (Equoria-q4uem.16)', () => {
 
     expect(body.versioned).toBe('/api/v1');
     expect(body.endpoints).toBeDefined();
-    expect(body.endpoints.traits).toBe('/api/traits');
+    // Equoria-ccjj7 (ARCH-01): old contract '/api/traits', an unversioned address
+    // that Equoria-4bs3s stopped mounting (it answered 404). New: the real mount.
+    expect(body.endpoints.traits).toBe('/api/v1/traits');
   });
 
   it('there is no FF_LABS_ENABLED flag', () => {
