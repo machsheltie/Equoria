@@ -3,6 +3,10 @@
  *
  * Used by Index.tsx, StableView.tsx, AsidePanel.tsx to determine
  * care status (Fed, Shod, Groomed, Vetted) and training cooldown state.
+ *
+ * Whether a horse is ready to TRAIN is not decided here (Equoria-aycdv): a
+ * passed cooldown is not enough (age, health and a trainer matter too), so the
+ * count comes from the server's verdict — useReadyToTrainCount.
  */
 
 /** Determine care urgency from a date field and day thresholds.
@@ -70,9 +74,4 @@ export function horseNeedsCare(horse: CareStatusFields): boolean {
     careChipStatus(horse.lastVettedDate, 7, 14),
   ];
   return statuses.some((s) => s === 'warn' || s === 'bad');
-}
-
-/** Check if a horse is ready to train (cooldown expired or never set) */
-export function isReadyToTrain(horse: CareStatusFields): boolean {
-  return trainingCooldownChip(horse.trainingCooldown).status === 'good';
 }

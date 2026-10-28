@@ -10,7 +10,8 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useHorses } from '@/hooks/api/useHorses';
 import { CooldownTimer } from '@/components/common/CooldownTimer';
-import { horseNeedsCare, isReadyToTrain } from '@/lib/utils/care-status-utils';
+import { useReadyToTrainCount } from '@/hooks/api/useTraining';
+import { horseNeedsCare } from '@/lib/utils/care-status-utils';
 
 export function AsidePanel() {
   const { user } = useAuth();
@@ -24,7 +25,9 @@ export function AsidePanel() {
   // (Equoria-pm0gu, doctrine §4).
   const rosterKnown = Array.isArray(horses);
   const totalHorses = horseList.length;
-  const readyCount = horseList.filter(isReadyToTrain).length;
+  // The server's verdict (Equoria-aycdv); null = unknown. Shown as "—" while either
+  // it or the roster is unknown, so a failed roster never sits beside a count.
+  const readyCount = useReadyToTrainCount(user?.id);
   const needsCareCount = horseList.filter(horseNeedsCare).length;
 
   return (
@@ -42,7 +45,7 @@ export function AsidePanel() {
           <AsideStat label="Balance" value={`${balance} 🪙`} variant="gold" />
           <AsideStat
             label="Ready to Train"
-            value={rosterKnown ? String(readyCount) : '—'}
+            value={rosterKnown && readyCount !== null ? String(readyCount) : '—'}
             variant="success"
           />
           <AsideStat

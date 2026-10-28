@@ -37,8 +37,8 @@ import {
   careChipStatus,
   trainingCooldownChip,
   horseNeedsCare,
-  isReadyToTrain,
 } from '@/lib/utils/care-status-utils';
+import { useReadyToTrainCount } from '@/hooks/api/useTraining';
 import type { HorseCardData, HorseSummary } from '@/lib/api-client';
 import { userMessageFor } from '@/lib/http/userMessage';
 
@@ -344,8 +344,9 @@ const Index = () => {
     setIsDayOne(false);
   }
 
-  // Compute summary stats from horse data using shared helpers
-  const readyCount = horseList.filter((h) => isReadyToTrain(h)).length;
+  // Ready to train is the server's verdict (Equoria-aycdv): age 3-20, health, a
+  // trainer and the cooldown. Unknown (null) while it loads or if it fails.
+  const readyCount = useReadyToTrainCount(user?.id);
 
   const needsCareCount = horseList.filter((h) => horseNeedsCare(h)).length;
 
@@ -364,7 +365,7 @@ const Index = () => {
               {rosterKnown ? horseList.length : '—'}
             </span>
             {' horses'}
-            {readyCount > 0 && (
+            {readyCount !== null && readyCount > 0 && (
               <>
                 {' · '}
                 <span className="text-[var(--gold-light)] font-semibold">{readyCount}</span>

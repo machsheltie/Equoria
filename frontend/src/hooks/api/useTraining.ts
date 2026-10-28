@@ -50,6 +50,19 @@ export const useTrainableHorses = (userId: string) =>
     staleTime: 60 * 1000,
   });
 
+/**
+ * How many of the player's horses can train right now (Equoria-aycdv), or null
+ * while that is unknown (loading or failed). Counted from the server's own
+ * verdict, `canTrain` on GET /training/trainable/:userId: the rules the train
+ * call applies (age 3-20, health, an assigned trainer, the weekly cooldown).
+ * Never re-derived on the client, so a foal, a retired horse, a horse in Bad
+ * health or one with no trainer is never counted as ready.
+ */
+export function useReadyToTrainCount(userId: string | undefined): number | null {
+  const { data } = useTrainableHorses(userId ?? '');
+  return Array.isArray(data) ? data.filter((horse) => horse.canTrain === true).length : null;
+}
+
 export const useTrainingStatus = (horseId: number, discipline: string) =>
   useQuery<DisciplineStatus, ApiError>({
     queryKey: trainingKeys.status(horseId, discipline),
