@@ -351,8 +351,9 @@ async function globalSetup(config: FullConfig) {
           `lastFedDate=${updatedHorse.lastFedDate?.toISOString()} lastVettedDate=${updatedHorse.lastVettedDate?.toISOString()}`
       );
 
-      // (4) Hire a groom (POST /api/v1/grooms/hire) — snake_case body fields per
-      //     the route's express-validator chain.
+      // (4) Hire a groom from the marketplace (GET /api/v1/groom-marketplace, then
+      //     POST /api/v1/groom-marketplace/hire). Equoria-bvddn.7 retired the
+      //     player-built POST /api/v1/grooms/hire: players never create grooms.
       const seedCsrfRes = await page.request.get(`${baseURL}/api/v1/auth/csrf-token`);
       const seedCsrfJson = await seedCsrfRes.json();
       const seedCsrfToken: string = seedCsrfJson?.data?.csrfToken ?? seedCsrfJson?.csrfToken ?? '';
@@ -364,22 +365,30 @@ async function globalSetup(config: FullConfig) {
         'X-CSRF-Token': seedCsrfToken,
       };
 
-      const hireRes = await page.request.post(`${baseURL}/api/v1/grooms/hire`, {
-        data: {
-          name: `E2E Conformation Handler ${timestamp}`,
-          speciality: 'foalCare',
-          skill_level: 'expert',
-          personality: 'gentle',
-        },
+      const marketRes = await page.request.get(`${baseURL}/api/v1/groom-marketplace`);
+      if (!marketRes.ok()) {
+        throw new Error(
+          `[conformation-seed] groom marketplace failed: GET /api/v1/groom-marketplace returned ${marketRes.status()} — ${await marketRes.text()}`
+        );
+      }
+      const marketJson = await marketRes.json();
+      const offerId: string | undefined = marketJson?.data?.grooms?.[0]?.marketplaceId;
+      if (!offerId) {
+        throw new Error(
+          `[conformation-seed] groom marketplace offered no groom: ${JSON.stringify(marketJson).slice(0, 300)}`
+        );
+      }
+      const hireRes = await page.request.post(`${baseURL}/api/v1/groom-marketplace/hire`, {
+        data: { marketplaceId: offerId },
         headers: seedHeaders,
       });
       if (!hireRes.ok()) {
         throw new Error(
-          `[conformation-seed] groom hire failed: POST /api/v1/grooms/hire returned ${hireRes.status()} — ${await hireRes.text()}`
+          `[conformation-seed] groom hire failed: POST /api/v1/groom-marketplace/hire returned ${hireRes.status()} — ${await hireRes.text()}`
         );
       }
       const hireJson = await hireRes.json();
-      const groomId: number | undefined = hireJson?.data?.id;
+      const groomId: number | undefined = hireJson?.data?.groom?.id;
       if (!Number.isInteger(groomId)) {
         throw new Error(
           `[conformation-seed] groom hire returned no groom id: ${JSON.stringify(hireJson).slice(0, 300)}`

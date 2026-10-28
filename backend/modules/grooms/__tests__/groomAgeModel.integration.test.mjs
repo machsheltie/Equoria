@@ -15,7 +15,8 @@
  * above settled it.
  *
  * WHAT IS ASSERTED, AND WHY EACH CASE FAILS ON THE PRE-FIX CODE:
- *   1. Both hire paths persist a start age in 18..24     -> `startAge` did not exist
+ *   1. Hiring persists a start age in 18..24             -> `startAge` did not exist
+ *      (marketplace hire; the direct hire was retired by Equoria-bvddn.7)
  *   2. Age is `startAge + careerWeeks`, one year per pass -> age was careerWeeks
  *   3. A groom at its drawn retirement age retires; one short does not, and the
  *      comparison is on AGE                              -> compared careerWeeks
@@ -56,7 +57,6 @@ import {
   RETIREMENT_AGE_MIN,
   RETIREMENT_AGE_MAX,
 } from '../services/groomRetirementScheduleService.mjs';
-import { hireGroom } from '../controllers/groomRosterController.mjs';
 import { hireFromMarketplace, refreshMarketplace } from '../controllers/groomMarketplaceController.mjs';
 import { listFreeAgentGrooms } from '../controllers/groomFreeAgentController.mjs';
 
@@ -253,7 +253,7 @@ describe('Equoria-ypb7d.1 — the start age is persisted, bounded and idempotent
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Equoria-ypb7d.1 — both hire paths give a groom an age', () => {
+describe('Equoria-ypb7d.1 — hiring gives a groom an age', () => {
   let user;
   const cleanup = createCleanupTracker();
 
@@ -272,34 +272,6 @@ describe('Equoria-ypb7d.1 — both hire paths give a groom an age', () => {
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);
-
-  it('direct hire persists a start age in 18..24, and the groom is NOT age 0', async () => {
-    const res = fakeRes();
-    await hireGroom(
-      {
-        user: { id: user.id },
-        body: {
-          name: `${FIXTURE_PREFIX}-hire-direct-${tag()}`,
-          speciality: 'foalCare',
-          skill_level: 'novice',
-          personality: 'gentle',
-        },
-      },
-      res,
-    );
-    expect(res.statusCode).toBe(201);
-
-    const groom = await prisma.groom.findUnique({
-      where: { id: res.body.data.id },
-      select: { startAge: true, careerWeeks: true },
-    });
-    expect(groom.startAge).toBeGreaterThanOrEqual(START_AGE_MIN);
-    expect(groom.startAge).toBeLessThanOrEqual(START_AGE_MAX);
-    // The whole point of the ruling: a freshly hired groom is an adult, not a
-    // newborn. Pre-ypb7d their age was `careerWeeks`, which is 0 here.
-    expect(groom.careerWeeks).toBe(0);
-    expect(groomAgeYears(groom)).toBeGreaterThanOrEqual(START_AGE_MIN);
-  });
 
   it('marketplace hire persists a start age too, independent of the offer experience', async () => {
     const refreshRes = fakeRes();
@@ -325,7 +297,10 @@ describe('Equoria-ypb7d.1 — both hire paths give a groom an age', () => {
     });
     expect(groom.startAge).toBeGreaterThanOrEqual(START_AGE_MIN);
     expect(groom.startAge).toBeLessThanOrEqual(START_AGE_MAX);
+    // The whole point of the ruling: a freshly hired groom is an adult, not a
+    // newborn. Pre-ypb7d their age was `careerWeeks`, which is 0 here.
     expect(groom.careerWeeks).toBe(0);
+    expect(groomAgeYears(groom)).toBeGreaterThanOrEqual(START_AGE_MIN);
     // Whatever the tier's experience is, the start age stays inside the flat band.
     expect(groom.experience).toBeGreaterThan(0);
   });

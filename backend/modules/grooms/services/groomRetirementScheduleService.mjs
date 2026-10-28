@@ -97,9 +97,8 @@ export async function readRetirementAge(client, groomId) {
  * half-recovered one. The recovery exists for the weekly-pass backstop, which
  * passes the autocommit client and is the only caller that can genuinely race.
  *
- * Called at hire from both hire paths (groomRosterController.hireGroom,
- * groomMarketplaceController.hireFromMarketplace) inside their existing
- * transactions, and again from the weekly career pass as the backstop for grooms
+ * Called at hire from groomMarketplaceController.hireFromMarketplace inside its
+ * existing transaction, and again from the weekly career pass as the backstop for grooms
  * that predate Equoria-m9lz1, legacy protégés, and test fixtures. The backstop
  * is why the migration performs no backfill.
  *

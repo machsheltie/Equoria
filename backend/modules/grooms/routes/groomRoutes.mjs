@@ -3,7 +3,7 @@
  * API endpoints for groom assignments, interactions, and management.
  *
  * Equoria-8mdpc god-file split: this parent keeps the foundational endpoints
- * (hire / assign / interact / assignments / user / profile / synergy /
+ * (assign / interact / assignments / user / profile / synergy /
  * assignment-logs / bonus-traits / definitions / ensure-default) and mounts
  * three sub-domain sub-routers at the bottom (mirroring the Equoria-y8u2j
  * horseRoutes pattern):
@@ -28,18 +28,12 @@ import {
   ensureDefaultAssignment,
   getFoalAssignments,
   getUserGrooms,
-  hireGroom,
   getGroomDefinitions,
   getGroomProfile,
   getGroomAssignmentLogs,
   getGroomBonusTraits,
   getGroomHorseSynergyPreview,
 } from '../controllers/groomController.mjs';
-import {
-  GROOM_SPECIALTY_VALUES,
-  GROOM_SKILL_LEVEL_VALUES,
-  GROOM_PERSONALITY_VALUES,
-} from '../../../constants/schema.mjs';
 import logger from '../../../utils/logger.mjs';
 import { handleValidationErrors } from './_groomRouteHelpers.mjs';
 import { retiredGroomDoor } from '../controllers/groomCareController.mjs';
@@ -276,97 +270,9 @@ router.get(
   getUserGrooms,
 );
 
-/**
- * @swagger
- * /api/grooms/hire:
- *   post:
- *     summary: Hire a new groom for a user
- *     summary: Hire a new groom for a user
- *     tags: [Grooms]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *               - speciality
- *               - skill_level
- *               - personality
- *             properties:
- *               name:
- *                 type: string
- *                 minLength: 2
- *                 maxLength: 100
- *                 description: Groom's name
- *               speciality:
- *                 type: string
- *                 enum: [foalCare, general, training, medical]
- *                 description: Groom's speciality
- *               experience:
- *                 type: integer
- *                 minimum: 1
- *                 maximum: 20
- *                 description: Years of experience
- *               skill_level:
- *                 type: string
- *                 enum: [novice, intermediate, expert, master]
- *                 description: Skill level
- *               personality:
- *                 type: string
- *                 enum: [gentle, energetic, patient, strict]
- *                 description: Personality trait
- *               hourly_rate:
- *                 type: number
- *                 minimum: 5
- *                 maximum: 100
- *                 description: Hourly rate in currency
- *               bio:
- *                 type: string
- *                 maxLength: 500
- *                 description: Optional biography
- *               availability:
- *                 type: object
- *                 description: Available days/hours
- *     responses:
- *       201:
- *         description: Groom hired successfully
- *       400:
- *         description: Invalid request data
- *       500:
- *         description: Internal server error
- */
-router.post(
-  '/hire',
-  authenticateToken, // Equoria-qyyj7: route-level auth, like every sibling mutation
-  [
-    body('name')
-      .isLength({ min: 2, max: 100 })
-      .withMessage('name must be between 2 and 100 characters'),
-    body('speciality')
-      .isIn(GROOM_SPECIALTY_VALUES)
-      .withMessage('speciality is not a recognized specialty'),
-    body('experience')
-      .optional()
-      .isInt({ min: 1, max: 20 })
-      .withMessage('experience must be between 1 and 20 years'),
-    body('skill_level')
-      .isIn(GROOM_SKILL_LEVEL_VALUES)
-      .withMessage('skill_level is not a recognized skill level'),
-    body('personality')
-      .isIn(GROOM_PERSONALITY_VALUES)
-      .withMessage('personality is not a recognized personality'),
-    body('sessionRate')
-      .optional()
-      .isFloat({ min: 5, max: 100 })
-      .withMessage('sessionRate must be between 5 and 100'),
-    body('bio').optional().isLength({ max: 500 }).withMessage('bio must be 500 characters or less'),
-    body('availability').optional().isObject().withMessage('availability must be an object'),
-    handleValidationErrors,
-  ],
-  hireGroom,
-);
+// POST /hire is gone (Equoria-bvddn.7): it let a player build a groom with a
+// chosen name, skill and experience. Players never create grooms (owner,
+// 2026-10-21); they hire through /groom-marketplace/hire, so this path 404s.
 
 /**
  * @swagger

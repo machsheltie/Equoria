@@ -1,8 +1,9 @@
 /**
  * Groom Workflow Integration Tests
  *
- * Tests the groom management workflow (hire → assign)
- * end-to-end against the real DB. No mocks of any kind.
+ * Tests the groom management workflow (assign) end-to-end against the real DB.
+ * No mocks of any kind. The hire section went with the player-built
+ * POST /grooms/hire (Equoria-bvddn.7: players never create grooms).
  *
  * Fixtures:
  *   - Breed, User, Horses created in beforeEach; deleted in afterEach
@@ -14,7 +15,6 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { hireGroom } from '../../modules/grooms/controllers/groomController.mjs';
 import { assignGroom } from '../../modules/grooms/controllers/groomAssignmentHandlers.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -212,91 +212,6 @@ describe('Groom Workflow Integration Tests', () => {
     }
 
     await cleanupTestData();
-  });
-
-  // ─── 1. Complete Groom Hiring Workflow ───────────────────────────────────────
-
-  describe('1. Complete Groom Hiring Workflow', () => {
-    it('hires a groom with proper skill calculations and validation', async () => {
-      const req = {
-        body: {
-          name: 'Sarah Johnson',
-          speciality: 'foalCare',
-          skill_level: 'expert',
-          personality: 'gentle',
-          experience: 8,
-          sessionRate: 25.0,
-          bio: 'Experienced foal care specialist',
-        },
-        user: { id: testUser.id },
-      };
-      const res = makeRes();
-
-      await hireGroom(req, res);
-
-      expect(res._status).toBe(201);
-      expect(res._json.success).toBe(true);
-      expect(res._json.message).toBe('Successfully hired Sarah Johnson');
-      expect(res._json.data).toMatchObject({
-        name: 'Sarah Johnson',
-        speciality: 'foalCare',
-        skillLevel: 'expert',
-        personality: 'gentle',
-        experience: 8,
-        userId: testUser.id,
-      });
-      expect(res._json.data.sessionRate).toBeDefined();
-
-      const groom = await prisma.groom.findFirst({ where: { name: 'Sarah Johnson' } });
-      expect(groom).toBeTruthy();
-      expect(groom.speciality).toBe('foalCare');
-      expect(groom.skillLevel).toBe('expert');
-    });
-
-    it('rejects a hire request with missing required fields', async () => {
-      const req = {
-        body: { name: 'Invalid Groom' },
-        user: { id: testUser.id },
-      };
-      const res = makeRes();
-
-      await hireGroom(req, res);
-
-      expect(res._status).toBe(400);
-      expect(res._json).toMatchObject({
-        success: false,
-        message: 'name, speciality, skill_level, and personality are required',
-      });
-    });
-
-    it('charges a higher session rate for an expert groom than a novice groom', async () => {
-      const expertReq = {
-        body: {
-          name: 'Expert Groom',
-          speciality: 'foalCare',
-          skill_level: 'expert',
-          personality: 'gentle',
-        },
-        user: { id: testUser.id },
-      };
-      const noviceReq = {
-        body: {
-          name: 'Novice Groom',
-          speciality: 'general',
-          skill_level: 'novice',
-          personality: 'patient',
-        },
-        user: { id: testUser.id },
-      };
-
-      await hireGroom(expertReq, makeRes());
-      await hireGroom(noviceReq, makeRes());
-
-      const expertGroom = await prisma.groom.findFirst({ where: { name: 'Expert Groom' } });
-      const noviceGroom = await prisma.groom.findFirst({ where: { name: 'Novice Groom' } });
-
-      expect(parseFloat(expertGroom.sessionRate)).toBeGreaterThan(parseFloat(noviceGroom.sessionRate));
-    });
   });
 
   // ─── 2. Groom Assignment Management ─────────────────────────────────────────

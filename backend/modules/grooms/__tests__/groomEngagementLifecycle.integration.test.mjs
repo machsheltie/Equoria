@@ -62,7 +62,7 @@ import { prismaRejectionOf } from '../../../__tests__/helpers/expectPrismaReject
 import { ENGAGEMENT_END_REASONS, FREE_AGENT_WHERE } from '../services/groomEngagementService.mjs';
 import { processRetirement } from '../services/groomRetirementService.mjs';
 import { ensureRetirementSchedule } from '../services/groomRetirementScheduleService.mjs';
-import { hireGroom } from '../controllers/groomRosterController.mjs';
+import { hireFromMarketplace, refreshMarketplace } from '../controllers/groomMarketplaceController.mjs';
 import { listFreeAgentGrooms, hireFreeAgent } from '../controllers/groomFreeAgentController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-ypb7d-eng';
@@ -189,24 +189,23 @@ describe('Equoria-ypb7d.2 — hiring opens an engagement, never an ownership', (
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('direct hire writes exactly one OPEN engagement, in the hire transaction', async () => {
+  // Equoria-bvddn.7: this case drove the direct hire (hireGroom) until that
+  // player-built door was retired — players never create grooms (owner,
+  // 2026-10-21). The marketplace hire is the hire that remains, so the same
+  // engagement assertions now run through it.
+  it('marketplace hire writes exactly one OPEN engagement, in the hire transaction', async () => {
+    const refreshRes = fakeRes();
+    await refreshMarketplace({ user: { id: user.id }, body: { force: false } }, refreshRes);
+    expect(refreshRes.statusCode).toBe(200);
+    const [offer] = refreshRes.body.data.grooms;
+    expect(offer).toBeDefined();
+
     const res = fakeRes();
-    await hireGroom(
-      {
-        user: { id: user.id },
-        body: {
-          name: `${FIXTURE_PREFIX}-open-hired-${tag()}`,
-          speciality: 'foalCare',
-          skill_level: 'novice',
-          personality: 'gentle',
-        },
-      },
-      res,
-    );
+    await hireFromMarketplace({ user: { id: user.id }, body: { marketplaceId: offer.marketplaceId } }, res);
     expect(res.statusCode).toBe(201);
 
     const engagements = await prisma.groomEngagement.findMany({
-      where: { groomId: res.body.data.id },
+      where: { groomId: res.body.data.groom.id },
     });
     expect(engagements).toHaveLength(1);
     expect(engagements[0].userId).toBe(user.id);

@@ -32,11 +32,10 @@
 
 /**
  * Maximum grooms a single user may hold on their roster. SINGLE source of truth
- * (Equoria-hduc5): enforced on EVERY groom-creating hire path — direct hire
- * (groomRosterController.hireGroom) and marketplace hire
+ * (Equoria-hduc5): enforced on the groom-creating hire path — marketplace hire
  * (groomMarketplaceController.hireFromMarketplace) — via a pre-tx fast-path
- * count PLUS an authoritative post-lock in-tx re-count (Equoria-n4m5j / hduc5),
- * so the two hire paths cannot drift on the cap value.
+ * count PLUS an authoritative post-lock in-tx re-count (Equoria-n4m5j / hduc5).
+ * The direct hire it once shared with was retired by Equoria-bvddn.7.
  */
 export const MAX_GROOMS_PER_USER = 10;
 

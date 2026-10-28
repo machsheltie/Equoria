@@ -82,12 +82,14 @@ const REPRESENTATIVE_MUTATIONS = [
     path: '/api/v1/horses',
     body: { name: 'TestFixture-sentinel-horse' },
   },
-  // authRouter — grooms domain
+  // authRouter — grooms domain. Equoria-bvddn.7: was POST /grooms/hire, the
+  // player-built groom, retired (players never create grooms, owner ruling
+  // 2026-10-21). The hire that remains is the marketplace hire.
   {
-    label: 'POST /api/v1/grooms/hire (authRouter — hire groom)',
+    label: 'POST /api/v1/groom-marketplace/hire (authRouter — hire groom)',
     method: 'post',
-    path: '/api/v1/grooms/hire',
-    body: { name: 'TestFixture-sentinel-groom', speciality: 'foalCare', skill_level: 'novice', personality: 'gentle' },
+    path: '/api/v1/groom-marketplace/hire',
+    body: { marketplaceId: 'TestFixture-sentinel-offer' },
   },
   // authRouter — financial/economy
   {

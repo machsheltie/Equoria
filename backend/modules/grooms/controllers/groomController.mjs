@@ -8,12 +8,11 @@
  * keeps working with zero changes. Handler names, signatures, behavior, and
  * response shapes are preserved exactly — this is a pure split, not a rewrite.
  *
- * Public surface (12 handlers):
+ * Public surface (hireGroom retired by Equoria-bvddn.7):
  *   - assignment:    assignGroom, ensureDefaultAssignment, getFoalAssignments,
  *                    getGroomAssignmentLogs
  *   - interaction:   getGroomHorseSynergyPreview (grooming itself: groomCareController)
- *   - roster:        getUserGrooms, hireGroom, getGroomProfile,
- *                    getGroomDefinitions
+ *   - roster:        getUserGrooms, getGroomProfile, getGroomDefinitions
  *   - bonus-traits:  getGroomBonusTraits, updateGroomBonusTraits
  */
 
@@ -26,11 +25,6 @@ export {
 
 export { getGroomHorseSynergyPreview } from './groomInteractionController.mjs';
 
-export {
-  getUserGrooms,
-  hireGroom,
-  getGroomProfile,
-  getGroomDefinitions,
-} from './groomRosterController.mjs';
+export { getUserGrooms, getGroomProfile, getGroomDefinitions } from './groomRosterController.mjs';
 
 export { getGroomBonusTraits, updateGroomBonusTraits } from './groomBonusTraitsController.mjs';

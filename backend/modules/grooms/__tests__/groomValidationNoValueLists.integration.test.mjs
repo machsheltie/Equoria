@@ -4,7 +4,8 @@
  * code names, they hint at exploits).
  *
  * Defect: 'interactionType must be one of: <every stored interaction code>' and
- * the three hire-field equivalents spelled every valid stored value into the
+ * the three hire-field equivalents (POST /grooms/hire, retired by
+ * Equoria-bvddn.7) spelled every valid stored value into the
  * response body, visible in the network tab to anyone who sent a bad value.
  *
  * Real DB, real HTTP, real auth, real CSRF. One scoped user, removed fail-loud.
@@ -102,19 +103,5 @@ describe('groom validation refusals carry no value lists (Equoria-bdpvw)', () =>
     expect(body).not.toMatch(/must be one of/i);
     expect(body).not.toMatch(noValueList);
     expect(body).not.toMatch(/tyingPractice|hoofHandling|stableExposure/);
-  });
-
-  it('bad hire fields are refused without listing the valid specialities, skill levels or personalities', async () => {
-    const res = await post('/api/v1/grooms/hire').send({
-      name: 'Nobody',
-      speciality: 'not-a-speciality',
-      skill_level: 'not-a-skill',
-      personality: 'not-a-personality',
-    });
-
-    expect(res.status).toBe(400);
-    const body = JSON.stringify(res.body);
-    expect(body).not.toMatch(/must be one of/i);
-    expect(body).not.toMatch(noValueList);
   });
 });

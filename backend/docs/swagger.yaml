@@ -1013,25 +1013,6 @@ paths:
         '200': { description: 'Interaction recorded' }
 
   # ── Grooms ───────────────────────────────────────────────────────────────────
-  /grooms/hire:
-    post:
-      tags: [Grooms]
-      summary: 'Hire a new groom'
-      security: [{ bearerAuth: [] }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name, specialty]
-              properties:
-                name: { type: string }
-                specialty: { type: string }
-      responses:
-        '201': { description: 'Groom hired' }
-        '400': { description: 'Validation error' }
-
   /grooms/assign:
     post:
       tags: [Grooms]

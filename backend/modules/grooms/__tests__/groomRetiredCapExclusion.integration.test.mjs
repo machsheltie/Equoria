@@ -20,11 +20,12 @@
  * idiom exactly.
  *
  * THIS SENTINEL asserts, over real HTTP with a real DB (no mocks): a user
- * sitting at 10 total grooms, 6 of them retired (4 active), can still hire —
- * through BOTH the marketplace hire path (groomMarketplaceController) and the
- * direct hire path (groomRosterController). Both are red on the current code
- * (both read the un-filtered count of 10 >= MAX, both refuse with the
- * "maximum limit" 400) and green once `retired: false` is added.
+ * sitting at 10 total grooms, 6 of them retired (4 active), can still hire
+ * through the marketplace hire path (groomMarketplaceController). It was red on
+ * the pre-fix code (the un-filtered count of 10 >= MAX refused with the
+ * "maximum limit" 400) and green once `retired: false` was added. The direct
+ * hire path (groomRosterController) had the same case until Equoria-bvddn.7
+ * retired that path: players never create grooms (owner, 2026-10-21).
  *
  * Real DB, no mocks, fail-loud scoped cleanup (CLAUDE.md §3).
  */
@@ -38,15 +39,12 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { SKILL_LEVELS } from '../../../utils/groomSystem.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-bvddn12-groom';
 const MAX_GROOMS_PER_USER = 10;
 const RETIRED_COUNT = 6;
 const ACTIVE_COUNT = MAX_GROOMS_PER_USER - RETIRED_COUNT; // 4 — well under the cap
-const SKILL_LEVEL = 'novice';
-const DIRECT_HIRE_COST = Math.round(500 * SKILL_LEVELS[SKILL_LEVEL].costModifier);
 // The marketplace offer's sessionRate is procedurally generated per-offer
 // (groomMarketplace.mjs: base rate 15-60 by skill tier, up to +50% by
 // experience within the tier -> worst case master/max-experience is 90,
@@ -152,33 +150,6 @@ describe('Equoria-bvddn.12 — retired grooms excluded from the roster cap', () 
 
     const hireRes = await authed(request(app).post('/api/v1/groom-marketplace/hire'), buyer.token, csrf).send({
       marketplaceId: offer.marketplaceId,
-    });
-
-    // Red on current code: un-filtered count == 10 >= MAX -> 400 "maximum limit".
-    // Green once the count excludes retired: active count 4 < MAX -> 201.
-    expect(hireRes.status).toBe(201);
-    expect(hireRes.body.success).toBe(true);
-
-    expect(await prisma.groom.count({ where: { userId: buyer.id } })).toBe(MAX_GROOMS_PER_USER + 1);
-  }, 30000);
-
-  it('direct hire path (groomRosterController): 10 total grooms (6 retired, 4 active) still allows a hire', async () => {
-    const buyer = await makeUser('direct', DIRECT_HIRE_COST * 2);
-    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: buyer.id } }), 'grooms');
-    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: buyer.id } }), 'ledger rows');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: buyer.id } }), 'user');
-
-    await seedFullRetiredHeavyRoster(buyer.id);
-    expect(await prisma.groom.count({ where: { userId: buyer.id } })).toBe(MAX_GROOMS_PER_USER);
-    expect(await prisma.groom.count({ where: { userId: buyer.id, retired: false } })).toBe(ACTIVE_COUNT);
-
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${buyer.token}`] });
-
-    const hireRes = await authed(request(app).post('/api/v1/grooms/hire'), buyer.token, csrf).send({
-      name: `${FIXTURE_PREFIX}-newhire-${tag()}`,
-      speciality: 'foalCare',
-      skill_level: SKILL_LEVEL,
-      personality: 'gentle',
     });
 
     // Red on current code: un-filtered count == 10 >= MAX -> 400 "maximum limit".

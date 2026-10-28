@@ -79,7 +79,9 @@ const MIGRATED = [
   // simultaneously-active assignments. Mirrors riderController.mjs's
   // Equoria-6p398.6 fix. Pinned so neither can be silently un-wrapped.
   ['modules/trainers/controllers/trainerController.mjs', { wrapped: 2, totalTx: 2 }],
-  ['modules/grooms/controllers/groomRosterController.mjs', { wrapped: 1, totalTx: 1 }],
+  // groomRosterController.mjs left this list with Equoria-bvddn.7: its only
+  // $transaction was the player-built hire (hireGroom), now retired, so the file
+  // holds no transaction to pin.
   ['modules/grooms/controllers/groomMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
   // createShow wrapped → wrapped 1 / totalTx 1. executeClosedShows' 1 remaining
   // executor-path $transaction (per-entry prize payout) is intentionally unwrapped

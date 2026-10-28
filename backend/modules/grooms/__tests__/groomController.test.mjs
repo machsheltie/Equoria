@@ -1,8 +1,9 @@
 /**
  * groomController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: getGroomDefinitions, getUserGrooms, hireGroom, getFoalAssignments.
- * Real DB, real auth, real CSRF — no bypass headers.
+ * Covers: getGroomDefinitions, getUserGrooms, getFoalAssignments. (hireGroom and
+ * its POST /grooms/hire cases were retired by Equoria-bvddn.7.)
+ * Real DB, real auth — no bypass headers.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
@@ -11,18 +12,12 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-
-// Valid enum values (from constants/schema.mjs)
-const VALID_SPECIALITY = 'foalCare';
-const VALID_SKILL = 'novice'; // costModifier=0.7 → hiringCost=Math.round(500*0.7)=350
-const VALID_PERSONALITY = 'gentle';
 
 function uniqueEmail(prefix = 'gc') {
   return `${prefix}-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`;
@@ -128,122 +123,6 @@ describe('groomController integration', () => {
 
     it('returns 401 without auth', async () => {
       const res = await request(app).get(`/api/v1/grooms/user/${user.id}`).set('Origin', ORIGIN);
-
-      expect(res.status).toBe(401);
-    });
-  });
-
-  // ─── POST /api/grooms/hire ────────────────────────────────────────────────
-
-  describe('POST /api/grooms/hire', () => {
-    it('returns 400 when name is missing', async () => {
-      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-      const res = await request(app)
-        .post('/api/v1/grooms/hire')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ speciality: VALID_SPECIALITY, skill_level: VALID_SKILL, personality: VALID_PERSONALITY });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('returns 400 for invalid speciality', async () => {
-      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-      const res = await request(app)
-        .post('/api/v1/grooms/hire')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({
-          name: 'Alice',
-          speciality: 'badSpeciality',
-          skill_level: VALID_SKILL,
-          personality: VALID_PERSONALITY,
-        });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('returns 400 for invalid skill_level', async () => {
-      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-      const res = await request(app)
-        .post('/api/v1/grooms/hire')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ name: 'Alice', speciality: VALID_SPECIALITY, skill_level: 'godTier', personality: VALID_PERSONALITY });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('returns 400 for invalid personality', async () => {
-      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-      const res = await request(app)
-        .post('/api/v1/grooms/hire')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ name: 'Alice', speciality: VALID_SPECIALITY, skill_level: VALID_SKILL, personality: 'grumpy' });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('returns 201 and creates a groom when all fields are valid', async () => {
-      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-      const res = await request(app)
-        .post('/api/v1/grooms/hire')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({
-          name: 'TestFixture-Alice',
-          speciality: VALID_SPECIALITY,
-          skill_level: VALID_SKILL,
-          personality: VALID_PERSONALITY,
-        });
-
-      expect(res.status).toBe(201);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.name).toBe('TestFixture-Alice');
-      expect(typeof res.body.data.hiringCost).toBe('number');
-    });
-
-    it('returns 400 when user has insufficient funds', async () => {
-      await prisma.user.update({ where: { id: user.id }, data: { money: 0 } });
-
-      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-      const res = await request(app)
-        .post('/api/v1/grooms/hire')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ name: 'Bob', speciality: VALID_SPECIALITY, skill_level: VALID_SKILL, personality: VALID_PERSONALITY });
-
-      expect(res.status).toBe(400);
-      expect(res.body.data).toHaveProperty('requiredFunds');
-      expect(res.body.data).toHaveProperty('availableFunds');
-    });
-
-    it('returns 401 without auth token', async () => {
-      const csrf = await fetchCsrf(app);
-      const res = await request(app)
-        .post('/api/v1/grooms/hire')
-        .set('Origin', ORIGIN)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({
-          name: 'Alice',
-          speciality: VALID_SPECIALITY,
-          skill_level: VALID_SKILL,
-          personality: VALID_PERSONALITY,
-        });
 
       expect(res.status).toBe(401);
     });
