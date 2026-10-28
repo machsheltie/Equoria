@@ -166,7 +166,8 @@ function assessFeedQualityFromMare(mare) {
  * @param {number} params.damId - id of the in-foal mare
  * @param {object} [params.options] - { name?, sex?, ownerId?,
  *   userId?, playerId?, stableId?, healthStatus?, positiveTraitChance?,
- *   negativeTraitChance?, rng?, statRng?, damSnapshot?, sireSnapshot?, dueBy? }.
+ *   negativeTraitChance?, rng?, statRng?, traitRng?, damSnapshot?, sireSnapshot?,
+ *   dueBy? }.
  *   The bonus chance fields are produced by
  *   `calculatePregnancyEpigeneticChances()` and applied as independent rolls
  *   on top of `applyEpigeneticTraitsAtBirth`. `rng` is a () => number
@@ -205,11 +206,21 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   }
 
   // A foal is born with its mare's health and hunger (owner ruling 2026-10-23,
-  // Equoria-w4ivy). A caller's snapshot may not carry the care clocks; read them.
-  if (dam.lastVettedDate === undefined || dam.lastFedDate === undefined) {
+  // Equoria-w4ivy). A caller's snapshot may not carry the care clocks or the
+  // dam's traits (Equoria-3ab0k: she passes them on like the sire); read them.
+  if (
+    dam.lastVettedDate === undefined ||
+    dam.lastFedDate === undefined ||
+    dam.epigeneticModifiers === undefined
+  ) {
     const careRow = await prisma.horse.findUnique({
       where: { id: damId },
-      select: { lastVettedDate: true, lastFedDate: true, hungerSince: true },
+      select: {
+        lastVettedDate: true,
+        lastFedDate: true,
+        hungerSince: true,
+        epigeneticModifiers: true,
+      },
     });
     dam = { ...dam, ...careRow };
   }
@@ -255,6 +266,8 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     damTraits,
     parentActiveTraits,
     seed: options.epigeneticSeed,
+    // Test seam: a () => number in [0,1) for the birth trait rolls (wins over the seed).
+    rng: typeof options.traitRng === 'function' ? options.traitRng : undefined,
   });
   // §D: the pipeline now also returns hidden[]; carry it through to persistence.
   const hiddenTraits = [...(epigeneticTraits.hidden || [])];
@@ -516,9 +529,11 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
  * @param {Date}     [opts.now] - test seam; defaults to new Date().
  * @param {Function} [opts.rng] - test seam for the bonus rolls; defaults to
  *   Math.random. Each mare uses the same rng instance.
+ * @param {Function} [opts.traitRng] - test seam for the birth trait rolls
+ *   (inheritance and the other at-birth stages); defaults to Math.random.
  * @returns {Promise<{foalsBorn:number, errors:Array<{damId:number,error:string}>}>}
  */
-export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}) {
+export async function runFoalingJob({ now = new Date(), rng = Math.random, traitRng } = {}) {
   // Bred before 00:00 Eastern on (today - 6) means bred on day <= today - 7.
   const cutoff = startOfGameDayIndex(gameDayIndex(now) - GESTATION_DAYS + 1);
   logger.info(
@@ -544,6 +559,9 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
       gaitScores: true,
       colorGenotype: true,
       phenotype: true,
+      // The dam's traits feed §A inheritance (Equoria-3ab0k): without them the
+      // snapshot read as trait-free and a foal never inherited from its dam.
+      epigeneticModifiers: true,
       inFoalSinceDate: true,
       pregnancySireId: true,
       pregnancyFeedingsByTier: true,
@@ -575,6 +593,7 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
           positiveTraitChance: positiveChance,
           negativeTraitChance: negativeChance,
           rng,
+          traitRng,
           userId: snapshot.userId,
           name: snapshot.pendingFoalName ?? undefined,
         },
