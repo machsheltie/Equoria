@@ -4,9 +4,10 @@
  * OWNER RULING 2026-10-28: every horse is born with a discipline and starts
  * with +5 trained value in it (Horse.disciplineScores, the field training
  * writes and show scoring reads). Starter horses take their breed's default:
- * Gaited for a gaited breed (ruling 2026-10-19). A non-gaited breed's default
- * waits on the owner's per-breed list (Equoria-cdmk1), so the Thoroughbred
- * registration placeholder is born without one. The rules themselves are
+ * Gaited for a gaited breed (ruling 2026-10-19); any other breed's default is
+ * the owner's approved per-breed list (q232, Equoria-cdmk1), so the Thoroughbred
+ * registration placeholder is born with Racing. Old contract (before the list):
+ * the placeholder was born with no discipline. The rules themselves are
  * pinned in modules/horses/__tests__/birthDiscipline.integration.test.mjs.
  *
  * Real database, real HTTP, real CSRF. No mocks. Fixtures removed by id.
@@ -73,11 +74,11 @@ afterAll(async () => {
 describe('onboarding starter horse', () => {
   it('the wizard’s chosen gaited breed replaces the registration placeholder with Gaited at +5', async () => {
     const { user, post } = await makeUser('onb', { completedOnboarding: false, onboardingStep: 0 });
-    // The registration placeholder (Thoroughbred, no default yet).
+    // The registration placeholder (Thoroughbred: Racing on the approved list, q232).
     await createStarterHorseForNewUser(user);
     const placeholder = await prisma.horse.findFirst({ where: { userId: user.id } });
     expect(placeholder).not.toBeNull();
-    expect(placeholder.disciplineScores).toBeNull();
+    expect(placeholder.disciplineScores).toEqual({ Racing: 5 });
 
     const res = await post('/api/v1/auth/advance-onboarding', {
       horseName: 'Saddle Song',

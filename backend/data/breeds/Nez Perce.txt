@@ -1,5 +1,5 @@
 INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
-('Nez Perce', 'Trait', $json${
+('Nez Perce', 'Gaited', $json${
   "allowedAlleles": {
     "E_Extension": [
       "e/e",

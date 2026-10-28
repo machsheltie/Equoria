@@ -11,12 +11,14 @@
  *   - Store and starter horses: their breed's default discipline
  *     (breedDefaultDiscipline). A gaited breed's default is always Gaited
  *     (ruling 2026-10-19). A non-gaited breed's default is the discipline named
- *     in breeds.defaultTrait; a non-gaited breed can never default to Gaited,
- *     and a breed whose defaultTrait names no discipline (the seed placeholder
- *     'Trait') has no default yet, so the horse is born without one.
- *   - Bred foals: resolveFoalBirthDiscipline. Owner question q216 is open
- *     (breed default, or a parent's trained discipline); it implements the
- *     2026-10-19/10-21 rulings until she answers.
+ *     in breeds.defaultTrait, the owner's approved per-breed list (q232,
+ *     Equoria-cdmk1; seeded from backend/data/breeds/*.txt default_trait). A
+ *     non-gaited breed can never default to Gaited, and a breed whose
+ *     defaultTrait names no discipline has none, so the horse is born without one.
+ *   - Bred foals: resolveFoalBirthDiscipline (owner rulings 2026-10-28): a foal
+ *     of a gaited breed is always born Gaited (q219); any other foal inherits
+ *     from a parent's trained discipline, as ruled 2026-10-19 (q216). A mare's
+ *     training during pregnancy adds nothing to the pick (q220).
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -106,9 +108,10 @@ function parentDiscipline(disciplineScores, allowGaited) {
 }
 
 /**
- * Pick a foal's birth discipline from its parents (rulings 2026-10-19/10-21).
+ * Pick a foal's birth discipline (rulings 2026-10-19/10-21, 2026-10-28).
  * Pure: every input is passed in.
  *
+ *   0. A foal of a gaited breed is always born Gaited (q219).
  *   1. Disciplines either parent trained in (at least one training session),
  *      weighted by sessions summed over both parents.
  *   2. If neither parent ever trained: the sire's or the dam's own discipline,
@@ -132,6 +135,9 @@ export function pickFoalBirthDisciplineFromParents({
   rng = Math.random,
 }) {
   const allowGaited = isGaitedBreedProfile(foalBreed?.breedGeneticProfile);
+  if (allowGaited) {
+    return gaitedDiscipline;
+  }
 
   const weighted = Object.entries(sessionsByDiscipline ?? {})
     .filter(
@@ -167,11 +173,9 @@ export function pickFoalBirthDisciplineFromParents({
 }
 
 /**
- * A bred foal's birth discipline. OPEN owner question q216: whether a foal
- * takes its breed's default or a parent's trained discipline. Until she
- * answers this follows the 2026-10-19 ruling (a parent's trained discipline);
- * if she rules for the breed default, this function's body becomes
- * `return breedDefaultDiscipline(foalBreed);`.
+ * A bred foal's birth discipline: Gaited for a gaited breed (q219), otherwise
+ * from a parent's trained discipline (q216, ruling 2026-10-19). See
+ * pickFoalBirthDisciplineFromParents.
  *
  * @param {object} input
  * @param {number} input.sireId

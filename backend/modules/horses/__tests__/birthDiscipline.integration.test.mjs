@@ -8,11 +8,12 @@
  *
  * Store and starter horses take their breed's default: Gaited for a gaited
  * breed (ruling 2026-10-19); a non-gaited breed's default comes from
- * breeds.defaultTrait, which today holds only the placeholder 'Trait' until
- * the owner approves the per-breed list (Equoria-cdmk1), so those horses are
- * born without one. Bred foals follow the 2026-10-19/10-21 rulings (parents'
- * training sessions, then a parent's own discipline, then the breed default)
- * while owner question q216 is open.
+ * breeds.defaultTrait, the owner's approved per-breed list (q232, Equoria-cdmk1;
+ * Thoroughbred is Racing). Old contract (placeholder 'Trait' for every breed):
+ * a non-gaited store horse was born with no discipline. Bred foals (owner rulings 2026-10-28): a gaited breed's foal
+ * is always born Gaited (q219); any other foal follows the 2026-10-19/10-21
+ * rulings (parents' training sessions, then a parent's own discipline, then the
+ * breed default), confirmed by q216.
  *
  * Real database, real HTTP for the store, real foaling service. The starter
  * horse paths are pinned in modules/auth/__tests__/starterHorseBirthDiscipline.
@@ -128,7 +129,7 @@ describe('breed default discipline (Equoria-tl5l8)', () => {
   });
 });
 
-describe('foal birth discipline from the parents (rulings 2026-10-19/10-21, q216 open)', () => {
+describe('foal birth discipline from the parents (rulings 2026-10-19/10-21, q216, q219)', () => {
   const plainFoal = { breedGeneticProfile: plainProfile, defaultTrait: 'Trait' };
   const gaitedFoal = { breedGeneticProfile: gaitedProfile, defaultTrait: 'Trait' };
 
@@ -175,6 +176,20 @@ describe('foal birth discipline from the parents (rulings 2026-10-19/10-21, q216
     );
   });
 
+  // q219 (owner ruling 2026-10-28): old contract let a gaited foal inherit its parents'
+  // trained discipline; now a gaited breed's foal is always born Gaited.
+  it('a gaited foal is always Gaited, whatever its parents trained or hold', () => {
+    expect(
+      pickFoalBirthDisciplineFromParents({
+        sessionsByDiscipline: { Dressage: 9, Saddleseat: 3 },
+        sireDisciplineScores: { Dressage: 40 },
+        damDisciplineScores: { Saddleseat: 30 },
+        foalBreed: gaitedFoal,
+        rng: () => 0,
+      }),
+    ).toBe('Gaited');
+  });
+
   it('falls back to the breed default last (Gaited for a gaited foal)', () => {
     expect(pickFoalBirthDisciplineFromParents({ sessionsByDiscipline: {}, foalBreed: gaitedFoal })).toBe('Gaited');
     expect(pickFoalBirthDisciplineFromParents({ sessionsByDiscipline: {}, foalBreed: plainFoal })).toBeNull();
@@ -191,13 +206,13 @@ describe('store purchase (buyStoreHorse)', () => {
     expect(horse.disciplineScores).toEqual({ Gaited: 5 });
   });
 
-  it('a non-gaited breed with no approved default is born with no discipline', async () => {
+  it('a non-gaited breed is born with its approved default discipline at +5 (q232)', async () => {
     const { user, post } = await makeUser('storeplain');
     const res = await post('/api/v1/marketplace/store/buy', { breedId: plainBreed.id, sex: 'Stallion' });
     expect(res.status).toBe(201);
 
     const horse = await prisma.horse.findFirst({ where: { userId: user.id }, select: { disciplineScores: true } });
-    expect(horse.disciplineScores).toBeNull();
+    expect(horse.disciplineScores).toEqual({ Racing: 5 });
   });
 });
 
@@ -256,11 +271,13 @@ describe('foaling (createFoalFromPregnancy)', () => {
     expect(scores).toEqual({ Gaited: 5 });
   });
 
-  it('a gaited foal inherits the discipline its parents trained in', async () => {
+  // q219 (owner ruling 2026-10-28). Old contract: "a gaited foal inherits the
+  // discipline its parents trained in" ({ Saddleseat: 5 }). Now always Gaited.
+  it('a gaited foal is always born Gaited, even when its parents trained in another discipline', async () => {
     const { sire, dam } = await pregnantPair('gaitedtrained', gaitedBreed);
     await prisma.trainingLog.create({ data: { horseId: sire.id, discipline: 'Saddleseat' } });
     await prisma.trainingLog.create({ data: { horseId: dam.id, discipline: 'Saddleseat' } });
-    expect(await foalScores(dam.id)).toEqual({ Saddleseat: 5 });
+    expect(await foalScores(dam.id)).toEqual({ Gaited: 5 });
   });
 
   it('a non-gaited foal never inherits Gaited from its parents’ training', async () => {
@@ -279,8 +296,10 @@ describe('foaling (createFoalFromPregnancy)', () => {
     expect(await foalScores(dam.id)).toEqual({ Endurance: 5 });
   });
 
-  it('a non-gaited foal with nothing to inherit and no approved breed default has no discipline', async () => {
+  // q232: old contract "no approved breed default has no discipline"; with the
+  // approved list the last fallback is the breed default (Thoroughbred: Racing).
+  it('a non-gaited foal with nothing to inherit falls back to its breed default', async () => {
     const { dam } = await pregnantPair('plainnone', plainBreed);
-    expect(await foalScores(dam.id)).toBeNull();
+    expect(await foalScores(dam.id)).toEqual({ Racing: 5 });
   });
 });
