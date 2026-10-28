@@ -161,3 +161,27 @@ export function withAgeYears(horse, now = new Date()) {
     ageYears: getHorseAgeYears(horse.dateOfBirth, now),
   };
 }
+
+/**
+ * A horse's age RIGHT NOW in game-years, for the age gates (training 3..20,
+ * retirement at 21, no rider before 3). Equoria-5b2nj, Equoria-y2ksc.
+ *
+ * `Horse.age` is written by the nightly birthday job (00:05 Eastern), so from
+ * midnight until that run a horse whose birthday it is still holds yesterday's age
+ * while `dateOfBirth` already says the new one. That pending birthday counts at
+ * once: when the dateOfBirth age is exactly one more than the stored age, it is
+ * the live age. Any other disagreement is not a pending birthday (a legacy row
+ * whose dateOfBirth was never back-dated, or one dated in real-world years), and
+ * the stored age stands, as before.
+ *
+ * @param {{ age?: number|null, dateOfBirth?: Date|string|null }} horse
+ * @param {Date} [now=new Date()]
+ * @returns {number} age in whole game-years
+ */
+export function liveHorseAgeYears(horse, now = new Date()) {
+  const fromBirthDate = getHorseAgeYears(horse?.dateOfBirth, now);
+  if (!Number.isFinite(horse?.age)) {
+    return fromBirthDate;
+  }
+  return fromBirthDate === horse.age + 1 ? fromBirthDate : horse.age;
+}

@@ -122,8 +122,32 @@ describe('rider assign under concurrency (Equoria-j8s5c)', () => {
   // holds the RIDER row: pre-fix both queue at their assignment insert (its
   // foreign key needs a share lock on the rider) after the check already
   // passed; post-fix both queue at the rider-row lock taken before the check.
-  it('one rider assigned to two horses at once is active on exactly one', async () => {
+  //
+  // Owner ruling 2026-10-28 (q254, Equoria-r2wix) changed the contract: a rider
+  // rides up to 20 horses (old contract: one). The race now targets the LAST
+  // place: a rider already on 19 horses, assigned to two more at once, ends on
+  // exactly 20.
+  it('one rider at 19 horses assigned to two more at once ends on exactly 20', async () => {
     const rider = riders[0];
+    const seated = [];
+    for (let i = 0; i < 19; i += 1) {
+      seated.push(
+        await prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `${fixturePrefix}-horse-seated${i}-${tag()}`,
+            sex: 'Mare',
+            dateOfBirth: new Date('2019-06-15'),
+            age: 6,
+            userId: owner.id,
+            healthStatus: 'Excellent',
+          },
+        }),
+      );
+    }
+    await prisma.riderAssignment.createMany({
+      data: seated.map(h => ({ riderId: rider.id, horseId: h.id, userId: owner.id, isActive: true })),
+    });
     const responses = await raceBehindLock(
       barrierClient,
       tx => tx.$queryRaw`SELECT "id" FROM "riders" WHERE "id" = ${rider.id} FOR UPDATE`,
@@ -132,11 +156,8 @@ describe('rider assign under concurrency (Equoria-j8s5c)', () => {
     expect(responses.map(r => r.status).sort()).toEqual([201, 400]);
 
     const active = await prisma.riderAssignment.findMany({ where: { riderId: rider.id, isActive: true } });
-    expect(active).toHaveLength(1);
-    const ridden = await prisma.riderAssignment.findMany({
-      where: { riderId: rider.id, isActive: true, horse: { userId: owner.id } },
-      select: { horseId: true },
-    });
-    expect(ridden.map(a => a.horseId)).toEqual([active[0].horseId]);
+    expect(active).toHaveLength(20);
+    const raced = active.filter(a => horses.some(h => h.id === a.horseId));
+    expect(raced).toHaveLength(1);
   }, 60000);
 });

@@ -280,7 +280,9 @@ describe('riderController (real DB)', () => {
       expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Horse not found' });
     });
 
-    it('returns 400 when rider is already assigned to another horse', async () => {
+    // Owner ruling 2026-10-28 (q254, Equoria-r2wix): a rider rides up to 20 horses.
+    // Old contract: 400 "Rider is already assigned to a horse" for a second horse.
+    it('assigns a rider who already rides another horse to a second one', async () => {
       const user = await createUser();
       const horse1 = await createHorse(user.id);
       const horse2 = await createHorse(user.id);
@@ -290,11 +292,11 @@ describe('riderController (real DB)', () => {
       const h = makeReqRes(user.id, { body: { riderId: rider.id, horseId: horse2.id } });
       await assignRider(h.req, h.res);
 
-      expect(h.res.statusValue).toBe(400);
-      expect(h.res.jsonValue).toMatchObject({
-        success: false,
-        message: expect.stringContaining('already assigned'),
+      expect(h.res.statusValue).toBe(201);
+      const active = await prisma.riderAssignment.count({
+        where: { riderId: rider.id, isActive: true },
       });
+      expect(active).toBe(2);
     });
 
     it('deactivates any existing rider on the target horse before assigning new one', async () => {

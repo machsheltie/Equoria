@@ -17,6 +17,12 @@
  */
 
 /**
+ * The most horses one rider may ride at a time (owner ruling 2026-10-28, q254,
+ * Equoria-r2wix). Old contract: one horse per rider.
+ */
+export const maxHorsesPerRider = 20;
+
+/**
  * Maximum NON-retired riders a user may hold, keyed by stable level (1–5).
  * Adopts the (previously orphaned) frontend SLOT_CAP_BY_STABLE_LEVEL map.
  */

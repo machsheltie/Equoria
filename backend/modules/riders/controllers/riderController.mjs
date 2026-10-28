@@ -11,6 +11,9 @@ import { hiredStaffFee, staffCareerLevel } from '../../../constants/staffLevels.
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 // Equoria-6p398.14 follow-up: a retired horse (21+, not in foal) is given no new rider.
 import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
+import { liveHorseAgeYears } from '../../../utils/horseAge.mjs';
+import { minActiveAgeYears } from '../../../constants/horseAgePolicy.mjs';
+import { maxHorsesPerRider } from '../config/riderConfig.mjs';
 import {
   getRevealedDiscoveryCount,
   getNextDiscoveryRevealLevel,
@@ -24,11 +27,20 @@ import {
  * @param {number} status
  * @param {string} message
  */
-function httpError(status, message) {
+function httpError(status, message, code = null) {
   const error = new Error(message);
   error.status = status;
+  if (code) {
+    error.code = code;
+  }
   return error;
 }
+
+/** Machine-readable codes for a refused rider assignment; for branching, never shown. */
+export const riderAssignRefusal = Object.freeze({
+  horseTooYoung: 'horseTooYoung',
+  riderAtCapacity: 'riderAtCapacity',
+});
 
 /**
  * Message for a request that names a horse the caller no longer owns.
@@ -183,9 +195,19 @@ export async function assignRider(req, res) {
         // the whole assignment rolls back rather than writing a rider onto a
         // stranger's horse.
         const claimed = await tx.$queryRaw`
-          SELECT "id" FROM "horses" WHERE "id" = ${horseId} AND "userId" = ${userId} FOR UPDATE`;
+          SELECT "id", "name", "age", "dateOfBirth" FROM "horses"
+          WHERE "id" = ${horseId} AND "userId" = ${userId} FOR UPDATE`;
         if (claimed.length !== 1) {
           throw httpError(409, HORSE_NOT_YOURS);
+        }
+        // A horse is ridden from 3, the age it can enter shows (Equoria-y2ksc). Read
+        // on the locked row, at its live age (a third birthday counts at once).
+        if (liveHorseAgeYears(claimed[0]) < minActiveAgeYears) {
+          throw httpError(
+            400,
+            `${claimed[0].name} is too young for a rider. Horses are ridden from age ${minActiveAgeYears}.`,
+            riderAssignRefusal.horseTooYoung,
+          );
         }
 
         // Equoria-j8s5c: then LOCK the rider row (a real write, as the trainer
@@ -203,11 +225,22 @@ export async function assignRider(req, res) {
           throw httpError(400, 'Cannot assign a retired rider');
         }
 
-        const existingRiderAssignment = await tx.riderAssignment.findFirst({
+        // One rider rides up to twenty horses (owner ruling 2026-10-28, q254,
+        // Equoria-r2wix; old contract: one). Counted under the rider lock above, so
+        // two assigns cannot both take the last place.
+        const ridden = await tx.riderAssignment.findMany({
           where: { riderId, isActive: true },
+          select: { horseId: true },
         });
-        if (existingRiderAssignment) {
-          throw httpError(400, 'Rider is already assigned to a horse. Unassign first.');
+        if (ridden.some(a => a.horseId === horseId)) {
+          throw httpError(400, 'Rider is already assigned to this horse.');
+        }
+        if (ridden.length >= maxHorsesPerRider) {
+          throw httpError(
+            400,
+            `${rider.firstName} ${rider.lastName} already rides ${maxHorsesPerRider} horses. Unassign one first.`,
+            riderAssignRefusal.riderAtCapacity,
+          );
         }
 
         // Staff rows second: deactivate any existing active rider on this horse.
