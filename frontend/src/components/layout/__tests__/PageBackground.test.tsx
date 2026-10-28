@@ -10,6 +10,8 @@
  */
 
 import React from 'react';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { render, screen, act } from '@testing-library/react';
 import { renderHook } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -84,6 +86,21 @@ describe('usePageBackground', () => {
     expect(bg).not.toContain('image-set');
     expect(bg).not.toContain('.jpg');
   });
+
+  // Equoria-uqk5y (NAV-10): the scene backgrounds named a .jpg fallback in
+  // image-set() that was never shipped. Every image the style names must exist.
+  it.each(['default', 'auth', 'hub'] as const)(
+    'names only background files that exist in public/ (scene=%s)',
+    (scene) => {
+      const { result } = renderHook(() => usePageBackground({ scene }));
+      const bg = result.current.backgroundImage as string;
+      const urls = [...bg.matchAll(/url\('([^']+)'\)/g)].map((match) => match[1]);
+      expect(urls.length).toBeGreaterThan(0);
+      for (const url of urls) {
+        expect(existsSync(path.join(process.cwd(), 'public', url)), url).toBe(true);
+      }
+    }
+  );
 
   it('default scene resolves to generic path (not /backgrounds/default/)', () => {
     const { result } = renderHook(() => usePageBackground({ scene: 'default' }));
