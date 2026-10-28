@@ -54,7 +54,7 @@ const feedCatalogEntries = [
   {
     id: 'elite',
     name: 'Elite Feed',
-    description: 'Top-tier specialised blend. 25% chance per feeding to boost a random stat by 1.',
+    description: 'Top-tier specialized blend. 25% chance per feeding to boost a random stat by 1.',
     packPrice: 200,
     perUnit: 2.0,
     statRollPct: 25,

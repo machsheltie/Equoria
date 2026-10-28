@@ -211,7 +211,7 @@ export const TACK_INVENTORY = [
     comingSoon: true,
     name: 'Memory Foam Saddle Pad',
     description:
-      "Contoured memory foam pad that moulds to the horse's back. Reduces pressure points during long rides.",
+      "Contoured memory foam pad that molds to the horse's back. Reduces pressure points during long rides.",
     cost: tackPrice,
     tier: 'quality',
     disciplines: ['Endurance', 'Eventing', 'Cross Country'],

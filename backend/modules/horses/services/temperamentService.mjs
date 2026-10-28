@@ -81,7 +81,7 @@ export function getTemperamentGroomSynergy(temperament, groomPersonality) {
   // (an unrecognised personality silently returns 0 for Calm/Steady _any synergy without this)
   if (!CANONICAL_GROOM_PERSONALITIES.has(normalizedPersonality)) {
     logger.warn(
-      `[temperamentService] Unrecognised groom personality "${groomPersonality}" — not in canonical set, returning zero synergy`,
+      `[temperamentService] Unrecognized groom personality "${groomPersonality}" — not in canonical set, returning zero synergy`,
     );
     return 0;
   }

@@ -46,7 +46,7 @@ const services = [
   {
     id: 'genetic-testing',
     name: 'Genetic Testing',
-    description: 'A colour genetics panel.',
+    description: 'A color genetics panel.',
     cost: 500,
     actionLabel: 'Run Panel',
   },

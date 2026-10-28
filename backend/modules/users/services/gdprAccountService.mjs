@@ -408,7 +408,7 @@ export async function eraseUserAccount(userId) {
           }
           await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, allowed, {
             category: 'showCancelRefundEntrant',
-            description: `Refund entry fee — show "${show.name}" cancelled (creator GDPR-deleted)`,
+            description: `Refund entry fee — show "${show.name}" canceled (creator GDPR-deleted)`,
             linkedUserId: refundUserId,
             metadata: { showId: show.id, reason: 'creator_deleted' },
           });

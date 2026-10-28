@@ -256,7 +256,7 @@ const CommunityPageContent: React.FC = () => {
     {
       title: 'Hall of Fame',
       description:
-        'Celebrate your greatest horses. Retired champions immortalised with career highlights and legacy records.',
+        'Celebrate your greatest horses. Retired champions immortalized with career highlights and legacy records.',
       href: '/my-stable',
       icon: <Trophy />,
       role: 'warning',

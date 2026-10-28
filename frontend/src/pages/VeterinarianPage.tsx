@@ -78,7 +78,7 @@ const VeterinarianPage: React.FC = () => {
           const name = result.horse.name;
           const done =
             service.id === 'genetic-testing'
-              ? `${name}'s colour panel is done.`
+              ? `${name}'s color panel is done.`
               : `${name} is in Excellent health.`;
           const hunger =
             service.id === 'genetic-testing' ? undefined : hungerLine(name, result.horse);
@@ -203,7 +203,7 @@ const VeterinarianPage: React.FC = () => {
     <div className="min-h-screen">
       <PageHero
         title="Vet Clinic"
-        subtitle="Health checks and colour genetics testing for your horses"
+        subtitle="Health checks and color genetics testing for your horses"
         icon={<Leaf className="w-7 h-7 text-[var(--gold-400)]" />}
       >
         <nav

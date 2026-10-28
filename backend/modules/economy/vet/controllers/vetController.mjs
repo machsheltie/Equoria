@@ -61,7 +61,7 @@ export const VET_SERVICES = [
   {
     id: geneticTestingId,
     name: 'Genetic Testing',
-    description: 'A colour genetics panel that uncovers the colour genes a horse carries.',
+    description: 'A color genetics panel that uncovers the color genes a horse carries.',
     cost: 500,
     actionLabel: 'Run Panel',
   },

@@ -30,7 +30,7 @@ export const TRAINER_PERSONALITIES: Record<
     icon: '⚙️',
     label: 'Technical',
     badgeClass: 'bg-[var(--role-info-bg)] text-[var(--role-info-text)]',
-    description: 'Data-driven approach. Optimises specific skill progression.',
+    description: 'Data-driven approach. Optimizes specific skill progression.',
   },
   competitive: {
     icon: '🏆',

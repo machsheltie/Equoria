@@ -166,7 +166,7 @@ const BREED_PRESETS: Record<string, { tendencies: BreedStatTendencies; lore: str
       precision: { min: 58, max: 80, avg: 69 },
       boldness: { min: 62, max: 84, avg: 73 },
     },
-    lore: 'Painted by fortune, the Paint Horse carries the heritage of the Great Plains — bold in colour and spirit, beloved by riders of every discipline.',
+    lore: 'Painted by fortune, the Paint Horse carries the heritage of the Great Plains — bold in color and spirit, beloved by riders of every discipline.',
   },
   andalusian: {
     tendencies: {

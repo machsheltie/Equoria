@@ -70,7 +70,7 @@ const DISCIPLINE_TRAITS = {
     {
       label: 'Phase Mastery',
       description:
-        'Optimises seamless transitions between dressage, cross-country, and stadium phases.',
+        'Optimizes seamless transitions between dressage, cross-country, and stadium phases.',
       icon: '🔀',
       strength: 'mild',
     },
@@ -123,7 +123,7 @@ const PERSONALITY_TRAITS = {
     },
     {
       label: 'Positive Momentum',
-      description: 'Maintains forward energy by recognising and celebrating small daily victories.',
+      description: 'Maintains forward energy by recognizing and celebrating small daily victories.',
       icon: '⬆️',
       strength: 'moderate',
     },
@@ -131,7 +131,7 @@ const PERSONALITY_TRAITS = {
   technical: [
     {
       label: 'Biomechanics Focus',
-      description: 'Analyses and corrects subtle movement inefficiencies at a granular level.',
+      description: 'Analyzes and corrects subtle movement inefficiencies at a granular level.',
       icon: '🔬',
       strength: 'mild',
     },
@@ -183,7 +183,7 @@ const COMPATIBILITY_POOL = [
     strength: 'mild',
   },
   {
-    label: 'Bold Horse Harmoniser',
+    label: 'Bold Horse Harmonizer',
     description: 'Channels high-energy horses into productive, focused work rather than chaos.',
     icon: '🤝',
     strength: 'moderate',
@@ -191,14 +191,13 @@ const COMPATIBILITY_POOL = [
   {
     label: 'Young Horse Developer',
     description:
-      'Specialises in laying correct foundations that set green horses up for long careers.',
+      'Specializes in laying correct foundations that set green horses up for long careers.',
     icon: '🌱',
     strength: 'mild',
   },
   {
     label: 'Veteran Horse Respecter',
-    description:
-      'Adapts training methods to honour experienced horses and protect their longevity.',
+    description: 'Adapts training methods to honor experienced horses and protect their longevity.',
     icon: '🏅',
     strength: 'moderate',
   },

@@ -21,7 +21,7 @@ export const guideSectionsWorld: readonly GuideSection[] = [
           "**Mares rest 7 days** (one game year) after being bred. Stallions don't need to rest.",
           '**Your own pair is free.** Breeding your mare to your own stallion costs nothing.',
           "**Stud fees are set by players.** If you own a stallion aged 3 or over, you decide whether he stands at stud and what his fee is. Choose **Public Stud**, where bookings go through automatically, or **Private Stud**, where you approve or turn down each request. When a mare is bred to another player's stallion, her owner pays that stallion's fee to his owner. There are no other breeding fees.",
-          '**Finding a stallion.** The **Horse Marketplace** search covers every horse. Tick **At stud**, **For sale**, or both, and narrow it down by breed, age, sex, colour, sale price, stud fee and Public or Private Stud.',
+          '**Finding a stallion.** The **Horse Marketplace** search covers every horse. Tick **At stud**, **For sale**, or both, and narrow it down by breed, age, sex, color, sale price, stud fee and Public or Private Stud.',
           "**Breeding is done on the stallion's page.** Open his page and press **Breed to** his name, then pick your mare. At a Public Stud she's bred at once and the fee is paid. At a Private Stud your request waits for his owner to accept or reject it. Your own pair works the same way, free of charge.",
           "**Breeding requests.** The **Breeding requests** button on a horse's page lists the requests waiting for your stallion, and the ones you've sent for your mare.",
         ],

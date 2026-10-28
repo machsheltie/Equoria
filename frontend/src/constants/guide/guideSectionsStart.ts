@@ -155,7 +155,7 @@ export const guideSectionsStart: readonly GuideSection[] = [
       },
       {
         kind: 'paragraph',
-        text: "**Genetic Testing.** A horse's colour genes stay hidden until you test it. Choose the horse at the Veterinarian and press **Run Panel** (500 coins).",
+        text: "**Genetic Testing.** A horse's color genes stay hidden until you test it. Choose the horse at the Veterinarian and press **Run Panel** (500 coins).",
       },
       {
         kind: 'paragraph',

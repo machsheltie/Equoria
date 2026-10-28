@@ -245,7 +245,7 @@ export default function GuidePage() {
         <Surface variant="panel">
           <img
             src="/images/equoriavisitorscenter.webp"
-            alt="The Equoria Visitors Centre"
+            alt="The Equoria Visitors Center"
             className="w-full h-auto rounded-[var(--radius-md)]"
           />
         </Surface>

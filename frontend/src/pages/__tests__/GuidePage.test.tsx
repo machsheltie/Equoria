@@ -140,7 +140,7 @@ describe('GuidePage (Equoria-kd2dd)', () => {
 });
 
 describe('GuidePage hero (Equoria-vcpbq)', () => {
-  it('shows the visitors centre banner in a panel below the title, with the gold divider', () => {
+  it('shows the visitors center banner in a panel below the title, with the gold divider', () => {
     Element.prototype.scrollIntoView =
       vi.fn() as unknown as typeof Element.prototype.scrollIntoView;
     renderGuide();
@@ -148,7 +148,7 @@ describe('GuidePage hero (Equoria-vcpbq)', () => {
     const heading = screen.getByRole('heading', { level: 1, name: guideTitle });
     const hero = heading.closest('header') as HTMLElement;
     expect(within(hero).getByTestId('page-hero-divider')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /visitors centre/i })).toHaveAttribute(
+    expect(screen.getByRole('img', { name: /visitors center/i })).toHaveAttribute(
       'src',
       '/images/equoriavisitorscenter.webp'
     );

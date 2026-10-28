@@ -51,7 +51,7 @@ export const RIDER_PERSONALITY_DATA: Record<RiderPersonality, RiderPersonalityIn
     label: 'Methodical',
     icon: '📐',
     description:
-      'Precise, structured riding style. Maximises scores in precision and technical disciplines.',
+      'Precise, structured riding style. Maximizes scores in precision and technical disciplines.',
     disciplineAffinities: [
       { discipline: 'Dressage', magnitude: 'high' },
       { discipline: 'Western Pleasure', magnitude: 'high' },

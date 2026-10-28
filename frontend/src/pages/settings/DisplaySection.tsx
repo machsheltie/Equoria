@@ -22,7 +22,7 @@ export const DisplaySection: React.FC<DisplaySectionProps> = ({ display, setDisp
     <div className="space-y-1">
       <Toggle
         label="Reduced Motion"
-        description="Minimise animations throughout the interface"
+        description="Minimize animations throughout the interface"
         checked={display.reducedMotion}
         onChange={setDisp('reducedMotion')}
         testId="display-reduced-motion"

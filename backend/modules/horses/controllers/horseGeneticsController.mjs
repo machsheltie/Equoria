@@ -191,7 +191,7 @@ export async function getGenetics(req, res) {
     if (horse.colorGeneticsTested !== true) {
       return res.status(200).json({
         success: true,
-        message: 'Colour genetics have not been tested for this horse',
+        message: 'Color genetics have not been tested for this horse',
         data: {
           horseId: horse.id,
           horseName: horse.name,
