@@ -43,6 +43,9 @@ const OnboardingGuard: React.FC<{ children?: ReactNode }> = ({ children }) => {
     !!user &&
     !EXEMPT_PATHS.has(location.pathname) &&
     !carriesToken &&
+    // Equoria-voasj: the email comes first; EmailVerificationGuard holds an
+    // unconfirmed player on /verify-email, so the wizard waits.
+    user.emailVerified !== false &&
     user.completedOnboarding === false &&
     (user.onboardingStep ?? 0) === 0;
 

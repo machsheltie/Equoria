@@ -121,7 +121,8 @@ export function WhileYouWereGone() {
   // On mount: detect absence; record the visit now only when no overlay is shown
   const userId = user?.id;
   useEffect(() => {
-    if (!user?.completedOnboarding || userId === undefined) return;
+    // Equoria-voasj: an unconfirmed player is held on /verify-email; no recap.
+    if (!user?.completedOnboarding || user.emailVerified === false || userId === undefined) return;
 
     const lastVisit = getLastVisit(userId);
     if (isLongAbsence(lastVisit)) {

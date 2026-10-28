@@ -23,7 +23,7 @@ const VerifyEmailPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
-  const { isAuthenticated, isEmailVerified } = useAuth();
+  const { isAuthenticated, isEmailVerified, logout, isLoggingOut, refetchProfile } = useAuth();
   const { mutate: verifyEmail, isPending: isVerifying, error: verifyError } = useVerifyEmail();
   const {
     mutate: resendVerification,
@@ -71,6 +71,13 @@ const VerifyEmailPage: React.FC = () => {
     resendVerification();
   };
 
+  // Equoria-voasj: play opens once the profile says the email is confirmed, so
+  // wait for the fresh profile before leaving, or the email gate sends her back.
+  const enterGame = async () => {
+    await refetchProfile();
+    navigate('/');
+  };
+
   // ── Already verified ─────────────────────────────────────────────────
   if (state === 'already-verified') {
     return (
@@ -101,7 +108,7 @@ const VerifyEmailPage: React.FC = () => {
               is already verified.
             </p>
           </div>
-          <Button type="button" className="w-full" onClick={() => navigate('/')}>
+          <Button type="button" className="w-full" onClick={enterGame}>
             Continue to Home
           </Button>
         </div>
@@ -170,7 +177,7 @@ const VerifyEmailPage: React.FC = () => {
               You now have full access to Equoria!
             </p>
           </div>
-          <Button type="button" className="w-full" onClick={() => navigate('/')}>
+          <Button type="button" className="w-full" onClick={enterGame}>
             Enter the Realm
           </Button>
         </div>
@@ -298,13 +305,16 @@ const VerifyEmailPage: React.FC = () => {
                 {resendError.message || 'Failed to send verification email. Try again later.'}
               </p>
             )}
+            {/* Equoria-voasj: nothing past this page opens until the email is
+                confirmed, so the only other way out is signing out. */}
             <Button
               type="button"
               variant="secondary"
               className="w-full"
-              onClick={() => navigate('/')}
+              onClick={logout}
+              disabled={isLoggingOut}
             >
-              Continue to Home
+              Sign Out
             </Button>
           </div>
         ) : (

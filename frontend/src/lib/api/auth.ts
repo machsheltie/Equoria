@@ -263,6 +263,8 @@ export const authApi = {
         level?: number;
         xp?: number;
         role?: 'user' | 'owner' | 'admin' | 'moderator';
+        /** Equoria-voasj: false until the player follows the emailed link. */
+        emailVerified?: boolean;
         completedOnboarding?: boolean;
         onboardingStep?: number;
         /** Equoria-kd2dd: whether the one-time welcome note has been shown. */

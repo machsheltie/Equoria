@@ -51,6 +51,11 @@ export interface User {
   xp?: number;
   /** User's role for access control. Defaults to 'user' if not set. */
   role?: UserRole;
+  /**
+   * Whether the player has confirmed her email (Equoria-voasj). Until she does,
+   * the server refuses all play and the client keeps her on /verify-email.
+   */
+  emailVerified?: boolean;
   /** Whether the player has completed the new-user onboarding wizard. Undefined for legacy accounts. */
   completedOnboarding?: boolean;
   /** Current step in the 10-step onboarding spotlight tour (0 = not started, 1-10 = in progress, 10 = complete). */

@@ -8,6 +8,7 @@ import { navItems } from './nav-items';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth';
 import OnboardingGuard from '@/components/auth/OnboardingGuard';
+import EmailVerificationGuard from '@/components/auth/EmailVerificationGuard';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import AppCrashFallback from '@/components/AppCrashFallback';
 import GallopingLoader from '@/components/ui/GallopingLoader';
@@ -91,70 +92,76 @@ const App = () => (
               <Suspense fallback={null}>
                 <WelcomeDialog />
               </Suspense>
-              <OnboardingGuard>
-                <Suspense fallback={<GallopingLoader />}>
-                  <Routes>
-                    {/* Equoria-bvddn.36: requires auth (no DashboardLayout nav shell) —
+              {/* EmailVerificationGuard (Equoria-voasj): no play until the email is confirmed. */}
+              <EmailVerificationGuard>
+                <OnboardingGuard>
+                  <Suspense fallback={<GallopingLoader />}>
+                    <Routes>
+                      {/* Equoria-bvddn.36: requires auth (no DashboardLayout nav shell) —
                       a logged-out visitor must not be able to walk the wizard and
                       only fail with a 401 on submit. OnboardingGuard still does the
                       post-registration redirect into this route for an already
                       signed-in player. */}
-                    <Route
-                      path="/onboarding"
-                      element={
-                        <ProtectedRoute>
-                          <OnboardingPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    {/* Public routes — no nav shell */}
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/register" element={<RegisterPage />} />
-                    <Route path="/verify-email" element={<VerifyEmailPage />} />
-                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                    <Route path="/reset-password" element={<ResetPasswordPage />} />
-                    <Route path="/confirm-email-change" element={<ConfirmEmailChangePage />} />
+                      <Route
+                        path="/onboarding"
+                        element={
+                          <ProtectedRoute>
+                            <OnboardingPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* Public routes — no nav shell */}
+                      <Route path="/login" element={<LoginPage />} />
+                      <Route path="/register" element={<RegisterPage />} />
+                      <Route path="/verify-email" element={<VerifyEmailPage />} />
+                      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                      <Route path="/reset-password" element={<ResetPasswordPage />} />
+                      <Route path="/confirm-email-change" element={<ConfirmEmailChangePage />} />
 
-                    {/* The Steward's Office (STAFF-CR-17): StewardGate decides before
+                      {/* The Steward's Office (STAFF-CR-17): StewardGate decides before
                       any login redirect or nav shell, so for anyone who is not
                       staff /steward renders exactly like the catch-all below. */}
-                    <Route
-                      path="/steward"
-                      element={
-                        <StewardGate>
+                      <Route
+                        path="/steward"
+                        element={
+                          <StewardGate>
+                            <ProtectedRoute>
+                              <DashboardLayout />
+                            </ProtectedRoute>
+                          </StewardGate>
+                        }
+                      >
+                        <Route index element={<StewardsOfficePage />} />
+                      </Route>
+
+                      {/* Authenticated routes — DashboardLayout provides persistent nav */}
+                      <Route
+                        element={
                           <ProtectedRoute>
                             <DashboardLayout />
                           </ProtectedRoute>
-                        </StewardGate>
-                      }
-                    >
-                      <Route index element={<StewardsOfficePage />} />
-                    </Route>
+                        }
+                      >
+                        <Route path="/horses/:id" element={<HorseDetailPage />} />
+                        <Route path="/horses/:id/equip" element={<HorseEquipPage />} />
+                        <Route path="/horses/:id/allocate-stats" element={<AllocateStatsPage />} />
+                        <Route path="/foals/:id" element={<FoalLinkRedirect />} />
+                        {/* Equoria-vb1n0: the Hall of Fame moved; old links land on it. */}
+                        <Route
+                          path="/my-stable"
+                          element={<Navigate to="/hall-of-fame" replace />}
+                        />
+                        {navItems.map(({ to, Page }) => (
+                          <Route key={to} path={to} element={<Page />} />
+                        ))}
+                      </Route>
 
-                    {/* Authenticated routes — DashboardLayout provides persistent nav */}
-                    <Route
-                      element={
-                        <ProtectedRoute>
-                          <DashboardLayout />
-                        </ProtectedRoute>
-                      }
-                    >
-                      <Route path="/horses/:id" element={<HorseDetailPage />} />
-                      <Route path="/horses/:id/equip" element={<HorseEquipPage />} />
-                      <Route path="/horses/:id/allocate-stats" element={<AllocateStatsPage />} />
-                      <Route path="/foals/:id" element={<FoalLinkRedirect />} />
-                      {/* Equoria-vb1n0: the Hall of Fame moved; old links land on it. */}
-                      <Route path="/my-stable" element={<Navigate to="/hall-of-fame" replace />} />
-                      {navItems.map(({ to, Page }) => (
-                        <Route key={to} path={to} element={<Page />} />
-                      ))}
-                    </Route>
-
-                    {/* Any other address: the one not-found behaviour. */}
-                    <Route path="*" element={<NotFoundPage />} />
-                  </Routes>
-                </Suspense>
-              </OnboardingGuard>
+                      {/* Any other address: the one not-found behaviour. */}
+                      <Route path="*" element={<NotFoundPage />} />
+                    </Routes>
+                  </Suspense>
+                </OnboardingGuard>
+              </EmailVerificationGuard>
             </BrowserRouter>
           </RewardToastProvider>
         </TooltipProvider>
