@@ -13,6 +13,7 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { staffCareerLevel } from '../../../constants/staffLevels.mjs';
 import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
 
 // Personality trait definitions
@@ -223,7 +224,6 @@ export async function getGroomPersonalityTraits(groomId) {
       name: true,
       epigeneticInfluenceType: true,
       experience: true,
-      level: true,
     },
   });
 
@@ -242,7 +242,9 @@ export function personalityTraitsFor(groom) {
   }
 
   const experienceLevel = calculateExperienceLevel(groom.experience);
-  const traitStrength = calculateTraitStrength(groom.experience, groom.level);
+  // Owner rulings 2026-10-28: the old 1-10 level is gone (q229) and stars give no bonus
+  // for now (q244), so the level term is staffCareerLevel (old level 1) for every groom.
+  const traitStrength = calculateTraitStrength(groom.experience, staffCareerLevel);
 
   const enhancedTraits = personalityDef.traits.map(trait => ({
     ...trait,

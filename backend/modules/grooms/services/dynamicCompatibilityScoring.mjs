@@ -16,6 +16,7 @@
  */
 
 import logger from '../../../utils/logger.mjs';
+import { staffCareerLevel } from '../../../constants/staffLevels.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { calculateOverallCompatibility, personalityTraitsFor } from './groomPersonalityTraits.mjs';
 import { analyzeHorseTemperament } from '../../horses/index.mjs';
@@ -42,7 +43,6 @@ const GROOM_SELECT = {
   epigeneticInfluenceType: true,
   skillLevel: true,
   experience: true,
-  level: true,
   sessionRate: true,
 };
 
@@ -409,7 +409,9 @@ function calculateHistoricalModifier(inputs, groomId) {
 // ===== CONTEXTUAL MODIFIERS =====
 
 function calculateExperienceBonus(groom) {
-  const levelBonus = Math.min(0.5, groom.level * 0.05); // Max 50% bonus from level
+  // Owner rulings 2026-10-28: the old 1-10 level is gone (q229) and stars give no bonus
+  // for now (q244), so the level term is staffCareerLevel (old level 1) for every groom.
+  const levelBonus = Math.min(0.5, staffCareerLevel * 0.05); // Max 50% bonus from level
   const experienceBonus = Math.min(0.4, groom.experience * 0.002); // Max 40% bonus from experience
   return 1.0 + levelBonus + experienceBonus;
 }
@@ -467,7 +469,7 @@ function generateRecommendationReasoning(compatibility, groom) {
   }
 
   if (compatibility.experienceBonus > 1.2) {
-    reasons.push(`High experience level (${groom.experience} exp, level ${groom.level})`);
+    reasons.push(`High experience level (${groom.experience} exp)`);
   }
 
   if (compatibility.taskSpecificModifier > 1.1) {

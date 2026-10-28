@@ -25,17 +25,18 @@ import {
 } from '../../hooks/api/useGrooms';
 import GroomTalentTree from './GroomTalentTree';
 import type { GroomTalentData } from '../../types/groomTalent';
+import { staffCareerStarLevel } from '@/lib/staffLevels';
 
 interface GroomDetailPanelProps {
   groomId: number;
   /**
-   * Equoria-oey96.6 — the groom's name / level / personality, needed to render
-   * the talent tree: tier gating is level-based and the tree keys its talents
-   * by personality. Sourced from the already-loaded groom LIST row in the
-   * dashboard, so the tree renders without waiting on a second profile fetch.
+   * Equoria-oey96.6 — the groom's name / personality, needed to render the talent
+   * tree: the tree keys its talents by personality. Sourced from the already-loaded
+   * groom LIST row in the dashboard, so the tree renders without waiting on a second
+   * profile fetch. Tier gating reads staffCareerStarLevel, not the groom's stars
+   * (owner ruling 2026-10-28, q244: stars give no bonus for now).
    */
   groomName: string;
-  groomLevel: number;
   groomPersonality: string;
   /** Only fetch when the panel is actually expanded. */
   enabled: boolean;
@@ -44,7 +45,6 @@ interface GroomDetailPanelProps {
 const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({
   groomId,
   groomName,
-  groomLevel,
   groomPersonality,
   enabled,
 }) => {
@@ -68,7 +68,7 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({
   const talentData: GroomTalentData = {
     id: groomId,
     name: groomName,
-    level: groomLevel,
+    starLevel: staffCareerStarLevel,
     groomPersonality,
     talentSelections: talents ?? null,
   };

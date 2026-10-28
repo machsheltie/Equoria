@@ -64,7 +64,6 @@ describe('Dynamic Compatibility Scoring', () => {
               userId: testUser.id,
               sessionRate: 35.0,
               experience: 200,
-              level: 10,
             },
           }),
           // Novice energetic groom
@@ -78,7 +77,6 @@ describe('Dynamic Compatibility Scoring', () => {
               userId: testUser.id,
               sessionRate: 15.0,
               experience: 20,
-              level: 2,
             },
           }),
           // Experienced methodical groom
@@ -92,7 +90,6 @@ describe('Dynamic Compatibility Scoring', () => {
               userId: testUser.id,
               sessionRate: 28.0,
               experience: 120,
-              level: 7,
             },
           }),
         ]);
@@ -240,7 +237,12 @@ describe('Dynamic Compatibility Scoring', () => {
       const noviceCompatibility = await analyzePair(noviceGroom.id, horse.id, scoreCompatibility, context);
 
       expect(expertCompatibility.experienceBonus).toBeGreaterThan(noviceCompatibility.experienceBonus);
-      expect(expertCompatibility.overallScore).toBeGreaterThan(noviceCompatibility.overallScore);
+      // Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): the level term is the old
+      // level 1 for every groom, so the two bonuses differ by the experience term alone
+      // (200 vs 20 experience: 0.40 vs 0.04). Old contract: the expert's level 10 also
+      // lifted its overall score above the novice's.
+      expect(expertCompatibility.experienceBonus - noviceCompatibility.experienceBonus).toBeCloseTo(0.36, 10);
+      expect(expertCompatibility.experienceBonus).toBeCloseTo(1 + 0.05 + 0.4, 10);
     });
   });
 

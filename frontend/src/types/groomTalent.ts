@@ -5,12 +5,16 @@
  * mirroring backend groomTalentService.mjs.
  *
  * Talent Tree Rules:
- * - 3 tiers: Tier 1 (level 3+), Tier 2 (level 5+), Tier 3 (level 8+)
+ * - 3 tiers: Tier 1 (Novice+), Tier 2 (Intermediate+), Tier 3 (Advanced+), the star
+ *   levels equivalent to the old levels 3, 5 and 8 (owner ruling 2026-10-28, q229).
+ *   Stars open no tier for now (q244): see staffCareerStarLevel in lib/staffLevels.
  * - Each tier has 2 talent choices (Tier 3 may have 1)
  * - Only one talent can be selected per tier
  * - Selections are permanent (no respec)
  * - Must select lower tiers before higher tiers
  */
+
+import { staffLevelAtLeast, type StaffLevel } from '@/lib/staffLevels';
 
 export interface TalentEffect {
   [key: string]: number;
@@ -44,7 +48,7 @@ export interface TalentWithState extends Talent {
 export interface TalentTierWithState {
   tierKey: 'tier1' | 'tier2' | 'tier3';
   label: string;
-  minLevel: number;
+  minStarLevel: StaffLevel;
   talents: TalentWithState[];
   isUnlocked: boolean; // Level meets minimum requirement
   selectedTalentId: string | null;
@@ -54,17 +58,28 @@ export interface TalentTierWithState {
 export interface GroomTalentData {
   id: number;
   name: string;
-  level: number;
+  /** The level that opens tiers: staffCareerStarLevel for every groom for now (q244). */
+  starLevel: string;
   groomPersonality: string;
   talentSelections: TalentSelections | null;
 }
 
-/** Talent tier requirements mirroring backend groomTalentService.mjs */
+/**
+ * Talent tier requirements mirroring backend groomTalentService.mjs: the star levels
+ * equivalent to the old levels 3, 5 and 8 (owner ruling 2026-10-28, q229).
+ */
 export const TALENT_REQUIREMENTS = {
-  tier1: { minLevel: 3, label: 'Tier 1 — Apprentice', prerequisite: null },
-  tier2: { minLevel: 5, label: 'Tier 2 — Journeyman', prerequisite: 'tier1' as const },
-  tier3: { minLevel: 8, label: 'Tier 3 — Master', prerequisite: 'tier2' as const },
-} as const;
+  tier1: { minStarLevel: 'novice', label: 'Tier 1 — Apprentice', prerequisite: null },
+  tier2: {
+    minStarLevel: 'intermediate',
+    label: 'Tier 2 — Journeyman',
+    prerequisite: 'tier1' as const,
+  },
+  tier3: { minStarLevel: 'advanced', label: 'Tier 3 — Master', prerequisite: 'tier2' as const },
+} as const satisfies Record<
+  'tier1' | 'tier2' | 'tier3',
+  { minStarLevel: StaffLevel; label: string; prerequisite: 'tier1' | 'tier2' | null }
+>;
 
 /**
  * All talent trees by personality type.
@@ -187,7 +202,7 @@ export const TALENT_TREES: Record<string, TalentTier> = {
  */
 export function getTalentTiersWithState(
   personality: string,
-  level: number,
+  starLevel: string,
   selections: TalentSelections | null
 ): TalentTierWithState[] {
   const tree = TALENT_TREES[personality];
@@ -197,7 +212,7 @@ export function getTalentTiersWithState(
 
   return tiers.map((tierKey) => {
     const req = TALENT_REQUIREMENTS[tierKey];
-    const isUnlocked = level >= req.minLevel;
+    const isUnlocked = staffLevelAtLeast(starLevel, req.minStarLevel);
     const prerequisite = req.prerequisite;
     const prerequisiteMet = prerequisite === null || !!(selections && selections[prerequisite]);
 
@@ -213,7 +228,7 @@ export function getTalentTiersWithState(
     return {
       tierKey,
       label: req.label,
-      minLevel: req.minLevel,
+      minStarLevel: req.minStarLevel,
       talents,
       isUnlocked,
       selectedTalentId,

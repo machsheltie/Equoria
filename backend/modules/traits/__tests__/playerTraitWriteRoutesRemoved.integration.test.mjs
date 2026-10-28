@@ -93,7 +93,6 @@ describe('Player trait-write routes are removed (Equoria-gu8jk)', () => {
         personality: 'gentle',
         userId: player.id,
         experience: 500,
-        level: 10,
       },
     });
   }, 60000);

@@ -46,7 +46,6 @@ describe('Equoria-tfo3c — the care menu quotes no price', () => {
     personality: 'gentle',
     experience: 10,
     sessionRate: 40,
-    level: 3,
   };
   const horse = { id: 1, name: 'Fixture Horse', bondScore: 50, age: 4 };
 

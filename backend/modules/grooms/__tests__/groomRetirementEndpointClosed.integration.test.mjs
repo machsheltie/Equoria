@@ -133,7 +133,6 @@ async function makeGroom(ownerId, label, extra = {}) {
       speciality: 'foalCare',
       personality: 'gentle',
       skillLevel: 'intermediate',
-      level: 3,
       careerWeeks: 12,
       // Equoria-ypb7d.1: a groom's age is `startAge + careerWeeks`, so a fixture
       // that parks a groom on a target age must set both. Fixed at 20 (inside the

@@ -77,16 +77,16 @@ describe('Groom Legacy Service', () => {
     await ensureTestUser();
     await ensureTestHorse();
 
-    // Create a retired high-level groom for each test
+    // Create a retired Expert groom for each test
     retiredGroom = await prisma.groom.create({
       data: {
         name: `Retired Master Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         personality: 'calm',
         skillLevel: 'expert',
+        starLevel: 'expert',
         speciality: 'foalCare',
         userId: testUser.id,
         careerWeeks: 104,
-        level: 8,
         experience: 500,
         retired: true,
         retirementReason: 'mandatoryCareerLimit',
@@ -159,15 +159,18 @@ describe('Groom Legacy Service', () => {
   });
 
   describe('Legacy Eligibility', () => {
-    test('should identify eligible retired groom', async () => {
+    // Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): no 1-10 level; the mentoring
+    // level is the old level 1 (staffCareerStarLevel) for every groom, below Advanced, so no
+    // groom mentors for now. Old contract: this level-8 groom was eligible / made a protégé.
+    test('a retired Expert groom is not yet eligible to mentor (q244)', async () => {
       const eligibility = await checkLegacyEligibility(retiredGroom.id);
 
-      expect(eligibility.eligible).toBe(true);
-      expect(eligibility.level).toBe(8);
-      expect(eligibility.experience).toBe(500);
-      expect(eligibility.assignmentCount).toBe(2);
-      expect(eligibility.availablePerks).toBeInstanceOf(Array);
-      expect(eligibility.availablePerks.length).toBeGreaterThan(0);
+      expect(eligibility).toEqual({
+        eligible: false,
+        reason: 'insufficient_level',
+        starLevel: 'expert',
+        requiredStarLevel: 'advanced',
+      });
     });
 
     test('should reject non-retired groom', async () => {
@@ -179,7 +182,6 @@ describe('Groom Legacy Service', () => {
           skillLevel: 'expert',
           speciality: 'generalGrooming',
           userId: testUser.id,
-          level: 9,
           retired: false,
         },
       });
@@ -202,7 +204,6 @@ describe('Groom Legacy Service', () => {
           skillLevel: 'intermediate',
           speciality: 'specializedDisciplines',
           userId: testUser.id,
-          level: 5,
           retired: true,
           retirementReason: 'voluntary',
         },
@@ -226,7 +227,6 @@ describe('Groom Legacy Service', () => {
           skillLevel: 'novice',
           speciality: 'foalCare',
           userId: testUser.id,
-          level: 1,
         },
       });
 
@@ -236,7 +236,6 @@ describe('Groom Legacy Service', () => {
           retiredGroomId: retiredGroom.id,
           legacyGroomId: protege.id,
           inheritedPerk: 'gentle_hands',
-          mentorLevel: retiredGroom.level,
         },
       });
 
@@ -254,35 +253,23 @@ describe('Groom Legacy Service', () => {
   });
 
   describe('Protégé Generation', () => {
-    test('should generate protégé with inherited perks', async () => {
+    // Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): no 1-10 level; the mentoring
+    // level is the old level 1 (staffCareerStarLevel) for every groom, below Advanced, so no
+    // groom mentors for now. Old contract: this level-8 groom was eligible / made a protégé.
+    test('a retired Expert groom makes no protégé and no legacy log (q244)', async () => {
       const protegeData = {
-        name: 'Young Apprentice',
+        name: `Young Apprentice ${randomBytes(4).toString('hex')}`,
         personality: 'energetic',
         skillLevel: 'novice',
         speciality: 'foalCare',
       };
 
-      const result = await generateLegacyProtege(retiredGroom.id, protegeData, testUser.id);
+      await expect(generateLegacyProtege(retiredGroom.id, protegeData, testUser.id)).rejects.toThrow(
+        'insufficient_level',
+      );
 
-      expect(result.protege).toBeDefined();
-      expect(result.protege.name).toBe('Young Apprentice');
-      expect(result.protege.personality).toBe('energetic');
-      expect(result.inheritedPerk).toBeDefined();
-      expect(result.legacyLog).toBeDefined();
-
-      // Verify protégé has bonus from inheritance
-      expect(result.protege.experience).toBeGreaterThan(0);
-
-      // Verify legacy log was created
-      const legacyLog = await prisma.groomLegacyLog.findUnique({
-        where: { id: result.legacyLog.id },
-      });
-      expect(legacyLog.retiredGroomId).toBe(retiredGroom.id);
-      expect(legacyLog.legacyGroomId).toBe(result.protege.id);
-
-      // Cleanup
-      await prisma.groomLegacyLog.delete({ where: { id: result.legacyLog.id } });
-      await prisma.groom.deleteMany({ where: { id: result.protege.id } });
+      expect(await prisma.groom.count({ where: { name: protegeData.name } })).toBe(0);
+      expect(await prisma.groomLegacyLog.count({ where: { retiredGroomId: retiredGroom.id } })).toBe(0);
     });
 
     test('should reject generation for ineligible mentor', async () => {
@@ -294,7 +281,6 @@ describe('Groom Legacy Service', () => {
           skillLevel: 'novice',
           speciality: 'foalCare',
           userId: testUser.id,
-          level: 3,
           retired: true,
         },
       });
@@ -347,15 +333,20 @@ describe('Groom Legacy Service', () => {
 
   describe('Legacy History', () => {
     test('should track user legacy history', async () => {
-      // Create a protégé to establish history
-      const protegeData = {
-        name: 'History Test Apprentice',
-        personality: 'methodical',
-        skillLevel: 'novice',
-        speciality: 'specializedDisciplines',
-      };
-
-      const result = await generateLegacyProtege(retiredGroom.id, protegeData, testUser.id);
+      // A legacy made before q244 (no groom mentors now): written directly.
+      const protege = await prisma.groom.create({
+        data: {
+          name: 'History Test Apprentice',
+          personality: 'methodical',
+          skillLevel: 'novice',
+          speciality: 'specializedDisciplines',
+          userId: testUser.id,
+        },
+      });
+      const legacyLog = await prisma.groomLegacyLog.create({
+        data: { retiredGroomId: retiredGroom.id, legacyGroomId: protege.id, inheritedPerk: 'gentle_hands' },
+      });
+      const result = { legacyLog, protege };
 
       // Get user legacy history
       const history = await getUserLegacyHistory(testUser.id);
@@ -368,6 +359,10 @@ describe('Groom Legacy Service', () => {
       expect(legacyEntry.retiredGroomName).toBe(retiredGroom.name);
       expect(legacyEntry.protegeGroomName).toBe('History Test Apprentice');
       expect(legacyEntry.inheritedPerk).toBeDefined();
+      // q229: stars, never the old 1-10 level.
+      expect(legacyEntry.retiredGroomStarLevel).toBe('expert');
+      expect(legacyEntry.protegeGroomStarLevel).toBe('rookie');
+      expect(legacyEntry).not.toHaveProperty('mentorLevel');
 
       // Cleanup
       await prisma.groomLegacyLog.delete({ where: { id: result.legacyLog.id } });

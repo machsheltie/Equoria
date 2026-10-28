@@ -184,7 +184,9 @@ function TierRow({
           </span>
         </div>
         <span className="text-xs text-slate-400" data-testid={`tier-requirement-${tier.tierKey}`}>
-          Level {tier.minLevel}+ required
+          {/* Owner ruling 2026-10-28 (q229): no old "Level N". Stars open no tier for
+              now (q244), so a locked tier names no level the groom could already show. */}
+          {tier.isUnlocked ? 'Open' : 'Not open yet'}
         </span>
       </div>
 
@@ -239,7 +241,7 @@ const GroomTalentTree: React.FC<GroomTalentTreeProps> = ({
 }) => {
   const tiers = getTalentTiersWithState(
     groom.groomPersonality,
-    groom.level,
+    groom.starLevel,
     groom.talentSelections
   );
   const allocatedCount = countAllocatedTalents(groom.talentSelections);

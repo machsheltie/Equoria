@@ -5,7 +5,11 @@
  * personality-based perks across 3 tiers to enhance their abilities.
  *
  * Talent Tree Rules:
- * - 3 tiers: Tier 1 (level 3+), Tier 2 (level 5+), Tier 3 (level 8+)
+ * - 3 tiers: Tier 1 (Novice+), Tier 2 (Intermediate+), Tier 3 (Advanced+). These are
+ *   the star levels equivalent to the old levels 3, 5 and 8 (owner ruling 2026-10-28,
+ *   q229). Stars give no bonus for now (q244): every groom's talent level is
+ *   staffCareerStarLevel (Rookie, old level 1), so no tier opens until staff growth
+ *   (Equoria-xlw03) - exactly as before, when every game-made groom sat at level 1.
  * - Each tier has 2-3 talent choices per personality type
  * - Only one talent can be selected per tier
  * - Selections are permanent (no respec)
@@ -14,14 +18,15 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { staffCareerStarLevel, staffLevelAtLeast } from '../../../constants/staffLevels.mjs';
 
 /**
  * Talent tree requirements
  */
 export const TALENT_REQUIREMENTS = {
-  tier1: { minLevel: 3 },
-  tier2: { minLevel: 5 },
-  tier3: { minLevel: 8 },
+  tier1: { minStarLevel: 'novice' },
+  tier2: { minStarLevel: 'intermediate' },
+  tier3: { minStarLevel: 'advanced' },
 };
 
 /**
@@ -182,21 +187,11 @@ export async function validateTalentSelection(groomId, tier, talentId) {
     };
   }
 
-  // Check level requirements
-  const requiredLevel = TALENT_REQUIREMENTS[tier]?.minLevel;
-  if (!requiredLevel) {
+  const requiredStarLevel = TALENT_REQUIREMENTS[tier]?.minStarLevel;
+  if (!requiredStarLevel) {
     return {
       valid: false,
       reason: 'invalid_tier',
-    };
-  }
-
-  if (groom.level < requiredLevel) {
-    return {
-      valid: false,
-      reason: 'insufficient_level',
-      groomLevel: groom.level,
-      requiredLevel,
     };
   }
 
@@ -245,10 +240,21 @@ export async function validateTalentSelection(groomId, tier, talentId) {
     };
   }
 
+  // Check the level last, so a choice that is wrong on its own (unknown talent, tier
+  // taken, prerequisite missing) is named as such. The level read is
+  // staffCareerStarLevel, not the groom's stars (owner rulings 2026-10-28: q229 stars,
+  // q244 stars give no bonus for now), so no tier opens until staff growth.
+  if (!staffLevelAtLeast(staffCareerStarLevel, requiredStarLevel)) {
+    return {
+      valid: false,
+      reason: 'insufficient_level',
+      requiredStarLevel,
+    };
+  }
+
   return {
     valid: true,
-    groomLevel: groom.level,
-    requiredLevel,
+    requiredStarLevel,
     talent: availableTalents.find(t => t.id === talentId),
   };
 }

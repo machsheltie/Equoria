@@ -343,9 +343,6 @@ export interface Groom {
   specialty: string;
   personality: string;
   experience: number;
-  // Equoria-oey96.6 — progression level (1–10); gates the talent-tree tiers. The
-  // list serializer supplies it. Optional so older cached envelopes typecheck.
-  level?: number;
   /**
    * Equoria-fby1t (owner ruling, 2026-09-14) — the groom's age in game-years, shown
    * to the player wherever their identity is. `null` when it is not yet known (a

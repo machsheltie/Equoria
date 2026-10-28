@@ -45,9 +45,8 @@ const baseCleanup = createCleanupTracker();
 // curve would put them, so neither an XP award nor a level recompute can
 // leave them looking unchanged by coincidence.
 const staffExperience = 37;
-const staffLevel = 4;
-// Riders and trainers keep a star level instead (owner ruling 2026-10-28, q229 replaced
-// their 1-10 level with it); grooms still carry the 1-10 level.
+// Riders, trainers and grooms keep a star level (owner ruling 2026-10-28, q229 replaced
+// their 1-10 level with it).
 const staffStarLevel = 'advanced';
 
 // The 12 horse stats (constants/schema.mjs HORSE_STATS), listed here as an
@@ -271,7 +270,7 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         sessionRate: 40,
         startAge: 20,
         experience: staffExperience,
-        level: staffLevel,
+        starLevel: staffStarLevel,
         userId: user.id,
       },
     });
@@ -291,8 +290,8 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
 
     const groomAfter = await prisma.groom.findUnique({
       where: { id: groom.id },
-      select: { experience: true, level: true },
+      select: { experience: true, starLevel: true },
     });
-    expect(groomAfter).toEqual({ experience: staffExperience, level: staffLevel });
+    expect(groomAfter).toEqual({ experience: staffExperience, starLevel: staffStarLevel });
   }, 60000);
 });

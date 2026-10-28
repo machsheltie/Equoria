@@ -64,7 +64,6 @@ function renderPanel(props: Partial<React.ComponentProps<typeof GroomDetailPanel
     <GroomDetailPanel
       groomId={7}
       groomName="TestGroom"
-      groomLevel={5}
       groomPersonality="energetic"
       enabled
       {...props}
@@ -129,7 +128,7 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
       // BACKEND is the source of truth: tier1 is selected server-side.
       profileResult({ data: { tier1: 'playtime_pro', tier2: null, tier3: null } })
     );
-    renderPanel({ groomLevel: 5, groomPersonality: 'energetic' });
+    renderPanel({ groomPersonality: 'energetic' });
 
     const section = screen.getByTestId('groom-talents-section-7');
     const tree = within(section).getByTestId('groom-talent-tree');
@@ -144,7 +143,7 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
 
   it('renders an honest empty tree (no selections) when the backend returns none', () => {
     spyHooks(profileResult({ data: [] }), profileResult({ data: null }));
-    renderPanel({ groomLevel: 5, groomPersonality: 'energetic' });
+    renderPanel({ groomPersonality: 'energetic' });
 
     const tree = screen.getByTestId('groom-talent-tree');
     expect(within(tree).getByTestId('talent-allocated-count')).toHaveTextContent('0 / 3 allocated');
@@ -181,7 +180,7 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
         error: { statusCode: 400, message: 'raw server words about the talent tier' },
       })
     );
-    renderPanel({ groomLevel: 5, groomPersonality: 'energetic' });
+    renderPanel({ groomPersonality: 'energetic' });
 
     const err = screen.getByTestId('groom-talent-select-error-7');
     expect(err).toBeInTheDocument();
@@ -192,20 +191,21 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
     expect(err).toHaveAttribute('role', 'alert');
   });
 
-  it('wires an available-talent selection to the select mutation', () => {
+  // Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): the groom's old 1-10 level is
+  // gone and stars open no talent tier for now, so the panel offers no choice whatever
+  // the groom's stars. Old contract: a level-5 groom's panel offered playtime_pro and
+  // clicking it fired the select mutation (the click wiring is still covered in
+  // GroomTalentTree.story-7-6).
+  it('offers no talent to choose: stars open no tier for now (q244)', () => {
     const select = selectStub();
     spyHooks(profileResult({ data: [] }), profileResult({ data: null }), select);
-    renderPanel({ groomLevel: 5, groomPersonality: 'energetic' });
+    renderPanel({ groomPersonality: 'energetic' });
 
-    // Level 5, no prerequisites for tier1 → playtime_pro is available and has a
-    // select button. Clicking it fires the real mutation with the exact
-    // { groomId, tier, talentId } the backend route expects.
-    const btn = screen.getByTestId('talent-select-btn-playtime_pro');
-    btn.click();
-    expect(select.mutate).toHaveBeenCalledWith({
-      groomId: 7,
-      tier: 'tier1',
-      talentId: 'playtime_pro',
-    });
+    expect(screen.queryByTestId('talent-select-btn-playtime_pro')).not.toBeInTheDocument();
+    for (const tier of ['tier1', 'tier2', 'tier3']) {
+      expect(screen.getByTestId(`tier-requirement-${tier}`)).toHaveTextContent('Not open yet');
+    }
+    expect(screen.queryByText(/Level \d/)).not.toBeInTheDocument();
+    expect(select.mutate).not.toHaveBeenCalled();
   });
 });

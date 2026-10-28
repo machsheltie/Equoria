@@ -46,7 +46,7 @@
  *   the whole point is that someone else can hire them.
  *
  * WHAT A RELEASE DOES *NOT* TOUCH, AND WHY (owner question, not a decision)
- *   Nothing about the groom themself is reset: `experience`, `level`,
+ *   Nothing about the groom themself is reset: `experience`, `starLevel`,
  *   `careerWeeks`, `startAge`, `bonusTraitMap`, `GroomHorseSynergy` rows,
  *   `GroomInteraction` history and `GroomAssignmentLog` history all survive
  *   untouched, exactly as they do through retirement (invariant I5). Preserving
@@ -289,7 +289,7 @@ export async function releaseGroomTx(tx, params) {
 
   const groom = await tx.groom.findUnique({
     where: { id: groomId },
-    select: { id: true, name: true, speciality: true, skillLevel: true, level: true },
+    select: { id: true, name: true, speciality: true, skillLevel: true, starLevel: true },
   });
   if (!groom) {
     throw new Error(`Groom with ID ${groomId} not found`);
@@ -345,7 +345,8 @@ export async function releaseGroomTx(tx, params) {
     groomName: groom.name,
     speciality: groom.speciality,
     skillLevel: groom.skillLevel,
-    level: groom.level,
+    // Owner ruling 2026-10-28 (q229): the star level, not the old 1-10 level.
+    starLevel: groom.starLevel,
     reason,
     horsesLeftUnattended: horses.length,
     horses,
@@ -490,7 +491,6 @@ export async function listFreeAgents(client, options = {}) {
         starLevel: true,
         personality: true,
         experience: true,
-        level: true,
         sessionRate: true,
         bio: true,
         imageUrl: true,

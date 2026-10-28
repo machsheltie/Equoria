@@ -71,7 +71,7 @@ export async function processWeeklyCareerProgression(userId = null) {
     }
     const activeGrooms = await prisma.groom.findMany({
       where: whereClause,
-      select: { id: true, name: true, careerWeeks: true, startAge: true, level: true },
+      select: { id: true, name: true, careerWeeks: true, startAge: true, starLevel: true },
     });
 
     const results = {
@@ -120,7 +120,7 @@ export async function processWeeklyCareerProgression(userId = null) {
             // groom retired at, in game-years. `careerWeeks + 1` — years WORKED
             // since hire — was the retired career-weeks reading of that age.
             ageYears: startAge + groom.careerWeeks + 1,
-            level: groom.level,
+            starLevel: groom.starLevel,
           });
 
           logger.info(`Groom ${groom.name} (ID: ${groom.id}) retired: ${eligibility.reason}`);

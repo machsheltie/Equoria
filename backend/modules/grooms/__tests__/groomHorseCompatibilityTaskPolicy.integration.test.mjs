@@ -104,7 +104,6 @@ function groomData(ownerId, name, personality) {
     epigeneticInfluenceType: personality,
     skillLevel: 'intermediate',
     experience: 60,
-    level: 4,
     sessionRate: 25.0,
     isActive: true,
   };
@@ -379,12 +378,17 @@ describe('ownership is enforced on every compatibility route', () => {
 // call's compatibilityScore, so the bonus does not reach the compatibility result. The
 // result differs from the coatCheck control by exactly the policy task modifier.
 describe('trait task bonuses through the full scorer (characterization)', () => {
+  // Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): grooms carry no 1-10 level and
+  // the compatibility level term is the old level 1 for every groom, so the experience
+  // bonus of these level-4 fixtures fell from 1 + 0.20 + 0.12 to 1 + 0.05 + 0.12 and every
+  // overall score scales by 1.17 / 1.32. Old values: trustBuilding 1.2441,
+  // desensitization 1.0527, control 0.957. Effectiveness and base are unchanged.
   const cases = [
     // [taskType, personality, horse, policy modifier, task overall, task effectiveness]
-    ['trustBuilding', 'calm', () => fearfulFlagHorse, 1.3, 1.2441, 1.23548085528],
-    ['desensitization', 'energetic', () => braveFlagHorse, 1.1, 1.0527, 1.23548085528],
+    ['trustBuilding', 'calm', () => fearfulFlagHorse, 1.3, 1.102725, 1.23548085528],
+    ['desensitization', 'energetic', () => braveFlagHorse, 1.1, 0.933075, 1.23548085528],
   ];
-  const CONTROL_OVERALL = 0.957;
+  const CONTROL_OVERALL = 0.84825;
   const CONTROL_TASK_EFFECTIVENESS = 1.14736335;
   const BASE_COMPATIBILITY = 0.725;
 

@@ -98,7 +98,10 @@ const PREDICTION_CONTEXTS = [
   'coat-array-time',
 ];
 
-// [key, influence, experience, level, owner]
+// [key, influence, experience, level, owner]. `level` is the fixture's old 1-10 level,
+// kept only to derive its skill word and session rate: grooms no longer store a level,
+// and the compatibility level term is the old level 1 for every groom (owner rulings
+// 2026-10-28, q229 and q244; the golden digests were re-recorded then, Equoria-2xxvd).
 const GROOMS = [
   ['calm', 'calm', 30, 2, 'A'],
   ['calm-expert', 'calm', 220, 9, 'A'],
@@ -194,7 +197,6 @@ export async function buildCompatibilityFixtures(prisma, token, colour) {
         personality: influence,
         epigeneticInfluenceType: influence,
         experience,
-        level,
         skillLevel: level > 5 ? 'expert' : 'novice',
         sessionRate: 10 + level,
         userId: owners[owner].id,

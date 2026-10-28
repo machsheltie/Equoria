@@ -491,8 +491,6 @@ model Groom {
   speciality        String
   /// Experience points for progression system
   experience        Int                @default(0)
-  /// Current level (1-10)
-  level             Int                @default(1)
   /// Skill level
   skillLevel        String             @default("novice")
   /// Star level (owner ruling 2026-10-28, Equoria-nawn5): rookie | novice | intermediate |
@@ -629,7 +627,6 @@ model Groom {
   user                User?              @relation(fields: [userId], references: [id])
 
   @@index([userId])
-  @@index([level])
   @@index([experience])
   @@index([careerWeeks])
   @@index([retired])
@@ -1554,8 +1551,6 @@ model GroomLegacyLog {
   legacyGroomId   Int
   /// Perk inherited from mentor
   inheritedPerk   String
-  /// Level of mentor at retirement
-  mentorLevel     Int
   /// Timestamps
   createdAt       DateTime @default(now())
 

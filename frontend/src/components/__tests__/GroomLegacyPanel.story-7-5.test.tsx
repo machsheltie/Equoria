@@ -31,21 +31,25 @@ import {
 // Helper function tests
 // ──────────────────────────────────────────────────────────────────────────────
 
+// Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): grooms carry stars, not the old
+// 1-10 level, the mentoring threshold is Advanced (the old 7), and the mentoring level is
+// the old level 1 (staffCareerStarLevel) for every groom, so no groom is eligible for now.
+// Old contract: a retired level-7+ groom was eligible; "Level N" showed in the lineage.
 describe('groomLegacy helpers', () => {
   describe('checkLegacyEligibility', () => {
     const retiredLevel7Groom: GroomLegacyData = {
       id: 1,
       name: 'Senior Groom',
-      level: 7,
+      starLevel: 'expert',
       retired: true,
       groomPersonality: 'calm',
       experience: 2000,
     };
 
-    it('returns eligible for retired groom at level 7+', () => {
+    it('a retired Expert groom is not yet eligible: mentoring is not open (q244)', () => {
       const result = checkLegacyEligibility(retiredLevel7Groom, false);
-      expect(result.isEligible).toBe(true);
-      expect(result.reasons).toHaveLength(0);
+      expect(result.isEligible).toBe(false);
+      expect(result.reasons).toEqual(['Mentoring is not open yet']);
     });
 
     it('returns ineligible for active (not retired) groom', () => {
@@ -55,11 +59,12 @@ describe('groomLegacy helpers', () => {
       expect(result.reasons).toContain('Must be retired to mentor a protégé');
     });
 
-    it('returns ineligible for groom below level 7', () => {
-      const lowLevelGroom = { ...retiredLevel7Groom, level: 6 };
+    it('returns ineligible for a Rookie groom, naming no level', () => {
+      const lowLevelGroom = { ...retiredLevel7Groom, starLevel: 'rookie' };
       const result = checkLegacyEligibility(lowLevelGroom, false);
       expect(result.isEligible).toBe(false);
-      expect(result.reasons.some((r) => r.includes('Level 7'))).toBe(true);
+      expect(result.reasons).toContain('Mentoring is not open yet');
+      expect(result.reasons.some((r) => /Level \d/.test(r))).toBe(false);
     });
 
     it('returns ineligible if already created a protégé', () => {
@@ -69,7 +74,11 @@ describe('groomLegacy helpers', () => {
     });
 
     it('returns multiple reasons when multiple conditions fail', () => {
-      const badGroom: GroomLegacyData = { ...retiredLevel7Groom, retired: false, level: 3 };
+      const badGroom: GroomLegacyData = {
+        ...retiredLevel7Groom,
+        retired: false,
+        starLevel: 'novice',
+      };
       const result = checkLegacyEligibility(badGroom, false);
       expect(result.reasons.length).toBeGreaterThanOrEqual(2);
     });
@@ -132,16 +141,16 @@ describe('groomLegacy helpers', () => {
   });
 
   describe('LEGACY_CONSTANTS', () => {
-    it('minimum mentor level is 7', () => {
-      expect(LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL).toBe(7);
+    it('minimum mentor level is Advanced (the old level 7)', () => {
+      expect(LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL).toBe('advanced');
     });
 
     it('protégé experience bonus is 50', () => {
       expect(LEGACY_CONSTANTS.PROTEGE_EXPERIENCE_BONUS).toBe(50);
     });
 
-    it('protégé level bonus is 1', () => {
-      expect(LEGACY_CONSTANTS.PROTEGE_LEVEL_BONUS).toBe(1);
+    it('has no protégé level bonus (it went with the old level)', () => {
+      expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_LEVEL_BONUS');
     });
 
     it('skill bonus percent is 10', () => {
@@ -167,7 +176,7 @@ describe('groomLegacy helpers', () => {
 const activeGroom: GroomLegacyData = {
   id: 1,
   name: 'Aria Thompson',
-  level: 5,
+  starLevel: 'intermediate',
   retired: false,
   groomPersonality: 'calm',
   experience: 1500,
@@ -176,7 +185,7 @@ const activeGroom: GroomLegacyData = {
 const retiredSeniorGroom: GroomLegacyData = {
   id: 2,
   name: 'Marcus Reid',
-  level: 9,
+  starLevel: 'expert',
   retired: true,
   groomPersonality: 'methodical',
   experience: 4000,
@@ -185,7 +194,7 @@ const retiredSeniorGroom: GroomLegacyData = {
 const sampleMentorInfo: MentorInfo = {
   mentorId: 10,
   mentorName: 'Eleanor Walsh',
-  mentorLevel: 8,
+  mentorStarLevel: 'advanced',
   mentorPersonality: 'calm',
   inheritedPerk: {
     id: 'gentle_hands',
@@ -297,9 +306,12 @@ describe('AC2: Legacy trees show lineage', () => {
     expect(screen.getByTestId('legacy-tree-mentor')).toHaveTextContent('Eleanor Walsh');
   });
 
-  it('shows mentor level in the tree', () => {
+  it("shows the mentor's stars in the tree, never an old level", () => {
     render(<GroomLegacyPanel groom={activeGroom} mentorInfo={sampleMentorInfo} />);
-    expect(screen.getByTestId('legacy-tree-mentor')).toHaveTextContent('Level 8');
+    expect(screen.getByTestId('legacy-tree-mentor')).toHaveTextContent('Advanced');
+    expect(screen.getByTestId('legacy-tree-mentor')).toHaveTextContent('★★★★');
+    expect(screen.getByTestId('legacy-tree-current')).toHaveTextContent('Intermediate');
+    expect(screen.queryByText(/Level \d/)).not.toBeInTheDocument();
   });
 
   it('shows protégé in the tree when protégéInfo provided', () => {
@@ -455,9 +467,9 @@ describe('AC5: Bonus effectiveness for legacy grooms', () => {
     expect(screen.getByTestId('bonus-experience')).toHaveTextContent('+50 bonus starting XP');
   });
 
-  it('shows level bonus value', () => {
+  it('shows no level bonus (it went with the old level)', () => {
     render(<GroomLegacyPanel groom={activeGroom} mentorInfo={sampleMentorInfo} />);
-    expect(screen.getByTestId('bonus-level')).toHaveTextContent('+1 starting level bonus');
+    expect(screen.queryByTestId('bonus-level')).not.toBeInTheDocument();
   });
 
   it('shows skill bonus percent', () => {
@@ -480,19 +492,25 @@ describe('AC5: Bonus effectiveness for legacy grooms', () => {
     expect(screen.getByTestId('mentor-eligibility-section')).toBeInTheDocument();
   });
 
-  it('shows eligible message for retired level 7+ groom', () => {
+  it('a retired Expert groom shows not yet eligible: mentoring is not open (q244)', () => {
     render(<GroomLegacyPanel groom={retiredSeniorGroom} />);
-    expect(screen.getByTestId('eligible-message')).toHaveTextContent('Eligible to mentor');
+    expect(screen.getByTestId('ineligible-message')).toBeInTheDocument();
+    expect(screen.queryByTestId('eligible-message')).not.toBeInTheDocument();
   });
 
   it('shows ineligible message for active (not retired) groom', () => {
-    render(<GroomLegacyPanel groom={{ ...retiredSeniorGroom, retired: true, level: 4 }} />);
+    render(
+      <GroomLegacyPanel groom={{ ...retiredSeniorGroom, retired: true, starLevel: 'novice' }} />
+    );
     expect(screen.getByTestId('ineligible-message')).toBeInTheDocument();
   });
 
-  it('shows level requirement text in mentor eligibility', () => {
+  it('shows the requirement text in mentor eligibility, naming no level', () => {
     render(<GroomLegacyPanel groom={retiredSeniorGroom} />);
-    expect(screen.getByTestId('mentor-level-requirement')).toHaveTextContent('Level 7+');
+    expect(screen.getByTestId('mentor-level-requirement')).toHaveTextContent(
+      'Requires retired status'
+    );
+    expect(screen.getByTestId('mentor-level-requirement')).not.toHaveTextContent(/Level \d/);
   });
 
   it('does NOT show mentor eligibility section for active groom', () => {

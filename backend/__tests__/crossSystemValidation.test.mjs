@@ -77,7 +77,6 @@ describe('Cross-System Boundary Validation', () => {
         personality: 'calm',
         epigeneticInfluenceType: 'calm',
         speciality: 'foalCare',
-        level: 1,
         careerWeeks: 0,
         retired: false,
       },
@@ -128,7 +127,10 @@ describe('Cross-System Boundary Validation', () => {
     expect(groom).toHaveProperty('skillLevel');
     expect(groom).toHaveProperty('personality');
     expect(groom).toHaveProperty('experience');
-    expect(groom).toHaveProperty('level');
+    // Owner ruling 2026-10-28 (q229): the groom carries a star level, not the old 1-10
+    // level. Old contract: toHaveProperty('level').
+    expect(groom).toHaveProperty('starLevel');
+    expect(groom).not.toHaveProperty('level');
   });
 
   test('User progress API contract: GET /api/v1/users/:id/progress returns shape consumed by training XP UI', async () => {

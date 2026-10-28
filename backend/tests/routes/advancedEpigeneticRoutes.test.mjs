@@ -119,7 +119,6 @@ describe('Advanced Epigenetic API Routes', () => {
         userId: testUser.id,
         sessionRate: 40.0,
         experience: 200,
-        level: 10,
       },
     });
     ids.grooms.push(groom.id);

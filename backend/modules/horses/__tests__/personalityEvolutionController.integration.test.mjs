@@ -67,7 +67,6 @@ beforeAll(async () => {
       personality: 'calm',
       skillLevel: 'intermediate',
       experience: 100,
-      level: 5,
       sessionRate: 25.0,
       isActive: true,
       userId: user.id,

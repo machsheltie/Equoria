@@ -37,6 +37,21 @@ export function staffLevelStars(level: string | null | undefined): number {
 }
 
 /**
+ * Whether `level` is at or above `minLevel`. An unknown value is below every level.
+ */
+export function staffLevelAtLeast(level: string | null | undefined, minLevel: StaffLevel): boolean {
+  return staffLevelStars(level) >= staffLevelStars(minLevel);
+}
+
+/**
+ * The level that opens a groom's talent tiers and mentoring, mirroring
+ * staffCareerStarLevel in backend/constants/staffLevels.mjs. Owner ruling 2026-10-28
+ * (q244): stars give no bonus for now, so every groom counts as a Rookie (the old
+ * level 1) there, whatever its stars, until staff growth (Equoria-xlw03).
+ */
+export const staffCareerStarLevel: StaffLevel = 'rookie';
+
+/**
  * The level as plain words, e.g. "Advanced, 4 stars", for places that can only
  * hold text (a select option, an accessible name).
  */

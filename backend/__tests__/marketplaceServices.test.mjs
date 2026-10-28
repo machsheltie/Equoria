@@ -120,7 +120,9 @@ describe('groomMarketplace — MARKETPLACE_CONFIG export', () => {
     expect(MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBe(12);
     expect(MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBe(100);
     expect(typeof MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS).toBe('number');
-    expect(MARKETPLACE_CONFIG.QUALITY_DISTRIBUTION.novice).toBe(40);
+    // Owner ruling 2026-10-28 (q177): every new groom on the hiring list is a Rookie,
+    // from the novice tier. Old contract: novice 40%.
+    expect(MARKETPLACE_CONFIG.QUALITY_DISTRIBUTION.novice).toBe(100);
   });
 });
 

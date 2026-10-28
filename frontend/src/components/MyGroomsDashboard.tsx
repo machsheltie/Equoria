@@ -539,7 +539,6 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                   <GroomDetailPanel
                     groomId={groom.id}
                     groomName={groom.name}
-                    groomLevel={groom.level ?? 1}
                     groomPersonality={groom.personality}
                     enabled
                   />

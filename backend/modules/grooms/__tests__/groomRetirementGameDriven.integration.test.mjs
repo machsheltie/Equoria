@@ -151,7 +151,6 @@ async function makeGroom(ownerId, label, extra = {}) {
       speciality: 'foalCare',
       personality: 'gentle',
       skillLevel: 'intermediate',
-      level: 3,
       careerWeeks: 5,
       startAge: FIXTURE_START_AGE,
       userId: ownerId,
@@ -471,10 +470,10 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
     owner = await makeUser('gameowner');
     bystander = await makeUser('bystander');
     horse = await makeHorse(owner.id, 'gamehorse');
-    groom = await makeGroom(owner.id, 'gamegroom', { level: 3 });
+    groom = await makeGroom(owner.id, 'gamegroom');
     // A second groom of the same user, far below any retirement age, to prove
     // the pass retires the one that reached its age and only that one.
-    youngGroom = await makeGroom(owner.id, 'younggroom', { careerWeeks: 1, level: 2 });
+    youngGroom = await makeGroom(owner.id, 'younggroom', { careerWeeks: 1 });
 
     retirementAge = await ensureRetirementSchedule(prisma, groom.id);
     // One tick short: the weekly pass increments careerWeeks first, so this

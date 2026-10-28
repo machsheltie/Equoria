@@ -98,7 +98,6 @@ beforeAll(async () => {
       personality: 'calm',
       skillLevel: 'expert',
       experience: 200,
-      level: 10,
       speciality: 'foalCare',
     },
     {
@@ -106,7 +105,6 @@ beforeAll(async () => {
       personality: 'energetic',
       skillLevel: 'novice',
       experience: 50,
-      level: 3,
       speciality: 'generalGrooming',
     },
     {
@@ -114,7 +112,6 @@ beforeAll(async () => {
       personality: 'methodical',
       skillLevel: 'intermediate',
       experience: 120,
-      level: 6,
       speciality: 'enrichment',
     },
   ];
@@ -131,7 +128,6 @@ beforeAll(async () => {
           epigeneticInfluenceType: data.personality,
           skillLevel: data.skillLevel,
           experience: data.experience,
-          level: data.level,
           sessionRate: 25.0,
           isActive: true,
         },
@@ -197,7 +193,6 @@ beforeAll(async () => {
       epigeneticInfluenceType: 'calm',
       skillLevel: 'expert',
       experience: 10,
-      level: 1,
       sessionRate: 25.0,
       isActive: true,
     },

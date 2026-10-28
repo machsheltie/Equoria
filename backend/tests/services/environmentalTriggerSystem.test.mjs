@@ -67,7 +67,6 @@ describe('Environmental Trigger System', () => {
               userId: testUser.id,
               sessionRate: 30.0,
               experience: 150,
-              level: 8,
             },
           }),
           tx.groom.create({
@@ -80,7 +79,6 @@ describe('Environmental Trigger System', () => {
               userId: testUser.id,
               sessionRate: 35.0,
               experience: 200,
-              level: 10,
             },
           }),
         ]);

@@ -11,7 +11,7 @@
  */
 
 import crypto from 'crypto';
-import { drawStarLevelInTier, staffLevelFee } from '../../../constants/staffLevels.mjs';
+import { staffLevelFee } from '../../../constants/staffLevels.mjs';
 
 // Marketplace configuration
 export const MARKETPLACE_CONFIG = {
@@ -30,12 +30,15 @@ export const MARKETPLACE_CONFIG = {
   REFRESH_INTERVAL_HOURS: process.env.NODE_ENV === 'test' ? 1 : 24,
   PREMIUM_REFRESH_COST: 100, // Cost for manual refresh
 
-  // Quality distribution (percentages)
+  // Quality distribution (percentages). Owner ruling 2026-10-28 (q177): every groom the
+  // game makes for the hiring list starts as a Rookie (the bottom of the old novice
+  // tier). Better grooms come from growth (Equoria-xlw03) and from grooms that leave a
+  // player's staff and return to the list at their own level.
   QUALITY_DISTRIBUTION: {
-    novice: 40, // 40% novice grooms
-    intermediate: 35, // 35% intermediate grooms
-    expert: 20, // 20% expert grooms
-    master: 5, // 5% master grooms
+    novice: 100,
+    intermediate: 0,
+    expert: 0,
+    master: 0,
   },
 
   // Specialty distribution
@@ -48,7 +51,8 @@ export const MARKETPLACE_CONFIG = {
 
   // Experience ranges by skill level
   EXPERIENCE_RANGES: {
-    novice: { min: 1, max: 3 },
+    // 1-2 years: a Rookie (3 years would place an older offer at Novice, staffLevels.mjs).
+    novice: { min: 1, max: 2 },
     intermediate: { min: 3, max: 8 },
     expert: { min: 8, max: 15 },
     master: { min: 15, max: 20 },
@@ -79,9 +83,9 @@ const _SKILL_LEVELS = ['novice', 'intermediate', 'expert', 'master'];
 export function generateRandomGroom() {
   // Select skill level based on distribution
   const skillLevel = selectByDistribution(MARKETPLACE_CONFIG.QUALITY_DISTRIBUTION);
-  // Owner ruling 2026-10-28 (Equoria-nawn5): the star level, drawn inside the skill tier;
-  // hiring costs one week of its price (backend/constants/staffLevels.mjs).
-  const starLevel = drawStarLevelInTier('groom', skillLevel);
+  // Owner rulings 2026-10-28: a new groom is a Rookie (q177); hiring costs one week of
+  // its star level's price (Equoria-nawn5, backend/constants/staffLevels.mjs).
+  const starLevel = 'rookie';
 
   // Select specialty based on distribution
   const specialty = selectByDistribution(MARKETPLACE_CONFIG.SPECIALTY_DISTRIBUTION);

@@ -271,7 +271,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
     // No money at all: the fee cannot be paid.
     user = await makeUser('arrears', 0);
     horse = await makeHorse(user.id, 'arrears-horse');
-    groom = await makeGroom(user.id, 'arrears-groom', { experience: 250, level: 4 });
+    groom = await makeGroom(user.id, 'arrears-groom', { experience: 250, starLevel: 'advanced' });
 
     const historical = await prisma.groomAssignment.create({
       data: {
@@ -475,7 +475,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
 
     const row = await prisma.groom.findUnique({
       where: { id: groom.id },
-      select: { userId: true, feeUnpaidSince: true, retired: true, experience: true, level: true },
+      select: { userId: true, feeUnpaidSince: true, retired: true, experience: true, starLevel: true },
     });
     // A free agent again — this is the whole ruling: "the groom goes back to the
     // Grooms for hire section of the marketplace".
@@ -486,7 +486,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
     // SHOULD happen to accumulated experience and bond history on release is an
     // open question for the owner, and this asserts the current answer plainly.
     expect(row.experience).toBe(250);
-    expect(row.level).toBe(4);
+    expect(row.starLevel).toBe('advanced');
 
     // The engagement is closed, with the reason recorded.
     const engagements = await prisma.groomEngagement.findMany({ where: { groomId: groom.id } });
@@ -555,12 +555,12 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
 
       const row = await prisma.groom.findUnique({
         where: { id: groom.id },
-        select: { userId: true, experience: true, level: true, startAge: true },
+        select: { userId: true, experience: true, starLevel: true, startAge: true },
       });
       expect(row.userId).toBe(newEmployer.id);
       // The same groom, not a copy: experience, level and start age all carried over.
       expect(row.experience).toBe(250);
-      expect(row.level).toBe(4);
+      expect(row.starLevel).toBe('advanced');
       expect(row.startAge).toBe(20);
 
       // A second engagement row, open; the first stays closed as history.

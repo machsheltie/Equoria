@@ -86,7 +86,6 @@ describe('System-Wide Data Integrity', () => {
         personality: 'calm',
         epigeneticInfluenceType: 'calm',
         speciality: 'foalCare',
-        level: 1,
         careerWeeks: 0,
         retired: false,
       },
@@ -228,7 +227,8 @@ describe('System-Wide Data Integrity', () => {
     const updatedGroom = groomResponse.body.grooms.find(g => g.id === testGroom.id);
     expect(updatedGroom).toBeDefined();
     expect(updatedGroom.experience).toBe(0);
-    expect(updatedGroom.level).toBe(1);
+    // Owner ruling 2026-10-28 (q229): grooms carry a star level, not the old 1-10 level.
+    expect(updatedGroom).not.toHaveProperty('level');
   });
 
   test('Auth registration produces auth cookies and queryable user record — cross-system: Auth → DB', async () => {

@@ -5,11 +5,15 @@
  * mirroring backend groomLegacyService.mjs.
  *
  * Legacy Rules:
- * - Only retired grooms at level 7+ can mentor
+ * - Only retired grooms at Advanced or above can mentor (the star level equivalent to
+ *   the old level 7, owner ruling 2026-10-28, q229). Stars give no mentoring for now
+ *   (q244): see staffCareerStarLevel in lib/staffLevels.
  * - Each retired groom can create one protégé
  * - Protégés inherit one perk from mentor's personality type
- * - Protégés start with bonus XP, level, and skill bonus
+ * - Protégés start with bonus experience and skill bonus
  */
+
+import { staffCareerStarLevel, staffLevelAtLeast } from '@/lib/staffLevels';
 
 export interface LegacyPerk {
   id: string;
@@ -21,7 +25,7 @@ export interface LegacyPerk {
 export interface GroomLegacyData {
   id: number;
   name: string;
-  level: number;
+  starLevel: string;
   retired: boolean;
   groomPersonality: string; // 'calm', 'energetic', 'methodical', 'playful', 'strict'
   experience: number;
@@ -30,7 +34,7 @@ export interface GroomLegacyData {
 export interface MentorInfo {
   mentorId: number;
   mentorName: string;
-  mentorLevel: number; // Level of mentor at time of mentorship
+  mentorStarLevel: string; // the mentor's star level
   mentorPersonality: string;
   inheritedPerk: LegacyPerk;
   mentorshipDate: string; // ISO timestamp
@@ -51,9 +55,8 @@ export interface LegacyEligibilityStatus {
 
 /** Legacy system constants mirroring backend groomLegacyService.mjs */
 export const LEGACY_CONSTANTS = {
-  MINIMUM_MENTOR_LEVEL: 7,
+  MINIMUM_MENTOR_STAR_LEVEL: 'advanced',
   PROTEGE_EXPERIENCE_BONUS: 50,
-  PROTEGE_LEVEL_BONUS: 1,
   PROTEGE_SKILL_BONUS_PERCENT: 10, // 10% bonus to starting skills
 } as const;
 
@@ -166,7 +169,8 @@ export const LEGACY_PERKS_BY_PERSONALITY: Record<string, LegacyPerk[]> = {
 
 /**
  * Check if a groom is eligible to create a legacy protégé.
- * Must be retired and at level 7+.
+ * Must be retired and at Advanced or above; the level read is staffCareerStarLevel
+ * (q244: stars give no mentoring for now).
  */
 export function checkLegacyEligibility(
   groom: GroomLegacyData,
@@ -177,8 +181,8 @@ export function checkLegacyEligibility(
   if (!groom.retired) {
     reasons.push('Must be retired to mentor a protégé');
   }
-  if (groom.level < LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL) {
-    reasons.push(`Must reach Level ${LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL} to mentor`);
+  if (!staffLevelAtLeast(staffCareerStarLevel, LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL)) {
+    reasons.push('Mentoring is not open yet');
   }
   if (hasExistingProtégé) {
     reasons.push('Already mentored a protégé');

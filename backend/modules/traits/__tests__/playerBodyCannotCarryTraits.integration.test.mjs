@@ -217,7 +217,6 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
           speciality: 'foalCare',
           personality: 'calm',
           userId: player.id,
-          level: 8,
           experience: 2000,
           retired: true,
         },
@@ -243,19 +242,19 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
       expect(await prisma.groomLegacyLog.count({ where: { retiredGroomId: mentor.id } })).toBe(0);
     });
 
-    it("still creates the protégé from its own profile fields (control); perks are the game's", async () => {
+    // Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): no groom reaches the mentoring
+    // level for now, so the allowed body gets past the allow-list and is refused by the
+    // eligibility check instead. Old contract (a level-8 mentor): 201 and a protégé whose
+    // perks were the game's.
+    it('passes the allow-list with its own profile fields (control), then meets the mentoring level', async () => {
+      const groomsBefore = await prisma.groom.count({ where: { userId: player.id } });
+
       const res = await send('post', `/api/v1/grooms/${mentor.id}/legacy/create`, PROTEGE);
 
-      expect(res.status).toBe(201);
-      const link = await prisma.groomLegacyLog.findFirst({ where: { retiredGroomId: mentor.id } });
-      expect(link).not.toBeNull();
-      groomIds.push(link.legacyGroomId);
-      const protege = await prisma.groom.findUnique({
-        where: { id: link.legacyGroomId },
-        select: { bonusTraitMap: true, rareTraitPerks: true },
-      });
-      expect(protege.rareTraitPerks).toEqual({});
-      expect(protege.bonusTraitMap).toMatchObject({ legacyMentor: mentor.name });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('insufficient_level');
+      expect(await prisma.groom.count({ where: { userId: player.id } })).toBe(groomsBefore);
+      expect(await prisma.groomLegacyLog.count({ where: { retiredGroomId: mentor.id } })).toBe(0);
     });
   });
 });

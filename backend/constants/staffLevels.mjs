@@ -67,15 +67,40 @@ export function staffLevelLabel(level) {
 }
 
 /**
- * The career level the rider and trainer modifiers and the discovery-slot reveal use:
- * the old bottom level, 1, for every rider and trainer.
+ * The career level the rider, trainer and groom modifiers, the discovery-slot reveal,
+ * the groom talent tree and groom mentoring use: the old bottom level, 1, for every
+ * rider, trainer and groom.
  *
  * Owner ruling 2026-10-28 (q244): stars give no bonus for now, so nothing changes from
- * before the old 1-10 level column was dropped (q229), when every rider and trainer
- * sat at level 1. That level term therefore adds no show bonus, no training bonus and
- * no revealed discovery slot. Staff growth (Equoria-xlw03) replaces this.
+ * before the old 1-10 level column was dropped (q229), when every game-made rider,
+ * trainer and groom sat at level 1. That level term therefore adds no show bonus, no
+ * training bonus, no revealed discovery slot, no open talent tier and no mentoring.
+ * Staff growth (Equoria-xlw03) replaces this.
  */
 export const staffCareerLevel = 1;
+
+/**
+ * `staffCareerLevel` on the star scale: the old levels sit two to a star (old 1-2
+ * Rookie, 3-4 Novice, 5-6 Intermediate, 7-8 Advanced, 9-10 Expert), so old level 1 is
+ * a Rookie. Gates that used to read an old level (groom talent tiers, groom mentoring)
+ * are written as the equivalent star level and compared against this.
+ */
+export const staffCareerStarLevel = 'rookie';
+
+/**
+ * Whether `level` is at or above `minLevel` on the five-level scale. An unknown word
+ * is below every level.
+ *
+ * @param {string} level
+ * @param {string} minLevel - one of `staffLevels`
+ * @returns {boolean}
+ */
+export function staffLevelAtLeast(level, minLevel) {
+  if (!isStaffLevel(minLevel)) {
+    throw new Error(`Unknown staff level: ${String(minLevel)}`);
+  }
+  return staffLevelStars(level) >= staffLevelStars(minLevel);
+}
 
 /**
  * How each staff type's older skill words sit on the five levels. A tier with two

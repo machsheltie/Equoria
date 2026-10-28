@@ -32,8 +32,10 @@ const GROOM_LIST_SELECT = {
   careerWeeks: true,
   speciality: true,
   experience: true,
-  level: true,
   skillLevel: true,
+  // Owner ruling 2026-10-28 (q229): the roster shows the groom's stars; the old 1-10
+  // level is gone.
+  starLevel: true,
   personality: true,
   sessionRate: true,
   isActive: true,

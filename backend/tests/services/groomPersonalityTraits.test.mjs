@@ -63,7 +63,6 @@ describe('Groom Personality Trait System', () => {
               userId: testUser.id,
               sessionRate: 35.0,
               experience: 150, // High experience
-              level: 8,
             },
           }),
           // Energetic personality groom
@@ -77,7 +76,6 @@ describe('Groom Personality Trait System', () => {
               userId: testUser.id,
               sessionRate: 15.0,
               experience: 25, // Low experience
-              level: 2,
             },
           }),
           // Methodical personality groom
@@ -91,7 +89,6 @@ describe('Groom Personality Trait System', () => {
               userId: testUser.id,
               sessionRate: 28.0,
               experience: 80, // Medium experience
-              level: 5,
             },
           }),
         ]);

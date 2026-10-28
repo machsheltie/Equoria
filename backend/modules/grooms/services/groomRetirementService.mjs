@@ -458,7 +458,8 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
         groomName: retiredGroom.name,
         speciality: retiredGroom.speciality,
         skillLevel: retiredGroom.skillLevel,
-        level: retiredGroom.level,
+        // Owner ruling 2026-10-28 (q229): the star level, not the old 1-10 level.
+        starLevel: retiredGroom.starLevel,
         // Equoria-maeba (owner, 2026-09-14): the notice speaks in YEARS. It used
         // to carry `careerWeeks`, which under the RETIRED career-weeks reading
         // was the groom's age and under the confirmed one is a bare count of
@@ -530,8 +531,9 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     finalizeNotificationAfterCommit(recipientId, GROOM_RETIRED_NOTIFICATION_TYPE, payload);
   }
 
-  // Equoria-c0vo: auto-create GroomLegacyLog for level-7+ retirees by pairing
-  // the mentor with the same user's lowest-level active groom as protégé.
+  // Equoria-c0vo: auto-create GroomLegacyLog for mentor-level retirees (Advanced,
+  // see groomLegacyService) by pairing the mentor with the same user's least
+  // experienced active groom as protégé.
   // If no eligible protégé exists, defer — the legacy can be created later via
   // the manual generateLegacyProtege flow when a new groom is hired.
   let legacyLog = null;

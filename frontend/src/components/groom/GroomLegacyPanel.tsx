@@ -18,6 +18,7 @@
 
 import React from 'react';
 import { formatDate } from '@/lib/formatDate';
+import StaffLevelStars from '@/components/common/StaffLevelStars';
 import { GitBranch, Award, Star, ChevronRight, Lock, CheckCircle, Sparkles } from 'lucide-react';
 import {
   GroomLegacyData,
@@ -91,13 +92,14 @@ function PerkCard({ perk, isInherited = false }: { perk: LegacyPerk; isInherited
 /** Lineage node in the legacy tree */
 function LineageNode({
   name,
-  level,
+  starLevel,
   role,
   testId,
   isCenter = false,
 }: {
   name: string;
-  level: number;
+  /** Owner ruling 2026-10-28 (q229): stars, never the old "Level N". */
+  starLevel?: string;
   role: string;
   testId: string;
   isCenter?: boolean;
@@ -113,7 +115,11 @@ function LineageNode({
     >
       <p className="text-xs text-slate-400 mb-0.5">{role}</p>
       <p className="text-sm font-semibold">{name}</p>
-      <p className="text-xs text-slate-400">Level {level}</p>
+      {starLevel && (
+        <p className="text-xs text-slate-400">
+          <StaffLevelStars level={starLevel} />
+        </p>
+      )}
     </div>
   );
 }
@@ -139,7 +145,7 @@ function LegacyTree({
         {mentorInfo ? (
           <LineageNode
             name={mentorInfo.mentorName}
-            level={mentorInfo.mentorLevel}
+            starLevel={mentorInfo.mentorStarLevel}
             role="Mentor"
             testId="legacy-tree-mentor"
           />
@@ -158,7 +164,7 @@ function LegacyTree({
         {/* Current groom (center) */}
         <LineageNode
           name={groom.name}
-          level={groom.level}
+          starLevel={groom.starLevel}
           role={groom.retired ? 'Retired' : 'Active'}
           testId="legacy-tree-current"
           isCenter
@@ -168,12 +174,7 @@ function LegacyTree({
 
         {/* Protégé (if any) */}
         {protégéInfo ? (
-          <LineageNode
-            name={protégéInfo.protégéName}
-            level={0}
-            role="Protégé"
-            testId="legacy-tree-protege"
-          />
+          <LineageNode name={protégéInfo.protégéName} role="Protégé" testId="legacy-tree-protege" />
         ) : (
           <div
             className="text-center px-3 py-2 rounded-lg border border-dashed border-[rgba(37,99,235,0.3)] text-slate-400"
@@ -247,7 +248,7 @@ function MentorEligibilitySection({
         </div>
       </div>
       <p className="text-xs text-slate-400 mt-1" data-testid="mentor-level-requirement">
-        Requires Level {LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL}+ and retired status
+        Requires retired status
       </p>
     </div>
   );
@@ -282,9 +283,6 @@ function LegacyBonusesSection() {
       <ul className="space-y-1 text-xs text-slate-400">
         <li data-testid="bonus-experience">
           +{LEGACY_CONSTANTS.PROTEGE_EXPERIENCE_BONUS} bonus starting XP
-        </li>
-        <li data-testid="bonus-level">
-          +{LEGACY_CONSTANTS.PROTEGE_LEVEL_BONUS} starting level bonus
         </li>
         <li data-testid="bonus-skill">
           +{LEGACY_CONSTANTS.PROTEGE_SKILL_BONUS_PERCENT}% skill effectiveness bonus

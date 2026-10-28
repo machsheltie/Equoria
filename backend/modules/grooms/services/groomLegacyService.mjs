@@ -5,10 +5,14 @@
  * can mentor new hires (protégés) who inherit perks and bonuses.
  *
  * Legacy Rules:
- * - Only retired grooms level 7+ are eligible
+ * - Only retired grooms at Advanced or above are eligible (the star level equivalent to
+ *   the old level 7, owner ruling 2026-10-28, q229). Stars give no bonus for now (q244):
+ *   every groom's mentoring level is staffCareerStarLevel (Rookie, old level 1), so no
+ *   groom mentors until staff growth (Equoria-xlw03) - as before, when every game-made
+ *   groom sat at level 1.
  * - Each retired groom can only create one legacy protégé
  * - Protégés inherit one random perk from mentor's personality type
- * - Protégés start with bonus experience and slight stat bonuses
+ * - Protégés start with bonus experience
  * - Legacy relationships are permanently tracked
  */
 
@@ -25,17 +29,31 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 // backstop without saying so is how an invariant quietly stops being one.
 import { drawStartAge } from './groomAgeService.mjs';
 import { openEngagementTx } from './groomEngagementService.mjs';
-import { legacyStaffLevel } from '../../../constants/staffLevels.mjs';
+import {
+  legacyStaffLevel,
+  staffCareerStarLevel,
+  staffLevelAtLeast,
+} from '../../../constants/staffLevels.mjs';
 
 /**
  * Legacy system constants
  */
 export const LEGACY_CONSTANTS = {
-  MINIMUM_MENTOR_LEVEL: 7,
+  // The star level equivalent to the old level 7 (q229). The old protégé +1 level bonus
+  // went with the old level.
+  MINIMUM_MENTOR_STAR_LEVEL: 'advanced',
   PROTEGE_EXPERIENCE_BONUS: 50,
-  PROTEGE_LEVEL_BONUS: 1,
   PROTEGE_SKILL_BONUS: 0.1, // 10% bonus to starting skills
 };
+
+/**
+ * Whether a groom's level allows mentoring. The level read is staffCareerStarLevel, not
+ * the groom's stars: stars give no bonus for now (owner ruling 2026-10-28, q244).
+ * @returns {boolean}
+ */
+function meetsMentorLevel() {
+  return staffLevelAtLeast(staffCareerStarLevel, LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL);
+}
 
 /**
  * Legacy perks by personality type
@@ -129,17 +147,7 @@ export async function checkLegacyEligibility(groomId) {
     return {
       eligible: false,
       reason: 'not_retired',
-      level: groom.level,
-    };
-  }
-
-  // Check minimum level requirement
-  if (groom.level < LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL) {
-    return {
-      eligible: false,
-      reason: 'insufficient_level',
-      level: groom.level,
-      requiredLevel: LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL,
+      starLevel: groom.starLevel,
     };
   }
 
@@ -156,12 +164,23 @@ export async function checkLegacyEligibility(groomId) {
     };
   }
 
+  // Check the mentoring level last, so a groom that has already mentored is named as
+  // such (the level read is staffCareerStarLevel, q244).
+  if (!meetsMentorLevel()) {
+    return {
+      eligible: false,
+      reason: 'insufficient_level',
+      starLevel: groom.starLevel,
+      requiredStarLevel: LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL,
+    };
+  }
+
   // Get available perks for this groom's personality
   const availablePerks = getLegacyPerks(groom.personality);
 
   return {
     eligible: true,
-    level: groom.level,
+    starLevel: groom.starLevel,
     experience: groom.experience,
     personality: groom.personality,
     assignmentCount: groom.groomAssignmentLogs.length,
@@ -196,7 +215,6 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
 
   // Calculate protégé bonuses
   const experienceBonus = LEGACY_CONSTANTS.PROTEGE_EXPERIENCE_BONUS;
-  const levelBonus = LEGACY_CONSTANTS.PROTEGE_LEVEL_BONUS;
 
   // Create protégé and legacy log in transaction
   const result = await withRetryableTxMapping(
@@ -219,7 +237,6 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
           speciality: protegeData.speciality,
           userId,
           experience: experienceBonus,
-          level: 1 + levelBonus,
           sessionRate: protegeData.sessionRate || 15.0,
           bio: protegeData.bio || `Protégé of ${mentorGroom.name}`,
           availability: protegeData.availability || {},
@@ -252,7 +269,6 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
           retiredGroomId: mentorGroomId,
           legacyGroomId: protege.id,
           inheritedPerk: selectedPerk.id,
-          mentorLevel: mentorGroom.level,
         },
       });
 
@@ -283,16 +299,14 @@ export function getLegacyPerks(personality) {
  * @param {number} retiredGroomId - ID of retired mentor groom
  * @param {number} legacyGroomId - ID of protégé groom
  * @param {string} inheritedPerk - ID of inherited perk
- * @param {number} mentorLevel - Level of mentor at retirement
  * @returns {Promise<Object>} Created legacy log
  */
-export async function createLegacyLog(retiredGroomId, legacyGroomId, inheritedPerk, mentorLevel) {
+export async function createLegacyLog(retiredGroomId, legacyGroomId, inheritedPerk) {
   const legacyLog = await prisma.groomLegacyLog.create({
     data: {
       retiredGroomId,
       legacyGroomId,
       inheritedPerk,
-      mentorLevel,
     },
   });
 
@@ -314,10 +328,10 @@ export async function getUserLegacyHistory(userId) {
     },
     include: {
       retiredGroom: {
-        select: { id: true, name: true, level: true, personality: true },
+        select: { id: true, name: true, starLevel: true, personality: true },
       },
       legacyGroom: {
-        select: { id: true, name: true, level: true, experience: true },
+        select: { id: true, name: true, starLevel: true, experience: true },
       },
     },
     orderBy: { createdAt: 'desc' },
@@ -327,12 +341,11 @@ export async function getUserLegacyHistory(userId) {
     id: log.id,
     retiredGroomId: log.retiredGroomId,
     retiredGroomName: log.retiredGroom.name,
-    retiredGroomLevel: log.retiredGroom.level,
+    retiredGroomStarLevel: log.retiredGroom.starLevel,
     protegeGroomId: log.legacyGroomId,
     protegeGroomName: log.legacyGroom.name,
-    protegeGroomLevel: log.legacyGroom.level,
+    protegeGroomStarLevel: log.legacyGroom.starLevel,
     inheritedPerk: log.inheritedPerk,
-    mentorLevel: log.mentorLevel,
     createdAt: log.createdAt,
   }));
 }
@@ -340,8 +353,9 @@ export async function getUserLegacyHistory(userId) {
 /**
  * Equoria-c0vo: Auto-create a GroomLegacyLog when a mentor-eligible groom retires.
  *
- * Eligibility: retiring groom level >= LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL (7).
- * Protégé selection: lowest-level active (non-retired) groom of the same user,
+ * Eligibility: the mentoring level (meetsMentorLevel) is at least
+ * LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL (Advanced).
+ * Protégé selection: the least experienced active (non-retired) groom of the same user,
  * excluding the retiring groom itself, that is not already a legacy protégé.
  * If no eligible protégé exists yet, returns null and logs an info message —
  * the user can still trigger generateLegacyProtege manually when they hire a
@@ -351,11 +365,11 @@ export async function getUserLegacyHistory(userId) {
  * commits, never inside it: a legacy log is a bonus, and failing to create one
  * must not undo a retirement the player has already been notified of.
  *
- * @param {Object} retiredGroom - The freshly retired groom record (must include id, userId, level, personality)
+ * @param {Object} retiredGroom - The freshly retired groom record (must include id, userId, personality)
  * @returns {Promise<Object|null>} The created legacy log, or null if not eligible / no protégé.
  */
 export async function autoCreateLegacyOnRetirement(retiredGroom) {
-  if (!retiredGroom || retiredGroom.level < LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL) {
+  if (!retiredGroom || !meetsMentorLevel()) {
     return null;
   }
 
@@ -391,7 +405,7 @@ export async function autoCreateLegacyOnRetirement(retiredGroom) {
     return null;
   }
 
-  // Find the lowest-level active groom of the same user, not already a legacy protégé.
+  // Find the least experienced active groom of the same user, not already a legacy protégé.
   const protegeCandidate = await prisma.groom.findFirst({
     where: {
       userId: retiredGroom.userId,
@@ -400,12 +414,12 @@ export async function autoCreateLegacyOnRetirement(retiredGroom) {
       id: { not: retiredGroom.id },
       legacyGroomMentors: { none: {} }, // not already a protégé in any legacy log
     },
-    orderBy: [{ level: 'asc' }, { experience: 'asc' }],
+    orderBy: [{ experience: 'asc' }, { id: 'asc' }],
   });
 
   if (!protegeCandidate) {
     logger.info(
-      `[groomLegacyService.autoCreateLegacyOnRetirement] No eligible protégé for retired mentor groom ${retiredGroom.id} (level ${retiredGroom.level}); legacy deferred.`,
+      `[groomLegacyService.autoCreateLegacyOnRetirement] No eligible protégé for retired mentor groom ${retiredGroom.id}; legacy deferred.`,
     );
     return null;
   }
@@ -420,15 +434,10 @@ export async function autoCreateLegacyOnRetirement(retiredGroom) {
   }
   const perk = perkPool[Math.floor(Math.random() * perkPool.length)];
 
-  const legacyLog = await createLegacyLog(
-    retiredGroom.id,
-    protegeCandidate.id,
-    perk.id,
-    retiredGroom.level,
-  );
+  const legacyLog = await createLegacyLog(retiredGroom.id, protegeCandidate.id, perk.id);
 
   logger.info(
-    `[groomLegacyService.autoCreateLegacyOnRetirement] Auto-created legacy log ${legacyLog.id}: retired mentor ${retiredGroom.id} (lvl ${retiredGroom.level}) → protégé ${protegeCandidate.id} (lvl ${protegeCandidate.level}), perk ${perk.id}.`,
+    `[groomLegacyService.autoCreateLegacyOnRetirement] Auto-created legacy log ${legacyLog.id}: retired mentor ${retiredGroom.id} → protégé ${protegeCandidate.id}, perk ${perk.id}.`,
   );
   return legacyLog;
 }

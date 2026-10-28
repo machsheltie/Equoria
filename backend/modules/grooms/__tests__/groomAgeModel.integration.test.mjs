@@ -417,7 +417,6 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
     const groom = await makeGroom(user.id, 'retire-merit', {
       startAge: FIXTURE_START_AGE,
       careerWeeks: 5, // age 25
-      level: 10,
       experience: 5000,
       skillLevel: 'master',
     });

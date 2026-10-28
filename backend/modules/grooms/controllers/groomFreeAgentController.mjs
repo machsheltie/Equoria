@@ -100,7 +100,7 @@ export async function listFreeAgentGrooms(req, res) {
  * Engage an existing free-agent groom. Body: { groomId }.
  *
  * This does NOT create a groom — that is the whole point. The groom already
- * exists, with their accumulated experience, level, bond history and interaction
+ * exists, with their accumulated experience, star level, bond history and interaction
  * record intact, and this opens a NEW engagement on them.
  *
  * ONE PREDICATE, USED BY BOTH PATHS (Equoria-ypb7d.3 fix round 1, finding F1).
@@ -276,7 +276,6 @@ export async function hireFreeAgent(req, res) {
               starLevel: true,
               personality: true,
               experience: true,
-              level: true,
               sessionRate: true,
               bio: true,
               imageUrl: true,

@@ -100,7 +100,6 @@ describe('Groom Retirement Service', () => {
         // so `careerWeeks = targetAge - FIXTURE_START_AGE` is exact; 20 sits inside
         // the 18..24 band the `grooms_start_age_range` CHECK enforces.
         startAge: FIXTURE_START_AGE,
-        level: 1,
         experience: 0,
       },
     });
@@ -420,7 +419,6 @@ describe('Groom Retirement Service', () => {
               // clear of every drawn retirement age — rather than depending on the
               // pass's backstop draw.
               startAge: FIXTURE_START_AGE,
-              level: 2,
               retired: false,
             },
           }),
@@ -439,7 +437,6 @@ describe('Groom Retirement Service', () => {
               // to retire are parked on their own ages after creation.
               careerWeeks: 5,
               startAge: FIXTURE_START_AGE,
-              level: 5,
               retired: false,
             },
           }),
@@ -455,7 +452,6 @@ describe('Groom Retirement Service', () => {
               // post-create step below, so the pass carries it over the line.
               careerWeeks: 0,
               startAge: FIXTURE_START_AGE,
-              level: 8,
               retired: false,
             },
           }),
@@ -472,7 +468,6 @@ describe('Groom Retirement Service', () => {
               // reaches its own hidden age during the pass.
               careerWeeks: 0,
               startAge: FIXTURE_START_AGE,
-              level: 10,
               retired: false,
             },
           }),
@@ -582,7 +577,6 @@ describe('Groom Retirement Service', () => {
           speciality: 'foalCare',
           userId: testUser.id,
           careerWeeks: 0,
-          level: 1,
           retired: false,
         },
       });

@@ -106,7 +106,6 @@ describe('Groom Retirement Routes', () => {
         skillLevel: 'intermediate',
         speciality: 'foalCare',
         userId: testUser.id,
-        level: 5,
         careerWeeks: 50,
       },
     });
@@ -119,7 +118,6 @@ describe('Groom Retirement Routes', () => {
         skillLevel: 'expert',
         speciality: 'generalGrooming',
         userId: testUser.id,
-        level: 8,
         careerWeeks: 104,
         retired: true,
         retirementReason: 'mandatoryCareerLimit',
@@ -268,7 +266,10 @@ describe('Groom Retirement Routes', () => {
       expect(response.body.data).toHaveProperty('valid');
     });
 
-    test('POST /api/v1/grooms/:id/talents/select should select talent', async () => {
+    // Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): stars open no talent tier for
+    // now, so the route refuses with 400 and writes nothing. Old contract: a level-5
+    // groom's tier 1 choice was saved (200).
+    test('POST /api/v1/grooms/:id/talents/select refuses: stars open no tier for now', async () => {
       const response = await request(app)
         .post(`/api/v1/grooms/${testGroom.id}/talents/select`)
         .set('Authorization', `Bearer ${testToken}`)
@@ -279,11 +280,10 @@ describe('Groom Retirement Routes', () => {
           tier: 'tier1',
           talentId: 'gentle_hands',
         })
-        .expect(200);
+        .expect(400);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('selection');
-      expect(response.body.data.selection.tier1).toBe('gentle_hands');
+      expect(response.body.success).toBe(false);
+      expect(await prisma.groomTalentSelections.count({ where: { groomId: testGroom.id } })).toBe(0);
     });
   });
 

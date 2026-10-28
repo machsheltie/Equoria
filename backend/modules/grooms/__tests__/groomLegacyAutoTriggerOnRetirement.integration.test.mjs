@@ -11,6 +11,11 @@
  *   - level-6 retiree → no GroomLegacyLog (below threshold).
  *   - level-7+ retiree with no active siblings → no row (deferred, logged).
  *
+ * Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): grooms carry no 1-10 level, the
+ * threshold is the equivalent star level (Advanced), and the mentoring level is the old
+ * level 1 (staffCareerStarLevel) for every groom, so no retirement creates a legacy log
+ * for now. Old contract: a level-8 retiree with an active sibling got one.
+ *
  * Real DB, no mocks.
  */
 
@@ -18,7 +23,6 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { processRetirement, RETIREMENT_REASONS } from '../services/groomRetirementService.mjs';
-import { LEGACY_PERKS } from '../services/groomLegacyService.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const TAG = `c0vo-${randomBytes(4).toString('hex')}`;
@@ -66,16 +70,16 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
 
   afterEach(() => cleanup.run());
 
-  it('creates GroomLegacyLog when a level-7+ groom retires with an active lower-level sibling', async () => {
+  it('an Expert groom retiring with an active sibling creates no GroomLegacyLog for now (q244)', async () => {
     const mentor = await prisma.groom.create({
       data: {
         name: `${TAG}-Mentor`,
         userId: user.id,
         speciality: 'foalCare',
         skillLevel: 'expert',
+        starLevel: 'expert',
         personality: 'calm',
         experience: 5000,
-        level: 8,
         sessionRate: 25,
         isActive: true,
       },
@@ -89,7 +93,6 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
         skillLevel: 'novice',
         personality: 'patient',
         experience: 50,
-        level: 1,
         sessionRate: 10,
         isActive: true,
       },
@@ -102,16 +105,13 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
     expect(preLogs).toBe(0);
 
     const result = await processRetirement(mentor.id, RETIREMENT_REASONS.VOLUNTARY, true);
-    expect(result.legacyLog).not.toBeNull();
+    expect(result.legacyLog).toBeNull();
 
-    const legacyRow = await prisma.groomLegacyLog.findFirst({
-      where: { retiredGroomId: mentor.id },
-    });
-    expect(legacyRow).not.toBeNull();
-    expect(legacyRow.legacyGroomId).toBe(protege.id);
-    expect(legacyRow.mentorLevel).toBe(8);
-    const calmPerkIds = LEGACY_PERKS.calm.map(p => p.id);
-    expect(calmPerkIds).toContain(legacyRow.inheritedPerk);
+    expect(await prisma.groomLegacyLog.count({ where: { retiredGroomId: mentor.id } })).toBe(0);
+    expect(await prisma.groomLegacyLog.count({ where: { legacyGroomId: protege.id } })).toBe(0);
+    // The retirement itself happened.
+    const retired = await prisma.groom.findUnique({ where: { id: mentor.id }, select: { retired: true } });
+    expect(retired).toEqual({ retired: true });
   }, 30000);
 
   it('does NOT create GroomLegacyLog when retiree is below level 7', async () => {
@@ -123,7 +123,6 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
         skillLevel: 'intermediate',
         personality: 'calm',
         experience: 1500,
-        level: 6,
         sessionRate: 20,
         isActive: true,
       },
@@ -137,7 +136,6 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
         skillLevel: 'novice',
         personality: 'patient',
         experience: 50,
-        level: 1,
         sessionRate: 10,
         isActive: true,
       },
@@ -162,7 +160,6 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
         skillLevel: 'expert',
         personality: 'energetic',
         experience: 5000,
-        level: 9,
         sessionRate: 30,
         isActive: true,
       },
@@ -214,7 +211,6 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
         skillLevel: 'expert',
         personality: 'calm',
         experience: 5000,
-        level: 9,
         sessionRate: 30,
         isActive: true,
       },
@@ -227,7 +223,6 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
         skillLevel: 'novice',
         personality: 'patient',
         experience: 0,
-        level: 1,
         sessionRate: 10,
         isActive: true,
       },
@@ -253,8 +248,8 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
 
     const result = await processRetirement(ownerlessMentor.id, RETIREMENT_REASONS.VOLUNTARY, true);
 
-    // Level 9 clears the mentor threshold, so the ONLY thing standing between
-    // this retirement and a fabricated mentorship is the ownerless guard.
+    // Since q244 no groom clears the mentor level, so the level guard refuses first;
+    // the ownerless guard still stands behind it for when staff growth arrives.
     expect(result.legacyLog).toBeNull();
     expect(await prisma.groomLegacyLog.count({ where: { retiredGroomId: ownerlessMentor.id } })).toBe(0);
     // And specifically: the unrelated ownerless groom was not conscripted, from

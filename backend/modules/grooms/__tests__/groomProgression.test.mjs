@@ -96,7 +96,6 @@ describe('Groom Progression System', () => {
           name: 'Test Groom',
           speciality: 'foalCare',
           experience: 0,
-          level: 1,
           skillLevel: 'novice',
           personality: 'gentle',
           epigeneticInfluenceType: 'calm',
@@ -206,7 +205,7 @@ describe('Groom Progression System', () => {
       // Set up some progression data. Owner ruling 2026-10-21 (Equoria-dea06):
       // a groom's experience/level are generated, never earned (old contract:
       // awardGroomXP(150) raised it to level 2), so set them as generation would.
-      await prisma.groom.update({ where: { id: testGroom.id }, data: { experience: 150, level: 2 } });
+      await prisma.groom.update({ where: { id: testGroom.id }, data: { experience: 150, starLevel: 'novice' } });
       await updateGroomSynergy(testGroom.id, testHorse.id, 'milestone_completed', 3);
       await logGroomAssignment(testGroom.id, testHorse.id, 'assigned');
 
@@ -217,7 +216,8 @@ describe('Groom Progression System', () => {
       expect(profile.groom.id).toBe(testGroom.id);
       expect(profile.groom.personality).toBe('gentle');
       expect(profile.groom.experience).toBe(150);
-      expect(profile.groom.level).toBe(2);
+      // Owner ruling 2026-10-28 (q229): grooms carry a star level, not the old 1-10 level.
+      expect(profile.groom.starLevel).toBe('novice');
       expect(profile.groom.synergyRecords).toBeDefined();
       expect(profile.groom.assignmentHistory).toBeDefined();
       expect(profile.groom.currentAssignments).toBeDefined();

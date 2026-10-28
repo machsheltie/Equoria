@@ -83,7 +83,6 @@ async function makeGroom(owner, label, extra = {}) {
       skillLevel: 'intermediate',
       personality: 'patient',
       experience: 5,
-      level: 1,
       sessionRate: 20,
       userId: owner.user.id,
       isActive: true,

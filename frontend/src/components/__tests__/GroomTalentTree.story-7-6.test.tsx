@@ -3,6 +3,13 @@
  *
  * Tests for the talent tree UI component that shows groom talents
  * across 3 tiers with locked/available/selected states.
+ *
+ * Owner ruling 2026-10-28 (q229, Equoria-2xxvd): the old 1-10 level is replaced by the
+ * star level; the tiers open at the equivalent stars (old 3 = Novice, 5 = Intermediate,
+ * 8 = Advanced) and no "Level N" is shown. Old contract: fixtures at levels 1/3/5/8/10
+ * and "Level N+ required"; the same fixtures are now Rookie/Novice/Intermediate/
+ * Advanced/Expert. (Which level the page passes in is pinned by q244, see
+ * GroomDetailPanel.)
  */
 
 import React from 'react';
@@ -23,14 +30,14 @@ import {
 const baseGroom: GroomTalentData = {
   id: 1,
   name: 'Oliver',
-  level: 1,
+  starLevel: 'rookie',
   groomPersonality: 'calm',
   talentSelections: null,
 };
 
-const level3Groom: GroomTalentData = { ...baseGroom, level: 3 };
-const level5Groom: GroomTalentData = { ...baseGroom, level: 5 };
-const level8Groom: GroomTalentData = { ...baseGroom, level: 8 };
+const level3Groom: GroomTalentData = { ...baseGroom, starLevel: 'novice' };
+const level5Groom: GroomTalentData = { ...baseGroom, starLevel: 'intermediate' };
+const level8Groom: GroomTalentData = { ...baseGroom, starLevel: 'advanced' };
 
 const withTier1Selected: GroomTalentData = {
   ...level5Groom,
@@ -51,16 +58,16 @@ const withAllSelected: GroomTalentData = {
 // ============================================================
 
 describe('TALENT_REQUIREMENTS constants', () => {
-  it('tier1 requires level 3', () => {
-    expect(TALENT_REQUIREMENTS.tier1.minLevel).toBe(3);
+  it('tier1 requires Novice (old level 3)', () => {
+    expect(TALENT_REQUIREMENTS.tier1.minStarLevel).toBe('novice');
   });
 
-  it('tier2 requires level 5', () => {
-    expect(TALENT_REQUIREMENTS.tier2.minLevel).toBe(5);
+  it('tier2 requires Intermediate (old level 5)', () => {
+    expect(TALENT_REQUIREMENTS.tier2.minStarLevel).toBe('intermediate');
   });
 
-  it('tier3 requires level 8', () => {
-    expect(TALENT_REQUIREMENTS.tier3.minLevel).toBe(8);
+  it('tier3 requires Advanced (old level 8)', () => {
+    expect(TALENT_REQUIREMENTS.tier3.minStarLevel).toBe('advanced');
   });
 
   it('tier2 prerequisite is tier1', () => {
@@ -148,45 +155,45 @@ describe('countAllocatedTalents', () => {
 
 describe('getTalentTiersWithState', () => {
   it('returns empty array for unknown personality', () => {
-    const tiers = getTalentTiersWithState('unknownPersonality', 10, null);
+    const tiers = getTalentTiersWithState('unknownPersonality', 'expert', null);
     expect(tiers).toHaveLength(0);
   });
 
   it('returns 3 tiers for calm personality', () => {
-    const tiers = getTalentTiersWithState('calm', 10, null);
+    const tiers = getTalentTiersWithState('calm', 'expert', null);
     expect(tiers).toHaveLength(3);
   });
 
-  it('all tiers locked below level 3', () => {
-    const tiers = getTalentTiersWithState('calm', 1, null);
+  it('all tiers locked below Novice', () => {
+    const tiers = getTalentTiersWithState('calm', 'rookie', null);
     expect(tiers[0].isUnlocked).toBe(false);
     expect(tiers[1].isUnlocked).toBe(false);
     expect(tiers[2].isUnlocked).toBe(false);
   });
 
-  it('tier1 unlocked at level 3', () => {
-    const tiers = getTalentTiersWithState('calm', 3, null);
+  it('tier1 unlocked at Novice', () => {
+    const tiers = getTalentTiersWithState('calm', 'novice', null);
     expect(tiers[0].isUnlocked).toBe(true);
     expect(tiers[1].isUnlocked).toBe(false);
   });
 
-  it('tier2 unlocked at level 5', () => {
-    const tiers = getTalentTiersWithState('calm', 5, null);
+  it('tier2 unlocked at Intermediate', () => {
+    const tiers = getTalentTiersWithState('calm', 'intermediate', null);
     expect(tiers[1].isUnlocked).toBe(true);
   });
 
-  it('tier3 unlocked at level 8', () => {
-    const tiers = getTalentTiersWithState('calm', 8, null);
+  it('tier3 unlocked at Advanced', () => {
+    const tiers = getTalentTiersWithState('calm', 'advanced', null);
     expect(tiers[2].isUnlocked).toBe(true);
   });
 
   it('talents in locked tier are locked', () => {
-    const tiers = getTalentTiersWithState('calm', 1, null);
+    const tiers = getTalentTiersWithState('calm', 'rookie', null);
     tiers[0].talents.forEach((t) => expect(t.isLocked).toBe(true));
   });
 
   it('tier1 talents available when unlocked with no selection', () => {
-    const tiers = getTalentTiersWithState('calm', 3, null);
+    const tiers = getTalentTiersWithState('calm', 'novice', null);
     tiers[0].talents.forEach((t) => {
       expect(t.isAvailable).toBe(true);
       expect(t.isLocked).toBe(false);
@@ -194,38 +201,38 @@ describe('getTalentTiersWithState', () => {
   });
 
   it('tier2 talents locked when tier1 not selected yet', () => {
-    const tiers = getTalentTiersWithState('calm', 5, null);
+    const tiers = getTalentTiersWithState('calm', 'intermediate', null);
     expect(tiers[1].prerequisiteMet).toBe(false);
     tiers[1].talents.forEach((t) => expect(t.isLocked).toBe(true));
   });
 
   it('tier2 available after tier1 selected', () => {
-    const tiers = getTalentTiersWithState('calm', 5, { tier1: 'gentle_hands' });
+    const tiers = getTalentTiersWithState('calm', 'intermediate', { tier1: 'gentle_hands' });
     expect(tiers[1].prerequisiteMet).toBe(true);
     tiers[1].talents.forEach((t) => expect(t.isLocked).toBe(false));
   });
 
   it('selected talent has isSelected=true', () => {
-    const tiers = getTalentTiersWithState('calm', 3, { tier1: 'gentle_hands' });
+    const tiers = getTalentTiersWithState('calm', 'novice', { tier1: 'gentle_hands' });
     const gentleHands = tiers[0].talents.find((t) => t.id === 'gentle_hands')!;
     expect(gentleHands.isSelected).toBe(true);
   });
 
   it('non-selected talent in same tier has isSelected=false', () => {
-    const tiers = getTalentTiersWithState('calm', 3, { tier1: 'gentle_hands' });
+    const tiers = getTalentTiersWithState('calm', 'novice', { tier1: 'gentle_hands' });
     const patienceVirtue = tiers[0].talents.find((t) => t.id === 'patience_virtue')!;
     expect(patienceVirtue.isSelected).toBe(false);
   });
 
   it('talents unavailable when tier already has selection', () => {
-    const tiers = getTalentTiersWithState('calm', 3, { tier1: 'gentle_hands' });
+    const tiers = getTalentTiersWithState('calm', 'novice', { tier1: 'gentle_hands' });
     // patience_virtue should not be available (already selected in this tier)
     const patienceVirtue = tiers[0].talents.find((t) => t.id === 'patience_virtue')!;
     expect(patienceVirtue.isAvailable).toBe(false);
   });
 
   it('selectedTalentId reflects current selection', () => {
-    const tiers = getTalentTiersWithState('calm', 5, { tier1: 'gentle_hands' });
+    const tiers = getTalentTiersWithState('calm', 'intermediate', { tier1: 'gentle_hands' });
     expect(tiers[0].selectedTalentId).toBe('gentle_hands');
     expect(tiers[1].selectedTalentId).toBeNull();
   });
@@ -294,7 +301,7 @@ describe('AC1: All tiers and talents displayed', () => {
 // ============================================================
 
 describe('AC2: Available talents highlighted', () => {
-  it('shows available icon for accessible talent at level 3', () => {
+  it('shows available icon for accessible talent at Novice', () => {
     render(<GroomTalentTree groom={level3Groom} />);
     expect(screen.getByTestId('talent-available-icon-gentle_hands')).toBeInTheDocument();
     expect(screen.getByTestId('talent-available-icon-patience_virtue')).toBeInTheDocument();
@@ -302,7 +309,7 @@ describe('AC2: Available talents highlighted', () => {
 
   it('does not show available icon for locked talent', () => {
     render(<GroomTalentTree groom={level3Groom} />);
-    // tier2 is locked at level 3
+    // tier2 is locked at Novice
     expect(screen.queryByTestId('talent-available-icon-empathic_sync')).not.toBeInTheDocument();
   });
 
@@ -328,7 +335,7 @@ describe('AC2: Available talents highlighted', () => {
 
   it('shows locked icon for tier below level requirement', () => {
     render(<GroomTalentTree groom={baseGroom} />);
-    // level 1 → tier1 locked
+    // Rookie → tier1 locked
     expect(screen.getByTestId('talent-locked-icon-gentle_hands')).toBeInTheDocument();
   });
 });
@@ -384,19 +391,18 @@ describe('AC3: Talent effects clearly explained', () => {
 // ============================================================
 
 describe('AC4: Unlock requirements shown', () => {
-  it('shows level requirement for tier1', () => {
+  it('a locked tier says it is not open yet, and names no level', () => {
     render(<GroomTalentTree groom={baseGroom} />);
-    expect(screen.getByTestId('tier-requirement-tier1')).toHaveTextContent('Level 3+ required');
+    for (const tier of ['tier1', 'tier2', 'tier3']) {
+      expect(screen.getByTestId(`tier-requirement-${tier}`)).toHaveTextContent('Not open yet');
+    }
+    expect(screen.queryByText(/Level \d/)).not.toBeInTheDocument();
   });
 
-  it('shows level requirement for tier2', () => {
-    render(<GroomTalentTree groom={baseGroom} />);
-    expect(screen.getByTestId('tier-requirement-tier2')).toHaveTextContent('Level 5+ required');
-  });
-
-  it('shows level requirement for tier3', () => {
-    render(<GroomTalentTree groom={baseGroom} />);
-    expect(screen.getByTestId('tier-requirement-tier3')).toHaveTextContent('Level 8+ required');
+  it('an open tier says it is open', () => {
+    render(<GroomTalentTree groom={level3Groom} />);
+    expect(screen.getByTestId('tier-requirement-tier1')).toHaveTextContent('Open');
+    expect(screen.getByTestId('tier-requirement-tier2')).toHaveTextContent('Not open yet');
   });
 
   it('shows tier label for tier1', () => {
@@ -416,7 +422,7 @@ describe('AC4: Unlock requirements shown', () => {
 
   it('shows prerequisite notice for tier2 when tier1 not selected', () => {
     render(<GroomTalentTree groom={level5Groom} />);
-    // tier2 is unlocked at level 5 but tier1 not selected
+    // tier2 is unlocked at Intermediate but tier1 not selected
     expect(screen.getByTestId('tier-prerequisite-notice-tier2')).toBeInTheDocument();
   });
 
