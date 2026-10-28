@@ -62,6 +62,7 @@ import {
   breedBirthDisciplineScores,
 } from '../../horses/index.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { horseArrivalCare } from '../../../utils/horseArrivalCare.mjs';
 
 // Equoria-3f0yx: ESM-native JSON load. See module docstring for the
 // rationale on readFileSync vs createRequire vs import attributes.
@@ -423,7 +424,8 @@ export const advanceOnboarding = async (req, res, next) => {
                 age: 3,
                 dateOfBirth,
                 userId,
-                healthStatus: 'Excellent',
+                // Owner ruling 2026-10-28 (Equoria-fd3f2): Excellent health and fully fed.
+                ...horseArrivalCare(),
                 temperament: generateTemperamentWithDefault(breed.name),
                 colorGenotype: starterColorGenotype,
                 phenotype: starterPhenotype,

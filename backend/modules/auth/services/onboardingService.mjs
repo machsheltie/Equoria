@@ -47,6 +47,7 @@
 
 import logger from '../../../utils/logger.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { horseArrivalCare } from '../../../utils/horseArrivalCare.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
   generateGenotype,
@@ -185,7 +186,8 @@ export async function createStarterHorseForNewUser(
         focus: 17,
         endurance: 17,
         strength: 17,
-        healthStatus: 'Excellent',
+        // Owner ruling 2026-10-28 (Equoria-fd3f2): Excellent health and fully fed.
+        ...horseArrivalCare(),
         ...physique,
         // Equoria-tl5l8: born with the starter breed's discipline at +5.
         ...(starterDisciplineScores && { disciplineScores: starterDisciplineScores }),

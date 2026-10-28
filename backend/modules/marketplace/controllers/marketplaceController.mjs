@@ -30,6 +30,7 @@ import { reconcileHorseOnTransfer } from '../services/horseTransferReconciliatio
 
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
 import { generateStoreHorseTraitRoster } from '../../traits/index.mjs';
+import { horseArrivalCare } from '../../../utils/horseArrivalCare.mjs';
 // Cross-module horses-domain imports go through the horses module barrel
 // (Equoria-v8l96.2): createHorse; generateStoreStats (shared with the perf
 // seed so test data matches real store horses — random-stat seed paths are
@@ -456,7 +457,7 @@ export async function buyStoreHorse(req, res) {
     const epigeneticModifiers = generateStoreHorseTraitRoster(); // hidden, 1-5 by tier (i366a, q174, q246)
     // ── Atomic money + horse transaction (Equoria-gumnp) ──────────────────────
     // The debit, its paired SYSTEM_ACCOUNT_BURN credit, the purchase ledger row,
-    // the horse INSERT, and the unvetted-flag update all commit or roll back
+    // and the horse INSERT all commit or roll back
     // TOGETHER. Because the horse and the charge are one atomic unit, there is no
     // compensating-refund saga: a failure anywhere in here rolls back the charge
     // AND the horse, so there is no free-horse-plus-refund window (F1) and no
@@ -501,7 +502,7 @@ export async function buyStoreHorse(req, res) {
           // Equoria-gumnp: the horse INSERT now runs ON THE TX CLIENT — passing
           // `tx` to createHorse enlists the insert in this transaction, so it is
           // atomic with the debit above.
-          const createdHorse = await createHorse(
+          const newHorse = await createHorse(
             {
               name: horseName,
               breedId: parsedBreedId,
@@ -509,7 +510,8 @@ export async function buyStoreHorse(req, res) {
               age: 3,
               dateOfBirth: dateOfBirth.toISOString(),
               userId: buyerId,
-              healthStatus: 'Excellent',
+              // Owner ruling 2026-10-28 (Equoria-fd3f2): Excellent health and fully fed.
+              ...horseArrivalCare(),
               colorGenotype,
               phenotype,
               temperament,
@@ -520,15 +522,6 @@ export async function buyStoreHorse(req, res) {
             },
             tx,
           );
-
-          // Store-bought horses arrive unvetted — the player must book a vet
-          // check before the "Vetted" care chip turns green. createHorse()
-          // filters out falsy `lastVettedDate`, so this explicit in-tx update
-          // clears the schema default to null.
-          const newHorse = await tx.horse.update({
-            where: { id: createdHorse.id },
-            data: { lastVettedDate: null },
-          });
 
           return { newBalance: balanceAfter, horse: newHorse };
         },
