@@ -12,6 +12,10 @@
  *   - When on the correct route and target element found: renders spotlight ring + tooltip
  *   - When on wrong route or target not found: renders a floating guide card with navigation
  *   - "Next →" advances step; "Skip tutorial" calls complete-onboarding immediately
+ *   - The server completes onboarding when the tour reaches step 10. So "Next →"
+ *     on card 9 only reveals card 10 here, and card 10's "Finish!" makes that
+ *     last advance (Equoria-hlo5x: the advance from card 9 used to close the
+ *     tour before card 10 was ever seen).
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -106,7 +110,11 @@ const ROUTE_LABELS: Record<string, string> = {
   '/training': 'Training Center',
   '/competitions': 'Competitions',
   '/inventory': 'Inventory',
+  '/stable': 'Stable',
 };
+
+/** The last card (Equoria-hlo5x): shown after card 9, its Finish! completes the tour. */
+const finalStep = ONBOARDING_STEPS.length;
 
 const OnboardingSpotlight: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -116,6 +124,7 @@ const OnboardingSpotlight: React.FC = () => {
   const { mutate: skipTutorial, isPending: isSkipping } = useCompleteOnboarding();
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [windowSize, setWindowSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+  const [finalCardOpen, setFinalCardOpen] = useState(false);
 
   // Only active during the guided tour (step 1–10, completedOnboarding still false).
   // The one-time welcome note goes first (Equoria-kd2dd): while it is owed the tour
@@ -128,7 +137,8 @@ const OnboardingSpotlight: React.FC = () => {
     user.onboardingStep >= 1 &&
     !isWelcomePending(user);
 
-  const stepIndex = isActive ? user!.onboardingStep! - 1 : 0;
+  const serverStep = isActive ? user!.onboardingStep! : 0;
+  const stepIndex = finalCardOpen && serverStep === finalStep - 1 ? finalStep - 1 : serverStep - 1;
   const activeStep = ONBOARDING_STEPS[stepIndex] ?? null;
 
   // Keyboard: Escape skips tutorial
@@ -192,6 +202,15 @@ const OnboardingSpotlight: React.FC = () => {
   const isOnCorrectRoute = location.pathname === activeStep.route;
   const isPending = isAdvancing || isSkipping;
   const locationLabel = ROUTE_LABELS[activeStep.route] ?? activeStep.route;
+  const isFinalCard = activeStep.step === finalStep;
+  const onNext = () => {
+    if (activeStep.step === finalStep - 1) {
+      setFinalCardOpen(true);
+      return;
+    }
+    advanceStep();
+  };
+  const nextLabel = isPending ? 'Saving…' : isFinalCard ? 'Finish!' : 'Next →';
 
   // ── FLOATING GUIDE CARD (wrong route or target not found) ──────────────────
   if (!isOnCorrectRoute || targetRect === null) {
@@ -207,8 +226,8 @@ const OnboardingSpotlight: React.FC = () => {
         <p className="text-[var(--cream)] text-sm mb-4 leading-relaxed">{activeStep.message}</p>
         <div className="flex items-center gap-3">
           {isOnCorrectRoute ? (
-            <Button onClick={() => advanceStep()} disabled={isPending} className="flex-1">
-              {isPending ? 'Saving…' : 'Next →'}
+            <Button onClick={onNext} disabled={isPending} className="flex-1">
+              {nextLabel}
             </Button>
           ) : (
             <Button
@@ -271,12 +290,8 @@ const OnboardingSpotlight: React.FC = () => {
         </p>
         <p className="text-[var(--cream)] text-sm mb-3 leading-relaxed">{activeStep.message}</p>
         <div className="flex items-center gap-3">
-          <Button onClick={() => advanceStep()} disabled={isPending} className="flex-1">
-            {isPending
-              ? 'Saving…'
-              : activeStep.step === ONBOARDING_STEPS.length
-                ? 'Finish!'
-                : 'Next →'}
+          <Button onClick={onNext} disabled={isPending} className="flex-1">
+            {nextLabel}
           </Button>
           <Button variant="ghost" size="sm" onClick={() => skipTutorial()} disabled={isPending}>
             Skip tutorial
