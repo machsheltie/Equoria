@@ -232,8 +232,9 @@ export async function getAssignedHandler(horseId, userId) {
         foalId: horseId,
         userId,
         isActive: true,
-        priority: 1, // Primary assignment only
       },
+      // The horse's longest-standing active groom (no priority: Equoria-ekrab).
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       include: {
         groom: {
           select: {

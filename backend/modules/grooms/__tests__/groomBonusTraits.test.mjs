@@ -224,8 +224,6 @@ describe('Groom Bonus Traits System', () => {
           userId: testUser.id,
           startDate: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000), // 28 days ago
           endDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago (26 days coverage > 22.5 needed)
-          priority: 5,
-          notes: 'Test assignment for bonus traits',
         },
       });
 
@@ -268,8 +266,6 @@ describe('Groom Bonus Traits System', () => {
           userId: testUser.id,
           startDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
           endDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-          priority: 5,
-          notes: 'Test assignment with low bond',
         },
       });
 
@@ -283,7 +279,6 @@ describe('Groom Bonus Traits System', () => {
           bondingChange: 3, // GroomInteraction uses bondingChange
           quality: 'fair', // GroomInteraction uses quality
           cost: 25.0,
-          notes: 'Low bond interaction',
           timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
         },
       });
@@ -307,8 +302,6 @@ describe('Groom Bonus Traits System', () => {
           userId: testUser.id,
           startDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // Only 10 days
           endDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-          priority: 5,
-          notes: 'Test assignment with insufficient coverage',
         },
       });
 

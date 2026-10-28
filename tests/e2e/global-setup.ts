@@ -398,7 +398,7 @@ async function globalSetup(config: FullConfig) {
 
       // (5) Assign the groom to the E2E horse (POST /api/v1/grooms/assign).
       const assignRes = await page.request.post(`${baseURL}/api/v1/grooms/assign`, {
-        data: { foalId: horseId, groomId, priority: 1 },
+        data: { foalId: horseId, groomId },
         headers: seedHeaders,
       });
       if (!assignRes.ok()) {

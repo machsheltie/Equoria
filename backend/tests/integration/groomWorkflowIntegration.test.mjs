@@ -237,8 +237,6 @@ describe('Groom Workflow Integration Tests', () => {
         body: {
           foalId: testFoal.id,
           groomId: testGroom.id,
-          priority: 1,
-          notes: 'Primary caregiver for daily enrichment',
         },
         user: { id: testUser.id },
       };
@@ -252,11 +250,12 @@ describe('Groom Workflow Integration Tests', () => {
         data: {
           foalId: testFoal.id,
           groomId: testGroom.id,
-          priority: 1,
-          notes: 'Primary caregiver for daily enrichment',
           isActive: true,
         },
       });
+      // Equoria-ekrab: no priority level and no notes on an assignment.
+      expect(res._json.data).not.toHaveProperty('priority');
+      expect(res._json.data).not.toHaveProperty('notes');
 
       const assignment = await prisma.groomAssignment.findFirst({
         where: { foalId: testFoal.id, groomId: testGroom.id },
@@ -265,15 +264,15 @@ describe('Groom Workflow Integration Tests', () => {
       expect(assignment.isActive).toBe(true);
     });
 
-    it('deactivates the previous priority-1 assignment when a new one is created', async () => {
+    // Equoria-ekrab: no priority level; a new groom replaces the foal's active
+    // groom. Old contract: it replaced the previous priority-1 assignment.
+    it('ends the previous assignment when a new one is created', async () => {
       await prisma.groomAssignment.create({
         data: {
           foalId: testFoal.id,
           groomId: testGroom.id,
           userId: testUser.id,
-          priority: 1,
           isActive: true,
-          notes: 'First assignment',
         },
       });
 
@@ -292,8 +291,6 @@ describe('Groom Workflow Integration Tests', () => {
         body: {
           foalId: testFoal.id,
           groomId: secondGroom.id,
-          priority: 1,
-          notes: 'New primary caregiver',
         },
         user: { id: testUser.id },
       };
@@ -329,7 +326,7 @@ describe('Groom Workflow Integration Tests', () => {
       createdUserIds.add(otherUser.id);
 
       const req = {
-        body: { foalId: testFoal.id, groomId: testGroom.id, priority: 1 },
+        body: { foalId: testFoal.id, groomId: testGroom.id },
         user: { id: otherUser.id },
       };
       const res = makeRes();

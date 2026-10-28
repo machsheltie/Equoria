@@ -35,7 +35,8 @@ import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
  * @returns {Object} Assignment result
  */
 export async function assignGroomToFoal(foalId, groomId, userId, options = {}) {
-  const { priority = 1, notes = null, isDefault = false } = options;
+  // Owner ruling 2026-10-28 (Equoria-ekrab): no priority level and no notes.
+  const { isDefault = false } = options;
 
   logger.info(`[groomSystem.assignGroomToFoal] Assigning groom ${groomId} to foal ${foalId}`);
 
@@ -111,20 +112,18 @@ export async function assignGroomToFoal(foalId, groomId, userId, options = {}) {
       await assertHorseTakesNewStaffTx(tx, foalId);
       await assertGroomHasRoomForAnotherHorse(tx, groomId, groom.name);
 
-      // Deactivate other assignments if this is primary (priority 1)
-      if (priority === 1) {
-        await tx.groomAssignment.updateMany({
-          where: {
-            foalId,
-            priority: 1,
-            isActive: true,
-          },
-          data: {
-            isActive: false,
-            endDate: new Date(),
-          },
-        });
-      }
+      // The new groom replaces the foal's active groom assignments (what the
+      // default primary assignment always did before priority was removed).
+      await tx.groomAssignment.updateMany({
+        where: {
+          foalId,
+          isActive: true,
+        },
+        data: {
+          isActive: false,
+          endDate: new Date(),
+        },
+      });
 
       // Create new assignment
       return tx.groomAssignment.create({
@@ -132,8 +131,6 @@ export async function assignGroomToFoal(foalId, groomId, userId, options = {}) {
           foalId,
           groomId,
           userId,
-          priority,
-          notes,
           isDefault,
           isActive: true,
         },

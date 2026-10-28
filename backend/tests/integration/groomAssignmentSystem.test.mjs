@@ -163,12 +163,13 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
   });
 
   describe('1. Assignment Creation', () => {
-    it('should create a new groom assignment', async () => {
+    // Owner ruling 2026-10-28 (Equoria-ekrab): an assignment has no priority
+    // level and no notes. Old contract: the request carried both and the
+    // assignment stored and returned them.
+    it('should create a new groom assignment, with no priority level or notes', async () => {
       const assignmentData = {
         groomId: testGroom1.id,
         horseId: testHorse1.id,
-        priority: 1,
-        notes: 'Primary assignment for foal care',
       };
 
       const response = await request(app)
@@ -186,17 +187,15 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const { assignment } = response.body.data;
       expect(assignment.groomId).toBe(testGroom1.id);
       expect(assignment.foalId).toBe(testHorse1.id);
-      expect(assignment.priority).toBe(1);
       expect(assignment.isActive).toBe(true);
-      expect(assignment.notes).toBe('Primary assignment for foal care');
+      expect(assignment).not.toHaveProperty('priority');
+      expect(assignment).not.toHaveProperty('notes');
     });
 
     it('should create multiple assignments for different horses', async () => {
       const assignmentData = {
         groomId: testGroom1.id,
         horseId: testHorse2.id,
-        priority: 2,
-        notes: 'Secondary assignment',
       };
 
       const response = await request(app)
@@ -224,7 +223,6 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const assignmentData = {
         groomId: testGroom1.id,
         horseId: testHorse1.id,
-        priority: 1,
       };
 
       const firstResponse = await request(app)
@@ -340,7 +338,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ groomId: testGroom1.id, horseId: testHorse1.id, priority: 1 });
+        .send({ groomId: testGroom1.id, horseId: testHorse1.id });
       // Fail loud if the seed itself broke — otherwise the assertions below
       // would falsely fail on a setup defect rather than a retrieval defect.
       expect(seed.status).toBe(201);
@@ -458,7 +456,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ groomId: testGroom1.id, horseId: testHorse1.id, priority: 1 });
+        .send({ groomId: testGroom1.id, horseId: testHorse1.id });
       expect(created.status).toBe(201);
 
       // Fetch the active assignment to remove

@@ -92,7 +92,6 @@ describe('executeConformationShow — no fabricated groom (Equoria-axad9.1)', ()
         foalId: horseWithGroom.id,
         userId: user.id,
         isActive: true,
-        priority: 1,
         createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
       },
     });

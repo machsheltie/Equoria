@@ -18,8 +18,6 @@ async function testAssignment() {
       body: JSON.stringify({
         foalId: 1,
         groomId: 1,
-        priority: 1,
-        notes: 'Test assignment',
       }),
     });
 

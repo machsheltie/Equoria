@@ -220,8 +220,6 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
           foalId: testHorse.id,
           userId: testUser.id,
           isActive: true,
-          priority: 5, // High priority (1-5 scale)
-          notes: 'Test assignment',
         },
       });
 

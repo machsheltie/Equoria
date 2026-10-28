@@ -174,7 +174,7 @@ beforeAll(async () => {
     const groom = legacy ? legacyGroom : recordedGroom;
     if (legacy) {
       await prisma.groomAssignment.create({
-        data: { groomId: legacyGroom.id, foalId: horse.id, userId: user.id, isActive: true, priority: 1 },
+        data: { groomId: legacyGroom.id, foalId: horse.id, userId: user.id, isActive: true },
       });
       await prisma.showEntry.create({ data: { showId, horseId: horse.id, userId: user.id } });
     } else {

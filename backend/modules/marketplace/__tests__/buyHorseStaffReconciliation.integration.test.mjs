@@ -131,7 +131,6 @@ async function makeGroomAssignment(groomId, horseId, ownerId, { isActive = true 
       groomId,
       foalId: horseId,
       userId: ownerId,
-      priority: 1,
       isActive,
       ...(isActive ? {} : { endDate: new Date('2026-01-01') }),
     },

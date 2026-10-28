@@ -154,7 +154,10 @@ export async function validateAssignmentEligibility(groomId, horseId, userId) {
  * @returns {Object} Assignment result
  */
 export async function createAssignment(groomId, horseId, userId, options = {}) {
-  const { priority = 1, notes = null, replacePrimary = false } = options;
+  // Owner ruling 2026-10-28 (Equoria-ekrab): no priority level and no notes.
+  // "Replace existing assignment" ends the horse's other active groom
+  // assignments.
+  const { replacePrimary = false } = options;
 
   // Validate assignment eligibility
   const validation = await validateAssignmentEligibility(groomId, horseId, userId);
@@ -187,13 +190,11 @@ export async function createAssignment(groomId, horseId, userId, options = {}) {
       await assertHorseTakesNewStaffTx(tx, horseId);
       await assertGroomHasRoomForAnotherHorse(tx, groomId, validation.groom.name);
 
-      // If this is a primary assignment (priority 1) and replacePrimary is true,
-      // deactivate existing primary assignments for this horse
-      if (priority === 1 && replacePrimary) {
+      // Replace existing assignment: end this horse's active groom assignments.
+      if (replacePrimary) {
         await tx.groomAssignment.updateMany({
           where: {
             foalId: horseId,
-            priority: 1,
             isActive: true,
           },
           data: {
@@ -209,8 +210,6 @@ export async function createAssignment(groomId, horseId, userId, options = {}) {
           groomId,
           foalId: horseId,
           userId,
-          priority,
-          notes,
           isActive: true,
         },
         include: {
@@ -296,7 +295,6 @@ export async function removeAssignment(assignmentId, userId, reason = 'Manual re
     data: {
       isActive: false,
       endDate: new Date(),
-      notes: assignment.notes ? `${assignment.notes} | Removed: ${reason}` : `Removed: ${reason}`,
     },
     include: {
       groom: {
@@ -309,7 +307,7 @@ export async function removeAssignment(assignmentId, userId, reason = 'Manual re
   });
 
   logger.info(
-    `[groomAssignmentService] Removed assignment: ${assignment.groom.name} -> ${assignment.foal.name}`,
+    `[groomAssignmentService] Removed assignment: ${assignment.groom.name} -> ${assignment.foal.name} (${reason})`,
   );
 
   return {
@@ -357,7 +355,7 @@ export async function getUserAssignments(userId, filters = {}) {
         },
       },
     },
-    orderBy: [{ isActive: 'desc' }, { priority: 'asc' }, { createdAt: 'desc' }],
+    orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
   });
 
   // Group assignments by groom

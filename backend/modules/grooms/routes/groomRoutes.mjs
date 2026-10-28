@@ -70,16 +70,6 @@ const router = express.Router();
  *                 type: integer
  *                 minimum: 1
  *                 description: ID of the groom
- *               priority:
- *                 type: integer
- *                 minimum: 1
- *                 maximum: 5
- *                 default: 1
- *                 description: Assignment priority (1 = primary)
- *               notes:
- *                 type: string
- *                 maxLength: 500
- *                 description: Optional assignment notes
  *     responses:
  *       200:
  *         description: Groom assigned successfully
@@ -94,14 +84,6 @@ router.post(
   [
     body('foalId').isInt({ min: 1 }).withMessage('foalId must be a positive integer'),
     body('groomId').isInt({ min: 1 }).withMessage('groomId must be a positive integer'),
-    body('priority')
-      .optional()
-      .isInt({ min: 1, max: 5 })
-      .withMessage('priority must be an integer between 1 and 5'),
-    body('notes')
-      .optional()
-      .isLength({ max: 500 })
-      .withMessage('notes must be 500 characters or less'),
     handleValidationErrors,
   ],
   // Dual ownership validation middleware (IDOR protection)

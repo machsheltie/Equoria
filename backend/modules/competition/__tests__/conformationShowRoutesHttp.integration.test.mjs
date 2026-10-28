@@ -186,7 +186,7 @@ describe('POST /api/v1/competition/conformation/execute — no early settlement 
     });
     for (const h of [horse1, horse2]) {
       await prisma.groomAssignment.create({
-        data: { groomId: groom.id, foalId: h.id, userId: host.id, isActive: true, priority: 1 },
+        data: { groomId: groom.id, foalId: h.id, userId: host.id, isActive: true },
       });
     }
 

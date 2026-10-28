@@ -7,7 +7,7 @@
  *   getGroomAssignmentLimits — skillLevel fallback to 2 (pure), real groom path
  *   validateAssignmentEligibility — groom not found, horse not found, groom inactive, already assigned, at limit
  *   createAssignment — valid path, replacePrimary=true, NotFoundError for missing horse
- *   removeAssignment — not found, ownership mismatch, already inactive, notes ternary branches
+ *   removeAssignment — not found, ownership mismatch, already inactive (no notes: Equoria-ekrab)
  *   getUserAssignments — no assignments (averageAssignmentsPerGroom=0 branch), with assignments + filters
  * calculateWeeklySalaryCosts went with the duplicate salary-costs and dashboard
  * lookups that read it (Equoria-a7f1p, owner ruling q151).
@@ -69,7 +69,7 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
   let gasGroomInactive; // isActive=false → validateAssignmentEligibility 'Groom is not active'
   let gasHorse;
   let _gasHorse2; // second horse for additional assignments
-  let gasHorse3; // third horse for notes ternary test
+  let gasHorse3; // third horse for the replace-existing test
   const gasCleanup = createCleanupTracker();
 
   beforeAll(async () => {
@@ -247,9 +247,11 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
     expect(result.errors).toContain('Groom is already assigned to this horse');
   });
 
-  it('createAssignment: replacePrimary=true deactivates existing primary', async () => {
-    // replacePrimary deactivates ALL priority=1 assignments for the horse, then creates a new one
-    // for a DIFFERENT groom. Using same groom fails validation (already assigned).
+  // Owner ruling 2026-10-28 (Equoria-ekrab): no priority level. "Replace existing
+  // assignment" ends the horse's active groom assignments. Old contract: it ended
+  // only priority-1 assignments, and only when the new one was priority 1.
+  it('createAssignment: replacePrimary=true ends the existing assignment', async () => {
+    // A DIFFERENT groom: the same groom fails validation (already assigned).
     const ts = Date.now();
     const masterGroom = await prisma.groom.create({
       data: {
@@ -271,12 +273,9 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
         userId: gasUser.id,
       },
     });
-    // Assign masterGroom to gasHorse3 at priority=1
-    await createAssignment(masterGroom.id, gasHorse3.id, gasUser.id, { priority: 1 });
-    // Assign masterGroom2 to gasHorse3 with replacePrimary=true
-    // This deactivates masterGroom's priority=1 assignment then creates masterGroom2's
+    await createAssignment(masterGroom.id, gasHorse3.id, gasUser.id);
+    // Replacing ends masterGroom's assignment, then creates masterGroom2's.
     const result = await createAssignment(masterGroom2.id, gasHorse3.id, gasUser.id, {
-      priority: 1,
       replacePrimary: true,
     });
     expect(result.success).toBe(true);
@@ -293,16 +292,16 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
     await expect(removeAssignment(999999999, gasUser.id)).rejects.toThrow('Assignment not found');
   });
 
-  it('removeAssignment: valid removal with null notes (notes ternary else-branch)', async () => {
-    // gasGroom is assigned to gasHorse; remove that assignment (notes=null → 'Removed: reason')
+  // Equoria-ekrab: assignments carry no notes; the removal reason is logged only.
+  // Old contract: the reason was written into the assignment's notes.
+  it('removeAssignment: valid removal ends the assignment', async () => {
     const activeAssignment = await prisma.groomAssignment.findFirst({
       where: { groomId: gasGroom.id, foalId: gasHorse.id, isActive: true },
     });
     const result = await removeAssignment(activeAssignment.id, gasUser.id, 'Test removal');
     expect(result.success).toBe(true);
     expect(result.assignment.isActive).toBe(false);
-    // notes was null → just 'Removed: Test removal'
-    expect(result.assignment.notes).toBe('Removed: Test removal');
+    expect(result.assignment.notes ?? null).toBeNull();
   });
 
   it('removeAssignment: already inactive → throws', async () => {
@@ -310,51 +309,6 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
       where: { groomId: gasGroom.id, foalId: gasHorse.id, isActive: false },
     });
     await expect(removeAssignment(inactiveAssignment.id, gasUser.id)).rejects.toThrow('Assignment is already inactive');
-  });
-
-  it('removeAssignment: with non-null notes → notes ternary if-branch (appended)', async () => {
-    // Find an active assignment with non-null notes to hit the if-branch
-    const assignmentWithNotes = await prisma.groomAssignment.findFirst({
-      where: { groomId: gasGroom.id, isActive: true, notes: { not: null } },
-    });
-    if (assignmentWithNotes) {
-      const result = await removeAssignment(assignmentWithNotes.id, gasUser.id, 'append removal');
-      expect(result.assignment.notes).toContain('| Removed: append removal');
-    } else {
-      // No notes-bearing active assignment available; create one via prisma directly
-      const gasHorse4 = await prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `TestFixture-GAS-Horse4-${Date.now()}`,
-          sex: 'Filly',
-          dateOfBirth: new Date(),
-          age: 0,
-          userId: gasUser.id,
-        },
-      });
-      const ts2 = Date.now();
-      const groomForNotes = await prisma.groom.create({
-        data: {
-          name: `TestFixture-GAS-GroomNotes-${ts2}`,
-          speciality: 'general',
-          personality: 'gentle',
-          skillLevel: 'novice',
-          isActive: true,
-          userId: gasUser.id,
-        },
-      });
-      const assignment = await prisma.groomAssignment.create({
-        data: {
-          groomId: groomForNotes.id,
-          foalId: gasHorse4.id,
-          userId: gasUser.id,
-          isActive: true,
-          notes: 'original note',
-        },
-      });
-      const result = await removeAssignment(assignment.id, gasUser.id, 'append removal');
-      expect(result.assignment.notes).toBe('original note | Removed: append removal');
-    }
   });
 
   // ── getUserAssignments ────────────────────────────────────────────────────

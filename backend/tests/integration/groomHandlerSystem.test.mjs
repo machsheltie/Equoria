@@ -99,9 +99,7 @@ describe('Groom Handler System Integration Tests', () => {
         groomId: testGroom.id,
         foalId: testHorse.id,
         userId: testUser.id,
-        priority: 1,
         isActive: true,
-        notes: 'Test assignment for handler system',
       },
     });
   });

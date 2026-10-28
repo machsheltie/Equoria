@@ -179,16 +179,16 @@ describe('Schema Validation', () => {
         foalId: horse.id,
         groomId: groom.id,
         userId: testUser.id,
-        priority: 1,
-        notes: 'Test assignment',
       },
     });
 
     expect(assignment).toBeTruthy();
     expect(assignment.foalId).toBe(horse.id);
     expect(assignment.groomId).toBe(groom.id);
-    expect(assignment.priority).toBe(1);
     expect(assignment.isActive).toBe(true);
+    // Equoria-ekrab: no priority level and no notes on an assignment.
+    expect(assignment).not.toHaveProperty('priority');
+    expect(assignment).not.toHaveProperty('notes');
   });
 
   it('should create groom interaction', async () => {

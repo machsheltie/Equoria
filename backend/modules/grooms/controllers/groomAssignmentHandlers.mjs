@@ -23,7 +23,7 @@ import { horseRetiredCode } from '../../../errors/HorseRetiredError.mjs';
  */
 export async function assignGroom(req, res) {
   try {
-    const { foalId, groomId, priority = 1, notes } = req.body;
+    const { foalId, groomId } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -52,8 +52,6 @@ export async function assignGroom(req, res) {
     // and not-owned (CWE-639 disclosure resistance).
 
     const result = await assignGroomToFoal(foalId, groomId, userId, {
-      priority,
-      notes,
       isDefault: false,
     });
 

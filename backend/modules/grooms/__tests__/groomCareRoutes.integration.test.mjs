@@ -96,7 +96,7 @@ async function makeGroom(owner, label, extra = {}) {
 
 async function assign(owner, horse, groom) {
   return prisma.groomAssignment.create({
-    data: { foalId: horse.id, groomId: groom.id, userId: owner.user.id, isActive: true, priority: 1 },
+    data: { foalId: horse.id, groomId: groom.id, userId: owner.user.id, isActive: true },
   });
 }
 

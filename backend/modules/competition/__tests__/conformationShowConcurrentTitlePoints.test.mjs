@@ -117,7 +117,6 @@ describe('executeConformationShow — concurrent results for the same horse (Equ
         foalId: tpHorse.id,
         userId: tpUser.id,
         isActive: true,
-        priority: 1,
       },
     });
 

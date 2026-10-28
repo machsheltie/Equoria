@@ -259,7 +259,6 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
           foalId: horseB.id,
           userId: userB.id,
           isActive: true,
-          priority: 1,
         },
       });
 

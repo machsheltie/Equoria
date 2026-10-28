@@ -359,8 +359,6 @@ describe('Groom Retirement Service', () => {
           groomId: testGroom.id,
           foalId: testHorse.id,
           userId: testUser.id,
-          priority: 1,
-          notes: 'Closed assignment — history',
           isActive: false,
           startDate: new Date('2025-01-01'),
           endDate: new Date('2025-02-01'),
@@ -371,8 +369,6 @@ describe('Groom Retirement Service', () => {
           groomId: testGroom.id,
           foalId: testHorse.id,
           userId: testUser.id,
-          priority: 1,
-          notes: 'Test assignment',
           isActive: true,
         },
       });

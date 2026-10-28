@@ -164,7 +164,7 @@ async function careTeamOf(row) {
     }),
     prisma.groomAssignment.findFirst({
       where: { foalId: row.id, isActive: true, groom: { userId: ownerId } },
-      orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       select: { groom: { select: { name: true, starLevel: true } } },
     }),
     prisma.riderAssignment.findFirst({

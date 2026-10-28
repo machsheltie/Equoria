@@ -16,7 +16,7 @@ import {
  */
 export async function createGroomAssignment(req, res) {
   try {
-    const { groomId, horseId, priority, notes, replacePrimary } = req.body;
+    const { groomId, horseId, replacePrimary } = req.body;
     const userId = req.user?.id;
 
     logger.info(
@@ -34,8 +34,6 @@ export async function createGroomAssignment(req, res) {
 
     // Create the assignment
     const result = await createAssignment(groomId, horseId, userId, {
-      priority: priority || 1,
-      notes,
       replacePrimary: replacePrimary || false,
     });
 

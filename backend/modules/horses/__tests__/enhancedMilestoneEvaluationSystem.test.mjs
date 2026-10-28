@@ -385,7 +385,6 @@ describe('evaluateEnhancedMilestone() — personality effects + interaction bran
         foalId: personalityHorse.id,
         groomId: personalityGroom.id,
         userId: personalityUser.id,
-        priority: 1,
         isActive: true,
       },
     });

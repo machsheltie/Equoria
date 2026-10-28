@@ -191,7 +191,6 @@ describe('groomHandlerService — DB fixture branch coverage (Equoria-rr7)', () 
         foalId: ghsHorse.id,
         userId: ghsUser.id,
         isActive: true,
-        priority: 1,
       },
     });
   }, 30000);

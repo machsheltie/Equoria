@@ -50,8 +50,8 @@ const groomSelect = {
 };
 
 /**
- * The horse's primary active groom: its active assignment with the lowest
- * priority number (then the oldest), whose groom is on the owner's staff.
+ * The horse's active groom: its oldest active assignment whose groom is on
+ * the owner's staff (there is no priority level: Equoria-ekrab).
  * @param {object} db - prisma or a transaction client
  * @param {number} horseId
  * @param {string|null} ownerId
@@ -62,7 +62,7 @@ async function findPrimaryAssignment(db, horseId, ownerId) {
   }
   return db.groomAssignment.findFirst({
     where: { foalId: horseId, isActive: true, groom: { userId: ownerId } },
-    orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     select: { id: true, groom: { select: groomSelect } },
   });
 }
@@ -326,7 +326,7 @@ export async function listUngroomedToday(userId, now = new Date()) {
       dateOfBirth: true,
       groomAssignments: {
         where: { isActive: true, groom: { userId } },
-        orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         take: 1,
         select: { groom: { select: groomSelect } },
       },

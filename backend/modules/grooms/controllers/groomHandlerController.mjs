@@ -68,7 +68,6 @@ export async function getHorseHandler(req, res) {
         assignment: handlerData.hasHandler
           ? {
               id: handlerData.assignment.id,
-              priority: handlerData.assignment.priority,
               createdAt: handlerData.assignment.createdAt,
             }
           : 'none',

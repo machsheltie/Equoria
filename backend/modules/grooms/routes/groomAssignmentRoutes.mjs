@@ -44,15 +44,6 @@ router.post(
   [
     body('groomId').isInt({ min: 1 }).withMessage('Groom ID must be a positive integer'),
     body('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    body('priority')
-      .optional()
-      .isInt({ min: 1, max: 5 })
-      .withMessage('Priority must be between 1 and 5'),
-    body('notes')
-      .optional()
-      .isString()
-      .isLength({ max: 500 })
-      .withMessage('Notes must be a string (max 500 characters)'),
     body('replacePrimary').optional().isBoolean().withMessage('replacePrimary must be a boolean'),
   ],
   handleValidationErrors,

@@ -470,7 +470,6 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
         foalId: cssHorse.id,
         userId: cssUser.id,
         isActive: true,
-        priority: 1,
       },
     });
 
@@ -481,7 +480,6 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
         foalId: cssHorse.id,
         userId: cssUser.id,
         isActive: true,
-        priority: 1,
         createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
       },
     });
