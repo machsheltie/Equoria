@@ -5,11 +5,12 @@
  * One ordered pipeline produces a foal's `{ positive, negative, hidden }`
  * epigenetic modifiers at birth:
  *
- *   Stage 0 — INHERITANCE (§A): each distinct sire/dam epigenetic trait ON THE
- *     ROSTER is inherited at a flat 25% (owner ruling 2026-10-27, q138). A
- *     trait both parents carry is one carried trait and rolls once. This
- *     replaced the rarity- and dam-bond-adjusted rates (common 50%, rare 15%,
- *     legendary 5%, otherwise 40%).
+ *   Stage 0 — INHERITANCE (§A): each sire/dam epigenetic trait ON THE ROSTER
+ *     is inherited at a flat 25% per carrying parent (owner rulings
+ *     2026-10-27 q138 and 2026-10-28 q145): one parent carrying it is one 25%
+ *     roll; both parents carrying it is one 25% roll for each parent, so about
+ *     43.75% overall. The flat rate replaced the rarity- and dam-bond-adjusted
+ *     rates (common 50%, rare 15%, legendary 5%, otherwise 40%).
  *   Stage 1 — premium feed → resilient / peopleTrusting.
  *   Stage 2 — inbreeding → fragile.
  *   Stage 3 — lineage discipline specialization → disciplineAffinity<Discipline>
@@ -30,10 +31,13 @@
  * lowImmunity from poor feed. A parent's off-roster trait is never inherited.
  *
  * A mare in Fair health multiplies EVERY negative-trait roll here by 1.25 and a
- * mare in Bad health by 1.5 (owner ruling 2026-10-26, Equoria-pw7cm): pass the
- * multiplier as `negativeRollMultiplier`. No other odds move.
+ * mare in Bad health by 1.5 (owner ruling 2026-10-26, Equoria-pw7cm; kept on
+ * top of the 25% by q146): pass the multiplier as `negativeRollMultiplier`.
+ * When both parents carry a negative trait, each parent's roll takes it, as
+ * every negative inheritance roll did before q145. No other odds move.
  *
- * Determinism: pass `seed` (number) for reproducible rolls in tests. Without a seed, Math.random is used.
+ * Determinism: pass `seed` (number) or `rng` (a function returning [0, 1))
+ * for reproducible rolls in tests. With neither, Math.random is used.
  *
  * Canonical trait keys (camelCase) only — see backend/utils/epigeneticTraitKeyMap.mjs.
  */
@@ -83,6 +87,7 @@ function traitPolarity(trait, fallbackType) {
  * @param {string[]} [params.parentActiveTraits] - traits active and revealed on
  *   either parent (their positive ∪ negative); only these can be born active
  * @param {number} [params.seed] - deterministic seed for tests
+ * @param {() => number} [params.rng] - injected random source for tests (wins over seed)
  * @returns {{positive:string[], negative:string[], hidden:string[]}}
  */
 export function applyEpigeneticTraitsAtBirth({
@@ -94,6 +99,7 @@ export function applyEpigeneticTraitsAtBirth({
   damTraits = [],
   parentActiveTraits = [],
   seed,
+  rng: injectedRng,
 }) {
   logger.info('[applyEpigeneticTraitsAtBirth] Starting staged trait assignment at birth');
 
@@ -101,7 +107,7 @@ export function applyEpigeneticTraitsAtBirth({
     throw new Error('Mare object is required');
   }
 
-  const rng = makeRng(seed);
+  const rng = typeof injectedRng === 'function' ? injectedRng : makeRng(seed);
 
   // Classify each candidate trait as 'positive' or 'negative' for visibility
   // fallback when the trait has no definition (e.g. discipline-affinity keys).
@@ -119,24 +125,31 @@ export function applyEpigeneticTraitsAtBirth({
 
   // ── Stage 0 — INHERITANCE (§A) ─────────────────────────────────────────────
   // Normalize incoming parent traits to canonical keys so legacy snake-case
-  // rows still inherit correctly, keep only roster traits (q117), then inherit
-  // each distinct trait at the flat rate (q138). A negative trait's roll still
-  // takes the mare-health multiplier (Equoria-pw7cm).
-  const parentTraits = [
-    ...new Set(
-      [
-        ...(Array.isArray(sireTraits) ? sireTraits : []),
-        ...(Array.isArray(damTraits) ? damTraits : []),
-      ]
+  // rows still inherit correctly and keep only roster traits (q117). Each
+  // distinct trait then rolls the flat rate (q138) once for every parent that
+  // carries it (q145): sire's roll first, then dam's. A negative trait's roll
+  // still takes the mare-health multiplier (Equoria-pw7cm, q146).
+  const rosterTraitsOf = traits =>
+    new Set(
+      (Array.isArray(traits) ? traits : [])
         .filter(t => typeof t === 'string' && t.length > 0)
         .map(normalizeTraitKey)
         .filter(isRosterTrait),
-    ),
-  ];
+    );
+  const sireCarried = rosterTraitsOf(sireTraits);
+  const damCarried = rosterTraitsOf(damTraits);
+  const parentTraits = [...new Set([...sireCarried, ...damCarried])];
   for (const trait of parentTraits) {
     const def = getTraitDefinition(trait);
     const p = def?.type === 'negative' ? negativeChance(inheritanceChance) : inheritanceChance;
-    if (rng() < p) {
+    const rolls = (sireCarried.has(trait) ? 1 : 0) + (damCarried.has(trait) ? 1 : 0);
+    let inherited = false;
+    for (let roll = 0; roll < rolls; roll += 1) {
+      if (rng() < p) {
+        inherited = true;
+      }
+    }
+    if (inherited) {
       if (def?.type === 'negative') {
         addNegative(trait);
       } else {
