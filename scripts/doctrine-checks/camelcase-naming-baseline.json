@@ -942,8 +942,6 @@
   "frontend/src/components/horse/HorseCard.tsx": 6,
   "frontend/src/components/horse/MarkingsPanel.tsx": 8,
   "frontend/src/components/horse/PregnancyFeedingPanel.tsx": 7,
-  "frontend/src/components/horse/RecentGains.tsx": 6,
-  "frontend/src/components/horse/StatProgressionChart.tsx": 6,
   "frontend/src/components/horse/__tests__/XpProgressBar.test.tsx": 3,
   "frontend/src/components/hub/NarrativeChip.tsx": 4,
   "frontend/src/components/hub/NextActionsBar.tsx": 3,
