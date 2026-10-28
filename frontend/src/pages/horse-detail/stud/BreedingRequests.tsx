@@ -7,6 +7,13 @@
  * revealed traits only) and the owner accepts or rejects (q95, no note q108).
  * A mare lists the requests she has sent, and her owner may withdraw a waiting
  * one (S8). Requests show only here, never as lines in the stable list (q109).
+ *
+ * Equoria-e7tgc.10: each row says the request's true state. "Declined" is the
+ * stallion owner's no; a request the game ended (the stallion was sold or left
+ * stud, the mare could not be bred, the fee could not be paid) "could not go
+ * ahead", the same words as its notification. No note and no
+ * stored code reach the screen. After an answer or a withdrawal the list
+ * refetches; the row keeps the line saying what happened, or the refusal.
  */
 
 import React, { useId, useState } from 'react';
@@ -36,19 +43,44 @@ const statusWords: Record<Side, Record<StudRequestStatus, string>> = {
   },
 };
 
-const Withdraw: React.FC<{ requestId: number }> = ({ requestId }) => {
+/**
+ * The row's words. A decline whose stored reason is not the stallion owner's
+ * reject (REJECTED) was the game's, read the same way as its notification
+ * (GameNotifRow studSentence).
+ */
+function statusLine(side: Side, request: StudRequest): string {
+  if (
+    request.status === 'DECLINED' &&
+    request.declineReason !== null &&
+    request.declineReason !== 'REJECTED'
+  ) {
+    return 'Could not go ahead';
+  }
+  return statusWords[side][request.status];
+}
+
+const Withdraw: React.FC<{ requestId: number; open: boolean; onWithdraw: () => void }> = ({
+  requestId,
+  open,
+  onWithdraw,
+}) => {
   const answer = useAnswerStudRequest();
   return (
     <div className="stud-answer">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={answer.isPending}
-        onClick={() => answer.mutate({ requestId, answer: 'cancel' })}
-      >
-        {answer.isPending ? 'Withdrawing…' : 'Withdraw request'}
-      </Button>
+      {open && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={answer.isPending}
+          onClick={() => {
+            onWithdraw();
+            answer.mutate({ requestId, answer: 'cancel' });
+          }}
+        >
+          {answer.isPending ? 'Withdrawing…' : 'Withdraw request'}
+        </Button>
+      )}
       {answer.isError && <InlineError message={requestAnswerRefusal(answer.error)} />}
     </div>
   );
@@ -56,6 +88,9 @@ const Withdraw: React.FC<{ requestId: number }> = ({ requestId }) => {
 
 const RequestEntry: React.FC<{ side: Side; request: StudRequest }> = ({ side, request }) => {
   const pending = request.status === 'PENDING';
+  // Answered from this row: keep its controls mounted after the refetch so the
+  // outcome line or the refusal stays (Equoria-e7tgc.10).
+  const [answeredHere, setAnsweredHere] = useState(false);
   const fee = request.fee.toLocaleString();
   return (
     <li className="stud-request" data-status={request.status.toLowerCase()}>
@@ -84,20 +119,26 @@ const RequestEntry: React.FC<{ side: Side; request: StudRequest }> = ({ side, re
           </p>
         </>
       )}
-      <p className="stud-request__status">{statusWords[side][request.status]}</p>
-      {pending && side === 'stallion' && (
+      <p className="stud-request__status">{statusLine(side, request)}</p>
+      {(pending || answeredHere) && side === 'stallion' && (
         <>
-          <p className="stud-quiet">Open {request.dam.name} to see her before you answer.</p>
+          {pending && (
+            <p className="stud-quiet">Open {request.dam.name} to see her before you answer.</p>
+          )}
           <RequestAnswer
             requestId={request.id}
             mareName={request.dam.name}
             stallionName={request.sire.name}
             fee={request.fee}
             mareOwnerName={request.counterparty.username}
+            open={pending}
+            onAnswer={() => setAnsweredHere(true)}
           />
         </>
       )}
-      {pending && side === 'mare' && <Withdraw requestId={request.id} />}
+      {(pending || answeredHere) && side === 'mare' && (
+        <Withdraw requestId={request.id} open={pending} onWithdraw={() => setAnsweredHere(true)} />
+      )}
     </li>
   );
 };

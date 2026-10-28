@@ -4,6 +4,11 @@
  * Owner rulings q95/q108 (2026-10-26/27): the stallion owner opens the mare
  * read-only, then accepts or rejects. Accepting moves the fee and puts the mare
  * in foal; rejecting tells the mare owner "declined", with no note.
+ *
+ * Equoria-e7tgc.10: after an answer the list refetches, so the request may no
+ * longer be pending. The parent keeps this mounted for a request answered here
+ * and passes `open={false}`: the buttons go, the line saying what happened (or
+ * the refusal) stays.
  */
 
 import React, { useState } from 'react';
@@ -18,6 +23,10 @@ export interface RequestAnswerProps {
   stallionName: string;
   fee: number;
   mareOwnerName: string;
+  /** False once the request is no longer pending: no buttons, only what happened. */
+  open?: boolean;
+  /** Told when the player presses Accept or Reject. */
+  onAnswer?: () => void;
 }
 
 const RequestAnswer: React.FC<RequestAnswerProps> = ({
@@ -26,11 +35,14 @@ const RequestAnswer: React.FC<RequestAnswerProps> = ({
   stallionName,
   fee,
   mareOwnerName,
+  open = true,
+  onAnswer,
 }) => {
   const answer = useAnswerStudRequest();
   const [said, setSaid] = useState<string | null>(null);
 
-  const reply = (choice: 'approve' | 'reject') =>
+  const reply = (choice: 'approve' | 'reject') => {
+    onAnswer?.();
     answer.mutate(
       { requestId, answer: choice },
       {
@@ -42,6 +54,7 @@ const RequestAnswer: React.FC<RequestAnswerProps> = ({
           ),
       }
     );
+  };
 
   if (said) {
     return (
@@ -53,19 +66,21 @@ const RequestAnswer: React.FC<RequestAnswerProps> = ({
 
   return (
     <div className="stud-answer">
-      <div className="stud-answer__buttons">
-        <Button type="button" disabled={answer.isPending} onClick={() => reply('approve')}>
-          Accept {mareName} ({fee.toLocaleString()})
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={answer.isPending}
-          onClick={() => reply('reject')}
-        >
-          Reject
-        </Button>
-      </div>
+      {open && (
+        <div className="stud-answer__buttons">
+          <Button type="button" disabled={answer.isPending} onClick={() => reply('approve')}>
+            Accept {mareName} ({fee.toLocaleString()})
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={answer.isPending}
+            onClick={() => reply('reject')}
+          >
+            Reject
+          </Button>
+        </div>
+      )}
       {answer.isPending && (
         <p className="stud-quiet" role="status">
           Sending your answer…

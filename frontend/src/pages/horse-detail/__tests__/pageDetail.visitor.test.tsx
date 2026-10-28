@@ -18,7 +18,7 @@
  */
 
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { describe, it, expect } from 'vitest';
@@ -105,8 +105,10 @@ function serve(visitBody: unknown, visitStatus = 200) {
   );
 }
 
-function renderAt(path: string) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function renderAt(
+  path: string,
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+) {
   return render(
     <QueryClientProvider client={client}>
       <MockAuthProvider userOverrides={{ money: 5000 }}>
@@ -297,6 +299,56 @@ describe('the horse page in visitor mode is the owner page, read-only', () => {
 
     expect(await screen.findByRole('button', { name: 'Accept Wren (500)' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reject' })).toBeInTheDocument();
+  });
+
+  // Equoria-e7tgc.10: the answer refetches the requests; the line saying what
+  // happened must not vanish with the request's PENDING status.
+  it('accepting there: the line saying the mare is in foal stays after the requests refresh', async () => {
+    let answered = false;
+    let reads = 0;
+    serve({ success: true, data: { ...visit, id: 77, name: 'Wren', sex: 'Mare', stud: null } });
+    server.use(
+      http.get(`${base}/api/v1/studs/requests`, () => {
+        reads += 1;
+        return HttpResponse.json({
+          success: true,
+          data: {
+            requests: [
+              {
+                id: 41,
+                status: answered ? 'COMPLETED' : 'PENDING',
+                fee: 500,
+                createdAt: new Date().toISOString(),
+                resolvedAt: null,
+                declineReason: null,
+                sire: { id: 5, name: 'Thunder Orchard' },
+                dam: { id: 77, name: 'Wren' },
+                counterparty: { username: 'Maple Run' },
+              },
+            ],
+          },
+        });
+      }),
+      http.post(`${base}/api/v1/studs/requests/41/approve`, () => {
+        answered = true;
+        return HttpResponse.json({ success: true, data: { requestId: 41, status: 'COMPLETED' } });
+      })
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    renderAt('/horses/77?request=41', client);
+    await screen.findByRole('heading', { name: 'Wren' });
+    await openTab('Stud / Sale');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Accept Wren (500)' }));
+    // The answer refetches the requests; wait until the refetched list (now
+    // COMPLETED) has landed and rendered.
+    await waitFor(() => expect(reads).toBeGreaterThan(1));
+    await waitFor(() => expect(client.isFetching()).toBe(0));
+    await act(async () => {});
+    expect(
+      screen.getByText('Wren is in foal to Thunder Orchard. Maple Run has been told.')
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Accept Wren (500)' })).not.toBeInTheDocument();
   });
 
   it('a horse that does not exist is still "Horse Not Found"', async () => {

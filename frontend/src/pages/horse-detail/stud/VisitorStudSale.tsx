@@ -11,7 +11,7 @@
  * (owner ruling 2026-10-26: the price on the button, no confirm page).
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useStudRequests } from '@/hooks/api/useStuds';
 import { useBuyHorse } from '@/hooks/api/useMarketplace';
@@ -80,10 +80,12 @@ const RequestFromLink: React.FC<{ horse: HorseVisit; requestId: number }> = ({
   requestId,
 }) => {
   const incoming = useStudRequests({ role: 'incoming', damId: horse.id });
-  const request = incoming.data?.requests.find(
-    (row) => row.id === requestId && row.status === 'PENDING'
-  );
-  if (!request) return null;
+  // Answered here: stay after the refetch so what happened, or the refusal,
+  // is still said once the request is no longer pending (Equoria-e7tgc.10).
+  const [answeredHere, setAnsweredHere] = useState(false);
+  const request = incoming.data?.requests.find((row) => row.id === requestId);
+  const pending = request?.status === 'PENDING';
+  if (!request || !(pending || answeredHere)) return null;
   return (
     <section className="stud-request-link" aria-label="Breeding request">
       <p className="stud-quiet">
@@ -96,6 +98,8 @@ const RequestFromLink: React.FC<{ horse: HorseVisit; requestId: number }> = ({
         stallionName={request.sire.name}
         fee={request.fee}
         mareOwnerName={request.counterparty.username}
+        open={pending}
+        onAnswer={() => setAnsweredHere(true)}
       />
     </section>
   );

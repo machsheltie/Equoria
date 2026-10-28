@@ -155,4 +155,145 @@ describe('BreedingRequests', () => {
       await screen.findByText('No mares have asked for Thunder Orchard yet.')
     ).toBeInTheDocument();
   });
+
+  // Equoria-e7tgc.10: the list shows the request's true state after an answer.
+  it('Accept that the server turns down: the list refreshes, says it could not go ahead, and keeps the reason', async () => {
+    let answered = false;
+    server.use(
+      http.get(`${base}/api/v1/studs/requests`, () =>
+        HttpResponse.json({
+          success: true,
+          data: {
+            requests: [
+              answered
+                ? {
+                    ...pending,
+                    status: 'DECLINED',
+                    declineReason: 'insufficientFunds',
+                    resolvedAt: new Date().toISOString(),
+                  }
+                : pending,
+            ],
+          },
+        })
+      ),
+      http.post(`${base}/api/v1/studs/requests/41/approve`, () => {
+        answered = true;
+        return HttpResponse.json(
+          {
+            success: false,
+            message: "The mare's owner could not pay the 500-coin stud fee.",
+          },
+          { status: 409 }
+        );
+      })
+    );
+    const user = userEvent.setup();
+    renderRequests();
+
+    await user.click(screen.getByRole('button', { name: 'Breeding requests' }));
+    await user.click(await screen.findByRole('button', { name: 'Accept Wren (500)' }));
+
+    expect(await screen.findByText('Could not go ahead')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(/couldn't go ahead and was declined/);
+    expect(screen.queryByRole('button', { name: /Accept Wren/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reject' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/could not pay/)).not.toBeInTheDocument();
+  });
+
+  it('Accept that succeeds: the row reads Accepted and the line saying so stays', async () => {
+    let answered = false;
+    server.use(
+      http.get(`${base}/api/v1/studs/requests`, () =>
+        HttpResponse.json({
+          success: true,
+          data: { requests: [answered ? { ...pending, status: 'COMPLETED' } : pending] },
+        })
+      ),
+      http.post(`${base}/api/v1/studs/requests/41/approve`, () => {
+        answered = true;
+        return HttpResponse.json({ success: true, data: { requestId: 41, status: 'COMPLETED' } });
+      })
+    );
+    const user = userEvent.setup();
+    renderRequests();
+
+    await user.click(screen.getByRole('button', { name: 'Breeding requests' }));
+    await user.click(await screen.findByRole('button', { name: 'Accept Wren (500)' }));
+
+    expect(await screen.findByText('Accepted')).toBeInTheDocument();
+    expect(
+      screen.getByText('Wren is in foal to Thunder Orchard. Maple Run has been told.')
+    ).toBeInTheDocument();
+  });
+
+  it("a mare's requests: an owner's no reads Declined; one the game ended reads Could not go ahead", async () => {
+    server.use(
+      http.get(`${base}/api/v1/studs/requests`, () =>
+        HttpResponse.json({
+          success: true,
+          data: {
+            requests: [
+              { ...pending, id: 1, status: 'DECLINED', declineReason: 'REJECTED' },
+              {
+                ...pending,
+                id: 2,
+                status: 'DECLINED',
+                declineReason: 'stallionSold',
+                sire: { id: 6, name: 'Copper Gate' },
+              },
+              {
+                ...pending,
+                id: 3,
+                status: 'CANCELLED',
+                declineReason: 'cancelledByOwner',
+                sire: { id: 7, name: 'Lark Hollow' },
+              },
+            ],
+          },
+        })
+      )
+    );
+    const user = userEvent.setup();
+    renderRequests({ side: 'mare', horseId: 77, horseName: 'Wren' });
+
+    await user.click(screen.getByRole('button', { name: 'Breeding requests' }));
+    const rejected = (await screen.findByText('Wren to Thunder Orchard')).closest('li');
+    const sold = screen.getByText('Wren to Copper Gate').closest('li');
+    const withdrawn = screen.getByText('Wren to Lark Hollow').closest('li');
+    expect(within(rejected as HTMLElement).getByText('Declined')).toBeInTheDocument();
+    expect(within(sold as HTMLElement).getByText('Could not go ahead')).toBeInTheDocument();
+    expect(within(withdrawn as HTMLElement).getByText('Withdrawn')).toBeInTheDocument();
+    expect(screen.queryByText(/stallionSold|REJECTED/)).not.toBeInTheDocument();
+  });
+
+  it('Withdraw on a request already answered: the list refreshes to its true state', async () => {
+    let tried = false;
+    server.use(
+      http.get(`${base}/api/v1/studs/requests`, () =>
+        HttpResponse.json({
+          success: true,
+          data: {
+            requests: [
+              tried
+                ? { ...pending, status: 'COMPLETED', counterparty: { username: 'Orchard Bend' } }
+                : { ...pending, counterparty: { username: 'Orchard Bend' } },
+            ],
+          },
+        })
+      ),
+      http.post(`${base}/api/v1/studs/requests/41/cancel`, () => {
+        tried = true;
+        return HttpResponse.json({ success: false, message: 'already' }, { status: 409 });
+      })
+    );
+    const user = userEvent.setup();
+    renderRequests({ side: 'mare', horseId: 77, horseName: 'Wren' });
+
+    await user.click(screen.getByRole('button', { name: 'Breeding requests' }));
+    await user.click(await screen.findByRole('button', { name: 'Withdraw request' }));
+
+    expect(await screen.findByText('Accepted, in foal')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Withdraw request' })).not.toBeInTheDocument();
+  });
 });

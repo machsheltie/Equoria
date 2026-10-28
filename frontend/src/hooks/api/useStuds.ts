@@ -105,5 +105,9 @@ export function useAnswerStudRequest() {
   >({
     mutationFn: ({ requestId, answer }) => studsApi.answerRequest(requestId, answer),
     onSuccess: () => refreshAfterBreeding(qc),
+    // A 409 means the request already ended (answered, withdrawn, or declined
+    // because it could not go ahead): fetch its true state (Equoria-e7tgc.10).
+    onError: (error) =>
+      refreshOnConflict(qc, error, [studKeys.allRequests, ['horses'], ['profile']]),
   });
 }
