@@ -5,9 +5,7 @@
  * - Display horse information
  * - List available grooms with slot availability
  * - Allow groom selection with radio buttons
- * - Configure assignment priority (1-5)
- * - Add optional notes (max 500 characters)
- * - Replace primary assignment option (when priority=1)
+ * - Replace existing assignment option
  * - Validate assignment before submission
  * - Handle success/error states
  * - Accessibility support with ARIA labels and keyboard navigation
@@ -19,10 +17,17 @@
  * focus trap / Escape / scroll lock); controls use the canonical Select /
  * Textarea / Checkbox; status colors use role tokens; close is prevented
  * while the assign mutation is pending (handoff §6.6).
+ *
+ * Owner ruling 2026-10-28 (Equoria-ekrab): there is no priority level and no
+ * notes field (both were invented); "Replace existing assignment" stays. The
+ * dialog closes the moment Assign Groom is pressed and the page updates in
+ * place. If the assignment is refused, the dialog comes back with the reason
+ * beside the button and the player's choice kept. Old contract: a 1-5
+ * priority select, a notes box, and a success banner held for 1.5 seconds.
  */
 
 import React, { useState, useEffect } from 'react';
-import { User, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
+import { User, AlertCircle, Sparkles } from 'lucide-react';
 import { useAssignGroom, useGroomHorseSynergy } from '../hooks/api/useGrooms';
 import { actionMessageFor, assignStaffRefusalCodes } from '@/lib/http/actionMessage';
 import { Button } from '@/components/ui/button';
@@ -35,7 +40,7 @@ import {
   GameDialogHeader,
   GameDialogTitle,
 } from '@/components/ui/game';
-import { Checkbox, Select, Textarea } from '@/components/ui/form';
+import { Checkbox } from '@/components/ui/form';
 import { groomSpecialtyTitle } from '@/lib/staffLabels';
 import StaffLevelStars from '@/components/common/StaffLevelStars';
 import { staffLevelPhrase } from '@/lib/staffLevels';
@@ -126,47 +131,37 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
 }) => {
   // State management
   const [selectedGroomId, setSelectedGroomId] = useState<number | null>(null);
-  const [priority, setPriority] = useState<number>(1);
-  const [notes, setNotes] = useState<string>('');
   const [replacePrimary, setReplacePrimary] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<boolean>(false);
+  // Pressed Assign: the dialog is out of sight while the request runs.
+  const [submitted, setSubmitted] = useState<boolean>(false);
 
   // Reset state when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
       setSelectedGroomId(null);
-      setPriority(1);
-      setNotes('');
       setReplacePrimary(false);
       setError(null);
-      setSuccess(false);
+      setSubmitted(false);
     }
   }, [isOpen]);
 
   // Assignment mutation using centralized hook
   const assignMutation = useAssignGroom();
 
-  // Custom success handler
+  // Success: the page shows the groom in place; the dialog is already gone.
   const handleMutationSuccess = () => {
-    setSuccess(true);
-    setError(null);
-
     if (onAssignmentComplete) {
       onAssignmentComplete({}); // Note: centralized hook doesn't return data
     }
-
-    // Close modal after short delay to show success message
-    setTimeout(() => {
-      onClose();
-    }, 1500);
+    onClose();
   };
 
-  // Custom error handler
+  // Refused: bring the dialog back with the reason, the choice kept.
   const handleMutationError = (err: unknown) => {
     // Class-mapped copy only: a server body can carry internals (§3).
     setError(actionMessageFor(err, {}, assignStaffRefusalCodes));
-    setSuccess(false);
+    setSubmitted(false);
   };
 
   // Handle assignment submission
@@ -177,13 +172,12 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
     }
 
     setError(null);
+    setSubmitted(true);
     assignMutation.mutate(
       {
         groomId: selectedGroomId,
         horseId,
-        priority,
-        notes: notes.trim() || undefined,
-        replacePrimary: priority === 1 ? replacePrimary : undefined,
+        replacePrimary,
       },
       {
         onSuccess: handleMutationSuccess,
@@ -197,7 +191,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
 
   return (
     <GameDialog
-      open={isOpen}
+      open={isOpen && !submitted}
       onOpenChange={(open) => {
         // Pending-close prevention: ignore close requests mid-assignment.
         if (!open && !assignMutation.isPending) onClose();
@@ -218,14 +212,6 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
             <h3 className="text-lg font-semibold text-role-primary mb-2">Horse</h3>
             <p className="text-role-secondary">{horseName}</p>
           </Surface>
-
-          {/* Success Message */}
-          {success && (
-            <div className="bg-[var(--badge-success-bg)] border border-[var(--role-success-border)] rounded-[var(--radius-md)] p-4 mb-6 flex items-center">
-              <CheckCircle className="text-[var(--status-success)] mr-3" size={20} />
-              <p className="text-[var(--status-success)]">Groom assigned successfully!</p>
-            </div>
-          )}
 
           {/* Error Message */}
           {error && (
@@ -334,69 +320,20 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
             <div className="space-y-4 mb-2">
               <h3 className="text-lg font-semibold text-role-primary">Assignment Options</h3>
 
-              {/* Priority Selection — canonical native Select (D-13) */}
-              <div>
-                <label
-                  htmlFor="priority"
-                  className="block text-sm font-medium text-role-secondary mb-2"
-                >
-                  Priority Level
-                </label>
-                <Select
-                  id="priority"
-                  value={priority}
-                  onChange={(e) => setPriority(Number(e.target.value))}
-                  aria-label="Priority level"
-                >
-                  <option value={1}>1 - Primary (Highest)</option>
-                  <option value={2}>2 - High</option>
-                  <option value={3}>3 - Medium</option>
-                  <option value={4}>4 - Low</option>
-                  <option value={5}>5 - Lowest</option>
-                </Select>
-                <p className="text-xs text-role-muted mt-1">
-                  Priority 1 assignments receive the most attention from the groom
-                </p>
-              </div>
-
-              {/* Replace Primary Checkbox — canonical Radix Checkbox (D-13) */}
-              {priority === 1 && (
-                <div className="flex items-start">
-                  <Checkbox
-                    id="replacePrimary"
-                    checked={replacePrimary}
-                    onCheckedChange={(checked) => setReplacePrimary(checked === true)}
-                    className="mt-1 mr-3"
-                  />
-                  <label htmlFor="replacePrimary" className="text-sm text-role-secondary">
-                    <span className="font-medium text-role-primary">
-                      Replace existing primary assignment
-                    </span>
-                    <p className="text-xs text-role-muted mt-1">
-                      If this horse already has a primary groom, deactivate that assignment
-                    </p>
-                  </label>
-                </div>
-              )}
-
-              {/* Notes Input — canonical Textarea (D-13) */}
-              <div>
-                <label
-                  htmlFor="notes"
-                  className="block text-sm font-medium text-role-secondary mb-2"
-                >
-                  Notes (Optional)
-                </label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  maxLength={500}
-                  rows={3}
-                  placeholder="Add any special instructions or notes for this assignment..."
-                  aria-label="Assignment notes"
+              {/* Replace existing assignment — canonical Radix Checkbox (D-13) */}
+              <div className="flex items-start">
+                <Checkbox
+                  id="replacePrimary"
+                  checked={replacePrimary}
+                  onCheckedChange={(checked) => setReplacePrimary(checked === true)}
+                  className="mt-1 mr-3"
                 />
-                <p className="text-xs text-role-muted mt-1">{notes.length}/500 characters</p>
+                <label htmlFor="replacePrimary" className="text-sm text-role-secondary">
+                  <span className="font-medium text-role-primary">Replace existing assignment</span>
+                  <p className="text-xs text-role-muted mt-1">
+                    If this horse already has a groom, end that assignment
+                  </p>
+                </label>
               </div>
             </div>
           )}
@@ -416,7 +353,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
           <Button
             type="button"
             onClick={handleAssign}
-            disabled={!selectedGroomId || assignMutation.isPending || success}
+            disabled={!selectedGroomId || assignMutation.isPending}
             aria-label="Assign groom"
           >
             {assignMutation.isPending ? 'Assigning...' : 'Assign Groom'}

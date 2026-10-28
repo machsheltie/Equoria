@@ -93,8 +93,6 @@ const mockAssignmentsData = [
     bondScore: 75,
     startDate: new Date('2025-10-01').toISOString(),
     isActive: true,
-    priority: 1,
-    notes: 'Primary caretaker',
   },
   {
     id: 2,
@@ -103,8 +101,6 @@ const mockAssignmentsData = [
     bondScore: 50,
     startDate: new Date('2025-10-10').toISOString(),
     isActive: true,
-    priority: 2,
-    notes: undefined,
   },
   {
     id: 3,
@@ -113,8 +109,6 @@ const mockAssignmentsData = [
     bondScore: 90,
     startDate: new Date('2025-09-15').toISOString(),
     isActive: true,
-    priority: 1,
-    notes: 'Advanced training focus',
   },
 ];
 
@@ -335,27 +329,10 @@ describe('MyGroomsDashboard Component', () => {
         { wrapper: Wrapper }
       );
 
-      // Current implementation doesn't seem to display bond score in MyGroomsDashboard.tsx
-      // It shows Priority and Started date.
+      // Owner ruling 2026-10-28 (Equoria-ekrab): there is no priority level, so
+      // an assignment line shows its start date only. Old contract: "Priority: N |".
       const sarahCard = screen.getByTestId('groom-card-1');
-      expect(within(sarahCard).getByText(/priority: 1/i)).toBeInTheDocument();
-    });
-
-    it('displays priority levels for assignments', () => {
-      const Wrapper = createTestWrapper();
-      render(
-        <MyGroomsDashboard
-          userId={1}
-          groomsData={mockGroomsData}
-          assignmentsData={mockAssignmentsData}
-          salaryCostsData={mockSalaryCostsData}
-        />,
-        { wrapper: Wrapper }
-      );
-
-      const sarahCard = screen.getByTestId('groom-card-1');
-      expect(within(sarahCard).getByText(/priority: 1/i)).toBeInTheDocument();
-      expect(within(sarahCard).getByText(/priority: 2/i)).toBeInTheDocument();
+      expect(within(sarahCard).queryByText(/priority/i)).not.toBeInTheDocument();
     });
 
     it('displays message when groom has no assignments', () => {
@@ -570,8 +547,6 @@ describe('MyGroomsDashboard Component', () => {
           bondScore: 60,
           createdAt: new Date('2025-10-15').toISOString(),
           isActive: true,
-          priority: 1,
-          notes: null,
           horse: { id: 200 + i, name: `Horse ${i}`, age: 2 },
         })),
       ];

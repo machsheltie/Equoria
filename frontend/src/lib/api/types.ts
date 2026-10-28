@@ -357,8 +357,6 @@ export interface GroomAssignment {
   id: number;
   groomId: number;
   horseId: number;
-  priority: number;
-  notes?: string;
   isActive: boolean;
   startDate: string;
 }

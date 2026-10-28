@@ -75,7 +75,6 @@ export const v1MirrorHandlers = [
           id: 1,
           groomId: 10,
           horseId: 1,
-          priority: 1,
           isActive: true,
           startDate: '2026-01-01T00:00:00Z',
         },

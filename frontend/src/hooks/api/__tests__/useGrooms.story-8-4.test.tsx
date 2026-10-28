@@ -172,7 +172,7 @@ describe('useAssignGroom', () => {
   it('mutation succeeds when called with valid data (AC: 4)', async () => {
     const { result } = renderHook(() => useAssignGroom(), { wrapper: createWrapper() });
     await act(async () => {
-      result.current.mutate({ groomId: 10, horseId: 1, priority: 1 });
+      result.current.mutate({ groomId: 10, horseId: 1 });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toBeDefined();

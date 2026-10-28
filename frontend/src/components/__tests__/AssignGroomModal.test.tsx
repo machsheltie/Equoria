@@ -5,8 +5,7 @@
  * - Modal open/close functionality
  * - Available groom listing with slot validation
  * - Groom selection and assignment creation
- * - Priority and notes input
- * - Replace primary assignment option
+ * - Replace existing assignment option (no priority, no notes: Equoria-ekrab)
  * - Validation error handling
  * - Success confirmation
  * - Accessibility compliance
@@ -21,7 +20,11 @@ import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from '../../test/utils';
+import { http, HttpResponse } from 'msw';
+import { server } from '@/test/msw/server';
 import AssignGroomModal from '../AssignGroomModal';
+
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Mock data for testing (NO MOCKING - real data passed as props)
 const mockAvailableGrooms = [
@@ -271,13 +274,17 @@ describe('AssignGroomModal Component', () => {
     });
   });
 
+  // Owner ruling 2026-10-28 (Equoria-ekrab): no priority level and no notes
+  // (both invented); "Replace existing assignment" stays; the dialog closes the
+  // moment Assign Groom is pressed. Old contract: a 1-5 priority select, a
+  // notes box and a "replace primary" box shown only at priority 1.
   describe('Assignment Options', () => {
-    test('allows setting priority level', async () => {
+    const renderOpen = (onClose = vi.fn()) =>
       render(
         <TestWrapper>
           <AssignGroomModal
             isOpen={true}
-            onClose={() => {}}
+            onClose={onClose}
             horseId={1}
             horseName="Thunder"
             userId={1}
@@ -286,72 +293,49 @@ describe('AssignGroomModal Component', () => {
         </TestWrapper>
       );
 
-      // First select a groom (priority field only shows when groom is selected)
-      await waitFor(() => {
-        const groomRadio = screen.getByLabelText(/sarah johnson/i);
-        fireEvent.click(groomRadio);
-      });
+    test('has no priority level and no notes, and keeps Replace existing assignment', async () => {
+      renderOpen();
+      fireEvent.click(screen.getByLabelText(/sarah johnson/i));
 
-      // Then test priority selection
-      await waitFor(() => {
-        const prioritySelect = screen.getByLabelText(/priority/i) as HTMLSelectElement;
-        fireEvent.change(prioritySelect, { target: { value: '2' } });
-        expect(prioritySelect.value).toBe('2');
-      });
+      expect(await screen.findByLabelText(/replace existing assignment/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/priority/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/priority/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/notes/i)).not.toBeInTheDocument();
     });
 
-    test('allows adding notes', async () => {
-      render(
-        <TestWrapper>
-          <AssignGroomModal
-            isOpen={true}
-            onClose={() => {}}
-            horseId={1}
-            horseName="Thunder"
-            userId={1}
-            availableGrooms={mockAvailableGrooms}
-          />
-        </TestWrapper>
+    test('closes the moment Assign Groom is pressed and sends no priority or notes', async () => {
+      let body: Record<string, unknown> | null = null;
+      server.use(
+        http.post(`${base}/api/v1/groom-assignments`, async ({ request }) => {
+          body = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({ success: true, data: { assignment: { id: 9 } } });
+        })
       );
+      const onClose = vi.fn();
+      renderOpen(onClose);
+      fireEvent.click(screen.getByLabelText(/sarah johnson/i));
+      fireEvent.click(screen.getByRole('button', { name: /assign groom/i }));
 
-      // First select a groom (notes field only shows when groom is selected)
-      await waitFor(() => {
-        const groomRadio = screen.getByLabelText(/sarah johnson/i);
-        fireEvent.click(groomRadio);
-      });
-
-      // Then test notes input
-      await waitFor(() => {
-        const notesInput = screen.getByLabelText(/notes/i) as HTMLTextAreaElement;
-        fireEvent.change(notesInput, { target: { value: 'Focus on bonding exercises' } });
-        expect(notesInput.value).toBe('Focus on bonding exercises');
-      });
+      // Gone at once, before the server has answered.
+      expect(screen.queryByTestId('assign-groom-modal')).not.toBeInTheDocument();
+      await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+      expect(body).toEqual({ groomId: 1, horseId: 1, replacePrimary: false });
     });
 
-    test('shows replace primary checkbox when priority is 1', async () => {
-      render(
-        <TestWrapper>
-          <AssignGroomModal
-            isOpen={true}
-            onClose={() => {}}
-            horseId={1}
-            horseName="Thunder"
-            userId={1}
-            availableGrooms={mockAvailableGrooms}
-          />
-        </TestWrapper>
+    test('a refused assignment brings the dialog back with the reason and the choice kept', async () => {
+      server.use(
+        http.post(`${base}/api/v1/groom-assignments`, () =>
+          HttpResponse.json({ success: false, message: 'nope' }, { status: 400 })
+        )
       );
+      const onClose = vi.fn();
+      renderOpen(onClose);
+      fireEvent.click(screen.getByLabelText(/sarah johnson/i));
+      fireEvent.click(screen.getByRole('button', { name: /assign groom/i }));
 
-      // First select a groom (priority field only shows when groom is selected)
-      await waitFor(() => {
-        const groomRadio = screen.getByLabelText(/sarah johnson/i);
-        fireEvent.click(groomRadio);
-      });
-
-      // Priority defaults to 1, so replace primary checkbox should be visible
-      await waitFor(() => {
-        expect(screen.getByLabelText(/replace.*primary/i)).toBeInTheDocument();
-      });
+      expect(await screen.findByRole('alert')).toBeInTheDocument();
+      expect(screen.getByLabelText(/sarah johnson/i)).toBeChecked();
+      expect(onClose).not.toHaveBeenCalled();
     });
   });
 

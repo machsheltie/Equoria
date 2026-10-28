@@ -568,7 +568,6 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                             Horse ID: {assignment.horseId}
                           </p>
                           <p className="text-[10px] type-label text-[var(--text-muted)]">
-                            Priority: {assignment.priority} |{' '}
                             {/* Equoria-2dnd2: shared util (guard + canonical format). */}
                             {formatDate(assignment.startDate)}
                           </p>

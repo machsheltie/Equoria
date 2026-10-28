@@ -129,8 +129,6 @@ export function useAssignGroom() {
     {
       groomId: number;
       horseId: number;
-      priority: number;
-      notes?: string;
       replacePrimary?: boolean;
     }
   >({

@@ -79,13 +79,8 @@ export const groomsApi = {
     ),
   refreshMarketplace: (force: boolean = false) =>
     apiClient.post<MarketplaceData>('/api/v1/groom-marketplace/refresh', { force }),
-  assignGroom: (data: {
-    groomId: number;
-    horseId: number;
-    priority: number;
-    notes?: string;
-    replacePrimary?: boolean;
-  }) => apiClient.post<{ success: boolean }>('/api/v1/groom-assignments', data),
+  assignGroom: (data: { groomId: number; horseId: number; replacePrimary?: boolean }) =>
+    apiClient.post<{ success: boolean }>('/api/v1/groom-assignments', data),
   deleteAssignment: (assignmentId: number) =>
     apiClient.delete<{ success: boolean }>(`/api/v1/groom-assignments/${assignmentId}`),
   // Equoria-w1vq — temperament x personality synergy preview for a groom/horse pair
