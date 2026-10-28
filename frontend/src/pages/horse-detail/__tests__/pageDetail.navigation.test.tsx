@@ -190,9 +190,13 @@ describe('HorseDetailPage Component', () => {
         expect(screen.getByText('Thunder')).toBeInTheDocument();
       });
 
-      // Verify action buttons are present
-      expect(screen.getByText(/train this horse/i)).toBeInTheDocument();
-      expect(screen.getByText(/enter competition/i)).toBeInTheDocument();
+      // Owner ruling 2026-10-28 (Equoria-k8wxl): Train and Enter Competition
+      // live only in the Quick Actions bar. Old contract: "Train This Horse"
+      // and "Enter Competition" gold buttons in the middle of the page.
+      expect(screen.queryByText(/train this horse/i)).not.toBeInTheDocument();
+      expect(screen.getByTestId('action-train')).toBeInTheDocument();
+      expect(screen.getAllByText(/enter competition/i)).toHaveLength(1);
+      expect(screen.getByTestId('action-enter-competition')).toBeInTheDocument();
 
       // View Parents button should appear if parentIds exist
       if (mockHorse.parentIds) {
@@ -200,7 +204,9 @@ describe('HorseDetailPage Component', () => {
       }
     });
 
-    test('train button navigates correctly', async () => {
+    // Equoria-k8wxl: the competition press moved to Quick Actions; old contract
+    // clicked the mid-page "Train This Horse" button.
+    test('Quick Actions Enter Competition navigates correctly', async () => {
       global.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
@@ -222,13 +228,10 @@ describe('HorseDetailPage Component', () => {
         expect(screen.getByText('Thunder')).toBeInTheDocument();
       });
 
-      // Click train button
-      const trainButton = screen.getByText(/train this horse/i);
-      fireEvent.click(trainButton);
+      fireEvent.click(screen.getByTestId('action-enter-competition'));
 
-      // Verify navigation occurred (URL should contain /training)
       await waitFor(() => {
-        expect(window.location.pathname).toContain('/training');
+        expect(window.location.pathname).toContain('/competitions');
       });
     });
   });

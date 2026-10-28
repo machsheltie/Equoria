@@ -98,7 +98,6 @@ const GroomHorseAction: React.FC<{ horseId: number; className?: string }> = ({
     return (
       <Button
         type="button"
-        variant="secondary"
         size="sm"
         className={className}
         onClick={() => navigate(`/grooms?horseId=${horseId}`)}
@@ -144,7 +143,6 @@ const GroomHorseAction: React.FC<{ horseId: number; className?: string }> = ({
       <Button
         ref={pressRef}
         type="button"
-        variant="secondary"
         size="sm"
         className={className}
         onClick={press}

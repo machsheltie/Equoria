@@ -17,6 +17,12 @@
  * Owner ruling 2026-10-28 (Equoria-7dje4): once a groom is assigned, the
  * daily Groom Horse press lives here (GroomHorseAction); without a groom the
  * same slot offers Assign Groom.
+ *
+ * Owner ruling 2026-10-28 (Equoria-k8wxl): the Quick Actions buttons look like
+ * the gold Train / Enter Competition buttons, at their own small size, and
+ * Enter Competition lives here; the middle of the page no longer carries Train
+ * or Enter Competition. Old contract: secondary (frosted) buttons here and the
+ * two gold buttons in the middle of the page.
  */
 
 import React from 'react';
@@ -24,7 +30,7 @@ import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { gameDateKey } from '@/lib/gameTime';
 import { formatHealth } from '@/lib/healthWords';
-import { Backpack, Dumbbell, Tag, Users, Wheat, Wrench, X } from 'lucide-react';
+import { Award, Backpack, Dumbbell, Tag, Users, Wheat, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
 import { useHorseTrainer } from '@/hooks/api/useTrainers';
@@ -119,7 +125,6 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
         </span>
         <Button
           type="button"
-          variant="secondary"
           size="sm"
           onClick={handleFeed}
           disabled={feedDisabledReason !== null || feedHorseMutation.isPending}
@@ -131,7 +136,6 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
         </Button>
         <Button
           type="button"
-          variant="secondary"
           size="sm"
           onClick={() =>
             navigate(
@@ -153,7 +157,15 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
         </Button>
         <Button
           type="button"
-          variant="secondary"
+          size="sm"
+          onClick={() => navigate(`/competitions?horseId=${horse.id}`)}
+          data-testid="action-enter-competition"
+        >
+          <Award className="w-3.5 h-3.5" />
+          Enter Competition
+        </Button>
+        <Button
+          type="button"
           size="sm"
           onClick={onAssignRider}
           title="Assign a rider to this horse"
@@ -165,7 +177,6 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
         <GroomHorseAction horseId={Number(horse.id)} />
         <Button
           type="button"
-          variant="secondary"
           size="sm"
           onClick={() => navigate(`/horses/${horse.id}/equip`)}
           title="Manage tack and feed for this horse"
@@ -176,7 +187,6 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
         </Button>
         <Button
           type="button"
-          variant="secondary"
           size="sm"
           onClick={() => navigate(`/farrier?horseId=${horse.id}`)}
           title="Shoe this horse"
@@ -188,7 +198,6 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
         {horse.forSale ? (
           <Button
             type="button"
-            variant="secondary"
             size="sm"
             onClick={() => delistHorseMutation.mutate(horse.id, { onSuccess: () => refetch() })}
             disabled={delistHorseMutation.isPending}
@@ -200,7 +209,6 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
         ) : (
           <Button
             type="button"
-            variant="secondary"
             size="sm"
             onClick={onListForSale}
             data-testid="action-list-for-sale"

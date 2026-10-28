@@ -28,12 +28,6 @@ describe('Button variants', () => {
     expect(btn.className).toContain('to-[var(--gold-light)]');
   });
 
-  it('default variant at default size includes btn-arcs class for horseshoe arc decorations', () => {
-    render(<Button>Primary Action</Button>);
-    const button = screen.getByRole('button');
-    expect(button).toHaveClass('btn-arcs');
-  });
-
   it('secondary variant includes glass-panel-subtle class', () => {
     render(<Button variant="secondary">Secondary</Button>);
     const btn = screen.getByRole('button', { name: 'Secondary' });
@@ -185,51 +179,33 @@ describe('Button asChild', () => {
 
 // ─── Shape tests (D-09 / DECISIONS.md §3/§5) ────────────────────────────────
 
-describe('Button horseshoe arcs — opt-in by size (Equoria-o5hub.27)', () => {
-  // The sm size uses Tailwind after:* utilities as its 44px hit-area
-  // expander. Arc decorations also style ::after, so any size whose
-  // hit-area owns ::after must NEVER receive the arc classes — the
-  // collision renders a floating gold circle above the button.
-  it('default variant at sm size has NO arc classes (hit-area ::after collision)', () => {
-    render(<Button size="sm">Quick action</Button>);
-    const btn = screen.getByRole('button', { name: 'Quick action' });
-    expect(btn.className).not.toContain('btn-arcs');
-    expect(btn.className).not.toContain('btn-cobalt');
-  });
+// Owner ruling 2026-10-28 (Equoria-k8wxl): "There's no good reason to have a
+// small oddly shaped ring outline on the far right of every gold button." The
+// horseshoe arcs are gone from every button. Old contract (Equoria-o5hub.27):
+// the default variant at default/lg/xl sizes carried btn-arcs.
+describe('Button has no horseshoe arcs at any size (Equoria-k8wxl)', () => {
+  const sizes = ['default', 'sm', 'lg', 'xl', 'icon'] as const;
+  const variants = ['default', 'secondary', 'outline', 'ghost', 'destructive', 'glass'] as const;
 
-  it('default variant at icon size has NO arc classes (too small for arcs)', () => {
-    render(
-      <Button size="icon" aria-label="Icon action">
-        x
-      </Button>
-    );
-    const btn = screen.getByRole('button', { name: 'Icon action' });
-    expect(btn.className).not.toContain('btn-arcs');
-    expect(btn.className).not.toContain('btn-cobalt');
-  });
-
-  it('default variant at lg and xl sizes keeps the arcs', () => {
-    render(
-      <>
-        <Button size="lg">Large CTA</Button>
-        <Button size="xl">Huge CTA</Button>
-      </>
-    );
-    expect(screen.getByRole('button', { name: 'Large CTA' }).className).toContain('btn-arcs');
-    expect(screen.getByRole('button', { name: 'Huge CTA' }).className).toContain('btn-arcs');
-  });
-
-  it('non-default variants never get arcs at any size', () => {
-    render(
-      <>
-        <Button variant="secondary">Sec</Button>
-        <Button variant="destructive" size="lg">
-          Del
+  it.each(sizes.flatMap((size) => variants.map((variant) => [variant, size] as const)))(
+    '%s variant at %s size carries no arc class',
+    (variant, size) => {
+      render(
+        <Button variant={variant} size={size} aria-label={`${variant} ${size}`}>
+          Go
         </Button>
-      </>
-    );
-    expect(screen.getByRole('button', { name: 'Sec' }).className).not.toContain('btn-arcs');
-    expect(screen.getByRole('button', { name: 'Del' }).className).not.toContain('btn-arcs');
+      );
+      const btn = screen.getByRole('button', { name: `${variant} ${size}` });
+      expect(btn.className).not.toMatch(/btn-arcs|btn-cobalt/);
+    }
+  );
+
+  it('no stylesheet rule draws the arcs any more', () => {
+    const css = Array.from(document.styleSheets)
+      .flatMap((sheet) => Array.from(sheet.cssRules ?? []))
+      .map((rule) => rule.cssText)
+      .join('\n');
+    expect(css).not.toMatch(/\.btn-arcs|\.btn-cobalt/);
   });
 });
 
