@@ -24,6 +24,7 @@ import {
 } from '@/hooks/api/useStaff';
 import type { QuarantinedShow, QuarantinedShowPreview } from '@/lib/api/staff';
 import { userMessageFor } from '@/lib/http/userMessage';
+import { competitionDisciplineLabel } from '@/lib/utils/training-utils';
 import { staffErrorMessage } from './staffMessages';
 import StaffSection from './StaffSection';
 
@@ -143,8 +144,9 @@ function ShowRow({ show }: { show: QuarantinedShow }) {
         <span className="text-[var(--text-primary)]">
           {show.name}{' '}
           <span className="text-sm text-role-secondary">
-            — {show.discipline}, {show.entryCount} {show.entryCount === 1 ? 'entry' : 'entries'},{' '}
-            {show.executionAttempts} failed {show.executionAttempts === 1 ? 'try' : 'tries'}
+            — {competitionDisciplineLabel(show.discipline)}, {show.entryCount}{' '}
+            {show.entryCount === 1 ? 'entry' : 'entries'}, {show.executionAttempts} failed{' '}
+            {show.executionAttempts === 1 ? 'try' : 'tries'}
           </span>
         </span>
         <span className="flex gap-3">

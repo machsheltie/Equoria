@@ -320,11 +320,10 @@ export async function getHorsePersonalityImpact(req, res) {
           sessionRate: groom.sessionRate,
           isActive: groom.isActive,
         },
+        // Read for the sort below only; never sent (Equoria-2wdp8).
+        rank: compatibility.traitModifierScore,
         compatibility: {
           isMatch: compatibility.isMatch,
-          isStrongMatch: compatibility.isStrongMatch,
-          traitModifier: compatibility.traitModifierScore,
-          bondModifier: compatibility.bondModifier,
           description: compatibility.description,
           recommendation: compatibility.isMatch
             ? "Excellent match for this horse's temperament"
@@ -341,11 +340,15 @@ export async function getHorsePersonalityImpact(req, res) {
       if (!a.compatibility.isMatch && b.compatibility.isMatch) {
         return 1;
       }
-      return b.compatibility.traitModifier - a.compatibility.traitModifier;
+      return b.rank - a.rank;
     });
 
-    // Get general compatibility info for this temperament
-    const generalCompatibility = getCompatibleGroomsForTemperament(horse.temperament);
+    // Owner ruling 2026-10-28 (q164, Equoria-2wdp8): the player learns which
+    // grooms suit the horse, never the modifiers, bonuses or bond threshold
+    // behind it. Which personalities suit this temperament, in words only.
+    const generalCompatibility = getCompatibleGroomsForTemperament(horse.temperament).map(
+      ({ personality, description }) => ({ personality, description }),
+    );
 
     logger.info(
       `[horseController.getHorsePersonalityImpact] Retrieved personality compatibility for horse ${horseId} (${horse.temperament})`,
@@ -359,7 +362,7 @@ export async function getHorsePersonalityImpact(req, res) {
         temperament: horse.temperament,
         bondScore: horse.bondScore,
       },
-      groomCompatibility,
+      groomCompatibility: groomCompatibility.map(({ rank: _rank, ...entry }) => entry),
       generalCompatibility,
       totalGrooms: grooms.length,
       compatibleGrooms: groomCompatibility.filter(g => g.compatibility.isMatch).length,

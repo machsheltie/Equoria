@@ -170,3 +170,21 @@ describe('StaffQuarantinedShows', () => {
     ).toBeInTheDocument();
   });
 });
+
+describe('StaffQuarantinedShows: the show is named in words (Equoria-2wdp8)', () => {
+  it('names a conformation show by its kind, never the stored discipline code', async () => {
+    const storedCode = 'conformation';
+    server.use(
+      http.get(`${STAFF}/shows/quarantined`, () =>
+        HttpResponse.json({
+          shows: [{ ...quarantined, discipline: storedCode, showType: storedCode }],
+        })
+      )
+    );
+    renderSection();
+
+    const row = (await screen.findByText(/Autumn Classic/)).closest('li');
+    expect(row).toHaveTextContent('Conformation,');
+    expect(row?.textContent ?? '').not.toContain(storedCode);
+  });
+});

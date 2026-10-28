@@ -169,11 +169,14 @@ export async function getGroomProfile(req, res) {
             assignment.foal.bondScore,
           );
 
+          // Owner ruling 2026-10-28 (q164, Equoria-2wdp8): the player learns
+          // whether the pairing suits, never the table, modifiers or bond
+          // threshold behind it.
           return {
             foalId: assignment.foal.id,
             foalName: assignment.foal.name,
             foalTemperament: assignment.foal.temperament,
-            compatibility,
+            suitsFoal: compatibility.isMatch,
           };
         }
         return null;
@@ -191,7 +194,6 @@ export async function getGroomProfile(req, res) {
       // are. Not the hidden retirement age, which is absent from this read by
       // construction — `findUnique` does not `include` the schedule relation.
       ageYears: groomAgeYears(groom),
-      epigeneticInfluenceType: groom.epigeneticInfluenceType,
       sessionRate: groom.sessionRate,
       bio: groom.bio,
       imageUrl: groom.imageUrl,
