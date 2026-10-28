@@ -11,6 +11,12 @@
  * from the rider assignments. Each line keeps its own loading and error state,
  * so one failed read never blanks the others. With nobody assigned, a line
  * offers the same assign step the action bar does.
+ *
+ * Owner ruling 2026-10-28 (Equoria-67yn9, supersedes q217): Last Trained sits
+ * on the Assigned Trainer line and Last Groomed on the Assigned Groom line;
+ * they left Horse Details, so each date shows in one place only. The date
+ * glows when the server says the horse can be trained / groomed now, with a
+ * text note, never color alone.
  */
 
 import React from 'react';
@@ -24,7 +30,26 @@ import { useHorseTrainer } from '@/hooks/api/useTrainers';
 import { useCareStatus } from '@/hooks/api/useGroomCare';
 import { useRiderAssignments } from '@/hooks/api/useRiders';
 import { userMessageFor } from '@/lib/http/userMessage';
+import { formatDate } from '@/lib/formatDate';
+import type { HorseCareStatus } from '@/lib/api/horseCareStatus';
 import '@/styles/horseCare.css';
+
+/** "Last Trained: May 3, 2026" under a staff line; glows when ready now. */
+const CareDate: React.FC<{
+  label: string;
+  date: string | null;
+  ready: boolean | null;
+  testId: string;
+}> = ({ label, date, ready, testId }) => (
+  <span
+    className="horse-status__care-date"
+    data-testid={testId}
+    data-glow={ready === true ? 'ready' : 'none'}
+  >
+    {label}: {formatDate(date, { month: 'long', day: 'numeric', year: 'numeric' }, 'Never')}
+    {ready === true && <span className="sr-only"> (ready now)</span>}
+  </span>
+);
 
 /** One Care Team line: loading, then error with Try Again, then the content. */
 const StaffRow: React.FC<{
@@ -35,7 +60,9 @@ const StaffRow: React.FC<{
   loadingText: string;
   onRetry: () => void;
   children: React.ReactNode;
-}> = ({ label, testId, isPending, error, loadingText, onRetry, children }) => (
+  /** Shown whatever this line's own read is doing (the care date). */
+  after?: React.ReactNode;
+}> = ({ label, testId, isPending, error, loadingText, onRetry, children, after }) => (
   <div className="horse-status__row">
     <dt>{label}</dt>
     <dd data-testid={testId}>
@@ -57,6 +84,7 @@ const StaffRow: React.FC<{
       ) : (
         children
       )}
+      {after}
     </dd>
   </div>
 );
@@ -106,10 +134,12 @@ export const VisitorCareTeam: React.FC<{ careTeam: VisitCareTeam | null }> = ({ 
   </section>
 );
 
-const CareTeamSection: React.FC<{ horseId: number; onAssignRider?: () => void }> = ({
-  horseId,
-  onAssignRider,
-}) => {
+const CareTeamSection: React.FC<{
+  horseId: number;
+  onAssignRider?: () => void;
+  /** The horse's care dates (Horse Details' read); absent while loading or failed. */
+  careDates?: HorseCareStatus;
+}> = ({ horseId, onAssignRider, careDates }) => {
   const trainer = useHorseTrainer(horseId);
   const care = useCareStatus(horseId);
   const riderAssignments = useRiderAssignments();
@@ -134,6 +164,16 @@ const CareTeamSection: React.FC<{ horseId: number; onAssignRider?: () => void }>
           error={trainer.isError ? trainer.error : null}
           loadingText="Loading trainer…"
           onRetry={() => trainer.refetch()}
+          after={
+            careDates && (
+              <CareDate
+                label="Last Trained"
+                date={careDates.lastTrainedAt}
+                ready={careDates.canTrainNow}
+                testId="last-trained"
+              />
+            )
+          }
         >
           {trainer.assignment ? (
             <span className="inline-flex flex-wrap items-center justify-end gap-3">
@@ -172,6 +212,16 @@ const CareTeamSection: React.FC<{ horseId: number; onAssignRider?: () => void }>
           error={care.isError ? care.error : null}
           loadingText="Loading groom…"
           onRetry={() => care.refetch()}
+          after={
+            careDates && (
+              <CareDate
+                label="Last Groomed"
+                date={careDates.lastGroomed}
+                ready={careDates.canGroomToday}
+                testId="last-groomed"
+              />
+            )
+          }
         >
           {groom ? (
             <span>

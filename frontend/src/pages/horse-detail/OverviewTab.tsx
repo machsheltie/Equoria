@@ -12,6 +12,10 @@
  * (PRODUCT.md structural anti-SaaS rules). Bond shows at every age; there is no
  * stress. The age reads in days while a horse is under 3 (Equoria-q4uzh).
  *
+ * Owner ruling 2026-10-28 (Equoria-67yn9, supersedes q217): Last Trained and
+ * Last Groomed moved out of Horse Details onto the Care Team's trainer and
+ * groom lines; Last Shod stays here.
+ *
  * Care Team (owner request 2026-10-28, Equoria-a6t0u): the assigned trainer
  * that sat at the foot of Horse Details is now its own Care Team section with
  * the assigned trainer, groom and rider (CareTeamSection).
@@ -183,18 +187,6 @@ const OverviewTab: React.FC<{
                   glow={isShoeOverdue(care.lastShod) ? 'overdue' : null}
                   testId="last-shod"
                 />
-                <CareDateRow
-                  label="Last Trained"
-                  date={care.lastTrainedAt}
-                  glow={care.canTrainNow ? 'ready' : null}
-                  testId="last-trained"
-                />
-                <CareDateRow
-                  label="Last Groomed"
-                  date={care.lastGroomed}
-                  glow={care.canGroomToday ? 'ready' : null}
-                  testId="last-groomed"
-                />
               </>
             )}
           </dl>
@@ -221,7 +213,11 @@ const OverviewTab: React.FC<{
       {visit ? (
         <VisitorCareTeam careTeam={visit.careTeam ?? null} />
       ) : (
-        <CareTeamSection horseId={Number(horse.id)} onAssignRider={onAssignRider} />
+        <CareTeamSection
+          horseId={Number(horse.id)}
+          onAssignRider={onAssignRider}
+          careDates={care}
+        />
       )}
 
       {horse.traits && horse.traits.length > 0 && (

@@ -148,7 +148,11 @@ describe('OverviewTab Care Team (Equoria-a6t0u)', () => {
     expect(screen.getByTestId('care-team-trainer')).toHaveTextContent('per session');
 
     expect(await screen.findByText('TestFixture-Rosa Bell')).toBeInTheDocument();
-    expect(screen.getByTestId('care-team-groom')).toHaveTextContent(/^TestFixture-Rosa Bell$/);
+    // Equoria-67yn9 (owner ruling 2026-10-28): the groom line also carries Last
+    // Groomed. Old contract: the line was the groom's name alone.
+    expect(screen.getByTestId('care-team-groom')).toHaveTextContent(
+      /^TestFixture-Rosa Bell(?: Last Groomed: .+)?$/
+    );
 
     expect(await screen.findByText('TestFixture-Maya Reyes')).toBeInTheDocument();
     expect(screen.getByTestId('care-team-rider')).toHaveTextContent(/^TestFixture-Maya Reyes$/);

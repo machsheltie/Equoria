@@ -87,6 +87,19 @@
   text-shadow: var(--glow-text-danger);
 }
 
+/* Last Trained / Last Groomed under a Care Team staff line (Equoria-67yn9). */
+.horse-status__care-date {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.horse-status__care-date[data-glow='ready'] {
+  color: var(--health-excellent);
+  text-shadow: var(--glow-text-ready);
+}
+
 /* ── Care area ─────────────────────────────────────────────────────── */
 
 .horse-care {

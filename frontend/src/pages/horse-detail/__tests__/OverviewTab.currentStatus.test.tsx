@@ -27,6 +27,11 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
  * Owner rulings 2026-10-28 changed it again: Breed moves above Age (q206, it
  * was provisionally after Color), and the Color row carries the coat's shade,
  * "Bay — Dark" (q214).
+ *
+ * Owner ruling 2026-10-28 (Equoria-67yn9, supersedes q217) changed it once
+ * more: Last Trained and Last Groomed left Horse Details for the Care Team,
+ * on the Assigned Trainer and Assigned Groom lines. Old contract: both dates
+ * were the last two rows of Horse Details.
  */
 
 const HORSE: Horse = {
@@ -95,8 +100,6 @@ describe('OverviewTab Horse Details (Equoria-2w4yo)', () => {
       'Markings',
       'Temperament',
       'Last Shod',
-      'Last Trained',
-      'Last Groomed',
     ]);
 
     // The visible color from the phenotype, the breed by name, the markings in
@@ -181,6 +184,22 @@ describe('OverviewTab Horse Details care status (Equoria-0l0tq)', () => {
     overview({ lastShod: daysAgoIso(2), lastTrainedAt: null, lastGroomed: null });
     renderTab();
     expect(await screen.findByTestId('last-shod')).toHaveAttribute('data-glow', 'none');
+  });
+
+  it('shows Last Trained on the Assigned Trainer line and Last Groomed on the Assigned Groom line (Equoria-67yn9)', async () => {
+    overview({ lastShod: null, lastTrainedAt: daysAgoIso(3), lastGroomed: null });
+    renderTab();
+    const trained = await screen.findByTestId('last-trained');
+    expect(within(screen.getByTestId('care-team-trainer')).getByTestId('last-trained')).toBe(
+      trained
+    );
+    expect(trained).toHaveTextContent(/^Last Trained: /);
+    expect(
+      within(await screen.findByTestId('care-team-groom')).getByTestId('last-groomed')
+    ).toHaveTextContent('Last Groomed: Never');
+    const details = screen.getByRole('region', { name: 'Horse Details' });
+    expect(within(details).queryByTestId('last-trained')).not.toBeInTheDocument();
+    expect(within(details).queryByTestId('last-groomed')).not.toBeInTheDocument();
   });
 
   it("glows Last Trained and Last Groomed green only when the server's verdict says now", async () => {
