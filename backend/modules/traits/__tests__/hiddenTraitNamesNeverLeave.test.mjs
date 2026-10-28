@@ -230,7 +230,10 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
       expect(res.status).toBe(200);
       const { traitSummary, flagInheritanceScore } = res.body.data.breedingData;
       expect(traitSummary.totalTraits).toBe(1);
-      expect(traitSummary.rareTraits).toBe(0); // sensitive is rare, and hidden
+      // Old contract: a rare-trait count was sent and had to stay 0 here. Owner
+      // ruling 2026-10-27 (q112): players never see rarity, so no count is sent
+      // at all (Equoria-qw4kp); a hidden trait cannot show in what is absent.
+      expect(traitSummary).not.toHaveProperty('rareTraits');
       expect(traitSummary.traitsByCategory).toMatchObject({ physical: 1, boldness: 0, empathy: 0 });
       expect(flagInheritanceScore.flags).toMatchObject({ physical: 1, boldness: 0, empathy: 0 });
       expect(flagInheritanceScore.dominantCategories).toEqual(['physical']);

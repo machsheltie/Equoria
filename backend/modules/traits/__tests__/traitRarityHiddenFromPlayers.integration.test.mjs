@@ -77,4 +77,62 @@ describe('trait rarity stays off player routes (q112)', () => {
     expect(picked.status).toBe(200);
     expect(JSON.stringify(picked.body)).not.toMatch(/rarity/i);
   });
+
+  // Equoria-qw4kp: the trait card and the breeding summary read trait history.
+  // They used private rare/negative lists and sent isRare, a rare count and a
+  // "rare" group to the owner. Polarity now comes from the roster (q135).
+  describe('trait history views', () => {
+    let historyHorse;
+
+    beforeAll(async () => {
+      historyHorse = await prisma.horse.create({
+        data: {
+          ...fixtureColor(),
+          name: `HistoryFoal ${tag()}`,
+          sex: 'colt',
+          dateOfBirth: gameCalendarDate(new Date(), -3),
+          breed: { connect: { id: breed.id } },
+          user: { connect: { id: owner.id } },
+          epigeneticModifiers: { positive: ['heart', 'brave'], negative: ['skittish'], hidden: [] },
+        },
+      });
+      // heart is ruled Legendary (q134); skittish is ruled negative (q135).
+      await prisma.traitHistoryLog.createMany({
+        data: ['heart', 'skittish', 'brave'].map((traitName, i) => ({
+          horseId: historyHorse.id,
+          traitName,
+          sourceType: 'groom',
+          ageInDays: 2 + i,
+          bondScore: 50,
+        })),
+      });
+    });
+
+    it('the trait card carries no rarity and takes polarity from the roster', async () => {
+      const res = await get(`/api/v1/horses/${historyHorse.id}/trait-card`);
+      expect(res.status).toBe(200);
+      const { timeline } = res.body.data;
+      expect(timeline.timelineEvents).toHaveLength(3);
+      for (const event of timeline.timelineEvents) {
+        expect(event).not.toHaveProperty('isRare');
+      }
+      expect(timeline.summary).not.toHaveProperty('rareTraits');
+      expect(timeline.categorization).not.toHaveProperty('rare');
+      expect(JSON.stringify(res.body)).not.toMatch(/isRare|rareTraits|rarity/i);
+
+      expect(timeline.summary.negativeTraits).toBe(1);
+      expect(timeline.categorization.negative.map(e => e.traitName)).toEqual(['skittish']);
+      expect(timeline.categorization.positive.map(e => e.traitName)).toEqual(['heart', 'brave']);
+    });
+
+    it('the breeding summary sends no rare-trait count', async () => {
+      const res = await get(`/api/v1/horses/${historyHorse.id}/breeding-data`);
+      expect(res.status).toBe(200);
+      const { traitSummary } = res.body.data.breedingData;
+      expect(traitSummary.totalTraits).toBe(3);
+      expect(traitSummary).not.toHaveProperty('rareTraits');
+      expect(traitSummary.negativeTraits).toBe(1);
+      expect(JSON.stringify(res.body)).not.toMatch(/isRare|rareTraits|rarity/i);
+    });
+  });
 });

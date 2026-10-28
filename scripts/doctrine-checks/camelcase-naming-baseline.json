@@ -753,7 +753,7 @@
   "backend/modules/traits/services/traitHistoryService.mjs": 2,
   "backend/modules/traits/services/traitInteractionMatrix.mjs": 32,
   "backend/modules/traits/services/traitInteractionRules.mjs": 53,
-  "backend/modules/traits/services/traitTimelineService.mjs": 14,
+  "backend/modules/traits/services/traitTimelineService.mjs": 9,
   "backend/modules/traits/services/ultraRareTraitEvaluationService.mjs": 1,
   "backend/modules/users/__tests__/accountDeletionClosed.integration.test.mjs": 1,
   "backend/modules/users/__tests__/addXpToUserAtomicity.integration.test.mjs": 11,

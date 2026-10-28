@@ -11,14 +11,16 @@
  * - Trait source event tracking (milestone, groom, breeding, environmental)
  * - Bond context inclusion with care pattern analysis
  * - Age-based filtering (only traits before age 4)
- * - Trait type distinctions (epigenetic, inherited, rare, negative)
+ * - Trait type distinctions (epigenetic, inherited, positive, negative)
  * - Bond trend analysis
  *
  * Business Rules:
  * - Only traits gained before age 4 (1460 days) are included in timeline
  * - Timeline organized by age ranges: first week, month, 3 months, years 1-3
  * - Includes detailed context for each trait acquisition event
- * - Categorizes traits by rarity, type, and source
+ * - Categorizes traits by polarity, type, and source
+ * - Never sends a trait's rarity: players do not see how rare a trait is
+ *   (owner ruling 2026-10-27, q112; Equoria-qw4kp)
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -28,6 +30,7 @@ import { visibleTraitHistoryWhere } from './visibleTraitHistory.mjs';
 // game-year). Replaces the legacy `/ 365` calendar-year math so the
 // "years" age bucket matches the rest of the game's age semantics.
 import { gameYearsFromDays } from '../../../utils/horseAge.mjs';
+import { getTraitsAtOrAboveRarity, getTraitsByType } from '../../../utils/epigeneticTraits.mjs';
 
 // Constants for timeline organization
 const AGE_CUTOFF_DAYS = 1460; // 4 years in days
@@ -41,32 +44,15 @@ const AGE_RANGES = {
   fourthYear: { min: 1096, max: 1460 },
 };
 
-// Trait categorization
-const RARE_TRAITS = [
-  'sensitive',
-  'noble',
-  'legacyTalent',
-  'exceptional',
-  'prodigy',
-  'natural_leader',
-  'empathic',
-  'intuitive',
-  'charismatic',
-  'legendary',
-];
-
-const NEGATIVE_TRAITS = [
-  'stubborn',
-  'anxious',
-  'aggressive',
-  'fearful',
-  'lazy',
-  'unpredictable',
-  'difficult',
-  'nervous',
-  'spooky',
-  'resistant',
-];
+// Polarity (q135) and rarity (q134) come from the twenty-trait roster in
+// utils/epigeneticTraits.mjs, their one source (Equoria-qw4kp); the private
+// lists this file used to carry named traits that are off the roster. A name
+// off the roster is neither positive nor negative. Rarity stays inside this
+// file: it feeds the development-quality label and is never sent (q112).
+const positiveTraitIds = Object.freeze(getTraitsByType('positive'));
+const negativeTraitIds = Object.freeze(getTraitsByType('negative'));
+// "Rare" is a Rare, Ultra Rare or Legendary trait, as in the breeding summary.
+const rareTraitIds = Object.freeze(getTraitsAtOrAboveRarity('rare'));
 
 /**
  * Generate comprehensive trait timeline for a horse
@@ -131,8 +117,7 @@ export async function generateTraitTimeline(horseId) {
       isEpigenetic: trait.isEpigenetic,
       ageInDays: trait.ageInDays,
       ageDescription: formatAgeDescription(trait.ageInDays),
-      isRare: RARE_TRAITS.includes(trait.traitName),
-      isNegative: NEGATIVE_TRAITS.includes(trait.traitName),
+      isNegative: negativeTraitIds.includes(trait.traitName),
       influenceScore: trait.influenceScore,
       bondScore: trait.bondScore,
       timestamp: trait.timestamp,
@@ -256,7 +241,6 @@ function organizeByAgeRanges(timelineEvents) {
  */
 function calculateTimelineSummary(timelineEvents, excludedTraits) {
   const sourceTypes = new Set(timelineEvents.map(e => e.sourceType));
-  const rareTraits = timelineEvents.filter(e => e.isRare).length;
   const negativeTraits = timelineEvents.filter(e => e.isNegative).length;
   const epigeneticTraits = timelineEvents.filter(e => e.isEpigenetic).length;
 
@@ -264,7 +248,6 @@ function calculateTimelineSummary(timelineEvents, excludedTraits) {
     totalTraits: timelineEvents.length,
     traitsExcluded: excludedTraits.length,
     epigeneticTraits,
-    rareTraits,
     negativeTraits,
     sourceTypes: Array.from(sourceTypes),
     sourceTypeCount: sourceTypes.size,
@@ -287,9 +270,8 @@ function calculateTimelineSummary(timelineEvents, excludedTraits) {
  */
 function categorizeTraits(timelineEvents) {
   return {
-    rare: timelineEvents.filter(e => e.isRare),
     negative: timelineEvents.filter(e => e.isNegative),
-    positive: timelineEvents.filter(e => !e.isNegative),
+    positive: timelineEvents.filter(e => positiveTraitIds.includes(e.traitName)),
     epigenetic: timelineEvents.filter(e => e.isEpigenetic),
     inherited: timelineEvents.filter(e => !e.isEpigenetic),
     bySource: {
@@ -357,7 +339,6 @@ export async function getTraitTimelineSummary(horseId) {
     horseId,
     hasTraits: !timeline.isEmpty,
     totalTraits: timeline.summary.totalTraits,
-    rareTraits: timeline.summary.rareTraits,
     negativeTraits: timeline.summary.negativeTraits,
     sourceTypes: timeline.summary.sourceTypes,
     bondTrend: timeline.bondProgress.bondTrend,
@@ -381,7 +362,8 @@ function calculateDevelopmentQuality(timeline) {
     return 'no_development';
   }
 
-  const { summary, bondProgress } = timeline;
+  const { summary, bondProgress, timelineEvents } = timeline;
+  const rareTraits = timelineEvents.filter(e => rareTraitIds.includes(e.traitName)).length;
   let score = 0;
 
   // Trait quantity (max 3 points)
@@ -401,9 +383,9 @@ function calculateDevelopmentQuality(timeline) {
   }
 
   // Rare traits (max 2 points)
-  if (summary.rareTraits >= 2) {
+  if (rareTraits >= 2) {
     score += 2;
-  } else if (summary.rareTraits >= 1) {
+  } else if (rareTraits >= 1) {
     score += 1;
   }
 

@@ -11,7 +11,7 @@
  * - Trait source event tracking (milestone, groom, breeding, environmental)
  * - Bond context inclusion with care pattern analysis
  * - Age-based filtering (only traits before age 4)
- * - Trait type distinctions (epigenetic, inherited, rare, negative)
+ * - Trait type distinctions (epigenetic, inherited, positive, negative); never rarity (q112)
  * - API endpoint for trait timeline card retrieval
  *
  * Testing approach: Real database operations with zero mocking to validate actual business logic
@@ -261,13 +261,17 @@ describe('Trait Timeline System', () => {
       expect(timeline.excludedTraits).toHaveLength(2);
     });
 
-    it('should categorize traits by type and rarity', async () => {
-      // Create diverse trait types
+    // Old contract: traits were also grouped by rarity from private lists of
+    // off-roster names (sensitive, legendary rare; stubborn negative). Owner
+    // rulings 2026-10-27: the roster (q117) and its polarity (q135) decide
+    // positive/negative, and players never see rarity (q112) (Equoria-qw4kp).
+    it('should categorize traits by roster polarity, never by rarity', async () => {
+      // focused is ruled Rare and heart Legendary; skittish is ruled negative.
       const traitHistory = [
-        { traitName: 'sensitive', sourceType: 'milestone', isRare: true, isNegative: false },
-        { traitName: 'stubborn', sourceType: 'environmental', isRare: false, isNegative: true },
-        { traitName: 'athletic', sourceType: 'breeding', isRare: false, isNegative: false },
-        { traitName: 'legendary', sourceType: 'groom', isRare: true, isNegative: false },
+        { traitName: 'focused', sourceType: 'milestone', isNegative: false },
+        { traitName: 'skittish', sourceType: 'environmental', isNegative: true },
+        { traitName: 'brave', sourceType: 'breeding', isNegative: false },
+        { traitName: 'heart', sourceType: 'groom', isNegative: false },
       ];
 
       for (const trait of traitHistory) {
@@ -289,9 +293,10 @@ describe('Trait Timeline System', () => {
 
       const timeline = await generateTraitTimeline(testHorse.id);
 
-      expect(timeline.summary.rareTraits).toBe(2);
+      expect(timeline.summary).not.toHaveProperty('rareTraits');
+      expect(timeline.categorization).not.toHaveProperty('rare');
+      expect(timeline.timelineEvents.some(e => 'isRare' in e)).toBe(false);
       expect(timeline.summary.negativeTraits).toBe(1);
-      expect(timeline.categorization.rare).toHaveLength(2);
       expect(timeline.categorization.negative).toHaveLength(1);
       expect(timeline.categorization.positive).toHaveLength(3); // 4 total - 1 negative = 3 positive
     });

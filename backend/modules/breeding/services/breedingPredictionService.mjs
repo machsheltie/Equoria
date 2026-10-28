@@ -14,6 +14,9 @@
  * Business Rules:
  * - Only traits before age 4 are considered
  * - History rows of traits still hidden on the horse are not counted
+ * - A trait's rarity is never sent: players do not see how rare a trait is
+ *   (owner ruling 2026-10-27, q112; Equoria-qw4kp). The rare count only feeds
+ *   the breeding-quality label.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -214,7 +217,6 @@ export async function generateBreedingData(horseId) {
   const traitSummary = {
     totalTraits: traitHistory.length,
     epigeneticTraits: traitHistory.filter(t => t.isEpigenetic).length,
-    rareTraits: traitHistory.filter(t => RARE_TRAITS.includes(t.traitName)).length,
     negativeTraits: traitHistory.filter(t => NEGATIVE_TRAITS.includes(t.traitName)).length,
     traitsByCategory: {},
     traitsBySource: {
@@ -284,7 +286,11 @@ export async function generateBreedingData(horseId) {
     epigeneticFlags,
     temperamentInfluence,
     hasInsufficientData: traitHistory.length === 0,
-    breedingQuality: calculateBreedingQuality(traitSummary, epigeneticFlags),
+    breedingQuality: calculateBreedingQuality(
+      traitSummary,
+      epigeneticFlags,
+      traitHistory.filter(t => RARE_TRAITS.includes(t.traitName)).length,
+    ),
     generatedAt: new Date(),
   };
 
@@ -327,9 +333,11 @@ function getIncompatibleTemperaments(temperament) {
  * Calculate overall breeding quality score
  * @param {Object} traitSummary - Trait summary data
  * @param {Object} epigeneticFlags - Epigenetic flags data
+ * @param {number} rareTraits - visible history rows of Rare-or-rarer traits;
+ *   counted here, never sent (q112)
  * @returns {string} Breeding quality assessment
  */
-function calculateBreedingQuality(traitSummary, epigeneticFlags) {
+function calculateBreedingQuality(traitSummary, epigeneticFlags, rareTraits) {
   let score = 0;
 
   // Trait quantity (max 3 points)
@@ -342,9 +350,9 @@ function calculateBreedingQuality(traitSummary, epigeneticFlags) {
   }
 
   // Rare traits (max 2 points)
-  if (traitSummary.rareTraits >= 2) {
+  if (rareTraits >= 2) {
     score += 2;
-  } else if (traitSummary.rareTraits >= 1) {
+  } else if (rareTraits >= 1) {
     score += 1;
   }
 

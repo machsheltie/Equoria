@@ -86,14 +86,14 @@ export type TraitCategory =
   | 'social';
 
 /**
- * Trait probabil inheritance data
+ * Trait probabil inheritance data. Never a trait's rarity: players do not see
+ * how rare a trait is (owner ruling 2026-10-27, q112; Equoria-qw4kp).
  */
 export interface TraitProbability {
   traitName: string;
   probability: number;
   hasStacking: boolean;
   stackingBonus: number;
-  isRare: boolean;
   isNegative: boolean;
   isEpigenetic: boolean;
   parentSources: {
@@ -113,7 +113,7 @@ export interface HorseBreedingData {
   traitSummary: {
     totalTraits: number;
     epigeneticTraits: number;
-    rareTraits: number;
+    // No rare-trait count: players never see rarity (q112, Equoria-qw4kp).
     negativeTraits: number;
     traitsByCategory: Record<TraitCategory, number>;
     traitsBySource: {

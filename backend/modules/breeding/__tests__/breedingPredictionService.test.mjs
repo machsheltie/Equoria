@@ -202,9 +202,12 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
     expect(result.horseId).toBe(bpsStallionCalm.id);
     expect(result.hasInsufficientData).toBe(false);
     expect(result.traitSummary.totalTraits).toBe(4);
-    expect(result.traitSummary.rareTraits).toBe(1); // focused
+    // Old contract: traitSummary.rareTraits was sent (1, focused). Owner ruling
+    // 2026-10-27 (q112): players never see rarity (Equoria-qw4kp). The rare
+    // trait still counts toward the quality label below.
+    expect(result.traitSummary).not.toHaveProperty('rareTraits');
     expect(result.traitSummary.negativeTraits).toBe(1); // fearful
-    // score = 2 (traits≥4) + 1 (rare≥1) - 1 (negative) = 2 → 'fair'
+    // score = 2 (traits≥4) + 1 (rare≥1: focused) - 1 (negative) = 2 → 'fair'
     expect(result.breedingQuality).toBe('fair');
     expect(result.epigeneticFlags).toBeDefined();
     expect(result.temperamentInfluence.temperament).toBe('calm');

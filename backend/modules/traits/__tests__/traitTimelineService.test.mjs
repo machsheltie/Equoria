@@ -13,7 +13,7 @@
  *   formatAgeDescription: ≤7, ≤30, ≤90, ≤365, >365
  *   analyzeBondTrend: 'improving' bond
  *   calculateDevelopmentQuality: 'exceptional' (score=8)
- *   calculateTimelineSummary: non-empty averages, rareTraits, negativeTraits, sourceTypes
+ *   calculateTimelineSummary: non-empty averages, negativeTraits, sourceTypes (no rarity, q112)
  *   organizeByAgeRanges: events placed in firstWeek, firstMonth, firstThreeMonths, firstYear, secondYear
  */
 
@@ -120,22 +120,25 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
       },
     });
 
-    // 5-trait horse: traits at ages 5, 14, 60, 200, 500 — covering all formatAgeDescription branches
+    // 5-trait horse: traits at ages 5, 14, 60, 200, 500 — covering all formatAgeDescription branches.
+    // Old fixture: off-roster noble/legacyTalent (rare) and anxious (negative)
+    // from the service's private lists. Owner rulings 2026-10-27 (q117 roster,
+    // q134 rarity, q135 polarity; Equoria-qw4kp): roster traits of the same kind.
     const fiveTraits = [
-      // ageInDays=5 → formatAgeDescription("Day 5"), firstWeek range, rare noble
-      { traitName: 'noble', sourceType: 'milestone', ageInDays: 5, bondScore: 40 },
+      // ageInDays=5 → formatAgeDescription("Day 5"), firstWeek range, focused (ruled Rare)
+      { traitName: 'focused', sourceType: 'milestone', ageInDays: 5, bondScore: 40 },
       // ageInDays=14 → formatAgeDescription("2 weeks"), firstMonth range
       { traitName: 'curious', sourceType: 'groom', ageInDays: 14, bondScore: 50 },
-      // ageInDays=60 → formatAgeDescription("2 months"), firstThreeMonths range, negative anxious
+      // ageInDays=60 → formatAgeDescription("2 months"), firstThreeMonths range, skittish (ruled negative)
       {
-        traitName: 'anxious',
+        traitName: 'skittish',
         sourceType: 'environmental',
         ageInDays: 60,
         bondScore: 55,
       },
-      // ageInDays=200 → formatAgeDescription("6 months"), firstYear range, rare legacyTalent
+      // ageInDays=200 → formatAgeDescription("6 months"), firstYear range, heart (ruled Legendary)
       {
-        traitName: 'legacyTalent',
+        traitName: 'heart',
         sourceType: 'genetic',
         ageInDays: 200,
         bondScore: 65,
@@ -228,12 +231,14 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
     expect(result.bondProgress.bondChange).toBe(40);
   });
 
-  it('5-trait horse: categorization has rare=2 (noble+legacy_talent), negative=1 (anxious)', async () => {
+  // Old contract: a "rare" group and a rare count were sent (noble+legacyTalent).
+  // Owner ruling 2026-10-27 (q112): players never see rarity (Equoria-qw4kp).
+  it('5-trait horse: categorization has negative=1 (skittish), positive=4, and no rarity', async () => {
     const result = await generateTraitTimeline(ttsHorse5Traits.id);
-    expect(result.categorization.rare).toHaveLength(2);
+    expect(result.categorization).not.toHaveProperty('rare');
     expect(result.categorization.negative).toHaveLength(1);
     expect(result.categorization.positive).toHaveLength(4); // 5 - 1 negative
-    expect(result.summary.rareTraits).toBe(2);
+    expect(result.summary).not.toHaveProperty('rareTraits');
     expect(result.summary.negativeTraits).toBe(1);
   });
 
@@ -256,7 +261,7 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
   });
 
   it('5-trait horse: developmentQuality=exceptional (score=8 ≥ 8)', async () => {
-    // totalTraits=5→+3, sourceTypeCount=4→+2, rareTraits=2→+2, improving→+2, negative=1→-1 = 8
+    // totalTraits=5→+3, sourceTypeCount=4→+2, rare (focused+heart)=2→+2, improving→+2, negative=1→-1 = 8
     const summary = await getTraitTimelineSummary(ttsHorse5Traits.id);
     expect(summary.developmentQuality).toBe('exceptional');
     expect(summary.bondTrend).toBe('improving');
@@ -370,7 +375,7 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
     });
 
     // ── horseExcellent ──────────────────────────────────────────────────────────
-    // 3 traits: 1 rare ('sensitive'), 2 source types, improving bond
+    // 3 traits: 1 rare ('resilient', ruled Rare; was off-roster 'sensitive'), 2 source types, improving bond
     // Bond: first=50, last=70 → delta=20 > 5 → 'improving'
     // Score: totalTraits=3→+2, sourceTypeCount=2→+1, rareTraits=1→+1 (line 425),
     //        improving→+2 = 6 → 'excellent' (line 450)
@@ -388,7 +393,7 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
     await prisma.traitHistoryLog.create({
       data: {
         horseId: horseExcellent.id,
-        traitName: 'sensitive',
+        traitName: 'resilient',
         sourceType: 'groom',
         influenceScore: 5,
         isEpigenetic: false,
