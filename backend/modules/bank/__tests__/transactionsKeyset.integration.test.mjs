@@ -1,5 +1,7 @@
 /**
- * GET /api/v1/bank/transactions on the keyset convention (Equoria-cmw85.20).
+ * GET /api/v1/users/transactions on the keyset convention (Equoria-cmw85.20).
+ * The Bank page reads this URL; the same handler's duplicate mount at
+ * GET /bank/transactions was removed (Equoria-a7f1p, owner ruling q151).
  *
  * The ledger was already ordered createdAt desc, id desc; what it lacked is the
  * cursor, so a transaction written while the player pages still shifted every
@@ -33,7 +35,8 @@ const entry = i => ({
   createdAt: TIED,
 });
 
-const get = query => request(app).get('/api/v1/bank/transactions').set('Authorization', `Bearer ${token}`).query(query);
+const get = query =>
+  request(app).get('/api/v1/users/transactions').set('Authorization', `Bearer ${token}`).query(query);
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -53,7 +56,7 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 60_000);
 
-describe('GET /api/v1/bank/transactions keyset pages (Equoria-cmw85.20)', () => {
+describe('GET /api/v1/users/transactions keyset pages (Equoria-cmw85.20)', () => {
   it('caps a huge ?pageSize at the shared maximum', async () => {
     const res = await get({ pageSize: 5000 });
     expect(res.status).toBe(200);

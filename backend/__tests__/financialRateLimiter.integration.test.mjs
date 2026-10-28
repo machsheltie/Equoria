@@ -20,7 +20,7 @@
  *  3. The limit is PER-USER: user B is unaffected when user A is capped
  *     (proves keyGenerator keys on the JWT user id, not just the IP — both
  *     users share ::1 / 127.0.0.1 under supertest).
- *  4. Read endpoints (GET /bank/claim-status, /bank/transactions) are NOT
+ *  4. Read endpoints (GET /bank/claim-status, /users/transactions) are NOT
  *     gated by the financial limiter — they keep working after the
  *     mutation cap is hit.
  *
@@ -188,7 +188,7 @@ describe('financialRateLimiter — dedicated per-user economy limiter (Equoria-f
     expect(statusRes.body.success).toBe(true);
 
     const txRes = await request(app)
-      .get('/api/v1/bank/transactions')
+      .get('/api/v1/users/transactions')
       .set('Authorization', `Bearer ${tokenA}`)
       .set('Origin', ORIGIN);
     expect(txRes.status).toBe(200);

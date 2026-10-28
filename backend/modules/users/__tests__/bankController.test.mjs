@@ -126,12 +126,14 @@ describe('bankController integration', () => {
     });
   });
 
-  // ─── GET /api/v1/bank/transactions (getTransactionHistory) ──────────────────
+  // ─── GET /api/v1/users/transactions (getTransactionHistory) ─────────────────
+  // The Bank page's read; the duplicate GET /bank/transactions mount was removed
+  // (Equoria-a7f1p, owner ruling q151).
 
-  describe('GET /api/v1/bank/transactions', () => {
+  describe('GET /api/v1/users/transactions', () => {
     it('returns 200 with data for an authenticated user', async () => {
       const res = await request(app)
-        .get('/api/v1/bank/transactions')
+        .get('/api/v1/users/transactions')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -141,7 +143,7 @@ describe('bankController integration', () => {
     });
 
     it('returns 401 without auth token', async () => {
-      const res = await request(app).get('/api/v1/bank/transactions').set('Origin', ORIGIN);
+      const res = await request(app).get('/api/v1/users/transactions').set('Origin', ORIGIN);
 
       expect(res.status).toBe(401);
     });

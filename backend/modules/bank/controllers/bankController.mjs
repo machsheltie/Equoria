@@ -161,10 +161,10 @@ export async function claimWeeklyReward(req, res) {
 }
 
 /**
- * GET /api/v1/bank/transactions
+ * GET /api/v1/users/transactions (bankUserTransactionsRoutes.mjs)
  *
- * Return the authenticated user's persisted transaction ledger.
- * (Also reachable at the legacy GET /api/v1/users/transactions mount.)
+ * Return the authenticated user's persisted transaction ledger. The duplicate
+ * GET /api/v1/bank/transactions mount was removed (Equoria-a7f1p, q151).
  */
 export async function getTransactionHistory(req, res) {
   try {

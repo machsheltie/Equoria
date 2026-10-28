@@ -10,7 +10,9 @@
  * Coverage:
  *  - GET  /api/v1/bank/claim-status   → fresh account can claim
  *  - POST /api/v1/bank/claim          → balance += 5,000, PERSISTED to DB
- *  - GET  /api/v1/bank/transactions   → a weeklyReward credit row exists
+ *  - GET  /api/v1/users/transactions  → a weeklyReward credit row exists
+ *    (the Bank page's read; GET /bank/transactions was a duplicate, removed by
+ *    Equoria-a7f1p, owner ruling q151)
  *                                         reflecting the claim
  *  - POST /api/v1/bank/claim (again)  → cooldown rejection (400), balance
  *                                         unchanged (no double-credit)
@@ -108,9 +110,9 @@ describe('Bank + transactions API — real-DB integration (Equoria-qfky)', () =>
     expect(after.settings.lastWeeklyClaimDate).toBeTruthy();
   });
 
-  it('GET /bank/transactions reflects the weeklyReward credit row', async () => {
+  it('GET /users/transactions reflects the weeklyReward credit row', async () => {
     const res = await request(app)
-      .get('/api/v1/bank/transactions')
+      .get('/api/v1/users/transactions')
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', ORIGIN);
 

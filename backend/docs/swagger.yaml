@@ -1793,14 +1793,6 @@ paths:
       responses:
         '200': { description: 'Claim status' }
 
-  /bank/transactions:
-    get:
-      tags: [Services]
-      summary: 'Get bank transaction history'
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200': { description: 'Transaction history' }
-
   /vet/services:
     get:
       tags: [Services]
