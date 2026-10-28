@@ -71,9 +71,15 @@ describe('deriveHorseChip', () => {
     vi.useRealTimers();
   });
 
-  it('returns warning chip for injured horse', () => {
-    const result = deriveHorseChip({ healthStatus: 'injured' });
-    expect(result).toEqual({ text: 'Injured — needs vet', variant: 'warning' });
+  // Equoria-2uqdg: health reads the owner's five health words (ruling 2026-10-23,
+  // Equoria-u0jop). Old contract: healthStatus 'healthy' | 'injured' | 'recovering'
+  // and the copy 'Injured — needs vet'; those words are not stored or sent.
+  it('returns warning chip for a horse in Bad health', () => {
+    const result = deriveHorseChip({ health: 'Bad' });
+    expect(result).toEqual({
+      text: 'In Bad health — needs feeding and the vet',
+      variant: 'warning',
+    });
   });
 
   it('returns cooldown chip when training cooldown is active', () => {
@@ -106,18 +112,18 @@ describe('deriveHorseChip', () => {
     expect(result).toBeNull();
   });
 
-  it('returns null when horse is healthy with no cooldowns', () => {
-    const result = deriveHorseChip({ healthStatus: 'healthy' });
+  it('returns null when horse is in Excellent health with no cooldowns', () => {
+    const result = deriveHorseChip({ health: 'Excellent' });
     expect(result).toBeNull();
   });
 
-  it('prioritizes injury over other states', () => {
+  it('prioritizes Bad health over other states', () => {
     const result = deriveHorseChip({
-      healthStatus: 'injured',
+      health: 'Bad',
       isEligibleForCompetition: true,
       hasFoalsInDevelopment: 3,
     });
     expect(result!.variant).toBe('warning');
-    expect(result!.text).toContain('Injured');
+    expect(result!.text).toContain('Bad health');
   });
 });

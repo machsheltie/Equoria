@@ -164,3 +164,45 @@ describe('deriveLatestChapter (pqzmf, Spec 11.3.12)', () => {
     });
   });
 });
+
+/**
+ * Equoria-2uqdg — the health chapter reads the real health words (owner ruling
+ * 2026-10-23, Equoria-u0jop: Excellent / Very Good / Good / Fair / Bad). The
+ * stored vet finding is 'Injured' (capital) and the hub list sends the derived
+ * displayedHealth band; the old check matched only the lowercase invented
+ * words 'injured' / 'recovering', so the chapter never appeared.
+ */
+describe('deriveLatestChapter — health words (Equoria-2uqdg)', () => {
+  const now = Date.now();
+  const fedYesterday = new Date(now - 1 * DAY).toISOString();
+
+  it('tells the story of a horse whose displayed health is Bad', () => {
+    const chip = deriveLatestChapter(
+      { displayedHealth: 'Bad', healthStatus: 'Excellent', lastFedDate: fedYesterday },
+      now
+    );
+    expect(chip.text).toBe('In Bad health — needs feeding and the vet');
+    expect(chip.variant).toBe('warning');
+    expect(chip.stale).toBe(false);
+  });
+
+  it("reads the stored 'Injured' vet finding as Bad health when no band is sent", () => {
+    const chip = deriveLatestChapter({ healthStatus: 'Injured' }, now);
+    expect(chip.text).toBe('In Bad health — needs feeding and the vet');
+  });
+
+  it('tells no health story for a horse in Fair health or better', () => {
+    for (const word of ['Excellent', 'Very Good', 'Good', 'Fair']) {
+      const chip = deriveLatestChapter(
+        { displayedHealth: word, healthStatus: 'Injured', lastFedDate: fedYesterday },
+        now
+      );
+      expect(chip.text).toMatch(/fed/i);
+    }
+  });
+
+  it('never prints a code word or the invented recovering copy', () => {
+    const chip = deriveLatestChapter({ displayedHealth: 'Bad' }, now);
+    expect(chip.text).not.toMatch(/recovering|injured/i);
+  });
+});
