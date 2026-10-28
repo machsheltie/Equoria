@@ -252,7 +252,7 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
       const res = await send('post', `/api/v1/grooms/${mentor.id}/legacy/create`, PROTEGE);
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('insufficient_level');
+      expect(res.body.message).toContain('not eligible for legacy creation');
       expect(await prisma.groom.count({ where: { userId: player.id } })).toBe(groomsBefore);
       expect(await prisma.groomLegacyLog.count({ where: { retiredGroomId: mentor.id } })).toBe(0);
     });

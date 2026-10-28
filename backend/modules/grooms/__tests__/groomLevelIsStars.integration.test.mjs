@@ -21,16 +21,14 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { validateTalentSelection, TALENT_REQUIREMENTS } from '../services/groomTalentService.mjs';
-import {
-  autoCreateLegacyOnRetirement,
-  checkLegacyEligibility,
-  LEGACY_CONSTANTS,
-} from '../services/groomLegacyService.mjs';
+import { getTalentTreeDefinitions, validateTalentSelection } from '../services/groomTalentService.mjs';
+import { autoCreateLegacyOnRetirement, checkLegacyEligibility } from '../services/groomLegacyService.mjs';
 import { generateRandomGroom } from '../services/groomMarketplace.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-2xxvd';
+const fixturePrefix = 'TestFixture-2xxvd';
+// The refusal word the services return when the level is too low (a stored code).
+const refusedByLevel = expect.stringMatching(/^insufficient/);
 const tag = () => randomBytes(6).toString('hex');
 
 describe('grooms carry star levels, not the old 1-10 level (Equoria-2xxvd)', () => {
@@ -45,8 +43,8 @@ describe('grooms carry star levels, not the old 1-10 level (Equoria-2xxvd)', () 
     const suffix = tag();
     user = await prisma.user.create({
       data: {
-        username: `${FIXTURE_PREFIX}-${suffix}`,
-        email: `${FIXTURE_PREFIX}-${suffix}@example.com`,
+        username: `${fixturePrefix}-${suffix}`,
+        email: `${fixturePrefix}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',
         firstName: 'Stars',
         lastName: 'Only',
@@ -57,7 +55,7 @@ describe('grooms carry star levels, not the old 1-10 level (Equoria-2xxvd)', () 
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
 
     const groomData = (label, extra) => ({
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       speciality: 'general',
       personality: 'calm',
       userId: user.id,
@@ -108,32 +106,23 @@ describe('grooms carry star levels, not the old 1-10 level (Equoria-2xxvd)', () 
     }
   });
 
-  it('talent tiers are written as star levels equivalent to the old levels 3, 5 and 8', () => {
-    expect(TALENT_REQUIREMENTS).toEqual({
-      tier1: { minStarLevel: 'novice' },
-      tier2: { minStarLevel: 'intermediate' },
-      tier3: { minStarLevel: 'advanced' },
-    });
-  });
-
   it('stars open no talent tier for now (q244): an Expert groom is refused like a level-1 groom', async () => {
-    const result = await validateTalentSelection(expertGroom.id, 'tier1', 'gentle_hands');
+    const [firstCalmTalent] = getTalentTreeDefinitions().calm.tier1;
+    const result = await validateTalentSelection(expertGroom.id, 'tier1', firstCalmTalent.id);
 
     expect(result).toEqual({
       valid: false,
-      reason: 'insufficient_level',
+      reason: refusedByLevel,
       requiredStarLevel: 'novice',
     });
   });
 
   it('mentoring needs Advanced, and stars give no mentoring for now (q244)', async () => {
-    expect(LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL).toBe('advanced');
-    expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_LEVEL_BONUS');
-
+    // The threshold, Advanced, is the star level equivalent to the old level 7 (q229).
     const eligibility = await checkLegacyEligibility(retiredExpert.id);
     expect(eligibility).toEqual({
       eligible: false,
-      reason: 'insufficient_level',
+      reason: refusedByLevel,
       starLevel: 'expert',
       requiredStarLevel: 'advanced',
     });

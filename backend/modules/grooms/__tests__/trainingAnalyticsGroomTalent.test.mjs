@@ -457,7 +457,7 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
   // Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): stars open no tier for now.
   // Old contract: a level-3 groom selected tier 1 here.
   it('selectTalent: a tier 1 choice is refused by level and writes nothing (q244)', async () => {
-    await expect(selectTalent(st2GroomCalmL3.id, 'tier1', 'gentle_hands')).rejects.toThrow('insufficient_level');
+    await expect(selectTalent(st2GroomCalmL3.id, 'tier1', 'gentle_hands')).rejects.toThrow('Invalid talent selection');
     await expect(prisma.groomTalentSelections.count({ where: { groomId: st2GroomCalmL3.id } })).resolves.toBe(0);
   });
 

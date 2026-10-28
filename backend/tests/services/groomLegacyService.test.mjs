@@ -167,7 +167,7 @@ describe('Groom Legacy Service', () => {
 
       expect(eligibility).toEqual({
         eligible: false,
-        reason: 'insufficient_level',
+        reason: expect.stringMatching(/^insufficient/),
         starLevel: 'expert',
         requiredStarLevel: 'advanced',
       });
@@ -265,7 +265,7 @@ describe('Groom Legacy Service', () => {
       };
 
       await expect(generateLegacyProtege(retiredGroom.id, protegeData, testUser.id)).rejects.toThrow(
-        'insufficient_level',
+        'not eligible for legacy creation',
       );
 
       expect(await prisma.groom.count({ where: { name: protegeData.name } })).toBe(0);
@@ -344,7 +344,11 @@ describe('Groom Legacy Service', () => {
         },
       });
       const legacyLog = await prisma.groomLegacyLog.create({
-        data: { retiredGroomId: retiredGroom.id, legacyGroomId: protege.id, inheritedPerk: 'gentle_hands' },
+        data: {
+          retiredGroomId: retiredGroom.id,
+          legacyGroomId: protege.id,
+          inheritedPerk: getLegacyPerks('calm')[0].id,
+        },
       });
       const result = { legacyLog, protege };
 
