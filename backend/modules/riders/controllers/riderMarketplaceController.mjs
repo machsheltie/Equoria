@@ -36,6 +36,7 @@ import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
 // read-filter-write against a pre-transaction snapshot.
 import { removeMarketplaceOfferCas } from '../../../utils/staffMarketplaceOfferCas.mjs';
 import { offerAtLevelPrice, offerLevelAndFee } from '../../../constants/staffLevels.mjs';
+import { publicStaffRow } from '../../../utils/staffPublicView.mjs';
 
 const STAFF_TYPE = 'rider';
 
@@ -91,7 +92,9 @@ export async function getRiderMarketplace(req, res) {
       message: 'Rider marketplace retrieved successfully',
       data: {
         // Owner ruling q226: every offer shows the price its hire charges.
-        riders: offers.map(o => offerAtLevelPrice('rider', o, 'weeklyRate', o.weeklyRate)),
+        riders: offers.map(o =>
+          publicStaffRow('rider', offerAtLevelPrice('rider', o, 'weeklyRate', o.weeklyRate)),
+        ),
         lastRefresh,
         nextFreeRefresh,
         refreshCost,
@@ -194,7 +197,7 @@ export async function refreshRiderMarketplace(req, res) {
       success: true,
       message: 'Rider marketplace refreshed successfully',
       data: {
-        riders: updated.offers,
+        riders: updated.offers.map(o => publicStaffRow('rider', o)),
         lastRefresh: updated.lastRefresh,
         nextFreeRefresh,
         refreshCost: 0,
@@ -445,7 +448,10 @@ export async function hireRiderFromMarketplace(req, res) {
       success: true,
       message: 'Rider hired successfully',
       data: {
-        rider: { ...newRider, name: `${newRider.firstName} ${newRider.lastName}` },
+        rider: publicStaffRow('rider', {
+          ...newRider,
+          name: `${newRider.firstName} ${newRider.lastName}`,
+        }),
         cost: hiringCost,
         remainingMoney: updatedUser.money,
       },

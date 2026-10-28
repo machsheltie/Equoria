@@ -21,6 +21,7 @@ import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 // `groomAgeYears` turns the stored `startAge` + `careerWeeks` into the one
 // number a player reads.
 import { groomAgeYears } from '../services/groomAgeService.mjs';
+import { staffLabels } from '../../../utils/staffPublicView.mjs';
 
 const GROOM_LIST_SELECT = {
   id: true,
@@ -54,7 +55,7 @@ const GROOM_LIST_SELECT = {
  */
 function withAgeYears(groom) {
   const { startAge: _startAge, careerWeeks: _careerWeeks, ...rest } = groom;
-  return { ...rest, ageYears: groomAgeYears(groom) };
+  return { ...rest, ageYears: groomAgeYears(groom), ...staffLabels('groom', groom) };
 }
 
 /**
@@ -202,6 +203,8 @@ export async function getGroomProfile(req, res) {
       availability: groom.availability,
       currentAssignments: groom.groomAssignments.length,
       personalityCompatibility,
+      // Equoria-no441: authored words beside the stored values.
+      ...staffLabels('groom', groom),
     };
 
     logger.info(`[groomController.getGroomProfile] Retrieved profile for groom ${groomId}`);

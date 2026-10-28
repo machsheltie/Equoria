@@ -33,6 +33,7 @@ import { removeMarketplaceOfferCas } from '../../../utils/staffMarketplaceOfferC
 import { StaleOfferError } from '../../../errors/index.mjs';
 import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
 import { offerAtLevelPrice, offerLevelAndFee } from '../../../constants/staffLevels.mjs';
+import { publicStaffRow } from '../../../utils/staffPublicView.mjs';
 // Equoria-m9lz1: draw the groom's HIDDEN retirement age at hire, inside the
 // hire transaction, so a hired groom always has a schedule and a rolled-back
 // hire leaves no orphan schedule row.
@@ -104,7 +105,9 @@ export async function getMarketplace(req, res) {
       message: 'Marketplace retrieved successfully',
       data: {
         // Owner rulings q226/q228: every offer shows its weekly fee, the price its hire charges.
-        grooms: offers.map(o => offerAtLevelPrice('groom', o, 'weeklyFee', o.experience)),
+        grooms: offers.map(o =>
+          publicStaffRow('groom', offerAtLevelPrice('groom', o, 'weeklyFee', o.experience)),
+        ),
         lastRefresh,
         nextFreeRefresh,
         refreshCost,
@@ -237,7 +240,7 @@ export async function refreshMarketplace(req, res) {
       success: true,
       message: 'Marketplace refreshed successfully',
       data: {
-        grooms: updated.offers,
+        grooms: updated.offers.map(o => publicStaffRow('groom', o)),
         lastRefresh: updated.lastRefresh,
         nextFreeRefresh,
         refreshCost: 0,
@@ -468,7 +471,10 @@ export async function hireFromMarketplace(req, res) {
       success: true,
       message: 'Groom hired successfully',
       data: {
-        groom: { ...newGroom, sessionRate: Number(newGroom.sessionRate) },
+        groom: publicStaffRow('groom', {
+          ...newGroom,
+          sessionRate: Number(newGroom.sessionRate),
+        }),
         cost: hiringCost,
         remainingMoney: updatedUser.money,
       },

@@ -8,6 +8,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { hiredStaffFee, staffCareerLevel } from '../../../constants/staffLevels.mjs';
+import { publicStaffRow } from '../../../utils/staffPublicView.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 // Equoria-6p398.14 follow-up: a retired horse (21+, not in foal) is given no new rider.
 import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
@@ -76,17 +77,20 @@ export async function getUserRiders(req, res) {
       orderBy: { createdAt: 'asc' },
     });
 
-    const formatted = riders.map(r => ({
-      ...r,
-      // Equoria-nawn5, owner ruling q226: what this rider costs a week is its star
-      // level's price.
-      weeklyRate: hiredStaffFee(r),
-      name: `${r.firstName} ${r.lastName}`,
-      assignedHorseId: r.assignments[0]?.horseId ?? null,
-      hiredDate: r.createdAt?.toISOString?.() ?? r.createdAt,
-      totalCompetitions: r.totalCompetitions,
-      totalWins: r.totalWins,
-    }));
+    // Equoria-no441: allow-listed fields plus authored labels, never the whole row.
+    const formatted = riders.map(r =>
+      publicStaffRow('rider', {
+        ...r,
+        // Equoria-nawn5, owner ruling q226: what this rider costs a week is its star
+        // level's price.
+        weeklyRate: hiredStaffFee(r),
+        name: `${r.firstName} ${r.lastName}`,
+        assignedHorseId: r.assignments[0]?.horseId ?? null,
+        hiredDate: r.createdAt?.toISOString?.() ?? r.createdAt,
+        totalCompetitions: r.totalCompetitions,
+        totalWins: r.totalWins,
+      }),
+    );
 
     res.status(200).json({
       success: true,

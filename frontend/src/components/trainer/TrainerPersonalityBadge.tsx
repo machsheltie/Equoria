@@ -49,9 +49,10 @@ export const TRAINER_PERSONALITIES: Record<
 export const getTrainerPersonalityInfo = (personality: string) =>
   TRAINER_PERSONALITIES[personality] ?? {
     icon: '❓',
-    label: personality,
+    // Equoria-no441: an unlisted personality reads as words, never the stored value.
+    label: 'Hard to Read',
     badgeClass: 'bg-[var(--glass-surface-subtle-bg)] text-[var(--text-secondary)]',
-    description: 'Unknown personality type',
+    description: 'This trainer keeps their manner to themselves.',
   };
 
 interface TrainerPersonalityBadgeProps {

@@ -37,6 +37,7 @@ import { MAX_GROOMS_PER_USER } from '../../../config/groomConfig.mjs';
 import { CapExceededError } from '../groomErrors.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
+import { publicStaffRow, staffLabels } from '../../../utils/staffPublicView.mjs';
 import {
   FREE_AGENT_WHERE,
   listFreeAgents,
@@ -80,6 +81,7 @@ export async function listFreeAgentGrooms(req, res) {
           ...groom,
           sessionRate: Number(groom.sessionRate),
           weeklyFee: hiredStaffFee(groom),
+          ...staffLabels('groom', groom),
         })),
         total,
         pagination: { total, limit, offset: skip, hasMore: skip + limit < total },
@@ -320,7 +322,10 @@ export async function hireFreeAgent(req, res) {
       success: true,
       message: `Successfully hired ${result.groom.name}`,
       data: {
-        groom: { ...result.groom, sessionRate: Number(result.groom.sessionRate) },
+        groom: publicStaffRow('groom', {
+          ...result.groom,
+          sessionRate: Number(result.groom.sessionRate),
+        }),
         cost: result.hiringCost,
         remainingMoney: result.moneyAfter,
       },

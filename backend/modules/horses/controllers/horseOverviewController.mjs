@@ -12,6 +12,7 @@ import {
   findKeysetPage,
   readKeysetParams,
 } from '../../../utils/paginationHelper.mjs';
+import { staffLabels, staffPersonalityLabel } from '../../../utils/staffPublicView.mjs';
 
 /**
  * GET /api/horses/:horseId/competition-history
@@ -319,6 +320,8 @@ export async function getHorsePersonalityImpact(req, res) {
           experience: groom.experience,
           sessionRate: groom.sessionRate,
           isActive: groom.isActive,
+          // Equoria-no441: authored words beside the stored values.
+          ...staffLabels('groom', groom),
         },
         // Read for the sort below only; never sent (Equoria-2wdp8).
         rank: compatibility.traitModifierScore,
@@ -347,7 +350,11 @@ export async function getHorsePersonalityImpact(req, res) {
     // grooms suit the horse, never the modifiers, bonuses or bond threshold
     // behind it. Which personalities suit this temperament, in words only.
     const generalCompatibility = getCompatibleGroomsForTemperament(horse.temperament).map(
-      ({ personality, description }) => ({ personality, description }),
+      ({ personality, description }) => ({
+        personality,
+        personalityLabel: staffPersonalityLabel(personality),
+        description,
+      }),
     );
 
     logger.info(

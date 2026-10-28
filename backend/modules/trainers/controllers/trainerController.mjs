@@ -6,6 +6,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { hiredStaffFee, staffCareerLevel } from '../../../constants/staffLevels.mjs';
+import { publicStaffRow, staffLabels } from '../../../utils/staffPublicView.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 // Equoria-6p398.14 follow-up: a retired horse (21+, not in foal) is given no new trainer.
 import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
@@ -50,14 +51,18 @@ export async function getUserTrainers(req, res) {
       orderBy: { createdAt: 'asc' },
     });
 
-    const formatted = trainers.map(t => ({
-      ...t,
-      // Equoria-nawn5, owner ruling q226: what one session costs is the trainer's
-      // star level's price.
-      sessionRate: hiredStaffFee(t),
-      name: `${t.firstName} ${t.lastName}`,
-      assignedHorseId: t.assignments[0]?.horseId ?? null,
-    }));
+    // Equoria-no441: allow-listed fields plus authored labels; the undiscovered
+    // traits in discoverySlots never leave the server.
+    const formatted = trainers.map(t =>
+      publicStaffRow('trainer', {
+        ...t,
+        // Equoria-nawn5, owner ruling q226: what one session costs is the trainer's
+        // star level's price.
+        sessionRate: hiredStaffFee(t),
+        name: `${t.firstName} ${t.lastName}`,
+        assignedHorseId: t.assignments[0]?.horseId ?? null,
+      }),
+    );
 
     res.status(200).json({
       success: true,
@@ -134,6 +139,7 @@ export async function getTrainerAssignments(req, res) {
       trainerName: `${a.trainer.firstName} ${a.trainer.lastName}`,
       // Equoria-r8a6h: the horse page shows who trains it and the per-session fee.
       trainerPersonality: a.trainer.personality,
+      trainerPersonalityLabel: staffLabels('trainer', a.trainer).personalityLabel,
       trainerSessionRate: hiredStaffFee(a.trainer),
       // Equoria-nawn5: the trainer's star level, shown with the name.
       trainerStarLevel: a.trainer.starLevel,

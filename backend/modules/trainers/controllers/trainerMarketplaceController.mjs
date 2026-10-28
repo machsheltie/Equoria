@@ -25,6 +25,7 @@ import { getTrainerRosterCap } from '../config/trainerConfig.mjs';
 import { RosterCapExceededError, StaleOfferError } from '../../../errors/index.mjs';
 import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
 import { offerAtLevelPrice, offerLevelAndFee } from '../../../constants/staffLevels.mjs';
+import { publicStaffRow } from '../../../utils/staffPublicView.mjs';
 // Equoria-1poxi: a hire may carry a horseId; the assignment commits with the hire.
 import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
 // Equoria-bvddn.19: remove the hired offer INSIDE the hire transaction via a
@@ -93,7 +94,9 @@ export async function getTrainerMarketplace(req, res) {
       message: 'Trainer marketplace retrieved successfully',
       data: {
         // Owner ruling q226: every offer shows the price its sessions charge.
-        trainers: offers.map(o => offerAtLevelPrice('trainer', o, 'sessionRate', o.sessionRate)),
+        trainers: offers.map(o =>
+          publicStaffRow('trainer', offerAtLevelPrice('trainer', o, 'sessionRate', o.sessionRate)),
+        ),
         lastRefresh,
         nextFreeRefresh,
         refreshCost,
@@ -197,7 +200,7 @@ export async function refreshTrainerMarketplace(req, res) {
       success: true,
       message: 'Trainer marketplace refreshed successfully',
       data: {
-        trainers: updated.offers,
+        trainers: updated.offers.map(o => publicStaffRow('trainer', o)),
         lastRefresh: updated.lastRefresh,
         nextFreeRefresh,
         refreshCost: 0,
@@ -384,7 +387,10 @@ export async function hireTrainerFromMarketplace(req, res) {
       success: true,
       message: 'Trainer hired successfully',
       data: {
-        trainer: { ...newTrainer, name: `${newTrainer.firstName} ${newTrainer.lastName}` },
+        trainer: publicStaffRow('trainer', {
+          ...newTrainer,
+          name: `${newTrainer.firstName} ${newTrainer.lastName}`,
+        }),
         // Hiring is free (owner ruling 2026-10-22, Equoria-3kegj).
         cost: 0,
         ...(newAssignment ? { assignment: newAssignment } : {}),
