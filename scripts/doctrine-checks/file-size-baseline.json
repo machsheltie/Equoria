@@ -5,7 +5,7 @@
   "backend/__tests__/security-attack-simulation.test.mjs": 935,
   "backend/middleware/rateLimiting.mjs": 884,
   "backend/middleware/requestBodySecurity.mjs": 884,
-  "backend/modules/admin/controllers/adminController.mjs": 641,
+  "backend/modules/admin/controllers/adminController.mjs": 620,
   "backend/modules/community/__tests__/clubController.test.mjs": 981,
   "backend/modules/competition/__tests__/showController.test.mjs": 921,
   "backend/modules/health/__tests__/session-lifecycle.test.mjs": 860,

@@ -25,7 +25,7 @@ import { getActiveConnectionMetrics } from '../../../services/eventBus.mjs';
 import { getMultiInstanceStatus } from '../../../utils/sseMultiInstanceGuard.mjs';
 import { runFoalingJob } from '../../horses/index.mjs';
 import { updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
-import { pruneOldNotifications } from '../../../utils/notificationService.mjs';
+import { pruneNotificationsForAllUsers } from '../../../utils/notificationService.mjs';
 import { getTraitRevelationAnalytics } from '../../traits/index.mjs';
 import { can } from '../../staff/index.mjs';
 import { getUserDocumentationService } from '../../users/index.mjs';
@@ -359,17 +359,20 @@ export async function triggerFoaling(req, res) {
  * that user's NEXT notification is created. Accounts that have not inserted a
  * new notification since the cap shipped keep their pre-cap backlog forever.
  *
- * This admin-only endpoint iterates over ALL users and calls the existing,
- * already-scoped `pruneOldNotifications(userId)` for each — reclaiming storage
- * immediately. It introduces NO new delete logic: every delete is the existing
- * per-user, id-scoped two-step prune. No unscoped deleteMany.
+ * This admin-only endpoint walks the users in id order and runs the existing,
+ * already-scoped per-user prune for each (pruneNotificationsForAllUsers). It
+ * introduces NO new delete logic and no unscoped deleteMany; each user's prune
+ * is its own short transaction.
  *
- * Users are streamed in keyset-paginated batches (ordered by id) so the whole
- * user table is never loaded into memory at once.
+ * Equoria-ctyia: one request stops taking new users once its time budget
+ * (backfillTimeBudgetMs, inside the 30s request timeout) has passed and
+ * returns `nextCursor`; send it back as `cursor` to carry on. `done` is true
+ * and `nextCursor` null once every user has been processed.
  *
- * Body: { batchSize?: number }  — users per page (default 500, 1–5000).
+ * Body: { batchSize?: number, cursor?: string } — users per page (default
+ * 500, 1–5000); the `nextCursor` of a previous call.
  *
- * Returns: { usersProcessed, usersPruned, rowsPruned }.
+ * Returns: { usersProcessed, usersPruned, rowsPruned, nextCursor, done }.
  */
 export async function backfillPruneNotifications(req, res) {
   try {
@@ -379,51 +382,27 @@ export async function backfillPruneNotifications(req, res) {
         .status(400)
         .json({ success: false, message: 'batchSize must be an integer between 1 and 5000' });
     }
+    const cursor = req.body?.cursor ?? null;
+    if (cursor !== null && (typeof cursor !== 'string' || cursor === '' || cursor.length > 64)) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'cursor must be the nextCursor of a previous call' });
+    }
 
     logger.info(
       `[adminController] POST /api/v1/admin/notifications/backfill-prune — batchSize=${batchSize}`,
     );
 
-    let usersProcessed = 0;
-    let usersPruned = 0;
-    let rowsPruned = 0;
-    let cursorId = null;
-
-    // Keyset pagination over the user id (string UUID). Ordering by id is
-    // stable and avoids the OFFSET drift that occurs if rows change mid-scan.
-    for (;;) {
-      const users = await prisma.user.findMany({
-        ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
-        take: batchSize,
-        orderBy: { id: 'asc' },
-        select: { id: true },
-      });
-
-      if (users.length === 0) {
-        break;
-      }
-
-      for (const { id } of users) {
-        // Reuse the existing per-user, id-scoped prune. Never throws; returns
-        // the count of rows it deleted for this user.
-        const deleted = await pruneOldNotifications(id);
-        usersProcessed += 1;
-        if (deleted > 0) {
-          usersPruned += 1;
-          rowsPruned += deleted;
-        }
-      }
-
-      cursorId = users[users.length - 1].id;
-      if (users.length < batchSize) {
-        break;
-      }
-    }
+    const result = await pruneNotificationsForAllUsers({ batchSize, cursor });
+    const done = result.nextCursor === null;
+    const summary = `Processed ${result.usersProcessed} user(s), pruned ${result.rowsPruned} row(s) across ${result.usersPruned} user(s).`;
 
     res.json({
       success: true,
-      message: `Notification backfill prune complete. Processed ${usersProcessed} user(s), pruned ${rowsPruned} row(s) across ${usersPruned} user(s).`,
-      data: { usersProcessed, usersPruned, rowsPruned },
+      message: done
+        ? `Notification backfill prune complete. ${summary}`
+        : `Notification backfill prune paused. ${summary} Send nextCursor as cursor to continue.`,
+      data: { ...result, done },
     });
   } catch (error) {
     logger.error(

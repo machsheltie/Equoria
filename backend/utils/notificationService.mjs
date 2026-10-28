@@ -18,7 +18,9 @@ import { publishUserEvent } from '../services/eventBus.mjs';
 
 // Per-user retention cap. Matches the existing read-side `take: 100` so the
 // table size stays bounded at exactly what the UI can ever surface.
-export const NOTIFICATION_RETENTION_COUNT = 100;
+export const notificationRetentionCount = 100;
+// Older spelling, still imported by existing callers.
+export const NOTIFICATION_RETENTION_COUNT = notificationRetentionCount;
 
 /**
  * Prune a user's Notification rows down to the newest
@@ -26,28 +28,98 @@ export const NOTIFICATION_RETENTION_COUNT = 100;
  *
  * Uses a two-step approach (findMany ids past offset, then deleteMany by
  * id) so the deletion target is bounded by the read snapshot — a race with
- * a concurrent inserter cannot delete the newer row.
+ * a concurrent inserter cannot delete the newer row. Both steps run in one
+ * short transaction.
  *
  * Returns the count of deleted rows. Never throws — failures are logged.
  */
 export async function pruneOldNotifications(userId, retentionCount = NOTIFICATION_RETENTION_COUNT) {
   try {
-    const stale = await prisma.notification.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      skip: retentionCount,
-      select: { id: true },
+    return await prisma.$transaction(async tx => {
+      const stale = await tx.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        skip: retentionCount,
+        select: { id: true },
+      });
+      if (stale.length === 0) {
+        return 0;
+      }
+      const ids = stale.map(row => row.id);
+      const result = await tx.notification.deleteMany({ where: { id: { in: ids } } });
+      return result.count;
     });
-    if (stale.length === 0) {
-      return 0;
-    }
-    const ids = stale.map(row => row.id);
-    const result = await prisma.notification.deleteMany({ where: { id: { in: ids } } });
-    return result.count;
   } catch (err) {
     logger.error(`[notificationService] prune failed: ${err.message}`);
     return 0;
   }
+}
+
+/**
+ * Equoria-y9n99 — coalesce the post-insert prune per user.
+ *
+ * Every insert used to fire its own prune, so a producer that writes many
+ * notifications for one user in a row ran one redundant prune per row. The
+ * scheduler keeps at most one prune per user in flight:
+ *   - a request while none is pending starts one on the next turn of the
+ *     event loop, so every request made before it starts shares it;
+ *   - a request while one is running marks it to run once more after it
+ *     finishes, so the last insert of a burst is always followed by a full
+ *     prune.
+ * The retention rule is unchanged: the same pruneOldNotifications runs after
+ * the last insert, keeping the newest notificationRetentionCount rows.
+ *
+ * @param {(userId: string) => Promise<number>} pruneFn
+ */
+export function createPruneScheduler(pruneFn = pruneOldNotifications) {
+  const pending = new Map();
+
+  const runFor = async (userId, state) => {
+    await new Promise(resolve => setImmediate(resolve));
+    do {
+      state.again = false;
+      try {
+        await pruneFn(userId);
+      } catch (err) {
+        logger.error(`[notificationService] scheduled prune failed: ${err.message}`);
+      }
+    } while (state.again);
+    // Same synchronous turn as the loop's last check: a request cannot slip in
+    // between deciding to stop and leaving the map.
+    pending.delete(userId);
+  };
+
+  return {
+    schedule(userId) {
+      const existing = pending.get(userId);
+      if (existing) {
+        existing.again = true;
+        return existing.done;
+      }
+      const state = { again: false, done: null };
+      pending.set(userId, state);
+      state.done = runFor(userId, state);
+      return state.done;
+    },
+    /** Resolves once every prune scheduled so far has finished. */
+    async settle() {
+      while (pending.size > 0) {
+        await Promise.all([...pending.values()].map(state => state.done));
+      }
+    },
+  };
+}
+
+const defaultPruneScheduler = createPruneScheduler();
+
+/** Ask for a retention prune of one user's notifications. Never throws. */
+export function schedulePrune(userId) {
+  return defaultPruneScheduler.schedule(userId);
+}
+
+/** Resolves once every scheduled post-insert prune has finished. */
+export function settleScheduledPrunes() {
+  return defaultPruneScheduler.settle();
 }
 
 /**
@@ -148,12 +220,12 @@ export function finalizeNotificationAfterCommit(userId, type, payload) {
     logger.error(`[notificationService] event bus publish failed: ${err.message}`);
   }
 
-  // Prune AFTER successful insert. Non-blocking fire-and-forget — if the
-  // prune fails, the insert is still successful and the user has at most
-  // one extra row, which the next insert will clean up.
-  pruneOldNotifications(userId).catch(err => {
-    logger.error(`[notificationService] prune fire-and-forget failed: ${err.message}`);
-  });
+  // Prune AFTER successful insert. Non-blocking — if the prune fails, the
+  // insert is still successful and the user has at most a few extra rows,
+  // which the next insert will clean up. Equoria-y9n99: a burst of inserts for
+  // one user (a payroll loop, several placements in one show) shares one
+  // prune instead of firing one per insert; see schedulePrune.
+  schedulePrune(userId);
 }
 
 export async function createNotification(userId, type, payload) {
@@ -168,4 +240,60 @@ export async function createNotification(userId, type, payload) {
   }
 
   finalizeNotificationAfterCommit(userId, type, payload);
+}
+
+// Equoria-ctyia: one backfill request stops taking new users after this long,
+// well inside the 30s request timeout, and hands back a cursor to resume from.
+export const backfillTimeBudgetMs = 20_000;
+
+/**
+ * Prune every user's notifications down to the retention cap (ADR-007
+ * one-time backfill), in bounded, resumable steps.
+ *
+ * Users are read in id order, `batchSize` at a time, starting after `cursor`.
+ * Each user's prune is its own short transaction (pruneOldNotifications), so
+ * no long transaction is ever held. Once `timeBudgetMs` has passed the scan
+ * stops after the current user and returns `nextCursor` (the last user id it
+ * processed); calling again with that cursor carries on. `nextCursor` is null
+ * when every user has been processed. At least one user is processed per
+ * call, so a resumed scan always makes progress.
+ *
+ * @param {{batchSize: number, cursor?: string|null, timeBudgetMs?: number}} options
+ * @returns {Promise<{usersProcessed: number, usersPruned: number, rowsPruned: number, nextCursor: string|null}>}
+ */
+export async function pruneNotificationsForAllUsers({
+  batchSize,
+  cursor = null,
+  timeBudgetMs = backfillTimeBudgetMs,
+}) {
+  const startedAt = Date.now();
+  const outcome = { usersProcessed: 0, usersPruned: 0, rowsPruned: 0, nextCursor: null };
+  let afterId = cursor;
+
+  for (;;) {
+    const users = await prisma.user.findMany({
+      ...(afterId ? { where: { id: { gt: afterId } } } : {}),
+      take: batchSize,
+      orderBy: { id: 'asc' },
+      select: { id: true },
+    });
+
+    for (const { id } of users) {
+      const deleted = await pruneOldNotifications(id);
+      outcome.usersProcessed += 1;
+      if (deleted > 0) {
+        outcome.usersPruned += 1;
+        outcome.rowsPruned += deleted;
+      }
+      afterId = id;
+      if (Date.now() - startedAt >= timeBudgetMs) {
+        outcome.nextCursor = id;
+        return outcome;
+      }
+    }
+
+    if (users.length < batchSize) {
+      return outcome;
+    }
+  }
 }
