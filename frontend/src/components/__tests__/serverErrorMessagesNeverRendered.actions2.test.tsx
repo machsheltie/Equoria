@@ -119,6 +119,28 @@ describe('TrainingTab — failed training (Equoria-mr1kq)', () => {
     server.use(
       http.get(`${base}/api/v1/training/status/:horseId`, () =>
         HttpResponse.json({ success: true, data: [] })
+      ),
+      // Owner ruling 2026-10-26 (q81, Equoria-r8a6h): a trainer is required to
+      // train; a horse with none is offered "Assign Trainer" instead of the
+      // discipline picker. This horse is otherwise eligible, so it has a
+      // fee-free fixture trainer.
+      http.get(`${base}/api/v1/trainers/assignments`, () =>
+        HttpResponse.json({
+          success: true,
+          data: [
+            {
+              id: 1,
+              trainerId: 1,
+              horseId: horse.id,
+              horseName: horse.name,
+              trainerName: 'TestFixture-Trainer',
+              trainerPersonality: 'focused',
+              trainerSessionRate: 0,
+              startDate: '2026-01-01T00:00:00Z',
+              isActive: true,
+            },
+          ],
+        })
       )
     );
     const user = userEvent.setup();
