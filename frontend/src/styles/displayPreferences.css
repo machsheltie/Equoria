@@ -1,0 +1,59 @@
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  DISPLAY PREFERENCES — the player's Settings switches (Equoria-apfwp)        */
+/*                                                                             */
+/*  Owner ruling 2026-10-28 (q247): the Display switches must work.            */
+/*  DisplayPreferencesApplier writes one root attribute per switch that is on; */
+/*  these rules give each attribute its effect. Values stay in token terms.    */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+/* Reduced Motion — the same policy MOTION.md applies to the operating-system
+   preference, switched on from Settings instead: duration tokens zero out,
+   decorative and celebration animation stops (end states still render), and
+   focus rings stay visible. Loading spinners (.animate-spin) keep turning —
+   they are the loading signal itself. */
+:root[data-reduced-motion='true'] {
+  --duration-fast: 0ms;
+  --duration-normal: 0ms;
+  --duration-slow: 0ms;
+  --duration-reveal: 0ms;
+  --duration-cinematic: 0ms;
+  --ease-reward: linear;
+  --skeleton-shimmer-duration: 0s;
+}
+
+:root[data-reduced-motion='true'] *:not(.animate-spin),
+:root[data-reduced-motion='true'] *::before,
+:root[data-reduced-motion='true'] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+:root[data-reduced-motion='true'] .glass-panel-interactive:hover,
+:root[data-reduced-motion='true'] .glass-panel-interactive:focus-visible {
+  transform: none;
+}
+
+:root[data-reduced-motion='true'] :focus-visible {
+  outline: 2px solid var(--gold-400) !important;
+  outline-offset: 2px !important;
+}
+
+/* High Contrast — supporting and muted text are lifted toward the primary
+   text colour, panels become near-opaque so scene artwork no longer shows
+   through behind text, and borders are drawn clearly.
+   On --bg-night-sky (#0a1628): #d6e2f2 = 13.83:1, #b8c6d8 = 10.45:1. */
+:root[data-high-contrast='true'] {
+  --text-secondary: #d6e2f2;
+  --text-muted: #b8c6d8;
+  --glass-bg: rgba(10, 22, 40, 0.94);
+  --glass-surface-heavy-bg: rgba(10, 22, 40, 0.97);
+  --glass-surface-subtle-bg: rgba(10, 22, 40, 0.9);
+  --glass-border: rgba(226, 232, 240, 0.6);
+}
+
+/* Compact Cards — horse cards drop their 12-stat grid, so more horses fit on
+   screen; name, portrait, breed, age, traits and care strip remain. */
+:root[data-compact-cards='true'] [data-horse-card-stats] {
+  display: none;
+}

@@ -1,10 +1,15 @@
 /**
  * Settings Persistence E2E — Story 21S-5 (Equoria-9vat)
  *
- * Verifies end-to-end that the /settings Notifications and Display preference
- * toggles persist across full page reloads. The test exercises the real
+ * Verifies end-to-end that the /settings Display preference toggles persist
+ * across full page reloads and take effect on the page. The test exercises the real
  * PATCH /api/v1/auth/profile/preferences endpoint and confirms the value is
  * hydrated from the server on reload — not from localStorage.
+ *
+ * Owner ruling 2026-10-28 (q247, Equoria-apfwp): the Display switches work and
+ * the Notifications switches are removed. Old contract: Test 1 toggled the
+ * emailCompetition notification switch and checked it persisted; that switch no
+ * longer exists, so Test 1 now checks the section is gone.
  *
  * Pattern: register + login via API (same style as session-lifetime.spec.ts),
  * then drive the browser through the UI.
@@ -175,68 +180,17 @@ test.describe('Settings preferences persistence (21S-5)', () => {
   }
 
   // ---------------------------------------------------------------------------
-  // Test 1: emailCompetition preference — toggle off, reload, verify persisted
+  // Test 1: there is no Notifications section (owner ruling q247)
   // ---------------------------------------------------------------------------
-  test('toggling emailCompetition off persists after full page reload', async ({ page }) => {
+  test('Settings has no Notifications switches', async ({ page }) => {
     test.setTimeout(120000);
 
     await loginViaUI(page);
 
-    // Navigate to /settings
     await page.goto(FRONTEND + '/settings', { waitUntil: 'load', timeout: 30000 });
     await expect(page.locator('[data-testid="settings-page"]')).toBeVisible({ timeout: 15000 });
-
-    // Click the Notifications nav tab
-    await page.locator('[data-testid="settings-nav-notifications"]').click();
-    await expect(page.locator('[data-testid="settings-notifications"]')).toBeVisible({
-      timeout: 10000,
-    });
-
-    // Find the emailCompetition toggle (role=switch inside the Toggle wrapper)
-    const emailCompetitionToggle = page
-      .locator('[data-testid="notif-email-competition"]')
-      .locator('button[role="switch"]');
-
-    // emailCompetition defaults to true — verify it's currently on
-    await expect(emailCompetitionToggle).toHaveAttribute('aria-checked', 'true', { timeout: 5000 });
-
-    // Intercept PATCH to assert the payload — 21R compliant (assertion only, no route override)
-    const patchPromise = page.waitForRequest(
-      (req) => req.url().includes('/api/v1/auth/profile/preferences') && req.method() === 'PATCH',
-      { timeout: 15000 }
-    );
-
-    // Click the toggle to turn emailCompetition OFF
-    await emailCompetitionToggle.click();
-
-    // Wait for the PATCH to fire and assert it contains { emailCompetition: false }
-    const patchRequest = await patchPromise;
-    const patchBody = patchRequest.postDataJSON() as Record<string, unknown>;
-    expect(patchBody).toMatchObject({ emailCompetition: false });
-
-    // Wait for the PATCH response to complete before reloading
-    await page.waitForResponse(
-      (res) =>
-        res.url().includes('/api/v1/auth/profile/preferences') &&
-        res.request().method() === 'PATCH',
-      { timeout: 15000 }
-    );
-
-    // ── Reload and verify the preference was persisted on the server ──────────
-    await page.goto(FRONTEND + '/settings', { waitUntil: 'load', timeout: 30000 });
-    await expect(page.locator('[data-testid="settings-page"]')).toBeVisible({ timeout: 15000 });
-
-    // Navigate back to notifications tab after reload
-    await page.locator('[data-testid="settings-nav-notifications"]').click();
-    await expect(page.locator('[data-testid="settings-notifications"]')).toBeVisible({
-      timeout: 10000,
-    });
-
-    // The toggle must still be OFF — hydrated from server, not localStorage
-    const toggleAfterReload = page
-      .locator('[data-testid="notif-email-competition"]')
-      .locator('button[role="switch"]');
-    await expect(toggleAfterReload).toHaveAttribute('aria-checked', 'false', { timeout: 10000 });
+    await expect(page.locator('[data-testid="settings-nav-display"]')).toBeVisible();
+    await expect(page.locator('[data-testid="settings-nav-notifications"]')).toHaveCount(0);
   });
 
   // ---------------------------------------------------------------------------
@@ -298,5 +252,8 @@ test.describe('Settings preferences persistence (21S-5)', () => {
       .locator('[data-testid="display-reduced-motion"]')
       .locator('button[role="switch"]');
     await expect(toggleAfterReload).toHaveAttribute('aria-checked', 'true', { timeout: 10000 });
+
+    // Equoria-apfwp: the saved switch is applied to the page, not only stored.
+    await expect(page.locator('html')).toHaveAttribute('data-reduced-motion', 'true');
   });
 });

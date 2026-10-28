@@ -14,6 +14,7 @@
  */
 import * as React from 'react';
 import { mergeRefs, composeEventHandlers } from '@/lib/ref-utils';
+import { prefersReducedMotion } from '@/lib/displayPreferences';
 
 /* -------------------------------------------------------------------------- */
 /* Native Slot — single-child render-merge for asChild (Trigger/Close).       */
@@ -119,15 +120,6 @@ export function lockBodyScroll(): () => void {
 
 /** Hard cap so a stuck/never-firing animation can never pin the dialog open. */
 const EXIT_ANIMATION_FALLBACK_MS = 1000;
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
-  try {
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  } catch {
-    return false;
-  }
-}
 
 /** True when the node has at least one running CSS animation we should await. */
 function hasRunningAnimation(node: HTMLElement | null): boolean {

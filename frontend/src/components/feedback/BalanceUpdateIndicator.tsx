@@ -24,6 +24,7 @@
 import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import Currency from '@/components/ui/Currency';
+import { prefersReducedMotion } from '@/lib/displayPreferences';
 
 /**
  * Props interface for BalanceUpdateIndicator component
@@ -120,9 +121,7 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
     }
 
     // Check for reduced motion preference
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    if (prefersReducedMotion) {
+    if (prefersReducedMotion()) {
       // Instant update for reduced motion
       setDisplayValue(newValue);
       setIsAnimating(false);

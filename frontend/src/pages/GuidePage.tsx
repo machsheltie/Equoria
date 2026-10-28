@@ -29,6 +29,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import PageHero from '@/components/layout/PageHero';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Surface } from '@/components/ui/Surface';
+import { prefersReducedMotion } from '@/lib/displayPreferences';
 import {
   guideClosingLine,
   guideTitle,
@@ -227,9 +228,7 @@ export default function GuidePage() {
     const target = document.getElementById(id);
     if (!target) return;
     const heading = id === topId ? target : document.getElementById(`${id}-title`);
-    const reduceMotion =
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduceMotion = prefersReducedMotion();
     target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
     heading?.focus({ preventScroll: true });
   }, [hash, key]);

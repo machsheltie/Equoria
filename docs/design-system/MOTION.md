@@ -6,8 +6,10 @@
 **Enforcement:** `frontend/src/components/ui/__tests__/motionPolicy.sentinel.test.ts`
 
 Every transition/animation in the frontend belongs to exactly one class, and
-each class has a defined reduced-motion behavior. `prefers-reduced-motion:
-reduce` is the only switch — there is no app-level toggle.
+each class has a defined reduced-motion behavior. Two switches turn it on:
+the operating system's `prefers-reduced-motion: reduce`, and the Reduced
+Motion switch in Settings (owner ruling 2026-10-28, q247), which sets
+`data-reduced-motion="true"` on the document root.
 
 **Motion principle:** motion marks interaction, spatial transition, or a
 meaningful game event. It is not a generic polish layer applied to every card,
@@ -52,6 +54,10 @@ delight than scattered SaaS micro-interactions.
   Epic 30-5 safety net, glass-panel-interactive) + the global policy block
   ("Motion policy: global reduced-motion rules").
 - `frontend/src/lib/soundManager.ts` — sound respects reduced motion too.
+- `frontend/src/styles/displayPreferences.css` — the Settings switch: the same
+  tokens zeroed and animation/transition stopped (spinners kept) under
+  `:root[data-reduced-motion='true']`; `frontend/src/lib/displayPreferences.ts`
+  `prefersReducedMotion()` answers for JavaScript (either switch).
 
 ## Changelog
 
@@ -59,3 +65,4 @@ delight than scattered SaaS micro-interactions.
 | ---------- | --------------------------------------------------------------------------------------------------------------- |
 | 2026-06-10 | Initial motion classification and reduced-motion policy                                                         |
 | 2026-08-19 | Removed toast/bounce approval, added event-weighted motion principle, and aligned authority with PRODUCT/DESIGN |
+| 2026-10-28 | Settings Reduced Motion switch made live (owner ruling q247, Equoria-apfwp)                                     |

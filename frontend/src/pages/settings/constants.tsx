@@ -2,13 +2,13 @@
  * Settings constants + shared Toggle (extracted from SettingsPage — Equoria-qk3vi)
  *
  * The reusable Toggle switch, the sidebar `sections` config, the
- * DEFAULT_PREFERENCES baseline, and the notification/display key unions.
+ * DEFAULT_PREFERENCES baseline, and the display key union.
  * Extracted verbatim so the page container and its section components share
  * one source of truth. Uses JSX (section icons + Toggle) so this is .tsx.
  */
 
 import React from 'react';
-import { User, Bell, Monitor, Volume2 } from 'lucide-react';
+import { User, Monitor, Volume2 } from 'lucide-react';
 import { Switch } from '@/components/ui/form';
 import type { UserPreferences } from '@/lib/api-client';
 
@@ -56,7 +56,6 @@ export interface SettingsSection {
 
 export const sections: SettingsSection[] = [
   { id: 'account', title: 'Account', icon: <User className="w-4 h-4" /> },
-  { id: 'notifications', title: 'Notifications', icon: <Bell className="w-4 h-4" /> },
   { id: 'display', title: 'Display', icon: <Monitor className="w-4 h-4" /> },
   { id: 'sound', title: 'Sound', icon: <Volume2 className="w-4 h-4" /> },
 ];
@@ -78,11 +77,4 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   soundEnabled: false,
 };
 
-export type NotificationKey =
-  | 'emailCompetition'
-  | 'emailBreeding'
-  | 'emailSystem'
-  | 'inAppTraining'
-  | 'inAppAchievements'
-  | 'inAppNews';
-export type DisplayKey = 'reducedMotion' | 'highContrast' | 'compactCards';
+export type { DisplayKey } from '@/lib/displayPreferences';

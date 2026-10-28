@@ -1,14 +1,16 @@
 /**
  * Settings Page
  *
- * Story 9B-4: Settings Page — account preferences, notification toggles,
- * and display settings for the Equoria application.
+ * Story 9B-4: Settings Page — account preferences and display settings for
+ * the Equoria application.
  *
  * Sections:
  * 1. Account — username, recovery address, password change
- * 2. Notifications — email and in-app notification toggles
- * 3. Display — theme and accessibility preferences
- * 4. Sound — sound-effects master toggle + previews
+ * 2. Display — accessibility preferences (applied by DisplayPreferencesApplier)
+ * 3. Sound — sound-effects master toggle + previews
+ *
+ * Owner ruling 2026-10-28 (q247, Equoria-apfwp): the Display switches work and
+ * the Notifications switches are removed — nothing ever read them.
  *
  * Equoria-ocn9 (2026-04-23): Account section is no longer a façade.
  * - Inputs are controlled and seeded from useAuth().user.
@@ -23,7 +25,7 @@
  * Equoria-qk3vi: decomposed under the 600-line cap. This file is now the
  * container — it owns ALL state, hooks, and mutation handlers and passes
  * them as props to presentational section components under `pages/settings/`
- * (AccountSection, NotificationsSection, DisplaySection, SoundSection).
+ * (AccountSection, DisplaySection, SoundSection).
  * Behavior is unchanged.
  */
 
@@ -39,14 +41,8 @@ import { useUpdatePreferences } from '@/hooks/api/useUpdatePreferences';
 import { useUpdateProfile, useChangePassword, useLogout } from '@/hooks/useAuth';
 import { useSound } from '@/hooks/useSound';
 import type { UserPreferences } from '@/lib/api-client';
-import {
-  sections,
-  DEFAULT_PREFERENCES,
-  type NotificationKey,
-  type DisplayKey,
-} from './settings/constants';
+import { sections, DEFAULT_PREFERENCES, type DisplayKey } from './settings/constants';
 import { AccountSection } from './settings/AccountSection';
-import { NotificationsSection } from './settings/NotificationsSection';
 import { DisplaySection } from './settings/DisplaySection';
 import { SoundSection } from './settings/SoundSection';
 
@@ -193,7 +189,7 @@ const SettingsPage: React.FC = () => {
     );
   };
 
-  // -------- Preferences (notifications + display) --------
+  // -------- Preferences (display + sound) --------
   const merged: UserPreferences = {
     ...DEFAULT_PREFERENCES,
     ...(user?.preferences ?? {}),
@@ -209,14 +205,6 @@ const SettingsPage: React.FC = () => {
     }
   }, [serverSoundEnabled, setSoundEnabledRef]);
 
-  const notifications = {
-    emailCompetition: merged.emailCompetition,
-    emailBreeding: merged.emailBreeding,
-    emailSystem: merged.emailSystem,
-    inAppTraining: merged.inAppTraining,
-    inAppAchievements: merged.inAppAchievements,
-    inAppNews: merged.inAppNews,
-  };
   const display = {
     reducedMotion: merged.reducedMotion,
     highContrast: merged.highContrast,
@@ -230,10 +218,6 @@ const SettingsPage: React.FC = () => {
         toast.error(`Couldn't save preference: ${msg}`);
       },
     });
-  };
-
-  const setNotif = (key: NotificationKey) => (val: boolean) => {
-    persist({ [key]: val } as Partial<UserPreferences>);
   };
 
   const setDisp = (key: DisplayKey) => (val: boolean) => {
@@ -301,10 +285,6 @@ const SettingsPage: React.FC = () => {
                 onResetPasswordForm={resetPasswordForm}
                 isChangingPassword={changePassword.isPending}
               />
-            )}
-
-            {activeSection === 'notifications' && (
-              <NotificationsSection notifications={notifications} setNotif={setNotif} />
             )}
 
             {activeSection === 'display' && <DisplaySection display={display} setDisp={setDisp} />}

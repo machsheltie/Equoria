@@ -4,6 +4,9 @@
 /* Equoria — Canonical design token system (UX spec §Design Token System) */
 @import './styles/tokens.css';
 
+/* Equoria — the player's Display switches in Settings (Equoria-apfwp) */
+@import './styles/displayPreferences.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

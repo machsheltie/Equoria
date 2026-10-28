@@ -203,7 +203,7 @@ export function HorseCard({
 
       {/* Stats — compact 4×3 grid */}
       {!hideStats && (
-        <div className="grid grid-cols-4 gap-x-3 gap-y-1 px-3 pt-3">
+        <div className="grid grid-cols-4 gap-x-3 gap-y-1 px-3 pt-3" data-horse-card-stats>
           {STAT_KEYS.map(({ label, key }) => (
             <div key={label} className="flex items-center justify-between min-w-0">
               <span className="text-2xs text-[var(--text-secondary)] uppercase tracking-wider font-medium">

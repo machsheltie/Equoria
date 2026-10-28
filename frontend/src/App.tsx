@@ -13,6 +13,7 @@ import AppCrashFallback from '@/components/AppCrashFallback';
 import GallopingLoader from '@/components/ui/GallopingLoader';
 import { RewardToastProvider } from '@/components/feedback';
 import { CelestialThemeProvider } from '@/components/theme/CelestialThemeProvider';
+import { DisplayPreferencesApplier } from '@/components/DisplayPreferencesApplier';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 // Eager, not lazy: a Suspense fallback here would tell /steward apart from an
 // unknown address (STAFF-CR-17).
@@ -67,6 +68,8 @@ const App = () => (
             <BrowserRouter>
               {/* Applies body.celestial class — reads ?theme= URL param + localStorage */}
               <CelestialThemeProvider />
+              {/* Settings Display switches -> document root attributes (Equoria-apfwp) */}
+              <DisplayPreferencesApplier />
               {/* Return overlay — shown after 4+ hour absence (authenticated users only).
                   fallback={null} is deliberate (doctrine section 5 exemption): until this lazy
                   chunk loads there is no overlay to stand in for — the player is not waiting
