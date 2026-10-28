@@ -167,7 +167,7 @@ The `sonner`, Recharts, Chart.js, and `react-chartjs-2` dependencies and their c
 
 ## Feedback and Irreversibility
 
-Cooldowns, breeding, retirement, sales, and money moves deserve a clear cost before commitment and a clear receipt afterward. Routine destructive or transactional confirmations may use a restrained accessible dialog. Foal birth, championship results, rare discovery, bloodline milestones, and major rewards require authored presentation. Emotional importance determines choreography.
+Cooldowns, breeding, sales, and money moves deserve a clear cost before commitment. Routine destructive or transactional confirmations may use a restrained accessible dialog. Foal birth, championship results, rare discovery, bloodline milestones, and major rewards require authored presentation. Emotional importance determines choreography.
 
 ## Truth, State, and Accessibility
 
