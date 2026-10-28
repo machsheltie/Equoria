@@ -1148,7 +1148,7 @@
   "tests/e2e/global-setup.ts": 10,
   "tests/e2e/groom-manage-error-state.spec.ts": 3,
   "tests/e2e/groom-marketplace-hire.spec.ts": 19,
-  "tests/e2e/groom-talent-tree.spec.ts": 14,
+  "tests/e2e/groom-talent-tree.spec.ts": 10,
   "tests/e2e/helpers/api.ts": 3,
   "tests/e2e/helpers/sessionKeepAlive.ts": 11,
   "tests/e2e/profile-edit.spec.ts": 2,
