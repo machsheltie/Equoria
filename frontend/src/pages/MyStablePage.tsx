@@ -248,7 +248,7 @@ const LegacyHallTab: React.FC<{
 }> = ({ entries, rosterStatus, rosterError, onRetryRoster }) => (
   <div className="space-y-4" data-testid="legacy-hall-tab">
     <p className="text-sm text-role-muted">
-      Retired horses live on in the Hall of Fame, their careers immortalised for future generations.
+      Retired horses live on in the Hall of Fame, their careers immortalized for future generations.
     </p>
 
     {rosterStatus === 'loading' ? (
@@ -260,8 +260,7 @@ const LegacyHallTab: React.FC<{
         <Trophy className="w-12 h-12 text-role-disabled mb-4" />
         <h3 className="text-base font-semibold text-role-secondary mb-2">No Retired Horses Yet</h3>
         <p className="text-role-muted text-sm max-w-xs">
-          Horses reach retirement at level 10 or after 80–104 career weeks of competition. Retire a
-          horse at level 8 or higher to induct them into your Hall of Fame.
+          Horses retire on their 21st birthday, and every retired horse joins your Hall of Fame.
         </p>
       </div>
     ) : (
@@ -527,7 +526,7 @@ const MyStablePage: React.FC = () => {
           <h3 className="font-semibold text-role-primary mb-2">About Your Stable Profile</h3>
           <ul className="space-y-1 list-disc list-inside">
             <li>Your stable profile is visible to other players on the leaderboards</li>
-            <li>Horses retired at level 8 or higher are inducted into the Hall of Fame</li>
+            <li>Horses retire on their 21st birthday and join the Hall of Fame</li>
             <li>Hall of Fame horses can be shown in breeding lineages for prestige</li>
             <li>Total earnings and win count contribute to your stable ranking</li>
             <li>Edit your stable display name from this profile panel</li>
