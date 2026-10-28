@@ -16,9 +16,9 @@ import { server } from '@/test/msw/server';
 import MyTrainersDashboard from '../MyTrainersDashboard';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const USER_ID = 'test-user-1';
-const TRAINERS_PATH = `${base}/api/v1/trainers/user/${USER_ID}`;
-const ASSIGNMENTS_PATH = `${base}/api/v1/trainers/assignments`;
+const userId = 'test-user-1';
+const trainersPath = `${base}/api/v1/trainers/user/${userId}`;
+const assignmentsPath = `${base}/api/v1/trainers/assignments`;
 
 const trainer = (id: number, skillLevel: string, speciality: string) => ({
   id,
@@ -37,8 +37,8 @@ const trainer = (id: number, skillLevel: string, speciality: string) => ({
 
 function renderWith(trainers: unknown[]) {
   server.use(
-    http.get(TRAINERS_PATH, () => HttpResponse.json({ success: true, data: trainers })),
-    http.get(ASSIGNMENTS_PATH, () => HttpResponse.json({ success: true, data: [] }))
+    http.get(trainersPath, () => HttpResponse.json({ success: true, data: trainers })),
+    http.get(assignmentsPath, () => HttpResponse.json({ success: true, data: [] }))
   );
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -46,7 +46,7 @@ function renderWith(trainers: unknown[]) {
   return render(
     <QueryClientProvider client={qc}>
       <BrowserRouter>
-        <MyTrainersDashboard userId={USER_ID} />
+        <MyTrainersDashboard userId={userId} />
       </BrowserRouter>
     </QueryClientProvider>
   );
