@@ -210,11 +210,11 @@ export const guideSectionsStart: readonly GuideSection[] = [
     blocks: [
       {
         kind: 'paragraph',
-        text: '**Hire a groom** from **Grooms for Hire** in the Marketplace. New grooms come onto the market each week.',
+        text: '**Hire a groom** from **Grooms** in the Marketplace. The grooms for hire change over time, and every groom starts out as a Rookie (see [Staff levels](#staff-levels)).',
       },
       {
         kind: 'paragraph',
-        text: '**Press "Groom horse" every day.** A groom never works on their own. Each day, for each horse in their care, you press **Groom horse** and choose the activity. Each horse gets one groom activity a day.',
+        text: '**Press "Groom Horse" every day.** A groom never works on their own. Each day, for each horse in their care, you press **Groom Horse** and choose the activity. Each horse gets one groom activity a day.',
       },
       {
         kind: 'paragraph',
@@ -234,14 +234,7 @@ export const guideSectionsStart: readonly GuideSection[] = [
       },
       {
         kind: 'paragraph',
-        text: '**Groom fees.** Each groom is paid by their star level every week, however many horses they look after: Rookie 100, Novice 200, Intermediate 300, Advanced 400, Expert 500 coins. Hiring pays the first week, and each groom looks after up to 20 horses. Fees are taken on Monday mornings, Eastern.',
-      },
-      {
-        kind: 'list',
-        items: [
-          "If you can't pay, the groom stays on your staff for one week's grace, but can't groom until you pay.",
-          'If a second week goes unpaid, the groom leaves and returns to Grooms for Hire, where anyone can hire them.',
-        ],
+        text: '**One weekly fee per groom.** Each groom costs one weekly fee at their star level, however many horses they look after, up to 20. Hiring pays the first week. Staff are paid each week.',
       },
     ],
   },
@@ -262,8 +255,9 @@ export const guideSectionsStart: readonly GuideSection[] = [
       {
         kind: 'list',
         items: [
-          'A horse needs an assigned trainer to train. **Hiring a trainer is free** at **Trainers for Hire**.',
-          "Each trainer advertises a **training fee**. You pay it **once**, when you press **Train** at the **Training Center**. You're never charged twice for the same session.",
+          'A horse needs an assigned trainer to train. **Hiring a trainer is free** at **Trainers** in the Marketplace.',
+          '**How many trainers:** 2 at player level 1, and one more for each level after that, up to 10.',
+          "Each trainer's **session fee** comes from their star level, 100 to 500 coins. You pay it **once**, when you press **Train** at the **Training Center**. You're never charged twice for the same session.",
         ],
       },
       {
@@ -285,17 +279,53 @@ export const guideSectionsStart: readonly GuideSection[] = [
       {
         kind: 'list',
         items: [
-          "Hire riders from **Riders** in the Marketplace. Each rider has a weekly rate, and you're charged **one week at a time**, never weeks in advance. Hiring pays the first week.",
-          '**Payday is every Monday morning, Eastern**, like the grooms. All your riders are paid together in one payment.',
-          "**If you can't cover payday,** nothing is taken, your riders can't ride in shows, and the missed week is owed. A rider rides again only once that week's pay and every owed week are paid. A rider left unpaid for a full week leaves your staff.",
+          "Hire riders from **Riders** in the Marketplace. Each rider's weekly fee comes from their star level, and you're charged **one week at a time**, never weeks in advance. Hiring pays the first week.",
+          "**Staff are paid each week.** A rider whose pay is owed can't ride in shows until every owed week is paid.",
           '**A horse needs an assigned rider to enter a ridden show**, and the rider must be on your staff.',
+          '**Each rider can ride up to 20 horses.**',
           'Some riders suit a horse better than others, and a good pairing helps the score a little.',
-          "Riders, trainers and grooms are hired staff. They don't level up or gain experience. Each keeps the skill they came with.",
         ],
       },
       {
         kind: 'paragraph',
         text: '**Riders retire on their own.** The game decides when, and nobody can see it coming. You get a notice a week before a rider retires, so you can hire a replacement.',
+      },
+    ],
+  },
+  {
+    id: 'staff-levels',
+    title: 'Staff levels',
+    tagline: 'Five star levels for every rider, trainer and groom.',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: "Riders, trainers and grooms all share the same five star levels. A staff member's level sets their price: **per week** for riders and grooms, and **per session** for trainers.",
+      },
+      {
+        kind: 'table',
+        caption: 'Staff star levels and their prices',
+        columns: ['Level', 'Stars', 'Price (coins)'],
+        rows: [
+          ['Rookie', '★', '100'],
+          ['Novice', '★★', '200'],
+          ['Intermediate', '★★★', '300'],
+          ['Advanced', '★★★★', '400'],
+          ['Expert', '★★★★★', '500'],
+        ],
+      },
+      {
+        kind: 'list',
+        items: [
+          '**Riders and grooms grow with every show.** They start as Rookies and climb a level as they complete shows. A new level brings the new price.',
+          '**Every rider and groom has hidden likes and dislikes**: certain horse traits, disciplines and temperaments, and a couple of favorite breeds. A Rookie shows you only their personality. Each new level reveals a little more, and an Expert has nothing left to hide.',
+          "**Trainers don't grow.** A trainer keeps the level they came with.",
+          'A rider or groom who leaves your staff goes back to the hiring list with their level, and with everything already revealed about them.',
+          '**Grooms retire too.** As with riders, you hear a week before, and not earlier.',
+        ],
+      },
+      {
+        kind: 'paragraph',
+        text: "For now, a star level only sets the price, and the hidden likes and dislikes don't change a score yet.",
       },
     ],
   },

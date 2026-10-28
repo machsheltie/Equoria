@@ -261,9 +261,13 @@ describe('NEW_PLAYER_GUIDE owner rulings of 2026-10-23 to 2026-10-28', () => {
     expect(joined).toContain('**10 times the entry fee**');
   });
 
-  it('describes the rider Monday payday and owed weeks (2026-10-27)', () => {
-    expect(joined).toContain('**Payday is every Monday morning, Eastern**');
+  // Old contract (2026-10-27, q133): the guide promised an automatic Monday payday.
+  // Owner ruling 2026-10-28 (q262/q265, Equoria-hc96y): payday is a player action, and its
+  // due window is still open (q268), so the guide says only that staff are paid each week.
+  it('keeps payday neutral and keeps the rider owed-weeks rule (2026-10-28)', () => {
+    expect(joined).toContain('**Staff are paid each week.**');
     expect(joined).toContain('every owed week');
+    expect(joined).not.toMatch(/Monday|payday|Pay Groom|Pay Rider/i);
   });
 
   it('never mentions removed features: stress, burnout, weather, forecasts, the Breeding Hall', () => {
@@ -296,6 +300,43 @@ describe('NEW_PLAYER_GUIDE owner rulings landed later on 2026-10-28', () => {
   it('gives every horse a +5 birth discipline, gaited breeds Gaited (Equoria-tl5l8, n7ph5)', () => {
     expect(joined).toContain('every horse is born with **+5** in one discipline');
     expect(joined).toContain('a gaited breed is always born **Gaited**');
+  });
+});
+
+describe('NEW_PLAYER_GUIDE staff rulings of 2026-10-28', () => {
+  const blocksOf = (id: string) =>
+    newPlayerGuide.find((section) => section.id === id)?.blocks ?? [];
+  const joined = newPlayerGuide.flatMap((section) => section.blocks.flatMap(textOf)).join(' ');
+
+  it('prices staff by the five star levels (Equoria-nawn5)', () => {
+    const table = blocksOf('staff-levels').find(
+      (block): block is Extract<GuideBlock, { kind: 'table' }> => block.kind === 'table'
+    );
+    expect(table?.rows).toEqual([
+      ['Rookie', '★', '100'],
+      ['Novice', '★★', '200'],
+      ['Intermediate', '★★★', '300'],
+      ['Advanced', '★★★★', '400'],
+      ['Expert', '★★★★★', '500'],
+    ]);
+  });
+
+  it('says riders and grooms grow by shows and reveal hidden items; trainers do not (Equoria-xlw03)', () => {
+    const staff = blocksOf('staff-levels').flatMap(textOf).join(' ');
+    expect(staff).toContain('**Riders and grooms grow with every show.**');
+    expect(staff).toContain('A Rookie shows you only their personality.');
+    expect(staff).toContain("**Trainers don't grow.**");
+    // The old fixed-NPC wording is gone.
+    expect(joined).not.toMatch(/don't level up|keeps the skill they came with/);
+  });
+
+  it('states the trainer limit, the rider horse limit and the one weekly groom fee', () => {
+    expect(joined).toContain(
+      '2 at player level 1, and one more for each level after that, up to 10'
+    );
+    expect(joined).toContain('**Each rider can ride up to 20 horses.**');
+    expect(joined).toContain('Each groom costs one weekly fee at their star level');
+    expect(joined).not.toMatch(/Grooms for Hire|Trainers for Hire/);
   });
 });
 
