@@ -11,6 +11,8 @@
  * in ultraRareMechanicalEffects.mjs: a bare `|| { ultraRare:[], exotic:[] }`
  * fallback only caught null/undefined, so a primitive, an array, or an object
  * missing those sub-keys threw at runtime ("X is not iterable" / TypeError).
+ * That file and groomRareTraitPerks.mjs were deleted with the invented exotic
+ * traits (Equoria-tpofm; owner ruling 2026-10-19), and their arms with them.
  *
  * These tests feed null / primitive / array / missing-sub-key shapes through
  * each guarded code path. They MUST NOT throw and MUST return the safe default.
@@ -24,25 +26,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { asFlagArray, asFlagObject } from '../utils/jsonbArrayGuard.mjs';
-import {
-  applyUltraRareTrainingEffects,
-  applyUltraRareCompetitionEffects,
-  applyUltraRareBondingEffects,
-  applyUltraRareStatEffects,
-  hasUltraRareAbility,
-} from '../utils/ultraRareMechanicalEffects.mjs';
-import { applyRareTraitBoosterEffects } from '../utils/groomRareTraitPerks.mjs';
 import { calculatePhenotype } from '../modules/horses/index.mjs';
-
-// Shapes a Prisma JSONB column can legitimately arrive as on a legacy row.
-const BAD_SHAPES = [
-  ['null', null],
-  ['undefined', undefined],
-  ['primitive number', 42],
-  ['primitive string', 'corrupted'],
-  ['array', ['unexpected', 'array']],
-  ['object missing sub-keys', { somethingElse: true }],
-];
 
 // ── asFlagObject helper ────────────────────────────────────────────────────
 
@@ -72,44 +56,6 @@ describe('asFlagObject (Equoria-liy7c)', () => {
   it('keeps an object that is missing the expected sub-keys', () => {
     const o = { somethingElse: true };
     expect(asFlagObject(o)).toBe(o);
-  });
-});
-
-// ── ultraRareMechanicalEffects — every exported reader ──────────────────────
-
-describe('ultraRareMechanicalEffects tolerate malformed ultraRareTraits (Equoria-liy7c)', () => {
-  it.each(BAD_SHAPES)('applyUltraRareTrainingEffects does not throw when ultraRareTraits is %s', (_label, value) => {
-    expect(() => applyUltraRareTrainingEffects({ ultraRareTraits: value }, {})).not.toThrow();
-  });
-
-  it.each(BAD_SHAPES)('applyUltraRareCompetitionEffects does not throw when ultraRareTraits is %s', (_label, value) => {
-    expect(() => applyUltraRareCompetitionEffects({ ultraRareTraits: value }, 100)).not.toThrow();
-  });
-
-  it.each(BAD_SHAPES)('applyUltraRareBondingEffects does not throw when ultraRareTraits is %s', (_label, value) => {
-    expect(() => applyUltraRareBondingEffects({ ultraRareTraits: value }, 3)).not.toThrow();
-  });
-
-  it.each(BAD_SHAPES)('applyUltraRareStatEffects does not throw when ultraRareTraits is %s', (_label, value) => {
-    expect(() => applyUltraRareStatEffects({ ultraRareTraits: value }, { speed: 10 })).not.toThrow();
-  });
-
-  it.each(BAD_SHAPES)('hasUltraRareAbility returns false (no throw) when ultraRareTraits is %s', (_label, value) => {
-    expect(hasUltraRareAbility({ ultraRareTraits: value }, 'training_fatigue_immunity')).toBe(false);
-  });
-
-  it('handles a whole horse with no ultraRareTraits property at all', () => {
-    expect(() => applyUltraRareCompetitionEffects({ id: 99 }, 100)).not.toThrow();
-  });
-});
-
-// ── groomRareTraitPerks.applyRareTraitBoosterEffects ────────────────────────
-
-describe('applyRareTraitBoosterEffects tolerates malformed rareTraitPerks (Equoria-liy7c)', () => {
-  it.each(BAD_SHAPES)('does not throw when rareTraitPerks is %s', (_label, value) => {
-    expect(() => applyRareTraitBoosterEffects('phoenix-born', 0.1, { rareTraitPerks: value })).not.toThrow();
-    const result = applyRareTraitBoosterEffects('phoenix-born', 0.1, { rareTraitPerks: value });
-    expect(result.modifiedChance).toBe(0.1); // no perks → base chance unchanged
   });
 });
 

@@ -2,10 +2,11 @@
  * Trait Discovery — discovery conditions and progress (read side)
  *
  * Read-only helpers behind GET /traits/discovery-status: which discovery
- * conditions a horse currently meets, and its discovery progress. Nothing here
- * writes a horse's traits. The /trait-discovery routes that read
- * getDiscoveryProgress were removed under Equoria-a7f1p (owner ruling
- * 2026-10-27: traits reveal only through the grooming-day ladder).
+ * conditions a horse currently meets. Nothing here writes a horse's traits.
+ * The /trait-discovery routes that read getDiscoveryProgress were removed under
+ * Equoria-a7f1p (owner ruling 2026-10-27: traits reveal only through the
+ * grooming-day ladder), and getDiscoveryProgress itself, left without a caller,
+ * was deleted under Equoria-tpofm.
  *
  * Equoria-0w96q: revealTraits / batchRevealTraits (with selectTraitsToReveal,
  * updateHorseTraits and getDiscoveryReason) were deleted. They read
@@ -26,7 +27,6 @@
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { MS_PER_WEEK } from './../constants/time.mjs';
-import { NotFoundError } from '../errors/index.mjs';
 
 /**
  * Discovery conditions that trigger trait revelation
@@ -128,76 +128,6 @@ async function checkDiscoveryConditions(horse) {
   }
 
   return metConditions;
-}
-
-/**
- * Get discovery progress for a horse
- * @param {number} horseId - Horse ID
- * @returns {Object} Discovery progress information
- */
-export async function getDiscoveryProgress(horseId) {
-  // Convert horseId to integer if it's a string
-  const horseIdInt = typeof horseId === 'string' ? parseInt(horseId, 10) : horseId;
-
-  if (isNaN(horseIdInt)) {
-    throw new Error(`Invalid horse ID: ${horseId}`);
-  }
-
-  const horse = await prisma.horse.findUnique({
-    where: { id: horseIdInt },
-    include: {
-      foalDevelopment: true,
-    },
-  });
-
-  if (!horse) {
-    // Equoria-4xwyi: throw a TYPED NotFoundError (AppError subclass, statusCode
-    // 404) instead of a plain Error so callers (formerly the /trait-discovery
-    // /progress and /check-conditions handlers) can detect not-found by type
-    // (AppError.isAppError + statusCode===404) rather than the fragile
-    // error.message.includes('not found') string-sniff (the Equoria-93lhj
-    // antipattern). NotFoundError('Horse', horseId) yields the identical message
-    // 'Horse with ID <id> not found', so the existing 404 response body is preserved.
-    throw new NotFoundError('Horse', horseId);
-  }
-
-  // Get traits from epigeneticModifiers JSON field
-  const epigeneticModifiers = horse.epigeneticModifiers || {
-    positive: [],
-    negative: [],
-    hidden: [],
-  };
-  const hiddenTraits = epigeneticModifiers.hidden || [];
-  const visibleTraits = [
-    ...(epigeneticModifiers.positive || []),
-    ...(epigeneticModifiers.negative || []),
-  ];
-
-  const totalPossibleTraits = Object.keys(DISCOVERY_CONDITIONS).length;
-  const discoveredTraits = visibleTraits.length + hiddenTraits.length;
-  const progressPercentage = Math.round((discoveredTraits / totalPossibleTraits) * 100);
-
-  // Get current stats for condition checking
-  const currentStats = {
-    bondScore: horse.bondScore,
-    developmentDay: horse.foalDevelopment?.currentDay || 0,
-  };
-
-  // Check discovery conditions
-  const conditions = await checkDiscoveryConditions(horse);
-
-  return {
-    horseId: horseIdInt,
-    horseName: horse.name,
-    discoveredTraits,
-    totalPossibleTraits,
-    progressPercentage,
-    traits: visibleTraits, // hidden ones are only counted (Equoria-6dace)
-    hiddenTraitsCount: hiddenTraits.length,
-    visibleTraitsCount: visibleTraits.length,
-    currentStats,
-    conditions,
-  };
 }
 
 export { DISCOVERY_CONDITIONS, checkDiscoveryConditions };

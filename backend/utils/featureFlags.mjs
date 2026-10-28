@@ -52,11 +52,6 @@ export const FLAG_DEFINITIONS = {
     description: 'Percentage rollout for new breeding interface',
     defaultValue: 0,
   },
-  FF_BREEDING_RARE_TRAITS: {
-    type: 'BOOLEAN',
-    description: 'Enable ultra-rare exotic traits',
-    defaultValue: true, // Already implemented
-  },
 
   // ============================================
   // Competition System Flags

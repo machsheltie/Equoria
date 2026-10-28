@@ -37,7 +37,6 @@ export type {
   BreedingRequest,
   BreedingResponse,
   TraitPrediction,
-  UltraRareTraitPotential,
   BreedingInsights,
   BreedingPredictions,
 } from './breeding';

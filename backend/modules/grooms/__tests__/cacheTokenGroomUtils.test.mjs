@@ -1,15 +1,15 @@
 /**
- * cacheHelper + tokenRotationService + groomRareTraitPerks + groomSystem unit tests
+ * cacheHelper + tokenRotationService + groomSystem unit tests
  * (Equoria-rr7 coverage sprint).
  *
- * cacheHelper + tokenRotationService + groomRareTraitPerks: pure or near-pure.
+ * cacheHelper + tokenRotationService: pure or near-pure. (The groomRareTraitPerks
+ * arm went with that file, Equoria-tpofm.)
  * groomSystem: constants.
  */
 
 import { describe, it, expect } from '@jest/globals';
 import { cacheStats, generateCacheKey, getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
 import { hashRefreshToken, generateTokenFamily } from '../../../utils/tokenRotationService.mjs';
-import { applyRareTraitBoosterEffects } from '../../../utils/groomRareTraitPerks.mjs';
 import { GROOM_SPECIALTIES, SKILL_LEVELS, PERSONALITY_TRAITS } from '../../../utils/groomSystem.mjs';
 
 // ── cacheHelper ───────────────────────────────────────────────────────────────
@@ -114,24 +114,6 @@ describe('generateTokenFamily', () => {
     const a = generateTokenFamily();
     const b = generateTokenFamily();
     expect(a).not.toBe(b);
-  });
-});
-
-// ── groomRareTraitPerks ───────────────────────────────────────────────────────
-
-describe('applyRareTraitBoosterEffects', () => {
-  it('returns unchanged chance when groom has no rare trait perks', () => {
-    const result = applyRareTraitBoosterEffects('moonlitGrace', 0.05, { rareTraitPerks: {} });
-    expect(result.originalChance).toBe(0.05);
-    expect(result.modifiedChance).toBe(0.05);
-    expect(Array.isArray(result.appliedPerks)).toBe(true);
-    expect(result.appliedPerks).toHaveLength(0);
-    expect(result.perkBonus).toBe(0);
-  });
-
-  it('caps modified chance at 1.0', () => {
-    const result = applyRareTraitBoosterEffects('anyTrait', 1.0, { rareTraitPerks: {} });
-    expect(result.modifiedChance).toBeLessThanOrEqual(1.0);
   });
 });
 

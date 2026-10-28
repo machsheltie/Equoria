@@ -34,7 +34,7 @@ import { dirname, resolve } from 'node:path';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { createTestHorse } from './helpers/createTestHorse.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
-import { getDiscoveryProgress } from '../utils/traitDiscovery.mjs';
+import { checkDiscoveryConditions } from '../utils/traitDiscovery.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -95,12 +95,14 @@ describe('Equoria-4maxb — legitimate 0 on NOT NULL Horse columns survives the 
   });
 
   it('trait discovery reads an unbonded (bondScore 0) horse as unbonded', async () => {
-    const progress = await getDiscoveryProgress(calmUnbondedId);
+    // Equoria-tpofm: getDiscoveryProgress (whose `horse.bondScore || 50`
+    // promoted 0 into neutral-50) was deleted with no caller left. The live
+    // reader is checkDiscoveryConditions, behind GET /traits/discovery-status,
+    // fed the stored row exactly as the controller feeds it.
+    const stored = await prisma.horse.findUnique({ where: { id: calmUnbondedId } });
+    const conditions = await checkDiscoveryConditions(stored);
 
-    // Defect: `horse.bondScore || 50` promoted 0 into neutral-50.
-    expect(progress.currentStats.bondScore).toBe(0);
-
-    const met = progress.conditions.map(c => c.name);
+    const met = conditions.map(c => c.name);
     // Unbonded: no bond-based discovery may fire.
     expect(met).not.toContain('HIGH_BOND');
     expect(met).not.toContain('PERFECT_CARE');

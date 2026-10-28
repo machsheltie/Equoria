@@ -17,7 +17,6 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 import { gameDateKey } from './gameTime.mjs';
 import { applyPersonalityEffectsToMilestone } from './personalityModifierEngine.mjs';
-import { evaluateAndPersistUltraRareTraits } from '../modules/traits/index.mjs';
 import { getHorseAgeDays, getHorseAgeYears } from './horseAge.mjs';
 import { minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
 
@@ -231,29 +230,14 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
     `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Completed evaluation for horse ${horseId}: ${traitOutcome.trait || 'no trait'} (score: ${finalScore})`,
   );
 
-  // Equoria-d4tl: every milestone log write triggers an ultra-rare/exotic
-  // trait evaluation. Wrapped in try/catch so a failure in the ultra-rare
-  // engine never bricks the primary milestone result.
-  let ultraRareEvaluation = null;
-  try {
-    ultraRareEvaluation = await evaluateAndPersistUltraRareTraits(horseId, {
-      source: 'milestone',
-      milestoneType,
-      milestoneLogId: milestoneLog.id,
-      finalScore,
-    });
-  } catch (urtError) {
-    logger.error(
-      `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Ultra-rare evaluation failed for horse ${horseId}: ${urtError.message}`,
-    );
-  }
-
+  // Equoria-tpofm: the ultra-rare/exotic trigger evaluation that ran here
+  // (Equoria-d4tl) went with the 10 invented exotic traits (owner ruling
+  // 2026-10-19). Competitive and Heart reveal through the grooming-day ladder.
   return {
     success: true,
     milestoneLog,
     finalScore,
     traitOutcome,
-    ultraRareEvaluation,
     modifiers: {
       bondModifier,
       taskConsistencyModifier,

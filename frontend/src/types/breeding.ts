@@ -209,23 +209,6 @@ export interface TraitPrediction {
 }
 
 /**
- * Ultra-rare trait potential
- */
-export interface UltraRareTraitPotential {
-  traitId: string;
-  traitName: string;
-  tier: 'ultra-rare' | 'exotic';
-  baseProbability: number; // 0-100
-  requirements: string[];
-  isAchievable: boolean;
-  groomInfluence?: {
-    groomType: string;
-    bonusPercentage: number;
-  };
-  description: string;
-}
-
-/**
  * Breeding insights and recommendations
  */
 export interface BreedingInsights {
@@ -244,7 +227,6 @@ export interface BreedingPredictions {
   sire: Horse;
   dam: Horse;
   traitPredictions: TraitPrediction[];
-  ultraRareTraits: UltraRareTraitPotential[];
   insights: BreedingInsights;
   predictionConfidence: number; // 0-100
 }

@@ -1,8 +1,8 @@
 /**
  * traitDiscovery — branch-coverage tests (Equoria-jkht)
  *
- * Covers DISCOVERY_CONDITIONS, checkDiscoveryConditions and getDiscoveryProgress
- * (the read side used by GET /traits/discovery-status and /trait-discovery/*).
+ * Covers DISCOVERY_CONDITIONS and checkDiscoveryConditions (the read side used
+ * by GET /traits/discovery-status).
  * No mocks.
  *
  * Equoria-ecp0i. OLD CONTRACT: the module also exported ENRICHMENT_DISCOVERIES
@@ -20,34 +20,30 @@
  * 2026-10-20: players never reveal traits), and hidden traits stay inert until
  * revealed (owner ruling 2026-10-19). The dead writer and its only importer,
  * the never-mounted traitDiscoveryMiddleware, were deleted.
+ *
+ * Equoria-tpofm. OLD CONTRACT: getDiscoveryProgress returned a horse's
+ * discovery progress. NEW: its routes were retired under Equoria-a7f1p (owner
+ * ruling 2026-10-27) and nothing called it, so it was deleted.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as traitDiscovery from '../../../utils/traitDiscovery.mjs';
-import {
-  checkDiscoveryConditions,
-  DISCOVERY_CONDITIONS,
-  getDiscoveryProgress,
-} from '../../../utils/traitDiscovery.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-// Equoria-1ohys: fail-loud scoped cleanup. A silent no-op catch arm on the
-// afterAll deletes leaks fixture rows into the canonical DB (CLAUDE.md §2) and
-// keeps the suite green while a leak trips downstream sentinels. The tracker
-// runs every registered scoped delete in FK order and throws loudly if any fail.
-import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { checkDiscoveryConditions, DISCOVERY_CONDITIONS } from '../../../utils/traitDiscovery.mjs';
 
-// ── Retired exports (Equoria-ecp0i, Equoria-0w96q) ───────────────────────────
+// ── Retired exports (Equoria-ecp0i, Equoria-0w96q, Equoria-tpofm) ───────────────────────────
 
 describe('retired trait discovery exports', () => {
-  it.each(['ENRICHMENT_DISCOVERIES', 'checkEnrichmentDiscoveries', 'revealTraits', 'batchRevealTraits'])(
-    'traitDiscovery no longer exports %s',
-    name => {
-      expect(traitDiscovery).not.toHaveProperty(name);
-    },
-  );
+  it.each([
+    'ENRICHMENT_DISCOVERIES',
+    'checkEnrichmentDiscoveries',
+    'revealTraits',
+    'batchRevealTraits',
+    'getDiscoveryProgress',
+  ])('traitDiscovery no longer exports %s', name => {
+    expect(traitDiscovery).not.toHaveProperty(name);
+  });
 
   it('the unmounted traitDiscoveryMiddleware module is gone', () => {
     const middlewarePath = fileURLToPath(new URL('../../../middleware/traitDiscoveryMiddleware.mjs', import.meta.url));
@@ -176,18 +172,6 @@ describe('checkDiscoveryConditions()', () => {
   }, 10000);
 });
 
-// ── getDiscoveryProgress — invalid/not-found error paths ─────────────────────
-
-describe('getDiscoveryProgress() — error paths', () => {
-  it('throws for non-numeric string horseId', async () => {
-    await expect(getDiscoveryProgress('bad-id')).rejects.toThrow(/invalid horse id/i);
-  });
-
-  it('throws when horse does not exist in DB (id=-1)', async () => {
-    await expect(getDiscoveryProgress(-1)).rejects.toThrow(/not found/i);
-  });
-});
-
 // ── checkDiscoveryConditions — catch path (line 340) ─────────────────────────
 // When a condition evaluator (synchronous) throws, the per-condition catch fires,
 // logs a warning, and the function continues to the next condition.
@@ -207,65 +191,4 @@ describe('checkDiscoveryConditions() — condition-throws catch path (Equoria-jk
     // Should not throw; should return an array (empty since no conditions met)
     expect(Array.isArray(result)).toBe(true);
   }, 10000);
-});
-
-// ── getDiscoveryProgress — DB-fixture happy path ─────────────────────────────
-
-describe('getDiscoveryProgress() — DB-fixture path (Equoria-jkht)', () => {
-  let tdUser;
-  let noHiddenHorse;
-  const cleanup = createCleanupTracker();
-
-  beforeAll(async () => {
-    const ts = Date.now();
-    const rand = () => Math.random().toString(36).slice(2, 8);
-
-    tdUser = await prisma.user.create({
-      data: {
-        email: `td-fixture-${ts}-${rand()}@test.com`,
-        username: `tdfix${ts}${rand()}`,
-        password: 'irrelevant-hash',
-        firstName: 'TD',
-        lastName: 'Fixture',
-        money: 1000,
-      },
-    });
-
-    noHiddenHorse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-TD-NoHidden-${ts}`,
-        sex: 'Filly',
-        dateOfBirth: new Date(),
-        age: 0,
-        bondScore: 50,
-        userId: tdUser.id,
-        epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-      },
-    });
-
-    // Equoria-g9sa: explicit SCOPED horse cleanup FIRST. Fixtures use raw
-    // prisma.horse.create() but now spread ...fixtureColor(), so they carry a
-    // valid phenotype and do NOT trip horseColorNullSentinel even transiently.
-    // Cleanup is scoped by THIS suite's own userId (unique per run) — explicit,
-    // not cascade-only — so a leaked row (Equoria-lfj5 class) cannot recur, and
-    // we won't delete a sibling suite's in-flight TestFixture-TD-* rows that
-    // share the prefix. FK order: horses before user (Horse.userId onDelete: Restrict).
-    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: tdUser.id } }), 'horses');
-    cleanup.add(() => prisma.user.delete({ where: { id: tdUser.id } }), 'user');
-  }, 30000);
-
-  afterAll(() => cleanup.run(), 30000);
-
-  it('getDiscoveryProgress returns progress object for existing horse (happy path)', async () => {
-    const result = await getDiscoveryProgress(noHiddenHorse.id);
-    expect(result.horseId).toBe(noHiddenHorse.id);
-    expect(result.horseName).toBe(noHiddenHorse.name);
-    expect(typeof result.discoveredTraits).toBe('number');
-    expect(typeof result.totalPossibleTraits).toBe('number');
-    expect(typeof result.progressPercentage).toBe('number');
-    expect(Array.isArray(result.traits)).toBe(true);
-    expect(typeof result.hiddenTraitsCount).toBe('number');
-    expect(Array.isArray(result.conditions)).toBe(true);
-  }, 15000);
 });
