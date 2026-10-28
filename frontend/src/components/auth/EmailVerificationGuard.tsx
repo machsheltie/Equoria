@@ -19,7 +19,7 @@ import React, { type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
 
-const OPEN_PATHS = new Set([
+const openPaths = new Set([
   '/verify-email',
   '/login',
   '/register',
@@ -33,7 +33,7 @@ const EmailVerificationGuard: React.FC<{ children?: ReactNode }> = ({ children }
   const location = useLocation();
 
   const mustConfirm =
-    !isLoading && !!user && user.emailVerified === false && !OPEN_PATHS.has(location.pathname);
+    !isLoading && !!user && user.emailVerified === false && !openPaths.has(location.pathname);
 
   if (mustConfirm) return <Navigate to="/verify-email" replace />;
   return <>{children}</>;
