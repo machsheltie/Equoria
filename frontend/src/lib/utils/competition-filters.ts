@@ -19,6 +19,11 @@ import { gameDayIndex } from '@/lib/gameTime';
 export type DisciplineFilter = 'all' | string;
 export type DateRangeFilter = 'all' | 'closing' | 'today' | 'week' | 'month';
 export type EntryFeeFilter = 'all' | 'free' | 'under100' | 'range' | 'over500';
+/**
+ * A show level, 1 to 20 (Equoria-i33ow). The server applies it (GET
+ * /api/v1/competition?level=N lists the shows whose bracket holds that level).
+ */
+export type LevelFilter = 'all' | number;
 
 export interface CompetitionFilterState {
   discipline: DisciplineFilter;

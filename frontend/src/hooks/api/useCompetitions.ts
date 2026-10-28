@@ -8,7 +8,7 @@
  * - Enter competition
  */
 
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { useQuery, useQueries, keepPreviousData } from '@tanstack/react-query';
 import { competitionsApi, ApiError, Competition, EligibilityResult } from '@/lib/api-client';
 
 // Query Keys
@@ -21,10 +21,16 @@ export const competitionKeys = {
 };
 
 // Hooks
-export function useCompetitions() {
+/**
+ * The open shows. With a level (1-20) the server lists only the shows open to
+ * that level (Equoria-i33ow); the previous list stays on screen while a new
+ * level loads, so the filters never blank the page.
+ */
+export function useCompetitions(level?: number) {
   return useQuery<Competition[], ApiError>({
-    queryKey: competitionKeys.list(),
-    queryFn: competitionsApi.list,
+    queryKey: level === undefined ? competitionKeys.list() : [...competitionKeys.list(), { level }],
+    queryFn: () => competitionsApi.list(level),
+    placeholderData: keepPreviousData,
     staleTime: 1 * 60 * 1000, // 1 minute
     gcTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,

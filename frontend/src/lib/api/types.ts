@@ -431,6 +431,9 @@ export interface Competition {
   // the unified competitions list without a separate backend endpoint.
   showType?: string;
   hostUserId?: string | null;
+  /** The show's level bracket (a hosted show runs one level: levelMin == levelMax). */
+  levelMin?: number;
+  levelMax?: number;
 }
 
 export interface Discipline {

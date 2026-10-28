@@ -5,6 +5,7 @@
  * - Discipline filter (24 options from training system)
  * - Date range filter (4 options)
  * - Entry fee filter (5 options)
+ * - Level filter (levels 1 to 20, Equoria-i33ow)
  * - Clear filters button
  *
  * Story 5-1: Competition Entry System - Task 2
@@ -20,7 +21,7 @@
  * for consistency with other competition components.
  */
 
-import { Filter, Calendar, Coins, X } from 'lucide-react';
+import { Filter, Calendar, Coins, Award, X } from 'lucide-react';
 import { DISCIPLINES } from '@/lib/utils/training-utils';
 import { Select } from '@/components/ui/form';
 import { type JSX, useMemo, memo } from 'react';
@@ -28,10 +29,11 @@ import type {
   DisciplineFilter,
   DateRangeFilter,
   EntryFeeFilter,
+  LevelFilter,
 } from '@/lib/utils/competition-filters';
 
 // Type definitions (the rules behind them live in lib/utils/competition-filters)
-export type { DisciplineFilter, DateRangeFilter, EntryFeeFilter };
+export type { DisciplineFilter, DateRangeFilter, EntryFeeFilter, LevelFilter };
 
 export interface CompetitionFiltersProps {
   disciplineFilter: DisciplineFilter;
@@ -40,6 +42,9 @@ export interface CompetitionFiltersProps {
   onDisciplineChange: (_discipline: DisciplineFilter) => void;
   onDateRangeChange: (_range: DateRangeFilter) => void;
   onEntryFeeChange: (_fee: EntryFeeFilter) => void;
+  /** The show level searched for (Equoria-i33ow); 'all' when none is chosen. */
+  levelFilter?: LevelFilter;
+  onLevelChange?: (_level: LevelFilter) => void;
   onClearFilters: () => void;
   className?: string;
 }
@@ -66,6 +71,9 @@ const ENTRY_FEE_OPTIONS: readonly {
   { value: 'range', label: '100-500', coins: '100 to 500 coins' },
   { value: 'over500', label: 'Over 500', coins: 'Over 500 coins' },
 ] as const;
+
+// Horse and show levels run 1 to 20 (owner ruling 2026-10-23).
+const levelOptions: readonly number[] = Array.from({ length: 20 }, (_, index) => index + 1);
 
 // Helper function to render filter button
 const FilterButton = memo(
@@ -113,6 +121,8 @@ const CompetitionFilters = ({
   onDisciplineChange,
   onDateRangeChange,
   onEntryFeeChange,
+  levelFilter = 'all',
+  onLevelChange,
   onClearFilters,
   className = '',
 }: CompetitionFiltersProps): JSX.Element => {
@@ -132,13 +142,17 @@ const CompetitionFilters = ({
 
   // Check if any filters are active
   const hasActiveFilters = useMemo(
-    () => disciplineFilter !== 'all' || dateRangeFilter !== 'all' || entryFeeFilter !== 'all',
-    [disciplineFilter, dateRangeFilter, entryFeeFilter]
+    () =>
+      disciplineFilter !== 'all' ||
+      dateRangeFilter !== 'all' ||
+      entryFeeFilter !== 'all' ||
+      levelFilter !== 'all',
+    [disciplineFilter, dateRangeFilter, entryFeeFilter, levelFilter]
   );
 
   return (
     <div className={`glass-panel rounded-lg p-4 ${className}`} data-testid="competition-filters">
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-5">
         {/* Discipline Filter */}
         <div>
           <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
@@ -203,6 +217,33 @@ const CompetitionFilters = ({
               </FilterButton>
             ))}
           </div>
+        </div>
+
+        {/* Level Filter */}
+        <div>
+          <label
+            htmlFor="filter-level"
+            className="block text-sm font-medium text-[var(--text-secondary)] mb-2"
+          >
+            <Award className="inline h-4 w-4 mr-1" aria-hidden="true" />
+            Level
+          </label>
+          <Select
+            id="filter-level"
+            value={levelFilter === 'all' ? 'all' : String(levelFilter)}
+            onChange={(e) =>
+              onLevelChange?.(e.target.value === 'all' ? 'all' : Number(e.target.value))
+            }
+            data-testid="filter-level"
+            aria-label="Filter by level"
+          >
+            <option value="all">All Levels</option>
+            {levelOptions.map((level) => (
+              <option key={level} value={level}>
+                Level {level}
+              </option>
+            ))}
+          </Select>
         </div>
 
         {/* Clear Filters */}

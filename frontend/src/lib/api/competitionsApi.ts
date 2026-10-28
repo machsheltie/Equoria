@@ -8,6 +8,7 @@
  *
  * Path registry:
  *   GET  /api/v1/competition                        → Competition[]
+ *        ?level=N (1-20) lists only the shows open to that level (Equoria-i33ow)
  *   GET  /api/v1/competition/disciplines            → disciplines + details
  *   GET  /api/v1/competition/eligibility/:id/:disc  → eligibility
  *   POST /api/v1/competition/enter                  → entry
@@ -56,11 +57,12 @@ const listPageSize = 100;
 // 10,000 open shows, far past anything the game can hold open at once.
 const listMaxPages = 100;
 
-async function listAllOpenShows(): Promise<Competition[]> {
+async function listAllOpenShows(level?: number): Promise<Competition[]> {
   const shows: Competition[] = [];
+  const levelQuery = level === undefined ? '' : `&level=${level}`;
   for (let page = 1; page <= listMaxPages; page += 1) {
     const rows = await apiClient.get<Competition[]>(
-      `/api/v1/competition?limit=${listPageSize}&page=${page}`
+      `/api/v1/competition?limit=${listPageSize}&page=${page}${levelQuery}`
     );
     shows.push(...rows);
     if (rows.length < listPageSize) break;

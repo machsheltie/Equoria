@@ -18,6 +18,7 @@ import CompetitionFilters, {
   type DisciplineFilter,
   type DateRangeFilter,
   type EntryFeeFilter,
+  type LevelFilter,
 } from '@/components/competition/CompetitionFilters';
 import { CompetitionList } from '@/components/competition';
 import CompetitionDetailModal, {
@@ -40,7 +41,12 @@ import { useShowField } from '@/hooks/api/useShowField';
 type BrowserTab = 'ridden' | 'conformation';
 
 const CompetitionBrowserPage = (): JSX.Element => {
-  const { data, isLoading, error, refetch } = useCompetitions();
+  // The level search runs on the server (Equoria-i33ow): GET
+  // /api/v1/competition?level=N lists only the shows open to that level.
+  const [levelFilter, setLevelFilter] = useState<LevelFilter>('all');
+  const { data, isLoading, error, refetch } = useCompetitions(
+    levelFilter === 'all' ? undefined : levelFilter
+  );
   // The list endpoint returns every open show; the Conformation tab takes the
   // conformation ones, so the Ridden tab must not offer them (their entry goes
   // through the conformation route; the ridden route refuses them, Equoria-g3n8c).
@@ -157,6 +163,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
     setDisciplineFilter('all');
     setDateRangeFilter('all');
     setEntryFeeFilter('all');
+    setLevelFilter('all');
   }, []);
 
   const handleCompetitionClick = useCallback(
@@ -301,6 +308,8 @@ const CompetitionBrowserPage = (): JSX.Element => {
               onDisciplineChange={setDisciplineFilter}
               onDateRangeChange={setDateRangeFilter}
               onEntryFeeChange={setEntryFeeFilter}
+              levelFilter={levelFilter}
+              onLevelChange={setLevelFilter}
               onClearFilters={handleClearFilters}
               className="mb-6"
             />
