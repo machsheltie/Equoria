@@ -18,8 +18,10 @@ import StudStanding, { type StudStandingProps } from '../StudStanding';
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const listingUrl = `${base}/api/v1/horses/5/stud-listing`;
 
-function renderStanding(props: Partial<StudStandingProps> = {}) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function renderStanding(
+  props: Partial<StudStandingProps> = {},
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+) {
   return render(
     <QueryClientProvider client={client}>
       <StudStanding
@@ -127,5 +129,26 @@ describe('StudStanding', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/RAW server words|stallionTooYoungForStud/)).not.toBeInTheDocument();
     expect(fee).toHaveValue(300);
+  });
+
+  it('e7tgc.9: taking him off stud refreshes the Marketplace search, so he leaves the stud list', async () => {
+    server.use(
+      http.delete(listingUrl, () =>
+        HttpResponse.json({ success: true, data: { studStatus: 'Not at Stud', studFee: 0 } })
+      )
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const searchKey = ['marketplace', 'search', { forSale: false, atStud: true }];
+    client.setQueryData(searchKey, { horses: [{ id: 5 }] });
+    const user = userEvent.setup();
+    renderStanding({ studStatus: 'At Public Stud', studFee: 750 }, client);
+    expect(client.getQueryState(searchKey)?.isInvalidated).toBe(false);
+
+    await user.click(screen.getByRole('radio', { name: 'Not at stud' }));
+
+    expect(
+      await screen.findByText('Thunder Orchard is no longer standing at stud.')
+    ).toBeInTheDocument();
+    expect(client.getQueryState(searchKey)?.isInvalidated).toBe(true);
   });
 });

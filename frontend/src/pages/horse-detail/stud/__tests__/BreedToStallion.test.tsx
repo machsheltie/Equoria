@@ -112,8 +112,11 @@ function serveHorses(data: unknown[] = myHorses) {
   server.use(http.get(`${base}/api/v1/horses`, () => HttpResponse.json({ success: true, data })));
 }
 
-function renderBreed(props: Partial<BreedToStallionProps> = {}, money = 5000) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function renderBreed(
+  props: Partial<BreedToStallionProps> = {},
+  money = 5000,
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+) {
   return render(
     <QueryClientProvider client={client}>
       <MockAuthProvider userOverrides={{ money }}>
@@ -286,5 +289,57 @@ describe('BreedToStallion', () => {
 
     await user.click(screen.getByRole('button', { name: /Breed to Moonrise Sonata/ }));
     expect(await screen.findByText('You have no mares in your stable yet.')).toBeInTheDocument();
+  });
+
+  it('e7tgc.9: a Public Stud she cannot pay for says so in authored words', async () => {
+    serveHorses();
+    server.use(
+      http.post(`${base}/api/v1/studs/99/bookings`, () =>
+        HttpResponse.json(
+          { success: false, code: 'insufficientFunds', message: 'SERVER-SIDE-TEXT' },
+          { status: 400 }
+        )
+      )
+    );
+    const user = userEvent.setup();
+    renderBreed();
+
+    await user.click(screen.getByRole('button', { name: /Breed to Moonrise Sonata/ }));
+    await user.selectOptions(await screen.findByLabelText('Choose one of your mares'), '11');
+
+    expect(
+      await screen.findByText("You don't have enough coins for this stud fee.")
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/SERVER-SIDE-TEXT/)).not.toBeInTheDocument();
+  });
+
+  it('e7tgc.9: a changed stud fee (409) refreshes the stallion, so the button shows the new fee', async () => {
+    serveHorses();
+    server.use(
+      http.post(`${base}/api/v1/studs/99/bookings`, () =>
+        HttpResponse.json(
+          { success: false, message: 'SERVER-SIDE-TEXT', data: { studFee: 800 } },
+          { status: 409 }
+        )
+      )
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const visitKey = ['horses', 99, 'visit'];
+    const searchKey = ['marketplace', 'search', { forSale: false, atStud: true }];
+    client.setQueryData(visitKey, { id: 99 });
+    client.setQueryData(searchKey, { horses: [] });
+    const user = userEvent.setup();
+    renderBreed({}, 5000, client);
+
+    await user.click(screen.getByRole('button', { name: /Breed to Moonrise Sonata/ }));
+    await user.selectOptions(await screen.findByLabelText('Choose one of your mares'), '11');
+
+    expect(
+      await screen.findByText(
+        "Moonrise Sonata's stud terms or your mare changed. Please look again."
+      )
+    ).toBeInTheDocument();
+    expect(client.getQueryState(visitKey)?.isInvalidated).toBe(true);
+    expect(client.getQueryState(searchKey)?.isInvalidated).toBe(true);
   });
 });

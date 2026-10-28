@@ -184,7 +184,7 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
     const results = await doubleSubmitHeldAtMare();
 
     await expectOneBookingCharged(results, FEE);
-    expect(results.some(r => r.body.code === 'INSUFFICIENT_FUNDS')).toBe(false);
+    expect(results.some(r => r.body.code === 'insufficientFunds')).toBe(false);
   });
 
   it('the mare is sold while the booking waits on her row: 404 Mare not found, nothing moves', async () => {
@@ -275,7 +275,7 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
     const res = await bookStud(mareOwner.token, stud.id, { damId: mare.id, expectedStudFee: FEE });
 
     expect(res.status).toBe(400);
-    expect(res.body.code).toBe('INSUFFICIENT_FUNDS');
+    expect(res.body.code).toBe('insufficientFunds');
     expect(await moneyOf(mareOwner.user.id)).toBe(FEE - 1);
     expect(await moneyOf(studOwner.user.id)).toBe(100);
     const dam = await prisma.horse.findUnique({ where: { id: mare.id } });

@@ -82,9 +82,10 @@ export function breedingRefusal(error: unknown, stallionName: string): string {
       409: `${stallionName}'s stud terms or your mare changed. Please look again.`,
     },
     {
-      // The Private request refusal (owner ruling q106); the older stud codes
-      // are SCREAMING_CASE until the camelCase conversion (Equoria-pjvp8)
-      // reaches them, so they are covered by the status copy above.
+      // A Public booking or a Private request she cannot pay for (owner
+      // ruling q106; Equoria-e7tgc.9). The other stud codes are still
+      // SCREAMING_CASE until the camelCase conversion (Equoria-pjvp8) reaches
+      // them, so they are covered by the status copy above.
       insufficientFunds: "You don't have enough coins for this stud fee.",
     }
   );

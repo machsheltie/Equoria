@@ -153,7 +153,7 @@ export async function bookPublicStud(req, res) {
               }
               throw new BookingRefusal(400, {
                 success: false,
-                code: 'INSUFFICIENT_FUNDS',
+                code: 'insufficientFunds',
                 message: `You need ${fee} coins to pay this stud fee.`,
               });
             }

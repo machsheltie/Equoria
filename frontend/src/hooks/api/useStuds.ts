@@ -4,7 +4,9 @@
  *
  * Every breeding or money move invalidates the horses (a mare goes in foal),
  * the requests and ['profile'] (the coin balance), so no consumer shows a stale
- * mare state or balance. There is no toast: each control reports its own
+ * mare state or balance. A stud standing change also refreshes the Marketplace
+ * search, and a 409 (the stud fee or the mare changed) refreshes the stallion
+ * and the search so the button shows the current terms (Equoria-e7tgc.9). There is no toast: each control reports its own
  * failure in place (FRONTEND_ASYNC_STATE_DOCTRINE §3).
  */
 
@@ -17,6 +19,7 @@ import {
   type StudRequestList,
   type StudRequestQuery,
 } from '@/lib/api/studs';
+import { refreshOnConflict } from '@/lib/http/conflict';
 
 export const studKeys = {
   visit: (horseId: number) => ['horses', horseId, 'visit'] as const,
@@ -62,6 +65,8 @@ export function useSetStudStanding(horseId: number) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['horses'] });
       qc.invalidateQueries({ queryKey: studKeys.allRequests });
+      // The Marketplace search lists stallions at stud with their terms.
+      qc.invalidateQueries({ queryKey: ['marketplace'] });
     },
   });
 }
@@ -86,6 +91,7 @@ export function useBreedToStallion() {
       return studsApi.requestPrivateStud(sireId, damId, fee);
     },
     onSuccess: () => refreshAfterBreeding(qc),
+    onError: (error) => refreshOnConflict(qc, error, [['horses'], ['marketplace']]),
   });
 }
 
