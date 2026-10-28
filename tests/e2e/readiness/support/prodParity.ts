@@ -97,6 +97,28 @@ export async function registerAndCompleteOnboarding(
   await page.click('button[type="submit"]');
   expect((await registerResponse).status()).toBe(201);
 
+  // Equoria-voasj (owner ruling q248): no play until the email is confirmed.
+  // A new player is held on /verify-email and the server refuses gameplay
+  // routes; she confirms through the real emailed link, then the wizard opens.
+  await page.waitForURL(/\/verify-email$/);
+  const refused = await page.request.get('/api/v1/horses');
+  expect(refused.status(), 'An unconfirmed player must be refused gameplay routes').toBe(403);
+  expect(((await refused.json()) as { code?: string }).code).toBe('emailNotVerified');
+
+  const verificationEmail = await latestCapturedEmail('verification', email);
+  expect(verificationEmail.preview).toContain('/verify-email');
+  expect(verificationEmail.preview).toContain('token=');
+  const verifyResponse = page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/v1/auth/verify-email') && response.request().method() === 'GET'
+  );
+  await page.goto(verificationEmail.preview, { waitUntil: 'domcontentloaded' });
+  expect((await verifyResponse).status()).toBe(200);
+  // React StrictMode (dev server) runs the page's verify effect twice; the
+  // second call meets a used token and the page shows "Already Verified".
+  await expect(page.locator('body')).toContainText(/Email Verified|Already Verified/);
+  await page.getByRole('button', { name: /Enter the Realm|Continue to Home/ }).click();
+
   await page.waitForURL(/\/onboarding$/);
   await expect(page.locator('h1')).toContainText('Welcome to Equoria');
   await page.locator('[data-testid="onboarding-next"]').click();

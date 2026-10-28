@@ -18,21 +18,15 @@ test('auth, email verification signal, onboarding persistence, and password rese
 
   const player = await registerAndCompleteOnboarding(page, suffix, `Nova ${suffix}`);
 
+  // Equoria-voasj: registerAndCompleteOnboarding already confirmed the email
+  // through the real emailed link (the wizard does not open before that). A
+  // second visit to the confirmed link shows the account as confirmed.
   const verificationEmail = await latestCapturedEmail('verification', player.email);
   expect(verificationEmail.preview).toContain('/verify-email');
   expect(verificationEmail.preview).toContain('token=');
-
-  // Navigate to the real verify-email page with the captured token and confirm
-  // the backend actually verifies the account end-to-end.
   const verifyPage = await browser.newPage();
   const verifyGuard = installProductionParityNetworkGuard(verifyPage);
-  // Frontend uses GET /api/v1/auth/verify-email?token=... (see api-client.ts verifyEmail).
-  const verifyResponse = verifyPage.waitForResponse(
-    (response) =>
-      response.url().includes('/api/v1/auth/verify-email') && response.request().method() === 'GET'
-  );
   await verifyPage.goto(verificationEmail.preview, { waitUntil: 'domcontentloaded' });
-  expect((await verifyResponse).status()).toBe(200);
   await expect(verifyPage.locator('body')).toContainText(/Email Verified|Already Verified/);
   verifyGuard.assertClean();
   await verifyPage.close();
