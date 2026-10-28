@@ -10,11 +10,13 @@
  * Contract:
  *   - Each of the 12 stats is sampled from a per-breed normal distribution
  *     (mean, stdDev) defined in `backend/data/breedStarterStats.json`.
- *   - Each individual stat is in [1, 100] inclusive (no zeros — game rule).
- *   - The TOTAL across all 12 stats is ≤ 200 (game rule). Means in the JSON
- *     sum to ~195-200 by design, but Box-Muller variance can push individual
- *     samples over; `clampStatsToTotalCap` enforces the cap proportionally
- *     and never lets any stat fall below 1.
+ *   - Owner ruling 2026-10-16 (Equoria-7wqbs): "Store horses: each stat 1–20
+ *     at purchase, totaling 200." Every stat is in [1, 20] and the TOTAL
+ *     across all 12 stats is exactly 200 (12 × 20 = 240, so it always fits).
+ *     Means in the JSON sum to ~195-200; Box-Muller variance moves a sample
+ *     either side, so `clampStatsToTotalCap` scales an over-200 roll down
+ *     proportionally and `topUpStatsToTotal` adds the shortfall of an
+ *     under-200 roll one point at a time to randomly chosen stats below 20.
  *
  * Extracted from marketplaceController.mjs as a shared service so the perf
  * seed can call the SAME generator the store calls. Random-stat seeds give
@@ -83,11 +85,12 @@ export const STAT_KEYS = [
  * Clamped to [1, 100] — no zeros, no over-100s. Each stat is independent.
  *
  * @param {{ mean: number, stdDev: number }} params
+ * @param {() => number} [random] - uniform [0, 1) source (defaults to Math.random)
  * @returns {number} integer stat value in [1, 100]
  */
-export function sampleStat({ mean, stdDev }) {
-  const u1 = Math.random() || Number.EPSILON; // guard against log(0)
-  const u2 = Math.random();
+export function sampleStat({ mean, stdDev }, random = Math.random) {
+  const u1 = random() || Number.EPSILON; // guard against log(0)
+  const u2 = random();
   const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
   return Math.max(1, Math.min(100, Math.round(mean + stdDev * z)));
 }
@@ -150,6 +153,40 @@ export function clampStatsToTotalCap(stats, cap) {
 export const TOTAL_STAT_CAP = 200;
 
 /**
+ * Owner ruling 2026-10-16 (Equoria-7wqbs): a store horse's stats are each
+ * 1–20 at purchase and total exactly TOTAL_STAT_CAP.
+ */
+export const storeStatMinimum = 1;
+export const storeStatMaximum = 20;
+export const storeStatTotal = TOTAL_STAT_CAP;
+
+/**
+ * Raise a stat object's total to exactly `total`, one point at a time, each
+ * point going to a randomly chosen stat still below `max`. Leaves a stat
+ * object whose total is already ≥ `total` unchanged.
+ *
+ * @param {Record<string, number>} stats - Object keyed by stat name
+ * @param {number} total - Target sum
+ * @param {number} max - Highest value any stat may reach
+ * @param {() => number} [random] - uniform [0, 1) source (defaults to Math.random)
+ * @returns {Record<string, number>} new stats object
+ */
+export function topUpStatsToTotal(stats, total, max, random = Math.random) {
+  const result = { ...stats };
+  let sum = Object.values(result).reduce((s, v) => s + v, 0);
+  while (sum < total) {
+    const open = Object.keys(result).filter(k => result[k] < max);
+    if (open.length === 0) {
+      break; // every stat is at max: total is unreachable
+    }
+    const key = open[Math.min(open.length - 1, Math.floor(random() * open.length))];
+    result[key] += 1;
+    sum += 1;
+  }
+  return result;
+}
+
+/**
  * Generate a complete 12-stat object for a horse of the given breed.
  *
  * Every breed in the DB MUST have a matching profile in
@@ -158,11 +195,14 @@ export const TOTAL_STAT_CAP = 200;
  * silently shipping a horse with random stats.
  *
  * @param {string} breedName - Breed display name (must match JSON key exactly)
- * @returns {Record<string, number>} object keyed by STAT_KEYS, each in [1, 100]
+ * @param {{ random?: () => number }} [options] - `random`: uniform [0, 1)
+ *   source for every draw (defaults to Math.random; tests pass a seeded one)
+ * @returns {Record<string, number>} object keyed by STAT_KEYS, each in
+ *   [storeStatMinimum, storeStatMaximum], summing to exactly TOTAL_STAT_CAP
  * @throws {Error} (statusCode=500) on missing breed name, missing profile,
  *   or incomplete profile
  */
-export function generateStoreStats(breedName) {
+export function generateStoreStats(breedName, { random = Math.random } = {}) {
   if (!breedName) {
     throw Object.assign(new Error('Breed name is required to generate store horse stats'), {
       statusCode: 500,
@@ -200,13 +240,14 @@ export function generateStoreStats(breedName) {
       const s = profile[k];
       // JSON uses `std`; sampleStat uses `stdDev`. Accept either.
       const stdDev = typeof s.stdDev === 'number' ? s.stdDev : s.std;
-      return [k, sampleStat({ mean: s.mean, stdDev: stdDev ?? 3 })];
+      const value = sampleStat({ mean: s.mean, stdDev: stdDev ?? 3 }, random);
+      return [k, Math.max(storeStatMinimum, Math.min(storeStatMaximum, value))];
     }),
   );
-  // Game rule: total ≤ 200. Means in breedStarterStats.json sum to ~195-200,
-  // but Box-Muller variance can push individual samples over; the cleanup
-  // script `scripts/fix-store-horse-stats.mjs` previously enforced the cap
-  // post-hoc on production data. Now the contract is enforced at generation
-  // time in the SAME path the store and the perf seed both use.
-  return clampStatsToTotalCap(sampled, TOTAL_STAT_CAP);
+  // Owner ruling 2026-10-16: each stat 1–20, total exactly 200. Scaling an
+  // over-200 roll down keeps every stat within [1, 20]; topping an under-200
+  // roll up never lifts a stat past 20. Enforced at generation time in the
+  // SAME path the store and the perf seed both use.
+  const capped = clampStatsToTotalCap(sampled, storeStatTotal);
+  return topUpStatsToTotal(capped, storeStatTotal, storeStatMaximum, random);
 }

@@ -35,7 +35,7 @@ import {
 // Read the breed JSON the same way the service does, so the data-contract
 // test exercises the actual file the runtime reads — not a fixture that
 // could drift from production data.
-const BREED_STARTER_STATS_PATH = resolve(
+const breedStarterStatsPath = resolve(
   dirname(fileURLToPath(import.meta.url)),
   '..',
   '..',
@@ -43,12 +43,12 @@ const BREED_STARTER_STATS_PATH = resolve(
   'data',
   'breedStarterStats.json',
 );
-const BREED_DATA = JSON.parse(readFileSync(BREED_STARTER_STATS_PATH, 'utf8'));
-const BREED_NAMES = Object.keys(BREED_DATA);
+const breedData = JSON.parse(readFileSync(breedStarterStatsPath, 'utf8'));
+const breedNames = Object.keys(breedData);
 
 // Pick a deterministic breed for individual case tests. Sorted to insulate
 // against arbitrary JSON-key ordering changes.
-const KNOWN_BREED = [...BREED_NAMES].sort()[0];
+const knownBreed = [...breedNames].sort()[0];
 
 describe('horseStarterStats — exported constants', () => {
   it('TOTAL_STAT_CAP is 200 (game rule)', () => {
@@ -285,26 +285,30 @@ describe('horseStarterStats — generateStoreStats input validation', () => {
 
 describe('horseStarterStats — generateStoreStats output for a known breed', () => {
   it('returns an object with exactly the 12 STAT_KEYS', () => {
-    const stats = generateStoreStats(KNOWN_BREED);
+    const stats = generateStoreStats(knownBreed);
     expect(Object.keys(stats).sort()).toEqual([...STAT_KEYS].sort());
   });
 
-  it('every stat is an integer in [1, 100]', () => {
-    const stats = generateStoreStats(KNOWN_BREED);
+  it('every stat is an integer in [1, 20]', () => {
+    // Old contract: each stat in [1, 100], total ≤ 200. Owner ruling 2026-10-16
+    // (Equoria-7wqbs): store horses get each stat 1–20, totaling exactly 200.
+    const stats = generateStoreStats(knownBreed);
     for (const [key, value] of Object.entries(stats)) {
       expect(Number.isInteger(value)).toBe(true);
       expect(value).toBeGreaterThanOrEqual(1);
-      expect(value).toBeLessThanOrEqual(100);
+      expect(value).toBeLessThanOrEqual(20);
       // Defensive: catch a future regression where a key sneaks in unmapped.
       expect(STAT_KEYS).toContain(key);
     }
   });
 
-  it('total stats ≤ TOTAL_STAT_CAP across 1000 generations (cap is enforced at generation time)', () => {
+  it('total stats = TOTAL_STAT_CAP across 1000 generations (enforced at generation time)', () => {
+    // Old contract: each stat in [1, 100], total ≤ 200. Owner ruling 2026-10-16
+    // (Equoria-7wqbs): store horses get each stat 1–20, totaling exactly 200.
     let maxTotal = 0;
     let minStat = Number.POSITIVE_INFINITY;
     for (let i = 0; i < 1000; i++) {
-      const stats = generateStoreStats(KNOWN_BREED);
+      const stats = generateStoreStats(knownBreed);
       const total = Object.values(stats).reduce((s, v) => s + v, 0);
       if (total > maxTotal) {
         maxTotal = total;
@@ -314,7 +318,7 @@ describe('horseStarterStats — generateStoreStats output for a known breed', ()
           minStat = v;
         }
       }
-      expect(total).toBeLessThanOrEqual(TOTAL_STAT_CAP);
+      expect(total).toBe(TOTAL_STAT_CAP);
     }
     // Sanity: at least one iteration should have hit the cap reasonably close
     // (otherwise the JSON means + std are too low to ever reach the cap and
@@ -327,7 +331,7 @@ describe('horseStarterStats — generateStoreStats output for a known breed', ()
 
 describe('horseStarterStats — data contract (every breed in the JSON)', () => {
   it('JSON has at least 200 breeds (sanity: catches truncated/empty file)', () => {
-    expect(BREED_NAMES.length).toBeGreaterThanOrEqual(200);
+    expect(breedNames.length).toBeGreaterThanOrEqual(200);
   });
 
   it('every breed in breedStarterStats.json has a complete 12-stat profile', () => {
@@ -337,8 +341,8 @@ describe('horseStarterStats — data contract (every breed in the JSON)', () => 
     // purchase / perf seed throws statusCode=500 in production. Catch
     // that here at unit-test time, not at runtime.
     const incompleteBreeds = [];
-    for (const breedName of BREED_NAMES) {
-      const profile = BREED_DATA[breedName];
+    for (const breedName of breedNames) {
+      const profile = breedData[breedName];
       const missing = STAT_KEYS.filter(k => {
         const s = profile[k];
         return !s || typeof s.mean !== 'number';
@@ -362,16 +366,18 @@ describe('horseStarterStats — data contract (every breed in the JSON)', () => 
     // verify the contract holds for every breed name without bloating
     // the test runtime.
     const failures = [];
-    for (const breedName of BREED_NAMES) {
+    for (const breedName of breedNames) {
       try {
         const stats = generateStoreStats(breedName);
         const total = Object.values(stats).reduce((s, v) => s + v, 0);
-        if (total > TOTAL_STAT_CAP) {
-          failures.push(`${breedName}: total ${total} > cap ${TOTAL_STAT_CAP}`);
+        // Old contract: each stat in [1, 100], total ≤ 200. Owner ruling 2026-10-16
+        // (Equoria-7wqbs): store horses get each stat 1–20, totaling exactly 200.
+        if (total !== TOTAL_STAT_CAP) {
+          failures.push(`${breedName}: total ${total} !== ${TOTAL_STAT_CAP}`);
         }
         for (const [k, v] of Object.entries(stats)) {
-          if (!Number.isInteger(v) || v < 1 || v > 100) {
-            failures.push(`${breedName}: ${k}=${v} out of [1,100]`);
+          if (!Number.isInteger(v) || v < 1 || v > 20) {
+            failures.push(`${breedName}: ${k}=${v} out of [1,20]`);
           }
         }
       } catch (err) {
@@ -381,5 +387,85 @@ describe('horseStarterStats — data contract (every breed in the JSON)', () => 
     if (failures.length > 0) {
       throw new Error(`generateStoreStats failed for ${failures.length} breeds:\n  ${failures.join('\n  ')}`);
     }
+  });
+});
+
+// Equoria-7wqbs — owner ruling 2026-10-16: "Store horses: each stat 1–20 at
+// purchase, totaling 200." 12 stats × 20 = 240 ≥ 200, so the ruling is
+// satisfiable for every breed. A seeded generator (mulberry32) makes each
+// run reproducible and lets one test cover many distinct random streams.
+function seededRandom(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+describe('horseStarterStats — store horse ruling (each stat 1–20, total exactly 200)', () => {
+  it('holds for every breed in the JSON across 20 seeds each', () => {
+    const failures = [];
+    for (const breedName of breedNames) {
+      for (let seed = 1; seed <= 20; seed++) {
+        const stats = generateStoreStats(breedName, { random: seededRandom(seed) });
+        const total = Object.values(stats).reduce((s, v) => s + v, 0);
+        if (total !== 200) {
+          failures.push(`${breedName} seed ${seed}: total ${total} !== 200`);
+        }
+        for (const [k, v] of Object.entries(stats)) {
+          if (!Number.isInteger(v) || v < 1 || v > 20) {
+            failures.push(`${breedName} seed ${seed}: ${k}=${v} out of [1,20]`);
+          }
+        }
+      }
+    }
+    expect(failures.slice(0, 10)).toEqual([]);
+  });
+
+  it('holds with the default Math.random source across 2000 generations', () => {
+    for (let i = 0; i < 2000; i++) {
+      const stats = generateStoreStats(knownBreed);
+      const values = Object.values(stats);
+      expect(values.reduce((s, v) => s + v, 0)).toBe(200);
+      expect(Math.min(...values)).toBeGreaterThanOrEqual(1);
+      expect(Math.max(...values)).toBeLessThanOrEqual(20);
+    }
+  });
+
+  it('the same seed reproduces the same horse; different seeds vary', () => {
+    const a = generateStoreStats(knownBreed, { random: seededRandom(42) });
+    const b = generateStoreStats(knownBreed, { random: seededRandom(42) });
+    expect(b).toEqual(a);
+    const distinct = new Set(
+      Array.from({ length: 30 }, (_, i) =>
+        JSON.stringify(generateStoreStats(knownBreed, { random: seededRandom(1000 + i) })),
+      ),
+    );
+    expect(distinct.size).toBeGreaterThan(1);
+  });
+
+  it('follows the breed profile: a breed stat with a higher mean averages higher', () => {
+    // Pick a breed whose profile has a spread of means, and compare its
+    // highest-mean stat against its lowest-mean stat over many seeds.
+    const breedName = breedNames.find(name => {
+      const means = STAT_KEYS.map(k => breedData[name][k].mean);
+      return Math.max(...means) - Math.min(...means) >= 4;
+    });
+    expect(breedName).toBeDefined();
+    const profile = breedData[breedName];
+    const byMean = [...STAT_KEYS].sort((x, y) => profile[x].mean - profile[y].mean);
+    const low = byMean[0];
+    const high = byMean[byMean.length - 1];
+    let lowSum = 0;
+    let highSum = 0;
+    for (let seed = 1; seed <= 300; seed++) {
+      const stats = generateStoreStats(breedName, { random: seededRandom(seed) });
+      lowSum += stats[low];
+      highSum += stats[high];
+    }
+    expect(highSum).toBeGreaterThan(lowSum);
   });
 });

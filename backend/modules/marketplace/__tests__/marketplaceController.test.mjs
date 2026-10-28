@@ -457,14 +457,16 @@ describe('marketplaceController integration', () => {
         const value = stored[key];
         expect(typeof value).toBe('number');
         // Lower bound: 1 (game minimum) OR mean - 6*std, whichever is higher
-        // Upper bound: 100 (game maximum) OR mean + 6*std, whichever is lower
+        // Upper bound: 20 (store maximum) OR mean + 6*std, whichever is lower
+        // Old contract: each stat in [1, 100], total ≤ 200. Owner ruling 2026-10-16
+        // (Equoria-7wqbs): store horses get each stat 1–20, totaling exactly 200.
         expect(value).toBeGreaterThanOrEqual(Math.max(1, mean - 6 * std));
-        expect(value).toBeLessThanOrEqual(Math.min(100, mean + 6 * std));
+        expect(value).toBeLessThanOrEqual(Math.min(20, mean + 6 * std));
       }
 
-      // Total must respect the 200 cap from clampStatsToTotalCap
+      // Owner ruling 2026-10-16: the stored total is exactly 200.
       const total = STAT_KEYS.reduce((sum, k) => sum + stored[k], 0);
-      expect(total).toBeLessThanOrEqual(200);
+      expect(total).toBe(200);
 
       createdHorseIds.push(horseId);
     });

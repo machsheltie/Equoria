@@ -251,12 +251,13 @@ describe('generateStoreStats', () => {
           expect(result).toHaveProperty(stat);
           expect(typeof result[stat]).toBe('number');
           expect(result[stat]).toBeGreaterThanOrEqual(1);
-          expect(result[stat]).toBeLessThanOrEqual(100);
+          // Old contract: each stat in [1, 100], total ≤ 200. Owner ruling 2026-10-16
+          // (Equoria-7wqbs): store horses get each stat 1–20, totaling exactly 200.
+          expect(result[stat]).toBeLessThanOrEqual(20);
         });
 
-        // Total must not exceed cap
         const total = STAT_KEYS.reduce((s, k) => s + result[k], 0);
-        expect(total).toBeLessThanOrEqual(TOTAL_STAT_CAP);
+        expect(total).toBe(TOTAL_STAT_CAP);
 
         worked = true;
         break;
@@ -286,10 +287,10 @@ describe('generateStoreStats', () => {
       STAT_KEYS.forEach(stat => {
         expect(result).toHaveProperty(stat);
         expect(result[stat]).toBeGreaterThanOrEqual(1);
-        expect(result[stat]).toBeLessThanOrEqual(100);
+        expect(result[stat]).toBeLessThanOrEqual(20);
       });
       const total = STAT_KEYS.reduce((s, k) => s + result[k], 0);
-      expect(total).toBeLessThanOrEqual(TOTAL_STAT_CAP);
+      expect(total).toBe(TOTAL_STAT_CAP);
     }
   });
 
@@ -307,10 +308,12 @@ describe('generateStoreStats', () => {
         // At minimum, the function returns valid stats every time
         results.forEach(r => {
           const total = STAT_KEYS.reduce((s, k) => s + r[k], 0);
-          expect(total).toBeLessThanOrEqual(TOTAL_STAT_CAP);
+          // Old contract: each stat in [1, 100], total ≤ 200. Owner ruling 2026-10-16
+          // (Equoria-7wqbs): store horses get each stat 1–20, totaling exactly 200.
+          expect(total).toBe(TOTAL_STAT_CAP);
           STAT_KEYS.forEach(k => {
             expect(r[k]).toBeGreaterThanOrEqual(1);
-            expect(r[k]).toBeLessThanOrEqual(100);
+            expect(r[k]).toBeLessThanOrEqual(20);
           });
         });
         // We found a valid breed, stop

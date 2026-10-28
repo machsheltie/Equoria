@@ -564,7 +564,7 @@
   "backend/modules/horses/__tests__/horseOverviewPregnancyParity.integration.test.mjs": 6,
   "backend/modules/horses/__tests__/horsePersonalityImpactIdor.integration.test.mjs": 4,
   "backend/modules/horses/__tests__/horseSexCanonical.test.mjs": 15,
-  "backend/modules/horses/__tests__/horseStarterStats.test.mjs": 30,
+  "backend/modules/horses/__tests__/horseStarterStats.test.mjs": 18,
   "backend/modules/horses/__tests__/horseStatPointThreshold.integration.test.mjs": 2,
   "backend/modules/horses/__tests__/horseTemperamentAnalysis.test.mjs": 9,
   "backend/modules/horses/__tests__/horseXpAwardServerAuthoritative.integration.test.mjs": 8,

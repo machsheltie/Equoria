@@ -174,10 +174,11 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
       'focus',
     ];
 
-    // Canonical breeds use sampleStat capped at [1, 100]; non-canonical get [20, 45]
+    // Old contract: each stat in [1, 100], total ≤ 200. Owner ruling 2026-10-16
+    // (Equoria-7wqbs): store horses get each stat 1–20, totaling exactly 200.
     for (const field of statFields) {
       expect(h[field]).toBeGreaterThanOrEqual(1);
-      expect(h[field]).toBeLessThanOrEqual(100);
+      expect(h[field]).toBeLessThanOrEqual(20);
       expect(Number.isInteger(h[field])).toBe(true);
     }
   });
