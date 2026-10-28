@@ -238,7 +238,7 @@ export const rejectPollutedRequest = (req, res, next) => {
  */
 export {
   HORSE_NAME_MIN_LENGTH,
-  HORSE_NAME_MAX_LENGTH,
+  horseNameMaxLength,
   UNNAMED_HORSE_NAME,
   horseNameRejectionReason,
   horseNameRejectionMessage,

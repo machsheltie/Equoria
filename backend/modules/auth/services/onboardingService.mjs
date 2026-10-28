@@ -54,9 +54,28 @@ import {
   generateMarkings,
   generateTemperamentWithDefault,
   DEFAULT_TEMPERAMENT_BREED,
+  horseNameMaxLength,
 } from '../../horses/index.mjs';
 
 const STARTER_HORSE_AGE_GAME_YEARS = 3;
+
+const starterHorseNameSuffix = "'s First Horse";
+
+/**
+ * The generated starter horse name, `<username>'s First Horse`, shortened so it
+ * always fits the shared horse-name limit (Equoria-4fnro; owner ruling
+ * 2026-09-14, Equoria-zalyb: 40 characters). A username may be 30 characters,
+ * which would make 44, so only the username part is cut; the suffix is kept.
+ * Usernames are letters, digits and underscores only, so a plain slice never
+ * splits a character.
+ *
+ * @param {string} username
+ * @returns {string}
+ */
+export function starterHorseName(username) {
+  const room = horseNameMaxLength - starterHorseNameSuffix.length;
+  return `${String(username).slice(0, room)}${starterHorseNameSuffix}`;
+}
 
 /**
  * Create the starter horse for a brand-new user. Non-fatal: failures
@@ -118,7 +137,7 @@ export async function createStarterHorseForNewUser(
 
     const starterHorse = await prisma.horse.create({
       data: {
-        name: `${user.username}'s First Horse`,
+        name: starterHorseName(user.username),
         sex: 'Mare',
         age: 3,
         dateOfBirth,

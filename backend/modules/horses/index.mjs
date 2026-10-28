@@ -43,6 +43,7 @@ export { getHorseById } from './services/horseRouteQueries.mjs';
 export {
   firstHorseNameRejectionMessage,
   horseNameRejectionReason,
+  horseNameMaxLength,
 } from './services/horseNamePolicy.mjs';
 export { generateStoreStats } from './services/horseStarterStats.mjs';
 export { analyzeHorseTemperament } from './services/horseTemperamentAnalysis.mjs';

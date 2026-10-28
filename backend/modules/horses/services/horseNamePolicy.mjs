@@ -68,7 +68,7 @@
  */
 
 export const HORSE_NAME_MIN_LENGTH = 1;
-export const HORSE_NAME_MAX_LENGTH = 40;
+export const horseNameMaxLength = 40;
 
 /**
  * The name every foal is born with (Equoria-4fnro, OWNER RULING 2026-09-14:
@@ -112,7 +112,7 @@ export function horseNameRejectionReason(name) {
   // Bound the RAW value — the stored string is the raw string, so measuring
   // anything else (as validator.js isLength does) would let an over-long name
   // through on a technicality.
-  if (name.length > HORSE_NAME_MAX_LENGTH) {
+  if (name.length > horseNameMaxLength) {
     return 'length';
   }
   if (name.trim().length < HORSE_NAME_MIN_LENGTH) {
@@ -168,7 +168,7 @@ export function horseNameRejectionMessage(reason) {
     case 'type':
       return 'Horse name must be a string';
     case 'length':
-      return `Horse name must be between ${HORSE_NAME_MIN_LENGTH} and ${HORSE_NAME_MAX_LENGTH} characters`;
+      return `Horse name must be between ${HORSE_NAME_MIN_LENGTH} and ${horseNameMaxLength} characters`;
     case 'characters':
       return 'Horse name may not contain < or a null character';
     default:
@@ -200,10 +200,10 @@ export function firstHorseNameRejectionMessage(reason, name) {
   const length = typeof name === 'string' ? name.length : 0;
   switch (reason) {
     case 'length':
-      if (length > HORSE_NAME_MAX_LENGTH) {
+      if (length > horseNameMaxLength) {
         return (
           `That name is ${length} characters — a horse name can be up to ` +
-          `${HORSE_NAME_MAX_LENGTH}. Trim ${length - HORSE_NAME_MAX_LENGTH} and she is ready to ` +
+          `${horseNameMaxLength}. Trim ${length - horseNameMaxLength} and she is ready to ` +
           'come home. Nothing else you chose has been lost.'
         );
       }
