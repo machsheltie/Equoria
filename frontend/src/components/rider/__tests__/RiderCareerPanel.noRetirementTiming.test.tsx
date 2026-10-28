@@ -20,7 +20,7 @@ const veteran: RiderCareerData = {
   id: 7,
   name: 'Veteran Rider',
   experience: 0,
-  level: 6,
+  starLevel: 'intermediate',
   // 101 weeks was the old "warnings start" point (104 - 3); 80 the server's.
   careerWeeks: 101,
   hiredDate: '2025-09-01T00:00:00.000Z',

@@ -90,7 +90,7 @@ async function createTrainer(userId, overrides = {}) {
       personality: overrides.personality ?? 'patient',
       skillLevel: 'expert',
       speciality: overrides.speciality ?? 'Dressage',
-      level: overrides.level ?? 1,
+      starLevel: overrides.starLevel ?? 'rookie',
       retired: overrides.retired ?? false,
       user: { connect: { id: userId } },
     },
@@ -367,7 +367,11 @@ describe('trainerController (real DB)', () => {
 
     it('returns 6 slots with unique, non-generic trait labels', async () => {
       const user = await createUser();
-      const trainer = await createTrainer(user.id, { speciality: 'Dressage', personality: 'patient', level: 4 });
+      const trainer = await createTrainer(user.id, {
+        speciality: 'Dressage',
+        personality: 'patient',
+        starLevel: 'novice',
+      });
 
       const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
       await getTrainerDiscovery(h.req, h.res);
@@ -390,7 +394,11 @@ describe('trainerController (real DB)', () => {
 
     it('persists slots so repeated calls return identical trait labels', async () => {
       const user = await createUser();
-      const trainer = await createTrainer(user.id, { speciality: 'Dressage', personality: 'patient', level: 4 });
+      const trainer = await createTrainer(user.id, {
+        speciality: 'Dressage',
+        personality: 'patient',
+        starLevel: 'novice',
+      });
 
       const h1 = makeReqRes(user.id, { params: { id: String(trainer.id) } });
       await getTrainerDiscovery(h1.req, h1.res);
@@ -410,24 +418,32 @@ describe('trainerController (real DB)', () => {
         });
     });
 
-    it('respects level threshold — level 1 yields 0 discovered slots', async () => {
+    it('respects the threshold — a Rookie (old level 2) reveals exactly 1 slot', async () => {
       const user = await createUser();
-      const trainer = await createTrainer(user.id, { level: 1 });
+      const trainer = await createTrainer(user.id, { starLevel: 'rookie' });
 
       const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
       await getTrainerDiscovery(h.req, h.res);
 
       expect(h.res.statusValue).toBe(200);
       const { data } = h.res.jsonValue;
-      expect(data.discoveredCount).toBe(0);
-      expect(data.slots.every(s => !s.discovered)).toBe(true);
-      expect(data.slots.every(s => s.trait === undefined)).toBe(true);
+      expect(data.discoveredCount).toBe(1);
+      expect(data.slots.filter(s => s.discovered)).toHaveLength(1);
+      expect(data.slots.filter(s => s.trait === undefined)).toHaveLength(5);
     });
 
     it('uses different discipline trait labels for different specialities', async () => {
       const user = await createUser();
-      const dressage = await createTrainer(user.id, { speciality: 'Dressage', personality: 'patient', level: 2 });
-      const jumping = await createTrainer(user.id, { speciality: 'Show Jumping', personality: 'patient', level: 2 });
+      const dressage = await createTrainer(user.id, {
+        speciality: 'Dressage',
+        personality: 'patient',
+        starLevel: 'rookie',
+      });
+      const jumping = await createTrainer(user.id, {
+        speciality: 'Show Jumping',
+        personality: 'patient',
+        starLevel: 'rookie',
+      });
 
       const hD = makeReqRes(user.id, { params: { id: String(dressage.id) } });
       await getTrainerDiscovery(hD.req, hD.res);
@@ -443,7 +459,7 @@ describe('trainerController (real DB)', () => {
 
     it('includes nextDiscoveryAt when slots remain undiscovered', async () => {
       const user = await createUser();
-      const trainer = await createTrainer(user.id, { level: 2 });
+      const trainer = await createTrainer(user.id, { starLevel: 'rookie' });
 
       const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
       await getTrainerDiscovery(h.req, h.res);
@@ -455,10 +471,12 @@ describe('trainerController (real DB)', () => {
     // Prior formula `Math.min(Math.floor(level/2), 6)` topped out at
     // floor(10/2)=5, so the 6th slot was NEVER revealable at the level-10 cap.
     // New stepped cadence [2,4,6,8,9,10] reveals all 6 by level 10.
+    // Owner ruling 2026-10-28 (q229): the old 1-10 level is the star level, two per
+    // star, so these cases set the star level that stands for the old level.
 
-    it('reveals ALL 6 slots for an expert trainer at the level-10 cap', async () => {
+    it('reveals ALL 6 slots for an Expert trainer (the old level-10 cap)', async () => {
       const user = await createUser();
-      const trainer = await createTrainer(user.id, { level: 10 });
+      const trainer = await createTrainer(user.id, { starLevel: 'expert' });
 
       const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
       await getTrainerDiscovery(h.req, h.res);
@@ -480,7 +498,7 @@ describe('trainerController (real DB)', () => {
       // the reveal COUNT is a separate concern. Revealing more slots must expose
       // the existing persisted content verbatim, never regenerate/corrupt it.
       const user = await createUser();
-      const trainer = await createTrainer(user.id, { level: 10 });
+      const trainer = await createTrainer(user.id, { starLevel: 'expert' });
 
       const seeded = [
         {
@@ -544,16 +562,17 @@ describe('trainerController (real DB)', () => {
       expect(row.discoverySlots[5].label).toBe('Seed-F');
     });
 
-    it('follows the stepped cadence at each boundary (L1→0, L8→4, L9→5, L10→6)', async () => {
+    it('follows the stepped cadence by star level (1★→1, 2★→2, 3★→3, 4★→4, 5★→6)', async () => {
       const user = await createUser();
       const cases = [
-        { level: 1, expected: 0 },
-        { level: 8, expected: 4 },
-        { level: 9, expected: 5 }, // FAILS pre-fix: floor(9/2)=4, expected 5
-        { level: 10, expected: 6 }, // FAILS pre-fix: floor(10/2)=5
+        { starLevel: 'rookie', expected: 1 },
+        { starLevel: 'novice', expected: 2 },
+        { starLevel: 'intermediate', expected: 3 },
+        { starLevel: 'advanced', expected: 4 },
+        { starLevel: 'expert', expected: 6 }, // FAILS pre-fix: floor(10/2)=5
       ];
-      for (const { level, expected } of cases) {
-        const trainer = await createTrainer(user.id, { level });
+      for (const { starLevel, expected } of cases) {
+        const trainer = await createTrainer(user.id, { starLevel });
         const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
         await getTrainerDiscovery(h.req, h.res);
         expect(h.res.jsonValue.data.discoveredCount).toBe(expected);

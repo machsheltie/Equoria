@@ -50,7 +50,7 @@ const { fixtureColor } = await import('../../../tests/helpers/fixtureColor.mjs')
 
 const PREFIX = `TestFixture-cmw8537-${randomBytes(3).toString('hex')}`;
 const staffSize = 6;
-const feeOneHorse = 70; // one groom on one horse (Equoria-95yrv)
+const feeOneGroom = 100; // one Rookie groom a week (owner ruling 2026-10-28, q228)
 
 let user;
 const groomIds = [];
@@ -85,6 +85,7 @@ beforeAll(async () => {
         speciality: 'general',
         personality: 'gentle',
         skillLevel: 'novice',
+        starLevel: 'rookie',
         userId: user.id,
       },
     });
@@ -123,7 +124,7 @@ describe('weekly fee pass batches a player’s writes (Equoria-cmw85.37)', () =>
     const { result, statements } = await recorder.measure(() => processWeeklySalaries(now, { userId: user.id }));
 
     expect(result.successful).toBe(1);
-    expect(result.totalAmount).toBe(staffSize * feeOneHorse);
+    expect(result.totalAmount).toBe(staffSize * feeOneGroom);
 
     // The batching claim: statement counts do not scale with staffSize.
     expect(inserts(statements, 'groom_salary_payments')).toHaveLength(1);
@@ -136,14 +137,14 @@ describe('weekly fee pass batches a player’s writes (Equoria-cmw85.37)', () =>
     expect(rows).toHaveLength(staffSize);
     expect(new Set(rows.map(row => row.groomId))).toEqual(new Set(groomIds));
     for (const row of rows) {
-      expect(row).toMatchObject({ amount: feeOneHorse, status: 'paid', paymentType: 'weeklySalary' });
+      expect(row).toMatchObject({ amount: feeOneGroom, status: 'paid', paymentType: 'weeklySalary' });
     }
     const engagements = await prisma.groomEngagement.findMany({
       where: { groomId: { in: groomIds }, endedAt: null },
     });
     expect(engagements).toHaveLength(staffSize);
     const after = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
-    expect(Number(after.money)).toBe(10000 - staffSize * feeOneHorse);
+    expect(Number(after.money)).toBe(10000 - staffSize * feeOneGroom);
 
     // Re-running in the same pay week pays nobody twice (Equoria-icqqm still holds).
     const rerun = await processWeeklySalaries(now, { userId: user.id });

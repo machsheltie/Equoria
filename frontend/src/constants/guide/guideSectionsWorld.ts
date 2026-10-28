@@ -359,7 +359,7 @@ export const guideSectionsWorld: readonly GuideSection[] = [
         caption: 'What you pay for, and when',
         columns: ['What', 'When you pay'],
         rows: [
-          ['Grooms', '70 coins per horse, per week, every Monday'],
+          ['Grooms', 'their star level price (100 to 500), per groom, every Monday'],
           ['Riders', 'their weekly rate, every Monday'],
           ['Training', "the trainer's advertised fee, once per session"],
           ['Feed', 'when you buy the bag'],

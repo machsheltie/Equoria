@@ -2,10 +2,11 @@
  * POST /api/trainers/marketplace/hire — roster-cap enforcement (Equoria-oey96.8).
  *
  * The trainer roster cap scales by STABLE LEVEL, derived from User.level via
- * getStableLevel(user) = clamp(ceil(level/4), 1, 5). Curve (ratified
- * 2026-07-07, docs/design/2026-07-07-game-balance-formulas.md §3):
- *   TRAINER_ROSTER_CAP_BY_STABLE_LEVEL = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 }
- * so User.level 1–4 → SL1 → cap 1; level 5–8 → SL2 → cap 2.
+ * getStableLevel(user) = clamp(ceil(level/4), 1, 5). Owner ruling 2026-10-28 (q222,
+ * Equoria-asmsy) replaced the 2026-07-07 curve (1/2/3/4/5), so these cases were
+ * rewritten to the new one: "2 for level 1, then +1 per level, up to 10", i.e.
+ * User.level 1–4 → SL1 → cap 2; level 5–8 → SL2 → cap 3. GET /roster-cap reports
+ * the same number for the trainer page.
  *
  * Enforcement mirrors the landed groom pattern (Equoria-n4m5j / hduc5): a
  * fast-path pre-check PLUS an authoritative post-lock in-tx re-count of
@@ -148,9 +149,9 @@ beforeAll(() => {
 afterAll(() => cleanup.run(), 30000);
 
 describe('POST /api/trainers/marketplace/hire — roster cap (Equoria-oey96.8)', () => {
-  it('AT CAP (SL1, cap 1): hire is rejected 400 with NO debit, NO trainer row, NO ledger row', async () => {
+  it('AT CAP (SL1, cap 2): hire is rejected 400 with NO debit, NO trainer row, NO ledger row', async () => {
     const { user, token } = await makeUser({ level: 1, money: 2000 });
-    await seedTrainers(user.id, { active: 1 });
+    await seedTrainers(user.id, { active: 2 });
     const [mid] = await seedMarketplace(user.id, 1);
 
     const res = await hire(token, mid);
@@ -161,25 +162,13 @@ describe('POST /api/trainers/marketplace/hire — roster cap (Equoria-oey96.8)',
     const after = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
     expect(Number(after.money)).toBe(2000); // no debit
     const trainerCount = await prisma.trainer.count({ where: { userId: user.id } });
-    expect(trainerCount).toBe(1); // no trainer row created
+    expect(trainerCount).toBe(2); // no trainer row created
     const ledgerCount = await prisma.userTransaction.count({ where: { userId: user.id } });
     expect(ledgerCount).toBe(0); // no ledger row
   });
 
-  it('CEIL BOUNDARY (level 4 → SL1, cap 1): still blocked at 1 non-retired trainer', async () => {
-    const { user, token } = await makeUser({ level: 4, money: 2000 });
-    await seedTrainers(user.id, { active: 1 });
-    const [mid] = await seedMarketplace(user.id, 1);
-
-    const res = await hire(token, mid);
-
-    expect(res.status).toBe(400);
-    const trainerCount = await prisma.trainer.count({ where: { userId: user.id } });
-    expect(trainerCount).toBe(1);
-  });
-
-  it('SCALING (level 5 → SL2, cap 2): a 2nd hire succeeds when 1 non-retired trainer exists', async () => {
-    const { user, token } = await makeUser({ level: 5, money: 2000 });
+  it('BELOW CAP (SL1, cap 2): a 2nd trainer at stable level 1 is hired (the owner report)', async () => {
+    const { user, token } = await makeUser({ level: 1, money: 2000 });
     await seedTrainers(user.id, { active: 1 });
     const [mid] = await seedMarketplace(user.id, 1);
 
@@ -190,21 +179,45 @@ describe('POST /api/trainers/marketplace/hire — roster cap (Equoria-oey96.8)',
     expect(activeCount).toBe(2);
   });
 
-  it('RETIRED DO NOT COUNT (SL1, cap 1): hire succeeds with 0 non-retired + 2 retired trainers', async () => {
+  it('CEIL BOUNDARY (level 4 → SL1, cap 2): still blocked at 2 non-retired trainers', async () => {
+    const { user, token } = await makeUser({ level: 4, money: 2000 });
+    await seedTrainers(user.id, { active: 2 });
+    const [mid] = await seedMarketplace(user.id, 1);
+
+    const res = await hire(token, mid);
+
+    expect(res.status).toBe(400);
+    const trainerCount = await prisma.trainer.count({ where: { userId: user.id } });
+    expect(trainerCount).toBe(2);
+  });
+
+  it('SCALING (level 5 → SL2, cap 3): a 3rd hire succeeds when 2 non-retired trainers exist', async () => {
+    const { user, token } = await makeUser({ level: 5, money: 2000 });
+    await seedTrainers(user.id, { active: 2 });
+    const [mid] = await seedMarketplace(user.id, 1);
+
+    const res = await hire(token, mid);
+
+    expect(res.status).toBe(201);
+    const activeCount = await prisma.trainer.count({ where: { userId: user.id, retired: false } });
+    expect(activeCount).toBe(3);
+  });
+
+  it('RETIRED DO NOT COUNT (SL1, cap 2): hire succeeds with 0 non-retired + 2 retired trainers', async () => {
     const { user, token } = await makeUser({ level: 1, money: 2000 });
     await seedTrainers(user.id, { active: 0, retired: 2 });
     const [mid] = await seedMarketplace(user.id, 1);
 
     const res = await hire(token, mid);
 
-    expect(res.status).toBe(201); // non-retired count (0) < cap (1)
+    expect(res.status).toBe(201); // non-retired count (0) < cap (2)
     const activeCount = await prisma.trainer.count({ where: { userId: user.id, retired: false } });
     expect(activeCount).toBe(1);
   });
 
-  it('CONCURRENT at cap-1 (SL1, cap 1): exactly one 201; roster == cap; no coins move', async () => {
+  it('CONCURRENT at cap-1 (SL1, cap 2): exactly one 201; roster == cap; no coins move', async () => {
     const { user, token } = await makeUser({ level: 1, money: 2000 });
-    await seedTrainers(user.id, { active: 0 }); // one slot (cap 1)
+    await seedTrainers(user.id, { active: 1 }); // one slot left (cap 2)
     const marketplaceIds = await seedMarketplace(user.id, 2);
 
     const results = await Promise.all(marketplaceIds.map(mid => hire(token, mid)));
@@ -215,8 +228,45 @@ describe('POST /api/trainers/marketplace/hire — roster cap (Equoria-oey96.8)',
     expect(rejects.length).toBe(1);
 
     const activeCount = await prisma.trainer.count({ where: { userId: user.id, retired: false } });
-    expect(activeCount).toBe(1); // exactly at cap, never over
+    expect(activeCount).toBe(2); // exactly at cap, never over
     const after = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
     expect(Number(after.money)).toBe(2000); // hiring is free (Equoria-3kegj)
+  });
+});
+
+describe('GET /api/v1/trainers/roster-cap — the limit the trainer page shows (q222)', () => {
+  const rosterCap = async token =>
+    request(app)
+      .get('/api/v1/trainers/roster-cap')
+      .set('Origin', 'http://localhost:3000')
+      .set('Authorization', `Bearer ${token}`);
+
+  it.each([
+    [1, 1, 2],
+    [4, 1, 2],
+    [5, 2, 3],
+    [20, 5, 6],
+  ])('User.level %i (stable level %i) may hold %i trainers', async (level, stableLevel, cap) => {
+    const { user, token } = await makeUser({ level, money: 0 });
+    await seedTrainers(user.id, { active: 1, retired: 1 });
+
+    const res = await rosterCap(token);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual({ rosterCap: cap, stableLevel, activeTrainers: 1 });
+  });
+
+  it('is the same number the hire path refuses at', async () => {
+    const { user, token } = await makeUser({ level: 1, money: 0 });
+    const { rosterCap: cap } = (await rosterCap(token)).body.data;
+    await seedTrainers(user.id, { active: cap });
+    const [mid] = await seedMarketplace(user.id, 1);
+
+    expect((await hire(token, mid)).status).toBe(400);
+  });
+
+  it('requires a login', async () => {
+    const res = await request(app).get('/api/v1/trainers/roster-cap').set('Origin', 'http://localhost:3000');
+    expect(res.status).toBe(401);
   });
 });

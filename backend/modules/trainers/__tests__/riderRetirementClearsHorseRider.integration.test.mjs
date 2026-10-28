@@ -74,7 +74,6 @@ describe('rider retirement ends the assignment on the horse (Equoria-r9u5k)', ()
         skillLevel: 'experienced',
         speciality: 'Jumping',
         weeklyRate: 200,
-        level: 3,
         userId: owner.id,
       },
     });

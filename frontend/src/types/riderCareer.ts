@@ -6,7 +6,8 @@
  *
  * Owner ruling 2026-10-21 (Equoria-dea06): riders are fixed NPCs. They earn no
  * XP and keep the level they were generated with, so the XP-to-level progress
- * helpers that used to live here were removed.
+ * helpers that used to live here were removed. Owner ruling 2026-10-28 (q229): that
+ * level is the star level; the old 1-10 number is gone, from the screen and the data.
  *
  * Rider careers end at a hidden, random retirement age (owner ruling
  * 2026-10-23, Equoria-or2ua). The client never knows or computes it: no screen
@@ -19,7 +20,7 @@ export interface RiderCareerData {
   id: number;
   name: string;
   experience: number; // generated at hire; never earned (Equoria-dea06)
-  level: number; // 1–10, generated at hire and fixed (Equoria-dea06)
+  starLevel: string; // rookie..expert, generated at hire and fixed (q229)
   careerWeeks: number;
   hiredDate: string; // ISO timestamp
   retired: boolean;
@@ -82,10 +83,12 @@ export function isRiderLegacyContractEligible(totalWins: number, prestige: numbe
  * Build career milestone list from rider data.
  */
 export function buildRiderCareerMilestones(
-  level: number,
   careerWeeks: number,
   totalWins: number
 ): RiderCareerMilestone[] {
+  // The two "Level 5" / "Level 10" milestones went with the old 1-10 level (owner
+  // ruling 2026-10-28, q229): a rider's star level is fixed at hire, so it is no
+  // milestone.
   return [
     {
       id: 'hired',
@@ -100,22 +103,10 @@ export function buildRiderCareerMilestones(
       reached: totalWins >= 1,
     },
     {
-      id: 'level_5',
-      label: 'Seasoned Rider (Level 5)',
-      description: 'A rider of level 5 or above',
-      reached: level >= 5,
-    },
-    {
       id: 'ten_wins',
       label: '10 Wins',
       description: 'Accumulated 10 competition victories',
       reached: totalWins >= 10,
-    },
-    {
-      id: 'level_10',
-      label: 'Elite Rider (Level 10)',
-      description: 'Achieved maximum skill level',
-      reached: level >= 10,
     },
     {
       id: 'one_year',

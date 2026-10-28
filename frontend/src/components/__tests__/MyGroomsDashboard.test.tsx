@@ -118,14 +118,12 @@ const mockAssignmentsData = [
   },
 ];
 
-// Equoria-95yrv (owner ruling, 2026-09-14): the weekly fee is 70 per horse in a
-// groom's care, up to ten horses. Sarah is on 2 horses (140), Mike on none (0),
-// Emma on 1 (70). The old fixture carried per-groom wages (100/75/150) and a
-// `totalMonthlyCost` the API has never sent.
+// The server's salary summary, shown as it arrives: the dashboard never computes a fee
+// itself. (Owner ruling 2026-10-28, q228: the server's figure is each groom's star
+// level price per week; this fixture's numbers are simply what the server sent.)
 const mockSalaryCostsData = {
   totalWeeklyCost: 210,
   groomCount: 3,
-  feePerHorsePerWeek: 70,
   maxHorsesPerGroom: 10,
   breakdown: [
     {
@@ -236,8 +234,7 @@ describe('MyGroomsDashboard Component', () => {
       expect(within(groomCard).getByText('Advanced')).toBeInTheDocument();
       expect(within(groomCard).getByText(/foal care/i)).toBeInTheDocument();
       expect(within(groomCard).getByText(/8 years/i)).toBeInTheDocument();
-      // Equoria-95yrv: the card shows the fee the player is actually billed —
-      // 70 per horse, so 140 for Sarah's two — not a per-groom wage.
+      // The card shows the fee the server bills for this groom (140 in the fixture).
       expect(within(groomCard).getByText('Weekly fee')).toBeInTheDocument();
       expect(groomCard).toHaveTextContent(/140/);
     });
@@ -484,7 +481,7 @@ describe('MyGroomsDashboard Component', () => {
       );
 
       // "Weekly Cost" label and the Currency-rendered total live in separate
-      // elements. Equoria-95yrv: 70 x the three horses in this stable's care.
+      // elements. The summary's weekly total, as the server sent it.
       expect(screen.getByText(/weekly cost/i)).toBeInTheDocument();
       expect(screen.getByText('210')).toBeInTheDocument();
     });

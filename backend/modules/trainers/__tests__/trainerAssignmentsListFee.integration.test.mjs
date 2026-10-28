@@ -3,8 +3,9 @@
  * per-session fee and personality (Equoria-r8a6h, owner ruling 2026-10-23).
  *
  * The horse page shows the horse's assigned trainer and "Train Horse <price>".
- * The price is the trainer's advertised per-session fee (Trainer.sessionRate),
- * the same figure the training transaction charges once per weekly session.
+ * The price is the trainer's per-session fee, its star level's price (owner ruling
+ * 2026-10-28, q226), the same figure the training transaction charges once per
+ * weekly session.
  *
  * Real DB, no mocks, id-scoped fail-loud cleanup.
  */
@@ -73,8 +74,10 @@ describe('GET /api/v1/trainers/assignments — fee and personality (Equoria-r8a6
         firstName: 'Fee',
         lastName: `Trainer${randomBytes(3).toString('hex')}`,
         personality: 'patient',
-        skillLevel: 'expert',
+        skillLevel: 'developing',
+        starLevel: 'intermediate',
         speciality: 'Dressage',
+        // A rate from before star levels: the list shows the level price, not this.
         sessionRate: 275,
       },
     });
@@ -100,7 +103,7 @@ describe('GET /api/v1/trainers/assignments — fee and personality (Equoria-r8a6
     expect(res.status).toBe(200);
     const row = res.body.data.find(a => a.horseId === horse.id);
     expect(row).toBeDefined();
-    expect(row.trainerSessionRate).toBe(275);
+    expect(row.trainerSessionRate).toBe(300);
     expect(row.trainerPersonality).toBe('patient');
   });
 });

@@ -142,7 +142,10 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
   /**
    * Create a trainer + an ACTIVE assignment to `horseId`.
    */
-  async function assignTrainer(horseId, { skillLevel, level, speciality, personality, retired = false }) {
+  async function assignTrainer(
+    horseId,
+    { skillLevel, starLevel = 'rookie', speciality, personality, retired = false },
+  ) {
     const trainer = await prisma.trainer.create({
       data: {
         firstName: 'TestFixture',
@@ -150,7 +153,7 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
         personality,
         skillLevel,
         speciality,
-        level,
+        starLevel,
         retired,
         userId: testUser.id,
       },
@@ -169,13 +172,12 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
     const badHireHorse = await makeHorse('t1-badhire', { temperament: 'Nervous', fixtureTrainer: false });
     await assignTrainer(expertHorse.id, {
       skillLevel: 'expert',
-      level: 10,
+      starLevel: 'expert',
       speciality: 'Dressage',
       personality: 'technical',
     });
     await assignTrainer(badHireHorse.id, {
       skillLevel: 'novice',
-      level: 1,
       speciality: 'Racing',
       personality: 'competitive',
     });
@@ -203,7 +205,7 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
     });
     await assignTrainer(horse.id, {
       skillLevel: 'expert',
-      level: 10,
+      starLevel: 'expert',
       speciality: 'Dressage',
       personality: 'technical',
     });
@@ -244,7 +246,7 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
     const horse = await makeHorse('t4-route', { temperament: 'Calm', positiveTraits: ['intelligent'] });
     await assignTrainer(horse.id, {
       skillLevel: 'expert',
-      level: 10,
+      starLevel: 'expert',
       speciality: 'Show Jumping',
       personality: 'technical',
     });
@@ -280,9 +282,11 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
     });
   });
 
-  it('T4 (cap sentinel): expert L10 matched patient+Stubborn (raw 0.235) → net == +20% exactly', () => {
+  // Owner ruling 2026-10-28 (q229): the old 1-10 level is the star level, two per star
+  // (staffCareerLevel), so an Expert is the old level 10.
+  it('T4 (cap sentinel): expert 5-star (L10) matched patient+Stubborn (raw 0.235) → net == +20% exactly', () => {
     const result = computeTrainerModifiers({
-      trainer: { skillLevel: 'expert', level: 10, speciality: 'Dressage', personality: 'patient' },
+      trainer: { skillLevel: 'expert', starLevel: 'expert', speciality: 'Dressage', personality: 'patient' },
       discipline: 'Dressage',
       horseTemperament: 'Stubborn',
     });
@@ -297,7 +301,7 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
     // an otherwise-minimal trainer: ONLY the untainted skill term (novice 0.02)
     // survives — the competitive+Nervous −0.04 penalty does NOT leak.
     const guarded = computeTrainerModifiers({
-      trainer: { skillLevel: 'novice', level: 1, speciality: 'Racing', personality: 'competetive' },
+      trainer: { skillLevel: 'novice', speciality: 'Racing', personality: 'competetive' },
       discipline: 'Dressage',
       horseTemperament: 'nervouss',
     });
@@ -307,7 +311,7 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
     // SENTINEL-POSITIVE: the SAME fixture with correct spellings DOES apply the
     // −0.04 penalty — proving the guard above is load-bearing, not vacuous.
     const unguarded = computeTrainerModifiers({
-      trainer: { skillLevel: 'novice', level: 1, speciality: 'Racing', personality: 'competitive' },
+      trainer: { skillLevel: 'novice', speciality: 'Racing', personality: 'competitive' },
       discipline: 'Dressage',
       horseTemperament: 'Nervous',
     });
@@ -317,7 +321,8 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
 
   // Owner ruling 2026-10-21: Driven keeps Playful's trainer fit (focused +0.03,
   // encouraging +0.02); Willing fits encouraging (+0.04) and technical (+0.03).
-  // A novice, level-1, unmatched trainer is +0.02, so the compat is the rest.
+  // A novice, unmatched trainer with no star level (old level 1) is +0.02, so the
+  // compat is the rest.
   it.each([
     ['focused', 'Driven', 0.05],
     ['encouraging', 'Driven', 0.04],
@@ -328,7 +333,7 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
     ['focused', 'Playful', 0.02],
   ])('trainer fit: %s trainer + %s horse → bonus %d', (personality, temperament, bonus) => {
     const result = computeTrainerModifiers({
-      trainer: { skillLevel: 'novice', level: 1, speciality: 'Racing', personality },
+      trainer: { skillLevel: 'novice', speciality: 'Racing', personality },
       discipline: 'Dressage',
       horseTemperament: temperament,
     });
@@ -341,7 +346,7 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
       // Even an otherwise-elite matched trainer is a dead-end once retired.
       trainer: {
         skillLevel: 'expert',
-        level: 10,
+        starLevel: 'expert',
         speciality: 'Dressage',
         personality: 'patient',
         retired: true,
@@ -358,12 +363,12 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
     // patient has no Bold entry → compat 0 (not a typo, just no synergy). Skill
     // + level + match still apply.
     const result = computeTrainerModifiers({
-      trainer: { skillLevel: 'developing', level: 3, speciality: 'Dressage', personality: 'patient' },
+      trainer: { skillLevel: 'developing', starLevel: 'novice', speciality: 'Dressage', personality: 'patient' },
       discipline: 'Dressage',
       horseTemperament: 'Bold',
     });
-    // 0.05 + (3-1)*0.005 + 0.05 + 0 = 0.11
-    expect(result.bonusPercent).toBeCloseTo(0.11, 10);
+    // 0.05 + (4-1)*0.005 + 0.05 + 0 = 0.115 (a Novice is the old level 4, q229)
+    expect(result.bonusPercent).toBeCloseTo(0.115, 10);
     expect(result.penaltyPercent).toBe(0);
   });
 

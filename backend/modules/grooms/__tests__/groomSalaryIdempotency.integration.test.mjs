@@ -56,13 +56,12 @@ const FIXTURE_PREFIX = 'TestFixture-icqqm';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
- * Equoria-95yrv (owner, 2026-09-14): the weekly fee is $70 per horse assigned.
- * Every `makeGroomAssignment` fixture below puts one groom on one horse, so one
- * groom costs exactly this much a week — whatever their skill, which no longer
- * prices anything. The literals this file used to carry (115 for an
- * expert+showHandling groom, 50 for a novice) were the retired rate table.
+ * Owner ruling 2026-10-28 (q228): the weekly fee is the groom's star level price,
+ * however many horses. Every `makeGroomAssignment` fixture below is a Rookie groom
+ * (the column default), so one groom costs exactly this much a week. (It was 70 per
+ * horse under Equoria-95yrv; the ruling changed it.)
  */
-const FEE_ONE_HORSE = 70;
+const FEE_ONE_HORSE = 100;
 
 const createdAssignmentIds = [];
 const createdGroomIds = [];

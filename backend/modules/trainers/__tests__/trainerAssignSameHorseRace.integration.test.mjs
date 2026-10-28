@@ -78,7 +78,6 @@ describe('trainer assign: two trainers, one horse (Equoria-j8s5c)', () => {
             skillLevel: 'expert',
             speciality: 'Dressage',
             sessionRate: 150,
-            level: 3,
             userId: owner.id,
           },
         }),

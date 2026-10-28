@@ -57,6 +57,8 @@ function renderList(money = 5000) {
   );
 }
 
+// Owner ruling 2026-10-28 (q230): hiring is one click, with the fee on the button and
+// no confirmation box, so a refusal now shows on the card that was clicked.
 describe('RiderList — refusal codes (Equoria-dosig)', () => {
   it('a full roster is named as a full roster, not as a short balance', async () => {
     server.use(
@@ -67,9 +69,8 @@ describe('RiderList — refusal codes (Equoria-dosig)', () => {
     renderList();
 
     await user.click(await screen.findByTestId('hire-button-mk-1'));
-    await user.click(await screen.findByTestId('confirm-hire-button'));
 
-    const alert = await within(await screen.findByTestId('hire-modal')).findByRole('alert');
+    const alert = await within(screen.getByTestId('rider-card-mk-1')).findByRole('alert');
     expect(alert).toHaveTextContent(/roster is full/i);
     expect(alert).not.toHaveTextContent(/balance|funds/i);
     expect(screen.queryByText(/RAW-SERVER-TEXT/)).not.toBeInTheDocument();
@@ -84,9 +85,8 @@ describe('RiderList — refusal codes (Equoria-dosig)', () => {
     renderList();
 
     await user.click(await screen.findByTestId('hire-button-mk-1'));
-    await user.click(await screen.findByTestId('confirm-hire-button'));
 
-    const alert = await within(await screen.findByTestId('hire-modal')).findByRole('alert');
+    const alert = await within(screen.getByTestId('rider-card-mk-1')).findByRole('alert');
     expect(alert).toHaveTextContent(/balance/i);
     expect(alert).not.toHaveTextContent(/roster/i);
     expect(screen.queryByText(/RAW-SERVER-TEXT/)).not.toBeInTheDocument();
@@ -98,7 +98,6 @@ describe('RiderList — one week at a time (Equoria-yw6w1)', () => {
     server.use(
       http.get(MARKETPLACE, () => HttpResponse.json({ success: true, data: marketplace }))
     );
-    const user = userEvent.setup();
     renderList(150); // weeklyRate 100: affordable for one week, not for four
 
     const hireButton = await screen.findByTestId('hire-button-mk-1');
@@ -106,11 +105,11 @@ describe('RiderList — one week at a time (Equoria-yw6w1)', () => {
     expect(hireButton).not.toHaveTextContent(/insufficient/i);
     expect(hireButton).toHaveTextContent('100');
 
-    await user.click(hireButton);
-    const dialog = await screen.findByTestId('hire-modal');
-    expect(dialog).not.toHaveTextContent(/4 weeks|four weeks|4-week/i);
-    expect(within(dialog).getByTestId('hire-charge-now')).toHaveTextContent('100');
-    expect(within(dialog).getByTestId('hire-charge-now')).not.toHaveTextContent('400');
+    // One click, one week: the button itself carries the one-week fee (q230).
+    expect(hireButton).not.toHaveTextContent('400');
+    expect(screen.getByTestId('rider-card-mk-1')).not.toHaveTextContent(
+      /4 weeks|four weeks|4-week/i
+    );
   });
 
   it('the low-balance note does not promise a four-week payment', async () => {

@@ -3,7 +3,7 @@
  *
  * Groom marketplace interface providing:
  * - Marketplace groom listing with filtering and sorting capabilities
- * - Groom hiring functionality with fund and stable limit validation
+ * - One-click groom hiring, fee on the button (owner ruling 2026-10-28, q230)
  * - Marketplace refresh mechanics (free daily or premium instant)
  * - Responsive design with mobile and desktop layouts
  * - Real-time data updates using React Query
@@ -12,9 +12,8 @@
  *
  * Design-system migration (Equoria-o5hub, world-services family): Surface
  * for panels/cards, form Select for filters (replaces celestial-input),
- * Currency for all coin amounts (no USD formatting), GameDialog for the
- * hire confirmation (replaces page-local fixed-inset overlay), canonical
- * SectionLoading / ErrorState, semantic role tokens.
+ * Currency for all coin amounts (no USD formatting), GameDialog for the paid
+ * refresh, canonical SectionLoading / ErrorState, semantic role tokens.
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -43,9 +42,10 @@ import { groomSpecialtyTitle } from '@/lib/staffLabels';
 import StaffLevelStars from '@/components/common/StaffLevelStars';
 import { staffLevelLabel, staffLevelOrder } from '@/lib/staffLevels';
 
-// Equoria-nawn5: one week at the star-level price (weeklyFee); older offers cost 7 sessions.
-const calculateHiringCost = (groom: MarketplaceGroom): number =>
-  typeof groom.weeklyFee === 'number' ? groom.weeklyFee : groom.sessionRate * 7;
+// Owner rulings 2026-10-28 (q226, q228): a groom costs their star level's price per
+// week, however many horses; hiring charges that one week. The server sends it as
+// weeklyFee on every offer.
+const calculateHiringCost = (groom: MarketplaceGroom): number => groom.weeklyFee;
 
 interface GroomListProps {
   onGroomHired?: (_groom: MarketplaceGroom) => void;
@@ -58,8 +58,8 @@ const GroomList: React.FC<GroomListProps> = ({
   marketplaceData: propMarketplaceData,
 }) => {
   const { user } = useAuth();
+  // The groom the last Hire click was for: its card shows "Processing..." and any refusal.
   const [selectedGroom, setSelectedGroom] = useState<MarketplaceGroom | null>(null);
-  const [showHireModal, setShowHireModal] = useState(false);
   const [showRefreshConfirm, setShowRefreshConfirm] = useState(false);
   const [filterStarLevel, setFilterStarLevel] = useState<string>('all');
   const [filterSpecialty, setFilterSpecialty] = useState<string>('all');
@@ -84,12 +84,6 @@ const GroomList: React.FC<GroomListProps> = ({
   const marketplaceData = propMarketplaceData || marketplaceQuery.data;
   const marketplaceLoading = !propMarketplaceData && marketplaceQuery.isLoading;
   const marketplaceError = !propMarketplaceData ? marketplaceQuery.error : null;
-
-  // Equoria-95yrv: the weekly fee's rate and cap, as the server publishes them
-  // with the offer list. Defaulted only so the card renders while the list is
-  // still arriving; the real numbers come from the API, never from a copy here.
-  const feePerHorse = marketplaceData?.feePerHorsePerWeek ?? 70;
-  const maxHorsesPerGroom = marketplaceData?.maxHorsesPerGroom ?? 20;
 
   // Hire groom mutation
   const hireMutation = useHireGroom();
@@ -138,20 +132,14 @@ const GroomList: React.FC<GroomListProps> = ({
     return (user.money || 0) >= calculateHiringCost(groom);
   };
 
-  // Handle hire button click
+  // Owner ruling 2026-10-28 (q230): one click hires; the fee is on the button.
   const handleHireClick = (groom: MarketplaceGroom) => {
     // A refusal belongs to the attempt that earned it; don't carry it to the next.
     hireMutation.reset();
     setSelectedGroom(groom);
-    setShowHireModal(true);
-  };
-
-  // Handle hire confirmation
-  const handleHireConfirm = () => {
-    if (selectedGroom) {
-      hireMutation.mutate(selectedGroom.marketplaceId, {
+    {
+      hireMutation.mutate(groom.marketplaceId, {
         onSuccess: (data) => {
-          setShowHireModal(false);
           setSelectedGroom(null);
           // Callback if provided
           if (onGroomHired && data) {
@@ -395,14 +383,13 @@ const GroomList: React.FC<GroomListProps> = ({
                       <span className="text-[var(--text-secondary)]">Personality:</span>
                       <GroomPersonalityBadge personality={groom.personality} />
                     </div>
-                    {/* Equoria-95yrv (owner ruling, 2026-09-14): a groom's weekly
-                        fee is charged per horse in their care, so the card states
-                        the rate rather than a flat wage nobody is charged. */}
+                    {/* Owner ruling 2026-10-28 (q228): the groom's star level price
+                        each week, however many horses they look after. */}
                     <div className="flex justify-between">
                       <span className="text-[var(--text-secondary)]">Weekly fee:</span>
                       <span className="font-bold inline-flex items-center gap-1">
-                        <Currency amount={feePerHorse} />
-                        <span className="font-normal text-[var(--text-secondary)]">per horse</span>
+                        <Currency amount={groom.weeklyFee} />
+                        /wk
                       </span>
                     </div>
                   </div>
@@ -431,6 +418,16 @@ const GroomList: React.FC<GroomListProps> = ({
                       'Insufficient Funds'
                     )}
                   </Button>
+                  {hireMutation.isError && selectedGroom?.marketplaceId === groom.marketplaceId && (
+                    <InlineError
+                      message={actionMessageFor(
+                        hireMutation.error,
+                        hireRefused,
+                        hireRefusalCodes('groom')
+                      )}
+                      className="mt-3"
+                    />
+                  )}
                 </Surface>
               );
             })}
@@ -454,80 +451,6 @@ const GroomList: React.FC<GroomListProps> = ({
           </div>
         </div>
       )}
-
-      {/* Hire Confirmation Dialog — GameDialog (DECISIONS.md §8). Overlay +
-          blur owned by GameDialogOverlay (single-blur rule). */}
-      <GameDialog
-        open={showHireModal && selectedGroom !== null}
-        onOpenChange={(open) => {
-          if (!open) setShowHireModal(false);
-        }}
-      >
-        {selectedGroom && (
-          <GameDialogContent size="sm" data-testid="hire-modal">
-            <GameDialogHeader>
-              <GameDialogTitle>Confirm Hire</GameDialogTitle>
-            </GameDialogHeader>
-            <GameDialogBody>
-              <p className="text-[var(--text-secondary)] mb-6 leading-relaxed">
-                Are you sure you want to hire{' '}
-                <strong className="text-[var(--text-primary)]">
-                  {selectedGroom.firstName} {selectedGroom.lastName}
-                </strong>
-                ? This professional will be added to your stable staff.
-              </p>
-
-              <Surface variant="subtle" className="p-5">
-                <div className="flex items-center justify-between mb-3 text-sm">
-                  <span className="text-[var(--text-secondary)]">Weekly fee:</span>
-                  <span className="inline-flex items-center gap-1">
-                    <Currency
-                      amount={feePerHorse}
-                      className="font-semibold text-[var(--text-primary)]"
-                    />
-                    <span className="text-[var(--text-secondary)]">
-                      per horse, up to {maxHorsesPerGroom}
-                    </span>
-                  </span>
-                </div>
-                <div className="flex items-center justify-between pt-3 border-t border-[var(--glass-border)]">
-                  <span className="text-sm font-bold text-[var(--text-secondary)]">
-                    Total Upfront:
-                  </span>
-                  <Currency amount={calculateHiringCost(selectedGroom)} variant="balance" />
-                </div>
-              </Surface>
-              {hireMutation.isError && (
-                <InlineError
-                  message={actionMessageFor(
-                    hireMutation.error,
-                    hireRefused,
-                    hireRefusalCodes('groom')
-                  )}
-                  className="mt-4"
-                />
-              )}
-            </GameDialogBody>
-            <GameDialogFooter>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setShowHireModal(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleHireConfirm}
-                disabled={hireMutation.isPending}
-                className="flex-1"
-              >
-                {hireMutation.isPending ? 'Hiring...' : 'Hire Groom'}
-              </Button>
-            </GameDialogFooter>
-          </GameDialogContent>
-        )}
-      </GameDialog>
 
       {/* Paid Refresh Confirmation — GameDialog (mirrors the hire-modal pattern
           and the unrouted MarketplacePage's refresh-confirmation-dialog,

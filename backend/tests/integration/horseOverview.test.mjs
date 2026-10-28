@@ -192,7 +192,6 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
           skillLevel: 'experienced',
           speciality: 'Dressage',
           weeklyRate: 200,
-          level: 4,
           userId: testUser.id,
         },
       });

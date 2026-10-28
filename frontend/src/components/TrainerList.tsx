@@ -3,7 +3,8 @@
  *
  * Trainer hiring marketplace interface:
  * - Fetches live data from /api/trainers/marketplace via useTrainerMarketplace()
- * - Hire button wired via useHireTrainer() + confirmation modal
+ * - One-click "Assign Trainer" via useHireTrainer() (owner ruling 2026-10-28, q230:
+ *   no confirmation box)
  * - Refresh button wired via useRefreshTrainerMarketplace()
  * - Real user balance from useAuth()
  * - Personality and skill-level filter controls
@@ -12,13 +13,13 @@
  *
  * Design-system migration (Equoria-o5hub, world-services family): Surface
  * for panels/cards, form Select for filters, Currency for all coin amounts,
- * GameDialog for the hire confirmation (replaces page-local fixed-inset
- * overlay), canonical SectionLoading / ErrorState / EmptyState, semantic
- * role tokens (no raw palette / text-white/NN).
+ * canonical SectionLoading / ErrorState / EmptyState, semantic role tokens (no raw
+ * palette / text-white/NN).
  *
  * "Assign Trainer" (owner ruling q14 2026-10-23, Equoria-1poxi): the card button hires
- * and assigns in one step, in one server transaction. With a horse in view (horseId)
- * it assigns to that horse; without one the dialog asks which horse first.
+ * and assigns in one step, in one server transaction, with one click (q230). With a
+ * horse in view (horseId) it assigns to that horse; without one the player picks the
+ * horse once, above the list.
  *
  * Cost (owner ruling 2026-10-22, Equoria-3kegj): hiring a trainer is free. A
  * trainer's only cost is its advertised per-training fee (sessionRate), charged
@@ -51,14 +52,6 @@ import {
   refreshRefused,
 } from '@/lib/http/actionMessage';
 import EmptyState from '@/components/ui/EmptyState';
-import {
-  GameDialog,
-  GameDialogContent,
-  GameDialogHeader,
-  GameDialogTitle,
-  GameDialogBody,
-  GameDialogFooter,
-} from '@/components/ui/game/GameDialog';
 import StaffLevelStars from '@/components/common/StaffLevelStars';
 import { staffLevelLabel, staffLevelOrder } from '@/lib/staffLevels';
 import { disciplineLabel } from '@/lib/utils/training-utils';
@@ -84,18 +77,16 @@ interface TrainerListProps {
 
 const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
   const { user } = useAuth();
+  // The trainer the last Assign click was for: its card shows "Assigning..." and any refusal.
   const [selectedTrainer, setSelectedTrainer] = useState<MarketplaceTrainer | null>(null);
-  const [showHireModal, setShowHireModal] = useState(false);
   const [filterStarLevel, setFilterStarLevel] = useState<string>('all');
   const [filterPersonality, setFilterPersonality] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
-  // The horse picked in the dialog when no horse is in view.
+  // The horse picked above the list when no horse is in view.
   const [pickedHorseId, setPickedHorseId] = useState<string>('');
 
   const { data: horses } = useHorses();
   const assignHorseId = horseId ?? (pickedHorseId ? Number(pickedHorseId) : null);
-  const viewedHorseName =
-    horseId === undefined ? null : horses?.find((h) => h.id === horseId)?.name;
 
   const { data, isLoading, isError, error, refetch } = useTrainerMarketplace();
   const hireMutation = useHireTrainer();
@@ -126,24 +117,15 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
     return filtered;
   }, [data, filterStarLevel, filterPersonality, sortBy]);
 
+  // Owner ruling 2026-10-28 (q230): one click hires and assigns; no confirmation box.
   const handleHireClick = (trainer: MarketplaceTrainer) => {
+    if (assignHorseId === null) return;
     // A refusal belongs to the attempt that earned it; don't carry it to the next.
     hireMutation.reset();
-    setPickedHorseId('');
     setSelectedTrainer(trainer);
-    setShowHireModal(true);
-  };
-
-  const handleHireConfirm = () => {
-    if (!selectedTrainer || assignHorseId === null) return;
     hireMutation.mutate(
-      { marketplaceId: selectedTrainer.marketplaceId, horseId: assignHorseId },
-      {
-        onSuccess: () => {
-          setShowHireModal(false);
-          setSelectedTrainer(null);
-        },
-      }
+      { marketplaceId: trainer.marketplaceId, horseId: assignHorseId },
+      { onSuccess: () => setSelectedTrainer(null) }
     );
   };
 
@@ -274,6 +256,28 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
         </div>
       </Surface>
 
+      {/* Which horse an assigned trainer goes to, when no horse is in view (q230). */}
+      {horseId === undefined && (
+        <Surface variant="panel" className="space-y-1.5">
+          <label htmlFor="assign-horse-select" className="type-label block">
+            Assign to which horse?
+          </label>
+          <Select
+            id="assign-horse-select"
+            value={pickedHorseId}
+            onChange={(e) => setPickedHorseId(e.target.value)}
+            className="w-full sm:max-w-xs"
+          >
+            <option value="">Choose a horse</option>
+            {(horses ?? []).map((horse) => (
+              <option key={horse.id} value={String(horse.id)}>
+                {horse.name}
+              </option>
+            ))}
+          </Select>
+        </Surface>
+      )}
+
       {/* Trainer Grid */}
       <div data-testid="trainer-marketplace">
         {isLoading && <SectionLoading label="Loading trainers" minHeight="192px" />}
@@ -332,6 +336,12 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
 
                   {/* Details */}
                   <div className="space-y-2 text-sm border-y border-[var(--glass-border)] py-3 mb-4">
+                    {/* Hiring is free (Equoria-3kegj); said on the card now that the
+                        confirmation box is gone (q230). */}
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-muted)]">Hiring:</span>
+                      <span className="font-semibold">Free</span>
+                    </div>
                     <div className="flex justify-between">
                       <span className="text-[var(--text-muted)]">Training fee:</span>
                       <span className="font-semibold inline-flex items-center gap-1">
@@ -371,7 +381,7 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
                   <Button
                     type="button"
                     onClick={() => handleHireClick(trainer)}
-                    disabled={hireMutation.isPending}
+                    disabled={hireMutation.isPending || assignHorseId === null}
                     className="w-full"
                     aria-label={`Assign Trainer ${trainer.firstName} ${trainer.lastName}`}
                     data-testid={`hire-button-${trainer.marketplaceId}`}
@@ -381,105 +391,23 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
                       ? 'Assigning...'
                       : 'Assign Trainer'}
                   </Button>
+                  {hireMutation.isError &&
+                    selectedTrainer?.marketplaceId === trainer.marketplaceId && (
+                      <InlineError
+                        message={actionMessageFor(
+                          hireMutation.error,
+                          hireRefused,
+                          hireRefusalCodes('trainer')
+                        )}
+                        className="mt-3"
+                      />
+                    )}
                 </Surface>
               );
             })}
           </div>
         )}
       </div>
-
-      {/* Hire Confirmation Dialog — GameDialog (DECISIONS.md §8). Overlay +
-          blur owned by GameDialogOverlay (single-blur rule). */}
-      <GameDialog
-        open={showHireModal && selectedTrainer !== null}
-        onOpenChange={(open) => {
-          if (!open) setShowHireModal(false);
-        }}
-      >
-        {selectedTrainer && (
-          <GameDialogContent size="sm" data-testid="hire-modal">
-            <GameDialogHeader>
-              <GameDialogTitle>Assign Trainer</GameDialogTitle>
-            </GameDialogHeader>
-            <GameDialogBody>
-              <p className="text-[var(--text-secondary)] text-sm mb-5 leading-relaxed">
-                Assign{' '}
-                <strong className="text-[var(--text-primary)]">
-                  {selectedTrainer.firstName} {selectedTrainer.lastName}
-                </strong>
-                {viewedHorseName ? (
-                  <>
-                    {' '}
-                    to <strong className="text-[var(--text-primary)]">{viewedHorseName}</strong>
-                  </>
-                ) : null}
-                ? They will join your training staff. Hiring is free.
-              </p>
-
-              {horseId === undefined && (
-                <div className="mb-4">
-                  <label htmlFor="assign-horse-select" className="type-label block mb-1.5">
-                    Which horse?
-                  </label>
-                  <Select
-                    id="assign-horse-select"
-                    value={pickedHorseId}
-                    onChange={(e) => setPickedHorseId(e.target.value)}
-                    className="w-full"
-                  >
-                    <option value="">Choose a horse</option>
-                    {(horses ?? []).map((horse) => (
-                      <option key={horse.id} value={String(horse.id)}>
-                        {horse.name}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-              )}
-
-              <Surface variant="subtle" className="p-4 space-y-2 text-sm">
-                <div className="flex justify-between text-[var(--text-secondary)]">
-                  <span className="font-bold">Training fee:</span>
-                  <Currency amount={selectedTrainer.sessionRate} variant="balance" />
-                </div>
-                <p className="text-xs text-[var(--text-muted)]">
-                  Paid each time this trainer trains one of your horses — once per horse, per week.
-                </p>
-              </Surface>
-
-              {hireMutation.isError && (
-                <InlineError
-                  message={actionMessageFor(
-                    hireMutation.error,
-                    hireRefused,
-                    hireRefusalCodes('trainer')
-                  )}
-                  className="mt-4"
-                />
-              )}
-            </GameDialogBody>
-            <GameDialogFooter>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setShowHireModal(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={handleHireConfirm}
-                disabled={hireMutation.isPending || assignHorseId === null}
-                className="flex-1"
-                data-testid="confirm-hire-button"
-              >
-                {hireMutation.isPending ? 'Assigning...' : 'Assign Trainer'}
-              </Button>
-            </GameDialogFooter>
-          </GameDialogContent>
-        )}
-      </GameDialog>
     </main>
   );
 };

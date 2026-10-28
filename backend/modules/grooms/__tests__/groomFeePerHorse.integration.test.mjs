@@ -1,28 +1,18 @@
 /**
- * Equoria-95yrv — the weekly groom fee is charged PER HORSE ASSIGNED.
+ * The weekly groom fee is the groom's star level's price, per groom per week.
  *
- * OWNER RULING (2026-09-14 10:23, verbatim, via the decision register):
- *   "Charge the player per horse assigned to a groom per week: $70 per horse per
- *    week, up to 10 horses per groom."
+ * OWNER RULING 2026-10-28 (q228, Equoria-nawn5): "The star price per groom, however
+ * many horses (like riders)." Rookie 100, Novice 200, Intermediate 300, Advanced 400,
+ * Expert 500 (backend/constants/staffLevels.mjs).
  *
- * This REPLACES the per-groom-on-staff basis Equoria-ypb7d.3 introduced, and with
- * it the whole skill/specialty rate table (50/75/100/150 plus 0/10/15). The fee no
- * longer depends on who the groom is — only on how many horses they are working:
- *
- *     weekly fee for a groom = 70 x (their ACTIVE assignments)
- *
- * So a groom on no horses costs NOTHING (hoarding is free again, and idle grooms
- * are not a sink), and a groom on three horses costs three times a groom on one.
- * The ten-horse cap is what bounds it, and it is now enforced at ASSIGNMENT time
- * rather than left implicit in the fee.
- *
- * WHAT EACH CASE WOULD HAVE DONE ON THE PRE-RULING CODE:
- *   1. fee arithmetic            -> was a skill/specialty lookup, horse count unread
- *   2. the weekly pass's debit   -> debited one flat rate per groom on staff
- *   3. the salary summary        -> reported that same flat rate
- *   4. a groom with no horses    -> still cost 50-165/week
- *   5. the 11th assignment       -> accepted (the live caps were 2..5 by skill on
- *                                   one door and ABSENT on the other)
+ * This file used to specify Equoria-95yrv's basis (owner ruling 2026-09-14: 70 per
+ * horse assigned, a groom on no horses free). The 2026-10-28 ruling replaced that
+ * behaviour, so these cases were rewritten to the new contract:
+ *   1. fee arithmetic            -> the level price, whatever the horse count
+ *   2. the weekly pass's debit   -> one level price per groom on staff
+ *   3. the salary summary        -> reports that same price, plus the horse count
+ *   4. a groom with no horses    -> costs their level price, like an idle rider
+ * The horse cap (case 5) is unchanged.
  *
  * Real DB, no mocks. Every `processWeeklySalaries` call is scoped to this suite's
  * own fixture user (`groomSalaryPassScoped.sentinel.test.mjs` enforces that).
@@ -34,7 +24,6 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import {
-  FEE_PER_HORSE_PER_WEEK,
   MAX_HORSES_PER_GROOM,
   calculateWeeklyFee,
   calculateUserSalaryCost,
@@ -105,23 +94,16 @@ async function moneyOf(userId) {
 // 1. The arithmetic itself
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Equoria-95yrv — the fee is 70 x horses assigned', () => {
-  it('is $70 per horse per week, and a groom on no horses is free', () => {
-    expect(FEE_PER_HORSE_PER_WEEK).toBe(70);
-    // The owner ruling 2026-10-26 (q68) raised the cap from ten to twenty.
+describe('q228 — the weekly fee is the groom star level price', () => {
+  it('is 100-500 by level, and the horse cap is twenty (q68)', () => {
     expect(MAX_HORSES_PER_GROOM).toBe(20);
-
-    expect(calculateWeeklyFee(0)).toBe(0);
-    expect(calculateWeeklyFee(1)).toBe(70);
-    expect(calculateWeeklyFee(3)).toBe(210);
-    expect(calculateWeeklyFee(MAX_HORSES_PER_GROOM)).toBe(1400);
+    expect(
+      ['rookie', 'novice', 'intermediate', 'advanced', 'expert'].map(starLevel => calculateWeeklyFee({ starLevel })),
+    ).toEqual([100, 200, 300, 400, 500]);
   });
 
-  it('REPORTS an over-cap groom honestly rather than truncating the charge', () => {
-    // The cap is enforced where assignments are made. A row that predates the cap
-    // must not be silently billed as though it were ten — a player would be told a
-    // number that does not match their own roster.
-    expect(calculateWeeklyFee(12)).toBe(840);
+  it('refuses a groom row without a star level rather than charging nothing', () => {
+    expect(() => calculateWeeklyFee({})).toThrow('Unknown staff level');
   });
 });
 
@@ -129,7 +111,7 @@ describe('Equoria-95yrv — the fee is 70 x horses assigned', () => {
 // 2/3/4. The weekly pass, the summary, and the idle groom — against the real DB
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Equoria-95yrv — the weekly pass and the summary charge the same thing', () => {
+describe('q228 — the weekly pass and the summary charge the same thing', () => {
   let user;
   let workingGroom;
   let idleGroom;
@@ -143,8 +125,8 @@ describe('Equoria-95yrv — the weekly pass and the summary charge the same thin
     });
 
     user = await makeUser('pass');
-    workingGroom = await makeGroom(user.id, 'working');
-    idleGroom = await makeGroom(user.id, 'idle');
+    workingGroom = await makeGroom(user.id, 'working', { starLevel: 'intermediate' });
+    idleGroom = await makeGroom(user.id, 'idle', { starLevel: 'novice' });
 
     for (const label of ['h1', 'h2', 'h3']) {
       const horse = await makeHorse(user.id, label);
@@ -163,34 +145,35 @@ describe('Equoria-95yrv — the weekly pass and the summary charge the same thin
 
   afterAll(() => cleanup.run(), 60000);
 
-  it('the salary summary charges 70 per assigned horse and nothing for an idle groom', async () => {
+  it('the salary summary charges each groom their level price, however many horses', async () => {
     const summary = await calculateUserSalaryCost(user.id);
 
-    expect(summary.totalWeeklyCost).toBe(210);
+    expect(summary.totalWeeklyCost).toBe(500);
     expect(summary.groomCount).toBe(2);
+    expect(summary).not.toHaveProperty('feePerHorsePerWeek');
 
     const working = summary.breakdown.find(b => b.groomId === workingGroom.id);
     const idle = summary.breakdown.find(b => b.groomId === idleGroom.id);
-    expect(working).toMatchObject({ assignedHorses: 3, weeklyFee: 210 });
-    expect(idle).toMatchObject({ assignedHorses: 0, weeklyFee: 0 });
+    expect(working).toMatchObject({ assignedHorses: 3, weeklyFee: 300 });
+    expect(idle).toMatchObject({ assignedHorses: 0, weeklyFee: 200 });
   }, 30000);
 
-  it('the weekly pass debits 70 x assigned horses, once, and bills the idle groom nothing', async () => {
+  it('the weekly pass debits one level price per groom, once, idle grooms included', async () => {
     const before = await moneyOf(user.id);
 
     const results = await processWeeklySalaries(new Date(), { userId: user.id });
     expect(results.errors).toEqual([]);
-    expect(results.totalAmount).toBe(210);
+    expect(results.totalAmount).toBe(500);
 
-    expect(await moneyOf(user.id)).toBe(before - 210);
+    expect(await moneyOf(user.id)).toBe(before - 500);
 
     const rows = await prisma.groomSalaryPayment.findMany({
       where: { userId: user.id, status: 'paid' },
       select: { groomId: true, amount: true },
     });
     const byGroom = Object.fromEntries(rows.map(r => [r.groomId, r.amount]));
-    expect(byGroom[workingGroom.id]).toBe(210);
-    expect(byGroom[idleGroom.id]).toBe(0);
+    expect(byGroom[workingGroom.id]).toBe(300);
+    expect(byGroom[idleGroom.id]).toBe(200);
   }, 60000);
 });
 

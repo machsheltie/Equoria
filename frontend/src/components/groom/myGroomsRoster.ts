@@ -24,8 +24,8 @@ export function activeAssignmentsFor(
 }
 
 /**
- * The weekly fee the server computed for this groom — Equoria-95yrv, 70 per horse
- * in their care. Read from the summary rather than recomputed, so the card and the
+ * The weekly fee the server computed for this groom — their star level's price
+ * (owner ruling 2026-10-28, q228). Read from the summary rather than recomputed, so the card and the
  * wallet can never disagree. `null` means the summary has not arrived: the surface
  * shows an em dash, never a reassuring zero.
  */

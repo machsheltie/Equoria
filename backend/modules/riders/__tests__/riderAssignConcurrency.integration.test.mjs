@@ -78,7 +78,6 @@ describe('rider assign under concurrency (Equoria-j8s5c)', () => {
             skillLevel: 'experienced',
             speciality: 'Jumping',
             weeklyRate: 200,
-            level: 3,
             userId: owner.id,
           },
         }),

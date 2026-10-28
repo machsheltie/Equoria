@@ -46,8 +46,10 @@ import { __TESTING_ONLY_setGroomHireRaceBarrier } from '../services/groomHireRac
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-ypb7d-http';
-const SESSION_RATE = 20; // → hire cost 140
-const HIRE_COST = SESSION_RATE * 7;
+const SESSION_RATE = 20;
+// Owner rulings 2026-10-28 (q226, q228): hiring charges one week at the groom's star
+// level price, never seven sessions. The fixture groom is a Novice (200).
+const HIRE_COST = 200;
 const BARRIER_TIMEOUT_MS = 20000;
 
 const tag = () => randomBytes(6).toString('hex');
@@ -78,6 +80,7 @@ async function makeFreeGroom(label, { withClosedEngagement, formerEmployerId }) 
       speciality: 'general',
       personality: 'gentle',
       skillLevel: 'novice',
+      starLevel: 'novice',
       startAge: 20,
       sessionRate: SESSION_RATE,
       userId: null,

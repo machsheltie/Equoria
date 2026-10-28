@@ -21,7 +21,6 @@ beforeAll(async () => {
       personality: 'focused',
       skillLevel: 'expert',
       speciality: 'Dressage',
-      level: 1,
     },
   });
 });

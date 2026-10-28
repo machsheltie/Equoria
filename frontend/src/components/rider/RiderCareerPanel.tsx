@@ -2,10 +2,9 @@
  * RiderCareerPanel Component (Epic 9C — Story 9C-4)
  *
  * Displays rider career progress:
- * - Level (generated and fixed: riders earn no XP, Equoria-dea06)
  * - Career timeline (weeks served)
  * - Legacy contract eligibility
- * - Career milestones (hired, first win, level caps, years)
+ * - Career milestones (hired, first win, wins, years)
  *
  * Mirrors GroomCareerPanel.tsx for the Rider System.
  */
@@ -25,7 +24,7 @@ interface RiderCareerPanelProps {
 
 const RiderCareerPanel: React.FC<RiderCareerPanelProps> = ({ rider, assignmentCount = 0 }) => {
   const legacyContractEligible = isRiderLegacyContractEligible(rider.totalWins, rider.prestige);
-  const milestones = buildRiderCareerMilestones(rider.level, rider.careerWeeks, rider.totalWins);
+  const milestones = buildRiderCareerMilestones(rider.careerWeeks, rider.totalWins);
 
   const hasCompetitionData = rider.totalCompetitions > 0;
   const winRate = hasCompetitionData
@@ -45,15 +44,8 @@ const RiderCareerPanel: React.FC<RiderCareerPanelProps> = ({ rider, assignmentCo
         </div>
       )}
 
-      {/* Level. Equoria-dea06: staff are fixed NPCs with no XP; this is the
-          level the rider was generated with. */}
-      <p
-        className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider"
-        data-testid="rider-level"
-      >
-        Level {rider.level}
-      </p>
-
+      {/* Owner ruling 2026-10-28 (q229): no old "Level N" here; the rider's stars
+          show on the card. */}
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3">
         <div className="text-center p-3 rounded-lg bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)]">

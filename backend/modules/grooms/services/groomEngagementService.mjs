@@ -487,6 +487,7 @@ export async function listFreeAgents(client, options = {}) {
         name: true,
         speciality: true,
         skillLevel: true,
+        starLevel: true,
         personality: true,
         experience: true,
         level: true,

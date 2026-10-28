@@ -45,6 +45,8 @@ const marketplaceData = {
       personality: 'patient',
       experience: 1,
       sessionRate: 30,
+      starLevel: 'rookie',
+      weeklyFee: 100,
       bio: 'Enthusiastic new groom focused on foal care',
       availability: true,
     },
@@ -57,6 +59,8 @@ const marketplaceData = {
       personality: 'energetic',
       experience: 8,
       sessionRate: 100,
+      starLevel: 'advanced',
+      weeklyFee: 400,
       bio: 'Experienced trainer with energetic approach',
       availability: true,
     },
@@ -69,6 +73,8 @@ const marketplaceData = {
       personality: 'gentle',
       experience: 15,
       sessionRate: 200,
+      starLevel: 'expert',
+      weeklyFee: 500,
       bio: 'Master show handler with gentle touch',
       availability: true,
     },
@@ -78,9 +84,8 @@ const marketplaceData = {
   refreshCost: 0,
   canRefreshFree: true,
   refreshCount: 0,
-  // Equoria-95yrv: the fee rule travels with the offer list.
-  feePerHorsePerWeek: 70,
-  maxHorsesPerGroom: 10,
+  // The horse cap travels with the offer list; each offer carries its weekly fee.
+  maxHorsesPerGroom: 20,
 };
 
 const queryClient = new QueryClient({
@@ -170,8 +175,7 @@ describe('Story 7-1: Groom Hiring Interface', () => {
         wrapper: createWrapper(),
       });
 
-      // Cost of budget groom (30/session * 7 = 210 or session rate visible)
-      // The component shows sessionRate as a cost indicator
+      // Each card shows the groom's weekly fee, the star level price (q228)
       const marketplace = screen.getByTestId('groom-marketplace');
       expect(marketplace).toBeInTheDocument();
 
@@ -268,8 +272,8 @@ describe('Story 7-1: Groom Hiring Interface', () => {
         wrapper: createWrapper(),
       });
 
-      // Budget groom ($30/session = $210 upfront) should be affordable
-      // Premium groom ($200/session = $1400 upfront) should be disabled
+      // Budget groom (Rookie, 100 for the first week) should be affordable
+      // Premium groom (Expert, 500 for the first week) should be disabled
       const hireButtons = screen.getAllByRole('button', { name: /hire/i });
       const disabledButtons = hireButtons.filter((btn) => btn.hasAttribute('disabled'));
       expect(disabledButtons.length).toBeGreaterThan(0);
@@ -312,84 +316,38 @@ describe('Story 7-1: Groom Hiring Interface', () => {
   });
 
   // =========================================================================
-  // AC4: Hire confirmation shows ongoing costs
+  // AC4 (owner ruling 2026-10-28, q230, which replaced the hire confirmation box):
+  // hiring is one click, and the card states the costs before the click.
   // =========================================================================
-  describe('AC4: Hire confirmation shows ongoing costs', () => {
-    it('shows hire confirmation modal when hire button is clicked', async () => {
+  describe('AC4: one-click hire with the costs on the card', () => {
+    it('clicking hire opens no confirmation box', async () => {
       const user = userEvent.setup();
       render(<GroomList userId={1} marketplaceData={marketplaceData} />, {
         wrapper: createWrapper(),
       });
 
-      const hireButtons = screen.getAllByRole('button', { name: /hire/i });
-      await user.click(hireButtons[0]);
+      await user.click(screen.getByRole('button', { name: /hire tom fields/i }));
 
-      expect(screen.getByTestId('hire-modal')).toBeInTheDocument();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('hire confirmation modal states the weekly fee rule before committing', async () => {
-      const user = userEvent.setup();
+    it("each card states the groom's weekly fee, per groom, not per horse (q228)", () => {
       render(<GroomList userId={1} marketplaceData={marketplaceData} />, {
         wrapper: createWrapper(),
       });
 
-      const hireButtons = screen.getAllByRole('button', { name: /hire/i });
-      await user.click(hireButtons[0]);
-
-      // Equoria-95yrv: what hiring costs weekly is 70 per horse you put them on,
-      // up to ten — not a flat wage. The player sees the rule before committing.
-      const modal = screen.getByTestId('hire-modal');
-      expect(within(modal).getByText(/weekly fee/i)).toBeInTheDocument();
-      expect(modal).toHaveTextContent(/per horse, up to 10/i);
+      const card = screen.getByTestId('groom-card-groom-mid');
+      expect(card).toHaveTextContent(/weekly fee:\s*400/i);
+      expect(card).not.toHaveTextContent(/per horse/i);
     });
 
-    it('hire confirmation modal shows total upfront cost', async () => {
-      const user = userEvent.setup();
+    it("the hire button carries one week's fee and names the groom", () => {
       render(<GroomList userId={1} marketplaceData={marketplaceData} />, {
         wrapper: createWrapper(),
       });
 
-      const hireButtons = screen.getAllByRole('button', { name: /hire/i });
-      await user.click(hireButtons[0]);
-
-      const modal = screen.getByTestId('hire-modal');
-      expect(within(modal).getByText(/total upfront/i)).toBeInTheDocument();
-    });
-
-    it('hire confirmation shows the groom name being hired', async () => {
-      const user = userEvent.setup();
-      render(<GroomList userId={1} marketplaceData={marketplaceData} />, {
-        wrapper: createWrapper(),
-      });
-
-      // Click the first hire button (grooms sorted alphabetically by default - Emma first)
-      const hireButtons = screen.getAllByRole('button', { name: /hire/i });
-      await user.click(hireButtons[0]);
-
-      const modal = screen.getByTestId('hire-modal');
-      // Modal mentions one of our groom names (the one that was clicked)
-      const modalText = modal.textContent ?? '';
-      expect(modalText).toMatch(/Emma|Thompson|Sarah|Johnson|Tom|Fields/i);
-    });
-
-    it('can cancel hire from confirmation modal', async () => {
-      const user = userEvent.setup();
-      render(<GroomList userId={1} marketplaceData={marketplaceData} />, {
-        wrapper: createWrapper(),
-      });
-
-      const hireButtons = screen.getAllByRole('button', { name: /hire/i });
-      await user.click(hireButtons[0]);
-
-      // Modal open
-      expect(screen.getByTestId('hire-modal')).toBeInTheDocument();
-
-      // Click cancel
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
-      await user.click(cancelButton);
-
-      // Modal closed
-      expect(screen.queryByTestId('hire-modal')).not.toBeInTheDocument();
+      const button = screen.getByRole('button', { name: /hire emma thompson/i });
+      expect(button).toHaveTextContent('500');
     });
   });
 
@@ -413,7 +371,6 @@ describe('Story 7-1: Groom Hiring Interface', () => {
 
     const salaryCosts = {
       totalWeeklyCost: 210,
-      feePerHorsePerWeek: 70,
       maxHorsesPerGroom: 10,
       groomCount: 1,
       breakdown: [
@@ -473,8 +430,8 @@ describe('Story 7-1: Groom Hiring Interface', () => {
         { wrapper: createWrapper() }
       );
 
-      // Equoria-95yrv: the same 210 appears twice now — as the stable's weekly
-      // cost and as this groom's own fee (three horses at 70) — so assert on the
+      // The same 210 appears twice — as the stable's weekly cost and as this
+      // groom's own fee in the server's summary — so assert on the
       // summary tile rather than on the first match anywhere.
       const weeklyTile = screen.getByText(/weekly cost/i).closest('div');
       expect(weeklyTile).toHaveTextContent('210');
@@ -488,7 +445,6 @@ describe('Story 7-1: Groom Hiring Interface', () => {
           assignmentsData={[]}
           salaryCostsData={{
             totalWeeklyCost: 0,
-            feePerHorsePerWeek: 70,
             maxHorsesPerGroom: 10,
             groomCount: 0,
             breakdown: [],

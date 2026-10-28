@@ -9,7 +9,7 @@ import NotFoundError from '../../../errors/NotFoundError.mjs';
 // Equoria-95yrv: the cap, the rate and the refusal wording are the fee's, so they
 // are DEFINED with the fee and imported here. Two copies would drift.
 import {
-  FEE_PER_HORSE_PER_WEEK,
+  calculateWeeklyFee,
   MAX_HORSES_PER_GROOM,
   acquireGroomRosterLockTx,
   assertGroomHasRoomForAnotherHorse,
@@ -24,8 +24,9 @@ import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
 /**
  * Assignment configuration.
  *
- * Equoria-95yrv, owner ruling 2026-09-14 10:23: "$70 per horse per week, up to 10
- * horses per groom." ONE cap, the same for every groom, and it is the ruling's.
+ * ONE horse cap, the same for every groom (Equoria-95yrv; twenty since owner ruling
+ * 2026-10-26, q68). What a groom costs is their star level's price per week (owner
+ * ruling 2026-10-28, q228), which lives with the fee in groomFeeBasisService.
  *
  * WHAT WENT, AND WHY:
  *   - `MAX_ASSIGNMENTS_BY_SKILL` (2/3/4/5 by skill) contradicted the owner's
@@ -34,16 +35,12 @@ import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
  *     how many horses they may hold.
  *   - `WEEKLY_SALARY_BY_SKILL` (100/200/350/500) and `SALARY_MULTIPLIERS` were a
  *     second, never-charged pay table — nothing computed a fee from them; the real
- *     one lives in groomSalaryService, and it is now 70 per horse with no
- *     multipliers. A published rate nobody charges is a lie to whoever reads
- *     GET /api/groom-assignments/config.
+ *     one lives in groomFeeBasisService. A published rate nobody charges is a lie
+ *     to whoever reads GET /api/groom-assignments/config.
  */
 export const ASSIGNMENT_CONFIG = {
   // The most horses one groom may be working at a time.
   MAX_HORSES_PER_GROOM,
-
-  // What each of those horses costs the player per week.
-  FEE_PER_HORSE_PER_WEEK,
 };
 
 /**
@@ -398,12 +395,12 @@ export async function getUserAssignments(userId, filters = {}) {
 /**
  * Calculate weekly fee costs for all of a user's groom assignments.
  *
- * Equoria-95yrv: $70 per horse per week. The old shape multiplied a per-skill base
- * salary (100/200/350/500) by an assignment-count "efficiency" multiplier — a pay
- * table nothing ever charged, sitting on the assignment dashboard next to the real
- * fee. Both keys are kept (`baseSalary` is now the per-horse rate, `totalSalary`
- * the groom's fee) so the dashboard reader is unchanged; the numbers are the ones
- * the player is actually billed.
+ * Owner ruling 2026-10-28 (q228): each groom costs their star level's price per
+ * week, however many horses they look after. Both keys are kept (`baseSalary` and
+ * `totalSalary` are both that weekly fee) so the dashboard reader is unchanged; the
+ * numbers are the ones the player is actually billed. This read covers the grooms
+ * working at least one horse; the salary summary (calculateUserSalaryCost) lists
+ * every groom on staff.
  *
  * @param {string} userId - User ID
  * @returns {Object} Fee calculation
@@ -421,6 +418,7 @@ export async function calculateWeeklySalaryCosts(userId) {
           id: true,
           name: true,
           skillLevel: true,
+          starLevel: true,
         },
       },
     },
@@ -436,16 +434,16 @@ export async function calculateWeeklySalaryCosts(userId) {
       groomCosts[groomId] = {
         groom: assignment.groom,
         assignmentCount: 0,
-        baseSalary: FEE_PER_HORSE_PER_WEEK,
+        baseSalary: calculateWeeklyFee(assignment.groom),
         totalSalary: 0,
       };
     }
     groomCosts[groomId].assignmentCount++;
   });
 
-  // Equoria-95yrv: 70 per horse, no multipliers.
+  // Owner ruling 2026-10-28 (q228): one weekly fee per groom, not per horse.
   Object.values(groomCosts).forEach(groomCost => {
-    groomCost.totalSalary = groomCost.assignmentCount * FEE_PER_HORSE_PER_WEEK;
+    groomCost.totalSalary = groomCost.baseSalary;
     totalWeeklyCost += groomCost.totalSalary;
   });
 

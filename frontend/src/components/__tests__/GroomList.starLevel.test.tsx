@@ -39,7 +39,6 @@ const marketplace = (grooms: unknown[]) => ({
   grooms,
   lastRefresh: new Date().toISOString(),
   nextFreeRefresh: new Date(Date.now() + 86400000).toISOString(),
-  feePerHorsePerWeek: 70,
   maxHorsesPerGroom: 20,
   refreshCost: 0,
   canRefreshFree: true,
@@ -86,11 +85,16 @@ describe('GroomList star levels (Equoria-nawn5)', () => {
     expect(within(card).queryByText('intermediate')).not.toBeInTheDocument();
   });
 
-  it('an offer from before star levels shows the week it advertised', async () => {
-    await renderList([offer({})]);
+  // Owner rulings 2026-10-28 (q226, q228) changed this contract: an offer from before star
+  // levels used to show the week it advertised (seven sessions). The server now prices
+  // every offer at its level, and a groom's weekly fee is that price per groom.
+  it('the weekly fee on the card is the level price per groom, never per horse', async () => {
+    await renderList([offer({ starLevel: 'advanced', weeklyFee: 400 })]);
 
     const card = await screen.findByTestId('groom-card-groom-x');
-    expect(within(card).getByRole('button', { name: 'Hire Nell Ashby' })).toHaveTextContent('210');
-    expect(within(card).getByTestId('staff-level')).toHaveTextContent('Unrated');
+    expect(card).toHaveTextContent(/weekly fee:\s*400/i);
+    expect(card).toHaveTextContent('/wk');
+    expect(card).not.toHaveTextContent(/per horse/i);
+    expect(within(card).getByRole('button', { name: 'Hire Nell Ashby' })).toHaveTextContent('400');
   });
 });

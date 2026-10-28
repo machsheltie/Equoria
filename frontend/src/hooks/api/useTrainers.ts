@@ -43,9 +43,24 @@ export const trainerKeys = {
   assignments: () => [...trainerKeys.all, 'assignments'] as const,
   marketplace: () => [...trainerKeys.all, 'marketplace'] as const,
   discovery: (trainerId: number) => [...trainerKeys.all, 'discovery', trainerId] as const,
+  rosterLimit: () => [...trainerKeys.all, 'rosterLimit'] as const,
 };
 
 // Hooks
+
+/**
+ * How many trainers the player may hold (owner ruling 2026-10-28, q222: 2 at stable
+ * level 1, one more per level, up to 10). Read from the server, which enforces the
+ * same number at hire, so the page and a refusal never disagree.
+ */
+export function useTrainerRosterLimit() {
+  return useQuery({
+    queryKey: trainerKeys.rosterLimit(),
+    queryFn: () => trainersApi.getRosterLimit(),
+    staleTime: 2 * 60 * 1000,
+    networkMode: 'always',
+  });
+}
 
 export function useUserTrainers(userId: string | number) {
   return useQuery<TrainerEntry[], ApiError>({

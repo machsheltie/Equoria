@@ -37,7 +37,8 @@ import { hireFromMarketplace } from '../controllers/groomMarketplaceController.m
 
 const FIXTURE_PREFIX = 'TestFixture-26wuo-groom';
 const SESSION_RATE = 100;
-const HIRING_COST = SESSION_RATE * 7; // controller line 216: sessionRate * 7
+// One week at the offer's star level price (owner ruling 2026-10-28, q226): Advanced.
+const HIRING_COST = 400;
 
 let happyUser;
 let happyMarketplaceId;
@@ -72,6 +73,7 @@ async function seedOfferState(userId) {
       lastName: 'Groom',
       specialty: 'general',
       skillLevel: 'experienced',
+      starLevel: 'advanced',
       personality: 'gentle',
       experience: 5,
       sessionRate: SESSION_RATE,

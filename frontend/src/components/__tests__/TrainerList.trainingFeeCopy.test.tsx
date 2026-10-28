@@ -14,7 +14,6 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { server } from '@/test/msw/server';
@@ -57,7 +56,7 @@ function renderList() {
     <QueryClientProvider client={qc}>
       <MemoryRouter>
         <MockAuthProvider>
-          <TrainerList userId="user-1" />
+          <TrainerList userId="user-1" horseId={1} />
         </MockAuthProvider>
       </MemoryRouter>
     </QueryClientProvider>
@@ -84,19 +83,18 @@ describe('TrainerList — per-training fee copy (Equoria-3kegj)', () => {
     expect(screen.queryByText(/upfront/i)).not.toBeInTheDocument();
   });
 
-  it('the hire dialog says hiring is free and names the fee charged per training', async () => {
+  // Owner ruling 2026-10-28 (q230): no confirmation box; the card itself says hiring
+  // is free next to the fee charged per training.
+  it('the card says hiring is free and names the fee charged per training', async () => {
     server.use(
       http.get(MARKETPLACE, () => HttpResponse.json({ success: true, data: marketplace }))
     );
-    const user = userEvent.setup();
     renderList();
 
-    await user.click(await screen.findByTestId('hire-button-mk-fee'));
-    const dialog = await screen.findByTestId('hire-modal');
-
-    expect(dialog).toHaveTextContent(/hiring is free/i);
-    expect(within(dialog).getByText(/training fee/i)).toBeInTheDocument();
-    expect(dialog).toHaveTextContent(/6,200/);
-    expect(dialog).not.toHaveTextContent(/upfront|4 weeks|weekly rate|24,800/i);
+    const card = await screen.findByTestId('trainer-card-mk-fee');
+    expect(card).toHaveTextContent(/hiring:\s*free/i);
+    expect(within(card).getByText(/training fee/i)).toBeInTheDocument();
+    expect(card).toHaveTextContent(/6,200/);
+    expect(card).not.toHaveTextContent(/upfront|4 weeks|weekly rate|24,800/i);
   });
 });

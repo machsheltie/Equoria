@@ -42,8 +42,8 @@ import {
 } from '../hooks/api/useGrooms';
 import { useHorses } from '../hooks/api/useHorses';
 import type { Groom, GroomAssignment, SalarySummary } from '@/lib/api-client';
-// Equoria-95yrv: the roster arithmetic — who is caring for what, what that costs this
-// week (70 per horse), and the card order. Pure functions, no composition change.
+// The roster arithmetic — who is caring for what, what that costs this week (each
+// groom's star level price, q228), and the card order. Pure functions, no composition change.
 import {
   DEFAULT_MAX_HORSES_PER_GROOM,
   activeAssignmentsFor,
@@ -131,7 +131,6 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
     salaryCostsFromAPI || {
       totalWeeklyCost: 0,
       groomCount: 0,
-      feePerHorsePerWeek: 0,
       maxHorsesPerGroom: DEFAULT_MAX_HORSES_PER_GROOM,
       breakdown: [],
     };
@@ -463,8 +462,8 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                   <span className="type-label text-xs text-[var(--text-secondary)]">
                     Weekly fee
                   </span>
-                  {/* Equoria-95yrv: per horse in the groom's care, so a groom on none
-                      costs nothing. An em dash while the summary loads — never a zero. */}
+                  {/* q228: the groom's star level price each week, however many
+                      horses. An em dash while the summary loads — never a zero. */}
                   <span className="font-bold inline-flex items-center gap-1">
                     {weeklyFee === null ? (
                       <span aria-label="Weekly fee unknown">—</span>

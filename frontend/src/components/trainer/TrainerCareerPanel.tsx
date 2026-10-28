@@ -2,24 +2,25 @@
  * TrainerCareerPanel — Career progress display (Epic 13 — Story 13-4)
  *
  * Displays trainer career progression:
- * - Level (generated and fixed: trainers earn no XP, Equoria-dea06)
  * - Career timeline (weeks served, sessions run)
  * - Retirement status / warnings
  * - Legacy certification eligibility
- * - Career milestones (hired, first session, level caps)
+ * - Career milestones (hired, first session, service, sessions)
  *
  * Mirrors RiderCareerPanel.tsx for the Trainer System.
  * Retirement: mandatory at 80 weeks; early at L8+
  */
 
 import React from 'react';
+import { staffLevelStars } from '@/lib/staffLevels';
 import { Trophy, Clock, AlertTriangle, Star, CheckCircle, Circle } from 'lucide-react';
 
 export interface TrainerCareerData {
   id: number;
   name: string;
   experience: number;
-  level: number;
+  /** rookie..expert (owner ruling 2026-10-28, q229: the only level a trainer has). */
+  starLevel: string;
   careerWeeks: number;
   hiredDate: string;
   retired: boolean;
@@ -30,22 +31,24 @@ export interface TrainerCareerData {
 const MANDATORY_RETIREMENT_WEEKS = 80;
 const RETIREMENT_WARNING_WEEKS = 72; // 8 weeks notice
 
-function calculateRetirementStatus(careerWeeks: number, level: number) {
+function calculateRetirementStatus(careerWeeks: number, starLevel: string) {
   const mandatoryRetirement = careerWeeks >= MANDATORY_RETIREMENT_WEEKS;
-  const earlyRetirement = level >= 8;
   const isApproachingRetirement = careerWeeks >= RETIREMENT_WARNING_WEEKS && !mandatoryRetirement;
   const weeksRemaining = mandatoryRetirement ? 0 : MANDATORY_RETIREMENT_WEEKS - careerWeeks;
-  const legacyEligible = level >= 7;
+  // The old "level 7 or above" in stars (owner ruling 2026-10-28, q229: two old
+  // levels per star), i.e. Advanced or Expert.
+  const legacyEligible = staffLevelStars(starLevel) * 2 >= 7;
   return {
     mandatoryRetirement,
-    earlyRetirement,
     isApproachingRetirement,
     weeksRemaining,
     legacyEligible,
   };
 }
 
-function buildMilestones(level: number, careerWeeks: number, totalSessions: number) {
+// The "Level 3 / 6 / 9" milestones went with the old 1-10 level (owner ruling
+// 2026-10-28, q229): a trainer's star level is fixed at hire, so it is no milestone.
+function buildMilestones(careerWeeks: number, totalSessions: number) {
   return [
     {
       id: 'hired',
@@ -60,34 +63,16 @@ function buildMilestones(level: number, careerWeeks: number, totalSessions: numb
       reached: totalSessions >= 1,
     },
     {
-      id: 'level3',
-      label: 'Level 3 Certified',
-      description: 'Earned junior certification',
-      reached: level >= 3,
-    },
-    {
       id: 'weeks_12',
       label: '12 Weeks Service',
       description: 'Three months on the payroll',
       reached: careerWeeks >= 12,
     },
     {
-      id: 'level6',
-      label: 'Level 6 Senior',
-      description: 'Earned senior trainer status',
-      reached: level >= 6,
-    },
-    {
       id: 'sessions_50',
       label: '50 Training Sessions',
       description: 'Seasoned veteran trainer',
       reached: totalSessions >= 50,
-    },
-    {
-      id: 'level9',
-      label: 'Level 9 Master',
-      description: 'Near-legendary expertise',
-      reached: level >= 9,
     },
   ];
 }
@@ -101,8 +86,8 @@ const TrainerCareerPanel: React.FC<TrainerCareerPanelProps> = ({
   trainer,
   assignmentCount = 0,
 }) => {
-  const retirementStatus = calculateRetirementStatus(trainer.careerWeeks, trainer.level);
-  const milestones = buildMilestones(trainer.level, trainer.careerWeeks, trainer.totalSessions);
+  const retirementStatus = calculateRetirementStatus(trainer.careerWeeks, trainer.starLevel);
+  const milestones = buildMilestones(trainer.careerWeeks, trainer.totalSessions);
 
   return (
     <div className="space-y-5" data-testid="trainer-career-panel">
@@ -134,15 +119,8 @@ const TrainerCareerPanel: React.FC<TrainerCareerPanelProps> = ({
         </div>
       )}
 
-      {/* Level. Equoria-dea06: staff are fixed NPCs with no XP; this is the
-          level the trainer was generated with. */}
-      <p
-        className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider"
-        data-testid="trainer-level"
-      >
-        Level {trainer.level}
-      </p>
-
+      {/* Owner ruling 2026-10-28 (q229): no old "Level N" here; the trainer's stars
+          show on the card. */}
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3">
         <div className="text-center p-3 rounded-lg bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)]">

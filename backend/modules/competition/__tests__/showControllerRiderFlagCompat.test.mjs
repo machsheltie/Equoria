@@ -91,7 +91,7 @@ const STAT_BASE = {
 // Rider config producing an EXACT bonus of 0.090 (below the 0.10 BONUS_CAP so
 // the positive-flag factor of 1.08 has headroom and does not clamp):
 //   experienced            -> +0.030
-//   level 10 (level-1)*0.004-> +0.036
+//   Expert, level 10 (level-1)*0.004 -> +0.036 (q229: two old levels per star)
 //   prestige 60 *0.0004     -> +0.024   (total 0.090)
 //   personality 'gentle' has NO Dressage affinity -> +0.000
 const RIDER_CONFIG = {
@@ -99,7 +99,7 @@ const RIDER_CONFIG = {
   personality: 'gentle',
   skillLevel: 'experienced',
   speciality: 'Dressage',
-  level: 10,
+  starLevel: 'expert',
   prestige: 60,
 };
 

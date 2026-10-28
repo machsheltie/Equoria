@@ -2,11 +2,9 @@
  * groomSalaryService branch-coverage tests (Equoria-jkht coverage sprint).
  *
  * Pure-function tests (no DB):
- *   calculateWeeklyFee — $70 per assigned horse (Equoria-95yrv, owner ruling
- *   2026-09-14). The skill/specialty rate table these tests used to walk
- *   (50/75/100/150 + 0/10/15) no longer exists: the fee is priced per horse and
- *   no longer depends on who the groom is, so those branches were deleted with
- *   the code they covered rather than re-pointed at a number nobody charges.
+ *   calculateWeeklyFee — the groom's star level price per week (owner ruling
+ *   2026-10-28, q228, which replaced the 70-per-horse basis of Equoria-95yrv; these
+ *   cases were rewritten to the new contract).
  *
  * DB-path tests (no fixture — non-existent IDs return empty / zero):
  *   getSalaryPaymentHistory — returns [] for non-existent user
@@ -18,7 +16,6 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
-  FEE_PER_HORSE_PER_WEEK,
   MAX_HORSES_PER_GROOM,
   calculateWeeklyFee,
   getSalaryPaymentHistory,
@@ -30,26 +27,19 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-// ── calculateWeeklyFee — pure branches (Equoria-95yrv) ───────────────────────
+// ── calculateWeeklyFee — pure branches (owner ruling 2026-10-28, q228) ───────
 
-describe('calculateWeeklyFee — $70 per horse assigned', () => {
-  it('charges the flat per-horse rate, whatever the groom is', () => {
-    expect(FEE_PER_HORSE_PER_WEEK).toBe(70);
-    expect(calculateWeeklyFee(1)).toBe(70);
-    expect(calculateWeeklyFee(4)).toBe(280);
-    // Owner ruling 2026-10-26 (q68): the cap is twenty horses, so a full groom is 1400.
-    expect(calculateWeeklyFee(MAX_HORSES_PER_GROOM)).toBe(1400);
+describe('calculateWeeklyFee — the groom star level price, per groom per week', () => {
+  it('charges the level price, whatever the groom is working', () => {
+    expect(calculateWeeklyFee({ starLevel: 'rookie' })).toBe(100);
+    expect(calculateWeeklyFee({ starLevel: 'expert' })).toBe(500);
+    // Owner ruling 2026-10-26 (q68): the horse cap stays twenty.
+    expect(MAX_HORSES_PER_GROOM).toBe(20);
   });
 
-  it('a groom on no horses costs nothing', () => {
-    expect(calculateWeeklyFee(0)).toBe(0);
-  });
-
-  it('treats a missing or nonsense count as no horses rather than inventing a fee', () => {
-    expect(calculateWeeklyFee(undefined)).toBe(0);
-    expect(calculateWeeklyFee(null)).toBe(0);
-    expect(calculateWeeklyFee(-3)).toBe(0);
-    expect(calculateWeeklyFee('not a number')).toBe(0);
+  it('refuses a missing or nonsense level rather than inventing a fee', () => {
+    expect(() => calculateWeeklyFee(undefined)).toThrow('Unknown staff level');
+    expect(() => calculateWeeklyFee({ starLevel: 'master' })).toThrow('Unknown staff level');
   });
 });
 
@@ -107,6 +97,7 @@ describe('calculateUserSalaryCost — DB fixture (Equoria-jkht)', () => {
         speciality: 'showHandling',
         personality: 'gentle',
         skillLevel: 'expert',
+        starLevel: 'advanced',
         userId: gssUser.id,
       },
     });
@@ -143,11 +134,11 @@ describe('calculateUserSalaryCost — DB fixture (Equoria-jkht)', () => {
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('charges one horse at the per-horse rate, whatever the skill of the groom', async () => {
+  it("charges the groom's star level price, whatever the skill or horses (q228)", async () => {
     const result = await calculateUserSalaryCost(gssUser.id);
-    // Equoria-95yrv: one assigned horse = $70. It used to be expert(100) +
-    // showHandling(15) = 115; skill and specialty no longer price the fee.
-    expect(result.totalWeeklyCost).toBe(70);
+    // Owner ruling 2026-10-28 (q228): an Advanced groom = 400 a week. It was 70 per
+    // horse under Equoria-95yrv; the ruling changed it.
+    expect(result.totalWeeklyCost).toBe(400);
     expect(result.groomCount).toBe(1);
     expect(result.breakdown).toHaveLength(1);
     expect(result.breakdown[0].groomId).toBe(gssGroom.id);
@@ -155,6 +146,6 @@ describe('calculateUserSalaryCost — DB fixture (Equoria-jkht)', () => {
     expect(result.breakdown[0].skillLevel).toBe('expert');
     expect(result.breakdown[0].speciality).toBe('showHandling');
     expect(result.breakdown[0].assignedHorses).toBe(1);
-    expect(result.breakdown[0].weeklyFee).toBe(70);
+    expect(result.breakdown[0].weeklyFee).toBe(400);
   });
 });

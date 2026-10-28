@@ -21,13 +21,13 @@ export interface TrainerEntry {
   lastName: string;
   name: string;
   skillLevel: string; // novice | developing | expert
-  /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw. */
-  starLevel?: string;
+  /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw.
+   *  Owner ruling 2026-10-28 (q229): the only level a trainer has. */
+  starLevel: string;
   personality: string; // focused | encouraging | technical | competitive | patient
   speciality: string;
   sessionRate: number;
   experience: number;
-  level: number;
   careerWeeks: number;
   retired: boolean;
   bio?: string;
@@ -99,7 +99,15 @@ export interface TrainerDiscoveryData {
   nextDiscoveryAt?: number;
 }
 
+/** GET /api/v1/trainers/roster-cap — the limit the hire path enforces (q222). */
+export interface TrainerRosterLimit {
+  rosterCap: number;
+  stableLevel: number;
+  activeTrainers: number;
+}
+
 export const trainersApi = {
+  getRosterLimit: () => apiClient.get<TrainerRosterLimit>('/api/v1/trainers/roster-cap'),
   getUserTrainers: (userId: string | number) =>
     apiClient.get<TrainerEntry[]>(`/api/v1/trainers/user/${userId}`),
   getAssignments: () => apiClient.get<TrainerAssignmentEntry[]>('/api/v1/trainers/assignments'),

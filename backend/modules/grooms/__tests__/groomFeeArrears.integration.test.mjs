@@ -189,7 +189,10 @@ function registerUserCleanup(cleanup, getUser, label) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Equoria-95yrv — the fee is per HORSE ASSIGNED, at $70 each', () => {
+// Owner ruling 2026-10-28 (q228) replaced the Equoria-95yrv basis (70 per horse, an idle
+// groom free) that this block used to specify: each groom costs their star level's
+// price per week, however many horses they look after.
+describe('q228 — the fee is per GROOM, at their star level price', () => {
   let user;
   let horses;
   let unassigned;
@@ -203,11 +206,10 @@ describe('Equoria-95yrv — the fee is per HORSE ASSIGNED, at $70 each', () => {
       makeHorse(user.id, 'basis-h2'),
       makeHorse(user.id, 'basis-h3'),
     ]);
-    // One groom with NO assignment at all. Charged a flat rate under the
-    // superseded per-groom-on-staff basis (Equoria-ypb7d.3); free again now.
-    unassigned = await makeGroom(user.id, 'basis-unassigned');
-    // One groom on three horses: $210 a week, three times a groom on one.
-    busy = await makeGroom(user.id, 'basis-busy');
+    // One Novice groom with NO assignment at all: still 200 a week.
+    unassigned = await makeGroom(user.id, 'basis-unassigned', { starLevel: 'novice' });
+    // One Advanced groom on three horses: 400 a week, not three times anything.
+    busy = await makeGroom(user.id, 'basis-busy', { starLevel: 'advanced' });
     for (const horse of horses) {
       await prisma.groomAssignment.create({
         data: { groomId: busy.id, foalId: horse.id, userId: user.id, isActive: true },
@@ -218,11 +220,11 @@ describe('Equoria-95yrv — the fee is per HORSE ASSIGNED, at $70 each', () => {
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('charges 70 per assigned horse, and nothing for the groom on none', async () => {
-    const expectedUnassigned = calculateWeeklyFee(0);
-    const expectedBusy = calculateWeeklyFee(horses.length);
-    expect(expectedUnassigned).toBe(0);
-    expect(expectedBusy).toBe(210);
+  it('charges each groom their level price, the groom on no horses included', async () => {
+    const expectedUnassigned = calculateWeeklyFee(unassigned);
+    const expectedBusy = calculateWeeklyFee(busy);
+    expect(expectedUnassigned).toBe(200);
+    expect(expectedBusy).toBe(400);
 
     const before = Number((await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money);
 
@@ -234,8 +236,8 @@ describe('Equoria-95yrv — the fee is per HORSE ASSIGNED, at $70 each', () => {
     const after = Number((await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money);
     expect(before - after).toBe(expectedUnassigned + expectedBusy);
 
-    // Still exactly one payment row per groom — the pay week is recorded for the
-    // idle groom too, at 0, so a re-run stays a no-op for them.
+    // Exactly one payment row per groom, the idle groom included, so a re-run stays
+    // a no-op for both.
     const rows = await prisma.groomSalaryPayment.findMany({
       where: { userId: user.id, status: 'paid' },
       select: { groomId: true, amount: true },

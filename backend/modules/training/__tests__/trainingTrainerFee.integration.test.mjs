@@ -27,7 +27,9 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 
 const TAG = randomBytes(4).toString('hex');
 const PREFIX = `TestFixture-3kegj-${TAG}`;
-const FEE = 120;
+// Owner ruling 2026-10-28 (q226, Equoria-nawn5): the fee is the trainer's star level
+// price; the fixture trainer is a Novice (2 stars, 200).
+const FEE = 200;
 const parallelRequests = 5;
 
 const userIds = [];
@@ -83,6 +85,7 @@ async function stable({ money, trainer = true }) {
         lastName: `Fee${seq}`,
         personality: 'focused',
         skillLevel: 'novice',
+        starLevel: 'novice',
         speciality: 'Dressage',
         sessionRate: FEE,
         bio: 'fixture',

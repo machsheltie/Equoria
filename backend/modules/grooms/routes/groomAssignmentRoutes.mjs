@@ -154,15 +154,12 @@ router.get('/config', async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Assignment configuration retrieved successfully',
-      // Equoria-95yrv: one cap and one rate, the same for every groom. The
-      // per-skill caps and the never-charged per-skill pay table are gone with
-      // the basis they belonged to.
+      // One horse cap, the same for every groom. What a groom costs is their star
+      // level's price per week (owner ruling 2026-10-28, q228), shown on each groom.
       data: {
         maxHorsesPerGroom: ASSIGNMENT_CONFIG.MAX_HORSES_PER_GROOM,
-        feePerHorsePerWeek: ASSIGNMENT_CONFIG.FEE_PER_HORSE_PER_WEEK,
         description: {
           maxHorsesPerGroom: 'The most horses one groom can be caring for at a time',
-          feePerHorsePerWeek: "What each horse in a groom's care costs the player per week",
         },
       },
     });

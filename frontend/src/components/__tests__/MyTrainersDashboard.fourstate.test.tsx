@@ -44,7 +44,7 @@ const oneTrainer = [
     speciality: 'Dressage',
     sessionRate: 150,
     experience: 8,
-    level: 5,
+    starLevel: 'advanced',
     careerWeeks: 12,
     retired: false,
   },

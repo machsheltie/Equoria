@@ -86,7 +86,6 @@ function serveStaff({
         data: {
           totalWeeklyCost: 0,
           groomCount: grooms.length,
-          feePerHorsePerWeek: 70,
           maxHorsesPerGroom: 20,
           breakdown,
         },

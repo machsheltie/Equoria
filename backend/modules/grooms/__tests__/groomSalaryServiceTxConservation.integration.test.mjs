@@ -96,6 +96,8 @@ async function makeGroomAssignment(user, { skillLevel = 'novice', speciality = '
       speciality,
       personality: 'gentle',
       skillLevel,
+      // Owner ruling 2026-10-28 (q228): a Rookie groom costs 100 a week.
+      starLevel: 'rookie',
       userId: user.id,
     },
   });
@@ -256,13 +258,13 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
     const made = await makeGroomAssignment(user, {
       skillLevel: 'expert',
       speciality: 'showHandling',
-    }); // Equoria-95yrv: one assigned horse = $70/week, whatever the skill.
+    }); // q228: a Rookie groom = 100/week, whatever the skill or horses.
     groom = made.groom;
   });
 
   it('preserves conservation: user.money delta + SystemAccount.burn delta = 0', async () => {
-    const expectedSalary = calculateWeeklyFee(1);
-    expect(expectedSalary).toBe(70);
+    const expectedSalary = calculateWeeklyFee(groom);
+    expect(expectedSalary).toBe(100);
 
     const userBefore = await getUserMoney(user.id);
     const burnBefore = await getBurnBalance();
@@ -309,7 +311,7 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
       },
     });
     expect(payments.length).toBeGreaterThanOrEqual(1);
-    expect(Number(payments[0].amount)).toBe(70);
+    expect(Number(payments[0].amount)).toBe(100);
     // capture id for cleanup
     for (const p of payments) {
       createdPaymentIds.push(p.id);
@@ -327,7 +329,7 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
       },
     });
     expect(ledgerRows.length).toBeGreaterThanOrEqual(1);
-    expect(Number(ledgerRows[0].amount)).toBe(70);
+    expect(Number(ledgerRows[0].amount)).toBe(100);
     expect(ledgerRows[0].metadata?.systemAccount).toBe(SYSTEM_ACCOUNT_BURN);
     expect(ledgerRows[0].metadata?.systemAccountSide).toBe('credit');
   }, 60000);
@@ -339,7 +341,7 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
 
 describe('groomSalaryService.processWeeklySalaries — insufficient funds (Equoria-7r67q)', () => {
   it('thin wallet does NOT debit, does NOT credit burn (for this user), and routes to grace-period branch', async () => {
-    const user = await makeUser(10); // far less than the $70 one-horse fee
+    const user = await makeUser(10); // far less than the 100 Rookie groom fee
     await makeGroomAssignment(user, { skillLevel: 'novice', speciality: 'general' });
 
     const userBefore = await getUserMoney(user.id);
@@ -393,18 +395,18 @@ describe('groomSalaryService.processWeeklySalaries — insufficient funds (Equor
 
 describe('groomSalaryService.processWeeklySalaries — TOCTOU sentinel (Equoria-7r67q)', () => {
   it('two concurrent processWeeklySalaries runs on a wallet sized for one debit yield exactly one debit', async () => {
-    // Fund the wallet to exactly ONE groom-week (Equoria-95yrv: $70 for the one
-    // horse this fixture assigns) so two parallel processWeeklySalaries calls
+    // Fund the wallet to exactly ONE groom-week (q228: 100 for the one Rookie
+    // groom this fixture hires) so two parallel processWeeklySalaries calls
     // would, under the legacy TOCTOU shape, both pass the stale
     // `if (user.money < totalSalary)` check and both decrement — taking the
     // wallet negative. Under the 7r67q rewrite only one debitMoneyOrThrow
     // predicate wins; the other throws InsufficientFundsError and routes to the
     // grace-period branch.
-    const user = await makeUser(70);
+    const user = await makeUser(100);
     await makeGroomAssignment(user, { skillLevel: 'novice', speciality: 'general' });
 
     const userBefore = await getUserMoney(user.id);
-    expect(userBefore).toBe(70);
+    expect(userBefore).toBe(100);
 
     // Count user-scoped burn-credit ledger rows BEFORE — same reason as the
     // insufficient-funds test: the global SystemAccount.burn delta can include credits
@@ -448,7 +450,7 @@ describe('groomSalaryService.processWeeklySalaries — TOCTOU sentinel (Equoria-
       orderBy: { createdAt: 'desc' },
       take: 1,
     });
-    expect(Number(burnRows[0].amount)).toBe(70);
+    expect(Number(burnRows[0].amount)).toBe(100);
 
     // Sum of successful + failed should reflect at least the two attempts on
     // this user — though either pass may have processed other users too.

@@ -7,7 +7,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
+import { hiredStaffFee, staffCareerLevel } from '../../../constants/staffLevels.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 // Equoria-6p398.14 follow-up: a retired horse (21+, not in foal) is given no new rider.
 import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
@@ -66,9 +66,9 @@ export async function getUserRiders(req, res) {
 
     const formatted = riders.map(r => ({
       ...r,
-      // Equoria-nawn5: what this rider costs a week (owner question q226 decides
-      // whether a rider hired before star levels keeps the rate they were hired at).
-      weeklyRate: hiredStaffFee(r, r.weeklyRate),
+      // Equoria-nawn5, owner ruling q226: what this rider costs a week is its star
+      // level's price.
+      weeklyRate: hiredStaffFee(r),
       name: `${r.firstName} ${r.lastName}`,
       assignedHorseId: r.assignments[0]?.horseId ?? null,
       hiredDate: r.createdAt?.toISOString?.() ?? r.createdAt,
@@ -326,10 +326,10 @@ export async function getRiderDiscovery(req, res) {
       return res.status(404).json({ success: false, message: 'Rider not found' });
     }
 
-    // Stepped reveal cadence (Equoria-oey96.25): slots unlock at levels
-    // 2, 4, 6, 8, 9, 10 — all 6 revealable by the level-10 cap. The prior
-    // Math.floor(level/2) formula left the 6th slot permanently hidden.
-    const discoveredCount = getRevealedDiscoveryCount(rider.level);
+    // Stepped reveal cadence (Equoria-oey96.25): slots unlock at career levels
+    // 2, 4, 6, 8, 9, 10. The career level is the rider's star level, two old levels
+    // per star (owner ruling 2026-10-28, q229; staffCareerLevel).
+    const discoveredCount = getRevealedDiscoveryCount(staffCareerLevel(rider.starLevel));
     const categories = ['discipline_affinity', 'temperament_compatibility', 'gait_affinity'];
     const slots = Array.from({ length: 6 }, (_, i) => ({
       slotIndex: i,

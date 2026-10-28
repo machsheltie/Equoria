@@ -5,10 +5,12 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
+import { hiredStaffFee, staffCareerLevel } from '../../../constants/staffLevels.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 // Equoria-6p398.14 follow-up: a retired horse (21+, not in foal) is given no new trainer.
 import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
+import { getStableLevel } from '../../users/index.mjs';
+import { getTrainerRosterCap } from '../config/trainerConfig.mjs';
 import {
   generateDiscoverySlots,
   readDiscoverySlots,
@@ -51,9 +53,9 @@ export async function getUserTrainers(req, res) {
 
     const formatted = trainers.map(t => ({
       ...t,
-      // Equoria-nawn5: what one session costs (owner question q226 decides whether a
-      // trainer hired before star levels keeps the rate they were hired at).
-      sessionRate: hiredStaffFee(t, t.sessionRate),
+      // Equoria-nawn5, owner ruling q226: what one session costs is the trainer's
+      // star level's price.
+      sessionRate: hiredStaffFee(t),
       name: `${t.firstName} ${t.lastName}`,
       assignedHorseId: t.assignments[0]?.horseId ?? null,
     }));
@@ -66,6 +68,37 @@ export async function getUserTrainers(req, res) {
   } catch (error) {
     logger.error(`[trainerController] getUserTrainers error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to get trainers', data: null });
+  }
+}
+
+/**
+ * GET /api/trainers/roster-cap
+ * How many trainers this player may hold (owner ruling 2026-10-28, q222): the same
+ * number the hire path enforces, so the trainer page never shows a different limit.
+ */
+export async function getTrainerRosterLimit(req, res) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { level: true },
+    });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found', data: null });
+    }
+    const stableLevel = getStableLevel(user);
+    const activeTrainers = await prisma.trainer.count({
+      where: { userId: req.user.id, retired: false },
+    });
+    res.status(200).json({
+      success: true,
+      message: 'Trainer roster limit retrieved',
+      data: { rosterCap: getTrainerRosterCap(stableLevel), stableLevel, activeTrainers },
+    });
+  } catch (error) {
+    logger.error(`[trainerController] getTrainerRosterLimit error: ${error.message}`);
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to get the trainer limit', data: null });
   }
 }
 
@@ -101,7 +134,7 @@ export async function getTrainerAssignments(req, res) {
       trainerName: `${a.trainer.firstName} ${a.trainer.lastName}`,
       // Equoria-r8a6h: the horse page shows who trains it and the per-session fee.
       trainerPersonality: a.trainer.personality,
-      trainerSessionRate: hiredStaffFee(a.trainer, a.trainer.sessionRate),
+      trainerSessionRate: hiredStaffFee(a.trainer),
       // Equoria-nawn5: the trainer's star level, shown with the name.
       trainerStarLevel: a.trainer.starLevel,
       startDate: a.startDate,
@@ -256,8 +289,9 @@ export async function deleteTrainerAssignment(req, res) {
  * Returns discovery slots for a trainer (career affinity discoveries).
  * 3 categories × 2 slots = 6 total.
  * Trait content is persisted in discovery_slots JSONB; visibility is computed
- * from trainer level via the stepped reveal cadence (Equoria-oey96.25):
- * slots unlock at levels 2, 4, 6, 8, 9, 10 — all 6 revealable at the level-10 cap.
+ * by the stepped reveal cadence (Equoria-oey96.25): slots unlock at career levels
+ * 2, 4, 6, 8, 9, 10. The career level is the trainer's star level, two old levels per
+ * star (owner ruling 2026-10-28, q229; staffCareerLevel).
  */
 export async function getTrainerDiscovery(req, res) {
   try {
@@ -276,7 +310,7 @@ export async function getTrainerDiscovery(req, res) {
       await writeDiscoverySlots(trainerId, slotPool);
     }
 
-    const discoveredCount = getRevealedDiscoveryCount(trainer.level);
+    const discoveredCount = getRevealedDiscoveryCount(staffCareerLevel(trainer.starLevel));
 
     const slots = slotPool.map(slot => ({
       slotIndex: slot.slotIndex,

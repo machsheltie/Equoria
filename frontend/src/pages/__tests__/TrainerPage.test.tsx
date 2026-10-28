@@ -46,7 +46,7 @@ const hiredTrainer = {
   speciality: 'Show Jumping',
   sessionRate: 175,
   experience: 40,
-  level: 4,
+  starLevel: 'novice',
   careerWeeks: 12,
   retired: false,
   bio: 'Builds confidence.',

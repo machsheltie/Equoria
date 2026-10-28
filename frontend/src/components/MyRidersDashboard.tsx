@@ -4,7 +4,7 @@
  * Dashboard for managing all hired riders and their horse assignments.
  * Displays:
  * - Slot usage ("3 of 5 rider slots used")
- * - Rider cards with personality, career level, assignment status
+ * - Rider cards with personality, star level, assignment status
  * - Expandable career + discovery panels
  *
  * Mirrors MyGroomsDashboard.tsx for the Rider System.
@@ -279,11 +279,7 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
               </div>
 
               {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-2 mb-4 text-center">
-                <div className="p-2 rounded-lg bg-white/5">
-                  <p className="text-sm font-bold text-[var(--gold-primary)]">Lv.{rider.level}</p>
-                  <p className="text-[10px] text-role-muted">Level</p>
-                </div>
+              <div className="grid grid-cols-2 gap-2 mb-4 text-center">
                 <div className="p-2 rounded-lg bg-white/5">
                   <p className="text-sm font-bold text-role-primary">{rider.totalWins}</p>
                   <p className="text-[10px] text-role-muted">Wins</p>
@@ -385,7 +381,7 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
                         id: rider.id,
                         name: `${rider.firstName} ${rider.lastName}`,
                         experience: rider.experience,
-                        level: rider.level,
+                        starLevel: rider.starLevel,
                         careerWeeks: rider.careerWeeks,
                         hiredDate: rider.hiredDate,
                         retired: rider.retired,

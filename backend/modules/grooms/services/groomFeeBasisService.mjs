@@ -4,7 +4,7 @@
  * Equoria-95yrv (the rate and the cap) and Equoria-bgdfb (what an unpaid week
  * becomes). Split out of groomSalaryService.mjs, which owns COLLECTING the fee and
  * reached its 600-line cap: this file is the basis itself — the numbers the ruling
- * fixed, the arithmetic over them, and the one rule that has to hold at assignment
+ * fixed, the fee, and the one rule that has to hold at assignment
  * time for the cap to mean anything. groomSalaryService re-exports all of it, so
  * every existing importer is unchanged.
  */
@@ -13,18 +13,7 @@
 // transaction-scoped advisory lock the weekly fee pass uses.
 import { jobNameToLockKey } from '../../../utils/cronLock.mjs';
 import { retirementAgeYears } from '../../../constants/horseAgePolicy.mjs';
-
-/**
- * Equoria-95yrv, owner ruling 2026-09-14 10:23: "Charge the player per horse
- * assigned to a groom per week: $70 per horse per week." The per-groom cap that
- * ruling set (10 horses) was raised by owner ruling 2026-10-26 (q68) to twenty
- * horses per groom — see MAX_HORSES_PER_GROOM below.
- *
- * The fee no longer depends on WHO the groom is. The skill/specialty rate table
- * (50/75/100/150 plus 0/10/15) is gone with the per-groom-on-staff basis it
- * priced; a groom's skill still decides how WELL they work, never what they cost.
- */
-export const FEE_PER_HORSE_PER_WEEK = 70;
+import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
 
 /**
  * The most horses one groom may be working at a time. Enforced where assignments
@@ -64,31 +53,22 @@ export const ARREARS_SETTLED_STATUS = 'arrearsSettled';
 export const ARREARS_WRITTEN_OFF_STATUS = 'arrearsWrittenOff';
 
 /**
- * The weekly fee for ONE groom: $70 for every horse they are currently working.
+ * The weekly fee for ONE groom on a player's staff. Owner ruling 2026-10-28 (q228,
+ * Equoria-nawn5): a groom is paid their star level's price per week, however many
+ * horses they look after, like a rider: Rookie 100, Novice 200, Intermediate 300,
+ * Advanced 400, Expert 500 (backend/constants/staffLevels.mjs). This replaces the
+ * 70-per-horse basis of Equoria-95yrv (owner ruling 2026-09-14); a groom on no horses
+ * costs their weekly price too.
  *
- * Equoria-95yrv. A groom on no horses costs nothing — the ruling prices WORK, not
- * headcount, so an unassigned groom is no longer a sink and a groom on three
- * horses costs three times a groom on one.
- *
- * OVER-CAP ROWS ARE REPORTED, NOT TRUNCATED. `MAX_HORSES_PER_GROOM` is enforced
- * at assignment time; a groom that already exceeds it (data predating the cap)
- * is charged for the horses they actually have. Clamping here would quote a
- * player a fee that does not match the roster in front of them, which
- * PRODUCT.md principle 7 forbids — and it would make the excess free.
- *
- * @param {number} assignedHorses - the groom's ACTIVE assignment count
+ * @param {{ starLevel?: string }} groom - the groom row (must carry starLevel)
  * @returns {number} Weekly fee in whole currency units
  */
-export function calculateWeeklyFee(assignedHorses) {
-  const horses = Number(assignedHorses);
-  if (!Number.isFinite(horses) || horses <= 0) {
-    return 0;
-  }
-  return Math.trunc(horses) * FEE_PER_HORSE_PER_WEEK;
+export function calculateWeeklyFee(groom) {
+  return hiredStaffFee(groom);
 }
 
 /**
- * Equoria-6p398.14 — RETIRED HORSES ARE NOT BILLED (owner rulings 2026-10-23). A
+ * Equoria-6p398.14 — RETIRED HORSES ARE NOT COUNTED (owner rulings 2026-10-23). A
  * horse aged 21+ is retired and its staff are released on that birthday; this
  * filter also covers a horse that was already 21+ before that release existed.
  * The one exception is a mare still in foal at 21: she keeps her groom until she
@@ -102,8 +82,9 @@ const billableHorse = Object.freeze({
  * Count the ACTIVE assignments of each groom in `groomIds` that sit on a horse the
  * groom's employer still owns and that is not retired.
  *
- * One grouped read rather than a count per groom: the weekly pass walks every
- * groom on staff, and the fee is now a function of this number.
+ * One grouped read rather than a count per groom. Since owner ruling 2026-10-28
+ * (q228) the weekly fee no longer depends on this number; the salary summary and
+ * the groom salary read still report it so a player can see each groom's horses.
  *
  * Equoria-6p398.14 — OWNERSHIP PREDICATE. A sale ends the seller's assignments
  * (horseTransferReconciliation), but a horse can also change owner without that
@@ -145,9 +126,8 @@ export async function countActiveAssignments(client, groomIds) {
  * Equoria-95yrv fix round 1 (F1). The cap was a count followed by a create, with
  * nothing between them: two `POST /api/grooms/assign` requests for a groom at nine
  * horses both counted nine, both passed, and both created — eleven active
- * assignments, billed at 11 x 70, and the over-cap path is deliberately unclamped
- * so nothing ever brought it back. The guard and the write it guards must be one
- * atomic act.
+ * assignments past the cap, with nothing ever bringing it back. The guard and the
+ * write it guards must be one atomic act.
  *
  * WHY AN ADVISORY LOCK AND NOT A GUARDED `INSERT ... SELECT ... WHERE (COUNT) < 10`.
  * That shape is the first thing to reach for, and it does NOT hold here. The
@@ -218,7 +198,6 @@ export function atCapacityMessage(groomName) {
 
 export default {
   acquireGroomRosterLockTx,
-  FEE_PER_HORSE_PER_WEEK,
   MAX_HORSES_PER_GROOM,
   ARREARS_OWED_STATUSES,
   ARREARS_SETTLED_STATUS,

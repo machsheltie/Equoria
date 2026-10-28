@@ -83,7 +83,7 @@ beforeAll(async () => {
       personality: 'methodical', // Dressage affinity = high (+2%)
       skillLevel: 'experienced', // +3%
       speciality: 'Dressage',
-      level: 10, // +3.6%
+      starLevel: 'expert', // old level 10 (q229): +3.6%
       prestige: 100, // +4%
       userId: user.id,
     },
@@ -144,7 +144,7 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
    * owner rulings C1/C2):
    *   noRider score = round(70 * (1 + L1/100)),       L1 uniform on 1..10
    *   rider  score  = round(70 * (1 + (L2 + 10)/100)), L2 uniform on 1..10
-   * The elite rider's modifier is experienced(+3%) + level10(+3.6%) +
+   * The elite rider's modifier is experienced(+3%) + Expert/level10(+3.6%) +
    * prestige100(+4%) + methodical/Dressage-high(+2%) = 12.6%, capped at the
    * BONUS_CAP of 10% by computeRiderModifiers. Exact enumeration of the 100
    * (L1, L2) pairs: the rider always wins (lowest rider 77.7 -> 78 beats the

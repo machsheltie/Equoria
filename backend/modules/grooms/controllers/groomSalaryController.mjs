@@ -107,10 +107,10 @@ export async function getGroomSalary(req, res) {
     // req.groom is the validated, owned record (full fields from middleware).
     const groom = req.groom;
 
-    // Equoria-95yrv: $70 per horse the groom is working, so the fee needs the
-    // horse count — it is no longer a property of the groom alone.
+    // Owner ruling 2026-10-28 (q228): the groom's star level's price per week,
+    // however many horses they look after. The horse count is reported alongside.
     const assignedHorses = (await countActiveAssignments(prisma, [groom.id])).get(groom.id) ?? 0;
-    const weeklySalary = calculateWeeklyFee(assignedHorses);
+    const weeklySalary = calculateWeeklyFee(groom);
 
     res.json({
       success: true,

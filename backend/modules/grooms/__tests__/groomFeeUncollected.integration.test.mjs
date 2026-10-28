@@ -82,9 +82,8 @@ async function makeGroom(userId, label, extra = {}) {
     },
   });
   await prisma.groomEngagement.create({ data: { groomId: groom.id, userId } });
-  // Equoria-95yrv: the weekly fee is $70 per horse assigned, so a groom on NO
-  // horses costs nothing — and a zero fee is no debit at all, which would take
-  // this suite's whole mechanism (a contended debit) off the table. One horse.
+  // The groom works one horse, as a real staffed groom would. (Since owner ruling
+  // 2026-10-28, q228, the fee is the groom's star level price whatever the horses.)
   const horse = await prisma.horse.create({
     data: {
       ...fixtureColor(),
@@ -140,7 +139,7 @@ describe('Equoria-2ti1j — a non-funds throw must not grant a free week of staf
     user = await makeUser('rich', 100000);
     registerUserCleanup(cleanup, () => user, 'rich');
     groom = await makeGroom(user.id, 'groom');
-    salary = calculateWeeklyFee(1);
+    salary = calculateWeeklyFee(groom);
   }, 60000);
 
   afterAll(async () => {
@@ -242,7 +241,7 @@ describe('Equoria-2ti1j — a collection error never costs the player the groom'
     // Already in grace since the EARLIER pay week — the exact state in which
     // `handleUnpaidFees` releases a groom for non-payment.
     groom = await makeGroom(user.id, 'in-grace', { feeUnpaidSince: getPayWeekStart(WEEK_ONE) });
-    salary = calculateWeeklyFee(1);
+    salary = calculateWeeklyFee(groom);
   }, 60000);
 
   afterAll(async () => {

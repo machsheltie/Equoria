@@ -67,6 +67,20 @@ export function staffLevelLabel(level) {
 }
 
 /**
+ * The old 1-10 career level, in stars (owner ruling 2026-10-28, q229: "replace the old
+ * level with equivalent stars"). Each star is two of the old levels, so Expert (5 stars)
+ * is the old top level 10 and Rookie is level 2. The rider and trainer modifiers and the
+ * discovery-slot reveal read this, so the star level is the only level a rider or trainer
+ * has. A row without a valid star level counts as the old bottom level, 1.
+ *
+ * @param {string|null|undefined} level - one of `staffLevels`
+ * @returns {number} 1-10
+ */
+export function staffCareerLevel(level) {
+  return isStaffLevel(level) ? staffLevelTable[level].stars * 2 : 1;
+}
+
+/**
  * How each staff type's older skill words sit on the five levels. A tier with two
  * levels is split: new staff draw one of the two evenly, and existing staff are placed
  * by where their old price sat in that tier's old price range (`splitAt`): below it the
@@ -184,59 +198,54 @@ export function legacyStaffLevel(staffType, skillLevel, measure) {
 }
 
 /**
- * The level of a marketplace offer and what hiring it costs.
+ * The level of a marketplace offer and what hiring it costs: always the level's price
+ * (owner ruling 2026-10-28, q226: "change it now").
  *
- * An offer generated since this ruling carries `starLevel`; hiring it costs that
- * level's price. An offer still sitting in a player's marketplace from before carries
- * only its advertised price, which is what the player was shown, so that is what it
- * costs; its level is placed from its old skill word.
+ * An offer generated since star levels carries `starLevel`. An offer still sitting in a
+ * player's marketplace from before carries only its old skill word (and its old price,
+ * or for grooms years of experience), which places it on a level the same way the
+ * backfill placed hired staff.
  *
  * @param {'rider'|'trainer'|'groom'} staffType
- * @param {{ starLevel?: string, skillLevel?: string, experience?: number }} offer
- * @param {number} advertisedPrice - the old offer's price for one week / one session
- * @param {number} [legacyMeasure] - see legacyStaffLevel (defaults to advertisedPrice)
+ * @param {{ starLevel?: string, skillLevel?: string }} offer
+ * @param {number} [legacyMeasure] - see legacyStaffLevel; only read for an old offer
  * @returns {{ starLevel: string, fee: number }}
  */
-export function offerLevelAndFee(
-  staffType,
-  offer,
-  advertisedPrice,
-  legacyMeasure = advertisedPrice,
-) {
-  if (isStaffLevel(offer?.starLevel)) {
-    return { starLevel: offer.starLevel, fee: staffLevelFee(offer.starLevel) };
-  }
-  return {
-    starLevel: legacyStaffLevel(staffType, offer?.skillLevel, legacyMeasure),
-    fee: Number(advertisedPrice),
-  };
+export function offerLevelAndFee(staffType, offer, legacyMeasure) {
+  const starLevel = isStaffLevel(offer?.starLevel)
+    ? offer.starLevel
+    : legacyStaffLevel(staffType, offer?.skillLevel, legacyMeasure);
+  return { starLevel, fee: staffLevelFee(starLevel) };
 }
 
 /**
- * OWNER QUESTION q226 (open, 2026-10-28): do staff hired before the star levels switch
- * to their level's price?
+ * A marketplace offer as a player sees it: its star level and, in `priceField`, the
+ * price hiring it will actually charge (offerLevelAndFee). An offer generated before
+ * star levels still advertises its old price in storage; the list must show the price
+ * the hire charges, never the stale one.
  *
- * Until the owner answers, staff already hired keep the price they were hired at.
- * Staff hired since the ruling were hired at their level's price, so for them both
- * answers give the same number. To switch everyone to the level price, set this to
- * false; nothing else changes.
+ * @param {'rider'|'trainer'|'groom'} staffType
+ * @param {Object} offer
+ * @param {'weeklyRate'|'sessionRate'|'weeklyFee'} priceField
+ * @param {number} [legacyMeasure] - see legacyStaffLevel
+ * @returns {Object}
  */
-export const alreadyHiredStaffKeepTheirPrice = true;
+export function offerAtLevelPrice(staffType, offer, priceField, legacyMeasure) {
+  const { starLevel, fee } = offerLevelAndFee(staffType, offer, legacyMeasure);
+  return { ...offer, starLevel, [priceField]: fee };
+}
 
 /**
- * What a hired rider costs per week, or a hired trainer per session.
+ * What a hired rider or groom costs per week, or a hired trainer per session: its star
+ * level's price. Owner ruling 2026-10-28 (q226): staff hired before star levels pay
+ * their level's price too; nobody keeps an older rate.
  *
- * @param {{ starLevel?: string }} staff - the hired rider or trainer row
- * @param {number|null|undefined} priceAtHire - Rider.weeklyRate / Trainer.sessionRate
+ * Throws for a row without a valid `starLevel` (the column is NOT NULL and CHECKed),
+ * so a read that forgot to select it fails loudly instead of charging nothing.
+ *
+ * @param {{ starLevel?: string }} staff - the hired rider, trainer or groom row
  * @returns {number}
  */
-export function hiredStaffFee(staff, priceAtHire) {
-  const atHire = Number(priceAtHire);
-  if (alreadyHiredStaffKeepTheirPrice && Number.isFinite(atHire) && atHire > 0) {
-    return atHire;
-  }
-  if (isStaffLevel(staff?.starLevel)) {
-    return staffLevelFee(staff.starLevel);
-  }
-  return Number.isFinite(atHire) && atHire > 0 ? atHire : 0;
+export function hiredStaffFee(staff) {
+  return staffLevelFee(staff?.starLevel);
 }

@@ -87,7 +87,6 @@ async function makeRider(ownerId, label) {
       skillLevel: 'experienced',
       speciality: 'Jumping',
       weeklyRate: 200,
-      level: 3,
       userId: ownerId,
     },
   });

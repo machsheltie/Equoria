@@ -32,7 +32,7 @@ import {
 
 /**
  * The per-training fee for a session with `trainer` (the horse's active
- * assigned trainer, or null): its advertised Trainer.sessionRate. No trainer,
+ * assigned trainer, or null): its star level's price. No trainer,
  * no fee. Retirement ends a trainer's assignments, so a retired trainer here is
  * a defensive dead-end and is never paid.
  *
@@ -40,9 +40,9 @@ import {
  * @returns {{trainerId:number, trainerName:string, amount:number}|null}
  */
 export function trainingFeeFor(trainer) {
-  // Equoria-nawn5: the per-session price; owner question q226 decides whether a trainer
-  // hired before star levels keeps the rate they were hired at (hiredStaffFee).
-  const fee = trainer ? hiredStaffFee(trainer, trainer.sessionRate) : 0;
+  // Equoria-nawn5, owner ruling q226: the per-session price is the trainer's star
+  // level's price, whenever the trainer was hired.
+  const fee = trainer ? hiredStaffFee(trainer) : 0;
   if (!trainer || trainer.retired === true || !(fee > 0)) {
     return null;
   }

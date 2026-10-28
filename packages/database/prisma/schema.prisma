@@ -1602,12 +1602,11 @@ model Rider {
   starLevel    String            @default("rookie")
   /// Preferred discipline specialty
   speciality   String
-  /// Weekly rate in game currency
+  /// Weekly rate in game currency: always the star level's price (owner ruling
+  /// 2026-10-28, q226; migration 20261028180000_staff_level_is_stars).
   weeklyRate   Int               @default(200)
   /// Total XP accumulated
   experience   Int               @default(0)
-  /// Current level (1–10)
-  level        Int               @default(1)
   /// Career weeks accumulated
   careerWeeks  Int               @default(0)
   /// Age in game-years when the rider was generated (18-25, owner ruling
@@ -1643,7 +1642,6 @@ model Rider {
   /// Equoria-cmw85.25: the roster pages and the weekly retirement job. Each replaces a
   /// plain single-column index (userId, retired) that it covers.
   @@index([userId, retired])
-  @@index([level])
   @@index([retired, careerWeeks])
   @@map("riders")
 }
@@ -1750,12 +1748,11 @@ model Trainer {
   starLevel    String              @default("rookie")
   /// Preferred discipline specialty
   speciality   String
-  /// Session rate in game currency
+  /// Session rate in game currency: always the star level's price (owner ruling
+  /// 2026-10-28, q226; migration 20261028180000_staff_level_is_stars).
   sessionRate  Int                 @default(150)
   /// Total XP accumulated
   experience   Int                 @default(0)
-  /// Current level (1–10)
-  level        Int                 @default(1)
   /// Career weeks accumulated
   careerWeeks  Int                 @default(0)
   /// Retirement status
@@ -1763,10 +1760,10 @@ model Trainer {
   /// Biography
   bio          String?
   /// Discovery slot trait pool (3 categories × 2 slots = 6 entries).
-  /// Persists generated career-affinity trait content. Visibility is computed
-  /// from trainer level at read-time via a stepped reveal cadence
-  /// (backend/utils/discoverySlotReveal.mjs, thresholds [2,4,6,8,9,10]): all
-  /// 6 slots revealed by the level-10 cap (Equoria-oey96.25).
+  /// Persists generated career-affinity trait content. Visibility follows the
+  /// stepped reveal cadence in backend/utils/discoverySlotReveal.mjs (Equoria-oey96.25),
+  /// at the career level every trainer was generated with (1), since the old 1-10
+  /// level was replaced by star levels (owner ruling 2026-10-28, q229).
   /// Backed by migration 20260513140000_add_trainer_discovery_slots.
   discoverySlots Json              @default("[]") @map("discovery_slots")
   /// User association
@@ -1778,7 +1775,6 @@ model Trainer {
   user         User?               @relation(fields: [userId], references: [id])
 
   @@index([userId, retired])
-  @@index([level])
   @@index([retired, careerWeeks])
   @@map("trainers")
 }

@@ -651,7 +651,8 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       // Equoria-95yrv: one cap and one rate. The per-skill caps and the
       // never-charged per-skill pay table are gone with the basis they served.
       expect(response.body.data.maxHorsesPerGroom).toBe(20);
-      expect(response.body.data.feePerHorsePerWeek).toBe(70);
+      // Owner ruling 2026-10-28 (q228): no per-horse rate any more.
+      expect(response.body.data).not.toHaveProperty('feePerHorsePerWeek');
       expect(response.body.data).not.toHaveProperty('maxAssignmentsBySkill');
       expect(response.body.data).not.toHaveProperty('weeklySalaryBySkill');
     });

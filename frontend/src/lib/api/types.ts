@@ -20,7 +20,7 @@ export interface TrainableHorse {
   id: number;
   horseId?: number;
   name: string;
-  level?: number;
+  // No horse-wide level (owner ruling 2026-10-28, q227): a level exists only per discipline.
   breed?: string | { name?: string };
   gender?: string;
   sex?: string;
@@ -455,11 +455,11 @@ export interface Rider {
   firstName: string;
   lastName: string;
   skillLevel: string; // rookie | developing | experienced
-  /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw. */
-  starLevel?: string;
+  /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw.
+   *  Owner ruling 2026-10-28 (q229): the only level a rider has. */
+  starLevel: string;
   personality: string; // daring | methodical | intuitive | competitive
   experience: number; // total XP
-  level: number; // 1–10
   weeklyRate: number;
   careerWeeks: number;
   totalWins: number;

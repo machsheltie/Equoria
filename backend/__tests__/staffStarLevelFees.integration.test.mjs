@@ -6,9 +6,9 @@
  * are priced per week (hire charges one week; riders' weekly payday), trainers per
  * training session. The fee comes from the level, not from a stored random rate.
  *
- * Staff hired before star levels keep the price they were hired at until the owner
- * answers q226 (alreadyHiredStaffKeepTheirPrice); offers generated before star levels
- * cost what they advertised.
+ * Owner ruling q226 (2026-10-28, "change it now"): staff hired before star levels pay
+ * their level's price too, and an offer generated before star levels costs its level's
+ * price (it used to keep the price it was hired at / advertised; the ruling changed it).
  *
  * Real DB, real routes (supertest). Every row is owned by this suite's fixture users and
  * removed fail-loud; every pay pass is scoped to the suite's own user.
@@ -27,7 +27,7 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { processWeeklyRiderSalaries } from '../modules/riders/index.mjs';
-import { alreadyHiredStaffKeepTheirPrice, staffLevelFee, staffLevels } from '../constants/staffLevels.mjs';
+import { staffLevelFee, staffLevels } from '../constants/staffLevels.mjs';
 
 const prefix = 'TestFixture-nawn5';
 const tag = () => randomBytes(4).toString('hex');
@@ -192,7 +192,7 @@ describe('hiring charges the star level price', () => {
     expect(groom.starLevel).toBe('novice');
   });
 
-  it('an offer from before star levels costs what it advertised, and is given a level', async () => {
+  it('an offer from before star levels is given a level and costs its price (q226)', async () => {
     const { user, token } = await makeUser(1000);
     const marketplaceId = await seedOffer(user.id, 'rider', {
       firstName: 'Old',
@@ -208,10 +208,10 @@ describe('hiring charges the star level price', () => {
     const res = await send('post', '/api/v1/riders/marketplace/hire', token, { marketplaceId });
 
     expect(res.status).toBe(201);
-    expect(await moneyOf(user.id)).toBe(750);
+    expect(await moneyOf(user.id)).toBe(800);
     const rider = await prisma.rider.findFirst({ where: { userId: user.id } });
     // A rookie-tier rider at 250 a week sits in the upper half of the old 150-300 range.
-    expect(rider).toMatchObject({ starLevel: 'novice', weeklyRate: 250 });
+    expect(rider).toMatchObject({ starLevel: 'novice', weeklyRate: 200 });
   });
 });
 
@@ -237,8 +237,7 @@ describe("a rider's weekly payday charges the level price", () => {
     expect(await moneyOf(user.id)).toBe(700);
   });
 
-  it('q226 pending: a rider hired before star levels keeps the rate they were hired at', async () => {
-    expect(alreadyHiredStaffKeepTheirPrice).toBe(true);
+  it('q226: a rider hired before star levels pays their level price, not their old rate', async () => {
     const { user } = await makeUser(1000);
     await prisma.rider.create({
       data: {
@@ -255,8 +254,8 @@ describe("a rider's weekly payday charges the level price", () => {
 
     const result = await processWeeklyRiderSalaries(payDay, { userId: user.id });
 
-    expect(result.totalAmount).toBe(250);
-    expect(await moneyOf(user.id)).toBe(750);
+    expect(result.totalAmount).toBe(200);
+    expect(await moneyOf(user.id)).toBe(800);
   });
 });
 
@@ -301,5 +300,49 @@ describe("a trainer's session charges the level price", () => {
     expect(res.status).toBe(200);
     expect(res.body.trainingFee).toBe(400);
     expect(await moneyOf(user.id)).toBe(600);
+  });
+
+  it('q226: a trainer hired at an old session rate charges its level price', async () => {
+    const { user, token } = await makeUser(1000);
+    const horse = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `${prefix}-horse-${tag()}`,
+        sex: 'Mare',
+        dateOfBirth: new Date('2019-06-15'),
+        age: 6,
+        healthStatus: 'Excellent',
+        lastFedDate: new Date(),
+        trainingCooldown: null,
+        userId: user.id,
+      },
+    });
+    horseIds.push(horse.id);
+    const marketplaceId = await seedOffer(user.id, 'trainer', {
+      firstName: 'Offer',
+      lastName: prefix,
+      personality: 'focused',
+      skillLevel: 'novice',
+      starLevel: 'novice',
+      speciality: 'Dressage',
+      sessionRate: 200,
+      bio: 'nawn5 fixture',
+    });
+    const hired = await send('post', '/api/v1/trainers/marketplace/hire', token, {
+      marketplaceId,
+      horseId: horse.id,
+    });
+    expect(hired.status).toBe(201);
+    // The rate a trainer was hired at before star levels.
+    await prisma.trainer.updateMany({ where: { userId: user.id }, data: { sessionRate: 175 } });
+
+    const res = await send('post', '/api/v1/training/train', token, {
+      horseId: horse.id,
+      discipline: 'Dressage',
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.trainingFee).toBe(200);
+    expect(await moneyOf(user.id)).toBe(800);
   });
 });

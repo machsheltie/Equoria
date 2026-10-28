@@ -4,7 +4,7 @@
  * Dashboard for managing all hired trainers and their horse assignments.
  * Displays:
  * - Slot usage ("2 of 4 trainer slots used")
- * - Trainer cards with personality, career level, assignment status
+ * - Trainer cards with personality, star level, assignment status
  * - Retirement warnings
  * - Expandable career + discovery panels
  *
@@ -34,6 +34,7 @@ import {
   useDeleteTrainerAssignment,
   useAssignTrainer,
   useDismissTrainer,
+  useTrainerRosterLimit,
   type TrainerEntry,
   type TrainerAssignmentEntry,
 } from '@/hooks/api/useTrainers';
@@ -60,13 +61,9 @@ interface MyTrainersDashboardProps {
   // Auth user id is a UUID string (Equoria-ai6pw / j2a51), not a numeric DB int.
   // Forwarded into useUserTrainers → /api/trainers/user/:id.
   userId: string;
-  trainerSlotCap?: number;
 }
 
-const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
-  userId,
-  trainerSlotCap = 4,
-}) => {
+const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ userId }) => {
   const [expandedTrainerId, setExpandedTrainerId] = useState<number | null>(null);
   const [expandedSection, setExpandedSection] = useState<'career' | 'discovery'>('career');
   const [selectedTrainerIdForAssign, setSelectedTrainerIdForAssign] = useState<number | null>(null);
@@ -89,6 +86,10 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
     error: assignmentsError,
     refetch: refetchAssignments,
   } = useTrainerAssignments();
+  // Owner ruling 2026-10-28 (q222): the trainer limit comes from the server, which
+  // enforces it at hire. Unknown while loading or after a failed read: an em dash.
+  const rosterLimit = useTrainerRosterLimit();
+  const trainerSlotCap = rosterLimit.data?.rosterCap ?? null;
   const unassignMutation = useDeleteTrainerAssignment();
   const assignMutation = useAssignTrainer();
   const dismissMutation = useDismissTrainer();
@@ -213,11 +214,14 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
           <GraduationCap className="w-4 h-4 text-role-muted" />
           <span className="text-sm text-role-secondary">
             <span className="font-bold text-role-primary">{slotsUsed}</span> of{' '}
-            <span className="font-bold text-role-primary">{trainerSlotCap}</span> trainer slots used
+            <span className="font-bold text-role-primary" data-testid="trainer-slot-cap">
+              {trainerSlotCap ?? '—'}
+            </span>{' '}
+            trainer slots used
           </span>
         </div>
         <div className="flex gap-1">
-          {Array.from({ length: trainerSlotCap }).map((_, i) => (
+          {Array.from({ length: trainerSlotCap ?? 0 }).map((_, i) => (
             <div
               key={i}
               className={`w-2.5 h-2.5 rounded-full ${
@@ -252,7 +256,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
             id: trainer.id,
             name: trainer.name ?? `${trainer.firstName} ${trainer.lastName}`,
             experience: trainer.experience,
-            level: trainer.level,
+            starLevel: trainer.starLevel,
             careerWeeks: trainer.careerWeeks,
             hiredDate: new Date().toISOString(),
             retired: trainer.retired,
@@ -295,11 +299,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
               </div>
 
               {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-2 mb-4 text-center">
-                <div className="p-2 rounded-lg bg-white/5">
-                  <p className="text-sm font-bold text-[var(--gold-primary)]">Lv.{trainer.level}</p>
-                  <p className="text-[10px] text-role-muted">Level</p>
-                </div>
+              <div className="grid grid-cols-2 gap-2 mb-4 text-center">
                 <div className="p-2 rounded-lg bg-white/5">
                   <p className="text-sm font-bold text-role-primary">{trainerAssignments.length}</p>
                   <p className="text-[10px] text-role-muted">Assigned</p>

@@ -45,8 +45,9 @@ export interface MarketplaceGroom {
   skillLevel: string;
   /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw. */
   starLevel?: string;
-  /** Equoria-nawn5: hiring costs one week at the star level's price (absent on older offers). */
-  weeklyFee?: number;
+  /** Owner rulings 2026-10-28 (q226/q228): the groom's weekly fee, their star level's
+   *  price; hiring charges one week of it. The server sends it on every offer. */
+  weeklyFee: number;
   personality: string;
   experience: number;
   sessionRate: number;
@@ -61,8 +62,6 @@ export interface MarketplaceData {
   refreshCost: number;
   canRefreshFree: boolean;
   refreshCount: number;
-  /** Equoria-95yrv — what each horse in a groom's care costs per week. */
-  feePerHorsePerWeek: number;
   /** Equoria-95yrv — the most horses one groom can take. */
   maxHorsesPerGroom: number;
 }
@@ -81,15 +80,13 @@ export interface MarketplaceStats {
 }
 
 /**
- * GET /api/v1/groom-salaries/cost — Equoria-95yrv. The weekly fee is
- * `feePerHorsePerWeek` for every horse a groom is caring for, up to
- * `maxHorsesPerGroom`; the rate travels with the payload so no surface keeps its own
- * copy. `totalMonthlyCost` is gone — the backend never sent it.
+ * GET /api/v1/groom-salaries/cost. Owner ruling 2026-10-28 (q228): each groom's weekly
+ * fee is their star level's price, however many horses (up to `maxHorsesPerGroom`)
+ * they look after; `assignedHorses` is reported for the roster only.
  */
 export interface SalarySummary {
   totalWeeklyCost: number;
   groomCount: number;
-  feePerHorsePerWeek: number;
   maxHorsesPerGroom: number;
   breakdown: Array<{
     groomId: number;

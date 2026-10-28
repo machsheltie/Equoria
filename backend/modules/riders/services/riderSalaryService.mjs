@@ -85,9 +85,8 @@ export async function processWeeklyRiderSalaries(
     });
     const byUser = new Map();
     for (const row of roster) {
-      // Equoria-nawn5: the week's pay. Owner question q226 decides whether a rider hired
-      // before star levels keeps the rate they were hired at (hiredStaffFee).
-      const rider = { ...row, weeklyRate: hiredStaffFee(row, row.weeklyRate) };
+      // Equoria-nawn5, owner ruling q226: the week's pay is the rider's star level's price.
+      const rider = { ...row, weeklyRate: hiredStaffFee(row) };
       if (!byUser.has(rider.userId)) {
         byUser.set(rider.userId, []);
       }

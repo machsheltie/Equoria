@@ -45,7 +45,7 @@ const oneRider = [
     skillLevel: 'experienced',
     personality: 'methodical',
     experience: 300,
-    level: 3,
+    starLevel: 'novice',
     weeklyRate: 120,
     careerWeeks: 20,
     totalWins: 4,

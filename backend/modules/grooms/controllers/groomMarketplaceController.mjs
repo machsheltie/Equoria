@@ -32,7 +32,7 @@ import { CapExceededError } from '../groomErrors.mjs';
 import { removeMarketplaceOfferCas } from '../../../utils/staffMarketplaceOfferCas.mjs';
 import { StaleOfferError } from '../../../errors/index.mjs';
 import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
-import { offerLevelAndFee } from '../../../constants/staffLevels.mjs';
+import { offerAtLevelPrice, offerLevelAndFee } from '../../../constants/staffLevels.mjs';
 // Equoria-m9lz1: draw the groom's HIDDEN retirement age at hire, inside the
 // hire transaction, so a hired groom always has a schedule and a rolled-back
 // hire leaves no orphan schedule row.
@@ -42,7 +42,7 @@ import { drawStartAge } from '../services/groomAgeService.mjs';
 // Equoria-ypb7d.2: hiring OPENS AN ENGAGEMENT. Players never own grooms.
 import { openEngagementTx } from '../services/groomEngagementService.mjs';
 // Equoria-95yrv: the weekly fee's rate and cap, published with the offer list.
-import { FEE_PER_HORSE_PER_WEEK, MAX_HORSES_PER_GROOM } from '../services/groomSalaryService.mjs';
+import { MAX_HORSES_PER_GROOM } from '../services/groomSalaryService.mjs';
 
 const STAFF_TYPE = 'groom';
 
@@ -103,16 +103,15 @@ export async function getMarketplace(req, res) {
       success: true,
       message: 'Marketplace retrieved successfully',
       data: {
-        grooms: offers,
+        // Owner rulings q226/q228: every offer shows its weekly fee, the price its hire charges.
+        grooms: offers.map(o => offerAtLevelPrice('groom', o, 'weeklyFee', o.experience)),
         lastRefresh,
         nextFreeRefresh,
         refreshCost,
         canRefreshFree: refreshCost === 0,
         refreshCount,
-        // Equoria-95yrv: what hiring one of these will actually cost per week —
-        // 70 per horse you put them on, up to ten. The offer itself has no
-        // weekly rate any more, so the rule travels with the list.
-        feePerHorsePerWeek: FEE_PER_HORSE_PER_WEEK,
+        // Each offer carries its own weekly fee (its star level's price, owner
+        // ruling 2026-10-28, q228); the horse cap travels with the list.
         maxHorsesPerGroom: MAX_HORSES_PER_GROOM,
       },
     });
@@ -294,12 +293,11 @@ export async function hireFromMarketplace(req, res) {
 
     const groomData = offers[groomIndex];
     // Owner ruling 2026-10-28 (Equoria-nawn5): hiring charges one week at the groom's
-    // star-level price. An offer generated before star levels costs the week it
-    // advertised (seven sessions).
+    // star-level price. An offer generated before star levels is placed on a level
+    // from its old skill word and experience, and costs that level's price (q226).
     const { starLevel, fee: hiringCost } = offerLevelAndFee(
       'groom',
       groomData,
-      groomData.sessionRate * 7,
       groomData.experience,
     );
 

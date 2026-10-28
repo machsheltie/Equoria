@@ -173,13 +173,14 @@ export async function getHorseOverview(req, res) {
     }
 
     // The horse's rider is its active RiderAssignment (Equoria-97se: the Horse.rider
-    // JSON copy is gone). Shape kept: { id, name, level, speciality }, else 'none'.
+    // JSON copy is gone). Shape: { id, name, starLevel, speciality }, else 'none'. The
+    // old 1-10 level gave way to the star level (owner ruling 2026-10-28, q229).
     const riderAssignment = await prisma.riderAssignment.findFirst({
       where: { horseId, isActive: true },
       orderBy: { id: 'desc' },
       select: {
         rider: {
-          select: { id: true, firstName: true, lastName: true, level: true, speciality: true },
+          select: { id: true, firstName: true, lastName: true, starLevel: true, speciality: true },
         },
       },
     });
@@ -187,7 +188,7 @@ export async function getHorseOverview(req, res) {
       ? {
           id: riderAssignment.rider.id,
           name: `${riderAssignment.rider.firstName} ${riderAssignment.rider.lastName}`,
-          level: riderAssignment.rider.level,
+          starLevel: riderAssignment.rider.starLevel,
           speciality: riderAssignment.rider.speciality,
         }
       : 'none';

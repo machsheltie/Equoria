@@ -25,7 +25,7 @@ import { getTrainerRosterCap } from '../config/trainerConfig.mjs';
 import { getStableLevel } from '../../users/index.mjs';
 import { RosterCapExceededError, StaleOfferError } from '../../../errors/index.mjs';
 import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
-import { offerLevelAndFee } from '../../../constants/staffLevels.mjs';
+import { offerAtLevelPrice, offerLevelAndFee } from '../../../constants/staffLevels.mjs';
 // Equoria-1poxi: a hire may carry a horseId; the assignment commits with the hire.
 import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
 // Equoria-bvddn.19: remove the hired offer INSIDE the hire transaction via a
@@ -93,7 +93,8 @@ export async function getTrainerMarketplace(req, res) {
       success: true,
       message: 'Trainer marketplace retrieved successfully',
       data: {
-        trainers: offers,
+        // Owner ruling q226: every offer shows the price its sessions charge.
+        trainers: offers.map(o => offerAtLevelPrice('trainer', o, 'sessionRate', o.sessionRate)),
         lastRefresh,
         nextFreeRefresh,
         refreshCost,
@@ -261,8 +262,8 @@ export async function hireTrainerFromMarketplace(req, res) {
 
     const trainerData = offers[trainerIndex];
     // Owner ruling 2026-10-28 (Equoria-nawn5): the trainer's per-session fee is its
-    // star level's price. An offer generated before star levels keeps the session
-    // rate it advertised.
+    // star level's price. An offer generated before star levels is placed on a level
+    // from its old skill word and rate, and costs that level's price (owner ruling q226).
     const { starLevel, fee: sessionFee } = offerLevelAndFee(
       'trainer',
       trainerData,

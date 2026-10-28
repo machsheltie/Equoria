@@ -81,6 +81,8 @@ function renderList(horseId?: number) {
   );
 }
 
+// Owner ruling 2026-10-28 (q230): hiring is one click, no confirmation box, so the card
+// button sends the hire and a refusal shows on the clicked card.
 describe('TrainerList — Assign Trainer (Equoria-1poxi)', () => {
   it('the card button reads "Assign Trainer", never a code word or a bare "Hire"', async () => {
     stubReads();
@@ -92,25 +94,20 @@ describe('TrainerList — Assign Trainer (Equoria-1poxi)', () => {
     expect(button).not.toHaveTextContent(/^Hire$/);
   });
 
-  it('with a horse in view, one confirm sends the hire and the horse together', async () => {
+  it('with a horse in view, one click sends the hire and the horse together', async () => {
     stubReads();
     const bodies: unknown[] = [];
     stubHire((b) => bodies.push(b));
     const user = userEvent.setup();
     renderList(7);
 
-    await user.click(await screen.findByTestId('hire-button-mk-1'));
-    const dialog = await screen.findByTestId('hire-modal');
-    await waitFor(() => expect(dialog).toHaveTextContent(/Thunder/));
-    expect(dialog).toHaveTextContent(/hiring is free/i);
     // The horse is already chosen: no picker is shown.
-    expect(within(dialog).queryByRole('combobox')).not.toBeInTheDocument();
-
-    await user.click(within(dialog).getByTestId('confirm-hire-button'));
+    expect(screen.queryByRole('combobox', { name: /which horse/i })).not.toBeInTheDocument();
+    await user.click(await screen.findByTestId('hire-button-mk-1'));
 
     await waitFor(() => expect(bodies).toHaveLength(1));
     expect(bodies[0]).toEqual({ marketplaceId: 'mk-1', horseId: 7 });
-    await waitFor(() => expect(screen.queryByTestId('hire-modal')).not.toBeInTheDocument());
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('with no horse in view it asks which horse before it will assign', async () => {
@@ -120,25 +117,23 @@ describe('TrainerList — Assign Trainer (Equoria-1poxi)', () => {
     const user = userEvent.setup();
     renderList();
 
-    await user.click(await screen.findByTestId('hire-button-mk-1'));
-    const dialog = await screen.findByTestId('hire-modal');
-    const confirm = within(dialog).getByTestId('confirm-hire-button');
-    expect(confirm).toHaveTextContent('Assign Trainer');
-    expect(confirm).toBeDisabled();
+    const button = await screen.findByTestId('hire-button-mk-1');
+    expect(button).toHaveTextContent('Assign Trainer');
+    expect(button).toBeDisabled();
 
-    const picker = await within(dialog).findByRole('combobox', { name: /which horse/i });
+    const picker = await screen.findByRole('combobox', { name: /which horse/i });
     await waitFor(() =>
       expect(within(picker).getByRole('option', { name: /Comet/ })).toBeInTheDocument()
     );
     await user.selectOptions(picker, '9');
-    expect(confirm).toBeEnabled();
-    await user.click(confirm);
+    expect(button).toBeEnabled();
+    await user.click(button);
 
     await waitFor(() => expect(bodies).toHaveLength(1));
     expect(bodies[0]).toEqual({ marketplaceId: 'mk-1', horseId: 9 });
   });
 
-  it('a refused request keeps the dialog open and says so, with no server text', async () => {
+  it('a refused request says so on the card, with no server text', async () => {
     stubReads();
     server.use(
       http.post(HIRE, () =>
@@ -149,9 +144,8 @@ describe('TrainerList — Assign Trainer (Equoria-1poxi)', () => {
     renderList(7);
 
     await user.click(await screen.findByTestId('hire-button-mk-1'));
-    await user.click(await screen.findByTestId('confirm-hire-button'));
 
-    const alert = await within(await screen.findByTestId('hire-modal')).findByRole('alert');
+    const alert = await within(screen.getByTestId('trainer-card-mk-1')).findByRole('alert');
     expect(alert).toBeInTheDocument();
     expect(screen.queryByText(/RAW-SERVER-TEXT/)).not.toBeInTheDocument();
   });

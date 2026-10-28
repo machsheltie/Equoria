@@ -59,7 +59,7 @@ export const groomsApi = {
   // Equoria-1bv3i: this reads /cost, NOT /summary. `SalarySummary` is the
   // shape of GET /groom-salaries/cost (see its docblock in groomStaffTypes.ts
   // and calculateUserSalaryCost in groomSalaryReadService.mjs):
-  // { totalWeeklyCost, groomCount, feePerHorsePerWeek, maxHorsesPerGroom,
+  // { totalWeeklyCost, groomCount, maxHorsesPerGroom,
   //   breakdown }. GET /groom-salaries/summary answers a DIFFERENT envelope —
   // { currentCost, currentMoney, weeksAffordable, inGracePeriod,
   //   gracePeriodDaysRemaining, recentPayments, nextPaymentDate } — with the

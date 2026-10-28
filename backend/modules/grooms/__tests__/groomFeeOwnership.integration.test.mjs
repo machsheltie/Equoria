@@ -2,7 +2,10 @@
  * Equoria-6p398.14 — the weekly groom fee counts only assignments on horses the
  * groom's employer still owns.
  *
- * The fee is 70 x the groom's ACTIVE assignments (Equoria-95yrv), counted by
+ * Owner ruling 2026-10-28 (q228) made the fee the groom's star level price per week,
+ * however many horses, so the count below no longer prices anything; it is still the
+ * horse count the salary summary and groom salary read report. It used to be
+ * 70 x the groom's ACTIVE assignments (Equoria-95yrv), counted by
  * `countActiveAssignments` with no look at who owns the horse. A sale ends the
  * seller's assignments (horseTransferReconciliation), but any other path that
  * moves a horse to another player without ending them — an admin transfer, an
@@ -75,6 +78,7 @@ describe('Equoria-6p398.14 — fee counts only horses the employer owns', () => 
         speciality: 'general',
         personality: 'gentle',
         skillLevel: 'novice',
+        starLevel: 'rookie',
         startAge: 20,
         userId: employer.id,
       },
@@ -109,24 +113,24 @@ describe('Equoria-6p398.14 — fee counts only horses the employer owns', () => 
     expect(counts.get(groom.id)).toBe(1);
   });
 
-  it('the salary summary quotes 70 for the one horse the employer owns', async () => {
+  it('the salary summary reports one horse and the Rookie groom price (q228)', async () => {
     const summary = await calculateUserSalaryCost(employer.id);
-    expect(summary.totalWeeklyCost).toBe(70);
+    expect(summary.totalWeeklyCost).toBe(100);
     expect(summary.breakdown.find(b => b.groomId === groom.id)).toMatchObject({
       assignedHorses: 1,
-      weeklyFee: 70,
+      weeklyFee: 100,
     });
   });
 
-  it('the weekly pass debits 70, not 140', async () => {
+  it('the weekly pass debits the one groom price once (q228)', async () => {
     const row = await prisma.user.findUnique({ where: { id: employer.id }, select: { money: true } });
     const before = Number(row.money);
 
     const results = await processWeeklySalaries(new Date(), { userId: employer.id });
     expect(results.errors).toEqual([]);
-    expect(results.totalAmount).toBe(70);
+    expect(results.totalAmount).toBe(100);
 
     const after = await prisma.user.findUnique({ where: { id: employer.id }, select: { money: true } });
-    expect(Number(after.money)).toBe(before - 70);
+    expect(Number(after.money)).toBe(before - 100);
   }, 60000);
 });

@@ -40,6 +40,14 @@ export const v1MirrorHandlers = [
     HttpResponse.json({ success: true, data: [] })
   ),
 
+  // The trainer limit (owner ruling 2026-10-28, q222): stable level 1 holds 2.
+  http.get(`${base}/api/v1/trainers/roster-cap`, () =>
+    HttpResponse.json({
+      success: true,
+      data: { rosterCap: 2, stableLevel: 1, activeTrainers: 0 },
+    })
+  ),
+
   // Breeding / foals — pregnancy-started response (B3 delayed foaling).
   // Mirrors the /api/horses/foals handler above; both paths exist because
   // the backend mounts authRouter on both /api and /api/v1. See the
@@ -89,13 +97,12 @@ export const v1MirrorHandlers = [
   http.get(`${base}/api/v1/groom-salaries/cost`, () =>
     HttpResponse.json({
       success: true,
-      // Equoria-95yrv: mirrors the real payload — 70 per horse in a groom's care,
-      // up to ten, and no `totalMonthlyCost` (the API has never sent one).
+      // Mirrors the real payload — each groom's star level price a week (q228), and
+      // no `totalMonthlyCost` (the API has never sent one).
       data: {
-        totalWeeklyCost: 140,
+        totalWeeklyCost: 400,
         groomCount: 1,
-        feePerHorsePerWeek: 70,
-        maxHorsesPerGroom: 10,
+        maxHorsesPerGroom: 20,
         breakdown: [
           {
             groomId: 10,
@@ -103,7 +110,7 @@ export const v1MirrorHandlers = [
             skillLevel: 'expert',
             speciality: 'foalCare',
             assignedHorses: 2,
-            weeklyFee: 140,
+            weeklyFee: 400,
             feeUnpaid: false,
           },
         ],

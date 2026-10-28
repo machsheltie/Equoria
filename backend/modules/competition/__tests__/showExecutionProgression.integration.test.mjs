@@ -151,7 +151,6 @@ describe('executeClosedShows progression awards (Equoria-oey96.4)', () => {
         personality: 'methodical',
         skillLevel: 'experienced',
         speciality: 'Dressage',
-        level: 10,
         prestige: 100,
         userId: owner.id,
       },

@@ -14,20 +14,15 @@
  *
  * TWO THINGS CHANGED HERE, AND BOTH ARE VISIBLE TO PLAYERS:
  *
- *   1. THE FEE BASIS. Equoria-95yrv, owner ruling 2026-09-14 10:23: "Charge the
- *      player per horse assigned to a groom per week: $70 per horse per week, up
- *      to 10 horses per groom."
+ *   1. THE FEE BASIS. Owner ruling 2026-10-28 (q228, Equoria-nawn5): each groom
+ *      on a player's staff is paid their star level's price per week, however many
+ *      horses they look after, like a rider:
  *
- *        weekly fee for a groom = 70 x their ACTIVE assignments
+ *        weekly fee for a groom = their star level's price (100-500)
  *
- *      This is the SECOND basis change on this line, and it replaces the first.
- *      Equoria-ypb7d.3 read the earlier ruling as per-groom-on-staff and priced it
- *      from the skill/specialty table (50-165/week); the owner has now ruled per
- *      assigned horse at a flat rate, so that table is gone. A groom on no horses
- *      costs NOTHING again, a groom on three costs 210, and the ten-horse cap
- *      (`MAX_HORSES_PER_GROOM`) is enforced where assignments are made. This is an
- *      economy change and is reported as one — a consequence of the ruling, not a
- *      rebalance.
+ *      This replaces the 70-per-horse basis of Equoria-95yrv (owner ruling
+ *      2026-09-14). The per-groom horse cap (`MAX_HORSES_PER_GROOM`) is still
+ *      enforced where assignments are made.
  *
  *   2. NON-PAYMENT. `terminateGroomsForNonPayment` is GONE. It had never once
  *      worked: it wrote `terminationReason` to `GroomAssignment`, which has no
@@ -105,11 +100,10 @@ import { acquirePayWeekLockTx, ensureEngagementsTx } from './groomEngagementServ
 // then release to the grooms-for-hire pool. Replaces the never-working
 // `handleInsufficientFunds` + `terminateGroomsForNonPayment` pair.
 import { handleUnpaidFees, recordUncollectedFees } from './groomFeeArrearsService.mjs';
-// Equoria-95yrv / Equoria-bgdfb: WHAT a groom costs, the ten-horse cap, and what an
+// Equoria-nawn5 / Equoria-bgdfb: WHAT a groom costs, the horse cap, and what an
 // unpaid week becomes. Defined next door so this file stays the COLLECTION of the
 // fee; re-exported below so every existing importer of this module is unchanged.
 import {
-  FEE_PER_HORSE_PER_WEEK,
   MAX_HORSES_PER_GROOM,
   ARREARS_OWED_STATUSES,
   ARREARS_SETTLED_STATUS,
@@ -123,7 +117,6 @@ import {
 export { getSalaryPaymentHistory, calculateUserSalaryCost } from './groomSalaryReadService.mjs';
 
 export {
-  FEE_PER_HORSE_PER_WEEK,
   MAX_HORSES_PER_GROOM,
   ARREARS_OWED_STATUSES,
   ARREARS_SETTLED_STATUS,
@@ -134,7 +127,6 @@ export {
 
 // Salary configuration
 export const SALARY_CONFIG = {
-  FEE_PER_HORSE_PER_WEEK,
   MAX_HORSES_PER_GROOM,
 
   // Payment processing day (0 = Sunday, 1 = Monday, etc.)
@@ -170,12 +162,10 @@ export function getPayWeekStart(now = new Date()) {
 /**
  * Process the weekly fee for every groom on a player's staff.
  *
- * Equoria-95yrv — THE BASIS IS THE HORSE. The selection below still reads GROOMS
- * with a `userId` (everyone on someone's staff), because staff is who may be
- * billed and who may enter grace — but each groom's fee is 70 x the horses they
- * are currently working, so a groom on no horses appears in the pass and is
- * charged 0. (Equoria-ypb7d.3 charged one flat rate per groom on staff; the owner
- * replaced that basis on 2026-09-14.) Retired grooms are excluded: `retired: false` — a
+ * THE BASIS IS THE GROOM (owner ruling 2026-10-28, q228). The selection below reads
+ * GROOMS with a `userId` (everyone on someone's staff), because staff is who is
+ * billed and who may enter grace; each groom's fee is their star level's price,
+ * whatever horses they are working. Retired grooms are excluded: `retired: false` — a
  * retired groom keeps its `userId` so the player can still read their history
  * (see the field comment in schema.prisma), and billing them would be charging
  * for a career that has ended.
@@ -227,6 +217,7 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
         name: true,
         userId: true,
         skillLevel: true,
+        starLevel: true,
         speciality: true,
         feeUnpaidSince: true,
         user: { select: { id: true, username: true } },
@@ -252,13 +243,6 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
       errors: [],
     };
 
-    // Equoria-95yrv: the fee is 70 x the horses each groom is working, so the
-    // pass needs those counts. One grouped read for the whole staff.
-    const assignmentCounts = await countActiveAssignments(
-      prisma,
-      staff.map(groom => groom.id),
-    );
-
     // Group by the employing player so one debit covers their whole staff.
     const userGroups = {};
     for (const groom of staff) {
@@ -276,12 +260,11 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
         };
       }
 
-      const assignedHorses = assignmentCounts.get(groom.id) ?? 0;
-      const salary = calculateWeeklyFee(assignedHorses);
+      // Owner ruling 2026-10-28 (q228): the groom's star level's price.
+      const salary = calculateWeeklyFee(groom);
       // The key stays `assignments` so every existing reader of this shape
-      // (handleUnpaidFees, the tests) keeps working; each entry is one GROOM on
-      // staff, carrying the horse count its fee was computed from.
-      userGroups[userId].assignments.push({ groom, salary, assignedHorses });
+      // (handleUnpaidFees, the tests) keeps working; each entry is one GROOM on staff.
+      userGroups[userId].assignments.push({ groom, salary });
       userGroups[userId].totalSalary += salary;
     }
 

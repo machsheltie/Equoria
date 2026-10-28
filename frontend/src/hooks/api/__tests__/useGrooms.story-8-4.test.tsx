@@ -128,12 +128,12 @@ describe('useGroomSalaries', () => {
   it('returns SalarySummary with totals from MSW (AC: 6)', async () => {
     const { result } = renderHook(() => useGroomSalaries(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    // Equoria-95yrv: 70 per horse in the groom's care, and the rule travels with
-    // the payload. There is no monthly total — the API has never sent one.
-    expect(result.current.data?.totalWeeklyCost).toBe(140);
+    // Owner ruling 2026-10-28 (q228): each groom's star level price a week; no
+    // per-horse rate, and no monthly total (the API has never sent one).
+    expect(result.current.data?.totalWeeklyCost).toBe(400);
     expect(result.current.data?.groomCount).toBe(1);
-    expect(result.current.data?.feePerHorsePerWeek).toBe(70);
-    expect(result.current.data?.maxHorsesPerGroom).toBe(10);
+    expect(result.current.data).not.toHaveProperty('feePerHorsePerWeek');
+    expect(result.current.data?.maxHorsesPerGroom).toBe(20);
   });
 
   it('returns SalarySummary with non-empty breakdown (AC: 6)', async () => {
@@ -144,7 +144,7 @@ describe('useGroomSalaries', () => {
     expect(entry?.groomId).toBe(10);
     expect(entry?.groomName).toBe('Alice Thornton');
     expect(entry?.assignedHorses).toBe(2);
-    expect(entry?.weeklyFee).toBe(140);
+    expect(entry?.weeklyFee).toBe(400);
   });
 });
 

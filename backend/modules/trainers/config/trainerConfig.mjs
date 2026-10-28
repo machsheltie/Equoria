@@ -6,33 +6,27 @@
  * fast-path count PLUS an authoritative post-lock in-tx re-count of NON-retired
  * trainers, mirroring the landed groom pattern (Equoria-n4m5j / hduc5).
  *
- * The cap SCALES BY STABLE LEVEL (owner decision 2026-07-07). Stable level
- * derives from User.level via the single exported getStableLevel() in the users module
- * — never inline `ceil(level/4)` at call sites.
+ * The cap SCALES BY STABLE LEVEL. Stable level derives from User.level via the single
+ * exported getStableLevel() in the users module — never inline `ceil(level/4)` at call
+ * sites.
  *
- * Trainers run one below riders at every stable level: every horse can carry a
- * rider AND a trainer, but trainers multi-assign across horses while riders are
- * the per-entry competition surface, so riders need slightly more room.
+ * Owner ruling 2026-10-28 (q222, Equoria-asmsy): "2 for level 1, then +1 per level, up
+ * to 10." This replaces the 2026-07-07 table (1/2/3/4/5). The trainer page reads the
+ * same number from GET /api/v1/trainers/roster-cap, so the page and the hire refusal
+ * can never disagree.
  */
 
-/**
- * Maximum NON-retired trainers a user may hold, keyed by stable level (1–5).
- */
-export const TRAINER_ROSTER_CAP_BY_STABLE_LEVEL = Object.freeze({
-  1: 1,
-  2: 2,
-  3: 3,
-  4: 4,
-  5: 5,
-});
+/** The most trainers any player may hold (q222). */
+export const trainerRosterCapMax = 10;
 
 /**
- * Resolve the trainer roster cap for a given stable level (1–5).
- * Defensive fallback to the SL1 cap for any out-of-range input.
+ * Resolve the trainer roster cap for a stable level: 2 at level 1, one more per level,
+ * never more than 10. Any out-of-range or non-numeric input counts as level 1.
  *
- * @param {number} stableLevel - Clamped stable level (1–5).
+ * @param {number} stableLevel
  * @returns {number} Max non-retired trainers allowed.
  */
 export function getTrainerRosterCap(stableLevel) {
-  return TRAINER_ROSTER_CAP_BY_STABLE_LEVEL[stableLevel] ?? TRAINER_ROSTER_CAP_BY_STABLE_LEVEL[1];
+  const level = Number.isInteger(stableLevel) && stableLevel >= 1 ? stableLevel : 1;
+  return Math.min(trainerRosterCapMax, level + 1);
 }

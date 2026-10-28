@@ -48,7 +48,6 @@ const grooms = backendSpecialties.map(groomFor);
 const salary = {
   totalWeeklyCost: 0,
   groomCount: grooms.length,
-  feePerHorsePerWeek: 70,
   maxHorsesPerGroom: 10,
   breakdown: [],
 };

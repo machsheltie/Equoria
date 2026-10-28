@@ -33,12 +33,14 @@ const flat = v => ({
   obedience: v,
   focus: v,
 });
-// computeRiderModifiers: experienced +3%, level 10 +3.6%, prestige 60 +2.4%, no affinity = +9%.
-const RIDER_9 = { skillLevel: 'experienced', level: 10, prestige: 60, personality: 'gentle' };
-// experienced +3%, level 10 +3.6%, prestige 100 +4%, methodical/Dressage +2% = 12.6%, capped at +10%.
-const RIDER_10 = { skillLevel: 'experienced', level: 10, prestige: 100, personality: 'methodical' };
+// Owner ruling 2026-10-28 (q229): the old 1-10 level is the star level, two per star
+// (staffCareerLevel), so an Expert is the old level 10.
+// computeRiderModifiers: experienced +3%, Expert (level 10) +3.6%, prestige 60 +2.4%, no affinity = +9%.
+const RIDER_9 = { skillLevel: 'experienced', starLevel: 'expert', prestige: 60, personality: 'gentle' };
+// experienced +3%, Expert +3.6%, prestige 100 +4%, methodical/Dressage +2% = 12.6%, capped at +10%.
+const RIDER_10 = { skillLevel: 'experienced', starLevel: 'expert', prestige: 100, personality: 'methodical' };
 // experienced +3% bonus, retired -8% penalty = -5%.
-const RIDER_RETIRED = { skillLevel: 'experienced', level: 1, prestige: 0, personality: 'gentle', retired: true };
+const RIDER_RETIRED = { skillLevel: 'experienced', prestige: 0, personality: 'gentle', retired: true };
 
 // Owner ruling 2026-10-23 (decision C, Equoria-k1p62): health is a percent term in
 // every score. Good health (fed today, Good vet finding) is 0%, so this test still

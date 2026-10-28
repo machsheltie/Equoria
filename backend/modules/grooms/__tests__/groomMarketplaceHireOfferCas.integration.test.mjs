@@ -45,9 +45,9 @@ import { hireFromMarketplace } from '../controllers/groomMarketplaceController.m
 
 const FIXTURE_PREFIX = 'TestFixture-bvddn19-groom';
 
-// hireFromMarketplace: hiringCost = sessionRate * 7 (one week upfront).
+// hireFromMarketplace: one week at the offer's star level price (owner ruling q226).
 const SESSION_RATE = 100;
-const HIRING_COST = SESSION_RATE * 7;
+const HIRING_COST = 400; // an Advanced offer
 // Fund the buyer far beyond what even several concurrent hires could ever
 // cost — the scenario under test is the offer-list race, not money.
 const BUYER_FUNDS = HIRING_COST * 1000;
@@ -98,6 +98,7 @@ async function makeSingleOfferMarketplace(userId) {
       lastName: 'Groom',
       specialty: 'general',
       skillLevel: 'experienced',
+      starLevel: 'advanced',
       personality: 'gentle',
       experience: 5,
       sessionRate: SESSION_RATE,

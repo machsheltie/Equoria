@@ -1,13 +1,12 @@
 /**
  * The shared staff star-level table (owner ruling 2026-10-28, Equoria-nawn5): five levels,
  * stars 1-5, prices 100-500, drawn inside each staff type's old skill tier with the old
- * odds; older rows and offers placed from their old skill word and price; owner question
- * q226 (already-hired staff keep their price) behind one switch.
+ * odds; older rows and offers placed from their old skill word and price. Owner ruling
+ * q226 (2026-10-28): every hire, old or new, pays its star level's price.
  */
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  alreadyHiredStaffKeepTheirPrice,
   drawStaffLevel,
   hiredStaffFee,
   isStaffLevel,
@@ -93,31 +92,33 @@ describe('placing staff from before star levels', () => {
     expect(legacyStaffLevel(type, skillLevel, measure)).toBe(expected);
   });
 
-  it('a new offer costs its level; an old offer costs what it advertised', () => {
+  // Owner ruling q226 changed this contract: an old offer used to cost what it
+  // advertised; now every offer costs its level's price.
+  it('every offer costs its level price; an old offer is placed from its old skill word', () => {
     expect(offerLevelAndFee('rider', { starLevel: 'advanced', weeklyRate: 999 }, 999)).toEqual({
       starLevel: 'advanced',
       fee: 400,
     });
     expect(offerLevelAndFee('rider', { skillLevel: 'rookie', weeklyRate: 250 }, 250)).toEqual({
       starLevel: 'novice',
-      fee: 250,
+      fee: 200,
     });
-    expect(offerLevelAndFee('groom', { skillLevel: 'expert', experience: 9 }, 280, 9)).toEqual({
+    expect(offerLevelAndFee('groom', { skillLevel: 'expert', experience: 9 }, 9)).toEqual({
       starLevel: 'advanced',
-      fee: 280,
+      fee: 400,
     });
   });
 });
 
-describe('what a hired rider or trainer costs (owner question q226)', () => {
-  it('while q226 is open, staff keep the price they were hired at', () => {
-    expect(alreadyHiredStaffKeepTheirPrice).toBe(true);
-    expect(hiredStaffFee({ starLevel: 'novice' }, 250)).toBe(250);
-    expect(hiredStaffFee({ starLevel: 'expert' }, 500)).toBe(500);
+// Owner ruling q226 (2026-10-28, "change it now") changed this contract: staff hired
+// before star levels no longer keep the price they were hired at.
+describe('what a hired rider, trainer or groom costs (owner ruling q226)', () => {
+  it('is always the star level price', () => {
+    expect(staffLevels.map(level => hiredStaffFee({ starLevel: level }))).toEqual([100, 200, 300, 400, 500]);
   });
 
-  it('a row with no price at hire falls back to its level price', () => {
-    expect(hiredStaffFee({ starLevel: 'intermediate' }, 0)).toBe(300);
-    expect(hiredStaffFee({}, 0)).toBe(0);
+  it('refuses a row without a star level rather than charging nothing', () => {
+    expect(() => hiredStaffFee({})).toThrow('Unknown staff level');
+    expect(() => hiredStaffFee(null)).toThrow('Unknown staff level');
   });
 });

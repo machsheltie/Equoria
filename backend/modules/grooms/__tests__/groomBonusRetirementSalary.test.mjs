@@ -59,6 +59,7 @@ beforeAll(async () => {
       name: `TestFixture-GroomBonusGroom-${Date.now()}`,
       speciality: 'foalCare',
       personality: 'gentle',
+      starLevel: 'rookie',
       userId: user.id,
     },
   });
@@ -170,18 +171,12 @@ describe('getRetirementStatistics', () => {
 
 // ── groomSalaryService ────────────────────────────────────────────────────────
 
-// Equoria-95yrv (owner, 2026-09-14): the fee is $70 per horse assigned, so the
-// skill/specialty rate table these cases walked (novice+foalCare=60,
-// master+showHandling=165) no longer exists. Skill decides how well a groom
-// works, never what they cost.
+// Owner ruling 2026-10-28 (q228) replaced the 70-per-horse fee (Equoria-95yrv): a
+// groom costs their star level's price per week, however many horses.
 describe('calculateWeeklyFee', () => {
-  it('charges 70 for each horse the groom is working', () => {
-    expect(calculateWeeklyFee(1)).toBe(70);
-    expect(calculateWeeklyFee(2)).toBe(140);
-  });
-
-  it('charges nothing for a groom on no horses', () => {
-    expect(calculateWeeklyFee(0)).toBe(0);
+  it("charges the groom's star level price", () => {
+    expect(calculateWeeklyFee({ starLevel: 'novice' })).toBe(200);
+    expect(calculateWeeklyFee({ starLevel: 'advanced' })).toBe(400);
   });
 });
 
@@ -193,25 +188,19 @@ describe('getSalaryPaymentHistory', () => {
 });
 
 describe('calculateUserSalaryCost', () => {
-  // Equoria-95yrv (owner ruling, 2026-09-14): the weekly fee is $70 per HORSE
-  // ASSIGNED, up to ten horses per groom. This fixture is one groom on staff with
-  // no `GroomAssignment` row, so the fee is 0 again.
-  //
-  // This assertion has now been inverted twice, which is worth saying plainly.
-  // Originally it asserted 0 under the per-active-assignment basis. Equoria-ypb7d.3
-  // read the owner's "so long as they pay their weekly fee, they keep the groom on
-  // their staff" as per-groom-on-staff and made it 50. The owner has now ruled the
-  // basis is the horse, so 0 is right again — for the original reason, not by
-  // reverting anything: an idle groom does no work, and the ruling prices work.
-  it('charges nothing for a groom on staff with no horses to care for', async () => {
+  // Owner ruling 2026-10-28 (q228): the weekly fee is the groom's star level price,
+  // however many horses, like a rider. This fixture is one Rookie groom on staff with
+  // no `GroomAssignment` row, so the fee is 100. (Under the 70-per-horse basis of
+  // Equoria-95yrv this asserted 0; the ruling changed it.)
+  it('charges the level price for a groom on staff with no horses to care for', async () => {
     const result = await calculateUserSalaryCost(user.id);
-    expect(result.totalWeeklyCost).toBe(0);
+    expect(result.totalWeeklyCost).toBe(100);
     expect(result.groomCount).toBe(1);
     expect(result.breakdown).toEqual([
       expect.objectContaining({
         groomId: groom.id,
         assignedHorses: 0,
-        weeklyFee: 0,
+        weeklyFee: 100,
         feeUnpaid: false,
       }),
     ]);

@@ -59,7 +59,6 @@ beforeAll(async () => {
       skillLevel: 'experienced',
       speciality: 'Jumping',
       weeklyRate: 200,
-      level: 3,
       userId: user.id,
     },
   });

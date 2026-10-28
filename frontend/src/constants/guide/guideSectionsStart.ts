@@ -219,7 +219,7 @@ export const guideSectionsStart: readonly GuideSection[] = [
       },
       {
         kind: 'paragraph',
-        text: '**Groom fees.** A groom costs **70 coins per horse per week**, and each groom looks after up to 20 horses. A groom with no horses costs nothing. Fees are taken on Monday mornings, Eastern.',
+        text: '**Groom fees.** Each groom is paid by their star level every week, however many horses they look after: Rookie 100, Novice 200, Intermediate 300, Advanced 400, Expert 500 coins. Hiring pays the first week, and each groom looks after up to 20 horses. Fees are taken on Monday mornings, Eastern.',
       },
       {
         kind: 'list',

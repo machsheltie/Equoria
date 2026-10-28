@@ -55,6 +55,16 @@ async function makeUser(money) {
   return { user, token };
 }
 
+// Owner ruling 2026-10-28 (q226, Equoria-nawn5): a rider's weekly pay is their star
+// level's price, so each fixture rider carries the level whose price is its rate.
+const starLevelForRate = rate => {
+  const level = { 100: 'rookie', 200: 'novice', 300: 'intermediate', 400: 'advanced', 500: 'expert' }[rate];
+  if (!level) {
+    throw new Error(`no star level is priced at ${rate}`);
+  }
+  return level;
+};
+
 const makeRider = (userId, weeklyRate) =>
   prisma.rider.create({
     data: {
@@ -65,6 +75,7 @@ const makeRider = (userId, weeklyRate) =>
       skillLevel: 'experienced',
       speciality: 'Show Jumping',
       weeklyRate,
+      starLevel: starLevelForRate(weeklyRate),
     },
   });
 

@@ -33,6 +33,7 @@ import {
   deleteTrainerAssignment,
   dismissTrainer,
   getTrainerDiscovery,
+  getTrainerRosterLimit,
 } from '../controllers/trainerController.mjs';
 // Equoria-jk9oj.2: declare auth at the router that OWNS these mutations rather
 // than inferring it from the authRouter mount comment. Idempotent with the
@@ -57,6 +58,9 @@ const handleValidationErrors = (req, res, next) => {
 // ── Marketplace routes ───────────────────────────────────────────────────────
 
 router.get('/marketplace', getTrainerMarketplace);
+
+// Owner ruling 2026-10-28 (q222): the trainer limit the page shows, from the hire path's source.
+router.get('/roster-cap', getTrainerRosterLimit);
 
 router.post(
   '/marketplace/hire',

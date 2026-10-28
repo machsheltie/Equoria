@@ -38,6 +38,7 @@ const mockMarketplaceData = {
       personality: 'gentle',
       experience: 8,
       sessionRate: 100,
+      weeklyFee: 400,
       bio: 'Experienced foal care specialist with gentle approach',
       availability: true,
     },
@@ -51,6 +52,7 @@ const mockMarketplaceData = {
       personality: 'patient',
       experience: 5,
       sessionRate: 75,
+      weeklyFee: 300,
       bio: 'Versatile groom with patient demeanor',
       availability: true,
     },
@@ -64,15 +66,15 @@ const mockMarketplaceData = {
       personality: 'energetic',
       experience: 12,
       sessionRate: 150,
+      weeklyFee: 500,
       bio: 'Master show handler with extensive competition experience',
       availability: true,
     },
   ],
   lastRefresh: new Date().toISOString(),
   nextFreeRefresh: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-  // Equoria-95yrv: the fee rule travels with the offer list.
-  feePerHorsePerWeek: 70,
-  maxHorsesPerGroom: 10,
+  // The horse cap travels with the offer list; each offer carries its weekly fee.
+  maxHorsesPerGroom: 20,
   refreshCost: 0,
   canRefreshFree: true,
   refreshCount: 0,
@@ -203,11 +205,11 @@ describe('GroomList Component', () => {
         // staff show their star level (an expert-tier groom is Advanced, 4 stars).
         expect(within(sarahCard).getByText('Advanced')).toBeInTheDocument();
         expect(within(sarahCard).getByText(/8.*years/i)).toBeInTheDocument();
-        // Equoria-95yrv (owner ruling, 2026-09-14): the offer states the RULE —
-        // the weekly fee is charged per horse in the groom's care — rather than a
-        // flat weekly wage, which is no longer a thing a groom has.
-        expect(sarahCard).toHaveTextContent(/Weekly fee/);
-        expect(sarahCard).toHaveTextContent(/70per horse/);
+        // Owner ruling 2026-10-28 (q228) changed this contract: the card used to state
+        // "70 per horse" (Equoria-95yrv). A groom now costs their star level's price
+        // each week, however many horses.
+        expect(sarahCard).toHaveTextContent(/Weekly fee:\s*400/);
+        expect(sarahCard).not.toHaveTextContent(/per horse/);
       });
     });
 
@@ -317,45 +319,44 @@ describe('GroomList Component', () => {
       });
     });
 
-    test('opens hire confirmation modal when hire button clicked', async () => {
+    // Owner ruling 2026-10-28 (q230) changed this contract: the hire button used to
+    // open a confirmation box. Hiring is one click, with the fee on the button.
+    test('one click hires: no confirmation box, the hire is sent', async () => {
+      const hired: unknown[] = [];
+      server.use(
+        http.post(`${apiBase}/api/v1/groom-marketplace/hire`, async ({ request }) => {
+          hired.push(await request.json());
+          return HttpResponse.json(
+            { success: true, data: { groom: { id: 1 }, cost: 400 } },
+            { status: 201 }
+          );
+        })
+      );
       render(
         <TestWrapper>
           <GroomList userId={1} marketplaceData={mockMarketplaceData} userData={mockUserData} />
         </TestWrapper>
       );
 
-      await waitFor(() => {
-        const hireButtons = screen.getAllByRole('button', { name: /hire/i });
-        fireEvent.click(hireButtons[0]);
-      });
+      const sarahButton = await screen.findByRole('button', { name: /hire sarah johnson/i });
+      fireEvent.click(sarahButton);
 
-      await waitFor(() => {
-        // Just check for the modal presence
-        expect(screen.getByTestId('hire-modal')).toBeInTheDocument();
-        // Check for modal heading specifically
-        expect(screen.getByRole('heading', { name: /confirm hire/i })).toBeInTheDocument();
-      });
+      await waitFor(() => expect(hired).toEqual([{ marketplaceId: 'groom-1' }]));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    test('displays hiring cost in confirmation modal', async () => {
+    test("the hire button carries one week's fee", async () => {
       render(
         <TestWrapper>
           <GroomList userId={1} marketplaceData={mockMarketplaceData} userData={mockUserData} />
         </TestWrapper>
       );
 
-      await waitFor(() => {
-        // Click on Sarah Johnson's hire button (she's groom-1)
-        const sarahButton = screen.getByRole('button', { name: /hire sarah johnson/i });
-        fireEvent.click(sarahButton);
-      });
-
-      await waitFor(() => {
-        // Hiring cost is 1 week upfront: 100 * 7 = 700 coins, rendered via the
-        // canonical Currency component (coin icon + Intl-formatted number).
-        const modal = screen.getByTestId('hire-modal');
-        expect(within(modal).getByText('700')).toBeInTheDocument();
-      });
+      // One week at Sarah's star level price (Advanced, 400), rendered via the
+      // canonical Currency component; never seven sessions (700).
+      const sarahButton = await screen.findByRole('button', { name: /hire sarah johnson/i });
+      expect(sarahButton).toHaveTextContent('400');
+      expect(sarahButton).not.toHaveTextContent('700');
     });
 
     test('disables hire button when insufficient funds', async () => {
@@ -370,7 +371,7 @@ describe('GroomList Component', () => {
 
       await waitFor(() => {
         const hireButtons = screen.getAllByRole('button', { name: /hire/i });
-        // Emma Thompson costs $150/week * 7 = $1050, user only has $50
+        // Emma Thompson costs 500 a week (Expert), user only has 50
         expect(hireButtons[2]).toBeDisabled();
       });
     });

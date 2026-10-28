@@ -46,6 +46,9 @@ const baseCleanup = createCleanupTracker();
 // leave them looking unchanged by coincidence.
 const staffExperience = 37;
 const staffLevel = 4;
+// Riders and trainers keep a star level instead (owner ruling 2026-10-28, q229 replaced
+// their 1-10 level with it); grooms still carry the 1-10 level.
+const staffStarLevel = 'advanced';
 
 // The 12 horse stats (constants/schema.mjs HORSE_STATS), listed here as an
 // independent pin of "training changes no stat".
@@ -128,7 +131,7 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         skillLevel: 'novice',
         speciality: 'Racing',
         experience: staffExperience,
-        level: staffLevel,
+        starLevel: staffStarLevel,
         userId: user.id,
       },
     });
@@ -148,9 +151,9 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
 
     const trainerAfter = await prisma.trainer.findUnique({
       where: { id: trainer.id },
-      select: { experience: true, level: true },
+      select: { experience: true, starLevel: true },
     });
-    expect(trainerAfter).toEqual({ experience: staffExperience, level: staffLevel });
+    expect(trainerAfter).toEqual({ experience: staffExperience, starLevel: staffStarLevel });
 
     const horseAfter = await prisma.horse.findUnique({
       where: { id: horse.id },
@@ -190,7 +193,7 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         skillLevel: 'developing',
         speciality: 'Dressage',
         experience: staffExperience,
-        level: staffLevel,
+        starLevel: staffStarLevel,
         prestige: 40,
         userId: user.id,
       },
@@ -233,12 +236,12 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
 
     const riderAfter = await prisma.rider.findUnique({
       where: { id: rider.id },
-      select: { experience: true, level: true, totalCompetitions: true, prestige: true },
+      select: { experience: true, starLevel: true, totalCompetitions: true, prestige: true },
     });
     expect(results[0].placement).toBe(1);
     expect(riderAfter.prestige).toBe(40);
     expect(riderAfter.experience).toBe(staffExperience);
-    expect(riderAfter.level).toBe(staffLevel);
+    expect(riderAfter.starLevel).toBe(staffStarLevel);
     // The ride itself is still on the rider's record.
     expect(riderAfter.totalCompetitions).toBe(1);
   }, 60000);

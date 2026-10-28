@@ -24,7 +24,8 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 const maxGroomsPerUser = 10;
 const fixturePrefix = 'TestFixture-dosig-groom';
 const offerRate = 100;
-const hiringCost = offerRate * 7; // one week upfront
+// Owner ruling 2026-10-28 (q226): one week at the offer's star level price (Advanced).
+const hiringCost = 400;
 
 const createdUserIds = [];
 const cleanup = createCleanupTracker();
@@ -68,6 +69,7 @@ async function seedMarketplace(userId, count) {
     lastName: `Groom${i}`,
     specialty: 'general',
     skillLevel: 'experienced',
+    starLevel: 'advanced',
     personality: 'gentle',
     experience: 5,
     sessionRate: offerRate,

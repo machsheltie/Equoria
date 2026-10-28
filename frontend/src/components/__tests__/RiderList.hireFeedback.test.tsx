@@ -11,7 +11,7 @@
 
 import React from 'react';
 import { describe, it, expect } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -61,8 +61,10 @@ function renderList() {
   );
 }
 
+// Owner ruling 2026-10-28 (q230): hiring is one click, with the fee on the button and
+// no confirmation box, so a refusal now shows on the card that was clicked.
 describe('RiderList — hire feedback (Equoria-ln49p)', () => {
-  it('a refused hire keeps the dialog open and says so inside it, with no server text', async () => {
+  it('a refused hire says so on the clicked card, with no server text', async () => {
     server.use(
       http.get(MARKETPLACE, () => HttpResponse.json({ success: true, data: marketplace })),
       http.post(HIRE, () => refusal(400))
@@ -71,16 +73,15 @@ describe('RiderList — hire feedback (Equoria-ln49p)', () => {
     renderList();
 
     await user.click(await screen.findByTestId('hire-button-mk-1'));
-    const dialog = await screen.findByTestId('hire-modal');
-    await user.click(within(dialog).getByTestId('confirm-hire-button'));
 
-    const alert = await within(await screen.findByTestId('hire-modal')).findByRole('alert');
+    const card = screen.getByTestId('rider-card-mk-1');
+    const alert = await within(card).findByRole('alert');
     expect(alert).toHaveTextContent(/roster/i);
     expect(alert).toHaveTextContent(/balance|funds/i);
     expect(screen.queryByText(/RAW-SERVER-TEXT/)).not.toBeInTheDocument();
-    // The dialog stays open on the same rider so the player can cancel or retry.
-    expect(within(screen.getByTestId('hire-modal')).getByText(/Ada/)).toBeInTheDocument();
-    expect(screen.getByTestId('confirm-hire-button')).toBeEnabled();
+    // No confirmation box, and the button is ready for another try.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByTestId('hire-button-mk-1')).toBeEnabled();
   });
 
   it('a server fault on hire shows the shared class copy, not server text', async () => {
@@ -92,29 +93,36 @@ describe('RiderList — hire feedback (Equoria-ln49p)', () => {
     renderList();
 
     await user.click(await screen.findByTestId('hire-button-mk-1'));
-    await user.click(await screen.findByTestId('confirm-hire-button'));
 
-    const alert = await within(await screen.findByTestId('hire-modal')).findByRole('alert');
+    const alert = await within(screen.getByTestId('rider-card-mk-1')).findByRole('alert');
     expect(alert).toHaveTextContent(/something went wrong/i);
     expect(screen.queryByText(/RAW-SERVER-TEXT/)).not.toBeInTheDocument();
   });
 
-  it('a stale hire error is cleared when the dialog is opened again', async () => {
+  it('a stale hire error is cleared by the next click', async () => {
+    let calls = 0;
     server.use(
       http.get(MARKETPLACE, () => HttpResponse.json({ success: true, data: marketplace })),
-      http.post(HIRE, () => refusal(500))
+      http.post(HIRE, () => {
+        calls += 1;
+        return calls === 1
+          ? refusal(500)
+          : HttpResponse.json(
+              { success: true, data: { rider: { id: 1 }, cost: 100 } },
+              { status: 201 }
+            );
+      })
     );
     const user = userEvent.setup();
     renderList();
 
     await user.click(await screen.findByTestId('hire-button-mk-1'));
-    await user.click(await screen.findByTestId('confirm-hire-button'));
-    await within(await screen.findByTestId('hire-modal')).findByRole('alert');
-    await user.click(screen.getByRole('button', { name: /cancel/i }));
-    await user.click(await screen.findByTestId('hire-button-mk-1'));
+    const card = screen.getByTestId('rider-card-mk-1');
+    await within(card).findByRole('alert');
+    await user.click(screen.getByTestId('hire-button-mk-1'));
 
-    const dialog = await screen.findByTestId('hire-modal');
-    expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument();
+    await waitFor(() => expect(within(card).queryByRole('alert')).not.toBeInTheDocument());
+    expect(calls).toBe(2);
   });
 });
 

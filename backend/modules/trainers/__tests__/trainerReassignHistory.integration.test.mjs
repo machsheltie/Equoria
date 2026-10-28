@@ -75,7 +75,6 @@ async function makeTrainer(ownerId, label) {
       skillLevel: 'expert',
       speciality: 'Dressage',
       sessionRate: 150,
-      level: 3,
       userId: ownerId,
     },
   });

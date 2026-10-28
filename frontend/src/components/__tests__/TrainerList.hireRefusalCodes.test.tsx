@@ -59,6 +59,8 @@ function renderList() {
   );
 }
 
+// Owner ruling 2026-10-28 (q230): hiring is one click, no confirmation box, so a
+// refusal shows on the clicked card.
 describe('TrainerList — refusal codes (Equoria-dosig)', () => {
   it('a full roster is named as a full roster, not as a short balance', async () => {
     server.use(
@@ -69,9 +71,8 @@ describe('TrainerList — refusal codes (Equoria-dosig)', () => {
     renderList();
 
     await user.click(await screen.findByTestId('hire-button-mk-1'));
-    await user.click(await screen.findByTestId('confirm-hire-button'));
 
-    const alert = await within(await screen.findByTestId('hire-modal')).findByRole('alert');
+    const alert = await within(screen.getByTestId('trainer-card-mk-1')).findByRole('alert');
     expect(alert).toHaveTextContent(/trainer roster is full/i);
     expect(alert).not.toHaveTextContent(/balance|funds/i);
     expect(screen.queryByText(/RAW-SERVER-TEXT/)).not.toBeInTheDocument();
@@ -86,9 +87,8 @@ describe('TrainerList — refusal codes (Equoria-dosig)', () => {
     renderList();
 
     await user.click(await screen.findByTestId('hire-button-mk-1'));
-    await user.click(await screen.findByTestId('confirm-hire-button'));
 
-    const alert = await within(await screen.findByTestId('hire-modal')).findByRole('alert');
+    const alert = await within(screen.getByTestId('trainer-card-mk-1')).findByRole('alert');
     expect(alert).toHaveTextContent(/balance/i);
     expect(alert).not.toHaveTextContent(/roster/i);
     expect(screen.queryByText(/RAW-SERVER-TEXT/)).not.toBeInTheDocument();

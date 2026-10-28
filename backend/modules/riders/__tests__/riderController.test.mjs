@@ -89,7 +89,7 @@ async function createRider(userId, overrides = {}) {
       personality: 'methodical',
       skillLevel: 'experienced',
       speciality: 'Dressage',
-      level: overrides.level ?? 1,
+      starLevel: overrides.starLevel ?? 'rookie',
       retired: overrides.retired ?? false,
       user: { connect: { id: userId } },
     },
@@ -394,11 +394,14 @@ describe('riderController (real DB)', () => {
   // ── getRiderDiscovery reveal cadence (Equoria-oey96.25) ────────────────────
   // Prior formula `Math.min(Math.floor(level/2), 6)` topped out at floor(10/2)=5,
   // so the 6th slot was NEVER revealable at the level-10 cap. New stepped cadence
-  // [2,4,6,8,9,10] reveals all 6 by level 10 while keeping level 1 → 0.
+  // [2,4,6,8,9,10] reveals all 6 by level 10.
+  // Owner ruling 2026-10-28 (q229) changed the input: the old 1-10 level is the star
+  // level, two per star, so Rookie = 2 ... Expert = 10. These cases used the old level
+  // column; they now set the star level that stands for it.
   describe('getRiderDiscovery — reveal cadence', () => {
-    it('reveals ALL 6 slots for a rider at the level-10 cap', async () => {
+    it('reveals ALL 6 slots for an Expert rider (the old level-10 cap)', async () => {
       const user = await createUser();
-      const rider = await createRider(user.id, { level: 10 });
+      const rider = await createRider(user.id, { starLevel: 'expert' });
 
       const h = makeReqRes(user.id, { params: { id: String(rider.id) } });
       await getRiderDiscovery(h.req, h.res);
@@ -415,31 +418,32 @@ describe('riderController (real DB)', () => {
       expect(data.nextDiscoveryAt).toBeNull(); // no further reveals at the cap
     });
 
-    it('reveals 0 slots for a rookie rider at level 1', async () => {
+    it('reveals 1 slot for a Rookie rider (old level 2)', async () => {
       const user = await createUser();
-      const rider = await createRider(user.id, { level: 1 });
+      const rider = await createRider(user.id, { starLevel: 'rookie' });
 
       const h = makeReqRes(user.id, { params: { id: String(rider.id) } });
       await getRiderDiscovery(h.req, h.res);
 
       expect(h.res.statusValue).toBe(200);
       const { data } = h.res.jsonValue;
-      expect(data.discoveredCount).toBe(0);
-      expect(data.slots.every(s => !s.discovered)).toBe(true);
-      expect(data.slots.every(s => s.trait === undefined)).toBe(true);
-      expect(data.nextDiscoveryAt).toBe(2); // next slot reveals at level 2
+      expect(data.discoveredCount).toBe(1);
+      expect(data.slots.filter(s => s.discovered)).toHaveLength(1);
+      expect(data.slots.filter(s => s.trait === undefined)).toHaveLength(5);
+      expect(data.nextDiscoveryAt).toBe(4); // the next slot is at the old level 4
     });
 
-    it('follows the stepped cadence at each boundary (L2→1, L8→4, L9→5, L10→6)', async () => {
+    it('follows the stepped cadence by star level (1★→1, 2★→2, 3★→3, 4★→4, 5★→6)', async () => {
       const user = await createUser();
       const cases = [
-        { level: 2, expected: 1 },
-        { level: 8, expected: 4 },
-        { level: 9, expected: 5 }, // FAILS pre-fix: floor(9/2)=4, expected 5
-        { level: 10, expected: 6 }, // FAILS pre-fix: floor(10/2)=5
+        { starLevel: 'rookie', expected: 1 },
+        { starLevel: 'novice', expected: 2 },
+        { starLevel: 'intermediate', expected: 3 },
+        { starLevel: 'advanced', expected: 4 },
+        { starLevel: 'expert', expected: 6 }, // FAILS pre-fix: floor(10/2)=5
       ];
-      for (const { level, expected } of cases) {
-        const rider = await createRider(user.id, { level });
+      for (const { starLevel, expected } of cases) {
+        const rider = await createRider(user.id, { starLevel });
         const h = makeReqRes(user.id, { params: { id: String(rider.id) } });
         await getRiderDiscovery(h.req, h.res);
         expect(h.res.jsonValue.data.discoveredCount).toBe(expected);

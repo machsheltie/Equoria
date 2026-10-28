@@ -67,6 +67,7 @@ describe('Groom Salary System', () => {
       data: {
         name: groomName,
         skillLevel: 'expert',
+        starLevel: 'rookie',
         speciality: 'showHandling',
         personality: 'gentle',
         experience: 50,
@@ -104,28 +105,23 @@ describe('Groom Salary System', () => {
   });
 
   describe('Salary Calculation', () => {
-    // Equoria-95yrv (owner, 2026-09-14): $70 per horse assigned, per week. Skill
-    // and specialty no longer price the fee, so the two rate-table cases that
-    // stood here (expert+showHandling=115, novice+general=50) went with it.
-    it('should charge $70 for each horse the groom is working', () => {
-      expect(calculateWeeklyFee(1)).toBe(70);
-      expect(calculateWeeklyFee(3)).toBe(210);
-    });
-
-    it('should charge nothing for a groom on no horses', () => {
-      expect(calculateWeeklyFee(0)).toBe(0);
+    // Owner ruling 2026-10-28 (q228) replaced the 70-per-horse fee (Equoria-95yrv):
+    // a groom costs their star level's price per week, however many horses.
+    it("should charge the groom's star level price per week", () => {
+      expect(calculateWeeklyFee({ starLevel: 'intermediate' })).toBe(300);
+      expect(calculateWeeklyFee({ starLevel: 'expert' })).toBe(500);
     });
 
     it('should calculate user total salary cost', async () => {
       const salaryCost = await calculateUserSalaryCost(testUser.id);
 
-      // Equoria-95yrv: one groom on one horse = $70/week.
-      expect(salaryCost.totalWeeklyCost).toBe(70);
+      // Owner ruling q228: one Rookie groom = 100/week, however many horses.
+      expect(salaryCost.totalWeeklyCost).toBe(100);
       expect(salaryCost.groomCount).toBe(1);
       expect(salaryCost.breakdown).toHaveLength(1);
       expect(salaryCost.breakdown[0].groomName).toBe(groomName);
       expect(salaryCost.breakdown[0].assignedHorses).toBe(1);
-      expect(salaryCost.breakdown[0].weeklyFee).toBe(70);
+      expect(salaryCost.breakdown[0].weeklyFee).toBe(100);
     });
   });
 
@@ -138,9 +134,9 @@ describe('Groom Salary System', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.totalWeeklyCost).toBe(70);
+      expect(response.body.data.totalWeeklyCost).toBe(100);
       expect(response.body.data.groomCount).toBe(1);
-      expect(response.body.data.feePerHorsePerWeek).toBe(70);
+      expect(response.body.data).not.toHaveProperty('feePerHorsePerWeek');
       // Owner ruling 2026-10-26 (q68): twenty horses per groom (was ten).
       expect(response.body.data.maxHorsesPerGroom).toBe(20);
     });
@@ -158,8 +154,8 @@ describe('Groom Salary System', () => {
       expect(response.body.data).toHaveProperty('weeksAffordable');
       expect(response.body.data).toHaveProperty('nextPaymentDate');
 
-      // 1000 coins against a weekly cost of 70 (one groom, one horse) = 14 weeks.
-      expect(response.body.data.weeksAffordable).toBe(14);
+      // 1000 coins against a weekly cost of 100 (one Rookie groom) = 10 weeks.
+      expect(response.body.data.weeksAffordable).toBe(10);
     });
 
     it('should get groom salary', async () => {
@@ -170,7 +166,7 @@ describe('Groom Salary System', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.weeklySalary).toBe(70);
+      expect(response.body.data.weeklySalary).toBe(100);
       expect(response.body.data.assignedHorses).toBe(1);
       expect(response.body.data.groom.name).toBe(groomName);
     });
@@ -255,7 +251,7 @@ describe('Groom Salary System', () => {
       // the whole population. The `> 0` existed only to tolerate every other row.
       expect(results.processed).toBe(1);
       expect(results.successful).toBe(1);
-      expect(results.totalAmount).toBe(70);
+      expect(results.totalAmount).toBe(100);
 
       // Check that payment was recorded
       const payments = await prisma.groomSalaryPayment.findMany({
@@ -263,7 +259,7 @@ describe('Groom Salary System', () => {
       });
 
       expect(payments.length).toBeGreaterThan(0);
-      expect(payments[0].amount).toBe(70);
+      expect(payments[0].amount).toBe(100);
       expect(payments[0].status).toBe('paid');
     });
 
@@ -271,7 +267,7 @@ describe('Groom Salary System', () => {
       // Set user money to insufficient amount
       await prisma.user.update({
         where: { id: testUser.id },
-        data: { money: 50 }, // Less than the 70-coin weekly fee
+        data: { money: 50 }, // Less than the 100-coin weekly fee
       });
 
       const results = await processWeeklySalaries(undefined, { userId: testUser.id });

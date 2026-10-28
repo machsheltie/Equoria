@@ -27,7 +27,6 @@ const trainer = {
   speciality: 'Dressage',
   sessionRate: 250,
   experience: 8,
-  level: 5,
   careerWeeks: 12,
   retired: false,
 };
@@ -55,11 +54,12 @@ describe('MyTrainersDashboard — assignment and fee (Equoria-r8a6h)', () => {
     const card = await screen.findByTestId('trainer-card-10');
     expect(within(card).getByRole('button', { name: 'Assign Trainer' })).toBeInTheDocument();
     expect(within(card).getByTestId('trainer-session-fee-10')).toHaveTextContent('250');
-    // Personality, speciality, skill level, level, career length.
+    // Personality, speciality, star level, career length. Owner ruling 2026-10-28
+    // (q229) changed this contract: the old "Lv.N" number is gone; only stars show.
     expect(card).toHaveTextContent(/focused/i);
     expect(card).toHaveTextContent('Dressage');
     expect(card).toHaveTextContent(/expert/i);
-    expect(card).toHaveTextContent('Lv.5');
+    expect(card).not.toHaveTextContent(/Lv\.\s*\d/);
     expect(card).toHaveTextContent('12w');
     // Staff never gain XP and trainer fit is not shown: neither appears.
     expect(card).not.toHaveTextContent(/\bxp\b|experience/i);

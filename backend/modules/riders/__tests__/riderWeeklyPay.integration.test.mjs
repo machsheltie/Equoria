@@ -64,6 +64,16 @@ async function makeUser(money) {
   return { user, token };
 }
 
+// Owner ruling 2026-10-28 (q226, Equoria-nawn5): a rider's weekly pay is their star
+// level's price, so each fixture rider carries the level whose price is its rate.
+const starLevelForRate = rate => {
+  const level = { 100: 'rookie', 200: 'novice', 300: 'intermediate', 400: 'advanced', 500: 'expert' }[rate];
+  if (!level) {
+    throw new Error(`no star level is priced at ${rate}`);
+  }
+  return level;
+};
+
 async function makeRider(userId, weeklyRate, extra = {}) {
   return prisma.rider.create({
     data: {
@@ -74,6 +84,7 @@ async function makeRider(userId, weeklyRate, extra = {}) {
       skillLevel: 'experienced',
       speciality: 'Show Jumping',
       weeklyRate,
+      starLevel: starLevelForRate(weeklyRate),
       ...extra,
     },
   });
@@ -107,18 +118,18 @@ describe('rider payday: the weekly rate is taken once a pay week', () => {
   it('charges each rider their own weekly rate and writes one paid row each', async () => {
     const { user } = await makeUser(1000);
     const a = await makeRider(user.id, 200);
-    const b = await makeRider(user.id, 150);
+    const b = await makeRider(user.id, 300);
 
     const result = await pass(user.id, week1);
 
     expect(result.successful).toBe(1);
-    expect(result.totalAmount).toBe(350);
-    expect(await moneyOf(user.id)).toBe(650);
+    expect(result.totalAmount).toBe(500);
+    expect(await moneyOf(user.id)).toBe(500);
     const paid = await rows(user.id, { status: 'paid' });
     expect(paid.map(r => [r.riderId, r.amount, r.weekKey]).sort()).toEqual(
       [
         [a.id, 200, '2031-03-03'],
-        [b.id, 150, '2031-03-03'],
+        [b.id, 300, '2031-03-03'],
       ].sort(),
     );
   });
@@ -180,9 +191,10 @@ describe('rider payday: the weekly rate is taken once a pay week', () => {
             firstName: 'Offer',
             lastName: PREFIX,
             personality: 'calm',
-            skillLevel: 'experienced',
+            skillLevel: 'rookie',
+            starLevel: 'rookie',
             speciality: 'Show Jumping',
-            weeklyRate: 120,
+            weeklyRate: 100,
             experience: 5,
             bio: 'gafyt fixture',
           },
@@ -199,12 +211,12 @@ describe('rider payday: the weekly rate is taken once a pay week', () => {
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({ marketplaceId: state.offers[0].marketplaceId });
     expect(hired.status).toBe(201);
-    expect(await moneyOf(user.id)).toBe(880);
+    expect(await moneyOf(user.id)).toBe(900);
 
     const result = await pass(user.id, new Date());
 
     expect(result.skipped).toBe(1);
-    expect(await moneyOf(user.id)).toBe(880);
+    expect(await moneyOf(user.id)).toBe(900);
     const paid = await rows(user.id, { status: 'paid' });
     expect(paid).toHaveLength(1);
     expect(paid[0].weekKey).toBe(riderPayWeekKey(getRiderPayWeekStart(new Date())));
@@ -215,7 +227,7 @@ describe('rider payday: an unpaid rider cannot ride, then leaves', () => {
   it('puts every rider in grace when the wallet cannot cover the roster, and tells the player', async () => {
     const { user } = await makeUser(250);
     const a = await makeRider(user.id, 200);
-    const b = await makeRider(user.id, 150);
+    const b = await makeRider(user.id, 300);
 
     const result = await pass(user.id, week1);
 

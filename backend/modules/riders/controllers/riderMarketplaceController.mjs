@@ -35,7 +35,7 @@ import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
 // compare-and-swap on the persisted offer list, instead of a post-commit
 // read-filter-write against a pre-transaction snapshot.
 import { removeMarketplaceOfferCas } from '../../../utils/staffMarketplaceOfferCas.mjs';
-import { offerLevelAndFee } from '../../../constants/staffLevels.mjs';
+import { offerAtLevelPrice, offerLevelAndFee } from '../../../constants/staffLevels.mjs';
 
 const STAFF_TYPE = 'rider';
 
@@ -90,7 +90,8 @@ export async function getRiderMarketplace(req, res) {
       success: true,
       message: 'Rider marketplace retrieved successfully',
       data: {
-        riders: offers,
+        // Owner ruling q226: every offer shows the price its hire charges.
+        riders: offers.map(o => offerAtLevelPrice('rider', o, 'weeklyRate', o.weeklyRate)),
         lastRefresh,
         nextFreeRefresh,
         refreshCost,
@@ -248,7 +249,8 @@ export async function hireRiderFromMarketplace(req, res) {
 
     const riderData = offers[riderIndex];
     // Owner ruling 2026-10-28 (Equoria-nawn5): one week at the rider's star-level price.
-    // An offer generated before star levels costs the weekly rate it advertised.
+    // An offer generated before star levels is placed on a level from its old skill
+    // word and rate, and costs that level's price (owner ruling q226).
     const { starLevel, fee: hiringCost } = offerLevelAndFee(
       'rider',
       riderData,

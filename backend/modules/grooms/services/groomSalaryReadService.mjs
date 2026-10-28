@@ -16,7 +16,6 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
-  FEE_PER_HORSE_PER_WEEK,
   MAX_HORSES_PER_GROOM,
   calculateWeeklyFee,
   countActiveAssignments,
@@ -66,10 +65,9 @@ export async function getSalaryPaymentHistory(userId, limit = 50) {
  * or the salary summary lies to the player about `weeksAffordable` — which
  * PRODUCT.md principle 7 forbids. So it counts the same thing the pass counts.
  *
- * Equoria-95yrv: that is now 70 x the horses each groom is working. Every groom on
- * staff still appears in the breakdown — a groom you employ but have not put on a
- * horse is still yours — but theirs is a fee of 0, and the breakdown says how many
- * horses each fee was computed from so a player can check it against their roster.
+ * Owner ruling 2026-10-28 (q228): each groom on staff costs their star level's price
+ * per week, however many horses they look after. The breakdown still says how many
+ * horses each groom is working, for the roster, but the fee does not depend on it.
  *
  * `feeUnpaidSince` is included in the breakdown because a groom in arrears still
  * costs the fee — that is what "one week of grace" means — and because the surface
@@ -86,6 +84,7 @@ export async function calculateUserSalaryCost(userId) {
         id: true,
         name: true,
         skillLevel: true,
+        starLevel: true,
         speciality: true,
         feeUnpaidSince: true,
       },
@@ -101,7 +100,7 @@ export async function calculateUserSalaryCost(userId) {
 
     for (const groom of staff) {
       const assignedHorses = assignmentCounts.get(groom.id) ?? 0;
-      const weeklyFee = calculateWeeklyFee(assignedHorses);
+      const weeklyFee = calculateWeeklyFee(groom);
       totalWeeklyCost += weeklyFee;
 
       breakdown.push({
@@ -118,10 +117,6 @@ export async function calculateUserSalaryCost(userId) {
     return {
       totalWeeklyCost,
       groomCount: staff.length,
-      // Equoria-95yrv: the RULE travels with the numbers, so a surface can explain
-      // the fee ("70 per horse, up to 10 horses a groom") from the API rather than
-      // restating a rate the frontend would have to keep in step by hand.
-      feePerHorsePerWeek: FEE_PER_HORSE_PER_WEEK,
       maxHorsesPerGroom: MAX_HORSES_PER_GROOM,
       breakdown,
     };
@@ -132,7 +127,6 @@ export async function calculateUserSalaryCost(userId) {
     return {
       totalWeeklyCost: 0,
       groomCount: 0,
-      feePerHorsePerWeek: FEE_PER_HORSE_PER_WEEK,
       maxHorsesPerGroom: MAX_HORSES_PER_GROOM,
       breakdown: [],
     };

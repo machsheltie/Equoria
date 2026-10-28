@@ -15,12 +15,13 @@
  *
  *   - `computeRiderModifiers({ rider, discipline })`
  *       Derives `{ bonusPercent, penaltyPercent }` from a Rider row
- *       (`personality`, `skillLevel`, `level`, `prestige`) plus the
+ *       (`personality`, `skillLevel`, `starLevel`, `prestige`) plus the
  *       competition discipline. Caps results at the validated ranges.
  *
  * Formula for computeRiderModifiers (Equoria-5bkh):
  *   - skillLevel: rookie=-2%, developing=0%, experienced=+3% (bonus)
- *   - level (1–10): +0.4% per level above 1, capped at +3.6% bonus
+ *   - career level (1–10, the star level: two per star, owner ruling 2026-10-28 q229):
+ *     +0.4% per level above 1, capped at +3.6% bonus
  *   - prestige (0–100): +0.04% per prestige point, capped at +4% bonus
  *   - discipline-personality affinity (from RIDER_PERSONALITY_DATA):
  *       high match: +2% bonus
@@ -41,6 +42,7 @@
  *     frontend `RIDER_PERSONALITY_DATA` to avoid a frontend→backend import.
  *     A follow-up issue can extract it into a shared package.
  */
+import { staffCareerLevel } from '../constants/staffLevels.mjs';
 
 // Single source of truth for rider cap constants (Equoria-pqdte). Previously
 // these were locally re-declared in simulateCompetition.mjs and
@@ -123,7 +125,7 @@ function applyRiderModifiers(score, bonusPercent = 0, penaltyPercent = 0) {
  * Output is always within `applyRiderModifiers`' validated range.
  *
  * @param {Object} params
- * @param {Object|null} params.rider - Rider row (personality, skillLevel, level, prestige, retired)
+ * @param {Object|null} params.rider - Rider row (personality, skillLevel, starLevel, prestige, retired)
  * @param {string} params.discipline - The show's discipline (e.g. "Dressage")
  * @returns {{ bonusPercent: number, penaltyPercent: number }}
  */
@@ -145,8 +147,9 @@ function computeRiderModifiers({ rider, discipline } = {}) {
   }
   // 'developing' = neutral
 
-  // ── level (1–10) contribution: +0.4% per level above 1, max +3.6% ─────
-  const level = Number.isFinite(rider.level) ? Math.max(1, Math.min(10, rider.level)) : 1;
+  // ── career level (1–10) contribution: +0.4% per level above 1, max +3.6% ─────
+  // The old 1-10 level is now the star level, two per star (q229).
+  const level = staffCareerLevel(rider.starLevel);
   bonus += (level - 1) * 0.004;
 
   // ── prestige (0–100) contribution: +0.04% per point, max +4% ──────────

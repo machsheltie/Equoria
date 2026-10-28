@@ -36,6 +36,7 @@ import {
 import { MAX_GROOMS_PER_USER } from '../../../config/groomConfig.mjs';
 import { CapExceededError } from '../groomErrors.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
+import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
 import {
   FREE_AGENT_WHERE,
   listFreeAgents,
@@ -73,7 +74,13 @@ export async function listFreeAgentGrooms(req, res) {
       success: true,
       message: `Retrieved ${grooms.length} grooms available for hire`,
       data: {
-        grooms: grooms.map(groom => ({ ...groom, sessionRate: Number(groom.sessionRate) })),
+        // Owner ruling 2026-10-28 (q228): each groom's weekly fee is their star level's
+        // price; it is also what hiring them charges (one week).
+        grooms: grooms.map(groom => ({
+          ...groom,
+          sessionRate: Number(groom.sessionRate),
+          weeklyFee: hiredStaffFee(groom),
+        })),
         total,
         pagination: { total, limit, offset: skip, hasMore: skip + limit < total },
       },
@@ -158,7 +165,7 @@ export async function hireFreeAgent(req, res) {
     // of it (F1).
     const offer = await prisma.groom.findFirst({
       where: { id: groomId, ...FREE_AGENT_WHERE },
-      select: { id: true, name: true, sessionRate: true },
+      select: { id: true, name: true, starLevel: true },
     });
     if (!offer) {
       return res.status(404).json({
@@ -168,11 +175,11 @@ export async function hireFreeAgent(req, res) {
       });
     }
 
-    // Same price as the procedural marketplace hire: one week of session rate,
-    // upfront (groomMarketplaceController.hireFromMarketplace). No new number is
-    // invented here — what a free agent costs to engage is deliberately the same
-    // question as what a marketplace groom costs.
-    const hiringCost = Math.round(Number(offer.sessionRate) * 7);
+    // Same price as the procedural marketplace hire: one week at the groom's star
+    // level's price, upfront (owner rulings 2026-10-28, q226/q228). What a free agent
+    // costs to engage is deliberately the same question as what a marketplace groom
+    // costs.
+    const hiringCost = hiredStaffFee(offer);
 
     // Fast-path cap reject, mirroring both existing hire paths.
     // Equoria-bvddn.12: retired grooms keep their userId (schema.prisma —
@@ -266,6 +273,7 @@ export async function hireFreeAgent(req, res) {
               name: true,
               speciality: true,
               skillLevel: true,
+              starLevel: true,
               personality: true,
               experience: true,
               level: true,

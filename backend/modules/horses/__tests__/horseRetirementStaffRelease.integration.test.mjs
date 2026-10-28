@@ -13,8 +13,9 @@
  * The nightly aging pass (processHorseBirthdays, 00:05 Eastern) is where a horse
  * turns 21, so the release happens there, in the birthday's transaction; the
  * foaling transaction releases an in-foal mare's staff. A horse turning 20 keeps
- * its staff. The weekly groom fee basis skips retired horses that are not in
- * foal, which also covers a horse already 21+ before this rule existed.
+ * its staff. Since owner ruling 2026-10-28 (q228) the weekly groom fee is per groom
+ * on staff (their star level price), not per horse, so a groom released from a
+ * retired horse is still on the player's staff and still paid.
  *
  * Real DB, real aging pass, real foaling, real feed service, the real vet route
  * via supertest and the real weekly groom fee pass (scoped to this suite's own
@@ -77,6 +78,7 @@ async function staffHorse(key, horse) {
       speciality: 'general',
       personality: 'gentle',
       skillLevel: 'novice',
+      starLevel: 'rookie',
       startAge: 20,
       userId: user.id,
     },
@@ -295,14 +297,15 @@ describe('Equoria-6p398.14 — a mare who turns 21 in foal keeps her staff until
   }, 60_000);
 });
 
-describe('Equoria-6p398.14 — the weekly groom fee pass bills no retired horse', () => {
-  it('bills only the 20-year-old: not the 21-year-old, the foaled mare, or the legacy 22-year-old', async () => {
-    // Fee is 70 per billable horse (Equoria-95yrv). The legacy 22-year-old still
-    // has an ACTIVE assignment (it retired before staff were released), so only
-    // the retirement filter keeps it off the bill.
+// Owner ruling 2026-10-28 (q228) changed this contract: the fee used to be 70 per
+// billable horse (Equoria-95yrv), so only the 20-year-old's groom was billed. It is now
+// each groom's star level price per week, however many horses, and releasing a
+// retired horse's staff ends the assignment, not the groom's place on the staff.
+describe('q228 — the weekly groom fee pass bills each groom on staff once', () => {
+  it('bills the four Rookie grooms on staff, whatever their horses', async () => {
     const results = await processWeeklySalaries(new Date(), { userId: user.id });
     expect(results.errors).toEqual([]);
-    expect(results.totalAmount).toBe(70);
+    expect(results.totalAmount).toBe(400);
     const legacy = await prisma.groomAssignment.findFirst({
       where: { groomId: staffLegacy.groom.id },
       select: { isActive: true },

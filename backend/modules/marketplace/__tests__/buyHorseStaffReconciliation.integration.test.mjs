@@ -87,7 +87,6 @@ async function makeRider(ownerId) {
       skillLevel: 'experienced',
       speciality: 'Jumping',
       weeklyRate: 200,
-      level: 4,
       userId: ownerId,
     },
   });
@@ -102,7 +101,6 @@ async function makeTrainer(ownerId) {
       skillLevel: 'expert',
       speciality: 'Jumping',
       sessionRate: 150,
-      level: 4,
       userId: ownerId,
     },
   });

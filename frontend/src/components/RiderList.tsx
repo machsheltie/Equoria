@@ -3,7 +3,7 @@
  *
  * Rider hiring marketplace interface providing:
  * - Marketplace rider listing with filtering and sorting
- * - Rider hiring with confirmation modal
+ * - One-click rider hiring, fee on the button (owner ruling 2026-10-28, q230)
  * - Skill level transparency system (rookie=hidden, developing=partial, experienced=full)
  * - Marketplace refresh mechanics
  * - Accessibility support with ARIA labels
@@ -12,9 +12,8 @@
  *
  * Design-system migration (Equoria-o5hub, world-services family): Surface
  * for panels/cards, form Select for filters, Currency for all coin amounts,
- * GameDialog for the hire confirmation (replaces page-local fixed-inset
- * overlay), canonical SectionLoading / ErrorState / EmptyState, semantic
- * role tokens (no raw palette / text-white/NN).
+ * canonical SectionLoading / ErrorState / EmptyState, semantic role tokens (no raw
+ * palette / text-white/NN).
  */
 
 import React, { useState, useMemo } from 'react';
@@ -41,14 +40,6 @@ import {
   refreshRefused,
 } from '@/lib/http/actionMessage';
 import EmptyState from '@/components/ui/EmptyState';
-import {
-  GameDialog,
-  GameDialogContent,
-  GameDialogHeader,
-  GameDialogTitle,
-  GameDialogBody,
-  GameDialogFooter,
-} from '@/components/ui/game/GameDialog';
 import StaffLevelStars from '@/components/common/StaffLevelStars';
 import { staffLevelLabel, staffLevelOrder } from '@/lib/staffLevels';
 
@@ -70,8 +61,8 @@ const RiderList: React.FC<RiderListProps> = ({
   marketplaceData: propMarketplaceData,
 }) => {
   const { user } = useAuth();
+  // The rider the last Hire click was for: its card shows "Hiring..." and any refusal.
   const [selectedRider, setSelectedRider] = useState<MarketplaceRider | null>(null);
-  const [showHireModal, setShowHireModal] = useState(false);
   const [filterStarLevel, setFilterStarLevel] = useState<string>('all');
   const [filterPersonality, setFilterPersonality] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
@@ -119,21 +110,12 @@ const RiderList: React.FC<RiderListProps> = ({
 
   const canAfford = (weeklyRate: number) => (user?.money ?? 0) >= calculateHiringCost(weeklyRate);
 
+  // Owner ruling 2026-10-28 (q230): one click hires; the fee is on the button.
   const handleHireClick = (rider: MarketplaceRider) => {
     // A refusal belongs to the attempt that earned it; don't carry it to the next.
     hireMutation.reset();
     setSelectedRider(rider);
-    setShowHireModal(true);
-  };
-
-  const handleHireConfirm = () => {
-    if (!selectedRider) return;
-    hireMutation.mutate(selectedRider.marketplaceId, {
-      onSuccess: () => {
-        setShowHireModal(false);
-        setSelectedRider(null);
-      },
-    });
+    hireMutation.mutate(rider.marketplaceId, { onSuccess: () => setSelectedRider(null) });
   };
 
   const handleRefresh = () => {
@@ -377,6 +359,16 @@ const RiderList: React.FC<RiderListProps> = ({
                       'Insufficient Funds'
                     )}
                   </Button>
+                  {hireMutation.isError && selectedRider?.marketplaceId === rider.marketplaceId && (
+                    <InlineError
+                      message={actionMessageFor(
+                        hireMutation.error,
+                        hireRefused,
+                        hireRefusalCodes('rider')
+                      )}
+                      className="mt-3"
+                    />
+                  )}
                 </Surface>
               );
             })}
@@ -391,81 +383,6 @@ const RiderList: React.FC<RiderListProps> = ({
           <p>Low balance — hiring a rider takes one week's pay up front.</p>
         </div>
       )}
-
-      {/* Hire Confirmation Dialog — GameDialog (DECISIONS.md §8). Overlay +
-          blur owned by GameDialogOverlay (single-blur rule). */}
-      <GameDialog
-        open={showHireModal && selectedRider !== null}
-        onOpenChange={(open) => {
-          if (!open) setShowHireModal(false);
-        }}
-      >
-        {selectedRider && (
-          <GameDialogContent size="sm" data-testid="hire-modal">
-            <GameDialogHeader>
-              <GameDialogTitle>Confirm Hire</GameDialogTitle>
-            </GameDialogHeader>
-            <GameDialogBody>
-              <p className="text-[var(--text-secondary)] text-sm mb-5 leading-relaxed">
-                Hire{' '}
-                <strong className="text-[var(--text-primary)]">
-                  {selectedRider.firstName} {selectedRider.lastName}
-                </strong>
-                ? They will join your stable staff.
-              </p>
-
-              <Surface variant="subtle" className="p-4 space-y-2 text-sm">
-                <div className="flex justify-between text-[var(--text-secondary)]">
-                  <span>Weekly Rate:</span>
-                  <Currency amount={selectedRider.weeklyRate} />
-                </div>
-                <div
-                  className="flex justify-between border-t border-[var(--glass-border)] pt-2"
-                  data-testid="hire-charge-now"
-                >
-                  <span className="font-bold text-[var(--text-secondary)]">
-                    Charged now (one week):
-                  </span>
-                  <Currency
-                    amount={calculateHiringCost(selectedRider.weeklyRate)}
-                    variant="balance"
-                  />
-                </div>
-              </Surface>
-
-              {hireMutation.isError && (
-                <InlineError
-                  message={actionMessageFor(
-                    hireMutation.error,
-                    hireRefused,
-                    hireRefusalCodes('rider')
-                  )}
-                  className="mt-4"
-                />
-              )}
-            </GameDialogBody>
-            <GameDialogFooter>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setShowHireModal(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={handleHireConfirm}
-                disabled={hireMutation.isPending}
-                className="flex-1"
-                data-testid="confirm-hire-button"
-              >
-                {hireMutation.isPending ? 'Hiring...' : 'Hire Rider'}
-              </Button>
-            </GameDialogFooter>
-          </GameDialogContent>
-        )}
-      </GameDialog>
     </main>
   );
 };

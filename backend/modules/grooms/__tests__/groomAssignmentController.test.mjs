@@ -125,7 +125,8 @@ describe('GET /api/groom-assignments/config', () => {
     // the never-charged per-skill pay table are gone.
     // The owner ruling 2026-10-26 (q68) raised the cap from ten to twenty.
     expect(res.body.data.maxHorsesPerGroom).toBe(20);
-    expect(res.body.data.feePerHorsePerWeek).toBe(70);
+    // Owner ruling 2026-10-28 (q228): no per-horse rate; each groom costs their level.
+    expect(res.body.data).not.toHaveProperty('feePerHorsePerWeek');
     expect(res.body.data).not.toHaveProperty('maxAssignmentsBySkill');
     expect(res.body.data).not.toHaveProperty('weeklySalaryBySkill');
   });
