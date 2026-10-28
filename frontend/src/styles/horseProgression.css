@@ -51,3 +51,38 @@
   color: var(--text-secondary);
   font-size: var(--text-sm);
 }
+
+/* Allocate Stats page (owner ruling q223) and its link from the Points. */
+
+.allocate-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.horse-points__link {
+  color: var(--gold-light);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.horse-points__link:hover {
+  color: var(--gold-bright);
+}
+
+.horse-allocate__label,
+.horse-allocate__retry {
+  color: var(--text-secondary);
+}
+
+.horse-allocate__retry {
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.horse-allocate__done {
+  color: var(--text-primary);
+}

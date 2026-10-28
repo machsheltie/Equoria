@@ -7,17 +7,23 @@
  * score and level, from the server. The Horse Points history chart and Recent
  * Gains are gone. (Training History stays for now, owner 2026-10-28.)
  *
+ * Owner ruling q223 (2026-10-28): Allocate Stats is a separate page, linked
+ * from here; the picker and its spend/refusal cases moved with it to
+ * pages/horses/__tests__/AllocateStatsPage.test.tsx. Old contract: an
+ * "Allocate Stats" button that opened the picker in place.
+ *
  * Real ProgressionTab, hooks and apiClient (CSRF included); MSW only at the
  * HTTP boundary, in the backend's response shapes.
  */
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { describe, it, expect } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/msw/server';
+import { MemoryRouter } from '@/test/utils';
 import ProgressionTab from '../ProgressionTab';
 import type { Horse } from '../HorseDetailPageTypes';
 
@@ -65,9 +71,11 @@ function stubScores() {
 function renderTab() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={queryClient}>
-      <ProgressionTab horse={horse} />
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <ProgressionTab horse={horse} />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 }
 
@@ -81,6 +89,7 @@ describe('Progression: Points toward the next stat (Equoria-a0fim)', () => {
     expect(screen.queryByText(/Level \d+ progress|Level \d+ reached|to Level/)).toBeNull();
     expect(screen.queryByTestId('stats-ready')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Allocate Stats' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Allocate Stats' })).toBeNull();
   });
 
   it('banked points: counts from the last 1,000 and says how many stats are ready', async () => {
@@ -89,52 +98,11 @@ describe('Progression: Points toward the next stat (Equoria-a0fim)', () => {
     renderTab();
     expect(await screen.findByTestId('horse-points-count')).toHaveTextContent('350 / 1000 Points');
     expect(screen.getByTestId('stats-ready')).toHaveTextContent('2 stats are ready to allocate.');
-    expect(screen.getByRole('button', { name: 'Allocate Stats' })).toBeInTheDocument();
-  });
-
-  it('Allocate Stats spends one point on the chosen stat and refreshes the Points', async () => {
-    stubXp({ currentXP: 1200, availableStatPoints: 1 });
-    stubScores();
-    let posted: unknown = null;
-    server.use(
-      http.post('*/api/v1/horses/:horseId/allocate-stat', async ({ request }) => {
-        posted = await request.json();
-        stubXp({ currentXP: 1200, availableStatPoints: 0 });
-        return HttpResponse.json({
-          success: true,
-          data: { statName: 'focus', newStatValue: 71, remainingStatPoints: 0 },
-        });
-      })
+    expect(screen.getByRole('link', { name: 'Allocate Stats' })).toHaveAttribute(
+      'href',
+      `/horses/${horseId}/allocate-stats`
     );
-    const user = userEvent.setup();
-    renderTab();
-    expect(await screen.findByTestId('stats-ready')).toHaveTextContent(
-      '1 stat is ready to allocate.'
-    );
-    await user.click(screen.getByRole('button', { name: 'Allocate Stats' }));
-    await user.selectOptions(screen.getByLabelText('Stat'), 'focus');
-    await user.click(screen.getByRole('button', { name: 'Allocate' }));
-
-    expect(await screen.findByText('Focus is now 71.')).toBeInTheDocument();
-    expect(posted).toEqual({ statName: 'focus' });
-    await waitFor(() => expect(screen.queryByTestId('stats-ready')).toBeNull());
     expect(screen.queryByLabelText('Stat')).toBeNull();
-  });
-
-  it('a refused allocation is said at the control and the picker stays', async () => {
-    stubXp({ currentXP: 1200, availableStatPoints: 1 });
-    stubScores();
-    server.use(
-      http.post('*/api/v1/horses/:horseId/allocate-stat', () =>
-        HttpResponse.json({ success: false, error: 'No stat points available' }, { status: 400 })
-      )
-    );
-    const user = userEvent.setup();
-    renderTab();
-    await user.click(await screen.findByRole('button', { name: 'Allocate Stats' }));
-    await user.click(screen.getByRole('button', { name: 'Allocate' }));
-    expect(await within(screen.getByTestId('allocate-stats')).findByRole('alert')).toBeVisible();
-    expect(screen.getByLabelText('Stat')).toBeInTheDocument();
   });
 
   it('a failed Points read shows an error whose Try Again reads again', async () => {

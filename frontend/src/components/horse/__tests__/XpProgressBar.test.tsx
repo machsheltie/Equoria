@@ -17,6 +17,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { describe, it, expect } from 'vitest';
 import { server } from '@/test/msw/server';
+import { MemoryRouter } from '@/test/utils';
 import { RewardToastProvider } from '@/components/feedback';
 import XpProgressBar from '../XpProgressBar';
 
@@ -33,11 +34,14 @@ function stubXp(data: Record<string, number | string>) {
 function renderBar() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={queryClient}>
-      <RewardToastProvider>
-        <XpProgressBar horseId={HORSE_ID} />
-      </RewardToastProvider>
-    </QueryClientProvider>
+    // A router: with stats ready the bar links to the Allocate Stats page (q223).
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <RewardToastProvider>
+          <XpProgressBar horseId={HORSE_ID} />
+        </RewardToastProvider>
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 }
 

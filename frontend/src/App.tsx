@@ -44,6 +44,8 @@ const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const ConfirmEmailChangePage = lazy(() => import('./pages/ConfirmEmailChangePage'));
 const HorseDetailPage = lazy(() => import('./pages/HorseDetailPage'));
 const HorseEquipPage = lazy(() => import('./pages/horses/HorseEquipPage'));
+// Allocate Stats is its own page (owner ruling q223, 2026-10-28; Equoria-a0fim).
+const AllocateStatsPage = lazy(() => import('./pages/horses/AllocateStatsPage'));
 // Equoria-puj1e.1: the staff-only Steward's Office. Deliberately absent from
 // navItems. Loaded only after StewardGate has confirmed a steward.
 const StewardsOfficePage = lazy(() => import('./pages/StewardsOfficePage'));
@@ -136,6 +138,7 @@ const App = () => (
                     >
                       <Route path="/horses/:id" element={<HorseDetailPage />} />
                       <Route path="/horses/:id/equip" element={<HorseEquipPage />} />
+                      <Route path="/horses/:id/allocate-stats" element={<AllocateStatsPage />} />
                       <Route path="/foals/:id" element={<FoalLinkRedirect />} />
                       {navItems.map(({ to, Page }) => (
                         <Route key={to} path={to} element={<Page />} />
