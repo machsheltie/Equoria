@@ -494,19 +494,20 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
     // ────────────────────────────────────────────────────────────────────
     // STEP 6: Leaderboard & Rankings
     // ────────────────────────────────────────────────────────────────────
-    // Update leaderboards with competition results using the leaderboard API.
+    // Read the horse wins board the Leaderboards page shows. Equoria-a7f1p (owner
+    // ruling 2026-10-28, q151): old contract read GET /leaderboards/competition
+    // ?metric=wins, a duplicate list removed in favour of the page boards.
     const leaderboardResponse = await request(app)
-      .get('/api/v1/leaderboards/competition?metric=wins&limit=10')
+      .get('/api/v1/leaderboards/boards/horseWins?limit=10')
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
 
     expect(leaderboardResponse.body.success).toBe(true);
-    expect(leaderboardResponse.body.data.leaderboard).toBeInstanceOf(Array);
-    expect(leaderboardResponse.body.data.filters.metric).toBe('wins');
-    expect(leaderboardResponse.body.data.pagination).toHaveProperty('total');
-    expect(leaderboardResponse.body.data.pagination).toHaveProperty('limit');
-    expect(leaderboardResponse.body.data.pagination).toHaveProperty('offset');
+    expect(leaderboardResponse.body.data.entries).toBeInstanceOf(Array);
+    expect(leaderboardResponse.body.data).toHaveProperty('totalEntries');
+    expect(leaderboardResponse.body.data).toHaveProperty('totalPages');
+    expect(leaderboardResponse.body.data).toHaveProperty('currentPage');
 
     // Track historical performance — get horse competition history.
     const competitionHistory = await prisma.competitionResult.findMany({

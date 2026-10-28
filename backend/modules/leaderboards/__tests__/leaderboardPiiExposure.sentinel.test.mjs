@@ -7,9 +7,15 @@
  * public `username` handle.
  *
  * Endpoints under test:
- *   GET /api/v1/leaderboards/players/xp      (getTopUsersByXP)
- *   GET /api/v1/leaderboards/horses/earnings  (getTopHorsesByEarnings — ownerName)
+ *   GET /api/v1/leaderboards/boards/playerXp      (player board — ownerName)
+ *   GET /api/v1/leaderboards/boards/horseEarnings (horse board — ownerName)
  *   GET /api/v1/leaderboards/user-summary/:userId (getUserRankSummary — userName)
+ *
+ * Equoria-a7f1p (owner ruling 2026-10-28, q151): the first two cases read
+ * GET /leaderboards/players/xp and /horses/earnings, duplicate lists removed in
+ * favour of the page boards the Leaderboards page reads. Old contract: those two
+ * URLs; new: the same guarantee on the boards that replaced them. The player
+ * board ranks User.xp, so the fixture's xp is set high enough to make page one.
  *
  * Test structure (EDGE_CASE_FIX_DISCIPLINE §1):
  *   1. Run BEFORE the fix → confirm FAIL (real names in responses).
@@ -65,14 +71,14 @@ beforeAll(async () => {
       lastName: FIXTURE_LAST,
       money: 0,
       level: 99, // high level so they appear at the top of the level leaderboard
-      xp: 9999,
+      xp: 9999999, // top xp so they appear on the first page of the playerXp board
     },
   });
 
   token = generateTestToken({ id: fixtureUser.id, email: fixtureUser.email, role: 'user' });
 
   // Create a fixture horse owned by the fixture user with positive earnings
-  // so it appears in getTopHorsesByEarnings results.
+  // so it appears on the horseEarnings board.
   const breed = await prisma.breed.findFirst();
   fixtureHorse = await prisma.horse.create({
     data: {
@@ -149,35 +155,35 @@ describe('PII exposure sentinel — leaderboard endpoints (Equoria-2gfor)', () =
     await invalidateCachePattern('leaderboard:*');
   });
 
-  it('GET /api/v1/leaderboards/players/xp — does NOT expose firstName/lastName, shows username as name', async () => {
+  it('GET /api/v1/leaderboards/boards/playerXp — does NOT expose firstName/lastName, shows username as ownerName', async () => {
     const res = await request(app)
-      .get('/api/v1/leaderboards/players/xp?limit=100')
+      .get('/api/v1/leaderboards/boards/playerXp?limit=100')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
 
-    const users = res.body.data?.users ?? [];
-    const fixtureEntry = users.find(u => u.userId === fixtureUser.id);
+    const entries = res.body.data?.entries ?? [];
+    const fixtureEntry = entries.find(e => e.ownerId === fixtureUser.id);
     expect(fixtureEntry).toBeDefined();
 
     assertPiiNotExposed(res);
 
-    expect(fixtureEntry.name).toBe(FIXTURE_USERNAME);
+    expect(fixtureEntry.ownerName).toBe(FIXTURE_USERNAME);
   });
 
-  it('GET /api/v1/leaderboards/horses/earnings — does NOT expose firstName/lastName in ownerName', async () => {
+  it('GET /api/v1/leaderboards/boards/horseEarnings — does NOT expose firstName/lastName in ownerName', async () => {
     const res = await request(app)
-      .get('/api/v1/leaderboards/horses/earnings?limit=100')
+      .get('/api/v1/leaderboards/boards/horseEarnings?limit=100')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
 
-    const horses = res.body.data?.horses ?? [];
-    const fixtureEntry = horses.find(h => h.horseId === fixtureHorse.id);
+    const entries = res.body.data?.entries ?? [];
+    const fixtureEntry = entries.find(e => e.horseId === fixtureHorse.id);
     expect(fixtureEntry).toBeDefined();
 
     assertPiiNotExposed(res);

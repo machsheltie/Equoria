@@ -8,7 +8,8 @@
  *
  *   - horseBreedingWorkflow.integration.test.mjs ('integrationtester')
  *   - competitionWorkflow.integration.test.mjs ('competitionuser')
- *   - leaderboardRoutes.test.mjs ('topplayer1/2/3' + name-based assertions)
+ *   - leaderboardRoutes.test.mjs ('topplayer1/2/3' + name-based assertions;
+ *     deleted with the duplicate leaderboard lists it tested, Equoria-a7f1p q151)
  *   - documentation-system-integration.test.mjs ('docintegrationuser')
  *   - health-monitoring-integration.test.mjs ('healthintegrationuser')
  *   - memory-management-integration.test.mjs ('memoryintegrationuser')
@@ -53,7 +54,6 @@ const integrationDir = join(__dirname, '..', 'tests', 'integration');
 const TARGET_FILES = [
   'horseBreedingWorkflow.integration.test.mjs',
   'competitionWorkflow.integration.test.mjs',
-  'leaderboardRoutes.test.mjs',
   'documentation-system-integration.test.mjs',
   'health-monitoring-integration.test.mjs',
   'memory-management-integration.test.mjs',

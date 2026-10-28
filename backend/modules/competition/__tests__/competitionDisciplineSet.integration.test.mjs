@@ -75,8 +75,12 @@ describe('Obedience Training is not a competition discipline (R8)', () => {
     expect(res.status).toBe(400);
   });
 
-  it('the competition leaderboard rejects an Obedience Training filter', async () => {
-    const res = await get(`/api/v1/leaderboards/competition?discipline=${encodeURIComponent('Obedience Training')}`);
+  // Equoria-a7f1p (q151): old contract read GET /leaderboards/competition, a duplicate
+  // list removed; the discipline board is the leaderboard that takes a discipline now.
+  it('the discipline leaderboard rejects an Obedience Training filter', async () => {
+    const res = await get(
+      `/api/v1/leaderboards/boards/discipline?discipline=${encodeURIComponent('Obedience Training')}`,
+    );
 
     expect(res.status).toBe(400);
   });

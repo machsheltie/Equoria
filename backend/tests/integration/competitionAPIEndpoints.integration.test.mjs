@@ -5,7 +5,10 @@
  * - POST /api/v1/competition/execute
  * - GET /api/v1/competition/eligibility/:horseId/:discipline
  * - GET /api/v1/competition/disciplines
- * - GET /api/v1/leaderboards/competition
+ *
+ * Equoria-a7f1p (owner ruling 2026-10-28, q151): the GET /leaderboards/competition
+ * cases went with that duplicate list; the page boards are covered in
+ * modules/leaderboards/__tests__/leaderboardBoards.integration.test.mjs.
  */
 
 import request from 'supertest';
@@ -490,68 +493,6 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         .expect(410);
 
       expect(response.body.success).toBe(false);
-    });
-  });
-
-  describe('🏆 GET /api/v1/leaderboards/competition', () => {
-    test('should get competition leaderboard by wins', async () => {
-      const response = await request(app)
-        .get('/api/v1/leaderboards/competition?metric=wins&limit=10')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.leaderboard).toBeInstanceOf(Array);
-      expect(response.body.data.filters.metric).toBe('wins');
-      expect(response.body.data.pagination).toHaveProperty('total');
-      expect(response.body.data.pagination).toHaveProperty('limit');
-      expect(response.body.data.pagination).toHaveProperty('offset');
-      expect(response.body.data.pagination).toHaveProperty('hasMore');
-
-      // Check leaderboard entry structure
-      if (response.body.data.leaderboard.length > 0) {
-        const [entry] = response.body.data.leaderboard;
-        expect(entry).toHaveProperty('rank');
-        expect(entry).toHaveProperty('horseId');
-        expect(entry).toHaveProperty('horseName');
-        expect(entry).toHaveProperty('userId');
-        expect(entry).toHaveProperty('userName');
-        expect(entry).toHaveProperty('wins');
-        expect(entry).toHaveProperty('metric');
-        expect(entry).toHaveProperty('value');
-      }
-    });
-
-    test('should get competition leaderboard by earnings', async () => {
-      const response = await request(app)
-        .get('/api/v1/leaderboards/competition?metric=earnings&discipline=Racing')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.filters.metric).toBe('earnings');
-      expect(response.body.data.filters.discipline).toBe('Racing');
-    });
-
-    test('should reject invalid metric', async () => {
-      const response = await request(app)
-        .get('/api/v1/leaderboards/competition?metric=invalid')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Validation failed');
-    });
-
-    test('should reject unauthorized access', async () => {
-      await request(app)
-        .get('/api/v1/leaderboards/competition')
-        .set('Origin', 'http://localhost:3000')
-
-        .expect(401);
     });
   });
 });

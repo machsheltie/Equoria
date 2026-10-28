@@ -13,9 +13,7 @@ import {
 // Cleanup hook: this E2E test creates real horses, shows, users, etc. via the
 // API (no test-bypass routes per beta doctrine). Without an afterAll teardown,
 // fixtures leak into the shared real DB and pollute global queries in other
-// suites (notably tests/integration/leaderboardRoutes.test.mjs's
-// /recent-winners endpoint, which queries the 10 most-recent 1st-place
-// results globally). Wipe by Atlas/Readiness name prefix — this also catches
+// suites (the leaderboard boards rank 1st-place results globally). Wipe by Atlas/Readiness name prefix — this also catches
 // leftovers from prior failed runs.
 test.afterAll(async () => {
   try {

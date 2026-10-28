@@ -12,6 +12,10 @@
  * The fixture horse has seven results: 1, 1, 1, 1, 2, 3, 5. Every reader must
  * see 4 wins and 6 top-three placings.
  *
+ * Equoria-a7f1p (owner ruling 2026-10-28, q151): the wins and placements
+ * leaderboard case read the groupBy helpers of GET /leaderboards/competition, a
+ * duplicate list removed with them.
+ *
  * Real DB, real routes (supertest, real JWT), scoped fixtures.
  */
 
@@ -23,10 +27,6 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
-import {
-  groupWinsByHorse,
-  groupTopThreePlacementsByHorse,
-} from '../modules/leaderboards/services/leaderboardCompetitionQueries.mjs';
 import { calculateAchievementsScore } from '../modules/horses/services/legacyScoreCalculator.mjs';
 
 const PREFIX = 'TestFixture-f46tb';
@@ -108,13 +108,6 @@ beforeAll(async () => {
 afterAll(() => cleanup.run(), 60000);
 
 describe('placement readers agree (Equoria-f46tb)', () => {
-  it('wins and placements leaderboards count every win and placing', async () => {
-    const wins = await groupWinsByHorse({ horseId: horse.id }, { take: 5, skip: 0 });
-    expect(wins).toEqual([{ horseId: horse.id, _count: { id: 4 } }]);
-    const placings = await groupTopThreePlacementsByHorse({ horseId: horse.id }, { take: 5, skip: 0 });
-    expect(placings).toEqual([{ horseId: horse.id, _count: { id: 6 } }]);
-  });
-
   it("the stable list's championship signal counts every win", async () => {
     const res = await request(app).get('/api/v1/horses').set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);

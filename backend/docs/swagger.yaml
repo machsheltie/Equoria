@@ -1325,46 +1325,6 @@ paths:
         '200': { description: 'Page-shaped board: entries, currentPage, totalPages, totalEntries' }
         '400': { description: 'Missing or unknown discipline' }
 
-  /leaderboards/players/xp:
-    get:
-      tags: [Leaderboards]
-      summary: 'Top players by XP'
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200': { description: 'Player XP leaderboard' }
-
-  /leaderboards/horses/earnings:
-    get:
-      tags: [Leaderboards]
-      summary: 'Top horses by total earnings'
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200': { description: 'Horse earnings leaderboard' }
-
-  /leaderboards/horses/performance:
-    get:
-      tags: [Leaderboards]
-      summary: 'Top horses by performance score'
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200': { description: 'Horse performance leaderboard' }
-
-  /leaderboards/recent-winners:
-    get:
-      tags: [Leaderboards]
-      summary: 'Recent competition winners'
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200': { description: 'Recent winners' }
-
-  /leaderboards/stats:
-    get:
-      tags: [Leaderboards]
-      summary: 'Overall leaderboard statistics'
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200': { description: 'Leaderboard stats' }
-
   # ── Users ────────────────────────────────────────────────────────────────────
   /users/community/activity:
     get:

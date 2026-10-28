@@ -7,6 +7,9 @@
  * earnings, placements, average_placement", and a bad marketplace sort answered
  * "sort must be one of: <every sort key>".
  *
+ * Equoria-a7f1p (owner ruling 2026-10-28, q151): the leaderboard metric case went
+ * with GET /leaderboards/competition, a duplicate list removed with its metric.
+ *
  * Real routes, real app.
  */
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -27,14 +30,6 @@ describe('refusals do not enumerate stored values (Equoria-bdpvw)', () => {
 
   afterAll(async () => {
     await prisma.user.deleteMany({ where: { id: user.id } });
-  });
-
-  it('a bad leaderboard metric is refused without naming average_placement', async () => {
-    const res = await request(app)
-      .get('/api/v1/leaderboards/competition?metric=bogus')
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).not.toContain(['average', 'placement'].join('_'));
   });
 
   it('a bad marketplace sort is refused without listing the sort keys', async () => {

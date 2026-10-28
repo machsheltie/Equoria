@@ -1,12 +1,11 @@
 /**
  * leaderboardController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: getLeaderboardStats, getTopHorsesByEarnings,
- * getRecentWinners, getUserRankSummary, getTopHorsesByPerformance (win-rate).
- * All leaderboard routes require auth (authRouter).
+ * Covers: getUserRankSummary. All leaderboard routes require auth (authRouter).
  *
- * Equoria-847r: getTopHorsesByPerformance must use MAX(CompetitionResult.score)
- * not the non-existent performanceScore column.
+ * Equoria-a7f1p (owner ruling 2026-10-28, q151): the stats, horses/earnings,
+ * recent-winners and horses/performance (Equoria-847r) cases went with those
+ * duplicate routes; the Leaderboards page reads GET /leaderboards/boards/:board.
  *
  * Equoria-ombe: getUserRankSummary must return 400 for non-UUID userId.
  */
@@ -17,10 +16,6 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
-import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
-// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
@@ -66,145 +61,6 @@ beforeAll(async () => {
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);
-
-describe('GET /api/v1/leaderboards/stats', () => {
-  it('returns 200 with leaderboard stats', async () => {
-    const res = await request(app)
-      .get('/api/v1/leaderboards/stats')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toHaveProperty('userCount');
-    expect(res.body.data).toHaveProperty('horseCount');
-    expect(res.body.data).toHaveProperty('showCount');
-    expect(res.body.data).toHaveProperty('totalEarnings');
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/leaderboards/stats').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-describe('GET /api/v1/leaderboards/horses/earnings', () => {
-  it('returns 200 with top horses by earnings', async () => {
-    const res = await request(app)
-      .get('/api/v1/leaderboards/horses/earnings')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(Array.isArray(res.body.data.horses)).toBe(true);
-  });
-});
-
-describe('GET /api/v1/leaderboards/recent-winners', () => {
-  it('returns 200 with recent winners', async () => {
-    const res = await request(app)
-      .get('/api/v1/leaderboards/recent-winners')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(Array.isArray(res.body.data.winners)).toBe(true);
-  });
-});
-
-// Equoria-xxdqh (owner ruling 2026-10-22): /win-rate became the win-percentage
-// board (leaderboardWinBoards.integration.test.mjs). The best-score ranking this
-// block pins (Equoria-847r) is still served at /horses/performance.
-describe('GET /api/v1/leaderboards/horses/performance (Equoria-847r)', () => {
-  it('returns 200 with rankings array (empty-results case)', async () => {
-    const res = await request(app)
-      .get('/api/v1/leaderboards/horses/performance')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toHaveProperty('rankings');
-    expect(Array.isArray(res.body.data.rankings)).toBe(true);
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/leaderboards/horses/performance').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-
-  it('returns 200 with populated rankings including maxScore when results exist', async () => {
-    // Bust any stale leaderboard cache from earlier tests (in-memory cache persists
-    // across tests within the same Jest worker; without this a cached empty-rankings
-    // result from the first win-rate test can mask newly created competition data).
-    await invalidateCachePattern('leaderboard:*');
-
-    const show = await prisma.show.create({
-      data: {
-        name: `TestFixture-WinRateShow-${Date.now()}`,
-        discipline: 'Racing',
-        levelMin: 1,
-        levelMax: 10,
-        entryFee: 0,
-        prize: 100,
-        runDate: new Date('2024-01-15'),
-        status: 'open',
-      },
-    });
-
-    const breed = await prisma.breed.findFirst();
-    const horse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-WinRateHorse-${Date.now()}`,
-        userId: user.id,
-        breedId: breed ? breed.id : null,
-        sex: 'mare',
-        dateOfBirth: new Date('2020-01-01'),
-        age: 4,
-      },
-    });
-
-    await prisma.competitionResult.create({
-      data: {
-        horseId: horse.id,
-        showId: show.id,
-        showName: show.name,
-        discipline: 'Racing',
-        placement: 1,
-        score: 87.5,
-        runDate: new Date('2024-01-15'),
-      },
-    });
-
-    try {
-      const res = await request(app)
-        .get('/api/v1/leaderboards/horses/performance')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(Array.isArray(res.body.data.rankings)).toBe(true);
-      expect(res.body.data.rankings.length).toBeGreaterThanOrEqual(1);
-      for (const entry of res.body.data.rankings) {
-        expect(entry).toHaveProperty('maxScore');
-        expect(entry).toHaveProperty('horseId');
-        expect(entry).toHaveProperty('name');
-        expect(entry).toHaveProperty('rank');
-        expect(typeof entry.maxScore).toBe('number');
-      }
-    } finally {
-      await prisma.competitionResult.deleteMany({ where: { horseId: horse.id } });
-      await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-      await prisma.show.delete({ where: { id: show.id } }).catch(() => {});
-    }
-  });
-});
 
 describe('GET /api/v1/leaderboards/user-summary/:userId (Equoria-ombe)', () => {
   it('returns 200 with rank summary for the authenticated user', async () => {
