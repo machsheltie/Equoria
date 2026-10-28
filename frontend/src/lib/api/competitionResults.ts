@@ -166,6 +166,10 @@ export interface CompetitionEntry {
 export interface HorseCompetitionStatistics {
   totalCompetitions: number;
   wins: number;
+  /** 2nd-place finishes (Equoria-b4msy). */
+  secondPlaces: number;
+  /** 3rd-place finishes (Equoria-b4msy). */
+  thirdPlaces: number;
   top3Finishes: number;
   winRate: number;
   totalPrizeMoney: number;

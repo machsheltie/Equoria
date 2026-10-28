@@ -15,6 +15,9 @@
  * Care Team (owner request 2026-10-28, Equoria-a6t0u): the assigned trainer
  * that sat at the foot of Horse Details is now its own Care Team section with
  * the assigned trainer, groom and rider (CareTeamSection).
+ *
+ * Show Record (Equoria-b4msy, owner request 2026-10-28): Points, Wins / Places /
+ * Shows and Winnings, below Horse Details (ShowRecordSection).
  */
 
 import React from 'react';
@@ -29,6 +32,7 @@ import { userMessageFor } from '@/lib/http/userMessage';
 import { getBreedName } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import MarkingsPanel from '@/components/horse/MarkingsPanel';
+import ShowRecordSection from './ShowRecordSection';
 import type { Horse } from './HorseDetailPageTypes';
 import '@/styles/horseCare.css';
 
@@ -210,6 +214,8 @@ const OverviewTab: React.FC<{
       </section>
 
       <CareTeamSection horseId={Number(horse.id)} onAssignRider={onAssignRider} />
+
+      <ShowRecordSection horseId={horse.id} />
 
       {horse.traits && horse.traits.length > 0 && (
         <div>

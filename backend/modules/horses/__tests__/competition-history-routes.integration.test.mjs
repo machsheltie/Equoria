@@ -152,6 +152,8 @@ describe('INTEGRATION: GET /api/v1/horses/:horseId/competition-history (21S-4)',
       expect(res.body.statistics).toMatchObject({
         totalCompetitions: 0,
         wins: 0,
+        secondPlaces: 0,
+        thirdPlaces: 0,
         top3Finishes: 0,
         winRate: 0,
         totalPrizeMoney: 0,
@@ -175,6 +177,10 @@ describe('INTEGRATION: GET /api/v1/horses/:horseId/competition-history (21S-4)',
       expect(res.body.statistics.totalCompetitions).toBe(2);
       expect(res.body.statistics.wins).toBe(1);
       expect(res.body.statistics.top3Finishes).toBe(2);
+      // Equoria-b4msy: the horse page's Wins / Places / Shows reads 1st, 2nd
+      // and 3rd place counts.
+      expect(res.body.statistics.secondPlaces).toBe(1);
+      expect(res.body.statistics.thirdPlaces).toBe(0);
       expect(res.body.statistics.winRate).toBeCloseTo(50, 1);
       expect(Number(res.body.statistics.totalPrizeMoney)).toBeCloseTo(700, 1);
       expect(res.body.statistics.bestPlacement).toBe(1);

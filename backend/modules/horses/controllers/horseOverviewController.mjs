@@ -68,6 +68,8 @@ export async function getHorseCompetitionHistory(req, res, next) {
         statistics: {
           totalCompetitions: 0,
           wins: 0,
+          secondPlaces: 0,
+          thirdPlaces: 0,
           top3Finishes: 0,
           winRate: 0,
           totalPrizeMoney: 0,
@@ -80,6 +82,10 @@ export async function getHorseCompetitionHistory(req, res, next) {
     }
 
     let wins = 0;
+    // 2nd and 3rd place counts for the horse page's Wins / Places / Shows
+    // (Equoria-b4msy, owner request 2026-10-28).
+    let secondPlaces = 0;
+    let thirdPlaces = 0;
     let top3Finishes = 0;
     let totalPrizeMoney = 0;
     let placementSum = 0;
@@ -91,6 +97,12 @@ export async function getHorseCompetitionHistory(req, res, next) {
       const n = g._count._all;
       if (p === 1) {
         wins += n;
+      }
+      if (p === 2) {
+        secondPlaces += n;
+      }
+      if (p === 3) {
+        thirdPlaces += n;
       }
       if (p > 0 && p <= 3) {
         top3Finishes += n;
@@ -175,6 +187,8 @@ export async function getHorseCompetitionHistory(req, res, next) {
       statistics: {
         totalCompetitions,
         wins,
+        secondPlaces,
+        thirdPlaces,
         top3Finishes,
         winRate: Math.round(winRate * 100) / 100,
         totalPrizeMoney,

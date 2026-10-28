@@ -113,6 +113,8 @@ export const competitionResultsHandlers = [
           statistics: {
             totalCompetitions: 0,
             wins: 0,
+            secondPlaces: 0,
+            thirdPlaces: 0,
             top3Finishes: 0,
             winRate: 0,
             totalPrizeMoney: 0,
@@ -132,6 +134,8 @@ export const competitionResultsHandlers = [
         statistics: {
           totalCompetitions: 15,
           wins: 5,
+          secondPlaces: 3,
+          thirdPlaces: 2,
           top3Finishes: 10,
           winRate: 33.33,
           totalPrizeMoney: 12500,

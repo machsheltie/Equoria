@@ -192,6 +192,23 @@ export const prizeHandlers = [
   // api-client call (horses.ts exposes getXP/getXPHistory, not level-info) and
   // no test referenced it.
 
+  // Horse Points status (GET /:id/xp, horseXpController.getHorseXpStatus shape):
+  // the horse page's Points bar and Show Record read it (Equoria-a0fim/b4msy).
+  http.get(`${base}/api/v1/horses/:horseId/xp`, ({ params }) =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        horseId: Number(params.horseId),
+        horseName: 'Thunder',
+        currentXP: 450,
+        availableStatPoints: 0,
+        nextStatPointAt: 1000,
+        xpToNextStatPoint: 550,
+        pointsPerStatPoint: 1000,
+      },
+    })
+  ),
+
   // XP System - Horse XP History
   http.get(`${base}/api/v1/horses/:horseId/xp-history`, ({ params, request }) => {
     const horseId = Number(params.horseId);
