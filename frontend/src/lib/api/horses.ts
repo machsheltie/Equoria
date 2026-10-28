@@ -49,17 +49,6 @@ export interface HorseBreedingData {
   [key: string]: unknown;
 }
 
-export interface HorseColorResponse {
-  horseId: number;
-  horseName: string;
-  colorName: string | null;
-  shade: string | null;
-  faceMarking: string | null;
-  legMarkings: Record<string, string> | string[] | null;
-  advancedMarkings: Record<string, unknown> | string[] | null;
-  modifiers: Record<string, unknown> | null;
-}
-
 /**
  * One offspring from GET /api/v1/horses/:id/offspring (Equoria-oey96.55): its id
  * and name only — a foal sold to another player exposes nothing more.
@@ -207,8 +196,4 @@ export const horsesApi = {
   // error. Consumers should branch on `data === null` to render fallback UI.
   getGenetics: (horseId: number | string) =>
     apiClient.get<HorseGeneticsResponse | null>(`/api/v1/horses/${horseId}/genetics`),
-  // Equoria-lsdb — 31E-4 player-facing coat-color endpoint.
-  // Returns null when the horse has no phenotype data (legacy horse).
-  getColor: (horseId: number | string) =>
-    apiClient.get<HorseColorResponse | null>(`/api/v1/horses/${horseId}/color`),
 };

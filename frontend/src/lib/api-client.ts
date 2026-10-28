@@ -85,10 +85,10 @@ export { trainingApi } from './api/training.js';
 export { breedingApi } from './api/breeding.js';
 
 // -- Horses --
-// Extracted to ./api/horses (Equoria-jog8w). Owns HorseGeneticsResponse +
-// HorseColorResponse (31E-4). Re-exported for barrel compat.
+// Extracted to ./api/horses (Equoria-jog8w). Owns HorseGeneticsResponse
+// (31E-4). Re-exported for barrel compat.
 export { horsesApi } from './api/horses.js';
-export type { HorseGeneticsResponse, HorseColorResponse, HorseBreedingData } from './api/horses.js';
+export type { HorseGeneticsResponse, HorseBreedingData } from './api/horses.js';
 
 // Rider types live in ./api/types (Equoria-aodym).
 

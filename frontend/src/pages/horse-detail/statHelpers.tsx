@@ -26,7 +26,6 @@ export type TabType =
   | 'overview'
   | 'disciplines'
   | 'genetics'
-  | 'coat'
   | 'conformation'
   | 'gaits'
   | 'progression'

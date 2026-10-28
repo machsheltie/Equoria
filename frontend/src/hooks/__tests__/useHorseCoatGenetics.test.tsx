@@ -3,7 +3,6 @@
  *
  * Tests React Query hooks for coat-color genetics:
  * - useHorseCoatGenetics
- * - useHorseCoatColor
  *
  * Network boundary is stubbed with MSW (per-test `server.use(...)` overrides)
  * rather than vi.mock'ing the api-client module (Equoria-f12xy). This exercises
@@ -18,7 +17,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
-import { useHorseCoatGenetics, useHorseCoatColor } from '../useHorseCoatGenetics';
+import { useHorseCoatGenetics } from '../useHorseCoatGenetics';
 import { server } from '../../test/msw/server';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -94,62 +93,6 @@ describe('Horse Coat-Color Genetics Hooks (31E-4 / Equoria-1wed)', () => {
       expect(result.current.isLoading).toBe(false);
       expect(result.current.fetchStatus).toBe('idle');
       // Give react-query a tick to (not) fire a request.
-      await new Promise((r) => setTimeout(r, 30));
-      expect(result.current.fetchStatus).toBe('idle');
-    });
-  });
-
-  describe('useHorseCoatColor', () => {
-    it('loading → success branch returns color payload', async () => {
-      const payload = {
-        horseId: 5,
-        horseName: 'Bay',
-        colorName: 'Bay',
-        shade: 'standard',
-        faceMarking: 'star',
-        legMarkings: null,
-        advancedMarkings: null,
-        modifiers: null,
-      };
-      server.use(
-        http.get(`${base}/api/v1/horses/5/color`, () => HttpResponse.json({ data: payload }))
-      );
-
-      const { result } = renderHook(() => useHorseCoatColor(5), { wrapper });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(result.current.data).toEqual(payload);
-      expect(queryClient.getQueryData(['horse-coat-color', 5])).toEqual(payload);
-    });
-
-    it('legacy null-data branch surfaces data === null', async () => {
-      server.use(
-        http.get(`${base}/api/v1/horses/101/color`, () => HttpResponse.json({ data: null }))
-      );
-
-      const { result } = renderHook(() => useHorseCoatColor(101), { wrapper });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(result.current.data).toBeNull();
-    });
-
-    it('error branch surfaces network error', async () => {
-      server.use(
-        http.get(`${base}/api/v1/horses/6/color`, () =>
-          HttpResponse.json({ message: 'boom' }, { status: 500 })
-        )
-      );
-
-      const { result } = renderHook(() => useHorseCoatColor(6), { wrapper });
-
-      await waitFor(() => expect(result.current.isError).toBe(true));
-    });
-
-    it('skips fetch when horseId is falsy', async () => {
-      const { result } = renderHook(() => useHorseCoatColor(undefined), { wrapper });
-
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.fetchStatus).toBe('idle');
       await new Promise((r) => setTimeout(r, 30));
       expect(result.current.fetchStatus).toBe('idle');
     });

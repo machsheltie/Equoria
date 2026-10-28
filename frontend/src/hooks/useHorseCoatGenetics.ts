@@ -1,9 +1,10 @@
 /**
  * React Query hooks for Horse Coat-Color Genetics (Epic 31E-4)
  *
- * Distinct from useHorseGenetics.ts (epigenetic traits). These hooks call
- * GET /api/v1/horses/:id/genetics and GET /api/v1/horses/:id/color and surface
- * the coat-color genotype + phenotype produced by the 31E pipeline.
+ * Distinct from useHorseGenetics.ts (epigenetic traits). This hook calls
+ * GET /api/v1/horses/:id/genetics and surfaces the coat-color genotype +
+ * phenotype produced by the 31E pipeline. (The /color hook went with the Coat
+ * tab, owner request 2026-10-28, Equoria-qzr6a.)
  *
  * The backend returns the canonical { success, message, data } envelope where
  * `data === null` for legacy horses (pre-31E horses without color data).
@@ -18,7 +19,7 @@
  */
 
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
-import { horsesApi, type HorseGeneticsResponse, type HorseColorResponse } from '@/lib/api-client';
+import { horsesApi, type HorseGeneticsResponse } from '@/lib/api-client';
 
 const COAT_GENETICS_STALE_MS = 10 * 60 * 1000; // 10 minutes
 const COAT_GENETICS_GC_MS = 30 * 60 * 1000; // 30 minutes
@@ -39,30 +40,6 @@ export function useHorseCoatGenetics(
         return Promise.resolve(null);
       }
       return horsesApi.getGenetics(horseId);
-    },
-    enabled: Boolean(horseId),
-    staleTime: COAT_GENETICS_STALE_MS,
-    gcTime: COAT_GENETICS_GC_MS,
-    refetchOnWindowFocus: false,
-  });
-}
-
-/**
- * Fetch the player-facing color summary (colorName, shade, markings) for a
- * horse. Returns `null` when the horse has no phenotype data.
- *
- * @param horseId - target horse ID (skip when falsy)
- */
-export function useHorseCoatColor(
-  horseId: number | string | null | undefined
-): UseQueryResult<HorseColorResponse | null> {
-  return useQuery({
-    queryKey: ['horse-coat-color', horseId],
-    queryFn: () => {
-      if (!horseId) {
-        return Promise.resolve(null);
-      }
-      return horsesApi.getColor(horseId);
     },
     enabled: Boolean(horseId),
     staleTime: COAT_GENETICS_STALE_MS,

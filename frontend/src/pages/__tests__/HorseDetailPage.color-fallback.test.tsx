@@ -139,6 +139,17 @@ describe('HorseDetailPage color readout fallback (Equoria-lsi5)', () => {
     expect(screen.queryByTestId('markings-panel-title')).not.toBeInTheDocument();
   });
 
+  test('there is no Coat tab; colour lives in Horse Details and genetics in the Genetics tab — Equoria-qzr6a', async () => {
+    // Owner request 2026-10-28: "Coat does not need a special section all its
+    // own in the clickable tabs."
+    global.fetch = makeFetch({ phenotype: { colorName: 'Bay' } });
+    renderPage();
+    expect(await screen.findByRole('tab', { name: /Genetics/ })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Coat/ })).not.toBeInTheDocument();
+    const details = screen.getByRole('region', { name: 'Horse Details' });
+    expect(details).toContainElement(screen.getByTestId('horse-detail-color'));
+  });
+
   test("renders 'not recorded' (never 'Unknown') when the phenotype is absent — Equoria-iwy3", async () => {
     // Per frontend-integration-backlog.md doctrine line 258: legacy horses with
     // colorGenotype: null and phenotype: null must NEVER show 'Unknown'. The

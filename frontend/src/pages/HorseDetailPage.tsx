@@ -34,7 +34,6 @@ import {
   Tag,
   ShoppingCart,
   Wind,
-  Eye,
   Dumbbell,
   TrendingUp,
 } from 'lucide-react';
@@ -82,10 +81,6 @@ import { ContextualBottomActions } from '@/components/layout/ContextualBottomAct
 
 // Heavy tab sub-panels — lazy loaded so they only enter the bundle when first selected
 const GeneticsTab = lazy(() => import('./horse-detail/GeneticsTab'));
-// Equoria-ea3n + Equoria-oovy — 31E-4 dedicated Color & Genetics panel sourced
-// from the GET /horses/:id/color and /horses/:id/genetics endpoints (not the
-// main horse payload).
-const CoatTab = lazy(() => import('./horse-detail/CoatTab'));
 const TrainingTab = lazy(() => import('./horse-detail/TrainingTab'));
 
 // Shared Suspense fallback for the lazy-loaded tab panels
@@ -214,8 +209,9 @@ const HorseDetailPage: React.FC = () => {
     { id: 'overview', label: 'Overview', icon: <Star className="w-4 h-4" /> },
     { id: 'disciplines', label: 'Disciplines', icon: <Trophy className="w-4 h-4" /> },
     { id: 'genetics', label: 'Genetics', icon: <Users className="w-4 h-4" /> },
-    // Equoria-ea3n / Equoria-oovy — 31E-4 coat-color & genotype tab
-    { id: 'coat', label: 'Coat', icon: <Eye className="w-4 h-4" /> },
+    // No Coat tab (owner request 2026-10-28, Equoria-qzr6a): colour and
+    // markings read in the Overview's Horse Details; tested colour genetics
+    // live in the Genetics tab.
     { id: 'conformation', label: 'Conformation', icon: <Ruler className="w-4 h-4" /> },
     { id: 'gaits', label: 'Gaits', icon: <Wind className="w-4 h-4" /> },
     { id: 'progression', label: 'Progression', icon: <TrendingUp className="w-4 h-4" /> },
@@ -321,11 +317,6 @@ const HorseDetailPage: React.FC = () => {
             <TabsContent value="genetics" className="mt-0 p-6">
               <Suspense fallback={lazyTabFallback}>
                 <GeneticsTab horse={horse} />
-              </Suspense>
-            </TabsContent>
-            <TabsContent value="coat" className="mt-0 p-6">
-              <Suspense fallback={lazyTabFallback}>
-                <CoatTab horseId={horse.id} />
               </Suspense>
             </TabsContent>
             <TabsContent value="conformation" className="mt-0 p-6">

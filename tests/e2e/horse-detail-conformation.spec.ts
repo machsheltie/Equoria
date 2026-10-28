@@ -21,7 +21,7 @@
  *
  * The starter horse seeded by global-setup may or may not have conformation
  * data populated depending on backend defaults. The spec mirrors the pattern
- * in horse-detail-coat-genetics.spec.ts: assert the structural container
+ * of the retired Coat-tab spec: assert the structural container
  * renders, then branch on the real-data path (score cards) vs the
  * no-data fallback ("conformation-no-data"). Both are real, beta-relevant
  * paths.
