@@ -77,6 +77,12 @@ export interface AllocateStatResult {
   remainingStatPoints: number;
 }
 
+/** One page of GET /api/v1/horses (Equoria-6tda3): the envelope with its keyset pageInfo. */
+interface HorseListPage {
+  data?: HorseListItemDto[];
+  pageInfo?: { nextCursor?: string | null; hasMore?: boolean };
+}
+
 export const horsesApi = {
   // NOTE (Equoria-6p398.2, 2026-09-05 audit Finding 2): there is deliberately
   // no `create` here. `POST /api/v1/horses` handed any authenticated player a
@@ -89,7 +95,40 @@ export const horsesApi = {
   // `DELETE /api/v1/horses/:id` is closed (403) for every caller. A player parts
   // with a horse by listing it in the marketplace, never by destroying it. Do not
   // add a delete helper or a "remove from stable" affordance that calls one.
-  list: () => apiClient.get<HorseListItemDto[]>(`/api/v1/horses?t=${Date.now()}`),
+  /**
+   * The whole stable (Equoria-6tda3). GET /api/v1/horses answers at most 200
+   * horses a page with keyset `pageInfo` (Equoria-cmw85.19); this follows
+   * `pageInfo.nextCursor` to the last page, so a stable of more than 200 horses
+   * is read in full. A failed page fails the whole read: never a partial stable.
+   */
+  list: async (): Promise<HorseListItemDto[]> => {
+    const horses: HorseListItemDto[] = [];
+    const cursorsUsed = new Set<string>();
+    let cursor: string | null = null;
+    for (;;) {
+      const query: string = cursor ? `&cursor=${encodeURIComponent(cursor)}` : '';
+      const page: HorseListPage | HorseListItemDto[] = await apiClient.getEnvelope<
+        HorseListPage | HorseListItemDto[]
+      >(`/api/v1/horses?t=${Date.now()}${query}`);
+      if (Array.isArray(page)) {
+        horses.push(...page);
+        return horses;
+      }
+      horses.push(...(page.data ?? []));
+      const next: string | null = page.pageInfo?.hasMore
+        ? (page.pageInfo.nextCursor ?? null)
+        : null;
+      if (!next) {
+        return horses;
+      }
+      // A repeated cursor would loop for ever: fail the read rather than show part of the stable.
+      if (cursorsUsed.has(next)) {
+        throw { message: 'The horse list repeated a page.', status: 'error', statusCode: 500 };
+      }
+      cursorsUsed.add(next);
+      cursor = next;
+    }
+  },
   get: (horseId: number) =>
     apiClient.get<HorseSummary>(`/api/v1/horses/${horseId}?t=${Date.now()}`),
   getTrainingHistory: (horseId: number) =>
