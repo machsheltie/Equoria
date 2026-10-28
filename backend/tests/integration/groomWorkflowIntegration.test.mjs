@@ -9,7 +9,7 @@
  *   - Breed, User, Horses created in beforeEach; deleted in afterEach
  *   - Grooms / Assignments / Interactions tracked per-test via Set<id>
  *
- * Cleanup: createdIds sets + afterEach cleanupTestData()
+ * Cleanup: createdIds sets + afterEach cleanupTestData() (fail-loud, Equoria-6ziwq)
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
@@ -20,6 +20,7 @@ import { assignGroom } from '../../modules/grooms/controllers/groomAssignmentHan
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ─── plain response capture ───────────────────────────────────────────────────
 
@@ -54,65 +55,34 @@ describe('Groom Workflow Integration Tests', () => {
   const createdUserIds = new Set();
   const createdBreedIds = new Set();
 
+  // Equoria-6ziwq: fail-loud cleanup. The old cleanupTestData() ran the deletes in
+  // one try/catch that only console.error'd, so one blocked delete (a horse still
+  // referenced) skipped the user and breed deletes and the suite stayed green:
+  // the ~46 leaked "Test Breed <hex>_<hex>" rows in the local DB carry this suite's
+  // name pattern. Every
+  // delete now runs even if an earlier one throws, and any failure fails the test.
+  // The old beforeEach name sweep (grooms named 'Expert Groom', 'Sarah Johnson', ...)
+  // is gone too: it deleted rows this suite never created.
   const cleanupTestData = async () => {
-    try {
-      if (createdInteractionIds.size > 0) {
-        await prisma.groomInteraction.deleteMany({
-          where: { id: { in: Array.from(createdInteractionIds) } },
-        });
-        createdInteractionIds.clear();
+    const cleanup = createCleanupTracker();
+    const scoped = (ids, model, label) => {
+      const list = Array.from(ids);
+      ids.clear();
+      if (list.length > 0) {
+        cleanup.add(() => prisma[model].deleteMany({ where: { id: { in: list } } }), label);
       }
-      if (createdAssignmentIds.size > 0) {
-        await prisma.groomAssignment.deleteMany({
-          where: { id: { in: Array.from(createdAssignmentIds) } },
-        });
-        createdAssignmentIds.clear();
-      }
-      if (createdGroomIds.size > 0) {
-        await prisma.groom.deleteMany({
-          where: { id: { in: Array.from(createdGroomIds) } },
-        });
-        createdGroomIds.clear();
-      }
-      if (createdHorseIds.size > 0) {
-        await prisma.horse.deleteMany({
-          where: { id: { in: Array.from(createdHorseIds) } },
-        });
-        createdHorseIds.clear();
-      }
-      if (createdUserIds.size > 0) {
-        await prisma.user.deleteMany({
-          where: { id: { in: Array.from(createdUserIds) } },
-        });
-        createdUserIds.clear();
-      }
-      if (createdBreedIds.size > 0) {
-        await prisma.breed.deleteMany({
-          where: { id: { in: Array.from(createdBreedIds) } },
-        });
-        createdBreedIds.clear();
-      }
-    } catch (error) {
-      console.error('Cleanup error:', error.message);
-    }
+    };
+    // Order: interactions -> assignments -> grooms -> horses -> users -> breed.
+    scoped(createdInteractionIds, 'groomInteraction', 'groom interactions');
+    scoped(createdAssignmentIds, 'groomAssignment', 'groom assignments');
+    scoped(createdGroomIds, 'groom', 'grooms');
+    scoped(createdHorseIds, 'horse', 'horses');
+    scoped(createdUserIds, 'user', 'users');
+    scoped(createdBreedIds, 'breed', 'breed');
+    await cleanup.run();
   };
 
   beforeEach(async () => {
-    await cleanupTestData();
-
-    // Clean stale test data from previous runs by name pattern
-    await prisma.groom.deleteMany({
-      where: {
-        OR: [
-          { name: { contains: 'Sarah Johnson' } },
-          { name: { contains: 'Test Assignment Groom' } },
-          { name: { contains: 'Age Test Groom' } },
-          { name: { contains: 'Expert Groom' } },
-          { name: { contains: 'Novice Groom' } },
-        ],
-      },
-    });
-
     const suffix = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
     testBreed = await prisma.breed.create({

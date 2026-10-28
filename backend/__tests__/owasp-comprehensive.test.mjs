@@ -492,37 +492,37 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
           },
         });
 
-        const ownershipTestBreed =
-          (await prisma.breed.findFirst({ where: { name: 'OWASP Test Breed' } })) ??
-          (await prisma.breed.create({
-            data: { name: 'OWASP Test Breed', description: 'Breed for OWASP ownership tests' },
-          }));
+        // Equoria-6ziwq: the suite's own breed. This used to find-or-create a
+        // shared 'OWASP Test Breed' that nothing ever deleted.
         const otherHorse = await prisma.horse.create({
           data: {
             ...fixtureColor(),
             name: 'Other User Horse',
-            breed: { connect: { id: ownershipTestBreed.id } },
+            breed: { connect: { id: testBreed.id } },
             sex: 'Mare',
             dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
             user: { connect: { id: otherUser.id } },
           },
         });
 
-        // Attempt to access other user's horse
-        const response = await request(app)
-          .get(`/api/v1/horses/${otherHorse.id}`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Authorization', `Bearer ${authToken}`);
+        try {
+          // Attempt to access other user's horse
+          const response = await request(app)
+            .get(`/api/v1/horses/${otherHorse.id}`)
+            .set('Origin', 'http://localhost:3000')
+            .set('Authorization', `Bearer ${authToken}`);
 
-        // OWASP Security Best Practice: Return 403 (Forbidden) OR 404 (Not Found)
-        // Both are acceptable - 404 prevents information leakage about resource existence
-        // 403 is explicit denial, 404 hides resource existence from unauthorized users
-        expect([403, 404]).toContain(response.status);
-        // Ownership violation should be logged (verified via audit log middleware)
-
-        // Cleanup
-        await prisma.horse.deleteMany({ where: { id: otherHorse.id } });
-        await prisma.user.deleteMany({ where: { id: otherUser.id } });
+          // OWASP Security Best Practice: Return 403 (Forbidden) OR 404 (Not Found)
+          // Both are acceptable - 404 prevents information leakage about resource existence
+          // 403 is explicit denial, 404 hides resource existence from unauthorized users
+          expect([403, 404]).toContain(response.status);
+          // Ownership violation should be logged (verified via audit log middleware)
+        } finally {
+          // Equoria-6ziwq: cleanup runs even when the assertion fails, so the
+          // horse never blocks the suite breed's delete in afterAll.
+          await prisma.horse.deleteMany({ where: { id: otherHorse.id } });
+          await prisma.user.deleteMany({ where: { id: otherUser.id } });
+        }
       });
 
       it('should log rate limit violations', async () => {
