@@ -12,12 +12,10 @@
  * - GET /horses/:id/flags - Get all flags for a horse
  * - Requires authentication for all endpoints
  * - Validates horse ownership for user operations
- * - Supports admin operations for batch evaluation
  */
 
 import logger from '../../../utils/logger.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
-import { batchEvaluateFlags as batchEvaluateFlagsEngine } from '../../../utils/flagEvaluationEngine.mjs';
 import {
   getAllFlagDefinitions,
   getFlagDefinition,
@@ -25,7 +23,6 @@ import {
 } from '../../../config/epigeneticFlagDefinitions.mjs';
 import { analyzeCarePatterns } from '../../../utils/carePatternAnalysis.mjs';
 import { getFlagInfluenceSummary } from '../../../utils/epigeneticFlagInfluence.mjs';
-import { satisfiesRole } from '../../staff/index.mjs';
 
 /**
  * Get epigenetic flags for a horse
@@ -149,72 +146,6 @@ export async function getFlagDefinitions(req, res) {
 }
 
 /**
- * Batch evaluate flags for multiple horses (Admin only)
- * POST /api/flags/batch-evaluate
- */
-export async function batchEvaluateFlags(req, res) {
-  try {
-    // Check admin permission
-    if (!satisfiesRole(req.user?.role, 'admin')) {
-      return res.status(403).json({
-        success: false,
-        message: 'Admin access required for batch evaluation',
-      });
-    }
-
-    const { horseIds } = req.body;
-
-    if (!Array.isArray(horseIds) || horseIds.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'horseIds must be a non-empty array',
-      });
-    }
-
-    // Validate all horse IDs are numbers
-    const validHorseIds = horseIds.filter(id => !isNaN(parseInt(id))).map(id => parseInt(id));
-
-    if (validHorseIds.length !== horseIds.length) {
-      return res.status(400).json({
-        success: false,
-        message: 'All horse IDs must be valid numbers',
-      });
-    }
-
-    // Perform batch evaluation
-    const results = await batchEvaluateFlagsEngine(validHorseIds);
-
-    // Summarize results
-    const summary = {
-      totalHorses: results.length,
-      successful: results.filter(r => r.success).length,
-      failed: results.filter(r => !r.success).length,
-      newFlagsAssigned: results.reduce((sum, r) => sum + (r.newFlags?.length || 0), 0),
-    };
-
-    logger.info(
-      `[epigeneticFlagController] Batch evaluation completed: ${summary.successful}/${summary.totalHorses} successful`,
-    );
-
-    return res.status(200).json({
-      success: true,
-      message: 'Batch flag evaluation completed',
-      data: {
-        summary,
-        results,
-      },
-    });
-  } catch (error) {
-    logger.error(`[epigeneticFlagController.batchEvaluateFlags] Error: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error during batch evaluation',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
-  }
-}
-
-/**
  * Get care pattern analysis for a horse (Debug/Admin)
  * GET /api/horses/:id/care-patterns
  */
@@ -256,6 +187,5 @@ export async function getCarePatterns(req, res) {
 export default {
   getHorseFlags,
   getFlagDefinitions,
-  batchEvaluateFlags,
   getCarePatterns,
 };

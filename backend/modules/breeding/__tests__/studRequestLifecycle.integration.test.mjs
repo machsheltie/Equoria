@@ -29,7 +29,6 @@ import {
   listAtStud,
   unlistAtStud,
   buyHorseHttp,
-  exportAccount,
 } from './helpers/studBookingFixtures.mjs';
 
 const PREFIX = 'TestFixture-q4uem9-studlife';
@@ -181,11 +180,8 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
     const otherMare = await horse({ ownerId: mareOwner.user.id, sex: 'Mare' });
     const pending = await requestPrivateStud(mareOwner.token, stud.id, { damId: otherMare.id, expectedStudFee: FEE });
     expect(pending.status).toBe(201);
-    const exported = await exportAccount(studOwner.token);
-    expect(exported.status).toBe(200);
-    expect(exported.body.data.breedingRecords.asStallionOwner.map(r => r.id).sort()).toEqual(
-      [completedId, pending.body.data.requestId].sort(),
-    );
+    // Old contract: the stallion owner's data export listed both records first.
+    // Owner ruling 2026-10-28 (q157): the account data download is removed.
 
     await expect(eraseUserAccount(studOwner.user.id)).resolves.toEqual({ deleted: true });
 

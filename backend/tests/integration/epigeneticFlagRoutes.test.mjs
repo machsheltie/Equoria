@@ -99,16 +99,6 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
       expect(response.status).toBe(401);
     });
 
-    test('should require authentication for batch evaluation', async () => {
-      const response = await request(app)
-        .post('/api/v1/flags/batch-evaluate')
-        .set('Origin', 'http://localhost:3000')
-        .set('Origin', 'http://localhost:3000')
-        .send({ horseIds: [123] });
-
-      expect(response.status).toBe(401);
-    });
-
     test('should require authentication for care patterns', async () => {
       const response = await request(app)
         .get('/api/v1/flags/horses/123/care-patterns')
@@ -125,7 +115,6 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
       const endpoints = [
         { method: 'get', path: '/api/v1/flags/horses/123/flags' },
         { method: 'get', path: '/api/v1/flags/definitions' },
-        { method: 'post', path: '/api/v1/flags/batch-evaluate' },
         { method: 'get', path: '/api/v1/flags/horses/123/care-patterns' },
         { method: 'get', path: '/api/v1/flags/health' },
       ];

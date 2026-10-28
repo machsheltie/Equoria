@@ -341,11 +341,6 @@ export function unlistAtStud(token, horseId) {
   return sendJson('delete', `/api/v1/horses/${horseId}/stud-listing`, token);
 }
 
-/** GET /api/v1/account/export (the player's GDPR export). Settled. */
-export function exportAccount(token) {
-  return sendJson('get', '/api/v1/account/export', token);
-}
-
 /** POST /api/v1/marketplace/buy/:horseId. Settled. */
 export function buyHorseHttp(token, horseId) {
   return sendJson('post', `/api/v1/marketplace/buy/${horseId}`, token, {});

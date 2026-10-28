@@ -196,14 +196,16 @@ describe('Equoria-gfany — player-reachable account deletion is closed', () => 
     expect(await prisma.user.findUnique({ where: { id: subject.id } })).not.toBeNull();
   }, 30000);
 
-  it('leaves the neighbouring GET /api/v1/account/export working', async () => {
+  // Old contract: the neighbouring GET /api/v1/account/export still answered
+  // 200 with the caller's data. Owner ruling 2026-10-28 (q157, Equoria-a7f1p):
+  // the account data download is removed.
+  it('GET /api/v1/account/export is gone (route-not-found 404)', async () => {
     const res = await request(app)
       .get('/api/v1/account/export')
       .set('Authorization', `Bearer ${subject.token}`)
       .set('Origin', ORIGIN);
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.profile.id).toBe(subject.id);
+    expect(res.status).toBe(404);
+    expect(res.body).toMatchObject({ success: false, message: 'Route not found' });
   }, 30000);
 });

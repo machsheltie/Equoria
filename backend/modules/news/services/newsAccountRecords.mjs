@@ -1,25 +1,12 @@
 /**
  * News and a player's own data (Equoria-wbt8l; security review 2026-10-23).
  *
- * - Article 15/20 export: the News posts an account wrote are its data.
  * - Article 17 erasure: the signature snapshot (authorName, authorRoleLabel)
  *   must not outlive the account. Inside the erasure transaction, before the
  *   user row goes, the account's posts lose their signature; the foreign key
  *   then goes NULL by itself (onDelete: SetNull). The page signs an unsigned
  *   staff post "Equoria Staff".
  */
-
-import prisma from '../../../../packages/database/prismaClient.mjs';
-
-/**
- * @param {string} userId
- */
-export async function exportAuthoredNews(userId) {
-  return prisma.newsItem.findMany({
-    where: { authorUserId: userId },
-    orderBy: [{ publishAt: 'asc' }, { id: 'asc' }],
-  });
-}
 
 /**
  * Inside the erasure transaction, BEFORE the user row is deleted.

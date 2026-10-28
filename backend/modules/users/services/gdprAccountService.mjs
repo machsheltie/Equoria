@@ -30,9 +30,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { eraseOrAnonymizeOwnedHorses } from './gdprHorseLineageErasure.mjs';
-import { exportBreedingRecords, closeBreedingRecordsForErasureTx } from './gdprBreedingRecords.mjs';
+import { closeBreedingRecordsForErasureTx } from './gdprBreedingRecords.mjs';
 import { scrubTicketEmailFilerTx } from '../../staff/index.mjs';
-import { exportAuthoredNews, scrubNewsSignaturesForErasureTx } from '../../news/index.mjs';
+import { scrubNewsSignaturesForErasureTx } from '../../news/index.mjs';
 import {
   SYSTEM_ACCOUNT_SHOW_ESCROW,
   SYSTEM_ACCOUNT_BURN,
@@ -68,103 +68,6 @@ export const ERASURE_TX_OPTIONS = Object.freeze({
   timeout: 120_000,
   maxWait: 10_000,
 });
-
-/**
- * Build a complete, machine-readable export of a user's personal data.
- *
- * Strictly scoped: every nested query filters by the owning user's id (or
- * by ids of rows already proven to belong to the user). Returns `null` if
- * the user does not exist.
- *
- * @param {string} userId - The authenticated user's own id.
- * @returns {Promise<object|null>}
- */
-export async function buildUserDataExport(userId) {
-  if (!userId || typeof userId !== 'string') {
-    throw new Error('userId is required');
-  }
-
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) {
-    return null;
-  }
-
-  // Strip the password hash — never exported.
-  const { password: _password, ...profile } = user;
-
-  const [
-    horses,
-    transactions,
-    notifications,
-    grooms,
-    riders,
-    trainers,
-    sentMessages,
-    receivedMessages,
-    forumThreads,
-    forumPosts,
-    clubMemberships,
-    xpEvents,
-    horseSalesAsSeller,
-    horseSalesAsBuyer,
-    competitionResults,
-  ] = await Promise.all([
-    prisma.horse.findMany({ where: { userId } }),
-    prisma.userTransaction.findMany({ where: { userId } }),
-    prisma.notification.findMany({ where: { userId } }),
-    prisma.groom.findMany({ where: { userId } }),
-    prisma.rider.findMany({ where: { userId } }),
-    prisma.trainer.findMany({ where: { userId } }),
-    prisma.directMessage.findMany({ where: { senderId: userId } }),
-    prisma.directMessage.findMany({ where: { recipientId: userId } }),
-    prisma.forumThread.findMany({ where: { authorId: userId } }),
-    prisma.forumPost.findMany({ where: { authorId: userId } }),
-    prisma.clubMembership.findMany({ where: { userId } }),
-    prisma.xpEvent.findMany({ where: { userId } }),
-    prisma.horseSale.findMany({ where: { sellerId: userId } }),
-    prisma.horseSale.findMany({ where: { buyerId: userId } }),
-    // Competition history for horses the user owns (their personal sporting record).
-    prisma.competitionResult.findMany({
-      where: { horse: { userId } },
-      omit: { scoreInputs: true },
-    }),
-  ]);
-
-  return {
-    exportMetadata: {
-      generatedAt: new Date().toISOString(),
-      userId,
-      schemaVersion: 1,
-      description:
-        'GDPR Article 15/20 data export. Contains all personal data Equoria holds about this account.',
-    },
-    profile,
-    settings: profile.settings ?? {},
-    horses,
-    competitionHistory: competitionResults,
-    transactions,
-    notifications,
-    grooms,
-    riders,
-    trainers,
-    messages: {
-      sent: sentMessages,
-      received: receivedMessages,
-    },
-    forum: {
-      threads: forumThreads,
-      posts: forumPosts,
-    },
-    clubMemberships,
-    xpEvents,
-    horseSales: {
-      asSeller: horseSalesAsSeller,
-      asBuyer: horseSalesAsBuyer,
-    },
-    breedingRecords: await exportBreedingRecords(userId), // Equoria-q4uem.9, both sides
-    newsPostsWritten: await exportAuthoredNews(userId), // Equoria-wbt8l
-  };
-}
 
 /**
  * Verify the supplied password matches the authenticated user's stored

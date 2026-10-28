@@ -9,27 +9,25 @@
  * 📋 API ENDPOINTS:
  * - GET /api/horses/:id/flags - Get horse flags
  * - GET /api/flags/definitions - Get flag definitions
- * - POST /api/flags/batch-evaluate - Batch evaluate (admin)
  * - GET /api/horses/:id/care-patterns - Get care patterns (debug)
  *
  * No player route assigns flags (Equoria-gu8jk; owner ruling 2026-10-20:
  * players must never write traits for themselves). POST /evaluate, which let an
  * owner run the flag engine on demand, was removed. The weekly flag job that
  * ran the engine over every horse under 3 was retired too (Equoria-koxep; owner
- * rulings 2026-10-27: traits change only through the nightly reveal ladder), so
- * the admin-only batch evaluation below is the engine's one remaining caller
- * (owner question q203 decides its future).
+ * rulings 2026-10-27: traits change only through the nightly reveal ladder), and
+ * the admin-only POST /batch-evaluate went with owner ruling 2026-10-28 (q203,
+ * Equoria-a7f1p: "Remove it"; traits reveal only through grooming days).
  *
  * GET /analytics (stable-wide trait distribution) is gone (Equoria-a7f1p; owner
  * ruling 2026-10-21: flags are not a separate system).
  */
 
 import express from 'express';
-import { body, param, query, validationResult } from 'express-validator';
+import { param, query, validationResult } from 'express-validator';
 import {
   getHorseFlags,
   getFlagDefinitions,
-  batchEvaluateFlags,
   getCarePatterns,
 } from '../controllers/epigeneticFlagController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
@@ -43,16 +41,6 @@ const router = express.Router();
  */
 const validateHorseIdParam = [
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-];
-
-/**
- * Validation middleware for batch evaluation
- */
-const validateBatchEvaluation = [
-  body('horseIds')
-    .isArray({ min: 1, max: 50 })
-    .withMessage('horseIds must be an array with 1-50 horse IDs'),
-  body('horseIds.*').isInt({ min: 1 }).withMessage('Each horse ID must be a positive integer'),
 ];
 
 /**
@@ -103,26 +91,6 @@ router.get('/definitions', authenticateToken, validateFlagTypeQuery, async (req,
     await getFlagDefinitions(req, res);
   } catch (error) {
     logger.error(`[epigeneticFlagRoutes] Error in /definitions: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
-  }
-});
-
-/**
- * POST /api/flags/batch-evaluate
- * Batch evaluate flags for multiple horses (Admin only)
- *
- * @body {number[]} horseIds - Array of horse IDs to evaluate
- * @returns {Object} Batch evaluation results
- */
-router.post('/batch-evaluate', authenticateToken, validateBatchEvaluation, async (req, res) => {
-  try {
-    await batchEvaluateFlags(req, res);
-  } catch (error) {
-    logger.error(`[epigeneticFlagRoutes] Error in /batch-evaluate: ${error.message}`);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

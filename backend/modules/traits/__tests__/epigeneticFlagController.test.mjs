@@ -1,8 +1,9 @@
 /**
  * epigeneticFlagController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: getHorseFlags, getFlagDefinitions, batchEvaluateFlags,
- * getCarePatterns. (evaluateFlags and POST /flags/evaluate were removed by
+ * Covers: getHorseFlags, getFlagDefinitions, getCarePatterns. (batchEvaluateFlags
+ * and POST /flags/batch-evaluate were removed by owner ruling 2026-10-28, q203,
+ * Equoria-a7f1p; retiredTraitAdviceRoutes pins the 404.) (evaluateFlags and POST /flags/evaluate were removed by
  * Equoria-gu8jk — players never assign flags.)
  * Routes live under authRouter at /api/v1/flags.
  */
@@ -13,8 +14,7 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
-import { generateTestToken, generateAdminToken } from '../../../tests/helpers/authHelper.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -24,7 +24,6 @@ const ORIGIN = 'http://localhost:3000';
 
 let user;
 let token;
-let adminToken;
 let horse;
 const cleanup = createCleanupTracker();
 // Equoria-1ohys: ids of all fixture horses owned by `user` (the beforeAll
@@ -44,7 +43,6 @@ beforeAll(async () => {
     },
   });
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
-  adminToken = generateAdminToken();
 
   horse = await prisma.horse.create({
     data: {
@@ -189,82 +187,6 @@ describe('GET /api/v1/flags/horses/:id/care-patterns', () => {
     const res = await request(app).get(`/api/v1/flags/horses/${horse.id}/care-patterns`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
-  });
-});
-
-// ─── POST /api/v1/flags/batch-evaluate ──────────────────────────────────────────
-
-describe('POST /api/v1/flags/batch-evaluate', () => {
-  it('returns 403 for a regular user (admin only)', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/flags/batch-evaluate')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseIds: [horse.id] });
-
-    expect(res.status).toBe(403);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 401 without auth', async () => {
-    // No-auth request: bare CSRF (anonymous session). authenticateToken 401s
-    // before csrfProtection runs, so no accessToken-bound token is needed.
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post('/api/v1/flags/batch-evaluate')
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseIds: [horse.id] });
-
-    expect(res.status).toBe(401);
-  });
-
-  it('returns 200 for admin user with valid horse IDs (covers lines 216-260)', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${adminToken}`] });
-    const res = await request(app)
-      .post('/api/v1/flags/batch-evaluate')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseIds: [horse.id] });
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.summary).toBeDefined();
-    expect(typeof res.body.data.summary.totalHorses).toBe('number');
-    expect(Array.isArray(res.body.data.results)).toBe(true);
-  });
-
-  it('returns 400 for admin user with invalid (non-numeric) horse IDs', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${adminToken}`] });
-    const res = await request(app)
-      .post('/api/v1/flags/batch-evaluate')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseIds: ['notanumber'] });
-
-    // Validation middleware returns 400 before controller runs
-    expect(res.status).toBe(400);
-  });
-
-  it('returns 400 for admin user with empty horseIds array', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${adminToken}`] });
-    const res = await request(app)
-      .post('/api/v1/flags/batch-evaluate')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseIds: [] });
-
-    expect(res.status).toBe(400);
   });
 });
 

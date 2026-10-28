@@ -6,8 +6,8 @@
  * (modules/traits/services/traitRevealEngine.mjs). The weekly flag job
  * (Mondays 00:30) used to run the care-pattern evaluator over every horse under
  * 3, and its aloof rule fired on a foal nobody had touched: no interactions,
- * bond 0. That job is retired. The care-pattern evaluator stays reachable only
- * from the admin-only POST /api/flags/batch-evaluate (owner question q203 open).
+ * bond 0. That job is retired, and the admin-only POST /api/flags/batch-evaluate
+ * went too (owner ruling 2026-10-28, q203), so nothing runs the evaluator.
  *
  * Real database for the foal; the registry check runs every scheduled job's
  * thunk against a recording stub, so no job does any work.

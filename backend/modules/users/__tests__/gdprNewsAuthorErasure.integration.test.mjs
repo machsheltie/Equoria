@@ -8,7 +8,6 @@
  *   - eraseUserAccount() blanks the signature on every post the account wrote,
  *     inside the erasure transaction, and the author FK goes NULL with the
  *     user row (the page then signs the post "Equoria Staff");
- *   - buildUserDataExport() includes the posts the account wrote.
  * Posts by someone else are untouched.
  *
  * RED before the fix: the signature survives erasure and the export has no
@@ -22,7 +21,7 @@ import { randomBytes } from 'node:crypto';
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { buildUserDataExport, eraseUserAccount } from '../services/gdprAccountService.mjs';
+import { eraseUserAccount } from '../services/gdprAccountService.mjs';
 
 const PREFIX = 'TestFixture-wbt8l-gdpr';
 const tag = () => randomBytes(6).toString('hex');
@@ -91,23 +90,5 @@ describe('Equoria-wbt8l — News posts in GDPR export and erasure', () => {
     expect(untouched.authorName).toBe(staying.username);
     expect(untouched.authorRoleLabel).toBe('Admin');
     expect(untouched.authorUserId).toBe(staying.id);
-  });
-
-  it('the data export lists the posts the account wrote, and only those', async () => {
-    const writer = await makeStaff('writer', 'admin');
-    const someoneElse = await makeStaff('else', 'admin');
-    userIds.push(writer.id, someoneElse.id);
-    const mine = await letterBy(writer, `${PREFIX} mine`);
-    const notMine = await letterBy(someoneElse, `${PREFIX} not mine`);
-    postIds.push(mine.id, notMine.id);
-
-    const exported = await buildUserDataExport(writer.id);
-
-    expect(exported.newsPostsWritten.map(p => p.id)).toEqual([mine.id]);
-    expect(exported.newsPostsWritten[0]).toMatchObject({
-      title: `${PREFIX} mine`,
-      authorName: writer.username,
-      authorRoleLabel: 'Admin',
-    });
   });
 });

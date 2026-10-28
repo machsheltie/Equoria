@@ -9,20 +9,6 @@
  * requests are resolved so no request waits on a closed account (a pending
  * request also holds the mare's one-pending-request slot, ruling S7).
  */
-import prisma from '../../../../packages/database/prismaClient.mjs';
-
-/**
- * The user's breeding records, both sides, for the Article 15/20 export.
- *
- * @param {string} userId
- */
-export async function exportBreedingRecords(userId) {
-  const [asMareOwner, asStallionOwner] = await Promise.all([
-    prisma.breedingRecord.findMany({ where: { mareOwnerId: userId } }),
-    prisma.breedingRecord.findMany({ where: { stallionOwnerId: userId } }),
-  ]);
-  return { asMareOwner, asStallionOwner };
-}
 
 /**
  * Inside the erasure transaction, BEFORE the user row is deleted.

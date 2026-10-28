@@ -305,11 +305,16 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
     expect(res.status).toBe(403);
   });
 
-  it('POST /flags/batch-evaluate stays and still refuses a non-admin with 403', async () => {
-    const res = await send('post', '/api/v1/flags/batch-evaluate', owner.token, {
-      horseIds: [ownHorse.id],
-    });
+  // Old contract: POST /flags/batch-evaluate stayed (admin-only; a player got
+  // 403). Owner ruling 2026-10-28 (q203, Equoria-a7f1p): "Remove it" — traits
+  // reveal only through grooming days. Gone for the admin and the player alike.
+  it.each([
+    ['the admin', () => admin.token, () => adminHorse.id],
+    ['a player', () => owner.token, () => ownHorse.id],
+  ])('POST /flags/batch-evaluate is gone for %s (route-not-found 404)', async (_who, token, horseId) => {
+    const res = await send('post', '/api/v1/flags/batch-evaluate', token(), { horseIds: [horseId()] });
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
+    expect(res.body).toMatchObject({ success: false, message: 'Route not found' });
   });
 });

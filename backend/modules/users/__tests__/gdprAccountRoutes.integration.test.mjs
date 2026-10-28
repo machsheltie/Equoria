@@ -28,12 +28,8 @@
  * authenticated user's own userId.
  *
  * AC coverage:
- *   1. GET /api/v1/account/export returns the caller's own personal data
- *      (profile, horses, transactions) and NOTHING belonging to other users.
- *   2. Export is self-only — there is no path param, so a token only ever
- *      yields its own data (cross-user access is structurally impossible);
- *      an unauthenticated request is rejected (401 by authenticateToken —
- *      no CSRF pair is sent because auth runs before CSRF on this router).
+ *   1-2. (retired: GET /api/v1/account/export was removed by owner ruling
+ *      2026-10-28, q157, Equoria-a7f1p; accountDeletionClosed pins its 404.)
  *   3. (retired with Equoria-gfany — the password-confirmed route is closed.)
  *   4. `eraseUserAccount()` removes the user's PII + owned data and is
  *      idempotent (second call → { deleted: false }, never a throw).
@@ -106,89 +102,6 @@ describe('INTEGRATION: GDPR account export/delete (Equoria-s3rf)', () => {
   });
 
   afterAll(() => cleanup.run(), 120000);
-
-  describe('GET /api/v1/account/export — Right to Access', () => {
-    it('returns the caller own profile + horses and excludes other users data', async () => {
-      const ts = randomBytes(8).toString('hex');
-      const subject = await createTestUser({
-        username: `TestFixture_gdprexp_${ts}`,
-        email: `testfixture_gdprexp_${ts}@test.com`,
-        password: PASSWORD,
-      });
-      ids.users.push(subject.user.id);
-      const other = await createTestUser({
-        username: `TestFixture_gdproth_${ts}`,
-        email: `testfixture_gdproth_${ts}@test.com`,
-        password: PASSWORD,
-      });
-      ids.users.push(other.user.id);
-
-      // createTestHorse spreads fixtureColor() internally — no raw
-      // NULL-phenotype horse create (CONTRIBUTING.md Equoria-dm1i).
-      const subjectHorse = await createTestHorse({
-        name: `TestFixture-GdprSubjectHorse_${ts}`,
-        userId: subject.user.id,
-      });
-      ids.horses.push(subjectHorse.id);
-      const otherHorse = await createTestHorse({
-        name: `TestFixture-GdprOtherHorse_${ts}`,
-        userId: other.user.id,
-      });
-      ids.horses.push(otherHorse.id);
-
-      // Give the subject a transaction so the export proves it includes it.
-      const txn = await prisma.userTransaction.create({
-        data: {
-          userId: subject.user.id,
-          type: 'credit',
-          amount: 250,
-          category: 'testFixture',
-          description: `TestFixture-GdprExportTxn_${ts}`,
-        },
-      });
-      ids.transactions.push(txn.id);
-
-      // GET is a CSRF-safe method (csrfProtection only gates state-changing
-      // verbs), so no CSRF pair is needed here — Bearer auth only.
-      const res = await request(app)
-        .get('/api/v1/account/export')
-        .set('Authorization', `Bearer ${subject.token}`)
-        .set('Origin', ORIGIN);
-
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-
-      const data = res.body.data;
-      expect(data).toBeTruthy();
-
-      // Profile is the subject's, password is NOT exported
-      expect(data.profile.id).toBe(subject.user.id);
-      expect(data.profile.email).toBe(`testfixture_gdprexp_${ts}@test.com`);
-      expect(data.profile.password).toBeUndefined();
-
-      // Horses: subject's horse present, other user's horse absent
-      const horseIds = data.horses.map(h => h.id);
-      expect(horseIds).toContain(subjectHorse.id);
-      expect(horseIds).not.toContain(otherHorse.id);
-
-      // Transactions: the subject's seeded txn is present
-      const txnDescriptions = data.transactions.map(t => t.description);
-      expect(txnDescriptions).toContain(`TestFixture-GdprExportTxn_${ts}`);
-
-      // No record anywhere in the export references the other user's id
-      const serialized = JSON.stringify(data);
-      expect(serialized).not.toContain(other.user.id);
-    }, 120000);
-
-    it('rejects an unauthenticated export request (401)', async () => {
-      // No CSRF pair needed: the authRouter mounts authenticateToken BEFORE
-      // csrfProtection (backend/app/routers.mjs), so a credential-less
-      // request is 401'd by authenticateToken before CSRF ever runs (and
-      // GET is CSRF-exempt anyway).
-      const res = await request(app).get('/api/v1/account/export').set('Origin', ORIGIN);
-      expect(res.status).toBe(401);
-    }, 120000);
-  });
 
   // Equoria-gfany: players cannot delete their accounts, so POST
   // /api/v1/account/delete is closed (locked by
