@@ -117,6 +117,16 @@ beforeAll(async () => {
   cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
+  // Equoria-zwndw: the staff users this suite makes (admin, owner, moderator,
+  // player) and what their check-ins write. Left behind, a verified admin or
+  // owner is mailed by every later staff-ticket filing.
+  const staffScope = () => ({ in: staff.createdUserIds });
+  cleanup.add(() => prisma.staffActionLog.deleteMany({ where: { actorId: staffScope() } }), 'action log');
+  cleanup.add(() => prisma.notification.deleteMany({ where: { userId: staffScope() } }), 'staff notifications');
+  cleanup.add(() => prisma.staffCheckinCode.deleteMany({ where: { userId: staffScope() } }), 'checkin codes');
+  cleanup.add(() => prisma.staffTrustedDevice.deleteMany({ where: { userId: staffScope() } }), 'devices');
+  cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: staffScope() } }), 'refresh tokens');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: staffScope() } }), 'staff users');
 
   await prisma.showEntry.createMany({
     data: [calm, nervous].map(h => ({ showId: show.id, horseId: h.id, userId: owner.id, feePaid: 0 })),
