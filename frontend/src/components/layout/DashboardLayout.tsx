@@ -16,6 +16,7 @@ import { usePageBackground } from './PageBackground';
 import { SidebarNav } from './SidebarNav';
 import { BottomNav } from './BottomNav';
 import { NavPanel } from './NavPanel';
+import type { NavRealmId } from './navItems';
 import {
   ContextualBottomActionsProvider,
   useContextualBottomActionsHost,
@@ -77,6 +78,12 @@ const DashboardLayout: React.FC = () => {
   // Story 22-8 — viewport-driven nav shell
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [isNavOpen, setIsNavOpen] = useState(false);
+  // The realm a phone bottom-bar button opened (owner ruling q267); null = the whole menu.
+  const [navRealm, setNavRealm] = useState<NavRealmId | null>(null);
+  const openRealm = (realm: NavRealmId | null) => {
+    setNavRealm(realm);
+    setIsNavOpen(realm !== null);
+  };
 
   // Equoria-o5hub.5 (D-24) — single contextual bottom-action slot. Pages
   // register an action bar via <ContextualBottomActions>; while one is
@@ -109,7 +116,13 @@ const DashboardLayout: React.FC = () => {
 
         {/* Main column (top bar + content + footer + optional bottom nav spacer) */}
         <div className="flex-1 flex flex-col min-w-0">
-          <MainNavigation onOpenNav={() => setIsNavOpen(true)} hideHamburger={isDesktop} />
+          <MainNavigation
+            onOpenNav={() => {
+              setNavRealm(null);
+              setIsNavOpen(true);
+            }}
+            hideHamburger={isDesktop}
+          />
 
           <div
             className={cn(
@@ -188,10 +201,19 @@ const DashboardLayout: React.FC = () => {
         )}
 
         {/* Mobile-only bottom navigation bar (< 768px) */}
-        {!isDesktop && <BottomNav onMoreClick={() => setIsNavOpen(true)} />}
+        {!isDesktop && (
+          <BottomNav openRealm={isNavOpen ? navRealm : null} onRealmClick={openRealm} />
+        )}
 
-        {/* Full navigation overlay — opened by hamburger OR bottom-nav "More" */}
-        <NavPanel isOpen={isNavOpen} onClose={() => setIsNavOpen(false)} />
+        {/* Navigation overlay — the whole menu from the hamburger, one realm from the bottom bar */}
+        <NavPanel
+          isOpen={isNavOpen}
+          realm={navRealm}
+          onClose={() => {
+            setIsNavOpen(false);
+            setNavRealm(null);
+          }}
+        />
       </div>
     </ContextualBottomActionsProvider>
   );

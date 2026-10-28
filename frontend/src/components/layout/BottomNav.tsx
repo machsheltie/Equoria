@@ -1,22 +1,25 @@
 /**
- * BottomNav — Mobile-only (< 768px) 5-item tab bar (Story 22-8)
- *
- * Gold-dot indicator appears under the icon of the active route. The
- * "More" tab calls `onMoreClick` which opens the full hamburger panel
- * (NavPanel) instead of navigating.
+ * BottomNav — the phone (< 768px) bottom bar: the five realms (owner ruling
+ * 2026-10-28, q267), matching the main menu. Each realm opens its own list in
+ * the phone menu (NavPanel); the realm the player is in keeps a gold dot and
+ * is announced as the current location, so it is never shown by color alone.
  */
 
-import { Link, useLocation } from 'react-router';
+import { useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
-import { BOTTOM_NAV_ITEMS, isRouteActive } from './navItems';
+import '@/styles/navigation.css';
+import { currentRealmId, navRealms, type NavRealmId } from './navItems';
 
 interface BottomNavProps {
-  /** Handler for the "More" tab — typically opens the full NavPanel overlay. */
-  onMoreClick: () => void;
+  /** The realm whose list is open, if any. */
+  openRealm: NavRealmId | null;
+  /** Open (or, when it is already open, close) a realm's list. */
+  onRealmClick: (realm: NavRealmId | null) => void;
 }
 
-export function BottomNav({ onMoreClick }: BottomNavProps) {
+export function BottomNav({ openRealm, onRealmClick }: BottomNavProps) {
   const location = useLocation();
+  const here = currentRealmId(location.pathname, location.search);
 
   return (
     <nav
@@ -36,68 +39,48 @@ export function BottomNav({ onMoreClick }: BottomNavProps) {
         'flex items-stretch'
       )}
     >
-      {BOTTOM_NAV_ITEMS.map((item) => {
-        const active = isRouteActive(location.pathname, item.href);
-        const isMore = item.href === '#more';
-
-        const content = (
-          <div className="flex flex-col items-center justify-center gap-1 flex-1 h-full">
-            <item.Icon
-              className={cn(
-                'w-5 h-5',
-                active ? 'text-[var(--gold-primary)]' : 'text-[var(--text-secondary)]'
-              )}
-              aria-hidden="true"
-            />
-            <span
-              className={cn(
-                'text-[10px] tracking-wide',
-                active ? 'text-[var(--gold-light)]' : 'text-[var(--text-secondary)]'
-              )}
-            >
-              {item.name}
-            </span>
-            {active && (
-              <span
-                data-testid={`bottom-nav-active-dot-${item.href.replace('/', '')}`}
-                aria-hidden="true"
-                className="w-1.5 h-1.5 rounded-full bg-[var(--gold-primary)] shadow-[0_0_6px_var(--gold-primary)] absolute bottom-1"
-              />
-            )}
-          </div>
-        );
-
-        if (isMore) {
-          return (
-            <button
-              key={item.href}
-              type="button"
-              onClick={onMoreClick}
-              data-testid="bottom-nav-more"
-              aria-label="More navigation"
-              className={cn(
-                'relative flex-1 h-full',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)] focus-visible:ring-inset'
-              )}
-            >
-              {content}
-            </button>
-          );
-        }
-
+      {navRealms.map((realm) => {
+        const current = realm.id === here;
+        const open = realm.id === openRealm;
         return (
-          <Link
-            key={item.href}
-            to={item.href}
-            data-testid={`bottom-nav-${item.name.toLowerCase()}`}
-            aria-current={active ? 'page' : undefined}
+          <button
+            key={realm.id}
+            type="button"
+            onClick={() => onRealmClick(open ? null : realm.id)}
+            data-testid={`bottom-nav-${realm.id}`}
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            aria-current={current ? 'location' : undefined}
             className={cn(
-              'relative flex-1 h-full',
+              'nav-touch-target relative flex-1 h-full min-w-0',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)] focus-visible:ring-inset'
             )}
           >
-            {content}
-          </Link>
+            <span className="flex flex-col items-center justify-center gap-1 h-full">
+              <realm.Icon
+                className={cn(
+                  'w-5 h-5',
+                  current || open ? 'text-[var(--gold-primary)]' : 'text-[var(--text-secondary)]'
+                )}
+                aria-hidden="true"
+              />
+              <span
+                className={cn(
+                  'text-[10px] tracking-wide',
+                  current || open ? 'text-[var(--gold-light)]' : 'text-[var(--text-secondary)]'
+                )}
+              >
+                {realm.name}
+              </span>
+              {current && (
+                <span
+                  data-testid={`bottom-nav-active-dot-${realm.id}`}
+                  aria-hidden="true"
+                  className="w-1.5 h-1.5 rounded-full bg-[var(--gold-primary)] shadow-[0_0_6px_var(--gold-primary)] absolute bottom-1"
+                />
+              )}
+            </span>
+          </button>
         );
       })}
     </nav>

@@ -19,11 +19,22 @@ import { Link, useLocation } from 'react-router';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import '@/styles/navigation.css';
-import { navMenuHrefs, navRealms, currentMenuHref, type NavItem } from './navItems';
+import {
+  navMenuHrefs,
+  navRealms,
+  currentMenuHref,
+  type NavItem,
+  type NavRealmId,
+} from './navItems';
 
 interface NavPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * Show one realm's list only — what a realm on the phone bottom bar opens
+   * (owner ruling q267). Without it the whole menu is shown.
+   */
+  realm?: NavRealmId | null;
 }
 
 const focusableSelector =
@@ -42,7 +53,7 @@ function makeBackgroundInert(keep: HTMLElement): () => void {
   };
 }
 
-export function NavPanel({ isOpen, onClose }: NavPanelProps) {
+export function NavPanel({ isOpen, onClose, realm = null }: NavPanelProps) {
   const location = useLocation();
   const layerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -108,6 +119,9 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
 
   if (!isOpen) return null;
 
+  const shownRealms = realm ? navRealms.filter((each) => each.id === realm) : navRealms;
+  const label = realm && shownRealms[0] ? shownRealms[0].name : 'Navigation menu';
+
   const renderLink = (item: Pick<NavItem, 'name' | 'href' | 'Icon'>) => {
     const active = item.href === currentHref;
     return (
@@ -143,7 +157,7 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Navigation menu"
+        aria-label={label}
         className={cn(
           'fixed top-0 left-0 z-[var(--z-modal)] h-full w-72',
           'bg-[var(--glass-surface-heavy-bg)] backdrop-blur-xl',
@@ -173,24 +187,24 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
           </button>
         </div>
 
-        {/* The five realms, each followed by its places. */}
+        {/* The five realms (or the one a bottom-bar realm opened), each followed by its places. */}
         <nav className="flex-1 overflow-y-auto py-3 px-3">
-          {navRealms.map((realm) => {
-            const headingId = `nav-panel-${realm.id}`;
+          {shownRealms.map((shown) => {
+            const headingId = `nav-panel-${shown.id}`;
             return (
-              <section key={realm.id} className="nav-panel__realm" aria-labelledby={headingId}>
-                {realm.href ? (
+              <section key={shown.id} className="nav-panel__realm" aria-labelledby={headingId}>
+                {shown.href ? (
                   <div id={headingId}>
-                    {renderLink({ name: realm.name, href: realm.href, Icon: realm.Icon })}
+                    {renderLink({ name: shown.name, href: shown.href, Icon: shown.Icon })}
                   </div>
                 ) : (
                   <h2 id={headingId} className="nav-panel__realm-name">
-                    <realm.Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-                    {realm.name}
+                    <shown.Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                    {shown.name}
                   </h2>
                 )}
                 <ul className="nav-panel__places">
-                  {realm.items.map((item) => (
+                  {shown.items.map((item) => (
                     <li key={item.href}>{renderLink(item)}</li>
                   ))}
                 </ul>

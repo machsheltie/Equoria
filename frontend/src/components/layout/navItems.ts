@@ -8,7 +8,8 @@
  * only once its page exists; the ruling's Breeding Specialist, Equestrian Tailor,
  * Seasonal Events and Parades have no page yet and are left out until they do.
  *
- * Shared by SidebarNav (desktop), NavPanel (phone menu) and BottomNav.
+ * Shared by SidebarNav (desktop), NavPanel (phone menu) and BottomNav (the phone
+ * bottom bar, the same five realms: owner ruling q267).
  */
 
 import {
@@ -26,7 +27,6 @@ import {
   Users,
   User,
   Settings,
-  MoreHorizontal,
   Newspaper,
   BookOpen,
   Stethoscope,
@@ -145,21 +145,6 @@ export const navRealms: NavRealm[] = [
 export const navDestinations: NavItem[] = navRealms.flatMap((realm) => realm.items);
 
 /**
- * Bottom-nav configuration — 5 most-used items on mobile.
- * "More" opens the full menu (NavPanel).
- */
-export const BOTTOM_NAV_ITEMS: NavItem[] = [
-  { name: 'Home', href: '/', Icon: Home },
-  { name: 'Horses', href: '/stable', Icon: Building2 },
-  { name: 'Compete', href: '/competitions', Icon: Trophy },
-  // The Breeding Hall is gone (owner ruling q89): breeding lives on the
-  // stallion's page and studs are found in the Marketplace, one of the five
-  // approved realms (PRODUCT.md, Approved global navigation).
-  { name: 'Market', href: '/marketplace', Icon: ShoppingCart },
-  { name: 'More', href: '#more', Icon: MoreHorizontal },
-];
-
-/**
  * Helpers used by active-state indicators.
  */
 export function isRouteActive(pathname: string, href: string): boolean {
@@ -198,3 +183,12 @@ export const navMenuHrefs: string[] = navRealms.flatMap((realm) => [
   ...(realm.href ? [realm.href] : []),
   ...realm.items.map((item) => item.href),
 ]);
+
+/** The realm the player is in: the one whose page or places holds the current link. */
+export function currentRealmId(pathname: string, search: string): NavRealmId | undefined {
+  const href = currentMenuHref(pathname, search, navMenuHrefs);
+  if (!href) return undefined;
+  return navRealms.find(
+    (realm) => realm.href === href || realm.items.some((item) => item.href === href)
+  )?.id;
+}

@@ -101,12 +101,11 @@ test.describe('MobileNav — phone (375×812)', () => {
     const bottomNav = page.getByTestId('bottom-nav');
     await expect(bottomNav).toBeVisible({ timeout: 15000 });
 
-    // Links: Home, Horses, Compete, Breed + "More" button
-    await expect(page.getByTestId('bottom-nav-home')).toBeVisible();
-    await expect(page.getByTestId('bottom-nav-horses')).toBeVisible();
-    await expect(page.getByTestId('bottom-nav-compete')).toBeVisible();
-    await expect(page.getByTestId('bottom-nav-breed')).toBeVisible();
-    await expect(page.getByTestId('bottom-nav-more')).toBeVisible();
+    // Owner ruling q267 (2026-10-28): the five realms, matching the menu. Old
+    // contract: Home, Horses, Compete, Breed links and a More button.
+    for (const realm of ['home', 'world', 'community', 'marketplace', 'compete']) {
+      await expect(page.getByTestId(`bottom-nav-${realm}`)).toBeVisible();
+    }
   });
 
   test('22-8-E2E-006: active tab shows gold-dot indicator on home route', async ({ page }) => {
@@ -115,9 +114,8 @@ test.describe('MobileNav — phone (375×812)', () => {
     // Wait for bottom nav to mount before checking the active-dot child.
     await expect(page.getByTestId('bottom-nav')).toBeVisible({ timeout: 15000 });
 
-    // Home is active on `/` — gold dot testid is `bottom-nav-active-dot-${href.replace('/', '')}`
-    // which for href '/' becomes the empty-suffix `bottom-nav-active-dot-`.
-    await expect(page.getByTestId('bottom-nav-active-dot-')).toBeVisible({ timeout: 5000 });
+    // Home is the realm the player is in on `/` (q267: the dot is per realm).
+    await expect(page.getByTestId('bottom-nav-active-dot-home')).toBeVisible({ timeout: 5000 });
   });
 
   test('22-8-E2E-007: hamburger opens NavPanel overlay', async ({ page }) => {
@@ -134,14 +132,16 @@ test.describe('MobileNav — phone (375×812)', () => {
     await expect(page.getByRole('dialog', { name: 'Navigation menu' })).not.toBeVisible();
   });
 
-  test('22-8-E2E-008: bottom-nav "More" button opens the same NavPanel overlay', async ({
-    page,
-  }) => {
+  // Owner ruling q267: a bottom-bar realm opens its own list. Old contract: a
+  // "More" button opened the whole menu.
+  test('22-8-E2E-008: a bottom-bar realm opens its own list', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-    const moreBtn = page.getByTestId('bottom-nav-more');
-    await expect(moreBtn).toBeVisible({ timeout: 15000 });
-    await moreBtn.click();
-    await expect(page.getByRole('dialog', { name: 'Navigation menu' })).toBeVisible();
+    const world = page.getByTestId('bottom-nav-world');
+    await expect(world).toBeVisible({ timeout: 15000 });
+    await world.click();
+    const list = page.getByRole('dialog', { name: 'World' });
+    await expect(list).toBeVisible();
+    await expect(list.getByRole('link', { name: 'Vet Clinic', exact: true })).toBeVisible();
   });
 });
