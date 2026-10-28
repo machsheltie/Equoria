@@ -324,7 +324,9 @@ const HorseDetailPage: React.FC = () => {
                 </Suspense>
               </TabsContent>
               <TabsContent value="conformation" className="mt-0 p-6">
-                <ConformationTab horseId={horse.id} />
+                {/* Equoria-uvgsz (audit HP-06): the horse's breed, so the tab can
+                    compare its scores with the breed average. */}
+                <ConformationTab horseId={horse.id} breedId={horse.breedId} />
               </TabsContent>
               <TabsContent value="gaits" className="mt-0 p-6">
                 <GaitsTab horseId={horse.id} />

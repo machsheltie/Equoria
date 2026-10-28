@@ -99,7 +99,9 @@ export function useBreedAverages(breedId: string | number): UseQueryResult<Breed
   return useQuery({
     queryKey: ['breed', String(breedId), 'conformation-averages'],
     queryFn: () => horsesApi.getBreedAverages(breedId),
-    enabled: breedId !== null && breedId !== undefined && breedId !== '',
+    // Equoria-uvgsz (audit HP-06): no breed (0 or empty) means no read at all;
+    // a request for breed 0 only ever failed.
+    enabled: Boolean(breedId) && breedId !== '0',
     staleTime: 60 * 60 * 1000, // 1 hour (breed data rarely changes)
     gcTime: 24 * 60 * 60 * 1000, // 24 hours
   });
