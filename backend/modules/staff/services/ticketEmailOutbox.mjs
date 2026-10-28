@@ -9,10 +9,18 @@
  *
  * Each attempt claims one row at a time (FOR UPDATE SKIP LOCKED, attempts + 1,
  * claimedAt = now), then sends through the real email service. A claim older
- * than LEASE_MS belongs to a worker that died; the next run retakes it. Two
- * workers never hold the same row, so a send is never duplicated except when
- * the process dies after the provider accepted the message and before the row
- * is marked sent (no mail provider here offers an idempotent send).
+ * than LEASE_MS belongs to a worker that died; the next run retakes it as the
+ * same attempt (STAFF-RR-02), so a crash before the send never uses up one of
+ * the MAX_ATTEMPTS. Two workers never hold the same row, so a send is never
+ * duplicated except when the process dies after the provider accepted the
+ * message and before the row is marked sent (no mail provider here offers an
+ * idempotent send).
+ *
+ * The recipient is re-read under a shared lock on their user row, held through
+ * the send (STAFF-RR-06): a demotion or email change waits for an in-flight
+ * send, and a send waits for an in-flight change and then reads its result, so
+ * no alert goes to an admin already demoted or to an address already replaced.
+ * The email service's own timeouts end every send well inside sendTxTimeoutMs.
  *
  * A failed send waits BACKOFF_MS before the next try; the MAX_ATTEMPTS-th
  * failure ends the row as `failed`, logged as an error and counted in the
@@ -27,8 +35,20 @@ import { sendStaffTicketEmail } from '../../../utils/emailService.mjs';
 import { hasCapability } from '../capabilities.mjs';
 
 export const MAX_ATTEMPTS = 5;
-/** Longer than either transport can hang (nodemailer's socket timeout is 10 min). */
+/** Far longer than one send can take (see sendTxTimeoutMs). */
 export const LEASE_MS = 15 * 60 * 1000;
+/**
+ * Most one send may hold the recipient's row lock. Both transports give up
+ * long before (emailService SMTP timeouts, the Gmail transport's per-stage
+ * timeout), and it is well inside the lease.
+ */
+const sendTxTimeoutMs = 3 * 60 * 1000;
+/**
+ * A scheduled run stops claiming once this long has passed since its first
+ * claim (STAFF-RR-08), so with the one send still in flight it ends inside the
+ * job's 5-minute period; what it did not reach stays due for the next run.
+ */
+export const runBudgetMs = 3 * 60 * 1000;
 /** Wait after the 1st, 2nd, 3rd and 4th failed attempt. */
 const BACKOFF_MS = [60 * 1000, 5 * 60 * 1000, 15 * 60 * 1000, 60 * 60 * 1000];
 /** Most rows one run delivers; the rest wait for the next run. */
@@ -82,7 +102,9 @@ export async function claimDueEmails({ now = new Date(), keys = null } = {}) {
   // never mistaken for values.
   return prisma.$queryRaw(Prisma.sql`
     UPDATE email_outbox AS o
-    SET status = 'sending', "claimedAt" = ${utc(now)}, attempts = o.attempts + 1,
+    SET status = 'sending', "claimedAt" = ${utc(now)},
+        -- Retaking a lapsed claim resumes the attempt its worker never finished.
+        attempts = CASE WHEN o.status = 'sending' THEN o.attempts ELSE o.attempts + 1 END,
         "updatedAt" = ${utc(now)}
     FROM (
       SELECT id FROM email_outbox
@@ -115,6 +137,43 @@ const stillWanted = user =>
   hasCapability(user.role, 'ticket.resolve');
 
 /**
+ * STAFF-RR-06: check the recipient and send to the address read, holding a
+ * shared lock on their user row from the check until the send ends. Every
+ * role or email change updates that row, so it waits for this send, and this
+ * send waits for a change already in flight and reads what it committed.
+ * @returns {Promise<{ cancelled?: true, sent?: true, error?: unknown }>}
+ */
+async function sendUnderRecipientLock(recipientId, details) {
+  let outcome = null;
+  try {
+    await prisma.$transaction(
+      async tx => {
+        const [user] = await tx.$queryRaw`
+          SELECT email, "emailVerified", role FROM "User" WHERE id = ${recipientId} FOR SHARE`;
+        if (!stillWanted(user)) {
+          outcome = { cancelled: true };
+          return;
+        }
+        try {
+          await sendStaffTicketEmail(user.email, details);
+          outcome = { sent: true };
+        } catch (error) {
+          outcome = { error };
+        }
+      },
+      { timeout: sendTxTimeoutMs },
+    );
+  } catch (error) {
+    // A send that finished stands even if releasing the lock failed; without
+    // one, the row keeps its claim and the lease hands it to a later run.
+    if (!outcome) {
+      throw error;
+    }
+  }
+  return outcome;
+}
+
+/**
  * Deliver one claimed row; returns the summary bucket it lands in. Logs come
  * before the row's final write, so nothing of this delivery runs after the
  * row is seen settled.
@@ -138,23 +197,15 @@ async function deliver(row, clock) {
   if (!details) {
     return fail(`unusable ${row.templateKey} payload`);
   }
-  if (row.attempts > MAX_ATTEMPTS) {
-    // Retaken after a worker died during the final attempt.
-    return fail('worker stopped during the final attempt');
-  }
-  const user = await prisma.user.findUnique({
-    where: { id: row.recipientId },
-    select: { email: true, emailVerified: true, role: true },
-  });
-  if (!stillWanted(user)) {
+  const outcome = await sendUnderRecipientLock(row.recipientId, details);
+  if (outcome.cancelled) {
     logger.info(`[emailOutbox] ${row.idempotencyKey} cancelled: recipient no longer an admin`);
     await finish({ status: 'cancelled', lastError: 'recipient is no longer a verified admin' });
     return 'cancelled';
   }
 
-  try {
-    await sendStaffTicketEmail(user.email, details);
-  } catch (error) {
+  if (outcome.error) {
+    const { error } = outcome;
     // Equoria-5vyuh: a provider error can name the recipient; mask before log/store.
     const message = maskEmailsInText(String(error?.message ?? error)).slice(0, ERROR_TEXT_LIMIT);
     if (row.attempts >= MAX_ATTEMPTS) {
@@ -186,13 +237,25 @@ async function deliver(row, clock) {
  * claim and every backoff, so each row's lease starts just before its own
  * send however long earlier rows took (STAFF-CR-10 review). `clock` is a test
  * override; `keys` limits the run to those rows (the post-commit kick), and
- * the run stops once each of them has been claimed.
+ * the run stops once each of them has been claimed. A scheduled run (no keys)
+ * also stops claiming after `budgetMs` from its first claim (STAFF-RR-08); a
+ * kick is bounded by its own few rows.
  */
-export async function runEmailOutbox({ clock = () => new Date(), keys = null } = {}) {
+export async function runEmailOutbox({
+  clock = () => new Date(),
+  keys = null,
+  budgetMs = keys ? Infinity : runBudgetMs,
+} = {}) {
   const summary = { claimed: 0, sent: 0, retrying: 0, failed: 0, cancelled: 0 };
   const limit = keys ? Math.min(keys.length, MAX_PER_RUN) : MAX_PER_RUN;
+  let startedAt = null;
   while (summary.claimed < limit) {
-    const [row] = await claimDueEmails({ now: clock(), keys });
+    const now = clock();
+    startedAt ??= now.getTime();
+    if (now.getTime() - startedAt >= budgetMs) {
+      break;
+    }
+    const [row] = await claimDueEmails({ now, keys });
     if (!row) {
       break;
     }

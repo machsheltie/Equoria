@@ -39,6 +39,13 @@ const EMAIL_CONFIG = {
   SUPPORT_EMAIL,
 };
 
+/** SMTP connect, greeting and idle-socket limits, in ms. */
+const smtpTimeouts = Object.freeze({
+  connectionTimeout: 10_000,
+  greetingTimeout: 10_000,
+  socketTimeout: 30_000,
+});
+
 // Cached transporter (lazy-initialized so import-time doesn't fail).
 let cachedTransporter = null;
 
@@ -83,6 +90,10 @@ function getTransporter() {
     port: Number(port),
     secure: Number(port) === 465,
     auth: { user, pass },
+    // Explicit limits (STAFF-RR-06/08): nodemailer's defaults wait 2 minutes to
+    // connect, 30 s for the greeting and 10 minutes on an idle socket, which
+    // let one dead server hold the staff email outbox past its schedule.
+    ...smtpTimeouts,
   });
   return cachedTransporter;
 }

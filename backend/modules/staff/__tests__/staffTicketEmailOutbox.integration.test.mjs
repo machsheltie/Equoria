@@ -5,7 +5,7 @@
  * Filing writes one email-outbox row per admin in the ticket's transaction.
  * After commit the filing kicks a delivery; the scheduled worker delivers
  * whatever that kick did not (a restart, a dead mail server), retries with
- * backoff, and gives up as `failed` after MAX_ATTEMPTS. A worker that dies
+ * backoff, and gives up as `failed` after maxAttempts. A worker that dies
  * mid-send leaves its row claimed until the lease runs out; one later worker
  * then takes it, and the email goes once.
  *
@@ -17,16 +17,23 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import http from 'node:http';
+import net from 'node:net';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import {
+  createBarrierClient,
+  openRowLockBarrier,
+  waitForBlockedSessions,
+} from '../../../__tests__/helpers/rowLockBarrier.mjs';
 import { _resetTransporter } from '../../../utils/emailService.mjs';
 import cronJobService from '../../../services/cronJobs.mjs';
 import { eraseUserAccount } from '../../users/index.mjs';
 import {
   FAILED_RETENTION_MS,
   FORMER_STEWARD,
-  LEASE_MS,
-  MAX_ATTEMPTS,
+  LEASE_MS as leaseMs,
+  MAX_ATTEMPTS as maxAttempts,
+  runBudgetMs,
   SENT_RETENTION_MS,
   claimDueEmails,
   enqueueTicketEmailsTx,
@@ -99,7 +106,7 @@ async function withMail(values, fn) {
 }
 
 // SMTP on a port nothing listens on: every send is a real ECONNREFUSED.
-const REFUSED_SMTP = { SMTP_HOST: '127.0.0.1', SMTP_PORT: '1', SMTP_USER: 'nobody', SMTP_PASS: 'nothing' };
+const refusedSmtp = { SMTP_HOST: '127.0.0.1', SMTP_PORT: '1', SMTP_USER: 'nobody', SMTP_PASS: 'nothing' };
 
 // A local "Google" that accepts connections and never answers.
 const googleSockets = new Set();
@@ -109,6 +116,17 @@ silentGoogle.on('connection', socket => {
   socket.on('error', () => {});
   socket.on('close', () => googleSockets.delete(socket));
 });
+
+// An SMTP server that accepts connections and never sends its greeting.
+const smtpSockets = new Set();
+const silentSmtp = net.createServer(socket => {
+  smtpSockets.add(socket);
+  socket.on('error', () => {});
+  socket.on('close', () => smtpSockets.delete(socket));
+});
+
+// A second client holds the race tests' row locks (rowLockBarrier.mjs).
+const barrierClient = createBarrierClient();
 
 async function staffPair() {
   const admin = await makeUser('admin');
@@ -129,7 +147,7 @@ const at = date => () => date;
  */
 async function fileWhileSmtpRefuses(admin, mod, modDevice) {
   const send = await preparePost(TICKETS, mod, goodTicket(), modDevice);
-  return withMail(REFUSED_SMTP, async () => {
+  return withMail(refusedSmtp, async () => {
     const res = await send();
     expect(res.status).toBe(201);
     const rows = await settledTicketEmails(res.body.ticket.id);
@@ -141,6 +159,7 @@ async function fileWhileSmtpRefuses(admin, mod, modDevice) {
 
 beforeAll(async () => {
   await new Promise(resolve => silentGoogle.listen(0, '127.0.0.1', resolve));
+  await new Promise(resolve => silentSmtp.listen(0, '127.0.0.1', resolve));
   const scope = () => ({ in: createdUserIds });
   // Test teardown of rows this suite created.
   const tickets = () => ({ OR: [{ filedById: scope() }, { id: { in: erasedFilerTickets } }] });
@@ -162,6 +181,11 @@ afterAll(async () => {
     socket.destroy();
   }
   await new Promise(resolve => silentGoogle.close(resolve));
+  for (const socket of smtpSockets) {
+    socket.destroy();
+  }
+  await new Promise(resolve => silentSmtp.close(resolve));
+  await barrierClient.$disconnect();
   await cleanup.run();
 }, 60_000);
 
@@ -214,19 +238,19 @@ describe('Ticket email outbox (STAFF-CR-10)', () => {
     expect(await outboxRow(row.idempotencyKey)).toMatchObject({ status: 'sending', attempts: 2 });
 
     // Inside the lease no other worker touches it.
-    const insideLease = new Date(claimedAt.getTime() + LEASE_MS - 1000);
+    const insideLease = new Date(claimedAt.getTime() + leaseMs - 1000);
     expect((await runEmailOutbox({ clock: at(insideLease), keys })).claimed).toBe(0);
     expect(capturedTicketEmailsFor(admin.email)).toHaveLength(0);
 
     // After the lease two workers race for it; exactly one sends.
-    const afterLease = new Date(claimedAt.getTime() + LEASE_MS + 1000);
+    const afterLease = new Date(claimedAt.getTime() + leaseMs + 1000);
     const runs = await Promise.all([
       runEmailOutbox({ clock: at(afterLease), keys }),
       runEmailOutbox({ clock: at(afterLease), keys }),
     ]);
     expect(runs.reduce((total, run) => total + run.sent, 0)).toBe(1);
     expect(capturedTicketEmailsFor(admin.email)).toHaveLength(1);
-    expect(await outboxRow(row.idempotencyKey)).toMatchObject({ status: 'sent', attempts: 3 });
+    expect(await outboxRow(row.idempotencyKey)).toMatchObject({ status: 'sent', attempts: 2 });
 
     // Later runs find nothing to do.
     const muchLater = new Date(afterLease.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -236,15 +260,15 @@ describe('Ticket email outbox (STAFF-CR-10)', () => {
     // The same ticket and recipient never get a second row.
     await prisma.$transaction(tx => enqueueTicketEmailsTx(tx, [{ id: admin.id }], row.payload));
     expect(await prisma.emailOutbox.count({ where: { idempotencyKey: row.idempotencyKey } })).toBe(1);
-    expect(await outboxRow(row.idempotencyKey)).toMatchObject({ status: 'sent', attempts: 3 });
+    expect(await outboxRow(row.idempotencyKey)).toMatchObject({ status: 'sent', attempts: 2 });
   });
 
-  it('ends a permanently failing email as failed after MAX_ATTEMPTS, keeping the ticket and the bell', async () => {
+  it('ends a permanently failing email as failed after maxAttempts, keeping the ticket and the bell', async () => {
     const { admin, mod, modDevice } = await staffPair();
     const { ticket, row: first } = await fileWhileSmtpRefuses(admin, mod, modDevice);
     const keys = [first.idempotencyKey];
 
-    await withMail(REFUSED_SMTP, async () => {
+    await withMail(refusedSmtp, async () => {
       let row = first;
       let summary = null;
       while (row.status === 'pending') {
@@ -252,7 +276,7 @@ describe('Ticket email outbox (STAFF-CR-10)', () => {
         row = await outboxRow(first.idempotencyKey);
       }
       expect(summary).toMatchObject({ claimed: 1, sent: 0, failed: 1 });
-      expect(row).toMatchObject({ status: 'failed', attempts: MAX_ATTEMPTS, sentAt: null });
+      expect(row).toMatchObject({ status: 'failed', attempts: maxAttempts, sentAt: null });
       expect(row.lastError).toMatch(/ECONNREFUSED/);
 
       // A failed email stays failed.
@@ -316,6 +340,119 @@ describe('Ticket email outbox (STAFF-CR-10)', () => {
     );
   });
 
+  // STAFF-RR-02 (Equoria-dqvg7): a worker that dies between claim and send has
+  // not tried to send, so the retake resumes that attempt instead of using one up.
+  it('still delivers after a worker dies before sending, maxAttempts times over', async () => {
+    const { admin, mod, modDevice } = await staffPair();
+    const { row } = await fileWhileSmtpRefuses(admin, mod, modDevice);
+    const keys = [row.idempotencyKey];
+
+    let claimAt = justAfter(row.nextAttemptAt);
+    for (let crash = 0; crash < maxAttempts; crash += 1) {
+      expect(await claimDueEmails({ now: claimAt, keys })).toHaveLength(1);
+      claimAt = new Date(claimAt.getTime() + leaseMs + 1000);
+    }
+    // One send was tried (the kick's); the second attempt never reached one.
+    expect(await outboxRow(row.idempotencyKey)).toMatchObject({ status: 'sending', attempts: 2 });
+
+    const summary = await runEmailOutbox({ clock: at(claimAt), keys });
+    expect(summary).toMatchObject({ claimed: 1, sent: 1, failed: 0 });
+    expect(await outboxRow(row.idempotencyKey)).toMatchObject({ status: 'sent', attempts: 2 });
+    expect(capturedTicketEmailsFor(admin.email)).toHaveLength(1);
+  });
+
+  // STAFF-RR-08 (Equoria-bq0oi): a slow mail server cannot keep a run going past
+  // its budget; what it did not reach stays due for the next run.
+  it('stops claiming once the run budget is spent, leaving the rest due', async () => {
+    const { admin, mod, modDevice } = await staffPair();
+    const rows = [];
+    for (let i = 0; i < 3; i += 1) {
+      rows.push((await fileWhileSmtpRefuses(admin, mod, modDevice)).row);
+    }
+    const keys = rows.map(row => row.idempotencyKey);
+    const start = justAfter(new Date(Math.max(...rows.map(row => row.nextAttemptAt.getTime()))));
+    // Every reading is two minutes after the last, as if each send were slow.
+    let readings = 0;
+    const clock = () => new Date(start.getTime() + readings++ * 2 * 60 * 1000);
+
+    const summary = await withMail(refusedSmtp, () => runEmailOutbox({ clock, keys, budgetMs: runBudgetMs }));
+
+    // Claim at 0, backoff at 2 min, next claim would be at 4 min: past budget.
+    expect(summary).toMatchObject({ claimed: 1, retrying: 1 });
+    const after = await Promise.all(keys.map(outboxRow));
+    expect(after.filter(row => row.attempts === 2)).toHaveLength(1);
+    const untouched = after.filter(row => row.attempts === 1);
+    expect(untouched).toHaveLength(2);
+    for (const row of untouched) {
+      expect(row.status).toBe('pending');
+      expect(row.nextAttemptAt.getTime()).toBeLessThan(start.getTime());
+    }
+    // The scheduled run's budget leaves room for one in-flight send in its 5-minute period.
+    expect(runBudgetMs).toBeLessThanOrEqual(3 * 60 * 1000);
+  });
+
+  // STAFF-RR-08 / STAFF-RR-06: an SMTP server that never greets is given up on
+  // in seconds (nodemailer's own default waits 30 s for the greeting and
+  // 10 minutes on an idle socket).
+  it('gives up on an SMTP server that never answers within seconds', async () => {
+    const { admin, mod, modDevice } = await staffPair();
+    const { row } = await fileWhileSmtpRefuses(admin, mod, modDevice);
+    const silent = { ...refusedSmtp, SMTP_PORT: String(silentSmtp.address().port) };
+
+    const started = Date.now();
+    const summary = await withMail(silent, () =>
+      runEmailOutbox({ clock: at(justAfter(row.nextAttemptAt)), keys: [row.idempotencyKey] }),
+    );
+
+    expect(Date.now() - started).toBeLessThan(20_000);
+    expect(summary).toMatchObject({ claimed: 1, retrying: 1 });
+    expect((await outboxRow(row.idempotencyKey)).lastError).toMatch(/greeting|timeout/i);
+  }, 40_000);
+
+  // STAFF-RR-06 (Equoria-aexiz): the recipient is re-read under a lock that
+  // role and email changes also need, so a change in flight is waited for.
+  describe('a role or email change in flight when the email comes due', () => {
+    /** Hold `change` uncommitted, start the delivery, see it wait, then commit. */
+    async function deliverDuring(change, row) {
+      const barrier = await openRowLockBarrier(barrierClient, change);
+      const delivery = runEmailOutbox({ clock: at(justAfter(row.nextAttemptAt)), keys: [row.idempotencyKey] });
+      try {
+        await waitForBlockedSessions(barrierClient, barrier.pid, 1, 5000);
+      } finally {
+        await barrier.release();
+      }
+      return delivery;
+    }
+
+    it('cancels instead of mailing an admin whose demotion was committing', async () => {
+      const { admin, mod, modDevice } = await staffPair();
+      const { row } = await fileWhileSmtpRefuses(admin, mod, modDevice);
+
+      const summary = await deliverDuring(
+        tx => tx.user.update({ where: { id: admin.id }, data: { role: 'moderator' } }),
+        row,
+      );
+
+      expect(summary).toMatchObject({ claimed: 1, sent: 0, cancelled: 1 });
+      expect(capturedTicketEmailsFor(admin.email)).toHaveLength(0);
+    });
+
+    it('mails the new address, never the old one, when an email change was committing', async () => {
+      const { admin, mod, modDevice } = await staffPair();
+      const { row } = await fileWhileSmtpRefuses(admin, mod, modDevice);
+      const newEmail = `moved-${uid()}@example.com`;
+
+      const summary = await deliverDuring(
+        tx => tx.user.update({ where: { id: admin.id }, data: { email: newEmail } }),
+        row,
+      );
+
+      expect(summary).toMatchObject({ claimed: 1, sent: 1 });
+      expect(capturedTicketEmailsFor(admin.email)).toHaveLength(0);
+      expect(capturedTicketEmailsFor(newEmail)).toHaveLength(1);
+    });
+  });
+
   it('cancels an email whose recipient is no longer an admin when it comes due', async () => {
     const { admin, mod, modDevice } = await staffPair();
     const { row } = await fileWhileSmtpRefuses(admin, mod, modDevice);
@@ -344,7 +481,7 @@ describe('Ticket email outbox (STAFF-CR-10)', () => {
       return reading;
     };
 
-    const summary = await withMail(REFUSED_SMTP, () => runEmailOutbox({ clock, keys }));
+    const summary = await withMail(refusedSmtp, () => runEmailOutbox({ clock, keys }));
     expect(summary).toMatchObject({ claimed: 2, retrying: 2 });
 
     // Reading order: claim 1, backoff 1, claim 2, backoff 2. The second
