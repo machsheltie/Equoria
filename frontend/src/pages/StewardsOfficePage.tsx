@@ -10,8 +10,8 @@
  *
  * - /me decides everything. Untrusted browser → check in by email code.
  *   Trusted → the areas the account's capabilities allow.
- * - If any area is refused with STAFF_CHECKIN_REQUIRED (the 30-day trust ran
- *   out mid-visit), the page returns to check-in.
+ * - If any area or action is refused with STAFF_CHECKIN_REQUIRED (the 30-day
+ *   trust ran out mid-visit), the page returns to check-in.
  * - If any area or action gets a 404, /me is asked again at once; a steward
  *   revoked mid-visit then gets /me's 404 and the gate replaces the office
  *   with the not-found page in place.
@@ -36,9 +36,9 @@ import NotFoundPage from './NotFoundPage';
 export default function StewardsOfficePage() {
   const { user } = useAuth();
   const me = useGatedStaffMe();
-  useStaffRevocationWatch();
   const [checkinLapsed, setCheckinLapsed] = useState(false);
   const onCheckinRequired = useCallback(() => setCheckinLapsed(true), []);
+  useStaffRevocationWatch(onCheckinRequired);
   const onCheckedIn = useCallback(() => setCheckinLapsed(false), []);
 
   // The gate mounts the office only with a steward's /me in hand. A failed

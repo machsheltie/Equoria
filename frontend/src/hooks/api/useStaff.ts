@@ -7,7 +7,7 @@
  * nothing is defaulted.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   staffApi,
@@ -33,13 +33,16 @@ export const staffKeys = {
   ticket: (id: number) => ['staff', 'tickets', id] as const,
 };
 
+/** The code a capability-guarded route refuses with when this browser is not checked in. */
+export const checkinRequiredCode = 'STAFF_CHECKIN_REQUIRED';
+
 /** The refusal a capability-guarded route gives when this browser is not checked in. */
 export function isCheckinRequired(error: unknown): boolean {
   return (
     typeof error === 'object' &&
     error !== null &&
     (error as ApiError).statusCode === 403 &&
-    (error as ApiError).code === 'STAFF_CHECKIN_REQUIRED'
+    (error as ApiError).code === checkinRequiredCode
   );
 }
 
@@ -55,9 +58,17 @@ export function statusOf(error: unknown): number | undefined {
  * moderator revoked mid-visit), or at least that /me is worth asking again.
  * Re-read /me at once so a revoked steward is sent home now, not at the next
  * background refetch. /me's own 404 is the page's job and is not watched.
+ *
+ * An action refused because this browser's check-in has lapsed (403
+ * STAFF_CHECKIN_REQUIRED) calls `onCheckinRequired`, so the page returns to
+ * check-in as it does when a read is refused that way (STAFF-RR-11).
  */
-export function useStaffRevocationWatch() {
+export function useStaffRevocationWatch(onCheckinRequired?: () => void) {
   const queryClient = useQueryClient();
+  const checkinRequired = useRef(onCheckinRequired);
+  useEffect(() => {
+    checkinRequired.current = onCheckinRequired;
+  }, [onCheckinRequired]);
   useEffect(() => {
     const recheckOn404 = (error: unknown) => {
       if (statusOf(error) === 404) {
@@ -82,6 +93,9 @@ export function useStaffRevocationWatch() {
         event.mutation.options.mutationKey?.[0] === staffKeys.all[0]
       ) {
         recheckOn404(event.action.error);
+        if (isCheckinRequired(event.action.error)) {
+          checkinRequired.current?.();
+        }
       }
     });
     return () => {
