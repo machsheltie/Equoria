@@ -40,7 +40,6 @@ import weeklyRiderTrainerCareerJob from './weeklyRiderTrainerCareerJob.mjs';
 import electionTransitionJob from './electionTransitionJob.mjs';
 import nightlyShowExecutionJob from './nightlyShowExecutionJob.mjs';
 import auditLogRetentionJob from './auditLogRetentionJob.mjs';
-import temporaryFlagExpiryJob from './temporaryFlagExpiryJob.mjs';
 import docCoverageSnapshotJob from './docCoverageSnapshotJob.mjs';
 import cronRunLogRetentionJob from './cronRunLogRetentionJob.mjs';
 import showExecutionReaperJob from './showExecutionReaperJob.mjs';
@@ -78,6 +77,8 @@ import nightlyTraitRevealJob from './nightlyTraitRevealJob.mjs';
  * weeklyFlagEvaluation (Mondays 00:30) was removed (Equoria-koxep; owner rulings
  * 2026-10-27, q112-q118): it turned a foal's weekly care pattern into traits,
  * and traits now change only through the nightly reveal ladder above.
+ * temporaryFlagExpiry (daily 00:20) was removed with the temporary flags it swept
+ * (Equoria-kqdde; owner ruling 2026-10-22 on Equoria-q4uem.17).
  */
 export const CRON_JOB_REGISTRY = Object.freeze([
   dailyTraitJob,
@@ -87,7 +88,6 @@ export const CRON_JOB_REGISTRY = Object.freeze([
   electionTransitionJob,
   nightlyShowExecutionJob,
   auditLogRetentionJob,
-  temporaryFlagExpiryJob,
   docCoverageSnapshotJob,
   cronRunLogRetentionJob,
   showExecutionReaperJob,

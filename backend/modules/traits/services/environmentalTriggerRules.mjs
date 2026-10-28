@@ -18,12 +18,6 @@ const deepFreeze = value => {
   return value;
 };
 
-// Discrete environmental events that apply a temporary (expiring) flag.
-export const ENVIRONMENTAL_EVENT_TO_TEMP_FLAG = deepFreeze({
-  startle: 'startled',
-  routine_change: 'unsettled',
-});
-
 export const ENVIRONMENTAL_TRIGGERS = deepFreeze({
   harsh_environment: {
     name: 'Harsh Environment',

@@ -18,7 +18,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { CRON_JOB_REGISTRY } from '../../../services/jobs/index.mjs';
+import cronJobRegistry from '../../../services/jobs/index.mjs';
 import cronJobService from '../../../services/cronJobs.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { runNightlyTraitReveal } from '../services/traitRevealEngine.mjs';
@@ -37,7 +37,7 @@ function scheduledMethods() {
       },
     },
   );
-  for (const job of CRON_JOB_REGISTRY) {
+  for (const job of cronJobRegistry) {
     job.run(stub);
   }
   return called;
@@ -72,7 +72,7 @@ describe('care patterns never write traits (Equoria-koxep)', () => {
   it('no scheduled job runs the weekly care-pattern flag evaluator', () => {
     const methods = scheduledMethods();
     expect(methods).not.toContain('evaluateWeeklyFlags');
-    expect(CRON_JOB_REGISTRY.map(j => j.jobName)).not.toContain('weeklyFlagEvaluation');
+    expect(cronJobRegistry.map(j => j.jobName)).not.toContain('weeklyFlagEvaluation');
     expect(cronJobService.evaluateWeeklyFlags).toBeUndefined();
   });
 

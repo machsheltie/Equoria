@@ -59,8 +59,10 @@ describe('DISCOVERY_CONDITIONS — structure and synchronous condition branches'
     expect(keys).toContain('HIGH_BOND');
     expect(keys).toContain('EXCELLENT_BOND');
     expect(keys).toContain('PERFECT_CARE');
-    expect(keys).toContain('MATURE_BOND');
-    expect(keys).toContain('CONSISTENT_TRAINING');
+    // Equoria-kqdde (owner rulings 2026-10-27, q115): no adult discovery, so the
+    // former MATURE_BOND and CONSISTENT_TRAINING conditions are gone.
+    expect(keys).not.toContain('MATURE_BOND');
+    expect(keys).not.toContain('CONSISTENT_TRAINING');
   });
 
   it('each synchronous entry has name, condition fn, description, priority', () => {
@@ -101,22 +103,6 @@ describe('DISCOVERY_CONDITIONS — structure and synchronous condition branches'
   it('PERFECT_CARE returns false below 80 bond', () => {
     expect(DISCOVERY_CONDITIONS.PERFECT_CARE.condition({ bondScore: 79 })).toBe(false);
   });
-
-  // MATURE_BOND: age >= 3 AND (bondScore || 0) >= 70
-  it('MATURE_BOND returns true for adult horse with sufficient bond', () => {
-    expect(DISCOVERY_CONDITIONS.MATURE_BOND.condition({ age: 4, bondScore: 75 })).toBe(true);
-  });
-  it('MATURE_BOND returns false for young horse', () => {
-    expect(DISCOVERY_CONDITIONS.MATURE_BOND.condition({ age: 2, bondScore: 90 })).toBe(false);
-  });
-  it('MATURE_BOND returns false for adult with low bond', () => {
-    expect(DISCOVERY_CONDITIONS.MATURE_BOND.condition({ age: 4, bondScore: 50 })).toBe(false);
-  });
-
-  // CONSISTENT_TRAINING is async
-  it('CONSISTENT_TRAINING has async:true flag', () => {
-    expect(DISCOVERY_CONDITIONS.CONSISTENT_TRAINING.async).toBe(true);
-  });
 });
 
 // ── checkDiscoveryConditions — async, uses real DB (horse.id=-1 → 0 logs) ────
@@ -144,11 +130,11 @@ describe('checkDiscoveryConditions()', () => {
     expect(names).toContain('EXCELLENT_BOND');
   }, 10000);
 
-  it('returns MATURE_BOND when age >= 3 and bondScore >= 70', async () => {
+  it('an adult with a strong bond meets no adult discovery condition (Equoria-kqdde)', async () => {
     const horse = { id: -1, bondScore: 75, age: 5 };
     const result = await checkDiscoveryConditions(horse);
     const names = result.map(c => c.name);
-    expect(names).toContain('MATURE_BOND');
+    expect(names).not.toContain('MATURE_BOND');
   }, 10000);
 
   it('returns PERFECT_CARE + HIGH_BOND when the bond criterion is met', async () => {

@@ -11,19 +11,18 @@
  *
  * Every projection of one snapshot shares one clock (`snapshot.now`). The
  * authored rule data lives in environmentalTriggerRules.mjs.
- * applyEnvironmentalEventFlag is the discrete-event write path (yzqhj.5).
+ * Nothing here writes a horse: the discrete-event temporary-flag writer
+ * (applyEnvironmentalEventFlag, yzqhj.5) was removed with the temporary flags
+ * (Equoria-kqdde; owner ruling 2026-10-22 on Equoria-q4uem.17).
  */
 
-import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
-import { applyTemporaryFlag } from './temporaryFlagSystem.mjs';
 import {
   BASE_TRIGGER_THRESHOLD,
   CUMULATIVE_EFFECTS_EVERY,
   DEFAULT_FACTOR_PRESENT_ABOVE,
   DEFAULT_QUALITY_SCORE,
-  ENVIRONMENTAL_EVENT_TO_TEMP_FLAG,
   ENVIRONMENTAL_TRIGGERS,
   EXPOSURE_SCALING,
   FACTOR_PRESENCE_RULES,
@@ -35,34 +34,6 @@ import {
 } from './environmentalTriggerRules.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/**
- * Record a discrete environmental event for a horse and, when the event maps to
- * a temporary epigenetic flag, apply that (expiring) flag (Equoria-yzqhj.5).
- * Persistence, dedup and expiry belong to temporaryFlagSystem.applyTemporaryFlag,
- * which writes only `Horse.temporaryEpigeneticFlags`. Unknown event types are a
- * no-op (null): fail-closed, no fabricated flag.
- *
- * @param {number} horseId
- * @param {string} eventType - 'startle' | 'routine_change'
- * @param {{source?: string, now?: Date}} [opts]
- * @returns {Promise<{flag:string, expiresAt:string, source:string}|null>}
- */
-export async function applyEnvironmentalEventFlag(horseId, eventType, { source, now } = {}) {
-  const flag = ENVIRONMENTAL_EVENT_TO_TEMP_FLAG[eventType];
-  if (!flag) {
-    logger.info(
-      `[environmentalTriggerSystem.applyEnvironmentalEventFlag] Event '${eventType}' ` +
-        `for horse ${horseId} maps to no temporary flag — no-op`,
-    );
-    return null;
-  }
-  const result = await applyTemporaryFlag(horseId, flag, {
-    source: source ?? `environmental_event:${eventType}`,
-    now,
-  });
-  return { flag: result.flag, expiresAt: result.expiresAt, source: result.source };
-}
 
 /**
  * Everything the trigger analysis reads, read once: the horse (null when it does

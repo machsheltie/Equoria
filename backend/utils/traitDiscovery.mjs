@@ -24,9 +24,7 @@
  * F14). Groom-driven trait discovery is unaffected.
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
-import { MS_PER_WEEK } from './../constants/time.mjs';
 
 /**
  * Discovery conditions that trigger trait revelation
@@ -61,36 +59,10 @@ const DISCOVERY_CONDITIONS = {
     revealableTraits: ['exceptional', 'thriving', 'balanced'],
   },
 
-  // Age-based discoveries
-  MATURE_BOND: {
-    name: 'Mature Bond',
-    condition: horse => horse.age >= 3 && (horse.bondScore || 0) >= 70,
-    description: 'Mature relationship developed with adult horse',
-    priority: 'medium',
-    category: 'milestones',
-    revealableTraits: ['resilient', 'calm', 'confident', 'bonded'],
-  },
-
-  // Training-based discoveries (requires training data)
-  CONSISTENT_TRAINING: {
-    name: 'Consistent Training',
-    condition: async horse => {
-      const recentTraining = await prisma.trainingLog.count({
-        where: {
-          horseId: horse.id,
-          trainedAt: {
-            gte: new Date(Date.now() - MS_PER_WEEK), // Last 7 days
-          },
-        },
-      });
-      return recentTraining >= 5;
-    },
-    description: 'Consistent training regimen maintained',
-    priority: 'medium',
-    category: 'activities',
-    revealableTraits: ['disciplined', 'focused', 'trainable'],
-    async: true,
-  },
+  // Equoria-kqdde: MATURE_BOND (age 3+ with bond 70) and CONSISTENT_TRAINING
+  // (five trainings in a week, i.e. an adult) were removed. Traits change only
+  // in a foal's first 21 days (owner rulings 2026-10-27, q115); there is no
+  // adult discovery.
 };
 
 /**

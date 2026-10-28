@@ -8,9 +8,6 @@ import { GAME_TIME_ZONE } from '../utils/gameTime.mjs';
 import * as foalTraitImpl from './jobs/impl/foalTraitEvaluation.mjs';
 import * as horseAgingImpl from './jobs/impl/horseAging.mjs';
 import { transitionElectionStatuses as transitionElectionStatusesImpl } from './jobs/impl/electionTransition.mjs';
-// Equoria-urqic.3.2: epigenetic-flag cluster (weekly flag evaluation + daily
-// temporary-flag expiry sweep).
-import * as flagEvaluationImpl from './jobs/impl/flagEvaluation.mjs';
 // Equoria-urqic.3.3: retention/maintenance single-delegator cluster (audit-log /
 // cron-run-log / doc-coverage purges + recording, hoof decay, foal milestones,
 // rider/trainer career tick, overnight show execution).
@@ -403,19 +400,6 @@ class CronJobService {
    */
   async recordDocCoverageSnapshot() {
     return retentionMaintenanceImpl.recordDocCoverageSnapshot();
-  }
-
-  /**
-   * Equoria-urqic.3.2: thin delegator into the epigenetic-flag impl module
-   * (backend/services/jobs/impl/flagEvaluation.mjs). Stays on the class because
-   * the temporaryFlagExpiryJob registry handler invokes it on the singleton
-   * (service.sweepExpiredTemporaryFlags()) and integration suites call it there
-   * too.
-   * @returns {Promise<{ horsesScanned:number, horsesUpdated:number,
-   *                      flagsRemoved:number }>}
-   */
-  async sweepExpiredTemporaryFlags() {
-    return flagEvaluationImpl.sweepExpiredTemporaryFlagsJob();
   }
 
   /**
