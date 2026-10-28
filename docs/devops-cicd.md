@@ -2,7 +2,7 @@
 
 **Status:** Active source-first runbook
 **Owner:** Runtime and deployment configuration
-**Last verified:** 2026-09-16
+**Last verified:** 2026-10-28
 **Load only when:** changing or diagnosing CI, hooks, Netlify, Railway, deployment gates, release operations, database-pool sizing, process/replica count, or cross-process runtime behavior
 **Do not load for:** ordinary feature implementation or testing command discovery
 
@@ -39,20 +39,76 @@ this file.
 
 Enumerate `.github/workflows/` before making a claim about workflow ownership. Do not rely on a prose list or an old incident report; workflows are added, renamed, and consolidated over time.
 
-## Required local gates
+## Where each check runs (Equoria-zstml)
 
-The repository-level baseline is:
+Owner ruling q233 (2026-10-28): **the full check runs only on GitHub after
+pushes; the laptop runs only the changed tests.** It replaced the 2026-10-26
+ruling that skipped the pre-push gate with `--no-verify`; the hook is meant to
+run on every push again.
 
-```bash
-npm run test:backend
-npm run test:frontend
-npm run typecheck
-npm run lint
-npm run test:e2e:beta-readiness
-bash scripts/doctrine-checks/run-all.sh
-```
+| Check                                | Laptop, `.husky/pre-push`                                     | GitHub Actions, every push to `master` and every PR                          |
+| ------------------------------------ | ------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Backend Jest                         | Related test files only, serial, capped at 30                 | Whole suite, 3 shards (`test.yml` Backend Tests) + Coverage Gate             |
+| Frontend Vitest                      | Related test files only, 2 workers, capped at 40              | Whole suite with coverage (`test.yml` Frontend Tests)                        |
+| ESLint + Prettier                    | Changed backend/frontend files only, CI's rules               | Whole tree (`test.yml` Lint & Format; Doctrine Gate's lint-and-format check) |
+| Typecheck                            | Not run                                                       | `tsc` inside the frontend build (`ci-cd.yml` Build Validation)               |
+| Doctrine checks                      | `run-all.sh --fast`: all but the whole-tree lint check (~45s) | `run-all.sh`, every check (`doctrine-gate.yml`)                              |
+| Security, E2E, beta readiness, build | Not run                                                       | `test.yml` jobs of those names; `security-scan.yml`, `codeql.yml`            |
 
-Select additional focused checks from the touched workflow/configuration and current package scripts. Never introduce `continue-on-error`, skip flags, bypass headers, failure-swallowing shell syntax, or relaxed assertions to manufacture a passing gate.
+**The hook** (`.husky/pre-push`), in order, each step failing closed:
+
+1. `scripts/session/session-guard.sh prepush` (see below).
+2. `scripts/preflight/candidate-state.mjs before` (see below).
+3. `bash scripts/doctrine-checks/run-all.sh --fast`. `--fast` skips only the
+   checks listed in `FAST_SKIP` in that file — today
+   `check-backend-lint-and-format.mjs` (whole-tree eslint and prettier, about
+   1.6 GB) — and prints each skip. Measured 2026-10-28: about 45 s, 30 s of it
+   in `check-no-tracked-data-rename.sh`.
+4. `scripts/preflight/changed-checks.mjs`. It works out what the push changes
+   (for each pushed ref: remote tip, or for a new branch its merge-base with
+   `origin/master`, to the pushed commit; plus modified and untracked files in
+   the working tree), then runs eslint and prettier on the changed backend and
+   frontend files, the related backend Jest files through the
+   `test:backend:targeted` profile with `--forceExit` (after the database
+   probes `db-probe.mjs` and `db-health.mjs`), and the related frontend Vitest
+   files through the frontend `test:run` profile. Related means: test files the
+   push changes; tests named after a changed source file
+   (`horseService.mjs` → `horseService.test.mjs`,
+   `horseService.integration.test.mjs`), in its directory or `__tests__/`, or
+   anywhere in the package when the name is not generic (`index`, `utils`, …);
+   and tests whose text names a changed file's repository path (hook and
+   workflow sentinels). Over a cap it keeps the changed tests first and prints
+   how many it left to GitHub. Before running anything it counts other
+   jest/vitest/playwright/sharded-runner node processes; an unreadable count is
+   busy, and it waits up to 10 minutes, then refuses. Every child process runs
+   without the hook's `GIT_*` variables.
+5. `candidate-state.mjs after`.
+
+A deletion-only push (`git push origin --delete <branch>`) and a push that
+changes no backend or frontend code run steps 1-3 and nothing else.
+
+**What the laptop no longer proves**, and GitHub does: tests that reach a
+changed module only through imports, effects of config, schema, setup-file,
+dependency and workflow changes on every test, typecheck, Playwright,
+Storybook browser tests and the root `tests/` Jest suites. A green push means
+"the changed code passed its own tests"; the GitHub run is the full verdict.
+Read it after pushing: `gh run list --branch master --limit 10`.
+
+The full sharded backend profile still exists for a deliberate local run —
+`npm run test:backend:full` (about 7 minutes, most of the laptop's memory).
+Nothing runs it automatically.
+
+**GitHub side, the needs graph.** No test job waits for `Lint & Format` (2026-10-28):
+from 10:21 UTC that day every master run had lint red on one Prettier drift and
+therefore skipped the backend matrix, the frontend suite and the security gate.
+`backend-tests` waits only for `db-preflight`. Downstream jobs (Coverage Gate,
+E2E, Production Build, Beta Readiness, Deployment Gate) still wait for the
+test jobs they summarise, and `Critical Jobs Ran` fails a run on which any of
+them was skipped. Branch protection does not require these checks yet
+(Equoria-zstml's later step), so a red GitHub run does not block a push; it
+has to be read.
+
+Never introduce `continue-on-error`, skip flags, bypass headers, failure-swallowing shell syntax, or relaxed assertions to manufacture a passing gate.
 
 ## One session per checkout (Equoria-9ai5g)
 
@@ -131,7 +187,7 @@ The pre-push gate tests the working tree of the checkout it runs in, while git
 publishes the commits named on the hook's stdin. `.husky/pre-push` captures
 that stdin once and replays it to the session guard and to
 `scripts/preflight/candidate-state.mjs`, which runs before the doctrine checks
-and again after the backend gate:
+and again after the changed-file checks:
 
 - **Before:** refuses when a pushed commit is not the checked-out `HEAD`, when
   a file under a code root (`backend/`, `frontend/`, `packages/`, `scripts/`,
@@ -140,18 +196,19 @@ and again after the backend gate:
   or when the remote tip is not an ancestor of what is pushed (git would reject
   it after the gate ran). Fails closed on any git error.
   `EQUORIA_PUSH_ALLOW_NON_FF=1` allows a deliberate non-fast-forward only.
-- **After:** re-reads `HEAD` and tracked files, so a green gate is never
-  attached to a tree edited while it ran. Untracked artifacts the suite leaves
+- **After:** re-reads `HEAD` and tracked files, so a green result is never
+  attached to a tree edited while the checks ran. Untracked artifacts the suite leaves
   behind are tolerated here.
 - **Not refused:** differences outside the code roots (docs, `EquoriaBible/`)
   print a note. At least one backend test reads a file under
   `EquoriaBible/RelevantFiles/`, so a modified bible file can still change a
   verdict; this is a stated gap, not a guarantee.
 
-Admission (one gate at a time, machine-wide) is separate: the runner takes the
-lock in `backend/scripts/gate-lock.mjs`, and its scope limits are documented in
-that file. The lock is released before git updates the remote ref; a push that
-loses that race is rejected by git, never silently merged.
+Admission is separate. The hook's changed-file checks wait for an idle machine
+by counting test processes (above). A manual `npm run test:backend:full` takes
+the lock in `backend/scripts/gate-lock.mjs`, whose scope limits are documented
+in that file; the hook does not take that lock, because a changed sentinel that
+starts the sharded runner would then deadlock against it.
 
 ## Railway invariant
 
