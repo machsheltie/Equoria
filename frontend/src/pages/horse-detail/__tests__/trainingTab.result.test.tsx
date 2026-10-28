@@ -1,7 +1,13 @@
 /**
- * HorseDetailPage Training Tab — Result Display (Equoria-smnow — split from HorseDetailPage.Training.test.tsx).
- * Training result modal: score breakdown, new score, stat/XP gains, close-resets-state.
- * Shared fixtures live in ./trainingTab.testHelpers; assertions are unchanged.
+ * HorseDetailPage Training Tab — after training (Equoria-6v2rt).
+ * Shared fixtures live in ./trainingTab.testHelpers.
+ *
+ * Owner ruling q173 (2026-10-28): success feedback is the page itself
+ * changing — no popup, no log. Old contract: a successful train opened a
+ * "Training Complete" result dialog (TrainingResultModal, removed) with the
+ * score breakdown, new score and XP, closed by a button or Escape. Its cases
+ * here are replaced by: no dialog opens, the discipline's score and the
+ * Training Status change on the page, and a refusal is still said in place.
  */
 
 import React from 'react';
@@ -13,6 +19,8 @@ import HorseDetailPage from '../../HorseDetailPage';
 import {
   originalFetch,
   createFetchMock,
+  createMockHorse,
+  createMockTrainingOverviewWithCooldown,
   renderWithProviders,
   waitForHorseToLoad,
   navigateToTrainingTab,
@@ -23,7 +31,32 @@ beforeAll(async () => {
   await import('../TrainingTab');
 });
 
-describe('HorseDetailPage Training Tab — Result Display', () => {
+/**
+ * The server before and after one dressage session: once the train POST has
+ * answered, the horse reads dressage 35 (was 30) and the overview carries a
+ * cooldown, as the real routes do.
+ */
+function serverThatTrains() {
+  const before = createFetchMock();
+  const after = createFetchMock({
+    horse: createMockHorse({
+      disciplineScores: { ...createMockHorse().disciplineScores, dressage: 35 },
+    }),
+    trainingOverview: createMockTrainingOverviewWithCooldown(),
+  });
+  let trained = false;
+  return vi.fn(async (url: string | Request, init?: RequestInit) => {
+    const urlStr = typeof url === 'string' ? url : url.toString();
+    if (urlStr.includes('/api/v1/training/train') && init?.method?.toUpperCase() === 'POST') {
+      const res = await before(url, init);
+      trained = true;
+      return res;
+    }
+    return (trained ? after : before)(url, init);
+  }) as typeof fetch;
+}
+
+describe('HorseDetailPage Training Tab — after training', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -33,159 +66,58 @@ describe('HorseDetailPage Training Tab — Result Display', () => {
     vi.restoreAllMocks();
   });
 
-  // ============================================
-  // Training Result Display Tests (6 tests)
-  // ============================================
-  describe('Training Result Display', () => {
-    test('Result modal opens after successful training', async () => {
-      global.fetch = createFetchMock();
-      const user = userEvent.setup();
+  test('no popup: the score and the Training Status change on the page', async () => {
+    global.fetch = serverThatTrains();
+    const user = userEvent.setup();
 
-      renderWithProviders(<HorseDetailPage />);
+    renderWithProviders(<HorseDetailPage />);
 
-      await waitForHorseToLoad();
-      await navigateToTrainingTab();
+    await waitForHorseToLoad();
+    await navigateToTrainingTab();
 
-      await waitFor(() => {
-        expect(screen.getByTestId('discipline-picker')).toBeInTheDocument();
-      });
+    const picker = await screen.findByTestId('discipline-picker');
+    expect(
+      within(picker).getByRole('button', { name: /dressage discipline, current score: 30/i })
+    ).toBeInTheDocument();
+    expect(await screen.findByTestId('training-status-ready')).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', { name: /dressage/i }));
+    await user.click(within(picker).getByRole('button', { name: /dressage/i }));
+    await user.click(screen.getByTestId('train-button'));
 
-      await user.click(screen.getByTestId('train-button'));
-
-      // Wait for result modal
-      await waitFor(() => {
-        expect(screen.getByTestId('training-result-modal')).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('discipline-picker')).getByRole('button', {
+          name: /dressage discipline, current score: 35/i,
+        })
+      ).toBeInTheDocument();
     });
+    expect(await screen.findByTestId('training-status-cooldown')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('training-result-modal')).not.toBeInTheDocument();
+    expect(screen.queryByText(/training complete/i)).not.toBeInTheDocument();
+    // Nothing is left picked: the Train button goes until she picks again.
+    expect(screen.queryByTestId('train-button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('training-error')).not.toBeInTheDocument();
+  });
 
-    test('Shows correct score gain breakdown', async () => {
-      global.fetch = createFetchMock();
-      const user = userEvent.setup();
+  test('a refusal is said in place, and the discipline stays picked', async () => {
+    global.fetch = createFetchMock({ trainingError: 'Horse is on cooldown' });
+    const user = userEvent.setup();
 
-      renderWithProviders(<HorseDetailPage />);
+    renderWithProviders(<HorseDetailPage />);
 
-      await waitForHorseToLoad();
-      await navigateToTrainingTab();
+    await waitForHorseToLoad();
+    await navigateToTrainingTab();
 
-      await waitFor(() => {
-        expect(screen.getByTestId('discipline-picker')).toBeInTheDocument();
-      });
+    await user.click(
+      within(await screen.findByTestId('discipline-picker')).getByRole('button', {
+        name: /dressage/i,
+      })
+    );
+    await user.click(screen.getByTestId('train-button'));
 
-      await user.click(screen.getByRole('button', { name: /dressage/i }));
-
-      await user.click(screen.getByTestId('train-button'));
-
-      await waitFor(() => {
-        const modal = screen.getByTestId('training-result-modal');
-        expect(within(modal).getByTestId('score-breakdown')).toBeInTheDocument();
-      });
-    });
-
-    test('Displays new score value', async () => {
-      global.fetch = createFetchMock();
-      const user = userEvent.setup();
-
-      renderWithProviders(<HorseDetailPage />);
-
-      await waitForHorseToLoad();
-      await navigateToTrainingTab();
-
-      await waitFor(() => {
-        expect(screen.getByTestId('discipline-picker')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('button', { name: /dressage/i }));
-
-      await user.click(screen.getByTestId('train-button'));
-
-      await waitFor(() => {
-        const modal = screen.getByTestId('training-result-modal');
-        expect(within(modal).getByTestId('new-score')).toBeInTheDocument();
-      });
-    });
-
-    // Old contract: the result listed a stat gain. New contract (owner rulings
-    // 2026-10-19, 2026-10-21): training never raises a stat.
-    test('Shows no stat gain', async () => {
-      global.fetch = createFetchMock();
-      const user = userEvent.setup();
-
-      renderWithProviders(<HorseDetailPage />);
-
-      await waitForHorseToLoad();
-      await navigateToTrainingTab();
-
-      await waitFor(() => {
-        expect(screen.getByTestId('discipline-picker')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('button', { name: /dressage/i }));
-
-      await user.click(screen.getByTestId('train-button'));
-
-      await waitFor(() => {
-        const modal = screen.getByTestId('training-result-modal');
-        expect(within(modal).getByTestId('new-score')).toBeInTheDocument();
-        expect(within(modal).queryAllByTestId(/^stat-gain-/)).toHaveLength(0);
-      });
-    });
-
-    test('Shows XP gain if any', async () => {
-      global.fetch = createFetchMock();
-      const user = userEvent.setup();
-
-      renderWithProviders(<HorseDetailPage />);
-
-      await waitForHorseToLoad();
-      await navigateToTrainingTab();
-
-      await waitFor(() => {
-        expect(screen.getByTestId('discipline-picker')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('button', { name: /dressage/i }));
-
-      await user.click(screen.getByTestId('train-button'));
-
-      await waitFor(() => {
-        const modal = screen.getByTestId('training-result-modal');
-        // Mock result includes XP gain
-        expect(within(modal).getByTestId('xp-gain')).toBeInTheDocument();
-      });
-    });
-
-    test('Closing result modal resets training state', async () => {
-      global.fetch = createFetchMock();
-      const user = userEvent.setup();
-
-      renderWithProviders(<HorseDetailPage />);
-
-      await waitForHorseToLoad();
-      await navigateToTrainingTab();
-
-      await waitFor(() => {
-        expect(screen.getByTestId('discipline-picker')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('button', { name: /dressage/i }));
-
-      await user.click(screen.getByTestId('train-button'));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('training-result-modal')).toBeInTheDocument();
-      });
-
-      // Close result modal
-      await user.click(screen.getByTestId('close-button'));
-
-      await waitFor(() => {
-        expect(screen.queryByTestId('training-result-modal')).not.toBeInTheDocument();
-      });
-
-      // State should be reset - can start new training
-      expect(screen.getByTestId('discipline-picker')).toBeInTheDocument();
-    });
+    expect(await screen.findByTestId('training-error')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByTestId('train-button')).toBeInTheDocument();
   });
 });

@@ -3,7 +3,6 @@
  *
  * Integrates the full training flow with:
  * - DisciplinePicker for discipline selection, then one "Train — <fee>" button
- * - TrainingResultModal for results display
  * - Training status and cooldown display
  *
  * Extracted from HorseDetailPage.tsx to enable React.lazy() code-splitting
@@ -15,6 +14,11 @@
  * receipts" 2026-10-26): pick the discipline, then one "Train — 250" button,
  * the trainer's fee on the button. Old contract: picking a discipline opened a
  * Confirm Training dialog (TrainingConfirmModal, removed).
+ *
+ * Owner ruling q173 (2026-10-28; Equoria-6v2rt): success is the page itself
+ * changing, no popup and no log. The discipline's score and the Training
+ * Status update in place from the refetched horse and overview. Old contract:
+ * a "Training Complete" result dialog (TrainingResultModal, removed).
  */
 
 import { actionMessageFor, trainRefused, trainRefusalCodes } from '@/lib/http/actionMessage';
@@ -22,18 +26,12 @@ import React, { useState } from 'react';
 import { Link } from 'react-router';
 import { AlertCircle, Loader2, Dumbbell, Clock, CheckCircle } from 'lucide-react';
 import DisciplinePicker from '../../components/training/DisciplinePicker';
-import TrainingResultModal from '../../components/training/TrainingResultModal';
 import { ErrorState } from '@/components/ui/state';
 import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { useTrainHorse, useTrainingOverview } from '../../hooks/api/useTraining';
-import {
-  formatDisciplineName,
-  canTrain,
-  getDisciplineScore,
-  formatCooldownDate,
-} from '../../lib/utils/training-utils';
+import { canTrain, formatCooldownDate } from '../../lib/utils/training-utils';
 import { isBadHealth } from '../../lib/healthWords';
 import { useHorseTrainer } from '../../hooks/api/useTrainers';
 import HorseTrainerPanel from './HorseTrainerPanel';
@@ -42,17 +40,6 @@ import type { Horse } from './HorseDetailPageTypes';
 const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   // Training flow state
   const [selectedDiscipline, setSelectedDiscipline] = useState<string | null>(null);
-  const [isResultModalOpen, setIsResultModalOpen] = useState(false);
-  const [trainingResult, setTrainingResult] = useState<{
-    scoreGain: number;
-    baseScoreGain: number;
-    newScore: number;
-    xpGain?: number;
-    // Equoria-gzvwa — the authoritative server next-eligible value (ISO string)
-    // or null when the server omits it. We never fabricate a client-side guess;
-    // null flows to the result modal's honest "Date unavailable" state.
-    nextTrainingDate: string | null;
-  } | null>(null);
   const [trainingError, setTrainingError] = useState<string | null>(null);
 
   // Training hooks. Equoria-llhf6: destructure the query's error/refetch too —
@@ -138,60 +125,17 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     setTrainingError(null);
 
     try {
-      const result = await trainHorse.mutateAsync({
+      await trainHorse.mutateAsync({
         horseId: horse.id,
         discipline: selectedDiscipline,
       });
-
-      // Equoria-o1x6g: read the REAL backend-computed values instead of
-      // inferring them client-side. The route now emits the authoritative
-      // disciplineScoreIncrease (the flat +5, owner ruling 2026-10-23) and
-      // the real awarded XP (xpAwarded), so the modal shows what actually
-      // happened rather than a recomputed estimate that drifts from the server.
-      const baseGain = 5; // A session's flat gain — for the breakdown line.
-      // Prefer the authoritative server value; fall back to the flat gain
-      // only on the legacy path that omits it.
-      const scoreGain = result.disciplineScoreIncrease ?? baseGain;
-      const currentScore = getDisciplineScore(
-        {
-          id: horse.id,
-          name: horse.name,
-          age: horse.age,
-          disciplineScores: horse.disciplineScores,
-        },
-        selectedDiscipline
-      );
-
-      // Set result for modal display
-      setTrainingResult({
-        scoreGain,
-        baseScoreGain: baseGain,
-        newScore: result.updatedScore ?? currentScore + scoreGain,
-        // Equoria-o1x6g: the REAL awarded XP, not the trait-only delta
-        // (traitEffects.xpModifier) it was previously wired to.
-        xpGain: result.xpAwarded ?? undefined,
-        // Equoria-gzvwa — pass the REAL server value through; when the server
-        // omits nextEligible (null), pass null so the result modal renders its
-        // honest "Date unavailable" state. NEVER fabricate a now+7-days guess —
-        // a client-computed cooldown date masks a missing server value and lies
-        // to the player about when training is actually available.
-        nextTrainingDate: result.nextEligible ?? null,
-      });
-
-      // Open result modal
-      setIsResultModalOpen(true);
+      // The page changes in place: useTrainHorse refetches the horse and the
+      // overview. Nothing stays picked, so the Train button goes.
+      setSelectedDiscipline(null);
     } catch (error) {
       // The discipline stays picked so she can press Train again.
       setTrainingError(actionMessageFor(error, trainRefused, trainRefusalCodes));
     }
-  };
-
-  // Handle closing the result modal
-  const handleCloseResult = () => {
-    setIsResultModalOpen(false);
-    setTrainingResult(null);
-    setSelectedDiscipline(null);
-    // Horse data will auto-refresh via React Query cache invalidation
   };
 
   const cooldownDateOptions: Intl.DateTimeFormatOptions = {
@@ -371,20 +315,6 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Training Result Modal */}
-      {trainingResult && (
-        <TrainingResultModal
-          isOpen={isResultModalOpen}
-          onClose={handleCloseResult}
-          disciplineName={formatDisciplineName(selectedDiscipline || '')}
-          scoreGain={trainingResult.scoreGain}
-          baseScoreGain={trainingResult.baseScoreGain}
-          newScore={trainingResult.newScore}
-          xpGain={trainingResult.xpGain}
-          nextTrainingDate={trainingResult.nextTrainingDate}
-        />
       )}
     </div>
   );

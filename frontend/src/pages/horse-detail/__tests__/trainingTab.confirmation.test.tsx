@@ -3,6 +3,8 @@
  * Owner ruling q163 (2026-10-28; Equoria-tjh8k): pick the discipline, then one
  * "Train — <fee>" button; no confirm dialog. Covers: no dialog, train, loading,
  * result, error. Old contract: a confirmation modal with a preview and Cancel.
+ * Owner ruling q173 (2026-10-28; Equoria-6v2rt): no result popup either; the
+ * "result opens" case now asserts no dialog opens after training.
  * Shared fixtures live in ./trainingTab.testHelpers.
  */
 
@@ -143,7 +145,7 @@ describe('HorseDetailPage Training Tab — Confirmation Flow', () => {
       });
     });
 
-    test('the result opens after successful training', async () => {
+    test('no result dialog opens after successful training', async () => {
       global.fetch = createFetchMock();
       const user = userEvent.setup();
 
@@ -160,9 +162,12 @@ describe('HorseDetailPage Training Tab — Confirmation Flow', () => {
 
       await user.click(screen.getByTestId('train-button'));
 
+      // Nothing is left picked once the session is done; no dialog opened.
       await waitFor(() => {
-        expect(screen.getByTestId('training-result-modal')).toBeInTheDocument();
+        expect(screen.queryByTestId('train-button')).not.toBeInTheDocument();
       });
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('training-result-modal')).not.toBeInTheDocument();
     });
 
     test('Error handling for failed training', async () => {

@@ -15,7 +15,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { FrostedPanel, FrostedPanelHeader, FrostedPanelTitle } from '../FrostedPanel';
 import { GameDialog, GameDialogContent, GameDialogTitle } from '../GameDialog';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
-import TrainingResultModal from '@/components/training/TrainingResultModal';
 
 const FRONTEND = resolve(__dirname, '../../../../..');
 const SRC = join(FRONTEND, 'src');
@@ -135,23 +134,8 @@ describe('GameDialogTitle / FrostedPanelTitle variants (Equoria-ru830)', () => {
 });
 
 describe('ceremonial consumers', () => {
-  it('TrainingResultModal result title is the ceremonial Moonlight voice, not bold', () => {
-    render(
-      <TrainingResultModal
-        isOpen
-        onClose={vi.fn()}
-        disciplineName="Dressage"
-        scoreGain={6}
-        baseScoreGain={5}
-        newScore={51}
-        nextTrainingDate={new Date('2026-02-07')}
-      />
-    );
-    const title = screen.getByRole('heading', { name: /training complete/i });
-    expect(title.className).toContain('type-ceremonial-title');
-    expect(title.className).not.toContain('font-bold');
-  });
-
+  // Old case: TrainingResultModal's title used this voice. Owner ruling q173
+  // (2026-10-28; Equoria-6v2rt) removed the training result popup.
   it.each(['trait-discovery', 'foal-birth', 'cup-win'] as const)(
     'CinematicMoment %s title is the Major Announcer (Basteleur Bold) role',
     (variant) => {

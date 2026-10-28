@@ -1088,7 +1088,6 @@
   "frontend/src/pages/clubs/constants.tsx": 4,
   "frontend/src/pages/horse-detail/HorseProfileCard.tsx": 5,
   "frontend/src/pages/horse-detail/TackTab.tsx": 4,
-  "frontend/src/pages/horse-detail/__tests__/TrainingTab.nextEligibleAbsent.test.tsx": 5,
   "frontend/src/pages/horse-detail/__tests__/horseProfileCard.naming.test.tsx": 4,
   "frontend/src/pages/horses/HorseEquipPage.tsx": 8,
   "frontend/src/pages/messages/GameNotifRow.tsx": 6,
