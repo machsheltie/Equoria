@@ -344,7 +344,7 @@
   border-radius: 50% 50% 14px 14px / 38% 38% 14px 14px;
   background: radial-gradient(ellipse at 50% 15%, #2a3d78 0, #0f2346 45%, #070b18 100%);
   box-shadow:
-    0 10px 40px rgba(201, 162, 39, 0.15),
+    0 10px 40px var(--alpha-gold-ember-15),
     inset 0 0 40px rgba(0, 0, 0, 0.5);
 }
 
@@ -437,7 +437,7 @@
   padding: 6px 12px;
   border: 1px solid var(--gold-dim);
   border-radius: var(--radius-full);
-  background: rgba(201, 162, 39, 0.15);
+  background: var(--alpha-gold-ember-15);
   color: var(--gold-light);
   font-size: var(--text-sm);
 }
