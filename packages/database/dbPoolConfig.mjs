@@ -7,8 +7,14 @@ export const getPoolConfig = (env = process.env) => {
   const isTestEnv = env.NODE_ENV === 'test' || env.JEST_WORKER_ID !== undefined;
 
   const defaults = {
-    // Railway PgBouncer Session mode has a limited pool_size (typically ≤10 on Hobby tier).
-    // Keep production connections small; override with DB_POOL_SIZE env var if needed.
+    // Production (Equoria-cmw85.10): one Railway process connects through the
+    // Supabase pooler (transaction mode on port 6543 gets pgbouncer=true below;
+    // migrations use DIRECT_URL). The game earns nothing, so the database stays
+    // on its current plan (owner ruling 2026-10-26: no added hosting costs) and
+    // the app keeps a small pool. Revisit only if real play shows pool
+    // exhaustion (Prisma P2024). DB_POOL_SIZE overrides this in production, and
+    // a connection_limit already present in DATABASE_URL wins over both.
+    // docs/devops-cicd.md "Runtime scaling guardrails" records the same budget.
     //
     // Test mode (Equoria-6s3fl): 3 per worker — the SAME size as production.
     // The previous value of 1 was chosen to keep chained/overlapping Jest runs

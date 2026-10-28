@@ -317,7 +317,20 @@ count alone never counts (2026-10-01: the 48-core Railway host produced a false
 "cluster mode is active with 48 workers" alert on every deploy until then).
 
 `packages/database/dbPoolConfig.mjs` currently owns Prisma pool defaults and
-environment overrides. Every backend process has its own pool, so potential
+environment overrides. The production budget is `connection_limit=3` per
+process, `pool_timeout=30`, `connect_timeout=30` (`getPoolConfig`; pinned by
+`backend/__tests__/dbPoolConfig.test.mjs`). Precedence: a `connection_limit`
+already in the `DATABASE_URL` query string wins, then `DB_POOL_SIZE`, then the
+default. The runtime `DATABASE_URL` is the Supabase pooler; `buildDatabaseUrl`
+adds `pgbouncer=true` for the transaction-mode port 6543, and migrations run
+through `DIRECT_URL` (`.railway/railway.ts`). Three is deliberate (owner ruling
+2026-10-26, no added hosting costs; Equoria-cmw85.10): one Railway process
+serves requests and nightly jobs from the same pool, and each locked cron job
+holds one connection in its advisory-lock transaction for the whole run
+(`backend/utils/cronLock.mjs`). Revisit only when real play shows pool waits or
+Prisma P2024 errors, and then follow the checklist below.
+
+Every backend process has its own pool, so potential
 connections grow with replicas, workers, overlapping deploys, tests,
 migrations, administration, and other services. Never derive a safe pool or
 replica count from a generic formula or an assumed PostgreSQL maximum.
