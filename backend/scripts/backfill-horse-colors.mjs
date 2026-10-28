@@ -49,7 +49,12 @@ async function run() {
 
       const colorGenotype = generateGenotype(breedGeneticProfile);
       const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shadeBias ?? null);
-      const markings = generateMarkings(breedGeneticProfile, baseColor.colorName);
+      const markings = generateMarkings(
+        breedGeneticProfile,
+        baseColor.colorName,
+        Math.random,
+        colorGenotype,
+      );
       const phenotype = { ...baseColor, ...markings };
 
       // Use raw SQL since the Prisma client in packages/database may be stale

@@ -119,7 +119,7 @@ async function run() {
       // Breedless → no-profile starter distribution (the post-mvrvb diverse path).
       const colorGenotype = generateGenotype(null);
       const baseColor = calculatePhenotype(colorGenotype, null);
-      const markings = generateMarkings(null, baseColor.colorName);
+      const markings = generateMarkings(null, baseColor.colorName, Math.random, colorGenotype);
       const phenotype = { ...baseColor, ...markings };
 
       if (!DRY_RUN) {

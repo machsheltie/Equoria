@@ -27,6 +27,7 @@ import {
   generateBooleanModifiers,
   generateMarkings,
   inheritMarkings,
+  carriesAppaloosaGene,
 } from '../services/markingGenerationService.mjs';
 import { createHorseFromRequest } from '../services/createHorseService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -202,9 +203,12 @@ describe('generateAdvancedMarkings', () => {
     expect(result.frostPresent).toBe(false);
   });
 
-  it('all true when rng always returns 0 (below any positive probability)', () => {
+  // Owner ruling 2026-10-28 (q252, Equoria-tcata): snowflake and frost need the
+  // appaloosa gene. Old contract: any horse could roll them, so this case
+  // called generateAdvancedMarkings(null, rng) with no gene argument.
+  it('all true when rng always returns 0 for a horse carrying the appaloosa gene', () => {
     // With default multiplier=1, base rates are 0.02/0.03/0.03 — rng=0 always passes
-    const result = generateAdvancedMarkings(null, alwaysReturn(0));
+    const result = generateAdvancedMarkings(null, alwaysReturn(0), true);
     expect(result.bloodyShoulderPresent).toBe(true);
     expect(result.snowflakePresent).toBe(true);
     expect(result.frostPresent).toBe(true);
@@ -334,6 +338,78 @@ describe('generateMarkings', () => {
       },
     };
     expect(() => generateMarkings(profile, 'Bay', Math.random)).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Snowflake and frost only with the appaloosa gene (q252, Equoria-tcata)
+// ---------------------------------------------------------------------------
+
+describe('snowflake and frost need the appaloosa gene (q252)', () => {
+  const lpCarrier = { LP_LeopardComplex: 'LP/lp' };
+  const lpHomozygous = { LP_LeopardComplex: 'LP/LP' };
+  const noLp = { LP_LeopardComplex: 'lp/lp' };
+
+  it('reads the LP locus: one or two copies carry it; lp/lp, missing or junk do not', () => {
+    expect(carriesAppaloosaGene(lpCarrier)).toBe(true);
+    expect(carriesAppaloosaGene(lpHomozygous)).toBe(true);
+    expect(carriesAppaloosaGene(noLp)).toBe(false);
+    expect(carriesAppaloosaGene({})).toBe(false);
+    expect(carriesAppaloosaGene(null)).toBe(false);
+    expect(carriesAppaloosaGene([])).toBe(false);
+  });
+
+  it('a horse without the gene never rolls snowflake or frost, even on a sure roll', () => {
+    const advanced = generateAdvancedMarkings(null, alwaysReturn(0), false);
+    expect(advanced.snowflakePresent).toBe(false);
+    expect(advanced.frostPresent).toBe(false);
+    // Bloody shoulder is not gated.
+    expect(advanced.bloodyShoulderPresent).toBe(true);
+
+    for (const genotype of [noLp, null]) {
+      const markings = generateMarkings(null, 'Bay', alwaysReturn(0), genotype);
+      expect(markings.advancedMarkings.snowflakePresent).toBe(false);
+      expect(markings.advancedMarkings.frostPresent).toBe(false);
+    }
+  });
+
+  it('a carrier can show them', () => {
+    const markings = generateMarkings(null, 'Bay', alwaysReturn(0), lpCarrier);
+    expect(markings.advancedMarkings.snowflakePresent).toBe(true);
+    expect(markings.advancedMarkings.frostPresent).toBe(true);
+  });
+
+  it('a foal without the gene never inherits them from spotted parents', () => {
+    const spotted = {
+      faceMarking: 'none',
+      legMarkings: { frontLeft: 'none', frontRight: 'none', hindLeft: 'none', hindRight: 'none' },
+      advancedMarkings: { bloodyShoulderPresent: false, snowflakePresent: true, frostPresent: true },
+      modifiers: { isSooty: false, isFlaxen: false, hasPangare: false, isRabicano: false },
+    };
+    // rng 0.1 < 0.4: every slot takes the sire's value.
+    const without = inheritMarkings(spotted, spotted, null, 'Bay', alwaysReturn(0.1), noLp);
+    expect(without.advancedMarkings.snowflakePresent).toBe(false);
+    expect(without.advancedMarkings.frostPresent).toBe(false);
+
+    const carrier = inheritMarkings(spotted, spotted, null, 'Bay', alwaysReturn(0.1), lpCarrier);
+    expect(carrier.advancedMarkings.snowflakePresent).toBe(true);
+    expect(carrier.advancedMarkings.frostPresent).toBe(true);
+  });
+
+  it('draws the same number of rolls with or without the gene (seeded rolls do not shift)', () => {
+    const counting = () => {
+      let n = 0;
+      const rng = () => {
+        n += 1;
+        return 0.5;
+      };
+      return { rng, count: () => n };
+    };
+    const a = counting();
+    generateMarkings(null, 'Bay', a.rng, noLp);
+    const b = counting();
+    generateMarkings(null, 'Bay', b.rng, lpCarrier);
+    expect(a.count()).toBe(b.count());
   });
 });
 

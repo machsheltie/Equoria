@@ -202,7 +202,12 @@ export async function createStarterHorseForNewUser(
     try {
       const starterGenotype = generateGenotype(null);
       const starterBaseColor = calculatePhenotype(starterGenotype, null);
-      const starterMarkings = generateMarkings(null, starterBaseColor.colorName);
+      const starterMarkings = generateMarkings(
+        null,
+        starterBaseColor.colorName,
+        Math.random,
+        starterGenotype,
+      );
       const starterPhenotype = { ...starterBaseColor, ...starterMarkings };
       await prisma.$executeRaw`
         UPDATE horses

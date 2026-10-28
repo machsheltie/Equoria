@@ -180,9 +180,16 @@ export async function createHorseFromRequest(reqBody, userId) {
       damHorse.phenotype,
       breedGeneticProfile,
       baseColor.colorName,
+      Math.random,
+      colorGenotype,
     );
   } else {
-    markings = generateMarkings(breedGeneticProfile, baseColor.colorName);
+    markings = generateMarkings(
+      breedGeneticProfile,
+      baseColor.colorName,
+      Math.random,
+      colorGenotype,
+    );
   }
   const phenotype = { ...baseColor, ...markings };
 

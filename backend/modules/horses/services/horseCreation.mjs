@@ -180,7 +180,12 @@ async function createHorse(horseData, client = prisma) {
           resolvedColorGenotype,
           breedGeneticProfile?.shadeBias ?? null,
         );
-        const markings = generateMarkings(breedGeneticProfile, baseColor.colorName);
+        const markings = generateMarkings(
+          breedGeneticProfile,
+          baseColor.colorName,
+          Math.random,
+          resolvedColorGenotype,
+        );
         resolvedPhenotype = { ...baseColor, ...markings };
       }
     }

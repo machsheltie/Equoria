@@ -40,7 +40,12 @@ import {
 export function fixtureColor(breedGeneticProfile = null) {
   const colorGenotype = generateGenotype(breedGeneticProfile);
   const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shadeBias ?? null);
-  const markings = generateMarkings(breedGeneticProfile, baseColor.colorName);
+  const markings = generateMarkings(
+    breedGeneticProfile,
+    baseColor.colorName,
+    Math.random,
+    colorGenotype,
+  );
   const phenotype = { ...baseColor, ...markings };
   return { colorGenotype, phenotype };
 }

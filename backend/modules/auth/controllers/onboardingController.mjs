@@ -342,7 +342,12 @@ export const advanceOnboarding = async (req, res, next) => {
         starterColorGenotype,
         breedGeneticProfile?.shadeBias ?? null,
       );
-      const starterMarkings = generateMarkings(breedGeneticProfile, starterBaseColor.colorName);
+      const starterMarkings = generateMarkings(
+        breedGeneticProfile,
+        starterBaseColor.colorName,
+        Math.random,
+        starterColorGenotype,
+      );
       starterPhenotype = { ...starterBaseColor, ...starterMarkings };
     }
 

@@ -14,6 +14,13 @@
  *
  * Used by: horseRoutes.mjs (POST /horses)
  * Story: 31E-3 — Marking System
+ *
+ * Owner ruling 2026-10-28 (q252, Equoria-tcata): snowflake and frost spotting
+ * appear only on horses that carry the appaloosa gene (LP at the
+ * LP_LeopardComplex locus). Callers pass the horse's colour genotype; with no
+ * genotype a horse cannot be shown to carry LP, so neither marking appears.
+ * The rolls are still drawn, so a seeded generator yields the same later
+ * values (sex, other markings) as before.
  */
 
 // ---------------------------------------------------------------------------
@@ -50,6 +57,20 @@ export const MODIFIER_DEFAULTS = {
   pangare: 0.1,
   rabicano: 0.05,
 };
+
+/**
+ * Whether a colour genotype carries the appaloosa gene (LP, one or two copies).
+ *
+ * @param {Object|null} colorGenotype - e.g. { LP_LeopardComplex: 'LP/lp', ... }
+ * @returns {boolean}
+ */
+export function carriesAppaloosaGene(colorGenotype) {
+  if (!colorGenotype || typeof colorGenotype !== 'object' || Array.isArray(colorGenotype)) {
+    return false;
+  }
+  const lp = colorGenotype.LP_LeopardComplex;
+  return typeof lp === 'string' && lp.split('/').includes('LP');
+}
 
 // Ordered leg names used for both generation and inheritance.
 const LEG_NAMES = ['frontLeft', 'frontRight', 'hindLeft', 'hindRight'];
@@ -161,13 +182,15 @@ export function generateLegMarkings(markingBias, rng) {
 
 /**
  * Generate rare advanced markings (bloody shoulder, snowflake, frost).
- * Effective probability = base rate × breed multiplier.
+ * Effective probability = base rate × breed multiplier. Snowflake and frost
+ * need the appaloosa gene (q252).
  *
  * @param {Object|null} advancedMarkingsBias - breedGeneticProfile.advancedMarkingsBias
  * @param {Function} rng
+ * @param {boolean} [hasAppaloosaGene=false] - the horse carries LP
  * @returns {{ bloodyShoulderPresent: boolean, snowflakePresent: boolean, frostPresent: boolean }}
  */
-export function generateAdvancedMarkings(advancedMarkingsBias, rng) {
+export function generateAdvancedMarkings(advancedMarkingsBias, rng, hasAppaloosaGene = false) {
   const bsMultiplier = advancedMarkingsBias?.bloodyShoulderProbabilityMultiplier ?? 1.0;
   const swMultiplier = advancedMarkingsBias?.snowflakeProbabilityMultiplier ?? 1.0;
   const frMultiplier = advancedMarkingsBias?.frostProbabilityMultiplier ?? 1.0;
@@ -180,10 +203,14 @@ export function generateAdvancedMarkings(advancedMarkingsBias, rng) {
   const swProb = Math.min(1, Math.max(0, ADVANCED_MARKING_BASE_RATES.snowflake * swMultiplier));
   const frProb = Math.min(1, Math.max(0, ADVANCED_MARKING_BASE_RATES.frost * frMultiplier));
 
+  // Every roll is drawn whatever the gene, so later seeded rolls do not shift.
+  const bloodyShoulderPresent = rng() < bsProb;
+  const snowflakeRolled = rng() < swProb;
+  const frostRolled = rng() < frProb;
   return {
-    bloodyShoulderPresent: rng() < bsProb,
-    snowflakePresent: rng() < swProb,
-    frostPresent: rng() < frProb,
+    bloodyShoulderPresent,
+    snowflakePresent: hasAppaloosaGene && snowflakeRolled,
+    frostPresent: hasAppaloosaGene && frostRolled,
   };
 }
 
@@ -239,9 +266,15 @@ export function generateBooleanModifiers(modifierPrevalence, colorName, rng) {
  * @param {Object|null} breedGeneticProfile - full breed profile JSONB
  * @param {string|null} colorName - calculated phenotype color name (for flaxen guard)
  * @param {Function} [rng=Math.random]
+ * @param {Object|null} [colorGenotype=null] - the horse's colour genotype (LP gate, q252)
  * @returns {{ faceMarking, legMarkings, advancedMarkings, modifiers }}
  */
-export function generateMarkings(breedGeneticProfile = null, colorName = null, rng = Math.random) {
+export function generateMarkings(
+  breedGeneticProfile = null,
+  colorName = null,
+  rng = Math.random,
+  colorGenotype = null,
+) {
   const markingBias = breedGeneticProfile?.markingBias ?? null;
   const advancedBias = breedGeneticProfile?.advancedMarkingsBias ?? null;
   const modifierPrevalence = breedGeneticProfile?.booleanModifiersPrevalence ?? null;
@@ -249,7 +282,11 @@ export function generateMarkings(breedGeneticProfile = null, colorName = null, r
   return {
     faceMarking: generateFaceMarking(markingBias, rng),
     legMarkings: generateLegMarkings(markingBias, rng),
-    advancedMarkings: generateAdvancedMarkings(advancedBias, rng),
+    advancedMarkings: generateAdvancedMarkings(
+      advancedBias,
+      rng,
+      carriesAppaloosaGene(colorGenotype),
+    ),
     modifiers: generateBooleanModifiers(modifierPrevalence, colorName, rng),
   };
 }
@@ -273,6 +310,7 @@ export function generateMarkings(breedGeneticProfile = null, colorName = null, r
  * @param {Object|null} breedGeneticProfile
  * @param {string|null} colorName
  * @param {Function} [rng=Math.random]
+ * @param {Object|null} [colorGenotype=null] - the foal's colour genotype (LP gate, q252)
  * @returns {{ faceMarking, legMarkings, advancedMarkings, modifiers }}
  */
 export function inheritMarkings(
@@ -281,11 +319,13 @@ export function inheritMarkings(
   breedGeneticProfile = null,
   colorName = null,
   rng = Math.random,
+  colorGenotype = null,
 ) {
   // If both parents have no markings, fall back to fresh random generation
   if (!sireMarkings && !damMarkings) {
-    return generateMarkings(breedGeneticProfile, colorName, rng);
+    return generateMarkings(breedGeneticProfile, colorName, rng, colorGenotype);
   }
+  const hasAppaloosaGene = carriesAppaloosaGene(colorGenotype);
 
   const markingBias = breedGeneticProfile?.markingBias ?? null;
   const advancedBias = breedGeneticProfile?.advancedMarkingsBias ?? null;
@@ -368,16 +408,20 @@ export function inheritMarkings(
       damMarkings?.advancedMarkings?.bloodyShoulderPresent,
       () => rng() < bsProb,
     ),
-    snowflakePresent: pickInherited(
-      sireMarkings?.advancedMarkings?.snowflakePresent,
-      damMarkings?.advancedMarkings?.snowflakePresent,
-      () => rng() < swProb,
-    ),
-    frostPresent: pickInherited(
-      sireMarkings?.advancedMarkings?.frostPresent,
-      damMarkings?.advancedMarkings?.frostPresent,
-      () => rng() < frProb,
-    ),
+    // q252: a foal without the appaloosa gene never shows snowflake or frost,
+    // whatever its parents show (the inheritance roll is still drawn).
+    snowflakePresent:
+      pickInherited(
+        sireMarkings?.advancedMarkings?.snowflakePresent,
+        damMarkings?.advancedMarkings?.snowflakePresent,
+        () => rng() < swProb,
+      ) === true && hasAppaloosaGene,
+    frostPresent:
+      pickInherited(
+        sireMarkings?.advancedMarkings?.frostPresent,
+        damMarkings?.advancedMarkings?.frostPresent,
+        () => rng() < frProb,
+      ) === true && hasAppaloosaGene,
   };
 
   // Boolean modifiers — inherit or reroll each independently
