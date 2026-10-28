@@ -29,7 +29,6 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestHorse, cleanupTestHorses } from '../helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
-import { getEligibleHorses } from '../../utils/flagEvaluationEngine.mjs';
 import * as flagEvaluationImpl from '../../services/jobs/impl/flagEvaluation.mjs';
 
 const randHex = () => randomBytes(6).toString('hex');
@@ -59,63 +58,6 @@ describe('INTEGRATION: flagEvaluation impl module (Equoria-urqic.3.2) — real D
     }
     await cleanup.run();
   }, 120000);
-
-  describe('evaluateWeeklyFlags()', () => {
-    it('returns a well-formed summary and includes a freshly-born eligible foal in the eligible set', async () => {
-      // Born "today" → 0 game-years, inside the 0-3 evaluation window and under
-      // the per-horse flag cap → must be eligible. We assert structure + that
-      // our scoped horse is counted, not exact global totals (the canonical DB
-      // holds other players' horses, so `evaluated` is >= 1, not == 1).
-      const foal = await createTestHorse(
-        prisma,
-        {
-          name: `TestFixture-flag-eligible-${randHex()}`,
-          sex: 'Colt',
-          dateOfBirth: new Date(),
-          age: 0,
-          userId: user.id,
-        },
-        createdHorseIds,
-      );
-
-      // Non-vacuous eligibility lock: prove OUR specific foal is in the engine's
-      // eligible set (not merely that some unrelated DB horse made the count >0),
-      // so this test fails if the impl ever stops feeding eligible foals through.
-      const eligibleIds = await getEligibleHorses(new Date());
-      expect(eligibleIds).toContain(foal.id);
-      expect(foal.epigeneticFlags ?? []).toEqual([]);
-
-      const summary = await flagEvaluationImpl.evaluateWeeklyFlags();
-
-      // Summary shape contract (flows into the heartbeat/health layer).
-      expect(typeof summary.evaluated).toBe('number');
-      expect(typeof summary.succeeded).toBe('number');
-      expect(typeof summary.flagsAssigned).toBe('number');
-      expect(typeof summary.errors).toBe('number');
-
-      // Internal consistency: succeeded + errors never exceeds evaluated.
-      expect(summary.succeeded + summary.errors).toBeLessThanOrEqual(summary.evaluated);
-      expect(summary.evaluated).toBeGreaterThanOrEqual(1);
-
-      // Equoria-7u4br: the impl evaluated OUR foal — proven on the foal's own
-      // row, not by comparing counts of the shared horse table. (The old
-      // `evaluated >= eligibleIds.length` compared the impl's eligible snapshot
-      // with an EARLIER one; sibling suites deleting their young horses, or a
-      // horse aging past the 21-day window in between, shrank the impl's set:
-      // 95 vs 98 in run 2026-08-18.) The foal has no groom interactions and
-      // bond 0, which is exactly the canonical aloof trigger (interactions < 3,
-      // bond <= 30, positive interactions <= 2), so evaluating it assigns
-      // 'aloof'. The flag can only appear if the impl passed this foal through
-      // evaluateHorseFlags and wrote the result.
-      const after = await prisma.horse.findUnique({
-        where: { id: foal.id },
-        select: { epigeneticFlags: true },
-      });
-      // The foal still exists (the evaluation never deletes horses).
-      expect(after).not.toBeNull();
-      expect(after.epigeneticFlags).toContain('aloof');
-    }, 120000);
-  });
 
   describe('sweepExpiredTemporaryFlagsJob()', () => {
     it('removes an already-expired temporary flag from a scoped horse and reports it in the summary', async () => {

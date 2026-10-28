@@ -14,9 +14,11 @@
  *
  * No player route assigns flags (Equoria-gu8jk; owner ruling 2026-10-20:
  * players must never write traits for themselves). POST /evaluate, which let an
- * owner run the flag engine on demand, was removed; flags are assigned by the
- * weekly flag job (services/jobs/impl/flagEvaluation.mjs) and the admin-only
- * batch evaluation below.
+ * owner run the flag engine on demand, was removed. The weekly flag job that
+ * ran the engine over every horse under 3 was retired too (Equoria-koxep; owner
+ * rulings 2026-10-27: traits change only through the nightly reveal ladder), so
+ * the admin-only batch evaluation below is the engine's one remaining caller
+ * (owner question q203 decides its future).
  *
  * GET /analytics (stable-wide trait distribution) is gone (Equoria-a7f1p; owner
  * ruling 2026-10-21: flags are not a separate system).

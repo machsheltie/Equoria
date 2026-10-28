@@ -408,18 +408,6 @@ class CronJobService {
   /**
    * Equoria-urqic.3.2: thin delegator into the epigenetic-flag impl module
    * (backend/services/jobs/impl/flagEvaluation.mjs). Stays on the class because
-   * the weeklyFlagEvaluationJob registry handler invokes it on the singleton
-   * (service.evaluateWeeklyFlags()) and integration suites call it there too.
-   * @returns {Promise<{ evaluated: number, succeeded: number,
-   *                      flagsAssigned: number, errors: number }>}
-   */
-  async evaluateWeeklyFlags() {
-    return flagEvaluationImpl.evaluateWeeklyFlags();
-  }
-
-  /**
-   * Equoria-urqic.3.2: thin delegator into the epigenetic-flag impl module
-   * (backend/services/jobs/impl/flagEvaluation.mjs). Stays on the class because
    * the temporaryFlagExpiryJob registry handler invokes it on the singleton
    * (service.sweepExpiredTemporaryFlags()) and integration suites call it there
    * too.

@@ -38,7 +38,8 @@ const EXPECTED_JOBS = [
   { jobName: 'electionStatusTransition', schedule: '3,18,33,48 * * * *', staleAfterMs: 30 * 60 * 1000 },
   { jobName: 'nightlyShowExecution', schedule: '0 3 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   { jobName: 'auditLogRetention', schedule: '30 3 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
-  { jobName: 'weeklyFlagEvaluation', schedule: '30 0 * * 1', staleAfterMs: 192 * 60 * 60 * 1000 },
+  // weeklyFlagEvaluation ('30 0 * * 1') removed: Equoria-koxep, owner rulings 2026-10-27
+  // (q112-q118) -- traits change only through the nightly reveal ladder.
   { jobName: 'temporaryFlagExpiry', schedule: '20 0 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   // Equoria-qr114: appended at the end (does not reorder the original ten).
   { jobName: 'docCoverageSnapshot', schedule: '0 4 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
@@ -127,7 +128,6 @@ describe('cron job registry structure (Equoria-fx4e7)', () => {
       electionStatusTransition: 'transitionElectionStatuses',
       nightlyShowExecution: 'executeOvernightShows',
       auditLogRetention: 'purgeExpiredAuditLogs',
-      weeklyFlagEvaluation: 'evaluateWeeklyFlags',
       temporaryFlagExpiry: 'sweepExpiredTemporaryFlags',
       docCoverageSnapshot: 'recordDocCoverageSnapshot',
       cronRunLogRetention: 'purgeExpiredCronRunLogs',

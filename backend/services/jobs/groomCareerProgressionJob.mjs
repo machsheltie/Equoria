@@ -41,7 +41,7 @@
  *
  * STALENESS BUDGET
  *   192h = the 168h weekly period plus 24h tolerance, matching
- *   `weeklyRiderTrainerCareerWeeks` and `weeklyFlagEvaluation`. This is the value
+ *   `weeklyRiderTrainerCareerWeeks`. This is the value
  *   that makes the health endpoint able to say "this pass has not run" — the
  *   whole reason the job lives in this registry.
  *

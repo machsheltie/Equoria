@@ -15,7 +15,7 @@
  *                    method. The domain impls stay as instance methods on the
  *                    class because integration tests call them directly on the
  *                    singleton (e.g. evaluateFoalTraits, transitionElectionStatuses,
- *                    executeOvernightShows, evaluateWeeklyFlags, manualHorseAging)
+ *                    executeOvernightShows, manualHorseAging)
  *                    and they share a `this`-coupled call graph; moving the
  *                    bodies to free functions would break that contract. This
  *                    registry extracts the per-job METADATA + wiring, which is
@@ -40,7 +40,6 @@ import weeklyRiderTrainerCareerJob from './weeklyRiderTrainerCareerJob.mjs';
 import electionTransitionJob from './electionTransitionJob.mjs';
 import nightlyShowExecutionJob from './nightlyShowExecutionJob.mjs';
 import auditLogRetentionJob from './auditLogRetentionJob.mjs';
-import weeklyFlagEvaluationJob from './weeklyFlagEvaluationJob.mjs';
 import temporaryFlagExpiryJob from './temporaryFlagExpiryJob.mjs';
 import docCoverageSnapshotJob from './docCoverageSnapshotJob.mjs';
 import cronRunLogRetentionJob from './cronRunLogRetentionJob.mjs';
@@ -75,6 +74,10 @@ import nightlyTraitRevealJob from './nightlyTraitRevealJob.mjs';
  * emailOutboxDelivery (STAFF-CR-10) is appended after that, likewise.
  * dailyNewsPosting (Equoria-wbt8l) is appended after that, likewise.
  * nightlyTraitReveal (Equoria-2d55z) is appended after that, likewise.
+ *
+ * weeklyFlagEvaluation (Mondays 00:30) was removed (Equoria-koxep; owner rulings
+ * 2026-10-27, q112-q118): it turned a foal's weekly care pattern into traits,
+ * and traits now change only through the nightly reveal ladder above.
  */
 export const CRON_JOB_REGISTRY = Object.freeze([
   dailyTraitJob,
@@ -84,7 +87,6 @@ export const CRON_JOB_REGISTRY = Object.freeze([
   electionTransitionJob,
   nightlyShowExecutionJob,
   auditLogRetentionJob,
-  weeklyFlagEvaluationJob,
   temporaryFlagExpiryJob,
   docCoverageSnapshotJob,
   cronRunLogRetentionJob,
