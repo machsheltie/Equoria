@@ -57,6 +57,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -246,10 +247,10 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     });
     createdBreedIds.push(breed.id);
 
-    // Calculate age from dateOfBirth for proper horse creation
-    const birthDate = new Date('2020-01-01');
-    const currentDate = new Date();
-    const calculatedAge = currentDate.getFullYear() - birthDate.getFullYear();
+    // Equoria-66qkj: the birth date is the Eastern date that makes the horse
+    // exactly this many game-years old (1 game-year = 7 days).
+    const calculatedAge = 6;
+    const birthDate = birthDateForAge(calculatedAge);
 
     const testHorse = await prisma.horse.create({
       data: {

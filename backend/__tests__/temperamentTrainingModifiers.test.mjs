@@ -22,6 +22,7 @@ import { trainHorse } from '../modules/training/controllers/trainingController.m
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+import { birthDateForAge } from '../utils/horseAge.mjs';
 
 const SUITE_PREFIX = 'tmod';
 
@@ -55,7 +56,7 @@ async function createHorse(userId, breedId, overrides = {}) {
       ...fixtureColor(),
       name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
-      dateOfBirth: new Date('2020-01-01'),
+      dateOfBirth: birthDateForAge(overrides.age ?? 5),
       age: overrides.age ?? 5,
       temperament: overrides.temperament ?? null,
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },

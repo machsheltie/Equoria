@@ -21,6 +21,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { canTrain } from '../controllers/trainingController.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 const TAG = randomBytes(4).toString('hex');
 const PREFIX = `TestFixture-r8a6h-${TAG}`;
@@ -58,7 +59,7 @@ async function stable({ trainer }) {
       ...fixtureColor(),
       name: `${PREFIX}-horse-${seq}`,
       sex: 'Mare',
-      dateOfBirth: new Date('2019-06-15'),
+      dateOfBirth: birthDateForAge(6),
       age: 6,
       healthStatus: 'Excellent',
       lastFedDate: new Date(),

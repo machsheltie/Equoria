@@ -47,8 +47,8 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -106,7 +106,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       { expiresIn: '1h' },
     );
 
-    const dob5yr = gameCalendarDate(new Date(), -5 * 365);
+    const dob5yr = birthDateForAge(5);
     const testHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),

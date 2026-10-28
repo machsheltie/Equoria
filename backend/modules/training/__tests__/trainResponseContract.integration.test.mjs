@@ -35,6 +35,7 @@ import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 import { randomBytes } from 'node:crypto';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -114,8 +115,7 @@ describe('🏋️ INTEGRATION: POST /train response contract (Equoria-o1x6g)', (
    * Create a fresh, training-eligible (4yo, no traits, no cooldown) horse.
    */
   async function makeEligibleHorse(name) {
-    const fourYearsAgo = new Date();
-    fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
+    const fourYearsAgo = birthDateForAge(4);
     const horse = await createTestHorse(
       prisma,
       {

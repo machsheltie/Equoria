@@ -29,6 +29,7 @@ import { trainHorse } from '../controllers/trainingController.mjs';
 import { DISCIPLINE_VALUES, HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -46,7 +47,7 @@ async function createHorse(label, extra = {}) {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-${label}-${tag}`,
       sex: 'Mare',
-      dateOfBirth: new Date('2019-06-15'),
+      dateOfBirth: birthDateForAge(6),
       age: 6,
       userId: testUser.id,
       healthStatus: 'Excellent',

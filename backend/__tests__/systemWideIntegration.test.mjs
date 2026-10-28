@@ -23,6 +23,7 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../tests/helpers/assignTrainer.mjs';
+import { birthDateForAge } from '../utils/horseAge.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -70,7 +71,7 @@ describe('System-Wide Data Integrity', () => {
         breed: { connect: { id: testBreed.id } },
         user: { connect: { id: testUser.id } },
         sex: 'mare',
-        dateOfBirth: new Date('2019-01-01'),
+        dateOfBirth: birthDateForAge(5),
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
@@ -278,7 +279,7 @@ describe('System-Wide Data Integrity', () => {
         breed: { connect: { id: testBreed.id } },
         user: { connect: { id: testUser.id } },
         sex: 'mare',
-        dateOfBirth: new Date('2020-01-01'),
+        dateOfBirth: birthDateForAge(4),
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },

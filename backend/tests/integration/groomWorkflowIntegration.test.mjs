@@ -19,8 +19,8 @@ import { assignGroom } from '../../modules/grooms/controllers/groomAssignmentHan
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
-import { gameCalendarDate } from '../../utils/gameTime.mjs';
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
+import { birthDateForAge } from '../../utils/horseAge.mjs';
 
 // ─── plain response capture ───────────────────────────────────────────────────
 
@@ -111,7 +111,7 @@ describe('Groom Workflow Integration Tests', () => {
         ...fixtureColor(),
         name: `Test Foal ${suffix}`,
         sex: 'Filly',
-        dateOfBirth: gameCalendarDate(new Date(), -365),
+        dateOfBirth: birthDateForAge(1),
         age: 1, // 1 game-year (post Equoria-son6: Horse.age is game-years; foal does enrichment tasks 0-2yr)
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
@@ -130,7 +130,7 @@ describe('Groom Workflow Integration Tests', () => {
         ...fixtureColor(),
         name: `Test Young Horse ${suffix}`,
         sex: 'Colt',
-        dateOfBirth: gameCalendarDate(new Date(), -2 * 365),
+        dateOfBirth: birthDateForAge(2),
         age: 2, // 2 game-years (post Equoria-son6: Horse.age is game-years; does foal grooming tasks 1-3yr)
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
@@ -149,7 +149,7 @@ describe('Groom Workflow Integration Tests', () => {
         ...fixtureColor(),
         name: `Test Adult Horse ${suffix}`,
         sex: 'Mare',
-        dateOfBirth: gameCalendarDate(new Date(), -4 * 365),
+        dateOfBirth: birthDateForAge(4),
         age: 28,
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },

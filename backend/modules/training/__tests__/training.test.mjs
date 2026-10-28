@@ -51,6 +51,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -163,8 +164,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
     }
 
     // Calculate dynamic dates for accurate age testing
-    const fourYearsAgo = new Date();
-    fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
+    const fourYearsAgo = birthDateForAge(4);
 
     // Create test horses with User relationships
     adultHorse = await prisma.horse.create({
@@ -188,8 +188,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
     });
     await assignTestTrainer(adultHorse);
 
-    const twoYearsAgo = new Date();
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    const twoYearsAgo = birthDateForAge(2);
 
     youngHorse = await prisma.horse.create({
       data: {
@@ -212,8 +211,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
     });
     await assignTestTrainer(youngHorse);
 
-    const fiveYearsAgo = new Date();
-    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+    const fiveYearsAgo = birthDateForAge(5);
 
     trainedHorse = await prisma.horse.create({
       data: {
@@ -337,8 +335,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
   describe('BUSINESS RULE: Discipline Score Progression (+5 base)', () => {
     it('INCREASES discipline scores by +5 for first-time training', async () => {
       // Create a fresh horse specifically for score testing
-      const fourYearsAgoForScore = new Date();
-      fourYearsAgoForScore.setFullYear(fourYearsAgoForScore.getFullYear() - 4);
+      const fourYearsAgoForScore = birthDateForAge(4);
 
       const scoreTestHorse = await prisma.horse.create({
         data: {
@@ -400,8 +397,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       // by checking that different horses can build up scores independently
 
       // Create two fresh horses for accumulation testing
-      const fiveYearsAgoForAccumulation = new Date();
-      fiveYearsAgoForAccumulation.setFullYear(fiveYearsAgoForAccumulation.getFullYear() - 5);
+      const fiveYearsAgoForAccumulation = birthDateForAge(5);
 
       const horse1 = await prisma.horse.create({
         data: {
@@ -424,8 +420,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       });
       await assignTestTrainer(horse1);
 
-      const sixYearsAgoForAccumulation2 = new Date();
-      sixYearsAgoForAccumulation2.setFullYear(sixYearsAgoForAccumulation2.getFullYear() - 6);
+      const sixYearsAgoForAccumulation2 = birthDateForAge(6);
 
       const horse2 = await prisma.horse.create({
         data: {
@@ -507,8 +502,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
     it('ALLOWS training after 7-day cooldown expires', async () => {
       // Create a horse with old training (more than 7 days ago)
-      const sixYearsAgoForOldTrained = new Date();
-      sixYearsAgoForOldTrained.setFullYear(sixYearsAgoForOldTrained.getFullYear() - 6);
+      const sixYearsAgoForOldTrained = birthDateForAge(6);
 
       const oldTrainedHorse = await prisma.horse.create({
         data: {
@@ -577,8 +571,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       const initialLevel = initialPlayer.level || 1;
 
       // Create a fresh horse for XP testing
-      const fourYearsAgoForXp = new Date();
-      fourYearsAgoForXp.setFullYear(fourYearsAgoForXp.getFullYear() - 4);
+      const fourYearsAgoForXp = birthDateForAge(4);
 
       const xpTestHorse = await prisma.horse.create({
         data: {
@@ -643,8 +636,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
   describe('BUSINESS RULE: Training Log Creation', () => {
     it('CREATES training log entry for successful training', async () => {
       // Create fresh horse for log testing
-      const fiveYearsAgoForLog = new Date();
-      fiveYearsAgoForLog.setFullYear(fiveYearsAgoForLog.getFullYear() - 5);
+      const fiveYearsAgoForLog = birthDateForAge(5);
 
       const logTestHorse = await prisma.horse.create({
         data: {
@@ -737,8 +729,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
   describe('BUSINESS RULE: Next Training Date Calculation', () => {
     it('PROVIDES accurate next training date (7 days from training)', async () => {
       // Create fresh horse for date testing
-      const fourYearsAgoForDate = new Date();
-      fourYearsAgoForDate.setFullYear(fourYearsAgoForDate.getFullYear() - 4);
+      const fourYearsAgoForDate = birthDateForAge(4);
 
       const dateTestHorse = await prisma.horse.create({
         data: {

@@ -45,6 +45,7 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 import { randomBytes } from 'node:crypto';
 import { assignTestTrainer, cleanupTestTrainers } from '../helpers/assignTrainer.mjs';
+import { birthDateForAge } from '../../utils/horseAge.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -230,8 +231,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       }));
 
     // Calculate a date that's exactly 2 years ago from today
-    const twoYearsAgo = new Date();
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    const twoYearsAgo = birthDateForAge(2);
 
     const youngHorse = await prisma.horse.create({
       data: {
@@ -258,8 +258,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
     expect(youngHorse.disciplineScores).toEqual({});
 
     // Calculate a date that's exactly 4 years ago from today
-    const fourYearsAgo = new Date();
-    fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
+    const fourYearsAgo = birthDateForAge(4);
 
     const matureHorse = await prisma.horse.create({
       data: {

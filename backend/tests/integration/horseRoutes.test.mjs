@@ -17,7 +17,7 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../helpers/assignTrainer.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
-import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { birthDateForAge } from '../../utils/horseAge.mjs';
 
 describe('Horse Routes Integration Tests', () => {
   let __csrf__;
@@ -53,7 +53,7 @@ describe('Horse Routes Integration Tests', () => {
           ...fixtureColor(),
           name: `TrainableHorse_${ts}`,
           sex: 'Mare',
-          dateOfBirth: gameCalendarDate(new Date(), -Math.round(4 * 365.25)),
+          dateOfBirth: birthDateForAge(4),
           age: 4,
           // Owner ruling 2026-10-22/23: a horse in Bad health cannot train, and a
           // never-fed, never-vetted horse is Bad. The trainable fixture is cared for.
@@ -67,7 +67,7 @@ describe('Horse Routes Integration Tests', () => {
           ...fixtureColor(),
           name: `FoalHorse_${ts}`,
           sex: 'Stallion',
-          dateOfBirth: gameCalendarDate(new Date(), -Math.round(1 * 365.25)),
+          dateOfBirth: birthDateForAge(1),
           age: 1,
           userId: u.id,
         },

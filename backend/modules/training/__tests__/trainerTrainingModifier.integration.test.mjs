@@ -23,6 +23,7 @@ import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 import { randomBytes } from 'node:crypto';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -114,8 +115,7 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
    * temperament and optional epigenetic traits.
    */
   async function makeHorse(label, { temperament = null, positiveTraits = [], fixtureTrainer = true } = {}) {
-    const fiveYearsAgo = new Date();
-    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+    const fiveYearsAgo = birthDateForAge(5);
     const horse = await createTestHorse(
       prisma,
       {

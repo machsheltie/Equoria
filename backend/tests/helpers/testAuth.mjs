@@ -7,8 +7,8 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { fetchCsrf } from './csrfHelper.mjs';
 import { fixtureColor } from './fixtureColor.mjs';
-import { gameCalendarDate } from '../../utils/gameTime.mjs';
 import { releaseShowEscrow } from '../../__tests__/helpers/releaseShowEscrow.mjs';
+import { birthDateForAge } from '../../utils/horseAge.mjs';
 
 const DEFAULT_ORIGIN = 'http://localhost:3000';
 
@@ -186,9 +186,11 @@ export async function createTestHorse(horseData = {}) {
     ...fixtureColor(),
     name: `TestHorse_${horseUid}`,
     breed: { connect: { id: breed.id } },
-    age: 5,
+    age: horseData.age ?? 5,
     sex: 'Mare',
-    dateOfBirth: gameCalendarDate(new Date(), -5 * 365), // 5 years ago
+    // Equoria-66qkj: born exactly `age` game-years ago on the Eastern calendar,
+    // so the birth date and the stored age agree.
+    dateOfBirth: birthDateForAge(horseData.age ?? 5),
     speed: 50,
     stamina: 50,
     focus: 50,

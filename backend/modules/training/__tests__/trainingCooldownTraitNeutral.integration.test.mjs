@@ -14,6 +14,7 @@ import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 import { randomBytes } from 'node:crypto';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -65,8 +66,7 @@ describe('INTEGRATION: training cooldown is seven days whatever the horse traits
   });
 
   async function cooldownDaysAfterTraining(label, positiveTraits) {
-    const fiveYearsAgo = new Date();
-    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+    const fiveYearsAgo = birthDateForAge(5);
     const horse = await createTestHorse(
       prisma,
       {

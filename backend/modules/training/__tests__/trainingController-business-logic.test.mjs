@@ -43,6 +43,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -173,20 +174,15 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
     }
 
     // Calculate dynamic dates for test horses
-    const fourYearsAgo = new Date();
-    fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
+    const fourYearsAgo = birthDateForAge(4);
 
-    const twoYearsAgo = new Date();
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    const twoYearsAgo = birthDateForAge(2);
 
-    const fiveYearsAgo = new Date();
-    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+    const fiveYearsAgo = birthDateForAge(5);
 
-    const sixYearsAgo = new Date();
-    sixYearsAgo.setFullYear(sixYearsAgo.getFullYear() - 6);
+    const sixYearsAgo = birthDateForAge(6);
 
-    const threeYearsAgo = new Date();
-    threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+    const threeYearsAgo = birthDateForAge(3);
 
     // Create test horses
     adultHorse = await prisma.horse.create({
@@ -413,8 +409,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
     it('EXECUTES successful training workflow for eligible horse', async () => {
       // Kept async() as per previous lint fix attempt
       // Calculate dynamic date for workflow horse
-      const workflowFourYearsAgo = new Date();
-      workflowFourYearsAgo.setFullYear(workflowFourYearsAgo.getFullYear() - 4);
+      const workflowFourYearsAgo = birthDateForAge(4);
 
       // Create a fresh horse for training workflow testing
       const workflowHorse = await prisma.horse.create({
@@ -631,8 +626,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
   describe('API INTEGRATION: trainRouteHandler() Function Validation', () => {
     it('PROCESSES valid training request and RETURNS success response', async () => {
       // Calculate dynamic date for fresh horse
-      const freshFourYearsAgo = new Date();
-      freshFourYearsAgo.setFullYear(freshFourYearsAgo.getFullYear() - 4);
+      const freshFourYearsAgo = birthDateForAge(4);
 
       // Fixed: Create a fresh horse for this test since adultHorse may be in cooldown
       const freshHorse = await prisma.horse.create({

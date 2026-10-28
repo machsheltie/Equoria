@@ -33,6 +33,7 @@ import { trainHorse } from '../modules/training/controllers/trainingController.m
 import { executeClosedShows } from '../modules/competition/shows/showExecutionService.mjs';
 // "Groom horse" is the only grooming path since the old doors were retired (Equoria-l7xag).
 import { groomHorse } from '../modules/grooms/services/groomCareService.mjs';
+import { birthDateForAge } from '../utils/horseAge.mjs';
 
 const tag = () => randomBytes(6).toString('hex');
 const PREFIX = 'TestFixture-dea06';
@@ -99,8 +100,7 @@ afterAll(async () => {
 
 describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)', () => {
   it('training: the trainer gains no XP, and the horse gains only +5 in the trained discipline', async () => {
-    const fiveYearsAgo = new Date();
-    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+    const fiveYearsAgo = birthDateForAge(5);
     const stats = Object.fromEntries(horseStats.map((s, i) => [s, 40 + i]));
     const horse = await createTestHorse(
       prisma,
@@ -177,7 +177,7 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         name: `${PREFIX}-show-${tag()}`,
         sex: 'Mare',
         age: 7,
-        dateOfBirth: new Date('2018-01-01'),
+        dateOfBirth: birthDateForAge(7),
         userId: user.id,
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)

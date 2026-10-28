@@ -34,6 +34,7 @@ import { trainHorse } from '../controllers/trainingController.mjs';
 // RED so leaked fixtures don't silently pollute the canonical DB (CLAUDE.md §2).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -67,7 +68,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${tag}`,
       sex: 'Mare',
-      dateOfBirth: new Date('2019-06-15'),
+      dateOfBirth: birthDateForAge(6),
       age: 6,
       userId: testUser.id,
       healthStatus: 'Excellent',
