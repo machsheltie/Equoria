@@ -9,7 +9,6 @@ describe('HorseStatsCard', () => {
   const mockHorse: TrainableHorse = {
     id: 1,
     name: 'Thunder',
-    level: 5,
     breed: 'Thoroughbred',
     gender: 'Mare',
     sex: 'Female',
@@ -28,9 +27,11 @@ describe('HorseStatsCard', () => {
       expect(screen.getByText('Thunder')).toBeInTheDocument();
     });
 
-    it('displays horse level when provided', () => {
-      render(<HorseStatsCard horse={mockHorse} />);
-      expect(screen.getByText(/Level 5/i)).toBeInTheDocument();
+    // Owner ruling 2026-10-28 (q227) changed this contract: the card used to show a
+    // horse-wide "Level N". A level exists only per discipline, so it shows none.
+    it('shows no horse-wide level, even if an old payload still carries one', () => {
+      render(<HorseStatsCard horse={{ ...mockHorse, level: 5 } as TrainableHorse} />);
+      expect(screen.queryByText(/Level/i)).not.toBeInTheDocument();
     });
 
     it('displays horse breed when provided', () => {
@@ -61,12 +62,6 @@ describe('HorseStatsCard', () => {
   });
 
   describe('Missing Data Handling', () => {
-    it('handles missing level gracefully', () => {
-      const horseWithoutLevel = { ...mockHorse, level: undefined };
-      render(<HorseStatsCard horse={horseWithoutLevel} />);
-      expect(screen.queryByText(/Level/i)).not.toBeInTheDocument();
-    });
-
     it('handles missing breed gracefully', () => {
       const horseWithoutBreed = { ...mockHorse, breed: undefined };
       render(<HorseStatsCard horse={horseWithoutBreed} />);

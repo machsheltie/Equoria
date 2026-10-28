@@ -13,7 +13,6 @@ const HorseStatsCard: React.FC<HorseStatsCardProps> = ({ horse }) => {
   };
 
   const hasAnyStats =
-    horse.level !== undefined ||
     horse.breed !== undefined ||
     horse.ageYears !== undefined ||
     horse.gender !== undefined ||
@@ -27,12 +26,9 @@ const HorseStatsCard: React.FC<HorseStatsCardProps> = ({ horse }) => {
     <div className="rounded-md border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-4">
       <h4 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Horse Stats</h4>
 
-      {/* Horse Name and Level */}
+      {/* Horse name. No horse-wide level (owner ruling 2026-10-28, q227). */}
       <div className="mb-3">
         <p className="text-lg font-bold text-[var(--text-primary)]">{horse.name}</p>
-        {horse.level !== undefined && (
-          <p className="text-sm text-role-secondary">Level {horse.level}</p>
-        )}
       </div>
 
       {/* Stats Grid */}

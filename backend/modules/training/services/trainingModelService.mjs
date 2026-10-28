@@ -1,7 +1,6 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
-import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
 import { breedAllowsDiscipline } from '../../../utils/gaitedBreed.mjs';
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
@@ -294,10 +293,8 @@ async function getTrainableHorses(userId) {
           name: horse.name,
           age: effectiveAge,
           ageYears: getHorseAgeYears(horse.dateOfBirth),
-          // horseXp is an Int column, so `.level` off it was always undefined and
-          // every horse read as level 1 (Equoria-fdwly). The pinned XP-bracket
-          // level is the one the show brackets use.
-          level: getHorseXpLevel(horse.horseXp),
+          // No horse-wide level (owner ruling 2026-10-28, q227, Equoria-vtgeh): Horse
+          // Points are not a level; a level exists only per discipline.
           breed: horse.breed?.name ?? null,
           sex: horse.sex ?? null,
           phenotype: horse.phenotype ?? null,

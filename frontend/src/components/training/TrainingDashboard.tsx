@@ -112,11 +112,6 @@ const HorseCard = ({ horse, onTrainClick }: HorseCardProps): JSX.Element => {
                 : 'not recorded'}
             </p>
           </div>
-          {horse.level !== undefined && (
-            <span className="rounded bg-[var(--role-neutral-bg)] px-2 py-1 text-xs font-medium text-role-secondary border border-[var(--glass-border)]">
-              Level {horse.level}
-            </span>
-          )}
         </div>
 
         {/* Breed Info */}

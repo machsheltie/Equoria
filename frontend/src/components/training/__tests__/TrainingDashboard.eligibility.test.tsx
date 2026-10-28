@@ -31,7 +31,6 @@ const horse = (id: number, name: string, ageYears: number, extra: object = {}) =
   name,
   age: ageYears,
   ageYears,
-  level: 1,
   breed: 'Thoroughbred',
   sex: 'Mare',
   trainableDisciplines: ['Dressage'],
@@ -99,5 +98,20 @@ describe('TrainingDashboard eligibility is the server truth (Equoria-du9bn)', ()
     expect(screen.getByTestId('train-button-1')).toBeInTheDocument();
     expect(screen.queryByTestId('train-button-2')).not.toBeInTheDocument();
     expect(screen.queryByTestId('train-button-3')).not.toBeInTheDocument();
+  });
+
+  // Owner ruling 2026-10-28 (q227, Equoria-vtgeh): no horse-wide Level on the training
+  // list; a level exists only per discipline.
+  it('shows no horse-wide level, even if an old payload still sends one', async () => {
+    server.use(
+      http.get(`${base}/api/v1/training/trainable/${userId}`, () =>
+        HttpResponse.json({ success: true, data: [horse(1, 'Fit Filly', 6, { level: 7 })] })
+      )
+    );
+    renderDashboard();
+
+    await screen.findByText('Fit Filly');
+    expect(screen.queryByText(/Level 7/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Level\b/)).not.toBeInTheDocument();
   });
 });

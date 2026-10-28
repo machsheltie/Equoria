@@ -190,17 +190,19 @@ describe('Training Model', () => {
     });
   });
 
-  describe('getTrainableHorses level (Equoria-fdwly)', () => {
-    it('reports the XP-bracket level, floor(horseXp / 100) + 1, not a constant 1', async () => {
-      // horseXp is an Int column; the payload used to read `.level` off it and
-      // so said level 1 for every horse regardless of XP.
+  // Owner ruling 2026-10-28 (q227, Equoria-vtgeh) changed this contract: the list used
+  // to report a horse-wide XP-bracket level (floor(horseXp / 100) + 1, Equoria-fdwly).
+  // Horse Points are not a level, and a level exists only per discipline, so the
+  // training list carries no horse-wide level at all.
+  describe('getTrainableHorses carries no horse-wide level (q227)', () => {
+    it('has no level field, whatever the horse XP', async () => {
       await prisma.horse.update({ where: { id: testHorse.id }, data: { horseXp: 250 } });
 
       const horses = await getTrainableHorses(testUser.id);
       const entry = horses.find(h => h.id === testHorse.id);
 
       expect(entry).toBeDefined();
-      expect(entry.level).toBe(3);
+      expect(entry).not.toHaveProperty('level');
     });
   });
 
