@@ -143,7 +143,7 @@ export function useMfaChallenge() {
 export function useRegister() {
   const queryClient = useQueryClient();
 
-  return useMutation<{ user: User }, ApiError, RegisterData>({
+  return useMutation<{ user: User; sessionIssued?: boolean }, ApiError, RegisterData>({
     mutationFn: authApi.register,
     onSuccess: () => {
       // Force fresh profile fetch so balance, level, role etc. are correct

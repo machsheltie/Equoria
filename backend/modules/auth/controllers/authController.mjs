@@ -56,11 +56,9 @@ import { createTokenPair, rotateRefreshToken } from '../../../utils/tokenRotatio
 import { createStarterHorseForNewUser } from '../services/onboardingService.mjs';
 // Equoria-vhv3i: verifyEmailToken / resendVerificationEmail /
 // checkVerificationStatus moved to emailVerificationController.mjs.
-// Only `createVerificationToken` is still needed here (register issues
-// the first verification token at signup).
-import { createVerificationToken } from '../services/emailVerificationService.mjs';
-import emailService from '../../../utils/emailService.mjs';
-import { maskEmailAddress, maskEmailsInError } from '../../../utils/emailIdentityPolicy.mjs';
+// Register sends the first verification link through signupVerificationEmail.
+import { sendFirstVerificationEmail } from '../services/signupVerificationEmail.mjs';
+import { maskEmailsInError } from '../../../utils/emailIdentityPolicy.mjs';
 import { COOKIE_OPTIONS, CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 import {
   issueCsrfToken,
@@ -233,33 +231,32 @@ export const register = async (req, res, next) => {
     // the service catches and logs failures so registration always succeeds.
     await createStarterHorseForNewUser(user);
 
-    // Create new token family for this registration.
-    // Equoria-ovp9: pass role so the access token carries it and requireRole()
-    // can skip the per-request DB lookup. New users always start with 'user'.
-    const tokenPair = await createTokenPair(user.id, undefined, user.role ?? 'user');
+    // Equoria-nqky1 (ACC-09): from here on the account EXISTS. Failing to send
+    // the link or to open the session must not answer "registration failed":
+    // the player would retry and be told the account is taken. The link can be
+    // sent again from the confirm-your-email screen and signing in opens a
+    // session, so both steps fail soft and the answer says which happened.
+    const verificationEmailSent = await sendFirstVerificationEmail(req, user);
 
-    // Create email verification token
-    const ipAddress = req.ip || req.connection?.remoteAddress || null;
-    const userAgent = req.headers['user-agent'];
-
-    const verificationToken = await createVerificationToken(user.id, user.email, {
-      ipAddress,
-      userAgent,
-    });
-
-    // Send verification email (don't block registration on email send failure)
+    let tokenPair = null;
     try {
-      await emailService.sendVerificationEmail(user.email, verificationToken.token, user);
-      logger.info('[authController.register] Verification email sent', {
+      // Equoria-ovp9: pass role so the access token carries it and requireRole()
+      // can skip the per-request DB lookup. New users always start with 'user'.
+      tokenPair = await createTokenPair(user.id, undefined, user.role ?? 'user');
+    } catch (sessionError) {
+      logger.error('[authController.register] Account created; session not opened:', {
         userId: user.id,
-        email: maskEmailAddress(user.email), // Equoria-5vyuh: never a raw address
+        error: maskEmailsInError(sessionError),
       });
-    } catch (emailError) {
-      logger.error(
-        '[authController.register] Failed to send verification email:',
-        maskEmailsInError(emailError),
-      );
-      // Continue with registration even if email fails
+      return res.status(201).json({
+        success: true,
+        message: 'Your account is ready. Please sign in.',
+        data: {
+          user: { id: user.id, username: user.username, emailVerified: user.emailVerified },
+          sessionIssued: false,
+          emailVerificationSent: verificationEmailSent,
+        },
+      });
     }
 
     // Set httpOnly cookies for security (prevents XSS attacks)
@@ -292,7 +289,8 @@ export const register = async (req, res, next) => {
         },
         // Tokens now in httpOnly cookies, not in response body
         csrfToken,
-        emailVerificationSent: true,
+        sessionIssued: true,
+        emailVerificationSent: verificationEmailSent,
       },
     });
   } catch (error) {

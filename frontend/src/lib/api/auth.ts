@@ -231,6 +231,8 @@ export const authApi = {
       // 21R-AUTH-3: the backend seeds a CSRF cookie + returns the matching
       // token (already bound to the new user.id) on successful registration.
       csrfToken?: string;
+      /** Equoria-nqky1: false when the account was created but no session opened. */
+      sessionIssued?: boolean;
     }>('/api/v1/auth/register', userData);
     // Equoria-f6wfa: registration rotates the auth cookies. The CSRF token
     // cached during the register POST itself is bound to the ANONYMOUS

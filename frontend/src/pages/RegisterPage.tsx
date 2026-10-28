@@ -85,7 +85,12 @@ const RegisterPage: React.FC = () => {
         dateOfBirth: result.data.dateOfBirth,
       },
       {
-        onSuccess: () => navigate('/verify-email'),
+        // Equoria-nqky1: the account exists even when its session could not be
+        // opened; the player then signs in instead of seeing a failed sign-up.
+        onSuccess: (data) =>
+          data?.sessionIssued === false
+            ? navigate('/login', { state: { accountReady: true } })
+            : navigate('/verify-email'),
         onError: (err) => {
           // Story 21S-9: flattened branches. Server returns one of several
           // duplicate phrasings ("already exists", "already in use",

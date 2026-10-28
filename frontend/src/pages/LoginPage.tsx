@@ -71,6 +71,12 @@ const LoginPage: React.FC = () => {
     navigate(safeRedirectTarget(rawFrom, '/'), { replace: true });
   };
 
+  /**
+   * Equoria-nqky1: sign-up created the account but could not open its session,
+   * so registration sent the player here. Say so, so she simply signs in.
+   */
+  const accountReady = (location.state as { accountReady?: boolean } | null)?.accountReady === true;
+
   /** Drop any challenge in flight and return to the credentials form. */
   const returnToCredentials = (revokedMessage: string | null = null) => {
     setMfaChallengeToken(null);
@@ -160,6 +166,12 @@ const LoginPage: React.FC = () => {
         }
         fallbackMessage="Login failed. Please try again."
       />
+
+      {accountReady && !error && (
+        <p role="status" className="text-role-secondary" data-testid="login-account-ready">
+          Your account is ready. Sign in to continue.
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-3">
         {/* Email — FormField + Input (Finding 2 migration) */}
