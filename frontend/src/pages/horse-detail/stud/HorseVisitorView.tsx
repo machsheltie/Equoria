@@ -7,18 +7,35 @@
  * q91/q94 a stallion at stud carries "Breed to <name> (<fee>)"; q95/q107 a
  * stallion owner opening a requesting mare (…?request=<id>) sees her read-only
  * and accepts or rejects there.
+ *
+ * Owner rulings 2026-10-28: visitors see everything on a horse's page,
+ * read-only (q205): the show record line under the name (q215 / q225), the
+ * Horse Details (Breed above Age, Color with its shade), the Care Team, and
+ * Trait Discovery chips (Hidden / gold / greyed Inactive; q174 / q213). Old
+ * contract: public facts and a "Revealed traits" list only.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useStudRequests } from '@/hooks/api/useStuds';
-import { humanizeTraitKey } from '@/hooks/useHorseTraits';
+import { humanizeTraitKey, type HorseTrait } from '@/hooks/useHorseTraits';
 import { healthLabel } from '@/lib/healthWords';
-import type { HorseVisit } from '@/lib/api/studs';
+import { colorWithShade } from '@/lib/coatColor';
+import { formatDate } from '@/lib/formatDate';
+import { horseAgeWords } from '@/lib/horseAgeWords';
+import { isStaffLevel } from '@/lib/staffLevels';
+import StaffLevelStars from '@/components/common/StaffLevelStars';
+import MarkingsPanel from '@/components/horse/MarkingsPanel';
+import LiveTraitDetailModal from '@/components/traits/LiveTraitDetailModal';
+import type { HorseVisit, VisitTrait } from '@/lib/api/studs';
+import { ShowRecordLine } from '../ShowRecordLine';
+import TraitDiscovery from '../genetics/TraitDiscovery';
+import type { HorseMarkings } from '../HorseDetailPageTypes';
 import BreedToStallion from './BreedToStallion';
 import RequestAnswer from './RequestAnswer';
 import { StarMark } from './StarMark';
 import '@/styles/studBreeding.css';
+import '@/styles/horseCare.css';
 
 const statOrder = [
   'speed',
@@ -33,6 +50,134 @@ const statOrder = [
 function statLabel(key: string): string {
   return key.charAt(0).toUpperCase() + key.slice(1);
 }
+
+/** A server-named trait as the Trait Discovery chips read it. */
+function chipTrait(trait: VisitTrait, valence: 'positive' | 'negative'): HorseTrait {
+  return {
+    key: trait.key,
+    name: trait.label ?? humanizeTraitKey(trait.key),
+    valence,
+    description: trait.description ?? '',
+  };
+}
+
+/** Revealed, dormant and a hidden count; an older reply sends revealed keys only. */
+function discoveryOf(horse: HorseVisit) {
+  const found = horse.traitDiscovery;
+  if (found) {
+    return {
+      revealed: [
+        ...found.positive.map((t) => chipTrait(t, 'positive')),
+        ...found.negative.map((t) => chipTrait(t, 'negative')),
+      ],
+      dormant: found.dormant.map((t) =>
+        chipTrait(t, t.type === 'negative' ? 'negative' : 'positive')
+      ),
+      hiddenCount: found.hiddenCount,
+    };
+  }
+  const named = (key: string, valence: 'positive' | 'negative'): HorseTrait => ({
+    key,
+    name: humanizeTraitKey(key),
+    valence,
+    description: '',
+  });
+  return {
+    revealed: [
+      ...horse.revealedTraits.positive.map((key) => named(key, 'positive')),
+      ...horse.revealedTraits.negative.map((key) => named(key, 'negative')),
+    ],
+    dormant: [],
+    hiddenCount: 0,
+  };
+}
+
+const noGlow: ReadonlySet<string> = new Set();
+const sameToken = (value: string) => value;
+
+/** One read-only ledger row, in the Horse Details style. */
+const Row: React.FC<{ label: string; testId?: string; children: React.ReactNode }> = ({
+  label,
+  testId,
+  children,
+}) => (
+  <div className="horse-status__row">
+    <dt>{label}</dt>
+    <dd data-testid={testId}>{children}</dd>
+  </div>
+);
+
+const staffRoles = [
+  { key: 'trainer', label: 'Assigned Trainer', none: 'No trainer assigned.' },
+  { key: 'groom', label: 'Assigned Groom', none: 'No groom assigned.' },
+  { key: 'rider', label: 'Assigned Rider', none: 'No rider assigned.' },
+] as const;
+
+/** The horse's Horse Details and Care Team, read-only (q205). */
+const VisitorLedgers: React.FC<{ horse: HorseVisit }> = ({ horse }) => {
+  const markings: HorseMarkings | null =
+    horse.faceMarking || horse.legMarkings
+      ? {
+          faceMarking: horse.faceMarking ?? undefined,
+          legMarkings: (horse.legMarkings ?? undefined) as HorseMarkings['legMarkings'],
+        }
+      : null;
+  return (
+    <>
+      <section aria-labelledby={`visit-details-${horse.id}`}>
+        <h2 id={`visit-details-${horse.id}`} className="stud-visit__heading">
+          Horse Details
+        </h2>
+        <dl className="horse-status__record">
+          <Row label="Breed">{horse.breed ?? 'not recorded'}</Row>
+          <Row label="Age">{horseAgeWords(horse.age, horse.dateOfBirth)}</Row>
+          <Row label="Date of Birth">
+            {formatDate(
+              horse.dateOfBirth,
+              { month: 'long', day: 'numeric', year: 'numeric' },
+              'Not recorded'
+            )}
+          </Row>
+          <Row label="Gender">{horse.sex}</Row>
+          <Row label="Color" testId="visit-color">
+            {colorWithShade(horse.colorName, horse.shade)}
+          </Row>
+          <Row label="Markings">
+            <MarkingsPanel markings={markings} inline />
+          </Row>
+          <Row label="Temperament">{horse.temperament ?? 'not recorded'}</Row>
+          <Row label="Health">{healthLabel(horse.displayedHealth)}</Row>
+        </dl>
+      </section>
+      {horse.careTeam && (
+        <section aria-labelledby={`visit-care-team-${horse.id}`} data-testid="visit-care-team">
+          <h2 id={`visit-care-team-${horse.id}`} className="stud-visit__heading">
+            Care Team
+          </h2>
+          <dl className="horse-status__record">
+            {staffRoles.map((role) => {
+              const member = horse.careTeam?.[role.key] ?? null;
+              return (
+                <Row key={role.key} label={role.label}>
+                  {member ? (
+                    <span>
+                      {member.name}{' '}
+                      {isStaffLevel(member.starLevel) && (
+                        <StaffLevelStars level={member.starLevel} />
+                      )}
+                    </span>
+                  ) : (
+                    role.none
+                  )}
+                </Row>
+              );
+            })}
+          </dl>
+        </section>
+      )}
+    </>
+  );
+};
 
 const StudPlaque: React.FC<{ horse: HorseVisit }> = ({ horse }) => {
   if (!horse.stud) return null;
@@ -114,10 +259,8 @@ const RequestFromLink: React.FC<{ horse: HorseVisit; requestId: number }> = ({
 const HorseVisitorView: React.FC<{ horse: HorseVisit }> = ({ horse }) => {
   const [params] = useSearchParams();
   const requestId = Number(params.get('request'));
-  const traits = [
-    ...horse.revealedTraits.positive.map((key) => ({ key, helps: true })),
-    ...horse.revealedTraits.negative.map((key) => ({ key, helps: false })),
-  ];
+  const discovery = discoveryOf(horse);
+  const [selectedTrait, setSelectedTrait] = useState<HorseTrait | null>(null);
   const facts = [horse.breed, horse.sex, horse.age !== null ? `${horse.age} years` : null]
     .filter(Boolean)
     .join(' · ');
@@ -141,6 +284,17 @@ const HorseVisitorView: React.FC<{ horse: HorseVisit }> = ({ horse }) => {
           <span className="stud-visit__readonly">Visiting</span>
         </p>
         <h1 className="stud-visit__name">{horse.name}</h1>
+        {horse.showRecord && (
+          <ShowRecordLine
+            record={{
+              wins: horse.showRecord.wins,
+              secondPlaces: horse.showRecord.secondPlaces,
+              thirdPlaces: horse.showRecord.thirdPlaces,
+              winnings: horse.showRecord.winnings,
+              points: horse.showRecord.points,
+            }}
+          />
+        )}
         <p className="stud-quiet">
           {[horse.colorName, horse.owner ? `owned by ${horse.owner.username}` : null]
             .filter(Boolean)
@@ -158,19 +312,16 @@ const HorseVisitorView: React.FC<{ horse: HorseVisit }> = ({ horse }) => {
             ))}
         </dl>
 
-        <h2 className="stud-visit__heading">Revealed traits</h2>
-        {traits.length === 0 ? (
-          <p className="stud-quiet">No traits have been revealed yet.</p>
-        ) : (
-          <ul className="stud-traits">
-            {traits.map(({ key, helps }) => (
-              <li key={key} className={helps ? 'stud-trait' : 'stud-trait stud-trait--hinders'}>
-                {humanizeTraitKey(key)}
-                <span className="sr-only">{helps ? ' (helps)' : ' (hinders)'}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <VisitorLedgers horse={horse} />
+
+        <TraitDiscovery
+          revealed={discovery.revealed}
+          dormant={discovery.dormant}
+          hiddenCount={discovery.hiddenCount}
+          glowTokens={noGlow}
+          normalize={sameToken}
+          onSelect={setSelectedTrait}
+        />
 
         <p className="stud-quiet stud-visit__lineage">
           {horse.sire ? (
@@ -194,12 +345,16 @@ const HorseVisitorView: React.FC<{ horse: HorseVisit }> = ({ horse }) => {
           ) : (
             'Dam unrecorded'
           )}
-          {' · '}Health {healthLabel(horse.displayedHealth)}
         </p>
 
         {requestId > 0 && <RequestFromLink horse={horse} requestId={requestId} />}
         <StudPlaque horse={horse} />
       </div>
+      <LiveTraitDetailModal
+        isOpen={selectedTrait !== null}
+        onClose={() => setSelectedTrait(null)}
+        trait={selectedTrait}
+      />
     </article>
   );
 };

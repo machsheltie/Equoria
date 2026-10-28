@@ -22,7 +22,39 @@ import { apiClient } from '../http/apiClient.js';
 export type StudMode = 'public' | 'private';
 
 /** A horse as any player may see it (backend app/queries/horseVisitQuery.mjs). */
-export interface HorseVisit {
+/** A named trait a player may see: authored label, never the rarity. */
+export interface VisitTrait {
+  key: string;
+  label: string | null;
+  type: 'positive' | 'negative' | null;
+  description: string | null;
+}
+
+/** Visitors see everything on a horse's page, read-only (owner ruling q205, 2026-10-28). */
+export interface HorseVisitWholePage {
+  shade?: string | null;
+  faceMarking?: string | null;
+  legMarkings?: Record<string, string> | null;
+  dateOfBirth?: string | null;
+  temperament?: string | null;
+  showRecord?: {
+    wins: number;
+    secondPlaces: number;
+    thirdPlaces: number;
+    winnings: number;
+    points: number;
+  };
+  careTeam?: Record<'trainer' | 'groom' | 'rider', { name: string; starLevel: string } | null>;
+  /** Revealed and dormant traits by name; hidden traits as a count only (q174 / q213). */
+  traitDiscovery?: {
+    positive: VisitTrait[];
+    negative: VisitTrait[];
+    dormant: VisitTrait[];
+    hiddenCount: number;
+  };
+}
+
+export interface HorseVisit extends HorseVisitWholePage {
   id: number;
   name: string;
   breed: string | null;

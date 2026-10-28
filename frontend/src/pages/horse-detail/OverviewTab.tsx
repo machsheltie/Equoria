@@ -8,7 +8,7 @@
  * (Equoria-2w4yo): the section is titled "Horse Details" and, since the line
  * under the horse's name is gone, carries Color, Breed (provisional, q206),
  * Markings and Temperament directly below Gender — the same values the line
- * showed: colour from the visible phenotype, never the hidden genotype. A ledger, not a wall of tiles
+ * showed: color from the visible phenotype, never the hidden genotype. A ledger, not a wall of tiles
  * (PRODUCT.md structural anti-SaaS rules). Bond shows at every age; there is no
  * stress. The age reads in days while a horse is under 3 (Equoria-q4uzh).
  *
@@ -31,6 +31,7 @@ import { HealthLevelBar } from '@/components/horse/HealthLevelBar';
 import { useHorseCareStatus } from '@/hooks/api/useHorseCareStatus';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { getBreedName } from '@/lib/utils';
+import { colorWithShade } from '@/lib/coatColor';
 import { Button } from '@/components/ui/button';
 import MarkingsPanel from '@/components/horse/MarkingsPanel';
 import type { Horse } from './HorseDetailPageTypes';
@@ -50,7 +51,7 @@ const LedgerRow: React.FC<{ label: string; children: React.ReactNode; testId?: s
   </div>
 );
 
-/** One care-date row. The glow is colour plus a text note, never colour alone. */
+/** One care-date row. The glow is color plus a text note, never color alone. */
 const CareDateRow: React.FC<{
   label: string;
   date: string | null | undefined;
@@ -66,16 +67,6 @@ const CareDateRow: React.FC<{
     </dd>
   </div>
 );
-
-/** "Bay — Dark": the visible colour and its shade (owner ruling q214). */
-function colorWithShade(phenotype: Horse['phenotype']): string {
-  const colorName = phenotype?.colorName;
-  if (!colorName) return 'not recorded';
-  const shade = typeof phenotype?.shade === 'string' ? phenotype.shade.trim() : '';
-  if (!shade) return colorName;
-  const shadeWords = shade.replace(/\b\w/g, (letter) => letter.toUpperCase());
-  return `${colorName} — ${shadeWords}`;
-}
 
 /** Shod more than a week ago, or never: the farrier is overdue. */
 const isShoeOverdue = (lastShod: string | null | undefined): boolean =>
@@ -152,10 +143,10 @@ const OverviewTab: React.FC<{
               <span className="capitalize">{horse.gender}</span>
             </LedgerRow>
             {/* Equoria-lsi5 + Equoria-iwy3 — phenotype.colorName is the visible
-                colour. Legacy horses (phenotype: null) never read 'Unknown';
+                color. Legacy horses (phenotype: null) never read 'Unknown';
                 'not recorded' is the honest fallback. */}
             <LedgerRow label="Color" testId="horse-detail-color">
-              {colorWithShade(horse.phenotype)}
+              {colorWithShade(horse.phenotype?.colorName, horse.phenotype?.shade)}
             </LedgerRow>
             <LedgerRow label="Markings" testId="horse-detail-markings">
               <MarkingsPanel markings={horse.markings} inline />

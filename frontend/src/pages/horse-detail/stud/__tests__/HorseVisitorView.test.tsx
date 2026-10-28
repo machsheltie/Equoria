@@ -4,7 +4,8 @@
  * Owner rulings q90 (same horse page, read-only: public facts, revealed traits
  * only, a "Standing at stud" plaque with fee, Public or Private, and owner),
  * q91 (a "Breed to <name> (<fee>)" button), q95/q107 (a stallion owner opening
- * a requesting mare accepts or rejects there).
+ * a requesting mare accepts or rejects there). Owner rulings 2026-10-28 (q205
+ * and the horse-page rulings): visitors see everything on the page, read-only.
  *
  * The real HorseDetailPage at /horses/:id: the owner-only read answers 404 for
  * another player's horse, and the page reads the visitor view instead. MSW at
@@ -150,5 +151,46 @@ describe('the horse page in visitor mode', () => {
     renderAt('/horses/12345');
 
     expect(await screen.findByText('Horse Not Found')).toBeInTheDocument();
+  });
+
+  // Owner rulings 2026-10-28 (q205, q215, q174, q213, q214): visitors see
+  // everything on a horse's page, read-only.
+  it('shows the show record, Horse Details, Care Team and Trait Discovery, all read-only', async () => {
+    serve({
+      success: true,
+      data: {
+        ...visit,
+        shade: 'dark',
+        temperament: 'Willing',
+        dateOfBirth: '2019-01-01T00:00:00.000Z',
+        showRecord: { wins: 2, secondPlaces: 1, thirdPlaces: 1, winnings: 1300, points: 2350 },
+        careTeam: {
+          trainer: { name: 'Alice Thornton', starLevel: 'advanced' },
+          groom: null,
+          rider: { name: 'Rowan Hale', starLevel: 'novice' },
+        },
+        traitDiscovery: {
+          positive: [
+            { key: 'evenTempered', label: 'Even Tempered', type: 'positive', description: null },
+          ],
+          negative: [],
+          dormant: [{ key: 'fearful', label: 'Fearful', type: 'negative', description: null }],
+          hiddenCount: 2,
+        },
+      },
+    });
+    renderAt('/horses/99');
+
+    expect(await screen.findByTestId('record-placings')).toHaveTextContent('2/1/1');
+    expect(screen.getByTestId('record-points')).toHaveTextContent('2,350');
+    expect(screen.getByTestId('visit-color')).toHaveTextContent(/^Black — Dark$/);
+    const team = screen.getByTestId('visit-care-team');
+    expect(team).toHaveTextContent('Alice Thornton');
+    expect(team).toHaveTextContent('No groom assigned.');
+    expect(team).toHaveTextContent('Rowan Hale');
+    expect(screen.queryByRole('link', { name: /Assign/ })).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('trait-chip-hidden')).toHaveLength(2);
+    expect(screen.getByTestId('trait-chip-inactive')).toHaveTextContent('Fearful');
+    expect(screen.getByRole('button', { name: 'Even Tempered' })).toBeInTheDocument();
   });
 });
