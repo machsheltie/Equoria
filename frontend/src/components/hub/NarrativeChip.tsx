@@ -72,10 +72,21 @@ interface HorseChipData {
   hasFoalsInDevelopment?: number;
   /** Any health value: the displayedHealth band or a stored healthStatus (healthWords.ts). */
   health?: string | null;
+  /** The horse's name, which the Bad health line speaks of. */
+  name?: string | null;
+  /** The horse's hunger band (feedHealth from the backend serializer). */
+  feedHealth?: string | null;
 }
 
-/** The chapter for a horse in Bad health (Equoria-2uqdg; health words per Equoria-u0jop). */
-const badHealthChapter = 'In Bad health — needs feeding and the vet';
+/**
+ * The line for a horse in Bad health, in the owner's words (ruling 2026-10-23,
+ * decisions q28): "<name> is in bad health and needs to be vetted.", with
+ * "and fed" added when its hunger is Fair or Bad (Equoria-2uqdg).
+ */
+function badHealthChapter(name?: string | null, feedHealth?: string | null): string {
+  const hungry = feedHealth === 'Fair' || feedHealth === 'Bad';
+  return `${name || 'This horse'} is in bad health and needs to be vetted${hungry ? ' and fed' : ''}.`;
+}
 
 export function deriveHorseChip(
   data: HorseChipData
@@ -83,7 +94,7 @@ export function deriveHorseChip(
   const now = Date.now();
 
   if (isBadHealth(data.health)) {
-    return { text: badHealthChapter, variant: 'warning' };
+    return { text: badHealthChapter(data.name, data.feedHealth), variant: 'warning' };
   }
 
   if (data.trainingCooldownEndsAt) {
@@ -128,6 +139,10 @@ export function deriveHorseChip(
  *   - none    : no recorded events -> "Just arrived at the stable"
  */
 export interface LatestChapterInput {
+  /** The horse's name, which the Bad health line speaks of. */
+  name?: string | null;
+  /** The hunger band the list serializer sends (feedHealth); Fair or Bad adds "and fed". */
+  feedHealth?: string | null;
   /**
    * The derived health band the list serializer sends (Excellent / Very Good /
    * Good / Fair / Bad). Preferred over the stored healthStatus when present.
@@ -179,7 +194,11 @@ export function deriveLatestChapter(
   // Bad health is the one health story (owner ruling 2026-10-23, Equoria-u0jop):
   // a horse in Fair health or better tells its latest event instead.
   if (isBadHealth(data.displayedHealth ?? data.healthStatus)) {
-    return { text: badHealthChapter, variant: 'warning', stale: false };
+    return {
+      text: badHealthChapter(data.name, data.feedHealth),
+      variant: 'warning',
+      stale: false,
+    };
   }
 
   const inFoalAt = chapterTs(data.inFoalSinceDate);

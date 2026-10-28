@@ -85,6 +85,8 @@ function HorseCard({ horse }: { horse: HorseCardData }) {
   // real per-horse HorseSummary fields, no extra requests. Stale (>7d) chips
   // fade to a quieter state per spec.
   const chapter = deriveLatestChapter({
+    name: horse.name,
+    feedHealth: horse.feedHealth,
     displayedHealth: horse.displayedHealth,
     healthStatus: horse.healthStatus,
     inFoalSinceDate: horse.inFoalSinceDate,

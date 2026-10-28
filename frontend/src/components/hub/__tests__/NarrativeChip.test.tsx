@@ -74,12 +74,21 @@ describe('deriveHorseChip', () => {
   // Equoria-2uqdg: health reads the owner's five health words (ruling 2026-10-23,
   // Equoria-u0jop). Old contract: healthStatus 'healthy' | 'injured' | 'recovering'
   // and the copy 'Injured — needs vet'; those words are not stored or sent.
-  it('returns warning chip for a horse in Bad health', () => {
-    const result = deriveHorseChip({ health: 'Bad' });
+  // Owner ruling 2026-10-23 (decisions q28). Old contract: the fixed string
+  // 'In Bad health — needs feeding and the vet', an agent's wording, not a ruling.
+  it("returns warning chip for a horse in Bad health, in the owner's words", () => {
+    const result = deriveHorseChip({ health: 'Bad', name: 'Blaze', feedHealth: 'Good' });
     expect(result).toEqual({
-      text: 'In Bad health — needs feeding and the vet',
+      text: 'Blaze is in bad health and needs to be vetted.',
       variant: 'warning',
     });
+  });
+
+  it('adds "and fed" to the Bad health chip when hunger is Fair or Bad', () => {
+    for (const hunger of ['Fair', 'Bad']) {
+      const result = deriveHorseChip({ health: 'Bad', name: 'Blaze', feedHealth: hunger });
+      expect(result!.text).toBe('Blaze is in bad health and needs to be vetted and fed.');
+    }
   });
 
   it('returns cooldown chip when training cooldown is active', () => {
@@ -120,10 +129,11 @@ describe('deriveHorseChip', () => {
   it('prioritizes Bad health over other states', () => {
     const result = deriveHorseChip({
       health: 'Bad',
+      name: 'Blaze',
       isEligibleForCompetition: true,
       hasFoalsInDevelopment: 3,
     });
     expect(result!.variant).toBe('warning');
-    expect(result!.text).toContain('Bad health');
+    expect(result!.text).toContain('is in bad health');
   });
 });

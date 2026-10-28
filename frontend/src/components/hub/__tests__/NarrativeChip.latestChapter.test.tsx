@@ -176,19 +176,53 @@ describe('deriveLatestChapter — health words (Equoria-2uqdg)', () => {
   const now = Date.now();
   const fedYesterday = new Date(now - 1 * DAY).toISOString();
 
+  // Owner ruling 2026-10-23 (decisions q28): "<name> is in bad health and needs
+  // to be vetted.", adding "and fed" when hunger is Fair or Bad. Old contract:
+  // the fixed string 'In Bad health — needs feeding and the vet' (an agent's
+  // wording, not a ruling).
   it('tells the story of a horse whose displayed health is Bad', () => {
     const chip = deriveLatestChapter(
-      { displayedHealth: 'Bad', healthStatus: 'Excellent', lastFedDate: fedYesterday },
+      {
+        name: 'Blaze',
+        feedHealth: 'Excellent',
+        displayedHealth: 'Bad',
+        healthStatus: 'Excellent',
+        lastFedDate: fedYesterday,
+      },
       now
     );
-    expect(chip.text).toBe('In Bad health — needs feeding and the vet');
+    expect(chip.text).toBe('Blaze is in bad health and needs to be vetted.');
     expect(chip.variant).toBe('warning');
     expect(chip.stale).toBe(false);
   });
 
+  it('Bad health + Good hunger: needs only the vet', () => {
+    const chip = deriveLatestChapter(
+      { name: 'Blaze', displayedHealth: 'Bad', feedHealth: 'Good' },
+      now
+    );
+    expect(chip.text).toBe('Blaze is in bad health and needs to be vetted.');
+  });
+
+  it('Bad health + Fair hunger: needs the vet and feeding', () => {
+    const chip = deriveLatestChapter(
+      { name: 'Blaze', displayedHealth: 'Bad', feedHealth: 'Fair' },
+      now
+    );
+    expect(chip.text).toBe('Blaze is in bad health and needs to be vetted and fed.');
+  });
+
+  it('Bad health + Bad hunger: needs the vet and feeding', () => {
+    const chip = deriveLatestChapter(
+      { name: 'Blaze', displayedHealth: 'Bad', feedHealth: 'Bad' },
+      now
+    );
+    expect(chip.text).toBe('Blaze is in bad health and needs to be vetted and fed.');
+  });
+
   it("reads the stored 'Injured' vet finding as Bad health when no band is sent", () => {
-    const chip = deriveLatestChapter({ healthStatus: 'Injured' }, now);
-    expect(chip.text).toBe('In Bad health — needs feeding and the vet');
+    const chip = deriveLatestChapter({ name: 'Blaze', healthStatus: 'Injured' }, now);
+    expect(chip.text).toBe('Blaze is in bad health and needs to be vetted.');
   });
 
   it('tells no health story for a horse in Fair health or better', () => {
