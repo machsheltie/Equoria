@@ -17,6 +17,7 @@ import { useGameNotifications } from '@/hooks/api/useGameNotifications';
 import { useEventStream } from '@/hooks/api/useEventStream';
 import { useAuth } from '@/contexts/AuthContext';
 import { Breadcrumb } from '@/components/layout/Breadcrumb';
+import '@/styles/navigation.css';
 
 interface MainNavigationProps {
   /**
@@ -69,7 +70,7 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburge
           {!hideHamburger && (
             <button
               onClick={() => onOpenNav?.()}
-              className="w-8 h-8 flex flex-col items-center justify-center gap-1 rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--glass-hover)] transition-colors cursor-pointer"
+              className="nav-touch-target w-8 h-8 flex flex-col items-center justify-center gap-1 rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--glass-hover)] transition-colors cursor-pointer"
               aria-label="Open menu"
               data-testid="hamburger-menu"
               data-onboarding-target="nav-menu"
@@ -101,7 +102,7 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburge
           {/* Coins pill */}
           <Link
             to="/bank"
-            className="flex items-center gap-1.5 text-xs tabular-nums font-semibold text-[var(--gold-light)] bg-[rgba(200,168,78,0.08)] px-3 py-1 rounded-[var(--radius-sm)] border border-[rgba(200,168,78,0.15)] hover:bg-[rgba(200,168,78,0.15)] transition-colors"
+            className="nav-touch-target flex items-center gap-1.5 text-xs tabular-nums font-semibold text-[var(--gold-light)] bg-[rgba(200,168,78,0.08)] px-3 py-1 rounded-[var(--radius-sm)] border border-[rgba(200,168,78,0.15)] hover:bg-[rgba(200,168,78,0.15)] transition-colors"
             data-testid="coins-display"
             data-onboarding-target="nav-coins"
           >
@@ -112,7 +113,7 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburge
           {/* Notification bell */}
           <Link
             to="/messages"
-            className="relative w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--glass-hover)] transition-colors"
+            className="nav-touch-target w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--glass-hover)] transition-colors"
             aria-label={`Notifications${totalUnread > 0 ? `, ${totalUnread} unread` : ''}`}
             data-testid="notification-indicator"
             data-onboarding-target="nav-notifications"
@@ -129,7 +130,7 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburge
           {/* Need Help? (Equoria-vc5x1) */}
           <Link
             to="/help"
-            className="w-8 h-8 flex items-center justify-center rounded-full border border-[var(--glass-border)] text-sm font-bold text-[var(--gold-light)] hover:border-[var(--gold-primary)] transition-colors"
+            className="nav-touch-target w-8 h-8 flex items-center justify-center rounded-full border border-[var(--glass-border)] text-sm font-bold text-[var(--gold-light)] hover:border-[var(--gold-primary)] transition-colors"
             aria-label="Need Help?"
             title="Need Help?"
             data-testid="need-help-button"
@@ -140,7 +141,7 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburge
           {/* Avatar */}
           <Link
             to="/settings"
-            className="w-8 h-8 rounded-full bg-[var(--bg-twilight)] border-2 border-[var(--gold-dim)] flex items-center justify-center text-xs text-[var(--gold-light)] hover:border-[var(--gold-primary)] transition-colors cursor-pointer"
+            className="nav-touch-target w-8 h-8 rounded-full bg-[var(--bg-twilight)] border-2 border-[var(--gold-dim)] flex items-center justify-center text-xs text-[var(--gold-light)] hover:border-[var(--gold-primary)] transition-colors cursor-pointer"
             aria-label="User settings"
             data-testid="user-avatar"
           >
@@ -158,7 +159,7 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburge
           {/* Logout */}
           <button
             onClick={() => logout()}
-            className="w-8 h-8 rounded-[var(--radius-sm)] border border-[var(--glass-border)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--status-danger)] hover:border-[var(--status-danger)] transition-colors cursor-pointer"
+            className="nav-touch-target w-8 h-8 rounded-[var(--radius-sm)] border border-[var(--glass-border)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--status-danger)] hover:border-[var(--status-danger)] transition-colors cursor-pointer"
             aria-label="Log out"
             data-testid="logout-button"
           >

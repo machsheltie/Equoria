@@ -47,6 +47,14 @@ describe('MarketplaceHubPage — hub locations', () => {
     expect(horseMarketplaceLink).toHaveAttribute('href', '/marketplace/horses');
   });
 
+  // Owner ruling 2026-10-28 (q249, Equoria-m5ml8): the Horse Marketplace is for
+  // horses for sale or at stud, and its description says so.
+  it('describes the Horse Marketplace as horses for sale or at stud', async () => {
+    renderPage();
+    const link = await screen.findByRole('link', { name: /horse marketplace/i });
+    expect(link).toHaveTextContent(/for sale or at stud/i);
+  });
+
   it('shows live breed count from useBreeds in the Horse Trader description', async () => {
     // Override the default 3-breed handler with a richer set so we can assert
     // a specific count is reflected in the description string.

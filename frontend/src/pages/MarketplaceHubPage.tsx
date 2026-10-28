@@ -27,7 +27,9 @@ import { useBreeds } from '@/hooks/api/useHorseTrader';
 const HORSE_MARKETPLACE_CARD: LocationCardProps = {
   id: 'horse-marketplace',
   name: 'Horse Marketplace',
-  description: 'Buy and sell horses with other players. Browse listings or list your own.',
+  // Owner ruling q249 (Equoria-m5ml8): horses for sale or at stud.
+  description:
+    'Horses for sale or at stud from other players. Browse the listings or list your own.',
   icon: '🛒',
   href: '/marketplace/horses',
   paintingGradient:

@@ -28,19 +28,23 @@ describe('NavPanel — full exposure', () => {
     // D-27 (Equoria-o5hub.20 / DECISIONS.md §10): nav label is "Stable"
     expect(screen.getByRole('link', { name: /^stable$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /inventory/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /competitions/i })).toBeInTheDocument();
+    // Owner ruling 2026-10-28 (q249, Equoria-m5ml8): Compete holds Ridden Shows and
+    // Conformation Shows. Old contract: one Competitions link.
+    expect(screen.getByRole('link', { name: 'Ridden Shows' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Conformation Shows' })).toBeInTheDocument();
     // Owner ruling 2026-10-26 (q89, Equoria-q4uem.9): the Breeding Hall is gone; breeding
     // happens on a stallion's page. Old contract: Breeding was a nav link.
     expect(screen.queryByRole('link', { name: /breeding/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /marketplace/i })).toBeInTheDocument();
+    // q249 adds Horse Marketplace beside Marketplace, so the name is matched exactly.
+    expect(screen.getByRole('link', { name: 'Marketplace' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /messages/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /bank/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /settings/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /world/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /community/i })).toBeInTheDocument();
-    // Owner ruling 2026-10-26 (q96, Equoria-3qjwz): the top-level Riders link is gone;
-    // riders are browsed and hired under World. Old contract: Riders was a nav link.
-    expect(screen.queryByRole('link', { name: /riders/i })).not.toBeInTheDocument();
+    // Owner ruling 2026-10-28 (q249, Equoria-m5ml8): Grooms, Riders and Trainers are
+    // listed under Marketplace, all for hire. Old contract (q96): no Riders link.
+    expect(screen.getByRole('link', { name: 'Riders' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /leaderboards/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /profile/i })).toBeInTheDocument();
   });

@@ -2,8 +2,12 @@
  * The Constellation Thread (Equoria-3qjwz, owner ruling q96 option A).
  *
  * Home stays a page; an arrow beside it lets down a thread with the rooms
- * beneath it: Stable, Staff, Inventory, Bank. Stable is no longer top-level and
- * the top-level Riders link is gone. Real router, no mocks.
+ * beneath it. Stable is no longer top-level and there is no top-level Riders
+ * link. Real router, no mocks.
+ *
+ * Owner ruling 2026-10-28 (q249, Equoria-m5ml8) changed what hangs under Home.
+ * Old contract: Stable, Staff, Inventory, Bank. New: Stable, Staff, Inventory,
+ * Bank, Settings, Profile; Riders now hangs under Marketplace (for hire).
  */
 
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -43,14 +47,14 @@ describe('SidebarNav — Home thread', () => {
     expect(screen.queryByRole('link', { name: 'Staff' })).not.toBeInTheDocument();
   });
 
-  it('lets down Stable, Staff, Inventory and Bank, in that order, and draws them up again', async () => {
+  it('lets down Stable, Staff, Inventory, Bank, Settings and Profile, in that order, and draws them up again', async () => {
     const user = userEvent.setup();
     renderSidebar();
     const arrow = screen.getByTestId('home-thread-toggle');
 
     await user.click(arrow);
     expect(arrow).toHaveAttribute('aria-expanded', 'true');
-    expect(roomNames()).toEqual(['Stable', 'Staff', 'Inventory', 'Bank']);
+    expect(roomNames()).toEqual(['Stable', 'Staff', 'Inventory', 'Bank', 'Settings', 'Profile']);
     expect(screen.getByRole('link', { name: 'Staff' })).toHaveAttribute('href', '/staff');
 
     await user.click(arrow);
@@ -83,7 +87,8 @@ describe('SidebarNav — Home thread', () => {
 });
 
 describe('NavPanel — rooms under Home', () => {
-  it('lists the rooms right after Home and no Riders link', () => {
+  // q249: Riders is listed again, under Marketplace (old contract: no Riders link).
+  it('lists the rooms right after Home, and Riders under Marketplace', () => {
     render(
       <MemoryRouter>
         <NavPanel isOpen onClose={() => {}} />
@@ -93,6 +98,15 @@ describe('NavPanel — rooms under Home', () => {
       .getAllByRole('link')
       .map((link) => link.textContent);
     expect(names.slice(0, 5)).toEqual(['Home', 'Stable', 'Staff', 'Inventory', 'Bank']);
-    expect(names).not.toContain('Riders');
+    expect(names.slice(0, 7)).toEqual([
+      'Home',
+      'Stable',
+      'Staff',
+      'Inventory',
+      'Bank',
+      'Settings',
+      'Profile',
+    ]);
+    expect(names.indexOf('Riders')).toBeGreaterThan(names.indexOf('Marketplace'));
   });
 });

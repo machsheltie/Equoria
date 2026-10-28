@@ -1,0 +1,163 @@
+/**
+ * The main menu and the top bar's controls (Equoria-m5ml8, Equoria-v0ng4).
+ *
+ * The menu is five realms (owner ruling q249): each realm hangs its places
+ * from a gold thread, as Home's rooms did (owner ruling q96). Every control a
+ * finger can reach is at least the 44px touch minimum (PRODUCT.md, DESIGN.md).
+ */
+
+/* ── Touch targets ─────────────────────────────────────────────────────── */
+
+/* A top-bar or menu control: its hit area is never smaller than the touch
+   minimum. The drawn control keeps its size (the phone top bar has no room to
+   grow) and an invisible layer, centered on it, takes the touch — DESIGN.md:
+   "a smaller visible control expands its hit area". Neighbors sit at least
+   12px apart, so two 32px controls' 44px areas meet but never overlap. */
+.nav-touch-target {
+  position: relative;
+}
+
+.nav-touch-target::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, var(--touch-target-min));
+  height: max(100%, var(--touch-target-min));
+  transform: translate(-50%, -50%);
+}
+
+/* ── Realm heading row (sidebar) ───────────────────────────────────────── */
+
+.nav-realm__row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+.nav-realm__link {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* The arrow that lets a realm's thread down; also the whole heading of a realm
+   without its own page (Compete). */
+.nav-realm__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  transition: color 150ms ease;
+}
+
+.nav-realm__toggle:hover {
+  color: var(--gold-primary);
+}
+
+.nav-realm__toggle:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: -2px;
+}
+
+.nav-realm__toggle--heading {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  padding: 0 0.75rem;
+  border-left: 2px solid transparent;
+}
+
+.nav-realm__toggle--heading[data-current='true'] {
+  color: var(--gold-light);
+  border-left-color: var(--gold-primary);
+}
+
+.nav-realm__label {
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+.nav-realm__chevron {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  transition: transform 200ms ease;
+}
+
+.nav-realm__chevron[data-open='true'] {
+  transform: rotate(180deg);
+}
+
+/* ── The thread a realm's places hang from ─────────────────────────────── */
+
+.nav-thread {
+  position: relative;
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+}
+
+.nav-thread--hung {
+  margin-left: 1.25rem;
+}
+
+.nav-thread__line {
+  position: absolute;
+  top: 0;
+  bottom: 0.75rem;
+  left: 5px;
+  width: 1px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--gold-primary), transparent);
+}
+
+.nav-thread__place {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-thread__place > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* ── Phone menu groups ─────────────────────────────────────────────────── */
+
+.nav-panel__realm + .nav-panel__realm {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--glass-border);
+}
+
+/* A realm without its own page (Compete) names its group in plain text. */
+.nav-panel__realm-name {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: var(--touch-target-min);
+  margin: 0;
+  padding: 0 0.75rem;
+  color: var(--gold-primary);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.nav-panel__places {
+  margin: 0;
+  padding: 0 0 0 1.25rem;
+  list-style: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-realm__toggle,
+  .nav-realm__chevron {
+    transition: none;
+  }
+}

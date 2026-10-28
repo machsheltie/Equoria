@@ -6,22 +6,35 @@
  * rail via a ChevronLeft/ChevronRight toggle. Toggle state persists
  * to localStorage key `equoria-sidebar-collapsed`.
  *
- * All 11 routes are rendered — no beta gating, no read-only mode.
+ * The menu is the five realms of owner ruling q249 (Equoria-m5ml8). Each realm
+ * lets its places down on a gold thread, the way Home's rooms first did (owner
+ * ruling q96); a realm's thread opens on its own when the player is in one of
+ * its places, and each thread remembers being let down.
  */
 
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { homeRooms, NAV_SECTIONS, isRouteActive, type NavItem } from './navItems';
+import '@/styles/navigation.css';
+import {
+  navMenuHrefs,
+  navRealms,
+  currentMenuHref,
+  type NavItem,
+  type NavRealm,
+  type NavRealmId,
+} from './navItems';
 
-const STORAGE_KEY = 'equoria-sidebar-collapsed';
-const threadKey = 'equoria-sidebar-home-thread';
+const storageKey = 'equoria-sidebar-collapsed';
+
+/** Home keeps the key its thread has always used, so players' choice survives. */
+const threadKey = (realm: NavRealmId) => `equoria-sidebar-${realm}-thread`;
 
 function readStoredCollapsed(): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    return window.localStorage.getItem(STORAGE_KEY) === 'true';
+    return window.localStorage.getItem(storageKey) === 'true';
   } catch {
     return false;
   }
@@ -29,29 +42,33 @@ function readStoredCollapsed(): boolean {
 
 function writeStoredCollapsed(value: boolean): void {
   try {
-    window.localStorage.setItem(STORAGE_KEY, String(value));
+    window.localStorage.setItem(storageKey, String(value));
   } catch {
     /* storage blocked — non-fatal */
   }
 }
 
-function readStoredThread(): boolean {
-  try {
-    return window.localStorage.getItem(threadKey) === 'true';
-  } catch {
-    return false;
+function readStoredThreads(): Record<NavRealmId, boolean> {
+  const open = {} as Record<NavRealmId, boolean>;
+  for (const realm of navRealms) {
+    try {
+      open[realm.id] = window.localStorage.getItem(threadKey(realm.id)) === 'true';
+    } catch {
+      open[realm.id] = false;
+    }
   }
+  return open;
 }
 
-function writeStoredThread(value: boolean): void {
+function writeStoredThread(realm: NavRealmId, value: boolean): void {
   try {
-    window.localStorage.setItem(threadKey, String(value));
+    window.localStorage.setItem(threadKey(realm), String(value));
   } catch {
     /* storage blocked — non-fatal */
   }
 }
 
-/** A four-point star: the mark each room hangs from on the thread. */
+/** A four-point star: the mark each place hangs from on the thread. */
 function ThreadStar({ lit }: { lit: boolean }) {
   return (
     <svg
@@ -72,50 +89,127 @@ function ThreadStar({ lit }: { lit: boolean }) {
 export function SidebarNav() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState<boolean>(readStoredCollapsed);
-  const [threadOpen, setThreadOpen] = useState<boolean>(readStoredThread);
-  const roomActive = homeRooms.some((room) => isRouteActive(location.pathname, room.href));
-  const threadShown = threadOpen;
+  const [threads, setThreads] = useState<Record<NavRealmId, boolean>>(readStoredThreads);
+  const currentHref = currentMenuHref(location.pathname, location.search, navMenuHrefs);
+  const currentRealm = navRealms.find((realm) =>
+    realm.items.some((item) => item.href === currentHref)
+  )?.id;
 
-  // Arriving in a room lets the thread down, so the player sees where they are.
+  // Arriving in a place lets its realm's thread down, so the player sees where they are.
   useEffect(() => {
-    if (roomActive) setThreadOpen(true);
-  }, [roomActive]);
+    if (!currentRealm) return;
+    setThreads((prev) => (prev[currentRealm] ? prev : { ...prev, [currentRealm]: true }));
+  }, [currentRealm]);
 
   useEffect(() => {
-    writeStoredThread(threadOpen);
-  }, [threadOpen]);
+    for (const realm of navRealms) writeStoredThread(realm.id, threads[realm.id]);
+  }, [threads]);
 
   useEffect(() => {
     writeStoredCollapsed(collapsed);
   }, [collapsed]);
 
   const toggle = () => setCollapsed((prev) => !prev);
+  const toggleThread = (realm: NavRealmId) =>
+    setThreads((prev) => ({ ...prev, [realm]: !prev[realm] }));
 
-  const renderLink = (item: NavItem, active: boolean) => (
-    <Link
-      to={item.href}
-      aria-current={active ? 'page' : undefined}
-      title={collapsed ? item.name : undefined}
-      className={cn(
-        'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm',
-        'transition-colors',
-        active
-          ? 'bg-[var(--glass-border-gold-subtle)] text-[var(--gold-light)] border-l-2 border-l-[var(--gold-primary)] pl-[10px]'
-          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] border-l-2 border-l-transparent pl-[10px]',
-        collapsed && 'justify-center px-0'
-      )}
-    >
-      <item.Icon
-        className={cn('w-5 h-5 flex-shrink-0', active && 'text-[var(--gold-primary)]')}
-        aria-hidden="true"
-      />
-      {!collapsed && (
-        <span className="truncate" style={{ fontFamily: 'var(--font-body)' }}>
-          {item.name}
-        </span>
-      )}
-    </Link>
-  );
+  const renderLink = (item: { name: string; href: string; Icon: NavItem['Icon'] }) => {
+    const active = item.href === currentHref;
+    return (
+      <Link
+        to={item.href}
+        aria-current={active ? 'page' : undefined}
+        title={collapsed ? item.name : undefined}
+        className={cn(
+          'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm',
+          'transition-colors',
+          active
+            ? 'bg-[var(--glass-border-gold-subtle)] text-[var(--gold-light)] border-l-2 border-l-[var(--gold-primary)] pl-[10px]'
+            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] border-l-2 border-l-transparent pl-[10px]',
+          collapsed && 'justify-center px-0'
+        )}
+      >
+        <item.Icon
+          className={cn('w-5 h-5 flex-shrink-0', active && 'text-[var(--gold-primary)]')}
+          aria-hidden="true"
+        />
+        {!collapsed && (
+          <span className="truncate" style={{ fontFamily: 'var(--font-body)' }}>
+            {item.name}
+          </span>
+        )}
+      </Link>
+    );
+  };
+
+  const renderRealm = (realm: NavRealm) => {
+    const open = threads[realm.id];
+    const threadId = `${realm.id}-rooms-thread`;
+    const toggleLabel = open
+      ? `Draw up the ${realm.name} thread`
+      : `Let down the ${realm.name} thread`;
+    return (
+      <div key={realm.id}>
+        <div className="nav-realm__row">
+          {realm.href ? (
+            <>
+              <div className="nav-realm__link">
+                {renderLink({ name: realm.name, href: realm.href, Icon: realm.Icon })}
+              </div>
+              {!collapsed && (
+                <button
+                  type="button"
+                  onClick={() => toggleThread(realm.id)}
+                  aria-expanded={open}
+                  aria-controls={threadId}
+                  aria-label={toggleLabel}
+                  data-testid={`${realm.id}-thread-toggle`}
+                  className="nav-realm__toggle"
+                >
+                  <ChevronDown aria-hidden="true" className="nav-realm__chevron" data-open={open} />
+                </button>
+              )}
+            </>
+          ) : (
+            // A realm with no page of its own (Compete): its heading only opens its thread.
+            <button
+              type="button"
+              onClick={() => toggleThread(realm.id)}
+              aria-expanded={collapsed || open}
+              aria-controls={threadId}
+              title={collapsed ? realm.name : undefined}
+              data-testid={`${realm.id}-thread-toggle`}
+              data-current={currentRealm === realm.id}
+              className="nav-realm__toggle nav-realm__toggle--heading"
+              disabled={collapsed}
+            >
+              <realm.Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+              {!collapsed && (
+                <>
+                  <span className="nav-realm__label">{realm.name}</span>
+                  <ChevronDown aria-hidden="true" className="nav-realm__chevron" data-open={open} />
+                </>
+              )}
+            </button>
+          )}
+        </div>
+        <div id={threadId} data-testid={threadId} hidden={!collapsed && !open}>
+          <ul
+            aria-label={`Places under ${realm.name}`}
+            className={cn('nav-thread', !collapsed && 'nav-thread--hung')}
+          >
+            {!collapsed && <span aria-hidden="true" className="nav-thread__line" />}
+            {realm.items.map((item) => (
+              <li key={item.href} className="nav-thread__place">
+                {!collapsed && <ThreadStar lit={item.href === currentHref} />}
+                <div>{renderLink(item)}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <aside
@@ -149,7 +243,7 @@ export function SidebarNav() {
           aria-expanded={!collapsed}
           data-testid="sidebar-toggle"
           className={cn(
-            'w-8 h-8 flex items-center justify-center rounded-md',
+            'nav-touch-target flex items-center justify-center rounded-md',
             'border border-[var(--glass-border)] text-[var(--text-secondary)]',
             'hover:text-[var(--gold-primary)] hover:border-[var(--glass-hover)]',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)]',
@@ -163,72 +257,7 @@ export function SidebarNav() {
 
       {/* Nav list */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-        {NAV_SECTIONS.map((item) => {
-          const active = isRouteActive(location.pathname, item.href);
-          const isHome = item.href === '/';
-          return (
-            <div key={item.href}>
-              <div className="flex items-stretch gap-1">
-                <div className="min-w-0 flex-1">{renderLink(item, active)}</div>
-                {isHome && !collapsed && (
-                  <button
-                    type="button"
-                    onClick={() => setThreadOpen((prev) => !prev)}
-                    aria-expanded={threadShown}
-                    aria-controls="home-rooms-thread"
-                    aria-label={
-                      threadShown ? 'Draw up the rooms under Home' : 'Let down the rooms under Home'
-                    }
-                    data-testid="home-thread-toggle"
-                    className={cn(
-                      'flex w-11 shrink-0 items-center justify-center rounded-md',
-                      'text-[var(--text-secondary)] hover:text-[var(--gold-primary)]',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)]',
-                      'transition-colors'
-                    )}
-                  >
-                    <ChevronDown
-                      aria-hidden="true"
-                      className={cn(
-                        'h-4 w-4 transition-transform duration-200 motion-reduce:transition-none',
-                        threadShown && 'rotate-180'
-                      )}
-                    />
-                  </button>
-                )}
-              </div>
-              {isHome && (
-                <div
-                  id="home-rooms-thread"
-                  data-testid="home-rooms-thread"
-                  hidden={!collapsed && !threadShown}
-                  className="relative"
-                >
-                  <ul
-                    aria-label="Rooms under Home"
-                    className={cn('relative py-1', collapsed ? 'space-y-0.5' : 'ml-5 space-y-0.5')}
-                  >
-                    {!collapsed && (
-                      <span
-                        aria-hidden="true"
-                        className="pointer-events-none absolute bottom-3 left-[5px] top-0 w-px bg-gradient-to-b from-[var(--gold-primary)] to-[var(--gold-dim)]/30"
-                      />
-                    )}
-                    {homeRooms.map((room) => {
-                      const roomIsActive = isRouteActive(location.pathname, room.href);
-                      return (
-                        <li key={room.href} className="flex items-center gap-2">
-                          {!collapsed && <ThreadStar lit={roomIsActive} />}
-                          <div className="min-w-0 flex-1">{renderLink(room, roomIsActive)}</div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {navRealms.map(renderRealm)}
       </nav>
     </aside>
   );
