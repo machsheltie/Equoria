@@ -352,27 +352,3 @@ export async function validateHandlerEligibility(horseId, userId, classNameOrDis
 // XP. recordHandlerPerformance (which incremented a handler groom's experience
 // after a show) and calculateGroomExperienceGain were removed; neither had a
 // production caller.
-
-/**
- * Fetch competition results for a user within a date window for the handler
- * statistics endpoint. Moves the prisma call out of groomHandlerRoutes.mjs
- * (Equoria-becrm).
- *
- * @param {number} userId - owning user id
- * @param {Date} startDate - lower bound for runDate (inclusive)
- * @returns {Promise<Array<object>>}
- */
-export async function getUserCompetitionResultsForHandlerStats(userId, startDate) {
-  return prisma.competitionResult.findMany({
-    where: {
-      horse: { userId },
-      runDate: { gte: startDate },
-    },
-    omit: { scoreInputs: true }, // Equoria-4q02c: staff only, never a player surface
-    include: {
-      horse: { select: { id: true, name: true, userId: true } },
-      show: { select: { id: true, name: true, discipline: true } },
-    },
-    orderBy: { runDate: 'desc' },
-  });
-}

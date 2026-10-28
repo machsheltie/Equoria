@@ -79,28 +79,6 @@ describe('GET /api/groom-handlers/config', () => {
   });
 });
 
-// ─── GET /api/groom-handlers/statistics ──────────────────────────────────────
-
-describe('GET /api/groom-handlers/statistics', () => {
-  it('returns 200 with handler statistics for user with no competition history', async () => {
-    const res = await request(app)
-      .get('/api/v1/groom-handlers/statistics')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toHaveProperty('summary');
-    expect(res.body.data).toHaveProperty('insights');
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/groom-handlers/statistics').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
 // ─── GET /api/groom-handlers/disciplines ─────────────────────────────────────
 
 describe('GET /api/groom-handlers/disciplines', () => {

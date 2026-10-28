@@ -12,7 +12,6 @@ import {
   PERSONALITY_DISCIPLINE_SYNERGY,
   SPECIALTY_DISCIPLINE_BONUSES,
   HANDLER_SKILL_BONUSES,
-  getUserCompetitionResultsForHandlerStats,
 } from '../services/groomHandlerService.mjs';
 import {
   getHorseHandler,
@@ -81,113 +80,7 @@ router.get(
  */
 router.get('/config', getHandlerConfig);
 
-/**
- * GET /api/groom-handlers/statistics
- * Get handler performance statistics
- */
-router.get('/statistics', async (req, res) => {
-  try {
-    const userId = req.user?.id;
-    const { timeframe = '30' } = req.query;
-
-    logger.info(`[groomHandlerRoutes] Getting handler statistics for user ${userId}`);
-
-    // Calculate date range
-    const daysBack = parseInt(timeframe) || 30;
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - daysBack);
-
-    // Get competition results with handler information (service-layer fetch, Equoria-becrm)
-    const results = await getUserCompetitionResultsForHandlerStats(userId, startDate);
-
-    // Analyze handler performance
-    const handlerStats = {
-      totalCompetitions: results.length,
-      competitionsWithHandlers: 0,
-      competitionsWithoutHandlers: 0,
-      averagePlacementWithHandler: 0,
-      averagePlacementWithoutHandler: 0,
-      topPerformingHandlers: {},
-      disciplinePerformance: {},
-    };
-
-    let placementSumWithoutHandler = 0;
-
-    for (const result of results) {
-      const placement = parseInt(result.placement) || 999;
-
-      // Handler tracking is not yet stored in competition results.
-      // All results are counted without-handler until the schema is extended.
-      handlerStats.competitionsWithoutHandlers++;
-      placementSumWithoutHandler += placement;
-
-      // Track discipline performance for all competitions
-      const { discipline } = result.show;
-      if (!handlerStats.disciplinePerformance[discipline]) {
-        handlerStats.disciplinePerformance[discipline] = {
-          competitions: 0,
-          averagePlacement: 0,
-          totalPlacement: 0,
-        };
-      }
-      handlerStats.disciplinePerformance[discipline].competitions++;
-      handlerStats.disciplinePerformance[discipline].totalPlacement += placement;
-    }
-
-    // Calculate averages
-    if (handlerStats.competitionsWithoutHandlers > 0) {
-      handlerStats.averagePlacementWithoutHandler =
-        Math.round((placementSumWithoutHandler / handlerStats.competitionsWithoutHandlers) * 10) /
-        10;
-    }
-
-    // Calculate discipline averages
-    Object.keys(handlerStats.disciplinePerformance).forEach(discipline => {
-      const disciplineData = handlerStats.disciplinePerformance[discipline];
-      disciplineData.averagePlacement =
-        Math.round((disciplineData.totalPlacement / disciplineData.competitions) * 10) / 10;
-      delete disciplineData.totalPlacement; // Remove intermediate calculation
-    });
-
-    // Calculate improvement percentage
-    const improvementPercentage =
-      handlerStats.averagePlacementWithoutHandler > 0 &&
-      handlerStats.averagePlacementWithHandler > 0
-        ? Math.round(
-            ((handlerStats.averagePlacementWithoutHandler -
-              handlerStats.averagePlacementWithHandler) /
-              handlerStats.averagePlacementWithoutHandler) *
-              100,
-          )
-        : 0;
-
-    res.status(200).json({
-      success: true,
-      message: 'Handler statistics retrieved successfully',
-      data: {
-        timeframe: `${daysBack} days`,
-        summary: handlerStats,
-        insights: {
-          handlerImpact:
-            improvementPercentage > 0
-              ? `Handlers improve average placement by ${improvementPercentage}%`
-              : 'Insufficient data to calculate handler impact',
-          recommendation:
-            handlerStats.competitionsWithoutHandlers > handlerStats.competitionsWithHandlers
-              ? 'Consider assigning handlers to more horses for better performance'
-              : 'Good handler utilization - keep it up!',
-        },
-      },
-    });
-  } catch (error) {
-    logger.error(`[groomHandlerRoutes] Error getting handler statistics: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Error retrieving handler statistics',
-      data: null,
-    });
-  }
-});
+// GET /statistics was removed (owner ruling 2026-10-27: the groom reputation/performance system is retired; Equoria-a7f1p).
 
 /**
  * GET /api/groom-handlers/disciplines

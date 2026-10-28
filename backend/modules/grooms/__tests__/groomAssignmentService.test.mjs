@@ -1,8 +1,7 @@
 /**
  * groomAssignmentService branch-coverage tests (Equoria-jkht coverage sprint).
  *
- * Pure-path tests (no DB fixture needed):
- *   calculateWeeklySalaryCosts — non-existent user → zero shape
+ * Pure-path tests (no DB fixture needed): getUserAssignments, ASSIGNMENT_CONFIG.
  *
  * DB-fixture branch coverage:
  *   getGroomAssignmentLimits — skillLevel fallback to 2 (pure), real groom path
@@ -10,7 +9,8 @@
  *   createAssignment — valid path, replacePrimary=true, NotFoundError for missing horse
  *   removeAssignment — not found, ownership mismatch, already inactive, notes ternary branches
  *   getUserAssignments — no assignments (averageAssignmentsPerGroom=0 branch), with assignments + filters
- *   calculateWeeklySalaryCosts — with assignments, unknown skillLevel fallback, multiplier fallback
+ * calculateWeeklySalaryCosts went with the duplicate salary-costs and dashboard
+ * lookups that read it (Equoria-a7f1p, owner ruling q151).
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -21,7 +21,6 @@ import {
   createAssignment,
   removeAssignment,
   getUserAssignments,
-  calculateWeeklySalaryCosts,
 } from '../services/groomAssignmentService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Static import: under resetModules a per-test dynamic import yields a FRESH
@@ -34,16 +33,6 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ── Pure-path tests ───────────────────────────────────────────────────────────
-
-describe('calculateWeeklySalaryCosts — non-existent user', () => {
-  it('returns zero cost for user with no assignments', async () => {
-    const result = await calculateWeeklySalaryCosts('00000000-0000-0000-0000-000000000099');
-    expect(result.totalWeeklyCost).toBe(0);
-    expect(result.groomCount).toBe(0);
-    expect(result.assignmentCount).toBe(0);
-    expect(Array.isArray(result.groomCosts)).toBe(true);
-  });
-});
 
 describe('getUserAssignments — non-existent user', () => {
   it('returns empty assignments and zero stats for non-existent user', async () => {
@@ -504,22 +493,6 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
         data: { groomId: omGroom.id, foalId: omHorse.id, userId: gasUser.id, isActive: true },
       });
       await expect(removeAssignment(newAssignment.id, gasUser2.id)).rejects.toThrow('Assignment not found');
-    }
-  });
-
-  // ── calculateWeeklySalaryCosts ────────────────────────────────────────────
-
-  it('calculateWeeklySalaryCosts: returns cost for user with active assignments', async () => {
-    const result = await calculateWeeklySalaryCosts(gasUser.id);
-    expect(typeof result.totalWeeklyCost).toBe('number');
-    expect(typeof result.groomCount).toBe('number');
-    expect(Array.isArray(result.groomCosts)).toBe(true);
-    // If there are active assignments, verify the salary structure
-    if (result.groomCount > 0) {
-      const firstCost = result.groomCosts[0];
-      expect(typeof firstCost.baseSalary).toBe('number');
-      expect(typeof firstCost.totalSalary).toBe('number');
-      expect(firstCost.assignmentCount).toBeGreaterThan(0);
     }
   });
 });

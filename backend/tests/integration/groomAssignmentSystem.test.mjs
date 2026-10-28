@@ -509,27 +509,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
     });
   });
 
-  describe('7. Configuration and Statistics', () => {
-    it('should get assignment statistics', async () => {
-      const response = await request(app)
-        .get('/api/v1/groom-assignments/statistics')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('summary');
-      expect(response.body.data).toHaveProperty('distributions');
-      expect(response.body.data).toHaveProperty('trends');
-
-      const { summary, distributions } = response.body.data;
-      expect(summary).toHaveProperty('totalAssignments');
-      expect(distributions).toHaveProperty('skillLevels');
-      expect(distributions).toHaveProperty('specialities');
-    });
-  });
+  describe('7. Configuration and Statistics', () => {});
 
   describe('8. Authentication and Authorization', () => {
     it('should require authentication for all endpoints', async () => {

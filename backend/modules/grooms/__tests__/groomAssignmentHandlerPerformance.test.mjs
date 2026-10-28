@@ -12,7 +12,6 @@ import {
   getGroomAssignmentLimits,
   validateAssignmentEligibility,
   getUserAssignments,
-  calculateWeeklySalaryCosts,
 } from '../services/groomAssignmentService.mjs';
 import {
   calculateHandlerBonus,
@@ -106,15 +105,6 @@ describe('getUserAssignments', () => {
     expect(result).toBeDefined();
     expect(Array.isArray(result.assignments)).toBe(true);
     expect(result.stats.totalAssignments).toBe(0);
-  });
-});
-
-describe('calculateWeeklySalaryCosts', () => {
-  it('returns zero cost for user with no active assignments', async () => {
-    const result = await calculateWeeklySalaryCosts(user.id);
-    expect(result.totalWeeklyCost).toBe(0);
-    expect(result.assignmentCount).toBe(0);
-    expect(Array.isArray(result.groomCosts)).toBe(true);
   });
 });
 

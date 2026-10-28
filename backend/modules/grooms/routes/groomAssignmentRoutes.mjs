@@ -13,7 +13,6 @@ import {
   removeGroomAssignment,
   getMyAssignments,
 } from '../controllers/groomAssignmentController.mjs';
-import { getAssignmentStatisticsRaw } from '../services/groomAssignmentService.mjs';
 
 const router = express.Router();
 
@@ -103,80 +102,6 @@ router.get(
 // GET /config were removed with the duplicate lookups (owner ruling 2026-10-28, q151, Equoria-a7f1p):
 // the Staff page reads GET /groom-assignments and GET /groom-salaries/cost.
 
-/**
- * GET /api/groom-assignments/statistics
- * Get assignment statistics and analytics
- */
-router.get('/statistics', async (req, res) => {
-  try {
-    const userId = req.user?.id;
-    const { timeframe = '30' } = req.query;
-
-    logger.info(`[groomAssignmentRoutes] Getting assignment statistics for user ${userId}`);
-
-    // Calculate date range
-    const daysBack = parseInt(timeframe) || 30;
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - daysBack);
-
-    // Get assignment statistics (service-layer fetch, Equoria-becrm)
-    const { totalAssignments, recentAssignments, assignmentHistory } =
-      await getAssignmentStatisticsRaw(userId, startDate);
-
-    // Analyze assignment patterns
-    const skillLevelDistribution = assignmentHistory.reduce((acc, assignment) => {
-      const skill = assignment.groom.skillLevel;
-      acc[skill] = (acc[skill] || 0) + 1;
-      return acc;
-    }, {});
-
-    const specialityDistribution = assignmentHistory.reduce((acc, assignment) => {
-      const { speciality } = assignment.groom;
-      acc[speciality] = (acc[speciality] || 0) + 1;
-      return acc;
-    }, {});
-
-    const activeAssignments = assignmentHistory.filter(a => a.isActive).length;
-    const completedAssignments = assignmentHistory.filter(a => !a.isActive && a.endDate).length;
-
-    res.status(200).json({
-      success: true,
-      message: 'Assignment statistics retrieved successfully',
-      data: {
-        timeframe: `${daysBack} days`,
-        summary: {
-          totalAssignments,
-          recentAssignments,
-          activeAssignments,
-          completedAssignments,
-          averageAssignmentsPerDay:
-            daysBack > 0 ? Math.round((recentAssignments / daysBack) * 10) / 10 : 0,
-        },
-        distributions: {
-          skillLevels: skillLevelDistribution,
-          specialities: specialityDistribution,
-        },
-        trends: {
-          assignmentGrowth: recentAssignments > 0 ? 'positive' : 'stable',
-          mostUsedSkillLevel: Object.keys(skillLevelDistribution).reduce(
-            (a, b) => (skillLevelDistribution[a] > skillLevelDistribution[b] ? a : b),
-            'novice',
-          ),
-          mostUsedSpeciality: Object.keys(specialityDistribution).reduce(
-            (a, b) => (specialityDistribution[a] > specialityDistribution[b] ? a : b),
-            'general',
-          ),
-        },
-      },
-    });
-  } catch (error) {
-    logger.error(`[groomAssignmentRoutes] Error getting statistics: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Error retrieving assignment statistics',
-      data: null,
-    });
-  }
-});
+// GET /statistics was removed (owner ruling 2026-10-27: the groom reputation/performance system is retired; Equoria-a7f1p).
 
 export default router;

@@ -3,7 +3,8 @@
  *
  * Owner ruling 2026-10-28 (q151, "Remove the duplicates"): the behind-the-scenes
  * lookups that copy something a screen already reads from another route are
- * removed. Old contract: each route below answered under /api/v1. New ruling:
+ * removed (the two groom statistics reads go under the 2026-10-27 ruling retiring
+ * groom reputation). Old contract: each route below answered under /api/v1. New ruling:
  * no mounted router hosts them, and the route each screen actually reads stays.
  *
  * The walker follows the real authRouter from backend/app/routers.mjs the way
@@ -55,6 +56,9 @@ const retiredDuplicates = [
   ['GET', '/groom-salaries/history'],
   ['GET', '/groom-salaries/groom/41/salary'],
   ['GET', '/grooms/41/bonus-traits'],
+  // Owner ruling 2026-10-27: the groom reputation/performance system is retired.
+  ['GET', '/groom-assignments/statistics'],
+  ['GET', '/groom-handlers/statistics'],
 ];
 
 // The routes the screens read instead; they must stay mounted. They also prove

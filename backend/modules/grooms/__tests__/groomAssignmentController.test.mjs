@@ -67,27 +67,6 @@ describe('GET /api/groom-assignments', () => {
   });
 });
 
-// ─── GET /api/groom-assignments/statistics ────────────────────────────────────
-
-describe('GET /api/groom-assignments/statistics', () => {
-  it('returns 200 with statistics data', async () => {
-    const res = await request(app)
-      .get('/api/v1/groom-assignments/statistics')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toHaveProperty('summary');
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/groom-assignments/statistics').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
 // ─── POST /api/groom-assignments (createGroomAssignment) ──────────────────────
 
 describe('POST /api/groom-assignments', () => {
