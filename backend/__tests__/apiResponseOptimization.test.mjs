@@ -3,7 +3,6 @@
  *
  * Comprehensive test suite for API response optimization system including:
  * - Response compression and encoding
- * - Pagination services (cursor and offset-based)
  * - Data serialization optimization
  * - Lazy loading functionality
  * - Response caching with ETags
@@ -21,7 +20,6 @@
 import request from 'supertest';
 import express from 'express';
 import {
-  PaginationService,
   SerializationService,
   LazyLoadingService,
   ResponseCacheService,
@@ -121,17 +119,13 @@ describe('API Response Optimization System', () => {
         where: { userId: testUserId }, // Correct schema field - userId not ownerId
       });
 
-      const paginatedResult = PaginationService.createOffsetPagination({
-        data: horses,
-        page: req.pagination.page,
-        limit: req.pagination.limit,
-        totalCount,
-      });
+      const { page, limit } = req.pagination;
 
       res.json({
         success: true,
         message: 'Horses retrieved successfully',
-        ...paginatedResult,
+        data: horses,
+        pagination: { page, limit, totalCount, hasNextPage: page * limit < totalCount },
       });
     });
 
@@ -169,60 +163,6 @@ describe('API Response Optimization System', () => {
     }
     await prisma.breed.deleteMany({
       where: { name: testBreedName },
-    });
-  });
-
-  describe('Pagination Service', () => {
-    test('creates offset-based pagination correctly', () => {
-      const testData = Array.from({ length: 5 }, (_, i) => ({ id: i + 1, name: `Item ${i + 1}` }));
-
-      const result = PaginationService.createOffsetPagination({
-        data: testData,
-        page: 1,
-        limit: 5,
-        totalCount: 25,
-      });
-
-      expect(result.data).toHaveLength(5);
-      expect(result.pagination.page).toBe(1);
-      expect(result.pagination.limit).toBe(5);
-      expect(result.pagination.totalCount).toBe(25);
-      expect(result.pagination.totalPages).toBe(5);
-      expect(result.pagination.hasNextPage).toBe(true);
-      expect(result.pagination.hasPrevPage).toBe(false);
-    });
-
-    test('creates cursor-based pagination correctly', () => {
-      const testData = Array.from({ length: 5 }, (_, i) => ({ id: i + 1, name: `Item ${i + 1}` }));
-
-      const result = PaginationService.createCursorPagination({
-        data: testData,
-        limit: 5,
-        orderBy: 'id',
-        totalCount: 25,
-      });
-
-      expect(result.data).toHaveLength(5);
-      expect(result.pagination.cursor.next).toBe(5);
-      expect(result.pagination.hasNextPage).toBe(true);
-      expect(result.pagination.hasPrevPage).toBe(false);
-      expect(result.pagination.limit).toBe(5);
-    });
-
-    test('generates optimized Prisma query for cursor pagination', () => {
-      const query = PaginationService.generateCursorQuery({
-        cursor: 10,
-        limit: 20,
-        orderBy: 'createdAt',
-        orderDirection: 'desc',
-        where: { userId: testUserId },
-      });
-
-      expect(query.where.userId).toBe(testUserId);
-      expect(query.orderBy.createdAt).toBe('desc');
-      expect(query.take).toBe(20);
-      expect(query.cursor.createdAt).toBe(10);
-      expect(query.skip).toBe(1);
     });
   });
 

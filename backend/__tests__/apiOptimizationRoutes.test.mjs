@@ -216,75 +216,6 @@ describe('API Optimization Routes', () => {
     }, 120000);
   });
 
-  describe('POST /api/optimization/test-pagination', () => {
-    test('tests offset pagination successfully', async () => {
-      const response = await request(testApp)
-        .post('/api/optimization/test-pagination')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          dataSize: 100,
-          pageSize: 20,
-          paginationType: 'offset',
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.paginationType).toBe('offset');
-      expect(response.body.data.dataSize).toBe(100);
-      expect(response.body.data.pageSize).toBe(20);
-      expect(response.body.data.processingTime).toBeDefined();
-      expect(response.body.data.result.data).toHaveLength(20);
-      expect(response.body.data.result.pagination).toBeDefined();
-      expect(response.body.data.performance).toBeDefined();
-    });
-
-    test('tests cursor pagination successfully', async () => {
-      const response = await request(testApp)
-        .post('/api/optimization/test-pagination')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          dataSize: 100,
-          pageSize: 15,
-          paginationType: 'cursor',
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.paginationType).toBe('cursor');
-      expect(response.body.data.result.pagination.cursor).toBeDefined();
-      expect(response.body.data.result.pagination.hasNextPage).toBeDefined();
-    });
-
-    test('validates pagination parameters', async () => {
-      // Test invalid data size
-      const response1 = await request(testApp)
-        .post('/api/optimization/test-pagination')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({ dataSize: 0 })
-        .expect(400);
-
-      expect(response1.body.success).toBe(false);
-
-      // Test invalid page size
-      const response2 = await request(testApp)
-        .post('/api/optimization/test-pagination')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({ dataSize: 100, pageSize: 0 })
-        .expect(400);
-
-      expect(response2.body.success).toBe(false);
-
-      // Test invalid pagination type
-      const response3 = await request(testApp)
-        .post('/api/optimization/test-pagination')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({ dataSize: 100, paginationType: 'invalid' })
-        .expect(400);
-
-      expect(response3.body.success).toBe(false);
-    }, 120000);
-  });
-
   describe('GET /api/optimization/recommendations', () => {
     test('generates optimization recommendations successfully', async () => {
       const response = await request(testApp)
@@ -354,21 +285,6 @@ describe('API Optimization Routes', () => {
       expect(response.body.data.bytesSaved).toBeGreaterThanOrEqual(0); // May be 0 if no compression
       expect(response.body.data.compressionRatio).toBeGreaterThanOrEqual(0);
       expect(response.body.data.percentageSaved).toBeGreaterThanOrEqual(0);
-    });
-
-    test('pagination test shows performance metrics', async () => {
-      const response = await request(testApp)
-        .post('/api/optimization/test-pagination')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          dataSize: 1000,
-          pageSize: 50,
-          paginationType: 'offset',
-        })
-        .expect(200);
-
-      expect(response.body.data.performance.itemsPerMs).toBeGreaterThanOrEqual(0);
-      expect(['excellent', 'good', 'needs optimization']).toContain(response.body.data.performance.efficiency);
     });
   });
 });

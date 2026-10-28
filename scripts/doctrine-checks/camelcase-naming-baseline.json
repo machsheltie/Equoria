@@ -913,7 +913,7 @@
   "backend/utils/jwtKeyRing.mjs": 3,
   "backend/utils/logger.mjs": 6,
   "backend/utils/notificationService.mjs": 2,
-  "backend/utils/paginationHelper.mjs": 10,
+  "backend/utils/paginationHelper.mjs": 6,
   "backend/utils/pregnancyBonus.mjs": 9,
   "backend/utils/redisCircuitBreaker.mjs": 7,
   "backend/utils/retryableTransaction.mjs": 2,

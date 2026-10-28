@@ -3,7 +3,6 @@
  *
  * Comprehensive service for optimizing API response performance including:
  * - Response compression and encoding
- * - Advanced pagination with cursor-based navigation
  * - Data serialization optimization
  * - Lazy loading and selective field inclusion
  * - Response caching and ETags
@@ -11,7 +10,6 @@
  *
  * Features:
  * - Gzip/Brotli compression with intelligent selection
- * - Cursor-based pagination for large datasets
  * - Field selection and data transformation
  * - Response size monitoring and optimization
  * - Cache-friendly response headers
@@ -64,90 +62,6 @@ export function createCompressionMiddleware(options = {}) {
   };
 
   return compression(defaultOptions);
-}
-
-/**
- * Advanced pagination service with cursor-based navigation
- */
-export class PaginationService {
-  /**
-   * Create cursor-based pagination for large datasets
-   */
-  static createCursorPagination(options) {
-    const {
-      data,
-      cursor,
-      limit = 20,
-      orderBy = 'id',
-      _orderDirection = 'asc',
-      totalCount,
-    } = options;
-
-    const hasNextPage = data.length === limit;
-    const hasPrevPage = !!cursor;
-
-    const nextCursor = hasNextPage ? data[data.length - 1][orderBy] : null;
-    const prevCursor = hasPrevPage ? data[0][orderBy] : null;
-
-    return {
-      data,
-      pagination: {
-        cursor: {
-          next: nextCursor,
-          prev: prevCursor,
-        },
-        hasNextPage,
-        hasPrevPage,
-        limit,
-        totalCount: totalCount || null,
-      },
-    };
-  }
-
-  /**
-   * Create offset-based pagination with performance optimizations
-   */
-  static createOffsetPagination(options) {
-    const { data, page = 1, limit = 20, totalCount } = options;
-
-    const totalPages = Math.ceil(totalCount / limit);
-    const hasNextPage = page < totalPages;
-    const hasPrevPage = page > 1;
-
-    return {
-      data,
-      pagination: {
-        page,
-        limit,
-        totalCount,
-        totalPages,
-        hasNextPage,
-        hasPrevPage,
-        nextPage: hasNextPage ? page + 1 : null,
-        prevPage: hasPrevPage ? page - 1 : null,
-      },
-    };
-  }
-
-  /**
-   * Generate optimized Prisma query for cursor pagination
-   */
-  static generateCursorQuery(options) {
-    const { cursor, limit = 20, orderBy = 'id', orderDirection = 'asc', where = {} } = options;
-
-    const query = {
-      where,
-      orderBy: { [orderBy]: orderDirection },
-      take: limit,
-    };
-
-    if (cursor) {
-      query.cursor = { [orderBy]: cursor };
-      query.skip = 1; // Skip the cursor item
-    }
-
-    return query;
-  }
 }
 
 /**
@@ -556,7 +470,6 @@ export function getPerformanceMetrics() {
 
 export default {
   createCompressionMiddleware,
-  PaginationService,
   SerializationService,
   LazyLoadingService,
   ResponseCacheService,

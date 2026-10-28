@@ -22,7 +22,6 @@ import { authenticateToken } from '../../../middleware/auth.mjs';
 import { getOptimizationMetrics } from '../../../middleware/responseOptimization.mjs';
 import {
   getPerformanceMetrics,
-  PaginationService,
   SerializationService,
   ResponseCacheService as _ResponseCacheService,
 } from '../../../services/apiResponseOptimizationService.mjs';
@@ -205,90 +204,6 @@ router.post(
       res.status(500).json({
         success: false,
         message: 'Failed to test compression',
-        error: error.message,
-      });
-    }
-  },
-);
-
-/**
- * POST /api/optimization/test-pagination
- * Test pagination performance with sample dataset
- */
-router.post(
-  '/test-pagination',
-  authenticateToken,
-  body('dataSize')
-    .isInt({ min: 1, max: 10000 })
-    .withMessage('Data size must be between 1 and 10000'),
-  body('pageSize')
-    .optional()
-    .isInt({ min: 1, max: 100 })
-    .withMessage('Page size must be between 1 and 100'),
-  body('paginationType')
-    .optional()
-    .isIn(['offset', 'cursor'])
-    .withMessage('Invalid pagination type'),
-  validateRequest,
-  async (req, res) => {
-    try {
-      const { dataSize, pageSize = 20, paginationType = 'offset' } = req.body;
-
-      logger.info(`[ApiOptimization] Testing ${paginationType} pagination with ${dataSize} items`);
-
-      // Generate test data
-      const testData = Array.from({ length: dataSize }, (_, i) => ({
-        id: i + 1,
-        name: `Item ${i + 1}`,
-        value: Math.random() * 100,
-        timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString(),
-      }));
-
-      const startTime = Date.now();
-
-      let paginationResult;
-      if (paginationType === 'cursor') {
-        paginationResult = PaginationService.createCursorPagination({
-          data: testData.slice(0, pageSize),
-          limit: pageSize,
-          totalCount: dataSize,
-        });
-      } else {
-        paginationResult = PaginationService.createOffsetPagination({
-          data: testData.slice(0, pageSize),
-          page: 1,
-          limit: pageSize,
-          totalCount: dataSize,
-        });
-      }
-
-      const processingTime = Date.now() - startTime;
-
-      res.json({
-        success: true,
-        message: 'Pagination test completed successfully',
-        data: {
-          paginationType,
-          dataSize,
-          pageSize,
-          processingTime: `${processingTime}ms`,
-          result: paginationResult,
-          performance: {
-            itemsPerMs: processingTime > 0 ? Math.round(dataSize / processingTime) : dataSize,
-            efficiency:
-              processingTime < 10
-                ? 'excellent'
-                : processingTime < 50
-                  ? 'good'
-                  : 'needs optimization',
-          },
-        },
-      });
-    } catch (error) {
-      logger.error(`[ApiOptimization] Error testing pagination: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to test pagination',
         error: error.message,
       });
     }
