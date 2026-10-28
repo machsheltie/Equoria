@@ -315,8 +315,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   if (sire.breedId !== requestedBreedId) {
     logger.warn(`[foalingService] dam ${damId} and sire ${sireId} differ in breed`);
   }
-  // Raw SQL is used for breedGeneticProfile because the Prisma DMMF may not
-  // include the JSONB column on every code path; mirrors horseRoutes.mjs.
+  // Raw SQL: the Prisma DMMF may lack the JSONB column on some paths (mirrors horseRoutes.mjs).
   const breedRows = await prisma.$queryRaw`
     SELECT name, "breedGeneticProfile", "defaultTrait"
     FROM breeds
@@ -401,13 +400,10 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
       : generateMarkings(breedGeneticProfile, baseColor.colorName, rng);
   const phenotype = { ...baseColor, ...markings };
 
-  // Sex: callers (e.g. the breed controller for direct calls) may supply
-  // options.sex; the foaling job does not, so randomize 50/50 using rng.
+  // Sex: direct callers may pass options.sex; the foaling job does not (50/50 via rng).
   const resolvedSex = options.sex ? options.sex : rng() < 0.5 ? 'Filly' : 'Colt';
 
-  // Equoria-tl5l8: the foal is born with a discipline at +5 trained value
-  // (q216 open: see resolveFoalBirthDiscipline). Drawn after every other rng
-  // use so seeded sequences for colour and sex are unchanged.
+  // Equoria-tl5l8: birth discipline at +5; drawn last so seeded colour/sex rolls are unchanged.
   const birthDiscipline = await resolveFoalBirthDiscipline({
     sireId,
     damId,
