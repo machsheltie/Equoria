@@ -2,9 +2,9 @@
  * Player-to-player money moves (Equoria-e7tgc.3).
  *
  * Why this exists: every payment from one player to another (the stud fee at a
- * public booking and at a private-request approval; buyHorse still carries its
- * own copy, Equoria-t8v8t) used to repeat "guarded debit, credit, two ledger
- * rows" inline. Copies drift — a credit without its guarded debit, a ledger
+ * public booking and at a private-request approval, and the marketplace sale
+ * in buyHorse, Equoria-t8v8t) used to repeat "guarded debit, credit, two
+ * ledger rows" inline. Copies drift — a credit without its guarded debit, a ledger
  * row on the wrong side, a flipped lock order — and each drift mints or burns
  * coin. `debitMoneyOrThrow` cannot serve here: it pairs every debit with a
  * SystemAccount credit (Equoria-kl16c), and a player-to-player payment has a

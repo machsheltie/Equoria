@@ -18,6 +18,9 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   SYSTEM_ACCOUNT_BURN,
+  InsufficientFundsError,
+  TransferPayeeNotFoundError,
+  transferUserMoneyOrThrow,
 } from '../../economy/index.mjs';
 
 // Same-module internal (NOT part of the marketplace public API): the
@@ -202,35 +205,32 @@ export async function buyHorse(req, res) {
 
           // ── Money moves: User rows first, ascending id ──────────────
           // Lock ordering: an UPDATE holds its row write-lock until commit, so
-          // User rows are written before the Horse row and the two User rows in
-          // ascending id order — two mutual purchases can never hold each
-          // other's rows. A stale claim below rolls both moves back untouched.
-          // Equoria-zz1ii: the debit is conditional, so `money` can never go
-          // negative even under concurrent spending by one buyer.
-          const debitBuyer = async () => {
-            const debitResult = await tx.user.updateMany({
-              where: { id: buyerId, money: { gte: salePrice } },
-              data: { money: { decrement: salePrice } },
+          // User rows are written before the Horse row, and
+          // transferUserMoneyOrThrow (Equoria-e7tgc.3, Equoria-t8v8t) locks the
+          // two User rows in ascending id order — two mutual purchases can
+          // never hold each other's rows. Its debit is conditional
+          // (Equoria-zz1ii: `money` never goes negative), it writes both
+          // ledger rows on this tx (Equoria-9hja2), and a stale claim below
+          // rolls all of it back untouched.
+          try {
+            await transferUserMoneyOrThrow(tx, {
+              fromUserId: buyerId,
+              toUserId: sellerId,
+              amount: salePrice,
+              debitCategory: 'marketplacePurchase',
+              creditCategory: 'marketplaceSale',
+              debitDescription: `Purchased ${horseSnapshot.name}`,
+              creditDescription: `Sold ${horseSnapshot.name}`,
+              metadata: { horseId, sellerId, buyerId },
             });
-            if (debitResult.count === 0) {
+          } catch (error) {
+            if (error instanceof InsufficientFundsError) {
               throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
             }
-          };
-          const creditSeller = async () => {
-            const creditResult = await tx.user.updateMany({
-              where: { id: sellerId },
-              data: { money: { increment: salePrice } },
-            });
-            if (creditResult.count !== 1) {
+            if (error instanceof TransferPayeeNotFoundError) {
               throw Object.assign(new Error('Seller account is unavailable'), { statusCode: 409 });
             }
-          };
-          if (buyerId < sellerId) {
-            await debitBuyer();
-            await creditSeller();
-          } else {
-            await creditSeller();
-            await debitBuyer();
+            throw error;
           }
 
           // ── Guarded claim on the LISTING (the commit point) ────────
@@ -261,25 +261,6 @@ export async function buyHorse(req, res) {
               salePrice,
               horseName: horseSnapshot.name,
             },
-          });
-
-          // Equoria-9hja2: recordTransactionTx reads balanceAfter from this
-          // same tx, so the ledger rows share the money moves' rollback.
-          await recordTransactionTx(tx, {
-            userId: buyerId,
-            type: 'debit',
-            amount: salePrice,
-            category: 'marketplacePurchase',
-            description: `Purchased ${horseSnapshot.name}`,
-            metadata: { horseId, saleId: saleRecord.id, sellerId },
-          });
-          await recordTransactionTx(tx, {
-            userId: sellerId,
-            type: 'credit',
-            amount: salePrice,
-            category: 'marketplaceSale',
-            description: `Sold ${horseSnapshot.name}`,
-            metadata: { horseId, saleId: saleRecord.id, buyerId },
           });
 
           // Re-fetch buyer balance from within the transaction for an accurate post-purchase value
