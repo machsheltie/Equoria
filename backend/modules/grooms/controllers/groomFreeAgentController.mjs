@@ -37,6 +37,7 @@ import { MAX_GROOMS_PER_USER } from '../../../config/groomConfig.mjs';
 import { CapExceededError } from '../groomErrors.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
+import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
 import { publicStaffRow, staffLabels } from '../../../utils/staffPublicView.mjs';
 import {
   FREE_AGENT_WHERE,
@@ -192,6 +193,8 @@ export async function hireFreeAgent(req, res) {
     if (existingGroomCount >= MAX_GROOMS_PER_USER) {
       return res.status(400).json({
         success: false,
+        // Equoria-266h7: the hiring page tells a full roster from a short balance by code.
+        code: staffHireRefusal.rosterCapReached,
         // Fix round 1 (F12): the sibling hire paths say "Please release a groom
         // before hiring a new one", and there is no player-initiated release
         // anywhere — the only way a groom leaves your staff is the game's own
@@ -300,6 +303,7 @@ export async function hireFreeAgent(req, res) {
       if (txErr instanceof CapExceededError) {
         return res.status(400).json({
           success: false,
+          code: staffHireRefusal.rosterCapReached,
           message: txErr.message,
           data: { currentCount: MAX_GROOMS_PER_USER, maxAllowed: MAX_GROOMS_PER_USER },
         });
@@ -307,6 +311,7 @@ export async function hireFreeAgent(req, res) {
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
           success: false,
+          code: staffHireRefusal.insufficientFunds,
           message: `Insufficient funds. Hiring costs $${hiringCost} (one week upfront)`,
           data: { required: hiringCost },
         });

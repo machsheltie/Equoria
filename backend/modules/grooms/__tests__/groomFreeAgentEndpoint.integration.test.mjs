@@ -361,6 +361,49 @@ describe('Equoria-ypb7d.2 — GET/POST /api/v1/groom-marketplace/free-agents ove
     }
   }, 60000);
 
+  // Equoria-266h7: the hiring page tells a short balance from a full roster by the
+  // refusal's code (Equoria-dosig), as the rider pool and both marketplaces already do.
+  it('POST refuses a hire the player cannot afford with the insufficientFunds code', async () => {
+    const poor = await makeUser('poor', HIRE_COST - 1);
+    cleanup.add(() => prisma.user.delete({ where: { id: poor.id } }), 'poor user');
+
+    const res = await hireRequest(poor.token, { groomId: released.id });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('insufficientFunds');
+    const row = await prisma.groom.findUnique({ where: { id: released.id }, select: { userId: true } });
+    expect(row.userId).toBeNull();
+    const wallet = await prisma.user.findUnique({ where: { id: poor.id }, select: { money: true } });
+    expect(Number(wallet.money)).toBe(HIRE_COST - 1);
+  }, 60000);
+
+  it('POST refuses a hire past the groom roster cap with the rosterCapReached code', async () => {
+    const full = await makeUser('fullroster');
+    const created = await prisma.groom.createManyAndReturn({
+      data: Array.from({ length: 10 }, (_, i) => ({
+        name: `${FIXTURE_PREFIX}-roster-${i}-${tag()}`,
+        speciality: 'general',
+        personality: 'gentle',
+        skillLevel: 'novice',
+        starLevel: 'novice',
+        startAge: 20,
+        sessionRate: SESSION_RATE,
+        userId: full.id,
+      })),
+      select: { id: true },
+    });
+    const rosterIds = created.map(g => g.id);
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: rosterIds } } }), 'full roster grooms');
+    cleanup.add(() => prisma.user.delete({ where: { id: full.id } }), 'full roster user');
+
+    const res = await hireRequest(full.token, { groomId: released.id });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('rosterCapReached');
+    const row = await prisma.groom.findUnique({ where: { id: released.id }, select: { userId: true } });
+    expect(row.userId).toBeNull();
+  }, 60000);
+
   it('POST rejects a malformed groomId with 400 and no state change', async () => {
     const res = await hireRequest(hirer.token, { groomId: 'not-a-number' });
     expect(res.status).toBe(400);
