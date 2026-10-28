@@ -100,6 +100,7 @@ export const getProfile = async (req, res, next) => {
         level: true,
         xp: true,
         role: true,
+        emailVerified: true,
         createdAt: true,
         updatedAt: true,
         settings: true,
@@ -159,6 +160,8 @@ export const getProfile = async (req, res, next) => {
           level: user.level,
           xp: user.xp,
           role: user.role,
+          // Equoria-voasj: the client sends an unconfirmed player to /verify-email.
+          emailVerified: user.emailVerified === true,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
           completedOnboarding,

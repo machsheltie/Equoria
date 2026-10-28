@@ -264,7 +264,10 @@ describe('Staff check-in and capability guard (Equoria-puj1e.1)', () => {
   it('refuses a code to a moderator whose email is unverified, and sends nothing', async () => {
     const mod = await makeUser('moderator', { emailVerified: false, emailVerifiedAt: null });
     const res = await post(REQUEST, mod);
-    expect(res.status).toBe(409);
+    // Owner ruling q248 (Equoria-voasj): an unconfirmed account, staff included,
+    // is refused at the door before any staff route runs.
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('emailNotVerified');
     expect(capturedFor(mod.email)).toHaveLength(0);
     expect(await prisma.staffCheckinCode.count({ where: { userId: mod.id } })).toBe(0);
   });

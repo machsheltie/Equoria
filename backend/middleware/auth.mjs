@@ -13,9 +13,13 @@ import { cachedAccountStanding, satisfiesRole, standingRefusal } from '../module
  * Removes the per-request DB lookup the CWE-613 check (Equoria-39r5) would
  * otherwise perform on every authenticated route.
  *
- * Entry shape: { value: Date | null, expiresAt: number }
+ * Entry shape: { value: Date | null, emailVerified: boolean | null, expiresAt: number }
  *   value === null → user has never rotated; no constraint.
  *   value === Date → reject tokens with iat < floor(value/1000) seconds.
+ *   emailVerified  → the email gate (Equoria-voasj). Only a verified account is
+ *                    served from the cache; an unverified one is re-read on every
+ *                    request, so confirming the email opens play on the next call.
+ *                    null = no such account (nothing to gate).
  *
  * Eviction:
  * - On every successful changePassword / resetPassword (explicit eviction
@@ -25,7 +29,7 @@ import { cachedAccountStanding, satisfiesRole, standingRefusal } from '../module
 const PASSWORD_CHANGED_AT_CACHE_TTL_MS = 30_000;
 const passwordChangedAtCache = new Map();
 
-const getCachedPasswordChangedAt = userId => {
+const getCachedAccountGate = userId => {
   const entry = passwordChangedAtCache.get(userId);
   if (!entry) {
     return undefined;
@@ -34,15 +38,55 @@ const getCachedPasswordChangedAt = userId => {
     passwordChangedAtCache.delete(userId); // lazy expiry
     return undefined; // miss
   }
-  return entry.value; // hit (Date or null)
+  if (entry.emailVerified === false) {
+    return undefined; // an unverified account is always re-read (see above)
+  }
+  return entry; // hit
 };
 
-const setCachedPasswordChangedAt = (userId, value) => {
+const setCachedAccountGate = (userId, value, emailVerified) => {
   passwordChangedAtCache.set(userId, {
     value,
+    emailVerified,
     expiresAt: Date.now() + PASSWORD_CHANGED_AT_CACHE_TTL_MS,
   });
 };
+
+/**
+ * The email gate (Equoria-voasj, owner ruling q248 2026-10-28: block all play
+ * until the email is confirmed). An account whose email is unconfirmed may use
+ * only what it needs to confirm it, to sign out, and to read its own account;
+ * every other authenticated route answers 403 emailNotVerified. Staff and admin
+ * accounts follow the same rule. The emailed link itself (GET
+ * /api/v1/auth/verify-email) is public and never reaches this middleware.
+ *
+ * Matched on the exact full path and method, so any other spelling of a path is
+ * refused rather than let through.
+ */
+const emailGateAllowed = new Set([
+  'GET /api/v1/auth/profile',
+  'GET /api/v1/auth/me',
+  'GET /api/v1/auth/verification-status',
+  'POST /api/v1/auth/resend-verification',
+  'POST /api/v1/auth/logout',
+  // A mistyped signup address can only be confirmed by replacing it; the
+  // confirmation link mailed to the new address marks it verified.
+  'GET /api/v1/auth/email-change/status',
+  'POST /api/v1/auth/email-change/request',
+]);
+
+const emailGateAllows = req => {
+  const method = req.method === 'HEAD' ? 'GET' : req.method;
+  const path = String(req.originalUrl ?? req.url ?? req.path ?? '').split('?')[0];
+  return emailGateAllowed.has(`${method} ${path}`);
+};
+
+export const emailNotVerifiedBody = Object.freeze({
+  success: false,
+  status: 'error',
+  code: 'emailNotVerified',
+  message: 'Please confirm your email address to start playing. The link is in your inbox.',
+});
 
 /**
  * Evict a user's passwordChangedAt cache entry.
@@ -250,21 +294,25 @@ export const authenticateToken = async (req, res, next) => {
     // The User.id column is a string UUID — skip the lookup for non-string ids
     // (forged or unit-test mock tokens). Downstream handlers will reject any
     // malformed id when they try their own DB lookups.
-    if (decoded.iat && typeof user.id === 'string' && user.id.length > 0) {
+    let emailVerified = null;
+    if (typeof user.id === 'string' && user.id.length > 0) {
       // Equoria-2bbf: read cache first; fall back to DB on miss/expiry.
       // Eviction is performed by changePassword/resetPassword on rotation.
-      let passwordChangedAt = getCachedPasswordChangedAt(user.id);
-      if (passwordChangedAt === undefined) {
+      const cached = getCachedAccountGate(user.id);
+      let passwordChangedAt = cached?.value;
+      emailVerified = cached ? cached.emailVerified : null;
+      if (cached === undefined) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: user.id },
-            select: { passwordChangedAt: true },
+            select: { passwordChangedAt: true, emailVerified: true },
           });
           // Cache the value (may be null for users who have never rotated).
           // Only populate when we successfully read; on lookup error we
           // fail-closed below without touching the cache.
           passwordChangedAt = dbUser ? dbUser.passwordChangedAt : null;
-          setCachedPasswordChangedAt(user.id, passwordChangedAt);
+          emailVerified = dbUser ? dbUser.emailVerified === true : null;
+          setCachedAccountGate(user.id, passwordChangedAt, emailVerified);
         } catch (lookupError) {
           // Fail-closed on DB lookup errors in this security-critical check.
           // (Per security boundary discipline: a transient DB failure must not
@@ -275,7 +323,11 @@ export const authenticateToken = async (req, res, next) => {
           return respondUnauthorized('Authentication unavailable. Please retry.');
         }
       }
-      if (passwordChangedAt && decoded.iat < Math.floor(passwordChangedAt.getTime() / 1000)) {
+      if (
+        decoded.iat &&
+        passwordChangedAt &&
+        decoded.iat < Math.floor(passwordChangedAt.getTime() / 1000)
+      ) {
         logger.warn(
           `[auth:${requestId}] Token rejected: iat predates passwordChangedAt for user ${user.id}`,
         );
@@ -322,6 +374,13 @@ export const authenticateToken = async (req, res, next) => {
         logger.warn(`[auth:${requestId}] Token rejected: session ended for user ${user.id}`);
         return respondUnauthorized('Session ended. Please login again.');
       }
+    }
+
+    if (emailVerified === false && !emailGateAllows(req)) {
+      logger.info(
+        `[auth:${requestId}] Request refused: email not verified for user ${user.id} (${req.method} ${req.path})`,
+      );
+      return res.status(403).json(emailNotVerifiedBody);
     }
 
     req.user = user;
