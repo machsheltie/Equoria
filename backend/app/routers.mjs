@@ -56,7 +56,6 @@ import showRoutes from '../modules/competition/shows/showRoutes.mjs';
 import foalRoutes from '../modules/breeding/routes/foalRoutes.mjs';
 import studBookingRoutes from '../modules/breeding/routes/studBookingRoutes.mjs';
 import traitRoutes from '../modules/traits/routes/traitRoutes.mjs';
-import epigeneticTraitRoutes from '../modules/traits/routes/epigeneticTraitRoutes.mjs';
 import epigeneticFlagRoutes from '../modules/traits/routes/epigeneticFlagRoutes.mjs';
 import advancedEpigeneticRoutes from '../modules/traits/routes/advancedEpigeneticRoutes.mjs';
 import groomRoutes from '../modules/grooms/routes/groomRoutes.mjs';
@@ -70,7 +69,6 @@ import dynamicCompatibilityRoutes from '../modules/grooms/routes/dynamicCompatib
 import leaderboardRoutes from '../modules/leaderboards/routes/leaderboardRoutes.mjs';
 // Equoria-q4uem.4 (WS4 S1): the former labs module was dissolved into traits,
 // horses and admin.
-import enhancedReportingRoutes from '../modules/traits/routes/enhancedReportingRoutes.mjs';
 import personalityEvolutionRoutes from '../modules/horses/routes/personalityEvolutionRoutes.mjs';
 import apiOptimizationRoutes from '../modules/admin/routes/apiOptimizationRoutes.mjs';
 import memoryManagementRoutes from '../modules/admin/routes/memoryManagementRoutes.mjs';
@@ -245,13 +243,14 @@ export function buildRouters() {
   authRouter.use('/groom-marketplace', groomMarketplaceRoutes);
 
   // Advanced game features
-  authRouter.use('/epigenetic-traits', epigeneticTraitRoutes);
   authRouter.use('/flags', epigeneticFlagRoutes);
   authRouter.use('/leaderboards', leaderboardRoutes);
 
   // Advanced epigenetic and genetics features
   authRouter.use('/', advancedEpigeneticRoutes); // Mounts horse-specific routes at /horses/:id/...
-  authRouter.use('/', enhancedReportingRoutes); // Enhanced reporting endpoints
+  // Equoria-a7f1p: /epigenetic-traits/* and the enhanced trait reports
+  // (trait history, timeline, stable report, comparison, export) were removed
+  // (owner ruling 2026-10-28, q152: no trait reports for players).
 
   // Performance optimization and environmental systems
   // Equoria-rvmse (SECURITY P1): /optimization and /memory expose operational

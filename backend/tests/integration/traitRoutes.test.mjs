@@ -179,63 +179,6 @@ describe('Trait Routes Integration Tests', () => {
     });
   });
 
-  describe('GET /api/v1/traits/definitions', () => {
-    it('should get all trait definitions', async () => {
-      const response = await request(app)
-        .get('/api/v1/traits/definitions')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('traits');
-      expect(response.body.data).toHaveProperty('count');
-      expect(response.body.data).toHaveProperty('filter', 'all');
-      expect(typeof response.body.data.traits).toBe('object');
-      expect(response.body.data.count).toBeGreaterThan(0);
-
-      // Check trait definition structure
-      const traitKeys = Object.keys(response.body.data.traits);
-      if (traitKeys.length > 0) {
-        const firstTrait = response.body.data.traits[traitKeys[0]];
-        expect(firstTrait).toHaveProperty('name');
-        expect(firstTrait).toHaveProperty('type');
-        expect(firstTrait).toHaveProperty('label');
-        // Old contract: each definition carried its rarity. Owner ruling 2026-10-27
-        // (q112): players never see a trait's rarity.
-        expect(firstTrait).not.toHaveProperty('rarity');
-      }
-    });
-
-    it('should filter traits by type', async () => {
-      const response = await request(app)
-        .get('/api/v1/traits/definitions?type=positive')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.filter).toBe('positive');
-
-      // All returned traits should be positive
-      const { traits } = response.body.data;
-      Object.values(traits).forEach(trait => {
-        expect(trait.type).toBe('positive');
-      });
-    });
-
-    it('should return validation error for invalid type', async () => {
-      const response = await request(app)
-        .get('/api/v1/traits/definitions?type=invalid')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Type must be either "all", "positive", or "negative"');
-    });
-  });
-
   describe('GET /api/v1/traits/discovery-status/:horseId', () => {
     it('should get discovery status successfully', async () => {
       const response = await request(app)

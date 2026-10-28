@@ -1,5 +1,4 @@
 import express from 'express';
-import { query } from 'express-validator';
 import { getTemperamentDefinitions } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
@@ -12,7 +11,6 @@ import horseHistoryRoutes from './horseHistoryRoutes.mjs';
 import horseFoalRoutes from './horseFoalRoutes.mjs';
 import horseIdentityRoutes from './horseIdentityRoutes.mjs';
 import {
-  handleValidationErrors,
   rejectPollutedRequest,
   validateHorseUpdatePayload,
   validateHorseId,
@@ -174,59 +172,6 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
     });
   }
 });
-
-/**
- * GET /horses/trait-trends
- * Get trait development trends across user's horses
- */
-router.get(
-  '/trait-trends',
-  queryRateLimiter,
-  authenticateToken,
-  query('userId').custom((value, { req }) => {
-    if (value !== req.user.id) {
-      throw new Error('Access denied: Can only access your own trait trends');
-    }
-    return true;
-  }),
-  query('timeframe')
-    .optional()
-    .isInt({ min: 1, max: 365 })
-    .withMessage('Timeframe must be 1-365 days'),
-  handleValidationErrors,
-  async (req, res) => {
-    try {
-      const { userId } = req.query;
-      const timeframe = parseInt(req.query.timeframe) || 30;
-
-      // Analyze trends
-      const cutoffDate = new Date(Date.now() - timeframe * 24 * 60 * 60 * 1000);
-      logger.debug(`Trend analysis requested with cutoff: ${cutoffDate.toISOString()}`);
-      const trends = [];
-      const patterns = {};
-      const predictions = {};
-
-      logger.info(`Trait trends analyzed for user ${userId} (${timeframe} days)`);
-
-      res.json({
-        success: true,
-        data: {
-          trends,
-          patterns,
-          predictions,
-          timeframe,
-          analysisDate: new Date(),
-        },
-      });
-    } catch (error) {
-      logger.error('Error analyzing trait trends:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to analyze trait trends',
-      });
-    }
-  },
-);
 
 /**
  * GET /horses/temperament-definitions

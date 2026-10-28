@@ -74,8 +74,12 @@ const HORSE_QUERY_ROUTES = [
   'GET /:id/overview',
   'GET /:id/training-history',
   'GET /:id/breeding-data',
-  'GET /:id/trait-card',
 ].sort();
+
+// Owner ruling 2026-10-28 (q152, Equoria-a7f1p): no trait reports for players.
+// Old contract: GET /:id/trait-card (query router) and GET /trait-trends
+// (module router) were part of the inventories above; they are hosted nowhere.
+const retiredTraitReportRoutes = ['GET /:id/trait-card', 'GET /trait-trends'];
 
 // The full Equoria-y8u2j pre-split inventory (parent + sub-routers), now split
 // between the query router and the module router tree.
@@ -86,7 +90,6 @@ const PRE_SPLIT_HORSES_INVENTORY = [
   'GET /:id',
   'PUT /:id',
   'DELETE /:id',
-  'GET /trait-trends',
   'GET /temperament-definitions',
   'GET /trainable/:userId',
   'POST /foals',
@@ -105,7 +108,14 @@ describe('application query routers mounting sentinel (Equoria-q4uem.4)', () => 
     }
   });
 
-  it('EXACT: horseQueryRoutes exposes exactly the six re-homed horse reads', () => {
+  it('RETIRED (q152): the trait card and trait trends are hosted by neither horses router', () => {
+    const union = new Set([...sigsOf(horseQueryRoutes), ...sigsOf(horseRoutes)]);
+    for (const sig of retiredTraitReportRoutes) {
+      expect(union.has(sig)).toBe(false);
+    }
+  });
+
+  it('EXACT: horseQueryRoutes exposes exactly the re-homed horse reads', () => {
     expect(sigsOf(horseQueryRoutes)).toEqual(HORSE_QUERY_ROUTES);
     // and the module tree no longer hosts them (no duplicate first-match candidates)
     const moduleSigs = new Set(sigsOf(horseRoutes));

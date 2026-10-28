@@ -13,7 +13,6 @@
   "backend/modules/horses/__tests__/phenotypeCalculationService.test.mjs": 837,
   "backend/modules/horses/services/horseTemperamentAnalysis.mjs": 806,
   "backend/modules/horses/services/phenotypeCalculationService.mjs": 725,
-  "backend/modules/traits/services/enhancedReportingService.mjs": 817,
   "backend/modules/users/controllers/userController.mjs": 631,
   "backend/scripts/performance-regression-tests.mjs": 616,
   "backend/services/apiDocumentationService.mjs": 676,

@@ -7,6 +7,11 @@
  * which replaced `error.message.includes('not found')` string-sniffing with
  * type-based 404 detection: `AppError.isAppError(error) && error.statusCode === 404`.
  *
+ * Owner ruling 2026-10-28 (q152, Equoria-a7f1p): GET /horses/:id/trait-card was
+ * removed with the trait reports; its cases left this suite (the removal is
+ * pinned in removedTraitReportRoutes). The notes below about trait-card are
+ * history.
+ *
  * Routes covered:
  *   GET /api/v1/horses/:id/legacy-score  (calculateLegacyScore — throws typed
  *                                         NotFoundError for a missing horse)
@@ -105,17 +110,6 @@ describe('INTEGRATION: type-based 404 — legacy-score (horseXpRoutes) / trait-c
       expect(typeof res.body.message).toBe('string');
       expect(res.body.message.length).toBeGreaterThan(0);
     });
-
-    it('GET /horses/:id/trait-card → 404', async () => {
-      const res = await request(app)
-        .get(`/api/v1/horses/${MISSING_ID}/trait-card`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${ownerToken}`);
-
-      expect(res.status).toBe(404);
-      expect(res.body).toMatchObject({ success: false });
-      expect(typeof res.body.message).toBe('string');
-    });
   });
 
   // ===================================================================
@@ -139,21 +133,6 @@ describe('INTEGRATION: type-based 404 — legacy-score (horseXpRoutes) / trait-c
       expect(typeof res.body.data.legacyScore).toBe('object');
       expect(res.body.data.legacyScore.horseId).toBe(ownedHorse.id);
       expect(typeof res.body.data.legacyScore.totalScore).toBe('number');
-    });
-
-    it('GET /horses/:id/trait-card on an owned horse → 200 with a timeline (empty, not a 404)', async () => {
-      const res = await request(app)
-        .get(`/api/v1/horses/${ownedHorse.id}/trait-card`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${ownerToken}`);
-
-      expect(res.status).toBe(200);
-      expect(res.status).not.toBe(404); // generateTraitTimeline returns empty, never throws
-      expect(res.body).toMatchObject({ success: true });
-      // A fresh horse with no trait history yields a timeline object (isEmpty:true
-      // shape) — assert the data envelope exists rather than over-fitting fields.
-      expect(res.body.data).toHaveProperty('timeline');
-      expect(res.body.data.timeline).toBeTruthy();
     });
   });
 });

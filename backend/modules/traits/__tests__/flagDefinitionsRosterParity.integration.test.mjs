@@ -16,6 +16,10 @@
  * are equal and equal to the canonical 9.
  *
  * Both endpoints live on authRouter (authenticateToken), so both need a bearer.
+ *
+ * Owner ruling 2026-10-28 (q152, Equoria-a7f1p): GET /epigenetic-traits/definitions
+ * was removed with the trait reports (pinned in removedTraitReportRoutes), so only
+ * /flags/definitions remains to hold to the canonical roster.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -64,7 +68,7 @@ describe('Equoria-oey96.33: both flag-definition endpoints serve the SAME canoni
     );
   });
 
-  it('the two endpoints agree on the flag-name set (canonical)', async () => {
+  it('the flags endpoint serves the canonical flag-name set', async () => {
     const flagsRes = await request(app)
       .get('/api/v1/flags/definitions')
       .set('Origin', ORIGIN)
@@ -72,31 +76,6 @@ describe('Equoria-oey96.33: both flag-definition endpoints serve the SAME canoni
     expect(flagsRes.status).toBe(200);
     const flagsNames = flagsRes.body.data.flags.map(f => f.name).sort();
 
-    const traitsRes = await request(app)
-      .get('/api/v1/epigenetic-traits/definitions')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(traitsRes.status).toBe(200);
-    const traitsNames = Object.values(traitsRes.body.data.epigeneticFlags)
-      .map(f => f.name)
-      .sort();
-
-    // Both endpoints match the canonical roster...
     expect(flagsNames).toEqual(CANONICAL_NAMES);
-    expect(traitsNames).toEqual(CANONICAL_NAMES); // RED pre-fix: had antisocial/social/sensitive
-    // ...and therefore each other.
-    expect(traitsNames).toEqual(flagsNames);
-  });
-
-  it('the epigenetic-traits endpoint no longer serves any stale-only flag', async () => {
-    const traitsRes = await request(app)
-      .get('/api/v1/epigenetic-traits/definitions')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(traitsRes.status).toBe(200);
-    const traitsNames = Object.values(traitsRes.body.data.epigeneticFlags).map(f => f.name);
-    for (const stale of ['antisocial', 'social', 'sensitive']) {
-      expect(traitsNames).not.toContain(stale);
-    }
   });
 });

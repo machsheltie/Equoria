@@ -11,7 +11,6 @@
  *   POST   /:id/award-xp            — REMOVED, 410 Gone (Equoria-6p398.3)
  *   GET    /:id/personality-impact  — groom-compatibility ranking
  *   GET    /:id/legacy-score        — legacy-score calculation
- *   GET    /:id/trait-card          — trait-timeline card
  *
  * Mounting: this router is mounted at the SAME path as the parent
  * (`router.use(horseXpRoutes)` in horseRoutes.mjs). All routes start with
@@ -26,8 +25,8 @@
  * `POST /:id/award-xp`, which answers 410 for every authenticated caller and
  * therefore performs no ownership lookup (Equoria-6p398.3, audit Finding 3).
  *
- * Note: legacy-score and trait-card use dynamic `await import(...)` to load
- * their services — preserved exactly because removing the laziness without
+ * Note: legacy-score uses a dynamic `await import(...)` to load
+ * its service — preserved exactly because removing the laziness without
  * profiling startup cost would be a behavioural change.
  */
 

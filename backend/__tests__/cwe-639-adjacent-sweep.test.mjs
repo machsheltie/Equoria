@@ -9,7 +9,9 @@
  * Companion child issues:
  *   - Equoria-m55h — ultraRareTraitRoutes /effects/calculate (route removed by
  *     Equoria-a7f1p — the ultra-rare traits are gone — so its case went with it)
- *   - Equoria-qpeg — enhancedReportingRoutes /horses/compare-epigenetics
+ *   - Equoria-qpeg — enhancedReportingRoutes /horses/compare-epigenetics (route
+ *     removed by Equoria-a7f1p — owner ruling q152, no trait reports — so its
+ *     case went with it)
  *   - Equoria-msh4 — environmentalRoutes /environment/calculate-impact (route removed by
  *     Equoria-aq9ya — there is no weather — so its case went with it)
  *   - Equoria-q4yy — traitDiscoveryRoutes /discover/batch (route removed by
@@ -165,47 +167,6 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
   });
 
   afterEach(() => cleanup.run());
-
-  // ─── Equoria-qpeg ────────────────────────────────────────────────────────
-  describe('enhancedReportingRoutes POST /horses/compare-epigenetics', () => {
-    it('returns 404 for cross-user horseIds with byte-identical response to not-exists', async () => {
-      // Need at least 2 horseIds (route AC). Equoria-1ohys: register the extra
-      // horse for the suite-level fail-loud `horse` cleanup (deleted before its
-      // owning user, in FK order) instead of a swallowed finally-block delete.
-      const horseA2 = await prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `CweHorseA2-${randomBytes(8).toString('hex')}`,
-          userId: userA.id,
-          sex: 'mare',
-          dateOfBirth: new Date(),
-        },
-      });
-      extraHorseIds.push(horseA2.id);
-
-      const resCrossUser = await request(app)
-        .post('/api/v1/auth/horses/compare-epigenetics')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ horseIds: [horseA.id, horseB.id] });
-
-      expect(resCrossUser.status).toBe(404);
-      expect(resCrossUser.body.success).toBe(false);
-
-      const resMissing = await request(app)
-        .post('/api/v1/auth/horses/compare-epigenetics')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ horseIds: [horseA.id, NONEXISTENT_ID] });
-
-      expect(resMissing.status).toBe(404);
-      expect(resMissing.body).toEqual(resCrossUser.body);
-    });
-  });
 
   // ─── Equoria-5w2v ────────────────────────────────────────────────────────
   describe('groomAssignmentRoutes /api/v1/groom-assignments/validate', () => {

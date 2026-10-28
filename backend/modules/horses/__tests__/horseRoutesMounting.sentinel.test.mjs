@@ -21,8 +21,9 @@
  *      a nested `handle.stack` containing the extracted routes.
  *
  * Why this test exists (CONTRIBUTING.md "Route ordering — specific routes
- * BEFORE /:id catch-alls"): the parent file has `GET /trait-trends`,
- * `GET /temperament-definitions` registered BEFORE `GET /:id`. If a future
+ * BEFORE /:id catch-alls"): the parent file has
+ * `GET /temperament-definitions` registered BEFORE `GET /:id` (GET /trait-trends,
+ * once also there, was removed by owner ruling 2026-10-28, q152). If a future
  * refactor swaps that order, the catch-all swallows them silently and they
  * return a 404 from the catch-all's ownership middleware. A direct HTTP test
  * is the strongest proof, but `app.mjs` import is currently blocked by
@@ -85,7 +86,6 @@ describe('horseRoutes mounting sentinel (Equoria-y8u2j)', () => {
       'GET /:id',
       'PUT /:id',
       'DELETE /:id',
-      'GET /trait-trends',
       'GET /temperament-definitions',
       'POST /foals',
       'GET /:id/prize-summary',
@@ -96,7 +96,13 @@ describe('horseRoutes mounting sentinel (Equoria-y8u2j)', () => {
     }
   });
 
-  it('keeps GET /trait-trends and GET /temperament-definitions registered BEFORE GET /:id (catch-all ordering, per CONTRIBUTING.md)', () => {
+  // Old contract: GET /trait-trends was also required here. Owner ruling
+  // 2026-10-28 (q152, Equoria-a7f1p): no trait reports, so it is gone.
+  it('no longer registers GET /trait-trends (q152)', () => {
+    expect(routeSet.has('GET /trait-trends')).toBe(false);
+  });
+
+  it('keeps GET /temperament-definitions registered BEFORE GET /:id (catch-all ordering, per CONTRIBUTING.md)', () => {
     // The parent file owns these three GETs in this exact order so the
     // /:id catch-all does not swallow the literal paths. Sub-router routes
     // (any 2-segment path like /:id/history) are fine in any order because
@@ -104,13 +110,10 @@ describe('horseRoutes mounting sentinel (Equoria-y8u2j)', () => {
     const parentGets = horseRoutes.stack
       .filter(l => l.route && Object.keys(l.route.methods).includes('get'))
       .map(l => l.route.path);
-    const idxTraitTrends = parentGets.indexOf('/trait-trends');
     const idxTempDefs = parentGets.indexOf('/temperament-definitions');
     const idxCatchAll = parentGets.indexOf('/:id');
-    expect(idxTraitTrends).toBeGreaterThanOrEqual(0);
     expect(idxTempDefs).toBeGreaterThanOrEqual(0);
     expect(idxCatchAll).toBeGreaterThanOrEqual(0);
-    expect(idxTraitTrends).toBeLessThan(idxCatchAll);
     expect(idxTempDefs).toBeLessThan(idxCatchAll);
   });
 

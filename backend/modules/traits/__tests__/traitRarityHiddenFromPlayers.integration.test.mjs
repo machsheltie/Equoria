@@ -3,9 +3,10 @@
  * Equoria-2d55z), and they see the authored trait name (owner ruling
  * 2026-10-23).
  *
- * GET /traits/horse/:id and GET /traits/definitions send each roster trait's
- * label, type, description and category, never its rarity, even when asked for
- * it by field selection. Real routes, real app, real test database.
+ * GET /traits/horse/:id sends each roster trait's label, type, description and
+ * category, never its rarity. (GET /traits/definitions and the trait card were
+ * removed with the trait reports, owner ruling 2026-10-28, q152; Equoria-a7f1p.)
+ * Real routes, real app, real test database.
  */
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
@@ -67,20 +68,9 @@ describe('trait rarity stays off player routes (q112)', () => {
     expect(JSON.stringify(res.body)).not.toMatch(/rarity/i);
   });
 
-  it('the definitions list is the roster, without rarity, even when rarity is asked for', async () => {
-    const all = await get('/api/v1/traits/definitions');
-    expect(all.status).toBe(200);
-    expect(all.body.data.count).toBe(20);
-    expect(JSON.stringify(all.body)).not.toMatch(/rarity/i);
-
-    const picked = await get('/api/v1/traits/definitions?fields=name,rarity');
-    expect(picked.status).toBe(200);
-    expect(JSON.stringify(picked.body)).not.toMatch(/rarity/i);
-  });
-
-  // Equoria-qw4kp: the trait card and the breeding summary read trait history.
-  // They used private rare/negative lists and sent isRare, a rare count and a
-  // "rare" group to the owner. Polarity now comes from the roster (q135).
+  // Equoria-qw4kp: the breeding summary and the legacy score read trait history.
+  // They sent a rare count and rare-trait points to the owner. Polarity now
+  // comes from the roster (q135).
   describe('trait history views', () => {
     let historyHorse;
 
@@ -108,21 +98,13 @@ describe('trait rarity stays off player routes (q112)', () => {
       });
     });
 
-    it('the trait card carries no rarity and takes polarity from the roster', async () => {
-      const res = await get(`/api/v1/horses/${historyHorse.id}/trait-card`);
+    // Owner ruling 2026-10-28 (q150): the rare-trait score is hidden from players.
+    it('the legacy score sends no rare-trait points', async () => {
+      const res = await get(`/api/v1/horses/${historyHorse.id}/legacy-score`);
       expect(res.status).toBe(200);
-      const { timeline } = res.body.data;
-      expect(timeline.timelineEvents).toHaveLength(3);
-      for (const event of timeline.timelineEvents) {
-        expect(event).not.toHaveProperty('isRare');
-      }
-      expect(timeline.summary).not.toHaveProperty('rareTraits');
-      expect(timeline.categorization).not.toHaveProperty('rare');
+      const { traitScore } = res.body.data.legacyScore.components;
+      expect(traitScore.breakdown).not.toHaveProperty('rareTraits');
       expect(JSON.stringify(res.body)).not.toMatch(/isRare|rareTraits|rarity/i);
-
-      expect(timeline.summary.negativeTraits).toBe(1);
-      expect(timeline.categorization.negative.map(e => e.traitName)).toEqual(['skittish']);
-      expect(timeline.categorization.positive.map(e => e.traitName)).toEqual(['heart', 'brave']);
     });
 
     it('the breeding summary sends no rare-trait count', async () => {

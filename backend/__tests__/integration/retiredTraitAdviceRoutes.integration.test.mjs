@@ -227,7 +227,8 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
   const kept = [
     ['GET /horses/:id/environmental-analysis', id => `/api/v1/horses/${id}/environmental-analysis`],
     ['GET /horses/:id/trait-interactions', id => `/api/v1/horses/${id}/trait-interactions`],
-    ['GET /epigenetic-traits/history/:horseId', id => `/api/v1/epigenetic-traits/history/${id}`],
+    // GET /epigenetic-traits/history/:horseId was kept here until owner ruling
+    // 2026-10-28 (q152) removed the trait reports; removedTraitReportRoutes pins it.
     ['GET /traits/discovery-status/:horseId', id => `/api/v1/traits/discovery-status/${id}`],
     ['GET /flags/horses/:id/flags', id => `/api/v1/flags/horses/${id}/flags`],
     ['GET /flags/definitions', () => '/api/v1/flags/definitions'],

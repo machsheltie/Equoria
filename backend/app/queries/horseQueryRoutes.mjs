@@ -21,7 +21,9 @@
  *   GET /:id/overview             — Horses + Training + Competition composition
  *   GET /:id/training-history     — Training: analytics for a horse
  *   GET /:id/breeding-data        — Breeding: breeding data + trait predictions
- *   GET /:id/trait-card           — Traits: trait-timeline card
+ *
+ * Equoria-a7f1p: GET /:id/trait-card went with the trait reports (owner ruling
+ * 2026-10-28, q152).
  */
 import express from 'express';
 import { param, validationResult } from 'express-validator';
@@ -34,7 +36,6 @@ import { queryRateLimiter } from '../../middleware/rateLimiting.mjs';
 import { validateHorseId, validateUserId } from '../../modules/horses/routes/_validators.mjs';
 import { getTrainableHorses, trainingAnalyticsService } from '../../modules/training/index.mjs';
 import { generateBreedingData } from '../../modules/breeding/index.mjs';
-import { generateTraitTimeline } from '../../modules/traits/index.mjs';
 import AppError from '../../errors/AppError.mjs';
 import logger from '../../utils/logger.mjs';
 import { getHorseHistory, getHorseOverview } from './horseOverviewQuery.mjs';
@@ -256,75 +257,6 @@ router.get(
       res.status(500).json({
         success: false,
         message: 'Failed to generate breeding data',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-      });
-    }
-  },
-);
-
-/**
- * @swagger
- * /api/horses/{id}/trait-card:
- *   get:
- *     summary: Get horse trait timeline card
- *     tags: [Horses]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Horse ID
- *     responses:
- *       200:
- *         description: Trait timeline card retrieved successfully
- *       404:
- *         description: Horse not found
- *       500:
- *         description: Internal server error
- *
- * Security: Validates horse ownership before returning trait card
- */
-router.get(
-  '/:id/trait-card',
-  authenticateToken, // base pass-through of horseXpRoutes.mjs:48 (see header)
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id, 10);
-
-      const timeline = await generateTraitTimeline(horseId);
-
-      res.json({
-        success: true,
-        message: 'Trait timeline card retrieved successfully',
-        data: {
-          timeline,
-        },
-      });
-    } catch (error) {
-      // Equoria-vkzvx: TYPE-based 404 detection (mirrors the legacy-score handler).
-      // generateTraitTimeline does NOT itself throw not-found — for a missing horse
-      // it returns an empty timeline (isEmpty:true), and ownership is already proven
-      // by requireOwnership('horse') before this handler runs — so a real 404 here
-      // would only originate from a typed NotFoundError thrown by a future dependency.
-      // We branch on the typed AppError(404) rather than error.message.includes('not
-      // found') so that an UNEXPECTED error (e.g. a future ERR_MODULE_NOT_FOUND import
-      // failure like Equoria-93lhj) surfaces loudly as 500 instead of being silently
-      // string-matched into a misleading 404 or a masked module-load 500.
-      // AppError.isAppError survives module-cache duplication (see errors/AppError.mjs).
-      if (AppError.isAppError(error) && error.statusCode === 404) {
-        return res.status(404).json({
-          success: false,
-          message: error.message,
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        message: 'Failed to generate trait timeline',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
       });
     }

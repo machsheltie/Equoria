@@ -8,19 +8,15 @@
  * traits for themselves).
  */
 
-import { getTraitsByType, playerTraitDefinition } from '../../../utils/epigeneticTraits.mjs';
+import { playerTraitDefinition } from '../../../utils/epigeneticTraits.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { getCachedQuery, generateCacheKey } from '../../../utils/cacheHelper.mjs';
 import {
   dormantTraitKeys,
   publicTraitModifiers,
   visibleTraitKeys,
 } from '../../../utils/publicTraitView.mjs';
 import { markTraitsSeen, seenTraitKeys } from '../services/traitSeenService.mjs';
-
-// TTL constants (in seconds)
-const TRAIT_DEFINITIONS_TTL = 600; // 10 minutes — static reference data
 
 /**
  * GET /api/traits/horse/:horseId
@@ -168,81 +164,6 @@ export async function markHorseTraitsSeen(req, res) {
     return res.status(500).json({
       success: false,
       message: 'Failed to record seen traits',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-    });
-  }
-}
-
-/**
- * GET /api/traits/definitions
- * Get all available trait definitions
- * Cached for 10 minutes — trait definitions are static reference data
- */
-export async function getTraitDefinitions(req, res) {
-  try {
-    const { type, fields } = req.query;
-
-    logger.info(
-      `[traitController.getTraitDefinitions] Getting trait definitions${type ? ` for type: ${type}` : ''}`,
-    );
-
-    // Determine field selection (comma-separated: e.g. ?fields=name,description,effects)
-    const selectedFields = fields ? fields.split(',').map(f => f.trim()) : null;
-
-    const cacheKey = generateCacheKey('traits:definitions', type || 'all', fields || 'all-fields');
-
-    const data = await getCachedQuery(
-      cacheKey,
-      async () => {
-        let traits;
-        if (type && ['positive', 'negative'].includes(type)) {
-          traits = getTraitsByType(type);
-        } else {
-          traits = getTraitsByType('all');
-        }
-
-        // Enhance with the player view of each definition: never the rarity
-        // (owner ruling 2026-10-27, q112). Admin tooling keeps it.
-        const definitions = traits.reduce((acc, trait) => {
-          const definition = playerTraitDefinition(trait);
-          if (definition) {
-            const fullDef = { name: trait, ...definition };
-            // Apply field selection if requested
-            if (selectedFields) {
-              acc[trait] = selectedFields.reduce((selected, field) => {
-                if (field in fullDef) {
-                  selected[field] = fullDef[field];
-                }
-                return selected;
-              }, {});
-            } else {
-              acc[trait] = fullDef;
-            }
-          }
-          return acc;
-        }, {});
-
-        return {
-          traits: definitions,
-          count: Object.keys(definitions).length,
-          filter: type || 'all',
-        };
-      },
-      TRAIT_DEFINITIONS_TTL,
-    );
-
-    // Equoria-cmw85.28: static reference data, so HTTP caching is opted in.
-    res.locals.cacheable = { maxAge: 300 };
-    res.status(200).json({
-      success: true,
-      message: `Retrieved ${data.count} trait definitions`,
-      data,
-    });
-  } catch (error) {
-    logger.error(`[traitController.getTraitDefinitions] Error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve trait definitions',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
   }

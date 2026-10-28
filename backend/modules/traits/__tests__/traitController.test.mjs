@@ -1,8 +1,10 @@
 /**
  * traitController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: getTraitDefinitions, getTraitCompetitionEffects, getHorseTraits,
- * getDiscoveryStatus. (discoverTraits and its POST /traits/discover/:horseId
+ * Covers: getHorseTraits, getDiscoveryStatus. (getTraitDefinitions and
+ * getTraitCompetitionEffects went with GET /traits/definitions and
+ * /traits/competition-effects, owner ruling 2026-10-28, q152; Equoria-a7f1p;
+ * pinned in removedTraitReportRoutes.) (discoverTraits and its POST /traits/discover/:horseId
  * route were removed by Equoria-gu8jk — players never reveal traits.)
  * Routes live under authRouter (mounted at /api/v1) at /api/v1/traits.
  */
@@ -59,69 +61,6 @@ beforeAll(async () => {
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);
-
-// ─── GET /api/v1/traits/definitions ──────────────────────────────────────────
-
-describe('GET /api/v1/traits/definitions', () => {
-  it('returns 200 with trait definitions object', async () => {
-    const res = await request(app)
-      .get('/api/v1/traits/definitions')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toHaveProperty('traits');
-    expect(res.body.data).toHaveProperty('count');
-    expect(res.body.data.count).toBeGreaterThan(0);
-  });
-
-  it('filters to positive traits when type=positive', async () => {
-    const res = await request(app)
-      .get('/api/v1/traits/definitions?type=positive')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.data.filter).toBe('positive');
-  });
-
-  it('returns 400 for invalid type query param', async () => {
-    const res = await request(app)
-      .get('/api/v1/traits/definitions?type=unknown')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(400);
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/traits/definitions').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── GET /api/v1/traits/competition-effects ──────────────────────────────────
-
-describe('GET /api/v1/traits/competition-effects', () => {
-  it('returns 200 with competition effects', async () => {
-    const res = await request(app)
-      .get('/api/v1/traits/competition-effects')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/traits/competition-effects').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
 
 // ─── GET /api/v1/traits/horse/:horseId ───────────────────────────────────────
 

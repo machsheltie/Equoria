@@ -1,5 +1,5 @@
 /**
- * environmentalTriggerSystem + traitTimelineService unit tests
+ * environmentalTriggerSystem unit tests
  * (Equoria-rr7 coverage sprint).
  *
  * Shared DB fixture: user + Filly foal (age 0, no interactions).
@@ -16,7 +16,6 @@ import {
   triggerThresholds,
 } from '../services/environmentalTriggerSystem.mjs';
 const analyze = async (horseId, project, ...rest) => project(await loadEnvironmentalTriggerSnapshot(horseId), ...rest);
-import { generateTraitTimeline, getTraitTimelineSummary } from '../services/traitTimelineService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -123,32 +122,8 @@ describe('generateEnvironmentalReport', () => {
   });
 });
 
-// ── traitTimelineService ──────────────────────────────────────────────────────
-
-describe('generateTraitTimeline', () => {
-  it('returns empty timeline for newborn with no trait history', async () => {
-    const result = await generateTraitTimeline(horse.id);
-    expect(result.horseId).toBe(horse.id);
-    expect(Array.isArray(result.timelineEvents)).toBe(true);
-    expect(result.timelineEvents).toHaveLength(0);
-    expect(result.isEmpty).toBe(true);
-    expect(typeof result.summary).toBe('object');
-    expect(typeof result.bondProgress).toBe('object');
-    expect(Array.isArray(result.excludedTraits)).toBe(true);
-    expect(realDateOrReason(result.generatedAt)).toBe('valid date');
-  });
-});
-
-describe('getTraitTimelineSummary', () => {
-  it('returns no-development summary for horse with no traits', async () => {
-    const result = await getTraitTimelineSummary(horse.id);
-    expect(result.horseId).toBe(horse.id);
-    expect(result.hasTraits).toBe(false);
-    expect(result.developmentQuality).toBe('no_development');
-    expect(typeof result.totalTraits).toBe('number');
-    expect(result.totalTraits).toBe(0);
-  });
-});
+// traitTimelineService and its tests were removed with the trait reports
+// (owner ruling 2026-10-28, q152; Equoria-a7f1p).
 
 // ── calculateTriggerThresholds / evaluateTraitExpressionProbability /
 //    assessCriticalPeriodSensitivity — age-bracket + residual-sensitivity

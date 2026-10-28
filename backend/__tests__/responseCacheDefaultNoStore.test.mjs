@@ -65,7 +65,9 @@ describe('response cache default (Equoria-cmw85.28)', () => {
     },
   );
 
-  it.each([['/api/v1/breeds'], ['/api/v1/traits/definitions']])(
+  // Old contract also probed /api/v1/traits/definitions, removed by owner
+  // ruling 2026-10-28 (q152, Equoria-a7f1p: no trait reports for players).
+  it.each([['/api/v1/breeds']])(
     'opted-in public reference data (%s) keeps its cache policy and varies on identity',
     async path => {
       const res = await authedGet(path);

@@ -7,24 +7,23 @@
  * POST /discover/:horseId and POST /batch-discover, which moved hidden traits
  * into the visible lists on demand, were removed. Traits will be activated by
  * grooms (Equoria-09g33), not by a player button.
+ *
+ * Equoria-a7f1p: GET /definitions went with the trait reports (owner ruling
+ * 2026-10-28, q152: no trait history or trait reports for players), and the
+ * three trait-competition reads (/competition-impact, /competition-comparison,
+ * /competition-effects) with the ruling that traits do nothing in show scores
+ * until the trait rework and that comparisons are advice (2026-10-07, 2026-10-23).
  */
 
 import express from 'express';
-import { param, query, validationResult } from 'express-validator';
+import { param, validationResult } from 'express-validator';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import {
   getHorseTraits,
   markHorseTraitsSeen,
-  getTraitDefinitions,
   getDiscoveryStatus,
 } from '../controllers/traitController.mjs';
-import {
-  analyzeHorseTraitImpact,
-  compareTraitImpactAcrossDisciplines,
-  getTraitCompetitionEffects,
-} from '../controllers/traitCompetitionController.mjs';
 import logger from '../../../utils/logger.mjs';
-import { DISCIPLINE_VALUES } from '../../../constants/schema.mjs';
 // Equoria-jk9oj.2: declare auth at the router that OWNS these mutations rather
 // than inferring it from the authRouter mount comment. Idempotent with the
 // mount-level authenticateToken; the guard travels with the file if re-mounted.
@@ -136,55 +135,6 @@ router.post(
 
 /**
  * @swagger
- * /api/traits/definitions:
- *   get:
- *     summary: Get all available trait definitions
- *     tags: [Traits]
- *     parameters:
- *       - in: query
- *         name: type
- *         schema:
- *           type: string
- *           enum: [positive, negative, all]
- *         description: Filter traits by type
- *     responses:
- *       200:
- *         description: Trait definitions retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: object
- *                   properties:
- *                     traits:
- *                       type: object
- *                     count:
- *                       type: integer
- *                     filter:
- *                       type: string
- *       500:
- *         description: Internal server error
- */
-router.get(
-  '/definitions',
-  [
-    query('type')
-      .optional()
-      .isIn(['positive', 'negative', 'all'])
-      .withMessage('Type must be either "all", "positive", or "negative"'),
-    handleValidationErrors,
-  ],
-  getTraitDefinitions,
-);
-
-/**
- * @swagger
  * /api/traits/discovery-status/{horseId}:
  *   get:
  *     summary: Get discovery status and conditions for a horse
@@ -239,192 +189,6 @@ router.get(
     requireOwnership('horse', { idParam: 'horseId' }),
   ],
   getDiscoveryStatus,
-);
-
-/**
- * @swagger
- * /api/traits/competition-impact/{horseId}:
- *   get:
- *     summary: Analyze trait impact for a specific horse and discipline
- *     tags: [Traits, Competition]
- *     parameters:
- *       - in: path
- *         name: horseId
- *         required: true
- *         schema:
- *           type: integer
- *           minimum: 1
- *         description: ID of the horse
- *       - in: query
- *         name: discipline
- *         required: true
- *         schema:
- *           type: string
- *           enum: [Dressage, Show Jumping, Cross Country, Racing, Endurance, Reining, Driving, Trail, Eventing]
- *         description: Competition discipline
- *     responses:
- *       200:
- *         description: Trait impact analysis completed
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: object
- *                   properties:
- *                     horseId:
- *                       type: integer
- *                     horseName:
- *                       type: string
- *                     discipline:
- *                       type: string
- *                     analysis:
- *                       type: object
- *                     traits:
- *                       type: object
- *                     summary:
- *                       type: object
- *       400:
- *         description: Invalid horse ID or missing discipline
- *       404:
- *         description: Horse not found
- *       500:
- *         description: Internal server error
- */
-router.get(
-  '/competition-impact/:horseId',
-  [
-    param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    query('discipline')
-      .notEmpty()
-      .withMessage('Discipline is required')
-      .isIn(DISCIPLINE_VALUES)
-      .withMessage('Invalid discipline'),
-    handleValidationErrors,
-    requireOwnership('horse', { idParam: 'horseId' }),
-  ],
-  analyzeHorseTraitImpact,
-);
-
-/**
- * @swagger
- * /api/traits/competition-comparison/{horseId}:
- *   get:
- *     summary: Compare trait impact across multiple disciplines for a horse
- *     tags: [Traits, Competition]
- *     parameters:
- *       - in: path
- *         name: horseId
- *         required: true
- *         schema:
- *           type: integer
- *           minimum: 1
- *         description: ID of the horse
- *     responses:
- *       200:
- *         description: Trait impact comparison completed
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: object
- *                   properties:
- *                     horseId:
- *                       type: integer
- *                     horseName:
- *                       type: string
- *                     comparison:
- *                       type: array
- *                     summary:
- *                       type: object
- *       400:
- *         description: Invalid horse ID
- *       404:
- *         description: Horse not found
- *       500:
- *         description: Internal server error
- */
-router.get(
-  '/competition-comparison/:horseId',
-  [
-    param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    handleValidationErrors,
-    requireOwnership('horse', { idParam: 'horseId' }),
-  ],
-  compareTraitImpactAcrossDisciplines,
-);
-
-/**
- * @swagger
- * /api/traits/competition-effects:
- *   get:
- *     summary: Get all trait competition effects and definitions
- *     tags: [Traits, Competition]
- *     parameters:
- *       - in: query
- *         name: type
- *         required: false
- *         schema:
- *           type: string
- *           enum: [positive, negative, all]
- *         description: Filter by trait type
- *       - in: query
- *         name: discipline
- *         required: false
- *         schema:
- *           type: string
- *           enum: [Dressage, Show Jumping, Cross Country, Racing, Endurance, Reining, Driving, Trail, Eventing]
- *         description: Highlight effects for specific discipline
- *     responses:
- *       200:
- *         description: Trait competition effects retrieved
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: object
- *                   properties:
- *                     totalTraits:
- *                       type: integer
- *                     positiveTraits:
- *                       type: integer
- *                     negativeTraits:
- *                       type: integer
- *                     filter:
- *                       type: object
- *                     effects:
- *                       type: array
- *       500:
- *         description: Internal server error
- */
-router.get(
-  '/competition-effects',
-  [
-    query('type')
-      .optional()
-      .isIn(['positive', 'negative', 'all'])
-      .withMessage('Type must be positive, negative, or all'),
-    query('discipline').optional().isIn(DISCIPLINE_VALUES).withMessage('Invalid discipline'),
-    handleValidationErrors,
-  ],
-  getTraitCompetitionEffects,
 );
 
 export default router;

@@ -21,7 +21,10 @@
  * /trait-discovery progress, conditions and check-conditions cases went with
  * those routes (Equoria-a7f1p; owner ruling 2026-10-27: traits reveal only
  * through the grooming-day ladder); retiredTraitAdviceRoutes.integration pins
- * their 404.
+ * their 404. The trait history and report cases (trait-timeline, trait-card,
+ * epigenetic-traits/history, enhanced-trait-history, epigenetic-report-export,
+ * stable-epigenetic-report) went with those routes (owner ruling q152,
+ * 2026-10-28, Equoria-a7f1p); removedTraitReportRoutes.integration pins their 404.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -206,39 +209,8 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
   });
 
   describe('trait history (TraitHistoryLog rows naming a still-hidden trait)', () => {
-    it('GET /horses/:id/trait-timeline shows the visible trait, not the hidden ones', async () => {
-      const res = await get(`/api/v1/horses/${foal.id}/trait-timeline`);
-      expectNoHiddenNames(res);
-      expect(res.body.data.timeline.map(e => e.event)).toContain('Discovered trait: Resilient');
-    });
-
-    it('GET /horses/:id/trait-card names no hidden trait', async () => {
-      const res = await get(`/api/v1/horses/${foal.id}/trait-card`);
-      expectNoHiddenNames(res);
-    });
-
     it('GET /horses/:id/legacy-score names no hidden trait', async () => {
       const res = await get(`/api/v1/horses/${foal.id}/legacy-score`);
-      expectNoHiddenNames(res);
-    });
-
-    it('GET /epigenetic-traits/history/:id names no hidden trait', async () => {
-      const res = await get(`/api/v1/epigenetic-traits/history/${foal.id}`);
-      expectNoHiddenNames(res);
-    });
-
-    it('GET /horses/:id/enhanced-trait-history names no hidden trait', async () => {
-      const res = await get(`/api/v1/horses/${foal.id}/enhanced-trait-history`);
-      expectNoHiddenNames(res);
-    });
-
-    it('GET /horses/:id/epigenetic-report-export names no hidden trait', async () => {
-      const res = await get(`/api/v1/horses/${foal.id}/epigenetic-report-export?reportType=detailed`);
-      expectNoHiddenNames(res);
-    });
-
-    it('GET /users/:id/stable-epigenetic-report names no hidden trait', async () => {
-      const res = await get(`/api/v1/users/${user.id}/stable-epigenetic-report`);
       expectNoHiddenNames(res);
     });
   });
