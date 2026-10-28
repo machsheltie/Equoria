@@ -42,7 +42,8 @@ function resolves(stack, path) {
     if (!isRouter) {
       continue;
     }
-    if (layer.regexp?.fast_slash) {
+    // A path-less ('/') mount matches '/' and consumes no path segment.
+    if (layer.match('/') && layer.path === '') {
       if (resolves(layer.handle.stack, path)) {
         return true;
       }
