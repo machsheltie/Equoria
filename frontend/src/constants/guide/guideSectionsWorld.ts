@@ -334,7 +334,7 @@ export const guideSectionsWorld: readonly GuideSection[] = [
       },
       {
         kind: 'paragraph',
-        text: "Everyday shows open and close by the hundreds, so they don't appear in the News. Find them under **COMPETE**.",
+        text: "Everyday shows open and close by the hundreds, so they don't appear in the News. Find them under **Compete**.",
       },
     ],
   },
@@ -379,7 +379,7 @@ export const guideSectionsWorld: readonly GuideSection[] = [
       {
         kind: 'list',
         items: [
-          '**Feed Shop**, **Tack Shop** (saddles, bridles and decorations), **Veterinarian**, **Farrier**, and the **Leathersmith** for crafting.',
+          '**Feed Shop**, **Tack Shop** (saddles, bridles and decorations), **Vet Clinic**, **Farrier**, and the **Leathersmith** for crafting.',
           '**Horse Trader** sells horses bred by the game. They come with no parents and no revealed traits, and their stats total 200, with each stat between 1 and 20.',
           '**Horse Marketplace** is where players sell to each other. The seller sets the price, and there are no listing fees or commissions. Its search covers every horse: tick **For sale**, **At stud**, or both.',
         ],

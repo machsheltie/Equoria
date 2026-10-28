@@ -24,7 +24,7 @@ export const guideSectionsStart: readonly GuideSection[] = [
           '**7 real days make 1 game year.** A horse born today turns 1 a week from now.',
           '**Game time runs on Eastern time.** Days roll over at midnight Eastern. The nightly run that settles shows and delivers foals happens in the early hours, Eastern.',
           '**You start with 10,000 coins**, and you can claim **5,000 coins** from the Bank every week.',
-          '**Only two birthdays change what a horse can do: 3 and 21.** At 3 a horse can train, show and breed. At 21 it retires.',
+          '**Only two birthdays change what a horse can do: 3 and 21.** At 3 a horse can train, show and breed. At 21 it retires, and that is the only way a horse retires.',
         ],
       },
       {
@@ -40,7 +40,7 @@ export const guideSectionsStart: readonly GuideSection[] = [
     blocks: [
       {
         kind: 'paragraph',
-        text: "**Signing up takes three short steps.** First a welcome. Then you choose your first horse: pick a breed, choose a mare or a stallion, and give your horse a name. Then you're ready. Your first horse arrives already 3 years old, so it can train, show and breed right away.",
+        text: "**Signing up takes three short steps.** First a welcome. Then you choose your first horse: pick a breed, choose a mare or a stallion, and give your horse a name. Then you're ready. Your first horse arrives already 3 years old, in Excellent health and fully fed, so it can train, show and breed right away.",
       },
       {
         kind: 'paragraph',
@@ -58,16 +58,30 @@ export const guideSectionsStart: readonly GuideSection[] = [
         kind: 'paragraph',
         text: '**Up to four accounts.** Each player may keep up to four accounts.',
       },
+      {
+        kind: 'paragraph',
+        text: '**Finding your way.** The menu has five groups:',
+      },
+      {
+        kind: 'list',
+        items: [
+          '**Home:** your Stable, Staff, Inventory, Bank, Settings and Profile.',
+          '**World:** the Vet Clinic, Farrier, Tack Shop, Feed Shop, Training Center, Premium Shop and Leathersmith.',
+          '**Community:** Message Boards, Clubs, Messages, Leaderboards, the Hall of Fame, the News and this Guide.',
+          '**Marketplace:** the Horse Trader, the Horse Marketplace, and Grooms, Riders and Trainers for hire.',
+          '**Compete:** Ridden Shows and Conformation Shows.',
+        ],
+      },
       { kind: 'paragraph', text: '**A good first day:**' },
       {
         kind: 'list',
         ordered: true,
         items: [
           'Buy feed at the **Feed Shop**, equip it on your horse, and feed it.',
-          'At the **Veterinarian**, choose your horse and press **Vet Horse**.',
-          'Hire a groom from **Grooms for Hire** and press **Groom horse**.',
-          'Hire a trainer from **Trainers for Hire** (hiring is free), then train at the **Training Center**.',
-          'Hire a rider from **Riders**, then browse shows under **COMPETE**.',
+          'At the **Vet Clinic**, choose your horse and press **Vet Horse**.',
+          'Hire a groom from **Grooms** in the Marketplace and press **Groom Horse**.',
+          'Hire a trainer from **Trainers** in the Marketplace (hiring is free), then train at the **Training Center**.',
+          'Hire a rider from **Riders** in the Marketplace, then browse shows under **Compete**.',
         ],
       },
     ],
@@ -79,11 +93,11 @@ export const guideSectionsStart: readonly GuideSection[] = [
     blocks: [
       {
         kind: 'paragraph',
-        text: "**Stable Home** is your yard. It shows last night's standout horses and a **Stable Rounds** marker for horses that need care, horses that can train this week, and mares ready to breed.",
+        text: '**Home** is your yard. **My Stable** shows your horses at a glance, how many are ready to train or need care, and which horses still need grooming today.',
       },
       {
         kind: 'paragraph',
-        text: "**The Horse Roster** holds every horse you own. **Portrait** view shows each horse's picture and current state. **Ledger** view lays your horses out side by side so you can sort and compare them. Whether you keep 5 horses or 200, the roster groups them into barns so you can always find the one you want.",
+        text: '**Stable**, under Home, holds every horse you own. Show them as a grid of pictures or as a list.',
       },
       {
         kind: 'paragraph',
@@ -95,6 +109,7 @@ export const guideSectionsStart: readonly GuideSection[] = [
         items: [
           '**12 stats:** Precision, Strength, Speed, Agility, Endurance, Intelligence, Stamina, Balance, Boldness, Flexibility, Obedience and Focus. **Stats have no cap, ever.** They never change with age. You raise them through feeding, the farrier, showing, Horse Points and breeding.',
           '**Conformation and gaits:** scored 0 to 100 and fixed for life. Only selective breeding improves them, generation by generation.',
+          "**A birth discipline:** every horse is born with **+5** in one discipline, the same as a week of training. A horse with no parents in the game takes its breed's discipline, and a gaited breed is always born **Gaited** (see [Breeding](#breeding) for foals).",
           '**Temperament:** one of 12, set at birth (see [Temperaments and traits](#temperaments-and-traits)).',
           "**Traits:** discovered over a horse's early life, not chosen.",
         ],
@@ -151,11 +166,11 @@ export const guideSectionsStart: readonly GuideSection[] = [
       },
       {
         kind: 'paragraph',
-        text: "**The Veterinarian.** Choose a horse and press **Vet Horse**. A health check always brings the horse's vet care back to Excellent. It costs **100 coins for each level** its vet care has slipped below Excellent: Very Good 100, Good 200, Fair 300 and Bad 400. A horse whose vet care is already Excellent doesn't need one.",
+        text: "**The Vet Clinic.** Choose a horse and press **Vet Horse**. A health check always brings the horse's vet care back to Excellent. It costs **100 coins for each level** its vet care has slipped below Excellent: Very Good 100, Good 200, Fair 300 and Bad 400. A horse whose vet care is already Excellent doesn't need one.",
       },
       {
         kind: 'paragraph',
-        text: "**Genetic Testing.** A horse's color genes stay hidden until you test it. Choose the horse at the Veterinarian and press **Run Panel** (500 coins).",
+        text: "**Genetic Testing.** A horse's color genes stay hidden until you test it. Choose the horse at the Vet Clinic and press **Run Panel** (500 coins).",
       },
       {
         kind: 'paragraph',

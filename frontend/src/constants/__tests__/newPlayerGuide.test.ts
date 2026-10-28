@@ -273,6 +273,32 @@ describe('NEW_PLAYER_GUIDE owner rulings of 2026-10-23 to 2026-10-28', () => {
   });
 });
 
+describe('NEW_PLAYER_GUIDE owner rulings landed later on 2026-10-28', () => {
+  const blocksOf = (id: string) =>
+    newPlayerGuide.find((section) => section.id === id)?.blocks ?? [];
+  const joined = newPlayerGuide.flatMap((section) => section.blocks.flatMap(textOf)).join(' ');
+
+  it('walks the five-group menu by its real names (Equoria-m5ml8)', () => {
+    const start = blocksOf('getting-started').flatMap(textOf).join(' ');
+    for (const group of [
+      '**Home:**',
+      '**World:**',
+      '**Community:**',
+      '**Marketplace:**',
+      '**Compete:**',
+    ]) {
+      expect(start).toContain(group);
+    }
+    // Retired place names from the older menu.
+    expect(joined).not.toMatch(/COMPETE|Veterinarian|Stable Rounds|Ledger/);
+  });
+
+  it('gives every horse a +5 birth discipline, gaited breeds Gaited (Equoria-tl5l8, n7ph5)', () => {
+    expect(joined).toContain('every horse is born with **+5** in one discipline');
+    expect(joined).toContain('a gaited breed is always born **Gaited**');
+  });
+});
+
 describe('parseGuideInline', () => {
   it('returns plain text as one part', () => {
     expect(parseGuideInline('Just words.')).toEqual([{ kind: 'text', text: 'Just words.' }]);
