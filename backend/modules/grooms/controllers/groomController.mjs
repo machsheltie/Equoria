@@ -18,10 +18,7 @@
  * their duplicate lookup routes (owner ruling 2026-10-28, q151, Equoria-a7f1p).
  */
 
-export {
-  assignGroom,
-  getGroomAssignmentLogs,
-} from './groomAssignmentHandlers.mjs';
+export { assignGroom, getGroomAssignmentLogs } from './groomAssignmentHandlers.mjs';
 
 export { getGroomHorseSynergyPreview } from './groomInteractionController.mjs';
 
