@@ -106,3 +106,22 @@ describe('auditLog module surface (Equoria-hjnrc)', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Equoria-ynbq4 — owner ruling 2026-10-28 (q181): log nothing about horses
+// ---------------------------------------------------------------------------
+describe('the audit trail records nothing about horses (Equoria-ynbq4)', () => {
+  it.each([
+    ['PATCH', '/api/v1/horses/42/name'],
+    ['PUT', '/api/v1/horses/42'],
+    ['POST', '/api/v1/horses'],
+    ['DELETE', '/api/v1/horses/42'],
+    ['POST', '/api/v1/horses/42/feed'],
+    ['POST', '/api/v1/marketplace/list'],
+    ['POST', '/api/v1/marketplace/buy/42'],
+    ['DELETE', '/api/v1/marketplace/list/42'],
+  ])('%s %s is not audited', async (method, path) => {
+    const { classifyAuditAction } = await import('../middleware/auditLog.mjs');
+    expect(classifyAuditAction(method, path)).toBeNull();
+  });
+});
