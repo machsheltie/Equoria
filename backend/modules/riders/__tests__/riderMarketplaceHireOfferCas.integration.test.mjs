@@ -38,13 +38,16 @@
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { staffLevelFee } from '../../../constants/staffLevels.mjs';
 import { hireRiderFromMarketplace } from '../controllers/riderMarketplaceController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-bvddn19-rider';
 
-// hireRiderFromMarketplace: hiringCost = riderData.weeklyRate.
-const WEEKLY_RATE = 150;
-const HIRING_COST = WEEKLY_RATE;
+// hireRiderFromMarketplace charges one week at the offer's star-level price
+// (owner ruling q226, Equoria-7hu4d). Old contract: riderData.weeklyRate (150).
+const offerStarLevel = 'novice';
+const HIRING_COST = staffLevelFee(offerStarLevel);
+const WEEKLY_RATE = HIRING_COST;
 // Fund the buyer far beyond what even several concurrent hires could ever
 // cost — the scenario under test is the offer-list race, not money.
 const BUYER_FUNDS = HIRING_COST * 1000;
@@ -100,6 +103,7 @@ async function makeSingleOfferMarketplace(userId) {
       skillLevel: 'experienced',
       speciality: 'dressage',
       weeklyRate: WEEKLY_RATE,
+      starLevel: offerStarLevel,
       experience: 5,
       bio: 'bvddn19 offer-cas fixture',
     },

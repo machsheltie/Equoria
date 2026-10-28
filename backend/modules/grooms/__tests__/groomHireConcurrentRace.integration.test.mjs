@@ -10,6 +10,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { staffLevelFee } from '../../../constants/staffLevels.mjs';
 import { hireFromMarketplace } from '../controllers/groomMarketplaceController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-6g8wm-groom';
@@ -41,10 +42,12 @@ beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
   const pw = await bcrypt.hash('TestPassword123!', 1);
 
-  // sessionRate * 7 = hiringCost (controller line 212). Seed buyer with
-  // EXACTLY one hire's worth.
+  // A hire charges one week at the offer's star-level price (owner rulings
+  // q226/q228, Equoria-7hu4d). Old contract: sessionRate x 7. Seed the buyer
+  // with EXACTLY one hire's worth.
   const sessionRate = 100;
-  hiringCost = sessionRate * 7;
+  const offerStarLevel = 'novice';
+  hiringCost = staffLevelFee(offerStarLevel);
 
   buyer = await prisma.user.create({
     data: {
@@ -68,6 +71,7 @@ beforeAll(async () => {
     personality: 'gentle',
     experience: 5,
     sessionRate,
+    starLevel: offerStarLevel,
     bio: 'race fixture',
   }));
 

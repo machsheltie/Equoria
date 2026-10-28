@@ -33,11 +33,15 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { staffLevelFee } from '../../../constants/staffLevels.mjs';
 import { hireRiderFromMarketplace } from '../controllers/riderMarketplaceController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-vp393-rider';
 const STARTING_MONEY = 10000;
-const HIRING_COST = 250;
+// A hire charges one week at the offer's star-level price (owner ruling q226,
+// Equoria-7hu4d). Old contract: the offer's weeklyRate (250).
+const offerStarLevel = 'intermediate';
+const HIRING_COST = staffLevelFee(offerStarLevel);
 
 let user;
 let marketplaceId;
@@ -87,6 +91,7 @@ beforeAll(async () => {
       skillLevel: 'experienced',
       speciality: 'Show Jumping',
       weeklyRate: HIRING_COST,
+      starLevel: offerStarLevel,
       experience: 5,
       bio: 'vp393 sentinel fixture',
     },

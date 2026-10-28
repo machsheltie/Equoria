@@ -34,15 +34,18 @@
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { staffLevelFee } from '../../../constants/staffLevels.mjs';
 import { hireFromMarketplace } from '../controllers/groomMarketplaceController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-hduc5-groom';
 
 // Mirrors the shared roster-cap constant (backend/utils/groomSystem.mjs).
 const MAX_GROOMS_PER_USER = 10;
-// hireFromMarketplace: hiringCost = sessionRate * 7 (one week upfront).
+// hireFromMarketplace charges one week at the offer's star-level price (owner
+// rulings q226/q228, Equoria-7hu4d). Old contract: sessionRate x 7.
 const SESSION_RATE = 100;
-const HIRING_COST = SESSION_RATE * 7;
+const offerStarLevel = 'novice';
+const HIRING_COST = staffLevelFee(offerStarLevel);
 
 const createdUserIds = [];
 const createdMarketplaceStateIds = [];
@@ -107,6 +110,7 @@ async function makeMarketplace(userId, count) {
     personality: 'gentle',
     experience: 5,
     sessionRate: SESSION_RATE,
+    starLevel: offerStarLevel,
     bio: 'hduc5 cap fixture',
   }));
   const state = await prisma.staffMarketplaceState.upsert({
