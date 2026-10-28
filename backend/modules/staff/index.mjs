@@ -26,6 +26,7 @@ export {
   createAccountWithinDeviceLimit,
 } from './services/deviceAccountLimitService.mjs';
 export { registerQuarantinedShowTools } from './services/quarantinedShowToolsPort.mjs';
+export { registerGroomPayrollRun } from './services/groomPayrollPort.mjs';
 export {
   retireStaffCheckinCodesTx,
   revokeStaffTrustedDevicesTx,

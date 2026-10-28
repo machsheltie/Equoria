@@ -1,8 +1,8 @@
 /**
  * groomSalaryController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: getSalarySummary, getUserSalaryCost, getCronStatus,
- * triggerSalaryProcessingEndpoint (admin-gated → 403 for regular users).
+ * Covers: getSalarySummary, getUserSalaryCost, getCronStatus. The manual payday
+ * (POST /process) left this API for the Steward's Office (q262, Equoria-opdt7).
  * Equoria-a7f1p (owner ruling 2026-10-28, q151): the history case went with that duplicate lookup.
  * Routes live under authRouter at /api/groom-salaries.
  */
@@ -109,11 +109,15 @@ describe('GET /api/groom-salaries/status', () => {
   });
 });
 
-// ─── POST /api/groom-salaries/process (admin-only) ───────────────────────────
+// ─── POST /api/groom-salaries/process (removed) ──────────────────────────────
+// Old contract: an admin-gated manual payday here (403 for a player, 401 signed out).
+// Owner ruling 2026-10-28 (q262, Equoria-opdt7): the manual payday is the Owner's
+// alone, behind the emailed staff check-in, at POST /api/v1/staff/payroll/grooms/run
+// (modules/staff/__tests__/staffPayrollRunAuthz.integration.test.mjs). The old path is gone.
 
 describe('POST /api/groom-salaries/process', () => {
-  it('returns 403 for a regular (non-admin) user', async () => {
-    const csrf = await fetchCsrf(app);
+  it('no longer exists for a signed-in player', async () => {
+    const csrf = await fetchCsrf(app, { extraCookies: `accessToken=${token}` });
     const res = await request(app)
       .post('/api/v1/groom-salaries/process')
       .set('Origin', ORIGIN)
@@ -122,19 +126,6 @@ describe('POST /api/groom-salaries/process', () => {
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({});
 
-    expect(res.status).toBe(403);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post('/api/v1/groom-salaries/process')
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(404);
   });
 });

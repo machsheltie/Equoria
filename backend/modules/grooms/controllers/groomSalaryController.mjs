@@ -11,7 +11,7 @@ import {
   calculateUserSalaryCost,
   getSalaryPaymentHistory,
 } from '../services/groomSalaryService.mjs';
-import { triggerSalaryProcessing, getCronJobStatus } from '../../../services/cronJobService.mjs';
+import { getCronJobStatus } from '../../../services/cronJobService.mjs';
 
 /**
  * GET /api/groom-salaries/cost
@@ -35,40 +35,6 @@ export async function getUserSalaryCost(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to get salary cost',
-      data: null,
-    });
-  }
-}
-
-/**
- * POST /api/groom-salaries/process (Admin only)
- * Manually trigger salary processing
- */
-export async function triggerSalaryProcessingEndpoint(req, res) {
-  try {
-    const userId = req.user?.id;
-
-    logger.info(`[groomSalaryController] Manual salary processing triggered by user ${userId}`);
-
-    // Check if user is admin (you may want to implement proper admin role checking)
-    const _user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { username: true },
-    });
-
-    // For now, allow any user to trigger (you can restrict this later)
-    const results = await triggerSalaryProcessing();
-
-    res.json({
-      success: true,
-      message: 'Salary processing completed',
-      data: results,
-    });
-  } catch (error) {
-    logger.error(`[groomSalaryController] Error triggering salary processing: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to trigger salary processing',
       data: null,
     });
   }

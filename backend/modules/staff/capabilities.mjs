@@ -76,6 +76,9 @@ const ownerOnly = [
   'news.update',
   'news.contest',
   'news.manageAll',
+  // Owner ruling q262 (2026-10-28, Equoria-opdt7): the manual groom payday is the
+  // owner's alone, behind the emailed check-in. Players still pay their own grooms.
+  'payroll.run',
 ];
 
 // Private and frozen (STAFF-CR-12): no importer can reach a mutable copy of

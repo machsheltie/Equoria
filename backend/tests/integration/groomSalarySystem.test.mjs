@@ -13,7 +13,6 @@ import { processWeeklySalaries } from '../../modules/grooms/index.mjs';
 import { calculateWeeklyFee } from '../../modules/grooms/services/groomFeeBasisService.mjs';
 import { calculateUserSalaryCost } from '../../modules/grooms/services/groomSalaryReadService.mjs';
 
-import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
@@ -226,45 +225,11 @@ describe('Groom Salary System', () => {
       });
     });
 
-    it('should trigger salary processing via API (admin only)', async () => {
-      // POST /process requires admin role — update DB and generate a new token
-      // carrying role:'admin' so the route's admin gate (req.user.role ===
-      // 'admin') passes.
-      await prisma.user.update({
-        where: { id: testUser.id },
-        data: { role: 'admin' },
-      });
-      const adminToken = generateTestToken({ id: testUser.id, role: 'admin' });
-
-      // Per-user CSRF binding (Equoria-plw0h): csrfProtection resolves its
-      // sessionIdentifier from req.user.id, which authenticateToken populates
-      // from this request's token. A CSRF token minted with no user context
-      // (fallback salt) would HMAC-mismatch → 403 EBADCSRFTOKEN BEFORE the admin
-      // gate ever runs. Mint a fresh CSRF token bound to THIS
-      // user by forwarding an accessToken cookie carrying the user's id so the
-      // /csrf-token route resolves the same sessionIdentifier the mutation will.
-      const accessCookie = `accessToken=${adminToken}`;
-      const csrf = await fetchCsrf(app, { extraCookies: accessCookie });
-
-      const response = await request(app)
-        .post('/api/v1/groom-salaries/process')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken);
-
-      // Restore role after test
-      await prisma.user.update({
-        where: { id: testUser.id },
-        data: { role: 'user' },
-      });
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('processed');
-      expect(response.body.data).toHaveProperty('successful');
-      expect(response.body.data).toHaveProperty('totalAmount');
-    });
+    // Old contract: an admin token triggered an unscoped payday at
+    // POST /api/v1/groom-salaries/process. Owner ruling 2026-10-28 (q262,
+    // Equoria-opdt7): only the Owner runs it, behind the emailed staff check-in, at
+    // POST /api/v1/staff/payroll/grooms/run; its guard is pinned in
+    // modules/staff/__tests__/staffPayrollRunAuthz.integration.test.mjs.
   });
 
   describe('Authentication', () => {
@@ -282,12 +247,6 @@ describe('Groom Salary System', () => {
 
     it('should require authentication for GET /api/groom-salaries/status', async () => {
       const response = await request(app).get('/api/v1/groom-salaries/status').set('Origin', 'http://localhost:3000');
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should require authentication for POST /api/groom-salaries/process', async () => {
-      const response = await request(app).post('/api/v1/groom-salaries/process').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });

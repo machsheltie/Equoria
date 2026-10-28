@@ -53,6 +53,7 @@ import {
   previewShow,
   runShow,
 } from '../controllers/staffShowsController.mjs';
+import { runGroomPayroll } from '../controllers/staffPayrollController.mjs';
 
 const router = express.Router();
 
@@ -146,5 +147,8 @@ router.get(
   requireStaffCapability('results.scoreInputs.view'),
   getShowScoreInputs,
 );
+
+// Owner only (Equoria-opdt7, owner ruling q262): run the weekly groom payday by hand.
+router.post('/payroll/grooms/run', requireStaffCapability('payroll.run'), runGroomPayroll);
 
 export default router;

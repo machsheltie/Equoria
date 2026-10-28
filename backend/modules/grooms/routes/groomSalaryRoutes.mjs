@@ -6,10 +6,8 @@
 
 import express from 'express';
 import { authenticateToken } from '../../../middleware/auth.mjs';
-import { satisfiesRole } from '../../staff/index.mjs';
 import {
   getUserSalaryCost,
-  triggerSalaryProcessingEndpoint,
   getCronStatus,
   getSalarySummary,
 } from '../controllers/groomSalaryController.mjs';
@@ -40,19 +38,8 @@ router.get('/cost', getUserSalaryCost);
  */
 router.get('/status', getCronStatus);
 
-/**
- * POST /api/groom-salaries/process
- * Manually trigger salary processing (admin only)
- */
-router.post(
-  '/process',
-  (req, res, next) => {
-    if (!req.user || !satisfiesRole(req.user.role, 'admin')) {
-      return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
-    next();
-  },
-  triggerSalaryProcessingEndpoint,
-);
+// POST /process (the manual payday) moved to the Steward's Office, owner only behind
+// the emailed check-in (owner ruling 2026-10-28, q262, Equoria-opdt7):
+// POST /api/v1/staff/payroll/grooms/run.
 
 export default router;
