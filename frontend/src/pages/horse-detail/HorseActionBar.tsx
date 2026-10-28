@@ -13,6 +13,10 @@
  * useFeedHorse mutation. Disabled when no feed equipped, already-fed-
  * today (Eastern game-day boundary), or horse is retired. Feed-system redesign
  * 2026-04-29 (A16).
+ *
+ * Owner ruling 2026-10-28 (Equoria-7dje4): once a groom is assigned, the
+ * daily Groom Horse press lives here (GroomHorseAction); without a groom the
+ * same slot offers Assign Groom.
  */
 
 import React from 'react';
@@ -20,13 +24,14 @@ import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { gameDateKey } from '@/lib/gameTime';
 import { formatHealth } from '@/lib/healthWords';
-import { Backpack, Brush, Dumbbell, Tag, Users, Wheat, Wrench, X } from 'lucide-react';
+import { Backpack, Dumbbell, Tag, Users, Wheat, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
 import { useHorseTrainer } from '@/hooks/api/useTrainers';
 import { useFeedHorse } from '../../hooks/api/useFeedHorse';
 import { useDelistHorse } from '@/hooks/api/useMarketplace';
 import type { Horse } from './HorseDetailPageTypes';
+import GroomHorseAction from './GroomHorseAction';
 
 interface HorseActionBarProps {
   horse: Horse;
@@ -157,17 +162,7 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
           <Users className="w-3.5 h-3.5" />
           Assign Rider
         </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => navigate(`/grooms?horseId=${horse.id}`)}
-          title="Assign a groom to this horse"
-          data-testid="action-assign-groom"
-        >
-          <Brush className="w-3.5 h-3.5" />
-          Assign Groom
-        </Button>
+        <GroomHorseAction horseId={Number(horse.id)} />
         <Button
           type="button"
           variant="secondary"

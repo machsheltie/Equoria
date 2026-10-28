@@ -4,8 +4,8 @@
  *
  * A four-day-old foal opens on the same horse page as any adult. The page says
  * her age in days (the old foal page showed whole game years times seven, so a
- * young foal read "0 days"), shows her bond, carries tonight's Care area with
- * the day's activities, and never mentions stress.
+ * young foal read "0 days"), shows her bond, offers Groom Horse in Quick Actions
+ * with the day's activities (Equoria-7dje4), and never mentions stress.
  *
  * Real HorseDetailPage with real hooks and apiClient; MSW stubs the HTTP
  * boundary. The horse's own reads are served in their real shapes; every other
@@ -13,7 +13,8 @@
  */
 
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { describe, it, expect } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -110,7 +111,11 @@ function renderPage(path = `/horses/${foalId}`) {
 }
 
 describe('HorseDetailPage for a foal (Equoria-jaeot)', () => {
-  it("shows a four-day-old foal's age in days, her bond and tonight's Care area", async () => {
+  // Owner ruling 2026-10-28 (Equoria-7dje4): the "Tonight's Care" block in the
+  // middle of the page is gone; Groom Horse lives in Quick Actions, and for a
+  // foal it opens today's activities. Old contract: the Care area held the
+  // activity radios and a "Groom <name>" button.
+  it("shows a four-day-old foal's age in days, her bond and Groom Horse in Quick Actions", async () => {
     servePage();
     renderPage();
 
@@ -120,9 +125,17 @@ describe('HorseDetailPage for a foal (Equoria-jaeot)', () => {
     expect(screen.queryByTestId('horse-detail-age')).not.toBeInTheDocument();
     expect(screen.getByTestId('horse-bond')).toHaveTextContent('15');
 
-    const care = screen.getByTestId('horse-care');
-    expect(await within(care).findByRole('radio', { name: 'Confidence Walk' })).toBeInTheDocument();
-    expect(within(care).getByRole('button', { name: 'Groom TestFixture-Starling' })).toBeDisabled();
+    expect(screen.queryByTestId('horse-care')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Tonight.s Care/)).not.toBeInTheDocument();
+    const bar = screen.getByTestId('horse-action-bar');
+    const groom = await within(bar).findByRole('button', { name: 'Groom Horse' });
+    await waitFor(() => expect(groom).toBeEnabled());
+    await userEvent.click(groom);
+    expect(
+      within(screen.getByTestId('groom-activity-picker')).getByRole('button', {
+        name: 'Confidence Walk',
+      })
+    ).toBeInTheDocument();
 
     expect(screen.queryByText(/stress/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/0 days/)).not.toBeInTheDocument();

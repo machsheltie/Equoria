@@ -100,204 +100,57 @@
   text-shadow: var(--glow-text-ready);
 }
 
-/* ── Care area ─────────────────────────────────────────────────────── */
+/* ── Groom Horse in Quick Actions (Equoria-7dje4) ───────────────────── */
 
-.horse-care {
+.groom-action {
   position: relative;
-  margin-bottom: var(--space-6);
-  padding: var(--space-5) 0 var(--space-4);
-  border-top: 1px solid var(--alpha-gold-primary-40);
-  border-bottom: 1px solid var(--glass-border);
-  scroll-margin-top: var(--space-8);
-}
-
-/* A thin lantern rule along the top edge: gold at the centre, fading out. */
-.horse-care::before {
-  content: '';
-  position: absolute;
-  top: -1px;
-  left: 15%;
-  right: 15%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
-  pointer-events: none;
-}
-
-.horse-care:focus {
-  outline: none;
-}
-
-.horse-care:focus-visible {
-  outline: 2px solid var(--gold-bright);
-  outline-offset: 4px;
-}
-
-.horse-care__head {
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  gap: var(--space-2);
 }
 
-.horse-care__title {
-  margin: 0;
-  font-family: var(--font-entity);
-  font-size: var(--text-h2);
-  font-weight: 400;
-  line-height: 1.25;
-  color: var(--gold-light);
+.groom-action__picker {
+  position: absolute;
+  bottom: calc(100% + var(--space-2));
+  left: 50%;
+  z-index: 1;
+  width: max-content;
+  max-width: min(90vw, 360px);
+  padding: var(--space-3);
+  transform: translateX(-50%);
+  border: 1px solid var(--alpha-gold-primary-40);
+  border-radius: var(--radius-md);
+  background: var(--bg-deep-space);
+  box-shadow: var(--shadow-floating);
 }
 
-/* The lantern: hollow while tonight's care is open, lit once she is groomed. */
-.horse-care__lantern {
-  flex: none;
-  width: 1.75rem;
-  height: 1.75rem;
-  color: var(--gold-primary);
-}
-
-.horse-care[data-state='open'] .horse-care__lantern-flame {
-  opacity: 0.35;
-}
-
-.horse-care[data-state='tended'] .horse-care__lantern {
-  color: var(--gold-light);
-  filter: drop-shadow(0 0 6px var(--gold-primary));
-}
-
-.horse-care__line {
-  margin: 0;
-  max-width: 60ch;
-  color: var(--text-primary);
-  font-size: var(--text-lg);
-  line-height: 1.5;
-}
-
-.horse-care__line strong {
-  color: var(--gold-light);
-  font-weight: 600;
-}
-
-.horse-care__note {
-  margin: var(--space-2) 0 0;
-  max-width: 60ch;
+.groom-action__picker-title {
+  margin: 0 0 var(--space-2);
   color: var(--text-secondary);
   font-size: var(--text-sm);
+  white-space: normal;
 }
 
-.horse-care__link {
-  color: var(--link-gold, var(--gold-primary));
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.horse-care__activities {
-  margin: var(--space-4) 0 0;
-  padding: 0;
-  border: 0;
-  min-width: 0;
-}
-
-.horse-care__activities legend {
-  margin-bottom: var(--space-2);
-  padding: 0;
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-}
-
-.horse-care__choices {
+.groom-action__choices {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
 }
 
-/* A choice is a tag hung on the stall door: the native radio stays in the
-   label for keyboard and screen readers; the label carries the look. */
-.horse-care__choice {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
+.groom-action__retry {
   min-height: 44px;
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  background: var(--bg-midnight);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition:
-    border-color var(--duration-fast, 150ms) ease-out,
-    background-color var(--duration-fast, 150ms) ease-out;
-}
-
-.horse-care__choice input {
-  position: absolute;
-  opacity: 0;
-  inset: 0;
-  margin: 0;
-  cursor: pointer;
-}
-
-.horse-care__choice:hover {
-  border-color: var(--alpha-gold-primary-40);
-}
-
-.horse-care__choice:has(input:checked) {
-  border-color: var(--gold-primary);
-  background: var(--bg-twilight);
-  color: var(--gold-light);
-}
-
-.horse-care__choice:has(input:focus-visible) {
-  outline: 2px solid var(--gold-bright);
-  outline-offset: 2px;
-}
-
-.horse-care__choice:has(input:disabled) {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.horse-care__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-}
-
-.horse-care__journal {
-  margin: var(--space-5) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.horse-care__journal-title {
-  margin: var(--space-5) 0 var(--space-1);
   color: var(--text-secondary);
   font-size: var(--text-sm);
-  font-weight: 600;
+  text-decoration: underline;
 }
 
-.horse-care__entry {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--glass-border);
-  color: var(--text-primary);
-  font-size: var(--text-sm);
-}
-
-.horse-care__entry time {
-  flex: none;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
+.groom-action__error {
+  white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .horse-status__bond-fill,
-  .horse-care__choice {
+  .horse-status__bond-fill {
     transition: none;
   }
 }
