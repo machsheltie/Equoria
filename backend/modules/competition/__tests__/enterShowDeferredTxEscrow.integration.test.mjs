@@ -36,13 +36,14 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { SYSTEM_ACCOUNT_SHOW_ESCROW } from '../../economy/index.mjs';
+import { SYSTEM_ACCOUNT_SHOW_ESCROW, creditSystemAccount } from '../../economy/index.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { enterShowDeferredTx } from '../services/competitionRouteQueries.mjs';
 // Equoria-576c0 B9: enterShowDeferredTx runs the shared entry rules first (age
 // 3-20, an eligible rider; the XP bracket is gone, R9). Fixture horses are
 // eligible, so this suite still exercises ONLY the escrow money-flow.
 import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
+import { releaseShowEscrow } from '../../../__tests__/helpers/releaseShowEscrow.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-jnk6r-escrow';
 
@@ -114,24 +115,29 @@ async function makeHorse(ownerId) {
   return h;
 }
 
+// The 1000 prize escrow is credited to SystemAccount[showEscrow] with the row,
+// as createShow does, so teardown can release it (Equoria-r3mv2).
 async function makeShow(creatorId, entryFee) {
-  const s = await prisma.show.create({
-    data: {
-      name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
-      discipline: 'Dressage',
-      entryFee,
-      maxEntries: null,
-      levelMin: 1,
-      levelMax: 10,
-      prize: 1000,
-      runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      closeDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      openDate: new Date(),
-      status: 'open',
-      createdByUserId: creatorId,
-      prizeEscrow: 1000,
-      feeEscrow: 0,
-    },
+  const s = await prisma.$transaction(async tx => {
+    await creditSystemAccount(tx, 'showEscrow', 1000, { category: 'testFixturePrizeEscrow' });
+    return tx.show.create({
+      data: {
+        name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+        discipline: 'Dressage',
+        entryFee,
+        maxEntries: null,
+        levelMin: 1,
+        levelMax: 10,
+        prize: 1000,
+        runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        closeDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        openDate: new Date(),
+        status: 'open',
+        createdByUserId: creatorId,
+        prizeEscrow: 1000,
+        feeEscrow: 0,
+      },
+    });
   });
   createdShowIds.push(s.id);
   return s;
@@ -144,6 +150,8 @@ beforeAll(async () => {
 }, 60000);
 
 afterAll(async () => {
+  // Equoria-r3mv2: hand back the escrow these shows still hold before the raw deletes.
+  await releaseShowEscrow(createdShowIds);
   for (const sid of createdShowIds) {
     await prisma.showEntry
       .deleteMany({ where: { showId: sid } })

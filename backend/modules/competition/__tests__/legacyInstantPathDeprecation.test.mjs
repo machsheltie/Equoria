@@ -28,6 +28,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { releaseShowEscrow } from '../../../__tests__/helpers/releaseShowEscrow.mjs';
 // Equoria-576c0 B9: entering needs age 3-20 game years and an eligible rider
 // (owner entry rules + C10); horses that enter get a game-age dateOfBirth and a
 // rider. Fixture-only; no assertion changed.
@@ -109,6 +110,8 @@ beforeAll(async () => {
   // their owners). A cleanup failure now fails the suite instead of being
   // swallowed.
   cleanup.add(async () => {
+    // Equoria-r3mv2: hand back the escrow these shows still hold before the raw deletes.
+    await releaseShowEscrow(showIds);
     for (const id of showIds) {
       await prisma.competitionResult.deleteMany({ where: { showId: id } });
       await prisma.showEntry.deleteMany({ where: { showId: id } });

@@ -39,6 +39,7 @@ import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { competitionDateOfBirth, giveEligibleRider } from '../__tests__/helpers/eligibleCompetitor.mjs';
 import { createShow, enterShow } from '../modules/competition/shows/showController.mjs';
 import { reapStaleExecutingShows, STALE_CLAIM_THRESHOLD_MS } from '../services/jobs/impl/showExecutionReaper.mjs';
+import { releaseShowEscrow } from './helpers/releaseShowEscrow.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-c7mx0-reaper';
 const PRIZE = 1000; // divisible by the 50/30/20 slots — no floor crumbs
@@ -188,6 +189,9 @@ beforeAll(async () => {
 }, 60000);
 
 afterAll(async () => {
+  // Equoria-r3mv2: hand back the prize and fee escrow these shows still hold
+  // on SystemAccount[showEscrow] before the raw deletes below.
+  await releaseShowEscrow(createdShowIds);
   for (const sid of createdShowIds) {
     await prisma.competitionResult
       .deleteMany({ where: { showId: sid } })

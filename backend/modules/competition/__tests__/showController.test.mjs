@@ -16,6 +16,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { releaseShowEscrow } from '../../../__tests__/helpers/releaseShowEscrow.mjs';
 import * as eligible from '../../../__tests__/helpers/eligibleCompetitor.mjs'; // B9 entry rules
 
 const ORIGIN = 'http://localhost:3000';
@@ -169,6 +170,7 @@ beforeAll(async () => {
   cleanup.add(async () => {
     if (createdShowId) {
       await prisma.showEntry.deleteMany({ where: { showId: createdShowId } });
+      await releaseShowEscrow([createdShowId]);
       await prisma.show.delete({ where: { id: createdShowId } });
     }
   }, 'createdShow');
@@ -181,13 +183,16 @@ beforeAll(async () => {
     if (pastShowId) {
       await prisma.competitionResult.deleteMany({ where: { showId: pastShowId } });
       await prisma.showEntry.deleteMany({ where: { showId: pastShowId } });
+      await releaseShowEscrow([pastShowId]);
       await prisma.show.delete({ where: { id: pastShowId } });
     }
   }, 'pastShow');
-  cleanup.add(
-    () => (pastShowNoEntriesId ? prisma.show.delete({ where: { id: pastShowNoEntriesId } }) : undefined),
-    'pastShowNoEntries',
-  );
+  cleanup.add(async () => {
+    if (pastShowNoEntriesId) {
+      await releaseShowEscrow([pastShowNoEntriesId]);
+      await prisma.show.delete({ where: { id: pastShowNoEntriesId } });
+    }
+  }, 'pastShowNoEntries');
   cleanup.add(() => (execHorse ? prisma.horse.delete({ where: { id: execHorse.id } }) : undefined), 'execHorse');
   cleanup.add(() => (execUser ? prisma.user.delete({ where: { id: execUser.id } }) : undefined), 'execUser');
   cleanup.add(
@@ -474,13 +479,16 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
       () => (injuredHorseId ? prisma.horse.delete({ where: { id: injuredHorseId } }) : undefined),
       'injuredHorse',
     );
-    validationCleanup.add(
-      () => (completedShowId ? prisma.show.delete({ where: { id: completedShowId } }) : undefined),
-      'completedShow',
-    );
+    validationCleanup.add(async () => {
+      if (completedShowId) {
+        await releaseShowEscrow([completedShowId]);
+        await prisma.show.delete({ where: { id: completedShowId } });
+      }
+    }, 'completedShow');
     validationCleanup.add(async () => {
       if (feeShowId) {
         await prisma.showEntry.deleteMany({ where: { showId: feeShowId } });
+        await releaseShowEscrow([feeShowId]);
         await prisma.show.delete({ where: { id: feeShowId } });
       }
     }, 'feeShow');
@@ -636,6 +644,7 @@ describe('POST /api/v1/shows/:id/enter — unlimited entries (Equoria-nx8t1 R3)'
   fullShowCleanup.add(async () => {
     if (fullShowId) {
       await prisma.showEntry.deleteMany({ where: { showId: fullShowId } });
+      await releaseShowEscrow([fullShowId]);
       await prisma.show.delete({ where: { id: fullShowId } });
     }
   }, 'fullShow');
@@ -702,10 +711,12 @@ describe('POST /api/v1/shows/:id/enter — already-closed show path', () => {
   // Scoped, fail-loud cleanup (Equoria-1ohys). closedShowId is set inside the
   // test, so the closure reads it at run() time. A cleanup failure now fails the
   // suite instead of being swallowed.
-  closedShowCleanup.add(
-    () => (closedShowId ? prisma.show.delete({ where: { id: closedShowId } }) : undefined),
-    'closedShow',
-  );
+  closedShowCleanup.add(async () => {
+    if (closedShowId) {
+      await releaseShowEscrow([closedShowId]);
+      await prisma.show.delete({ where: { id: closedShowId } });
+    }
+  }, 'closedShow');
 
   afterAll(() => closedShowCleanup.run());
 
@@ -877,10 +888,12 @@ describe('POST /api/v1/shows/create — duplicate name conflict', () => {
   // Scoped, fail-loud cleanup (Equoria-1ohys). duplicateShowId is set inside the
   // test, so the closure reads it at run() time. A cleanup failure now fails the
   // suite instead of being swallowed.
-  dupShowCleanup.add(
-    () => (duplicateShowId ? prisma.show.delete({ where: { id: duplicateShowId } }) : undefined),
-    'duplicateShow',
-  );
+  dupShowCleanup.add(async () => {
+    if (duplicateShowId) {
+      await releaseShowEscrow([duplicateShowId]);
+      await prisma.show.delete({ where: { id: duplicateShowId } });
+    }
+  }, 'duplicateShow');
 
   afterAll(() => dupShowCleanup.run());
 

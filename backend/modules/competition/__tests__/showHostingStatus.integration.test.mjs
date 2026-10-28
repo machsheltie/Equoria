@@ -14,6 +14,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { releaseShowEscrow } from '../../../__tests__/helpers/releaseShowEscrow.mjs';
 import { startOfShowWeek } from '../rules/showHostingLimits.mjs';
 
 const uid = () => randomBytes(5).toString('hex');
@@ -46,6 +47,9 @@ beforeAll(async () => {
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
   csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
   cleanup.add(async () => {
+    // Equoria-r3mv2: hand back the prize escrow of the shows this host created.
+    const hosted = await prisma.show.findMany({ where: { createdByUserId: user.id }, select: { id: true } });
+    await releaseShowEscrow(hosted.map(show => show.id));
     await prisma.show.deleteMany({ where: { createdByUserId: user.id } });
     await prisma.user.delete({ where: { id: user.id } });
   }, 'hostingStatusUser');

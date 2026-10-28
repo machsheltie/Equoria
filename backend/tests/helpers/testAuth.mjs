@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs';
 import { fetchCsrf } from './csrfHelper.mjs';
 import { fixtureColor } from './fixtureColor.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { releaseShowEscrow } from '../../__tests__/helpers/releaseShowEscrow.mjs';
 
 const DEFAULT_ORIGIN = 'http://localhost:3000';
 
@@ -299,6 +300,10 @@ export async function cleanupTestData() {
     }
 
     if (showIds.length > 0) {
+      // Equoria-r3mv2: paid entries credited these shows' fees to
+      // SystemAccount[showEscrow]; hand back what they still hold before the
+      // raw delete, or it is left there as orphaned credit.
+      await releaseShowEscrow(showIds);
       await prisma.show.deleteMany({ where: { id: { in: showIds } } });
       _createdShowIds.clear();
     }
