@@ -14,9 +14,10 @@ import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTrai
 // born hidden, so "the foal gets X" means X is among the traits it carries.
 const carried = r => [...r.positive, ...r.negative, ...r.hidden];
 
+// `fn` receives a run number (1..maxRuns) that a caller may use as the seed.
 function traitAppears(fn, traitName, category = 'positive', maxRuns = 25) {
-  for (let i = 0; i < maxRuns; i++) {
-    const result = fn();
+  for (let i = 1; i <= maxRuns; i++) {
+    const result = fn(i);
     // q98: stage traits are born hidden, so a carried trait counts wherever it sits.
     if ([...result[category], ...result.hidden].includes(traitName)) {
       return true;
@@ -26,26 +27,32 @@ function traitAppears(fn, traitName, category = 'positive', maxRuns = 25) {
 }
 
 describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () => {
-  describe('Premium feed → positive traits', () => {
-    it('assigns resilient trait with premium feed', () => {
+  // Owner ruling 2026-10-28 (q175): a well-kept mare gives a 10% Resilient chance
+  // (bible 08). Old contract: 75% Resilient + 60% People Trusting with unseeded
+  // retries; at 10% the runs are seeded so the checks stay deterministic.
+  describe('Well-kept mare → resilient', () => {
+    it('assigns resilient trait for a well-kept mare', () => {
       const mare = { id: 1, name: 'Premium Mare' };
       expect(
-        traitAppears(() => applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 85 }), 'resilient'),
+        traitAppears(seed => applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 85, seed }), 'resilient'),
       ).toBe(true);
     });
 
-    it('assigns peopleTrusting trait with premium feed', () => {
+    it('never assigns peopleTrusting for a well-kept mare (old contract: it did)', () => {
       const mare = { id: 1, name: 'Premium Mare' };
       expect(
-        traitAppears(() => applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 80 }), 'peopleTrusting'),
-      ).toBe(true);
+        traitAppears(
+          seed => applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 80, seed }),
+          'peopleTrusting',
+        ),
+      ).toBe(false);
     });
 
-    it('assigns both positive traits with optimal conditions', () => {
+    it('optimal conditions give resilient and nothing else from feed', () => {
       const mare = { id: 1, name: 'Optimal Mare' };
-      const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 95 });
+      const fn = seed => applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 95, seed });
       expect(traitAppears(fn, 'resilient')).toBe(true);
-      expect(traitAppears(fn, 'peopleTrusting')).toBe(true);
+      expect(traitAppears(fn, 'peopleTrusting')).toBe(false);
     });
 
     it('does not assign positive traits when feed quality is too low', () => {
@@ -213,7 +220,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
         { id: 1103, name: 'Racing Horse 3', mostCompetedDiscipline: 'Racing' },
         { id: 1104, name: 'Racing Horse 4', mostCompetedDiscipline: 'Racing' },
       ];
-      const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 85 });
+      const fn = seed => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 85, seed });
       expect(traitAppears(fn, 'resilient')).toBe(true);
       expect(traitAppears(fn, 'disciplineAffinityRacing')).toBe(true);
     });

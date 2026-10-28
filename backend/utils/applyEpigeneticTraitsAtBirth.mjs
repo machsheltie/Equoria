@@ -11,7 +11,9 @@
  *     roll; both parents carrying it is one 25% roll for each parent, so about
  *     43.75% overall. The flat rate replaced the rarity- and dam-bond-adjusted
  *     rates (common 50%, rare 15%, legendary 5%, otherwise 40%).
- *   Stage 1 — premium feed → resilient / peopleTrusting.
+ *   Stage 1 — well-kept mare (feedQuality >= 80) → 10% resilient (bible 08
+ *     numbers, owner ruling 2026-10-28 q175). Replaced the unruled 75% resilient
+ *     + 60% peopleTrusting bonus.
  *   Stage 2 — inbreeding → fragile.
  *   Stage 3 — lineage discipline specialization → disciplineAffinity<Discipline>
  *     (the discipline trait, ruled separately from the trait roster).
@@ -64,6 +66,17 @@ function makeRng(seed) {
 
 /** Chance that a foal inherits a trait a parent carries (owner ruling 2026-10-27, q138). */
 const inheritanceChance = 0.25;
+
+/**
+ * Feed quality from which a mare counts as well kept (unchanged threshold), and the
+ * bible 08 chance her foal gets a positive constitution trait: "Mare stress <30 +
+ * good feed: ~10% chance of Resilient / High Immunity-style positive flag" (owner
+ * ruling 2026-10-28, q175: use the bible numbers). Equoria has no stress, so good
+ * feed alone qualifies; High Immunity is not on the trait roster, so the one
+ * roster trait the passage names, Resilient, is the outcome.
+ */
+const wellKeptMareFeedQuality = 80;
+const wellKeptMareResilientChance = 0.1;
 
 /** Whether a carried trait acts positively or negatively (q135), else by the stage that produced it. */
 function traitPolarity(trait, fallbackType) {
@@ -161,16 +174,10 @@ export function applyEpigeneticTraitsAtBirth({
     }
   }
 
-  // ── Stage 1 — premium feed ────────────────────────────────────
-  if (currentFeedQuality >= 80) {
-    if (rng() < 0.75) {
-      addPositive('resilient');
-      logger.info('[applyEpigeneticTraitsAtBirth] Applied resilient (premium feed)');
-    }
-    if (rng() < 0.6) {
-      addPositive('peopleTrusting');
-      logger.info('[applyEpigeneticTraitsAtBirth] Applied peopleTrusting (premium feed)');
-    }
+  // ── Stage 1 — well-kept mare (bible 08, q175) ─────────────────────────────
+  if (currentFeedQuality >= wellKeptMareFeedQuality && rng() < wellKeptMareResilientChance) {
+    addPositive('resilient');
+    logger.info('[applyEpigeneticTraitsAtBirth] Applied resilient (well-kept mare)');
   }
 
   // ── Stage 2 — inbreeding ────────────────────────────────────────────────────

@@ -88,7 +88,7 @@ describe('no stress in the foal trait pipeline', () => {
     }
   });
 
-  it('a calm-or-not mare does not matter: premium feed alone decides resilient / peopleTrusting', () => {
+  it('a calm-or-not mare does not matter: well-kept-mare feed alone decides resilient (q175)', () => {
     const born = stress =>
       SEEDS.map(seed =>
         applyEpigeneticTraitsAtBirth({

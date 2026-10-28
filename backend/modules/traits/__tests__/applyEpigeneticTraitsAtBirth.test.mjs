@@ -65,14 +65,18 @@ describe('applyEpigeneticTraitsAtBirth — return shape', () => {
 // ---------------------------------------------------------------------------
 // Feed conditions
 // ---------------------------------------------------------------------------
+// Owner ruling 2026-10-28 (q175): a well-kept mare (feedQuality >= 80) gives a 10%
+// Resilient chance (bible 08). Old contract: 75% Resilient + 60% People Trusting, so
+// these used unseeded retry loops; at 10% they are seeded to stay deterministic.
 describe('applyEpigeneticTraitsAtBirth — feed conditions', () => {
-  it('premium feed runs many seeds and usually grants positive traits', () => {
+  it('a well-kept mare grants a positive trait for some seeds', () => {
     let foundPositive = false;
-    for (let i = 0; i < 50; i++) {
+    for (let i = 1; i <= 50; i++) {
       const result = applyEpigeneticTraitsAtBirth({
         mare: baseMare(),
         lineage: emptyLineage(),
         feedQuality: 90,
+        seed: i,
       });
       if (carried(result).length > 0) {
         foundPositive = true;
@@ -82,15 +86,16 @@ describe('applyEpigeneticTraitsAtBirth — feed conditions', () => {
     expect(foundPositive).toBe(true);
   });
 
-  it('positive traits from premium feed include resilient or peopleTrusting', () => {
+  it('the positive trait from a well-kept mare is resilient', () => {
     let found = false;
-    for (let i = 0; i < 100; i++) {
+    for (let i = 1; i <= 100; i++) {
       const result = applyEpigeneticTraitsAtBirth({
         mare: baseMare(),
         lineage: emptyLineage(),
         feedQuality: 100,
+        seed: i,
       });
-      if (carried(result).includes('resilient') || carried(result).includes('peopleTrusting')) {
+      if (carried(result).includes('resilient')) {
         found = true;
         break;
       }
@@ -436,10 +441,12 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
     return false;
   }
 
-  it('assigns peopleTrusting trait with premium feed', () => {
+  // q175: old contract "assigns peopleTrusting trait with premium feed"; the bible
+  // bonus names only Resilient, so a well-kept mare never gives People Trusting.
+  it('never assigns peopleTrusting from a well-kept mare', () => {
     const mare = {};
     expect(traitAppears(seed => applyEpigeneticTraitsAtBirth({ mare, feedQuality: 80, seed }), 'peopleTrusting')).toBe(
-      true,
+      false,
     );
   });
 
