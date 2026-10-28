@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils';
 import type { SceneKey } from '@/hooks/useResponsiveBackground';
 
 /** Routes that show the aside panel on desktop */
-const ASIDE_ROUTES = ['/', '/stable', '/my-stable'];
+const ASIDE_ROUTES = ['/', '/stable'];
 
 /**
  * Routes with dedicated artwork that must not be overridden by the scene
@@ -33,7 +33,6 @@ const ASIDE_ROUTES = ['/', '/stable', '/my-stable'];
  */
 const STATIC_BG: Record<string, string> = {
   '/stable': '/images/bg-stable.webp',
-  '/my-stable': '/images/bg-stable.webp',
   '/farrier': '/assets/art/farrier.webp',
   '/vet': '/images/equinehospital.webp',
   '/feed-shop': '/images/feedstore2.webp',
@@ -55,12 +54,13 @@ function getSceneForPath(pathname: string): SceneKey {
   if (pathname.startsWith('/training')) return 'training';
   if (pathname.startsWith('/competition')) return 'competition';
   if (pathname.startsWith('/breeding') || pathname.startsWith('/foal')) return 'breeding';
-  if (pathname === '/horses' || pathname === '/stable' || pathname === '/my-stable')
-    return 'stable';
+  if (pathname === '/horses' || pathname === '/stable') return 'stable';
   if (pathname.startsWith('/horses/')) return 'horse-detail';
   if (
     pathname.startsWith('/world') ||
     pathname.startsWith('/community') ||
+    // Equoria-vb1n0: the Hall of Fame is a Community page (/my-stable only redirects to it).
+    pathname.startsWith('/hall-of-fame') ||
     pathname.startsWith('/clubs') ||
     pathname.startsWith('/messages') ||
     pathname.startsWith('/message-board')

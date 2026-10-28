@@ -192,7 +192,8 @@ const ReadyStep: React.FC<ReadyStepProps> = ({ horseName, breedName, gender }) =
       {[
         {
           img: '/images/horses/stableicon.png',
-          path: '/my-stable',
+          // Equoria-vb1n0: /my-stable is now the Hall of Fame; the horse is in the Stable.
+          path: '/stable',
           label: 'View your horse in the stable',
         },
         {
