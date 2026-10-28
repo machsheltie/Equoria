@@ -18,10 +18,11 @@
  * jest.config.mjs's setupFilesAfterEnv; this one loads __tests__/setup.mjs),
  * and tests/setup.mjs is what sets TEST_RATE_LIMIT_MAX_REQUESTS=1000 /
  * TEST_RATE_LIMIT_WINDOW_MS=15min. Unset, every limiter built with
- * `useEnvOverride: true` falls back to its own literal — mutationRateLimiter is
- * 30 requests per 60 SECONDS (backend/middleware/rateLimiting.mjs). The foal
- * file issues more than 30 breeding mutations in under a minute, so it 429s
- * under THIS config in a fresh process, on its own, with no other file running:
+ * `useEnvOverride: true` falls back to its own literal — mutationRateLimiter was
+ * then 30 requests per 60 SECONDS (backend/middleware/rateLimiting.mjs; 600 per
+ * minute since the owner's 2026-10-27 ruling). The foal file issued more than 30
+ * breeding mutations in under a minute, so it 429'd under THIS config in a
+ * fresh process, on its own, with no other file running (measured 2026-09-15):
  *
  *   jest --config=jest.config.security.mjs --runInBand \
  *     --testMatch '<rootDir>/modules/horses/__tests__/foalCreationMinimalPayload.test.mjs'
@@ -35,7 +36,14 @@
  *
  * Raising the cap, disabling the limiter or adding a bypass header are all
  * forbidden and would destroy what this gate proves — and the tighter caps are
- * arguably the more honest profile for a SECURITY suite, so they stay. What was
+ * arguably the more honest profile for a SECURITY suite, so they stay.
+ * Equoria-bh7j8 made that a decision rather than a side effect of which setup
+ * file loads: both setups call applyTestRateLimitProfile from
+ * tests/config/testRateLimitProfile.mjs, tests/setup.mjs with 'relaxed' and
+ * __tests__/setup.mjs (this config) with 'production' — every limiter at the
+ * cap players get. A control suite here that needs more headroom sets its own
+ * TEST_RATE_LIMIT_* value in its file, as the MFA lockout suites do.
+ * __tests__/testRateLimitProfile.sentinel.test.mjs pins both selections. What was
  * wrong is that a security gate was running domain suites at all. The defect was
  * the SELECTION, and selection is now three explicit layers:
  *

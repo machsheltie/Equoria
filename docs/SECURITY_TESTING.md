@@ -36,16 +36,20 @@ Before naming a test path, verify it exists; security tests have been relocated 
 
 The Security Gate does **not** run the whole backend suite. It did until Equoria-ugxuc,
 and that was a defect: ~12.4k tests in one Jest process, and five foal-creation cases
-failing on HTTP 429. This config does not load `backend/tests/setup.mjs`, so the
-`TEST_RATE_LIMIT_*` knobs are unset and `mutationRateLimiter` runs at its literal
-30-per-60-seconds rather than the 1000/15min the shard matrix uses — a domain suite that
-issues more than 30 mutations a minute fails here and nowhere else. The tighter caps are
-the more honest profile for a security suite and are kept; what was wrong is that the
-security gate was running domain suites at all. `backend/jest.config.security.mjs` now
-selects in three declared layers.
+failing on HTTP 429. The two configs run different rate-limit profiles, and since
+Equoria-bh7j8 that is a named choice in `backend/tests/config/testRateLimitProfile.mjs`:
+`backend/tests/setup.mjs` (shard matrix) applies `relaxed` — 1000 requests per 15 minutes
+on every env-overridable limiter — and `backend/__tests__/setup.mjs` (Security Gate)
+applies `production`, leaving the `TEST_RATE_LIMIT_*` knobs unset so every limiter runs at
+the cap players get (`mutationRateLimiter` was 30 per minute then; 600 per minute since the
+owner's 2026-10-27 ruling). The production caps are the more honest profile for a security
+suite and are kept; what was wrong is that the security gate was running domain suites at
+all. `backend/jest.config.security.mjs` now selects in three declared layers.
 
-Practical consequence when adding a suite here: budget mutations against
-`mutationRateLimiter`'s 30/60s, not against the shard matrix's 1000/15min.
+Practical consequence when adding a suite here: budget requests against each limiter's
+production cap in `backend/middleware/rateLimiting.mjs` and `backend/app.mjs`, not against
+the shard matrix's 1000/15min. A control suite that needs more headroom sets its own
+`TEST_RATE_LIMIT_*` value for its file, as the MFA lockout suites do.
 
 **1 — Control-source scope.** The test homes of the sources in the "Middleware and
 controls" row above: `backend/__tests__/**` (middleware sentinels and cross-module

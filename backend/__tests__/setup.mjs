@@ -8,10 +8,16 @@
 import { beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
+import { applyTestRateLimitProfile } from '../tests/config/testRateLimitProfile.mjs';
 
 // Set test environment
 process.env.NODE_ENV = 'test';
 process.env.LOG_LEVEL = 'error'; // Reduce test noise
+
+// Rate-limit profile: production. The Security Gate runs every limiter at the
+// cap players get, unlike tests/setup.mjs's relaxed profile; the decision and
+// its reasons live in tests/config/testRateLimitProfile.mjs (Equoria-bh7j8).
+applyTestRateLimitProfile('production');
 
 /**
  * Global test setup - runs once before all tests

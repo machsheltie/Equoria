@@ -2,6 +2,7 @@
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { applyTestRateLimitProfile } from './config/testRateLimitProfile.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,18 +26,11 @@ if (process.env.NODE_ENV === 'test') {
 // typically does not pre-set these.
 dotenv.config({ path: join(__dirname, '..', '.env.test') });
 
-// Rate limit cap for test runs. The bypass header was removed in WS4; we
-// now control test traffic via the TEST_RATE_LIMIT_* env knobs that
-// createRateLimiter reads when `useEnvOverride: true` (the default). A
-// high default keeps feature suites green without forcing each file to
-// set its own cap. Files that need a specific cap (e.g.
-// rate-limiting.test.mjs) override this before importing app.mjs.
-if (!process.env.TEST_RATE_LIMIT_MAX_REQUESTS) {
-  process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '1000';
-}
-if (!process.env.TEST_RATE_LIMIT_WINDOW_MS) {
-  process.env.TEST_RATE_LIMIT_WINDOW_MS = `${15 * 60 * 1000}`;
-}
+// Rate-limit profile: relaxed (1000 per 15 min on every env-overridable
+// limiter). The Security Gate's setup (__tests__/setup.mjs) runs the
+// production profile instead; both choices and the reasons live in
+// tests/config/testRateLimitProfile.mjs (Equoria-bh7j8).
+applyTestRateLimitProfile('relaxed');
 
 // Normalize mime API across versions for test-only dependencies.
 try {
