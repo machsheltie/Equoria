@@ -260,7 +260,10 @@ export function buildRouters() {
   // unchanged (/api/v1/optimization/*, /api/v1/memory/*) — admin-only, not moved.
   authRouter.use('/optimization', requireRole('admin'), apiOptimizationRoutes);
   authRouter.use('/memory', requireRole('admin'), memoryManagementRoutes);
-  authRouter.use('/compatibility', dynamicCompatibilityRoutes);
+  // Equoria-oey96.37 (owner ruling 2026-07-07): clusters no screen uses are
+  // admin-gated. /compatibility has no frontend consumer; the routes and their
+  // tables stay (q143 parks the compatibility tables), only players lose access.
+  authRouter.use('/compatibility', requireRole('admin'), dynamicCompatibilityRoutes);
   authRouter.use('/personality-evolution', personalityEvolutionRoutes);
 
   // ADMIN ROUTES (Admin role required)

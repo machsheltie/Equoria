@@ -82,12 +82,15 @@ beforeAll(async () => {
       password: 'irrelevant-hash',
       firstName: 'DCompat',
       lastName: 'Tester',
+      role: 'admin',
       money: 5000,
       xp: 0,
       level: 1,
     },
   });
-  token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+  // Equoria-oey96.37 (owner ruling 2026-07-07): /compatibility is admin-only, so the
+  // caller is an admin; ownership checks still apply to her own fixtures.
+  token = generateTestToken({ id: user.id, email: user.email, role: 'admin' });
 
   const groomData = [
     {

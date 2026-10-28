@@ -62,7 +62,7 @@ function tag() {
   return randomBytes(6).toString('hex');
 }
 
-async function makePlayer(role) {
+async function makePlayer(role, accountRole = 'user') {
   const suffix = tag();
   const user = await prisma.user.create({
     data: {
@@ -72,9 +72,10 @@ async function makePlayer(role) {
       firstName: 'Retired',
       lastName: role,
       money: 1000,
+      role: accountRole,
     },
   });
-  return { user, token: generateTestToken({ id: user.id, email: user.email, role: 'user' }) };
+  return { user, token: generateTestToken({ id: user.id, email: user.email, role: accountRole }) };
 }
 
 async function makeHorse(ownerId, breedId) {
@@ -124,6 +125,11 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
   let otherHorse;
   let ownGroom;
   let otherGroom;
+  // Equoria-oey96.37 (owner ruling 2026-07-07): /compatibility is admin-only, so
+  // its routes are called by an admin with her own horse and groom.
+  let admin;
+  let adminHorse;
+  let adminGroom;
 
   beforeAll(async () => {
     const breed = await prisma.breed.upsert({
@@ -133,16 +139,19 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
     });
     owner = await makePlayer('owner');
     other = await makePlayer('other');
+    admin = await makePlayer('admin', 'admin');
     ownHorse = await makeHorse(owner.user.id, breed.id);
     otherHorse = await makeHorse(other.user.id, breed.id);
-    const horses = [ownHorse.id, otherHorse.id];
+    adminHorse = await makeHorse(admin.user.id, breed.id);
+    const horses = [ownHorse.id, otherHorse.id, adminHorse.id];
     cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horses } } }), 'horses');
     ownGroom = await makeGroom(owner.user.id);
     otherGroom = await makeGroom(other.user.id);
-    const grooms = [ownGroom.id, otherGroom.id];
+    adminGroom = await makeGroom(admin.user.id);
+    const grooms = [ownGroom.id, otherGroom.id, adminGroom.id];
     cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: grooms } } }), 'grooms');
     // Users last: horses and grooms reference them (the tracker runs in order).
-    const users = [owner.user.id, other.user.id];
+    const users = [owner.user.id, other.user.id, admin.user.id];
     cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: users } } }), 'users');
   });
 
@@ -156,6 +165,14 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
   };
   const whoseGroom = {
     'own groom': () => ownGroom.id,
+    'another player’s groom': () => otherGroom.id,
+  };
+  const adminWhose = {
+    'admin’s own horse': () => adminHorse.id,
+    'another player’s horse': () => otherHorse.id,
+  };
+  const adminWhoseGroom = {
+    'admin’s own groom': () => adminGroom.id,
     'another player’s groom': () => otherGroom.id,
   };
 
@@ -233,20 +250,20 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
       `GET /groom-handlers/recommendations/:horseId, ${who}`,
       () => send('get', `/api/v1/groom-handlers/recommendations/${id()}`, owner.token),
     ]),
-    ...Object.entries(whose).map(([who, id]) => [
-      `POST /compatibility/recommendations, ${who}`,
+    ...Object.entries(adminWhose).map(([who, id]) => [
+      `POST /compatibility/recommendations, admin, ${who}`,
       () =>
-        send('post', '/api/v1/compatibility/recommendations', owner.token, {
+        send('post', '/api/v1/compatibility/recommendations', admin.token, {
           horseId: id(),
           context: { taskType: 'desensitization' },
         }),
     ]),
-    ...Object.entries(whoseGroom).map(([who, id]) => [
-      `POST /compatibility/predict, ${who}`,
+    ...Object.entries(adminWhoseGroom).map(([who, id]) => [
+      `POST /compatibility/predict, admin, ${who}`,
       () =>
-        send('post', '/api/v1/compatibility/predict', owner.token, {
+        send('post', '/api/v1/compatibility/predict', admin.token, {
           groomId: id(),
-          horseId: ownHorse.id,
+          horseId: adminHorse.id,
           context: { taskType: 'desensitization' },
         }),
     ]),
@@ -259,18 +276,32 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
     expect(res.body).toMatchObject({ success: false, message: 'Route not found' });
   });
 
-  it.each([
-    ['GET /compatibility/config', () => '/api/v1/compatibility/config'],
-    [
-      'GET /compatibility/factors/:groomId/:horseId',
-      () => `/api/v1/compatibility/factors/${ownGroom.id}/${ownHorse.id}`,
-    ],
-    ['GET /groom-handlers/config', () => '/api/v1/groom-handlers/config'],
-  ])('%s still answers 200 for the owner', async (_label, path) => {
-    const res = await send('get', path(), owner.token);
+  it('GET /groom-handlers/config still answers 200 for the owner', async () => {
+    const res = await send('get', '/api/v1/groom-handlers/config', owner.token);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
+  });
+
+  const keptCompatibility = [
+    ['GET /compatibility/config', () => '/api/v1/compatibility/config'],
+    [
+      'GET /compatibility/factors/:groomId/:horseId',
+      () => `/api/v1/compatibility/factors/${adminGroom.id}/${adminHorse.id}`,
+    ],
+  ];
+
+  it.each(keptCompatibility)('%s still answers 200 for an admin', async (_label, path) => {
+    const res = await send('get', path(), admin.token);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+
+  it('GET /compatibility/config refuses a player with 403 (admin-only, Equoria-oey96.37)', async () => {
+    const res = await send('get', '/api/v1/compatibility/config', owner.token);
+
+    expect(res.status).toBe(403);
   });
 
   it('POST /flags/batch-evaluate stays and still refuses a non-admin with 403', async () => {

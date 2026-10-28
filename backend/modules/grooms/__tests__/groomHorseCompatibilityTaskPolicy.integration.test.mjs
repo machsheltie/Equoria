@@ -138,6 +138,7 @@ beforeAll(async () => {
       password: 'irrelevant-hash',
       firstName: 'Compat',
       lastName: 'Policy',
+      role: 'admin',
       money: 0,
       xp: 0,
       level: 1,
@@ -160,7 +161,9 @@ beforeAll(async () => {
   cleanup.add(() => prisma.groom.deleteMany({ where: { userId: { in: [user.id, foreignUser.id] } } }), 'grooms');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [user.id, foreignUser.id] } } }), 'users');
   cleanup.add(() => prisma.breed.deleteMany({ where: { id: breedId } }), 'breed');
-  token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+  // Equoria-oey96.37 (owner ruling 2026-07-07): /compatibility is admin-only, so the
+  // caller is an admin; ownership checks still apply to her own fixtures.
+  token = generateTestToken({ id: user.id, email: user.email, role: 'admin' });
 
   for (const personality of ['calm', 'energetic', 'methodical', 'balanced']) {
     groomsByPersonality[personality] = await prisma.groom.create({

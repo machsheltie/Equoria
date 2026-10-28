@@ -35,13 +35,16 @@ beforeAll(async () => {
       password: 'irrelevant-hash',
       firstName: 'DCompat',
       lastName: 'Types',
+      role: 'admin',
       money: 0,
       xp: 0,
       level: 1,
     },
   });
   cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
-  token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+  // Equoria-oey96.37 (owner ruling 2026-07-07): /compatibility is admin-only, so the
+  // caller is an admin; ownership checks still apply to her own fixtures.
+  token = generateTestToken({ id: user.id, email: user.email, role: 'admin' });
   csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
   // A task type the validator accepts, taken from the config endpoint.
   const config = await request(app).get('/api/v1/compatibility/config').set('Authorization', `Bearer ${token}`);
