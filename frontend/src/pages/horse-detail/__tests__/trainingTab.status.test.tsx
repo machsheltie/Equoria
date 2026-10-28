@@ -133,7 +133,7 @@ describe('HorseDetailPage Training Tab — Status Display & Error Handling', () 
       });
     });
 
-    test('Keeps modal open on error for retry', async () => {
+    test('Keeps the discipline picked on error for retry', async () => {
       global.fetch = createFetchMock({
         trainingError: 'Training failed: Network error',
       });

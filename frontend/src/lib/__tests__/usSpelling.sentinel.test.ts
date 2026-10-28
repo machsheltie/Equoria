@@ -6,8 +6,8 @@
  * TypeScript parser (so comments are not text) and checked for British
  * spellings: colour, grey, honour, centre, immortalise, optimise and the like.
  *
- * pages/horse-detail/ is left out while another change owns those files; its
- * hits (genetics/ColourGeneticsSection.tsx) are recorded on Equoria-at90e.
+ * pages/horse-detail/ was left out until its Color sweep landed (agent/horsepage,
+ * ColorGeneticsSection); it is checked like everything else now.
  */
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
@@ -15,7 +15,6 @@ import path from 'node:path';
 import ts from 'typescript';
 
 const srcRoot = path.resolve(__dirname, '..', '..');
-const horseDetail = path.join(srcRoot, 'pages', 'horse-detail');
 
 const british = new RegExp(
   [
@@ -38,7 +37,7 @@ function sourceFiles(dir: string): string[] {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === '__tests__' || entry.name === 'test' || full === horseDetail) continue;
+      if (entry.name === '__tests__' || entry.name === 'test') continue;
       out.push(...sourceFiles(full));
     } else if (/\.(ts|tsx)$/.test(entry.name) && !/\.(test|stories)\.tsx?$/.test(entry.name)) {
       out.push(full);

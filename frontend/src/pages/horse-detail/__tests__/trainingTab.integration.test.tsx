@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { screen, waitFor, fireEvent, within } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { vi, describe, test, expect, beforeAll, beforeEach, afterEach } from 'vitest';
