@@ -65,9 +65,9 @@ let cacheRedisDegradationWarned = false;
  *
  * @returns {boolean}
  */
-export function cacheRedisIntentionallyDisabled() {
-  const isTestLike = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
-  const redisDisabledFlag = process.env.REDIS_DISABLED === 'true';
+export function cacheRedisIntentionallyDisabled(env = process.env) {
+  const isTestLike = env.NODE_ENV === 'test' || env.JEST_WORKER_ID !== undefined;
+  const redisDisabledFlag = env.REDIS_DISABLED === 'true';
   return isTestLike || redisDisabledFlag;
 }
 
@@ -175,6 +175,54 @@ export const cacheStats = {
 };
 
 /**
+ * Build the query cache's (not yet connected) Redis client from the environment,
+ * or null when Redis is intentionally disabled (test/Jest or REDIS_DISABLED=true).
+ *
+ * Equoria-5m00f (ARCH-03): REDIS_URL wins, as it does for the rate limiter
+ * (middleware/rateLimiting.mjs); REDIS_HOST/REDIS_PORT/REDIS_DB are the fallback.
+ * REDIS_PASSWORD fills in a password the URL does not carry (a password inside
+ * REDIS_URL wins, as ioredis merges URL fields first). The client is lazy, so
+ * building it opens no connection. Exported for unit testing.
+ *
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {Redis | null}
+ */
+export function createCacheRedisClient(env = process.env) {
+  if (cacheRedisIntentionallyDisabled(env)) {
+    return null;
+  }
+
+  const options = {
+    retryStrategy(times) {
+      // Retry 3 times max, then give up
+      if (times > 3) {
+        logger.warn('[cacheHelper] Redis connection failed after 3 retries, caching disabled');
+        return null; // Stop retrying
+      }
+      const delay = Math.min(times * 100, 1000); // Max 1s delay
+      return delay;
+    },
+    maxRetriesPerRequest: 1,
+    connectTimeout: 2000, // 2 seconds
+    lazyConnect: true,
+    enableOfflineQueue: false, // Don't queue commands when offline
+  };
+  if (env.REDIS_PASSWORD) {
+    options.password = env.REDIS_PASSWORD;
+  }
+
+  if (env.REDIS_URL) {
+    return new Redis(env.REDIS_URL, options);
+  }
+  return new Redis({
+    ...options,
+    host: env.REDIS_HOST || 'localhost',
+    port: parseInt(env.REDIS_PORT || '6379', 10),
+    db: parseInt(env.REDIS_DB || '0', 10),
+  });
+}
+
+/**
  * Initialize Redis client with optimized configuration
  */
 async function initializeRedis() {
@@ -182,9 +230,8 @@ async function initializeRedis() {
     return redisClient;
   }
 
-  // Skip Redis in test environment
-  if (process.env.NODE_ENV === 'test') {
-    // logger.info('[cacheHelper] Redis disabled in test environment'); // Reduce log noise
+  const client = createCacheRedisClient();
+  if (!client) {
     // Equoria-1tu03: cacheRedisIntentionallyDisabled() is true here, so the
     // gate decides NO warn — but route through the gate anyway so there is a
     // single canonical warn site rather than scattered conditionals.
@@ -193,25 +240,7 @@ async function initializeRedis() {
   }
 
   try {
-    redisClient = new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379', 10),
-      password: process.env.REDIS_PASSWORD || undefined,
-      db: parseInt(process.env.REDIS_DB || '0', 10),
-      retryStrategy(times) {
-        // Retry 3 times max, then give up
-        if (times > 3) {
-          logger.warn('[cacheHelper] Redis connection failed after 3 retries, caching disabled');
-          return null; // Stop retrying
-        }
-        const delay = Math.min(times * 100, 1000); // Max 1s delay
-        return delay;
-      },
-      maxRetriesPerRequest: 1,
-      connectTimeout: 2000, // 2 seconds
-      lazyConnect: true,
-      enableOfflineQueue: false, // Don't queue commands when offline
-    });
+    redisClient = client;
 
     // Event handlers
     redisClient.on('error', error => {
