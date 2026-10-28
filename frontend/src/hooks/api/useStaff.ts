@@ -62,6 +62,11 @@ export function statusOf(error: unknown): number | undefined {
  * An action refused because this browser's check-in has lapsed (403
  * STAFF_CHECKIN_REQUIRED) calls `onCheckinRequired`, so the page returns to
  * check-in as it does when a read is refused that way (STAFF-RR-11).
+ *
+ * Owner ruling 2026-10-28 (q263, Equoria-jqdho): when a background /me check
+ * fails with a server error or no connection, the office stays open, and the
+ * steward's next action (any staff request) checks /me again, so lost access
+ * still closes the office at once.
  */
 export function useStaffRevocationWatch(onCheckinRequired?: () => void) {
   const queryClient = useQueryClient();
@@ -75,8 +80,22 @@ export function useStaffRevocationWatch(onCheckinRequired?: () => void) {
         void queryClient.invalidateQueries({ queryKey: staffKeys.me });
       }
     };
+    const recheckAfterFailedCheck = () => {
+      const me = queryClient.getQueryState(staffKeys.me);
+      if (me?.status === 'error' && me.fetchStatus === 'idle') {
+        void queryClient.invalidateQueries({ queryKey: staffKeys.me });
+      }
+    };
     const stopQueries = queryClient.getQueryCache().subscribe((event) => {
       const key = event.query.queryKey;
+      if (
+        event.type === 'updated' &&
+        event.action.type === 'fetch' &&
+        key[0] === staffKeys.all[0] &&
+        key[1] !== 'me'
+      ) {
+        recheckAfterFailedCheck();
+      }
       if (
         event.type === 'updated' &&
         event.action.type === 'error' &&
@@ -87,6 +106,13 @@ export function useStaffRevocationWatch(onCheckinRequired?: () => void) {
       }
     });
     const stopMutations = queryClient.getMutationCache().subscribe((event) => {
+      if (
+        event.type === 'updated' &&
+        event.action.type === 'pending' &&
+        event.mutation.options.mutationKey?.[0] === staffKeys.all[0]
+      ) {
+        recheckAfterFailedCheck();
+      }
       if (
         event.type === 'updated' &&
         event.action.type === 'error' &&

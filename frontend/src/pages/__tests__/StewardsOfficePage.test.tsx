@@ -459,6 +459,9 @@ describe("The Steward's Office", () => {
 
   // ── /me refetch after the office has loaded ───────────────────────────────
 
+  // Old contract (32c72f7a7): the office stays and /me waits for the next background
+  // refetch. Owner ruling 2026-10-28 (q263, Equoria-jqdho) keeps the office and adds a
+  // re-check on the steward's next action: StewardsOfficeRecheck.test.tsx.
   it('a failed background /me refetch keeps the office and an open dialog with its reason', async () => {
     let meFails = false;
     stubStaff({ me: () => (meFails ? json({ message: 'boom' }, 500) : json(adminMe)) });
