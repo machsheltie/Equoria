@@ -69,7 +69,7 @@ describe('getTraitScoringDefinitions()', () => {
     expect(Array.isArray(defs.rareTraits)).toBe(true);
     // Old contract: the lists named off-roster traits (noble, anxious,
     // aggressive). Owner rulings 2026-10-27 (q134 rarity, q135 polarity;
-    // Equoria-qw4kp): they are the roster's Rare-or-rarer and negative traits.
+    // Equoria-qw4kp): they are the roster's Rare, Ultra Rare and Legendary traits and its negative traits.
     expect(defs.rareTraits).toEqual(['resilient', 'heart', 'focused', 'competitive']);
     expect(defs.negativeTraits).toEqual(['fearful', 'insecure', 'aloof', 'fragile', 'skittish', 'excitable']);
     expect(defs.negativeTraitPenalties).toEqual({ fearful: -2 });

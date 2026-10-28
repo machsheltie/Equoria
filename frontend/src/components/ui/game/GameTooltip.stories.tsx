@@ -95,7 +95,7 @@ export const LongContent: Story = {
       <GameTooltipContent>
         <p>
           This trait grants a 25% bonus to all competition scores in the horse&apos;s primary
-          discipline. Extremely rare — only 0.1% of foals are born with this trait.
+          discipline.
         </p>
       </GameTooltipContent>
     </GameTooltip>

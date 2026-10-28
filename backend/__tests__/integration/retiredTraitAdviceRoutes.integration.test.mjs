@@ -23,7 +23,7 @@
  * - No advice and no genetics reports for players (2026-10-07, 2026-10-28):
  *     GET  /horses/:id/epigenetic-insights
  *     GET  /epigenetic-traits/breeding-insights/:horseId
- * - All ultra-rare and exotic traits removed (2026-10-19):
+ * - All invented ultra-rare traits removed (2026-10-19):
  *     GET  /ultra-rare-traits/definitions
  *     GET  /ultra-rare-traits/horse/:horseId (its only caller, the horse page's
  *          ultra-rare reveal, showed trait rarity, which q112 hides; removed

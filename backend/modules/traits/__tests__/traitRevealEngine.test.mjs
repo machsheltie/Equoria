@@ -117,7 +117,7 @@ describe('applyTraitDay — the ladder on groomed days', () => {
     expect(rolled(5)).toEqual(['brave']);
     expect(rolled(6)).toEqual(['adaptable', 'brave']);
     expect(rolled(11)).toEqual(['adaptable', 'brave']);
-    // The commoner traits keep rolling once a rarer gate opens.
+    // The lower tiers keep rolling once a higher tier's gate opens.
     expect(rolled(12)).toEqual(['adaptable', 'brave', 'resilient']);
     expect(rolled(15)).toEqual(['adaptable', 'brave', 'resilient']);
     expect(rolled(16)).toEqual(['adaptable', 'brave', 'competitive', 'resilient']);

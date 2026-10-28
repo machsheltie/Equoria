@@ -11,7 +11,7 @@
  * in ultraRareMechanicalEffects.mjs: a bare `|| { ultraRare:[], exotic:[] }`
  * fallback only caught null/undefined, so a primitive, an array, or an object
  * missing those sub-keys threw at runtime ("X is not iterable" / TypeError).
- * That file and groomRareTraitPerks.mjs were deleted with the invented exotic
+ * That file and groomRareTraitPerks.mjs were deleted with the invented ultra-rare
  * traits (Equoria-tpofm; owner ruling 2026-10-19), and their arms with them.
  *
  * These tests feed null / primitive / array / missing-sub-key shapes through

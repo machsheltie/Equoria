@@ -5,7 +5,7 @@
  * which events a player had seen, first as one key per event id
  * (`urt-seen-<id>`), later as one bounded key (`urt-seen-ids`, Equoria-o7c0x
  * L7). The reveal was retired (a59333a0f) and its seen-set functions were
- * deleted with the invented exotic traits (Equoria-tpofm; owner ruling
+ * deleted with the invented ultra-rare traits (Equoria-tpofm; owner ruling
  * 2026-10-19). Only the startup purge of the old per-id keys remains.
  */
 

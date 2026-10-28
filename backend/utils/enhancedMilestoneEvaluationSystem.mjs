@@ -230,8 +230,8 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
     `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Completed evaluation for horse ${horseId}: ${traitOutcome.trait || 'no trait'} (score: ${finalScore})`,
   );
 
-  // Equoria-tpofm: the ultra-rare/exotic trigger evaluation that ran here
-  // (Equoria-d4tl) went with the 10 invented exotic traits (owner ruling
+  // Equoria-tpofm: the invented ultra-rare trigger evaluation that ran here
+  // (Equoria-d4tl) went with the 10 invented ultra-rare traits (owner ruling
   // 2026-10-19). Competitive and Heart reveal through the grooming-day ladder.
   return {
     success: true,

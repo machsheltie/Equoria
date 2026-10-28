@@ -19,7 +19,7 @@
  * groomed days (3 / 6 / 12 / 16 / 19 for Common .. Legendary). The groomed day
  * that opens a gate rolls (q139), and so does every groomed day after it: a
  * chance (25%, q114) for each hidden positive trait at or below the opened
- * gates, so a higher gate adds the rarer traits while the commoner ones keep
+ * gates, so a higher gate adds that tier's traits while the lower tiers keep
  * rolling. On
  * the same groomed days an active negative trait past its switch-off gate rolls
  * to switch off (q116, q118: any active negative). A neglected day is the

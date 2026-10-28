@@ -6,8 +6,8 @@
  *   - Rarity gates: 3 / 6 / 12 / 16 / 19 groomed days for Common / Uncommon /
  *     Rare / Ultra Rare / Legendary. From the groomed day that opens a gate
  *     (that day included, q139) every groomed day rolls a chance for each trait
- *     at or below it. Reaching the next gate adds the rarer traits; the
- *     commoner ones keep rolling. Neglect mirrors this for negative traits.
+ *     at or below it. Reaching the next gate adds that tier's traits;
+ *     the lower tiers keep rolling. Neglect mirrors this for negative traits.
  *   - A flat 25% chance per qualifying day, whatever the rarity.
  *   - The first 21 days of life only. The birth day is day 1.
  *   - Switching a trait off needs the same day counts of the opposite care,

@@ -5,7 +5,7 @@
  * Equoria-tpofm. OLD CONTRACT: the module also kept a bounded seen-set
  * (readSeenIds / hasSeenEvent / markEventSeen, URT_SEEN_MAX; Equoria-o7c0x L7)
  * for the horse page's one-time ultra-rare reveal. NEW: the reveal was retired
- * (a59333a0f) and the invented exotic traits removed (owner ruling
+ * (a59333a0f) and the invented ultra-rare traits removed (owner ruling
  * 2026-10-19), so those functions and their tests were deleted. The purge
  * below is unchanged.
  */

@@ -8,7 +8,7 @@
  * recorded on Equoria-q4uem.17 eliminated temporary flags, and there is no adult
  * discovery. This file pins the other paths that used to claim trait changes:
  *   - the daily temporary-flag sweep and the environmental-event flag writer;
- *   - the ultra-rare/exotic trigger run after every foal milestone (it recorded
+ *   - the invented ultra-rare trigger run after every foal milestone (it recorded
  *     off-roster traits such as phoenix-born as triggered);
  *   - the adult discovery conditions (age 3+ bond, weekly training) advertised
  *     by GET /api/traits/discovery-status.
@@ -72,7 +72,7 @@ describe('temporary flags are gone (Equoria-kqdde)', () => {
 });
 
 describe('foal milestones claim no traits (Equoria-kqdde)', () => {
-  it('a milestone evaluation runs no ultra-rare/exotic trigger and leaves the traits as they were', async () => {
+  it('a milestone evaluation runs no invented ultra-rare trigger and leaves the traits as they were', async () => {
     const modifiers = { positive: [], negative: [], hidden: ['brave'] };
     const foal = await createTestHorse(
       prisma,

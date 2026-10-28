@@ -145,7 +145,7 @@ export const GENERIC_STARTER_WEIGHTS = Object.freeze({
   MFSD12_Mushroom: { 'N/N': 0.98, 'M/N': 0.02 },
   // Equoria-26qjf.1: starter-population frequencies for the two new loci.
   // Lowercase 'n/n' wild-type (see GENERIC_DEFAULTS note). Pearl is a rare
-  // recessive carrier in the general population; Brindle is extremely rare and
+  // recessive carrier in the general population; Brindle is rare and
   // sex-limited, so starters stay at wild-type (no Brindle starter horses).
   Prl_Pearl: { 'n/n': 0.98, 'prl/n': 0.02 },
   BR1_Brindle1: { 'n/n': 1.0 },

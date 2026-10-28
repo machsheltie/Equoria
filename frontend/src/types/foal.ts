@@ -86,7 +86,6 @@ export interface EpigeneticTrait {
   id: string;
   name: string;
   category: string;
-  tier?: string;
   description: string;
   effects: TraitEffect[];
   isPositive?: boolean;

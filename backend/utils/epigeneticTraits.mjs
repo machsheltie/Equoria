@@ -147,7 +147,7 @@ export function getTraitsByType(type = 'all') {
 const rarityOrder = Object.freeze(['common', 'uncommon', 'rare', 'ultraRare', 'legendary']);
 
 /**
- * Roster traits whose ruled rarity (q134) is `rarity` or rarer: 'rare' gives
+ * Roster traits whose ruled rarity (q134) is `rarity` or a higher tier: 'rare' gives
  * the Rare, Ultra Rare and Legendary traits. Game and admin use only; players
  * never see rarity (q112).
  * @param {string} rarity - one of common, uncommon, rare, ultraRare, legendary

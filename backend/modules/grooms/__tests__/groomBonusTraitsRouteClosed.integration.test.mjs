@@ -6,7 +6,7 @@
  * service's own earning conditions (bond >= 60, >= 75% assignment window
  * coverage, groomBonusTraitService.mjs:29-30/236-237). Any authenticated
  * owner of a groom could PUT arbitrary bonus traits — including three
- * ultra-rare/exotic trait names at 0.3 each — straight into
+ * invented ultra-rare trait names at 0.3 each — straight into
  * `Groom.bonusTraitMap` with zero play, which also made the groom
  * immediately eligible for the `any-with-3-rare-bonuses` rare-trait booster
  * perk (backend/utils/groomRareTraitPerks.mjs:173-181, evaluatePerkEligibility)
@@ -102,7 +102,7 @@ describe('🔒 REGRESSION: PUT /api/v1/grooms/:id/bonus-traits is closed (Equori
   });
 
   it('refuses an owner PUT with 410 and leaves bonusTraitMap unchanged, even for 3 rare traits', async () => {
-    // Three ultra-rare/exotic trait names at the max per-trait bonus — the
+    // Three invented ultra-rare trait names at the max per-trait bonus — the
     // exact shape that used to unlock the rare-trait booster perk for free.
     const exploitBonusTraits = {
       phoenixTouch: 0.3,
