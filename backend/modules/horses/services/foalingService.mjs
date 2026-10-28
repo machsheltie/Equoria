@@ -383,17 +383,11 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
 
   // Phenotype: base color + markings (31E-1b / 31E-3).
   const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shadeBias ?? null);
+  const markingArgs = [breedGeneticProfile, baseColor.colorName, rng, colorGenotype];
   const markings =
     sirePhenotype && damPhenotype
-      ? inheritMarkings(
-          sirePhenotype,
-          damPhenotype,
-          breedGeneticProfile,
-          baseColor.colorName,
-          rng,
-          colorGenotype,
-        )
-      : generateMarkings(breedGeneticProfile, baseColor.colorName, rng, colorGenotype);
+      ? inheritMarkings(sirePhenotype, damPhenotype, ...markingArgs)
+      : generateMarkings(...markingArgs);
   const phenotype = { ...baseColor, ...markings };
 
   // Sex: direct callers may pass options.sex; the foaling job does not (50/50 via rng).
