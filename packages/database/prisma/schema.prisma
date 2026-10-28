@@ -619,6 +619,9 @@ model Groom {
   /// a caller explicitly `include`s it — which only the retirement service does.
   /// DO NOT add `include: { retirementSchedule: true }` to a player-facing read.
   retirementSchedule  GroomRetirementSchedule?
+  /// The groom's hidden growth profile (owner rulings 2026-10-28, q160/q177; Equoria-xlw03).
+  /// Its own table so no groom read can serialise the unrevealed items.
+  growthProfile       GroomGrowthProfile?
   /// Equoria-ypb7d: the record of every player who has hired this groom. At most
   /// one row has `endedAt = null` (partial unique index).
   engagements         GroomEngagement[]
@@ -1620,6 +1623,11 @@ model Rider {
   /// rider went unpaid. NULL = paid up. While set the rider cannot ride; a full pay week
   /// later, still unpaid, the rider leaves. Mirrors Groom.feeUnpaidSince.
   feeUnpaidSince DateTime?
+  /// Owner ruling 2026-10-28 (q177, Equoria-xlw03): a dismissed or unpaid rider returns to
+  /// the riders-for-hire pool at its current level with its reveals intact. Set when the
+  /// rider enters the pool (userId is cleared at the same time); cleared when hired again.
+  /// The pool is userId NULL, retired false, freeAgentSince NOT NULL.
+  freeAgentSince DateTime?
   /// Biography
   bio          String?
   /// User association
@@ -1632,6 +1640,9 @@ model Rider {
   /// The HIDDEN retirement age lives in its own table so no rider read can
   /// serialise it (see RiderRetirementSchedule).
   riderRetirementSchedule RiderRetirementSchedule?
+  /// The rider's hidden growth profile (Equoria-xlw03): its own table, like the
+  /// retirement schedule, so no rider read can serialise the unrevealed items.
+  growthProfile RiderGrowthProfile?
   salaryPayments RiderSalaryPayment[]
 
   /// Equoria-cmw85.25: the roster pages and the weekly retirement job. Each replaces a
@@ -1664,6 +1675,35 @@ model RiderRetirementSchedule {
   rider         Rider     @relation(fields: [riderId], references: [id], onDelete: Cascade)
 
   @@map("rider_retirement_schedules")
+}
+
+/// A rider's hidden growth profile (owner rulings 2026-10-28, q160/q177/q244; Equoria-xlw03).
+/// `items` holds the twelve hidden modifiers drawn when the profile is made: 4 horse traits,
+/// 4 disciplines and 2 temperaments (each positive or negative) and 2 favourite breeds
+/// (positive), each with its own `revealed` flag. Rookies reveal nothing; each level-up
+/// reveals 3 at random; Expert reveals all. `showsAtLevel` counts shows completed since the
+/// last level-up (backend/constants/staffGrowth.mjs). Players only ever see revealed items.
+model RiderGrowthProfile {
+  riderId      Int      @id
+  items        Json     @default("[]")
+  showsAtLevel Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  rider        Rider    @relation(fields: [riderId], references: [id], onDelete: Cascade)
+
+  @@map("rider_growth_profiles")
+}
+
+/// A groom's hidden growth profile: the same shape as RiderGrowthProfile (Equoria-xlw03).
+model GroomGrowthProfile {
+  groomId      Int      @id
+  items        Json     @default("[]")
+  showsAtLevel Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  groom        Groom    @relation(fields: [groomId], references: [id], onDelete: Cascade)
+
+  @@map("groom_growth_profiles")
 }
 
 /// The weekly pay of a hired rider, one row per rider per pay week (owner ruling
