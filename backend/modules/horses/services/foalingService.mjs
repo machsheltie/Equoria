@@ -40,7 +40,10 @@ import { generateMarkings, inheritMarkings } from './markingGenerationService.mj
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { calculatePregnancyEpigeneticChances } from '../../../utils/pregnancyBonus.mjs';
-import { normalizeEpigeneticModifiers } from '../../../utils/epigeneticTraitKeyMap.mjs';
+import {
+  normalizeEpigeneticModifiers,
+  normalizeTraitKey,
+} from '../../../utils/epigeneticTraitKeyMap.mjs';
 import {
   createNotificationTx,
   finalizeNotificationAfterCommit,
@@ -81,13 +84,16 @@ const PREGNANCY_BONUS_POSITIVE_TRAITS = Object.freeze(['resilient', 'peopleTrust
 const PREGNANCY_BONUS_NEGATIVE_TRAITS = Object.freeze(['fragile']);
 
 /**
- * Collect the union of a horse's epigenetic traits (positive ∪ negative ∪
- * hidden), normalized to canonical camelCase keys, for §A inheritance input.
+ * Collect the union of a horse's carried epigenetic traits (positive ∪ negative
+ * ∪ hidden ∪ dormant), normalized to canonical camelCase keys, for §A
+ * inheritance input. A dormant trait (revealed, switched off; Equoria-nrto5) is
+ * still carried and inheritable (owner ruling 2026-10-22 on Equoria-q4uem.17).
  * Tolerates null / primitive / array-shaped epigeneticModifiers (legacy rows).
  */
 function collectEpigeneticTraits(modifiers) {
   const norm = normalizeEpigeneticModifiers(modifiers);
-  return [...new Set([...norm.positive, ...norm.negative, ...norm.hidden])];
+  const dormant = Array.isArray(modifiers?.dormant) ? modifiers.dormant.map(normalizeTraitKey) : [];
+  return [...new Set([...norm.positive, ...norm.negative, ...norm.hidden, ...dormant])];
 }
 
 /** A horse's active, revealed traits (positive ∪ negative): the only ones a foal can be born with active. */

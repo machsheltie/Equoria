@@ -14,6 +14,11 @@
  *     tests used made-up test values and the shipped settings touched nothing
  *     (skipped: 'noTraitsRuled'). Owner rulings 2026-10-27 (q134 rarity, q135
  *     polarity) filled all twenty, so the tests use the shipped values.
+ *   - 2026-10-27: a trait that switched off went back to `hidden`. The owner
+ *     ruling of 2026-10-22 recorded on Equoria-q4uem.17 (Equoria-nrto5): a
+ *     revealed trait made inactive becomes revealed + dormant, never hidden
+ *     again. The engine's trait lists gained `dormant`, so whole-object
+ *     expectations carry it.
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -24,7 +29,7 @@ import { seededRng } from '../../../__tests__/helpers/seededRng.mjs';
 
 const always = () => 0;
 const never = () => 0.999;
-const empty = () => ({ positive: [], negative: [], hidden: [] });
+const empty = () => ({ positive: [], negative: [], hidden: [], dormant: [] });
 const groomedDay = groomedDays => ({ groomed: true, groomedDays, neglectedDays: 0 });
 const neglectedDay = neglectedDays => ({ groomed: false, groomedDays: 0, neglectedDays });
 
@@ -130,11 +135,11 @@ describe('applyTraitDay — the ladder on groomed days', () => {
     const traits = { ...empty(), negative: ['fragile', 'skittish'] };
     expect(applyTraitDay(traits, groomedDay(2), settings, always).changes).toEqual([]);
     const third = applyTraitDay(traits, groomedDay(3), settings, always);
-    expect(third.traits).toEqual({ positive: [], negative: ['fragile'], hidden: ['skittish'] });
+    expect(third.traits).toEqual({ positive: [], negative: ['fragile'], hidden: [], dormant: ['skittish'] });
     expect(third.changes).toEqual([{ trait: 'skittish', change: 'switchedOff', polarity: 'negative' }]);
     expect(applyTraitDay(traits, groomedDay(5), settings, always).traits.negative).toEqual(['fragile']);
     const sixth = applyTraitDay(traits, groomedDay(6), settings, always);
-    expect(sixth.traits).toEqual({ positive: [], negative: [], hidden: ['fragile', 'skittish'] });
+    expect(sixth.traits).toEqual({ positive: [], negative: [], hidden: [], dormant: ['fragile', 'skittish'] });
   });
 
   it('a groomed day never reveals a negative or switches off a positive', () => {
@@ -148,7 +153,7 @@ describe('applyTraitDay — neglected days mirror grooming, driven by polarity',
     const traits = { positive: ['confident'], negative: [], hidden: ['fearful', 'brave'] };
     expect(applyTraitDay(traits, neglectedDay(2), settings, always).changes).toEqual([]);
     const { traits: next, changes } = applyTraitDay(traits, neglectedDay(3), settings, always);
-    expect(next).toEqual({ positive: [], negative: ['fearful'], hidden: ['brave', 'confident'] });
+    expect(next).toEqual({ positive: [], negative: ['fearful'], hidden: ['brave'], dormant: ['confident'] });
     expect(changes).toEqual([
       { trait: 'fearful', change: 'revealed', polarity: 'negative' },
       { trait: 'confident', change: 'switchedOff', polarity: 'positive' },
@@ -170,7 +175,8 @@ describe('applyTraitDay — neglected days mirror grooming, driven by polarity',
     expect(applyTraitDay(traits, neglectedDay(12), settings, always).traits).toEqual({
       positive: [],
       negative: [],
-      hidden: ['resilient'],
+      hidden: [],
+      dormant: ['resilient'],
     });
   });
 
@@ -181,6 +187,41 @@ describe('applyTraitDay — neglected days mirror grooming, driven by polarity',
   });
 });
 
+describe('applyTraitDay — a switched-off trait stays revealed and dormant (Equoria-nrto5)', () => {
+  it('a dormant trait is never hidden again, whatever the day brings', () => {
+    const traits = { ...empty(), dormant: ['skittish', 'brave'] };
+    for (const day of [groomedDay(20), neglectedDay(20)]) {
+      const { traits: next } = applyTraitDay(traits, day, settings, never);
+      expect(next.hidden).toEqual([]);
+      expect(next.dormant.sort()).toEqual(['brave', 'skittish']);
+    }
+    // A groomed day never touches a dormant negative; a neglected day never a dormant positive.
+    expect(applyTraitDay({ ...empty(), dormant: ['skittish'] }, groomedDay(20), settings, always).traits).toEqual({
+      ...empty(),
+      dormant: ['skittish'],
+    });
+    expect(applyTraitDay({ ...empty(), dormant: ['brave'] }, neglectedDay(20), settings, always).traits).toEqual({
+      ...empty(),
+      dormant: ['brave'],
+    });
+  });
+
+  it('a dormant trait turns back on by the same gate and chance that revealed it', () => {
+    const traits = { ...empty(), dormant: ['brave'] };
+    expect(applyTraitDay(traits, groomedDay(2), settings, always).changes).toEqual([]);
+    const third = applyTraitDay(traits, groomedDay(3), settings, always);
+    expect(third.traits).toEqual({ ...empty(), positive: ['brave'] });
+    expect(third.changes).toEqual([{ trait: 'brave', change: 'reactivated', polarity: 'positive' }]);
+  });
+
+  it('switching off and back on keeps the one carried copy', () => {
+    const off = applyTraitDay({ ...empty(), negative: ['fearful'] }, groomedDay(3), settings, always).traits;
+    expect(off).toEqual({ ...empty(), dormant: ['fearful'] });
+    const on = applyTraitDay(off, neglectedDay(3), settings, always).traits;
+    expect(on).toEqual({ ...empty(), negative: ['fearful'] });
+  });
+});
+
 describe('applyTraitDay — traits outside the roster are never touched', () => {
   it('leaves an off-roster name exactly where it is', () => {
     const traits = { positive: ['calm'], negative: ['nervous'], hidden: ['bold'] };
@@ -188,7 +229,7 @@ describe('applyTraitDay — traits outside the roster are never touched', () => 
     const neglected = applyTraitDay(traits, neglectedDay(20), settings, always);
     expect(groomed.changes).toEqual([]);
     expect(neglected.changes).toEqual([]);
-    expect(neglected.traits).toEqual(traits);
+    expect(neglected.traits).toEqual({ ...traits, dormant: [] });
   });
 
   it('never invents a trait the horse does not carry', () => {

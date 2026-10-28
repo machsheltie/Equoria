@@ -6,7 +6,8 @@
  * A horse carries a trait or it doesn't. In Horse.epigeneticModifiers a carried
  * trait sits in exactly one array:
  *   - `hidden`              carried, hidden and inactive (has no effect, admin-only);
- *   - `positive`/`negative` revealed and active.
+ *   - `positive`/`negative` revealed and active;
+ *   - `dormant`             revealed and inactive (has no effect; Equoria-nrto5).
  * This engine never adds a trait a horse does not carry; it only moves carried
  * traits between those arrays.
  *
@@ -24,7 +25,10 @@
  * to switch off (q116, q118: any active negative). A neglected day is the
  * mirror image: hidden negative traits roll to reveal and active positive
  * traits roll to switch off, counted in neglected days. A trait that switches
- * off goes back to `hidden`: carried, inactive, and able to turn on again.
+ * off becomes `dormant`: still revealed and carried, but inactive. It is never
+ * hidden again (owner ruling 2026-10-22 recorded on Equoria-q4uem.17). A
+ * dormant trait can turn back on by the same gate and chance that reveal a
+ * hidden one, as a switched-off trait could before it stayed revealed.
  *
  * Every number lives in modules/traits/config/traitRevealSettings.mjs, and each
  * trait's rarity (q134) and polarity (q135) come from the roster. A name off
@@ -74,11 +78,16 @@ export function revealSettingsReady(settings) {
   return tablesReady && windowReady;
 }
 
-/** The three trait arrays, whatever the stored Json holds. */
+/** The four trait arrays, whatever the stored Json holds. */
 export function traitArrays(raw) {
   const value = raw !== null && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
   const list = key => (Array.isArray(value[key]) ? [...value[key]] : []);
-  return { positive: list('positive'), negative: list('negative'), hidden: list('hidden') };
+  return {
+    positive: list('positive'),
+    negative: list('negative'),
+    hidden: list('hidden'),
+    dormant: list('dormant'),
+  };
 }
 
 /**
@@ -100,12 +109,12 @@ export function ruledTraits(settings) {
 /**
  * Apply ONE completed game day to a horse's traits. Pure: no I/O.
  *
- * @param {{positive:string[], negative:string[], hidden:string[]}} traits
+ * @param {{positive:string[], negative:string[], hidden:string[], dormant:string[]}} traits
  * @param {{groomed:boolean, groomedDays:number, neglectedDays:number}} day -
  *   counts INCLUDE this day, so a gate of N rolls first when the count is N (q139)
  * @param {object} settings - a ready settings object (see revealSettingsReady)
  * @param {() => number} rng - returns [0, 1)
- * @returns {{traits: object, changes: Array<{trait:string, change:'revealed'|'switchedOff', polarity:string}>}}
+ * @returns {{traits: object, changes: Array<{trait:string, change:'revealed'|'reactivated'|'switchedOff', polarity:string}>}}
  */
 export function applyTraitDay(traits, day, settings, rng) {
   const next = traitArrays(traits);
@@ -119,15 +128,23 @@ export function applyTraitDay(traits, day, settings, rng) {
   const revealPolarity = day.groomed ? 'positive' : 'negative';
   const switchOffPolarity = day.groomed ? 'negative' : 'positive';
 
-  for (const trait of [...next.hidden].sort()) {
+  // Hidden and dormant traits are both inactive; either can turn on.
+  const inactive = [...new Set([...next.hidden, ...next.dormant])].sort();
+  for (const trait of inactive) {
     const rule = ruled.get(trait);
     if (!rule || rule.polarity !== revealPolarity) {
       continue;
     }
     if (gateOpen(settings.revealDays[revealPolarity][rule.rarity]) && roll(rule.rarity)) {
+      const wasHidden = next.hidden.includes(trait);
       next.hidden = next.hidden.filter(t => t !== trait);
+      next.dormant = next.dormant.filter(t => t !== trait);
       next[revealPolarity].push(trait);
-      changes.push({ trait, change: 'revealed', polarity: revealPolarity });
+      changes.push({
+        trait,
+        change: wasHidden ? 'revealed' : 'reactivated',
+        polarity: revealPolarity,
+      });
     }
   }
 
@@ -143,7 +160,9 @@ export function applyTraitDay(traits, day, settings, rng) {
     if (gateOpen(settings.switchOffDays[switchOffPolarity][rule.rarity]) && roll(rule.rarity)) {
       next.positive = next.positive.filter(t => t !== trait);
       next.negative = next.negative.filter(t => t !== trait);
-      next.hidden.push(trait);
+      if (!next.dormant.includes(trait)) {
+        next.dormant.push(trait);
+      }
       changes.push({ trait, change: 'switchedOff', polarity: switchOffPolarity });
     }
   }
@@ -247,12 +266,13 @@ export async function evaluateHorseTraitReveal(
     // milestone's tags) is kept as stored. The row lock above makes this safe.
     await tx.$executeRaw`
       UPDATE "horses"
-      SET "epigeneticModifiers" = jsonb_set(jsonb_set(jsonb_set(jsonb_set(
+      SET "epigeneticModifiers" = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(
         CASE WHEN jsonb_typeof("epigeneticModifiers") = 'object'
           THEN "epigeneticModifiers" ELSE '{}'::jsonb END,
         '{positive}', ${JSON.stringify(traits.positive)}::jsonb),
         '{negative}', ${JSON.stringify(traits.negative)}::jsonb),
         '{hidden}', ${JSON.stringify(traits.hidden)}::jsonb),
+        '{dormant}', ${JSON.stringify(traits.dormant)}::jsonb),
         ARRAY[${revealProgressKey}::text], ${JSON.stringify(throughDay)}::jsonb)
       WHERE "id" = ${horseId}`;
 

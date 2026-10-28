@@ -244,7 +244,9 @@ describe('evaluateHorseTraitReveal — the owner ladder on real horses and groom
         groomed: true,
       },
     ]);
-    expect(await stored(groomedFoal.id)).toMatchObject({ negative: [], hidden: ['insecure'] });
+    // Owner ruling 2026-10-22 on Equoria-q4uem.17 (Equoria-nrto5): switched off
+    // means revealed + dormant, never hidden again (old contract: back to hidden).
+    expect(await stored(groomedFoal.id)).toMatchObject({ negative: [], hidden: [], dormant: ['insecure'] });
 
     const neglectedFoal = await makeHorse({
       livedDays: 4,
@@ -258,7 +260,7 @@ describe('evaluateHorseTraitReveal — the owner ladder on real horses and groom
     expect(neglectedResult.changes.map(c => [c.trait, c.change, c.dayOfLife])).toEqual([
       ['confident', 'switchedOff', 3],
     ]);
-    expect(await stored(neglectedFoal.id)).toMatchObject({ positive: [], hidden: ['confident'] });
+    expect(await stored(neglectedFoal.id)).toMatchObject({ positive: [], hidden: [], dormant: ['confident'] });
   }, 60_000);
 
   it('a losing roll leaves the trait where it was but still marks the day evaluated', async () => {
@@ -357,6 +359,8 @@ describe('runNightlyTraitReveal — the nightly pass', () => {
       positive: [],
       negative: ['fearful'],
       hidden: ['brave'],
+      // Equoria-nrto5: the engine now writes its fourth list, dormant (empty here).
+      dormant: [],
       [revealProgressKey]: 5,
     });
   }, 60_000);
