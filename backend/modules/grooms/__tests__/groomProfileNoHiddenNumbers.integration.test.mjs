@@ -22,8 +22,10 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { getGroomProfile } from '../controllers/groomRosterController.mjs';
-import { GROOM_PERSONALITY_TYPES, FOAL_TEMPERAMENT_TYPES } from '../../../utils/groomPersonalityTraitBonus.mjs';
 
+// A calm groom suits a reactive foal (utils/groomPersonalityTraitBonus.mjs).
+const calmGroom = 'Calm';
+const reactiveFoal = 'Reactive';
 const fixturePrefix = 'TestFixture-2wdp8-profile';
 
 function fakeRes() {
@@ -70,7 +72,7 @@ describe('GET /grooms/:id/profile sends no compatibility numbers or tables', () 
       data: {
         name: `${fixturePrefix}-groom-${suffix}`,
         speciality: 'foalCare',
-        personality: GROOM_PERSONALITY_TYPES.CALM,
+        personality: calmGroom,
         skillLevel: 'novice',
         userId: user.id,
       },
@@ -83,7 +85,7 @@ describe('GET /grooms/:id/profile sends no compatibility numbers or tables', () 
         dateOfBirth: gameCalendarDate(new Date(), -3),
         age: 0,
         userId: user.id,
-        temperament: FOAL_TEMPERAMENT_TYPES.REACTIVE,
+        temperament: reactiveFoal,
         bondScore: 80,
       },
     });
@@ -107,7 +109,7 @@ describe('GET /grooms/:id/profile sends no compatibility numbers or tables', () 
     expect(entry).toEqual({
       foalId: foal.id,
       foalName: foal.name,
-      foalTemperament: FOAL_TEMPERAMENT_TYPES.REACTIVE,
+      foalTemperament: reactiveFoal,
       suitsFoal: true,
     });
 

@@ -21,8 +21,10 @@ import { randomBytes } from 'node:crypto';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
-import { GROOM_PERSONALITY_TYPES, FOAL_TEMPERAMENT_TYPES } from '../../../utils/groomPersonalityTraitBonus.mjs';
 
+// A calm groom suits a reactive foal (utils/groomPersonalityTraitBonus.mjs).
+const calmGroom = 'Calm';
+const reactiveFoal = 'Reactive';
 const fixturePrefix = 'TestFixture-2wdp8-impact';
 const internals = ['traitModifier', 'bondModifier', 'traitDevBonus', 'isStrongMatch', 'idealMatches'];
 
@@ -40,14 +42,14 @@ beforeAll(async () => {
   horse = await createTestHorse({
     name: `${fixturePrefix}-${tag}`,
     userId: created.user.id,
-    temperament: FOAL_TEMPERAMENT_TYPES.REACTIVE,
+    temperament: reactiveFoal,
     bondScore: 80,
   });
   const groom = await prisma.groom.create({
     data: {
       name: `${fixturePrefix}-groom-${tag}`,
       speciality: 'foalCare',
-      personality: GROOM_PERSONALITY_TYPES.CALM,
+      personality: calmGroom,
       skillLevel: 'novice',
       userId: created.user.id,
     },
