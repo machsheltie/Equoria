@@ -158,8 +158,8 @@ export function getTraitsAtOrAboveRarity(rarity) {
   if (floor < 0) {
     throw new Error(`Unknown trait rarity: ${rarity}`);
   }
-  return Object.keys(TRAIT_DEFINITIONS).filter(
-    trait => rarityOrder.indexOf(TRAIT_DEFINITIONS[trait].rarity) >= floor,
+  return traitRosterIds.filter(
+    trait => rarityOrder.indexOf(getTraitDefinition(trait).rarity) >= floor,
   );
 }
 
