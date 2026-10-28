@@ -309,14 +309,21 @@ describe('candidate-state — the real entry point and the hook wiring', () => {
     expect(result.status).toBe(2);
   });
 
-  it('is wired into .husky/pre-push before doctrine and again after the gate', () => {
+  // Owner ruling q233 (2026-10-28, Equoria-zstml) replaced the hook's gate: the
+  // full sharded suite ('npm run test:backend:full') runs only on GitHub now,
+  // and the hook runs fast doctrine plus scripts/preflight/changed-checks.mjs.
+  // The ordering contract is unchanged: candidate-state before the checks and
+  // again after them.
+  it('is wired into .husky/pre-push before doctrine and again after the checks', () => {
     const hook = readFileSync(path.join(repoRoot, '.husky', 'pre-push'), 'utf8');
     const capture = hook.indexOf('PUSH_REFS="$(cat)"');
     const guard = hook.indexOf('session-guard.sh" prepush');
     const before = hook.indexOf('candidate-state.mjs" before');
-    const doctrine = hook.indexOf('bash "$DOCTRINE_SCRIPT"');
-    const gate = hook.indexOf('npm run test:backend:full');
+    const doctrine = hook.indexOf('run-all.sh" --fast');
+    const gate = hook.indexOf('node "$REPO_ROOT/scripts/preflight/changed-checks.mjs"');
     const after = hook.indexOf('candidate-state.mjs" after');
+    expect(before).toBeGreaterThan(-1);
+    expect(doctrine).toBeGreaterThan(-1);
     expect(capture).toBeGreaterThan(-1);
     expect(capture).toBeLessThan(guard);
     expect(guard).toBeLessThan(before);
@@ -327,18 +334,15 @@ describe('candidate-state — the real entry point and the hook wiring', () => {
     expect(hook.match(/\$\(cat\)/g)).toHaveLength(1);
   });
 
-  it('unsets the hook-supplied GIT_* variables immediately before the canonical gate line', () => {
+  // Equoria-zstml: the hook no longer runs a suite after an `unset GIT_*` line.
+  // The GIT_* protection moved into changed-checks.mjs, which strips them from
+  // every test and lint child; prePushChangedChecks.sentinel.test.mjs proves it.
+  it('no hook line runs a full suite (the full gate runs on GitHub)', () => {
     const hook = readFileSync(path.join(repoRoot, '.husky', 'pre-push'), 'utf8');
-    const lines = hook.split(String.fromCharCode(10));
-    const gateLine = lines.indexOf('if ! npm run test:backend:full; then');
-    // The exact line check-backend-test-profiles.mjs and its planted-violation
-    // sentinel parse; it must stay a one-line `if ! ...; then`.
-    expect(gateLine).toBeGreaterThan(-1);
-    const unsetLine = lines.findIndex(line => line.startsWith('unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE'));
-    expect(unsetLine).toBeGreaterThan(-1);
-    expect(unsetLine).toBe(gateLine - 1);
-    for (const name of ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE']) {
-      expect(lines[unsetLine]).toContain(name);
-    }
+    const executable = hook
+      .split(String.fromCharCode(10))
+      .filter(line => !line.trimStart().startsWith('#'))
+      .join(String.fromCharCode(10));
+    expect(executable).not.toMatch(/test:backend:full|run-suite-sharded|test:frontend/);
   });
 });

@@ -2,8 +2,9 @@
 /**
  * Pre-push candidate-state validation (Equoria-hqrqk, handoff Phase E).
  *
- * The pre-push hook runs the doctrine checks and the full backend suite against
- * the WORKING TREE of the checkout it runs in. Git, however, publishes the
+ * The pre-push hook runs the doctrine checks and the changed-file tests
+ * (scripts/preflight/changed-checks.mjs; since 2026-10-28 the full suite runs
+ * only on GitHub, Equoria-zstml) against the WORKING TREE of the checkout it runs in. Git, however, publishes the
  * COMMITS named on the hook's stdin. Three ways those two differ, each of which
  * has cost a gate run or could pass one on the wrong code:
  *

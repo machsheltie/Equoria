@@ -40,11 +40,14 @@
  * item 5). This lock serializes ONE entry point. Inventory taken 2026-09-16:
  *
  *   PARTICIPATES:
- *     - backend `test:backend:full` -> scripts/run-suite-sharded.mjs, which is
- *       what .husky/pre-push:169 invokes. That is the whole list.
+ *     - backend `test:backend:full` -> scripts/run-suite-sharded.mjs. That is
+ *       the whole list. (.husky/pre-push stopped invoking it on 2026-10-28,
+ *       Equoria-zstml: the full suite now runs only on GitHub.)
  *
  *   DOES NOT PARTICIPATE (each can run beside an admitted gate):
- *     - .husky/pre-push:80 doctrine checks, which run BEFORE the gate is taken;
+ *     - .husky/pre-push (fast doctrine checks and the changed-file tests of
+ *       scripts/preflight/changed-checks.mjs, which waits for an idle machine
+ *       by counting test processes instead);
  *     - `test:backend:targeted` — bare jest, and the command CLAUDE.md tells
  *       contributors to use for day-to-day work;
  *     - `test:backend`, `test:backend:ci`, `test:backend:diagnostic`,

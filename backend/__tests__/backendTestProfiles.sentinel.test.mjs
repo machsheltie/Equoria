@@ -43,15 +43,29 @@ describe('backend test profile contract sentinel', () => {
       },
       'root test:backend:full drifted',
     ],
+    // Owner ruling q233 (2026-10-28, Equoria-zstml) replaced the old contract
+    // "pre-push must call test:backend:full": the full check runs only on
+    // GitHub and the laptop runs only the changed tests.
     [
-      'pre-push bypasses the canonical profile',
+      'pre-push drops the changed-file checks',
       inputs => {
-        inputs.prePush = inputs.prePush.replace(
-          'if ! npm run test:backend:full; then',
-          'if ! false && npm run test:backend:full; then',
-        );
+        inputs.prePush = inputs.prePush.replace('node "$REPO_ROOT/scripts/preflight/changed-checks.mjs"', 'true');
       },
-      'pre-push must call test:backend:full',
+      'pre-push must run scripts/preflight/changed-checks.mjs',
+    ],
+    [
+      'pre-push runs the full sharded backend suite again',
+      inputs => {
+        inputs.prePush += '\nnpm run test:backend:full\n';
+      },
+      'pre-push must not run a full test suite',
+    ],
+    [
+      'pre-push runs the whole frontend suite',
+      inputs => {
+        inputs.prePush += '\nnpm run test:frontend || exit 1\n';
+      },
+      'pre-push must not run a full test suite',
     ],
     [
       'CI bypasses the canonical profile',

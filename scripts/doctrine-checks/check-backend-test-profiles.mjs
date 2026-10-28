@@ -68,17 +68,20 @@ export function validateBackendTestProfiles({
     .filter((line) => !line.trimStart().startsWith('#'))
     .map((line) => line.trim());
 
+  // Owner ruling q233 (2026-10-28, Equoria-zstml): the full check runs only on
+  // GitHub; the laptop runs only the changed tests. The hook must run the
+  // changed-file checks and must never start a whole suite.
   if (
-    !executablePrePushLines.some(
-      (line) =>
-        line === 'npm run test:backend:full' ||
-        /^if ! npm run test:backend:full;\s*then$/.test(line)
+    !executablePrePushLines.some((line) =>
+      /node "\$REPO_ROOT\/scripts\/preflight\/changed-checks\.mjs"/.test(line)
     )
   ) {
-    failures.push('pre-push must call test:backend:full');
+    failures.push('pre-push must run scripts/preflight/changed-checks.mjs');
   }
-  if (executablePrePushLines.some((line) => /--shard=/.test(line))) {
-    failures.push('pre-push duplicates shard arguments instead of using the full profile');
+  const fullSuite =
+    /test:backend:full|run-suite-sharded|test:backend(?:\s|;|$)|test:backend:ci|test:frontend|test:coverage|vitest run(?:\s*;|\s*$)|--shard=/;
+  if (executablePrePushLines.some((line) => fullSuite.test(line))) {
+    failures.push('pre-push must not run a full test suite (the full gate runs on GitHub)');
   }
 
   const backendSteps = workflowDocument?.jobs?.['backend-tests']?.steps ?? [];

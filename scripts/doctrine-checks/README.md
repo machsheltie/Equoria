@@ -156,5 +156,7 @@ to fix the underlying problem. It is not a license to weaken the check.
 bash scripts/doctrine-checks/run-all.sh
 ```
 
-The pre-push hook runs this automatically. CI re-runs it on the merge commit
-to catch any push that used `--no-verify`.
+The pre-push hook runs it with `--fast`, which skips only the whole-tree
+eslint/prettier check (the hook lints the changed files instead; each skip is
+printed). The Doctrine Gate workflow runs every check, without `--fast`, on
+every push to master and every PR.
