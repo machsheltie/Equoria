@@ -314,7 +314,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ userId }) => 
               <dl className="grid grid-cols-2 gap-2 mb-4 text-xs">
                 <div>
                   <dt className="text-[10px] text-role-muted uppercase tracking-wider">
-                    Speciality
+                    Specialty
                   </dt>
                   <dd className="text-role-primary">
                     {trainer.skillLevel === 'expert' && trainer.speciality.trim().length > 0

@@ -66,9 +66,9 @@ interface TrainerView {
 }
 
 const skillLevelNote: Record<string, string> = {
-  novice: 'Specialities are not yet known — they could be exceptional.',
-  developing: 'Some specialities are known.',
-  expert: 'Every speciality is known.',
+  novice: 'Specialties are not yet known — they could be exceptional.',
+  developing: 'Some specialties are known.',
+  expert: 'Every specialty is known.',
 };
 
 const TrainerPage: React.FC = () => {
@@ -248,7 +248,7 @@ const TrainerPage: React.FC = () => {
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-[var(--text-muted)]">Speciality</dt>
+                  <dt className="text-[var(--text-muted)]">Specialty</dt>
                   <dd className="text-[var(--text-primary)]" data-testid="trainer-speciality">
                     {specialityKnown ? disciplineLabel(trainer.speciality) : 'Not yet known'}
                   </dd>

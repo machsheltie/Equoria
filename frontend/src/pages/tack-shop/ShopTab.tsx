@@ -36,7 +36,7 @@ export const ShopTab: React.FC = () => {
       { itemId: item.id },
       {
         onSuccess: (result) => {
-          const msg = `Bought ${result.item.name}; it is in your inventory, ready to equip. Remaining balance: ${result.remainingMoney.toLocaleString('en-US')} coins`;
+          const msg = `Bought ${result.item.name}; it is in your inventory, ready to equip.`;
           setPurchaseSuccess(msg);
           toast.success(msg);
         },

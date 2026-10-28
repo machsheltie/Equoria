@@ -142,8 +142,8 @@ const StaffPage: React.FC = () => {
                   {leavingSoon.map((groom) => groom.name).join(', ')}
                 </span>{' '}
                 {leavingSoon.length === 1 ? 'has' : 'have'} not been paid and cannot work this week.{' '}
-                {leavingSoon.length === 1 ? 'This groom leaves' : 'They leave'} your stable if the
-                next payday, Monday morning, is missed too.
+                {leavingSoon.length === 1 ? 'This groom leaves' : 'They leave'} your stable if next
+                week&rsquo;s pay is missed too.
               </p>
             )}
             {ridersLeavingSoon.length > 0 && (
@@ -155,7 +155,7 @@ const StaffPage: React.FC = () => {
                 </span>{' '}
                 {ridersLeavingSoon.length === 1 ? 'has' : 'have'} not been paid and cannot ride this
                 week. {ridersLeavingSoon.length === 1 ? 'This rider leaves' : 'They leave'} your
-                stable if the next payday, Monday morning, is missed too.
+                stable if next week&rsquo;s pay is missed too.
               </p>
             )}
           </div>
@@ -242,7 +242,7 @@ const StaffPage: React.FC = () => {
                       note={
                         unpaid ? (
                           <p className="text-sm text-[var(--status-warning)]">
-                            {groom.name} leaves if the next payday is missed as well.
+                            {groom.name} leaves if next week&rsquo;s pay is missed as well.
                           </p>
                         ) : undefined
                       }
@@ -310,7 +310,7 @@ const StaffPage: React.FC = () => {
                   note={
                     rider.feeUnpaidSince ? (
                       <p className="text-sm text-[var(--status-warning)]">
-                        {rider.firstName} leaves if the next payday is missed as well.
+                        {rider.firstName} leaves if next week&rsquo;s pay is missed as well.
                       </p>
                     ) : undefined
                   }

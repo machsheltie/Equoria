@@ -114,11 +114,13 @@ describe('FarrierPage (Equoria-zz14s)', () => {
     await user.selectOptions(within(box).getByRole('combobox'), 'Starlight');
     await user.click(button);
 
+    // Old contract: the line ended "Remaining balance: 950 coins." Owner ruling 2026-10-26
+    // (no receipts or before/after balances, as on the Veterinarian page): one line, no
+    // balance (Equoria-6xm6b).
     expect(
-      await within(box).findByText(
-        /Starlight has been shod and gained \+1 Speed\. Remaining balance: 950 coins\./
-      )
+      await within(box).findByText(/^Starlight has been shod and gained \+1 Speed\.$/)
     ).toBeInTheDocument();
+    expect(within(box).queryByText(/balance/i)).not.toBeInTheDocument();
     expect(within(box).queryByRole('alert')).not.toBeInTheDocument();
     expect(body).toEqual({ horseId: 1, serviceId: 'basic-shoes' });
   });

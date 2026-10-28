@@ -388,8 +388,8 @@ const StaffPayRow: React.FC<{
         title={name}
         body={
           <p>
-            Could not be paid this week and cannot {work} until payday comes round again. They leave
-            your stable if next Monday&rsquo;s pay is missed too.
+            Was not paid this week and cannot {work}. They leave your stable if next week&rsquo;s
+            pay is missed too.
           </p>
         }
       />

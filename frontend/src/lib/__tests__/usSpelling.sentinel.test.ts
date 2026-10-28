@@ -27,6 +27,8 @@ const british = new RegExp(
     'catalogue',
     '\\bmould',
     '\\banalys(e|ed|es|ing)\\b',
+    // Not inside identifiers such as the data-testid "trainer-speciality".
+    '(?<![\\w-])specialit(y|ies)\\b',
     '(optim|maxim|minim|special|recogn|real|organ|personal|custom|priorit|harmon|apolog|author|categor|memor|visual|util|summar|character|immortal|normal|final|stabil|familiar)is(e|ed|er|es|ing|ation|ations)\\b',
   ].join('|'),
   'i'
@@ -93,6 +95,7 @@ describe('US spelling in player-facing text (Equoria-at90e)', () => {
       'immortalised',
       'Optimises',
       'Minimise',
+      'Speciality',
     ]) {
       expect(british.test(word), word).toBe(true);
     }
@@ -103,6 +106,9 @@ describe('US spelling in player-facing text (Equoria-at90e)', () => {
       'Falabella',
       'aria-labelledby',
       'specialist',
+      'Specialty',
+      'returning-staff__speciality',
+      'trainer-speciality',
     ]) {
       expect(british.test(word), word).toBe(false);
     }

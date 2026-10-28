@@ -73,8 +73,8 @@ const RiderDismissControl: React.FC<RiderDismissControlProps> = ({
           <GameDialogHeader>
             <GameDialogTitle>Dismiss Rider</GameDialogTitle>
             <GameDialogDescription>
-              Dismiss {riderName}? They will be retired and removed from any assigned horses. This
-              cannot be undone.
+              Dismiss {riderName}? They leave your staff and are taken off any horses they ride.
+              They go back to the hiring list, where any stable can hire them.
             </GameDialogDescription>
           </GameDialogHeader>
           <GameDialogFooter>

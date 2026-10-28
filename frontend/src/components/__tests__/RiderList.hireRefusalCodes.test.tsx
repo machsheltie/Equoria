@@ -71,6 +71,9 @@ describe('RiderList — refusal codes (Equoria-dosig)', () => {
 
     const alert = await within(screen.getByTestId('rider-card-mk-1')).findByRole('alert');
     expect(alert).toHaveTextContent(/roster is full/i);
+    // Players dismiss riders; they never retire them (Equoria-6xm6b).
+    expect(alert).toHaveTextContent(/Dismiss a rider/);
+    expect(alert).not.toHaveTextContent(/retire/i);
     expect(alert).not.toHaveTextContent(/balance|funds/i);
     expect(screen.queryByText(/RAW-SERVER-TEXT/)).not.toBeInTheDocument();
   });

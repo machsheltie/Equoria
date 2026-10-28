@@ -59,6 +59,14 @@ describe('GameNotifRow — staff pay notices', () => {
     expect(unpaid).not.toContain('groomFeeUnpaid');
   });
 
+  // Payday is a player action whose due window is still open (owner q262/q265/q268,
+  // Equoria-hc96y): the unpaid notice names no automatic Monday payday (Equoria-6xm6b).
+  it('keeps the unpaid notice neutral about when pay is due', () => {
+    const text = textOf(notice('riderFeeUnpaid', { riderId: 4, riderName: 'Joss Hale' }));
+    expect(text).toContain('next week’s pay is missed too');
+    expect(text).not.toMatch(/Monday|payday/i);
+  });
+
   it('shows a departed groom and the horse left without one', () => {
     const left = textOf(
       notice('groomReleased', { groomName: 'Ben Marsh', horses: [{ id: 3, name: 'Comet' }] })

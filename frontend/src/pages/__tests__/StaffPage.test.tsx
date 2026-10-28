@@ -112,7 +112,11 @@ describe('StaffPage', () => {
     expect(screen.queryByTestId('staff-leaving-warning')).not.toBeInTheDocument();
   });
 
-  it('warns about an unpaid groom: not working, and leaves if the next payday is missed', async () => {
+  // Old contract (2026-10-27, q133): the warnings named an automatic Monday-morning payday.
+  // Owner ruling 2026-10-28 (q262/q265, Equoria-hc96y): payday is a player action whose due
+  // window is still open (q268), so the warnings say only that next week's pay must not be
+  // missed (Equoria-6xm6b).
+  it("warns about an unpaid groom: not working, and leaves if next week's pay is missed", async () => {
     serveStaff({
       grooms: [groom(1, 'Alice Thornton'), groom(2, 'Ben Marsh')],
       breakdown: [breakdownEntry(1, 140, false), breakdownEntry(2, 70, true)],
@@ -122,11 +126,12 @@ describe('StaffPage', () => {
     const warning = await screen.findByTestId('staff-leaving-warning');
     expect(warning).toHaveTextContent('Ben Marsh');
     expect(warning).not.toHaveTextContent('Alice Thornton');
-    expect(warning).toHaveTextContent(/next payday/i);
+    expect(warning).toHaveTextContent(/next week’s pay is missed too/i);
+    expect(warning).not.toHaveTextContent(/Monday|payday/i);
 
     const unpaidRow = screen.getByTestId('staff-groom-2');
     expect(within(unpaidRow).getByText(/Not paid/)).toBeInTheDocument();
-    expect(within(unpaidRow).getByText(/leaves if the next payday is missed/)).toBeInTheDocument();
+    expect(within(unpaidRow).getByText(/leaves if next week’s pay is missed/)).toBeInTheDocument();
     expect(
       within(screen.getByTestId('staff-groom-1')).getByText(/Paid this week/)
     ).toBeInTheDocument();
@@ -152,7 +157,7 @@ describe('StaffPage', () => {
     expect(within(trainerRow).queryByText(/dressage/i)).not.toBeInTheDocument();
   });
 
-  it('warns about an unpaid rider: not riding, and leaves if the next payday is missed', async () => {
+  it("warns about an unpaid rider: not riding, and leaves if next week's pay is missed", async () => {
     serveStaff({
       riders: [
         rider,
@@ -172,12 +177,13 @@ describe('StaffPage', () => {
     expect(warning).toHaveTextContent('Joss Hale');
     expect(warning).not.toHaveTextContent('Mara Quill');
     expect(warning).toHaveTextContent(/cannot ride this week/i);
-    expect(warning).toHaveTextContent(/next payday/i);
+    expect(warning).toHaveTextContent(/next week’s pay is missed too/i);
+    expect(warning).not.toHaveTextContent(/Monday|payday/i);
 
     const unpaidRow = screen.getByTestId('staff-rider-6');
     expect(within(unpaidRow).getByText(/Not paid/)).toBeInTheDocument();
     expect(
-      within(unpaidRow).getByText(/Joss leaves if the next payday is missed/)
+      within(unpaidRow).getByText(/Joss leaves if next week’s pay is missed/)
     ).toBeInTheDocument();
     expect(
       within(screen.getByTestId('staff-rider-5')).getByText(/Paid this week/)

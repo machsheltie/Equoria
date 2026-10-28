@@ -56,7 +56,7 @@ const FarrierPage: React.FC = () => {
         onSuccess: (result) => {
           setOutcome({
             serviceId: service.id,
-            confirmation: `${result.horse.name} has been shod and gained +1 ${titleCase(result.statGained)}. Remaining balance: ${result.remainingMoney.toLocaleString('en-US')} coins.`,
+            confirmation: `${result.horse.name} has been shod and gained +1 ${titleCase(result.statGained)}.`,
           });
         },
         onError: (error) => {

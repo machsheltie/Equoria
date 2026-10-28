@@ -102,6 +102,8 @@ describe('TackShopPage (Equoria-dslww)', () => {
     expect(
       await screen.findByText(/Bought Dressage Saddle; it is in your inventory/)
     ).toBeInTheDocument();
+    // No receipt line with the remaining balance (owner ruling 2026-10-26, Equoria-6xm6b).
+    expect(screen.queryByText(/Remaining balance/i)).not.toBeInTheDocument();
     expect(body).toEqual({ itemId: 'dressage-saddle' });
   });
 });

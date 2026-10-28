@@ -39,6 +39,10 @@ describe('RiderDismissControl — dismiss confirm dialog (Equoria-oey96.27)', ()
     await user.click(screen.getByRole('button', { name: /dismiss rider/i }));
     const dialog = await screen.findByTestId(`dismiss-rider-confirm-${RIDER.id}`);
     expect(dialog).toBeInTheDocument();
+    // Old contract: "They will be retired ... This cannot be undone." Owner ruling 2026-10-28
+    // (Equoria-xlw03): a dismissed rider returns to the hiring list (Equoria-6xm6b).
+    expect(dialog).toHaveTextContent(/go back to the hiring list/);
+    expect(dialog).not.toHaveTextContent(/retired|cannot be undone/i);
 
     // Confirm — destructive action fires the callback exactly once with the id.
     await user.click(within(dialog).getByRole('button', { name: /dismiss rider/i }));

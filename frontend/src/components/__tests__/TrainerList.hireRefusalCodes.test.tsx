@@ -74,6 +74,9 @@ describe('TrainerList — refusal codes (Equoria-dosig)', () => {
 
     const alert = await within(screen.getByTestId('trainer-card-mk-1')).findByRole('alert');
     expect(alert).toHaveTextContent(/trainer roster is full/i);
+    // Players dismiss trainers; the advice no longer says "Retire" (Equoria-6xm6b).
+    expect(alert).toHaveTextContent(/Dismiss a trainer/);
+    expect(alert).not.toHaveTextContent(/retire/i);
     expect(alert).not.toHaveTextContent(/balance|funds/i);
     expect(screen.queryByText(/RAW-SERVER-TEXT/)).not.toBeInTheDocument();
   });

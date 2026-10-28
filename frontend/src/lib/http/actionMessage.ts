@@ -74,9 +74,9 @@ export const hireRefused: ActionCopy = {
 export type HireStaffKind = 'rider' | 'trainer' | 'groom';
 
 const rosterFullAdvice: Record<HireStaffKind, string> = {
-  rider: 'Retire a rider or raise your stable level before hiring another.',
+  rider: 'Dismiss a rider or raise your stable level before hiring another.',
   // The trainer limit follows the player's level (owner ruling 2026-10-28, q245).
-  trainer: 'Retire a trainer or raise your level before hiring another.',
+  trainer: 'Dismiss a trainer or raise your level before hiring another.',
   groom: 'Release a groom before hiring another.',
 };
 
