@@ -21,7 +21,9 @@ import * as eligible from '../../../__tests__/helpers/eligibleCompetitor.mjs'; /
 
 // Deletes a fixture show's entries, hands back its escrow, then deletes it (Equoria-r3mv2).
 async function dropShow(id) {
-  if (!id) { return; }
+  if (!id) {
+    return;
+  }
   await prisma.showEntry.deleteMany({ where: { showId: id } });
   await releaseShowEscrow([id]);
   await prisma.show.delete({ where: { id } });
