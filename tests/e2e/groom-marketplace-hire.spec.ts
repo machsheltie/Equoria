@@ -8,16 +8,17 @@
  *
  * The live route for groom hiring is /grooms → GroomsPage, whose "Hire Grooms"
  * tab renders frontend/src/components/GroomList.tsx and whose "Manage Grooms"
- * tab renders frontend/src/components/MyGroomsDashboard.tsx. (Equoria-149ty:
- * the product decision landed — the paid-refresh confirmation UX was ported
- * INTO the live GroomList, which now carries the `refresh-confirmation-dialog`
- * testid, and the standalone, unrouted frontend/src/pages/MarketplacePage.tsx
- * was DELETED as dead surface. This spec drives the live GroomList surface a
- * beta tester can actually reach.)
+ * tab renders frontend/src/components/MyGroomsDashboard.tsx. (Equoria-149ty
+ * deleted the unrouted frontend/src/pages/MarketplacePage.tsx; this spec drives
+ * the live GroomList surface a beta tester can actually reach. Owner rulings
+ * 2026-10-26 "no receipts" and q230 one-click, Equoria-1qf9n: the paid-refresh
+ * confirmation dialog Equoria-149ty added is removed again.)
  *
  * Sub-flows:
  *
- *  (a) HIRE — GroomList hire-confirmation dialog → POST /api/v1/groom-marketplace/hire.
+ *  (a) HIRE — one click on the card's Hire button → POST /api/v1/groom-marketplace/hire
+ *      (owner ruling q230, 2026-10-28: one-click hire; old contract: a
+ *      hire-confirmation dialog with Cancel and Hire Groom, now removed).
  *      Why E2E: the hire spans the real React Query mutation, the real CSRF
  *      header, the real Express controller, an atomic Prisma debit + ledger
  *      write, and the real money-decrement on the user row. A unit/mock test
@@ -41,13 +42,11 @@
  *      given run is in exactly ONE of two branches — free (canRefreshFree:true,
  *      refreshCost:0) or paid (canRefreshFree:false, refreshCost>0) — so the
  *      spec reads the real GET response and drives the matching real branch.
- *      (Equoria-149ty) The two branches now differ in UX and the test asserts
- *      each honestly:
- *        - FREE branch: clicking Refresh fires the real POST {force:false}
- *          DIRECTLY — no confirmation dialog.
- *        - PAID branch: clicking Refresh opens the real
- *          `refresh-confirmation-dialog`; Cancel fires NO POST; Confirm fires
- *          the real POST {force:true}.
+ *      Both branches are one click with no dialog (Equoria-1qf9n; old
+ *      contract: the paid branch opened a confirmation dialog first):
+ *        - FREE branch: clicking Refresh fires the real POST {force:false}.
+ *        - PAID branch: the button names its fee, and clicking it fires the
+ *          real POST {force:true}.
  *      This is not a skip: both branches are real and which one runs is dictated
  *      by real DB state, not by the test.
  */
@@ -209,25 +208,21 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
     const target = affordable[0];
     const expectedCost = target.cost;
 
-    // ── Open the hire-confirmation dialog for the chosen groom ─────────────
+    // ── One click on the chosen groom's Hire button (q230) ─────────────────
     const card = page.locator(`[data-testid="groom-card-${target.groom.marketplaceId}"]`);
     await expect(card).toBeVisible({ timeout: 10_000 });
 
-    // The card's Hire button has aria-label "Hire <First> <Last>".
-    await card
-      .getByRole('button', { name: `Hire ${target.groom.firstName} ${target.groom.lastName}` })
-      .click();
-
-    const hireModal = page.locator('[data-testid="hire-modal"]');
-    await expect(hireModal).toBeVisible({ timeout: 10_000 });
-
-    // ── Confirm hire → assert the REAL hire POST fires and returns the debit ─
+    // ── Assert the REAL hire POST fires and returns the debit, no dialog ──
     const hireResp: Promise<PWResponse> = page.waitForResponse(
       (r) => r.url().includes(HIRE_POST) && r.request().method() === 'POST',
       { timeout: 20_000 }
     );
 
-    await hireModal.getByRole('button', { name: 'Hire Groom' }).click();
+    // The card's Hire button has aria-label "Hire <First> <Last>".
+    await card
+      .getByRole('button', { name: `Hire ${target.groom.firstName} ${target.groom.lastName}` })
+      .click();
+    await expect(page.getByRole('dialog')).toBeHidden({ timeout: 2_000 });
 
     const resp = await hireResp;
     expect(resp.status(), `POST ${HIRE_POST} must return 201`).toBe(201);
@@ -341,8 +336,7 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
     const market = await fetchMarketplace(page);
 
     // Track every refresh POST and the `force` flag it carried so we can prove
-    // the real mutation fired (or did NOT fire, on Cancel) with the value the
-    // live state dictates.
+    // the real mutation fired with the value the live state dictates.
     const refreshPosts: Array<{ force: unknown }> = [];
     page.on('request', (req) => {
       if (req.url().includes(REFRESH_POST) && req.method() === 'POST') {
@@ -356,12 +350,11 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
       }
     });
 
-    const confirmDialog = page.locator('[data-testid="refresh-confirmation-dialog"]');
+    const anyDialog = page.getByRole('dialog');
 
     // ── FREE branch first (only if the live window is free): fires the real
     //    POST {force:false} DIRECTLY with NO dialog — AND consumes the free
-    //    window so the PAID branch below is deterministically reached. This way
-    //    the NEW paid-confirmation dialog (Equoria-149ty) is exercised EVERY
+    //    window so the PAID branch below is deterministically reached every
     //    run, not only when the live state happens to already be paid.
     if (market.canRefreshFree) {
       const freeResp = page.waitForResponse(
@@ -369,8 +362,8 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
         { timeout: 20_000 }
       );
       await refreshBtn.click();
-      // The confirmation dialog must NOT appear on the free branch.
-      await expect(confirmDialog).toBeHidden({ timeout: 2_000 });
+      // No dialog on the free branch.
+      await expect(anyDialog).toBeHidden({ timeout: 2_000 });
       const resp = await freeResp;
       expect(resp.status(), `free POST ${REFRESH_POST} must return 200`).toBe(200);
       expect(refreshPosts.length, 'exactly one free refresh POST (force:false)').toBe(1);
@@ -381,34 +374,22 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
         .toBe(false);
     }
 
-    // ── PAID branch (now guaranteed): clicking Refresh opens the real
-    //    refresh-confirmation-dialog BEFORE any POST; Cancel fires none;
-    //    Confirm fires the real POST {force:true}.
+    // ── PAID branch (now guaranteed): the button names its fee, and one
+    //    click fires the real POST {force:true} with no dialog (Equoria-1qf9n).
+    const paid = await fetchMarketplace(page);
+    await expect(refreshBtn).toContainText(`Refresh (${paid.refreshCost.toLocaleString('en-US')}`, {
+      timeout: 10_000,
+    });
     const before = refreshPosts.length;
-    await refreshBtn.click();
-    await expect(confirmDialog).toBeVisible({ timeout: 10_000 });
-    expect(
-      refreshPosts.length,
-      'opening the paid-refresh dialog must NOT fire a refresh POST'
-    ).toBe(before);
-
-    // Cancel fires NO refresh mutation.
-    await confirmDialog.getByRole('button', { name: 'Cancel' }).click();
-    await expect(confirmDialog).toBeHidden({ timeout: 5_000 });
-    await page.waitForTimeout(750);
-    expect(refreshPosts.length, 'Cancel must not fire a refresh mutation').toBe(before);
-
-    // Re-open and Confirm → the real POST {force:true} fires.
-    await refreshBtn.click();
-    await expect(confirmDialog).toBeVisible({ timeout: 10_000 });
     const paidResp = page.waitForResponse(
       (r) => r.url().includes(REFRESH_POST) && r.request().method() === 'POST',
       { timeout: 20_000 }
     );
-    await confirmDialog.getByRole('button', { name: 'Confirm Refresh' }).click();
+    await refreshBtn.click();
+    await expect(anyDialog).toBeHidden({ timeout: 2_000 });
     const presp = await paidResp;
     expect(presp.status(), `paid POST ${REFRESH_POST} must return 200`).toBe(200);
-    expect(refreshPosts.length, 'exactly one paid confirm POST fired').toBe(before + 1);
+    expect(refreshPosts.length, 'exactly one paid refresh POST fired').toBe(before + 1);
     expect(refreshPosts[before].force, 'paid refresh must send force:true').toBe(true);
     const pbody = await presp.json();
     const pdata = pbody?.data ?? pbody;
@@ -416,58 +397,7 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
     expect(pdata?.refreshCost, 'post-refresh refreshCost resets to 0').toBe(0);
   });
 
-  test('(b-cancel) dismissing the hire dialog fires NO hire mutation', async ({ page }) => {
-    // The cancel-fires-no-mutation guarantee the issue asks for on the refresh
-    // confirmation does not exist on the live GroomList refresh (it has no
-    // confirm dialog — see header note). The equivalent real "cancel ⇒ no
-    // mutation" guarantee that IS present on the live surface is the hire
-    // dialog's Cancel button. We assert it here so the no-op-on-cancel contract
-    // is covered by a real network-listener assertion rather than left untested.
-    const marketplaceResp = page.waitForResponse(
-      (r) => r.url().includes(MARKETPLACE_GET) && r.request().method() === 'GET',
-      { timeout: 20_000 }
-    );
-
-    await page.goto('/grooms', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByText('Groom Quarters').first()).toBeVisible({ timeout: 20_000 });
-
-    const hireTab = page.locator('[data-testid="hire-tab"]');
-    await expect(hireTab).toBeVisible({ timeout: 15_000 });
-    await hireTab.click();
-    await marketplaceResp.catch(() => {});
-
-    const marketplace = await fetchMarketplace(page);
-    expect(marketplace.grooms.length, 'marketplace must offer a groom').toBeGreaterThan(0);
-
-    // Record any hire POST so we can prove Cancel fires none.
-    let hirePosts = 0;
-    page.on('request', (req) => {
-      if (req.url().includes(HIRE_POST) && req.method() === 'POST') {
-        hirePosts += 1;
-      }
-    });
-
-    const first = marketplace.grooms[0];
-    const card = page.locator(`[data-testid="groom-card-${first.marketplaceId}"]`);
-    await expect(card).toBeVisible({ timeout: 10_000 });
-
-    // The Hire button is disabled when the user cannot afford the groom; only
-    // open the dialog if it is actionable. If none is affordable we still prove
-    // "no hire fired" trivially, which is the contract under test.
-    const hireButton = card.getByRole('button', {
-      name: `Hire ${first.firstName} ${first.lastName}`,
-    });
-    if (await hireButton.isEnabled()) {
-      await hireButton.click();
-      const hireModal = page.locator('[data-testid="hire-modal"]');
-      await expect(hireModal).toBeVisible({ timeout: 10_000 });
-
-      await hireModal.getByRole('button', { name: 'Cancel' }).click();
-      await expect(hireModal).toBeHidden({ timeout: 5_000 });
-    }
-
-    // Give any (erroneously-fired) mutation a moment to surface, then assert none did.
-    await page.waitForTimeout(750);
-    expect(hirePosts, 'Cancel must not fire a hire mutation').toBe(0);
-  });
+  // Old case (b-cancel): dismissing the hire dialog fired no hire. Owner ruling
+  // q230 (2026-10-28) made hiring one click, so there is no dialog to cancel;
+  // the refresh has none either (Equoria-1qf9n).
 });

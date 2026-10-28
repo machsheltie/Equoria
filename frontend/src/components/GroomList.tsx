@@ -4,7 +4,7 @@
  * Groom marketplace interface providing:
  * - Marketplace groom listing with filtering and sorting capabilities
  * - One-click groom hiring, fee on the button (owner ruling 2026-10-28, q230)
- * - Marketplace refresh mechanics (free daily or premium instant)
+ * - Marketplace refresh: free daily, or paid in one click with the fee on the button
  * - Responsive design with mobile and desktop layouts
  * - Real-time data updates using React Query
  * - Accessibility support with ARIA labels and keyboard navigation
@@ -12,8 +12,8 @@
  *
  * Design-system migration (Equoria-o5hub, world-services family): Surface
  * for panels/cards, form Select for filters (replaces celestial-input),
- * Currency for all coin amounts (no USD formatting), GameDialog for the paid
- * refresh, canonical SectionLoading / ErrorState, semantic role tokens.
+ * Currency for all coin amounts (no USD formatting), canonical
+ * SectionLoading / ErrorState, semantic role tokens.
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -30,14 +30,6 @@ import Currency from '@/components/ui/Currency';
 import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
 import { actionMessageFor, hireRefusalCodes, hireRefused } from '@/lib/http/actionMessage';
 import { userMessageFor } from '@/lib/http/userMessage';
-import {
-  GameDialog,
-  GameDialogContent,
-  GameDialogHeader,
-  GameDialogTitle,
-  GameDialogBody,
-  GameDialogFooter,
-} from '@/components/ui/game/GameDialog';
 import { groomSpecialtyTitle } from '@/lib/staffLabels';
 import StaffLevelStars from '@/components/common/StaffLevelStars';
 import { staffLevelLabel, staffLevelOrder } from '@/lib/staffLevels';
@@ -60,7 +52,6 @@ const GroomList: React.FC<GroomListProps> = ({
   const { user } = useAuth();
   // The groom the last Hire click was for: its card shows "Processing..." and any refusal.
   const [selectedGroom, setSelectedGroom] = useState<MarketplaceGroom | null>(null);
-  const [showRefreshConfirm, setShowRefreshConfirm] = useState(false);
   const [filterStarLevel, setFilterStarLevel] = useState<string>('all');
   const [filterSpecialty, setFilterSpecialty] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
@@ -151,26 +142,21 @@ const GroomList: React.FC<GroomListProps> = ({
     }
   };
 
-  // Handle refresh marketplace.
-  // A FREE refresh (canRefreshFree === true) fires immediately. A PAID refresh
-  // (canRefreshFree === false / refreshCost > 0) spends coins, so it must be
-  // confirmed via the refresh-confirmation dialog BEFORE the mutation fires —
-  // mirrors the paid-refresh guard on the unrouted MarketplacePage (Equoria-149ty).
+  // Refresh the marketplace in one click, the fee on the button (owner rulings
+  // 2026-10-26 "no receipts", q230 one-click; Equoria-1qf9n). A free refresh
+  // sends force:false; a paid one sends force:true. Old contract: a paid
+  // refresh opened a confirmation dialog first.
+  const isFreeRefresh = Boolean(marketplaceData?.canRefreshFree);
   const handleRefresh = () => {
-    const needsPayment = !(marketplaceData && marketplaceData.canRefreshFree);
-    if (needsPayment) {
-      setShowRefreshConfirm(true);
-      return;
-    }
-    // Free refresh: no confirmation, force = false.
-    refreshMutation.mutate(false);
+    refreshMutation.mutate(!isFreeRefresh);
   };
-
-  // Confirm a PAID refresh — fires the real POST /groom-marketplace/refresh {force:true}.
-  const handleConfirmPaidRefresh = () => {
-    setShowRefreshConfirm(false);
-    refreshMutation.mutate(true);
-  };
+  const refreshLabel = isFreeRefresh ? (
+    <span>Free Refresh Available</span>
+  ) : (
+    <span className="inline-flex items-center gap-1">
+      Refresh (<Currency amount={marketplaceData?.refreshCost ?? 0} />)
+    </span>
+  );
 
   if (marketplaceLoading && !propMarketplaceData) {
     return (
@@ -216,16 +202,12 @@ const GroomList: React.FC<GroomListProps> = ({
           onClick={handleRefresh}
           disabled={refreshMutation.isPending}
           className="mt-4 lg:mt-0"
-          aria-label="Refresh marketplace"
         >
-          <RefreshCw className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
-          {marketplaceData?.canRefreshFree ? (
-            <span>Free Refresh Available</span>
-          ) : (
-            <span className="inline-flex items-center gap-1">
-              Refresh (<Currency amount={marketplaceData?.refreshCost || 0} />)
-            </span>
-          )}
+          <RefreshCw
+            className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`}
+            aria-hidden="true"
+          />
+          {refreshLabel}
         </Button>
       </div>
 
@@ -337,7 +319,9 @@ const GroomList: React.FC<GroomListProps> = ({
             <p className="text-[var(--text-secondary)] mb-6">
               Try refreshing the marketplace to see new grooms
             </p>
-            <Button onClick={handleRefresh}>Refresh Marketplace</Button>
+            <Button onClick={handleRefresh} disabled={refreshMutation.isPending}>
+              {refreshLabel}
+            </Button>
           </Surface>
         ) : (
           <div
@@ -451,68 +435,6 @@ const GroomList: React.FC<GroomListProps> = ({
           </div>
         </div>
       )}
-
-      {/* Paid Refresh Confirmation — GameDialog (mirrors the hire-modal pattern
-          and the unrouted MarketplacePage's refresh-confirmation-dialog,
-          Equoria-149ty). Only reachable on the PAID branch (canRefreshFree ===
-          false); a FREE refresh skips this dialog entirely. Cancel => no
-          mutation; Confirm => real POST /groom-marketplace/refresh {force:true}. */}
-      <GameDialog
-        open={showRefreshConfirm}
-        onOpenChange={(open) => {
-          if (!open) setShowRefreshConfirm(false);
-        }}
-      >
-        <GameDialogContent
-          size="sm"
-          data-testid="refresh-confirmation-dialog"
-          aria-describedby="refresh-confirmation-description"
-        >
-          <GameDialogHeader>
-            <GameDialogTitle>Refresh Marketplace</GameDialogTitle>
-          </GameDialogHeader>
-          <GameDialogBody>
-            <p
-              id="refresh-confirmation-description"
-              className="text-[var(--text-secondary)] mb-6 leading-relaxed"
-            >
-              Refreshing replaces the current selection of grooms with new ones. This is a paid
-              refresh — the cost below will be deducted from your balance.
-            </p>
-
-            <Surface variant="subtle" className="p-4 flex items-center justify-between">
-              <span className="text-sm text-[var(--text-primary)] inline-flex items-center gap-2">
-                <Coins className="w-4 h-4 text-[var(--gold-primary)]" aria-hidden="true" />
-                Refresh Cost
-              </span>
-              <span
-                className="text-lg font-bold text-[var(--gold-primary)]"
-                data-testid="refresh-cost"
-              >
-                <Currency amount={marketplaceData?.refreshCost || 0} showIcon={false} />
-              </span>
-            </Surface>
-          </GameDialogBody>
-          <GameDialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setShowRefreshConfirm(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmPaidRefresh}
-              disabled={refreshMutation.isPending}
-              className="flex-1"
-            >
-              <RefreshCw className="w-4 h-4 inline mr-2" aria-hidden="true" />
-              {refreshMutation.isPending ? 'Refreshing...' : 'Confirm Refresh'}
-            </Button>
-          </GameDialogFooter>
-        </GameDialogContent>
-      </GameDialog>
     </main>
   );
 };

@@ -220,9 +220,9 @@ for (const viewport of viewports) {
 //        competitions" (CompetitionBrowserPage.tsx:222-240). (Grooms has no
 //        error state — its hooks default to [] and fall through to empty — so
 //        competitions is the correct error candidate.)
-//   4. DIALOG-OPEN      /grooms (Hire)  — mock GET /api/v1/groom-marketplace,
-//        click [data-testid="hire-tab"] then a card's [aria-label="Hire …"];
-//        [data-testid="hire-modal"] opens (GroomList.tsx:388-405, 432-439).
+//   4. (removed) DIALOG-OPEN /grooms — its subject, the groom hire
+//        confirmation dialog, no longer exists: hiring is one click (owner
+//        ruling q230, 2026-10-28).
 //   5. (removed) DESTRUCTIVE /settings — its subject, the delete-account
 //        dialog, no longer exists: players cannot delete their accounts
 //        (owner ruling, Equoria-gfany).
@@ -243,36 +243,6 @@ for (const viewport of viewports) {
 //    · /api/v1/groom-marketplace returns { success, message, data: { grooms,
 //      lastRefresh, nextFreeRefresh, refreshCost, canRefreshFree, refreshCount }
 //      } → client hands back the MarketplaceData object.
-
-/** A groom-marketplace envelope with one affordable groom (sessionRate 1 →
- *  hiring cost 7, so any funded account can click Hire). Shape = the real
- *  controller (groomMarketplaceController.mjs:83-94) + MarketplaceGroom
- *  (types.ts:529-540). */
-const SLICE2_MARKETPLACE_BODY = {
-  success: true,
-  message: 'Marketplace retrieved successfully',
-  data: {
-    grooms: [
-      {
-        marketplaceId: 'slice2-mkt-1',
-        firstName: 'Baseline',
-        lastName: 'Groom',
-        specialty: 'foalCare',
-        skillLevel: 'expert',
-        personality: 'gentle',
-        experience: 5,
-        sessionRate: 1,
-        bio: 'Representative marketplace groom for baseline capture.',
-        availability: true,
-      },
-    ],
-    lastRefresh: '2026-01-01T00:00:00.000Z',
-    nextFreeRefresh: '2026-01-02T00:00:00.000Z',
-    refreshCost: 0,
-    canRefreshFree: true,
-    refreshCount: 1,
-  },
-} as const;
 
 /** A competition list envelope with N shows, matching buildPaginatedResponse
  *  (paginationHelper.mjs:147-161): { success, data: [...], pagination, meta }. */
@@ -402,38 +372,8 @@ for (const viewport of viewports) {
     });
 
     // 4. DIALOG-OPEN — /grooms Hire tab hire-confirm modal.
-    test('slice 2 — dialog-open (grooms hire-confirm)', async ({ page }) => {
-      // Mock the marketplace so exactly one affordable groom renders (the real
-      // marketplace is randomized + affordability-gated; mocking makes the
-      // Hire button deterministically clickable).
-      await page.route('**/api/v1/groom-marketplace', (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(SLICE2_MARKETPLACE_BODY),
-        })
-      );
-
-      await page.goto('/grooms');
-      await settle(page);
-      assertNotLoginRedirect(page, 'grooms-dialog');
-      await assertNotStuckLoading(page, 'grooms-dialog');
-
-      // Switch to the Hire tab (GroomsPage.tsx:60 — data-testid="hire-tab").
-      await page.locator('[data-testid="hire-tab"]').click();
-      // The mocked groom's Hire button (GroomList.tsx:393 —
-      // aria-label="Hire {firstName} {lastName}").
-      const hireBtn = page.locator('[aria-label="Hire Baseline Groom"]');
-      await hireBtn.waitFor({ state: 'visible', timeout: 8000 });
-      await hireBtn.click();
-      // Confirm dialog (GroomList.tsx:439 — data-testid="hire-modal").
-      await page.locator('[data-testid="hire-modal"]').waitFor({ state: 'visible', timeout: 8000 });
-      await page.waitForTimeout(250); // dialog enter transition settle
-      await page.screenshot({
-        path: path.join(OUT_DIR, `world-services--grooms--dialog-open--${viewport.name}.png`),
-        fullPage: true,
-      });
-    });
+    // 4. DIALOG-OPEN — removed with the groom hire dialog it captured (one-click
+    //    hire, owner ruling q230).
 
     // 5. DESTRUCTIVE-CONFIRM — removed with the delete-account dialog it
     //    captured (Equoria-gfany).
