@@ -89,6 +89,32 @@ export function isRosterTrait(trait) {
 }
 
 /**
+ * A trait's authored name (Equoria-no441, owner rulings 2026-10-28 q164/q165:
+ * players read names, not stored ids). A stored id off the roster has no
+ * authored name and reads as "Unlisted Trait", never the id.
+ * @param {unknown} trait
+ * @returns {string}
+ */
+export function playerTraitLabel(trait) {
+  return isRosterTrait(trait) ? TRAIT_DEFINITIONS[trait].label : 'Unlisted Trait';
+}
+
+/**
+ * `{ storedId: authored name }` for every id in `traits` (non-strings skipped).
+ * @param {unknown[]} traits
+ * @returns {Record<string, string>}
+ */
+export function playerTraitLabels(traits) {
+  const labels = {};
+  for (const trait of Array.isArray(traits) ? traits : []) {
+    if (typeof trait === 'string') {
+      labels[trait] = playerTraitLabel(trait);
+    }
+  }
+  return labels;
+}
+
+/**
  * A trait definition as a player may see it: the authored label, type,
  * description and category. Never the rarity (q112). Null off the roster.
  * @param {string} trait

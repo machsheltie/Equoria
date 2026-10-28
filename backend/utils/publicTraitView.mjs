@@ -12,7 +12,8 @@
  *     three keys, so a key added to the column later is not sent by accident.
  *   - withPublicTraitModifiers: the same view applied to every
  *     `epigeneticModifiers` value anywhere in a response body (the response
- *     guard middleware runs it on every JSON response).
+ *     guard middleware runs it on every JSON response), with a sibling
+ *     `traitLabels` ({ id: authored name } for each shown trait, Equoria-no441).
  *   - withoutHiddenTraitHistory: drops history rows (TraitHistoryLog) that
  *     name a trait still hidden on the horse. Checked at READ time against the
  *     horse's current hidden list, so rows written before this fix are covered
@@ -21,6 +22,7 @@
  * Pure: no database access, inputs are never mutated.
  */
 import { asFlagArray, asFlagObject } from './jsonbArrayGuard.mjs';
+import { playerTraitLabels } from './epigeneticTraits.mjs';
 
 /**
  * The trait keys currently hidden on a horse, as a Set.
@@ -175,6 +177,10 @@ export function withPublicTraitModifiers(body) {
     memo.set(value, out);
     for (const key of Object.keys(value)) {
       out[key] = holdsModifiers(value, key) ? publicTraitModifiers(value[key]) : build(value[key]);
+    }
+    if (!Array.isArray(value) && holdsModifiers(value, 'epigeneticModifiers')) {
+      // Equoria-no441: each shown trait id travels with its authored name.
+      out.traitLabels = playerTraitLabels(visibleTraitKeys(value.epigeneticModifiers));
     }
     return out;
   };

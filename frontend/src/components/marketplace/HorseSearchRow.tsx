@@ -37,6 +37,8 @@ interface Props {
 export const HorseSearchRow: React.FC<Props> = ({ horse, onBuy }) => {
   const { positive, negative } = horse.revealedTraits;
   const traits = [...positive, ...negative];
+  // The server names each trait (Equoria-no441); an older reply falls back to words.
+  const traitName = (key: string) => horse.traitLabels?.[key] ?? humanizeTraitKey(key);
   const facts = [horse.breed, `${horse.age ?? '?'} yr`, horse.sex, horse.color]
     .filter(Boolean)
     .join(' · ');
@@ -67,13 +69,13 @@ export const HorseSearchRow: React.FC<Props> = ({ horse, onBuy }) => {
             {positive.map((t) => (
               <span key={`p-${t}`} className="mr-3">
                 <span aria-hidden="true">✦ </span>
-                {humanizeTraitKey(t)}
+                {traitName(t)}
               </span>
             ))}
             {negative.map((t) => (
               <span key={`n-${t}`} className="mr-3 text-[var(--text-muted)]">
                 <span aria-hidden="true">◇ </span>
-                {humanizeTraitKey(t)}
+                {traitName(t)}
               </span>
             ))}
           </p>

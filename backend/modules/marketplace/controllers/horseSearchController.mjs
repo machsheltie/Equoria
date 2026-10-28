@@ -16,6 +16,7 @@ import {
 import { studStatuses } from '../../../constants/schema.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
+import { playerTraitLabels } from '../../../utils/epigeneticTraits.mjs';
 import { withoutUnrevealedTraits } from '../../breeding/index.mjs';
 import { coatColorNames, minBreedingAgeYears, maxBreedingAgeYears } from '../../horses/index.mjs';
 import { parseOr400 } from '../services/listingQueryParams.mjs';
@@ -58,6 +59,8 @@ function toSearchRow(view) {
     },
     // Revealed traits are public; the projection has already removed every unrevealed one.
     revealedTraits: { positive: traits.positive ?? [], negative: traits.negative ?? [] },
+    // Equoria-no441: each revealed trait id with its authored name.
+    traitLabels: playerTraitLabels([...(traits.positive ?? []), ...(traits.negative ?? [])]),
     displayedHealth: getDisplayedHealth(view),
     imageUrl: view.imageUrl,
     sale: view.forSale === true ? { price: view.salePrice ?? 0 } : null,

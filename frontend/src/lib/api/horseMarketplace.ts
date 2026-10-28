@@ -54,6 +54,8 @@ export interface MarketplaceSearchHorse {
   stats: MarketplaceListing['stats'];
   /** Revealed traits only; the server never sends a hidden one. */
   revealedTraits: { positive: string[]; negative: string[] };
+  /** Equoria-no441: each revealed trait id with its authored name. */
+  traitLabels?: Record<string, string>;
   imageUrl: string | null;
   sale: { price: number } | null;
   stud: { mode: 'public' | 'private'; fee: number } | null;
