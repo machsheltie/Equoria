@@ -6,25 +6,59 @@
  *     roster, every trait hidden. The player learns the line only by breeding
  *     descendants and developing them before age 3; nothing reveals a store
  *     horse's own traits.
- *   - 2026-10-28 (q174): a random number of traits, up to 5. The player may
- *     know HOW MANY hidden traits a horse carries, never which ones.
+ *   - 2026-10-28 (q174): the player may know HOW MANY hidden traits a horse
+ *     carries, never which ones.
  *   - 2026-10-27 (q117): only the twenty roster traits exist.
+ *   - 2026-10-28 (q241, q246): each roster trait rolls its own chance by its
+ *     rarity tier (config/storeHorseTraitSettings.mjs), at most 5 traits, and
+ *     every store horse carries at least 1: if no trait came up, roll again
+ *     until one does.
  *
- * The traits are drawn without repeats from the roster, skipping any trait
- * that conflicts with one already drawn (confident/fearful,
- * resilient/fragile), so a carried set is never self-contradictory. Every
- * roster trait has the same chance of being drawn; no per-tier store odds have
- * been ruled. The count is a whole number from storeHorseTraitCount.min to
- * storeHorseTraitCount.max, each equally likely.
+ * Each roll visits the roster in a freshly shuffled order, so when the cap of
+ * 5 or a conflict (confident/fearful, resilient/fragile) turns a trait away,
+ * no trait is favoured by its place in the roster. A trait that conflicts with
+ * one already carried is skipped, so a carried set is never self-contradictory.
  *
  * Pure: the caller passes the random source (`rng`, returns [0, 1)) so tests
  * can seed it. Nothing here touches the database.
  */
 
 import { checkTraitConflict, traitRosterIds } from '../../../utils/epigeneticTraits.mjs';
+import { storeHorseTraitSettings } from '../config/storeHorseTraitSettings.mjs';
 
-/** How many hidden traits a store horse carries (q174: up to 5). */
-export const storeHorseTraitCount = Object.freeze({ min: 1, max: 5 });
+/**
+ * A pass that turns up no trait happens about 1% of the time with a fair
+ * random source, so this many in a row means the source is broken. Fail loud
+ * rather than hang the purchase.
+ */
+const maxRolls = 1000;
+
+function shuffled(items, rng) {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** One pass over the roster: each trait rolls its tier's chance. */
+function rollOnce(rng) {
+  const { tierChance, traitRarity, maxTraits } = storeHorseTraitSettings;
+  const carried = [];
+  for (const trait of shuffled(traitRosterIds, rng)) {
+    if (carried.length >= maxTraits) {
+      break;
+    }
+    if (rng() >= tierChance[traitRarity[trait]]) {
+      continue;
+    }
+    if (!carried.some(held => checkTraitConflict(held, trait))) {
+      carried.push(trait);
+    }
+  }
+  return carried;
+}
 
 /**
  * Draw a store horse's carried traits.
@@ -34,17 +68,11 @@ export const storeHorseTraitCount = Object.freeze({ min: 1, max: 5 });
  *   horse's epigeneticModifiers: every drawn trait hidden, none visible
  */
 export function generateStoreHorseTraitRoster(rng = Math.random) {
-  const { min, max } = storeHorseTraitCount;
-  const count = min + Math.floor(rng() * (max - min + 1));
-
-  const pool = [...traitRosterIds];
-  const hidden = [];
-  while (hidden.length < count && pool.length > 0) {
-    const [trait] = pool.splice(Math.floor(rng() * pool.length), 1);
-    if (!hidden.some(drawn => checkTraitConflict(drawn, trait))) {
-      hidden.push(trait);
+  for (let roll = 0; roll < maxRolls; roll++) {
+    const hidden = rollOnce(rng);
+    if (hidden.length >= storeHorseTraitSettings.minTraits) {
+      return { positive: [], negative: [], hidden };
     }
   }
-
-  return { positive: [], negative: [], hidden };
+  throw new Error(`generateStoreHorseTraitRoster: no trait came up in ${maxRolls} rolls`);
 }

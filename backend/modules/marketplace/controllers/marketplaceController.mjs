@@ -453,7 +453,7 @@ export async function buyStoreHorse(req, res) {
     // Equoria-f5372: assign a permanent temperament from the breed's weights.
     const temperament = generateTemperamentWithDefault(breed.name);
 
-    const epigeneticModifiers = generateStoreHorseTraitRoster(); // hidden, 1-5 (i366a, q174)
+    const epigeneticModifiers = generateStoreHorseTraitRoster(); // hidden, 1-5 by tier (i366a, q174, q246)
     // ── Atomic money + horse transaction (Equoria-gumnp) ──────────────────────
     // The debit, its paired SYSTEM_ACCOUNT_BURN credit, the purchase ledger row,
     // the horse INSERT, and the unvetted-flag update all commit or roll back
