@@ -7,12 +7,8 @@
  * to 24:00 EDT (19:00–24:00 EST) `Date.now() - dateOfBirth` already holds one
  * more whole day than the Eastern calendar does.
  *
- *   - flagEvaluationEngine.getEligibleHorses pre-filters on
- *     `evaluationDate - 21 days`. That looked like it would drop a
- *     20-day-old (2 game-years, eligible) horse in the window, but Prisma
- *     binds a filter on a `@db.Date` column as the UTC DATE of the instant,
- *     which in the window is already the next Eastern date, so the bound lands
- *     on the right day. This case guards that behaviour; it is not a fix.
+ *   - (flagEvaluationEngine.getEligibleHorses had a guard case here; the
+ *     engine was deleted with no caller left, Equoria-1vep2.)
  *   - horseAgingSystem.processFoalMilestoneEvaluations aged a foal as
  *     floor((Date.now() - dob) / day), one day too old in that window, so
  *     milestone windows opened a day early and closed a day early.
@@ -32,16 +28,13 @@ import { describe, it, expect, jest, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 
 import prisma from '../../packages/database/prismaClient.mjs';
-import { getEligibleHorses } from '../utils/flagEvaluationEngine.mjs';
 import { processFoalMilestoneEvaluations, updateHorseAge } from '../utils/horseAgingSystem.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
-import { getHorseAgeDays } from '../utils/horseAge.mjs';
 import { cleanupTestHorses } from './helpers/createTestHorse.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 const PREFIX = `TestFixture-kha18-${randomBytes(4).toString('hex')}`;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 const EVENINGS = [
   ['summer, 20:30 EDT', new Date('2026-10-17T00:30:00.000Z')],
@@ -119,19 +112,6 @@ afterAll(async () => {
 }, 120000);
 
 describe.each(EVENINGS)('Eastern day counts for foals (%s) — Equoria-kha18', (_label, now) => {
-  it('flag evaluation keeps a 20-game-day-old horse (2 game-years) and drops a 21-day-old (3 game-years)', async () => {
-    const twenty = await makeHorse(gameCalendarDate(now, -20));
-    const twentyOne = await makeHorse(gameCalendarDate(now, -21));
-    // Proof the instant is in the window: the millisecond age is a day more.
-    expect(Math.floor((now.getTime() - twenty.dateOfBirth.getTime()) / DAY_MS)).toBe(21);
-    expect(getHorseAgeDays(twenty.dateOfBirth, now)).toBe(20);
-
-    const eligible = await getEligibleHorses(now);
-
-    expect(eligible).toContain(twenty.id);
-    expect(eligible).not.toContain(twentyOne.id);
-  });
-
   it('the milestone pass reads a foal born today (Eastern) as day 0: imprinting only', async () => {
     const foal = await makeHorse(gameCalendarDate(now));
 

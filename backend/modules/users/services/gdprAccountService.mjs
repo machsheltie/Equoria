@@ -25,7 +25,6 @@
  *     the privacy policy.
  */
 
-import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
@@ -68,29 +67,6 @@ export const ERASURE_TX_OPTIONS = Object.freeze({
   timeout: 120_000,
   maxWait: 10_000,
 });
-
-/**
- * Verify the supplied password matches the authenticated user's stored
- * hash. Used to gate the destructive deletion endpoint.
- *
- * @param {string} userId
- * @param {string} password
- * @returns {Promise<{ ok: boolean, reason?: string }>}
- */
-export async function verifyAccountPassword(userId, password) {
-  if (!password || typeof password !== 'string') {
-    return { ok: false, reason: 'missing_password' };
-  }
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, password: true },
-  });
-  if (!user) {
-    return { ok: false, reason: 'not_found' };
-  }
-  const valid = await bcrypt.compare(password, user.password);
-  return valid ? { ok: true } : { ok: false, reason: 'bad_password' };
-}
 
 /**
  * Permanently erase a user's account and all data scoped to that user.

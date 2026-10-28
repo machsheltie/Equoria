@@ -288,8 +288,8 @@ router.get(
  * each, which also unlocked the `any-with-3-rare-bonuses` rare-trait
  * booster perk (groomRareTraitPerks.mjs:173-181) for free.
  *
- * No caller to preserve: the frontend only reads `bonusTraitMap`
- * (GroomBonusTraitPanel), and no server code calls `assignBonusTraits`
+ * No caller to preserve: the frontend only read `bonusTraitMap`
+ * (GroomBonusTraitPanel, since deleted unused, Equoria-1vep2), and no server code calls `assignBonusTraits`
  * except this route's controller. The real earned-bonus path
  * (`checkBonusEligibility` -> `traitAssignmentLogic.mjs`) applies
  * probability bonuses at trait-roll time and never writes `bonusTraitMap`;

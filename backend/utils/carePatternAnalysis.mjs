@@ -54,13 +54,12 @@ export async function analyzeCarePatterns(horseId, evaluationDate = new Date()) 
 
 /**
  * The groom-interaction window the analysis reads: the last 7 days, oldest
- * first. Shared by the single read above and the weekly batch read
- * (flagEvaluationEngine.batchEvaluateFlags, Equoria-cmw85.38) so both see the
- * same rows.
+ * first. (The weekly batch read that shared it, flagEvaluationEngine, was
+ * deleted with no caller left, Equoria-1vep2.)
  * @param {Date} evaluationDate
  * @returns {Object} Prisma relation arguments for `groomInteractions`
  */
-export function careWindowInteractions(evaluationDate) {
+function careWindowInteractions(evaluationDate) {
   return {
     where: {
       createdAt: {
@@ -73,13 +72,13 @@ export function careWindowInteractions(evaluationDate) {
 
 /**
  * Analyze care patterns for a horse already read with its care-window
- * interactions (Equoria-cmw85.38: the weekly batch reads many horses at once).
+ * interactions.
  * Pure: no database access.
  * @param {Object} horse - { id, dateOfBirth, bondScore, groomInteractions }
  * @param {Date} evaluationDate
  * @returns {Object} Care pattern analysis results
  */
-export function analyzeLoadedCarePatterns(horse, evaluationDate = new Date()) {
+function analyzeLoadedCarePatterns(horse, evaluationDate = new Date()) {
   const horseId = horse.id;
 
   // Equoria-z183: Age in canonical game-years/game-days (1 game-week = 1
@@ -340,7 +339,6 @@ function calculateAverageBondChange(interactions) {
 
 export default {
   analyzeCarePatterns,
-  analyzeLoadedCarePatterns,
   analyzeConsistentCare,
   analyzeNoveltyExposure,
   analyzeBondingPatterns,

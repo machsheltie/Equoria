@@ -14,6 +14,12 @@
  * Decision (yzqhj.3): keep utils/ as canonical (it serves the 6 mounted
  * /flags endpoints), DELETE the three dead services/ files + their tests.
  *
+ * Equoria-1vep2 (2026-10-28): the utils/ engine lost its last caller when the
+ * weekly flag job (Equoria-koxep) and POST /flags/batch-evaluate (Equoria-a7f1p,
+ * q203) were retired — traits change only through the grooming-day reveal
+ * ladder. utils/flagEvaluationEngine.mjs and its trigger rules
+ * (utils/flagTriggerRules.mjs) were deleted and joined the dead list below.
+ *
  * This sentinel asserts the dead generation stays deleted (it would FAIL if
  * any of the three dead files were re-added) and the live generation's three
  * modules still exist + import cleanly. Sentinel-positive per
@@ -112,13 +118,11 @@ describe('Epigenetic flag engine — single source of truth (Equoria-yzqhj.3)', 
     'services/carePatternAnalyzer.mjs',
     'services/flagAssignmentEngine.mjs',
     'services/weeklyFlagEvaluationService.mjs',
+    'utils/flagEvaluationEngine.mjs',
+    'utils/flagTriggerRules.mjs',
   ];
 
-  const liveFiles = [
-    'config/epigeneticFlagDefinitions.mjs',
-    'utils/carePatternAnalysis.mjs',
-    'utils/flagEvaluationEngine.mjs',
-  ];
+  const liveFiles = ['config/epigeneticFlagDefinitions.mjs', 'utils/carePatternAnalysis.mjs'];
 
   test.each(deadFiles)('dead services/ flag file %s must NOT exist', rel => {
     expect(existsSync(resolve(backendRoot, rel))).toBe(false);
@@ -153,12 +157,9 @@ describe('Epigenetic flag engine — single source of truth (Equoria-yzqhj.3)', 
   test('live flag generation imports cleanly and exposes its public API', async () => {
     const defs = await import('../../../config/epigeneticFlagDefinitions.mjs');
     const care = await import('../../../utils/carePatternAnalysis.mjs');
-    const engine = await import('../../../utils/flagEvaluationEngine.mjs');
 
     expect(typeof defs.getAllFlagDefinitions).toBe('function');
     expect(typeof care.analyzeCarePatterns).toBe('function');
-    expect(typeof engine.evaluateHorseFlags).toBe('function');
-    expect(typeof engine.batchEvaluateFlags).toBe('function');
   });
 });
 

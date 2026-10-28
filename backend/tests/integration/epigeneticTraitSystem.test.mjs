@@ -68,8 +68,7 @@ describe('Trait History Service', () => {
   });
 
   test('Should log and retrieve trait assignments correctly', async () => {
-    const { logTraitAssignment, getTraitHistory } =
-      await import('../../modules/traits/services/traitHistoryService.mjs');
+    const { logTraitAssignment } = await import('../../modules/traits/services/traitHistoryService.mjs');
 
     // Log a trait assignment
     const traitData = {
@@ -88,8 +87,9 @@ describe('Trait History Service', () => {
     expect(loggedTrait.traitName).toBe('Confident');
     expect(loggedTrait.isEpigenetic).toBe(true);
 
-    // Retrieve trait history
-    const history = await getTraitHistory(testHorse.id);
+    // Read the stored history back (the getTraitHistory reader went with the
+    // trait reports, Equoria-1vep2)
+    const history = await prisma.traitHistoryLog.findMany({ where: { horseId: testHorse.id } });
     expect(history.length).toBeGreaterThan(0);
 
     const confidentTrait = history.find(h => h.traitName === 'Confident');
