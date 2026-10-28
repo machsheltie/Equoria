@@ -36,7 +36,7 @@ export interface BreedAverages {
  */
 export function useHorseConformation(
   horseId: number | string
-): UseQueryResult<HorseConformation, Error> {
+): UseQueryResult<HorseConformation | null, Error> {
   return useQuery({
     // Equoria-bvddn.33: normalise to Number — every other horse-scoped key in
     // this module and useConformationShow.ts/useConformationShowExecution.ts
@@ -45,8 +45,10 @@ export function useHorseConformation(
     // ever reached.
     queryKey: ['horse', Number(horseId), 'conformation'],
     queryFn: async () => {
+      // Equoria-nmjsr (audit HP-07): a horse without scores answers 200 with
+      // data: null. That is "no scores" (the no-data panel), not an error.
       const response = await horsesApi.getConformation(horseId);
-      return response.conformationScores;
+      return response?.conformationScores ?? null;
     },
     enabled: horseId !== null && horseId !== undefined && horseId !== '',
     staleTime: 5 * 60 * 1000, // 5 minutes
