@@ -133,6 +133,10 @@ export function normalizeHorseDetail(raw: HorseSummary): Horse {
     description: raw.description,
     forSale: raw.forSale,
     salePrice: raw.salePrice,
+    // Equoria-zd12a: a stallion at stud shows its standing, the fee its owner
+    // set, and the control to remove it from stud.
+    studStatus: raw.studStatus ?? undefined,
+    studFee: raw.studFee ?? undefined,
     userId: raw.userId,
     // Equoria-qi7rm: the detail read sends the row's sireId / damId; nothing
     // on the server builds parentIds, so without these a bred horse showed

@@ -229,6 +229,9 @@ export interface HorseSummary {
   // null for a store horse (Equoria-qi7rm).
   sireId?: number | null;
   damId?: number | null;
+  // Stud standing and the player's chosen fee (Equoria-zd12a).
+  studStatus?: string | null;
+  studFee?: number | null;
   // Care & cooldown fields from Prisma
   lastFedDate?: string;
   lastVettedDate?: string;

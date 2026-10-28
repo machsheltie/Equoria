@@ -144,6 +144,13 @@ describe('normalizeHorseDetail', () => {
     expect(parents?.damId).toBeUndefined();
   });
 
+  // Equoria-zd12a: a stallion at stud keeps its standing and fee.
+  it("keeps a stallion's stud standing and the fee its owner set", () => {
+    const horse = normalizeHorseDetail(detail({ studStatus: 'At Public Stud', studFee: 750 }));
+    expect(horse.studStatus).toBe('At Public Stud');
+    expect(horse.studFee).toBe(750);
+  });
+
   it('does not mutate the cached payload', () => {
     const raw = detail({ phenotype: { colorName: 'Bay', faceMarking: 'star' } });
     const before = JSON.stringify(raw);
