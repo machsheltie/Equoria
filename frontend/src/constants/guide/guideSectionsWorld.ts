@@ -21,12 +21,18 @@ export const guideSectionsWorld: readonly GuideSection[] = [
           "**Mares rest 7 days** (one game year) after being bred. Stallions don't need to rest.",
           '**Your own pair is free.** Breeding your mare to your own stallion costs nothing.',
           "**Stud fees are set by players.** If you own a stallion aged 3 or over, you decide whether he stands at stud and what his fee is. Choose **Public Stud**, where bookings go through automatically, or **Private Stud**, where you approve or turn down each request. When a mare is bred to another player's stallion, her owner pays that stallion's fee to his owner. There are no other breeding fees.",
-          "**Look before you breed.** You can view genetic odds, lineage and warnings, such as a lethal white risk, for any stallion at stud, including ones you don't own. Public studs can be found in the Horse Marketplace search.",
+          '**Finding a stallion.** The **Horse Marketplace** search covers every horse. Tick **At stud**, **For sale**, or both, and narrow it down by breed, age, sex, colour, sale price, stud fee and Public or Private Stud.',
+          "**Breeding is done on the stallion's page.** Open his page and press **Breed to** his name, then pick your mare. At a Public Stud she's bred at once and the fee is paid. At a Private Stud your request waits for his owner to accept or reject it. Your own pair works the same way, free of charge.",
+          "**Breeding requests.** The **Breeding requests** button on a horse's page lists the requests waiting for your stallion, and the ones you've sent for your mare.",
         ],
       },
       {
         kind: 'paragraph',
-        text: "**Pregnancy lasts 7 days.** A mare bred on one day foals in the nightly run 7 days later. Feed her every day while she's in foal: each feeding counts toward her foal's chance of a positive trait, and better feed counts for more. Each missed day adds a small chance of a negative trait.",
+        text: "**Pregnancy lasts 7 days.** A mare bred on one day foals in the nightly run 7 days later. Feed her every day while she's in foal: each feeding counts toward her foal's chance of a positive trait, and better feed counts for more. Each missed day adds a small chance of a negative trait. A mare in Fair or Bad health when she foals also makes a negative trait more likely.",
+      },
+      {
+        kind: 'paragraph',
+        text: '**Traits run in families.** A foal can inherit a trait from either parent that carries it, and a trait both parents carry is more likely to pass on. A trait that showed on a parent can arrive already revealed. One that was still hidden stays hidden on the foal.',
       },
       {
         kind: 'paragraph',
@@ -65,7 +71,7 @@ export const guideSectionsWorld: readonly GuideSection[] = [
         items: [
           'show scores, where each discipline suits, ignores or dislikes it (±5%);',
           'how well a horse bonds with its groom;',
-          'how well it suits a trainer.',
+          'how well it suits a trainer (coming soon).',
         ],
       },
       {
@@ -228,13 +234,14 @@ export const guideSectionsWorld: readonly GuideSection[] = [
         ],
       },
       {
-        kind: 'pending',
-        topic: 'What trainer fit changes',
-        ownerQuestion: 'What trainer fit changes, given that training always adds +5.',
+        kind: 'paragraph',
+        text: "**Traits** are hidden at birth, unless a parent passed one on already showing, and are revealed through a young horse's care (see [Grooms](#grooms)). There are 20: Brave, Confident, Outgoing, Affectionate, Resilient, Fearful, Insecure, Aloof, Fragile, Skittish, Eager Learner, People Trusting, Adaptable, Heart, Focused, Excitable, Curious, Playful, Biddable and Competitive.",
       },
       {
-        kind: 'paragraph',
-        text: "**Traits** are hidden at birth and revealed through a young horse's care. There are 19: Brave, Fearful, Confident, Insecure, Affectionate, Skittish, Resilient, Fragile, High Immunity, Low Immunity, People Trusting, Show Calm, Crowd Ready, Bonded, Eager Learner, Social, Antisocial, Presentation Boosted and Legendary Bloodline.",
+        kind: 'pending',
+        topic: 'What each trait does',
+        ownerQuestion:
+          "Owner ruling 2026-10-27 (q117): the 20-trait roster is names only - 'Do not add what each actually does yet. We will address that later.' Replace this note with each trait's effect once she rules them.",
       },
       {
         kind: 'list',
@@ -289,7 +296,7 @@ export const guideSectionsWorld: readonly GuideSection[] = [
     blocks: [
       {
         kind: 'paragraph',
-        text: 'Seasonal events have nothing to do with weather. Each month brings a themed event, announced on the News page on the 1st. An event can include:',
+        text: 'Each month brings a themed event, announced on the News page on the 1st. An event can include:',
       },
       {
         kind: 'list',
@@ -300,10 +307,8 @@ export const guideSectionsWorld: readonly GuideSection[] = [
         ],
       },
       {
-        kind: 'pending',
-        topic: 'The event shop',
-        ownerQuestion:
-          "The premium shop and its currency aren't designed yet. Confirm how the guide should mention them.",
+        kind: 'paragraph',
+        text: 'The **Premium Shop** in the World is coming soon.',
       },
     ],
   },
@@ -345,6 +350,7 @@ export const guideSectionsWorld: readonly GuideSection[] = [
           '10,000 coins to start.',
           '**5,000 coins** from the **Bank** every week. Remember to claim it.',
           'Show prize money, horse sales, and stud fees from other players.',
+          'The entry fees from shows you host.',
         ],
       },
       { kind: 'paragraph', text: '**Going out:**' },
@@ -353,12 +359,16 @@ export const guideSectionsWorld: readonly GuideSection[] = [
         caption: 'What you pay for, and when',
         columns: ['What', 'When you pay'],
         rows: [
-          ['Grooms', '70 coins per horse, per week'],
-          ['Riders', 'their weekly rate, one week at a time'],
+          ['Grooms', '70 coins per horse, per week, every Monday'],
+          ['Riders', 'their weekly rate, every Monday'],
           ['Training', "the trainer's advertised fee, once per session"],
           ['Feed', 'when you buy the bag'],
-          ['Vet and farrier', 'each visit'],
+          ['Tack', '500 coins a piece, when you buy it'],
+          ['Vet health check', '100 coins for each level below Excellent, each visit'],
+          ['Genetic Testing', '500 coins, once per horse'],
+          ['Farrier', '50 coins, once a week per horse'],
           ['Show entry', 'when you enter'],
+          ['Hosting a show', 'the prize money, 10 times the entry fee, when you create it'],
         ],
       },
       {
@@ -371,7 +381,7 @@ export const guideSectionsWorld: readonly GuideSection[] = [
         items: [
           '**Feed Shop**, **Tack Shop** (saddles, bridles and decorations), **Veterinarian**, **Farrier**, and the **Leathersmith** for crafting.',
           '**Horse Trader** sells horses bred by the game. They come with no parents and no revealed traits, and their stats total 200, with each stat between 1 and 20.',
-          '**Horse Marketplace** is where players sell to each other. The seller sets the price, and there are no listing fees or commissions.',
+          '**Horse Marketplace** is where players sell to each other. The seller sets the price, and there are no listing fees or commissions. Its search covers every horse: tick **For sale**, **At stud**, or both.',
         ],
       },
       { kind: 'paragraph', text: "Coins are for play only. They're never real money." },

@@ -54,13 +54,17 @@ export const guideSectionsStart: readonly GuideSection[] = [
         kind: 'paragraph',
         text: '**Every visit after that.** When you return, the **While You Were Away** panel tells you what happened to your horses since you left. It appears every time, even on a quiet night. Press **Okay** to go on to the News.',
       },
+      {
+        kind: 'paragraph',
+        text: '**Up to four accounts.** Each player may keep up to four accounts.',
+      },
       { kind: 'paragraph', text: '**A good first day:**' },
       {
         kind: 'list',
         ordered: true,
         items: [
           'Buy feed at the **Feed Shop**, equip it on your horse, and feed it.',
-          'Book a **Veterinarian** visit.',
+          'At the **Veterinarian**, choose your horse and press **Vet Horse**.',
           'Hire a groom from **Grooms for Hire** and press **Groom horse**.',
           'Hire a trainer from **Trainers for Hire** (hiring is free), then train at the **Training Center**.',
           'Hire a rider from **Riders**, then browse shows under **COMPETE**.',
@@ -89,7 +93,7 @@ export const guideSectionsStart: readonly GuideSection[] = [
       {
         kind: 'list',
         items: [
-          '**12 stats:** Precision, Strength, Speed, Agility, Endurance, Intelligence, Stamina, Balance, Boldness, Flexibility, Obedience and Focus. **Stats have no cap, ever.** They never change with age. You raise them through showing, Horse Points and breeding.',
+          '**12 stats:** Precision, Strength, Speed, Agility, Endurance, Intelligence, Stamina, Balance, Boldness, Flexibility, Obedience and Focus. **Stats have no cap, ever.** They never change with age. You raise them through feeding, the farrier, showing, Horse Points and breeding.',
           '**Conformation and gaits:** scored 0 to 100 and fixed for life. Only selective breeding improves them, generation by generation.',
           '**Temperament:** one of 12, set at birth (see [Temperaments and traits](#temperaments-and-traits)).',
           "**Traits:** discovered over a horse's early life, not chosen.",
@@ -108,7 +112,7 @@ export const guideSectionsStart: readonly GuideSection[] = [
     blocks: [
       {
         kind: 'paragraph',
-        text: "**Health is the only consequence in Equoria.** Neglect never kills a horse, and there's no fatigue or burnout to manage. But a horse in **Bad** health cannot breed, train or enter a show until you bring it back.",
+        text: '**Health is the only consequence in Equoria.** Neglect never kills a horse, and nothing else wears it down. But a horse in **Bad** health cannot breed, train or enter a show until you bring it back.',
       },
       {
         kind: 'paragraph',
@@ -119,7 +123,8 @@ export const guideSectionsStart: readonly GuideSection[] = [
         kind: 'list',
         items: [
           "Buy feed at the **Feed Shop**. It goes into your inventory. Buying feed doesn't feed a horse.",
-          'Equip a feed on the horse, then press **Feed** once per game day. Each feeding uses one unit.',
+          'Equip a feed on the horse, then press **Feed**. Each feeding uses one unit.',
+          "A well-fed horse eats once per game day. A hungry horse goes up one hunger level with each feeding, and you can keep feeding it until it's back to Excellent.",
           'When the feed runs out, the horse goes back to having no feed equipped. Buy more and equip it again.',
           'Feeds come in five tiers: Basic, Performance, Performance Plus, High Performance and Elite. Better feed matters most for a mare in foal (see [Breeding](#breeding)).',
         ],
@@ -142,40 +147,40 @@ export const guideSectionsStart: readonly GuideSection[] = [
       },
       {
         kind: 'paragraph',
-        text: 'A horse is fed once a day, so it gets one roll a day. Stats have no cap, so a gain is always kept.',
+        text: 'Each feeding gets its own roll. Stats have no cap, so a gain is always kept.',
       },
       {
         kind: 'paragraph',
-        text: "**The Veterinarian.** Book a check-up and pay per visit. A vet visit keeps the horse's health up. If the vet finds a problem, such as an injury, that finding sets the horse's health until it's treated.",
+        text: "**The Veterinarian.** Choose a horse and press **Vet Horse**. A health check always brings the horse's vet care back to Excellent. It costs **100 coins for each level** its vet care has slipped below Excellent: Very Good 100, Good 200, Fair 300 and Bad 400. A horse whose vet care is already Excellent doesn't need one.",
       },
       {
         kind: 'paragraph',
-        text: "**How health is worked out.** Equoria looks at feeding and vet care separately, and the horse's health is the **worse of the two**:",
+        text: "**Genetic Testing.** A horse's colour genes stay hidden until you test it. Choose the horse at the Veterinarian and press **Run Panel** (500 coins).",
+      },
+      {
+        kind: 'paragraph',
+        text: "**How health is worked out.** A horse's health comes from its vet care, and hunger can pull it down:",
       },
       {
         kind: 'table',
-        caption: 'Health by days since the last feeding and the last vet visit',
-        columns: ['Health', 'Days since last feeding', 'Days since last vet visit'],
+        caption:
+          'Health by days since the last vet visit, and hunger by days since the last feeding',
+        columns: ['Level', 'Health: days since last vet visit', 'Hunger: days since last feeding'],
         rows: [
-          ['Excellent', '0–2', '0–7'],
-          ['Good', '3–4', '8–14'],
-          ['Fair', '5–6', '15–21'],
-          ['Bad', '7 or more', '22 or more'],
+          ['Excellent', '0–7', '0–2'],
+          ['Very Good', '8–14', '3–4'],
+          ['Good', '15–21', '5–6'],
+          ['Fair', '22–28', '7–8'],
+          ['Bad', '29 or more', '9 or more'],
         ],
       },
       {
         kind: 'paragraph',
-        text: "So feeding doesn't cancel out a missed vet visit, and a vet visit doesn't cancel out missed meals.",
-      },
-      {
-        kind: 'pending',
-        topic: 'How Very Good health is earned',
-        ownerQuestion:
-          'No care band produces Very Good yet. Owner ruling 2026-10-23 (not built yet, Equoria-qwz60): a new health and hunger system, with vetting days 0-7 Excellent, 8-14 Very Good, 15-21 Good, 22-28 Fair and 29+ Bad. Until it is built the guide describes only the live bands above and keeps this note; do not describe the new rule as live. (Equoria-j0254)',
+        text: "Hunger at Fair lowers the horse's health by one level, and hunger at Bad lowers it by two. So feeding doesn't cancel out a missed vet visit, and a vet visit doesn't cancel out missed meals.",
       },
       {
         kind: 'paragraph',
-        text: '**The Farrier.** Once a week you can shoe a horse for 50 coins. The horse is recorded as shod, and for now it gains +1 in one stat.',
+        text: '**The Farrier.** Once a week, choose a horse at the Farrier and press **Shoe Horse** (50 coins). The horse is recorded as shod, and for now it gains +1 in one stat, picked at random.',
       },
       {
         kind: 'paragraph',
@@ -198,11 +203,15 @@ export const guideSectionsStart: readonly GuideSection[] = [
       },
       {
         kind: 'paragraph',
-        text: '**The bond.** Daily grooming builds a bond between groom and horse. Some temperaments get along with some grooms better than others. The bond also counts in conformation shows.',
+        text: "**The bond.** Daily grooming builds a bond between groom and horse, starting from nothing. You can see the bond on every horse's page. Some temperaments get along with some grooms better than others. The bond also counts in conformation shows.",
       },
       {
         kind: 'paragraph',
-        text: "**Foals and young horses.** For horses under 3, your groom does the **enrichment**. Each week of a young horse's life brings different activities to choose from. This early care is how a young horse's traits come to light. You choose the activity, and the groom does the work.",
+        text: "**Foals and young horses.** For horses under 3, your groom does the **enrichment**. Each week of a young horse's life brings different activities to choose from. You choose the activity, and the groom does the work.",
+      },
+      {
+        kind: 'paragraph',
+        text: "**How traits come to light.** A horse's first 21 days, the three years before it turns 3, are when its traits are discovered. Once a foal has had a few days of grooming, each further day it's groomed gives a chance for a good trait to be revealed. Days without grooming give bad traits the same kind of chance, and can switch a good trait off. Grooming can also switch off a bad trait a foal was born with. Nothing is guaranteed, and some traits need grooming on most of those 21 days.",
       },
       {
         kind: 'paragraph',
@@ -261,7 +270,9 @@ export const guideSectionsStart: readonly GuideSection[] = [
       {
         kind: 'list',
         items: [
-          "Hire riders from **Riders** in the Marketplace. Each rider has a weekly rate, and you're charged **one week at a time**, never weeks in advance.",
+          "Hire riders from **Riders** in the Marketplace. Each rider has a weekly rate, and you're charged **one week at a time**, never weeks in advance. Hiring pays the first week.",
+          '**Payday is every Monday morning, Eastern**, like the grooms. All your riders are paid together in one payment.',
+          "**If you can't cover payday,** nothing is taken, your riders can't ride in shows, and the missed week is owed. A rider rides again only once that week's pay and every owed week are paid. A rider left unpaid for a full week leaves your staff.",
           '**A horse needs an assigned rider to enter a ridden show**, and the rider must be on your staff.',
           'Some riders suit a horse better than others, and a good pairing helps the score a little.',
           "Riders, trainers and grooms are hired staff. They don't level up or gain experience. Each keeps the skill they came with.",

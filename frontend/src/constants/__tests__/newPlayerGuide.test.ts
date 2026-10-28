@@ -182,18 +182,6 @@ describe('NEW_PLAYER_GUIDE owner rulings of 2026-10-23', () => {
     expect(boards.join(' ')).toContain('**Wins:**');
   });
 
-  it('keeps the Very Good note pending and names the unbuilt health system without describing it as live', () => {
-    const veryGood = newPlayerGuide
-      .flatMap((section) => section.blocks)
-      .find(
-        (block): block is Extract<GuideBlock, { kind: 'pending' }> =>
-          block.kind === 'pending' && block.topic === 'How Very Good health is earned'
-      );
-    expect(veryGood?.ownerQuestion).toContain('Equoria-qwz60');
-    // The new vetting bands (8-14 Very Good, 29+ Bad) are not in any player-facing text.
-    expect(allText.join(' ')).not.toMatch(/22-28|29\+|29 or more/);
-  });
-
   it('leaves exactly the owner-queued questions undecided', () => {
     const topics = newPlayerGuide
       .flatMap((section) => section.blocks)
@@ -201,14 +189,8 @@ describe('NEW_PLAYER_GUIDE owner rulings of 2026-10-23', () => {
         (block): block is Extract<GuideBlock, { kind: 'pending' }> => block.kind === 'pending'
       )
       .map((block) => block.topic);
-    expect(topics.sort()).toEqual(
-      [
-        'How Very Good health is earned',
-        'Hosting limits and where entry fees go',
-        'What trainer fit changes',
-        'The event shop',
-      ].sort()
-    );
+    // Owner ruling 2026-10-27 (q117): the 20 traits are names only; effects come later.
+    expect(topics).toEqual(['What each trait does']);
   });
 
   it('no longer lists the settled questions as undecided', () => {
@@ -224,12 +206,70 @@ describe('NEW_PLAYER_GUIDE owner rulings of 2026-10-23', () => {
       'How much of the temperament chart players see',
       'Parades',
       'Conformation classes',
-      'What each trait does',
       'Other leaderboards',
       'More about trainers',
+      'How Very Good health is earned',
+      'Hosting limits and where entry fees go',
+      'What trainer fit changes',
+      'The event shop',
     ]) {
       expect(topics).not.toContain(settled);
     }
+  });
+});
+
+describe('NEW_PLAYER_GUIDE owner rulings of 2026-10-23 to 2026-10-28', () => {
+  const tableCaptioned = (caption: string) =>
+    newPlayerGuide
+      .flatMap((section) => section.blocks)
+      .find(
+        (block): block is Extract<GuideBlock, { kind: 'table' }> =>
+          block.kind === 'table' && block.caption === caption
+      );
+  const joined = newPlayerGuide.flatMap((section) => section.blocks.flatMap(textOf)).join(' ');
+
+  it('shows the live health and hunger bands (Equoria-qwz60, built 2026-10-24)', () => {
+    expect(
+      tableCaptioned(
+        'Health by days since the last vet visit, and hunger by days since the last feeding'
+      )?.rows
+    ).toEqual([
+      ['Excellent', '0–7', '0–2'],
+      ['Very Good', '8–14', '3–4'],
+      ['Good', '15–21', '5–6'],
+      ['Fair', '22–28', '7–8'],
+      ['Bad', '29 or more', '9 or more'],
+    ]);
+    expect(joined).toContain('Hunger at Fair lowers the horse');
+  });
+
+  it('prices the vet health check by level and says it restores Excellent (2026-10-27)', () => {
+    expect(joined).toContain('Very Good 100, Good 200, Fair 300 and Bad 400');
+    expect(joined).toContain('back to Excellent');
+  });
+
+  it('lists the 20-trait roster and never a rarity (2026-10-27)', () => {
+    for (const trait of ['Outgoing', 'Aloof', 'Heart', 'Biddable', 'Competitive']) {
+      expect(joined).toContain(trait);
+    }
+    expect(joined).toContain('There are 20:');
+    expect(joined).not.toMatch(/Show Calm|Crowd Ready|Legendary|Ultra Rare|Uncommon|rarity/i);
+  });
+
+  it('describes the show hosting rules (2026-10-23 q60)', () => {
+    expect(joined).toContain('**10 shows a week**');
+    expect(joined).toContain('**10 times the entry fee**');
+  });
+
+  it('describes the rider Monday payday and owed weeks (2026-10-27)', () => {
+    expect(joined).toContain('**Payday is every Monday morning, Eastern**');
+    expect(joined).toContain('every owed week');
+  });
+
+  it('never mentions removed features: stress, burnout, weather, forecasts, the Breeding Hall', () => {
+    expect(joined).not.toMatch(
+      /stress|burnout|weather|forecast|predict|genetic odds|lethal white|Breeding Hall|reputation/i
+    );
   });
 });
 

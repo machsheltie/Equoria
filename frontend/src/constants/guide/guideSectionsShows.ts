@@ -31,12 +31,7 @@ export const guideSectionsShows: readonly GuideSection[] = [
       },
       {
         kind: 'paragraph',
-        text: 'Players can host shows too, and a host may enter her own horses.',
-      },
-      {
-        kind: 'pending',
-        topic: 'Hosting limits and where entry fees go',
-        ownerQuestion: 'How many shows a player may host each week, and where entry fees go.',
+        text: '**Hosting a show.** Players can host shows too, and a host may enter her own horses. You can host up to **10 shows a week**. The prize money is always **10 times the entry fee**, and you put it up when you create the show. When the show runs, you receive all of its entry fees.',
       },
       { kind: 'subheading', text: 'How a score is built' },
       {
