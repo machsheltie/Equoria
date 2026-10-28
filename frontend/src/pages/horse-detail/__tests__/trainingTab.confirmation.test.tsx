@@ -1,11 +1,13 @@
 /**
- * HorseDetailPage Training Tab — Confirmation Flow (Equoria-smnow — split from HorseDetailPage.Training.test.tsx).
- * Training confirmation modal: open, score/trait preview, cancel, confirm, loading, error.
- * Shared fixtures live in ./trainingTab.testHelpers; assertions are unchanged.
+ * HorseDetailPage Training Tab — the Train button (Equoria-smnow — split from HorseDetailPage.Training.test.tsx).
+ * Owner ruling q163 (2026-10-28; Equoria-tjh8k): pick the discipline, then one
+ * "Train — <fee>" button; no confirm dialog. Covers: no dialog, train, loading,
+ * result, error. Old contract: a confirmation modal with a preview and Cancel.
+ * Shared fixtures live in ./trainingTab.testHelpers.
  */
 
 import React from 'react';
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { vi, describe, test, expect, beforeAll, beforeEach, afterEach } from 'vitest';
@@ -35,109 +37,14 @@ describe('HorseDetailPage Training Tab — Confirmation Flow', () => {
   });
 
   // ============================================
-  // Training Confirmation Flow Tests (8 tests)
+  // Train button tests
   // ============================================
   describe('Training Confirmation Flow', () => {
-    test('Confirm modal opens with correct horse and discipline data', async () => {
-      global.fetch = createFetchMock();
-      const user = userEvent.setup();
-
-      renderWithProviders(<HorseDetailPage />);
-
-      await waitForHorseToLoad();
-      await navigateToTrainingTab();
-
-      await waitFor(() => {
-        expect(screen.getByTestId('discipline-picker')).toBeInTheDocument();
-      });
-
-      // Click discipline
-      await user.click(screen.getByRole('button', { name: /dressage/i }));
-
-      await waitFor(() => {
-        const modal = screen.getByTestId('training-confirm-modal');
-        expect(within(modal).getByTestId('horse-name')).toHaveTextContent('Thunder');
-        expect(within(modal).getByTestId('discipline-name')).toHaveTextContent('Dressage');
-      });
-    });
-
-    test('Shows correct expected score gain', async () => {
-      global.fetch = createFetchMock();
-      const user = userEvent.setup();
-
-      renderWithProviders(<HorseDetailPage />);
-
-      await waitForHorseToLoad();
-      await navigateToTrainingTab();
-
-      await waitFor(() => {
-        expect(screen.getByTestId('discipline-picker')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('button', { name: /dressage/i }));
-
-      await waitFor(() => {
-        const modal = screen.getByTestId('training-confirm-modal');
-        // Base score gain is +5
-        expect(within(modal).getByTestId('base-score-gain')).toHaveTextContent('+5');
-      });
-    });
-
-    // Owner ruling 2026-10-23 (Equoria-576c0.1): weekly training adds a flat +5, so the
-    // confirm dialog lists no trait modifiers. Old contract: a horse with the "Fast Learner"
-    // trait saw a trait-modifiers list here (a hardcoded +1 the server never applied).
-    test('Shows no trait modifiers, even for a horse with traits', async () => {
-      global.fetch = createFetchMock();
-      const user = userEvent.setup();
-
-      renderWithProviders(<HorseDetailPage />);
-
-      await waitForHorseToLoad();
-      await navigateToTrainingTab();
-
-      await waitFor(() => {
-        expect(screen.getByTestId('discipline-picker')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('button', { name: /dressage/i }));
-
-      await waitFor(() => {
-        const modal = screen.getByTestId('training-confirm-modal');
-        // The horse has the "Fast Learner" trait; it changes nothing about the +5.
-        expect(within(modal).getByTestId('base-score-gain')).toHaveTextContent('+5');
-        expect(within(modal).queryByTestId('trait-modifiers-list')).not.toBeInTheDocument();
-        expect(within(modal).queryByText(/trait modifiers/i)).not.toBeInTheDocument();
-      });
-    });
-
-    test('Cancel button closes modal without training', async () => {
-      global.fetch = createFetchMock();
-      const user = userEvent.setup();
-
-      renderWithProviders(<HorseDetailPage />);
-
-      await waitForHorseToLoad();
-      await navigateToTrainingTab();
-
-      await waitFor(() => {
-        expect(screen.getByTestId('discipline-picker')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('button', { name: /dressage/i }));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      // Click cancel
-      await user.click(screen.getByTestId('cancel-button'));
-
-      await waitFor(() => {
-        expect(screen.queryByTestId('training-confirm-modal')).not.toBeInTheDocument();
-      });
-    });
-
-    test('Confirm button executes training mutation', async () => {
+    // Old contract: a Confirm Training dialog previewed the horse, discipline,
+    // the +5 gain and no trait modifiers, with Cancel. Owner ruling q163
+    // (2026-10-28) removed the dialog: picking a discipline offers one Train
+    // button and nothing else.
+    test('picking a discipline opens no confirm dialog and trains nothing on its own', async () => {
       const fetchMock = createFetchMock();
       global.fetch = fetchMock;
       const user = userEvent.setup();
@@ -153,12 +60,33 @@ describe('HorseDetailPage Training Tab — Confirmation Flow', () => {
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
+      expect(screen.queryByTestId('training-confirm-modal')).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.getByTestId('train-button')).toBeInTheDocument();
+      const trainingCalls = fetchMock.mock.calls.filter((call) =>
+        call[0]?.toString().includes('/api/v1/training/train')
+      );
+      expect(trainingCalls).toHaveLength(0);
+    });
+
+    test('Train button executes training mutation', async () => {
+      const fetchMock = createFetchMock();
+      global.fetch = fetchMock;
+      const user = userEvent.setup();
+
+      renderWithProviders(<HorseDetailPage />);
+
+      await waitForHorseToLoad();
+      await navigateToTrainingTab();
+
       await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
+        expect(screen.getByTestId('discipline-picker')).toBeInTheDocument();
       });
 
-      // Click confirm
-      await user.click(screen.getByTestId('confirm-button'));
+      await user.click(screen.getByRole('button', { name: /dressage/i }));
+
+      // Train, in one click
+      await user.click(screen.getByTestId('train-button'));
 
       // Verify training API was called
       await waitFor(() => {
@@ -206,20 +134,16 @@ describe('HorseDetailPage Training Tab — Confirmation Flow', () => {
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      // Click confirm
-      await user.click(screen.getByTestId('confirm-button'));
+      // Train, in one click
+      await user.click(screen.getByTestId('train-button'));
 
       // Check for loading state
       await waitFor(() => {
-        expect(screen.getByTestId('confirm-button')).toHaveAttribute('aria-busy', 'true');
+        expect(screen.getByTestId('train-button')).toHaveAttribute('aria-busy', 'true');
       });
     });
 
-    test('Modal closes after successful training', async () => {
+    test('the result opens after successful training', async () => {
       global.fetch = createFetchMock();
       const user = userEvent.setup();
 
@@ -234,15 +158,10 @@ describe('HorseDetailPage Training Tab — Confirmation Flow', () => {
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
+      await user.click(screen.getByTestId('train-button'));
 
-      await user.click(screen.getByTestId('confirm-button'));
-
-      // Wait for confirm modal to close and result modal to open
       await waitFor(() => {
-        expect(screen.queryByTestId('training-confirm-modal')).not.toBeInTheDocument();
+        expect(screen.getByTestId('training-result-modal')).toBeInTheDocument();
       });
     });
 
@@ -263,13 +182,9 @@ describe('HorseDetailPage Training Tab — Confirmation Flow', () => {
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
+      await user.click(screen.getByTestId('train-button'));
 
-      await user.click(screen.getByTestId('confirm-button'));
-
-      // Modal should stay open on error
+      // The refusal is said in place
       await waitFor(() => {
         expect(screen.getByTestId('training-error')).toBeInTheDocument();
       });

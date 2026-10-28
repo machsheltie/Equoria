@@ -28,7 +28,7 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
  * real server value through (null when absent) so TrainingResultModal renders
  * its honest "Date unavailable" empty state.
  *
- * These tests drive the REAL TrainingTab flow (select discipline → confirm →
+ * These tests drive the REAL TrainingTab flow (select discipline → Train →
  * real train mutation) against an HTTP-level MSW override of the actual
  * /api/v1/training/train endpoint — no vi.mock of the api-client per
  * CLAUDE.md §3. They are sentinel-positive: a TrainingTab that still
@@ -147,8 +147,8 @@ describe('TrainingTab — absent server nextEligible (Equoria-gzvwa)', () => {
     });
     await user.click(dressageButton);
 
-    // Confirm modal opens — confirm the training session (fires the real mutation).
-    const confirmButton = await screen.findByTestId('confirm-button');
+    // One Train button (owner ruling q163: no confirm dialog) fires the real mutation.
+    const confirmButton = await screen.findByTestId('train-button');
     await user.click(confirmButton);
 
     // Result modal appears. The next-training line must be the honest empty
@@ -200,7 +200,7 @@ describe('TrainingTab — absent server nextEligible (Equoria-gzvwa)', () => {
     });
     await user.click(dressageButton);
 
-    const confirmButton = await screen.findByTestId('confirm-button');
+    const confirmButton = await screen.findByTestId('train-button');
     await user.click(confirmButton);
 
     await waitFor(() => {

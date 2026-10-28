@@ -1,10 +1,11 @@
 /**
  * HorseDetailPage Training Tab — assigned trainer (Equoria-r8a6h, owner ruling 2026-10-23).
  * The horse page shows the trainer assigned to this horse with its per-session fee, and
- * the confirm button reads "Train Horse <price>" (the fee charged once per weekly
- * session). Owner ruling 2026-10-26 (q81): a trainer is REQUIRED to train, so with none
- * assigned the tab offers "Assign Trainer" in place of the discipline picker (the old
- * contract here let an untrained-by-anyone horse reach the confirm button).
+ * the Train button reads "Train — <price>" (the fee charged once per weekly
+ * session; owner ruling q163 removed the confirm dialog). Owner ruling 2026-10-26 (q81):
+ * a trainer is REQUIRED to train, so with none assigned the tab offers "Assign Trainer"
+ * in place of the discipline picker (the old contract here let an untrained-by-anyone
+ * horse reach the confirm button).
  * Real providers and the real hooks; only the network boundary is stubbed.
  */
 
@@ -75,7 +76,9 @@ describe('HorseDetailPage Training Tab — assigned trainer', () => {
     expect(panel).toHaveTextContent('250');
   });
 
-  test('the confirm button reads "Train Horse" with the assigned trainer fee', async () => {
+  // Owner ruling q163 (2026-10-28): "Train — 250" on the one button under the
+  // picker. Old contract: the confirm dialog's button read "Train Horse 250".
+  test('the Train button reads "Train — <fee>" with the assigned trainer fee', async () => {
     global.fetch = fetchWithAssignments([assignment()]);
     const user = userEvent.setup();
     renderWithProviders(<HorseDetailPage />);
@@ -88,8 +91,7 @@ describe('HorseDetailPage Training Tab — assigned trainer', () => {
 
     await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-    const modal = await screen.findByTestId('training-confirm-modal');
-    expect(within(modal).getByTestId('confirm-button')).toHaveTextContent(/Train Horse\s*250/);
+    expect(await screen.findByTestId('train-button')).toHaveTextContent(/^Train —\s*250$/);
   });
 
   test('a trainer assigned to a different horse is not shown on this horse', async () => {

@@ -1,6 +1,7 @@
 /**
  * HorseDetailPage Training Tab — Tab Integration & Discipline Selection (Equoria-smnow — split from HorseDetailPage.Training.test.tsx).
- * Tab navigation/ARIA and discipline-picker selection -> confirm modal.
+ * Tab navigation/ARIA and discipline-picker selection -> one Train button (owner ruling q163;
+ * old contract: a Confirm Training dialog).
  * Shared fixtures live in ./trainingTab.testHelpers; assertions are unchanged.
  */
 
@@ -120,7 +121,9 @@ describe('HorseDetailPage Training Tab — Tab Integration & Discipline Selectio
       expect(screen.getByText('English')).toBeInTheDocument();
     });
 
-    test('Clicking discipline opens confirm modal', async () => {
+    // Owner ruling q163 (2026-10-28): picking a discipline selects it and
+    // offers one Train button; the old Confirm Training dialog is gone.
+    test('Clicking a discipline selects it and offers the Train button, no dialog', async () => {
       global.fetch = createFetchMock();
       const user = userEvent.setup();
 
@@ -138,10 +141,9 @@ describe('HorseDetailPage Training Tab — Tab Integration & Discipline Selectio
       const disciplineButton = screen.getByRole('button', { name: /western pleasure/i });
       await user.click(disciplineButton);
 
-      // Check confirm modal opens
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
+      expect(disciplineButton).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByTestId('train-button')).toBeInTheDocument();
+      expect(screen.queryByTestId('training-confirm-modal')).not.toBeInTheDocument();
     });
 
     test('Selected discipline state updates correctly', async () => {
@@ -161,10 +163,9 @@ describe('HorseDetailPage Training Tab — Tab Integration & Discipline Selectio
       const disciplineButton = screen.getByRole('button', { name: /dressage/i });
       await user.click(disciplineButton);
 
-      // Check that modal shows selected discipline
+      // The picker shows the selected discipline
       await waitFor(() => {
-        const modal = screen.getByTestId('training-confirm-modal');
-        expect(within(modal).getByTestId('discipline-name')).toHaveTextContent('Dressage');
+        expect(disciplineButton).toHaveAttribute('aria-pressed', 'true');
       });
     });
 
@@ -185,25 +186,13 @@ describe('HorseDetailPage Training Tab — Tab Integration & Discipline Selectio
       const firstDiscipline = screen.getByRole('button', { name: /western pleasure/i });
       await user.click(firstDiscipline);
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      // Close modal
-      const cancelButton = screen.getByTestId('cancel-button');
-      await user.click(cancelButton);
-
-      await waitFor(() => {
-        expect(screen.queryByTestId('training-confirm-modal')).not.toBeInTheDocument();
-      });
-
-      // Select different discipline
+      // Select different discipline: the pick moves to it
       const secondDiscipline = screen.getByRole('button', { name: /dressage/i });
       await user.click(secondDiscipline);
 
       await waitFor(() => {
-        const modal = screen.getByTestId('training-confirm-modal');
-        expect(within(modal).getByTestId('discipline-name')).toHaveTextContent('Dressage');
+        expect(secondDiscipline).toHaveAttribute('aria-pressed', 'true');
+        expect(firstDiscipline).toHaveAttribute('aria-pressed', 'false');
       });
     });
 

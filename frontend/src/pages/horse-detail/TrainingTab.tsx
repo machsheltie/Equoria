@@ -2,8 +2,7 @@
  * TrainingTab — lazy sub-panel for HorseDetailPage (Equoria-r22q)
  *
  * Integrates the full training flow with:
- * - DisciplinePicker for discipline selection
- * - TrainingConfirmModal for confirmation
+ * - DisciplinePicker for discipline selection, then one "Train — <fee>" button
  * - TrainingResultModal for results display
  * - Training status and cooldown display
  *
@@ -11,6 +10,11 @@
  * so this ~330-line module only loads when the Training tab is first selected.
  *
  * Story 4-1: Training Session Interface - Task 6
+ *
+ * Owner ruling q163 (2026-10-28; Equoria-tjh8k, and "just a game: no
+ * receipts" 2026-10-26): pick the discipline, then one "Train — 250" button,
+ * the trainer's fee on the button. Old contract: picking a discipline opened a
+ * Confirm Training dialog (TrainingConfirmModal, removed).
  */
 
 import { actionMessageFor, trainRefused, trainRefusalCodes } from '@/lib/http/actionMessage';
@@ -18,9 +22,10 @@ import React, { useState } from 'react';
 import { Link } from 'react-router';
 import { AlertCircle, Loader2, Dumbbell, Clock, CheckCircle } from 'lucide-react';
 import DisciplinePicker from '../../components/training/DisciplinePicker';
-import TrainingConfirmModal from '../../components/training/TrainingConfirmModal';
 import TrainingResultModal from '../../components/training/TrainingResultModal';
 import { ErrorState } from '@/components/ui/state';
+import { Button } from '@/components/ui/button';
+import Currency from '@/components/ui/Currency';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { useTrainHorse, useTrainingOverview } from '../../hooks/api/useTraining';
 import {
@@ -37,7 +42,6 @@ import type { Horse } from './HorseDetailPageTypes';
 const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   // Training flow state
   const [selectedDiscipline, setSelectedDiscipline] = useState<string | null>(null);
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   const [trainingResult, setTrainingResult] = useState<{
     scoreGain: number;
@@ -121,15 +125,14 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       .map((d) => d.discipline);
   }
 
-  // Handle discipline selection
+  // Picking a discipline only selects it; the Train button below trains.
   const handleDisciplineSelect = (disciplineId: string) => {
     setSelectedDiscipline(disciplineId);
     setTrainingError(null);
-    setIsConfirmModalOpen(true);
   };
 
-  // Handle training confirmation
-  const handleConfirm = async () => {
+  // One click on Train, the fee on the button (owner ruling q163).
+  const handleTrain = async () => {
     if (!selectedDiscipline) return;
 
     setTrainingError(null);
@@ -139,9 +142,6 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         horseId: horse.id,
         discipline: selectedDiscipline,
       });
-
-      // Close confirm modal
-      setIsConfirmModalOpen(false);
 
       // Equoria-o1x6g: read the REAL backend-computed values instead of
       // inferring them client-side. The route now emits the authoritative
@@ -181,7 +181,7 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       // Open result modal
       setIsResultModalOpen(true);
     } catch (error) {
-      // Keep modal open on error so user can retry
+      // The discipline stays picked so she can press Train again.
       setTrainingError(actionMessageFor(error, trainRefused, trainRefusalCodes));
     }
   };
@@ -192,13 +192,6 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     setTrainingResult(null);
     setSelectedDiscipline(null);
     // Horse data will auto-refresh via React Query cache invalidation
-  };
-
-  // Handle closing confirm modal (cancel)
-  const handleCloseConfirm = () => {
-    setIsConfirmModalOpen(false);
-    setSelectedDiscipline(null);
-    setTrainingError(null);
   };
 
   const cooldownDateOptions: Intl.DateTimeFormatOptions = {
@@ -342,6 +335,25 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
               disabledDisciplines={disabledDisciplines}
               isLoading={isStatusLoading || trainHorse.isPending}
             />
+
+            {selectedDiscipline && eligibility.eligible && (
+              <div className="mt-4 flex justify-center">
+                <Button
+                  type="button"
+                  data-testid="train-button"
+                  pending={trainHorse.isPending}
+                  onClick={() => void handleTrain()}
+                >
+                  {trainerFee > 0 ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      Train — <Currency amount={trainerFee} />
+                    </span>
+                  ) : (
+                    'Train'
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -359,30 +371,6 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Training Confirm Modal */}
-      {selectedDiscipline && (
-        <TrainingConfirmModal
-          isOpen={isConfirmModalOpen}
-          onClose={handleCloseConfirm}
-          onConfirm={handleConfirm}
-          horseName={horse.name}
-          disciplineName={formatDisciplineName(selectedDiscipline)}
-          baseScoreGain={5}
-          currentScore={getDisciplineScore(
-            {
-              id: horse.id,
-              name: horse.name,
-              age: horse.age,
-              disciplineScores: horse.disciplineScores,
-            },
-            selectedDiscipline
-          )}
-          cooldownDays={7}
-          trainerFee={trainerFee}
-          isLoading={trainHorse.isPending}
-        />
       )}
 
       {/* Training Result Modal */}

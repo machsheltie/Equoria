@@ -1,11 +1,16 @@
 /**
  * HorseDetailPage Training Tab — Complete Flow (Equoria-smnow — split from HorseDetailPage.Training.test.tsx).
- * End-to-end select->confirm->train->result->close and escape-key closes.
- * Shared fixtures live in ./trainingTab.testHelpers; assertions are unchanged.
+ * End-to-end select->train->result->close and escape-key closes.
+ * Shared fixtures live in ./trainingTab.testHelpers.
+ *
+ * Owner ruling q163 (2026-10-28; Equoria-tjh8k): pick the discipline, then one
+ * "Train — <fee>" button. Old contract: picking a discipline opened a Confirm
+ * Training dialog; its steps and the "Escape closes the confirm dialog" case
+ * went with it, replaced by "picking a discipline opens no dialog".
  */
 
 import React from 'react';
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { vi, describe, test, expect, beforeAll, beforeEach, afterEach } from 'vitest';
@@ -37,7 +42,7 @@ describe('HorseDetailPage Training Tab — Complete Flow', () => {
   // Complete Training Flow Tests (5 tests)
   // ============================================
   describe('Complete Training Flow', () => {
-    test('Full flow: select -> confirm -> train -> view results -> close', async () => {
+    test('Full flow: select -> train -> view results -> close', async () => {
       global.fetch = createFetchMock();
       const user = userEvent.setup();
 
@@ -53,20 +58,15 @@ describe('HorseDetailPage Training Tab — Complete Flow', () => {
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      // Step 2: Confirm modal opens
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
+      // Step 2: Train, in one click
+      await user.click(screen.getByTestId('train-button'));
 
-      // Step 3: Confirm training
-      await user.click(screen.getByTestId('confirm-button'));
-
-      // Step 4: Result modal opens
+      // Step 3: Result modal opens
       await waitFor(() => {
         expect(screen.getByTestId('training-result-modal')).toBeInTheDocument();
       });
 
-      // Step 5: Close result modal
+      // Step 4: Close result modal
       await user.click(screen.getByTestId('close-button'));
 
       await waitFor(() => {
@@ -90,11 +90,7 @@ describe('HorseDetailPage Training Tab — Complete Flow', () => {
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('confirm-button'));
+      await user.click(screen.getByTestId('train-button'));
 
       await waitFor(() => {
         expect(screen.getByTestId('training-result-modal')).toBeInTheDocument();
@@ -110,9 +106,7 @@ describe('HorseDetailPage Training Tab — Complete Flow', () => {
       await user.click(screen.getByRole('button', { name: /show jumping/i }));
 
       await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-        const modal = screen.getByTestId('training-confirm-modal');
-        expect(within(modal).getByTestId('discipline-name')).toHaveTextContent('Show Jumping');
+        expect(screen.getByTestId('train-button')).toBeInTheDocument();
       });
     });
 
@@ -132,11 +126,7 @@ describe('HorseDetailPage Training Tab — Complete Flow', () => {
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('confirm-button'));
+      await user.click(screen.getByTestId('train-button'));
 
       await waitFor(() => {
         expect(screen.getByTestId('training-result-modal')).toBeInTheDocument();
@@ -146,9 +136,9 @@ describe('HorseDetailPage Training Tab — Complete Flow', () => {
 
       // Verify state is reset
       await waitFor(() => {
-        // No modals visible
-        expect(screen.queryByTestId('training-confirm-modal')).not.toBeInTheDocument();
+        // No modal visible, and no discipline left picked
         expect(screen.queryByTestId('training-result-modal')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('train-button')).not.toBeInTheDocument();
         // No error displayed
         expect(screen.queryByTestId('training-error')).not.toBeInTheDocument();
         // Discipline picker is ready
@@ -156,7 +146,7 @@ describe('HorseDetailPage Training Tab — Complete Flow', () => {
       });
     });
 
-    test('Escape key closes confirm modal', async () => {
+    test('picking a discipline opens no dialog; the Train button waits below the picker', async () => {
       global.fetch = createFetchMock();
       const user = userEvent.setup();
 
@@ -169,18 +159,12 @@ describe('HorseDetailPage Training Tab — Complete Flow', () => {
         expect(screen.getByTestId('discipline-picker')).toBeInTheDocument();
       });
 
+      expect(screen.queryByTestId('train-button')).not.toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      // Press Escape key
-      await user.keyboard('{Escape}');
-
-      await waitFor(() => {
-        expect(screen.queryByTestId('training-confirm-modal')).not.toBeInTheDocument();
-      });
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('training-confirm-modal')).not.toBeInTheDocument();
+      expect(screen.getByTestId('train-button')).toBeInTheDocument();
     });
 
     test('Escape key closes result modal', async () => {
@@ -198,11 +182,7 @@ describe('HorseDetailPage Training Tab — Complete Flow', () => {
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('confirm-button'));
+      await user.click(screen.getByTestId('train-button'));
 
       await waitFor(() => {
         expect(screen.getByTestId('training-result-modal')).toBeInTheDocument();

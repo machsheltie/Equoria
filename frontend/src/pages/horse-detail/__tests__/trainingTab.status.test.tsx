@@ -126,11 +126,7 @@ describe('HorseDetailPage Training Tab — Status Display & Error Handling', () 
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('confirm-button'));
+      await user.click(screen.getByTestId('train-button'));
 
       await waitFor(() => {
         expect(screen.getByTestId('training-error')).toBeInTheDocument();
@@ -154,21 +150,17 @@ describe('HorseDetailPage Training Tab — Status Display & Error Handling', () 
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('confirm-button'));
+      await user.click(screen.getByTestId('train-button'));
 
       await waitFor(() => {
         expect(screen.getByTestId('training-error')).toBeInTheDocument();
       });
 
-      // Modal should still be visible for retry
-      expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
+      // The discipline stays picked, so Train can be pressed again (q163: no dialog).
+      expect(screen.getByTestId('train-button')).toBeInTheDocument();
     });
 
-    test('Error state clears when modal closes', async () => {
+    test('Error state clears when another discipline is picked', async () => {
       global.fetch = createFetchMock({
         trainingError: 'Training failed: Server error',
       });
@@ -185,21 +177,16 @@ describe('HorseDetailPage Training Tab — Status Display & Error Handling', () 
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('confirm-button'));
+      await user.click(screen.getByTestId('train-button'));
 
       await waitFor(() => {
         expect(screen.getByTestId('training-error')).toBeInTheDocument();
       });
 
-      // Close modal
-      await user.click(screen.getByTestId('cancel-button'));
+      // Owner ruling q163: no dialog to close; picking again starts afresh.
+      await user.click(screen.getByRole('button', { name: /show jumping/i }));
 
       await waitFor(() => {
-        expect(screen.queryByTestId('training-confirm-modal')).not.toBeInTheDocument();
         expect(screen.queryByTestId('training-error')).not.toBeInTheDocument();
       });
     });

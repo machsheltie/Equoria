@@ -52,11 +52,7 @@ describe('HorseDetailPage Training Tab — Result Display', () => {
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('confirm-button'));
+      await user.click(screen.getByTestId('train-button'));
 
       // Wait for result modal
       await waitFor(() => {
@@ -79,11 +75,7 @@ describe('HorseDetailPage Training Tab — Result Display', () => {
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('confirm-button'));
+      await user.click(screen.getByTestId('train-button'));
 
       await waitFor(() => {
         const modal = screen.getByTestId('training-result-modal');
@@ -106,11 +98,7 @@ describe('HorseDetailPage Training Tab — Result Display', () => {
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('confirm-button'));
+      await user.click(screen.getByTestId('train-button'));
 
       await waitFor(() => {
         const modal = screen.getByTestId('training-result-modal');
@@ -135,11 +123,7 @@ describe('HorseDetailPage Training Tab — Result Display', () => {
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('confirm-button'));
+      await user.click(screen.getByTestId('train-button'));
 
       await waitFor(() => {
         const modal = screen.getByTestId('training-result-modal');
@@ -163,11 +147,7 @@ describe('HorseDetailPage Training Tab — Result Display', () => {
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('confirm-button'));
+      await user.click(screen.getByTestId('train-button'));
 
       await waitFor(() => {
         const modal = screen.getByTestId('training-result-modal');
@@ -191,11 +171,7 @@ describe('HorseDetailPage Training Tab — Result Display', () => {
 
       await user.click(screen.getByRole('button', { name: /dressage/i }));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('confirm-button'));
+      await user.click(screen.getByTestId('train-button'));
 
       await waitFor(() => {
         expect(screen.getByTestId('training-result-modal')).toBeInTheDocument();
