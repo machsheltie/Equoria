@@ -267,7 +267,6 @@ These are requirements, not optional flourishes:
 - Whisperleaf for a few short enchanted accents where readability is proven
 - Proda Sans for functional UI, body copy, controls, labels, tabs, ordinary dialogs, and stats
 - Artavion Mono for registry/genetics/record data
-- Horseshoe arcs as a primary-button signature, not the entire visual identity
 - Depth by tonal layering first, shadow second, glow where it carries meaning
 - 44px touch targets and visible focus states on phone and desktop
 - Typography, imagery, and composition should make the interface feel as authored as the artwork
