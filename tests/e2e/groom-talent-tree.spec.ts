@@ -12,19 +12,19 @@
  * bypass headers, no route interception, no mocked endpoints — per CLAUDE.md
  * Constitution §3, the E2E is the proof, not a vitest mock.
  *
- * Seeding: the talent tree needs a groom of a personality that HAS a tree
- * (backend TALENT_TREES is keyed calm|energetic|methodical) at a level that
- * unlocks a tier (tier1 >= level 3). We seed one directly through Prisma
- * (mirroring global-setup.ts) — personality 'energetic' (the canonical
- * personality that also has a tree), level 5 — owned by the shared E2E user,
- * with a TestFixture- name and an id-scoped afterAll cleanup (Constitution §3).
+ * Owner rulings 2026-10-28 (Equoria-2xxvd): q229 replaced the groom's old 1-10
+ * level with the star level, and q244 says stars give no bonus for now, so no
+ * talent tier opens for any groom until staff growth (Equoria-xlw03). Old
+ * contract: a level-5 groom allocated a tier-1 talent here and it persisted.
+ * This spec now proves the tree is still reachable from the live backend, that
+ * it offers no choice even to an Expert groom, and that the backend refuses a
+ * tier-1 choice (the one tier with no prerequisite) with HTTP 400.
  *
- * AC5 (backend validation respected): a locked-tier selection (tier3 on a
- * level-5 groom) is rejected by the real backend with HTTP 400 — asserted here
- * against the live endpoint (with the real CSRF token). The UI-surfaces-the-
- * error half of AC5 is covered by the GroomDetailPanel component test
- * (groom-talent-select-error-<id>, role=alert) — the UI correctly gates locked
- * tiers so there is no natural click path to a locked-tier request.
+ * Seeding: a groom of a personality that HAS a tree (backend TALENT_TREES is
+ * keyed calm|energetic|methodical), personality 'energetic', at Expert stars,
+ * owned by the shared E2E user, seeded directly through Prisma (mirroring
+ * global-setup.ts) with a TestFixture- name and an id-scoped afterAll cleanup
+ * (Constitution §3).
  */
 import { test, expect, type Page } from '@playwright/test';
 import { fileURLToPath } from 'url';
@@ -49,9 +49,8 @@ async function getPrisma(): Promise<any> {
 
 // Backend TALENT_TREES.energetic tier1 talents: playtime_pro / enthusiasm_boost.
 const SEED_PERSONALITY = 'energetic';
-const SEED_LEVEL = 5; // tier1 (>=3) unlocked; tier2 (>=5) unlocked-but-prereq-gated; tier3 (>=8) locked
+const SEED_STAR_LEVEL = 'expert'; // the top level; still opens no tier (q244)
 const TIER1_TALENT_ID = 'playtime_pro';
-const LOCKED_TIER3_TALENT_ID = 'inspiration_master'; // energetic tier3 (needs level 8)
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let prisma: any;
@@ -77,7 +76,8 @@ async function openSeededGroomDetail(page: Page): Promise<void> {
   });
 }
 
-test.describe.serial('Groom Talent Tree — reachable + allocatable (Equoria-oey96.6)', () => {
+test.describe
+  .serial('Groom Talent Tree — reachable, no tier open yet (Equoria-oey96.6, Equoria-2xxvd)', () => {
   test.beforeAll(async () => {
     prisma = await getPrisma();
 
@@ -97,19 +97,19 @@ test.describe.serial('Groom Talent Tree — reachable + allocatable (Equoria-oey
         name: `TestFixture-TalentGroom-${crypto.randomBytes(4).toString('hex')}`,
         speciality: 'foalCare',
         personality: SEED_PERSONALITY,
-        level: SEED_LEVEL,
-        skillLevel: 'expert',
+        starLevel: SEED_STAR_LEVEL,
+        skillLevel: 'master',
         userId: user.id,
         isActive: true,
       },
-      select: { id: true, personality: true, level: true },
+      select: { id: true, personality: true, starLevel: true },
     });
     groomId = groom.id;
     // Preconditions must hold or the tree test is meaningless.
     expect(groom.personality, 'seeded groom personality must have a talent tree').toBe(
       SEED_PERSONALITY
     );
-    expect(groom.level, 'seeded groom level must unlock tier1').toBeGreaterThanOrEqual(3);
+    expect(groom.starLevel, 'seeded groom must be at the top level').toBe(SEED_STAR_LEVEL);
   });
 
   test.afterAll(async () => {
@@ -120,65 +120,32 @@ test.describe.serial('Groom Talent Tree — reachable + allocatable (Equoria-oey
     await prisma.groom.delete({ where: { id: groomId } });
   });
 
-  test('views the talent tree, allocates a tier-1 talent, and it persists after reload', async ({
+  test('views the talent tree from the live backend; an Expert groom is offered no talent (q244)', async ({
     page,
   }) => {
     test.setTimeout(90_000);
 
     await openSeededGroomDetail(page);
 
-    // The tree renders from BACKEND-sourced state (initially no selections).
     const tree = page.locator('[data-testid="groom-talent-tree"]');
     await expect(tree).toBeVisible({ timeout: 15_000 });
     await expect(tree.locator('[data-testid="talent-allocated-count"]')).toHaveText(
       '0 / 3 allocated'
     );
-
-    // tier1 talent is AVAILABLE (level 5, no prerequisite) → has a Select button.
-    const selectBtn = tree.locator(`[data-testid="talent-select-btn-${TIER1_TALENT_ID}"]`);
-    await expect(selectBtn).toBeVisible({ timeout: 10_000 });
-
-    // ── Allocate → assert the REAL select POST fires and returns 200 ──
-    const selectResp = page.waitForResponse(
-      (r) =>
-        r.url().includes(`/grooms/${groomId}/talents/select`) && r.request().method() === 'POST',
-      { timeout: 20_000 }
+    for (const tier of ['tier1', 'tier2', 'tier3']) {
+      await expect(tree.locator(`[data-testid="tier-requirement-${tier}"]`)).toHaveText(
+        'Not open yet'
+      );
+    }
+    await expect(tree.locator(`[data-testid="talent-select-btn-${TIER1_TALENT_ID}"]`)).toHaveCount(
+      0
     );
-    await selectBtn.click();
-    const resp = await selectResp;
-    expect(resp.status(), 'POST /talents/select must return 200 for a valid allocation').toBe(200);
-
-    // The selection is now reflected in the tree (react-query refetch after the
-    // mutation invalidated the talents key).
-    await expect(
-      tree.locator(`[data-testid="talent-selected-badge-${TIER1_TALENT_ID}"]`)
-    ).toBeVisible({ timeout: 15_000 });
-    await expect(tree.locator('[data-testid="talent-allocated-count"]')).toHaveText(
-      '1 / 3 allocated'
-    );
-
-    // ── Persistence: full page reload, re-open, selection is STILL there ──
-    // This is the real-DB-write proof — the selection came back from the
-    // backend, not from an in-memory optimistic cache.
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    await openSeededGroomDetail(page);
-
-    const treeAfter = page.locator('[data-testid="groom-talent-tree"]');
-    await expect(
-      treeAfter.locator(`[data-testid="talent-selected-badge-${TIER1_TALENT_ID}"]`)
-    ).toBeVisible({ timeout: 15_000 });
-    await expect(treeAfter.locator('[data-testid="talent-allocated-count"]')).toHaveText(
-      '1 / 3 allocated'
-    );
+    await expect(tree.getByText(/Level \d/)).toHaveCount(0);
   });
 
-  test('the backend rejects a locked-tier selection (AC5 — validation respected)', async ({
+  test('the backend refuses a tier-1 talent choice: stars open no tier for now (q244)', async ({
     page,
   }) => {
-    // The UI correctly gates locked tiers (no Select button renders for tier3 on
-    // a level-5 groom), so we prove the backend REJECTION directly against the
-    // real endpoint with the real CSRF token. A level-5 groom cannot select
-    // tier3 (needs level 8) → HTTP 400, not a silent success.
     const csrfRes = await page.request.get('/api/v1/auth/csrf-token');
     expect(csrfRes.ok(), 'CSRF token fetch must succeed').toBe(true);
     const csrfJson = await csrfRes.json();
@@ -186,15 +153,12 @@ test.describe.serial('Groom Talent Tree — reachable + allocatable (Equoria-oey
     expect(csrfToken, 'CSRF token must be present').toBeTruthy();
 
     const res = await page.request.post(`/api/v1/grooms/${groomId}/talents/select`, {
-      data: { tier: 'tier3', talentId: LOCKED_TIER3_TALENT_ID },
+      data: { tier: 'tier1', talentId: TIER1_TALENT_ID },
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
     });
-    expect(res.status(), 'locked-tier selection must be rejected with 400').toBe(400);
+    expect(res.status(), 'a tier-1 choice must be refused with 400').toBe(400);
     const body = await res.json();
     expect(body?.success, 'rejection envelope must be success:false').toBe(false);
-    expect(
-      String(body?.message ?? ''),
-      'rejection message must name the validation reason'
-    ).toContain('insufficient_level');
+    expect(await prisma.groomTalentSelections.count({ where: { groomId } })).toBe(0);
   });
 });

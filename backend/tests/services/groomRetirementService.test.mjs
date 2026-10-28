@@ -236,15 +236,16 @@ describe('Groom Retirement Service', () => {
       expect(eligibility.mandatory).toBe(true);
     });
 
-    test('level 10 is NOT a retirement trigger any more', async () => {
+    test('the top level is NOT a retirement trigger any more', async () => {
       // Pre-m9lz1: { eligible: true, reason: 'earlyLevelCap' } at career week
-      // 5. The ruling retires grooms between age 50 and 65; a level-10 groom in
-      // its fifth week is neither.
+      // 5. The ruling retires grooms between age 50 and 65; a top-level groom in
+      // its fifth week is neither. Owner ruling 2026-10-28 (q229, Equoria-2xxvd):
+      // the old level 10 is gone; the top level is now Expert stars.
       await ensureRetirementSchedule(prisma, testGroom.id);
       await prisma.groom.update({
         where: { id: testGroom.id },
         // age 25 with startAge 20 — nowhere near any drawn retirement age.
-        data: { level: 10, careerWeeks: 5 },
+        data: { starLevel: 'expert', careerWeeks: 5 },
       });
 
       const eligibility = await checkRetirementEligibility(testGroom.id);
