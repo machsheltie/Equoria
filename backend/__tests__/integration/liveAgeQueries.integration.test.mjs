@@ -37,7 +37,6 @@ import { getAvailableInteractions } from '../../modules/grooms/services/enhanced
 import { generateInteractionRecommendations } from '../../modules/grooms/controllers/enhancedGroomController.mjs';
 import { checkAgeRequirements } from '../../utils/competitionLogic.mjs';
 import { validateConformationEntry } from '../../modules/competition/services/conformationShowService.mjs';
-import { CONFORMATION_AGE_CLASSES } from '../../modules/competition/services/conformationShowScoring.mjs';
 
 const scope = 'TestFixture-66qkj-liveAgeQ';
 const rand = () => randomBytes(5).toString('hex');
@@ -336,8 +335,8 @@ describe('in-memory age reads and shown ages follow the live age (real clock)', 
     // id null: the pure-input path (no groom-assignment read).
     const classOf = async horse =>
       (await validateConformationEntry({ id: null, ...horse }, { id: null }, 'uid')).ageClass;
-    expect(await classOf({ age: 0, dateOfBirth: daysAgo(6) })).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
-    expect(await classOf({ age: 0, dateOfBirth: daysAgo(7) })).toBe(CONFORMATION_AGE_CLASSES.YEARLING);
+    expect(await classOf({ age: 0, dateOfBirth: daysAgo(6) })).toBe('Weanling');
+    expect(await classOf({ age: 0, dateOfBirth: daysAgo(7) })).toBe('Yearling');
     const invalid = await validateConformationEntry(
       { id: null, age: -1, dateOfBirth: daysAgo(0) },
       { id: null },
