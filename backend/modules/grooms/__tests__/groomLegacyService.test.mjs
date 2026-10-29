@@ -25,6 +25,9 @@
  * LEGACY_CONSTANTS.PROTEGE_EXPERIENCE_BONUS = 50 was written to the protégé's
  * experience and fed its star level.
  *
+ * Player-facing perks (Equoria-gghoi): the backend table is the only perk table; the
+ * frontend reads authored names/descriptions from these responses, never effect codes.
+ *
  * getUserLegacyHistory:
  *   non-existent userId → []
  *   after generating protégé → returns entry
@@ -39,6 +42,8 @@ import {
   generateLegacyProtege,
   getUserLegacyHistory,
   buildProtegeGroomData,
+  getPlayerLegacyPerks,
+  findPlayerLegacyPerk,
 } from '../services/groomLegacyService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
@@ -78,6 +83,34 @@ describe('getLegacyPerks — pure function', () => {
     expect(LEGACY_PERKS.calm).toHaveLength(3);
     expect(LEGACY_PERKS.energetic).toHaveLength(3);
     expect(LEGACY_PERKS.methodical).toHaveLength(3);
+  });
+});
+
+// ── player-facing legacy perks (Equoria-gghoi) ───────────────────────────────
+
+describe('player-facing legacy perks (Equoria-gghoi)', () => {
+  it('getPlayerLegacyPerks gives the backend perks with authored labels only, no effect codes', () => {
+    const perks = getPlayerLegacyPerks('methodical');
+    expect(perks.map(p => p.id)).toEqual(['dataDriven', 'memoryBuilder', 'precisionTraining']);
+    perks.forEach(perk => {
+      expect(Object.keys(perk).sort()).toEqual(['description', 'id', 'name']);
+      expect(perk.name).toBeTruthy();
+      expect(perk.description).toBeTruthy();
+    });
+  });
+
+  it('getPlayerLegacyPerks gives nothing for personalities the backend does not define', () => {
+    expect(getPlayerLegacyPerks('playful')).toEqual([]);
+    expect(getPlayerLegacyPerks('strict')).toEqual([]);
+  });
+
+  it('findPlayerLegacyPerk names a granted perk and refuses one the game never grants', () => {
+    expect(findPlayerLegacyPerk('memoryBuilder')).toEqual({
+      id: 'memoryBuilder',
+      name: 'Memory Builder',
+      description: 'Exceptional at building horse-groom synergy',
+    });
+    expect(findPlayerLegacyPerk('routineMastery')).toBeNull();
   });
 });
 
@@ -308,5 +341,16 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
     // q229: the history names each groom's stars, never an old level.
     expect(firstEntry.retiredGroomStarLevel).toBe('rookie');
     expect(firstEntry).not.toHaveProperty('mentorLevel');
+  });
+
+  it('getUserLegacyHistory: names the inherited perk with its authored label (Equoria-gghoi)', async () => {
+    const history = await getUserLegacyHistory(glsUser.id);
+    const entry = history.find(h => h.retiredGroomId === glsGroomHasLegacy.id);
+    expect(entry.inheritedPerk).toBe('playtimePro');
+    expect(entry.inheritedPerkDetail).toEqual({
+      id: 'playtimePro',
+      name: 'Playtime Pro',
+      description: 'Expert at engaging horses through play',
+    });
   });
 });

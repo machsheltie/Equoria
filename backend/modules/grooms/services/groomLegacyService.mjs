@@ -121,6 +121,42 @@ export const LEGACY_PERKS = {
 };
 
 /**
+ * A legacy perk as a player sees it: its authored name and description only. The
+ * `effect` map is internal (its keys are code names, never shown to players), and the
+ * frontend keeps no copy of this table: it reads the perks from these responses
+ * (Equoria-gghoi).
+ * @param {{ id: string, name: string, description: string }} perk
+ * @returns {{ id: string, name: string, description: string }}
+ */
+export function toPlayerLegacyPerk(perk) {
+  return { id: perk.id, name: perk.name, description: perk.description };
+}
+
+/**
+ * The perks a groom of this personality could pass on, as players see them.
+ * @param {string} personality
+ * @returns {Array<{ id: string, name: string, description: string }>}
+ */
+export function getPlayerLegacyPerks(personality) {
+  return getLegacyPerks(personality).map(toPlayerLegacyPerk);
+}
+
+/**
+ * The legacy perk with this id, as players see it, or null when no personality grants it.
+ * @param {string} perkId
+ * @returns {{ id: string, name: string, description: string } | null}
+ */
+export function findPlayerLegacyPerk(perkId) {
+  for (const perks of Object.values(LEGACY_PERKS)) {
+    const perk = perks.find(p => p.id === perkId);
+    if (perk) {
+      return toPlayerLegacyPerk(perk);
+    }
+  }
+  return null;
+}
+
+/**
  * Check if a retired groom is eligible for legacy creation
  * @param {number} groomId - ID of the retired groom
  * @returns {Promise<Object>} Eligibility status and details
@@ -173,8 +209,8 @@ export async function checkLegacyEligibility(groomId) {
     };
   }
 
-  // Get available perks for this groom's personality
-  const availablePerks = getLegacyPerks(groom.personality);
+  // Get available perks for this groom's personality (authored labels only, Equoria-gghoi)
+  const availablePerks = getPlayerLegacyPerks(groom.personality);
 
   return {
     eligible: true,
@@ -349,6 +385,10 @@ export async function getUserLegacyHistory(userId) {
 
   return legacyLogs.map(log => ({
     id: log.id,
+    // Equoria-gghoi: the inherited perk's authored name and description, so the
+    // frontend reads the perk from the game instead of keeping its own table. null for
+    // a perk id no personality grants any more.
+    inheritedPerkDetail: findPlayerLegacyPerk(log.inheritedPerk),
     retiredGroomId: log.retiredGroomId,
     retiredGroomName: log.retiredGroom.name,
     retiredGroomStarLevel: log.retiredGroom.starLevel,
@@ -435,7 +475,7 @@ export async function autoCreateLegacyOnRetirement(retiredGroom) {
   }
 
   // Select a random perk from the mentor's personality pool.
-  const perkPool = LEGACY_PERKS[retiredGroom.personality] || [];
+  const perkPool = getLegacyPerks(retiredGroom.personality);
   if (perkPool.length === 0) {
     logger.warn(
       `[groomLegacyService.autoCreateLegacyOnRetirement] No legacy perks defined for personality '${retiredGroom.personality}'; skipping auto-legacy for groom ${retiredGroom.id}.`,
@@ -456,6 +496,8 @@ export default {
   checkLegacyEligibility,
   generateLegacyProtege,
   getLegacyPerks,
+  getPlayerLegacyPerks,
+  findPlayerLegacyPerk,
   createLegacyLog,
   getUserLegacyHistory,
   autoCreateLegacyOnRetirement,

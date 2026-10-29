@@ -27,8 +27,6 @@ import {
   LegacyPerk,
   LEGACY_CONSTANTS,
   checkLegacyEligibility,
-  getAvailablePerksForPersonality,
-  formatPerkEffect,
 } from '../../types/groomLegacy';
 
 interface GroomLegacyPanelProps {
@@ -40,9 +38,15 @@ interface GroomLegacyPanelProps {
   protégéInfo?: ProtégéInfo;
   /** Whether this groom has already created a protégé */
   hasCreatedProtégé?: boolean;
+  /**
+   * The perks this groom could pass on, exactly as the game sends them
+   * (GET /api/v1/grooms/:id/legacy/eligibility `availablePerks`). The frontend keeps
+   * no perk table of its own (Equoria-gghoi); without this, no perks are shown.
+   */
+  availablePerks?: LegacyPerk[];
 }
 
-/** Single perk card showing perk name, description, and effects */
+/** Single perk card showing the perk's authored name and description */
 function PerkCard({ perk, isInherited = false }: { perk: LegacyPerk; isInherited?: boolean }) {
   return (
     <div
@@ -72,19 +76,9 @@ function PerkCard({ perk, isInherited = false }: { perk: LegacyPerk; isInherited
           </span>
         )}
       </div>
-      <p className="text-xs text-slate-400 mb-2" data-testid={`perk-description-${perk.id}`}>
+      <p className="text-xs text-slate-400" data-testid={`perk-description-${perk.id}`}>
         {perk.description}
       </p>
-      <div className="flex flex-wrap gap-1" data-testid={`perk-effects-${perk.id}`}>
-        {Object.entries(perk.effect).map(([key, value]) => (
-          <span
-            key={key}
-            className="text-xs bg-[rgba(16,185,129,0.1)] text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded"
-          >
-            {formatPerkEffect(key, value)}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }
@@ -291,9 +285,13 @@ function LegacyBonusesSection() {
 }
 
 /** Shows perks this groom could pass to a future protégé */
-function TraitInheritancePreview({ groom }: { groom: GroomLegacyData }) {
-  const availablePerks = getAvailablePerksForPersonality(groom.groomPersonality);
-
+function TraitInheritancePreview({
+  groom,
+  availablePerks,
+}: {
+  groom: GroomLegacyData;
+  availablePerks: LegacyPerk[];
+}) {
   if (availablePerks.length === 0) return null;
 
   return (
@@ -347,6 +345,7 @@ const GroomLegacyPanel: React.FC<GroomLegacyPanelProps> = ({
   mentorInfo,
   protégéInfo,
   hasCreatedProtégé = false,
+  availablePerks = [],
 }) => {
   return (
     <div
@@ -387,7 +386,9 @@ const GroomLegacyPanel: React.FC<GroomLegacyPanelProps> = ({
       {protégéInfo && <ProtégéSection protégéInfo={protégéInfo} />}
 
       {/* Transferable perks preview (for active or retired grooms without a protégé yet) */}
-      {!hasCreatedProtégé && <TraitInheritancePreview groom={groom} />}
+      {!hasCreatedProtégé && (
+        <TraitInheritancePreview groom={groom} availablePerks={availablePerks} />
+      )}
     </div>
   );
 };

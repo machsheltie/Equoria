@@ -10,19 +10,26 @@
  * AC3: Trait inheritance preview
  * AC4: Mentorship period displayed
  * AC5: Bonus effectiveness for legacy grooms
+ *
+ * Equoria-gghoi (orchestrator decision under the owner's rulings, 2026-10-28): the
+ * backend's LEGACY_PERKS is the only perk table; the frontend copy
+ * (LEGACY_PERKS_BY_PERSONALITY, getAvailablePerksForPersonality, formatPerkEffect) is
+ * deleted and the panel shows only the perks the game sends, by authored name and
+ * description, never effect codes. Old contract: the panel looked perks up in its own
+ * drifted table (methodical routineMastery/precisionTouch, playful/strict perks the game
+ * never defines) and rendered effect keys as "+5% Bonding Bonus" chips.
  */
 
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import GroomLegacyPanel from '../groom/GroomLegacyPanel';
+import * as groomLegacyModule from '../../types/groomLegacy';
 import {
   checkLegacyEligibility,
-  getAvailablePerksForPersonality,
-  formatPerkEffect,
   LEGACY_CONSTANTS,
-  LEGACY_PERKS_BY_PERSONALITY,
   type GroomLegacyData,
+  type LegacyPerk,
   type MentorInfo,
   type ProtégéInfo,
 } from '../../types/groomLegacy';
@@ -91,55 +98,6 @@ describe('groomLegacy helpers', () => {
     });
   });
 
-  describe('getAvailablePerksForPersonality', () => {
-    it('returns 3 perks for calm personality', () => {
-      const perks = getAvailablePerksForPersonality('calm');
-      expect(perks).toHaveLength(3);
-    });
-
-    it('returns 3 perks for energetic personality', () => {
-      const perks = getAvailablePerksForPersonality('energetic');
-      expect(perks).toHaveLength(3);
-    });
-
-    it('returns 3 perks for methodical personality', () => {
-      const perks = getAvailablePerksForPersonality('methodical');
-      expect(perks).toHaveLength(3);
-    });
-
-    it('returns empty array for unknown personality', () => {
-      const perks = getAvailablePerksForPersonality('unknown');
-      expect(perks).toHaveLength(0);
-    });
-
-    it('all calm perks have id, name, description, and effect', () => {
-      const perks = getAvailablePerksForPersonality('calm');
-      perks.forEach((perk) => {
-        expect(perk.id).toBeTruthy();
-        expect(perk.name).toBeTruthy();
-        expect(perk.description).toBeTruthy();
-        expect(Object.keys(perk.effect).length).toBeGreaterThan(0);
-      });
-    });
-  });
-
-  describe('formatPerkEffect', () => {
-    it('formats positive bonding bonus as +5% Bonding Bonus', () => {
-      const result = formatPerkEffect('bondingBonus', 0.05);
-      expect(result).toBe('+5% Bonding Bonus');
-    });
-
-    it('formats 20% burnout resistance correctly', () => {
-      const result = formatPerkEffect('burnoutResistance', 0.2);
-      expect(result).toBe('+20% Burnout Resistance');
-    });
-
-    it('handles camelCase keys by adding spaces', () => {
-      const result = formatPerkEffect('milestoneAccuracy', 0.1);
-      expect(result).toContain('Milestone Accuracy');
-    });
-  });
-
   describe('LEGACY_CONSTANTS', () => {
     it('minimum mentor level is Advanced (the old level 7)', () => {
       expect(LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL).toBe('advanced');
@@ -158,16 +116,48 @@ describe('groomLegacy helpers', () => {
     });
   });
 
-  describe('LEGACY_PERKS_BY_PERSONALITY', () => {
-    it('has entries for all 5 personality types', () => {
-      const personalities = ['calm', 'energetic', 'methodical', 'playful', 'strict'];
-      personalities.forEach((p) => {
-        expect(LEGACY_PERKS_BY_PERSONALITY[p]).toBeDefined();
-        expect(LEGACY_PERKS_BY_PERSONALITY[p].length).toBeGreaterThan(0);
-      });
+  describe('no frontend perk table (Equoria-gghoi)', () => {
+    it('keeps no copy of the perks and no effect-code formatter', () => {
+      expect(groomLegacyModule).not.toHaveProperty('LEGACY_PERKS_BY_PERSONALITY');
+      expect(groomLegacyModule).not.toHaveProperty('getAvailablePerksForPersonality');
+      expect(groomLegacyModule).not.toHaveProperty('formatPerkEffect');
     });
   });
 });
+
+// The perks exactly as the backend sends them (GET /api/v1/grooms/:id/legacy/eligibility
+// availablePerks, from LEGACY_PERKS in groomLegacyService.mjs).
+const backendCalmPerks: LegacyPerk[] = [
+  { id: 'gentleHands', name: 'Gentle Hands', description: 'Inherited gentle touch technique' },
+  {
+    id: 'empathicSync',
+    name: 'Empathic Sync',
+    description: 'Natural ability to read horse emotions',
+  },
+  {
+    id: 'patienceMastery',
+    name: 'Patience Mastery',
+    description: 'Exceptional patience with difficult horses',
+  },
+];
+
+const backendMethodicalPerks: LegacyPerk[] = [
+  {
+    id: 'dataDriven',
+    name: 'Data Driven',
+    description: 'Systematic approach to trait development',
+  },
+  {
+    id: 'memoryBuilder',
+    name: 'Memory Builder',
+    description: 'Exceptional at building horse-groom synergy',
+  },
+  {
+    id: 'precisionTraining',
+    name: 'Precision Training',
+    description: 'Meticulous attention to training details',
+  },
+];
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Test fixtures
@@ -200,7 +190,6 @@ const sampleMentorInfo: MentorInfo = {
     id: 'gentleHands',
     name: 'Gentle Hands',
     description: 'Inherited gentle touch technique',
-    effect: { bondingBonus: 0.05 },
   },
   mentorshipDate: '2025-06-15T00:00:00.000Z',
 };
@@ -209,10 +198,9 @@ const sampleProtégéInfo: ProtégéInfo = {
   protégéId: 20,
   protégéName: 'Jamie Chen',
   inheritedPerk: {
-    id: 'precisionTouch',
-    name: 'Precision Touch',
-    description: 'Exact and careful handling technique',
-    effect: { groomingQuality: 0.15, injuryPrevention: 0.1 },
+    id: 'precisionTraining',
+    name: 'Precision Training',
+    description: 'Meticulous attention to training details',
   },
   createdAt: '2026-01-10T00:00:00.000Z',
 };
@@ -250,10 +238,11 @@ describe('AC1: Skills and traits transfer displayed', () => {
     );
   });
 
-  it('shows perk effects', () => {
+  it('shows no effect codes on a perk, only its authored name and description', () => {
     render(<GroomLegacyPanel groom={activeGroom} mentorInfo={sampleMentorInfo} />);
     const inheritedSection = screen.getByTestId('inherited-perk-section');
-    expect(within(inheritedSection).getByTestId('perk-effects-gentleHands')).toBeInTheDocument();
+    expect(within(inheritedSection).queryByTestId('perk-effects-gentleHands')).toBeNull();
+    expect(inheritedSection).not.toHaveTextContent(/Bonding Bonus|bondingBonus|%/);
   });
 
   it('shows inherited badge on the perk card', () => {
@@ -356,35 +345,51 @@ describe('AC2: Legacy trees show lineage', () => {
 
 describe('AC3: Trait inheritance preview', () => {
   it('renders the transferable perks section', () => {
-    render(<GroomLegacyPanel groom={activeGroom} />);
+    render(<GroomLegacyPanel groom={activeGroom} availablePerks={backendCalmPerks} />);
     expect(screen.getByTestId('trait-inheritance-preview')).toBeInTheDocument();
   });
 
-  it('shows all 3 calm personality perks in preview', () => {
+  it('shows no transferable perks when the game sent none (never a frontend copy)', () => {
     render(<GroomLegacyPanel groom={activeGroom} />);
+    expect(screen.queryByTestId('trait-inheritance-preview')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('perk-card-gentleHands')).not.toBeInTheDocument();
+  });
+
+  it('shows all 3 calm personality perks in preview', () => {
+    render(<GroomLegacyPanel groom={activeGroom} availablePerks={backendCalmPerks} />);
     expect(screen.getByTestId('perk-card-gentleHands')).toBeInTheDocument();
     expect(screen.getByTestId('perk-card-empathicSync')).toBeInTheDocument();
     expect(screen.getByTestId('perk-card-patienceMastery')).toBeInTheDocument();
   });
 
   it('shows personality label in inheritance preview', () => {
-    render(<GroomLegacyPanel groom={activeGroom} />);
+    render(<GroomLegacyPanel groom={activeGroom} availablePerks={backendCalmPerks} />);
     expect(screen.getByTestId('perk-personality-label')).toHaveTextContent('calm personality');
   });
 
-  it('shows methodical perks for methodical groom', () => {
-    render(<GroomLegacyPanel groom={retiredSeniorGroom} />);
+  it('shows exactly the methodical perks the game grants (Equoria-gghoi)', () => {
+    render(<GroomLegacyPanel groom={retiredSeniorGroom} availablePerks={backendMethodicalPerks} />);
     expect(screen.getByTestId('perk-card-dataDriven')).toBeInTheDocument();
-    expect(screen.getByTestId('perk-card-routineMastery')).toBeInTheDocument();
+    expect(screen.getByTestId('perk-card-memoryBuilder')).toBeInTheDocument();
+    expect(screen.getByTestId('perk-card-precisionTraining')).toBeInTheDocument();
+    // The drifted frontend copy's perks, which the game never grants.
+    expect(screen.queryByTestId('perk-card-routineMastery')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('perk-card-precisionTouch')).not.toBeInTheDocument();
   });
 
   it('hides transferable perks when groom has already created a protégé', () => {
-    render(<GroomLegacyPanel groom={retiredSeniorGroom} hasCreatedProtégé />);
+    render(
+      <GroomLegacyPanel
+        groom={retiredSeniorGroom}
+        availablePerks={backendMethodicalPerks}
+        hasCreatedProtégé
+      />
+    );
     expect(screen.queryByTestId('trait-inheritance-preview')).not.toBeInTheDocument();
   });
 
   it('perks in preview are NOT marked as inherited', () => {
-    render(<GroomLegacyPanel groom={activeGroom} />);
+    render(<GroomLegacyPanel groom={activeGroom} availablePerks={backendCalmPerks} />);
     // gentleHands perk in preview should not have inherited badge
     expect(screen.queryByTestId('perk-inherited-badge-gentleHands')).not.toBeInTheDocument();
   });
@@ -448,7 +453,7 @@ describe('AC4: Mentorship period displayed', () => {
         hasCreatedProtégé
       />
     );
-    expect(screen.getByTestId('perk-card-precisionTouch')).toBeInTheDocument();
+    expect(screen.getByTestId('perk-card-precisionTraining')).toBeInTheDocument();
   });
 });
 
