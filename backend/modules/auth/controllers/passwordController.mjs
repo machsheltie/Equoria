@@ -196,8 +196,16 @@ export const changePassword = async (req, res, next) => {
     // Verify old password
     const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
 
+    // Equoria-9dtyj: a wrong current password is a refusal of this request,
+    // not an ended session. A 401 here made the frontend client refresh the
+    // session and re-send, so one mistyped password was checked (and counted
+    // by authRateLimiter) twice. 400 is still a counted failure.
     if (!isOldPasswordValid) {
-      throw new AppError('Current password is incorrect', 401);
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect',
+        code: 'currentPasswordIncorrect',
+      });
     }
 
     // Hash new password

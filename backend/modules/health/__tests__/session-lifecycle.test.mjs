@@ -457,10 +457,12 @@ describe('Session Lifecycle Management', () => {
           oldPassword: 'WrongPassword123!',
           newPassword: 'NewPassword456!',
         })
-        .expect(401);
+        .expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('incorrect');
+      // Equoria-9dtyj: a refusal with a code, never a 401 the client reads as an ended session.
+      expect(response.body.code).toBe('currentPasswordIncorrect');
     });
 
     it('should validate new password requirements', async () => {

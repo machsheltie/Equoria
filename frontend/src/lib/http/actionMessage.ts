@@ -226,19 +226,15 @@ export const changePasswordRefused: ActionCopy = {
 };
 
 /**
- * A refused password change. The backend answers a wrong current password with
- * a 401, which `actionMessageFor` reads as an ended session. An ended session
- * reaches this caller marked `sessionExpired` by the transport; any other 401
- * from this endpoint is the current password being refused.
+ * Coded password-change refusals (Equoria-9dtyj). The backend answers a wrong
+ * current password with a 400 and this code, never a 401: a 401 made the
+ * transport refresh the session and re-send, checking the password twice.
  */
+export const changePasswordRefusalCodes: ActionCodeCopy = {
+  currentPasswordIncorrect: "Your current password isn't right. Check it and try again.",
+};
+
+/** A refused password change; a 401 here is only ever an ended session. */
 export function changePasswordMessageFor(error: unknown): string {
-  const status = statusOf(error);
-  const sessionExpired =
-    typeof error === 'object' &&
-    error !== null &&
-    (error as { sessionExpired?: unknown }).sessionExpired === true;
-  if (status === 401 && !sessionExpired) {
-    return "Your current password isn't right. Check it and try again.";
-  }
-  return actionMessageFor(error, changePasswordRefused);
+  return actionMessageFor(error, changePasswordRefused, changePasswordRefusalCodes);
 }

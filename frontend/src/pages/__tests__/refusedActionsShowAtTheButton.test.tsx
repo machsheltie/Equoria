@@ -468,10 +468,26 @@ describe('Refused feed, inventory and Settings actions show at the control (Equo
 
   it('a wrong current password is named at the password form, not as an ended session', async () => {
     stubProfile();
+    // Equoria-9dtyj: the backend answers a wrong current password with a coded
+    // 400 (it was a 401, which the transport refreshed and re-sent).
+    let changeCalls = 0;
+    let refreshCalls = 0;
     server.use(
-      http.post(`${base}/api/v1/auth/change-password`, () =>
-        refusal('Current password is incorrect', 401)
-      )
+      http.post(`${base}/api/v1/auth/change-password`, () => {
+        changeCalls += 1;
+        return HttpResponse.json(
+          {
+            success: false,
+            message: 'Current password is incorrect',
+            code: 'currentPasswordIncorrect',
+          },
+          { status: 400 }
+        );
+      }),
+      http.post(`${base}/api/v1/auth/refresh-token`, () => {
+        refreshCalls += 1;
+        return HttpResponse.json({ success: true, message: 'Token refreshed' });
+      })
     );
     const user = userEvent.setup();
     renderSettingsWith(client());
@@ -487,6 +503,8 @@ describe('Refused feed, inventory and Settings actions show at the control (Equo
       "Your current password isn't right. Check it and try again."
     );
     expect(screen.queryByText(/current password is incorrect/i)).not.toBeInTheDocument();
+    expect(changeCalls, 'one attempt is one password check').toBe(1);
+    expect(refreshCalls, 'a wrong password is not an ended session').toBe(0);
   });
 
   it('a refused display switch save shows beside that switch', async () => {

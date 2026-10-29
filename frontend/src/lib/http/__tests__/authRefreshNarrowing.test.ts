@@ -35,8 +35,10 @@ let refreshCalls = 0;
 let loginCalls = 0;
 let challengeCalls = 0;
 let horsesCalls = 0;
+let changePasswordCalls = 0;
 
 beforeEach(() => {
+  changePasswordCalls = 0;
   refreshCalls = 0;
   loginCalls = 0;
   challengeCalls = 0;
@@ -162,5 +164,69 @@ describe('apiClient — 401 handling for pre-session authentication operations',
     expect(error?.statusCode).toBe(401);
     expect(error?.message).toMatch(/session expired/i);
     expect(refreshCalls).toBe(1);
+  });
+});
+
+/**
+ * Change-password (Equoria-9dtyj): a wrong current password used to answer
+ * 401, so the transport refreshed and re-sent it and the backend checked (and
+ * counted) the password twice. It now answers a coded 400; a genuinely expired
+ * access token still answers 401 and must still refresh and retry once.
+ */
+describe('apiClient — change-password refusals and expired sessions', () => {
+  const body = { oldPassword: 'NotMyPassword1!', newPassword: 'BrandNewPassword9!' };
+
+  it('sends a wrong current password once and never refreshes for it', async () => {
+    server.use(
+      http.post(`${base}/api/v1/auth/refresh-token`, () => {
+        refreshCalls += 1;
+        return HttpResponse.json({ success: true, message: 'Token refreshed' });
+      }),
+      http.post(`${base}/api/v1/auth/change-password`, () => {
+        changePasswordCalls += 1;
+        return HttpResponse.json(
+          {
+            success: false,
+            message: 'Current password is incorrect',
+            code: 'currentPasswordIncorrect',
+          },
+          { status: 400 }
+        );
+      })
+    );
+
+    const error = await apiClient.post('/api/v1/auth/change-password', body).then(
+      () => null,
+      (caught: ApiError) => caught
+    );
+
+    expect(error?.statusCode).toBe(400);
+    expect(error?.code).toBe('currentPasswordIncorrect');
+    expect(changePasswordCalls, 'one attempt is one backend password check').toBe(1);
+    expect(refreshCalls).toBe(0);
+  });
+
+  it('still refreshes and retries once when the access token has expired', async () => {
+    server.use(
+      http.post(`${base}/api/v1/auth/refresh-token`, () => {
+        refreshCalls += 1;
+        return HttpResponse.json({ success: true, message: 'Token refreshed' });
+      }),
+      http.post(`${base}/api/v1/auth/change-password`, () => {
+        changePasswordCalls += 1;
+        if (changePasswordCalls === 1) {
+          return HttpResponse.json(
+            { status: 'error', message: 'Access token expired' },
+            { status: 401 }
+          );
+        }
+        return HttpResponse.json({ success: true, message: 'Password changed successfully.' });
+      })
+    );
+
+    await apiClient.post('/api/v1/auth/change-password', body);
+
+    expect(refreshCalls).toBe(1);
+    expect(changePasswordCalls).toBe(2);
   });
 });
