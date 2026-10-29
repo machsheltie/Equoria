@@ -107,6 +107,12 @@ import { ENGAGEMENT_END_REASONS, endEngagementTx } from './groomEngagementServic
 // so the age model fits under the 600-line cap. Re-exported so the route and every
 // existing importer are unchanged.
 import { getRetirementStatistics } from './groomRetirementStatsService.mjs';
+// Equoria-t08a4: recipient resolution and notice payload assembly, split out so
+// this file's explanations stop being trimmed to fit the 600-line cap.
+import {
+  buildRetirementNotices,
+  reportUnattributedHorses,
+} from './groomRetirementNoticeService.mjs';
 
 export { getRetirementStatistics };
 
@@ -408,71 +414,19 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
       },
     });
 
-    // WHO GETS TOLD (Equoria-m9lz1 fix round 1).
-    //   `Groom.userId` is `String?`, and `GroomAssignment` carries its OWN
-    //   `userId`. Gating the notification on the groom's alone meant a groom with
-    //   a null `userId` but live assignments could retire with nobody told — the
-    //   player would lose care on their horse silently, which is exactly the
-    //   failure the in-transaction notification exists to prevent. Currently
-    //   unreachable (no unengaged non-retired groom has an active assignment —
-    //   Equoria-ypb7d.2: "ownerless", a word `\bowner\b` cannot match)
-    //   but the owner's "the game should notify a player" requirement is
-    //   absolute, so it does not rely on that staying true. That population's
-    //   SIZE is deliberately not quoted: it moves with ordinary play (56 when
-    //   written, 62 the next day) and only "none has an active assignment" is
-    //   load-bearing. Same reason as commit 6c8672c73.
-    //
-    //   Preference order: the groom's own owner, then the distinct owners of the
-    //   assignments just ended. In the ordinary case those are the same person
-    //   and this writes exactly ONE notification, so the normal path is
-    //   unchanged. Ids are sorted so a multi-recipient write order is
-    //   deterministic.
-    const recipientIds = retiredGroom.userId
-      ? [retiredGroom.userId]
-      : [...new Set(endingAssignments.map(a => a.userId).filter(Boolean))].sort();
-
-    // WHICH HORSES, PER RECIPIENT (fix round 3). A shared list of NAMES would show
-    // one player another's horses in the multi-recipient fallback case. So the
-    // groom's own owner gets every ending assignment that is theirs or carries no
-    // `userId` of its own (`GroomAssignment.userId` is `String?`) — identical to the
-    // old count on the ordinary path — and a fallback recipient gets only assignments
-    // naming them. `horsesLeftUnattended` is that list's length, so it cannot lie.
-    const horsesForRecipient = recipientId =>
-      endingAssignments
-        .filter(a =>
-          retiredGroom.userId
-            ? recipientId === retiredGroom.userId && (a.userId === recipientId || !a.userId)
-            : a.userId === recipientId,
-        )
-        .map(a => ({ id: a.foal?.id ?? a.foalId, name: a.foal?.name ?? null }))
-        .sort((x, y) => x.id - y.id);
-
-    // The player's only notice, written with the retirement it announces. It
-    // carries nothing they could not already see — and NOT the age (I3).
+    // Who is told and what each reads: pure assembly over the rows read above,
+    // in groomRetirementNoticeService.mjs (Equoria-t08a4). The WRITE stays here,
+    // on this `tx` (invariant I4): an unannounceable retirement does not happen.
+    const notices = buildRetirementNotices({
+      groomId,
+      retiredGroom,
+      endingAssignments,
+      retirementReason,
+    });
+    const recipientIds = notices.recipientIds;
+    const notificationPayloadsByRecipient = notices.payloadsByRecipient;
     const notificationIds = [];
-    const notificationPayloadsByRecipient = new Map();
-    for (const recipientId of recipientIds) {
-      const horses = horsesForRecipient(recipientId);
-      const payload = {
-        groomId,
-        groomName: retiredGroom.name,
-        speciality: retiredGroom.speciality,
-        skillLevel: retiredGroom.skillLevel,
-        // Owner ruling 2026-10-28 (q229): the star level, not the old 1-10 level.
-        starLevel: retiredGroom.starLevel,
-        // Equoria-maeba (owner, 2026-09-14): the notice speaks in YEARS. It used
-        // to carry `careerWeeks`, which under the RETIRED career-weeks reading
-        // was the groom's age and under the confirmed one is a bare count of
-        // weekly passes — a number with no meaning to a player. The age is not
-        // the hidden value (I3): that is the RETIREMENT age, and this notice is
-        // sent in the same transaction that retires the groom, so it discloses
-        // nothing ahead of the event.
-        ageYears: groomAgeYears(retiredGroom),
-        reason: retirementReason,
-        horsesLeftUnattended: horses.length,
-        horses,
-      };
-      notificationPayloadsByRecipient.set(recipientId, payload);
+    for (const [recipientId, payload] of notificationPayloadsByRecipient) {
       const notification = await createNotificationTx(
         tx,
         recipientId,
@@ -482,22 +436,8 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
       notificationIds.push(notification.id);
     }
 
-    // A HORSE WHOSE OWNER WAS NOT TOLD, in either shape: nobody could be notified
-    // at all, or an ending assignment landed on no recipient's list. Both are
-    // claims about DATA (`GroomAssignment.userId` vs `Groom.userId`), so both are
-    // checked, and loud — that is what the in-transaction notice exists to prevent.
-    const attributed = [...notificationPayloadsByRecipient.values()].reduce(
-      (n, p) => n + p.horses.length,
-      0,
-    );
-    if (attributed !== endedAssignments.count) {
-      logger.error(
-        `[groomRetirementService.processRetirement] Groom ${groomId} ended ` +
-          `${endedAssignments.count} active assignment(s), but only ${attributed} reached one of ` +
-          `${recipientIds.length} notified player(s). A horse lost its groom with no warning to ` +
-          'its owner. Investigate the userId on those GroomAssignment rows.',
-      );
-    }
+    // Loud (never fatal) when a horse's owner was not told.
+    reportUnattributedHorses(groomId, notices, endedAssignments.count);
 
     return {
       retiredGroom,
