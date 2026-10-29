@@ -135,9 +135,20 @@ for (const f of files.sort()) {
   }
 
   // ---- HARD: each shade sub-distribution must sum to ~1.0 ----
+  // Owner ruling q270 (2026-10-29): every Saddlebred shade of a color is equally likely.
+  // Six equal shades are 1/6 each, which three decimals can only write as 0.167 (sum
+  // 1.002) or 0.166 (sum 0.996), so the sum check alone rejects a ruled distribution.
+  // An equal-share distribution is therefore checked share by share instead: every
+  // weight must be 1/n to three decimals (|w - 1/n| <= 0.0005), which is stricter than
+  // the sum check for those maps. Every other distribution keeps the sum check.
   for (const [name, dist] of Object.entries(j.shadeBias || {})) {
-    const s = Object.values(dist).reduce((x, y) => x + y, 0);
-    if (Math.abs(s - 1) > 0.001) E.push(`shade "${name}" sub-weights sum ${s.toFixed(3)} (≠1.0)`);
+    const weights = Object.values(dist);
+    const s = weights.reduce((x, y) => x + y, 0);
+    const equalShares = weights.length > 0 && weights.every((w) => w === weights[0]);
+    const ok = equalShares
+      ? Math.abs(weights[0] - 1 / weights.length) <= 0.0005
+      : Math.abs(s - 1) <= 0.001;
+    if (!ok) E.push(`shade "${name}" sub-weights sum ${s.toFixed(3)} (≠1.0)`);
   }
   // ---- HARD: face marking distribution must sum to ~1.0 ----
   const face = (j.markingBias || {}).face || {};
