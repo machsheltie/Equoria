@@ -318,16 +318,8 @@ describe('Temperament Assignment Service', () => {
     });
   });
 
-  // ── Backward compatibility ──────────────────────────────────────────────
-
-  describe('Backward compatibility', () => {
-    test('null temperament is a valid state for existing horses', () => {
-      // Existing horses in the database have temperament = null
-      // This test documents that null is the expected default
-      const existingHorse = { id: 1, name: 'Legacy Horse', temperament: null };
-      expect(existingHorse.temperament).toBeNull();
-    });
-  });
+  // (Old contract: a "Backward compatibility" case documented null as a valid
+  // temperament. Temperament is NOT NULL now, Equoria-576c0.5.)
 
   // ── Immutability verification ───────────────────────────────────────────
 

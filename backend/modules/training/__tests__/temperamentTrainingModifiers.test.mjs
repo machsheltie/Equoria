@@ -61,7 +61,7 @@ async function createHorse(userId, breedId, overrides = {}) {
       sex: 'Mare',
       dateOfBirth: birthDateForAge(overrides.age ?? 5),
       age: overrides.age ?? 5,
-      temperament: overrides.temperament ?? null,
+      temperament: overrides.temperament,
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       disciplineScores: overrides.disciplineScores ?? {},
       trainingCooldown: null,
@@ -122,8 +122,9 @@ describe('trainHorse() — every temperament gains exactly +5 (real DB)', () => 
   afterAll(cleanupSuite);
 
   // The temperaments whose old modifiers moved the gain or XP the most, plus
-  // the two new ones and a horse with no temperament.
-  it.each(['Calm', 'Lazy', 'Stubborn', 'Spirited', 'Willing', 'Driven', null])(
+  // the two new ones. (Old contract: a horse with no temperament was also
+  // covered; temperament is NOT NULL now, Equoria-576c0.5.)
+  it.each(['Calm', 'Lazy', 'Stubborn', 'Spirited', 'Willing', 'Driven'])(
     '%s horse: discipline +5, user XP +5, no temperamentEffects',
     async temperament => {
       const user = await createUser();
