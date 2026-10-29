@@ -94,7 +94,6 @@ describe('a breeding record is linked to the foal it produced (Equoria-wnlf0)', 
 
     const records = await prisma.breedingRecord.findMany({ where: { damId: mare.id } });
     expect(records).toHaveLength(1);
-    expect(records[0].kind).toBe('OWN_PAIR');
     expect(records[0].foalId).toBe(foal.id);
   });
 
@@ -113,40 +112,28 @@ describe('a breeding record is linked to the foal it produced (Equoria-wnlf0)', 
     const foal = await foalFor(mare);
 
     const record = await prisma.breedingRecord.findFirst({ where: { damId: mare.id } });
-    expect(record.kind).toBe('PUBLIC_STUD');
+    expect(record.stallionOwnerId).toBe(studOwner.user.id);
     expect(record.foalId).toBe(foal.id);
   });
 
-  it('an earlier breeding of the same pair keeps its own foal; the new foal goes on the new record', async () => {
+  it('a record already naming a foal keeps it; the new foal goes on the open record', async () => {
     const sire = await horse({ ownerId: mareOwner.user.id, sex: 'Stallion' });
     const mare = await horse({ ownerId: mareOwner.user.id, sex: 'Mare' });
     const olderFoal = await horse({ ownerId: mareOwner.user.id, sex: 'Filly', age: 1 });
-    const older = await prisma.breedingRecord.create({
-      data: {
-        kind: 'OWN_PAIR',
-        status: 'COMPLETED',
-        fee: 0,
-        sireId: sire.id,
-        damId: mare.id,
-        mareOwnerId: mareOwner.user.id,
-        stallionOwnerId: mareOwner.user.id,
-        sireName: sire.name,
-        damName: mare.name,
-        mareOwnerName: mareOwner.user.username,
-        stallionOwnerName: mareOwner.user.username,
-        resolvedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
-        foalId: olderFoal.id,
-      },
-    });
 
     const res = await breedOwnPair(mareOwner.token, sire.id, mare.id);
     expect(res.status).toBe(200);
+    const open = await prisma.breedingRecord.findFirst({ where: { damId: mare.id } });
+    // An earlier breeding of the same pair, already linked. Its higher id puts it first
+    // in id order, so only the "no foal yet" condition keeps the birth off it.
+    const { id: _openId, createdAt: _createdAt, ...fields } = open;
+    const linked = await prisma.breedingRecord.create({
+      data: { ...fields, foalId: olderFoal.id },
+    });
+
     const foal = await foalFor(mare);
 
-    expect((await prisma.breedingRecord.findUnique({ where: { id: older.id } })).foalId).toBe(olderFoal.id);
-    const newer = await prisma.breedingRecord.findFirst({
-      where: { damId: mare.id, id: { not: older.id } },
-    });
-    expect(newer.foalId).toBe(foal.id);
+    expect((await prisma.breedingRecord.findUnique({ where: { id: linked.id } })).foalId).toBe(olderFoal.id);
+    expect((await prisma.breedingRecord.findUnique({ where: { id: open.id } })).foalId).toBe(foal.id);
   });
 });
