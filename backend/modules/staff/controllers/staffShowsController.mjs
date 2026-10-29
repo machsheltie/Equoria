@@ -11,6 +11,11 @@
 import { listQuarantinedShows } from '../services/quarantinedShowsService.mjs';
 import { listShowScoreInputs } from '../services/showScoreInputsService.mjs';
 import { quarantinedShowTools } from '../services/quarantinedShowToolsPort.mjs';
+import {
+  fileOwnerReport,
+  filingState,
+  showFilingSubject,
+} from '../services/ownerFilingService.mjs';
 
 function parseShowId(req, res) {
   const showId = Number.parseInt(req.params.showId, 10);
@@ -42,8 +47,27 @@ export async function diagnoseShow(req, res, next) {
       return undefined;
     }
     const diagnosis = await quarantinedShowTools().diagnoseQuarantinedShow(showId);
+    const filing = await filingState(await showFilingSubject(showId));
     res.setHeader('Cache-Control', 'no-store');
-    return res.json({ success: true, diagnosis });
+    return res.json({ success: true, diagnosis, filing });
+  } catch (error) {
+    return respondRefusal(error, res, next);
+  }
+}
+
+/**
+ * POST /api/v1/staff/shows/quarantined/:showId/file: File for Claude Code
+ * (Equoria-brh8c, q234). The report is built here, never taken from the browser.
+ */
+export async function fileShow(req, res, next) {
+  try {
+    const showId = parseShowId(req, res);
+    if (showId === null) {
+      return undefined;
+    }
+    const { report } = await quarantinedShowTools().diagnoseQuarantinedShow(showId);
+    const filing = await fileOwnerReport(await showFilingSubject(showId), report, req.staff);
+    return res.json({ success: true, filing });
   } catch (error) {
     return respondRefusal(error, res, next);
   }

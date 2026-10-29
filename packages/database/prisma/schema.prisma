@@ -2297,6 +2297,27 @@ model StaffTicket {
   @@map("staff_tickets")
 }
 
+/// The owner's "File for Claude Code" (Equoria-brh8c, owner rulings q158, q234): a
+/// redacted Diagnose report waiting to become an issue in the game's issue list.
+/// scripts/import-owner-filings.mjs creates the issue and sets beadId + importedAt.
+/// filingKey makes filing idempotent (one row per failure filed). filedById has no
+/// foreign key on purpose: the owner's account id, kept as written.
+model OwnerFiling {
+  id         Int       @id @default(autoincrement())
+  filingKey  String    @unique
+  /// show | payroll | server
+  kind       String
+  title      String
+  report     String
+  filedById  String?
+  beadId     String?
+  importedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([importedAt, id])
+  @@map("owner_filings")
+}
+
 model StaffTicketReply {
   id        Int         @id @default(autoincrement())
   ticketId  Int

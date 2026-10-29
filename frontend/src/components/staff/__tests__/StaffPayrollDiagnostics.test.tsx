@@ -190,6 +190,48 @@ describe('StaffPayrollDiagnostics', () => {
     await user.click(screen.getByRole('button', { name: 'Copy report' }));
     expect(writeText).toHaveBeenCalledWith(report);
   });
+
+  it('File for Claude Code files once, then says it is filed', async () => {
+    let filings = 0;
+    const notFiled = { filed: false, filingId: null, filedAt: null, imported: false, beadId: null };
+    const filed = (alreadyFiled: boolean) => ({
+      filed: true,
+      filingId: 5,
+      filedAt: '2026-10-29T12:00:00Z',
+      imported: false,
+      beadId: null,
+      alreadyFiled,
+    });
+    server.use(
+      http.get(`${STAFF}/payroll/groom/7/diagnose`, () =>
+        HttpResponse.json({
+          diagnosis: { staffType: 'groom', staffId: 7, commitSha: null, report: '# report' },
+          filing: filings > 0 ? filed(false) : notFiled,
+        })
+      ),
+      http.post(`${STAFF}/payroll/groom/7/file`, () => {
+        filings += 1;
+        return HttpResponse.json({ filing: filed(filings > 1) });
+      })
+    );
+    const user = userEvent.setup();
+    renderWithClient(<StaffPayrollDiagnostics onCheckinRequired={() => undefined} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Open Hazel Brightwater' }));
+    await user.click(await screen.findByRole('button', { name: 'Diagnose Hazel Brightwater' }));
+    await user.click(await screen.findByRole('button', { name: 'File for Claude Code' }));
+
+    expect(
+      await screen.findByText('Filed. The next Claude Code session picks it up.')
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filed for Claude Code' })).toBeDisabled();
+    expect(filings).toBe(1);
+
+    // Opened again later, Diagnose already knows it is filed.
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await user.click(screen.getByRole('button', { name: 'Diagnose Hazel Brightwater' }));
+    expect(await screen.findByRole('button', { name: 'Filed for Claude Code' })).toBeDisabled();
+  });
 });
 
 describe('StaffServerHealth', () => {

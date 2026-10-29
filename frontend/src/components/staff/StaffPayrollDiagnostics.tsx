@@ -22,6 +22,7 @@ import { ErrorState, InlineError, SectionLoading } from '@/components/ui/state';
 import {
   isCheckinRequired,
   useDiagnosePayroll,
+  useFilePayrollReport,
   usePayrollFailures,
   usePayrollStaffSearch,
   useRerunPayroll,
@@ -29,6 +30,7 @@ import {
 } from '@/hooks/api/useStaff';
 import type { ApiError } from '@/lib/http/types';
 import type {
+  OwnerFiling,
   PayrollFailure,
   PayrollOutcome,
   PayrollStaffMember,
@@ -193,7 +195,10 @@ function FailureRow({
 function StaffMemberPanel({ member }: { member: PayrollStaffMember }) {
   const failures = usePayrollFailures(member.staffType, member.id);
   const diagnose = useDiagnosePayroll();
+  const fileReport = useFilePayrollReport();
   const [report, setReport] = useState<string | null>(null);
+  const [filing, setFiling] = useState<OwnerFiling | null>(null);
+  const target = { staffType: member.staffType, staffId: member.id };
 
   let body: React.ReactNode;
   if (failures.isPending) {
@@ -235,10 +240,12 @@ function StaffMemberPanel({ member }: { member: PayrollStaffMember }) {
           pending={diagnose.isPending}
           aria-label={`Diagnose ${member.name}`}
           onClick={() =>
-            diagnose.mutate(
-              { staffType: member.staffType, staffId: member.id },
-              { onSuccess: ({ diagnosis }) => setReport(diagnosis.report) }
-            )
+            diagnose.mutate(target, {
+              onSuccess: ({ diagnosis, filing: state }) => {
+                setReport(diagnosis.report);
+                setFiling(state ?? null);
+              },
+            })
           }
         >
           Diagnose
@@ -247,7 +254,19 @@ function StaffMemberPanel({ member }: { member: PayrollStaffMember }) {
       {diagnose.isError && (
         <InlineError message={staffErrorMessage(diagnose.error, toolMessages)} />
       )}
-      {report !== null && <CopyReportPanel report={report} onClose={() => setReport(null)} />}
+      {report !== null && (
+        <CopyReportPanel
+          report={report}
+          onClose={() => setReport(null)}
+          file={{
+            filing,
+            pending: fileReport.isPending,
+            error: fileReport.isError ? staffErrorMessage(fileReport.error, toolMessages) : null,
+            onFile: () =>
+              fileReport.mutate(target, { onSuccess: ({ filing: state }) => setFiling(state) }),
+          }}
+        />
+      )}
       <div className="mt-2">{body}</div>
     </div>
   );

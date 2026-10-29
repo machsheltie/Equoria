@@ -5,17 +5,43 @@
  * Shared by the held-show tools, the payroll tools and the server panel. When
  * the browser refuses clipboard access the report is selected and she is told
  * to copy it by hand.
+ *
+ * File for Claude Code (owner ruling q234) puts the report in the game's issue
+ * list for the next Claude Code session. It files once: a filed report says so.
  */
 
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { InlineError } from '@/components/ui/state';
+import type { OwnerFiling } from '@/lib/api/staff';
+
+/** The File for Claude Code control, when the report can be filed. */
+export interface FileForClaudeCode {
+  /** Whether it is filed already, as the server last said. */
+  filing: OwnerFiling | null;
+  pending: boolean;
+  /** Plain words for a refused filing, or null. */
+  error: string | null;
+  onFile: () => void;
+}
+
+function filedWords(filing: OwnerFiling): string {
+  if (filing.imported && filing.beadId) {
+    return `Filed. It is in the issue list as ${filing.beadId}.`;
+  }
+  return filing.alreadyFiled
+    ? 'This was already filed. The next Claude Code session picks it up.'
+    : 'Filed. The next Claude Code session picks it up.';
+}
 
 export interface CopyReportPanelProps {
   report: string;
   onClose: () => void;
+  file?: FileForClaudeCode;
 }
 
-export function CopyReportPanel({ report, onClose }: CopyReportPanelProps) {
+export function CopyReportPanel({ report, onClose, file }: CopyReportPanelProps) {
+  const filed = file?.filing?.filed === true;
   const textRef = useRef<HTMLTextAreaElement>(null);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'manual'>('idle');
 
@@ -48,6 +74,17 @@ export function CopyReportPanel({ report, onClose }: CopyReportPanelProps) {
         <Button variant="secondary" size="sm" onClick={() => void copy()}>
           Copy report
         </Button>
+        {file && (
+          <Button
+            variant="secondary"
+            size="sm"
+            pending={file.pending}
+            disabled={filed}
+            onClick={file.onFile}
+          >
+            {filed ? 'Filed for Claude Code' : 'File for Claude Code'}
+          </Button>
+        )}
         <Button variant="secondary" size="sm" onClick={onClose}>
           Close
         </Button>
@@ -62,6 +99,12 @@ export function CopyReportPanel({ report, onClose }: CopyReportPanelProps) {
           </span>
         )}
       </div>
+      {file?.filing?.filed && (
+        <p className="mt-2 text-sm text-role-secondary" role="status">
+          {filedWords(file.filing)}
+        </p>
+      )}
+      {file?.error && <InlineError message={file.error} />}
     </div>
   );
 }

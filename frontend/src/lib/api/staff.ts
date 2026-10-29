@@ -27,7 +27,9 @@
  *   GET  /api/v1/staff/payroll/:type/:id/diagnose     → { diagnosis }         (owner only)
  *   POST /api/v1/staff/payroll/:type/:id/failures/:fid/test-run → { testRun } (owner only)
  *   POST /api/v1/staff/payroll/:type/:id/failures/:fid/rerun    → { result }  (owner only)
- *   GET  /api/v1/staff/server-health                  → { health }            (owner only)
+ *   GET  /api/v1/staff/server-health                  → { health, filing }    (owner only)
+ *   POST /api/v1/staff/shows/quarantined/:id/file | payroll/:type/:id/file | server-health/file
+ *                                                     → { filing }            (owner only)
  */
 
 import { apiClient } from '../http/apiClient.js';
@@ -237,6 +239,17 @@ export interface QuarantinedShowDiagnosis {
   report: string;
 }
 
+/** Equoria-brh8c (q234): a report filed for Claude Code, once per failure. */
+export interface OwnerFiling {
+  filed: boolean;
+  filingId: number | null;
+  filedAt: string | null;
+  imported: boolean;
+  beadId: string | null;
+  /** Only on a filing request: true when it was already filed before. */
+  alreadyFiled?: boolean;
+}
+
 /** Equoria-brh8c: the owner's payroll diagnostics pick a groom or a rider. */
 export type PayrollStaffType = 'groom' | 'rider';
 
@@ -400,9 +413,14 @@ export const staffApi = {
   listQuarantinedShows: () =>
     apiClient.get<{ shows: QuarantinedShow[] }>(`${BASE}/shows/quarantined`),
   diagnoseQuarantinedShow: (showId: number) =>
-    apiClient.get<{ diagnosis: QuarantinedShowDiagnosis }>(
+    apiClient.get<{ diagnosis: QuarantinedShowDiagnosis; filing: OwnerFiling }>(
       `${BASE}/shows/quarantined/${showId}/diagnose`
     ),
+  fileQuarantinedShow: (showId: number) =>
+    apiClient.post<{ filing: OwnerFiling }>(`${BASE}/shows/quarantined/${showId}/file`, {}),
+  filePayroll: (staffType: PayrollStaffType, staffId: number) =>
+    apiClient.post<{ filing: OwnerFiling }>(`${BASE}/payroll/${staffType}/${staffId}/file`, {}),
+  fileServerHealth: () => apiClient.post<{ filing: OwnerFiling }>(`${BASE}/server-health/file`, {}),
   testRunQuarantinedShow: (showId: number) =>
     apiClient.post<{ testRun: QuarantinedShowTestRun }>(
       `${BASE}/shows/quarantined/${showId}/test-run`,
@@ -415,7 +433,7 @@ export const staffApi = {
   payrollFailures: (staffType: PayrollStaffType, staffId: number) =>
     apiClient.get<PayrollFailures>(`${BASE}/payroll/${staffType}/${staffId}/failures`),
   diagnosePayroll: (staffType: PayrollStaffType, staffId: number) =>
-    apiClient.get<{ diagnosis: PayrollDiagnosis }>(
+    apiClient.get<{ diagnosis: PayrollDiagnosis; filing: OwnerFiling }>(
       `${BASE}/payroll/${staffType}/${staffId}/diagnose`
     ),
   testRunPayroll: (staffType: PayrollStaffType, staffId: number, failureId: number) =>
@@ -428,7 +446,8 @@ export const staffApi = {
       `${BASE}/payroll/${staffType}/${staffId}/failures/${failureId}/rerun`,
       {}
     ),
-  serverHealth: () => apiClient.get<{ health: ServerHealth }>(`${BASE}/server-health`),
+  serverHealth: () =>
+    apiClient.get<{ health: ServerHealth; filing: OwnerFiling }>(`${BASE}/server-health`),
   runQuarantinedShow: (showId: number) =>
     apiClient.post<{ result: { showId: number; status: 'completed'; settled: number } }>(
       `${BASE}/shows/quarantined/${showId}/run`,

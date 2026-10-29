@@ -21,12 +21,13 @@ import { ErrorState, InlineError, SectionLoading } from '@/components/ui/state';
 import {
   isCheckinRequired,
   useDiagnoseQuarantinedShow,
+  useFileShowReport,
   useQuarantinedShows,
   useRunQuarantinedShow,
   useTestRunQuarantinedShow,
 } from '@/hooks/api/useStaff';
 import type { ApiError } from '@/lib/http/types';
-import type { QuarantinedShow, QuarantinedShowTestRun } from '@/lib/api/staff';
+import type { OwnerFiling, QuarantinedShow, QuarantinedShowTestRun } from '@/lib/api/staff';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { competitionDisciplineLabel } from '@/lib/utils/training-utils';
 import { staffErrorMessage } from './staffMessages';
@@ -118,11 +119,20 @@ function ShowRow({ show }: { show: QuarantinedShow }) {
   const diagnose = useDiagnoseQuarantinedShow();
   const testRunShow = useTestRunQuarantinedShow();
   const runShow = useRunQuarantinedShow();
+  const fileReport = useFileShowReport();
   const [report, setReport] = useState<string | null>(null);
+  const [filing, setFiling] = useState<OwnerFiling | null>(null);
   const [testRun, setTestRun] = useState<QuarantinedShowTestRun | null>(null);
 
   const runDiagnose = () =>
-    diagnose.mutate(show.id, { onSuccess: ({ diagnosis }) => setReport(diagnosis.report) });
+    diagnose.mutate(show.id, {
+      onSuccess: ({ diagnosis, filing: state }) => {
+        setReport(diagnosis.report);
+        setFiling(state ?? null);
+      },
+    });
+  const file = () =>
+    fileReport.mutate(show.id, { onSuccess: ({ filing: state }) => setFiling(state) });
   const runTest = () => {
     runShow.reset();
     testRunShow.mutate(show.id, { onSuccess: ({ testRun: next }) => setTestRun(next) });
@@ -196,7 +206,18 @@ function ShowRow({ show }: { show: QuarantinedShow }) {
         <InlineError message={staffErrorMessage(testRunShow.error, toolMessages)} />
       )}
       {runShow.isError && <InlineError message={runErrorMessage(runShow.error)} />}
-      {report !== null && <CopyReportPanel report={report} onClose={() => setReport(null)} />}
+      {report !== null && (
+        <CopyReportPanel
+          report={report}
+          onClose={() => setReport(null)}
+          file={{
+            filing,
+            pending: fileReport.isPending,
+            error: fileReport.isError ? staffErrorMessage(fileReport.error, toolMessages) : null,
+            onFile: file,
+          }}
+        />
+      )}
       {testRun && !testRunShow.isPending && <TestRunPanel testRun={testRun} />}
     </li>
   );

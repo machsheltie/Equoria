@@ -10,11 +10,11 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ErrorState, SectionLoading } from '@/components/ui/state';
-import { isCheckinRequired, useServerHealth } from '@/hooks/api/useStaff';
+import { isCheckinRequired, useFileServerReport, useServerHealth } from '@/hooks/api/useStaff';
 import type { ServerHealth } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
-import { staffTimeOptions } from './staffMessages';
+import { staffErrorMessage, staffTimeOptions } from './staffMessages';
 import StaffSection from './StaffSection';
 import CopyReportPanel from './CopyReportPanel';
 
@@ -92,6 +92,7 @@ export interface StaffServerHealthProps {
 
 export function StaffServerHealth({ onCheckinRequired }: StaffServerHealthProps) {
   const health = useServerHealth();
+  const fileReport = useFileServerReport();
   const [report, setReport] = useState<string | null>(null);
 
   const checkinLapsed = isCheckinRequired(health.error);
@@ -130,7 +131,18 @@ export function StaffServerHealth({ onCheckinRequired }: StaffServerHealthProps)
             Report for Claude Code
           </Button>
         </div>
-        {report !== null && <CopyReportPanel report={report} onClose={() => setReport(null)} />}
+        {report !== null && (
+          <CopyReportPanel
+            report={report}
+            onClose={() => setReport(null)}
+            file={{
+              filing: fileReport.data?.filing ?? health.data.filing ?? null,
+              pending: fileReport.isPending,
+              error: fileReport.isError ? staffErrorMessage(fileReport.error) : null,
+              onFile: () => fileReport.mutate(undefined),
+            }}
+          />
+        )}
         <HealthFacts health={data} />
       </>
     );

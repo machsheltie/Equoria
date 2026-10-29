@@ -48,6 +48,7 @@ import {
 } from '../controllers/staffLinkedAccountsController.mjs';
 import {
   diagnoseShow,
+  fileShow,
   getQuarantinedShows,
   getShowScoreInputs,
   testRunShow,
@@ -56,12 +57,13 @@ import {
 import { runGroomPayroll } from '../controllers/staffPayrollController.mjs';
 import {
   diagnosePayroll,
+  filePayroll,
   getPayrollFailures,
   rerunPayroll,
   searchPayroll,
   testRunPayroll,
 } from '../controllers/staffPayrollDiagnosticsController.mjs';
-import { getServerHealth } from '../controllers/staffServerHealthController.mjs';
+import { fileServerHealth, getServerHealth } from '../controllers/staffServerHealthController.mjs';
 
 const router = express.Router();
 
@@ -148,6 +150,12 @@ router.post(
   requireStaffCapability('shows.quarantine.resolve'),
   runShow,
 );
+// File for Claude Code (Equoria-brh8c, q234): the redacted report, filed once per failure.
+router.post(
+  '/shows/quarantined/:showId/file',
+  requireStaffCapability('shows.quarantine.resolve'),
+  fileShow,
+);
 
 // Owner and admins: the luck roll and score inputs recorded per entry
 // (Equoria-4q02c, owner ruling q01). Never moderators or players.
@@ -184,6 +192,12 @@ router.post(
   requireStaffCapability('payroll.diagnose'),
   rerunPayroll,
 );
+router.post(
+  '/payroll/:staffType/:staffId/file',
+  requireStaffCapability('payroll.diagnose'),
+  filePayroll,
+);
 router.get('/server-health', requireStaffCapability('server.health.view'), getServerHealth);
+router.post('/server-health/file', requireStaffCapability('server.health.view'), fileServerHealth);
 
 export default router;

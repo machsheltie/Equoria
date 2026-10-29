@@ -12,6 +12,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import {
   staffApi,
   type ConductAction,
+  type OwnerFiling,
   type PayrollStaffType,
   type FileTicketPayload,
   type StaffLogFilter,
@@ -427,4 +428,39 @@ export function useRerunPayroll() {
 /** Equoria-brh8c: the server's memory and speed, read when the owner asks. */
 export function useServerHealth() {
   return useQuery({ queryKey: staffKeys.serverHealth, queryFn: staffApi.serverHealth });
+}
+
+/**
+ * File for Claude Code (Equoria-brh8c, q234): the server builds and stores the
+ * redacted report once; a second filing returns the first.
+ */
+export function useFileForClaudeCode<TVars>(
+  fileFn: (vars: TVars) => Promise<{ filing: OwnerFiling }>
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: [...staffKeys.all, 'file-for-claude-code'],
+    mutationFn: fileFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: staffKeys.serverHealth });
+    },
+  });
+}
+
+/** File a held show's report for Claude Code. */
+export function useFileShowReport() {
+  return useFileForClaudeCode((showId: number) => staffApi.fileQuarantinedShow(showId));
+}
+
+/** File a groom's or rider's payroll report for Claude Code. */
+export function useFilePayrollReport() {
+  return useFileForClaudeCode(
+    ({ staffType, staffId }: { staffType: PayrollStaffType; staffId: number }) =>
+      staffApi.filePayroll(staffType, staffId)
+  );
+}
+
+/** File today's server memory and speed report for Claude Code. */
+export function useFileServerReport() {
+  return useFileForClaudeCode((_vars: void) => staffApi.fileServerHealth());
 }

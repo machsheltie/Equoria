@@ -14,6 +14,11 @@ import {
   testRunPayrollFailure,
 } from '../services/payrollDiagnosticsService.mjs';
 import { diagnosePayrollStaff } from '../services/payrollDiagnosis.mjs';
+import {
+  fileOwnerReport,
+  filingState,
+  payrollFilingSubject,
+} from '../services/ownerFilingService.mjs';
 
 function parseId(value) {
   const id = Number.parseInt(value, 10);
@@ -76,8 +81,28 @@ export async function diagnosePayroll(req, res, next) {
       return undefined;
     }
     const diagnosis = await diagnosePayrollStaff(target.staffType, target.staffId);
+    const filing = await filingState(await payrollFilingSubject(target.staffType, target.staffId));
     res.setHeader('Cache-Control', 'no-store');
-    return res.json({ success: true, diagnosis });
+    return res.json({ success: true, diagnosis, filing });
+  } catch (error) {
+    return respondRefusal(error, res, next);
+  }
+}
+
+/**
+ * POST /api/v1/staff/payroll/:staffType/:staffId/file: File for Claude Code
+ * (Equoria-brh8c, q234). The report is built here, never taken from the browser.
+ */
+export async function filePayroll(req, res, next) {
+  try {
+    const target = parseTarget(req, res);
+    if (!target) {
+      return undefined;
+    }
+    const { report } = await diagnosePayrollStaff(target.staffType, target.staffId);
+    const subject = await payrollFilingSubject(target.staffType, target.staffId);
+    const filing = await fileOwnerReport(subject, report, req.staff);
+    return res.json({ success: true, filing });
   } catch (error) {
     return respondRefusal(error, res, next);
   }
