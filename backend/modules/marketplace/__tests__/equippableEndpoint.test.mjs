@@ -32,6 +32,11 @@ describe('GET /api/v1/horses/:id/equippable', () => {
   const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
+    // Scoped, fail-loud cleanup (Equoria-9jv9c). Horses deleted before owner;
+    // run() drains the queue each cycle so per-test fixtures are also covered.
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -139,11 +144,6 @@ describe('GET /api/v1/horses/:id/equippable', () => {
       where: { id: user.id },
       data: { settings: { inventory: inventoryWithProSaddleOnB } },
     });
-
-    // Scoped, fail-loud cleanup (Equoria-9jv9c). Horses deleted before owner;
-    // run() drains the queue each cycle so per-test fixtures are also covered.
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: [horseAId, horseBId] } } }), 'horses');
-    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   });
 
   afterEach(() => cleanup.run());

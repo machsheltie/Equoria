@@ -111,18 +111,18 @@ describe('Horse.tack document integrity around equip/unequip (Equoria-6p398.12)'
   let listedHorse;
 
   beforeEach(async () => {
+    const userIds = () => [owner?.id, buyer?.id].filter(Boolean);
+    const horseIds = () => [horse?.id, listedHorse?.id].filter(Boolean);
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds() } } }), 'notification');
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds() } } }), 'userTransaction');
+    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: { in: horseIds() } } }), 'horseSale');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds() } } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds() } } }), 'user');
+
     owner = await makeUser('owner', 5000);
     buyer = await makeUser('buyer', 10000);
     horse = await makeHorse(owner.id);
     listedHorse = await makeHorse(owner.id, { forSale: true, salePrice: LIST_PRICE });
-
-    const userIds = [owner.id, buyer.id];
-    const horseIds = [horse.id, listedHorse.id];
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds } } }), 'notification');
-    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'userTransaction');
-    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: { in: horseIds } } }), 'horseSale');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'user');
   }, 60000);
 
   afterEach(() => cleanup.run(), 30000);

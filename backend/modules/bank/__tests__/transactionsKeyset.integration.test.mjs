@@ -39,6 +39,8 @@ const get = query =>
   request(app).get('/api/v1/users/transactions').set('Authorization', `Bearer ${token}`).query(query);
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: user.id } }), 'transactions');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -51,8 +53,6 @@ beforeAll(async () => {
   });
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
   await prisma.userTransaction.createMany({ data: Array.from({ length: TOTAL }, (_, i) => entry(i)) });
-  cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: user.id } }), 'transactions');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 60_000);
 
 afterAll(() => cleanup.run(), 60_000);

@@ -112,10 +112,10 @@ describe('Equoria-gfany — player-reachable account deletion is closed', () => 
   let stranger;
 
   beforeEach(async () => {
+    const userIds = () => [subject?.id, stranger?.id].filter(Boolean);
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds() } } }), 'fixture users');
     subject = await makeUser('subject');
     stranger = await makeUser('stranger');
-    const userIds = [subject.id, stranger.id];
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'fixture users');
   }, 30000);
 
   afterEach(() => cleanup.run(), 30000);

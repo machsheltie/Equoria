@@ -102,17 +102,17 @@ describe('trainer re-assignment history (Equoria-kccmt)', () => {
   let trainerC;
 
   beforeEach(async () => {
+    const trainerIds = () => [trainerA?.id, trainerB?.id, trainerC?.id].filter(Boolean);
+    cleanup.add(() => prisma.trainerAssignment.deleteMany({ where: { horseId: horse.id } }), 'trainerAssignment');
+    cleanup.add(() => prisma.trainer.deleteMany({ where: { id: { in: trainerIds() } } }), 'trainer');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
+
     owner = await makeUser();
     horse = await makeHorse(owner.id);
     trainerA = await makeTrainer(owner.id, 'TrainerA');
     trainerB = await makeTrainer(owner.id, 'TrainerB');
     trainerC = await makeTrainer(owner.id, 'TrainerC');
-
-    const trainerIds = [trainerA.id, trainerB.id, trainerC.id];
-    cleanup.add(() => prisma.trainerAssignment.deleteMany({ where: { horseId: horse.id } }), 'trainerAssignment');
-    cleanup.add(() => prisma.trainer.deleteMany({ where: { id: { in: trainerIds } } }), 'trainer');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
   }, 30000);
 
   afterEach(() => cleanup.run(), 30000);

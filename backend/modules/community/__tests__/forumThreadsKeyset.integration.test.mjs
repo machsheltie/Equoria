@@ -42,6 +42,8 @@ const thread = (i, isPinned) => ({
 });
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.forumThread.deleteMany({ where: { authorId: author.id } }), 'threads');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: author.id } }), 'author');
   author = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -58,8 +60,6 @@ beforeAll(async () => {
   });
   mine = (await prisma.forumThread.findMany({ where: { authorId: author.id }, select: { id: true } })).map(t => t.id);
   mine.sort((a, b) => a - b);
-  cleanup.add(() => prisma.forumThread.deleteMany({ where: { authorId: author.id } }), 'threads');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: author.id } }), 'author');
 }, 60_000);
 
 afterAll(() => cleanup.run(), 60_000);

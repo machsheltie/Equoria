@@ -60,6 +60,20 @@ describe('SENTINEL: marketplace purchase TOCTOU (Equoria-alei5)', () => {
   const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
+    // Fail-loud, id-scoped, FK-ordered cleanup (Equoria-0y9f5). The previous
+    // `.catch(console.warn)` form silently leaked the whole fixture graph
+    // into the canonical DB whenever a delete failed (e.g. a horseSale row
+    // RESTRICT-blocking the horse/users). Registration order = run order:
+    // children before parents (notifications/transactions cascade with user
+    // deletion but are deleted explicitly as defence; horseSale is RESTRICT
+    // on horseId/buyerId/sellerId so it MUST precede horse + users).
+    const userIds = () => [seller?.id, buyerA?.id, buyerB?.id].filter(Boolean);
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds() } } }), 'notifications');
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds() } } }), 'userTransactions');
+    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: horse.id } }), 'horseSale');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds() } } }), 'users');
+
     seller = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -108,21 +122,6 @@ describe('SENTINEL: marketplace purchase TOCTOU (Equoria-alei5)', () => {
     tokenA = generateTestToken({ id: buyerA.id, email: buyerA.email, role: 'user' });
     tokenB = generateTestToken({ id: buyerB.id, email: buyerB.email, role: 'user' });
     csrf = await fetchCsrf(app);
-
-    // Fail-loud, id-scoped, FK-ordered cleanup (Equoria-0y9f5). The previous
-    // `.catch(console.warn)` form silently leaked the whole fixture graph
-    // into the canonical DB whenever a delete failed (e.g. a horseSale row
-    // RESTRICT-blocking the horse/users). Registration order = run order:
-    // children before parents (notifications/transactions cascade with user
-    // deletion but are deleted explicitly as defence; horseSale is RESTRICT
-    // on horseId/buyerId/sellerId so it MUST precede horse + users).
-    const userIds = [seller.id, buyerA.id, buyerB.id];
-    const horseId = horse.id;
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds } } }), 'notifications');
-    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'userTransactions');
-    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId } }), 'horseSale');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horseId } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
   }, 60000);
 
   afterEach(() => cleanup.run(), 60000);

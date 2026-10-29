@@ -44,6 +44,10 @@ describe('rider retirement ends the assignment on the horse (Equoria-r9u5k)', ()
 
   beforeEach(async () => {
     const suffix = tag();
+    cleanup.add(() => prisma.riderAssignment.deleteMany({ where: { userId: owner.id } }), 'riderAssignment');
+    cleanup.add(() => prisma.rider.deleteMany({ where: { userId: owner.id } }), 'rider');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: owner.id } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
     owner = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -78,10 +82,6 @@ describe('rider retirement ends the assignment on the horse (Equoria-r9u5k)', ()
         userId: owner.id,
       },
     });
-    cleanup.add(() => prisma.riderAssignment.deleteMany({ where: { userId: owner.id } }), 'riderAssignment');
-    cleanup.add(() => prisma.rider.deleteMany({ where: { userId: owner.id } }), 'rider');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: owner.id } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
   }, 30000);
 
   afterEach(() => cleanup.run(), 30000);

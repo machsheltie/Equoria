@@ -124,6 +124,25 @@ describe('GET /api/v1/while-you-were-gone — six event-type aggregation (Equori
   beforeAll(async () => {
     const hex = () => randomBytes(4).toString('hex');
 
+    // FK-ordered, scoped cleanup (Equoria-myfc5 / CLAUDE.md §2). HorseSale is a
+    // RESTRICT relation on horse — delete sales BEFORE horses.
+    cleanup6.add(() => prisma.directMessage.deleteMany({ where: { id: { in: messageIds } } }), 'directMessages');
+    cleanup6.add(() => prisma.clubElection.deleteMany({ where: { clubId: club.id } }), 'clubElections');
+    cleanup6.add(() => prisma.clubMembership.deleteMany({ where: { clubId: club.id } }), 'clubMemberships');
+    cleanup6.add(() => prisma.club.deleteMany({ where: { id: club.id } }), 'club');
+    cleanup6.add(() => prisma.horseSale.deleteMany({ where: { id: { in: saleIds } } }), 'horseSales');
+    cleanup6.add(
+      () => prisma.competitionResult.deleteMany({ where: { horseId: { in: horseIds } } }),
+      'competitionResults',
+    );
+    cleanup6.add(() => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: horseIds } } }), 'foalDevelopment');
+    cleanup6.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
+    cleanup6.add(() => cleanupTestHorses(prisma, horseIds), 'horses');
+    cleanup6.add(
+      () => prisma.user.deleteMany({ where: { id: { in: [player?.id, otherUser?.id].filter(Boolean) } } }),
+      'users',
+    );
+
     player = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -315,22 +334,6 @@ describe('GET /api/v1/while-you-were-gone — six event-type aggregation (Equori
     });
     outOfWindowSaleId = outSale.id;
     saleIds.push(outSale.id);
-
-    // FK-ordered, scoped cleanup (Equoria-myfc5 / CLAUDE.md §2). HorseSale is a
-    // RESTRICT relation on horse — delete sales BEFORE horses.
-    cleanup6.add(() => prisma.directMessage.deleteMany({ where: { id: { in: messageIds } } }), 'directMessages');
-    cleanup6.add(() => prisma.clubElection.deleteMany({ where: { clubId: club.id } }), 'clubElections');
-    cleanup6.add(() => prisma.clubMembership.deleteMany({ where: { clubId: club.id } }), 'clubMemberships');
-    cleanup6.add(() => prisma.club.deleteMany({ where: { id: club.id } }), 'club');
-    cleanup6.add(() => prisma.horseSale.deleteMany({ where: { id: { in: saleIds } } }), 'horseSales');
-    cleanup6.add(
-      () => prisma.competitionResult.deleteMany({ where: { horseId: { in: horseIds } } }),
-      'competitionResults',
-    );
-    cleanup6.add(() => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: horseIds } } }), 'foalDevelopment');
-    cleanup6.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
-    cleanup6.add(() => cleanupTestHorses(prisma, horseIds), 'horses');
-    cleanup6.add(() => prisma.user.deleteMany({ where: { id: { in: [player.id, otherUser.id] } } }), 'users');
   }, 60000);
 
   afterAll(() => cleanup6.run(), 60000);

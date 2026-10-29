@@ -42,6 +42,10 @@ describe('rider assign under concurrency (Equoria-j8s5c)', () => {
 
   beforeEach(async () => {
     const suffix = tag();
+    cleanup.add(() => prisma.riderAssignment.deleteMany({ where: { userId: owner.id } }), 'riderAssignment');
+    cleanup.add(() => prisma.rider.deleteMany({ where: { userId: owner.id } }), 'riders');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: owner.id } }), 'horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
     owner = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -84,10 +88,6 @@ describe('rider assign under concurrency (Equoria-j8s5c)', () => {
         }),
       );
     }
-    cleanup.add(() => prisma.riderAssignment.deleteMany({ where: { userId: owner.id } }), 'riderAssignment');
-    cleanup.add(() => prisma.rider.deleteMany({ where: { userId: owner.id } }), 'riders');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: owner.id } }), 'horses');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
   }, 30000);
 
   afterEach(() => cleanup.run(), 30000);

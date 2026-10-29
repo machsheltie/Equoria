@@ -99,6 +99,9 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
     horseIds.length = 0;
     breedIds.length = 0;
     run = tag();
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
+    cleanup.add(() => prisma.breed.deleteMany({ where: { id: { in: breedIds } } }), 'breeds');
     breed = await prisma.breed.upsert({
       where: { name: 'Thoroughbred' },
       update: {},
@@ -110,12 +113,6 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
     breedIds.push(otherBreed.id);
     viewer = await player('viewer');
     seller = await player('seller');
-    const ids = horseIds;
-    const users = userIds;
-    const breeds = breedIds;
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: ids } } }), 'horses');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: users } } }), 'users');
-    cleanup.add(() => prisma.breed.deleteMany({ where: { id: { in: breeds } } }), 'breeds');
   });
 
   afterEach(async () => {

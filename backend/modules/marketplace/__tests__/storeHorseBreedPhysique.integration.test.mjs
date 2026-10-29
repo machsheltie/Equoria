@@ -45,6 +45,10 @@ describe('POST /marketplace/store/buy: conformation and gaits from the breed (Eq
       breedIds[name] = breed.id;
     }
     const tag = randomBytes(6).toString('hex');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { breedId: rangeless.id } }), 'rangeless horses');
+    cleanup.add(() => prisma.breed.deleteMany({ where: { id: rangeless.id } }), 'rangeless breed');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -58,14 +62,9 @@ describe('POST /marketplace/store/buy: conformation and gaits from the breed (Eq
       },
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
-    const userId = user.id;
     // A breed row with no ranges anywhere (no JSON profile, no breedGeneticProfile).
     const rangeless = await prisma.breed.create({ data: { name: `No Ranges q211 ${tag}` } });
     rangelessBreedId = rangeless.id;
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { breedId: rangeless.id } }), 'rangeless horses');
-    cleanup.add(() => prisma.breed.deleteMany({ where: { id: rangeless.id } }), 'rangeless breed');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: userId } }), 'user');
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);

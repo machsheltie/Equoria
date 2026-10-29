@@ -81,14 +81,14 @@ async function makeHorse(forSale) {
 }
 
 beforeAll(async () => {
-  ({ user: seller, token: sellerToken } = await makeUser('seller'));
-  horseListable = await makeHorse(false);
-  horseDelistable = await makeHorse(true);
-
   // Scoped, fail-loud cleanup (Equoria-9jv9c): a delete failure fails the suite
   // so leaked fixtures surface instead of being swallowed by a console.warn.
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horse');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'user');
+
+  ({ user: seller, token: sellerToken } = await makeUser('seller'));
+  horseListable = await makeHorse(false);
+  horseDelistable = await makeHorse(true);
 }, 60000);
 
 afterAll(() => cleanup.run(), 30000);

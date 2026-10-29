@@ -28,6 +28,32 @@ let rider;
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: child rows
+  // (assignments, riders, marketplace state) and the horse (Horse.userId is
+  // onDelete:Restrict, schema:282) BEFORE the user row. A failed delete fails
+  // the suite instead of being swallowed and leaking a fixture into the
+  // canonical DB. rider.deleteMany({ userId }) also sweeps the disposable
+  // rider created in the dismiss test, scoped to this suite's user.
+  cleanup.add(
+    () =>
+      prisma.riderAssignment.deleteMany({
+        where: { OR: [{ riderId: rider?.id ?? -1 }, { horseId: horse?.id ?? -1 }] },
+      }),
+    'riderAssignment',
+  );
+  // A dismissed rider returns to the riders-for-hire pool with no userId (owner ruling
+  // 2026-10-28, q177, Equoria-xlw03), so dismissed riders are also cleaned up by id.
+  cleanup.add(
+    () =>
+      prisma.rider.deleteMany({
+        where: { OR: [{ userId: user.id }, { id: { in: pooledRiderIds } }] },
+      }),
+    'rider',
+  );
+  cleanup.add(() => prisma.staffMarketplaceState.deleteMany({ where: { userId: user.id } }), 'staffMarketplaceState');
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -63,32 +89,6 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: child rows
-  // (assignments, riders, marketplace state) and the horse (Horse.userId is
-  // onDelete:Restrict, schema:282) BEFORE the user row. A failed delete fails
-  // the suite instead of being swallowed and leaking a fixture into the
-  // canonical DB. rider.deleteMany({ userId }) also sweeps the disposable
-  // rider created in the dismiss test, scoped to this suite's user.
-  cleanup.add(
-    () =>
-      prisma.riderAssignment.deleteMany({
-        where: { OR: [{ riderId: rider.id }, { horseId: horse.id }] },
-      }),
-    'riderAssignment',
-  );
-  // A dismissed rider returns to the riders-for-hire pool with no userId (owner ruling
-  // 2026-10-28, q177, Equoria-xlw03), so dismissed riders are also cleaned up by id.
-  cleanup.add(
-    () =>
-      prisma.rider.deleteMany({
-        where: { OR: [{ userId: user.id }, { id: { in: pooledRiderIds } }] },
-      }),
-    'rider',
-  );
-  cleanup.add(() => prisma.staffMarketplaceState.deleteMany({ where: { userId: user.id } }), 'staffMarketplaceState');
-  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

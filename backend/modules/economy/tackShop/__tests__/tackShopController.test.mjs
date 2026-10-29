@@ -29,6 +29,10 @@ let token;
 let horse;
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-9jv9c).
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -52,10 +56,6 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-
-  // Scoped, fail-loud cleanup (Equoria-9jv9c).
-  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

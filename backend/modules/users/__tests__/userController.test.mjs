@@ -261,6 +261,14 @@ describe('GET /api/v1/users/:userId/competition-stats — with results', () => {
   const statsCleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    // FK order: competitionResults → shows → horse → user. Scoped by id.
+    statsCleanup.add(
+      () => prisma.competitionResult.deleteMany({ where: { id: { in: createdResultIds } } }),
+      'competitionResults',
+    );
+    statsCleanup.add(() => prisma.show.deleteMany({ where: { id: { in: createdShowIds } } }), 'shows');
+    statsCleanup.add(() => prisma.horse.delete({ where: { id: statsHorse.id } }), 'horse');
+    statsCleanup.add(() => prisma.user.delete({ where: { id: statsUser.id } }), 'user');
     statsUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -331,14 +339,6 @@ describe('GET /api/v1/users/:userId/competition-stats — with results', () => {
       });
       createdResultIds.push(r.id);
     }
-    // FK order: competitionResults → shows → horse → user. Scoped by id.
-    statsCleanup.add(
-      () => prisma.competitionResult.deleteMany({ where: { id: { in: createdResultIds } } }),
-      'competitionResults',
-    );
-    statsCleanup.add(() => prisma.show.deleteMany({ where: { id: { in: createdShowIds } } }), 'shows');
-    statsCleanup.add(() => prisma.horse.delete({ where: { id: statsHorse.id } }), 'horse');
-    statsCleanup.add(() => prisma.user.delete({ where: { id: statsUser.id } }), 'user');
   }, 60000);
 
   afterAll(() => statsCleanup.run(), 30000);

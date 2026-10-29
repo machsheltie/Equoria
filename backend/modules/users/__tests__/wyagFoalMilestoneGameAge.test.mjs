@@ -29,6 +29,10 @@ let youngName;
 let grownName;
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: horseIds } } }), 'foalDevelopment');
+  cleanup.add(() => cleanupTestHorses(prisma, horseIds), 'horses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -75,10 +79,6 @@ beforeAll(async () => {
   await prisma.foalDevelopment.create({
     data: { foalId: grown.id, bondScore: 9, bondingLevel: 50, isActive: true, lastInteractionAt: hoursAgo(1) },
   });
-
-  cleanup.add(() => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: horseIds } } }), 'foalDevelopment');
-  cleanup.add(() => cleanupTestHorses(prisma, horseIds), 'horses');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

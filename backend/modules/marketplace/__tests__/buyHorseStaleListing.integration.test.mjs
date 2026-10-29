@@ -188,18 +188,17 @@ describe('buyHorse — a purchase is bound to the listing it actually buys (find
   const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
+    const userIds = () => [sellerA?.user.id, buyerB?.user.id, buyerC?.user.id].filter(Boolean);
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds() } } }), 'notifications');
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds() } } }), 'userTransactions');
+    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: horse.id } }), 'horseSale');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds() } } }), 'users');
+
     sellerA = await makeUser('sellerA', 0);
     buyerB = await makeUser('buyerB', 1000);
     buyerC = await makeUser('buyerC', 1000);
     horse = await makeListedHorse(sellerA.user.id, LIST_PRICE);
-
-    const userIds = [sellerA.user.id, buyerB.user.id, buyerC.user.id];
-    const horseId = horse.id;
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds } } }), 'notifications');
-    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'userTransactions');
-    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId } }), 'horseSale');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horseId } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
   }, 60000);
 
   afterEach(async () => {

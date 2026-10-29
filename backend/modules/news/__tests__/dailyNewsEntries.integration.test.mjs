@@ -72,6 +72,31 @@ async function makeElection(data, candidateUsers = []) {
 const keysFor = rows => rows.map(r => r.sourceKey).sort();
 
 beforeAll(async () => {
+  cleanup.add(
+    () => prisma.newsItem.deleteMany({ where: { sourceKey: { contains: `-${T}` } } }),
+    'fixture store entries',
+  );
+  cleanup.add(
+    () =>
+      prisma.newsItem.deleteMany({
+        where: {
+          sourceKey: {
+            in: electionIds.flatMap(id => [
+              `clubNews:electionOpened:${id}`,
+              `clubNews:runoffResult:${id}`,
+              `clubNews:electionResult:${id}`,
+            ]),
+          },
+        },
+      }),
+    'club news',
+  );
+  cleanup.add(() => prisma.clubCandidate.deleteMany({ where: { electionId: { in: electionIds } } }), 'candidates');
+  cleanup.add(() => prisma.clubElection.deleteMany({ where: { id: { in: electionIds } } }), 'elections');
+  cleanup.add(() => prisma.club.deleteMany({ where: { id: club.id } }), 'club');
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
+
   const leader = await makeUser('leader');
   fx.ann = await makeUser('ann');
   fx.bo = await makeUser('bo');
@@ -184,31 +209,6 @@ beforeAll(async () => {
     where: { id: fx.wonOld.id },
     data: { outcome: 'won', winnerCandidateId: fx.wonOld.candidates[0].id },
   });
-
-  cleanup.add(
-    () => prisma.newsItem.deleteMany({ where: { sourceKey: { contains: `-${T}` } } }),
-    'fixture store entries',
-  );
-  cleanup.add(
-    () =>
-      prisma.newsItem.deleteMany({
-        where: {
-          sourceKey: {
-            in: electionIds.flatMap(id => [
-              `clubNews:electionOpened:${id}`,
-              `clubNews:runoffResult:${id}`,
-              `clubNews:electionResult:${id}`,
-            ]),
-          },
-        },
-      }),
-    'club news',
-  );
-  cleanup.add(() => prisma.clubCandidate.deleteMany({ where: { electionId: { in: electionIds } } }), 'candidates');
-  cleanup.add(() => prisma.clubElection.deleteMany({ where: { id: { in: electionIds } } }), 'elections');
-  cleanup.add(() => prisma.club.deleteMany({ where: { id: club.id } }), 'club');
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
 }, 60000);
 
 afterAll(() => cleanup.run(), 60000);

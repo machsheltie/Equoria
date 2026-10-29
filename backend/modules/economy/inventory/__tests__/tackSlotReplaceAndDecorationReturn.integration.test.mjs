@@ -101,6 +101,9 @@ describe('Horse.tack replace / decoration return / equip-vs-purchase (Equoria-6p
 
   beforeEach(async () => {
     const tag = uniq();
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: owner.id } }), 'userTransaction');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
     owner = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -125,11 +128,6 @@ describe('Horse.tack replace / decoration return / equip-vs-purchase (Equoria-6p
         healthStatus: 'Excellent',
       },
     });
-    const userId = owner.id;
-    const horseId = horse.id;
-    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId } }), 'userTransaction');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horseId } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: userId } }), 'user');
   }, 60000);
 
   afterEach(() => cleanup.run(), 30000);

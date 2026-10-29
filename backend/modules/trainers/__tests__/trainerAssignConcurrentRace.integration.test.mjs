@@ -102,15 +102,14 @@ describe('trainer assign concurrency (Equoria-bvddn.8)', () => {
   let horses;
 
   beforeEach(async () => {
+    cleanup.add(() => prisma.trainerAssignment.deleteMany({ where: { trainerId: trainer.id } }), 'trainerAssignment');
+    cleanup.add(() => prisma.trainer.deleteMany({ where: { id: trainer.id } }), 'trainer');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: owner.id } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
+
     owner = await makeUser();
     trainer = await makeTrainer(owner.id);
     horses = await Promise.all(Array.from({ length: N_ATTEMPTS }, (_, i) => makeHorse(owner.id, String(i))));
-
-    const horseIds = horses.map(h => h.id);
-    cleanup.add(() => prisma.trainerAssignment.deleteMany({ where: { trainerId: trainer.id } }), 'trainerAssignment');
-    cleanup.add(() => prisma.trainer.deleteMany({ where: { id: trainer.id } }), 'trainer');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
   }, 30000);
 
   afterEach(() => cleanup.run(), 30000);

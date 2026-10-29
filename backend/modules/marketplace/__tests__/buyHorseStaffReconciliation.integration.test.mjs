@@ -267,6 +267,25 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
   let groomAssignmentId;
 
   beforeEach(async () => {
+    const userIds = () => [seller?.id, buyer?.id].filter(Boolean);
+    const horseIds = () => [listedHorse?.id, keptHorse?.id].filter(Boolean);
+
+    cleanup.add(() => prisma.riderAssignment.deleteMany({ where: { horseId: { in: horseIds() } } }), 'riderAssignment');
+    cleanup.add(
+      () => prisma.trainerAssignment.deleteMany({ where: { horseId: { in: horseIds() } } }),
+      'trainerAssignment',
+    );
+    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { groomId: groom.id } }), 'groomInteraction');
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { foalId: { in: horseIds() } } }), 'groomAssignment');
+    cleanup.add(() => prisma.rider.deleteMany({ where: { id: rider.id } }), 'rider');
+    cleanup.add(() => prisma.trainer.deleteMany({ where: { id: trainer.id } }), 'trainer');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds() } } }), 'notification');
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds() } } }), 'userTransaction');
+    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: { in: horseIds() } } }), 'horseSale');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds() } } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds() } } }), 'user');
+
     seller = await makeUser('seller', 0);
     buyer = await makeUser('buyer', 10000);
     listedHorse = await makeHorse(seller.id, { forSale: true, salePrice: LIST_PRICE });
@@ -274,25 +293,6 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
     rider = await makeRider(seller.id);
     trainer = await makeTrainer(seller.id);
     groom = await makeGroom(seller.id);
-
-    const userIds = [seller.id, buyer.id];
-    const horseIds = [listedHorse.id, keptHorse.id];
-
-    cleanup.add(() => prisma.riderAssignment.deleteMany({ where: { horseId: { in: horseIds } } }), 'riderAssignment');
-    cleanup.add(
-      () => prisma.trainerAssignment.deleteMany({ where: { horseId: { in: horseIds } } }),
-      'trainerAssignment',
-    );
-    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { groomId: groom.id } }), 'groomInteraction');
-    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { foalId: { in: horseIds } } }), 'groomAssignment');
-    cleanup.add(() => prisma.rider.deleteMany({ where: { id: rider.id } }), 'rider');
-    cleanup.add(() => prisma.trainer.deleteMany({ where: { id: trainer.id } }), 'trainer');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds } } }), 'notification');
-    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'userTransaction');
-    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: { in: horseIds } } }), 'horseSale');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'user');
 
     const riderAssigned = await assignRiderRequest(seller.token, rider.id, listedHorse.id);
     expect(riderAssigned.status).toBe(201);

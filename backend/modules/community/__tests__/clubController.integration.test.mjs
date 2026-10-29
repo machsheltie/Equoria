@@ -23,6 +23,12 @@ let club;
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: memberships (FK to
+  // club + user) before the club, club before the user.
+  cleanup.add(() => prisma.clubMembership.deleteMany({ where: { clubId: club.id } }), 'clubMembership');
+  cleanup.add(() => prisma.club.delete({ where: { id: club.id } }), 'club');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -50,12 +56,6 @@ beforeAll(async () => {
   await prisma.clubMembership.create({
     data: { clubId: club.id, userId: user.id, role: 'president' },
   });
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: memberships (FK to
-  // club + user) before the club, club before the user.
-  cleanup.add(() => prisma.clubMembership.deleteMany({ where: { clubId: club.id } }), 'clubMembership');
-  cleanup.add(() => prisma.club.delete({ where: { id: club.id } }), 'club');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

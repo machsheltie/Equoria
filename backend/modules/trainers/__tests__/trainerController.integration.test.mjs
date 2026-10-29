@@ -28,6 +28,24 @@ let trainer;
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: child rows
+  // (assignments, trainers, marketplace state) and the horse (Horse.userId is
+  // onDelete:Restrict, schema:282) BEFORE the user row. A failed delete fails
+  // the suite instead of being swallowed and leaking a fixture into the
+  // canonical DB. trainer.deleteMany({ userId }) also sweeps the disposable
+  // trainer created in the dismiss test, scoped to this suite's user.
+  cleanup.add(
+    () =>
+      prisma.trainerAssignment.deleteMany({
+        where: { OR: [{ trainerId: trainer?.id ?? -1 }, { horseId: horse?.id ?? -1 }] },
+      }),
+    'trainerAssignment',
+  );
+  cleanup.add(() => prisma.trainer.deleteMany({ where: { userId: user.id } }), 'trainer');
+  cleanup.add(() => prisma.staffMarketplaceState.deleteMany({ where: { userId: user.id } }), 'staffMarketplaceState');
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -63,24 +81,6 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: child rows
-  // (assignments, trainers, marketplace state) and the horse (Horse.userId is
-  // onDelete:Restrict, schema:282) BEFORE the user row. A failed delete fails
-  // the suite instead of being swallowed and leaking a fixture into the
-  // canonical DB. trainer.deleteMany({ userId }) also sweeps the disposable
-  // trainer created in the dismiss test, scoped to this suite's user.
-  cleanup.add(
-    () =>
-      prisma.trainerAssignment.deleteMany({
-        where: { OR: [{ trainerId: trainer.id }, { horseId: horse.id }] },
-      }),
-    'trainerAssignment',
-  );
-  cleanup.add(() => prisma.trainer.deleteMany({ where: { userId: user.id } }), 'trainer');
-  cleanup.add(() => prisma.staffMarketplaceState.deleteMany({ where: { userId: user.id } }), 'staffMarketplaceState');
-  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

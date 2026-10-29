@@ -221,18 +221,18 @@ describe('tack return on sale vs a concurrent inventory write (Equoria-6p398.12)
   let bridleRecordId;
 
   beforeEach(async () => {
+    const userIds = () => [seller?.id, buyer?.id].filter(Boolean);
+    const horseIds = () => [listedHorse?.id, keptHorse?.id].filter(Boolean);
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds() } } }), 'notification');
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds() } } }), 'userTransaction');
+    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: { in: horseIds() } } }), 'horseSale');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds() } } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds() } } }), 'user');
+
     seller = await makeUser('seller', 5000);
     buyer = await makeUser('buyer', 10000);
     listedHorse = await makeHorse(seller.id, { forSale: true, salePrice: LIST_PRICE });
     keptHorse = await makeHorse(seller.id);
-
-    const userIds = [seller.id, buyer.id];
-    const horseIds = [listedHorse.id, keptHorse.id];
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds } } }), 'notification');
-    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'userTransaction');
-    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: { in: horseIds } } }), 'horseSale');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'user');
 
     // Real provenance, through the real endpoints: a saddle on the LISTED horse
     // (which the sale must return) and a spare bridle the seller is free to

@@ -65,6 +65,22 @@ async function createFixtureUser(tag) {
 }
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup. FK order: elections → memberships → clubs,
+  // then messages (scoped to fixture users), then the users themselves.
+  cleanup.add(() => prisma.clubElection.deleteMany({ where: { clubId: { in: clubIds } } }), 'clubElection');
+  cleanup.add(() => prisma.clubMembership.deleteMany({ where: { clubId: { in: clubIds } } }), 'clubMembership');
+  cleanup.add(() => prisma.club.deleteMany({ where: { id: { in: clubIds } } }), 'club');
+  cleanup.add(
+    () =>
+      prisma.directMessage.deleteMany({
+        where: {
+          OR: [{ senderId: { in: userIds } }, { recipientId: { in: userIds } }],
+        },
+      }),
+    'directMessage',
+  );
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'user');
+
   userA = await createFixtureUser('A');
   userB = await createFixtureUser('B');
   userC = await createFixtureUser('C');
@@ -161,22 +177,6 @@ beforeAll(async () => {
       },
     ],
   });
-
-  // Scoped, fail-loud cleanup. FK order: elections → memberships → clubs,
-  // then messages (scoped to fixture users), then the users themselves.
-  cleanup.add(() => prisma.clubElection.deleteMany({ where: { clubId: { in: clubIds } } }), 'clubElection');
-  cleanup.add(() => prisma.clubMembership.deleteMany({ where: { clubId: { in: clubIds } } }), 'clubMembership');
-  cleanup.add(() => prisma.club.deleteMany({ where: { id: { in: clubIds } } }), 'club');
-  cleanup.add(
-    () =>
-      prisma.directMessage.deleteMany({
-        where: {
-          OR: [{ senderId: { in: userIds } }, { recipientId: { in: userIds } }],
-        },
-      }),
-    'directMessage',
-  );
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'user');
 }, 60000);
 
 afterAll(() => cleanup.run(), 30000);

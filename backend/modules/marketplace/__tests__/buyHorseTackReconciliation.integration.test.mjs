@@ -250,21 +250,21 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
   let keptHorse;
 
   beforeEach(async () => {
+    const userIds = () => [seller?.id, buyer?.id].filter(Boolean);
+    const horseIds = () => [listedHorse?.id, keptHorse?.id].filter(Boolean);
+
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds() } } }), 'notification');
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds() } } }), 'userTransaction');
+    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: { in: horseIds() } } }), 'horseSale');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds() } } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds() } } }), 'user');
+
     // 5,000 covers the shop purchases below (500 each) with room to spare; the
     // sale credit is asserted separately.
     seller = await makeUser('seller', 5000);
     buyer = await makeUser('buyer', 10000);
     listedHorse = await makeHorse(seller.id, { forSale: true, salePrice: LIST_PRICE });
     keptHorse = await makeHorse(seller.id);
-
-    const userIds = [seller.id, buyer.id];
-    const horseIds = [listedHorse.id, keptHorse.id];
-
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds } } }), 'notification');
-    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'userTransaction');
-    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: { in: horseIds } } }), 'horseSale');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'user');
   }, 60000);
 
   afterEach(async () => {
@@ -381,6 +381,9 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
   }, 90000);
 
   it('leaves the horse’s tack and the seller’s inventory untouched when the purchase is rejected', async () => {
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: brokeBuyer.id } }), 'brokeNotification');
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: brokeBuyer.id } }), 'brokeTransaction');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: brokeBuyer.id } }), 'brokeBuyer');
     await seedShopTack(keptHorse.id, INVENTORY_SADDLE);
     const seeded = await getInventoryRequest(seller.token);
     const saddleRecord = seeded.body.data.items.find(i => i.itemId === INVENTORY_SADDLE);
@@ -391,9 +394,6 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
     const inventoryBefore = await sellerInventory(seller.id);
 
     const brokeBuyer = await makeUser('broke', 1);
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: brokeBuyer.id } }), 'brokeNotification');
-    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: brokeBuyer.id } }), 'brokeTransaction');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: brokeBuyer.id } }), 'brokeBuyer');
 
     expect((await buyRequest(brokeBuyer.token, listedHorse.id)).status).toBe(400);
 

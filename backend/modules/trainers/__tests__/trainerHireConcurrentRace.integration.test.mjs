@@ -74,6 +74,29 @@ async function makeUser(suffix, money) {
 }
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: the trainers the hire
+  // path created (scoped to buyer.id) and the per-id marketplace-state rows
+  // BEFORE the user rows. No horses are created by the hire flow, so there is
+  // no Horse.userId (onDelete:Restrict) row to delete first. A failed delete
+  // fails the suite instead of being swallowed and leaking a fixture into the
+  // canonical DB.
+  cleanup.add(() => {
+    if (buyer) {
+      return prisma.trainer.deleteMany({ where: { userId: buyer.id } });
+    }
+    return undefined;
+  }, 'trainer');
+  cleanup.add(
+    () => Promise.all(createdMarketplaceStateIds.map(id => prisma.staffMarketplaceState.delete({ where: { id } }))),
+    'staffMarketplaceState',
+  );
+  cleanup.add(() => {
+    if (createdUserIds.length) {
+      return prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    }
+    return undefined;
+  }, 'user');
+
   // A level-1 buyer (trainer roster cap 2, q222) with no coins and one trainer
   // already on staff, so exactly one slot is left: hiring is free.
   ({ user: buyer, token: buyerToken } = await makeUser('buyer', 0));
@@ -106,29 +129,6 @@ beforeAll(async () => {
     update: { offers },
   });
   createdMarketplaceStateIds.push(state.id);
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: the trainers the hire
-  // path created (scoped to buyer.id) and the per-id marketplace-state rows
-  // BEFORE the user rows. No horses are created by the hire flow, so there is
-  // no Horse.userId (onDelete:Restrict) row to delete first. A failed delete
-  // fails the suite instead of being swallowed and leaking a fixture into the
-  // canonical DB.
-  cleanup.add(() => {
-    if (buyer) {
-      return prisma.trainer.deleteMany({ where: { userId: buyer.id } });
-    }
-    return undefined;
-  }, 'trainer');
-  cleanup.add(
-    () => Promise.all(createdMarketplaceStateIds.map(id => prisma.staffMarketplaceState.delete({ where: { id } }))),
-    'staffMarketplaceState',
-  );
-  cleanup.add(() => {
-    if (createdUserIds.length) {
-      return prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
-    }
-    return undefined;
-  }, 'user');
 }, 60000);
 
 afterAll(() => cleanup.run(), 30000);

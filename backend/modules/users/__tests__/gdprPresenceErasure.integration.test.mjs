@@ -43,13 +43,13 @@ describe('Equoria-0o7ib — erasure removes the presence row', () => {
   afterEach(() => cleanup.run(), 30000);
 
   it('deletes the erased account presence row and leaves another account untouched', async () => {
+    const userIds = [];
+    cleanup.add(() => prisma.userPresence.deleteMany({ where: { userId: { in: userIds } } }), 'presence');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
     const subject = await makeUser('subject');
+    userIds.push(subject.id);
     const bystander = await makeUser('bystander');
-    cleanup.add(
-      () => prisma.userPresence.deleteMany({ where: { userId: { in: [subject.id, bystander.id] } } }),
-      'presence',
-    );
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [subject.id, bystander.id] } } }), 'users');
+    userIds.push(bystander.id);
 
     const lastActiveAt = new Date();
     await prisma.userPresence.createMany({

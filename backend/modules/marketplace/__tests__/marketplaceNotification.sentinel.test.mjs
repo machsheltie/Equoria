@@ -27,6 +27,20 @@ describe('SENTINEL: marketplace purchase → horsePurchased + horseSold Notifica
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    // Scoped, fail-loud cleanup (Equoria-9jv9c). Deletes run in dependency
+    // order (notifications + sale rows before the horse/users they reference);
+    // a failure now fails the suite instead of being swallowed.
+    cleanup.add(
+      () => prisma.notification.deleteMany({ where: { userId: { in: [seller?.id, buyer?.id].filter(Boolean) } } }),
+      'notifications',
+    );
+    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: horse.id } }), 'horseSale');
+    cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+    cleanup.add(
+      () => prisma.user.deleteMany({ where: { id: { in: [seller?.id, buyer?.id].filter(Boolean) } } }),
+      'users',
+    );
+
     seller = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -66,17 +80,6 @@ describe('SENTINEL: marketplace purchase → horsePurchased + horseSold Notifica
 
     buyerToken = generateTestToken({ id: buyer.id, email: buyer.email, role: 'user' });
     csrf = await fetchCsrf(app);
-
-    // Scoped, fail-loud cleanup (Equoria-9jv9c). Deletes run in dependency
-    // order (notifications + sale rows before the horse/users they reference);
-    // a failure now fails the suite instead of being swallowed.
-    cleanup.add(
-      () => prisma.notification.deleteMany({ where: { userId: { in: [seller.id, buyer.id] } } }),
-      'notifications',
-    );
-    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: horse.id } }), 'horseSale');
-    cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [seller.id, buyer.id] } } }), 'users');
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);
