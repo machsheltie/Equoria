@@ -5,7 +5,7 @@
  * same in-process sources as the admin endpoints /api/v1/memory and
  * /api/v1/optimization (the memory manager's report, the response optimisation
  * metrics) plus the per-route answer times the performance middleware keeps
- * (utils/routeTimings.mjs), and says them in plain words, with a report to copy.
+ * (utils/answerTimings.mjs), and says them in plain words, with a report to copy.
  *
  * No new service and no external telemetry: everything is this server's own
  * memory, read on request. The report names no setting, address or account; the
@@ -16,7 +16,7 @@ import { getMemoryManager } from '../../../services/memoryResourceManagementServ
 import { getPerformanceMetrics } from '../../../services/apiResponseOptimizationService.mjs';
 import { deployedCommitSha } from '../../../utils/deployedCommitSha.mjs';
 import { redactSecrets } from '../../../utils/diagnosticReport.mjs';
-import { routeTimingTotals, slowestRoutes } from '../../../utils/routeTimings.mjs';
+import { routeTimingTotals, slowestRoutes } from '../../../utils/answerTimings.mjs';
 
 const mb = bytes => Math.round((bytes / (1024 * 1024)) * 10) / 10;
 

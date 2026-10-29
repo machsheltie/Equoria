@@ -23,7 +23,7 @@ import {
   getPerformanceMetrics,
 } from '../services/apiResponseOptimizationService.mjs';
 import logger from '../utils/logger.mjs';
-import { recordRouteTiming, routeKeyFor } from '../utils/routeTimings.mjs';
+import { recordRouteTiming, routeKeyFor } from '../utils/answerTimings.mjs';
 
 /**
  * Response optimization middleware
