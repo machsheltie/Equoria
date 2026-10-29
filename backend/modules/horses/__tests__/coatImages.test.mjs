@@ -25,11 +25,10 @@ const breed = 'American Saddlebred';
 const entry = coatImages[breed];
 
 // Colors a Saddlebred can roll that have no portrait yet (the owner will
-// address Dominant White and the Cream Champagnes herself).
+// address the Cream Champagnes herself; Dominant White got portraits 2026-10-29).
 const noPortraitYet = [
   'Amber Cream Champagne',
   'Classic Cream Champagne',
-  'Dominant White',
   'Gold Cream Champagne',
   'Ivory Champagne',
   'Sable Cream Champagne',
@@ -90,7 +89,11 @@ describe('coat-color portrait table (Equoria-de7ts)', () => {
     const bay = { colorName: 'Bay', shade: 'blood' };
     expect(rollCoatImageUrl(breed, bay, () => 0)).toBe('/images/breeds/american_saddlebred/bloodbay1.webp');
     expect(rollCoatImageUrl(breed, bay, () => 0.999)).toBe('/images/breeds/american_saddlebred/bloodbay2.webp');
-    expect(rollCoatImageUrl(breed, { colorName: 'Dominant White', shade: 'white' })).toBeNull();
+    expect(rollCoatImageUrl(breed, { colorName: 'Smoky Seal Brown', shade: 'standard' })).toBeNull();
+    expect(coatImageVariants(breed, { colorName: 'Dominant White', shade: 'white' })).toEqual([
+      '/images/breeds/american_saddlebred/dominantwhite1.webp',
+      '/images/breeds/american_saddlebred/dominantwhite2.webp',
+    ]);
     expect(rollCoatImageUrl(breed, { colorName: 'Bay', shade: 'no such shade' })).toBeNull();
     expect(rollCoatImageUrl('Arabian', bay)).toBeNull();
     expect(rollCoatImageUrl(breed, null)).toBeNull();

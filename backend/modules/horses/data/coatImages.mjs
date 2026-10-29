@@ -71,6 +71,7 @@ const saddlebredImages = {
   rosegrey: numbered('rosegrey', 5),
   whitegrey: numbered('whitegrey'),
   fleabittengrey: numbered('fleabittengrey'),
+  dominantwhite: numbered('dominantwhite'),
 };
 
 const saddlebredColors = {
@@ -116,6 +117,8 @@ const saddlebredColors = {
   'Rose Light Dapple Gray': 'rosegrey',
   'White Gray': 'whitegrey',
   'Fleabitten Gray': 'fleabittengrey',
+  // Owner added these portraits 2026-10-29.
+  'Dominant White': 'dominantwhite',
 };
 
 export const coatImages = Object.freeze({

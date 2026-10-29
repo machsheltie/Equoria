@@ -140,11 +140,11 @@ describe('coat portrait persistence (Equoria-de7ts)', () => {
 
   it('keeps the column default for a color or breed with no portrait, and a chosen imageUrl', async () => {
     const user = await fixtureUser('fallback');
-    const white = await horseFor(user, saddlebred, {
+    const noPortrait = await horseFor(user, saddlebred, {
       colorGenotype: bayDunGenotype,
-      phenotype: { colorName: 'Dominant White', shade: 'white' },
+      phenotype: { colorName: 'Smoky Seal Brown', shade: 'standard' },
     });
-    expect(white.imageUrl).toBe(defaultHorseImageUrl);
+    expect(noPortrait.imageUrl).toBe(defaultHorseImageUrl);
 
     const thoroughbred = await horseFor(user, 'Thoroughbred', {
       colorGenotype: bayDunGenotype,
