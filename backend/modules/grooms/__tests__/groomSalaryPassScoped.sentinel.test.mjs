@@ -90,6 +90,9 @@ const GUARDED_FILES = [
   // Equoria-sgkjp: a fee transaction failed after its debit rolls back. Runs the pass for
   // its own fixture user only.
   'modules/grooms/__tests__/groomFeeRollbackAfterDebit.integration.test.mjs',
+  // Equoria-e165h: overlapping passes behind a row-lock barrier prove the pay-week lock is
+  // load-bearing. Runs the pass for its own fixture user only.
+  'modules/grooms/__tests__/groomPayWeekLockLoadBearing.integration.test.mjs',
   // Equoria-6p398.14: retired horses are not billed. Runs the pass for its own fixture user.
   'modules/horses/__tests__/horseRetirementStaffRelease.integration.test.mjs',
   // Equoria-6p398.14 follow-up: an in-foal 21+ mare's groom is billed the normal fee.
