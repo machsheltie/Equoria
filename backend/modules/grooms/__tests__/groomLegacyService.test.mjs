@@ -19,6 +19,12 @@
  *   mentor at Expert stars → throws insufficientLevel, creates nothing
  *   ineligible mentor (not retired) → throws
  *
+ * buildProtegeGroomData (Equoria-ixya8): a protégé is stored as a Rookie with no
+ * experience, whatever skill word the request carries. Owner rulings: staff never gain
+ * XP (2026-10-21) and every groom starts as a Rookie (q177). Old contract:
+ * LEGACY_CONSTANTS.PROTEGE_EXPERIENCE_BONUS = 50 was written to the protégé's
+ * experience and fed its star level.
+ *
  * getUserLegacyHistory:
  *   non-existent userId → []
  *   after generating protégé → returns entry
@@ -32,6 +38,7 @@ import {
   checkLegacyEligibility,
   generateLegacyProtege,
   getUserLegacyHistory,
+  buildProtegeGroomData,
 } from '../services/groomLegacyService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
@@ -64,7 +71,8 @@ describe('getLegacyPerks — pure function', () => {
 
   it('LEGACY_CONSTANTS and LEGACY_PERKS exports are correctly shaped', () => {
     expect(LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL).toBe('advanced');
-    expect(LEGACY_CONSTANTS.PROTEGE_EXPERIENCE_BONUS).toBe(50);
+    // Equoria-ixya8 (owner-changed behaviour, see header): no protégé experience bonus.
+    expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_EXPERIENCE_BONUS');
     expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_LEVEL_BONUS');
     expect(typeof LEGACY_CONSTANTS.PROTEGE_SKILL_BONUS).toBe('number');
     expect(LEGACY_PERKS.calm).toHaveLength(3);
@@ -263,6 +271,29 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
     await expect(generateLegacyProtege(glsGroomActive.id, protegeData, glsUser.id)).rejects.toThrow(
       'not eligible for legacy creation',
     );
+  });
+
+  it('buildProtegeGroomData: an expert-worded protégé is stored as a Rookie with no experience (Equoria-ixya8)', async () => {
+    const perk = getLegacyPerks('methodical')[0];
+    const data = buildProtegeGroomData(
+      {
+        name: `TestFixture-GLS-ProtegeRookie-${Date.now()}`,
+        personality: 'calm',
+        skillLevel: 'expert',
+        speciality: 'general',
+      },
+      glsGroomEligible,
+      perk,
+      glsUser.id,
+    );
+    expect(data.starLevel).toBe('rookie');
+    expect(data.experience).toBe(0);
+    expect(data.bonusTraitMap.legacyPerk).toBe(perk.id);
+
+    // The row the game would create, written to the real database.
+    const stored = await prisma.groom.create({ data });
+    expect(stored.starLevel).toBe('rookie');
+    expect(stored.experience).toBe(0);
   });
 
   it('getUserLegacyHistory: returns entries after generating protégé', async () => {

@@ -466,7 +466,7 @@
   "backend/modules/grooms/services/groomFeeArrearsService.mjs": 12,
   "backend/modules/grooms/services/groomFeeBasisService.mjs": 10,
   "backend/modules/grooms/services/groomHorseCompatibilityTaskPolicy.mjs": 6,
-  "backend/modules/grooms/services/groomLegacyService.mjs": 15,
+  "backend/modules/grooms/services/groomLegacyService.mjs": 12,
   "backend/modules/grooms/services/groomMarketplace.mjs": 27,
   "backend/modules/grooms/services/groomPersonalityTraits.mjs": 4,
   "backend/modules/grooms/services/groomProgressionService.mjs": 6,

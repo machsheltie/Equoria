@@ -12,7 +12,8 @@
  *   groom sat at level 1.
  * - Each retired groom can only create one legacy protégé
  * - Protégés inherit one random perk from mentor's personality type
- * - Protégés start with bonus experience
+ * - Protégés start as a Rookie with no experience, like every groom (staff never gain
+ *   XP, owner ruling 2026-10-21; every groom starts as a Rookie, q177; Equoria-ixya8)
  * - Legacy relationships are permanently tracked
  */
 
@@ -29,11 +30,7 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 // backstop without saying so is how an invariant quietly stops being one.
 import { drawStartAge } from './groomAgeService.mjs';
 import { openEngagementTx } from './groomEngagementService.mjs';
-import {
-  legacyStaffLevel,
-  staffCareerStarLevel,
-  staffLevelAtLeast,
-} from '../../../constants/staffLevels.mjs';
+import { staffCareerStarLevel, staffLevelAtLeast } from '../../../constants/staffLevels.mjs';
 
 /**
  * Legacy system constants
@@ -42,7 +39,8 @@ export const LEGACY_CONSTANTS = {
   // The star level equivalent to the old level 7 (q229). The old protégé +1 level bonus
   // went with the old level.
   MINIMUM_MENTOR_STAR_LEVEL: 'advanced',
-  PROTEGE_EXPERIENCE_BONUS: 50,
+  // Equoria-ixya8: the old +50 starting experience is gone (staff never gain XP, owner
+  // ruling 2026-10-21; every groom starts as a Rookie, q177).
   PROTEGE_SKILL_BONUS: 0.1, // 10% bonus to starting skills
 };
 
@@ -189,6 +187,47 @@ export async function checkLegacyEligibility(groomId) {
 }
 
 /**
+ * The row a legacy protégé is created with. Exported so the starting values can be
+ * checked while no groom can mentor yet (q244 keeps generateLegacyProtege refusing).
+ * @param {Object} protegeData - The protégé's profile fields from the request
+ * @param {{ name: string }} mentorGroom - The retired mentor
+ * @param {{ id: string, effect: Object }} selectedPerk - The inherited legacy perk
+ * @param {string} userId - The player whose staff the protégé joins
+ * @returns {Object} Prisma groom create data
+ */
+export function buildProtegeGroomData(protegeData, mentorGroom, selectedPerk, userId) {
+  return {
+    name: protegeData.name,
+    personality: protegeData.personality,
+    skillLevel: protegeData.skillLevel,
+    // Equoria-ixya8: a protégé starts as a Rookie like every groom (q177) and with
+    // no experience (staff never gain XP, owner ruling 2026-10-21) - neither the
+    // skill word nor a legacy bonus lifts its star level.
+    starLevel: staffCareerStarLevel,
+    speciality: protegeData.speciality,
+    userId,
+    experience: 0,
+    sessionRate: protegeData.sessionRate || 15.0,
+    bio: protegeData.bio || `Protégé of ${mentorGroom.name}`,
+    availability: protegeData.availability || {},
+    // Equoria-ypb7d.1 (F8): a protégé enters the game at an age like anyone
+    // else, drawn from the same 18..24 band. Deliberately NOT inherited from
+    // or related to the mentor: the owner's addendum forbids anything but
+    // chance influencing retirement timing, and a protégé of an old mentor
+    // starting old would be exactly that. Their retirement age is still drawn
+    // by the weekly pass's `ensureRetirementDrawn` backstop, because this
+    // service must not handle that value at all (the hiding doctrine).
+    startAge: drawStartAge(),
+    // Add legacy bonus to bonus trait map
+    bonusTraitMap: {
+      legacyPerk: selectedPerk.id,
+      legacyMentor: mentorGroom.name,
+      ...selectedPerk.effect,
+    },
+  };
+}
+
+/**
  * Generate a legacy protégé from a retired mentor groom
  * @param {number} mentorGroomId - ID of the mentor groom
  * @param {Object} protegeData - Data for the new protégé groom
@@ -213,9 +252,6 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
   const availablePerks = getLegacyPerks(mentorGroom.personality);
   const selectedPerk = availablePerks[Math.floor(Math.random() * availablePerks.length)];
 
-  // Calculate protégé bonuses
-  const experienceBonus = LEGACY_CONSTANTS.PROTEGE_EXPERIENCE_BONUS;
-
   // Create protégé and legacy log in transaction
   const result = await withRetryableTxMapping(
     prisma.$transaction(async prismaTx => {
@@ -228,33 +264,7 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
       // normal cap. The absence of a cap guard here is DELIBERATE; do not add
       // one (it would break the intended reward).
       const protege = await prismaTx.groom.create({
-        data: {
-          name: protegeData.name,
-          personality: protegeData.personality,
-          skillLevel: protegeData.skillLevel,
-          // Equoria-nawn5: the star level that matches the protégé's skill word.
-          starLevel: legacyStaffLevel('groom', protegeData.skillLevel, experienceBonus),
-          speciality: protegeData.speciality,
-          userId,
-          experience: experienceBonus,
-          sessionRate: protegeData.sessionRate || 15.0,
-          bio: protegeData.bio || `Protégé of ${mentorGroom.name}`,
-          availability: protegeData.availability || {},
-          // Equoria-ypb7d.1 (F8): a protégé enters the game at an age like anyone
-          // else, drawn from the same 18..24 band. Deliberately NOT inherited from
-          // or related to the mentor: the owner's addendum forbids anything but
-          // chance influencing retirement timing, and a protégé of an old mentor
-          // starting old would be exactly that. Their retirement age is still drawn
-          // by the weekly pass's `ensureRetirementDrawn` backstop, because this
-          // service must not handle that value at all (the hiding doctrine).
-          startAge: drawStartAge(),
-          // Add legacy bonus to bonus trait map
-          bonusTraitMap: {
-            legacyPerk: selectedPerk.id,
-            legacyMentor: mentorGroom.name,
-            ...selectedPerk.effect,
-          },
-        },
+        data: buildProtegeGroomData(protegeData, mentorGroom, selectedPerk, userId),
       });
 
       // Equoria-ypb7d.2 (F8): a protégé arrives ON A PLAYER'S STAFF, so the
