@@ -59,6 +59,10 @@ describe('feedHorse locks User before Horse (Equoria-lmer7)', () => {
 
   beforeEach(async () => {
     const tag = uniq();
+    const horseIds = [];
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: user.id } }), 'ledger');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -84,7 +88,6 @@ describe('feedHorse locks User before Horse (Equoria-lmer7)', () => {
       },
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
-    const horseIds = [];
     horse = await createTestHorse(
       prisma,
       {
@@ -98,10 +101,6 @@ describe('feedHorse locks User before Horse (Equoria-lmer7)', () => {
       },
       horseIds,
     );
-    const userId = user.id;
-    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId } }), 'ledger');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: userId } }), 'user');
   }, 60000);
 
   afterEach(() => cleanup.run(), 60000);

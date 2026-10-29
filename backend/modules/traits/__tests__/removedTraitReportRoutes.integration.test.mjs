@@ -39,6 +39,10 @@ describe('trait report routes are removed (Equoria-a7f1p, q152)', () => {
   let otherHorse;
 
   beforeAll(async () => {
+    const ids = () => [horse?.id, otherHorse?.id].filter(Boolean);
+    // FK order: horses before their owner (Horse.userId is onDelete: Restrict).
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: ids() } } }), 'horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -66,10 +70,6 @@ describe('trait report routes are removed (Equoria-a7f1p, q152)', () => {
       });
     horse = await make('a');
     otherHorse = await make('b');
-    const ids = [horse.id, otherHorse.id];
-    // FK order: horses before their owner (Horse.userId is onDelete: Restrict).
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: ids } } }), 'horses');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
   });
 
   afterAll(async () => {

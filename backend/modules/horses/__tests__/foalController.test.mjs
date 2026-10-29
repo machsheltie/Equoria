@@ -34,6 +34,19 @@ let token;
 let foal;
 
 beforeAll(async () => {
+  // FK-order scoped cleanup (Equoria-n7qa3): foal child rows -> horse -> user.
+  // Horse.userId is onDelete:Restrict (schema:282), so the foal horse row must
+  // be deleted BEFORE its owning user, or the user delete throws. Fail-loud:
+  // if any of these fails, afterAll goes red so the leak is fixed at source.
+  // Before q153 the development read created a default groom and assignment for
+  // the user; these scoped deletes keep a red run from leaking them.
+  cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: user.id } }), 'groomAssignment');
+  cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'groom');
+  cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: foal.id } }), 'foalActivity');
+  cleanup.add(() => prisma.foalDevelopment.deleteMany({ where: { foalId: foal.id } }), 'foalDevelopment');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: foal.id } }), 'horse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -57,19 +70,6 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-
-  // FK-order scoped cleanup (Equoria-n7qa3): foal child rows -> horse -> user.
-  // Horse.userId is onDelete:Restrict (schema:282), so the foal horse row must
-  // be deleted BEFORE its owning user, or the user delete throws. Fail-loud:
-  // if any of these fails, afterAll goes red so the leak is fixed at source.
-  // Before q153 the development read created a default groom and assignment for
-  // the user; these scoped deletes keep a red run from leaking them.
-  cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: user.id } }), 'groomAssignment');
-  cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'groom');
-  cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: foal.id } }), 'foalActivity');
-  cleanup.add(() => prisma.foalDevelopment.deleteMany({ where: { foalId: foal.id } }), 'foalDevelopment');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: foal.id } }), 'horse');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

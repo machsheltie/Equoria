@@ -26,6 +26,10 @@ let horse;
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // FK order: horse(s) before user (Horse.userId is onDelete: Restrict).
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -48,10 +52,6 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-
-  // FK order: horse(s) before user (Horse.userId is onDelete: Restrict).
-  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);
@@ -217,6 +217,11 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
 
+    // FK order: horses before user (Horse.userId onDelete: Restrict). Scoped by
+    // this suite's TestFixture-TIM- name prefix (horses) and own userId (user).
+    tiCleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TIM-' } } }), 'horses');
+    tiCleanup.add(() => prisma.user.delete({ where: { id: tiUser.id } }), 'user');
+
     tiUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -254,11 +259,6 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
         epigeneticFlags: ['fearful', 'brave', 'reactive', 'calm', 'social', 'antisocial'],
       },
     });
-
-    // FK order: horses before user (Horse.userId onDelete: Restrict). Scoped by
-    // this suite's TestFixture-TIM- name prefix (horses) and own userId (user).
-    tiCleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TIM-' } } }), 'horses');
-    tiCleanup.add(() => prisma.user.delete({ where: { id: tiUser.id } }), 'user');
   }, 30000);
 
   afterAll(() => tiCleanup.run(), 30000);

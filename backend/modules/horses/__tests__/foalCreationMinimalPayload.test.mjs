@@ -75,6 +75,41 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
   beforeAll(async () => {
     const hashedPassword = await bcrypt.hash('TestPw123!', 1);
 
+    // Scoped, fail-loud cleanup in dependency order. Foal-dependent rows first,
+    // then every horse owned by the two fixture users in ONE id-scoped
+    // deleteMany (a single multi-row DELETE removes lineage-referencing rows
+    // together, so Horse.sireId/damId/pregnancySireId onDelete:Restrict does
+    // not fire among them), then the users. The shared breeds are NOT deleted.
+    cleanup.add(
+      () => prisma.foalTrainingHistory.deleteMany({ where: { horseId: { in: createdFoalIds } } }),
+      'foalTrainingHistory(foals)',
+    );
+    cleanup.add(
+      () => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
+      'foalDevelopment(foals)',
+    );
+    cleanup.add(
+      () => prisma.foalActivity.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
+      'foalActivity(foals)',
+    );
+    cleanup.add(
+      () => prisma.groomAssignment.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
+      'groomAssignment(foals)',
+    );
+    const userIds = () => [player?.id, otherPlayer?.id].filter(Boolean);
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: userIds() } } }), 'fixtureHorses');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: { in: userIds() } } }), 'grooms');
+    // This suite's OWN breed row only (the shared canonical breeds are never
+    // deleted). Must follow the horses that reference it.
+    cleanup.add(
+      () =>
+        prisma.breed.deleteMany({
+          where: { id: { in: [breedWithoutProfile?.id].filter(Boolean) } },
+        }),
+      'noProfileBreed',
+    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds() } } }), 'users');
+
     player = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -173,41 +208,6 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
     profilelessStallion = await prisma.horse.create({
       data: adult(`TestFixture-6w3ur-ProfilelessSire_${ts}`, 'Stallion', player.id, breedWithoutProfile.id),
     });
-
-    // Scoped, fail-loud cleanup in dependency order. Foal-dependent rows first,
-    // then every horse owned by the two fixture users in ONE id-scoped
-    // deleteMany (a single multi-row DELETE removes lineage-referencing rows
-    // together, so Horse.sireId/damId/pregnancySireId onDelete:Restrict does
-    // not fire among them), then the users. The shared breeds are NOT deleted.
-    cleanup.add(
-      () => prisma.foalTrainingHistory.deleteMany({ where: { horseId: { in: createdFoalIds } } }),
-      'foalTrainingHistory(foals)',
-    );
-    cleanup.add(
-      () => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
-      'foalDevelopment(foals)',
-    );
-    cleanup.add(
-      () => prisma.foalActivity.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
-      'foalActivity(foals)',
-    );
-    cleanup.add(
-      () => prisma.groomAssignment.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
-      'groomAssignment(foals)',
-    );
-    const userIds = () => [player?.id, otherPlayer?.id].filter(Boolean);
-    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: userIds() } } }), 'fixtureHorses');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: { in: userIds() } } }), 'grooms');
-    // This suite's OWN breed row only (the shared canonical breeds are never
-    // deleted). Must follow the horses that reference it.
-    cleanup.add(
-      () =>
-        prisma.breed.deleteMany({
-          where: { id: { in: [breedWithoutProfile?.id].filter(Boolean) } },
-        }),
-      'noProfileBreed',
-    );
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds() } } }), 'users');
   }, 120000);
 
   afterAll(() => cleanup.run(), 120000);

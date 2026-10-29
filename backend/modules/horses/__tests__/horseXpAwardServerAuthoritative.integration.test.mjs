@@ -131,6 +131,14 @@ async function authedPost(path, token, body) {
 }
 
 beforeAll(async () => {
+  // FK order: HorseXpEvent cascades off Horse; Horse.userId is onDelete:Restrict,
+  // so horses go before their owners. Scoped by the ids this suite created.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
+  cleanup.add(
+    () => prisma.user.deleteMany({ where: { id: { in: [owner?.id, stranger?.id].filter(Boolean) } } }),
+    'users',
+  );
+
   owner = await makeUser('owner');
   stranger = await makeUser('stranger');
 
@@ -142,11 +150,6 @@ beforeAll(async () => {
   auditHorse = await makeHorse(owner.id, 'audit');
   earnedHorse = await makeHorse(owner.id, 'earned');
   raceHorse = await makeHorse(owner.id, 'race', { availableStatPoints: 1 });
-
-  // FK order: HorseXpEvent cascades off Horse; Horse.userId is onDelete:Restrict,
-  // so horses go before their owners. Scoped by the ids this suite created.
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [owner.id, stranger.id] } } }), 'users');
 }, 120000);
 
 afterAll(() => cleanup.run(), 120000);

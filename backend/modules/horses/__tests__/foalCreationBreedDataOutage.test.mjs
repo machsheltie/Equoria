@@ -168,6 +168,10 @@ describe("POST /horses/foals — breed-data outage reports 500, not the breed's 
   beforeAll(async () => {
     const hashedPassword = await bcrypt.hash('TestPw123!', 1);
 
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: player.id } }), 'fixtureHorses');
+    cleanup.add(() => prisma.breed.deleteMany({ where: { id: breed.id } }), 'outageBreed');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: player.id } }), 'user');
+
     player = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -218,10 +222,6 @@ describe("POST /horses/foals — breed-data outage reports 500, not the breed's 
     mare = await prisma.horse.create({
       data: adult(`TestFixture-task20-Dam_${ts}`, 'Mare'),
     });
-
-    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: player.id } }), 'fixtureHorses');
-    cleanup.add(() => prisma.breed.deleteMany({ where: { id: breed.id } }), 'outageBreed');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: player.id } }), 'user');
   }, 120000);
 
   afterAll(() => cleanup.run(), 120000);

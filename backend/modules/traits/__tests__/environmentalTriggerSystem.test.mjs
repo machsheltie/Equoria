@@ -81,6 +81,18 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
 
+    // groomInteractions cascade via horse onDelete: Cascade (foalId FK);
+    // horses (prefix-scoped) deleted before the user (Horse.userId Restrict).
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-ETS-' } } }),
+      'horses(prefix)',
+    );
+    cleanup.add(
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-ETS-' } } }),
+      'grooms(prefix)',
+    );
+    cleanup.add(() => (etsUser ? prisma.user.deleteMany({ where: { id: etsUser.id } }) : undefined), 'user');
+
     etsUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -234,18 +246,6 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
         },
       ],
     });
-
-    // groomInteractions cascade via horse onDelete: Cascade (foalId FK);
-    // horses (prefix-scoped) deleted before the user (Horse.userId Restrict).
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-ETS-' } } }),
-      'horses(prefix)',
-    );
-    cleanup.add(
-      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-ETS-' } } }),
-      'grooms(prefix)',
-    );
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: etsUser?.id } }), 'user');
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);

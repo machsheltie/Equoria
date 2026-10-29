@@ -749,6 +749,15 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
   beforeAll(async () => {
     server = app.listen(0);
 
+    // Scoped, fail-loud cleanup for the cross-user sentinel fixtures
+    // (Equoria-n7qa3). FK order: their horses BEFORE their users —
+    // Horse.userId is onDelete:Restrict (schema:282). Callbacks read the
+    // crossUser id arrays at run() time so they capture ids pushed during
+    // tests. .deleteMany so an already-gone row is a no-op (not P2025); a real
+    // scope/FK failure reds afterAll instead of being swallowed.
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: crossUserHorseIds } } }), 'crossUserHorses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: crossUserUserIds } } }), 'crossUserUsers');
+
     const breed =
       (await prisma.breed.findFirst({ where: { name: 'Arabian' } })) ??
       (await prisma.breed.create({ data: { name: 'Arabian', description: 'Arabian breed for inheritance tests' } }));
@@ -818,15 +827,6 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
       },
     });
     damHorseId = dam.id;
-
-    // Scoped, fail-loud cleanup for the cross-user sentinel fixtures
-    // (Equoria-n7qa3). FK order: their horses BEFORE their users —
-    // Horse.userId is onDelete:Restrict (schema:282). Callbacks read the
-    // crossUser id arrays at run() time so they capture ids pushed during
-    // tests. .deleteMany so an already-gone row is a no-op (not P2025); a real
-    // scope/FK failure reds afterAll instead of being swallowed.
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: crossUserHorseIds } } }), 'crossUserHorses');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: crossUserUserIds } } }), 'crossUserUsers');
   });
 
   afterAll(async () => {

@@ -48,6 +48,11 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
 
   beforeAll(async () => {
     const hashedPassword = await bcrypt.hash('TestPw123!', 1);
+    const horseIds = () => [adultStallion?.id, adultMare?.id, anotherAdultMare?.id, youngHorse?.id].filter(Boolean);
+
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds() } } }), 'horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: testUser.id } }), 'user');
+
     testUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -122,11 +127,6 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
         lastFedDate: new Date(),
       },
     });
-
-    const horseIds = () => [adultStallion?.id, adultMare?.id, anotherAdultMare?.id, youngHorse?.id].filter(Boolean);
-
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds() } } }), 'horses');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: testUser.id } }), 'user');
   }, 120000);
 
   afterAll(() => cleanup.run(), 120000);

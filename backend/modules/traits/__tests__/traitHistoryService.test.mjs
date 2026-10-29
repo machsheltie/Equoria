@@ -27,6 +27,21 @@ const freshHorseIds = [];
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: traitHistoryLog (children
+  // of all horses) -> fresh per-test horses -> main horse -> user (Horse.userId
+  // Restrict). The traitHistoryLog delete is scoped to the main horse + any fresh
+  // horse ids collected during the run.
+  cleanup.add(
+    () =>
+      prisma.traitHistoryLog.deleteMany({
+        where: { horseId: { in: [horse.id, ...freshHorseIds] } },
+      }),
+    'traitHistoryLog',
+  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: freshHorseIds } } }), 'freshHorses');
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -49,21 +64,6 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: traitHistoryLog (children
-  // of all horses) -> fresh per-test horses -> main horse -> user (Horse.userId
-  // Restrict). The traitHistoryLog delete is scoped to the main horse + any fresh
-  // horse ids collected during the run.
-  cleanup.add(
-    () =>
-      prisma.traitHistoryLog.deleteMany({
-        where: { horseId: { in: [horse.id, ...freshHorseIds] } },
-      }),
-    'traitHistoryLog',
-  );
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: freshHorseIds } } }), 'freshHorses');
-  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

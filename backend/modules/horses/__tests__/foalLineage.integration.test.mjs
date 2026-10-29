@@ -44,6 +44,9 @@ async function makeHorse(key, sex, extra = {}) {
 }
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'lineageHorses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'foalLineageUser');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -71,9 +74,6 @@ beforeAll(async () => {
   const c = await makeHorse('C', 'Mare');
   await makeHorse('S', 'Stallion', { sireId: a.id, damId: b.id });
   await makeHorse('M', 'Mare', { sireId: a.id, damId: c.id });
-
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'lineageHorses');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'foalLineageUser');
 }, 60_000);
 
 afterAll(() => cleanup.run(), 60_000);

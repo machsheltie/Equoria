@@ -35,6 +35,10 @@ const showIds = [];
 const auth = req => req.set('Authorization', `Bearer ${token}`);
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -75,10 +79,6 @@ beforeAll(async () => {
     });
     showIds.push(show.id);
   }
-
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 120_000);
 
 afterAll(() => cleanup.run(), 60_000);

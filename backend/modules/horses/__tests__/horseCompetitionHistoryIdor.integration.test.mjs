@@ -63,6 +63,21 @@ async function makeUser(suffix) {
 }
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: competitionResults
+  // (showId/horseId) first, then shows, then horses, then users — Horse.userId
+  // is onDelete:Restrict (schema:282), so the owned horses MUST be deleted
+  // before their owning users. Callbacks read the created-id arrays at run()
+  // time, so they capture every id pushed during setup. All deletes are
+  // id-scoped .deleteMany — already-gone rows are a no-op (not P2025); a real
+  // scope/FK failure reds afterAll instead of being swallowed.
+  cleanup.add(
+    () => prisma.competitionResult.deleteMany({ where: { id: { in: createdCompetitionResultIds } } }),
+    'competitionResults',
+  );
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: createdShowIds } } }), 'shows');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'users');
+
   ({ user: userA, token: userAToken } = await makeUser('victim'));
   ({ token: userBToken } = await makeUser('attacker'));
 
@@ -113,21 +128,6 @@ beforeAll(async () => {
     },
   });
   createdCompetitionResultIds.push(cr.id);
-
-  // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: competitionResults
-  // (showId/horseId) first, then shows, then horses, then users — Horse.userId
-  // is onDelete:Restrict (schema:282), so the owned horses MUST be deleted
-  // before their owning users. Callbacks read the created-id arrays at run()
-  // time, so they capture every id pushed during setup. All deletes are
-  // id-scoped .deleteMany — already-gone rows are a no-op (not P2025); a real
-  // scope/FK failure reds afterAll instead of being swallowed.
-  cleanup.add(
-    () => prisma.competitionResult.deleteMany({ where: { id: { in: createdCompetitionResultIds } } }),
-    'competitionResults',
-  );
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: createdShowIds } } }), 'shows');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'users');
 }, 60000);
 
 afterAll(() => cleanup.run(), 30000);

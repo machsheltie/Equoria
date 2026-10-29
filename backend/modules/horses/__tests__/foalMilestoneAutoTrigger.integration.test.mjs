@@ -46,6 +46,18 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
   let agedHorse; // age 1200d → past the 1095-day cap, must be skipped
 
   beforeAll(async () => {
+    // FK-order scoped cleanup (Equoria-n7qa3). All three horses are owned by
+    // `user` and Horse.userId is onDelete:Restrict (schema:282), so the horse
+    // rows (and their milestone logs) must be deleted BEFORE the user. Tasks
+    // read the live ids at run() time; fail-loud so a real leak reds afterAll.
+    const horseIds = () => [socializationFoal?.id, trustHandlingFoal?.id, agedHorse?.id].filter(Boolean);
+    cleanup.add(
+      () => prisma.milestoneTraitLog.deleteMany({ where: { horseId: { in: horseIds() } } }),
+      'milestoneTraitLog',
+    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds() } } }), 'horses');
+    cleanup.add(() => (user ? prisma.user.deleteMany({ where: { id: user.id } }) : undefined), 'user');
+
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -93,18 +105,6 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
         userId: user.id,
       },
     });
-
-    // FK-order scoped cleanup (Equoria-n7qa3). All three horses are owned by
-    // `user` and Horse.userId is onDelete:Restrict (schema:282), so the horse
-    // rows (and their milestone logs) must be deleted BEFORE the user. Tasks
-    // read the live ids at run() time; fail-loud so a real leak reds afterAll.
-    const horseIds = () => [socializationFoal?.id, trustHandlingFoal?.id, agedHorse?.id].filter(Boolean);
-    cleanup.add(
-      () => prisma.milestoneTraitLog.deleteMany({ where: { horseId: { in: horseIds() } } }),
-      'milestoneTraitLog',
-    );
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds() } } }), 'horses');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: user?.id } }), 'user');
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);

@@ -32,6 +32,9 @@ describe('the legacy-score route is removed (q242)', () => {
   let horse;
 
   beforeAll(async () => {
+    // FK order: horse before its owner (Horse.userId is onDelete: Restrict).
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -56,9 +59,6 @@ describe('the legacy-score route is removed (q242)', () => {
         epigeneticModifiers: { positive: ['brave'], negative: [], hidden: ['heart'] },
       },
     });
-    // FK order: horse before its owner (Horse.userId is onDelete: Restrict).
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
   });
 
   afterAll(async () => {

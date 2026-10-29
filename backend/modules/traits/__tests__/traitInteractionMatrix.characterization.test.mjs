@@ -93,6 +93,14 @@ describe('trait interaction analysis characterization (Equoria-q4uem.5)', () => 
 
   beforeAll(async () => {
     const suffix = `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { userId: { in: [user?.id, otherUser?.id].filter(Boolean) } } }),
+      'horses',
+    );
+    cleanup.add(
+      () => prisma.user.deleteMany({ where: { id: { in: [user?.id, otherUser?.id].filter(Boolean) } } }),
+      'users',
+    );
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -115,8 +123,6 @@ describe('trait interaction analysis characterization (Equoria-q4uem.5)', () => 
         money: 1000,
       },
     });
-    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: [user.id, otherUser.id] } } }), 'horses');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [user.id, otherUser.id] } } }), 'users');
 
     authToken = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET, {
       expiresIn: '1h',

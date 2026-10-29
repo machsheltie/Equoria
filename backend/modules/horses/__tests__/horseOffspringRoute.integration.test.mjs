@@ -73,6 +73,14 @@ async function makeHorse(userId, label, extra = {}) {
 
 beforeAll(async () => {
   let other;
+  // Foals reference their parents (onDelete: Restrict), so they go first.
+  cleanup.add(
+    () => prisma.horse.deleteMany({ where: { id: { in: [foalOwned?.id, foalSold?.id].filter(Boolean) } } }),
+    'foals',
+  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'parent horses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'users');
+
   ({ user: owner, token: ownerToken } = await makeUser('owner'));
   ({ user: other, token: otherToken } = await makeUser('other'));
 
@@ -92,11 +100,6 @@ beforeAll(async () => {
     dateOfBirth: new Date('2025-03-01'),
     age: 1,
   });
-
-  // Foals reference their parents (onDelete: Restrict), so they go first.
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: [foalOwned.id, foalSold.id] } } }), 'foals');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'parent horses');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'users');
 }, 60000);
 
 afterAll(() => cleanup.run(), 30000);

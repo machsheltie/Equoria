@@ -32,6 +32,11 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
   const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
+    // Scoped, fail-loud cleanup (Equoria-pemoo); run() drains the queue each cycle.
+    // Horse before user for the FK ordering.
+    cleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -59,11 +64,6 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
       },
     });
     horseId = horse.id;
-
-    // Scoped, fail-loud cleanup (Equoria-pemoo); run() drains the queue each cycle.
-    // Horse before user for the FK ordering.
-    cleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
-    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   });
 
   afterEach(() => cleanup.run());

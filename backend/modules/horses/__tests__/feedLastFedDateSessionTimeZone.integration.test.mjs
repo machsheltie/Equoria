@@ -34,6 +34,8 @@ describe('feedHorse lastFedDate is UTC regardless of the session TimeZone (Equor
 
   beforeEach(async () => {
     const tag = `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
+    cleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -61,8 +63,6 @@ describe('feedHorse lastFedDate is UTC regardless of the session TimeZone (Equor
       },
     });
     horseId = horse.id;
-    cleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
-    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
   });
 
   afterEach(() => cleanup.run());

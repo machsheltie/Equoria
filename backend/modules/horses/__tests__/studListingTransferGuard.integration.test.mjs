@@ -135,16 +135,15 @@ describe('stud listing follows the owner, not the horse (Equoria-q4uem.9 slice 1
   let stallion;
 
   beforeEach(async () => {
+    const userIds = () => [seller?.user.id, buyer?.user.id].filter(Boolean);
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds() } } }), 'notifications');
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds() } } }), 'userTransactions');
+    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: stallion.id } }), 'horseSale');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: stallion.id } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds() } } }), 'users');
     seller = await makeUser('seller', 0);
     buyer = await makeUser('buyer', 5000);
     stallion = await makeStudStallionForSale(seller.user.id);
-    const userIds = [seller.user.id, buyer.user.id];
-    const horseId = stallion.id;
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds } } }), 'notifications');
-    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'userTransactions');
-    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId } }), 'horseSale');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horseId } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
   });
 
   afterEach(async () => {

@@ -147,6 +147,21 @@ let active20;
 let inFoal21;
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { foalId: { in: horseIds } } }), 'groom assignments');
+  cleanup.add(() => prisma.riderAssignment.deleteMany({ where: { horseId: { in: horseIds } } }), 'rider assignments');
+  cleanup.add(
+    () => prisma.trainerAssignment.deleteMany({ where: { horseId: { in: horseIds } } }),
+    'trainer assignments',
+  );
+  cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: groomIds } } }), 'grooms');
+  cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
+  cleanup.add(() => prisma.trainer.deleteMany({ where: { id: { in: trainerIds } } }), 'trainers');
+  cleanup.add(() => prisma.groomSalaryPayment.deleteMany({ where: { userId: user.id } }), 'salary payments');
+  cleanup.add(() => prisma.groomEngagement.deleteMany({ where: { userId: user.id } }), 'engagements');
+  cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user.id } }), 'notifications');
+  cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: user.id } }), 'transactions');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
   const breed = await prisma.breed.upsert({
     where: { name: 'Thoroughbred' },
     update: {},
@@ -164,21 +179,6 @@ beforeAll(async () => {
       money: 10000,
     },
   });
-  cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { foalId: { in: horseIds } } }), 'groom assignments');
-  cleanup.add(() => prisma.riderAssignment.deleteMany({ where: { horseId: { in: horseIds } } }), 'rider assignments');
-  cleanup.add(
-    () => prisma.trainerAssignment.deleteMany({ where: { horseId: { in: horseIds } } }),
-    'trainer assignments',
-  );
-  cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: groomIds } } }), 'grooms');
-  cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
-  cleanup.add(() => prisma.trainer.deleteMany({ where: { id: { in: trainerIds } } }), 'trainers');
-  cleanup.add(() => prisma.groomSalaryPayment.deleteMany({ where: { userId: user.id } }), 'salary payments');
-  cleanup.add(() => prisma.groomEngagement.deleteMany({ where: { userId: user.id } }), 'engagements');
-  cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user.id } }), 'notifications');
-  cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: user.id } }), 'transactions');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 
   // 156 Eastern game days = game-year 22; the nightly pass has stored age 22.
   retired22 = await makeHorse('retired22', { daysOld: 156, storedAge: 22 });

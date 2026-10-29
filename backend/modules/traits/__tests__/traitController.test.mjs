@@ -32,6 +32,10 @@ let horse;
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // FK order: horse(s) before user (Horse.userId is onDelete: Restrict).
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -55,10 +59,6 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-
-  // FK order: horse(s) before user (Horse.userId is onDelete: Restrict).
-  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

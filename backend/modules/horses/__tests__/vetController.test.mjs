@@ -26,6 +26,14 @@ let horse;
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: the horse (no child
+  // rows here) BEFORE the owning user — Horse.userId is onDelete:Restrict
+  // (schema:282), so the user delete would throw if the horse outlived it.
+  // .deleteMany (not .delete) so an already-gone row is a no-op, not P2025;
+  // a real scope/FK failure still reds afterAll.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -53,14 +61,6 @@ beforeAll(async () => {
       lastVettedDate: new Date('2024-01-01'),
     },
   });
-
-  // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: the horse (no child
-  // rows here) BEFORE the owning user — Horse.userId is onDelete:Restrict
-  // (schema:282), so the user delete would throw if the horse outlived it.
-  // .deleteMany (not .delete) so an already-gone row is a no-op, not P2025;
-  // a real scope/FK failure still reds afterAll.
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

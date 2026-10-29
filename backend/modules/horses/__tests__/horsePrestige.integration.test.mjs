@@ -85,6 +85,11 @@ async function settledShow(placement, fieldSize, daysAgo) {
 }
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: { in: showIds } } }), 'competitionResults');
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
+
   owner = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -98,11 +103,6 @@ beforeAll(async () => {
   userIds.push(owner.id);
   token = jwt.sign({ id: owner.id, role: owner.role }, config.jwtSecret, { expiresIn: '1h' });
   star = await makeHorse(owner.id);
-
-  cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: { in: showIds } } }), 'competitionResults');
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
 
   await settledShow(1, bigField, 4); // first win, big field
   await settledShow(1, 2, 3); // repeat win, small field

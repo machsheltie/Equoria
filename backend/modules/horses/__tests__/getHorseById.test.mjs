@@ -23,6 +23,10 @@ beforeAll(async () => {
   const ts = Date.now();
   const rand = () => Math.random().toString(36).slice(2, 8);
 
+  // Scoped, fail-loud cleanup (Equoria-pemoo). Horse before user for the FK ordering.
+  hmCleanup.add(() => prisma.horse.delete({ where: { id: hmHorse.id } }), 'horse');
+  hmCleanup.add(() => prisma.user.delete({ where: { id: hmUser.id } }), 'user');
+
   hmUser = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -45,10 +49,6 @@ beforeAll(async () => {
       userId: hmUser.id,
     },
   });
-
-  // Scoped, fail-loud cleanup (Equoria-pemoo). Horse before user for the FK ordering.
-  hmCleanup.add(() => prisma.horse.delete({ where: { id: hmHorse.id } }), 'horse');
-  hmCleanup.add(() => prisma.user.delete({ where: { id: hmUser.id } }), 'user');
 }, 30000);
 
 afterAll(() => hmCleanup.run(), 30000);

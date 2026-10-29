@@ -32,6 +32,11 @@ const cleanup = createCleanupTracker();
 const horseIds = [];
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys). Sweep all owned fixture horses
+  // (collected in horseIds) before the user, for FK ordering.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -56,11 +61,6 @@ beforeAll(async () => {
     },
   });
   horseIds.push(horse.id);
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys). Sweep all owned fixture horses
-  // (collected in horseIds) before the user, for FK ordering.
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

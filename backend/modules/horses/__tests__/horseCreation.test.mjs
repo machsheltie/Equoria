@@ -39,6 +39,12 @@ async function persisted(id) {
 }
 
 beforeAll(async () => {
+  // Horses before user and stable for the FK ordering.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: owner.id } }), 'horses');
+  // Ownerless horses are found through the test's own stable.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { stableId: stable.id } }), 'ownerless horses');
+  cleanup.add(() => prisma.stable.delete({ where: { id: stable.id } }), 'stable');
+  cleanup.add(() => prisma.user.delete({ where: { id: owner.id } }), 'user');
   owner = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -56,12 +62,6 @@ beforeAll(async () => {
     create: { name: 'Thoroughbred', description: 'Shared test breed' },
   });
   stable = await prisma.stable.create({ data: { name: `HC Stable ${TOKEN}` } });
-  // Horses before user and stable for the FK ordering.
-  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: owner.id } }), 'horses');
-  // Ownerless horses are found through the test's own stable.
-  cleanup.add(() => prisma.horse.deleteMany({ where: { stableId: stable.id } }), 'ownerless horses');
-  cleanup.add(() => prisma.stable.delete({ where: { id: stable.id } }), 'stable');
-  cleanup.add(() => prisma.user.delete({ where: { id: owner.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

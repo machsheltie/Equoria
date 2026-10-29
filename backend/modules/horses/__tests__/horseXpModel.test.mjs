@@ -38,6 +38,22 @@ beforeAll(async () => {
   const ts = Date.now();
   const rand = () => Math.random().toString(36).slice(2, 8);
 
+  // FK-order scoped cleanup (Equoria-n7qa3). The TestFixture-HorseXP- horses are
+  // owned by xpUser and Horse.userId is onDelete:Restrict (schema:282), so the
+  // XP events and horse rows must be deleted BEFORE the user. The horse sweep is
+  // name-prefix-scoped (covers xpHorse, xpHorseWithPoints, and the freshHorse
+  // the no-stat-points test creates — also TestFixture-HorseXP-named, no XP
+  // events). Fail-loud: any failure reds afterAll instead of being swallowed.
+  cleanup.add(
+    () =>
+      prisma.horseXpEvent.deleteMany({
+        where: { horse: { name: { startsWith: 'TestFixture-HorseXP-' } } },
+      }),
+    'horseXpEvent',
+  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-HorseXP-' } } }), 'horses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: xpUser.id } }), 'user');
+
   xpUser = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -76,22 +92,6 @@ beforeAll(async () => {
       availableStatPoints: 1,
     },
   });
-
-  // FK-order scoped cleanup (Equoria-n7qa3). The TestFixture-HorseXP- horses are
-  // owned by xpUser and Horse.userId is onDelete:Restrict (schema:282), so the
-  // XP events and horse rows must be deleted BEFORE the user. The horse sweep is
-  // name-prefix-scoped (covers xpHorse, xpHorseWithPoints, and the freshHorse
-  // the no-stat-points test creates — also TestFixture-HorseXP-named, no XP
-  // events). Fail-loud: any failure reds afterAll instead of being swallowed.
-  cleanup.add(
-    () =>
-      prisma.horseXpEvent.deleteMany({
-        where: { horse: { name: { startsWith: 'TestFixture-HorseXP-' } } },
-      }),
-    'horseXpEvent',
-  );
-  cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-HorseXP-' } } }), 'horses');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: xpUser.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

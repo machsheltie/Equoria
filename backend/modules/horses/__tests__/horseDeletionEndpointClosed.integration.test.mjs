@@ -191,6 +191,12 @@ describe('Equoria-9tque — DELETE /api/v1/horses/:id is closed to players', () 
   let groomAssignmentId;
 
   beforeEach(async () => {
+    cleanup.add(() => prisma.riderAssignment.deleteMany({ where: { id: ids.riderAssignmentId } }), 'rider assignment');
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { id: ids.groomAssignmentId } }), 'groom assignment');
+    cleanup.add(() => prisma.rider.deleteMany({ where: { id: ids.riderId } }), 'rider');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: ids.groomId } }), 'groom');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: ids.horseIds } } }), 'fixture horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: ids.userIds } } }), 'fixture users');
     owner = await makeUser('owner');
     stranger = await makeUser('stranger');
     horse = await makeHorse(owner.id, 'horse');
@@ -217,12 +223,6 @@ describe('Equoria-9tque — DELETE /api/v1/horses/:id is closed to players', () 
       horseIds: [horse.id, strangerHorse.id],
       userIds: [owner.id, stranger.id],
     };
-    cleanup.add(() => prisma.riderAssignment.deleteMany({ where: { id: ids.riderAssignmentId } }), 'rider assignment');
-    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { id: ids.groomAssignmentId } }), 'groom assignment');
-    cleanup.add(() => prisma.rider.deleteMany({ where: { id: ids.riderId } }), 'rider');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { id: ids.groomId } }), 'groom');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: ids.horseIds } } }), 'fixture horses');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: ids.userIds } } }), 'fixture users');
   }, 30000);
 
   afterEach(() => cleanup.run(), 30000);
@@ -350,12 +350,6 @@ describe('Equoria-9tque — the legitimate server-owned deletion path still remo
   afterEach(() => cleanup.run(), 30000);
 
   it("GDPR right-to-erasure still deletes the erased account's horse rows", async () => {
-    const doomed = await makeUser('gdpr');
-    const doomedHorse = await makeHorse(doomed.id, 'gdprhorse');
-
-    // Fail-loud safety net only: eraseUserAccount is expected to remove both
-    // rows, so these cleanups should find nothing.
-    const ids = { horseId: doomedHorse.id, userId: doomed.id };
     cleanup.add(
       () => prisma.horse.deleteMany({ where: { id: ids.horseId } }),
       'gdpr fixture horse (should already be gone)',
@@ -364,6 +358,12 @@ describe('Equoria-9tque — the legitimate server-owned deletion path still remo
       () => prisma.user.deleteMany({ where: { id: ids.userId } }),
       'gdpr fixture user (should already be gone)',
     );
+    const doomed = await makeUser('gdpr');
+    const doomedHorse = await makeHorse(doomed.id, 'gdprhorse');
+
+    // Fail-loud safety net only: eraseUserAccount is expected to remove both
+    // rows, so these cleanups should find nothing.
+    const ids = { horseId: doomedHorse.id, userId: doomed.id };
 
     const result = await eraseUserAccount(doomed.id);
     expect(result).toEqual({ deleted: true });

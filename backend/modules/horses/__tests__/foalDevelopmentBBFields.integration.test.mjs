@@ -66,6 +66,12 @@ let token;
 let yearlingFoal;
 
 beforeAll(async () => {
+  // FK-order scoped cleanup (Equoria-n7qa3): child rows → horse → user.
+  cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: yearlingFoal.id } }), 'foalActivity');
+  cleanup.add(() => prisma.foalDevelopment.deleteMany({ where: { foalId: yearlingFoal.id } }), 'foalDevelopment');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: yearlingFoal.id } }), 'horse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -104,12 +110,6 @@ beforeAll(async () => {
       completedMilestones: { bond25: SEEDED_MILESTONE_TS },
     },
   });
-
-  // FK-order scoped cleanup (Equoria-n7qa3): child rows → horse → user.
-  cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: yearlingFoal.id } }), 'foalActivity');
-  cleanup.add(() => prisma.foalDevelopment.deleteMany({ where: { foalId: yearlingFoal.id } }), 'foalDevelopment');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: yearlingFoal.id } }), 'horse');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

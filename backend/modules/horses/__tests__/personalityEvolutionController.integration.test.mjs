@@ -41,6 +41,12 @@ const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   const tag = randomBytes(6).toString('hex');
+  // FK order: horse -> groom -> user -> breed.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
+  cleanup.add(() => prisma.breed.deleteMany({ where: { id: breed.id } }), 'breed');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -87,12 +93,6 @@ beforeAll(async () => {
       breedId: breed.id,
     },
   });
-
-  // FK order: horse -> groom -> user -> breed.
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
-  cleanup.add(() => prisma.breed.deleteMany({ where: { id: breed.id } }), 'breed');
 }, 60000);
 
 afterAll(() => cleanup.run(), 60000);

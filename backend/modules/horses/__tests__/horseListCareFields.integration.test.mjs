@@ -26,6 +26,8 @@ describe('horse list: shod date, training cooldown and portrait (Equoria-9spb2)'
 
   it('sends lastShod, trainingCooldown and imageUrl for each horse, and no level', async () => {
     const suffix = randomBytes(6).toString('hex');
+    cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -52,8 +54,6 @@ describe('horse list: shod date, training cooldown and portrait (Equoria-9spb2)'
         imageUrl: '/images/portraits/test-portrait.png',
       },
     });
-    cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 
     const token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
     const res = await request(app).get('/api/v1/horses').set('Authorization', `Bearer ${token}`);
@@ -71,6 +71,8 @@ describe('horse list: shod date, training cooldown and portrait (Equoria-9spb2)'
   // groomed date; without it in the list every horse counted as never groomed.
   it('sends lastGroomed, so a horse groomed today is not counted as needing grooming', async () => {
     const suffix = randomBytes(6).toString('hex');
+    cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -94,8 +96,6 @@ describe('horse list: shod date, training cooldown and portrait (Equoria-9spb2)'
         lastGroomed,
       },
     });
-    cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 
     const token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
     const res = await request(app).get('/api/v1/horses').set('Authorization', `Bearer ${token}`);

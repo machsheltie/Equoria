@@ -64,6 +64,37 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     // Create a real user in the database
     // rounds=1: fast in tests; password is never verified (JWT generated directly)
     const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
+    // FK-order scoped cleanup (Equoria-n7qa3). Horse.userId is onDelete:Restrict
+    // (schema:282): every foal/parent horse owned by testUser must be deleted
+    // BEFORE the user, or the user delete throws. Tasks read the live
+    // createdFoalIds / parent ids at run() time. Fail-loud: any failure reds
+    // afterAll so a real leak is fixed at source rather than swallowed.
+    cleanup.add(
+      () => prisma.foalTrainingHistory.deleteMany({ where: { horseId: { in: createdFoalIds } } }),
+      'foalTrainingHistory(foals)',
+    );
+    cleanup.add(
+      () => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
+      'foalDevelopment(foals)',
+    );
+    cleanup.add(
+      () => prisma.foalActivity.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
+      'foalActivity(foals)',
+    );
+    cleanup.add(
+      () => prisma.groomAssignment.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
+      'groomAssignment(foals)',
+    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdFoalIds } } }), 'foalHorses');
+    // Parent horses (sire + dam) — also owned by testUser, delete before the user.
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { id: { in: [testSire?.id, testDam?.id].filter(Boolean) } } }),
+      'parentHorses',
+    );
+    // Do NOT delete the shared "Thoroughbred" breed — other suites use it.
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: testUser.id } }), 'groom(user)');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: testUser.id } }), 'user');
+
     testUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -133,37 +164,6 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
         epigeneticModifiers: { positive: ['calm'], negative: [], hidden: [] },
       },
     });
-
-    // FK-order scoped cleanup (Equoria-n7qa3). Horse.userId is onDelete:Restrict
-    // (schema:282): every foal/parent horse owned by testUser must be deleted
-    // BEFORE the user, or the user delete throws. Tasks read the live
-    // createdFoalIds / parent ids at run() time. Fail-loud: any failure reds
-    // afterAll so a real leak is fixed at source rather than swallowed.
-    cleanup.add(
-      () => prisma.foalTrainingHistory.deleteMany({ where: { horseId: { in: createdFoalIds } } }),
-      'foalTrainingHistory(foals)',
-    );
-    cleanup.add(
-      () => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
-      'foalDevelopment(foals)',
-    );
-    cleanup.add(
-      () => prisma.foalActivity.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
-      'foalActivity(foals)',
-    );
-    cleanup.add(
-      () => prisma.groomAssignment.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
-      'groomAssignment(foals)',
-    );
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdFoalIds } } }), 'foalHorses');
-    // Parent horses (sire + dam) — also owned by testUser, delete before the user.
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { id: { in: [testSire?.id, testDam?.id].filter(Boolean) } } }),
-      'parentHorses',
-    );
-    // Do NOT delete the shared "Thoroughbred" breed — other suites use it.
-    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: testUser.id } }), 'groom(user)');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: testUser.id } }), 'user');
   }, 120000);
 
   /**

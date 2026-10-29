@@ -142,6 +142,10 @@ describe('feedHorse service — stat-boost integration (real DB)', () => {
   const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
+    // Scoped, fail-loud cleanup (Equoria-pemoo); run() drains the queue each cycle.
+    cleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
+
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -178,10 +182,6 @@ describe('feedHorse service — stat-boost integration (real DB)', () => {
       },
     });
     horseId = horse.id;
-
-    // Scoped, fail-loud cleanup (Equoria-pemoo); run() drains the queue each cycle.
-    cleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
-    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
   });
 
   afterEach(() => cleanup.run());
@@ -279,6 +279,10 @@ describe('feedHorse service — pregnancy feeding counter (Phase B4, real DB)', 
   const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
+    // Scoped, fail-loud cleanup (Equoria-pemoo); run() drains the queue each cycle.
+    cleanup.add(() => prisma.horse.delete({ where: { id: damId } }), 'dam');
+    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
+
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -319,10 +323,6 @@ describe('feedHorse service — pregnancy feeding counter (Phase B4, real DB)', 
       },
     });
     damId = dam.id;
-
-    // Scoped, fail-loud cleanup (Equoria-pemoo); run() drains the queue each cycle.
-    cleanup.add(() => prisma.horse.delete({ where: { id: damId } }), 'dam');
-    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
   });
 
   afterEach(() => cleanup.run());
@@ -389,6 +389,10 @@ describe('feedHorse service — sequential-feed guard (Equoria-nsr7 / Equoria-5g
   const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
+    // Scoped, fail-loud cleanup (Equoria-pemoo); run() drains the queue each cycle.
+    cleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
+
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -426,10 +430,6 @@ describe('feedHorse service — sequential-feed guard (Equoria-nsr7 / Equoria-5g
       },
     });
     horseId = horse.id;
-
-    // Scoped, fail-loud cleanup (Equoria-pemoo); run() drains the queue each cycle.
-    cleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
-    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
   });
 
   afterEach(() => cleanup.run());
@@ -485,6 +485,9 @@ describe('feedHorse — optimistic-concurrency lost-update guard (Equoria-zvp4, 
   const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
+    cleanup.add(() => prisma.horse.delete({ where: { id: damId } }), 'dam');
+    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
+
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -525,9 +528,6 @@ describe('feedHorse — optimistic-concurrency lost-update guard (Equoria-zvp4, 
       },
     });
     damId = dam.id;
-
-    cleanup.add(() => prisma.horse.delete({ where: { id: damId } }), 'dam');
-    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
   });
 
   afterEach(() => cleanup.run());

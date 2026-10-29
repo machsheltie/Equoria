@@ -26,6 +26,12 @@ let horse;
 const topCleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-n7qa3). Delete every horse owned by this
+  // user (covers `horse` AND the per-test `flaggedHorse`, both userId-scoped)
+  // BEFORE the user, since Horse.userId is onDelete:Restrict (schema:282).
+  topCleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
+  topCleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -48,12 +54,6 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-
-  // Scoped, fail-loud cleanup (Equoria-n7qa3). Delete every horse owned by this
-  // user (covers `horse` AND the per-test `flaggedHorse`, both userId-scoped)
-  // BEFORE the user, since Horse.userId is onDelete:Restrict (schema:282).
-  topCleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
-  topCleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => topCleanup.run(), 30000);
@@ -249,6 +249,15 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
 
+    // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: groomInteractions
+    // (foalId -> horse) first, then the horse, then groom, then user (the
+    // horse and groom are userId-scoped to interUser; Horse.userId is
+    // onDelete:Restrict, schema:282 — horse MUST precede user).
+    interCleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: interHorse.id } }), 'interactions');
+    interCleanup.add(() => prisma.horse.delete({ where: { id: interHorse.id } }), 'horse');
+    interCleanup.add(() => prisma.groom.delete({ where: { id: interGroom.id } }), 'groom');
+    interCleanup.add(() => prisma.user.delete({ where: { id: interUser.id } }), 'user');
+
     interUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -311,15 +320,6 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
         },
       });
     }
-
-    // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: groomInteractions
-    // (foalId -> horse) first, then the horse, then groom, then user (the
-    // horse and groom are userId-scoped to interUser; Horse.userId is
-    // onDelete:Restrict, schema:282 — horse MUST precede user).
-    interCleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: interHorse.id } }), 'interactions');
-    interCleanup.add(() => prisma.horse.delete({ where: { id: interHorse.id } }), 'horse');
-    interCleanup.add(() => prisma.groom.delete({ where: { id: interGroom.id } }), 'groom');
-    interCleanup.add(() => prisma.user.delete({ where: { id: interUser.id } }), 'user');
   }, 60000);
 
   afterAll(() => interCleanup.run(), 30000);
@@ -375,6 +375,32 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
   beforeAll(async () => {
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
+
+    // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: groomInteractions
+    // (foalId -> horse) first, then the horses, then groom, then user. Horses
+    // are deleted by their userId (covers every RBR fixture horse, all of which
+    // are owned by rbrUser) BEFORE the user, since Horse.userId is
+    // onDelete:Restrict (schema:282).
+    rbrCleanup.add(
+      () =>
+        prisma.groomInteraction.deleteMany({
+          where: {
+            foalId: {
+              in: [
+                confidentHorse?.id,
+                nervousHorse?.id,
+                negTrendHorse?.id,
+                neutralChangeHorse?.id,
+                worseningHorse?.id,
+              ].filter(Boolean),
+            },
+          },
+        }),
+      'interactions',
+    );
+    rbrCleanup.add(() => prisma.horse.deleteMany({ where: { userId: rbrUser.id } }), 'horses');
+    rbrCleanup.add(() => prisma.groom.delete({ where: { id: rbrGroom.id } }), 'groom');
+    rbrCleanup.add(() => prisma.user.delete({ where: { id: rbrUser.id } }), 'user');
 
     rbrUser = await prisma.user.create({
       data: {
@@ -536,32 +562,6 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
         },
       });
     }
-
-    // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: groomInteractions
-    // (foalId -> horse) first, then the horses, then groom, then user. Horses
-    // are deleted by their userId (covers every RBR fixture horse, all of which
-    // are owned by rbrUser) BEFORE the user, since Horse.userId is
-    // onDelete:Restrict (schema:282).
-    rbrCleanup.add(
-      () =>
-        prisma.groomInteraction.deleteMany({
-          where: {
-            foalId: {
-              in: [
-                confidentHorse?.id,
-                nervousHorse?.id,
-                negTrendHorse?.id,
-                neutralChangeHorse?.id,
-                worseningHorse?.id,
-              ].filter(Boolean),
-            },
-          },
-        }),
-      'interactions',
-    );
-    rbrCleanup.add(() => prisma.horse.deleteMany({ where: { userId: rbrUser.id } }), 'horses');
-    rbrCleanup.add(() => prisma.groom.delete({ where: { id: rbrGroom.id } }), 'groom');
-    rbrCleanup.add(() => prisma.user.delete({ where: { id: rbrUser.id } }), 'user');
   }, 180000);
 
   afterAll(() => rbrCleanup.run(), 60000);

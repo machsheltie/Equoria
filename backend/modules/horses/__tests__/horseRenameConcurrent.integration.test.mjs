@@ -42,6 +42,8 @@ const rename = async name => {
 };
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
   owner = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -65,8 +67,6 @@ beforeAll(async () => {
       healthStatus: 'Excellent',
     },
   });
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
 }, 60000);
 
 afterAll(() => cleanup.run(), 30000);

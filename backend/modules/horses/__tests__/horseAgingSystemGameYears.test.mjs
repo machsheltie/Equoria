@@ -65,6 +65,10 @@ describe('updateHorseAge writes game-years to Horse.age (Equoria-son6)', () => {
 
   beforeAll(async () => {
     const ts = Date.now();
+    // Scoped, fail-loud cleanup (Equoria-pemoo): horses by name-prefix, then user.
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-son6-' } } }), 'horses');
+    cleanup.add(() => prisma.user.delete({ where: { id: fixtureUser.id } }), 'user');
+
     fixtureUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -98,10 +102,6 @@ describe('updateHorseAge writes game-years to Horse.age (Equoria-son6)', () => {
         userId: fixtureUser.id,
       },
     });
-
-    // Scoped, fail-loud cleanup (Equoria-pemoo): horses by name-prefix, then user.
-    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-son6-' } } }), 'horses');
-    cleanup.add(() => prisma.user.delete({ where: { id: fixtureUser.id } }), 'user');
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);

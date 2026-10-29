@@ -134,6 +134,32 @@ async function storedName(id) {
 }
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup registered in dependency order: child rows that
+  // reference a horse, then the foal, then the parents/horses, then the stable
+  // and the users. Every delete is scoped by id or by this suite's prefix.
+  cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: createdUserIds } } }), 'notifications');
+  cleanup.add(() => prisma.horseXpEvent.deleteMany({ where: { horseId: { in: createdHorseIds } } }), 'horseXpEvents');
+  cleanup.add(
+    () => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: createdHorseIds } } }),
+    'foalDevelopment',
+  );
+  cleanup.add(
+    () =>
+      prisma.horse.updateMany({
+        where: { id: { in: createdHorseIds } },
+        data: { sireId: null, damId: null, pregnancySireId: null },
+      }),
+    'detachParentage',
+  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
+  // Safety net for the POST /horses cases below: if a create the suite EXPECTS to
+  // be rejected ever succeeds, the row would have an id this file never learned.
+  // Scoped to this suite's own two users, so it can only ever remove fixtures
+  // this suite is responsible for.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: createdUserIds } } }), 'horsesByFixtureOwner');
+  cleanup.add(() => prisma.stable.deleteMany({ where: { id: stable.id } }), 'stable');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'users');
+
   breed = await prisma.breed.upsert({
     where: { name: 'Thoroughbred' },
     update: {},
@@ -186,32 +212,6 @@ beforeAll(async () => {
   intruderToken = generateTestToken({ id: intruder.id, email: intruder.email, role: 'user' });
   ownerCsrf = await fetchCsrf(app, { extraCookies: [`accessToken=${ownerToken}`] });
   intruderCsrf = await fetchCsrf(app, { extraCookies: [`accessToken=${intruderToken}`] });
-
-  // Scoped, fail-loud cleanup registered in dependency order: child rows that
-  // reference a horse, then the foal, then the parents/horses, then the stable
-  // and the users. Every delete is scoped by id or by this suite's prefix.
-  cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: createdUserIds } } }), 'notifications');
-  cleanup.add(() => prisma.horseXpEvent.deleteMany({ where: { horseId: { in: createdHorseIds } } }), 'horseXpEvents');
-  cleanup.add(
-    () => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: createdHorseIds } } }),
-    'foalDevelopment',
-  );
-  cleanup.add(
-    () =>
-      prisma.horse.updateMany({
-        where: { id: { in: createdHorseIds } },
-        data: { sireId: null, damId: null, pregnancySireId: null },
-      }),
-    'detachParentage',
-  );
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
-  // Safety net for the POST /horses cases below: if a create the suite EXPECTS to
-  // be rejected ever succeeds, the row would have an id this file never learned.
-  // Scoped to this suite's own two users, so it can only ever remove fixtures
-  // this suite is responsible for.
-  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: createdUserIds } } }), 'horsesByFixtureOwner');
-  cleanup.add(() => prisma.stable.deleteMany({ where: { id: stable.id } }), 'stable');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'users');
 }, 120000);
 
 afterAll(async () => {

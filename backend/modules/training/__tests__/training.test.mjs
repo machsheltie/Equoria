@@ -134,6 +134,25 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       },
     });
 
+    // Equoria-6yaqy: register scoped, FK-ordered cleanup. Children (training
+    // logs) before horses, horses before the user — Horse.userId is
+    // onDelete:Restrict (schema:282). The horse sweep is userId-scoped to
+    // testPlayer, so it removes the three named fixtures AND any per-test
+    // horse ('Score Test Horse', 'XP Test Horse', etc.) whose own in-test
+    // delete never ran because the test body threw first. That is exactly the
+    // leak that produced the horses_userId_fkey RESTRICT failure on the user
+    // delete. All deletes are scoped by userId — no broad deleteMany.
+    cleanup.add(
+      () => prisma.trainingLog.deleteMany({ where: { horse: { userId: testPlayer.id } } }),
+      'trainingLogs(testPlayer)',
+    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: testPlayer.id } }), 'horses(testPlayer)');
+    cleanup.add(
+      () => prisma.user.deleteMany({ where: { email: 'training-test-player@example.com' } }),
+      'user(training-test-player)',
+    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { email: 'training-test@example.com' } }), 'user(training-test)');
+
     // Create a test Player (for XP system and userId relationship)
     testPlayer = await prisma.user.create({
       data: {
@@ -251,25 +270,6 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       where: { id: trainedHorse.id },
       data: { trainingCooldown: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
     });
-
-    // Equoria-6yaqy: register scoped, FK-ordered cleanup. Children (training
-    // logs) before horses, horses before the user — Horse.userId is
-    // onDelete:Restrict (schema:282). The horse sweep is userId-scoped to
-    // testPlayer, so it removes the three named fixtures AND any per-test
-    // horse ('Score Test Horse', 'XP Test Horse', etc.) whose own in-test
-    // delete never ran because the test body threw first. That is exactly the
-    // leak that produced the horses_userId_fkey RESTRICT failure on the user
-    // delete. All deletes are scoped by userId — no broad deleteMany.
-    cleanup.add(
-      () => prisma.trainingLog.deleteMany({ where: { horse: { userId: testPlayer.id } } }),
-      'trainingLogs(testPlayer)',
-    );
-    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: testPlayer.id } }), 'horses(testPlayer)');
-    cleanup.add(
-      () => prisma.user.deleteMany({ where: { email: 'training-test-player@example.com' } }),
-      'user(training-test-player)',
-    );
-    cleanup.add(() => prisma.user.deleteMany({ where: { email: 'training-test@example.com' } }), 'user(training-test)');
   });
 
   afterAll(async () => {
