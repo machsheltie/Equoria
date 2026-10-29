@@ -266,9 +266,8 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     // Equoria-hd3sq: Reject tokens that are not access tokens.
-    // Challenge tokens (type='mfa_challenge'), refresh tokens (type='refresh'),
-    // and any other token types must NOT be accepted as full access.
-    // This prevents MFA bypass via challenge-token confusion.
+    // Refresh tokens (type='refresh') and any other token types must NOT be
+    // accepted as full access (token-type confusion).
     if (decoded.type && decoded.type !== 'access') {
       logger.warn(
         `[auth:${requestId}] Token rejected: invalid type '${decoded.type}' (expected 'access')`,

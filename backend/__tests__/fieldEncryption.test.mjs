@@ -1,7 +1,7 @@
 /**
  * fieldEncryption — unit tests (Equoria-yi13v)
  *
- * AES-256-GCM at-rest field encryption util used to protect User.mfaSecret.
+ * AES-256-GCM at-rest field encryption util (written for the retired User.mfaSecret).
  * Pure crypto, no DB. Tests the round-trip, ciphertext opacity, tamper
  * rejection, and fail-fast key policy.
  */

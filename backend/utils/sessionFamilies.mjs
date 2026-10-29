@@ -115,8 +115,7 @@ async function familiesOverTheLimit(tx, userId, keepFamilyId) {
 }
 
 /**
- * Start a new session for a player who has just proved who they are (password,
- * or password + MFA code).
+ * Start a new session for a player who has just proved who they are (password).
  *
  * In one transaction, after locking the player's User row so two logins at
  * once cannot both keep a sixth session:

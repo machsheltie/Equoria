@@ -110,19 +110,6 @@ describe('PUT /api/v1/users/:id — mass-assignment protection (Equoria-qia4j)',
     expect(fresh.password).toBe(user.password); // PROTECTED — original hash must stand
   });
 
-  it('MUST NOT allow a user to disable their own MFA flag', async () => {
-    // Temporarily enable MFA on the row so we have a non-default value to assert on.
-    await prisma.user.update({ where: { id: user.id }, data: { mfaEnabled: true } });
-
-    const { res, fresh } = await doPut({ mfaEnabled: false });
-
-    expect(res.status).not.toBe(500);
-    expect(fresh.mfaEnabled).toBe(true); // PROTECTED — must remain enabled
-
-    // Restore
-    await prisma.user.update({ where: { id: user.id }, data: { mfaEnabled: false } });
-  });
-
   it('MUST NOT allow a user to set level arbitrarily', async () => {
     const { res, fresh } = await doPut({ level: 999 });
 

@@ -257,17 +257,11 @@ export const getCommunityActivity = async (req, res, next) => {
 
 /**
  * Equoria-pt9dh (ACC-11): the player's own account as the API may show it.
- * The password hash, its change stamp and the MFA secret and recovery codes
- * never leave the server, not even to the account's owner.
+ * The password hash and its change stamp never leave the server, not even to
+ * the account's owner.
  */
 function toOwnAccountView(user) {
-  const {
-    password: _password,
-    passwordChangedAt: _passwordChangedAt,
-    mfaSecret: _mfaSecret,
-    mfaRecoveryCodes: _mfaRecoveryCodes,
-    ...visible
-  } = user;
+  const { password: _password, passwordChangedAt: _passwordChangedAt, ...visible } = user;
   return visible;
 }
 
@@ -330,7 +324,7 @@ export const getUser = async (req, res, next) => {
  * SECURITY (Equoria-qia4j, CWE-915 / CWE-269): This allowlist is the ONLY
  * fields that may pass through to Prisma. Everything else in req.body is
  * silently dropped at this boundary. Do NOT add privileged fields here
- * (role, money, level, xp, password, mfa*, emailVerified*, etc.) — those
+ * (role, money, level, xp, password, emailVerified*, etc.) — those
  * each have dedicated, properly-gated endpoints.
  */
 const USER_UPDATE_ALLOWLIST = ['username', 'email', 'firstName', 'lastName', 'settings'];
@@ -346,9 +340,6 @@ const SENSITIVE_BLOCKED_FIELDS = new Set([
   'level',
   'xp',
   'password',
-  'mfaSecret',
-  'mfaEnabled',
-  'mfaRecoveryCodes',
   'emailVerified',
   'emailVerifiedAt',
   'passwordChangedAt',

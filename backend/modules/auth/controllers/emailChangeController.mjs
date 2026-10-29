@@ -76,13 +76,12 @@ export const requestEmailChangeController = async (req, res, next) => {
       throw new AppError('Authentication required', 401);
     }
 
-    const { email, password, totpToken } = req.body || {};
+    const { email, password } = req.body || {};
 
     const staged = await requestEmailChange({
       userId: req.user.id,
       requestedEmail: email,
       password,
-      totpToken,
       metadata: {
         // Equoria-n62tl: req.ip already honors Express's `trust proxy`. Do NOT
         // add an x-forwarded-for fallback — that re-enables attacker-controlled
@@ -147,8 +146,7 @@ export const requestEmailChangeController = async (req, res, next) => {
   } catch (error) {
     logger.error(`[emailChangeController.request] ${maskEmailsInText(error.message)}`);
     // The central errorHandler has no retry-after handling, so a throttled
-    // rejection (MFA lockout, or the email-change resend cooldown) renders its
-    // own body here — the same shape /auth/mfa/disable returns.
+    // rejection (the email-change resend cooldown) renders its own body here.
     if (AppError.isAppError(error) && error.statusCode === 429 && error.retryAfter !== undefined) {
       return res.status(429).json({
         success: false,
@@ -157,7 +155,7 @@ export const requestEmailChangeController = async (req, res, next) => {
       });
     }
     // Equoria-wkpns: the central errorHandler drops `code`, and a coded
-    // refusal is how the client tells a wrong password from a missing code.
+    // refusal is how the client names a wrong password.
     if (AppError.isAppError(error) && error.statusCode === 400 && typeof error.code === 'string') {
       return res.status(400).json({ success: false, message: error.message, code: error.code });
     }

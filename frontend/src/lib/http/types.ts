@@ -23,7 +23,7 @@ export interface ApiError {
    * True only on the 401 the transport throws after the refresh-token attempt
    * FAILED — the session is dead, not merely an expired access token
    * (Equoria-bvddn.29). A 401 that survives a successful refresh, or a 401 from
-   * a pre-session endpoint (login, MFA challenge), never carries this flag.
+   * a pre-session endpoint (login), never carries this flag.
    */
   sessionExpired?: boolean;
 }

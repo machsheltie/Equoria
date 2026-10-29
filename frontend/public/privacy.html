@@ -95,10 +95,10 @@
       <tr>
         <td>Authentication security</td>
         <td>
-          password-change timestamp, email-verification status, refresh tokens, password-reset
-          tokens, optional TOTP MFA secret (encrypted at rest) &amp; recovery codes
+          password-change timestamp, email-verification status, refresh tokens and password-reset
+          tokens
         </td>
-        <td>To keep your account secure and support login/MFA/password reset</td>
+        <td>To keep your account secure and support login and password reset</td>
       </tr>
       <tr>
         <td>Game progression</td>
@@ -199,7 +199,6 @@
     <h2>5. How we protect your data</h2>
     <ul>
       <li>Passwords are hashed with bcrypt (12+ rounds); never stored or exported in plaintext.</li>
-      <li>TOTP MFA secrets are encrypted at rest (AES-256-GCM).</li>
       <li>All traffic is expected to be served over HTTPS in production.</li>
       <li>
         Access to your data through the API is gated by JWT authentication, CSRF protection, rate

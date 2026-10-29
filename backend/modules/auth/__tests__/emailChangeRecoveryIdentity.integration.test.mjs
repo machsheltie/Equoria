@@ -19,14 +19,12 @@ import { readFileSync, existsSync, unlinkSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import bcrypt from 'bcryptjs';
-import { authenticator } from 'otplib';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { encryptField } from '../../../utils/fieldEncryption.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const PREFIX = 'f5emailid';
@@ -165,7 +163,7 @@ async function resetIdentity(email) {
   await prisma.$executeRawUnsafe('DELETE FROM password_reset_tokens WHERE "userId" = $1', user.id);
   await prisma.user.update({
     where: { id: user.id },
-    data: { email, emailVerified: true, emailVerifiedAt: new Date(), mfaEnabled: false, mfaSecret: null },
+    data: { email, emailVerified: true, emailVerifiedAt: new Date() },
   });
   user = { ...user, email };
   token = generateTestToken({ id: user.id, email, role: 'user' });
@@ -245,25 +243,13 @@ describe('Finding 5 — fresh authentication gates the change request', () => {
     expect(rows).toHaveLength(0);
   });
 
-  it('requires a valid TOTP step-up when the account has MFA enabled', async () => {
-    const secret = authenticator.generateSecret();
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { mfaEnabled: true, mfaSecret: encryptField(secret) },
-    });
-    const target = `${PREFIX}-mfa-${uid()}@test.com`;
-
+  // Owner ruling 2026-10-29 (q305): authenticator-app sign-in is removed. Old contract:
+  // an MFA account also needed a valid TOTP here. New ruling: the password alone stages it.
+  it('stages the change on the current password alone; no one-time code is asked for', async () => {
+    const target = `${PREFIX}-nocode-${uid()}@test.com`;
     try {
-      const withoutTotp = await requestChange({ email: target, password: PASSWORD });
-      expect(withoutTotp.status).toBe(400);
-      expect(await prisma.emailVerificationToken.count({ where: { userId: user.id } })).toBe(0);
-
-      const withTotp = await requestChange({
-        email: target,
-        password: PASSWORD,
-        totpToken: authenticator.generate(secret),
-      });
-      expect(withTotp.status).toBe(200);
+      const res = await requestChange({ email: target, password: PASSWORD });
+      expect(res.status).toBe(200);
       expect(await prisma.emailVerificationToken.count({ where: { userId: user.id } })).toBe(1);
     } finally {
       await resetIdentity(user.email);

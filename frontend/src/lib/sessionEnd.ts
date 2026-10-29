@@ -35,7 +35,7 @@ export function subscribeSessionEnd(listener: SessionEndListener): () => void {
  * True for the 401 the transport throws after the refresh-token attempt failed
  * (`ApiError.sessionExpired`). A first 401 that the refresh single-flight
  * recovers never reaches React Query, and a 401 that survives a successful
- * refresh (or comes from login / MFA) is an ordinary error, not a dead session.
+ * refresh (or comes from login) is an ordinary error, not a dead session.
  */
 export function isSessionExpiredError(error: unknown): boolean {
   if (typeof error !== 'object' || error === null) return false;

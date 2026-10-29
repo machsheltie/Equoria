@@ -21,11 +21,8 @@
  *  - Feedback is Surface-Owned: failure is `InlineError` at the control, success
  *    is this section changing into its waiting state. No toast, no overlay
  *    (FRONTEND_ASYNC_STATE_DOCTRINE §3).
- *  - Whether to ask for a code is READ from `GET /auth/email-change/status`, not
- *    guessed: on a second-factor account the backend gives a wrong password
- *    and a wrong code one coded answer (Equoria-wkpns), on purpose.
- *  - No jargon reaches the player: the words MFA, TOTP and two-factor appear
- *    nowhere in the copy.
+ *  - Fresh authentication is the current password alone: the one-time code box
+ *    went with authenticator-app sign-in (owner ruling 2026-10-29, q305).
  */
 
 import React, { useState } from 'react';
@@ -33,7 +30,6 @@ import { Mail, ShieldCheck, ShieldAlert, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input, PasswordInput, FormField } from '@/components/ui/form';
 import { InlineError, SectionLoading, ErrorState } from '@/components/ui/state';
-import { OneTimeCodeField, ONE_TIME_CODE_LENGTH } from '@/components/auth/OneTimeCodeField';
 import { useEmailChangeStatus, useRequestEmailChange } from '@/hooks/useAuth';
 import { recoveryAddressMessage } from '@/lib/http/authErrorMessages';
 import { emailSchema } from '@/lib/validation-schemas';
@@ -60,14 +56,13 @@ export const RecoveryAddressSection: React.FC = () => {
   const [isChanging, setIsChanging] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [code, setCode] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [errorDismissed, setErrorDismissed] = useState(false);
 
   /**
-   * Clear a field's error the moment the player starts correcting it, the way
-   * `SecondFactorForm` does — leaving it up while she retypes reads as though
-   * the correction were being rejected too.
+   * Clear a field's error the moment the player starts correcting it — leaving
+   * it up while she retypes reads as though the correction were being rejected
+   * too.
    */
   const clearFieldError = (field: string) =>
     setFieldErrors((previous) => {
@@ -76,8 +71,6 @@ export const RecoveryAddressSection: React.FC = () => {
       delete next[field];
       return next;
     });
-
-  const secondFactorRequired = status?.secondFactorRequired ?? false;
 
   /**
    * A locally staged change wins over the server read: the read may race the
@@ -114,7 +107,6 @@ export const RecoveryAddressSection: React.FC = () => {
     setIsChanging(false);
     setNewEmail('');
     setPassword('');
-    setCode('');
     setFieldErrors({});
   };
 
@@ -152,9 +144,6 @@ export const RecoveryAddressSection: React.FC = () => {
     if (password.length === 0) {
       errors.password = 'Enter your current Equoria password.';
     }
-    if (secondFactorRequired && !new RegExp(`^\\d{${ONE_TIME_CODE_LENGTH}}$`).test(code.trim())) {
-      errors.code = `Enter the ${ONE_TIME_CODE_LENGTH} digits showing in your authenticator app.`;
-    }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
@@ -166,8 +155,6 @@ export const RecoveryAddressSection: React.FC = () => {
       {
         email: parsedEmail.success ? parsedEmail.data : newEmail,
         password,
-        // The code stays a STRING end to end so a leading zero survives.
-        ...(secondFactorRequired ? { totpToken: code.trim() } : {}),
       },
       { onSuccess: finishForm }
     );
@@ -311,23 +298,6 @@ export const RecoveryAddressSection: React.FC = () => {
                 />
               )}
             </FormField>
-
-            {secondFactorRequired && (
-              /* The same field the login second factor renders — shared because
-                 the digits are shared, not because the flows are. This surface
-                 keeps its own form, its own submit and its own error mapping. */
-              <OneTimeCodeField
-                htmlFor="recovery-code"
-                name="recoveryCode"
-                value={code}
-                onChange={(next) => {
-                  setCode(next);
-                  clearFieldError('code');
-                }}
-                disabled={isSending}
-                error={fieldErrors.code}
-              />
-            )}
 
             {requestError && !errorDismissed && (
               <InlineError

@@ -92,15 +92,14 @@ export function sleep(ms: number): Promise<void> {
  * failure calls authSessionState.clear() and replaces the useful authentication
  * error with "Session expired. Please log in again." (Finding 7,
  * Equoria-6p398.7). Worse: when a refresh does succeed, the transport REPLAYS
- * the original request, so a single mistyped second factor is counted twice
- * against the backend's 5-failure MFA lockout (mfaLockoutService,
- * Equoria-kg7i2).
+ * the original request. (The second-factor challenge endpoint that stood here
+ * went with authenticator-app sign-in, owner ruling 2026-10-29, q305.)
  *
- * This is deliberately narrow: it names two pre-session endpoints and changes
+ * This is deliberately narrow: it names the pre-session endpoint and changes
  * nothing about protected requests, whose 401 → refresh → retry behavior is the
  * reason the generic branch exists.
  */
-const PRE_SESSION_AUTH_ENDPOINTS = ['/api/v1/auth/login', '/api/v1/auth/mfa/challenge'];
+const PRE_SESSION_AUTH_ENDPOINTS = ['/api/v1/auth/login'];
 
 /** True when a 401 from `endpoint` means "these credentials are wrong". */
 export function isPreSessionAuthEndpoint(endpoint: string): boolean {
@@ -185,9 +184,9 @@ export async function fetchWithAuth<T>(
 
     // Handle 401 Unauthorized - attempt token refresh once.
     // Skipped for the pre-session authentication endpoints: their 401 is the
-    // operation's own answer ("wrong password" / "wrong second factor"), there
-    // is no session to refresh, and replaying the request would spend another
-    // MFA attempt. Those fall through to the generic non-2xx branch below so
+    // operation's own answer ("wrong password"), there is no session to
+    // refresh, and replaying the request would count another attempt. Those
+    // fall through to the generic non-2xx branch below so
     // the real authentication failure reaches the caller intact.
     if (response.status === 401 && retryCount === 0 && !isPreSessionAuthEndpoint(endpoint)) {
       // Don't retry refresh endpoint itself

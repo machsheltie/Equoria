@@ -22,8 +22,10 @@
  * shared client is an instance of the exported namespace's error class. Before the fix
  * all three failed in band (the first two stored `{}`).
  *
- * The throwaway row is a uniquely named user whose nullable Json column
- * (`mfaRecoveryCodes`) is the probe; it is deleted by id, fail-loud.
+ * The throwaway row is a uniquely named cron run log whose nullable Json column
+ * (`summary`) is the probe; it is deleted by id, fail-loud. (The probe was
+ * User.mfaRecoveryCodes until authenticator-app sign-in was removed, owner ruling
+ * 2026-10-29, q305; the column is gone, the contract pinned here is unchanged.)
  */
 
 import { describe, it, expect, afterAll } from '@jest/globals';
@@ -35,45 +37,42 @@ describe('Equoria-27xvj: Prisma namespace and shared client are one runtime copy
   const cleanup = createCleanupTracker();
   afterAll(() => cleanup.run(), 30000);
 
-  async function makeProbeUser() {
+  async function makeProbeRow() {
     const tag = randomBytes(5).toString('hex');
-    const user = await prisma.user.create({
+    const row = await prisma.cronRunLog.create({
       data: {
-        emailVerified: true,
-        username: `TestFixture-27xvj-${tag}`,
-        email: `TestFixture-27xvj-${tag}@example.com`,
-        password: 'irrelevant-not-a-login-test',
-        firstName: 'Nulls',
-        lastName: 'Probe',
-        mfaRecoveryCodes: ['seed'],
+        jobName: `TestFixture-27xvj-${tag}`,
+        startedAt: new Date(),
+        status: 'success',
+        summary: ['seed'],
       },
     });
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'probe user');
-    return user;
+    cleanup.add(() => prisma.cronRunLog.deleteMany({ where: { id: row.id } }), 'probe cron run log');
+    return row;
   }
 
-  async function columnState(userId) {
+  async function columnState(rowId) {
     const rows = await prisma.$queryRaw`
-      SELECT ("mfaRecoveryCodes" IS NULL) AS "sqlNull", jsonb_typeof("mfaRecoveryCodes"::jsonb) AS "jsonType"
-      FROM "User" WHERE "id" = ${userId}`;
+      SELECT ("summary" IS NULL) AS "sqlNull", jsonb_typeof("summary"::jsonb) AS "jsonType"
+      FROM "cron_run_logs" WHERE "id" = ${rowId}`;
     return rows[0];
   }
 
   it('Prisma.DbNull written through the shared client stores SQL NULL', async () => {
-    const user = await makeProbeUser();
-    expect(await columnState(user.id)).toEqual({ sqlNull: false, jsonType: 'array' });
+    const row = await makeProbeRow();
+    expect(await columnState(row.id)).toEqual({ sqlNull: false, jsonType: 'array' });
 
-    await prisma.user.updateMany({ where: { id: user.id }, data: { mfaRecoveryCodes: Prisma.DbNull } });
+    await prisma.cronRunLog.updateMany({ where: { id: row.id }, data: { summary: Prisma.DbNull } });
 
-    expect(await columnState(user.id)).toEqual({ sqlNull: true, jsonType: null });
+    expect(await columnState(row.id)).toEqual({ sqlNull: true, jsonType: null });
   }, 60000);
 
   it('Prisma.JsonNull written through the shared client stores JSON null, not SQL NULL', async () => {
-    const user = await makeProbeUser();
+    const row = await makeProbeRow();
 
-    await prisma.user.updateMany({ where: { id: user.id }, data: { mfaRecoveryCodes: Prisma.JsonNull } });
+    await prisma.cronRunLog.updateMany({ where: { id: row.id }, data: { summary: Prisma.JsonNull } });
 
-    expect(await columnState(user.id)).toEqual({ sqlNull: false, jsonType: 'null' });
+    expect(await columnState(row.id)).toEqual({ sqlNull: false, jsonType: 'null' });
   }, 60000);
 
   it('an error thrown by the shared client is an instance of the exported namespace class', async () => {

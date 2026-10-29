@@ -8,7 +8,7 @@
  * request/confirm flow that replaced it had no surface at all.
  *
  * Network is exercised through the REAL api-client at the fetch boundary via
- * MSW (src/test/msw/server.ts), the same boundary LoginPageMfa.test.tsx uses.
+ * MSW (src/test/msw/server.ts).
  * The api-client, the auth hooks and the section are all real here; nothing
  * Equoria owns is mocked.
  */
@@ -57,7 +57,6 @@ function stubStatus(
   overrides: Partial<{
     email: string;
     emailVerified: boolean;
-    secondFactorRequired: boolean;
     pending: { maskedEmail: string; expiresAt: string; resendAvailableAt: string } | null;
   }> = {}
 ) {
@@ -69,7 +68,6 @@ function stubStatus(
         data: {
           email: CONFIRMED,
           emailVerified: true,
-          secondFactorRequired: false,
           pending: null,
           ...overrides,
         },
@@ -93,7 +91,6 @@ function stubStatusPendingAfterFirstRead() {
         data: {
           email: CONFIRMED,
           emailVerified: true,
-          secondFactorRequired: false,
           pending:
             statusCalls === 1
               ? null
@@ -204,8 +201,10 @@ describe('RecoveryAddressSection — the way back in', () => {
     expect(statusCalls).toBeGreaterThan(callsBefore);
   });
 
-  it('does not ask for a code when the account carries no second factor', async () => {
-    stubStatus({ secondFactorRequired: false });
+  // Owner ruling 2026-10-29 (q305): authenticator-app sign-in is removed. Old contract: a
+  // second-factor account was also asked for its six-digit code. New ruling: never.
+  it('asks only for the new address and the current password, never a code', async () => {
+    stubStatus();
     const user = userEvent.setup();
     renderSection();
     await openTheForm(user);
@@ -213,16 +212,7 @@ describe('RecoveryAddressSection — the way back in', () => {
     expect(screen.getByLabelText(/new email address/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/current password/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/six-digit code/i)).not.toBeInTheDocument();
-  });
-
-  it('asks for the six-digit code when the account carries a second factor', async () => {
-    stubStatus({ secondFactorRequired: true });
-    const user = userEvent.setup();
-    renderSection();
-    await openTheForm(user);
-
-    // Read from the status endpoint, never guessed and never shown to everyone.
-    expect(screen.getByLabelText(/six-digit code/i)).toBeInTheDocument();
+    expect(screen.queryByText(/authenticator/i)).not.toBeInTheDocument();
   });
 
   it('stages the change through the request endpoint, never through the profile endpoint', async () => {
@@ -239,22 +229,6 @@ describe('RecoveryAddressSection — the way back in', () => {
     await waitFor(() => expect(requestCalls).toBe(1));
     expect(requestBodies[0]).toEqual({ email: REPLACEMENT, password: 'CorrectHorse1!' });
     expect(profilePuts).toBe(0);
-  });
-
-  it('sends the code as a string so a leading zero survives', async () => {
-    stubStatus({ secondFactorRequired: true });
-    stubRequestAccepted();
-    const user = userEvent.setup();
-    renderSection();
-    await openTheForm(user);
-
-    await user.type(screen.getByLabelText(/new email address/i), REPLACEMENT);
-    await user.type(screen.getByLabelText(/current password/i), 'CorrectHorse1!');
-    await user.type(screen.getByLabelText(/six-digit code/i), '012345');
-    await user.click(screen.getByRole('button', { name: /send the confirmation/i }));
-
-    await waitFor(() => expect(requestCalls).toBe(1));
-    expect(requestBodies[0].totpToken).toBe('012345');
   });
 
   it('turns the surface itself into the waiting state, with the old address still live', async () => {
@@ -328,44 +302,6 @@ describe('RecoveryAddressSection — the way back in', () => {
     expect(screen.queryByTestId('recovery-address-waiting')).not.toBeInTheDocument();
     expect(requestCalls, 'one attempt is one password check').toBe(1);
     expect(refreshes(), 'a wrong password is not an ended session').toBe(0);
-  });
-
-  it('names the password or code once on a second-factor account, sent once', async () => {
-    stubStatus({ secondFactorRequired: true });
-    stubRequestRejected(400, 'The password or one-time code is incorrect', {
-      code: 'passwordOrCodeIncorrect',
-    });
-    const refreshes = countRefreshes();
-    const user = userEvent.setup();
-    renderSection();
-    await openTheForm(user);
-
-    await user.type(screen.getByLabelText(/new email address/i), REPLACEMENT);
-    await user.type(screen.getByLabelText(/current password/i), 'CorrectHorse1!');
-    await user.type(screen.getByLabelText(/six-digit code/i), '000000');
-    await user.click(screen.getByRole('button', { name: /send the confirmation/i }));
-
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent("That password or code wasn't accepted.");
-    expect(alert).not.toHaveTextContent(/one-time code is incorrect/);
-    expect(requestCalls, 'one wrong code is one lockout strike').toBe(1);
-    expect(refreshes()).toBe(0);
-  });
-
-  it('asks for the code when the server wants one the form did not show', async () => {
-    stubStatus();
-    stubRequestRejected(400, 'A current one-time code is required', { code: 'mfaCodeRequired' });
-    const user = userEvent.setup();
-    renderSection();
-    await openTheForm(user);
-
-    await user.type(screen.getByLabelText(/new email address/i), REPLACEMENT);
-    await user.type(screen.getByLabelText(/current password/i), 'CorrectHorse1!');
-    await user.click(screen.getByRole('button', { name: /send the confirmation/i }));
-
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent(/six-digit code from your authenticator app/i);
-    expect(alert).not.toHaveTextContent(/check the address/i);
   });
 
   it('names the wait when the resend cooldown refuses the request', async () => {

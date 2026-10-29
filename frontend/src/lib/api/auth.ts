@@ -38,8 +38,8 @@ export interface AuthenticatedUser {
 }
 
 /**
- * Login/second-factor completed: the backend issued the real session cookies
- * and the user-bound CSRF token.
+ * Login completed: the backend issued the real session cookies and the
+ * user-bound CSRF token.
  */
 export interface AuthenticatedSessionResult {
   status: 'authenticated';
@@ -48,37 +48,22 @@ export interface AuthenticatedSessionResult {
 }
 
 /**
- * Login verified the password but issued NO session because the account has a
- * second factor enrolled (authController.login, Equoria-2vwwh). The challenge
- * token is short-lived and belongs in transient memory only — never storage,
- * a URL, or a log.
+ * A login attempt resolves to a session. (It was a session-or-challenge union
+ * until authenticator-app sign-in was removed, owner ruling 2026-10-29, q305.)
  */
-export interface MfaChallengeRequiredResult {
-  status: 'mfa_required';
-  mfaChallengeToken: string;
-}
-
-/**
- * A login attempt resolves to exactly one of two outcomes. Callers must branch
- * on `status`; a challenge is never a user (Finding 7, Equoria-6p398.7).
- */
-export type LoginResult = AuthenticatedSessionResult | MfaChallengeRequiredResult;
+export type LoginResult = AuthenticatedSessionResult;
 
 /**
  * What the recovery-address surface must know before it asks for anything
  * (Finding 9, Equoria-6p398.11).
  *
- * `POST /auth/email-change/request` refuses a wrong password and a missing or
- * wrong TOTP with the SAME bare 401, so a client cannot infer from a failure
- * whether the account carries a second factor. `secondFactorRequired` is that
- * missing fact. `pending` is the single live staged replacement, so a reloaded
+ * `pending` is the single live staged replacement, so a reloaded
  * surface can say a letter is waiting instead of pretending nothing happened.
  */
 export interface EmailChangeStatus {
   /** The confirmed address — still the live recovery identity. */
   email: string;
   emailVerified: boolean;
-  secondFactorRequired: boolean;
   pending: {
     /**
      * MASKED (`j***@example.com`). The backend never reports a staged address
@@ -96,8 +81,6 @@ export interface EmailChangeStatus {
 export interface EmailChangeRequestCredentials {
   email: string;
   password: string;
-  /** Required only when `secondFactorRequired` is true. */
-  totpToken?: string;
 }
 
 /** What the backend reports after staging (never the token itself). */
@@ -119,26 +102,19 @@ export interface EmailChangeConfirmResult {
   emailVerifiedAt: string | null;
 }
 
-/** Second-factor proof: a TOTP from the authenticator app, or a recovery code. */
-export type MfaChallengeCredentials =
-  | { mfaChallengeToken: string; token: string; recoveryCode?: never }
-  | { mfaChallengeToken: string; recoveryCode: string; token?: never };
-
-/** Raw `data` block the two session-issuing auth endpoints can return. */
+/** Raw `data` block the session-issuing login endpoint returns. */
 interface RawAuthResponse {
   user?: AuthenticatedUser;
   csrfToken?: string;
-  mfaRequired?: boolean;
-  mfaChallengeToken?: string;
 }
 
 /**
- * Equoria-f6wfa: login and the MFA challenge both rotate the auth cookies. The
+ * Equoria-f6wfa: login rotates the auth cookies. The
  * CSRF token cached during the request itself is bound to the ANONYMOUS
  * identifier and is stale the moment the new auth cookie applies. Seed the
  * freshly-bound token so the FIRST authenticated mutation sends a matching
  * token instead of 403-ing (invalidCsrfToken) and relying on the apiClient's
- * one-shot retry to recover. Both paths must finalize the session identically.
+ * one-shot retry to recover.
  */
 function finalizeAuthenticatedSession(raw: RawAuthResponse): AuthenticatedSessionResult {
   if (raw?.csrfToken) {
@@ -148,19 +124,15 @@ function finalizeAuthenticatedSession(raw: RawAuthResponse): AuthenticatedSessio
 }
 
 /**
- * Read a session-issuing auth response without ever casting a challenge into a
- * user. An unrecognised shape is an error, not a silent success.
+ * Read a session-issuing auth response. An unrecognised shape is an error, not
+ * a silent success.
  */
 function readAuthResponse(raw: RawAuthResponse, endpointLabel: string): LoginResult {
-  if (raw?.mfaRequired === true && typeof raw.mfaChallengeToken === 'string') {
-    // Deliberately NOT seeding CSRF: no session exists yet.
-    return { status: 'mfa_required', mfaChallengeToken: raw.mfaChallengeToken };
-  }
   if (raw?.user?.id) {
     return finalizeAuthenticatedSession(raw);
   }
   throw {
-    message: `${endpointLabel} returned neither a session nor a second-factor challenge.`,
+    message: `${endpointLabel} returned no session.`,
     status: 'error',
     statusCode: 500,
   };
@@ -170,37 +142,11 @@ export const authApi = {
   /**
    * Login user.
    *
-   * Resolves to a discriminated union: an authenticated session, or the MFA
-   * challenge the backend issues instead of a session for an enrolled account.
-   * Sets httpOnly cookies automatically on the authenticated branch.
+   * Resolves to the authenticated session. Sets httpOnly cookies automatically.
    */
   login: async (credentials: { email: string; password: string }): Promise<LoginResult> => {
     const result = await apiClient.post<RawAuthResponse>('/api/v1/auth/login', credentials);
     return readAuthResponse(result, 'Login');
-  },
-
-  /**
-   * Complete the second factor of login (POST /api/v1/auth/mfa/challenge).
-   *
-   * Public endpoint: it consumes the short-lived challenge token from `login`
-   * plus either a TOTP `token` or a single-use `recoveryCode`, and on success
-   * issues the same session triple as an ordinary login
-   * (authSessionService.issueAuthenticatedSession).
-   *
-   * `token` stays a string end-to-end so a leading zero survives.
-   */
-  mfaChallenge: async (
-    credentials: MfaChallengeCredentials
-  ): Promise<AuthenticatedSessionResult> => {
-    const result = await apiClient.post<RawAuthResponse>('/api/v1/auth/mfa/challenge', credentials);
-    if (!result?.user?.id) {
-      throw {
-        message: 'The second factor was accepted but no session was issued.',
-        status: 'error',
-        statusCode: 500,
-      };
-    }
-    return finalizeAuthenticatedSession(result);
   },
 
   /**
@@ -435,8 +381,7 @@ export const authApi = {
    * Stage a replacement recovery address
    * (POST /api/v1/auth/email-change/request, Finding 5).
    *
-   * Requires fresh authentication: the current password always, plus a current
-   * TOTP when the account carries a second factor. Nothing moves yet — the
+   * Requires fresh authentication: the current password. Nothing moves yet — the
    * confirmed address stays the live recovery identity until the link mailed to
    * the replacement is opened.
    */

@@ -42,7 +42,7 @@
  * tests/config/testRateLimitProfile.mjs, tests/setup.mjs with 'relaxed' and
  * __tests__/setup.mjs (this config) with 'production' — every limiter at the
  * cap players get. A control suite here that needs more headroom sets its own
- * TEST_RATE_LIMIT_* value in its file, as the MFA lockout suites do.
+ * TEST_RATE_LIMIT_* value in its file.
  * __tests__/testRateLimitProfile.sentinel.test.mjs pins both selections. What was
  * wrong is that a security gate was running domain suites at all. The defect was
  * the SELECTION, and selection is now three explicit layers:

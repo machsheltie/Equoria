@@ -49,7 +49,7 @@ all. `backend/jest.config.security.mjs` now selects in three declared layers.
 Practical consequence when adding a suite here: budget requests against each limiter's
 production cap in `backend/middleware/rateLimiting.mjs` and `backend/app.mjs`, not against
 the shard matrix's 1000/15min. A control suite that needs more headroom sets its own
-`TEST_RATE_LIMIT_*` value for its file, as the MFA lockout suites do.
+`TEST_RATE_LIMIT_*` value for its file.
 
 **1 — Control-source scope.** The test homes of the sources in the "Middleware and
 controls" row above: `backend/__tests__/**` (middleware sentinels and cross-module

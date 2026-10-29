@@ -18,7 +18,7 @@
  *
  * Real-stack supertest, no mocks. The CSRF token is fetched normally; the
  * goal of the sentinel is to lock the VALIDATION layer, not to test the
- * full register lifecycle (which mfa.integration covers).
+ * full register lifecycle.
  */
 
 import { describe, it, expect, beforeAll } from '@jest/globals';

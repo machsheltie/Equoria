@@ -5,17 +5,15 @@
  * The transport's generic 401 handler assumes every 401 means "the access
  * token expired" and answers it with POST /auth/refresh-token followed by one
  * replay of the original request. That is correct for a PROTECTED request made
- * by a logged-in player, and wrong for the two PRE-SESSION endpoints:
+ * by a logged-in player, and wrong for the PRE-SESSION endpoint:
  *
  *   POST /api/v1/auth/login          — 401 means "those credentials are wrong"
- *   POST /api/v1/auth/mfa/challenge  — 401 means "that second factor is wrong"
  *
- * Neither has a session to refresh, so the refresh always fails, the failure
- * wipes the cached CSRF state, and the useful authentication error is replaced
- * by "Session expired. Please log in again." Worse, when the refresh happens to
- * succeed the transport REPLAYS the challenge — a single mistyped code is
- * counted twice against the backend's 5-failure MFA lockout
- * (mfaLockoutService, Equoria-kg7i2).
+ * It has no session to refresh, so the refresh always fails, the failure wipes
+ * the cached CSRF state, and the useful authentication error is replaced by
+ * "Session expired. Please log in again." (The second-factor challenge endpoint
+ * that also stood here went with authenticator-app sign-in, owner ruling
+ * 2026-10-29, q305.)
  *
  * Network is exercised through the REAL transport at the fetch boundary via
  * MSW (src/test/msw/server.ts) — the same boundary the existing api-client and
@@ -33,7 +31,6 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 let refreshCalls = 0;
 let loginCalls = 0;
-let challengeCalls = 0;
 let horsesCalls = 0;
 let changePasswordCalls = 0;
 
@@ -41,7 +38,6 @@ beforeEach(() => {
   changePasswordCalls = 0;
   refreshCalls = 0;
   loginCalls = 0;
-  challengeCalls = 0;
   horsesCalls = 0;
   authSessionState.clear();
 });
@@ -88,35 +84,6 @@ describe('apiClient — 401 handling for pre-session authentication operations',
     expect(error?.message).not.toMatch(/session expired/i);
     expect(refreshCalls, 'login has no session to refresh').toBe(0);
     expect(loginCalls, 'the rejected credentials must not be replayed').toBe(1);
-  });
-
-  it('surfaces the second-factor rejection and never replays the submitted code', async () => {
-    stubRefreshRejected();
-    server.use(
-      http.post(`${base}/api/v1/auth/mfa/challenge`, () => {
-        challengeCalls += 1;
-        return HttpResponse.json(
-          { success: false, message: 'Invalid MFA credentials' },
-          { status: 401 }
-        );
-      })
-    );
-
-    const error = await apiClient
-      .post('/api/v1/auth/mfa/challenge', { mfaChallengeToken: 'challenge-token', token: '000000' })
-      .then(
-        () => null,
-        (caught: ApiError) => caught
-      );
-
-    expect(error?.statusCode).toBe(401);
-    expect(error?.message).toBe('Invalid MFA credentials');
-    expect(error?.message).not.toMatch(/session expired/i);
-    expect(refreshCalls, 'the second factor has no session to refresh').toBe(0);
-    expect(
-      challengeCalls,
-      'replaying the code would burn a second attempt against the MFA lockout'
-    ).toBe(1);
   });
 
   it('still refreshes and retries a protected request that answers 401', async () => {
@@ -233,7 +200,7 @@ describe('apiClient — change-password refusals and expired sessions', () => {
 
 /** The email-change request (Equoria-wkpns): same contract as change-password. */
 describe('apiClient — email-change refusals and expired sessions', () => {
-  const body = { email: 'new-rider@example.com', password: 'NotMyPassword1!', totpToken: '000000' };
+  const body = { email: 'new-rider@example.com', password: 'NotMyPassword1!' };
   let emailChangeCalls = 0;
 
   beforeEach(() => {
@@ -246,12 +213,12 @@ describe('apiClient — email-change refusals and expired sessions', () => {
     );
   });
 
-  it('sends a wrong password or code once and never refreshes for it', async () => {
+  it('sends a wrong password once and never refreshes for it', async () => {
     server.use(
       http.post(`${base}/api/v1/auth/email-change/request`, () => {
         emailChangeCalls += 1;
         return HttpResponse.json(
-          { success: false, message: 'refused', code: 'passwordOrCodeIncorrect' },
+          { success: false, message: 'refused', code: 'currentPasswordIncorrect' },
           { status: 400 }
         );
       })
@@ -262,8 +229,8 @@ describe('apiClient — email-change refusals and expired sessions', () => {
       (caught: ApiError) => caught
     );
 
-    expect(error?.code).toBe('passwordOrCodeIncorrect');
-    expect(emailChangeCalls, 'one wrong code is one lockout strike').toBe(1);
+    expect(error?.code).toBe('currentPasswordIncorrect');
+    expect(emailChangeCalls, 'one wrong password is one request').toBe(1);
     expect(refreshCalls).toBe(0);
   });
 

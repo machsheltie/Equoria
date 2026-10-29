@@ -1,6 +1,5 @@
 ﻿import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
 import { AppError, ValidationError } from '../../../errors/index.mjs';
 
 // Equoria-gm4fg: Constant-time placeholder hash used when `email` does not
@@ -29,10 +28,6 @@ function getFakeBcryptHash() {
   FAKE_BCRYPT_HASH ??= bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
   return FAKE_BCRYPT_HASH;
 }
-// Equoria-vhv3i: mfaService / mfaLockoutService / mfaReplayProtectionService /
-// fieldEncryption imports moved to mfaController.mjs with the MFA endpoints.
-// Only the login handler below still touches MFA (it issues the short-lived
-// mfaChallengeToken JWT when user.mfaEnabled is true), which only needs `jwt`.
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { resetAuthRateLimit } from '../../../middleware/authRateLimiter.mjs';
@@ -323,7 +318,6 @@ export const login = async (req, res, next) => {
         xp: true,
         role: true,
         settings: true,
-        mfaEnabled: true,
       },
     });
 
@@ -345,30 +339,6 @@ export const login = async (req, res, next) => {
     // password check so a refusal never confirms that an account exists.
     if (await refuseSignIn(req, res, { userId: user.id })) {
       return undefined;
-    }
-
-    // OWASP A07 (Equoria-2vwwh): if MFA is enabled, the first factor
-    // (password) is verified but NO session tokens are issued. The client
-    // must complete the second factor at POST /auth/mfa/challenge with the
-    // short-lived signed challenge token below. This deliberately diverges
-    // from the non-MFA path so a password alone never yields a session.
-    if (user.mfaEnabled) {
-      const mfaChallengeToken = jwt.sign(
-        { userId: user.id, type: 'mfa_challenge' },
-        process.env.JWT_SECRET,
-        { algorithm: 'HS256', expiresIn: '5m' },
-      );
-      logger.info('[authController.login] MFA required — challenge issued', {
-        userId: user.id,
-      });
-      return res.status(200).json({
-        success: true,
-        message: 'MFA verification required',
-        data: {
-          mfaRequired: true,
-          mfaChallengeToken,
-        },
-      });
     }
 
     await recordLoginSighting(req, res, user.id);
@@ -582,14 +552,3 @@ export {
 // alongside (no other consumers).
 // ─────────────────────────────────────────────────────────────────────────
 export { completeOnboarding, advanceOnboarding, markWelcomeSeen } from './onboardingController.mjs';
-
-// ─────────────────────────────────────────────────────────────────────────
-// TOTP MFA (OWASP A07, Equoria-2vwwh)
-// ─────────────────────────────────────────────────────────────────────────
-// Equoria-vhv3i: the four MFA endpoints (enroll, verify-enrollment,
-// challenge, disable) plus the shared issueAuthenticatedSession helper
-// moved to mfaController.mjs + services/authSessionService.mjs. Re-exported
-// here so existing routes (authRoutes / authenticatedAuthRoutes) and tests
-// that import { mfaEnroll, mfaChallenge, ... } from this module keep
-// working unchanged.
-export { mfaEnroll, mfaVerifyEnrollment, mfaChallenge, mfaDisable } from './mfaController.mjs';

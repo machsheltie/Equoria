@@ -64,7 +64,6 @@ describe('User-documentation refresh access control (Equoria-bs6fc)', () => {
         firstName: 'TestFixture-bs6fc',
         lastName: 'Admin',
         role: 'admin',
-        mfaEnabled: false,
       },
     });
     adminToken = generateTestToken({ id: admin.id, role: 'admin' });

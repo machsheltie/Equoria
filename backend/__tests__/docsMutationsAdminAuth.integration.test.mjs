@@ -80,7 +80,6 @@ describe('API-documentation mutation access control (Equoria-7osu4)', () => {
         firstName: 'TestFixture-7osu4',
         lastName: 'Admin',
         role: 'admin',
-        mfaEnabled: false,
       },
     });
     member = await prisma.user.create({
@@ -92,7 +91,6 @@ describe('API-documentation mutation access control (Equoria-7osu4)', () => {
         firstName: 'TestFixture-7osu4',
         lastName: 'Member',
         role: 'user',
-        mfaEnabled: false,
       },
     });
     adminToken = generateTestToken({ id: admin.id, role: 'admin' });

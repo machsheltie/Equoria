@@ -3,17 +3,15 @@
  * and a surface needs a truthful read.
  *
  * `POST /auth/email-change/request` (Finding 5) refuses without a current
- * password and, when the account carries a second factor, without a current
- * TOTP as well. Both refusals are a bare 401, so a client that cannot ask
- * "does this account need a code?" must either guess or show a field that is
- * wrong for most players. Separately, a staged change is invisible: reload the
+ * password. (It once also asked for a TOTP from accounts with a second factor
+ * and this read reported `secondFactorRequired`; authenticator-app sign-in was
+ * removed, owner ruling 2026-10-29, q305.) A staged change is invisible: reload the
  * settings surface and nothing says a letter is waiting, so the honest
  * four-state contract cannot be met.
  *
  * This suite pins `GET /api/v1/auth/email-change/status`: session-gated, read
- * only, and reporting exactly two facts about the caller's OWN account —
- * whether the change flow will demand a second factor, and the single live
- * pending replacement if one exists.
+ * only, and reporting facts about the caller's OWN account only — its confirmed
+ * address and the single live pending replacement if one exists.
  *
  * FAILING TEST FIRST: the route does not exist, so every case below answers
  * 404 against unpatched code.
@@ -29,14 +27,12 @@ import { readFileSync, existsSync, unlinkSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import bcrypt from 'bcryptjs';
-import { authenticator } from 'otplib';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { encryptField } from '../../../utils/fieldEncryption.mjs';
 import { VERIFICATION_RESEND_COOLDOWN_MS } from '../services/emailVerificationService.mjs';
 import { maskEmailAddress } from '../../../utils/emailIdentityPolicy.mjs';
 
@@ -168,8 +164,6 @@ async function resetIdentity(email) {
       email,
       emailVerified: true,
       emailVerifiedAt: new Date(),
-      mfaEnabled: false,
-      mfaSecret: null,
     },
   });
   user = { ...user, email };
@@ -182,7 +176,7 @@ describe('Finding 9 — GET /api/v1/auth/email-change/status', () => {
     expect(res.status).toBe(401);
   });
 
-  it('reports the confirmed address, no pending change, and no second factor', async () => {
+  it('reports the confirmed address and no pending change', async () => {
     await resetIdentity(user.email);
 
     const res = await readStatus();
@@ -190,24 +184,9 @@ describe('Finding 9 — GET /api/v1/auth/email-change/status', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.email).toBe(user.email);
     expect(res.body.data.emailVerified).toBe(true);
-    expect(res.body.data.secondFactorRequired).toBe(false);
+    // Owner ruling 2026-10-29 (q305): no second factor exists, so the flag is gone.
+    expect(res.body.data).not.toHaveProperty('secondFactorRequired');
     expect(res.body.data.pending).toBeNull();
-  });
-
-  it('reports a second factor is required when the account has MFA enabled', async () => {
-    await resetIdentity(user.email);
-    const secret = authenticator.generateSecret();
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { mfaEnabled: true, mfaSecret: encryptField(secret) },
-    });
-
-    const res = await readStatus();
-
-    expect(res.status).toBe(200);
-    expect(res.body.data.secondFactorRequired).toBe(true);
-
-    await resetIdentity(user.email);
   });
 
   it('reports the live pending replacement while the confirmed address stays put', async () => {

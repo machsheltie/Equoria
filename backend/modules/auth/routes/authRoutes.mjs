@@ -178,17 +178,4 @@ router.get('/verify-email', authController.verifyEmail);
 // to one account and one exact normalized destination.
 router.get('/email-change/confirm', authController.confirmEmailChangeController);
 
-// POST /auth/mfa/challenge — public second factor of the login flow
-// (Equoria-2vwwh, OWASP A07). Consumes the short-lived signed challenge token
-// issued by /auth/login when the account has MFA enabled.
-router.post(
-  '/mfa/challenge',
-  authRateLimiter,
-  [
-    body('mfaChallengeToken').notEmpty().withMessage('mfaChallengeToken is required'),
-    handleValidationErrors,
-  ],
-  authController.mfaChallenge,
-);
-
 export default router;

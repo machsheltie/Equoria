@@ -10,10 +10,9 @@
  *
  * This service owns the only path that may move it:
  *
- *   1. REQUEST  — fresh authentication proportionate to the account
- *                 (current password always; a TOTP step-up as well when MFA is
- *                 enabled, reusing the same lockout + replay services
- *                 `/auth/mfa/disable` uses). The replacement address is STAGED;
+ *   1. REQUEST  — fresh authentication: the current password (authenticator-app
+ *                 sign-in was removed, owner ruling 2026-10-29, q305). The
+ *                 replacement address is STAGED;
  *                 the confirmed identity stays live and keeps receiving
  *                 password recovery.
  *   2. CONFIRM  — a one-time, purpose-tagged, address-bound token delivered to
@@ -64,10 +63,6 @@ import {
   VERIFICATION_RESEND_COOLDOWN_MS,
   VERIFICATION_TOKEN_PURPOSE,
 } from '../services/emailVerificationService.mjs';
-import { decryptField } from '../../../utils/fieldEncryption.mjs';
-import * as mfaService from './mfaService.mjs';
-import * as mfaLockoutService from './mfaLockoutService.mjs';
-import * as mfaReplayProtectionService from './mfaReplayProtectionService.mjs';
 import { retireStaffCheckinCodesTx, revokeStaffTrustedDevicesTx } from '../../staff/index.mjs';
 import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 
@@ -131,8 +126,6 @@ export async function revokePendingEmailChanges(client, userId, currentEmail, no
   return result.count;
 }
 
-const passwordOrCodeMessage = 'The password or one-time code is incorrect';
-
 /** A coded 400 refusal; emailChangeController renders `code` into the body. */
 function refusal(message, code) {
   const error = new AppError(message, 400);
@@ -147,17 +140,10 @@ function refusal(message, code) {
  * @param {string} params.userId
  * @param {unknown} params.requestedEmail - Route-validated + normalized address.
  * @param {unknown} params.password - Current account password.
- * @param {unknown} [params.totpToken] - Required when the account has MFA on.
  * @param {{ipAddress?: string|null, userAgent?: string|null}} [params.metadata]
  * @returns {Promise<{rawToken: string, pendingEmail: string, expiresAt: Date, user: object}>}
  */
-export async function requestEmailChange({
-  userId,
-  requestedEmail,
-  password,
-  totpToken,
-  metadata = {},
-}) {
+export async function requestEmailChange({ userId, requestedEmail, password, metadata = {} }) {
   const pendingEmail = normalizeEmailAddress(requestedEmail);
   if (!pendingEmail) {
     throw new ValidationError('A valid email address is required');
@@ -174,8 +160,6 @@ export async function requestEmailChange({
       username: true,
       firstName: true,
       password: true,
-      mfaEnabled: true,
-      mfaSecret: true,
     },
   });
   if (!user) {
@@ -183,56 +167,12 @@ export async function requestEmailChange({
   }
 
   // ── Fresh authentication ────────────────────────────────────────────────
-  // The MFA lockout gate runs BEFORE any cryptographic work so a locked-out
-  // attacker cannot use this endpoint as an oracle (same posture as
-  // /auth/mfa/disable, Equoria-uqq8n).
-  if (user.mfaEnabled) {
-    const lockState = await mfaLockoutService.isLocked(user.id);
-    if (lockState.locked) {
-      const error = new AppError('Too many failed MFA attempts. Please try again later.', 429);
-      // `retryAfter` (not `retryAfterSec`): the central errorHandler has no
-      // retry-after handling at all, so the controller renders this field into
-      // the body itself, exactly the way /auth/mfa/disable does.
-      error.retryAfter = lockState.retryAfterSec;
-      throw error;
-    }
-  }
-
-  // Equoria-wkpns: every fresh-authentication refusal is a coded 400, never a
-  // 401. The frontend client reads a 401 as an expired session and re-sends
-  // the request, which recorded one wrong code twice against the lockout.
-  // A missing code is refused before the password is checked, and a wrong
-  // password and a wrong code share one answer on a second-factor account, so
-  // this endpoint never confirms a password without the second factor.
-  if (user.mfaEnabled && (typeof totpToken !== 'string' || totpToken.trim().length === 0)) {
-    throw refusal(
-      'A current one-time code is required to change your email address',
-      'mfaCodeRequired',
-    );
-  }
-
+  // Equoria-wkpns: a wrong password is a coded 400, never a 401. The frontend
+  // client reads a 401 as an expired session and re-sends the request.
   const passwordValid = await bcrypt.compare(password, user.password);
   if (!passwordValid) {
     logger.warn('[emailChangeService] Rejected email change — wrong password', { userId: user.id });
-    throw user.mfaEnabled
-      ? refusal(passwordOrCodeMessage, 'passwordOrCodeIncorrect')
-      : refusal('Current password is incorrect', 'currentPasswordIncorrect');
-  }
-
-  if (user.mfaEnabled) {
-    // Replay check first so a replayed code feeds the lockout counter exactly
-    // like an invalid one (Equoria-y932s / uqq8n).
-    const isReplay = mfaReplayProtectionService.hasBeenUsed(user.id, totpToken);
-    const otpValid =
-      !isReplay && user.mfaSecret
-        ? mfaService.verifyToken(totpToken, decryptField(user.mfaSecret))
-        : false;
-    if (!otpValid) {
-      await mfaLockoutService.recordFailure(user.id);
-      throw refusal(passwordOrCodeMessage, 'passwordOrCodeIncorrect');
-    }
-    mfaReplayProtectionService.recordSuccessfulVerification(user.id, totpToken);
-    await mfaLockoutService.recordSuccess(user.id);
+    throw refusal('Current password is incorrect', 'currentPasswordIncorrect');
   }
 
   // ── Destination validation ──────────────────────────────────────────────
@@ -498,12 +438,10 @@ export async function confirmEmailChange({ rawToken, metadata = {} }) {
  * Step 0 — the read a recovery-address surface needs before it can ask for
  * anything (Equoria-6p398.11, Finding 9).
  *
- * Three facts about the CALLER'S OWN account, and nothing else:
+ * Facts about the CALLER'S OWN account, and nothing else (the old
+ * `secondFactorRequired` flag went with authenticator-app sign-in, owner ruling
+ * 2026-10-29, q305):
  *
- *  - `secondFactorRequired` — `requestEmailChange` refuses a password-only
- *    submission with a bare 401 when the account has MFA on, exactly as it
- *    refuses a wrong password. Without this flag a client cannot tell those
- *    apart and must either guess or show a TOTP field to every player.
  *  - `pending.maskedEmail` — the single live staged replacement, so a reloaded
  *    surface can say a letter is waiting instead of pretending nothing
  *    happened. It is MASKED (`j***@example.com`): the account owner recognises
@@ -521,13 +459,13 @@ export async function confirmEmailChange({ rawToken, metadata = {} }) {
  * selected, so the raw secret cannot leak through this surface.
  *
  * @param {string} userId
- * @returns {Promise<{email: string, emailVerified: boolean, secondFactorRequired: boolean,
+ * @returns {Promise<{email: string, emailVerified: boolean,
  *   pending: {maskedEmail: string, expiresAt: Date, resendAvailableAt: Date}|null}>}
  */
 export async function readEmailChangeStatus(userId) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, emailVerified: true, mfaEnabled: true },
+    select: { id: true, email: true, emailVerified: true },
   });
   if (!user) {
     throw new AppError('User not found', 404);
@@ -545,7 +483,6 @@ export async function readEmailChangeStatus(userId) {
   return {
     email: user.email,
     emailVerified: Boolean(user.emailVerified),
-    secondFactorRequired: Boolean(user.mfaEnabled),
     pending: pending
       ? {
           maskedEmail: maskEmailAddress(pending.email),

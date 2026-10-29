@@ -1,19 +1,18 @@
 /**
- * User-safe copy for the two steps of signing in (Finding 7, Equoria-6p398.7).
+ * User-safe copy for signing in (Finding 7, Equoria-6p398.7).
  *
  * FRONTEND_ASYNC_STATE_DOCTRINE §4 forbids rendering a raw server error string.
  * The shared `userMessageFor` mapper is the right tool almost everywhere, but
  * its 401 branch answers "Your session expired — log in again", which is true
  * for a protected request and wrong on the login surface: the player has no
- * session yet, and a 401 there means the credentials — or the second factor —
- * were refused. These two mappers keep the taxonomy discipline (classify by
+ * session yet, and a 401 there means the credentials were refused. These
+ * mappers keep the taxonomy discipline (classify by
  * `ApiError.statusCode`, never echo `error.message`) with copy that fits the
  * step the player is actually standing on.
  *
- * Both are total, pure functions over `ApiError | null`, mirroring
- * `userMessageFor`'s contract. They live beside it rather than inside
- * `LoginPage` so the second-factor copy travels with `SecondFactorForm` to any
- * future step-up surface.
+ * They are total, pure functions over `ApiError | null`, mirroring
+ * `userMessageFor`'s contract. (The second-factor copy went with
+ * authenticator-app sign-in, owner ruling 2026-10-29, q305.)
  */
 
 import { formatDateTime } from '../formatDate.js';
@@ -77,49 +76,15 @@ export function credentialsMessage(error: ApiError | null | undefined): string |
 }
 
 /**
- * Copy for a refused second factor.
- *
- * A refused code and an aged-out challenge are indistinguishable on the wire —
- * `mfaController.mfaChallenge` answers both with a bare 401 — so the 401 copy
- * names both remedies, and the caller keeps the way back to the credentials
- * form on screen.
- */
-export function secondFactorMessage(error: ApiError | null | undefined): string | null {
-  if (!error) return null;
-  const status = error.statusCode;
-
-  if (status === 0) {
-    return "Can't reach the stable. Check your connection and try again.";
-  }
-  if (status === 400) {
-    return 'Enter the six digits from your authenticator app, or one of your recovery codes.';
-  }
-  if (status === 401) {
-    return "That code wasn't accepted. Enter the code showing now — or go back and sign in again if you have been waiting a while.";
-  }
-  // The MFA lockout / throttle: the code itself may have been right.
-  if (status === 429) {
-    return 'Too many code attempts. Wait a few minutes, then try again.';
-  }
-  if (status >= 500) {
-    return 'Something went wrong on our end. Try again in a moment.';
-  }
-  return "That code wasn't accepted. Try again.";
-}
-
-/**
  * Copy for a refused recovery-address change request (Finding 9,
  * Equoria-6p398.11).
  *
  * `emailChangeService.requestEmailChange` refuses fresh authentication with a
  * coded 400 (Equoria-wkpns; it was a 401, which the transport refreshed and
- * re-sent, counting one wrong code twice toward the lockout):
- * currentPasswordIncorrect, mfaCodeRequired, or passwordOrCodeIncorrect — one
- * answer for a wrong password or code on a second-factor account, so the copy
- * names both things the player typed. A 401 is only ever an ended session.
+ * re-sent): currentPasswordIncorrect. A 401 is only ever an ended session.
  *
- * 429 covers both throttles on that endpoint: the MFA lockout and the
- * five-minute resend cooldown. Both are a wait, not a lockout of the account,
+ * 429 is the throttle on that endpoint: the five-minute resend cooldown (or the
+ * sign-in rate limiter). Either is a wait, not a lockout of the account,
  * and the backend's own `retryAfter` seconds are rendered when present so the
  * player is not told to guess.
  */
@@ -133,12 +98,6 @@ export function recoveryAddressMessage(error: ApiError | null | undefined): stri
   if (status === 400) {
     if (error.code === 'currentPasswordIncorrect') {
       return "That password wasn't accepted. Enter your current Equoria password and try again.";
-    }
-    if (error.code === 'passwordOrCodeIncorrect') {
-      return "That password or code wasn't accepted. Re-enter your password and the code showing now.";
-    }
-    if (error.code === 'mfaCodeRequired') {
-      return 'This account also needs the six-digit code from your authenticator app. Reload Settings to show the code box, then try again.';
     }
     // Also the "already the address on this account" and pending-cap refusals.
     return 'Check the address you entered, then try again. If several changes are already waiting, confirm or let them lapse first.';

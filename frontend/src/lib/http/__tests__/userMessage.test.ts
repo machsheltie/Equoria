@@ -186,20 +186,18 @@ describe('recoveryAddressMessage — every branch', () => {
     expectNoRawLeak(copy);
   });
 
-  it('passwordOrCodeIncorrect names BOTH the password and the code', () => {
-    // One answer for both on a second-factor account, so naming only one of
-    // them would blame the wrong field.
-    const copy = recoveryAddressMessage(apiError(400, 'x', { code: 'passwordOrCodeIncorrect' }));
-    expect(copy).toMatch(/password or code/i);
-    expectNoRawLeak(copy);
-  });
-
-  it('mfaCodeRequired asks for the code without jargon', () => {
-    const copy = recoveryAddressMessage(apiError(400, 'x', { code: 'mfaCodeRequired' }));
-    expect(copy).toMatch(/six-digit code/i);
-    expect(copy).not.toMatch(/mfa|totp|two-factor/i);
-    expectNoRawLeak(copy);
-  });
+  // Owner ruling 2026-10-29 (q305): authenticator-app sign-in is removed. Old contract:
+  // passwordOrCodeIncorrect and mfaCodeRequired had their own copy. New ruling: the
+  // backend never sends them; a stray one reads as the generic 400 copy.
+  it.each(['passwordOrCodeIncorrect', 'mfaCodeRequired'])(
+    'the retired code %s gets no code-box copy',
+    (code) => {
+      const copy = recoveryAddressMessage(apiError(400, 'x', { code }));
+      expect(copy).toMatch(/check the address you entered/i);
+      expect(copy).not.toMatch(/six-digit|authenticator|code/i);
+      expectNoRawLeak(copy);
+    }
+  );
 
   it('401 is an ended session, never a refused password', () => {
     const copy = recoveryAddressMessage(apiError(401));

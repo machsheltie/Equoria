@@ -11,10 +11,6 @@
  *
  * Everything here is production behaviour:
  *  - accounts are registered and onboarded through the real UI;
- *  - MFA is enrolled through the real authenticated endpoints with real CSRF,
- *    because no enrolment surface exists yet (out of scope), and the TOTP codes
- *    are computed with the repository's own `otplib` — the same library
- *    `backend/modules/auth/services/mfaService.mjs` verifies with;
  *  - the confirmation link is read out of the real email capture sink the
  *    backend writes in non-production (`EMAIL_CAPTURE_FILE`), never fabricated;
  *  - the link is opened in a SEPARATE browser context, which is how a player
@@ -24,13 +20,14 @@
  * Profile: `playwright.beta-readiness.config.ts` (NODE_ENV=beta-readiness), the
  * documented Redis-free harness in docs/testing/BETA_PROFILE.md. Nothing about
  * auth, CSRF, ownership or persistence is relaxed.
+ *
+ * Owner ruling 2026-10-29 (q305): authenticator-app sign-in is removed, so the
+ * second-factor case that enrolled TOTP here is gone and no code box is asked for.
  */
 
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
-import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
 import {
   csrfRequest,
   expectOk,
@@ -42,37 +39,6 @@ import {
   visitLiveRoute,
   type RegisteredPlayer,
 } from './support/prodParity';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const repoRoot = path.resolve(__dirname, '..', '..', '..');
-
-const backendRequire = createRequire(path.join(repoRoot, 'backend', 'package.json'));
-const { authenticator } = backendRequire('otplib') as {
-  authenticator: {
-    generate(_secret: string): string;
-    options: Record<string, unknown>;
-    resetOptions(): void;
-  };
-};
-
-const TOTP_STEP_MS = 30_000;
-
-function totpAt(secret: string, stepOffset: number): string {
-  authenticator.options = { epoch: Date.now() + stepOffset * TOTP_STEP_MS };
-  const code = authenticator.generate(secret);
-  authenticator.resetOptions();
-  return code;
-}
-
-/** An accepted code that has not already been consumed (replay guard, Equoria-y932s). */
-function freshTotp(secret: string, alreadyUsed: string[]): string {
-  for (const offset of [0, 1, -1]) {
-    const code = totpAt(secret, offset);
-    if (!alreadyUsed.includes(code)) return code;
-  }
-  throw new Error('Could not derive an unused TOTP inside the accepted window');
-}
 
 /** How the backend reports a staged address on a later read (never in full). */
 function maskedForm(address: string): string {
@@ -115,16 +81,10 @@ async function openRecoveryAddress(page: Page) {
 }
 
 /** Fill and submit the disclosed change form. Returns the request response. */
-async function submitAddressChange(
-  page: Page,
-  values: { email: string; password: string; code?: string }
-) {
+async function submitAddressChange(page: Page, values: { email: string; password: string }) {
   await page.getByRole('button', { name: /different address/i }).click();
   await page.getByLabel('New Email Address').fill(values.email);
   await page.getByLabel('Current Password').fill(values.password);
-  if (values.code !== undefined) {
-    await page.getByLabel('Six-Digit Code').fill(values.code);
-  }
   const requestResponse = page.waitForResponse(
     (response) =>
       response.url().includes('/api/v1/auth/email-change/request') &&
@@ -356,69 +316,6 @@ test.describe('Recovery address — Settings to a moved identity', () => {
       0
     );
     await expect(section.getByRole('button', { name: /different address/i })).toBeVisible();
-
-    guard.assertClean();
-  });
-
-  test('an account with a second factor is asked for its code, and a real code stages the change', async ({
-    page,
-  }) => {
-    const guard = installProductionParityNetworkGuard(page);
-    const player: RegisteredPlayer = await registerAndCompleteOnboarding(
-      page,
-      `${Date.now()}_mfa`,
-      'Keeper Recmfa'
-    );
-
-    // Real enrolment through the real authenticated endpoints — there is no
-    // enrolment surface yet, so the spec drives the same HTTP contract one would.
-    const enrol = await csrfRequest(page, 'POST', '/api/v1/auth/mfa/enroll', {});
-    const { secret } = unwrapData<{ secret: string }>(
-      await expectOk(enrol, 'POST /api/v1/auth/mfa/enroll')
-    );
-    const enrolmentCode = totpAt(secret, 0);
-    const verify = await csrfRequest(page, 'POST', '/api/v1/auth/mfa/verify-enrollment', {
-      token: enrolmentCode,
-    });
-    await expectOk(verify, 'POST /api/v1/auth/mfa/verify-enrollment');
-
-    const section = await openRecoveryAddress(page);
-    await section.getByRole('button', { name: /different address/i }).click();
-    // The field appears because the surface READ that this account needs it —
-    // a refused attempt could not have told it apart from a wrong password.
-    await expect(page.getByLabel('Six-Digit Code')).toBeVisible();
-
-    // A structurally valid but wrong code is refused, and nothing is staged.
-    const replacement = newAddressFor('mfa');
-    await page.getByLabel('New Email Address').fill(replacement);
-    await page.getByLabel('Current Password').fill(player.password);
-    await page.getByLabel('Six-Digit Code').fill(totpAt(secret, 25));
-    const refusedResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes('/api/v1/auth/email-change/request') &&
-        response.request().method() === 'POST'
-    );
-    await page.locator('[data-testid="recovery-address-submit"]').click();
-    expect((await refusedResponse).status()).toBe(400);
-    await expect(page.getByRole('alert')).toContainText(/password or code wasn't accepted/i);
-    await expect(page.locator('[data-testid="recovery-address-waiting"]')).toHaveCount(0);
-
-    // The real code stages it.
-    const goodCode = freshTotp(secret, [enrolmentCode]);
-    await page.getByLabel('Six-Digit Code').fill(goodCode);
-    const acceptedResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes('/api/v1/auth/email-change/request') &&
-        response.request().method() === 'POST'
-    );
-    await page.locator('[data-testid="recovery-address-submit"]').click();
-    expect((await acceptedResponse).status()).toBe(200);
-
-    const waiting = page.locator('[data-testid="recovery-address-waiting"]');
-    await expect(waiting).toBeVisible();
-    await expect(waiting).toContainText(replacement);
-    // Still staged, not committed.
-    expect(await liveAccountEmail(page)).toBe(player.email);
 
     guard.assertClean();
   });

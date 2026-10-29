@@ -28,11 +28,6 @@ export const FLAG_DEFINITIONS = {
     description: 'Enable passwordless login via magic link',
     defaultValue: false,
   },
-  FF_AUTH_MFA_ENABLED: {
-    type: 'boolean',
-    description: 'Enable multi-factor authentication',
-    defaultValue: false,
-  },
   FF_AUTH_SOCIAL_LOGIN: {
     type: 'boolean',
     description: 'Enable social login (Google, Apple, etc.)',

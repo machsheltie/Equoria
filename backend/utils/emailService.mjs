@@ -357,7 +357,7 @@ export async function sendPasswordResetEmail(email, token, user = {}) {
  *
  * Addressed to the REPLACEMENT address only — the confirmed identity is not
  * asked to approve its own replacement here; that proof was the fresh
- * authentication (password, plus TOTP when MFA is on) already required at
+ * authentication (the current password) already required at
  * `POST /auth/email-change/request`.
  *
  * @param {string} email - The staged replacement address.

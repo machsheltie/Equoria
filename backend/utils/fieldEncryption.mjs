@@ -1,9 +1,10 @@
 /**
  * fieldEncryption — AES-256-GCM at-rest encryption for sensitive DB fields.
  *
- * Equoria-yi13v: User.mfaSecret was stored as plaintext base32; a DB dump
- * exposed every TOTP shared secret. This util encrypts such fields before
- * persistence and decrypts on read.
+ * Equoria-yi13v: written for User.mfaSecret (TOTP shared secrets). That column
+ * went with authenticator-app sign-in (owner ruling 2026-10-29, q305), so no
+ * stored field uses this util today. It encrypts a field before persistence and
+ * decrypts on read.
  *
  * Design:
  *  - AES-256-GCM (authenticated encryption): tampering with the stored value
@@ -18,8 +19,7 @@
  *    envelope is assumed to be a legacy plaintext secret and returned as-is,
  *    so users enrolled before this change are not locked out. New writes are
  *    always encrypted.
- *  - null/empty input passes through untouched (Prisma stores null mfaSecret
- *    when MFA is disabled).
+ *  - null/empty input passes through untouched.
  */
 
 import crypto from 'crypto';

@@ -146,11 +146,11 @@ describe('overrideFlag and clearOverrides', () => {
   it('overrideFlag stores the value (does not currently affect isFeatureEnabled — flagCache not consulted)', () => {
     // overrideFlag writes to flagCache but getRawFlagValue reads env vars and FLAG_DEFAULTS,
     // not flagCache. Document as-is, not a bug for this test — just verify no throw.
-    expect(() => overrideFlag('FF_AUTH_MFA_ENABLED', true)).not.toThrow();
+    expect(() => overrideFlag('FF_AUTH_SOCIAL_LOGIN', true)).not.toThrow();
   });
 
   it('clearOverrides does not throw', () => {
-    overrideFlag('FF_AUTH_MFA_ENABLED', true);
+    overrideFlag('FF_AUTH_SOCIAL_LOGIN', true);
     expect(() => clearOverrides()).not.toThrow();
   });
 });

@@ -98,8 +98,8 @@ router.post('/resend-verification', authController.resendVerification);
 
 // ── Recovery-address change (Equoria-6p398.5, Finding 5) ───────────────────
 // The email address IS the account-recovery identity, so this route is gated on
-// FRESH authentication (current password, plus a TOTP step-up when the account
-// has MFA enabled) on top of the session + CSRF this router already enforces.
+// FRESH authentication (the current password) on top of the session + CSRF
+// this router already enforces.
 // It only STAGES the replacement; the confirmation link mailed to the new
 // address commits it (GET /auth/email-change/confirm, in authRoutes.mjs).
 // The email validator chain matches POST /auth/register exactly so a staged
@@ -110,7 +110,6 @@ router.post(
   [
     body('email').isEmail().withMessage('Valid email is required').normalizeEmail().trim(),
     body('password').notEmpty().withMessage('Your current password is required'),
-    body('totpToken').optional().isString().withMessage('TOTP token must be a string'),
     handleValidationErrors,
   ],
   authController.requestEmailChangeController,
@@ -118,9 +117,7 @@ router.post(
 
 // GET /auth/email-change/status — read-only companion to the route above
 // (Equoria-6p398.11, Finding 9). The player-facing surface needs to know
-// whether this account will be asked for a second factor (both refusals are a
-// bare 401, so it cannot be inferred from a failed attempt) and whether a
-// replacement is already staged. Session + CSRF-free because it is a GET that
+// whether a replacement is already staged. Session + CSRF-free because it is a GET that
 // changes nothing; authorization comes from `authenticateToken` on the router.
 router.get('/email-change/status', authController.getEmailChangeStatusController);
 
@@ -147,28 +144,5 @@ router.post(
 
 // PATCH /auth/profile/preferences
 router.patch('/profile/preferences', profileRateLimiter, authController.updateUserPreferences);
-
-// ── TOTP MFA (Equoria-2vwwh, OWASP A07) — authenticated enrollment/management.
-// The second-factor challenge (/auth/mfa/challenge) is public and lives in
-// authRoutes.mjs because it is part of the login flow (no session yet).
-
-// POST /auth/mfa/enroll
-router.post('/mfa/enroll', authRateLimiter, authController.mfaEnroll);
-
-// POST /auth/mfa/verify-enrollment
-router.post(
-  '/mfa/verify-enrollment',
-  authRateLimiter,
-  [body('token').notEmpty().withMessage('TOTP token is required'), handleValidationErrors],
-  authController.mfaVerifyEnrollment,
-);
-
-// POST /auth/mfa/disable
-router.post(
-  '/mfa/disable',
-  authRateLimiter,
-  [body('token').notEmpty().withMessage('Current TOTP token is required'), handleValidationErrors],
-  authController.mfaDisable,
-);
 
 export default router;
