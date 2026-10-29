@@ -24,7 +24,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
-import { Skeleton, ErrorState } from '@/components/ui/state';
+import { Skeleton, ErrorState, InlineError } from '@/components/ui/state';
+import { actionMessageFor, delistHorseRefused } from '@/lib/http/actionMessage';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
@@ -123,6 +124,13 @@ const MyListingsTab: React.FC = () => {
               amount={l.salePrice}
               className="text-sm text-[var(--role-success-text)] font-bold mt-0.5"
             />
+            {/* A refused delist says why on its own listing (owner ruling 2026-10-28, q161). */}
+            {delistMutation.isError && delistMutation.variables === l.id && (
+              <InlineError
+                className="mt-1"
+                message={actionMessageFor(delistMutation.error, delistHorseRefused)}
+              />
+            )}
           </div>
           {/* Delist removes the listing — supporting action, not the page's gold primary */}
           <Button

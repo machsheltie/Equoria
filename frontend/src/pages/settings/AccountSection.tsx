@@ -24,6 +24,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/Surface';
 import { Input, PasswordInput, FormField } from '@/components/ui/form';
+import { InlineError } from '@/components/ui/state';
 import { RecoveryAddressSection } from './RecoveryAddressSection';
 
 export interface AccountSectionProps {
@@ -31,6 +32,8 @@ export interface AccountSectionProps {
   onUsernameChange: (_value: string) => void;
   onSaveAccount: () => void;
   isSavingAccount: boolean;
+  /** Authored copy for a refused account save, shown at Save Changes (q161). */
+  saveAccountError?: string;
 
   showPasswordForm: boolean;
   onShowPasswordForm: () => void;
@@ -50,6 +53,7 @@ export const AccountSection: React.FC<AccountSectionProps> = ({
   onUsernameChange,
   onSaveAccount,
   isSavingAccount,
+  saveAccountError,
   showPasswordForm,
   onShowPasswordForm,
   oldPassword,
@@ -86,6 +90,7 @@ export const AccountSection: React.FC<AccountSectionProps> = ({
       >
         Save Changes
       </Button>
+      {saveAccountError && <InlineError message={saveAccountError} />}
     </div>
 
     {/* The recovery address (Equoria-6p398.11). It owns its own server read and

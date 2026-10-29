@@ -17,7 +17,7 @@ import { useStudRequests } from '@/hooks/api/useStuds';
 import { useBuyHorse } from '@/hooks/api/useMarketplace';
 import { Button } from '@/components/ui/button';
 import { InlineError } from '@/components/ui/state';
-import { userMessageFor } from '@/lib/http/userMessage';
+import { actionMessageFor, buyHorseRefused } from '@/lib/http/actionMessage';
 import type { HorseVisit } from '@/lib/api/studs';
 import BreedToStallion from './BreedToStallion';
 import RequestAnswer from './RequestAnswer';
@@ -118,7 +118,7 @@ const BuyHorseButton: React.FC<{ horse: HorseVisit; price: number }> = ({ horse,
       >
         {buy.isPending ? 'Buying…' : `Buy ${horse.name} (${price.toLocaleString()})`}
       </Button>
-      {buy.isError && <InlineError message={userMessageFor(buy.error).message} />}
+      {buy.isError && <InlineError message={actionMessageFor(buy.error, buyHorseRefused)} />}
     </div>
   );
 };

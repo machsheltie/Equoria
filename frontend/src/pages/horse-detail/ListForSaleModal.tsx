@@ -12,6 +12,8 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { InlineError } from '@/components/ui/state';
+import { actionMessageFor, listHorseRefused } from '@/lib/http/actionMessage';
 import {
   GameDialog,
   GameDialogContent,
@@ -42,6 +44,7 @@ const ListForSaleModal: React.FC<ListForSaleModalProps> = ({
 
   const handleClose = () => {
     setListPrice('');
+    listHorseMutation.reset();
     onClose();
   };
 
@@ -109,6 +112,13 @@ const ListForSaleModal: React.FC<ListForSaleModalProps> = ({
               {listHorseMutation.isPending ? 'Listing…' : 'Confirm'}
             </Button>
           </div>
+          {/* A refused listing says why at the button (owner ruling 2026-10-28, q161). */}
+          {listHorseMutation.isError && (
+            <InlineError
+              className="mt-3"
+              message={actionMessageFor(listHorseMutation.error, listHorseRefused)}
+            />
+          )}
         </div>
       </GameDialogContent>
     </GameDialog>

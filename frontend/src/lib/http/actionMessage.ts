@@ -155,3 +155,39 @@ export const createShowRefusalCodes: ActionCodeCopy = {
     "Your coins don't cover the prize for that entry fee. Lower the entry fee, or hold a show once you have more coins.",
   showNameTaken: 'Another show already has that name. Give yours a different one.',
 };
+
+/**
+ * Marketplace and profile refusals (owner ruling 2026-10-28, q161,
+ * Equoria-bvddn.40): a failed listing, delisting, purchase, profile save or
+ * craft shows its reason next to the button that failed, in plain words —
+ * never the server's own message. None of these endpoints sends a refusal
+ * code, so the copy is keyed by status and names each refusal that status can
+ * mean for that request.
+ */
+export const listHorseRefused: ActionCopy = {
+  400: "That horse couldn't be listed. Set a price from 100 to 9,999,999 coins, and check it isn't already for sale.",
+  409: 'That horse changed while you were listing it. It may already be listed or sold.',
+};
+
+export const delistHorseRefused: ActionCopy = {
+  400: "That horse isn't listed for sale any more.",
+  409: 'That listing changed. The horse may already be sold or off the Marketplace.',
+};
+
+export const buyHorseRefused: ActionCopy = {
+  400: "That horse couldn't be bought. Your coins may not cover the price, or it's no longer for sale.",
+  404: "That horse couldn't be found. It may already have been sold.",
+  409: 'That listing changed before your purchase went through. It may already be sold.',
+};
+
+export const saveProfileRefused: ActionCopy = {
+  400: 'Check your username, stable name and bio, then try again.',
+  409: 'That username is already taken. Choose a different one.',
+};
+
+export const craftItemRefused: ActionCopy = {
+  400: "You don't have the coins or materials this recipe needs.",
+  403: 'Your workshop needs an upgrade before you can craft this.',
+  404: "That recipe couldn't be found. Reload and try again.",
+  409: 'Your inventory changed while you were crafting. Try again.',
+};

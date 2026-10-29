@@ -57,8 +57,5 @@ export function useCraftItem() {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast.success(`You crafted ${data?.item?.name ?? 'an item'}!`);
     },
-    onError: (error: Error) => {
-      toast.error(error.message ?? 'Failed to craft item');
-    },
   });
 }

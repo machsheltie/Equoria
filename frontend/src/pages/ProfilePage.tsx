@@ -45,6 +45,7 @@ import { profileSchema, type ProfileFormData } from '../lib/validation-schemas';
 import { VALIDATION_RULES, UI_TEXT } from '../lib/constants';
 import { useProfile, useUpdateProfile } from '../hooks/useAuth';
 import { userMessageFor } from '@/lib/http/userMessage';
+import { actionMessageFor, saveProfileRefused } from '@/lib/http/actionMessage';
 import { Button } from '@/components/ui/button';
 import { useActivityFeed, useUserProgress } from '../hooks/api/useUserProgress';
 import { useUserCompetitionStats } from '../hooks/api/useUserCompetitionStats';
@@ -433,7 +434,7 @@ const ProfilePage: React.FC = () => {
               </div>
               {isSaveError && (
                 <InlineError
-                  message={`Your profile was not saved. ${userMessageFor(saveError).message}`}
+                  message={`Your profile was not saved. ${actionMessageFor(saveError, saveProfileRefused)}`}
                 />
               )}
             </form>

@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Surface } from '@/components/ui/Surface';
 import { ErrorState } from '@/components/ui/state';
+import { actionMessageFor, delistHorseRefused } from '@/lib/http/actionMessage';
 import {
   Star,
   Trophy,
@@ -359,6 +360,11 @@ const HorseDetailPage: React.FC = () => {
                     delistHorseMutation.mutate(horse.id, { onSuccess: () => refetch() })
                   }
                   isDelisting={delistHorseMutation.isPending}
+                  delistError={
+                    delistHorseMutation.isError
+                      ? actionMessageFor(delistHorseMutation.error, delistHorseRefused)
+                      : undefined
+                  }
                 />
               </TabsContent>
             </Tabs>

@@ -32,6 +32,8 @@ import { gameDateKey } from '@/lib/gameTime';
 import { formatHealth } from '@/lib/healthWords';
 import { Award, Backpack, Dumbbell, Tag, Users, Wheat, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { InlineError } from '@/components/ui/state';
+import { actionMessageFor, delistHorseRefused } from '@/lib/http/actionMessage';
 import Currency from '@/components/ui/Currency';
 import { useHorseTrainer } from '@/hooks/api/useTrainers';
 import { useFeedHorse } from '../../hooks/api/useFeedHorse';
@@ -216,6 +218,13 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
             <Tag className="w-3.5 h-3.5" />
             List for Sale
           </Button>
+        )}
+        {/* A refused delist says why beside the button (owner ruling 2026-10-28, q161). */}
+        {delistHorseMutation.isError && (
+          <InlineError
+            className="whitespace-nowrap flex-shrink-0"
+            message={actionMessageFor(delistHorseMutation.error, delistHorseRefused)}
+          />
         )}
       </div>
     </div>

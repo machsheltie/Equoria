@@ -16,6 +16,7 @@ import BreedToStallion from './stud/BreedToStallion';
 import BreedingRequests from './stud/BreedingRequests';
 import { maxBreedingAge, minBreedingAge } from './stud/studBreeding';
 import VisitorStudSale from './stud/VisitorStudSale';
+import { InlineError } from '@/components/ui/state';
 import { useHorseVisitData } from './horseVisitContext';
 import '@/styles/studBreeding.css';
 
@@ -24,6 +25,8 @@ interface StudSaleTabProps {
   onListForSale: () => void;
   onDelist: () => void;
   isDelisting: boolean;
+  /** Authored copy for a refused delist, shown under the listing control (q161). */
+  delistError?: string;
 }
 
 const StudSaleTab: React.FC<StudSaleTabProps> = ({
@@ -31,6 +34,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
   onListForSale,
   onDelist,
   isDelisting,
+  delistError,
 }) => {
   // Visitor mode (q205): the same tab, read-only; the visitor's own actions
   // (breed to a stallion at stud, answer a request, buy a listed horse)
@@ -181,6 +185,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
               {isDelisting ? 'Saving...' : horse.forSale ? 'Delist' : 'Set Price'}
             </span>
           </button>
+          {delistError && <InlineError message={delistError} />}
         </div>
       )}
     </div>

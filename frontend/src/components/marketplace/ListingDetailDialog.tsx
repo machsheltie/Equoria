@@ -12,6 +12,8 @@
 import React, { useCallback } from 'react';
 import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
+import { InlineError } from '@/components/ui/state';
+import { actionMessageFor, buyHorseRefused } from '@/lib/http/actionMessage';
 import Currency from '@/components/ui/Currency';
 import {
   GameDialog,
@@ -104,16 +106,22 @@ export const ListingDetailDialog: React.FC<ListingDetailDialogProps> = ({
           )}
         </GameDialogBody>
         <GameDialogFooter>
-          <Button
-            type="button"
-            className="w-full"
-            disabled={!canBuy || buyMutation.isPending}
-            pending={buyMutation.isPending}
-            onClick={handleBuy}
-            title={!canBuy ? 'Insufficient funds' : undefined}
-          >
-            Buy now for <Currency amount={listing.salePrice} />
-          </Button>
+          <div className="w-full space-y-2">
+            {/* A refused purchase says why at the button (owner ruling 2026-10-28, q161). */}
+            {buyMutation.isError && (
+              <InlineError message={actionMessageFor(buyMutation.error, buyHorseRefused)} />
+            )}
+            <Button
+              type="button"
+              className="w-full"
+              disabled={!canBuy || buyMutation.isPending}
+              pending={buyMutation.isPending}
+              onClick={handleBuy}
+              title={!canBuy ? 'Insufficient funds' : undefined}
+            >
+              Buy now for <Currency amount={listing.salePrice} />
+            </Button>
+          </div>
         </GameDialogFooter>
       </GameDialogContent>
     </GameDialog>

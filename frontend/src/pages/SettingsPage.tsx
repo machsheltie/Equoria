@@ -43,6 +43,7 @@ import { useSound } from '@/hooks/useSound';
 import type { UserPreferences } from '@/lib/api-client';
 import { sections, DEFAULT_PREFERENCES, type DisplayKey } from './settings/constants';
 import { AccountSection } from './settings/AccountSection';
+import { actionMessageFor, saveProfileRefused } from '@/lib/http/actionMessage';
 import { DisplaySection } from './settings/DisplaySection';
 import { SoundSection } from './settings/SoundSection';
 
@@ -103,9 +104,8 @@ const SettingsPage: React.FC = () => {
       onSuccess: () => {
         toast.success('Account changes saved.');
       },
-      onError: (err) => {
-        toast.error(err?.message ?? 'Could not save account changes.');
-      },
+      // A refusal is shown at Save Changes by AccountSection (owner ruling
+      // 2026-10-28, q161), never the server's own message.
     });
   };
 
@@ -273,6 +273,11 @@ const SettingsPage: React.FC = () => {
                 onUsernameChange={setUsername}
                 onSaveAccount={handleSaveAccount}
                 isSavingAccount={updateProfile.isPending}
+                saveAccountError={
+                  updateProfile.isError
+                    ? actionMessageFor(updateProfile.error, saveProfileRefused)
+                    : undefined
+                }
                 showPasswordForm={showPasswordForm}
                 onShowPasswordForm={() => setShowPasswordForm(true)}
                 oldPassword={oldPassword}

@@ -61,9 +61,6 @@ export function useListHorse() {
       qc.invalidateQueries({ queryKey: ['marketplace'] });
       qc.invalidateQueries({ queryKey: ['horses'] });
     },
-    onError: (err: Error) => {
-      toast.error(err.message ?? 'Failed to list horse');
-    },
   });
 }
 
@@ -75,9 +72,6 @@ export function useDelistHorse() {
       toast.success('Listing removed');
       qc.invalidateQueries({ queryKey: ['marketplace'] });
       qc.invalidateQueries({ queryKey: ['horses'] });
-    },
-    onError: (err: Error) => {
-      toast.error(err.message ?? 'Failed to remove listing');
     },
   });
 }
@@ -98,8 +92,9 @@ export function useBuyHorse() {
     },
     onError: (err: Error) => {
       // 409: the listing is no longer purchasable (Equoria-6p398.13).
+      // The refusal itself is shown at the Buy button by the surface that owns it
+      // (owner ruling 2026-10-28, q161), never the server's own message.
       refreshOnConflict(qc, err, [['marketplace'], ['horses']]);
-      toast.error(err.message ?? 'Purchase failed');
     },
   });
 }

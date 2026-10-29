@@ -23,7 +23,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
-import { SectionLoading, ErrorState } from '@/components/ui/state';
+import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
+import { actionMessageFor, craftItemRefused } from '@/lib/http/actionMessage';
 import EmptyState from '@/components/ui/EmptyState';
 import { useCraftingMaterials, useCraftingRecipes, useCraftItem } from '@/hooks/api/useCrafting';
 import type { CraftingRecipe, CraftingMaterials } from '@/lib/api-client';
@@ -91,11 +92,14 @@ function RecipeCard({
   playerMaterials,
   onCraft,
   isCrafting,
+  errorMessage,
 }: {
   recipe: CraftingRecipe;
   playerMaterials: CraftingMaterials;
   onCraft: (_recipeId: string) => void;
   isCrafting: boolean;
+  /** Authored copy for this recipe's refused craft (owner ruling 2026-10-28, q161). */
+  errorMessage?: string;
 }) {
   const [confirming, setConfirming] = useState(false);
 
@@ -201,6 +205,7 @@ function RecipeCard({
             Craft
           </Button>
         ))}
+      {errorMessage && <InlineError className="mt-2" message={errorMessage} />}
     </Surface>
   );
 }
@@ -327,6 +332,11 @@ const CraftingPage: React.FC = () => {
                         onCraft={(recipeId) => craftMutation.mutate(recipeId)}
                         isCrafting={
                           craftMutation.isPending && craftMutation.variables === recipe.id
+                        }
+                        errorMessage={
+                          craftMutation.isError && craftMutation.variables === recipe.id
+                            ? actionMessageFor(craftMutation.error, craftItemRefused)
+                            : undefined
                         }
                       />
                     ))}
