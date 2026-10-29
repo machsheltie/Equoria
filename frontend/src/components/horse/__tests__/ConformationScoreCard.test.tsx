@@ -81,9 +81,9 @@ describe('ConformationScoreCard', () => {
       const badge = screen.getByTestId('quality-badge-head');
       expect(badge).toHaveTextContent(word);
       expect(badge).toHaveClass(
-        `text-[var(--conformation-rating-${token})]`,
-        `bg-[var(--conformation-rating-${token}-bg)]`,
-        `border-[var(--conformation-rating-${token}-border)]`
+        'text-[var(--conformation-rating-' + token + ')]',
+        'bg-[var(--conformation-rating-' + token + '-bg)]',
+        'border-[var(--conformation-rating-' + token + '-border)]'
       );
     });
   });

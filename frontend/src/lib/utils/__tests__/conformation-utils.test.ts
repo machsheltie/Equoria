@@ -101,11 +101,15 @@ describe('conformation-utils', () => {
       [45, 'poor'],
     ])('a score of %i takes the %s rating colour for text, tint and bar', (score, token) => {
       const rating = getQualityRating(score);
-      expect(rating.color).toBe(`text-[var(--conformation-rating-${token})]`);
+      expect(rating.color).toBe('text-[var(--conformation-rating-' + token + ')]');
       expect(rating.bgColor).toBe(
-        `bg-[var(--conformation-rating-${token}-bg)] border-[var(--conformation-rating-${token}-border)]`
+        'bg-[var(--conformation-rating-' +
+          token +
+          '-bg)] border-[var(--conformation-rating-' +
+          token +
+          '-border)]'
       );
-      expect(rating.fillColor).toBe(`bg-[var(--conformation-rating-${token})]`);
+      expect(rating.fillColor).toBe('bg-[var(--conformation-rating-' + token + ')]');
     });
   });
 
@@ -348,7 +352,7 @@ describe('conformation-utils', () => {
       [[-10, 0, 25, 49], 'poor'],
     ])('scores %j fill with the %s colour', (scores, token) => {
       for (const score of scores) {
-        expect(fill(score)).toBe(`bg-[var(--conformation-rating-${token})]`);
+        expect(fill(score)).toBe('bg-[var(--conformation-rating-' + token + ')]');
       }
     });
   });
