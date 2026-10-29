@@ -10,7 +10,7 @@ import {
   getAvailableInteractions,
   calculateRelationshipLevel,
 } from '../services/enhancedGroomInteractions.mjs';
-import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { getHorseAgeDays, liveHorseAgeYears } from '../../../utils/horseAge.mjs';
 
 // POST /api/grooms/enhanced/interact (performEnhancedInteraction) was retired:
 // "groom horse" (groomCareService) is the only way to groom (owner rulings
@@ -120,7 +120,8 @@ export async function getEnhancedInteractions(req, res) {
           name: horse.name,
           // Equoria-ogmu: `age` is game-years (DB value, unmutated);
           // `ageInDays` is the day-granular value for clients that need it.
-          age: horse.age,
+          // Equoria-66qkj: the live Eastern age (a pending birthday counts).
+          age: liveHorseAgeYears(horse),
           ageInDays,
           bondScore: horse.bondScore,
         },
@@ -245,7 +246,7 @@ export function generateInteractionRecommendations(groom, horse, relationshipLev
   // compared against 1095 (the day-count for 3 years), which after the son6
   // migration was always true (every horse < 1095 years), causing the foalCare
   // recommendation to fire for adult horses too. Foal-care window = 0-3 years.
-  if (groom.speciality === 'foalCare' && horse.age < 3) {
+  if (groom.speciality === 'foalCare' && liveHorseAgeYears(horse) < 3) {
     recommendations.push({
       type: 'enrichment',
       variation: 'Sensory Exploration',

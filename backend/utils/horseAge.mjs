@@ -185,3 +185,40 @@ export function liveHorseAgeYears(horse, now = new Date()) {
   }
   return fromBirthDate === horse.age + 1 ? fromBirthDate : horse.age;
 }
+
+/**
+ * Prisma `OR` clauses matching exactly the horses whose liveHorseAgeYears at
+ * `now` is below `years` (Equoria-66qkj), for list/count queries that cannot
+ * call the helper row by row (e.g. "not retired" = below 21, "foal" = below 3).
+ *
+ * The live age is the dateOfBirth age when there is no stored age, the stored
+ * age otherwise, except that a birthday the nightly job has not recorded yet
+ * (dateOfBirth age = stored age + 1) counts at once. With the Eastern birth
+ * date cut-offs `bornAfter` (dateOfBirth age below `years` exactly when
+ * dateOfBirth > bornAfter) and `bornAfterOneMore` (the same for years + 1):
+ *  - no stored age: dateOfBirth > bornAfter;
+ *  - stored age below years - 1: always (a pending birthday stays below years);
+ *  - stored age years - 1: unless the birthday to `years` is pending, i.e. not
+ *    bornAfterOneMore < dateOfBirth <= bornAfter;
+ *  - stored age years or more: never.
+ * Horse.dateOfBirth is a non-null date-only column.
+ *
+ * Spread into a where's OR, alongside any extra alternatives:
+ *   where: { userId, OR: [...liveAgeBelowClauses(21, now), { inFoalSinceDate: { not: null } }] }
+ *
+ * @param {number} years - whole game-years
+ * @param {Date} [now=new Date()]
+ * @returns {object[]}
+ */
+export function liveAgeBelowClauses(years, now = new Date()) {
+  const bornAfter = birthDateForAge(years, now);
+  const bornAfterOneMore = birthDateForAge(years + 1, now);
+  return [
+    { age: null, dateOfBirth: { gt: bornAfter } },
+    { age: { lt: years - 1 } },
+    {
+      age: years - 1,
+      OR: [{ dateOfBirth: { gt: bornAfter } }, { dateOfBirth: { lte: bornAfterOneMore } }],
+    },
+  ];
+}

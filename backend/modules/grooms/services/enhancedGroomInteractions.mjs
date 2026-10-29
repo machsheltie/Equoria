@@ -12,6 +12,7 @@
  */
 
 import logger from '../../../utils/logger.mjs';
+import { liveHorseAgeYears } from '../../../utils/horseAge.mjs';
 
 // Enhanced interaction types with contextual variations
 export const ENHANCED_INTERACTIONS = {
@@ -253,13 +254,14 @@ function evaluateCondition(condition, context) {
 
   if (condition.includes('horse_age <')) {
     const threshold = parseInt(condition.split('<')[1].trim());
-    return (horse.age || 0) < threshold;
+    // Equoria-66qkj: the live Eastern age (a pending birthday counts).
+    return liveHorseAgeYears(horse) < threshold;
   }
 
   if (condition === 'groom_specialty_match') {
     // Equoria-yny4: horse.age is game-years (post Equoria-son6). Foal-care
     // window = 0-3 game-years (was 1095 days pre-migration).
-    return groom.speciality === 'foalCare' && horse.age < 3;
+    return groom.speciality === 'foalCare' && liveHorseAgeYears(horse) < 3;
   }
 
   return false;
@@ -325,7 +327,7 @@ function canPerformInteraction(groom, horse, interaction) {
   // Equoria-yny4: horse.age is game-years (post Equoria-son6). Enrichment
   // is for horses UNDER 3 game-years (owner ruling 2026-10-14; Equoria-fjgzp:
   // age 3 itself is excluded).
-  if (interaction.category === 'enrichment' && horse.age >= 3) {
+  if (interaction.category === 'enrichment' && liveHorseAgeYears(horse) >= 3) {
     return false;
   }
 

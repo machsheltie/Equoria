@@ -29,6 +29,7 @@ import logger from '../../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
 import { gameDayIndex, startOfGameDayIndex } from '../../../../utils/gameTime.mjs';
 import { retirementAgeYears } from '../../../../constants/horseAgePolicy.mjs';
+import { liveAgeBelowClauses } from '../../../../utils/horseAge.mjs';
 import { HORSE_STAT_VALUES } from '../../../../constants/schema.mjs';
 import {
   recordTransactionTx,
@@ -91,15 +92,16 @@ export async function getFarrierServices(_req, res) {
  */
 export async function getFarrierHorses(req, res) {
   try {
+    const now = new Date();
     const rows = await prisma.horse.findMany({
       where: {
         userId: req.user.id,
-        OR: [{ age: null }, { age: { lt: retirementAgeYears } }],
+        // Equoria-66qkj: under 21 on the live Eastern age (a pending birthday counts).
+        OR: liveAgeBelowClauses(retirementAgeYears, now),
       },
       select: { id: true, name: true, lastShod: true },
       orderBy: { name: 'asc' },
     });
-    const now = new Date();
     res.status(200).json({
       success: true,
       message: 'Farrier horses retrieved successfully',

@@ -13,6 +13,7 @@
 // transaction-scoped advisory lock the weekly fee pass uses.
 import { jobNameToLockKey } from '../../../utils/cronLock.mjs';
 import { retirementAgeYears } from '../../../constants/horseAgePolicy.mjs';
+import { liveAgeBelowClauses } from '../../../utils/horseAge.mjs';
 import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
 
 /**
@@ -74,8 +75,9 @@ export function calculateWeeklyFee(groom) {
  * The one exception is a mare still in foal at 21: she keeps her groom until she
  * foals, and that groom's work on her is billed as usual.
  */
-const billableHorse = Object.freeze({
-  OR: [{ age: null }, { age: { lt: retirementAgeYears } }, { inFoalSinceDate: { not: null } }],
+// Equoria-66qkj: under 21 on the live Eastern age (a pending birthday counts).
+const billableHorse = (now = new Date()) => ({
+  OR: [...liveAgeBelowClauses(retirementAgeYears, now), { inFoalSinceDate: { not: null } }],
 });
 
 /**
@@ -104,7 +106,7 @@ export async function countActiveAssignments(client, groomIds) {
     return counts;
   }
   const rows = await client.groomAssignment.findMany({
-    where: { groomId: { in: groomIds }, isActive: true, foal: billableHorse },
+    where: { groomId: { in: groomIds }, isActive: true, foal: billableHorse() },
     select: {
       groomId: true,
       groom: { select: { userId: true } },

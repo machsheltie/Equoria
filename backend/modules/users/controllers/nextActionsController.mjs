@@ -62,7 +62,11 @@ import {
   loadActiveDisciplineTypes,
   loadHorsesWithConformationGroom,
 } from '../../../utils/competitionEntryRules.mjs';
-import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import {
+  getHorseAgeDays,
+  liveAgeBelowClauses,
+  liveHorseAgeYears,
+} from '../../../utils/horseAge.mjs';
 import { gameDayBounds } from '../../../utils/gameTime.mjs';
 import { maxActiveAgeYears, minActiveAgeYears } from '../../../constants/horseAgePolicy.mjs';
 import { getFeedHealth, hasBadHealth, hungerFeedingPlan } from '../../../utils/horseHealth.mjs';
@@ -95,16 +99,19 @@ const minActiveAge = minActiveAgeYears;
 // `=== 'injured' || === 'INJURED'` form here MISSED the real 'Injured' value.
 const isInjured = healthStatus => String(healthStatus).toLowerCase() === 'injured';
 
-// `age` is a nullable Int on Horse — a null age must not pass the gate.
-const isActiveAge = age =>
-  typeof age === 'number' && age >= minActiveAgeYears && age <= maxActiveAgeYears;
+// Equoria-66qkj: the live Eastern age the training gate uses (liveHorseAgeYears:
+// a pending birthday counts; a row with no stored age reads its dateOfBirth).
+const isActiveAge = (h, now) => {
+  const age = liveHorseAgeYears(h, now);
+  return age >= minActiveAgeYears && age <= maxActiveAgeYears;
+};
 
 // The health gate breeding, training and show entry apply (Equoria-3tna6,
 // Equoria-u0jop): displayed health (worse of feed and vet health) Bad.
 const isInBadHealth = (h, now) => hasBadHealth(h, now);
 
 const isTrainable = (h, now) =>
-  isActiveAge(h.age) &&
+  isActiveAge(h, now) &&
   !isInjured(h.healthStatus) &&
   !isInBadHealth(h, now) &&
   (!h.trainingCooldown || new Date(h.trainingCooldown) <= now);
@@ -166,7 +173,8 @@ export async function getNextActions(req, res) {
         where: {
           foal: {
             userId,
-            age: { lt: minActiveAge },
+            // Equoria-66qkj: under 3 on the live Eastern age.
+            OR: liveAgeBelowClauses(minActiveAge, now),
             groomInteractions: { none: { timestamp: { gte: today.start, lt: today.end } } },
           },
         },
@@ -322,7 +330,7 @@ export async function getNextActions(req, res) {
       const sex = h.sex?.toLowerCase();
       if (
         (sex === 'mare' || sex === 'stallion') &&
-        isActiveAge(h.age) &&
+        isActiveAge(h, now) &&
         !isInjured(h.healthStatus) &&
         !isInBadHealth(h, now)
       ) {

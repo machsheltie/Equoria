@@ -30,6 +30,7 @@
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 import { gameCalendarDate } from '../../../../utils/gameTime.mjs';
+import { liveAgeBelowClauses } from '../../../../utils/horseAge.mjs';
 import {
   careBeneathRetirement,
   getVetHealth,
@@ -99,10 +100,13 @@ export function isAlreadyVetted(horse, now = new Date()) {
   return vetHealthOf(horse, now) === 'Excellent';
 }
 
-/** Prisma where-fragment: horses the vet sees: under 21 (age unknown counts), or in foal. */
-const vetVisibleWhere = {
-  OR: [{ age: null }, { age: { lt: retirementAgeYears } }, { inFoalSinceDate: { not: null } }],
-};
+/**
+ * Prisma where-fragment: horses the vet sees: under 21 on the live Eastern age
+ * (Equoria-66qkj: a pending birthday counts), or in foal.
+ */
+const vetVisibleWhere = (now = new Date()) => ({
+  OR: [...liveAgeBelowClauses(retirementAgeYears, now), { inFoalSinceDate: { not: null } }],
+});
 
 /**
  * GET /api/v1/vet/services
@@ -123,7 +127,7 @@ export async function getVetServices(_req, res) {
 export async function getVetHorses(req, res) {
   try {
     const rows = await prisma.horse.findMany({
-      where: { userId: req.user.id, ...vetVisibleWhere },
+      where: { userId: req.user.id, ...vetVisibleWhere() },
       select: {
         id: true,
         name: true,

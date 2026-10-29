@@ -11,6 +11,7 @@
 import { playerTraitDefinition } from '../../../utils/epigeneticTraits.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { liveHorseAgeYears } from '../../../utils/horseAge.mjs';
 import {
   dormantTraitKeys,
   publicTraitModifiers,
@@ -48,6 +49,7 @@ export async function getHorseTraits(req, res) {
         epigeneticModifiers: true,
         bondScore: true,
         age: true,
+        dateOfBirth: true,
       },
     });
 
@@ -104,7 +106,8 @@ export async function getHorseTraits(req, res) {
         horseId: parsedHorseId,
         horseName: horse.name,
         bondScore: horse.bondScore,
-        age: horse.age,
+        // Equoria-66qkj: the live Eastern age (a pending birthday counts).
+        age: liveHorseAgeYears(horse),
         traits: enhancedTraits,
         summary: {
           totalTraits: visibleCount + traits.hiddenCount,
@@ -226,7 +229,7 @@ export async function getDiscoveryStatus(req, res) {
         horseName: horse.name,
         currentStats: {
           bondScore: horse.bondScore || 0,
-          age: horse.age,
+          age: liveHorseAgeYears(horse),
         },
         traitCounts: {
           visible: (traits.positive?.length || 0) + (traits.negative?.length || 0),

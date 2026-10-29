@@ -24,6 +24,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { liveHorseAgeYears } from '../../../utils/horseAge.mjs';
 import { recordSettledResultTotals } from '../../../utils/monthlyTotals.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { settleShowFeeEscrowInTx } from '../shows/showEscrowTx.mjs';
@@ -194,14 +195,16 @@ export async function validateConformationEntry(horse, groom, userId, client = p
       errors.push('Groom must be assigned to this horse before entering conformation shows');
     }
 
-    // Age validation — reject only invalid (< 0); Weanlings (0-<1) are allowed — AC4
-    const age = horse.age ?? 0;
-    if (age < CONFORMATION_SHOW_CONFIG.MIN_AGE) {
+    // Age validation — reject only invalid (< 0); Weanlings (0-<1) are allowed — AC4.
+    // This checks the stored value itself: a negative stored age is bad data.
+    const ageIsInvalid = (horse.age ?? 0) < CONFORMATION_SHOW_CONFIG.MIN_AGE;
+    if (ageIsInvalid) {
       errors.push('Horse age is invalid (negative)');
     }
 
-    // Assign age class for the entry
-    const ageClass = age >= 0 ? getConformationAgeClass(age) : null;
+    // Assign age class for the entry on the live Eastern age (Equoria-66qkj: a
+    // birthday the nightly job has not recorded yet counts).
+    const ageClass = ageIsInvalid ? null : getConformationAgeClass(liveHorseAgeYears(horse));
 
     // Conformation scores advisory (show will use default 50 if missing)
     if (!horse.conformationScores) {

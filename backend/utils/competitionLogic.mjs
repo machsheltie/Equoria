@@ -7,6 +7,7 @@
 
 import logger from './logger.mjs';
 import { maxActiveAgeYears, minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
+import { liveHorseAgeYears } from './horseAge.mjs';
 import { DISCIPLINE_STATS, disciplineStandingScore } from '../modules/competition/index.mjs';
 
 /**
@@ -247,7 +248,8 @@ export function calculateHorseLevel(horse, discipline) {
  */
 export function checkAgeRequirements(horse) {
   try {
-    const ageInYears = horse.age || 0;
+    // Equoria-66qkj: the live Eastern age (a pending birthday counts).
+    const ageInYears = liveHorseAgeYears(horse);
     return ageInYears >= minActiveAgeYears && ageInYears <= maxActiveAgeYears;
   } catch (error) {
     logger.error('[competitionLogic.checkAgeRequirements] Error:', error.message);
