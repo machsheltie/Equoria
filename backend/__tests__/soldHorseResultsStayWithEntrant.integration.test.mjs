@@ -55,7 +55,8 @@ describe('a sold horse keeps its past results on the entrant’s record (Equoria
     const sellerStats = await computeUserCompetitionStats(seller.id);
     expect(sellerStats.totalCompetitions).toBe(1);
     expect(sellerStats.totalWins).toBe(1);
-    expect(sellerStats.totalPrizeMoney).toBe(PRIZE);
+    // A lone entrant wins half the prize (50/30/20); the rest returns to the host.
+    expect(sellerStats.totalPrizeMoney).toBe(PRIZE / 2);
 
     const buyerStats = await computeUserCompetitionStats(buyer.id);
     expect(buyerStats.totalCompetitions).toBe(0);
