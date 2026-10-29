@@ -6,7 +6,7 @@
  *
  * Coordinated with Equoria-y8u2j (god-file split — sub-router extraction).
  * These helpers cover the inline prisma calls that remain in the parent
- * router (list, latest-event batch, update, prize-summary). Anything the
+ * router (list, latest-event batch, prize-summary). Anything the
  * y8u2j agent moves into a sub-router takes its prisma calls with it via
  * follow-up commits; this service stays as the canonical place to add
  * future helpers for routes left in the parent.
@@ -141,28 +141,6 @@ export function getRecentResultsForHorses(horseIds) {
       discipline: true,
       placement: true,
       runDate: true,
-    },
-  });
-}
-
-/**
- * Update a horse with the validated payload and return the row with the
- * breed + owning user joined. Caller catches `error.code === 'P2025'`
- * (record not found) and validation errors (`PrismaClientValidationError`
- * / `Unknown argument` / the literal `Invalid \`prisma.horse.update()\``
- * substring).
- *
- * @param {number} horseId
- * @param {object} data - validated update payload
- * @returns {Promise<object>}
- */
-export function updateHorse(horseId, data) {
-  return prisma.horse.update({
-    where: { id: horseId },
-    data,
-    include: {
-      breed: true,
-      user: { select: { id: true, username: true } },
     },
   });
 }

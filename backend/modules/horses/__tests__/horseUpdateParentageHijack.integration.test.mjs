@@ -20,6 +20,10 @@
  *
  * Real-DB integration. No mocks (per CLAUDE.md §3, "Tests exist to detect
  * real failures"). Cleanup is scoped by id.
+ *
+ * UPDATED Equoria-h4zni: OLD contract 400 (empty allow-list). NEW contract:
+ * PUT /horses/:id is closed and answers 410 Gone for every caller and payload,
+ * writing nothing — so no parent id of any kind can be written through it.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -31,7 +35,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
-describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
+describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v; closed 410, Equoria-h4zni)', () => {
   let __csrf__;
   let userA;
   let userB;
@@ -77,7 +81,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
     // Per-user CSRF binding (Equoria-plw0h): the PUT /horses/:id mutations
     // authenticate via tokenA, so their sessionIdentifier resolves to userA.id.
     // Issue the CSRF token under the same identifier (pass the access cookie) so
-    // the legitimate owner PUTs (200 cases) pass doubleCsrf instead of 403ing.
+    // the owner PUTs reach the route (410) instead of 403ing at doubleCsrf.
     __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${tokenA}`] });
 
     const dob = new Date();
@@ -132,7 +136,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
     }
   }, 120000);
 
-  it('rejects PUT with cross-user sireId — 400, no genealogy mutation (sentinel-positive)', async () => {
+  it('rejects PUT with cross-user sireId — 410, no genealogy mutation (sentinel-positive)', async () => {
     // Sentinel: this is the exact failure mode hg62v describes. Before the
     // fix this returned 200 and the row's sireId became victimSire.id.
     const response = await request(app)
@@ -143,7 +147,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sireId: victimSire.id });
 
-    expect(response.status).toBe(400); // OLD: 404 (owner ruling 2026-09-30, Equoria-bvddn.2)
+    expect(response.status).toBe(410); // OLD: 404, then 400 (Equoria-bvddn.2); closed (Equoria-h4zni)
     expect(response.body.success).toBe(false);
 
     // Genealogy must NOT have been touched.
@@ -155,7 +159,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
     expect(after.damId).toBeNull();
   });
 
-  it('rejects PUT with cross-user damId — 400, no genealogy mutation', async () => {
+  it('rejects PUT with cross-user damId — 410, no genealogy mutation', async () => {
     const response = await request(app)
       .put(`/api/v1/horses/${horseA.id}`)
       .set('Authorization', `Bearer ${tokenA}`)
@@ -164,7 +168,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ damId: victimDam.id });
 
-    expect(response.status).toBe(400); // OLD: 404 (owner ruling 2026-09-30, Equoria-bvddn.2)
+    expect(response.status).toBe(410); // OLD: 404, then 400 (Equoria-bvddn.2); closed (Equoria-h4zni)
     expect(response.body.success).toBe(false);
 
     const after = await prisma.horse.findUnique({
@@ -175,7 +179,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
     expect(after.damId).toBeNull();
   });
 
-  it('rejects PUT with cross-user sireId+damId combo — 400', async () => {
+  it('rejects PUT with cross-user sireId+damId combo — 410', async () => {
     const response = await request(app)
       .put(`/api/v1/horses/${horseA.id}`)
       .set('Authorization', `Bearer ${tokenA}`)
@@ -184,7 +188,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sireId: victimSire.id, damId: victimDam.id });
 
-    expect(response.status).toBe(400); // OLD: 404 (owner ruling 2026-09-30, Equoria-bvddn.2)
+    expect(response.status).toBe(410); // OLD: 404, then 400 (Equoria-bvddn.2); closed (Equoria-h4zni)
     const after = await prisma.horse.findUnique({
       where: { id: horseA.id },
       select: { sireId: true, damId: true },
@@ -193,7 +197,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
     expect(after.damId).toBeNull();
   });
 
-  it('rejects PUT with non-existent sireId — 400', async () => {
+  it('rejects PUT with non-existent sireId — 410', async () => {
     // Same 404 as cross-user case to prevent enumeration disclosure.
     const response = await request(app)
       .put(`/api/v1/horses/${horseA.id}`)
@@ -203,10 +207,10 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sireId: 2_147_483_640 }); // far above any real id
 
-    expect(response.status).toBe(400); // OLD: 404 (owner ruling 2026-09-30, Equoria-bvddn.2)
+    expect(response.status).toBe(410); // OLD: 404, then 400 (Equoria-bvddn.2); closed (Equoria-h4zni)
   });
 
-  it('refuses PUT with own-owned sireId — 400, sireId unchanged', async () => {
+  it('refuses PUT with own-owned sireId — 410, sireId unchanged', async () => {
     // OLD CONTRACT: the owner could reassign a sire to their own stallion (200,
     // persisted). NEW RULING (owner ruling 2026-09-30, Equoria-bvddn.2): pedigree is fixed by
     // breeding; even the owner's own horse is refused and nothing changes.
@@ -218,7 +222,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sireId: horseAOriginalSire.id });
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(410); // OLD: 400 (Equoria-h4zni)
     expect(response.body.success).toBe(false);
     const after = await prisma.horse.findUnique({
       where: { id: horseA.id },
@@ -248,7 +252,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sex: 'mare' });
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(410); // OLD: 400 (Equoria-h4zni)
     expect(response.body.success).toBe(false);
     const after = await prisma.horse.findUnique({
       where: { id: horseA.id },

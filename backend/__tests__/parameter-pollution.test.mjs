@@ -31,8 +31,18 @@ import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 describe('Parameter Pollution Attack Integration Tests', () => {
+  // Equoria-h4zni: the body-validation vehicle here was PUT /api/v1/horses/:id.
+  // That route is closed (410 for every body), so the request-layer cases now
+  // drive the live horse write with a real body validator and ownership check,
+  // PATCH /api/v1/horses/:id/name (validateHorseRenamePayload: JSON-only, UTF-8
+  // only, `name` the sole key, the shared name rule). App-level guards
+  // (duplicate keys, prototype pollution, malformed JSON) are route-independent
+  // and assert the same messages as before. Where the rename validator's
+  // refusal differs from the old PUT validator's, the case says so and pins the
+  // exact new message plus the unchanged stored name.
+  //
   // Equoria-0ys7m / Equoria-plw0h per-user CSRF binding. The CSRF-gated
-  // mutations here (PUT /api/v1/horses/:id, POST /api/v1/horses/batch-update)
+  // mutations here (PATCH /api/v1/horses/:id/name, POST /api/v1/horses/batch-update)
   // run on the authRouter behind csrfProtection. The previous anonymous
   // fetchCsrf(app) in beforeAll minted a token whose sessionIdentifier
   // (CSRF_SESSION_SALT) did not match req.user.id at validation time, so every
@@ -62,6 +72,16 @@ describe('Parameter Pollution Attack Integration Tests', () => {
   const createdUserIds = [];
   const createdHorseIds = [];
   const cleanup = createCleanupTracker();
+  // The live horse write every request-layer case below drives (Equoria-h4zni).
+  const renameRequest = () =>
+    request(app)
+      .patch(`/api/v1/horses/${testHorse.id}/name`)
+      .set('Authorization', `Bearer ${validToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken);
+  const storedName = async () =>
+    (await prisma.horse.findUnique({ where: { id: testHorse.id }, select: { name: true } })).name;
 
   beforeAll(() => {
     cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
@@ -143,16 +163,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     // Equoria-4fnro: both cases used to PUT a `name` of the wrong TYPE; PUT now
     // refuses any body with `name` before checking the type, so there they would
     // pass with the type rule deleted. Repointed at the rename endpoint.
-    const renameAttempt = body =>
-      request(app)
-        .patch(`/api/v1/horses/${testHorse.id}/name`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(body);
-    const storedName = async () =>
-      (await prisma.horse.findUnique({ where: { id: testHorse.id }, select: { name: true } })).name;
+    const renameAttempt = body => renameRequest().send(body);
     it('should reject array-syntax parameters where not expected', async () => {
       const before = await storedName();
       const res = await renameAttempt({ name: ['HorseName1', 'HorseName2'] });
@@ -181,15 +192,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       expect.assertions(2);
       const maliciousPayload = '{"name":"ValidName","name":"HackedName"}';
 
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .set('Content-Type', 'application/json')
-        .send(maliciousPayload)
-        .expect(400);
+      const response = await renameRequest().set('Content-Type', 'application/json').send(maliciousPayload).expect(400);
       expect(response.body.success).toBe(false);
       expect(response.body.message).toMatch(/duplicate json key/i);
     });
@@ -201,7 +204,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       const maliciousPayload = '{"name":"ValidName","name":"HackedName"}';
 
       const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
+        .patch(`/api/v1/horses/${testHorse.id}/name`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -245,60 +248,28 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     describe('duplicate-key obfuscation via JSON escape sequences (21R-SEC-1)', () => {
       it('should reject duplicate keys disguised by leading \\u006e (Unicode \\uXXXX)', async () => {
         const payload = '{"name":"x","\\u006eame":"y"}';
-        const response = await request(app)
-          .put(`/api/v1/horses/${testHorse.id}`)
-          .set('Authorization', `Bearer ${validToken}`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken)
-          .set('Content-Type', 'application/json')
-          .send(payload)
-          .expect(400);
+        const response = await renameRequest().set('Content-Type', 'application/json').send(payload).expect(400);
         expect(response.body.success).toBe(false);
         expect(String(response.body.message || '')).toMatch(/duplicate/i);
       });
 
       it('should reject duplicate keys when the second one decodes to the first (\\u0061 vs a)', async () => {
         const payload = '{"a":"x","\\u0061":"y"}';
-        const response = await request(app)
-          .put(`/api/v1/horses/${testHorse.id}`)
-          .set('Authorization', `Bearer ${validToken}`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken)
-          .set('Content-Type', 'application/json')
-          .send(payload)
-          .expect(400);
+        const response = await renameRequest().set('Content-Type', 'application/json').send(payload).expect(400);
         expect(response.body.success).toBe(false);
         expect(String(response.body.message || '')).toMatch(/duplicate/i);
       });
 
       it('should reject duplicate keys with mid-string escape obfuscation (n\\u0061me vs name)', async () => {
         const payload = '{"n\\u0061me":"x","name":"y"}';
-        const response = await request(app)
-          .put(`/api/v1/horses/${testHorse.id}`)
-          .set('Authorization', `Bearer ${validToken}`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken)
-          .set('Content-Type', 'application/json')
-          .send(payload)
-          .expect(400);
+        const response = await renameRequest().set('Content-Type', 'application/json').send(payload).expect(400);
         expect(response.body.success).toBe(false);
         expect(String(response.body.message || '')).toMatch(/duplicate/i);
       });
 
       it('should reject duplicate keys with mixed hex case (\\u006E vs \\u006e)', async () => {
         const payload = '{"\\u006Eame":"x","\\u006eame":"y"}';
-        const response = await request(app)
-          .put(`/api/v1/horses/${testHorse.id}`)
-          .set('Authorization', `Bearer ${validToken}`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken)
-          .set('Content-Type', 'application/json')
-          .send(payload)
-          .expect(400);
+        const response = await renameRequest().set('Content-Type', 'application/json').send(payload).expect(400);
         expect(response.body.success).toBe(false);
         expect(String(response.body.message || '')).toMatch(/duplicate/i);
       });
@@ -311,14 +282,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         // The endpoint may still 400 for unknown-field reasons (the horse update controller has
         // its own field whitelist) — the assertion is that if it 400s, it's NOT for duplicate-key.
         const payload = '{"\\\\u006eame":"x","name":"y"}';
-        const response = await request(app)
-          .put(`/api/v1/horses/${testHorse.id}`)
-          .set('Authorization', `Bearer ${validToken}`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken)
-          .set('Content-Type', 'application/json')
-          .send(payload);
+        const response = await renameRequest().set('Content-Type', 'application/json').send(payload);
         // We don't pin the status (the controller may accept or reject for other reasons —
         // unknown-field whitelist, validation, etc.). The contract is narrower: the security
         // middleware MUST NOT classify these two distinct keys as duplicates.
@@ -341,12 +305,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should reject nested parameter pollution', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           name: 'ValidName',
           traits: {
@@ -373,12 +332,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       // lets the payload through (e.g., wrong Content-Type bypass) and V8
       // parses it in a mode that does pollute the prototype.
       expect.assertions(4);
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .set('Content-Type', 'application/json')
         .send('{"name":"ValidName","__proto__":{"isAdmin":true}}')
         .expect(400);
@@ -394,12 +348,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       // without it, a vacuously-passing 400 from any validator would satisfy
       // only the envelope check and silently hide a removed rejectPollutedRequestBody.
       expect.assertions(2);
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           name: 'ValidName',
           constructor: {
@@ -415,12 +364,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should sanitize JSON keys with special characters', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           'name<script>': 'HackedName',
           'color\x00': 'HackedColor',
@@ -620,12 +564,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
   describe('Content-Type Manipulation', () => {
     it('should reject mismatched Content-Type and body format', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .set('Content-Type', 'application/json')
         .send('name=HackedName') // Form-urlencoded body with JSON content-type
         .expect(400);
@@ -634,26 +573,18 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should reject Content-Type charset manipulation', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .set('Content-Type', 'application/json; charset=utf-7')
         .send({ name: 'HackedName' })
         .expect(400);
 
       expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Invalid rename payload');
+      expect(await storedName()).toBe(testHorse.name);
     });
 
     it('should reject multipart/form-data without proper boundaries', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .set('Content-Type', 'multipart/form-data')
         .send('name=HackedName') // sending plain string to avoid implicit boundary handling
         .expect(400);
@@ -662,17 +593,14 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should accept only allowed Content-Types', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .set('Content-Type', 'application/xml') // Not allowed
         .send('<name>HackedName</name>')
-        .expect(415); // Unsupported Media Type
+        .expect(400); // OLD: 415 from the closed PUT validator (Equoria-h4zni)
 
       expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Invalid rename payload');
+      expect(await storedName()).toBe(testHorse.name);
     });
   });
 
@@ -680,42 +608,27 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     it('should reject excessive nesting depth', async () => {
       const deepObject = { a: { b: { c: { d: { e: { f: { g: { h: { i: { j: { k: 1 } } } } } } } } } } };
 
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(deepObject)
-        .expect(400);
+      const response = await renameRequest().send(deepObject).expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('nested');
+      // OLD: 'Invalid horse payload: nested too deep' from the closed PUT
+      // validator's depth-5 check (Equoria-h4zni). The rename body admits one
+      // string key, so nesting is refused at depth 1 by the allow-list.
+      expect(response.body.message).toBe('Invalid rename payload: unexpected field');
+      expect(await storedName()).toBe(testHorse.name);
     });
 
     it('should reject circular references in objects', async () => {
       const circularObj = { name: 'Horse' };
       circularObj.self = circularObj;
 
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(circularObj)
-        .expect(400);
+      const response = await renameRequest().send(circularObj).expect(400);
 
       expect(response.body.success).toBe(false);
     });
 
     it('should sanitize nested object keys', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           traits: {
             __proto__: { isAdmin: true },
@@ -729,12 +642,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should reject objects with numeric string keys', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           traits: {
             0: 'value1',
@@ -749,12 +657,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
   describe('Type Coercion Attacks', () => {
     it('should reject boolean as string', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           name: true, // Boolean where string expected
         })
@@ -764,12 +667,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should reject object as number', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           age: { value: 5 }, // Object where number expected
         })
@@ -779,12 +677,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should reject array as string', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           name: ['H', 'o', 'r', 's', 'e'], // Array where string expected
         })
@@ -794,12 +687,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should reject numeric string with leading zeros', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           age: '005', // Leading zeros
         })
@@ -809,12 +697,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should reject scientific notation where integers expected', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           age: 5e1, // Scientific notation (50)
         })
@@ -824,12 +707,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should reject Infinity and NaN values', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           age: Infinity,
         })
@@ -841,12 +719,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
   describe('Mass Assignment Vulnerabilities', () => {
     it('should reject attempts to modify protected fields', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           name: 'ValidName',
           userId: 99999, // Attempting to change owner
@@ -863,12 +736,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should reject attempts to set createdAt/updatedAt manually', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           name: 'ValidName',
           createdAt: new Date('2020-01-01'),
@@ -880,12 +748,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should only allow whitelisted fields in updates', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           name: 'ValidName',
           unexpectedField: 'HackedValue',
@@ -895,15 +758,11 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('unexpected');
+      expect(await storedName()).toBe(testHorse.name);
     });
 
     it('should reject attempts to add new fields', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+      const response = await renameRequest()
         .send({
           name: 'ValidName',
           newCustomField: 'HackedValue',
@@ -975,8 +834,9 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       // PUT is no longer a rename path (Equoria-4fnro), so neither request can win:
       // both are refused (not [200, 409, 400], which a lost update also satisfied) and
       // the name is untouched (Equoria-oj5jw). Renames race in horseRenameConcurrent.
-      expect(response1.status).toBe(400);
-      expect(response2.status).toBe(400);
+      // OLD: 400 each; the route is now closed (410, Equoria-h4zni).
+      expect(response1.status).toBe(410);
+      expect(response2.status).toBe(410);
 
       const horse = await prisma.horse.findUnique({ where: { id: testHorse.id } });
       expect(horse.name).toBe(originalName);

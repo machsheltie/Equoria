@@ -14,6 +14,11 @@
  * PUT allowlist entirely. A future explicit breed-change feature would
  * land as its own endpoint with its own authorization + cost logic.
  *
+ * UPDATED Equoria-h4zni: OLD contract 400 'unexpected field' with an empty
+ * PUT still a 200 no-op. NEW contract: PUT /horses/:id is closed — 410 Gone
+ * for every caller and payload, before any validation, writing nothing. The
+ * breedId swap stays impossible, more strictly.
+ *
  * Real-DB integration. No mocks. Cleanup scoped by id.
  */
 
@@ -26,7 +31,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
-describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', () => {
+describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2; closed 410, Equoria-h4zni)', () => {
   let __csrf__;
   let user;
   let token;
@@ -113,7 +118,7 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', ()
     }
   }, 120000);
 
-  it('rejects PUT with breedId in body — 400, breedId unchanged (sentinel-positive)', async () => {
+  it('rejects PUT with breedId in body — 410, breedId unchanged (sentinel-positive)', async () => {
     // Sentinel: this is the exact failure mode tmyd2 describes. Pre-fix,
     // the allowlist included `breedId` and the request returned 200 with
     // the horse silently re-pointed at targetBreed.
@@ -125,14 +130,11 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', ()
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ breedId: targetBreed.id });
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(410); // OLD: 400 (Equoria-h4zni)
     expect(response.body.success).toBe(false);
-    // The 400 must come from the allowlist guard, with the "unexpected
-    // field" message — confirms the rejection happened BEFORE any DB
-    // touch (defence-in-depth: even if a future refactor moved the
-    // prisma.update behind permission middleware, the field is still
-    // not on the wire).
-    expect(response.body.message).toMatch(/unexpected field|invalid/i);
+    // The refusal must be the closed-route answer (OLD: the allow-list's
+    // "unexpected field"), which the handler returns without touching the DB.
+    expect(response.body.message).toMatch(/can no longer be edited/i);
 
     // BreedId must NOT have been mutated.
     const after = await prisma.horse.findUnique({
@@ -142,9 +144,10 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', ()
     expect(after.breedId).toBe(originalBreed.id);
   });
 
-  it('still allows PUT with an empty (no-field) payload — sanity', async () => {
-    // Regression guard: dropping breedId from the allowlist must not break
-    // the route itself.
+  it('refuses PUT with an empty (no-field) payload too — 410, nothing changes', async () => {
+    // OLD CONTRACT (Equoria-h4zni): an empty payload was a 200 no-op proving the
+    // route stayed reachable after the allow-list narrowed. NEW CONTRACT: the
+    // route is closed, so even an empty body is a 410 and the row is untouched.
     //
     // OLD CONTRACT: this case used `sex` as "a permitted field" — first
     // `name` (pre-Equoria-4fnro), then `sex` (Equoria-4fnro). NEW RULING
@@ -167,8 +170,8 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', ()
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({});
 
-    expect(response.status).toBe(200);
-    expect(response.body.success).toBe(true);
+    expect(response.status).toBe(410); // OLD: 200 (Equoria-h4zni)
+    expect(response.body.success).toBe(false);
     const after = await prisma.horse.findUnique({
       where: { id: horse.id },
       select: { name: true, breedId: true, sex: true },

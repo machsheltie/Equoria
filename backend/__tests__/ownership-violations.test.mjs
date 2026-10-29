@@ -165,8 +165,12 @@ describe('Ownership Violation Attempts Integration Tests', () => {
     });
 
     it('blocks cross-user updates and preserves data integrity', async () => {
+      // Equoria-h4zni: this used PUT /horses/:id as the update vehicle; that
+      // route is closed (410). The live owner-gated horse write is the rename,
+      // PATCH /horses/:id/name, whose requireOwnership answers 404 for a horse
+      // the caller does not own — the same property this case always asserted.
       const response = await request(app)
-        .put(`/api/v1/horses/${horseB.id}`)
+        .patch(`/api/v1/horses/${horseB.id}/name`)
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -175,7 +179,24 @@ describe('Ownership Violation Attempts Integration Tests', () => {
         .expect(404);
 
       expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Horse not found');
 
+      const horse = await prisma.horse.findUnique({ where: { id: horseB.id } });
+      expect(horse.name).toBe(horseB.name);
+    });
+
+    it('answers a cross-user PUT with the closed-route 410, changing nothing (Equoria-h4zni)', async () => {
+      const response = await request(app)
+        .put(`/api/v1/horses/${horseB.id}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ name: 'HackedHorse' })
+        .expect(410);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.data).toBeUndefined();
       const horse = await prisma.horse.findUnique({ where: { id: horseB.id } });
       expect(horse.name).toBe(horseB.name);
     });
@@ -190,6 +211,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
       // so they are off the allow-list too. This case now proves the
       // refusal. (Comment updated owner ruling 2026-09-30, Equoria-bvddn.2: the old
       // sireId/damId "PUT still works" happy path is gone; pedigree is never editable.)
+      // Equoria-h4zni: OLD 400 (empty allow-list); the route is now closed, 410.
       const before = await prisma.horse.findUnique({ where: { id: horseA.id } });
 
       const response = await request(app)
@@ -202,7 +224,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
           sex: 'mare',
           dateOfBirth: new Date().toISOString(),
         })
-        .expect(400);
+        .expect(410);
 
       expect(response.body.success).toBe(false);
 
@@ -226,11 +248,11 @@ describe('Ownership Violation Attempts Integration Tests', () => {
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ name: 'Renamed Through The Wrong Door' })
-        .expect(400);
+        .expect(410); // OLD: 400 (Equoria-h4zni: route closed)
 
       expect(response.body.success).toBe(false);
       // The message points the caller at the door that IS open.
-      expect(response.body.message).toContain('PATCH /horses/:id/name');
+      expect(response.body.message).toContain('PATCH /api/v1/horses/:id/name');
 
       const after = await prisma.horse.findUnique({ where: { id: horseA.id } });
       expect(after.name).toBe(before.name);
@@ -246,7 +268,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ name: 'Smuggled Rename', sex: 'stallion' })
-        .expect(400);
+        .expect(410); // OLD: 400 (Equoria-h4zni: route closed)
 
       const after = await prisma.horse.findUnique({ where: { id: horseA.id } });
       expect(after.name).toBe(before.name);

@@ -5,9 +5,11 @@
  * themselves, by any path. This file covers the player routes that create or
  * update a horse or groom from a request body:
  *
- *   - PUT  /horses/:id                     req.body is the Prisma `data`; the
- *                                          allow-list is empty, so every
- *                                          protected field is refused with 400.
+ *   - PUT  /horses/:id                     closed (Equoria-h4zni). Old contract:
+ *                                          an empty allow-list refused every
+ *                                          protected field with 400. New
+ *                                          contract: 410 Gone for every body,
+ *                                          and nothing is written.
  *   - POST /marketplace/store/buy          allow-list { breedId, sex }; any
  *                                          other field (every protected trait
  *                                          field included) is refused with 400.
@@ -147,13 +149,13 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
     });
 
   it.each(Object.entries(hostileHorseFields))(
-    'PUT /horses/:id refuses { %s } with 400 and changes nothing',
+    'PUT /horses/:id refuses { %s } with 410 and changes nothing',
     async (field, value) => {
       const before = await horseRow();
 
       const res = await send('put', `/api/v1/horses/${horse.id}`, { [field]: value });
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(410); // OLD: 400 (Equoria-h4zni)
       expect(res.body.success).toBe(false);
       expect(await horseRow()).toEqual(before);
     },

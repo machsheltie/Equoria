@@ -333,14 +333,18 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
 
     describe('Data Integrity Checks', () => {
       it('should validate data integrity for critical operations', async () => {
-        // Attempt to modify protected horse stats directly
+        // Attempt to modify protected horse stats directly. Equoria-h4zni: the
+        // vehicle was PUT /horses/:id, now closed (410); the live owner horse
+        // write is the rename, so the stats ride along with a valid name there.
+        const before = await prisma.horse.findUnique({ where: { id: testHorse.id } });
         const response = await request(app)
-          .put(`/api/v1/horses/${testHorse.id}`)
+          .patch(`/api/v1/horses/${testHorse.id}/name`)
           .set('Authorization', `Bearer ${authToken}`)
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
           .set('X-CSRF-Token', __csrf__.csrfToken)
           .send({
+            name: 'Tampered',
             // Attempting to directly set protected stats
             precision: 100,
             strength: 100,
@@ -350,6 +354,11 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
 
         // Should reject or ignore protected field modifications
         expect(response.status).not.toBe(200);
+        const after = await prisma.horse.findUnique({ where: { id: testHorse.id } });
+        expect(after.name).toBe(before.name);
+        expect(after.precision).toBe(before.precision);
+        expect(after.strength).toBe(before.strength);
+        expect(after.speed).toBe(before.speed);
       });
 
       it('should prevent stat manipulation through tampering', async () => {

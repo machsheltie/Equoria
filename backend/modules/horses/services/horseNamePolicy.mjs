@@ -31,7 +31,7 @@
  *     existing horses carry names that could no longer be RE-typed. Nothing is
  *     broken by that: the bound is checked on input, never on the stored row,
  *     so no horse became unrenameable and no read path rejects anything.
- *   - characters — the rule `validateHorseUpdatePayload` already enforced:
+ *   - characters — the rule the former PUT validator already enforced:
  *     reject `<` and NUL, nothing else. No allow-list regex, because
  *     `backend/__tests__/sql-injection-attempts.test.mjs` requires
  *     `O'Malley's Horse` to be accepted verbatim (201) and excludes 400.

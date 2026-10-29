@@ -282,21 +282,21 @@ describe('Security Attack Simulation Tests', () => {
       });
 
       it("should block modification of another user's horse", async () => {
-        const response = await request(app)
-          .put(`/api/v1/horses/${horseB.id}`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Authorization', `Bearer ${attackerToken}`)
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken)
-          .send({
-            name: 'Stolen Horse',
-            forSale: true,
-            salePrice: 1,
-          });
-
-        expect(response.status).toBe(404);
-        expect(response.body.success).toBe(false);
-
+        // Equoria-h4zni: PUT /horses/:id is closed; hit the live writers of name and sale flags.
+        const rename = `/api/v1/horses/${horseB.id}/name`;
+        for (const [start, body] of [
+          [() => request(app).patch(rename), { name: 'Stolen Horse' }],
+          [() => request(app).post('/api/v1/marketplace/list'), { horseId: horseB.id, price: 100 }],
+        ]) {
+          const response = await start()
+            .set('Origin', 'http://localhost:3000')
+            .set('Authorization', `Bearer ${attackerToken}`)
+            .set('Cookie', __csrf__.cookieHeader)
+            .set('X-CSRF-Token', __csrf__.csrfToken)
+            .send(body);
+          expect(response.status).toBe(404);
+          expect(response.body.success).toBe(false);
+        }
         // Integrity: victim's horse is unchanged (name, sale flags).
         const horse = await prisma.horse.findUnique({ where: { id: horseB.id } });
         expect(horse.name).toBe(horseB.name);

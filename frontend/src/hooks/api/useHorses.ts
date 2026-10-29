@@ -80,9 +80,8 @@ export const useHorseOffspring = (horseId: number) =>
  * parentage. The owner ruled that the form uses the dedicated rename endpoint
  * and the older route stops renaming (Equoria-4fnro) — which left the update
  * hook with no caller at all, so it is gone rather than left as dead code for
- * someone to wire a name back through. PUT /horses/:id still exists on the
- * server; if the frontend ever needs it (sex, dateOfBirth, parentage), add the
- * hook back then, without `name`.
+ * someone to wire a name back through. PUT /horses/:id is now closed on the
+ * server (410, Equoria-h4zni): sex, birth date and parentage are fixed at birth.
  *
  * Every surface that shows a horse's name is invalidated, because the name is
  * on all of them — the horse's own page, the roster, and the next-actions

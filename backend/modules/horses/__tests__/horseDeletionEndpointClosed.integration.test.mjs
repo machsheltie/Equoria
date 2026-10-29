@@ -48,7 +48,8 @@
  *
  * Retained legitimate behaviour proven here:
  *   - GDPR right-to-erasure still deletes the erased account's horse rows;
- *   - the neighbouring owner mutation `PUT /api/v1/horses/:id` still works, so
+ *   - the neighbouring owner mutation `PATCH /api/v1/horses/:id/name` still
+ *     works (PUT /:id is itself closed, 410, Equoria-h4zni), so
  *     the refusal is scoped to deletion and is not collateral damage.
  *
  * Real database, real HTTP, real CSRF. No mocks. Fixtures are uniquely named
@@ -310,28 +311,27 @@ describe('Equoria-9tque — DELETE /api/v1/horses/:id is closed to players', () 
     expect(await prisma.horse.findUnique({ where: { id: horse.id } })).not.toBeNull();
   }, 30000);
 
-  it('leaves the neighbouring owner mutation PUT /:id working', async () => {
-    // OLD CONTRACT: pre-Equoria-4fnro this proved PUT still worked by
-    // renaming the horse; Equoria-4fnro switched it to `sex`, the field PUT
-    // still owned at the time. NEW RULING (Equoria-bvddn.2, audit finding
-    // 2026-09-25): `sex` is off the PUT allow-list too (see
-    // horseUpdateSexDobMassAssign.sentinel.test.mjs), and the remaining
-    // allow-listed fields (sireId/damId) need a second, sex-matched horse
-    // fixture this file doesn't have. An empty payload is a legitimate no-op
-    // PUT and is enough to prove this route was not collaterally closed by
-    // the DELETE fix above — which is the only thing this case exists to show.
+  it('leaves the neighbouring owner mutation PATCH /:id/name working', async () => {
+    // OLD CONTRACT: this proved `PUT /:id` still served the owner (a rename,
+    // then `sex`, then an empty no-op as that route's allow-list narrowed).
+    // PUT /:id is itself closed now (410, Equoria-h4zni — see
+    // horsePedigreeLocked.integration.test.mjs), so the live owner mutation on
+    // this horse is the rename. It still renames, which proves the DELETE
+    // refusal above is scoped to deletion and not collateral damage — the only
+    // thing this case exists to show.
     const before = await prisma.horse.findUnique({
       where: { id: horse.id },
       select: { name: true, sex: true },
     });
+    const newName = `Renamed-${tag()}`;
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .put(`/api/v1/horses/${horse.id}`)
+      .patch(`/api/v1/horses/${horse.id}/name`)
       .set('Authorization', `Bearer ${owner.token}`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
+      .send({ name: newName });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -339,7 +339,7 @@ describe('Equoria-9tque — DELETE /api/v1/horses/:id is closed to players', () 
       where: { id: horse.id },
       select: { name: true, sex: true },
     });
+    expect(persisted.name).toBe(newName);
     expect(persisted.sex).toBe(before.sex);
-    expect(persisted.name).toBe(before.name);
   }, 60000);
 });

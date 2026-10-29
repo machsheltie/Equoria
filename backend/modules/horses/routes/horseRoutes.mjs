@@ -10,16 +10,11 @@ import horseBreedingRoutes from './horseBreedingRoutes.mjs';
 import horseHistoryRoutes from './horseHistoryRoutes.mjs';
 import horseFoalRoutes from './horseFoalRoutes.mjs';
 import horseIdentityRoutes from './horseIdentityRoutes.mjs';
-import {
-  rejectPollutedRequest,
-  validateHorseUpdatePayload,
-  validateHorseId,
-} from './_validators.mjs';
+import { rejectPollutedRequest, validateHorseId } from './_validators.mjs';
 import {
   listHorses,
   getRecentResultsForHorses,
   getPendingStudRequestsForDams,
-  updateHorse,
 } from '../services/horseRouteQueries.mjs';
 import { breedingStateFields } from '../services/breedingPairRules.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -329,73 +324,30 @@ router.post(
 );
 
 /**
- * PUT /horses/:id
- * Update a horse
- *
- * Security: Validates horse ownership before allowing updates
+ * PUT /horses/:id — GONE (410, Equoria-h4zni). Its field allow-list shrank to
+ * nothing: `breedId` (Equoria-tmyd2), `name` (Equoria-4fnro, renaming lives on
+ * PATCH /horses/:id/name), `sex`/`gender`/`dateOfBirth` (Equoria-bvddn.2) and
+ * finally `sireId`/`damId` (OWNER RULING 2026-09-30: pedigree is fixed by
+ * breeding). A route that may change nothing is closed rather than left as an
+ * empty mass-assignment surface; nothing in frontend/src or the backend called
+ * it. 410 (not 403) because the operation itself no longer exists — the same
+ * idiom as `POST /:id/award-xp` (horseXpRoutes.mjs). Auth ordering mirrors the
+ * closed `DELETE /:id` below: BEHIND `authenticateToken` (anonymous is 401) and
+ * BEFORE any id validation or ownership lookup, so an owned horse, a stranger's,
+ * a missing id and a malformed id share ONE body (no existence/ownership
+ * oracle), and the handler writes nothing for any caller or payload.
+ * Locked by __tests__/horsePedigreeLocked.integration.test.mjs.
  */
-router.put(
-  '/:id',
-  mutationRateLimiter,
-  rejectPollutedRequest,
-  validateHorseId,
-  requireOwnership('horse'),
-  validateHorseUpdatePayload,
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id);
-
-      // Equoria-bvddn.2 (OWNER RULING 2026-09-30): sireId/damId can never be
-      // edited — pedigree is fixed by breeding. validateHorseUpdatePayload's
-      // allow-list is empty, so no pedigree field reaches this handler; the
-      // former sire/dam ownership and sex-role checks (Equoria-hg62v,
-      // Equoria-91ezs) had nothing left to guard and were removed.
-
-      // Ownership already validated by middleware (service-layer update, Equoria-becrm)
-      const updatedHorse = await updateHorse(horseId, req.body);
-
-      logger.info(
-        `[horseRoutes] User ${req.user.id} updated horse: ${updatedHorse.name} (ID: ${horseId})`,
-      );
-
-      res.json({
-        success: true,
-        message: 'Horse updated successfully',
-        data: updatedHorse,
-      });
-    } catch (error) {
-      if (error.code === 'P2025') {
-        return res.status(404).json({
-          success: false,
-          message: 'Horse not found',
-        });
-      }
-
-      // Surface validation issues as 400 for security tests
-      // (Equoria-becrm: dropped the defensive substring match against
-      // 'Invalid `' + the client/method token; PrismaClientValidationError
-      // + 'Unknown argument' already cover the same shape, and keeping
-      // the literal token forced the routes file to contain text the
-      // routes-layer sentinel scan rejects.)
-      if (
-        error.name === 'PrismaClientValidationError' ||
-        error.message?.includes('Unknown argument')
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid horse payload',
-        });
-      }
-
-      logger.error(`[horseRoutes] Error updating horse: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
+router.put('/:id', mutationRateLimiter, authenticateToken, (req, res) => {
+  logger.info(
+    `[horseRoutes] 410 Gone — PUT /horses/:id is closed; user ${req.user?.id} (Equoria-h4zni)`,
+  );
+  return res.status(410).json({
+    success: false,
+    message:
+      "A horse's details can no longer be edited here. Pedigree, breed, sex and birth date are set when a horse is born and never change. To rename a horse, use PATCH /api/v1/horses/:id/name.",
+  });
+});
 
 /**
  * DELETE /horses/:id — CLOSED to players (owner ruling 2026-09-08, Equoria-9tque:
@@ -405,8 +357,8 @@ router.put(
  * 2026-09-05 audit closed for free creation (Finding 2, `POST /horses` above)
  * and self-awarded XP (Finding 3) — and cascading children took the horse's
  * staff assignments, XP events and history too. No live caller existed. 403
- * follows Finding 2, not Finding 3's 410: `/horses/:id` is not gone, `GET` and
- * `PUT` still serve the owner; only permission to destroy is withdrawn. It sits
+ * follows Finding 2, not Finding 3's 410: `/horses/:id` is not gone, `GET`
+ * still serves the owner; only permission to destroy is withdrawn. It sits
  * BEHIND `authenticateToken` (anonymous is 401) and BEFORE the validator, so an
  * owned horse, a stranger's, a missing id and a malformed id share ONE body (no
  * oracle). Horse rows leave the DB only via the fixture-purge script (account

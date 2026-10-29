@@ -172,17 +172,12 @@ export const rejectPollutedRequest = (req, res, next) => {
  *        into the game (`firstHorseNameRejectionMessage`). Its entry in
  *        scripts/doctrine-checks/horse-name-gate-allowlist.json is gone with it.
  *
- *   NO LONGER A NAME PATH: `PUT /api/v1/horses/:id`. `validateHorseUpdatePayload`
- *   below now refuses ANY body carrying `name`, with a message pointing at the
- *   rename endpoint (Equoria-4fnro). Equoria-bvddn.2 (OWNER-ASSIGNED AUDIT
- *   FINDING, 2026-09-25) went further: `sex`, `gender` and `dateOfBirth` are
- *   OFF the allow-list too — `dateOfBirth` drives age everywhere (foal
- *   stages, milestones, training eligibility) and `sex` had no value
- *   validation at all, so PUT let an owner instantly age a newborn foal or
- *   reverse a gelding/flip a mare with an arbitrary string. It now accepts
- *   only `sireId` and `damId` — sireId/damId are a separate, still-open
- *   question (does a player get to re-point pedigree after birth at all?)
- *   that this fix deliberately leaves alone.
+ *   NO LONGER A NAME PATH: `PUT /api/v1/horses/:id`. It stopped taking `name`
+ *   (Equoria-4fnro), then `sex`/`gender`/`dateOfBirth` (Equoria-bvddn.2), then
+ *   `sireId`/`damId` (owner ruling 2026-09-30: pedigree is fixed by breeding).
+ *   With nothing left to accept it answers 410 before any validation runs
+ *   (Equoria-h4zni), and its validator, `validateHorseUpdatePayload`, was
+ *   deleted with it.
  *
  *   CLOSED, not gated: `POST /api/v1/horses` returns 403 before any validation
  *   runs (Finding 2 / Equoria-6p398.2), so `validateHorseCreation` below is DEAD
@@ -291,13 +286,21 @@ export const validateHorseRenamePayload = (req, res, next) => {
   if (!contentType.startsWith('application/json')) {
     return res.status(400).json({ success: false, message: 'Invalid rename payload' });
   }
+  // Equoria-h4zni: JSON is UTF-8 (RFC 8259 §8.1). body-parser accepts any
+  // `utf-*` charset, so `charset=utf-7` would otherwise reach the name rule
+  // decoded from an encoding no client of ours sends. This wall used to live on
+  // the now-closed PUT /horses/:id validator; it moves to the live write route.
+  const charset = /;\s*charset\s*=\s*"?([^";\s]+)/.exec(contentType)?.[1];
+  if (charset !== undefined && charset !== 'utf-8' && charset !== 'utf8') {
+    return res.status(400).json({ success: false, message: 'Invalid rename payload' });
+  }
 
   const body = req.body;
   if (typeof body !== 'object' || body === null || Array.isArray(body)) {
     return res.status(400).json({ success: false, message: 'Invalid rename payload' });
   }
 
-  // Prototype-pollution guard, mirroring validateHorseUpdatePayload.
+  // Prototype-pollution guard (the global rejectPollutedRequestBody also runs).
   if (
     Object.prototype.hasOwnProperty.call(body, '__proto__') ||
     Object.prototype.hasOwnProperty.call(body, 'constructor') ||
@@ -307,7 +310,8 @@ export const validateHorseRenamePayload = (req, res, next) => {
   }
 
   // `name` is the whole payload. Refusing extra keys keeps this endpoint from
-  // becoming a second mass-assignment surface the way PUT /horses/:id did.
+  // becoming a second mass-assignment surface the way PUT /horses/:id was
+  // before it closed (Equoria-h4zni).
   for (const key of Object.keys(body)) {
     if (key !== 'name') {
       return res
@@ -322,124 +326,4 @@ export const validateHorseRenamePayload = (req, res, next) => {
   }
 
   return next();
-};
-
-/**
- * Validate horse update payload to prevent type coercion / mass assignment
- * (PUT /horses/:id). Allowlist-only fields; rejects nested too-deep payloads,
- * prototype-pollution keys, non-JSON content types, and protected fields.
- *
- * Behaviour preserved verbatim from the original inline definition.
- */
-export const validateHorseUpdatePayload = (req, res, next) => {
-  const getDepth = (value, seen = new Set()) => {
-    if (value && typeof value === 'object') {
-      if (seen.has(value)) {
-        return 0;
-      }
-      seen.add(value);
-      let maxDepth = 1;
-      for (const key of Object.keys(value)) {
-        maxDepth = Math.max(maxDepth, 1 + getDepth(value[key], seen));
-      }
-      return maxDepth;
-    }
-    return 0;
-  };
-
-  // Enforce content types for update to prevent content-type manipulation
-  const contentType = (req.headers?.['content-type'] || '').toLowerCase();
-  if (contentType.includes('application/xml')) {
-    return res.status(415).json({ success: false, message: 'Unsupported Media Type' });
-  }
-  if (contentType.includes('charset=utf-7') || contentType.includes('multipart/form-data')) {
-    return res.status(400).json({ success: false, message: 'Invalid horse payload' });
-  }
-  const isJson = contentType.startsWith('application/json');
-  if (!isJson) {
-    return res.status(400).json({ success: false, message: 'Invalid horse payload' });
-  }
-
-  if (typeof req.body !== 'object' || Array.isArray(req.body) || req.body === null) {
-    return res.status(400).json({ success: false, message: 'Invalid horse payload' });
-  }
-
-  const body = req.body || {};
-
-  // Reject prototype pollution keys at top-level
-  if (
-    Object.prototype.hasOwnProperty.call(body, '__proto__') ||
-    Object.prototype.hasOwnProperty.call(body, 'constructor') ||
-    Object.getPrototypeOf(body) !== Object.prototype
-  ) {
-    return res.status(400).json({ success: false, message: 'Invalid horse payload' });
-  }
-
-  const depth = getDepth(body);
-  if (depth > 5) {
-    return res
-      .status(400)
-      .json({ success: false, message: 'Invalid horse payload: nested too deep' });
-  }
-
-  // Equoria-tmyd2: breedId is intentionally NOT in the allowlist. Pre-fix
-  // it was — and a user could PUT { breedId: <higher-tier-breed-id> } to
-  // silently re-point a starter horse at a different breed, inheriting that
-  // breed's stat ranges, color genetics, conformation, and gait advantages
-  // without going through any documented (and non-existent) breed-change
-  // mechanic. If breed change ever ships as a real game feature, it MUST
-  // land as its own endpoint with explicit authorization + cost — not via
-  // mass-assignment on the generic update path.
-  // Equoria-4fnro (OWNER RULING 2026-09-14): `name` is NO LONGER in this
-  // allow-list. Renaming a horse is its own player intent with its own narrow,
-  // transactional endpoint (PATCH /horses/:id/name); leaving it here as well
-  // left two ways to rename a horse, one of them a mass-assignment path that
-  // also took sex, dateOfBirth, sireId and damId. See the explicit branch
-  // below for the message, which is deliberately more informative than the
-  // generic unexpected-field refusal this Set would otherwise produce.
-  //
-  // Equoria-bvddn.2 (audit finding, 2026-09-25): `sex`, `gender` and
-  // `dateOfBirth` are ALSO gone. They had no value validation at all, so a
-  // player could PUT any string to `sex` (un-gelding, sex-flipping) or any
-  // date to `dateOfBirth` (instantly ageing a newborn foal past every
-  // development stage). No legitimate in-game mechanic re-sexes or re-ages a
-  // horse after birth; if one ever ships it needs its own endpoint with real
-  // validation, same reasoning as breedId (Equoria-tmyd2).
-  //
-  // Equoria-bvddn.2 (OWNER RULING 2026-09-30): `sireId` and `damId` are gone
-  // too. OLD CONTRACT: an owner could PUT them at another owned horse of the
-  // right sex. NEW RULING: a horse's sire and dam can NEVER be edited —
-  // pedigree is fixed by breeding. The allow-list is therefore EMPTY: this
-  // validator refuses every field. (PUT /horses/:id is itself closed with 410
-  // before this runs; the validator stays as a second wall.)
-  const allowedFields = new Set();
-
-  // `name` is refused BEFORE the allow-list loop so the caller is told where
-  // renaming lives rather than being told 'unexpected field' about the one
-  // field this route used to be most commonly called with.
-  if (Object.prototype.hasOwnProperty.call(body, 'name')) {
-    return res.status(400).json({
-      success: false,
-      message:
-        'Invalid horse payload: unexpected field `name` — rename a horse with PATCH /horses/:id/name',
-    });
-  }
-
-  for (const key of Object.keys(body)) {
-    if (!allowedFields.has(key)) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'Invalid horse payload: unexpected field' });
-    }
-  }
-
-  if (body.age !== undefined || body.userId !== undefined || body.id !== undefined) {
-    return res.status(400).json({ success: false, message: 'Invalid horse payload' });
-  }
-
-  if (body.traits !== undefined) {
-    return res.status(400).json({ success: false, message: 'Invalid traits payload' });
-  }
-
-  next();
 };

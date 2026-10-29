@@ -26,6 +26,10 @@
  * whatever the sex, and the genealogy is untouched. The wrong-sex corruption
  * scenario stays impossible, more strictly.
  *
+ * UPDATED Equoria-h4zni: OLD contract 400 'unexpected field'. NEW contract:
+ * PUT /horses/:id is closed — 410 Gone with the closed-route message for every
+ * caller and payload, genealogy untouched.
+ *
  * Real-DB integration. No mocks (CLAUDE.md §3). Scoped cleanup by id.
  */
 
@@ -134,7 +138,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
   // Before this fix, the PUT returned 200 and the row's sireId/damId would
   // be silently mutated to point at a sex-incompatible horse.
 
-  it('rejects PUT { sireId: <Mare> } with 400 "Sire must be a stallion"', async () => {
+  it('rejects PUT { sireId: <Mare> } with 410 (OLD: 400 "Sire must be a stallion")', async () => {
     expect.hasAssertions();
     const response = await request(app)
       .put(`/api/v1/horses/${horse.id}`)
@@ -144,9 +148,9 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sireId: mare.id });
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(410); // OLD: 400 (Equoria-h4zni)
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toMatch(/unexpected field/i); // OLD: 'Sire must be a stallion'
+    expect(response.body.message).toMatch(/can no longer be edited/i); // OLD: 'Sire must be a stallion', then 'unexpected field'
 
     // Genealogy must NOT have been touched.
     const after = await prisma.horse.findUnique({
@@ -156,7 +160,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
     expect(after.sireId).toBeNull();
   });
 
-  it('rejects PUT { sireId: <Colt> } with 400 "Sire must be a stallion"', async () => {
+  it('rejects PUT { sireId: <Colt> } with 410 (OLD: 400 "Sire must be a stallion")', async () => {
     expect.hasAssertions();
     const response = await request(app)
       .put(`/api/v1/horses/${horse.id}`)
@@ -166,11 +170,11 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sireId: colt.id });
 
-    expect(response.status).toBe(400);
-    expect(response.body.message).toMatch(/unexpected field/i); // OLD: 'Sire must be a stallion'
+    expect(response.status).toBe(410); // OLD: 400 (Equoria-h4zni)
+    expect(response.body.message).toMatch(/can no longer be edited/i); // OLD: 'Sire must be a stallion', then 'unexpected field'
   });
 
-  it('rejects PUT { damId: <Stallion> } with 400 "Dam must be a mare"', async () => {
+  it('rejects PUT { damId: <Stallion> } with 410 (OLD: 400 "Dam must be a mare")', async () => {
     expect.hasAssertions();
     const response = await request(app)
       .put(`/api/v1/horses/${horse.id}`)
@@ -180,9 +184,9 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ damId: stallion.id });
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(410); // OLD: 400 (Equoria-h4zni)
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toMatch(/unexpected field/i); // OLD: 'Dam must be a mare'
+    expect(response.body.message).toMatch(/can no longer be edited/i); // OLD: 'Dam must be a mare', then 'unexpected field'
 
     const after = await prisma.horse.findUnique({
       where: { id: horse.id },
@@ -191,7 +195,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
     expect(after.damId).toBeNull();
   });
 
-  it('rejects PUT { damId: <Colt> } with 400 "Dam must be a mare"', async () => {
+  it('rejects PUT { damId: <Colt> } with 410 (OLD: 400 "Dam must be a mare")', async () => {
     expect.hasAssertions();
     const response = await request(app)
       .put(`/api/v1/horses/${horse.id}`)
@@ -201,13 +205,13 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ damId: colt.id });
 
-    expect(response.status).toBe(400);
-    expect(response.body.message).toMatch(/unexpected field/i); // OLD: 'Dam must be a mare'
+    expect(response.status).toBe(410); // OLD: 400 (Equoria-h4zni)
+    expect(response.body.message).toMatch(/can no longer be edited/i); // OLD: 'Dam must be a mare', then 'unexpected field'
   });
 
   // ─── happy path: success when sexes correct ──────────────────────────────
 
-  it('refuses PUT { sireId: <Stallion>, damId: <Mare> } — 400, parents unchanged (owner ruling 2026-09-30, Equoria-bvddn.2)', async () => {
+  it('refuses PUT { sireId: <Stallion>, damId: <Mare> } — 410, parents unchanged (owner ruling 2026-09-30, Equoria-bvddn.2)', async () => {
     expect.hasAssertions();
     const response = await request(app)
       .put(`/api/v1/horses/${horse.id}`)
@@ -218,7 +222,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
       .send({ sireId: stallion.id, damId: mare.id });
 
     // OLD: 200 and both parents persisted.
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(410); // OLD: 400 (Equoria-h4zni)
     expect(response.body.success).toBe(false);
     const after = await prisma.horse.findUnique({
       where: { id: horse.id },
@@ -233,7 +237,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
   // 400 sex-role error (not the 404 ownership error). Ownership succeeds; sex
   // role fails. This ordering matches POST /horses (sex check follows ownership).
 
-  it('owned non-Stallion sireId returns 400 unexpected-field (sex-role check removed)', async () => {
+  it('owned non-Stallion sireId returns 410 (sex-role check removed, route closed)', async () => {
     expect.hasAssertions();
     const response = await request(app)
       .put(`/api/v1/horses/${horse.id}`)
@@ -243,7 +247,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sireId: colt.id }); // owned, but wrong sex
 
-    expect(response.status).toBe(400);
-    expect(response.body.message).toMatch(/unexpected field/i); // OLD: 'Sire must be a stallion'
+    expect(response.status).toBe(410); // OLD: 400 (Equoria-h4zni)
+    expect(response.body.message).toMatch(/can no longer be edited/i); // OLD: 'Sire must be a stallion', then 'unexpected field'
   });
 });

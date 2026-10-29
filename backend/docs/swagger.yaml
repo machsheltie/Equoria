@@ -309,17 +309,15 @@ paths:
         '404': { description: 'Horse not found' }
     put:
       tags: [Horses]
-      summary: 'Update a horse'
+      summary: 'Removed: horse details cannot be edited (410 Gone)'
+      description: 'Closed (Equoria-h4zni). Pedigree, breed, sex and birth date are fixed when a horse is born, so this route accepts no fields and answers 410 for every authenticated caller and payload, writing nothing. Rename a horse with PATCH /horses/{id}/name.'
+      deprecated: true
       security: [{ bearerAuth: [] }]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer } }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
-        '200': { description: 'Horse updated' }
+        '401': { description: Unauthorized }
+        '410': { description: 'Gone: horse details can no longer be edited here' }
     delete:
       tags: [Horses]
       summary: 'Delete a horse'

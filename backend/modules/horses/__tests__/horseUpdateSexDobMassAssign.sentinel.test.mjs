@@ -17,6 +17,10 @@
  * sireId/damId are DELIBERATELY untouched by this fix — see OPEN QUESTIONS in
  * the task report. This file does not exercise them.
  *
+ * UPDATED Equoria-h4zni: OLD contract 400 'unexpected field'. NEW contract:
+ * PUT /horses/:id is closed — 410 Gone for every caller and payload, before
+ * any validation, writing nothing.
+ *
  * Real-DB integration. No mocks. Cleanup scoped by id.
  */
 
@@ -29,7 +33,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
-describe('PUT /horses/:id — sex/gender/dateOfBirth mass-assignment guard (Equoria-bvddn.2)', () => {
+describe('PUT /horses/:id — sex/gender/dateOfBirth mass-assignment guard (Equoria-bvddn.2; closed 410, Equoria-h4zni)', () => {
   let __csrf__;
   let user;
   let token;
@@ -101,7 +105,7 @@ describe('PUT /horses/:id — sex/gender/dateOfBirth mass-assignment guard (Equo
     }
   }, 120000);
 
-  it('rejects PUT { dateOfBirth } — 400, newborn foal cannot be instantly aged (sentinel-positive)', async () => {
+  it('rejects PUT { dateOfBirth } — 410, newborn foal cannot be instantly aged (sentinel-positive)', async () => {
     // Sentinel: the exact failure scenario bvddn.2 describes. Pre-fix this
     // returned 200 and the foal's dateOfBirth silently became 2020-01-01,
     // skipping all foal development.
@@ -113,9 +117,9 @@ describe('PUT /horses/:id — sex/gender/dateOfBirth mass-assignment guard (Equo
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ dateOfBirth: new Date('2020-01-01').toISOString() });
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(410); // OLD: 400 (Equoria-h4zni)
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toMatch(/unexpected field|invalid/i);
+    expect(response.body.message).toMatch(/can no longer be edited/i); // OLD: unexpected field
 
     const after = await prisma.horse.findUnique({
       where: { id: foal.id },
@@ -124,7 +128,7 @@ describe('PUT /horses/:id — sex/gender/dateOfBirth mass-assignment guard (Equo
     expect(after.dateOfBirth.toISOString()).toBe(foal.dateOfBirth.toISOString());
   });
 
-  it('rejects PUT { sex } — 400, a Colt cannot be flipped to Stallion (sentinel-positive)', async () => {
+  it('rejects PUT { sex } — 410, a Colt cannot be flipped to Stallion (sentinel-positive)', async () => {
     // Sentinel: pre-fix this returned 200 with no value validation at all —
     // any string was accepted and silently written to the sex column.
     const response = await request(app)
@@ -135,9 +139,9 @@ describe('PUT /horses/:id — sex/gender/dateOfBirth mass-assignment guard (Equo
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sex: 'Stallion' });
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(410); // OLD: 400 (Equoria-h4zni)
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toMatch(/unexpected field|invalid/i);
+    expect(response.body.message).toMatch(/can no longer be edited/i); // OLD: unexpected field
 
     const after = await prisma.horse.findUnique({
       where: { id: rig.id },
@@ -146,7 +150,8 @@ describe('PUT /horses/:id — sex/gender/dateOfBirth mass-assignment guard (Equo
     expect(after.sex).toBe('Colt');
   });
 
-  it('rejects PUT { gender } — 400, gender is off the allowlist too', async () => {
+  it('rejects PUT { gender } — 410, sex unchanged', async () => {
+    const before = await prisma.horse.findUnique({ where: { id: rig.id }, select: { sex: true } });
     const response = await request(app)
       .put(`/api/v1/horses/${rig.id}`)
       .set('Authorization', `Bearer ${token}`)
@@ -155,8 +160,10 @@ describe('PUT /horses/:id — sex/gender/dateOfBirth mass-assignment guard (Equo
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ gender: 'Stallion' });
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(410); // OLD: 400 (Equoria-h4zni)
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toMatch(/unexpected field|invalid/i);
+    expect(response.body.message).toMatch(/can no longer be edited/i); // OLD: unexpected field
+    const after = await prisma.horse.findUnique({ where: { id: rig.id }, select: { sex: true } });
+    expect(after.sex).toBe(before.sex);
   });
 });
