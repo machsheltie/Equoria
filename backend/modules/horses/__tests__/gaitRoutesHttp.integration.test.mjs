@@ -33,7 +33,6 @@ let tokenA;
 let ownerB;
 let gaitedHorse;
 let nonGaitedHorse;
-let legacyHorse;
 let horseOwnedByB;
 
 const FIXTURE_PREFIX = 'TestFixture-gait-http';
@@ -96,12 +95,6 @@ beforeAll(async () => {
     gaitScores: makeNonGaitedScores(),
   });
 
-  legacyHorse = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-Legacy-${tag}`,
-    userId: ownerA.id,
-    gaitScores: null,
-  });
-
   horseOwnedByB = await createTestHorse({
     name: `${FIXTURE_PREFIX}-OwnerB-${tag}`,
     userId: ownerB.id,
@@ -160,18 +153,6 @@ describe('GET /api/v1/horses/:id/gaits (HTTP chain)', () => {
     for (const slot of ['walk', 'trot', 'canter', 'gallop']) {
       expect(typeof res.body.data.gaitScores[slot]).toBe('number');
     }
-  });
-
-  it('returns 200 with data:null for a legacy (no-gaitScores) owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${legacyHorse.id}/gaits`)
-      .set('Authorization', `Bearer ${tokenA}`)
-      .set('Origin', 'http://localhost:3000');
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeNull();
-    expect(res.body.message).toMatch(/no gait scores available/i);
   });
 
   it('returns 401 when no Authorization header is sent', async () => {

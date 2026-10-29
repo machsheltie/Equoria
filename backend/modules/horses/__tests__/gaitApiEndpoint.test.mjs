@@ -122,31 +122,8 @@ describe('getGaits', () => {
     expect(response.data.gaitScores.gaiting).toBeNull();
   });
 
-  // === Task 3.4: Returns 200 with null data for legacy horse without gait scores ===
-
-  test('returns 200 with null data for legacy horse without gait scores', async () => {
-    const { req, res } = createMockReqRes({ gaitScores: null });
-
-    await getGaits(req, res);
-
-    expect(res.statusCode).toBe(200);
-    const response = res.body;
-    expect(response.success).toBe(true);
-    expect(response.message).toBe('No gait scores available for this horse');
-    expect(response.data).toBeNull();
-  });
-
-  // === Task 3.5: Returns 200 with null data for horse with undefined gait scores ===
-
-  test('returns 200 with null data for horse with undefined gait scores', async () => {
-    const { req, res } = createMockReqRes({ gaitScores: undefined });
-
-    await getGaits(req, res);
-
-    expect(res.statusCode).toBe(200);
-    const response = res.body;
-    expect(response.data).toBeNull();
-  });
+  // Tasks 3.4 / 3.5 (a horse with null or undefined gait scores got 200 data:null) were
+  // removed with that branch: gaitScores is NOT NULL (Equoria-576c0.5).
 
   // === Task 3.6: Response includes horseId, horseName, breedId metadata ===
 

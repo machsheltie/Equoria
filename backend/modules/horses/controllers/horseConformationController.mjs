@@ -307,22 +307,9 @@ export async function getGaits(req, res) {
     const horse = req.horse;
     const gaitScores = horse.gaitScores;
 
-    // A horse without gait scores. The gaitScores column is nullable with no default.
-    // History: Equoria-0hqg (an agent decision, never an owner ruling) chose to leave
-    // such horses null forever and never backfill. The owner overrode that on
-    // 2026-10-28 (Equoria-vqz4b, Equoria-17zgu): every horse is meant to carry gait
-    // scores rolled from its breed's ranges. Horse Trader and onboarding starter horses
-    // now get them at creation (horses/services/breedPhysique.mjs); whether existing
-    // null horses are backfilled is still the owner's call (decision q208).
-    // Until then this 200/data:null response remains, and the frontend treats null
-    // as "data not generated yet", never as a crash.
-    if (!gaitScores) {
-      return res.status(200).json({
-        success: true,
-        message: 'No gait scores available for this horse',
-        data: null,
-      });
-    }
+    // Every horse has gait scores (Equoria-576c0.5: the column is NOT NULL and every
+    // creation path rolls them from the breed). Old contract: a horse with none got a
+    // 200 with data:null ("No gait scores available for this horse").
 
     logger.info(`[horseController.getGaits] Retrieved gait scores for horse ${horse.id}`);
 
