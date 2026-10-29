@@ -20,6 +20,7 @@ import {
 import logger from '../../utils/logger.mjs';
 import { parsePaginationParams, buildPaginatedResponse } from '../../utils/paginationHelper.mjs';
 import { getHorseVisit, getHorseVisitShowResults } from './horseVisitQuery.mjs';
+import { can } from '../../modules/staff/index.mjs';
 
 const router = express.Router();
 
@@ -31,7 +32,11 @@ router.get(
   validateHorseId,
   async (req, res) => {
     try {
-      const visit = await getHorseVisit(Number.parseInt(req.params.id, 10), req.user.id);
+      // Equoria-w4bvy: only the game owner is sent hidden trait names (the
+      // response guard then marks her response private, no-store).
+      const visit = await getHorseVisit(Number.parseInt(req.params.id, 10), req.user.id, {
+        includeHiddenTraits: can(req.user, 'traits.hidden.view'),
+      });
       if (!visit) {
         return res.status(404).json({ success: false, message: 'Horse not found', status: 'fail' });
       }

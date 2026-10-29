@@ -10,6 +10,9 @@
  *   (Equoria-lylhb).
  * - A switched-off (dormant) trait is greyed out and still shows its name,
  *   with the word "Inactive" so the state never rests on color alone.
+ * - The game owner alone (Equoria-w4bvy; owner ruling 2026-10-19) is sent the
+ *   hidden traits' names: each is the same dark blue Hidden chip with the
+ *   authored name and the word "Hidden", never gold, never a code name.
  *
  * Rarity is never shown; names are the authored labels the server sends.
  */
@@ -22,6 +25,8 @@ interface TraitDiscoveryProps {
   revealed: HorseTrait[];
   dormant: HorseTrait[];
   hiddenCount: number;
+  /** Hidden traits by name: sent to the game owner only; empty for everyone else. */
+  hidden?: HorseTrait[];
   /** Normalised keys of revealed traits that glow (first view). */
   glowTokens: ReadonlySet<string>;
   normalize: (value: string) => string;
@@ -32,11 +37,13 @@ const TraitDiscovery: React.FC<TraitDiscoveryProps> = ({
   revealed,
   dormant,
   hiddenCount,
+  hidden = [],
   glowTokens,
   normalize,
   onSelect,
 }) => {
-  const carried = revealed.length + dormant.length + hiddenCount;
+  const unnamedHidden = Math.max(0, hiddenCount - hidden.length);
+  const carried = revealed.length + dormant.length + hidden.length + unnamedHidden;
 
   return (
     <section aria-labelledby="trait-discovery-heading" data-testid="hidden-traits-section">
@@ -84,7 +91,15 @@ const TraitDiscovery: React.FC<TraitDiscoveryProps> = ({
               </button>
             </li>
           ))}
-          {Array.from({ length: hiddenCount }, (_, index) => (
+          {hidden.map((trait) => (
+            <li key={`hidden-${trait.key}`}>
+              <span className="trait-chip trait-chip--hidden" data-testid="trait-chip-hidden-named">
+                {trait.name}
+                <span className="trait-chip__state">Hidden</span>
+              </span>
+            </li>
+          ))}
+          {Array.from({ length: unnamedHidden }, (_, index) => (
             <li key={`hidden-${index}`}>
               <span className="trait-chip trait-chip--hidden" data-testid="trait-chip-hidden">
                 Hidden

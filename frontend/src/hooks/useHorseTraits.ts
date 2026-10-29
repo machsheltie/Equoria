@@ -67,6 +67,11 @@ export interface RawHorseTraits {
     dormant?: RawEnhancedTrait[];
     /** Count only: the backend never names an unrevealed trait (Equoria-6dace). */
     hiddenCount?: number;
+    /**
+     * Still-hidden traits by name: sent to the game owner only (Equoria-w4bvy);
+     * absent for every other viewer.
+     */
+    hidden?: RawEnhancedTrait[];
   };
   summary?: {
     totalTraits?: number;
@@ -117,8 +122,13 @@ export interface HorseTraitsView {
   negative: HorseTrait[];
   /** Revealed traits that are switched off: still carried, no effect (q213). */
   dormant: HorseTrait[];
-  /** Hidden trait COUNT only — names are intentionally not revealed. */
+  /** Hidden trait COUNT — names are intentionally not revealed to players. */
   hiddenCount: number;
+  /**
+   * Still-hidden traits by name: the game owner's view only (Equoria-w4bvy).
+   * Absent for every other viewer, whose hidden traits are the count above.
+   */
+  hidden?: HorseTrait[];
   totalTraits: number;
 }
 
@@ -178,13 +188,19 @@ export function mapHorseTraits(raw: RawHorseTraits | null | undefined): HorseTra
   const rawHidden = buckets?.hiddenCount;
   const hiddenCount =
     typeof rawHidden === 'number' && Number.isInteger(rawHidden) && rawHidden > 0 ? rawHidden : 0;
-  return {
+  const view: HorseTraitsView = {
     positive,
     negative,
     dormant,
     hiddenCount,
     totalTraits: positive.length + negative.length + dormant.length + hiddenCount,
   };
+  const hiddenNamed = buckets?.hidden;
+  if (Array.isArray(hiddenNamed)) {
+    // Sent to the game owner only; a hidden trait never glows.
+    view.hidden = mapBucket(hiddenNamed, null).map((t) => ({ ...t, isNew: false }));
+  }
+  return view;
 }
 
 /**

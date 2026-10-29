@@ -1,7 +1,8 @@
 /**
  * Trait Discovery from the visitor read (q174 / q213 / q205): revealed and
- * dormant traits by their authored names, hidden traits as a count only. An
- * older reply that sends revealed keys only still reads.
+ * dormant traits by their authored names, hidden traits as a count only (by
+ * name for the game owner alone, Equoria-w4bvy). An older reply that sends
+ * revealed keys only still reads.
  */
 
 import { humanizeTraitKey, type HorseTrait } from '@/hooks/useHorseTraits';
@@ -21,6 +22,7 @@ export function visitTraitDiscovery(horse: HorseVisit): {
   revealed: HorseTrait[];
   dormant: HorseTrait[];
   hiddenCount: number;
+  hidden: HorseTrait[];
 } {
   const found = horse.traitDiscovery;
   if (found) {
@@ -33,6 +35,9 @@ export function visitTraitDiscovery(horse: HorseVisit): {
         chipTrait(t, t.type === 'negative' ? 'negative' : 'positive')
       ),
       hiddenCount: found.hiddenCount,
+      hidden: (found.hidden ?? []).map((t) =>
+        chipTrait(t, t.type === 'negative' ? 'negative' : 'positive')
+      ),
     };
   }
   const named = (key: string, valence: 'positive' | 'negative'): HorseTrait => ({
@@ -48,5 +53,6 @@ export function visitTraitDiscovery(horse: HorseVisit): {
     ],
     dormant: [],
     hiddenCount: 0,
+    hidden: [],
   };
 }

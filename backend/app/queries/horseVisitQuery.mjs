@@ -196,16 +196,21 @@ function namedTrait(key) {
 
 /**
  * Trait Discovery (q174 / q213): revealed and dormant traits by name, hidden
- * traits as a count only.
+ * traits as a count only. The game owner (`includeHidden`, Equoria-w4bvy) also
+ * gets the hidden traits by name, in their own `hidden` list.
  */
-function traitDiscoveryOf(row) {
-  const view = publicTraitModifiers(row.epigeneticModifiers);
-  return {
+function traitDiscoveryOf(row, includeHidden) {
+  const view = publicTraitModifiers(row.epigeneticModifiers, { includeHidden });
+  const discovery = {
     positive: view.positive.map(namedTrait),
     negative: view.negative.map(namedTrait),
     dormant: dormantTraitKeys(row.epigeneticModifiers).map(namedTrait),
     hiddenCount: view.hiddenCount,
   };
+  if (includeHidden) {
+    discovery.hidden = view.hidden.map(namedTrait);
+  }
+  return discovery;
 }
 
 /** The visible phenotype: colour, shade and markings (never the genotype). */
@@ -228,8 +233,10 @@ function coatOf(phenotype) {
  *
  * @param {number} horseId
  * @param {string} viewerId
+ * @param {{ includeHiddenTraits?: boolean }} [options] - true only for the game
+ *   owner (`traits.hidden.view`): Trait Discovery then names hidden traits too.
  */
-export async function getHorseVisit(horseId, viewerId) {
+export async function getHorseVisit(horseId, viewerId, { includeHiddenTraits = false } = {}) {
   const row = await prisma.horse.findUnique({
     where: { id: horseId },
     include: {
@@ -269,7 +276,7 @@ export async function getHorseVisit(horseId, viewerId) {
     temperament: row.temperament ?? null,
     showRecord,
     careTeam,
-    traitDiscovery: traitDiscoveryOf(row),
+    traitDiscovery: traitDiscoveryOf(row, includeHiddenTraits === true),
     imageUrl: row.imageUrl ?? null,
     stats: publicStats(row),
     revealedTraits: {

@@ -99,6 +99,7 @@ const OwnerGeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           revealed={traits}
           dormant={classification.dormant}
           hiddenCount={classification.hiddenCount}
+          hidden={classification.hidden}
           glowTokens={glowTokens}
           normalize={normalizeTraitToken}
           onSelect={setSelectedTrait}
@@ -133,6 +134,7 @@ const VisitorGeneticsTab: React.FC<{ visit: HorseVisit }> = ({ visit }) => {
         revealed={discovery.revealed}
         dormant={discovery.dormant}
         hiddenCount={discovery.hiddenCount}
+        hidden={discovery.hidden}
         glowTokens={noGlow}
         normalize={sameToken}
         onSelect={setSelectedTrait}

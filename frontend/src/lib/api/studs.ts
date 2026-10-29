@@ -54,6 +54,8 @@ export interface HorseVisitWholePage {
     negative: VisitTrait[];
     dormant: VisitTrait[];
     hiddenCount: number;
+    /** Still-hidden traits by name: the game owner only (Equoria-w4bvy). */
+    hidden?: VisitTrait[];
   };
   // The rest of the owner's page, read-only (q205; coordinator directive
   // 2026-10-28): each section of the visitor page reads its data from here.

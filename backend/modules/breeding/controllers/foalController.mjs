@@ -31,6 +31,7 @@ import { validationResult } from 'express-validator';
 import { getFoalDevelopment } from '../../horses/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { publicTraitModifiers } from '../../../utils/publicTraitView.mjs';
+import { can } from '../../staff/index.mjs';
 import { computeAgeInWeeks, isFoalByBirthDate } from '../../../utils/foalAgeUtils.mjs';
 import logger from '../../../utils/logger.mjs';
 import AppError from '../../../errors/AppError.mjs';
@@ -125,8 +126,11 @@ export async function getFoalHandler(req, res) {
         userId: foal.userId,
         breedId: foal.breedId,
         bondScore: foal.bondScore,
-        // Unrevealed hidden traits are never named, to anyone (Equoria-6dace).
-        epigeneticModifiers: publicTraitModifiers(foal.epigeneticModifiers),
+        // Unrevealed hidden traits are never named (Equoria-6dace), except to
+        // the game owner (Equoria-w4bvy).
+        epigeneticModifiers: publicTraitModifiers(foal.epigeneticModifiers, {
+          includeHidden: can(req.user, 'traits.hidden.view'),
+        }),
       },
     });
   } catch (error) {

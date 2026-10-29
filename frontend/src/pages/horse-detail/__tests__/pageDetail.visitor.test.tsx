@@ -181,6 +181,33 @@ describe('the horse page in visitor mode is the owner page, read-only', () => {
     expect(screen.queryByText(/Genetic Testing/i)).not.toBeInTheDocument();
   });
 
+  // Equoria-w4bvy: the visit names hidden traits for the game owner only.
+  it("Genetics names hidden traits on Hidden chips when the visit carries them (the game owner's view)", async () => {
+    serve({
+      success: true,
+      data: {
+        ...visit,
+        traitDiscovery: {
+          ...visit.traitDiscovery,
+          hidden: [
+            { key: 'eagerLearner', label: 'Eager Learner', type: 'positive', description: null },
+          ],
+        },
+      },
+    });
+    renderAt('/horses/99');
+    await screen.findByRole('heading', { name: 'Moonrise Sonata' });
+    await openTab('Genetics');
+
+    expect(await screen.findByRole('button', { name: 'Even Tempered' })).toBeInTheDocument();
+    const named = screen.getByTestId('trait-chip-hidden-named');
+    expect(named).toHaveTextContent('Eager Learner');
+    expect(named).toHaveTextContent('Hidden');
+    // Two hidden in all, one named: one unnamed Hidden chip remains.
+    expect(screen.getAllByTestId('trait-chip-hidden')).toHaveLength(1);
+    expect(screen.queryByText(/eagerLearner/)).not.toBeInTheDocument();
+  });
+
   it('Conformation, Gaits and Pedigree render from the visit', async () => {
     serve({ success: true, data: visit });
     renderAt('/horses/99');

@@ -109,6 +109,66 @@ describe('GeneticsTab Trait Discovery chips (q174, q213)', () => {
     expect(screen.queryByText(/rare|common|legendary/i)).toBeNull();
   });
 
+  // Equoria-w4bvy (owner ruling 2026-10-19): the game owner alone is sent the
+  // hidden traits by name. Each is a dark blue Hidden chip with its authored
+  // name and the word "Hidden", never a gold revealed chip, never a code name.
+  it("the game owner's view names each hidden trait on a Hidden chip, apart from the revealed ones", async () => {
+    server.use(
+      http.get(`${base}/api/v1/traits/horse/79`, () =>
+        HttpResponse.json({
+          success: true,
+          data: {
+            traits: {
+              positive: [
+                {
+                  name: 'resilient',
+                  isNew: false,
+                  definition: { label: 'Resilient', type: 'positive', description: 'Steady.' },
+                },
+              ],
+              negative: [],
+              dormant: [],
+              hiddenCount: 2,
+              hidden: [
+                {
+                  name: 'peopleTrusting',
+                  isNew: false,
+                  definition: { label: 'People Trusting', type: 'positive' },
+                },
+                {
+                  name: 'skittish',
+                  isNew: false,
+                  definition: { label: 'Skittish', type: 'negative' },
+                },
+              ],
+            },
+          },
+        })
+      )
+    );
+    renderTab();
+
+    const list = await screen.findByRole('list', { name: 'Traits carried' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(3);
+    expect(within(list).getByRole('button', { name: 'Resilient' })).toHaveClass(
+      'trait-chip--revealed'
+    );
+
+    const named = screen.getAllByTestId('trait-chip-hidden-named');
+    expect(named.map((chip) => chip.textContent)).toEqual([
+      'People TrustingHidden',
+      'SkittishHidden',
+    ]);
+    for (const chip of named) {
+      expect(chip).toHaveClass('trait-chip--hidden');
+      expect(chip).not.toHaveClass('trait-chip--revealed');
+    }
+    // Both hidden traits are named, so no unnamed placeholder is added.
+    expect(screen.queryAllByTestId('trait-chip-hidden')).toHaveLength(0);
+    expect(within(list).queryByRole('button', { name: /People Trusting|Skittish/ })).toBeNull();
+    expect(screen.queryByText(/peopleTrusting/)).toBeNull();
+  });
+
   it('opens the detail of a revealed trait from its gold chip', async () => {
     stubTraits();
     renderTab();

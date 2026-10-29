@@ -18,6 +18,7 @@ import {
   visibleTraitKeys,
 } from '../../../utils/publicTraitView.mjs';
 import { markTraitsSeen, seenTraitKeys } from '../services/traitSeenService.mjs';
+import { can } from '../../staff/index.mjs';
 
 /**
  * GET /api/traits/horse/:horseId
@@ -65,8 +66,10 @@ export async function getHorseTraits(req, res) {
     }
 
     // Visible traits with definitions; unrevealed hidden traits are a count
-    // only, never named, to anyone (Equoria-6dace).
-    const traits = publicTraitModifiers(horse.epigeneticModifiers);
+    // only, never named (Equoria-6dace), except to the game owner, who also
+    // gets them by name in a separate `hidden` bucket (Equoria-w4bvy).
+    const seesHidden = can(req.user, 'traits.hidden.view');
+    const traits = publicTraitModifiers(horse.epigeneticModifiers, { includeHidden: seesHidden });
     // First-view glow (Equoria-lylhb): a revealed trait is `isNew` until this
     // viewer's private seen marker covers it. Never set for a hidden trait,
     // which is not in this list at all.
@@ -94,6 +97,14 @@ export async function getHorseTraits(req, res) {
       })),
       hiddenCount: traits.hiddenCount,
     };
+    if (seesHidden) {
+      // Hidden traits never glow: they have not been revealed to anyone.
+      // The response guard marks the owner's responses private, no-store.
+      enhancedTraits.hidden = traits.hidden.map(trait => ({
+        ...withDefinition(trait),
+        isNew: false,
+      }));
+    }
     const visibleCount =
       enhancedTraits.positive.length +
       enhancedTraits.negative.length +

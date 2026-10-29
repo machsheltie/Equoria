@@ -92,3 +92,8 @@ button.trait-chip:focus-visible {
 .trait-discovery__quiet {
   color: var(--text-secondary);
 }
+
+/* The owner's named hidden chip (Equoria-w4bvy): "Hidden" stays readable on the dark blue. */
+.trait-chip--hidden .trait-chip__state {
+  color: var(--text-secondary);
+}
