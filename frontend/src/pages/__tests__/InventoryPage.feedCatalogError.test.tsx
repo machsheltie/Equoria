@@ -23,8 +23,8 @@ import type { InventoryItem, FeedItem } from '@/lib/api-client';
 import InventoryPage from '../InventoryPage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const INVENTORY_PATH = `${base}/api/v1/inventory`;
-const FEED_CATALOG_PATH = `${base}/api/v1/feed-shop/catalog`;
+const inventoryPath = `${base}/api/v1/inventory`;
+const feedCatalogPath = `${base}/api/v1/feed-shop/catalog`;
 
 const feedItem: InventoryItem = {
   id: 'inv-feed-1',
@@ -60,7 +60,7 @@ const catalog: FeedItem[] = [
 
 function stubInventory(items: InventoryItem[]) {
   server.use(
-    http.get(INVENTORY_PATH, () =>
+    http.get(inventoryPath, () =>
       HttpResponse.json({
         success: true,
         message: 'Inventory retrieved successfully',
@@ -72,7 +72,7 @@ function stubInventory(items: InventoryItem[]) {
 
 function stubCatalogFailure() {
   server.use(
-    http.get(FEED_CATALOG_PATH, () =>
+    http.get(feedCatalogPath, () =>
       HttpResponse.json({ success: false, message: 'Server error' }, { status: 500 })
     )
   );
@@ -80,7 +80,7 @@ function stubCatalogFailure() {
 
 function stubCatalog(items: FeedItem[]) {
   server.use(
-    http.get(FEED_CATALOG_PATH, () =>
+    http.get(feedCatalogPath, () =>
       HttpResponse.json({ success: true, message: 'Feed catalog retrieved', data: items })
     )
   );
