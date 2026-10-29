@@ -23,7 +23,9 @@ import { handleUnpaidRiders } from '../services/riderUnpaidService.mjs';
 
 const PREFIX = 'TestFixture-riderArrears';
 const tag = () => randomBytes(4).toString('hex');
-// Wednesday 2032-03-03 -> pay week Monday 2032-03-01.
+// Owner ruling 2026-10-29 (q268, Equoria-hc96y): the pay week ends Sunday midnight Eastern,
+// so it starts on Sunday. Old contract: the pay week started on Monday.
+// Wednesday 2032-03-03 -> pay week Sunday 2032-02-29.
 const week1 = new Date('2032-03-03T15:00:00Z');
 const week2 = new Date('2032-03-10T15:00:00Z');
 const week3 = new Date('2032-03-17T15:00:00Z');
@@ -111,7 +113,7 @@ describe('rider owed weeks: a missed week is collected with the next payday', ()
     expect(await moneyOf(user.id)).toBe(600);
     expect(await rows(user.id, 'missed')).toHaveLength(0);
     const settled = await rows(user.id, 'arrearsSettled');
-    expect(settled.map(r => [r.riderId, r.amount, r.weekKey])).toEqual([[rider.id, 200, '2032-03-01']]);
+    expect(settled.map(r => [r.riderId, r.amount, r.weekKey])).toEqual([[rider.id, 200, '2032-02-29']]);
     expect(await rows(user.id, 'paid')).toHaveLength(1);
 
     // the settled week is never collected again
@@ -158,7 +160,7 @@ describe('rider owed weeks: a missed week is collected with the next payday', ()
         riderId: rider.id,
         userId: user.id,
         amount: 200,
-        weekKey: '2032-03-01',
+        weekKey: '2032-02-29',
         paymentDate: getRiderPayWeekStart(week1),
         status: 'missed',
       },
@@ -168,7 +170,7 @@ describe('rider owed weeks: a missed week is collected with the next payday', ()
 
     expect(await moneyOf(user.id)).toBe(250);
     expect(await rows(user.id, 'paid')).toHaveLength(0);
-    expect((await rows(user.id, 'missed')).map(r => r.weekKey)).toEqual(['2032-03-01', '2032-03-08']);
+    expect((await rows(user.id, 'missed')).map(r => r.weekKey)).toEqual(['2032-02-29', '2032-03-07']);
     const after = await prisma.rider.findUnique({ where: { id: rider.id } });
     expect(after.retired).toBe(false);
     expect(after.feeUnpaidSince).toEqual(getRiderPayWeekStart(week2));

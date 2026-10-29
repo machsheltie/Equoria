@@ -38,19 +38,19 @@ export const MAX_HORSES_PER_GROOM = 20;
  * is why this needed no schema change.
  *
  * A row leaves the owed set exactly once, in one of two ways:
- *   ARREARS_SETTLED_STATUS     — collected with a later week's fee, in that week's
+ *   arrearsSettledStatus     — collected with a later week's fee, in that week's
  *                                single debit. The row is never collected twice.
- *   ARREARS_WRITTEN_OFF_STATUS — the groom was released to the grooms-for-hire pool
+ *   arrearsWrittenOffStatus — the groom was released to the grooms-for-hire pool
  *                                for a full unpaid week. Losing the groom IS the
  *                                penalty; a debt for a groom the player no longer
  *                                has would be charging them for nothing.
  */
-export const ARREARS_OWED_STATUSES = Object.freeze([
+export const arrearsOwedStatuses = Object.freeze([
   'missedInsufficientFunds',
   'missedCollectionError',
 ]);
-export const ARREARS_SETTLED_STATUS = 'arrearsSettled';
-export const ARREARS_WRITTEN_OFF_STATUS = 'arrearsWrittenOff';
+export const arrearsSettledStatus = 'arrearsSettled';
+export const arrearsWrittenOffStatus = 'arrearsWrittenOff';
 
 /**
  * The weekly fee for ONE groom on a player's staff. Owner ruling 2026-10-28 (q228,
@@ -199,9 +199,9 @@ export function atCapacityMessage(groomName) {
 export default {
   acquireGroomRosterLockTx,
   MAX_HORSES_PER_GROOM,
-  ARREARS_OWED_STATUSES,
-  ARREARS_SETTLED_STATUS,
-  ARREARS_WRITTEN_OFF_STATUS,
+  arrearsOwedStatuses,
+  arrearsSettledStatus,
+  arrearsWrittenOffStatus,
   calculateWeeklyFee,
   countActiveAssignments,
   assertGroomHasRoomForAnotherHorse,

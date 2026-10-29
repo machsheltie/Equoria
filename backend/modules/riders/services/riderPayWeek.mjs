@@ -1,5 +1,5 @@
 /**
- * The rider pay week (owner ruling 2026-10-27, q111): the Eastern (game-clock) Monday
+ * The rider pay week (owner ruling 2026-10-27, q111): the Eastern (game-clock) Sunday
  * that starts it, same as the groom pay week. One definition, shared by the weekly pass,
  * the hire charge and the unpaid-week handling.
  */
@@ -12,10 +12,13 @@ import {
 } from '../../../utils/gameTime.mjs';
 import { jobNameToLockKey } from '../../../utils/cronLock.mjs';
 
-/** Payday is Monday (0 = Sunday). */
-export const riderPayDay = 1;
+/**
+ * The pay week starts on Sunday (0 = Sunday). Owner ruling 2026-10-29 (q268, Equoria-hc96y):
+ * the week ends Sunday midnight Eastern, as for grooms and the Hall of Fame. Old: Monday.
+ */
+export const riderPayDay = 0;
 
-/** Eastern midnight of the Monday that starts the pay week containing `now`. */
+/** Eastern midnight of the Sunday that starts the pay week containing `now`. */
 export function getRiderPayWeekStart(now = new Date()) {
   return startOfGameWeek(now, riderPayDay);
 }

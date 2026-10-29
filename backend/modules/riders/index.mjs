@@ -10,5 +10,6 @@
  */
 
 export { processWeeklyRiderSalaries } from './services/riderSalaryService.mjs';
+export { settleEndedRiderPayWeek } from './services/riderPlayerPayService.mjs';
 export { processRiderRetirement } from './services/riderRetirementService.mjs';
 export { backfillRiderRetirementSchedules } from './services/riderRetirementBackfillService.mjs';

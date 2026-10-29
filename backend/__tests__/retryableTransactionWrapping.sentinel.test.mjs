@@ -187,6 +187,10 @@ const MIGRATED = [
   // Equoria-x5n89 — signup: the device's account count, the new account and its
   // login sighting commit as one wrapped transaction under the device's lock.
   ['modules/staff/services/deviceAccountLimitService.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-hc96y — Pay Groom / Pay Rider: the player's one-click weekly pay, one wrapped
+  // transaction each (lock, paid-this-week read, debit, paid row).
+  ['modules/grooms/services/groomPlayerPayService.mjs', { wrapped: 1, totalTx: 1 }],
+  ['modules/riders/services/riderPlayerPayService.mjs', { wrapped: 1, totalTx: 1 }],
 ];
 
 // marketplaceController is asserted separately: it has 2 wrapped sites

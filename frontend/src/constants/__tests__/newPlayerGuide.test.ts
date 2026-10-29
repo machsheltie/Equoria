@@ -261,13 +261,16 @@ describe('NEW_PLAYER_GUIDE owner rulings of 2026-10-23 to 2026-10-28', () => {
     expect(joined).toContain('**10 times the entry fee**');
   });
 
-  // Old contract (2026-10-27, q133): the guide promised an automatic Monday payday.
-  // Owner ruling 2026-10-28 (q262/q265, Equoria-hc96y): payday is a player action, and its
-  // due window is still open (q268), so the guide says only that staff are paid each week.
-  it('keeps payday neutral and keeps the rider owed-weeks rule (2026-10-28)', () => {
-    expect(joined).toContain('**Staff are paid each week.**');
+  // Old contract (2026-10-27, q133): the guide promised an automatic Monday payday; then
+  // (2026-10-28) a neutral "Staff are paid each week" while the due window was open.
+  // Owner ruling 2026-10-29 (q268, Equoria-hc96y): players press Pay Groom / Pay Rider any
+  // time during the week; the week ends Sunday midnight Eastern.
+  it('names the Pay Groom / Pay Rider buttons and the Sunday-midnight week end (q268)', () => {
+    expect(joined).toContain('**Pay Groom**');
+    expect(joined).toContain('**Press Pay Rider on the Staff page once a week**');
+    expect(joined).toContain('Sunday midnight (Eastern)');
     expect(joined).toContain('every owed week');
-    expect(joined).not.toMatch(/Monday|payday|Pay Groom|Pay Rider/i);
+    expect(joined).not.toMatch(/Monday|payday/i);
   });
 
   it('never mentions removed features: stress, burnout, weather, forecasts, the Breeding Hall', () => {

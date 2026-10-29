@@ -7,7 +7,7 @@
  * on (userId, groomId, weekKey, paymentType) WHERE status = 'paid'.
  *
  * Asserted here, against the real database:
- *   - a weekly run writes the paid row with weekKey = the Eastern Monday of the pay week;
+ *   - a weekly run writes the paid row with weekKey = the Eastern Sunday of the pay week (q268);
  *   - a second paid row for the same groom, week and type is refused (P2002), whatever its
  *     paymentDate says;
  *   - the same groom can still be paid in a LATER week, and a missed row (a different
@@ -99,7 +99,7 @@ describe('groom_salary_payments weekKey (Equoria-h7518)', () => {
     ...extra,
   });
 
-  it('a weekly run writes the paid row with the Eastern Monday of the pay week as its weekKey', async () => {
+  it('a weekly run writes the paid row with the Eastern Sunday of the pay week as its weekKey (q268; old: Monday)', async () => {
     await setUp();
     const now = new Date();
 

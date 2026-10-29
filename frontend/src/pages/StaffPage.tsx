@@ -6,16 +6,16 @@
  * Academy); this page is for the staff a player already has.
  *
  * What the game actually does, read from the backend and not invented here:
- *  - A groom is paid every Monday morning. When the fee cannot be taken the groom
- *    cannot work that week, and leaves if the next payday is missed as well
- *    (groomFeeArrearsService / groomEngagementService). The weekly fee comes from
- *    GET /groom-salaries/cost, whose breakdown says which grooms are unpaid.
- *  - Riders have the same Monday payday (owner ruling 2026-10-27, q111): an unpaid
- *    rider cannot ride that week and leaves if the next payday is missed too.
- *    `feeUnpaidSince` on the rider row says which. Trainers are paid per
- *    training session, when the player presses Train Horse, so they have no weekly
- *    pay state and none is shown. Leaving warnings are for unpaid grooms and
- *    riders, and only here.
+ *  - Payday is the player's job (owner rulings 2026-10-28; q268, Equoria-hc96y): each
+ *    groom and rider has a Pay button with the fee on it, pressed any time during the
+ *    week. One click pays; the row updates in place, with no receipt or confirm step.
+ *    The week ends Sunday midnight Eastern. A groom or rider left unpaid then cannot
+ *    work or ride until paid, and leaves if the next week ends unpaid as well. Missed
+ *    weeks are owed and are paid with the next press (GET /groom-salaries/pay-status,
+ *    GET /riders/pay-status).
+ *  - Trainers are paid per training session, when the player presses Train Horse, so
+ *    they have no weekly pay state and none is shown. Leaving warnings are for unpaid
+ *    grooms and riders, and only here.
  *
  * Composition: an open roll of names under three headings, separated by rules —
  * no cards, no stat tiles. Staff are fixed characters; no XP is shown.
@@ -25,20 +25,29 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router';
 import { AlertTriangle, CheckCircle2, UsersRound } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserGrooms, useGroomSalaries } from '@/hooks/api/useGrooms';
+import { useUserGrooms } from '@/hooks/api/useGrooms';
 import { useUserRiders } from '@/hooks/api/useRiders';
 import { useUserTrainers } from '@/hooks/api/useTrainers';
+import { useGroomPay, usePayGroom, usePayRider, useRiderPay } from '@/hooks/api/useStaffPay';
+import type { StaffPayLine } from '@/lib/api/staffPay';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { ErrorState, SectionLoading } from '@/components/ui/state';
+import { Button } from '@/components/ui/button';
+import { ErrorState, InlineError, SectionLoading } from '@/components/ui/state';
 import { groomSpecialtyLabel } from '@/lib/groomSpecialtyLabels';
 import StaffLevelStars from '@/components/common/StaffLevelStars';
 import { userMessageFor } from '@/lib/http/userMessage';
+import { actionMessageFor } from '@/lib/http/actionMessage';
 
 function coins(amount: number): string {
   return amount.toLocaleString();
 }
+
+const payRefusalCopy = {
+  insufficientFunds: "Your balance doesn't cover this pay.",
+  alreadyPaid: 'Already paid for this week.',
+};
 
 interface RollProps {
   heading: string;
@@ -92,20 +101,88 @@ function Row({
   );
 }
 
+/**
+ * One groom's or rider's weekly pay: the fee on the button, one click, no receipt.
+ * Disabled once this week is paid or while the balance is short; the fee still shows.
+ */
+function PayAction({
+  label,
+  line,
+  onPay,
+  pending,
+  error,
+  testId,
+  unpaidLabel,
+}: {
+  label: string;
+  line: StaffPayLine;
+  onPay: () => void;
+  pending: boolean;
+  error: unknown;
+  testId: string;
+  unpaidLabel: string;
+}) {
+  return (
+    <>
+      <p className="text-[var(--text-secondary)]">{coins(line.weeklyFee)} coins a week</p>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className="mt-1"
+        onClick={onPay}
+        disabled={line.paidThisWeek || !line.canAfford}
+        pending={pending}
+        data-testid={testId}
+      >
+        {label} · {coins(line.amountDue)} coins
+      </Button>
+      {line.paidThisWeek ? (
+        <p className="mt-1 flex items-center gap-1.5 text-[var(--status-success)] sm:justify-end">
+          <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+          Paid this week
+        </p>
+      ) : line.feeUnpaid ? (
+        <p className="mt-1 flex items-center gap-1.5 font-semibold text-[var(--status-warning)] sm:justify-end">
+          <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+          {unpaidLabel}
+        </p>
+      ) : !line.canAfford ? (
+        <p className="mt-1 text-[var(--text-secondary)]">Not enough coins</p>
+      ) : null}
+      {!line.paidThisWeek && line.amountDue > line.weeklyFee && (
+        <p className="text-xs text-[var(--text-secondary)]">
+          Includes {coins(line.amountDue - line.weeklyFee)} coins owed from earlier weeks
+        </p>
+      )}
+      {error ? (
+        <div className="mt-1">
+          <InlineError message={actionMessageFor(error, {}, payRefusalCopy)} />
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 const StaffPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const userId = user?.id ?? '';
 
   const grooms = useUserGrooms(userId);
-  const salaries = useGroomSalaries();
+  const groomPay = useGroomPay(Boolean(userId));
   const riders = useUserRiders(userId);
+  const riderPay = useRiderPay(Boolean(userId));
   const trainers = useUserTrainers(userId);
+  const payGroom = usePayGroom();
+  const payRider = usePayRider();
 
-  const unpaidFor = (groomId: number) =>
-    salaries.data?.breakdown.find((entry) => entry.groomId === groomId);
+  const groomPayFor = (groomId: number) =>
+    groomPay.data?.grooms.find((entry) => entry.groomId === groomId);
+  const riderPayFor = (riderId: number) =>
+    riderPay.data?.riders.find((entry) => entry.riderId === riderId);
 
-  const leavingSoon = (grooms.data ?? []).filter((groom) => unpaidFor(groom.id)?.feeUnpaid);
+  const leavingSoon = (grooms.data ?? []).filter((groom) => groomPayFor(groom.id)?.feeUnpaid);
   const ridersLeavingSoon = (riders.data ?? []).filter((rider) => Boolean(rider.feeUnpaidSince));
 
   const emptyRoll = (title: string, description: string, label: string, to: string) => (
@@ -115,6 +192,12 @@ const StaffPage: React.FC = () => {
       description={description}
       secondaryAction={{ label, onClick: () => navigate(to) }}
     />
+  );
+
+  const payUnavailable = (pending: boolean) => (
+    <p className="text-[var(--text-secondary)]">
+      {pending ? 'Checking pay…' : 'Pay status unavailable'}
+    </p>
   );
 
   return (
@@ -141,9 +224,9 @@ const StaffPage: React.FC = () => {
                 <span className="font-semibold">
                   {leavingSoon.map((groom) => groom.name).join(', ')}
                 </span>{' '}
-                {leavingSoon.length === 1 ? 'has' : 'have'} not been paid and cannot work this week.{' '}
-                {leavingSoon.length === 1 ? 'This groom leaves' : 'They leave'} your stable if next
-                week&rsquo;s pay is missed too.
+                {leavingSoon.length === 1 ? 'was' : 'were'} not paid last week and cannot work until
+                paid. {leavingSoon.length === 1 ? 'This groom leaves' : 'They leave'} your stable if
+                this week ends unpaid too.
               </p>
             )}
             {ridersLeavingSoon.length > 0 && (
@@ -153,9 +236,9 @@ const StaffPage: React.FC = () => {
                     .map((rider) => rider.name || `${rider.firstName} ${rider.lastName}`)
                     .join(', ')}
                 </span>{' '}
-                {ridersLeavingSoon.length === 1 ? 'has' : 'have'} not been paid and cannot ride this
-                week. {ridersLeavingSoon.length === 1 ? 'This rider leaves' : 'They leave'} your
-                stable if next week&rsquo;s pay is missed too.
+                {ridersLeavingSoon.length === 1 ? 'was' : 'were'} not paid last week and cannot ride
+                until paid. {ridersLeavingSoon.length === 1 ? 'This rider leaves' : 'They leave'}{' '}
+                your stable if this week ends unpaid too.
               </p>
             )}
           </div>
@@ -192,18 +275,17 @@ const StaffPage: React.FC = () => {
             )
           ) : (
             <>
-              {salaries.isError && (
+              {groomPay.isError && (
                 <ErrorState
                   title="Pay status unavailable"
-                  message={userMessageFor(salaries.error).message}
-                  retry={{ label: 'Try Again', onClick: () => void salaries.refetch() }}
+                  message={userMessageFor(groomPay.error).message}
+                  retry={{ label: 'Try Again', onClick: () => void groomPay.refetch() }}
                   focusOnMount={false}
                 />
               )}
               <ul>
                 {grooms.data.map((groom) => {
-                  const pay = unpaidFor(groom.id);
-                  const unpaid = pay?.feeUnpaid === true;
+                  const pay = groomPayFor(groom.id);
                   return (
                     <Row
                       key={groom.id}
@@ -217,32 +299,23 @@ const StaffPage: React.FC = () => {
                       }
                       side={
                         pay ? (
-                          <>
-                            <p className="text-[var(--text-secondary)]">
-                              {coins(pay.weeklyFee)} coins a week
-                            </p>
-                            {unpaid ? (
-                              <p className="inline-flex items-center gap-1.5 font-semibold text-[var(--status-warning)]">
-                                <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-                                Not paid — not working this week
-                              </p>
-                            ) : (
-                              <p className="inline-flex items-center gap-1.5 text-[var(--status-success)]">
-                                <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                                Paid this week
-                              </p>
-                            )}
-                          </>
-                        ) : salaries.isPending ? (
-                          <p className="text-[var(--text-secondary)]">Checking pay…</p>
+                          <PayAction
+                            label="Pay Groom"
+                            line={pay}
+                            onPay={() => payGroom.mutate(groom.id)}
+                            pending={payGroom.isPending && payGroom.variables === groom.id}
+                            error={payGroom.variables === groom.id ? payGroom.error : null}
+                            testId={`pay-groom-${groom.id}`}
+                            unpaidLabel="Not paid — not working until paid"
+                          />
                         ) : (
-                          <p className="text-[var(--text-secondary)]">Pay status unavailable</p>
+                          payUnavailable(groomPay.isPending)
                         )
                       }
                       note={
-                        unpaid ? (
+                        pay?.feeUnpaid ? (
                           <p className="text-sm text-[var(--status-warning)]">
-                            {groom.name} leaves if next week&rsquo;s pay is missed as well.
+                            {groom.name} leaves if this week ends unpaid as well.
                           </p>
                         ) : undefined
                       }
@@ -282,41 +355,51 @@ const StaffPage: React.FC = () => {
               '/riders'
             )
           ) : (
-            <ul>
-              {riders.data.map((rider) => (
-                <Row
-                  key={rider.id}
-                  testId={`staff-rider-${rider.id}`}
-                  name={rider.name || `${rider.firstName} ${rider.lastName}`}
-                  line={<StaffLevelStars level={rider.starLevel} />}
-                  side={
-                    <>
-                      <p className="text-[var(--text-secondary)]">
-                        {coins(rider.weeklyRate)} coins a week
-                      </p>
-                      {rider.feeUnpaidSince ? (
-                        <p className="inline-flex items-center gap-1.5 font-semibold text-[var(--status-warning)]">
-                          <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-                          Not paid — not riding this week
-                        </p>
-                      ) : (
-                        <p className="inline-flex items-center gap-1.5 text-[var(--status-success)]">
-                          <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                          Paid this week
-                        </p>
-                      )}
-                    </>
-                  }
-                  note={
-                    rider.feeUnpaidSince ? (
-                      <p className="text-sm text-[var(--status-warning)]">
-                        {rider.firstName} leaves if next week&rsquo;s pay is missed as well.
-                      </p>
-                    ) : undefined
-                  }
+            <>
+              {riderPay.isError && (
+                <ErrorState
+                  title="Pay status unavailable"
+                  message={userMessageFor(riderPay.error).message}
+                  retry={{ label: 'Try Again', onClick: () => void riderPay.refetch() }}
+                  focusOnMount={false}
                 />
-              ))}
-            </ul>
+              )}
+              <ul>
+                {riders.data.map((rider) => {
+                  const pay = riderPayFor(rider.id);
+                  return (
+                    <Row
+                      key={rider.id}
+                      testId={`staff-rider-${rider.id}`}
+                      name={rider.name || `${rider.firstName} ${rider.lastName}`}
+                      line={<StaffLevelStars level={rider.starLevel} />}
+                      side={
+                        pay ? (
+                          <PayAction
+                            label="Pay Rider"
+                            line={pay}
+                            onPay={() => payRider.mutate(rider.id)}
+                            pending={payRider.isPending && payRider.variables === rider.id}
+                            error={payRider.variables === rider.id ? payRider.error : null}
+                            testId={`pay-rider-${rider.id}`}
+                            unpaidLabel="Not paid — not riding until paid"
+                          />
+                        ) : (
+                          payUnavailable(riderPay.isPending)
+                        )
+                      }
+                      note={
+                        rider.feeUnpaidSince ? (
+                          <p className="text-sm text-[var(--status-warning)]">
+                            {rider.firstName} leaves if this week ends unpaid as well.
+                          </p>
+                        ) : undefined
+                      }
+                    />
+                  );
+                })}
+              </ul>
+            </>
           )}
         </Roll>
 

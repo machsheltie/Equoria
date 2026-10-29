@@ -5,11 +5,15 @@
  */
 
 import express from 'express';
+import { param, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
+import { mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import {
   getUserSalaryCost,
   getCronStatus,
   getSalarySummary,
+  getGroomPayStatusHandler,
+  payGroomHandler,
 } from '../controllers/groomSalaryController.mjs';
 
 const router = express.Router();
@@ -31,6 +35,32 @@ router.get('/cost', getUserSalaryCost);
 
 // GET /history and GET /groom/:groomId/salary were removed with the duplicate
 // lookups (owner ruling 2026-10-28, q151, Equoria-a7f1p): the Staff page reads GET /groom-salaries/cost.
+
+/**
+ * GET /api/groom-salaries/pay-status
+ * This week's pay for each groom on staff: fee, paid or not, what Pay Groom takes.
+ */
+router.get('/pay-status', getGroomPayStatusHandler);
+
+/**
+ * POST /api/groom-salaries/grooms/:groomId/pay
+ * Pay Groom (owner ruling 2026-10-28; q268, Equoria-hc96y): payday is a player action.
+ */
+router.post(
+  '/grooms/:groomId/pay',
+  mutationRateLimiter,
+  param('groomId').isInt({ min: 1 }).withMessage('groomId must be a positive integer'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Validation failed', errors: errors.array() });
+    }
+    return next();
+  },
+  payGroomHandler,
+);
 
 /**
  * GET /api/groom-salaries/status

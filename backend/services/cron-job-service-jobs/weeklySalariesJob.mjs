@@ -1,65 +1,47 @@
 /**
- * Weekly salary processing job descriptor (Equoria-1j167 cronJobService split).
+ * Weekly staff pay-week end (Equoria-hc96y; registry entry consumed by
+ * initializeCronJobs() in cronJobService.mjs).
  *
- * Registry entry consumed by initializeCronJobs() in cronJobService.mjs.
- * Behaviour identical to the pre-split inline `cron.schedule('0 9 * * 1', ...)`:
- * Every Monday 09:00 Eastern, advisory-locked under 'cronJobService:weeklySalaries'.
+ * Owner rulings 2026-10-28 (q262/q265 notes) and 2026-10-29 (q268): payday is a player
+ * action — the player presses Pay Groom / Pay Rider any time during the week — and the
+ * week ends Sunday midnight Eastern, then the unpaid rules apply. So this job TAKES NO
+ * MONEY. Just after Sunday 00:00 Eastern it settles the pay week that has just ended:
+ * every groom or rider left unpaid for it gets the existing consequence (the week is
+ * owed and they cannot work or ride until paid; one already unpaid for an earlier week
+ * leaves for the hiring pool).
  *
- * `runSalaryProcessing` stays the work function (also re-exported by
- * cronJobService.mjs as the manual triggerSalaryProcessing path's impl is a
- * sibling that calls processWeeklySalaries directly).
+ * Old contract: every Monday 09:00 Eastern this job took every groom's and rider's
+ * weekly pay from the player automatically. The owner's manual groom payday (q262,
+ * POST /api/v1/staff/payroll/grooms/run behind the emailed staff check-in) is unchanged.
+ *
+ * The job name and lock key are kept so the heartbeat history and health checks carry on.
  */
 
 import logger from '../../utils/logger.mjs';
-import { processWeeklySalaries } from '../../modules/grooms/index.mjs';
-import { processWeeklyRiderSalaries } from '../../modules/riders/index.mjs';
+import { settleEndedGroomPayWeek } from '../../modules/grooms/index.mjs';
+import { settleEndedRiderPayWeek } from '../../modules/riders/index.mjs';
 
-/**
- * Run weekly salary processing
- */
+/** Settle the pay week that has just ended, for grooms and then riders. */
 export async function runSalaryProcessing() {
+  // Each pass in its own try, so a groom-pass failure never skips the riders, nor the reverse.
   try {
-    logger.info('[cronJobService] Starting weekly salary processing...');
-
-    const results = await processWeeklySalaries();
-
-    logger.info(
-      `[cronJobService] Weekly salary processing completed. Results: ${JSON.stringify(results)}`,
-    );
-
-    // Log summary
-    if (results.successful > 0) {
-      logger.info(
-        `[cronJobService] Successfully processed $${results.totalAmount} in salaries for ${results.successful} users`,
-      );
-    }
-
-    if (results.failed > 0) {
-      logger.warn(`[cronJobService] Failed to process salaries for ${results.failed} users`);
-      results.errors.forEach(error => {
-        logger.warn(`[cronJobService] Salary processing error: ${error}`);
-      });
-    }
+    const results = await settleEndedGroomPayWeek();
+    logger.info(`[cronJobService] Groom pay week settled: ${JSON.stringify(results)}`);
   } catch (error) {
-    logger.error(`[cronJobService] Error in weekly salary processing: ${error.message}`);
+    logger.error(`[cronJobService] Error settling the groom pay week: ${error.message}`);
   }
-
-  // Owner ruling 2026-10-27 (q111, Equoria-gafyt): riders have the same Monday payday.
-  // Its own try, so a groom-pass failure never skips the riders, nor the reverse.
   try {
-    const riderResults = await processWeeklyRiderSalaries();
-    logger.info(
-      `[cronJobService] Weekly rider pay completed. Results: ${JSON.stringify(riderResults)}`,
-    );
+    const results = await settleEndedRiderPayWeek();
+    logger.info(`[cronJobService] Rider pay week settled: ${JSON.stringify(results)}`);
   } catch (error) {
-    logger.error(`[cronJobService] Error in weekly rider pay: ${error.message}`);
+    logger.error(`[cronJobService] Error settling the rider pay week: ${error.message}`);
   }
 }
 
 export default Object.freeze({
   jobName: 'weeklySalaries',
-  // Every Monday at 09:00 Eastern.
-  schedule: '0 9 * * 1',
+  // Sunday 00:05 Eastern: five minutes after the pay week ends at Sunday midnight.
+  schedule: '5 0 * * 0',
   lockKey: 'cronJobService:weeklySalaries',
   // Heartbeat staleness budget (Equoria-cmw85.9): 168h period + 24h tolerance, as the primary registry.
   staleAfterMs: 192 * 60 * 60 * 1000,

@@ -28,7 +28,9 @@ import { getRiderPayWeekStart, riderPayWeekKey } from '../services/riderPayWeek.
 
 const PREFIX = 'TestFixture-gafyt';
 const tag = () => randomBytes(4).toString('hex');
-// Wednesday 2031-03-05 -> pay week Monday 2031-03-03; the next pay week starts 2031-03-10.
+// Owner ruling 2026-10-29 (q268, Equoria-hc96y): the pay week ends Sunday midnight Eastern,
+// so it starts on Sunday. Old contract: the pay week started on Monday.
+// Wednesday 2031-03-05 -> pay week Sunday 2031-03-02; the next pay week starts 2031-03-09.
 const week1 = new Date('2031-03-05T15:00:00Z');
 const week2 = new Date('2031-03-12T15:00:00Z');
 const week3 = new Date('2031-03-19T15:00:00Z');
@@ -137,8 +139,8 @@ describe('rider payday: the weekly rate is taken once a pay week', () => {
     const paid = await rows(user.id, { status: 'paid' });
     expect(paid.map(r => [r.riderId, r.amount, r.weekKey]).sort()).toEqual(
       [
-        [a.id, 200, '2031-03-03'],
-        [b.id, 300, '2031-03-03'],
+        [a.id, 200, '2031-03-02'],
+        [b.id, 300, '2031-03-02'],
       ].sort(),
     );
   });

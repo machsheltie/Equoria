@@ -234,7 +234,7 @@ export const guideSectionsStart: readonly GuideSection[] = [
       },
       {
         kind: 'paragraph',
-        text: '**One weekly fee per groom.** Each groom costs one weekly fee at their star level, however many horses they look after, up to 20. Hiring pays the first week. Staff are paid each week.',
+        text: '**One weekly fee per groom.** Each groom costs one weekly fee at their star level, however many horses they look after, up to 20. Hiring pays the first week. After that, press **Pay Groom** on the Staff page once a week, any time before the week ends at Sunday midnight (Eastern). A groom left unpaid cannot work until paid, and leaves if the next week ends unpaid too.',
       },
     ],
   },
@@ -280,7 +280,7 @@ export const guideSectionsStart: readonly GuideSection[] = [
         kind: 'list',
         items: [
           "Hire riders from **Riders** in the Marketplace. Each rider's weekly fee comes from their star level, and you're charged **one week at a time**, never weeks in advance. Hiring pays the first week.",
-          "**Staff are paid each week.** A rider whose pay is owed can't ride in shows until every owed week is paid.",
+          "**Press Pay Rider on the Staff page once a week**, any time before the week ends at Sunday midnight (Eastern). A rider whose pay is owed can't ride in shows until every owed week is paid, and leaves if the next week ends unpaid too.",
           '**A horse needs an assigned rider to enter a ridden show**, and the rider must be on your staff.',
           '**Each rider can ride up to 20 horses.**',
           'Some riders suit a horse better than others, and a good pairing helps the score a little.',

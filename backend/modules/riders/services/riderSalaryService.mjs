@@ -1,8 +1,12 @@
 /**
  * Rider weekly pay (owner ruling 2026-10-27, q111; Equoria-gafyt): "Riders, yes."
  *
- * Every Monday (Eastern) each hired rider's weekly rate (`Rider.weeklyRate`, the same
- * figure charged at hire) is taken from the employing player. A rider whose pay cannot
+ * Owner rulings 2026-10-28 and 2026-10-29 (q268, Equoria-hc96y): payday is a player
+ * action. The player presses Pay Rider (riderPlayerPayService) any time during the week,
+ * which takes the rider's star price through `collectRiderPayTx` below; nothing is
+ * scheduled to charge riders any more (old contract: every Monday the weekly pass below
+ * took every rider's pay). `processWeeklyRiderSalaries` remains the same collection run
+ * over a whole roster at once, and is no longer scheduled. A rider whose pay cannot
  * be taken cannot ride that week (utils/competitionEntryRules riderRefusal), and leaves
  * after a full unpaid week (riderUnpaidService). Trainers are NOT paid here: a player
  * pays a trainer per horse each time they press Train Horse.
@@ -28,6 +32,7 @@ import { debitMoneyOrThrow, InsufficientFundsError } from '../../economy/index.m
 import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
 import {
   acquireRiderPayWeekLockTx,
+  getRiderPayWeekEnd,
   getRiderPayWeekStart,
   riderPayWeekKey,
 } from './riderPayWeek.mjs';
@@ -39,6 +44,99 @@ import {
 
 // The economy module's burn sink, whose constant name is snake-case (ratchet): its value.
 const burnAccount = 'burn';
+
+/**
+ * Take this week's pay for some of one player's riders, inside the caller's transaction.
+ *
+ * Shared by the weekly pass below and the player's Pay Rider button (owner ruling
+ * 2026-10-28; q268, Equoria-hc96y), so money moves by one definition: the per-(user, pay
+ * week) advisory lock first, the paid-this-week read, this week plus every owed week in
+ * ONE debit (q142), the paid rows, and the unpaid marker cleared.
+ *
+ * A rider counts as paid for the week when it has a 'paid' row with this week's key OR
+ * dated inside the week: rows written before the pay week moved from Monday to Sunday
+ * carry the old Monday key, and must not let the same week be charged twice.
+ *
+ * Throws `InsufficientFundsError` when the wallet cannot cover the whole amount; nothing
+ * is taken. `state.unpaid` is set to the riders still unpaid for the week.
+ *
+ * @param {Object} tx
+ * @param {{userId: string, username: string, riders: Array, payWeekStart: Date, now: Date,
+ *   state?: {unpaid?: Array}}} params - each rider carries its star-level `weeklyRate`
+ * @returns {Promise<{skipped: boolean, amount: number}>}
+ */
+export async function collectRiderPayTx(tx, params) {
+  const { userId, username, riders, payWeekStart, now, state = {} } = params;
+  const weekKey = riderPayWeekKey(payWeekStart);
+  const payWeekEnd = getRiderPayWeekEnd(payWeekStart);
+  await acquireRiderPayWeekLockTx(tx, userId, payWeekStart);
+  const paidRows = await tx.riderSalaryPayment.findMany({
+    where: {
+      userId,
+      status: 'paid',
+      riderId: { in: riders.map(r => r.id) },
+      OR: [{ weekKey }, { paymentDate: { gte: payWeekStart, lt: payWeekEnd } }],
+    },
+    select: { riderId: true },
+  });
+  const paidIds = new Set(paidRows.map(row => row.riderId));
+  const unpaid = riders.filter(r => !paidIds.has(r.id));
+  state.unpaid = unpaid;
+  if (unpaid.length === 0) {
+    return { skipped: true, amount: 0 };
+  }
+  const total = unpaid.reduce((sum, r) => sum + r.weeklyRate, 0);
+  // Earlier weeks these riders still owe. A missed row is dated with its own pay week's
+  // start, so `lt: payWeekStart` can never pick up this week.
+  const owedRows = await tx.riderSalaryPayment.findMany({
+    where: {
+      userId,
+      status: riderArrearsOwedStatus,
+      riderId: { in: unpaid.map(r => r.id) },
+      paymentDate: { lt: payWeekStart },
+    },
+    select: { id: true, amount: true },
+  });
+  const owedTotal = owedRows.reduce((sum, row) => sum + row.amount, 0);
+  // Owed weeks first (owner q142): this week plus the debt in ONE debit. If the wallet
+  // cannot cover all of it nothing is taken (InsufficientFundsError).
+  if (total + owedTotal > 0) {
+    await debitMoneyOrThrow(tx, {
+      userId,
+      amount: total + owedTotal,
+      systemAccount: burnAccount,
+      category: 'riderSalaryBurn',
+      description: `Rider weekly pay: user ${username}`,
+      metadata: {
+        riderCount: unpaid.length,
+        totalSalary: total,
+        arrears: owedTotal,
+        payWeekStart: payWeekStart.toISOString(),
+      },
+    });
+  }
+  if (owedRows.length > 0) {
+    await tx.riderSalaryPayment.updateMany({
+      where: { id: { in: owedRows.map(row => row.id) } },
+      data: { status: riderArrearsSettledStatus },
+    });
+  }
+  await tx.riderSalaryPayment.createMany({
+    data: unpaid.map(r => ({
+      riderId: r.id,
+      userId,
+      amount: r.weeklyRate,
+      weekKey,
+      paymentDate: now,
+      status: 'paid',
+    })),
+  });
+  await tx.rider.updateMany({
+    where: { id: { in: unpaid.map(r => r.id) }, feeUnpaidSince: { not: null } },
+    data: { feeUnpaidSince: null },
+  });
+  return { skipped: false, amount: total + owedTotal };
+}
 
 /**
  * Take this week's pay for every hired rider.
@@ -64,7 +162,6 @@ export async function processWeeklyRiderSalaries(
   };
   try {
     const payWeekStart = getRiderPayWeekStart(now);
-    const weekKey = riderPayWeekKey(payWeekStart);
     const where = { userId: { not: null }, retired: false };
     if (scopeUserId) {
       where.userId = scopeUserId;
@@ -95,74 +192,18 @@ export async function processWeeklyRiderSalaries(
 
     for (const [userId, riders] of byUser) {
       results.processed++;
-      let unpaid = riders;
+      const collected = { unpaid: riders };
       try {
         const outcome = await prisma.$transaction(
-          async tx => {
-            await acquireRiderPayWeekLockTx(tx, userId, payWeekStart);
-            const paidRows = await tx.riderSalaryPayment.findMany({
-              where: { userId, weekKey, status: 'paid', riderId: { in: riders.map(r => r.id) } },
-              select: { riderId: true },
-            });
-            const paidIds = new Set(paidRows.map(row => row.riderId));
-            unpaid = riders.filter(r => !paidIds.has(r.id));
-            if (unpaid.length === 0) {
-              return { skipped: true, amount: 0 };
-            }
-            const total = unpaid.reduce((sum, r) => sum + r.weeklyRate, 0);
-            // Earlier weeks these riders still owe. A missed row is dated with its own
-            // pay week's Monday, so `lt: payWeekStart` can never pick up this week.
-            const owedRows = await tx.riderSalaryPayment.findMany({
-              where: {
-                userId,
-                status: riderArrearsOwedStatus,
-                riderId: { in: unpaid.map(r => r.id) },
-                paymentDate: { lt: payWeekStart },
-              },
-              select: { id: true, amount: true },
-            });
-            const owedTotal = owedRows.reduce((sum, row) => sum + row.amount, 0);
-            // Owed weeks first (owner q142): this week plus the debt in ONE debit. If the
-            // wallet cannot cover all of it nothing is taken (InsufficientFundsError), the
-            // week is missed, and the rider cannot ride.
-            const arrearsSettledNow = owedRows.length > 0;
-            if (total + owedTotal > 0) {
-              await debitMoneyOrThrow(tx, {
-                userId,
-                amount: total + owedTotal,
-                systemAccount: burnAccount,
-                category: 'riderSalaryBurn',
-                description: `Rider weekly pay: user ${riders[0].user?.username ?? userId}`,
-                metadata: {
-                  riderCount: unpaid.length,
-                  totalSalary: total,
-                  arrears: owedTotal,
-                  payWeekStart: payWeekStart.toISOString(),
-                },
-              });
-            }
-            if (arrearsSettledNow && owedRows.length > 0) {
-              await tx.riderSalaryPayment.updateMany({
-                where: { id: { in: owedRows.map(row => row.id) } },
-                data: { status: riderArrearsSettledStatus },
-              });
-            }
-            await tx.riderSalaryPayment.createMany({
-              data: unpaid.map(r => ({
-                riderId: r.id,
-                userId,
-                amount: r.weeklyRate,
-                weekKey,
-                paymentDate: now,
-                status: 'paid',
-              })),
-            });
-            await tx.rider.updateMany({
-              where: { id: { in: unpaid.map(r => r.id) }, feeUnpaidSince: { not: null } },
-              data: { feeUnpaidSince: null },
-            });
-            return { skipped: false, amount: total + (arrearsSettledNow ? owedTotal : 0) };
-          },
+          tx =>
+            collectRiderPayTx(tx, {
+              userId,
+              username: riders[0].user?.username ?? userId,
+              riders,
+              payWeekStart,
+              now,
+              state: collected,
+            }),
           { timeout: 30000 },
         );
         if (outcome.skipped) {
@@ -179,13 +220,13 @@ export async function processWeeklyRiderSalaries(
         results.failed++;
         if (error instanceof InsufficientFundsError) {
           // The wallet could not cover the whole roster, so none of it was paid.
-          const consequence = await handleUnpaidRiders(userId, unpaid, payWeekStart);
+          const consequence = await handleUnpaidRiders(userId, collected.unpaid, payWeekStart);
           results.graced += consequence.graced;
           results.released += consequence.released;
           results.errors.push(`User ${userId} could not pay this week's rider pay`);
         } else {
           // Our fault, not the player's: nobody rides for free, nobody is released.
-          const consequence = await handleUnpaidRiders(userId, unpaid, payWeekStart, {
+          const consequence = await handleUnpaidRiders(userId, collected.unpaid, payWeekStart, {
             allowLeave: false,
           });
           results.graced += consequence.graced;

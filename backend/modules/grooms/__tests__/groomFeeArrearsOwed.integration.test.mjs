@@ -58,8 +58,8 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import {
   processWeeklySalaries,
   calculateWeeklyFee,
-  ARREARS_SETTLED_STATUS,
-  ARREARS_WRITTEN_OFF_STATUS,
+  arrearsSettledStatus,
+  arrearsWrittenOffStatus,
 } from '../services/groomSalaryService.mjs';
 import { checkGroomMayWork } from '../services/groomEngagementService.mjs';
 import { processRetirement } from '../services/groomRetirementService.mjs';
@@ -221,7 +221,7 @@ describe('Equoria-bgdfb — the missed week is collected with the next one, once
 
     // The owed week is marked settled, so it cannot be collected a second time.
     const settled = await prisma.groomSalaryPayment.findMany({
-      where: { userId: user.id, groomId: groom.id, status: ARREARS_SETTLED_STATUS },
+      where: { userId: user.id, groomId: groom.id, status: arrearsSettledStatus },
     });
     expect(settled).toHaveLength(1);
     expect(settled[0].amount).toBe(ONE_GROOM_FEE);
@@ -294,7 +294,7 @@ describe('Equoria-bgdfb — a debt does not outlive the groom it was owed for', 
     });
     expect(owed).toBe(0);
     const writtenOff = await prisma.groomSalaryPayment.findMany({
-      where: { userId: user.id, groomId: groom.id, status: ARREARS_WRITTEN_OFF_STATUS },
+      where: { userId: user.id, groomId: groom.id, status: arrearsWrittenOffStatus },
     });
     expect(writtenOff).toHaveLength(1);
     expect(writtenOff[0].amount).toBe(ONE_GROOM_FEE);
@@ -365,7 +365,7 @@ describe('Equoria-bgdfb F2 — the debt never blocks the current week', () => {
     expect(await moneyOf(user.id)).toBe(before - ONE_GROOM_FEE * 2);
 
     const settled = await prisma.groomSalaryPayment.findMany({
-      where: { userId: user.id, groomId: groom.id, status: ARREARS_SETTLED_STATUS },
+      where: { userId: user.id, groomId: groom.id, status: arrearsSettledStatus },
     });
     expect(settled).toHaveLength(1);
 
@@ -422,7 +422,7 @@ describe('Equoria-bgdfb F3 — a debt does not outlive the career either', () =>
     expect(owed).toBe(0);
 
     const writtenOff = await prisma.groomSalaryPayment.findMany({
-      where: { userId: user.id, groomId: groom.id, status: ARREARS_WRITTEN_OFF_STATUS },
+      where: { userId: user.id, groomId: groom.id, status: arrearsWrittenOffStatus },
     });
     expect(writtenOff).toHaveLength(1);
     expect(writtenOff[0].amount).toBe(ONE_GROOM_FEE);

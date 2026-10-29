@@ -12,6 +12,8 @@
  *   DELETE /assignments/:id       → remove a rider assignment
  *   GET  /:id/discovery           → get rider discovery slots
  *   DELETE /:id/dismiss           → dismiss (retire) a rider
+ *   GET  /pay-status              → this week's pay for each rider (Equoria-hc96y)
+ *   POST /:id/pay                 → Pay Rider (Equoria-hc96y)
  */
 
 import express from 'express';
@@ -36,6 +38,7 @@ import {
   getRiderDiscovery,
   dismissRider,
 } from '../controllers/riderController.mjs';
+import { getRiderPayStatusHandler, payRiderHandler } from '../controllers/riderPayController.mjs';
 // Equoria-jk9oj.2: declare auth at the router that OWNS these mutations rather
 // than inferring it from the authRouter mount comment. Idempotent with the
 // mount-level authenticateToken; the guard travels with the file if re-mounted.
@@ -175,7 +178,25 @@ router.get(
   getUserRiders,
 );
 
+// ── Pay Rider (owner ruling 2026-10-28; q268, Equoria-hc96y) ─────────────────
+
+router.get('/pay-status', getRiderPayStatusHandler);
+
 // ── Per-rider routes ─────────────────────────────────────────────────────────
+
+/**
+ * POST /api/riders/:id/pay
+ * Pay Rider: this week's pay plus every owed week, one click.
+ */
+router.post(
+  '/:id/pay',
+  mutationRateLimiter,
+  [
+    param('id').isInt({ min: 1 }).withMessage('rider id must be a positive integer'),
+    handleValidationErrors,
+  ],
+  payRiderHandler,
+);
 
 /**
  * GET /api/riders/:id/discovery

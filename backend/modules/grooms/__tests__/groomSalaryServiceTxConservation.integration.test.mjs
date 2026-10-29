@@ -217,7 +217,13 @@ describe('groomSalaryService.processWeeklySalaries — code sentinel (Equoria-7r
     const nextAsyncFn = after.indexOf('\nasync function');
     const stops = [nextExport, nextAsyncFn].filter(i => i > -1);
     const fnEnd = stops.length ? Math.min(...stops) : after.length;
-    const body = after.slice(0, fnEnd);
+    // Equoria-hc96y: the per-user collection moved, verbatim, into
+    // groomFeeCollection.mjs (collectGroomFeesTx) so the player's Pay Groom button
+    // shares it; processWeeklySalaries runs it inside its own $transaction. The
+    // checks below read the pass and the collection together, unchanged.
+    expect(after.slice(0, fnEnd)).toMatch(/collectGroomFeesTx\(tx,/);
+    const collectionSource = readFileSync(resolve(__dirname, '..', 'services', 'groomFeeCollection.mjs'), 'utf8');
+    const body = after.slice(0, fnEnd) + collectionSource;
 
     // (1) Per-user processing must be wrapped in a $transaction
     expect(body).toMatch(/prisma\.\$transaction\(\s*\n?\s*async\s+tx\s*=>/);
@@ -232,7 +238,8 @@ describe('groomSalaryService.processWeeklySalaries — code sentinel (Equoria-7r
     //     separate creditSystemAccount call. Assert the required pairing arg is
     //     present so a regression that drops it (and thus the conservation
     //     pairing) is caught at source level.
-    expect(body).toMatch(/systemAccount:\s*SYSTEM_ACCOUNT_BURN/);
+    // camelCase name of the same 'burn' account (Equoria-pjvp8 naming ratchet).
+    expect(body).toMatch(/systemAccount:\s*(SYSTEM_ACCOUNT_BURN|systemAccountBurn)\b/);
     expect(body).toMatch(/category:\s*'groomSalaryBurn'/);
 
     // (4) Must NOT use the historical TOCTOU shape — manual pre-check
@@ -492,7 +499,7 @@ describe('groomSalaryService.processWeeklySalaries — code sentinel positive (E
     // is the check the planted body must fail.)
     expect(planted).not.toMatch(/prisma\.\$transaction\(\s*\n?\s*async\s+tx\s*=>/);
     expect(planted).not.toMatch(/debitMoneyOrThrow\(\s*tx\s*,/);
-    expect(planted).not.toMatch(/systemAccount:\s*SYSTEM_ACCOUNT_BURN/);
+    expect(planted).not.toMatch(/systemAccount:\s*(SYSTEM_ACCOUNT_BURN|systemAccountBurn)\b/);
     // And the TOCTOU shape MUST match (proving the regex fires on the
     // real bug rather than being a placebo)
     expect(planted).toMatch(/user\.money\s*<\s*userGroup\.totalSalary/);

@@ -30,7 +30,7 @@ import {
   createNotificationTx,
   finalizeNotificationAfterCommit,
 } from '../../../utils/notificationService.mjs';
-import { acquireRiderPayWeekLockTx, riderPayWeekKey } from './riderPayWeek.mjs';
+import { acquireRiderPayWeekLockTx, getRiderPayWeekEnd, riderPayWeekKey } from './riderPayWeek.mjs';
 import { returnRiderToPoolTx } from './riderFreeAgentPool.mjs';
 
 /** The player is told this rider cannot ride until the week's pay is taken. */
@@ -51,6 +51,27 @@ export function hasFullUnpaidRiderWeek(feeUnpaidSince, payWeekStart) {
     return false;
   }
   return new Date(feeUnpaidSince).getTime() < payWeekStart.getTime();
+}
+
+/**
+ * Equoria-hc96y: was this rider paid for `payWeekStart`? Read under the pay-week lock, so
+ * a player who pressed Pay Rider while the week-end pass was choosing whom to mark unpaid
+ * is never marked unpaid for the week they paid. Old Monday-keyed rows count by date.
+ */
+async function paidForWeekTx(tx, riderId, userId, payWeekStart) {
+  const row = await tx.riderSalaryPayment.findFirst({
+    where: {
+      riderId,
+      userId,
+      status: 'paid',
+      OR: [
+        { weekKey: riderPayWeekKey(payWeekStart) },
+        { paymentDate: { gte: payWeekStart, lt: getRiderPayWeekEnd(payWeekStart) } },
+      ],
+    },
+    select: { id: true },
+  });
+  return row !== null;
 }
 
 const riderName = rider => `${rider.firstName} ${rider.lastName}`.trim();
@@ -170,8 +191,14 @@ export async function handleUnpaidRiders(userId, unpaid, payWeekStart, { allowLe
       if (allowLeave && hasFullUnpaidRiderWeek(rider.feeUnpaidSince, payWeekStart)) {
         const payload = await prisma.$transaction(async tx => {
           await acquireRiderPayWeekLockTx(tx, userId, payWeekStart);
+          if (await paidForWeekTx(tx, rider.id, userId, payWeekStart)) {
+            return null;
+          }
           return leaveTx(tx, { rider, userId, payWeekStart });
         });
+        if (!payload) {
+          continue;
+        }
         finalizeNotificationAfterCommit(userId, riderReleasedNotificationType, payload);
         outcome.released++;
         logger.warn(
@@ -181,6 +208,9 @@ export async function handleUnpaidRiders(userId, unpaid, payWeekStart, { allowLe
       }
       const payload = await prisma.$transaction(async tx => {
         await acquireRiderPayWeekLockTx(tx, userId, payWeekStart);
+        if (await paidForWeekTx(tx, rider.id, userId, payWeekStart)) {
+          return null;
+        }
         return graceTx(tx, { rider, userId, payWeekStart, allowLeave });
       });
       if (payload) {

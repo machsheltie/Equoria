@@ -15,9 +15,9 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { finalizeNotificationAfterCommit } from '../../../utils/notificationService.mjs';
-import { gameDateKey } from '../../../utils/gameTime.mjs';
+import { gameDateKey, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 // Equoria-bgdfb: what an unpaid week becomes, and the two ways it stops being owed.
-import { ARREARS_OWED_STATUSES, ARREARS_WRITTEN_OFF_STATUS } from './groomFeeBasisService.mjs';
+import { arrearsOwedStatuses, arrearsWrittenOffStatus } from './groomFeeBasisService.mjs';
 import {
   ENGAGEMENT_END_REASONS,
   GROOM_FEE_UNPAID_NOTIFICATION_TYPE,
@@ -27,6 +27,26 @@ import {
   hasFullUnpaidWeek,
   releaseGroomTx,
 } from './groomEngagementService.mjs';
+
+/**
+ * Equoria-hc96y: was this groom's fee for `payWeekStart` paid? Read under the pay-week
+ * lock, so a player who pressed Pay Groom while the week-end pass was choosing whom to
+ * mark unpaid is never marked unpaid for the week they paid.
+ */
+async function paidForWeekTx(tx, groomId, userId, payWeekStart) {
+  const payWeekEnd = startOfGameDayIndex(gameDayIndex(payWeekStart) + 7);
+  const row = await tx.groomSalaryPayment.findFirst({
+    where: {
+      groomId,
+      userId,
+      paymentType: 'weeklySalary',
+      status: 'paid',
+      paymentDate: { gte: payWeekStart, lt: payWeekEnd },
+    },
+    select: { id: true },
+  });
+  return row !== null;
+}
 
 /**
  * The non-payment consequence, per groom. Equoria-ypb7d.3 / Equoria-0aybn.
@@ -103,6 +123,9 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
           // F2: the same lock the payment transaction takes, first, so an
           // overlapping pass for this player cannot interleave with the release.
           await acquirePayWeekLockTx(tx, userId, payWeekStart);
+          if (await paidForWeekTx(tx, groom.id, userId, payWeekStart)) {
+            return null;
+          }
           const result = await releaseGroomTx(tx, {
             groomId: groom.id,
             userId,
@@ -137,12 +160,15 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
               groomId: groom.id,
               userId,
               paymentType: 'weeklySalary',
-              status: { in: [...ARREARS_OWED_STATUSES] },
+              status: { in: [...arrearsOwedStatuses] },
             },
-            data: { status: ARREARS_WRITTEN_OFF_STATUS },
+            data: { status: arrearsWrittenOffStatus },
           });
           return result;
         });
+        if (!released) {
+          continue;
+        }
 
         // Post-commit, in ADR-011 / ADR-007 order: the real-time nudge and the
         // retention prune follow the durable write. Never throws.
@@ -195,6 +221,9 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
         // User row and then claims a Groom row WITHOUT this lock, so a staff-then-User
         // grace transaction could still cycle against it.
         await acquirePayWeekLockTx(tx, userId, payWeekStart);
+        if (await paidForWeekTx(tx, groom.id, userId, payWeekStart)) {
+          return { entered: false, notificationPayload: null };
+        }
 
         if (graceBeginsForThisGroom) {
           await tx.user.updateMany({
@@ -286,7 +315,7 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
  *     groom stays on staff, cannot work, and the audit row records the week.
  *   - RELEASE, as above. (ARREARS is no longer open: Equoria-bgdfb was ruled on
  *     2026-09-14 — "It's owed." The `missedCollectionError` row this writes is in
- *     `ARREARS_OWED_STATUSES`, so the next successful collection takes it along with
+ *     `arrearsOwedStatuses`, so the next successful collection takes it along with
  *     that week's fee. Because this path never releases, its uncollected weeks can
  *     accumulate across weeks — each owed once and settled once, never doubled.)
  *

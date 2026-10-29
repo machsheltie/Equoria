@@ -100,7 +100,7 @@ import {
 // secret, unlike the retirement age above; see groomAgeService.mjs.
 import { groomAgeYears } from './groomAgeService.mjs';
 // Equoria-bgdfb (F3): the arrears vocabulary, so a career ending also ends the debt.
-import { ARREARS_OWED_STATUSES, ARREARS_WRITTEN_OFF_STATUS } from './groomFeeBasisService.mjs';
+import { arrearsOwedStatuses, arrearsWrittenOffStatus } from './groomFeeBasisService.mjs';
 // Equoria-ypb7d.2: retirement CLOSES the engagement (players never own grooms).
 import { ENGAGEMENT_END_REASONS, endEngagementTx } from './groomEngagementService.mjs';
 // Equoria-ypb7d.1: a reporting read over rows retirement already wrote, split out
@@ -395,9 +395,9 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
       where: {
         groomId,
         paymentType: 'weeklySalary',
-        status: { in: [...ARREARS_OWED_STATUSES] },
+        status: { in: [...arrearsOwedStatuses] },
       },
-      data: { status: ARREARS_WRITTEN_OFF_STATUS },
+      data: { status: arrearsWrittenOffStatus },
     });
 
     const retiredGroom = await tx.groom.findUnique({
