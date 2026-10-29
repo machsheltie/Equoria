@@ -17,6 +17,11 @@
 function expandShadesToArray(shadeObj) {
   const arr = [];
   for (const [shade, weight] of Object.entries(shadeObj)) {
+    // Equoria-1fyfa: a shade weighted zero (or less, or not a number) gets no
+    // slot, so it can never be picked; any positive weight keeps at least one.
+    if (!(typeof weight === 'number' && weight > 0)) {
+      continue;
+    }
     const slots = Math.max(1, Math.round(weight * 10));
     for (let i = 0; i < slots; i++) {
       arr.push(shade);
