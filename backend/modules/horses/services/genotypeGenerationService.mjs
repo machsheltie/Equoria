@@ -9,6 +9,13 @@
  * Story: 31E-1a — Genotype Generation Service + Migration
  */
 
+import {
+  allelePairKey,
+  buildDisallowedMap,
+  isDisallowedCombination,
+  isLethalCombination,
+} from './allelePairRules.mjs';
+
 // Core 19 loci always present in generated genotype output.
 // Equoria-26qjf.1: Prl_Pearl + BR1_Brindle1 added so random-generated horses
 // carry these loci even when a breed profile gives them nonzero alleleWeights
@@ -181,6 +188,62 @@ export function sampleWeightedAllele(weights, rng = Math.random) {
 }
 
 /**
+ * Whether a pair may be minted for this locus (Equoria-piiof): not lethal, not
+ * breed-disallowed, and inside the breed's allowedAlleles when it lists any
+ * (compared order-free, so 'Cr/n' matches a breed's 'n/Cr').
+ *
+ * @param {string} locus
+ * @param {string} pair
+ * @param {string[]|undefined} allowed - allowedAlleles[locus]
+ * @param {Object} disallowedMap - buildDisallowedMap() output
+ * @returns {boolean}
+ */
+function isMintable(locus, pair, allowed, disallowedMap) {
+  if (isLethalCombination(locus, pair) || isDisallowedCombination(disallowedMap, locus, pair)) {
+    return false;
+  }
+  if (Array.isArray(allowed) && allowed.length > 0) {
+    return allowed.some(candidate => allelePairKey(candidate) === allelePairKey(pair));
+  }
+  return true;
+}
+
+/**
+ * Sample one pair for a locus from its weights, never a pair that may not be
+ * minted (Equoria-piiof). When every weighted pair is mintable the draw is
+ * exactly sampleWeightedAllele's; otherwise the forbidden pairs are dropped and
+ * the rest keep their relative weights. Null when no weighted pair is mintable.
+ *
+ * @param {string} locus
+ * @param {Object} weights
+ * @param {string[]|undefined} allowed
+ * @param {Object} disallowedMap
+ * @param {Function} rng
+ * @returns {string|null}
+ */
+function sampleMintableAllele(locus, weights, allowed, disallowedMap, rng) {
+  const entries = Object.entries(weights);
+  const mintable = entries.filter(([pair]) => isMintable(locus, pair, allowed, disallowedMap));
+  if (mintable.length === entries.length) {
+    return sampleWeightedAllele(weights, rng);
+  }
+  const usable = mintable.filter(([, weight]) => weight > 0);
+  const total = usable.reduce((sum, [, weight]) => sum + weight, 0);
+  if (usable.length === 0 || !(total > 0)) {
+    return null;
+  }
+  const roll = rng() * total;
+  let cumulative = 0;
+  for (const [pair, weight] of usable) {
+    cumulative += weight;
+    if (roll < cumulative) {
+      return pair;
+    }
+  }
+  return usable[usable.length - 1][0];
+}
+
+/**
  * Generate a complete coat color genotype for a horse given its breed genetic profile.
  * Always includes all 19 CORE_LOCI plus any additional loci present in the breed profile.
  *
@@ -188,6 +251,10 @@ export function sampleWeightedAllele(weights, rng = Math.random) {
  *   1. alleleWeights[locus] present → weighted random sampling
  *   2. allowedAlleles[locus] present (no weights) → first entry (most common by convention)
  *   3. Neither present → GENERIC_DEFAULTS fallback
+ *
+ * Equoria-piiof: a lethal pair, a breed-disallowed pair or a pair outside
+ * allowedAlleles is never minted, whatever its weight. A locus with no mintable
+ * weighted pair falls through to the next rule.
  *
  * No-profile path (Equoria-mvrvb): when breedGeneticProfile is null/undefined,
  * the generic GENERIC_STARTER_WEIGHTS distribution is used so starter / fixture
@@ -215,22 +282,24 @@ export function generateGenotype(breedGeneticProfile, rng = Math.random) {
   const profileLoci = Object.keys(allowedAlleles);
   const allLoci = [...new Set([...CORE_LOCI, ...profileLoci])];
 
+  const disallowedMap = buildDisallowedMap(effectiveProfile);
   const genotype = {};
 
   for (const locus of allLoci) {
     const weights = alleleWeights[locus];
     const allowed = allowedAlleles[locus];
 
-    if (weights && Object.keys(weights).length > 0) {
-      // Weighted sampling from breed-specific distribution
-      genotype[locus] = sampleWeightedAllele(weights, rng);
-    } else if (allowed && allowed.length > 0) {
-      // Equal-weight fallback: first entry is most common by convention
-      genotype[locus] = allowed[0];
-    } else {
-      // Unknown locus with no breed data: use generic default
-      genotype[locus] = GENERIC_DEFAULTS[locus] ?? 'n/n';
-    }
+    // Weighted sampling from breed-specific distribution
+    const sampled =
+      weights && typeof weights === 'object' && Object.keys(weights).length > 0
+        ? sampleMintableAllele(locus, weights, allowed, disallowedMap, rng)
+        : null;
+    // Equal-weight fallback: first mintable entry is most common by convention
+    const firstAllowed = Array.isArray(allowed)
+      ? allowed.find(pair => isMintable(locus, pair, allowed, disallowedMap))
+      : undefined;
+    // Unknown locus with no breed data: use generic default
+    genotype[locus] = sampled ?? firstAllowed ?? GENERIC_DEFAULTS[locus] ?? 'n/n';
   }
 
   return genotype;

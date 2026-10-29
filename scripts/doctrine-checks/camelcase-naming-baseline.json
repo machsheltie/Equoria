@@ -548,7 +548,7 @@
   "backend/modules/horses/index.mjs": 3,
   "backend/modules/horses/routes/_validators.mjs": 2,
   "backend/modules/horses/routes/horseFoalRoutes.mjs": 2,
-  "backend/modules/horses/services/breedingColorInheritanceService.mjs": 10,
+  "backend/modules/horses/services/breedingColorInheritanceService.mjs": 9,
   "backend/modules/horses/services/breedingPairRules.mjs": 4,
   "backend/modules/horses/services/conformationService.mjs": 9,
   "backend/modules/horses/services/foalMilestoneService.mjs": 4,
