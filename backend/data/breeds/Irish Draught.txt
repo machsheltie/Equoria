@@ -61,17 +61,9 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Chestnut": {"light": 0.3, "medium": 0.4, "dark": 0.3},
     "Bay": {"light": 0.3, "standard": 0.4, "dark": 0.3},
     "Black": {"standard": 0.5, "faded": 0.5},
-    "Grulla": {"silver gray": 0.3, "standard": 0.4, "burnished": 0.3},
+    "Grulla": {"silver grey": 0.3, "standard": 0.4, "burnished": 0.3},
     "Red Dun": {"strawberry": 0.4, "medium": 0.3, "dark red": 0.3},
     "Bay Dun": {"light": 0.3, "standard": 0.4, "dark": 0.3},
-    "Steel Gray": {"steel": 1.0},
-    "Rose Gray": {"rose": 1.0},
-    "Steel Dark Dapple Gray": {"steel dapple": 1.0},
-    "Rose Dark Dapple Gray": {"rose dapple": 1.0},
-    "Steel Light Dapple Gray": {"light steel dapple": 1.0},
-    "Rose Light Dapple Gray": {"light rose dapple": 1.0},
-    "White Gray": {"white gray": 1.0},
-    "Fleabitten Gray": {"fleabitten": 1.0},
     "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
   },
   "advancedMarkingsBias": {

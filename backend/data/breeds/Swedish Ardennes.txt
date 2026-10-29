@@ -173,45 +173,8 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "standard": 0.5,
       "faded": 0.5
     },
-    "Red Roan": {
-      "rose": 0.5,
-      "cherry": 0.3,
-      "rust": 0.2
-    },
-    "Blue Roan": {
-      "steel": 0.4,
-      "cool gray": 0.4,
-      "charcoal": 0.2
-    },
-    "Strawberry Roan": {
-      "pinkish": 0.4,
-      "amber": 0.4,
-      "wine": 0.2
-    },
-    "Steel Gray": {
-      "steel": 1
-    },
-    "Rose Gray": {
-      "rose": 1
-    },
-    "Steel Dark Dapple Gray": {
-      "steel dapple": 1
-    },
-    "Rose Dark Dapple Gray": {
-      "rose dapple": 1
-    },
-    "Steel Light Dapple Gray": {
-      "light steel dapple": 1
-    },
-    "Rose Light Dapple Gray": {
-      "light rose dapple": 1
-    },
-    "White Gray": {
-      "white gray": 1
-    },
-    "Fleabitten Gray": {
-      "fleabitten": 1
-    },
+    "Red Roan": {"rose": 0.25, "cherry": 0.15, "rust": 0.1, "pinkish": 0.2, "amber": 0.2, "wine": 0.1},
+    "Blue Roan": {"steel": 0.4, "cool grey": 0.4, "charcoal": 0.2},
     "Sparse Mane/Tail": {
       "sparse mane/tail": 1
     }

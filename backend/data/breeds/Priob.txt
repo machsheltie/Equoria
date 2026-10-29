@@ -173,11 +173,7 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "medium": 0.4,
       "dark": 0.3
     },
-    "Grulla": {
-      "silver gray": 0.3,
-      "standard": 0.4,
-      "burnished": 0.3
-    },
+    "Grulla": {"silver grey": 0.3, "standard": 0.4, "burnished": 0.3},
     "Red Dun": {
       "strawberry": 0.4,
       "medium": 0.3,

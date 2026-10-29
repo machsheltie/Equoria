@@ -40,17 +40,18 @@ const CANON_GAITS = new Set([
 const CREAM = ['Palomino', 'Buckskin', 'Smoky Black', 'Cremello', 'Perlino', 'Smoky Cream'];
 const DUNS = ['Grulla', 'Red Dun', 'Bay Dun'];
 const SILVERS = ['Silver Bay', 'Silver Black'];
+// Equoria-7woyj: grey colors carry no shades (each grey name is the owner's whole
+// name), so a grey shade entry may only appear on a breed that can roll grey.
 const GRAYS = [
-  'Steel Gray',
-  'Rose Gray',
-  'Steel Dark Dapple Gray',
-  'Rose Dark Dapple Gray',
-  'Steel Light Dapple Gray',
-  'Rose Light Dapple Gray',
-  'White Gray',
-  'Fleabitten Gray',
+  'Dapple Grey',
+  'Steel Grey',
+  'Rose Grey',
+  'White Grey',
+  'Fleabitten Grey',
+  'Light Dapple Grey',
 ];
-const ROANS = ['Red Roan', 'Blue Roan', 'Strawberry Roan'];
+// Equoria-7woyj: Strawberry Roan's shades merged into Red Roan (the game's name).
+const ROANS = ['Red Roan', 'Blue Roan'];
 const APPYS = [
   'Fewspot Leopard',
   'Snowcap',
@@ -160,7 +161,6 @@ for (const f of files.sort()) {
   if (creamAllele(a) && !CREAM.some((s) => shSet.has(s))) W.push('Cr allele but no cream shade');
   if (dunAllele(a) && !DUNS.some((s) => shSet.has(s))) W.push('dun allele but no dun shade');
   if (silverAllele(a) && !SILVERS.some((s) => shSet.has(s))) W.push('Z allele but no silver shade');
-  if (grayAllele(a) && !GRAYS.some((s) => shSet.has(s))) W.push('G allele but no gray shade');
   if (roanAllele(a) && !ROANS.some((s) => shSet.has(s))) W.push('Rn allele but no roan shade');
   if (lpAllele(a) && !APPYS.some((s) => shSet.has(s))) W.push('LP allele but no appaloosa shade');
   if (wAllele(a) && !DWHITE.some((s) => shSet.has(s)))
