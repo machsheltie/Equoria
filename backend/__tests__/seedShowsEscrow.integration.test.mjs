@@ -14,6 +14,7 @@ import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { createShow } from '../seed/seedShows.mjs';
+import { createEscrowedDevShow } from '../seed/seedDevData.mjs';
 import { releaseShowEscrow } from './helpers/releaseShowEscrow.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
@@ -56,5 +57,27 @@ describe('seedShows createShow escrows the prize (Equoria-law5w)', () => {
     expect(stored).toEqual({ prize: 1200, prizeEscrow: 1200, feeEscrow: 0 });
     // The escrow account was credited by exactly the prize, in the same transaction.
     expect((await escrowBalance()) - before).toBe(1200);
+  });
+});
+
+describe('seedDevData createEscrowedDevShow escrows the prize (Equoria-law5w)', () => {
+  it('stores prize = 10x the entry fee, held in escrow, and credits the escrow account by it', async () => {
+    const before = await escrowBalance();
+    const show = await createEscrowedDevShow({
+      name: `TestFixture-devSeedEscrow-${randomBytes(4).toString('hex')}`,
+      discipline: 'Reining',
+      levelMin: 1,
+      levelMax: 5,
+      entryFee: 150,
+      runDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+    });
+    showIds.push(show.id);
+    expect({ prize: show.prize, prizeEscrow: show.prizeEscrow, feeEscrow: show.feeEscrow }).toEqual({
+      prize: 1500,
+      prizeEscrow: 1500,
+      feeEscrow: 0,
+    });
+    expect(show.closeDate).toEqual(show.runDate);
+    expect((await escrowBalance()) - before).toBe(1500);
   });
 });

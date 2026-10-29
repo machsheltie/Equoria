@@ -18,6 +18,7 @@ import { dirname, join } from 'path';
 // same breed-weighted generator the register/advanceOnboarding paths use — so
 // dev databases never contain NULL-temperament horses.
 import { generateTemperamentWithDefault } from '../modules/horses/index.mjs';
+import { creditSystemAccount } from '../modules/economy/index.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -184,6 +185,7 @@ function futureDate(daysFromNow) {
   return d;
 }
 
+// Prizes are derived: 10x the entry fee, escrowed (createEscrowedDevShow).
 const SHOWS = [
   {
     name: 'Spring Dressage Classic',
@@ -191,7 +193,6 @@ const SHOWS = [
     levelMin: 1,
     levelMax: 5,
     entryFee: 100,
-    prize: 500,
     runDate: futureDate(3),
   },
   {
@@ -200,7 +201,6 @@ const SHOWS = [
     levelMin: 1,
     levelMax: 10,
     entryFee: 200,
-    prize: 1000,
     runDate: futureDate(5),
   },
   {
@@ -209,7 +209,6 @@ const SHOWS = [
     levelMin: 2,
     levelMax: 8,
     entryFee: 150,
-    prize: 750,
     runDate: futureDate(7),
   },
   {
@@ -218,7 +217,6 @@ const SHOWS = [
     levelMin: 1,
     levelMax: 5,
     entryFee: 100,
-    prize: 600,
     runDate: futureDate(4),
   },
   {
@@ -227,7 +225,6 @@ const SHOWS = [
     levelMin: 1,
     levelMax: 5,
     entryFee: 80,
-    prize: 400,
     runDate: futureDate(6),
   },
 ];
@@ -347,6 +344,36 @@ async function seedHorses(users, breeds) {
   }
 }
 
+/**
+ * Create one dev show funded like a hosted show (Equoria-law5w): a show pays
+ * prizes only from escrow (owner ruling q52), so the prize is 10x the entry fee
+ * (owner ruling 2026-10-23) and SystemAccount[showEscrow] is credited by it in
+ * the same transaction that writes Show.prizeEscrow. A seed has no host to
+ * debit, so the prize enters the economy here. Any `prize` in showData is ignored.
+ */
+export async function createEscrowedDevShow(showData) {
+  const prize = showData.entryFee * 10;
+  return prisma.$transaction(async tx => {
+    if (prize > 0) {
+      await creditSystemAccount(tx, 'showEscrow', prize, {
+        category: 'showCreatePrizeEscrow',
+        description: `Prize escrow for seeded show "${showData.name}"`,
+      });
+    }
+    // Entries close when the show runs, as createShow sets it; an undated show
+    // could never be entered (owner ruling 2026-10-05/07/12: undated shows refuse entry (Equoria-576c0 B10)).
+    return tx.show.create({
+      data: {
+        ...showData,
+        prize,
+        prizeEscrow: prize,
+        feeEscrow: 0,
+        closeDate: showData.closeDate ?? showData.runDate,
+      },
+    });
+  });
+}
+
 async function seedShows() {
   console.log('Seeding shows...');
   for (const showData of SHOWS) {
@@ -355,11 +382,7 @@ async function seedShows() {
       console.log(`  Skip existing show: ${showData.name}`);
       continue;
     }
-    // Entries close when the show runs, as createShow sets it; an undated show
-    // could never be entered (owner ruling 2026-10-05/07/12: undated shows refuse entry (Equoria-576c0 B10)).
-    const s = await prisma.show.create({
-      data: { ...showData, closeDate: showData.closeDate ?? showData.runDate },
-    });
+    const s = await createEscrowedDevShow(showData);
     console.log(`  Created show: ${s.name} (ID: ${s.id})`);
   }
 }
