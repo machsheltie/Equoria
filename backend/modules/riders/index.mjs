@@ -10,5 +10,7 @@
  */
 
 export { settleEndedRiderPayWeek } from './services/riderPlayerPayService.mjs';
+// Equoria-brh8c: the owner's payroll re-run, reached by the staff routes through a port.
+export { replayRiderPayrollTx } from './services/riderPayrollReplay.mjs';
 export { processRiderRetirement } from './services/riderRetirementService.mjs';
 export { backfillRiderRetirementSchedules } from './services/riderRetirementBackfillService.mjs';

@@ -14,7 +14,7 @@
  *   another browser, finds the show already run.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState, InlineError, SectionLoading } from '@/components/ui/state';
@@ -31,6 +31,7 @@ import { userMessageFor } from '@/lib/http/userMessage';
 import { competitionDisciplineLabel } from '@/lib/utils/training-utils';
 import { staffErrorMessage } from './staffMessages';
 import StaffSection from './StaffSection';
+import CopyReportPanel from './CopyReportPanel';
 
 const toolMessages = {
   404: 'That show is not there any more.',
@@ -57,57 +58,6 @@ function runErrorMessage(error: unknown): string {
 
 function coins(amount: number) {
   return `${amount.toLocaleString()} coins`;
-}
-
-function DiagnosePanel({ report, onClose }: { report: string; onClose: () => void }) {
-  const textRef = useRef<HTMLTextAreaElement>(null);
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'manual'>('idle');
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(report);
-      setCopyState('copied');
-    } catch {
-      // The browser refused clipboard access: the visible fallback below
-      // selects the report and tells her to copy it by hand.
-      textRef.current?.select();
-      setCopyState('manual');
-    }
-  };
-
-  return (
-    <div className="mt-3 border-l-2 border-[var(--border-muted)] pl-4">
-      <p className="text-[var(--text-primary)]">
-        Hand this report to Claude Code or Codex. It holds no emails, passwords or server settings.
-      </p>
-      <textarea
-        ref={textRef}
-        readOnly
-        aria-label="Diagnosis report"
-        value={report}
-        rows={12}
-        className="mt-2 w-full rounded border border-[var(--border-muted)] bg-transparent p-2 font-mono text-xs text-[var(--text-primary)]"
-      />
-      <div className="mt-2 flex flex-wrap items-center gap-3">
-        <Button variant="secondary" size="sm" onClick={() => void copy()}>
-          Copy report
-        </Button>
-        <Button variant="secondary" size="sm" onClick={onClose}>
-          Close
-        </Button>
-        {copyState === 'copied' && (
-          <span className="text-sm text-role-secondary" role="status">
-            Copied.
-          </span>
-        )}
-        {copyState === 'manual' && (
-          <span className="text-sm text-role-secondary" role="status">
-            The report is selected: press Ctrl+C to copy it.
-          </span>
-        )}
-      </div>
-    </div>
-  );
 }
 
 function TestRunPanel({ testRun }: { testRun: QuarantinedShowTestRun }) {
@@ -246,7 +196,7 @@ function ShowRow({ show }: { show: QuarantinedShow }) {
         <InlineError message={staffErrorMessage(testRunShow.error, toolMessages)} />
       )}
       {runShow.isError && <InlineError message={runErrorMessage(runShow.error)} />}
-      {report !== null && <DiagnosePanel report={report} onClose={() => setReport(null)} />}
+      {report !== null && <CopyReportPanel report={report} onClose={() => setReport(null)} />}
       {testRun && !testRunShow.isPending && <TestRunPanel testRun={testRun} />}
     </li>
   );

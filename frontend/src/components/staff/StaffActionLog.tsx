@@ -105,6 +105,8 @@ const targetWords: Record<string, string> = {
   ticket: 'ticket',
   show: 'show',
   device: 'a browser',
+  groom: 'groom',
+  rider: 'rider',
 };
 
 function targetText(entry: StaffLogEntry, nameOf: NameOf): string {
@@ -175,6 +177,12 @@ function describeEntry(
         return `${actor} test ran held ${target}`;
       }
       return `${actor} settled held ${target}`;
+    case 'payroll.diagnose':
+      // Equoria-brh8c: a payroll test run is recorded too, and moves nothing.
+      if (after.action === 'testRun') {
+        return `${actor} test ran the failed payroll of ${target}`;
+      }
+      return `${actor} re-ran the failed payroll of ${target}`;
     default:
       // A staff tool the ledger has no sentence for yet: never show its stored code.
       return `${actor} took a staff action on ${target}`;

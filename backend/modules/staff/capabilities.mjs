@@ -79,6 +79,11 @@ const ownerOnly = [
   // Owner ruling q262 (2026-10-28, Equoria-opdt7): the manual groom payday is the
   // owner's alone, behind the emailed check-in. Players still pay their own grooms.
   'payroll.run',
+  // Owner ruling q158 (2026-10-28, Equoria-brh8c): the Owner/Head Admin alone sees
+  // payroll failures per groom or rider (Diagnose, Test run, Re-run) and the server's
+  // memory and speed. Never admins, moderators or players.
+  'payroll.diagnose',
+  'server.health.view',
 ];
 
 // Private and frozen (STAFF-CR-12): no importer can reach a mutable copy of

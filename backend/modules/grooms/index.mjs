@@ -13,4 +13,6 @@ export { processWeeklyCareerProgression } from './services/groomCareerProgressio
 export { updateGroomSynergy } from './services/groomProgressionService.mjs';
 export { processWeeklySalaries } from './services/groomSalaryService.mjs';
 export { settleEndedGroomPayWeek } from './services/groomPlayerPayService.mjs';
+// Equoria-brh8c: the owner's payroll re-run, reached by the staff routes through a port.
+export { replayGroomPayrollTx } from './services/groomPayrollReplay.mjs';
 export { canGroomToday } from './services/groomVerdict.mjs';

@@ -93,6 +93,7 @@ import { collectGroomFeesTx } from './groomFeeCollection.mjs';
 // then release to the grooms-for-hire pool. Replaces the never-working
 // `handleInsufficientFunds` + `terminateGroomsForNonPayment` pair.
 import { handleUnpaidFees, recordUncollectedFees } from './groomFeeArrearsService.mjs';
+import { groomPayrollFailureRecorder } from './groomPayrollFailures.mjs';
 // Equoria-nawn5 / Equoria-bgdfb: WHAT a groom costs, the horse cap, and what an
 // unpaid week becomes. Defined next door so this file stays the COLLECTION of the
 // fee; re-exported below so every existing importer of this module is unchanged.
@@ -223,6 +224,8 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
     const payWeekStart = getPayWeekStart(now);
     const payWeekEnd = startOfGameDayIndex(gameDayIndex(payWeekStart) + 7);
     const weekKey = gameDateKey(payWeekStart);
+    // Equoria-brh8c: every groom this payday fails for is recorded for the owner.
+    const recordFailure = groomPayrollFailureRecorder('manualPayroll', payWeekStart);
 
     const results = {
       processed: 0,
@@ -331,7 +334,9 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
             // enters grace together. That is the pre-existing behaviour, kept
             // deliberately; paying for as many as affordable would be a new rule
             // and is the owner's to make.
-            const outcome = await handleUnpaidFees(userId, collected.unpaid, payWeekStart);
+            const outcome = await handleUnpaidFees(userId, collected.unpaid, payWeekStart, {
+              onFailure: recordFailure,
+            });
             results.graced += outcome.graced;
             results.released += outcome.released;
             results.terminated += outcome.released;
@@ -344,6 +349,9 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
           // as though it had been paid. Fail CLOSED instead: record it as uncollected
           // so the groom stops working and the week is on the record. Release is
           // deliberately NOT escalated here; see recordUncollectedFees.
+          for (const { groom } of collected.unpaid) {
+            await recordFailure(groom, txError, userId);
+          }
           const out = await recordUncollectedFees(userId, collected.unpaid, payWeekStart, txError);
           results.uncollected += out.recorded;
           results.graced += out.graced;
@@ -370,6 +378,9 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
       } catch (error) {
         results.failed++;
         results.errors.push(`Error processing salaries for user ${userId}: ${error.message}`);
+        for (const { groom } of userGroup.assignments) {
+          await recordFailure(groom, error, userId);
+        }
         logger.error(
           `[groomSalaryService] Error processing salaries for user ${userId}: ${error.message}`,
         );

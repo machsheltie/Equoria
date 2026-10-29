@@ -98,9 +98,15 @@ import staffRoutes from '../modules/staff/routes/staffRoutes.mjs';
 // Equoria-ehlbj: the owner's quarantined-show tools are the competition module's;
 // the staff routes reach them through a port only this layer can fill (staff
 // cannot import competition without a cycle).
-import { registerGroomPayrollRun, registerQuarantinedShowTools } from '../modules/staff/index.mjs';
+import {
+  registerGroomPayrollRun,
+  registerPayrollReplays,
+  registerQuarantinedShowTools,
+} from '../modules/staff/index.mjs';
 // Equoria-opdt7 (owner ruling q262): the owner's manual groom payday, by the same kind of port.
-import { processWeeklySalaries } from '../modules/grooms/index.mjs';
+import { processWeeklySalaries, replayGroomPayrollTx } from '../modules/grooms/index.mjs';
+// Equoria-brh8c: the owner's payroll re-run for one groom or rider, by the same kind of port.
+import { replayRiderPayrollTx } from '../modules/riders/index.mjs';
 import {
   diagnoseQuarantinedShow,
   testRunQuarantinedShow,
@@ -140,6 +146,7 @@ export function buildRouters() {
   });
   // Unscoped on purpose: the owner's run is the whole weekly payday.
   registerGroomPayrollRun(() => processWeeklySalaries());
+  registerPayrollReplays({ groom: replayGroomPayrollTx, rider: replayRiderPayrollTx });
 
   // Public router - No authentication required
   const publicRouter = express.Router();

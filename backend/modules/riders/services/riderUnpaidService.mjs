@@ -180,10 +180,17 @@ async function graceTx(tx, { rider, userId, payWeekStart, allowLeave }) {
  * @param {string} userId
  * @param {Array<{id:number,firstName:string,lastName:string,weeklyRate:number,feeUnpaidSince:Date|null}>} unpaid
  * @param {Date} payWeekStart
- * @param {{allowLeave?: boolean}} [options]
+ * @param {{allowLeave?: boolean, onFailure?: (rider: Object, error: Error) => Promise<void>}} [options]
+ *   `onFailure` records a rider whose consequence could not be applied, for the
+ *   owner's payroll diagnostics (Equoria-brh8c). It must not throw.
  * @returns {Promise<{graced: number, released: number}>}
  */
-export async function handleUnpaidRiders(userId, unpaid, payWeekStart, { allowLeave = true } = {}) {
+export async function handleUnpaidRiders(
+  userId,
+  unpaid,
+  payWeekStart,
+  { allowLeave = true, onFailure } = {},
+) {
   const outcome = { graced: 0, released: 0 };
   const ordered = [...unpaid].sort((a, b) => a.id - b.id);
   for (const rider of ordered) {
@@ -222,7 +229,59 @@ export async function handleUnpaidRiders(userId, unpaid, payWeekStart, { allowLe
         `[riderUnpaidService] Could not apply the non-payment consequence to rider ${rider.id} ` +
           `for user ${userId}: ${error.message}`,
       );
+      if (onFailure) {
+        await onFailure(rider, error);
+      }
     }
   }
   return outcome;
+}
+
+/**
+ * The owner's re-run of a failed week-end settlement for ONE rider (Equoria-brh8c),
+ * inside the caller's transaction (a test run rolls it back; a re-run commits it).
+ *
+ * Idempotent per rider and pay week: under the same pay-week lock as every rider
+ * payroll write, a week already paid, or already settled (any recorded non-payment
+ * row for that week), is left alone. Otherwise the rider gets exactly the
+ * consequence the weekly settlement would have applied. Takes no money.
+ *
+ * @param {Object} tx
+ * @param {{rider: Object, userId: string, payWeekStart: Date}} params - `rider` read
+ *   fresh by the caller, with `weeklyRate` set to the star price
+ * @returns {Promise<{outcome: 'alreadyPaid'|'alreadySettled'|'leftRoster'|'cannotRide',
+ *   afterCommit: (() => void)|null}>}
+ */
+export async function resettleRiderWeekTx(tx, { rider, userId, payWeekStart }) {
+  await acquireRiderPayWeekLockTx(tx, userId, payWeekStart);
+  if (await paidForWeekTx(tx, rider.id, userId, payWeekStart)) {
+    return { outcome: 'alreadyPaid', afterCommit: null };
+  }
+  const recorded = await tx.riderSalaryPayment.findFirst({
+    where: {
+      riderId: rider.id,
+      userId,
+      status: { not: 'paid' },
+      OR: [{ weekKey: riderPayWeekKey(payWeekStart) }, { paymentDate: payWeekStart }],
+    },
+    select: { id: true },
+  });
+  if (recorded) {
+    return { outcome: 'alreadySettled', afterCommit: null };
+  }
+  if (hasFullUnpaidRiderWeek(rider.feeUnpaidSince, payWeekStart)) {
+    const payload = await leaveTx(tx, { rider, userId, payWeekStart });
+    return {
+      outcome: 'leftRoster',
+      afterCommit: () =>
+        finalizeNotificationAfterCommit(userId, riderReleasedNotificationType, payload),
+    };
+  }
+  const payload = await graceTx(tx, { rider, userId, payWeekStart, allowLeave: true });
+  return {
+    outcome: payload ? 'cannotRide' : 'alreadySettled',
+    afterCommit: payload
+      ? () => finalizeNotificationAfterCommit(userId, riderFeeUnpaidNotificationType, payload)
+      : null,
+  };
 }

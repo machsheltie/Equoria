@@ -28,6 +28,10 @@ import {
   releaseGroomTx,
 } from './groomEngagementService.mjs';
 
+// camelCase names for the two notification types this file sends (Equoria-pjvp8).
+const groomReleasedType = GROOM_RELEASED_NOTIFICATION_TYPE;
+const groomFeeUnpaidType = GROOM_FEE_UNPAID_NOTIFICATION_TYPE;
+
 /**
  * Equoria-hc96y: was this groom's fee for `payWeekStart` paid? Read under the pay-week
  * lock, so a player who pressed Pay Groom while the week-end pass was choosing whom to
@@ -46,6 +50,97 @@ async function paidForWeekTx(tx, groomId, userId, payWeekStart) {
     select: { id: true },
   });
   return row !== null;
+}
+
+/**
+ * Release one groom for a full unpaid week, inside the caller's transaction, which
+ * already holds the pay-week lock and has checked the week is unpaid. Moved verbatim
+ * out of handleUnpaidFees (Equoria-brh8c) so the owner's payroll re-run applies the
+ * same consequence.
+ */
+async function releaseUnpaidGroomTx(tx, { groom, salary, userId, payWeekStart }) {
+  const result = await releaseGroomTx(tx, {
+    groomId: groom.id,
+    userId,
+    reason: ENGAGEMENT_END_REASONS.FEE_UNPAID,
+    notificationPayloadExtras: {
+      weeklyFee: salary,
+      unpaidSince: new Date(groom.feeUnpaidSince).toISOString(),
+      payWeekStart: payWeekStart.toISOString(),
+    },
+  });
+  // The audit row, in the same transaction as the release it records.
+  await tx.groomSalaryPayment.create({
+    data: {
+      groomId: groom.id,
+      userId,
+      amount: salary,
+      paymentDate: payWeekStart,
+      weekKey: gameDateKey(payWeekStart),
+      paymentType: 'weeklySalary',
+      status: 'terminatedNonPayment',
+    },
+  });
+  // Equoria-bgdfb: the debt does not outlive the groom. Losing them to the
+  // grooms-for-hire pool IS the penalty for a full unpaid week; carrying the
+  // owed weeks forward would charge the player for a groom they no longer
+  // have, and the next player to hire this groom owes nothing for the last
+  // player's arrears. Written off rather than deleted, so the weeks stay on
+  // the record. In the same transaction as the release, so a rollback leaves
+  // both the engagement and the debt exactly as they were.
+  await tx.groomSalaryPayment.updateMany({
+    where: {
+      groomId: groom.id,
+      userId,
+      paymentType: 'weeklySalary',
+      status: { in: [...arrearsOwedStatuses] },
+    },
+    data: { status: arrearsWrittenOffStatus },
+  });
+  return result;
+}
+
+/**
+ * Put one groom into grace for this unpaid week, inside the caller's transaction,
+ * which already holds the pay-week lock and has checked the week is unpaid. Moved
+ * verbatim out of handleUnpaidFees (Equoria-brh8c); see the decision there on why
+ * the User write is gated on graceBeginsForThisGroom.
+ */
+async function graceUnpaidGroomTx(tx, { groom, salary, userId, payWeekStart }) {
+  const graceBeginsForThisGroom = groom.feeUnpaidSince === null;
+
+  if (graceBeginsForThisGroom) {
+    await tx.user.updateMany({
+      where: { id: userId, groomSalaryGracePeriod: null },
+      data: { groomSalaryGracePeriod: payWeekStart },
+    });
+  }
+
+  const entered = await enterFeeGraceTx(tx, {
+    groomId: groom.id,
+    userId,
+    payWeekStart,
+    fee: salary,
+  });
+  await tx.groomSalaryPayment.create({
+    data: {
+      groomId: groom.id,
+      userId,
+      amount: salary,
+      // Equoria-bgdfb: dated with the PAY WEEK this row records, not with the
+      // moment it was written. The next collection settles the weeks strictly
+      // BEFORE the one it is charging, and that test is only exact if the row
+      // says which week it is. (A `missedGracePeriod` row is not owed — its
+      // week is already recorded by the `missedInsufficientFunds` row.)
+      paymentDate: payWeekStart,
+      weekKey: gameDateKey(payWeekStart),
+      paymentType: 'weeklySalary',
+      // The distinction the existing vocabulary already draws: the week the
+      // fee was first missed, versus a later failure inside the same week.
+      status: entered.entered ? 'missedInsufficientFunds' : 'missedGracePeriod',
+    },
+  });
+  return entered;
 }
 
 /**
@@ -111,9 +206,12 @@ async function paidForWeekTx(tx, groomId, userId, payWeekStart) {
  * @param {Array<{groom: Object, salary: number}>} unpaid - the grooms whose fee
  *   this pay week's debit did not cover
  * @param {Date} payWeekStart
+ * @param {{onFailure?: (groom: Object, error: Error) => Promise<void>}} [options] -
+ *   `onFailure` records a groom whose consequence could not be applied, for the
+ *   owner's payroll diagnostics (Equoria-brh8c). It must not throw.
  * @returns {Promise<{graced: number, released: number}>}
  */
-export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
+export async function handleUnpaidFees(userId, unpaid, payWeekStart, { onFailure } = {}) {
   const outcome = { graced: 0, released: 0 };
 
   for (const { groom, salary } of unpaid) {
@@ -126,45 +224,7 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
           if (await paidForWeekTx(tx, groom.id, userId, payWeekStart)) {
             return null;
           }
-          const result = await releaseGroomTx(tx, {
-            groomId: groom.id,
-            userId,
-            reason: ENGAGEMENT_END_REASONS.FEE_UNPAID,
-            notificationPayloadExtras: {
-              weeklyFee: salary,
-              unpaidSince: new Date(groom.feeUnpaidSince).toISOString(),
-              payWeekStart: payWeekStart.toISOString(),
-            },
-          });
-          // The audit row, in the same transaction as the release it records.
-          await tx.groomSalaryPayment.create({
-            data: {
-              groomId: groom.id,
-              userId,
-              amount: salary,
-              paymentDate: payWeekStart,
-              weekKey: gameDateKey(payWeekStart),
-              paymentType: 'weeklySalary',
-              status: 'terminatedNonPayment',
-            },
-          });
-          // Equoria-bgdfb: the debt does not outlive the groom. Losing them to the
-          // grooms-for-hire pool IS the penalty for a full unpaid week; carrying the
-          // owed weeks forward would charge the player for a groom they no longer
-          // have, and the next player to hire this groom owes nothing for the last
-          // player's arrears. Written off rather than deleted, so the weeks stay on
-          // the record. In the same transaction as the release, so a rollback leaves
-          // both the engagement and the debt exactly as they were.
-          await tx.groomSalaryPayment.updateMany({
-            where: {
-              groomId: groom.id,
-              userId,
-              paymentType: 'weeklySalary',
-              status: { in: [...arrearsOwedStatuses] },
-            },
-            data: { status: arrearsWrittenOffStatus },
-          });
-          return result;
+          return releaseUnpaidGroomTx(tx, { groom, salary, userId, payWeekStart });
         });
         if (!released) {
           continue;
@@ -172,11 +232,7 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
 
         // Post-commit, in ADR-011 / ADR-007 order: the real-time nudge and the
         // retention prune follow the durable write. Never throws.
-        finalizeNotificationAfterCommit(
-          userId,
-          GROOM_RELEASED_NOTIFICATION_TYPE,
-          released.notificationPayload,
-        );
+        finalizeNotificationAfterCommit(userId, groomReleasedType, released.notificationPayload);
         outcome.released++;
         logger.warn(
           `[groomSalaryService] Released groom ${groom.name} (${groom.id}) from user ${userId} ` +
@@ -208,8 +264,6 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
       // would tell a player they are inside a grace period they are not in — a lie
       // about state, which PRODUCT.md principle 7 forbids, and the reachable case is
       // real: a groom whose row stopped matching between the snapshot and the write.
-      const graceBeginsForThisGroom = groom.feeUnpaidSince === null;
-
       const graced = await prisma.$transaction(async tx => {
         // F2, in this exact order and for the reason in the docblock above:
         //   1. the shared per-(user, pay week) advisory lock;
@@ -225,46 +279,11 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
           return { entered: false, notificationPayload: null };
         }
 
-        if (graceBeginsForThisGroom) {
-          await tx.user.updateMany({
-            where: { id: userId, groomSalaryGracePeriod: null },
-            data: { groomSalaryGracePeriod: payWeekStart },
-          });
-        }
-
-        const entered = await enterFeeGraceTx(tx, {
-          groomId: groom.id,
-          userId,
-          payWeekStart,
-          fee: salary,
-        });
-        await tx.groomSalaryPayment.create({
-          data: {
-            groomId: groom.id,
-            userId,
-            amount: salary,
-            // Equoria-bgdfb: dated with the PAY WEEK this row records, not with the
-            // moment it was written. The next collection settles the weeks strictly
-            // BEFORE the one it is charging, and that test is only exact if the row
-            // says which week it is. (A `missedGracePeriod` row is not owed — its
-            // week is already recorded by the `missedInsufficientFunds` row.)
-            paymentDate: payWeekStart,
-            weekKey: gameDateKey(payWeekStart),
-            paymentType: 'weeklySalary',
-            // The distinction the existing vocabulary already draws: the week the
-            // fee was first missed, versus a later failure inside the same week.
-            status: entered.entered ? 'missedInsufficientFunds' : 'missedGracePeriod',
-          },
-        });
-        return entered;
+        return graceUnpaidGroomTx(tx, { groom, salary, userId, payWeekStart });
       });
 
       if (graced.entered) {
-        finalizeNotificationAfterCommit(
-          userId,
-          GROOM_FEE_UNPAID_NOTIFICATION_TYPE,
-          graced.notificationPayload,
-        );
+        finalizeNotificationAfterCommit(userId, groomFeeUnpaidType, graced.notificationPayload);
         outcome.graced++;
         logger.warn(
           `[groomSalaryService] Groom ${groom.name} (${groom.id}) cannot work for user ${userId}: ` +
@@ -279,6 +298,9 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
         `[groomSalaryService] Failed to apply the non-payment consequence to groom ${groom.id} ` +
           `for user ${userId}: ${error.message}`,
       );
+      if (onFailure) {
+        await onFailure(groom, error);
+      }
     }
   }
 
@@ -379,11 +401,7 @@ export async function recordUncollectedFees(userId, unpaid, payWeekStart, cause)
 
       outcome.recorded++;
       if (marked.entered) {
-        finalizeNotificationAfterCommit(
-          userId,
-          GROOM_FEE_UNPAID_NOTIFICATION_TYPE,
-          marked.notificationPayload,
-        );
+        finalizeNotificationAfterCommit(userId, groomFeeUnpaidType, marked.notificationPayload);
         outcome.graced++;
       }
       logger.error(
@@ -404,6 +422,57 @@ export async function recordUncollectedFees(userId, unpaid, payWeekStart, cause)
   }
 
   return outcome;
+}
+
+/**
+ * The owner's re-run of a failed week-end settlement for ONE groom (Equoria-brh8c),
+ * inside the caller's transaction (a test run rolls it back; a re-run commits it).
+ *
+ * Idempotent per groom and pay week: under the same pay-week lock as every payroll
+ * write, a week already paid, or already settled (any recorded non-payment row for
+ * that week), is left alone. Otherwise the groom gets exactly the consequence the
+ * weekly settlement would have applied. Takes no money.
+ *
+ * @param {Object} tx
+ * @param {{groom: Object, salary: number, userId: string, payWeekStart: Date}} params
+ *   `groom` read fresh by the caller (it must carry feeUnpaidSince)
+ * @returns {Promise<{outcome: 'alreadyPaid'|'alreadySettled'|'leftForHirePool'|'cannotWork',
+ *   afterCommit: (() => void)|null}>} `afterCommit` sends the player's notice once committed
+ */
+export async function resettleGroomWeekTx(tx, { groom, salary, userId, payWeekStart }) {
+  await acquirePayWeekLockTx(tx, userId, payWeekStart);
+  if (await paidForWeekTx(tx, groom.id, userId, payWeekStart)) {
+    return { outcome: 'alreadyPaid', afterCommit: null };
+  }
+  const recorded = await tx.groomSalaryPayment.findFirst({
+    where: {
+      groomId: groom.id,
+      userId,
+      paymentType: 'weeklySalary',
+      status: { not: 'paid' },
+      OR: [{ weekKey: gameDateKey(payWeekStart) }, { paymentDate: payWeekStart }],
+    },
+    select: { id: true },
+  });
+  if (recorded) {
+    return { outcome: 'alreadySettled', afterCommit: null };
+  }
+  if (hasFullUnpaidWeek(groom.feeUnpaidSince, payWeekStart)) {
+    const released = await releaseUnpaidGroomTx(tx, { groom, salary, userId, payWeekStart });
+    return {
+      outcome: 'leftForHirePool',
+      afterCommit: () =>
+        finalizeNotificationAfterCommit(userId, groomReleasedType, released.notificationPayload),
+    };
+  }
+  const graced = await graceUnpaidGroomTx(tx, { groom, salary, userId, payWeekStart });
+  return {
+    outcome: 'cannotWork',
+    afterCommit: graced.entered
+      ? () =>
+          finalizeNotificationAfterCommit(userId, groomFeeUnpaidType, graced.notificationPayload)
+      : null,
+  };
 }
 
 export default { handleUnpaidFees, recordUncollectedFees };

@@ -27,6 +27,10 @@ export {
 } from './services/deviceAccountLimitService.mjs';
 export { registerQuarantinedShowTools } from './services/quarantinedShowToolsPort.mjs';
 export { registerGroomPayrollRun } from './services/groomPayrollPort.mjs';
+// Equoria-brh8c: payroll failures are recorded by the grooms and riders modules and
+// re-run through a port the app layer fills (staff cannot import either module).
+export { recordPayrollFailure } from './services/payrollFailureLog.mjs';
+export { registerPayrollReplays } from './services/payrollReplayPort.mjs';
 export {
   retireStaffCheckinCodesTx,
   revokeStaffTrustedDevicesTx,

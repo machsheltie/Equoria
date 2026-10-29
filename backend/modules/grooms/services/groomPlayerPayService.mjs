@@ -32,6 +32,7 @@ import { collectGroomFeesTx } from './groomFeeCollection.mjs';
 import { handleUnpaidFees } from './groomFeeArrearsService.mjs';
 import { arrearsOwedStatuses, calculateWeeklyFee } from './groomFeeBasisService.mjs';
 import { getPayWeekStart } from './groomSalaryService.mjs';
+import { groomPayrollFailureRecorder } from './groomPayrollFailures.mjs';
 
 /** A refused press of Pay Groom: the route answers with `status`, `code` and `message`. */
 export class GroomPayRefusal extends Error {
@@ -219,6 +220,8 @@ export async function settleEndedGroomPayWeek(now = new Date(), { userId = null 
   const weekEnd = getPayWeekStart(now);
   const weekStart = startOfGameDayIndex(gameDayIndex(weekEnd) - 7);
   const results = { users: 0, graced: 0, released: 0, errors: [] };
+  // Equoria-brh8c: each groom this pass could not settle is recorded for the owner.
+  const recordFailure = groomPayrollFailureRecorder('weeklySettlement', weekStart);
 
   const where = { userId: userId ?? { not: null }, retired: false, isActive: true };
   const staff = await prisma.groom.findMany({
@@ -257,7 +260,9 @@ export async function settleEndedGroomPayWeek(now = new Date(), { userId = null 
       }
       results.users++;
       // Re-checks each groom's paid row under the pay-week lock before marking it.
-      const outcome = await handleUnpaidFees(ownerId, unpaid, weekStart);
+      const outcome = await handleUnpaidFees(ownerId, unpaid, weekStart, {
+        onFailure: recordFailure,
+      });
       results.graced += outcome.graced;
       results.released += outcome.released;
     } catch (error) {
@@ -265,6 +270,10 @@ export async function settleEndedGroomPayWeek(now = new Date(), { userId = null 
       logger.error(
         `[groomPlayerPayService] Week-end settlement failed for user ${ownerId}: ${error.message}`,
       );
+      // Nobody of this player's staff was settled: the failure is each groom's.
+      for (const groom of grooms) {
+        await recordFailure(groom, error, ownerId);
+      }
     }
   }
   return results;

@@ -23,6 +23,7 @@ import {
   getPerformanceMetrics,
 } from '../services/apiResponseOptimizationService.mjs';
 import logger from '../utils/logger.mjs';
+import { recordRouteTiming, routeKeyFor } from '../utils/routeTimings.mjs';
 
 /**
  * Response optimization middleware
@@ -273,6 +274,8 @@ export function performanceMonitoring(options = {}) {
       try {
         const endTime = Date.now();
         const duration = endTime - startTime;
+        // Equoria-brh8c: per-route answer times for the owner's server speed panel.
+        recordRouteTiming(routeKeyFor(req), duration, slowRequestThreshold);
 
         if (logSlowRequests && duration > slowRequestThreshold) {
           logger.warn(

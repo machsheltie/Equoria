@@ -12,6 +12,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import {
   staffApi,
   type ConductAction,
+  type PayrollStaffType,
   type FileTicketPayload,
   type StaffLogFilter,
   type TicketStatus,
@@ -30,6 +31,11 @@ export const staffKeys = {
   flaggedAddresses: ['staff', 'flagged-addresses'] as const,
   tickets: ['staff', 'tickets'] as const,
   quarantinedShows: ['staff', 'quarantined-shows'] as const,
+  payrollSearch: (staffType: string, query: string) =>
+    ['staff', 'payroll', 'search', staffType, query] as const,
+  payrollFailures: (staffType: string, staffId: number) =>
+    ['staff', 'payroll', 'failures', staffType, staffId] as const,
+  serverHealth: ['staff', 'server-health'] as const,
   ticket: (id: number) => ['staff', 'tickets', id] as const,
 };
 
@@ -357,4 +363,68 @@ export function useRunQuarantinedShow() {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
+}
+
+/** Equoria-brh8c: grooms or riders by name; with no name, those with logged payroll failures. */
+export function usePayrollStaffSearch(staffType: PayrollStaffType, query: string) {
+  return useQuery({
+    queryKey: staffKeys.payrollSearch(staffType, query),
+    queryFn: () => staffApi.searchPayrollStaff(staffType, query),
+  });
+}
+
+/** One groom's or rider's logged payroll failures and whether Re-run is unlocked. */
+export function usePayrollFailures(staffType: PayrollStaffType, staffId: number) {
+  return useQuery({
+    queryKey: staffKeys.payrollFailures(staffType, staffId),
+    queryFn: () => staffApi.payrollFailures(staffType, staffId),
+  });
+}
+
+/** Diagnose is a read; it is a mutation here only because it runs on a click. */
+export function useDiagnosePayroll() {
+  return useMutation({
+    mutationKey: [...staffKeys.all, 'diagnose-payroll'],
+    mutationFn: ({ staffType, staffId }: { staffType: PayrollStaffType; staffId: number }) =>
+      staffApi.diagnosePayroll(staffType, staffId),
+  });
+}
+
+interface PayrollToolVars {
+  staffType: PayrollStaffType;
+  staffId: number;
+  failureId: number;
+}
+
+/** Test run: the failed pass replayed and always rolled back. A pass unlocks Re-run. */
+export function useTestRunPayroll() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: [...staffKeys.all, 'test-run-payroll'],
+    mutationFn: ({ staffType, staffId, failureId }: PayrollToolVars) =>
+      staffApi.testRunPayroll(staffType, staffId, failureId),
+    onSettled: (_data, _error, { staffType, staffId }) => {
+      queryClient.invalidateQueries({ queryKey: staffKeys.payrollFailures(staffType, staffId) });
+      queryClient.invalidateQueries({ queryKey: staffKeys.log });
+    },
+  });
+}
+
+/** Re-run: once, after a passed test run on the code running now. */
+export function useRerunPayroll() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: [...staffKeys.all, 'rerun-payroll'],
+    mutationFn: ({ staffType, staffId, failureId }: PayrollToolVars) =>
+      staffApi.rerunPayroll(staffType, staffId, failureId),
+    onSettled: (_data, _error, { staffType, staffId }) => {
+      queryClient.invalidateQueries({ queryKey: staffKeys.payrollFailures(staffType, staffId) });
+      queryClient.invalidateQueries({ queryKey: staffKeys.log });
+    },
+  });
+}
+
+/** Equoria-brh8c: the server's memory and speed, read when the owner asks. */
+export function useServerHealth() {
+  return useQuery({ queryKey: staffKeys.serverHealth, queryFn: staffApi.serverHealth });
 }

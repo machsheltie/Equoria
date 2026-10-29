@@ -21,6 +21,7 @@ import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
 import { getRiderPayWeekEnd, getRiderPayWeekStart, riderPayWeekKey } from './riderPayWeek.mjs';
 import { collectRiderPayTx } from './riderSalaryService.mjs';
 import { handleUnpaidRiders, riderArrearsOwedStatus } from './riderUnpaidService.mjs';
+import { riderPayrollFailureRecorder } from './riderPayrollFailures.mjs';
 
 /** A refused press of Pay Rider: the route answers with `status`, `code` and `message`. */
 export class RiderPayRefusal extends Error {
@@ -187,6 +188,8 @@ export async function settleEndedRiderPayWeek(now = new Date(), { userId = null 
   const weekEnd = getRiderPayWeekStart(now);
   const weekStart = startOfGameDayIndex(gameDayIndex(weekEnd) - 7);
   const results = { users: 0, graced: 0, released: 0, errors: [] };
+  // Equoria-brh8c: each rider this pass could not settle is recorded for the owner.
+  const recordFailure = riderPayrollFailureRecorder('weeklySettlement', weekStart);
   const roster = await prisma.rider.findMany({
     where: { userId: userId ?? { not: null }, retired: false },
     select: riderSelect,
@@ -212,7 +215,9 @@ export async function settleEndedRiderPayWeek(now = new Date(), { userId = null 
       }
       results.users++;
       // Re-checks each rider's paid row under the pay-week lock before marking it.
-      const outcome = await handleUnpaidRiders(ownerId, unpaid, weekStart);
+      const outcome = await handleUnpaidRiders(ownerId, unpaid, weekStart, {
+        onFailure: recordFailure,
+      });
       results.graced += outcome.graced;
       results.released += outcome.released;
     } catch (error) {
@@ -220,6 +225,10 @@ export async function settleEndedRiderPayWeek(now = new Date(), { userId = null 
       logger.error(
         `[riderPlayerPayService] Week-end settlement failed for user ${ownerId}: ${error.message}`,
       );
+      // Nobody on this player's roster was settled: the failure is each rider's.
+      for (const rider of riders) {
+        await recordFailure(rider, error, ownerId);
+      }
     }
   }
   return results;

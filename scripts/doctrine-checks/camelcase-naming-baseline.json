@@ -429,7 +429,7 @@
   "backend/modules/grooms/services/groomAgeService.mjs": 6,
   "backend/modules/grooms/services/groomAssignmentService.mjs": 4,
   "backend/modules/grooms/services/groomEngagementService.mjs": 13,
-  "backend/modules/grooms/services/groomFeeArrearsService.mjs": 8,
+  "backend/modules/grooms/services/groomFeeArrearsService.mjs": 7,
   "backend/modules/grooms/services/groomFeeBasisService.mjs": 4,
   "backend/modules/grooms/services/groomHorseCompatibilityTaskPolicy.mjs": 6,
   "backend/modules/grooms/services/groomLegacyService.mjs": 11,

@@ -22,6 +22,12 @@
  *   GET  /api/v1/staff/shows/quarantined/:id/diagnose → { diagnosis }         (owner only)
  *   POST /api/v1/staff/shows/quarantined/:id/test-run → { testRun }           (owner only)
  *   POST /api/v1/staff/shows/quarantined/:id/run      → { result }            (owner only)
+ *   GET  /api/v1/staff/payroll/staff?type&q           → { staff }             (owner only)
+ *   GET  /api/v1/staff/payroll/:type/:id/failures     → PayrollFailures       (owner only)
+ *   GET  /api/v1/staff/payroll/:type/:id/diagnose     → { diagnosis }         (owner only)
+ *   POST /api/v1/staff/payroll/:type/:id/failures/:fid/test-run → { testRun } (owner only)
+ *   POST /api/v1/staff/payroll/:type/:id/failures/:fid/rerun    → { result }  (owner only)
+ *   GET  /api/v1/staff/server-health                  → { health }            (owner only)
  */
 
 import { apiClient } from '../http/apiClient.js';
@@ -231,6 +237,110 @@ export interface QuarantinedShowDiagnosis {
   report: string;
 }
 
+/** Equoria-brh8c: the owner's payroll diagnostics pick a groom or a rider. */
+export type PayrollStaffType = 'groom' | 'rider';
+
+/** What a payroll replay did, or would do. The page puts each in words. */
+export type PayrollOutcome =
+  | 'paid'
+  | 'alreadyPaid'
+  | 'notEnoughCoins'
+  | 'weekEnded'
+  | 'alreadySettled'
+  | 'cannotWork'
+  | 'leftForHirePool'
+  | 'cannotRide'
+  | 'leftRoster'
+  | 'noLongerOnStaff'
+  | 'hiredThatWeek'
+  | 'nothingToReplay';
+
+export interface PayrollStaffMember {
+  staffType: PayrollStaffType;
+  id: number;
+  name: string;
+  starLevel: string;
+  employerId: string | null;
+  employerName: string | null;
+  onStaff: boolean;
+  unpaidSince: string | null;
+  failureCount?: number;
+  lastFailureAt?: string | null;
+}
+
+export interface PayrollFailure {
+  id: number;
+  at: string;
+  source: 'weeklySettlement' | 'manualPayroll' | 'testRun' | 'rerun' | null;
+  weekKey: string | null;
+  message: string | null;
+  replayable: boolean;
+}
+
+export interface PayrollFailures {
+  staffMember: PayrollStaffMember;
+  failures: PayrollFailure[];
+  lastTestRun: {
+    failureId: number | null;
+    testedAt: string;
+    passed: boolean;
+    sameCommit: boolean;
+    outcome: PayrollOutcome | null;
+  } | null;
+  /** The failure a passed test run on the code running now has unlocked. */
+  rerunReadyFailureId: number | null;
+}
+
+export type PayrollTestRun =
+  | {
+      failureId: number;
+      passed: true;
+      testedAt: string;
+      commitSha: string | null;
+      outcome: PayrollOutcome;
+      amount: number;
+    }
+  | { failureId: number; passed: false; error: string; commitSha: string | null };
+
+export interface PayrollDiagnosis {
+  staffType: PayrollStaffType;
+  staffId: number;
+  commitSha: string | null;
+  report: string;
+}
+
+/** Equoria-brh8c: the server's memory and speed, as the owner's panel shows them. */
+export interface ServerHealth {
+  commitSha: string | null;
+  uptime: string;
+  memory: {
+    totalMb: number;
+    usedMb: number;
+    reservedMb: number;
+    percentUsed: number;
+    outsideMb: number;
+    growing: boolean | null;
+    watching: boolean;
+    warnings: Array<{ at: string; serious: boolean; what: string }>;
+    openTimers: number;
+  };
+  speed: {
+    since: string;
+    requests: number;
+    overOneSecond: number;
+    slowestRoutes: Array<{
+      route: string;
+      requests: number;
+      averageMs: number;
+      slowestMs: number;
+      overOneSecond: number;
+    }>;
+    cachedAnswersPercent: number;
+    averagePackingMs: number | null;
+  };
+  report: string;
+}
+
 const BASE = '/api/v1/staff';
 
 export const staffApi = {
@@ -298,6 +408,27 @@ export const staffApi = {
       `${BASE}/shows/quarantined/${showId}/test-run`,
       {}
     ),
+  searchPayrollStaff: (staffType: PayrollStaffType, query: string) =>
+    apiClient.get<{ staff: PayrollStaffMember[] }>(
+      `${BASE}/payroll/staff?type=${staffType}&q=${encodeURIComponent(query)}`
+    ),
+  payrollFailures: (staffType: PayrollStaffType, staffId: number) =>
+    apiClient.get<PayrollFailures>(`${BASE}/payroll/${staffType}/${staffId}/failures`),
+  diagnosePayroll: (staffType: PayrollStaffType, staffId: number) =>
+    apiClient.get<{ diagnosis: PayrollDiagnosis }>(
+      `${BASE}/payroll/${staffType}/${staffId}/diagnose`
+    ),
+  testRunPayroll: (staffType: PayrollStaffType, staffId: number, failureId: number) =>
+    apiClient.post<{ testRun: PayrollTestRun }>(
+      `${BASE}/payroll/${staffType}/${staffId}/failures/${failureId}/test-run`,
+      {}
+    ),
+  rerunPayroll: (staffType: PayrollStaffType, staffId: number, failureId: number) =>
+    apiClient.post<{ result: { failureId: number; outcome: PayrollOutcome; amount: number } }>(
+      `${BASE}/payroll/${staffType}/${staffId}/failures/${failureId}/rerun`,
+      {}
+    ),
+  serverHealth: () => apiClient.get<{ health: ServerHealth }>(`${BASE}/server-health`),
   runQuarantinedShow: (showId: number) =>
     apiClient.post<{ result: { showId: number; status: 'completed'; settled: number } }>(
       `${BASE}/shows/quarantined/${showId}/run`,

@@ -54,6 +54,14 @@ import {
   runShow,
 } from '../controllers/staffShowsController.mjs';
 import { runGroomPayroll } from '../controllers/staffPayrollController.mjs';
+import {
+  diagnosePayroll,
+  getPayrollFailures,
+  rerunPayroll,
+  searchPayroll,
+  testRunPayroll,
+} from '../controllers/staffPayrollDiagnosticsController.mjs';
+import { getServerHealth } from '../controllers/staffServerHealthController.mjs';
 
 const router = express.Router();
 
@@ -151,5 +159,31 @@ router.get(
 
 // Owner only (Equoria-opdt7, owner ruling q262): run the weekly groom payday by hand.
 router.post('/payroll/grooms/run', requireStaffCapability('payroll.run'), runGroomPayroll);
+
+// Owner only (Equoria-brh8c, owner ruling q158): payroll failures per groom or rider,
+// Diagnose (a report to copy), Test run (always rolled back) and Re-run, which a passed
+// test run on the deployed commit unlocks; and the server's memory and speed.
+router.get('/payroll/staff', requireStaffCapability('payroll.diagnose'), searchPayroll);
+router.get(
+  '/payroll/:staffType/:staffId/failures',
+  requireStaffCapability('payroll.diagnose'),
+  getPayrollFailures,
+);
+router.get(
+  '/payroll/:staffType/:staffId/diagnose',
+  requireStaffCapability('payroll.diagnose'),
+  diagnosePayroll,
+);
+router.post(
+  '/payroll/:staffType/:staffId/failures/:failureId/test-run',
+  requireStaffCapability('payroll.diagnose'),
+  testRunPayroll,
+);
+router.post(
+  '/payroll/:staffType/:staffId/failures/:failureId/rerun',
+  requireStaffCapability('payroll.diagnose'),
+  rerunPayroll,
+);
+router.get('/server-health', requireStaffCapability('server.health.view'), getServerHealth);
 
 export default router;
