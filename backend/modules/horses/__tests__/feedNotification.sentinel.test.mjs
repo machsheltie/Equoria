@@ -21,6 +21,7 @@ import { fetchCsrf, attachCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -45,7 +46,7 @@ describe('SENTINEL: feed → statGain Notification', () => {
       },
     });
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-FeedNotifHorse-${Date.now()}`,
         sex: 'Mare',
@@ -53,7 +54,7 @@ describe('SENTINEL: feed → statGain Notification', () => {
         age: 5,
         userId: user.id,
         equippedFeedType: 'elite',
-      },
+      }),
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
     // Per-user CSRF binding (Equoria-plw0h): the POST /feed mutation authenticates

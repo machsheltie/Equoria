@@ -24,6 +24,7 @@ import { feedHorse } from '../services/horseFeedService.mjs';
 import { startOfGameDay } from '../../../utils/horseHealth.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const noBoost = () => 0.99;
 
@@ -52,7 +53,7 @@ describe('feedHorse lastFedDate is UTC regardless of the session TimeZone (Equor
     });
     userId = user.id;
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `FeedTzHorse${tag}`,
         sex: 'Stallion',
@@ -60,7 +61,7 @@ describe('feedHorse lastFedDate is UTC regardless of the session TimeZone (Equor
         age: 5,
         userId,
         equippedFeedType: 'basic',
-      },
+      }),
     });
     horseId = horse.id;
   });

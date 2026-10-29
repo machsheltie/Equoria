@@ -30,6 +30,7 @@ import { createMockToken } from '../../../__tests__/factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 /** Assert the closed-route answer: 410, the authored message, no data. */
 function expectPutClosed(response) {
@@ -103,15 +104,15 @@ describe('PUT /horses/:id — closed, pedigree is locked (Equoria-h4zni, owner r
 
     const dob = new Date();
     dob.setUTCFullYear(dob.getUTCFullYear() - 5);
-    const make = (label, sex) =>
+    const make = async (label, sex) =>
       prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `TestFixture-pedlock-${label}-${suffix}`,
           userId: user.id,
           sex,
           dateOfBirth: dob,
-        },
+        }),
       });
     horse = await make('target', 'Mare');
     createdHorseIds.push(horse.id);

@@ -30,6 +30,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-q4uem9-studxfer';
@@ -61,7 +62,7 @@ async function makeUser(role, money) {
 
 async function makeStudStallionForSale(ownerId) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-stallion-${tag()}`,
       sex: 'Stallion',
@@ -73,7 +74,7 @@ async function makeStudStallionForSale(ownerId) {
       salePrice: SALE_PRICE,
       studStatus: 'At Public Stud',
       studFee: STUD_FEE,
-    },
+    }),
   });
 }
 

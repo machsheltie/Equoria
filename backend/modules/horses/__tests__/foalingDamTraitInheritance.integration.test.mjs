@@ -24,6 +24,7 @@ import { runFoalingJob } from '../services/foalingService.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const dayMs = 24 * 60 * 60 * 1000;
 const cleanup = createCleanupTracker();
@@ -56,7 +57,7 @@ async function createPregnantPair(userId, damModifiers) {
   const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
   const tag = randomBytes(3).toString('hex');
   const sire = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `Bre03Sire_${tag}`,
       sex: 'Stallion',
@@ -66,10 +67,10 @@ async function createPregnantPair(userId, damModifiers) {
       userId,
       healthStatus: 'Good',
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-    },
+    }),
   });
   const dam = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `Bre03Dam_${tag}`,
       sex: 'Mare',
@@ -82,7 +83,7 @@ async function createPregnantPair(userId, damModifiers) {
       inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancySireId: sire.id,
       pregnancyFeedingsByTier: {},
-    },
+    }),
   });
   return { sire, dam };
 }

@@ -35,6 +35,7 @@ import {
 import { assertHorseTakesNewStaffTx, releaseStaffIfRetiredTx } from '../services/horseRetirementStaff.mjs';
 import { feedHorse } from '../services/horseFeedService.mjs';
 import { HorseRetiredError } from '../../../errors/HorseRetiredError.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const scope = 'TestFixture-66qkj-retireLiveAge';
 const rand = () => randomBytes(5).toString('hex');
@@ -47,7 +48,7 @@ let breedId;
 /** A mare `days` Eastern calendar days old, with the stored age the nightly job last wrote. */
 async function makeHorse(days, storedAge, extra = {}) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${scope}-${rand()}`,
       sex: 'Mare',
@@ -57,7 +58,7 @@ async function makeHorse(days, storedAge, extra = {}) {
       healthStatus: 'Good',
       userId: user.id,
       ...extra,
-    },
+    }),
   });
   horseIds.push(horse.id);
   return horse;

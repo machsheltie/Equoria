@@ -28,6 +28,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // Minimal groomCareHistory stub used by functions that accept it but don't branch on it
 const emptyHistory = { totalInteractions: 0, taskDiversity: 0, averageQuality: 0, interactions: [] };
@@ -230,45 +231,45 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
 
     // Horse born 21 days ago → game age 3 (Equoria-xggat; old contract was 1095 elapsed days) → "too old" path
     tooOldHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-EMES-TooOld-${ts}`,
         sex: 'Colt',
         dateOfBirth: gameCalendarDate(new Date(), -21),
         age: 3,
         userId: fixtureUser.id,
-      },
+      }),
     });
 
     // Horse born 12 days ago (game age 1) → ageInDays=12 > IMPRINTING.end=1 → "wrong window" (lines 117-124)
     wrongWindowHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-EMES-WrongWindow-${ts}`,
         sex: 'Filly',
         dateOfBirth: gameCalendarDate(new Date(), -12),
         age: 1,
         userId: fixtureUser.id,
-      },
+      }),
     });
 
     // Horse born today → ageInDays=0 → in IMPRINTING window {start:0,end:1} (lines 127-232)
     freshHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-EMES-Fresh-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: fixtureUser.id,
-      },
+      }),
     });
 
     // Equoria-4maxb: an explicitly UNBONDED newborn (bondScore 0, the NOT NULL
     // column default per Equoria-507mt). Planted as 0, not omitted, so the
     // broken `|| 50` reader and the fixed bare reader produce different scores.
     unbondedHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-EMES-Unbonded-${ts}`,
         sex: 'Colt',
@@ -276,7 +277,7 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
         age: 0,
         userId: fixtureUser.id,
         bondScore: 0,
-      },
+      }),
     });
   }, 30000);
 
@@ -381,7 +382,7 @@ describe('evaluateEnhancedMilestone() — personality effects + interaction bran
     // Horse born today (age=0) → in IMPRINTING window {start:0, end:1}
     // temperament must be non-null to trigger personality effects block
     personalityHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-PersonalityHorse-${ts}`,
         sex: 'Filly',
@@ -389,7 +390,7 @@ describe('evaluateEnhancedMilestone() — personality effects + interaction bran
         age: 0,
         userId: personalityUser.id,
         temperament: 'bold',
-      },
+      }),
     });
 
     // Active groomAssignment → currentGroom is set in evaluateEnhancedMilestone

@@ -26,6 +26,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-n7qa3: fail-loud scoped cleanup — a swallowed cleanup delete leaks
 // fixtures into the canonical DB and trips downstream sentinels (CLAUDE.md §2).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const TAG = `3yxz-${randomBytes(4).toString('hex')}`;
 
@@ -71,7 +72,7 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
     });
 
     socializationFoal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${TAG}-SocializationFoal`,
         sex: 'colt',
@@ -79,11 +80,11 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
         age: 0,
         bondScore: 50,
         userId: user.id,
-      },
+      }),
     });
 
     trustHandlingFoal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${TAG}-TrustHandlingFoal`,
         sex: 'filly',
@@ -91,11 +92,11 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
         age: 0,
         bondScore: 50,
         userId: user.id,
-      },
+      }),
     });
 
     agedHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${TAG}-AgedHorse`,
         sex: 'colt',
@@ -103,7 +104,7 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
         age: 4,
         bondScore: 50,
         userId: user.id,
-      },
+      }),
     });
   }, 60000);
 

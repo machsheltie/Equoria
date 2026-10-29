@@ -38,6 +38,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { addXpToHorse } from '../services/horseXpModelService.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 // Owner ruling C15 (2026-10-16; Equoria-576c0 B13): 1,000 Horse Points per stat
 // allocation. Old contract: 100. The point amounts below are the old scenarios at
 // the new scale; every assertion keeps its meaning.
@@ -57,7 +58,7 @@ const createdHorseIds = [];
 
 async function makeHorse(horseXp, availableStatPoints) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-geo1a-horse-${randomBytes(8).toString('hex')}`,
       sex: 'Mare',
@@ -66,7 +67,7 @@ async function makeHorse(horseXp, availableStatPoints) {
       userId: ownerId,
       horseXp,
       availableStatPoints,
-    },
+    }),
   });
   createdHorseIds.push(horse.id);
   return horse;

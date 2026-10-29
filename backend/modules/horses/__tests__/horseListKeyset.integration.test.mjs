@@ -22,6 +22,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import config from '../../../config/config.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const RUN = randomBytes(5).toString('hex');
@@ -52,15 +53,19 @@ beforeAll(async () => {
   token = jwt.sign({ id: user.id, role: user.role }, config.jwtSecret, { expiresIn: '1h' });
 
   await prisma.horse.createMany({
-    data: Array.from({ length: 7 }, (_, i) => ({
-      ...fixtureColor(),
-      name: `TestFixture-HorseKeyset-${i}-${RUN}`,
-      sex: 'Mare',
-      dateOfBirth: new Date('2018-01-01'),
-      age: 5,
-      userId: user.id,
-      createdAt: TIED,
-    })),
+    data: await Promise.all(
+      Array.from({ length: 7 }, (_, i) =>
+        testHorseData(prisma, {
+          ...fixtureColor(),
+          name: `TestFixture-HorseKeyset-${i}-${RUN}`,
+          sex: 'Mare',
+          dateOfBirth: new Date('2018-01-01'),
+          age: 5,
+          userId: user.id,
+          createdAt: TIED,
+        }),
+      ),
+    ),
   });
 
   // Open shows all running at the same instant (runDate is the sort key).

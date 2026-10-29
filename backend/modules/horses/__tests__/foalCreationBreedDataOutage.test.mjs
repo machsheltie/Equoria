@@ -99,6 +99,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // Mirrors breedProfileLoader.mjs's own default resolution from
 // backend/modules/horses/data/ -> backend/data/breedProfiles.json. Computed
@@ -217,10 +218,10 @@ describe("POST /horses/foals — breed-data outage reports 500, not the breed's 
     });
 
     stallion = await prisma.horse.create({
-      data: adult(`TestFixture-task20-Sire_${ts}`, 'Stallion'),
+      data: await testHorseData(prisma, adult(`TestFixture-task20-Sire_${ts}`, 'Stallion')),
     });
     mare = await prisma.horse.create({
-      data: adult(`TestFixture-task20-Dam_${ts}`, 'Mare'),
+      data: await testHorseData(prisma, adult(`TestFixture-task20-Dam_${ts}`, 'Mare')),
     });
   }, 120000);
 

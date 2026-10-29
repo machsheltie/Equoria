@@ -24,6 +24,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-n7qa3: fail-loud scoped cleanup — a swallowed cleanup delete leaks
 // fixtures into the canonical DB and trips downstream sentinels (CLAUDE.md §2).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -61,14 +62,14 @@ beforeAll(async () => {
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
 
   foal = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-Foal-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,
       userId: user.id,
-    },
+    }),
   });
 }, 30000);
 
@@ -225,14 +226,14 @@ describe('foal routes carry no named life stage (Equoria-fr2kg Q5)', () => {
   const makeHorse = async (label, ageYears) => {
     const dob = birthDateForAge(ageYears);
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-Foal-${label}-${randomBytes(4).toString('hex')}`,
         sex: 'Filly',
         dateOfBirth: dob,
         age: ageYears,
         userId: user.id,
-      },
+      }),
     });
     return horse;
   };

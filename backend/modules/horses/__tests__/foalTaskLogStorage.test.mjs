@@ -32,6 +32,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Foal Task Log Storage', () => {
   // Reference date anchor for all test date calculations
@@ -81,7 +82,7 @@ describe('Foal Task Log Storage', () => {
 
     // Create test foal
     testFoal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Test Foal Task Log',
         sex: 'Colt',
@@ -93,7 +94,7 @@ describe('Foal Task Log Storage', () => {
         bondScore: 50,
         taskLog: null,
         lastGroomed: null,
-      },
+      }),
     });
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 

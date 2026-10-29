@@ -22,6 +22,7 @@ import { createHorse } from '../services/horseCreation.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const UNIQUE = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
@@ -36,7 +37,7 @@ beforeAll(async () => {
     (await prisma.breed.create({ data: { name: 'Thoroughbred', description: 'Test breed' } }));
 
   sire = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `Sire_AtBirth_${UNIQUE}`,
       sex: 'Stallion',
@@ -45,11 +46,11 @@ beforeAll(async () => {
       breed: { connect: { id: breed.id } },
       healthStatus: 'Good',
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-    },
+    }),
   });
 
   dam = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `Dam_AtBirth_${UNIQUE}`,
       sex: 'Mare',
@@ -58,7 +59,7 @@ beforeAll(async () => {
       breed: { connect: { id: breed.id } },
       healthStatus: 'Good',
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-    },
+    }),
   });
 });
 

@@ -58,6 +58,7 @@ import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const START_UNITS = 100;
 
@@ -139,7 +140,7 @@ describe('feedHorse — in-foal feed conservation, exact equality (Equoria-qi1ns
 
     const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
     const sire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-Qi1nsSire_${ts}`,
         sex: 'Stallion',
@@ -148,10 +149,10 @@ describe('feedHorse — in-foal feed conservation, exact equality (Equoria-qi1ns
         breedId: breed.id,
         userId: user.id,
         healthStatus: 'Good',
-      },
+      }),
     });
     const mare = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-Qi1nsMare_${ts}`,
         sex: 'Mare',
@@ -166,7 +167,7 @@ describe('feedHorse — in-foal feed conservation, exact equality (Equoria-qi1ns
         pendingFoalName: `TestFixture-Qi1nsFoal_${ts}`,
         lastFedDate: null,
         pregnancyFeedingsByTier: {},
-      },
+      }),
     });
     mareId = mare.id;
   });

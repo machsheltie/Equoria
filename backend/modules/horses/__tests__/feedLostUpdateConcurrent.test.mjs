@@ -72,6 +72,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { startOfGameDay } from '../../../utils/horseHealth.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const FEED_SERVICE_SRC = readFileSync(
   resolve(dirname(fileURLToPath(import.meta.url)), '../services/horseFeedService.mjs'),
@@ -209,7 +210,7 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
 
     const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
     const sire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-Kv2gzSire_${ts}`,
         sex: 'Stallion',
@@ -218,10 +219,10 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
         breedId: breed.id,
         userId: user.id,
         healthStatus: 'Good',
-      },
+      }),
     });
     const mare = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-Kv2gzMare_${ts}`,
         sex: 'Mare',
@@ -238,7 +239,7 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
         // Never fed → first feed is not gated by alreadyFedToday.
         lastFedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // Excellent hunger, not fed today: owner ruling 2026-10-23 (hunger fill bar) - a never-fed horse is Bad and can be fed again today
         pregnancyFeedingsByTier: {},
-      },
+      }),
     });
     mareId = mare.id;
   });

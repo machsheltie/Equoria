@@ -23,6 +23,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { horseStatNames as horseStats } from '../services/foalLineageStatBonus.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const dayMs = 24 * 60 * 60 * 1000;
 const tag = randomBytes(4).toString('hex');
@@ -41,7 +42,7 @@ const parentAverage = () => Object.fromEntries(horseStats.map(stat => [stat, (si
 
 async function horse(label, data) {
   const row = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${prefix}-${label}`,
       dateOfBirth: gameCalendarDate(new Date(), -8 * 365),
@@ -50,7 +51,7 @@ async function horse(label, data) {
       userId: owner.id,
       healthStatus: 'Good',
       ...data,
-    },
+    }),
   });
   horseIds.push(row.id);
   return row;

@@ -26,6 +26,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { processHorseBirthdays } from '../../../utils/horseAgingSystem.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const SCOPE = 'TestFixture-AgingBatch';
 const RUN = randomBytes(6).toString('hex');
@@ -37,14 +38,14 @@ let user;
 
 async function makeHorse(key, { daysOld, storedAge }) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${SCOPE}-${key}-${RUN}`,
       sex: 'Mare',
       dateOfBirth: daysAgo(daysOld),
       age: storedAge,
       userId: user.id,
-    },
+    }),
   });
   ids[key] = horse.id;
   return horse;

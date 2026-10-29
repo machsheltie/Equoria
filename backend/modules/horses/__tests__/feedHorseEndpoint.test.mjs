@@ -27,6 +27,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('POST /api/v1/horses/:id/feed', () => {
   let user;
@@ -65,7 +66,7 @@ describe('POST /api/v1/horses/:id/feed', () => {
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
 
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `Fed${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'mare',
@@ -74,7 +75,7 @@ describe('POST /api/v1/horses/:id/feed', () => {
         userId: user.id,
         equippedFeedType: 'elite',
         speed: 50,
-      },
+      }),
     });
     horseId = horse.id;
   });

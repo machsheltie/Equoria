@@ -28,6 +28,7 @@ import {
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const PREFIX = 'TestFixture-HorseConformation-';
 
@@ -283,13 +284,13 @@ describe('conformationScores persistence (real DB)', () => {
     };
 
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${PREFIX}Persist`,
         sex: 'Colt',
         dateOfBirth: new Date('2020-01-01'),
         conformationScores: scores,
-      },
+      }),
     });
 
     // Cleanup is the suite afterAll's prefix-scoped, fail-loud deleteMany

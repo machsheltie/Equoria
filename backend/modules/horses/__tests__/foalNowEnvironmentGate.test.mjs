@@ -29,6 +29,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
 const FIVE_YEARS_AGO = gameCalendarDate(new Date(), -5 * 365);
@@ -74,7 +75,7 @@ describe('POST /horses/:id/foal-now — the gestation bypass is gone (Equoria-6n
     csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
 
     const sire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-Bhf6nSire_${ts}`,
         sex: 'Stallion',
@@ -83,10 +84,10 @@ describe('POST /horses/:id/foal-now — the gestation bypass is gone (Equoria-6n
         breedId: breed.id,
         userId: user.id,
         healthStatus: 'Good',
-      },
+      }),
     });
     const dam = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-Bhf6nDam_${ts}`,
         sex: 'Mare',
@@ -98,7 +99,7 @@ describe('POST /horses/:id/foal-now — the gestation bypass is gone (Equoria-6n
         inFoalSinceDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
         pregnancySireId: sire.id,
         pendingFoalName: `TestFixture-Bhf6nFoal_${ts}`,
-      },
+      }),
     });
     damId = dam.id;
   });

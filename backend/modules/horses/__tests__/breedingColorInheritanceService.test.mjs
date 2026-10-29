@@ -37,6 +37,7 @@ import app from '../../../app.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { seededRng } from '../../../__tests__/helpers/seededRng.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -799,7 +800,7 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
     };
 
     const sire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         // Spread fixtureColor() first for a non-null phenotype (sentinel-safe),
         // then override colorGenotype with the deterministic e/e test genotype.
         ...fixtureColor(),
@@ -810,12 +811,12 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
         breedId,
         userId: testUserId,
         colorGenotype: sireGenotype,
-      },
+      }),
     });
     sireHorseId = sire.id;
 
     const dam = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `DamTest_${timestamp}`,
         age: 5,
@@ -824,7 +825,7 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
         breedId,
         userId: testUserId,
         colorGenotype: sireGenotype, // same e/e genotype for deterministic test
-      },
+      }),
     });
     damHorseId = dam.id;
   });
@@ -983,7 +984,7 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
     });
     crossUserUserIds.push(otherUser.id);
     const otherSire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `OtherUserSire_${timestamp}`,
         age: 5,
@@ -992,7 +993,7 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
         breedId,
         userId: otherUser.id,
         colorGenotype: buildGenotype({ E_Extension: 'e/e' }),
-      },
+      }),
     });
     // Registered for fail-loud, FK-ordered teardown in the suite afterAll
     // (Equoria-n7qa3) — the swallowed per-test finally delete is removed.
@@ -1034,7 +1035,7 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
     });
     crossUserUserIds.push(otherUser.id);
     const otherDam = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `OtherUserDam_${timestamp}`,
         age: 5,
@@ -1043,7 +1044,7 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
         breedId,
         userId: otherUser.id,
         colorGenotype: buildGenotype({ E_Extension: 'e/e' }),
-      },
+      }),
     });
     // Registered for fail-loud, FK-ordered teardown in the suite afterAll
     // (Equoria-n7qa3) — the swallowed per-test finally delete is removed.

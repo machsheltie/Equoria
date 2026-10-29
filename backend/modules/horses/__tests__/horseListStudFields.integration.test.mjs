@@ -26,6 +26,7 @@ import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const PREFIX = 'TestFixture-q4uem9-listfields';
 
@@ -125,7 +126,7 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
 
   async function horse({ ownerId, sex, ...overrides }) {
     const h = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${PREFIX}-${sex}-${tag()}`,
         sex,
@@ -136,7 +137,7 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
         healthStatus: 'Good',
         lastFedDate: new Date(),
         ...overrides,
-      },
+      }),
     });
     horseIds.push(h.id);
     return h;

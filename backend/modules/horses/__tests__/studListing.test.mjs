@@ -14,6 +14,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { listHorseAtStud, unlistHorseAtStud } from '../controllers/horseController.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const SUITE_PREFIX = 'studlist';
 
@@ -40,7 +41,7 @@ async function createBreed() {
 
 async function createHorse(userId, breedId, sex, overrides = {}) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
       sex,
@@ -48,7 +49,7 @@ async function createHorse(userId, breedId, sex, overrides = {}) {
       user: { connect: { id: userId } },
       breed: { connect: { id: breedId } },
       ...overrides,
-    },
+    }),
   });
 }
 

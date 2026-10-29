@@ -41,6 +41,7 @@ import { createMockToken } from '../../../__tests__/factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
   let __csrf__;
@@ -78,40 +79,40 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
     dob.setUTCFullYear(dob.getUTCFullYear() - 5);
 
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-91ezs-target-${suffix}`,
         userId: user.id,
         sex: 'Mare',
         dateOfBirth: dob,
-      },
+      }),
     });
     stallion = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-91ezs-stallion-${suffix}`,
         userId: user.id,
         sex: 'Stallion',
         dateOfBirth: dob,
-      },
+      }),
     });
     mare = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-91ezs-mare-${suffix}`,
         userId: user.id,
         sex: 'Mare',
         dateOfBirth: dob,
-      },
+      }),
     });
     colt = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-91ezs-colt-${suffix}`,
         userId: user.id,
         sex: 'Colt',
         dateOfBirth: dob,
-      },
+      }),
     });
     createdHorseIds.push(horse.id, stallion.id, mare.id, colt.id);
 

@@ -19,6 +19,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // The twelve horse stats a shoeing can raise.
 const horseStatKeys = [
@@ -63,7 +64,7 @@ async function makePlayer(money = 10000, horseData = {}) {
   });
   userIds.push(user.id);
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-FarrierHorse-${uid()}`,
       sex: 'Mare',
@@ -72,7 +73,7 @@ async function makePlayer(money = 10000, horseData = {}) {
       userId: user.id,
       healthStatus: 'Good',
       ...horseData,
-    },
+    }),
   });
   horseIds.push(horse.id);
   const token = generateTestToken({ id: user.id, email: user.email, role: 'user' });

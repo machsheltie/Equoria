@@ -23,6 +23,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 // Owner ruling C15 (2026-10-16; Equoria-576c0 B13): 1,000 Horse Points per stat
 // allocation. Old contract: 100. The point amounts below are the old scenarios at
 // the new scale; every assertion keeps its meaning.
@@ -33,7 +34,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
   beforeAll(async () => {
     // Create a minimal test horse directly in database for XP testing
     const testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'XP Test Horse',
         age: 5,
@@ -52,7 +53,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
         healthStatus: 'Excellent',
         horseXp: 0,
         availableStatPoints: 0,
-      },
+      }),
     });
     testHorseId = testHorse.id;
   });

@@ -28,6 +28,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-n7qa3: fail-loud scoped cleanup — a swallowed cleanup delete leaks
 // fixtures into the canonical DB and trips downstream sentinels (CLAUDE.md §2).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const cleanup = createCleanupTracker();
 let xpUser;
@@ -67,7 +68,7 @@ beforeAll(async () => {
   });
 
   xpHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-HorseXP-Horse-${ts}`,
       sex: 'Filly',
@@ -76,12 +77,12 @@ beforeAll(async () => {
       userId: xpUser.id,
       horseXp: 0,
       availableStatPoints: 0,
-    },
+    }),
   });
 
   // Horse pre-seeded with a stat point so allocateStatPoint can succeed
   xpHorseWithPoints = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-HorseXP-WithPoints-${ts}`,
       sex: 'Colt',
@@ -90,7 +91,7 @@ beforeAll(async () => {
       userId: xpUser.id,
       horseXp: 100,
       availableStatPoints: 1,
-    },
+    }),
   });
 }, 30000);
 
@@ -190,7 +191,7 @@ describe('allocateStatPoint() — validation errors', () => {
   it('returns success:false when no stat points available', async () => {
     // xpHorse starts with 0 available stat points (before addXpToHorse runs)
     const freshHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-HorseXP-NoPoints-${Date.now()}`,
         sex: 'Filly',
@@ -198,7 +199,7 @@ describe('allocateStatPoint() — validation errors', () => {
         age: 0,
         userId: xpUser.id,
         availableStatPoints: 0,
-      },
+      }),
     });
     // Equoria-n7qa3: freshHorse is TestFixture-HorseXP-named, so the afterAll
     // name-prefix horse sweep removes it. The old per-test delete used a

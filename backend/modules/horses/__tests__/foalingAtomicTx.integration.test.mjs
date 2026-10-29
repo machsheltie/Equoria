@@ -26,6 +26,7 @@ import { runFoalingJob, createFoalFromPregnancy } from '../services/foalingServi
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const FIXTURE_PREFIX = 'TestFixture-bvddn20';
@@ -43,7 +44,7 @@ function dropConstraint() {
 async function createPregnantMare(label) {
   const dob = gameCalendarDate(new Date(), -5 * 365);
   const sire = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-Sire-${label}-${tag}`,
       sex: 'Stallion',
@@ -52,11 +53,11 @@ async function createPregnantMare(label) {
       breedId,
       userId: testUser.id,
       healthStatus: 'Good',
-    },
+    }),
   });
   const inFoalSinceDate = new Date(Date.now() - 8 * DAY_MS);
   const dam = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-Dam-${label}-${tag}`,
       sex: 'Mare',
@@ -69,7 +70,7 @@ async function createPregnantMare(label) {
       pregnancySireId: sire.id,
       pregnancyFeedingsByTier: { performance: 2 },
       pendingFoalName: `${FIXTURE_PREFIX}-Foal-${label}-${tag}`,
-    },
+    }),
   });
   return { sire, dam, inFoalSinceDate };
 }

@@ -19,6 +19,7 @@ import config from '../../../config/config.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { horsePrestigeRules, scoreHorsePrestige } from '../services/horsePrestige.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const prefix = 'TestFixture-jyf8c';
 const tag = () => randomBytes(4).toString('hex');
@@ -35,14 +36,14 @@ let star;
 
 async function makeHorse(userId) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${prefix}-horse-${tag()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 7,
       userId,
-    },
+    }),
   });
   horseIds.push(horse.id);
   return horse;

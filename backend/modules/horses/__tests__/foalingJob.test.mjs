@@ -25,6 +25,7 @@ import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../ut
 import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // The pregnancy bonus pools in foalingService.mjs.
 // Owner ruling 2026-10-27 (q117): the bonus pools hold roster traits only
@@ -69,7 +70,7 @@ async function createMareSirePair({
 }) {
   const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
   const sire = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${sireName}_${Math.random().toString(36).slice(2, 6)}`,
       sex: 'Stallion',
@@ -78,10 +79,10 @@ async function createMareSirePair({
       breedId,
       userId,
       healthStatus: 'Good',
-    },
+    }),
   });
   const dam = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${damName}_${Math.random().toString(36).slice(2, 6)}`,
       sex: 'Mare',
@@ -93,7 +94,7 @@ async function createMareSirePair({
       inFoalSinceDate,
       pregnancySireId: pregnancySireId ?? sire.id,
       pregnancyFeedingsByTier,
-    },
+    }),
   });
   return { sire, dam };
 }
@@ -370,7 +371,7 @@ describe('runFoalingJob (B5)', () => {
 
     const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
     const validSire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `B5IsoSire_${Math.random().toString(36).slice(2, 6)}`,
         sex: 'Stallion',
@@ -379,11 +380,11 @@ describe('runFoalingJob (B5)', () => {
         breedId,
         userId: user.id,
         healthStatus: 'Good',
-      },
+      }),
     });
 
     const damBad = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `B5BadMare_${Math.random().toString(36).slice(2, 6)}`,
         sex: 'Mare',
@@ -395,10 +396,10 @@ describe('runFoalingJob (B5)', () => {
         inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
         pregnancySireId: 999_999_999, // sire that doesn't exist
         pregnancyFeedingsByTier: { performance: 3 },
-      },
+      }),
     });
     const damGood = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `B5GoodMare_${Math.random().toString(36).slice(2, 6)}`,
         sex: 'Mare',
@@ -410,7 +411,7 @@ describe('runFoalingJob (B5)', () => {
         inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
         pregnancySireId: validSire.id,
         pregnancyFeedingsByTier: { performance: 3 },
-      },
+      }),
     });
 
     const result = await runFoalingJob();
@@ -559,7 +560,7 @@ describe('runFoalingJob (B5)', () => {
       create: { name: 'Arabian', description: 'B5 wjxw direct-call sentinel' },
     });
     const otherBreedSire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `LegacyMismatchSire_${Math.random().toString(36).slice(2, 6)}`,
         sex: 'Stallion',
@@ -568,7 +569,7 @@ describe('runFoalingJob (B5)', () => {
         breedId: otherBreed.id,
         userId: user.id,
         healthStatus: 'Good',
-      },
+      }),
     });
     const { dam } = await createMareSirePair({
       userId: user.id,
@@ -636,9 +637,11 @@ describe('runFoalingJob (B5)', () => {
     // random generation. Both parents homozygous chestnut (e/e at extension)
     // means every foal MUST be e/e — deterministic regardless of rng.
     const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
-    // eslint-disable-next-line equoria/no-raw-test-horse-create -- deterministic color-inheritance sentinel: both parents set an explicit homozygous-chestnut colorGenotype + non-null phenotype on purpose; a fixtureColor() spread would be overridden and is not the point. No NULL-phenotype risk.
+    // Deterministic color-inheritance sentinel: both parents set an explicit
+    // homozygous-chestnut colorGenotype + non-null phenotype on purpose;
+    // testHorseData keeps a caller's color and adds only temperament + gaits.
     const sire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         name: `ColorSire_${Math.random().toString(36).slice(2, 6)}`,
         sex: 'Stallion',
         dateOfBirth: fiveYearsAgo,
@@ -654,11 +657,11 @@ describe('runFoalingJob (B5)', () => {
           G_Gray: 'g/g',
         },
         phenotype: { colorName: 'Chestnut' },
-      },
+      }),
     });
-    // eslint-disable-next-line equoria/no-raw-test-horse-create -- deterministic color-inheritance sentinel: explicit homozygous-chestnut colorGenotype + non-null phenotype set on purpose (see sire above). No NULL-phenotype risk.
+    // Explicit homozygous-chestnut colorGenotype + phenotype on purpose (see sire above).
     const dam = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         name: `ColorDam_${Math.random().toString(36).slice(2, 6)}`,
         sex: 'Mare',
         dateOfBirth: fiveYearsAgo,
@@ -677,7 +680,7 @@ describe('runFoalingJob (B5)', () => {
           G_Gray: 'g/g',
         },
         phenotype: { colorName: 'Chestnut' },
-      },
+      }),
     });
 
     const result = await runFoalingJob();

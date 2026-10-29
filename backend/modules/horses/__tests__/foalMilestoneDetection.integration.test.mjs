@@ -43,6 +43,7 @@ import {
   detectAndRecordFoalMilestonesCore,
   computeReachedMilestones,
 } from '../services/foalMilestoneService.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -76,7 +77,7 @@ async function makeFoal({ suffix, days, ageYears, bondScore = 0, epigeneticModif
   if (epigeneticModifiers !== undefined) {
     data.epigeneticModifiers = epigeneticModifiers;
   }
-  const foal = await prisma.horse.create({ data });
+  const foal = await prisma.horse.create({ data: await testHorseData(prisma, data) });
   createdFoalIds.push(foal.id);
   return foal;
 }

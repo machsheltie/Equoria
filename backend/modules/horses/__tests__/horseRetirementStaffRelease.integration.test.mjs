@@ -38,6 +38,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { processWeeklySalaries } from '../../grooms/index.mjs';
 import { feedHorse } from '../services/horseFeedService.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const SCOPE = 'TestFixture-6p398_14-retire';
 const RUN = randomBytes(5).toString('hex');
@@ -54,7 +55,7 @@ let breedId;
 
 async function makeHorse(key, { daysOld, storedAge, ...extra }) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${SCOPE}-${key}-${RUN}`,
       sex: 'Mare',
@@ -64,7 +65,7 @@ async function makeHorse(key, { daysOld, storedAge, ...extra }) {
       healthStatus: 'Good',
       userId: user.id,
       ...extra,
-    },
+    }),
   });
   horseIds.push(horse.id);
   return horse;

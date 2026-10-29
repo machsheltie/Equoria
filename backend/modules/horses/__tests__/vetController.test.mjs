@@ -17,6 +17,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -48,7 +49,7 @@ beforeAll(async () => {
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-VetHorse-${Date.now()}`,
       sex: 'Mare',
@@ -59,7 +60,7 @@ beforeAll(async () => {
       // Owner ruling 2026-10-26 (Equoria-7dmzp): a horse vetted within the last week is
       // refused a second health check, so this fixture was last vetted long ago.
       lastVettedDate: new Date('2024-01-01'),
-    },
+    }),
   });
 }, 30000);
 

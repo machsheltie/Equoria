@@ -20,6 +20,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // Equoria-kha18: a dob N Eastern game days ago, as a date-only value (the
 // owner ruling: day counts are Eastern calendar days). `Date.now() - N days`
@@ -82,25 +83,25 @@ describe('updateHorseAge writes game-years to Horse.age (Equoria-son6)', () => {
     });
 
     horse14d = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-son6-14d-${ts}`,
         sex: 'Filly',
         dateOfBirth: daysAgo(14),
         age: 0, // pretend cron hasn't run yet
         userId: fixtureUser.id,
-      },
+      }),
     });
 
     horse1107d = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-son6-1107d-${ts}`,
         sex: 'Mare',
         dateOfBirth: daysAgo(1107),
         age: 1107, // simulate the corrupted-DB state (cron wrote days)
         userId: fixtureUser.id,
-      },
+      }),
     });
   }, 30000);
 

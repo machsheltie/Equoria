@@ -33,6 +33,7 @@ import {
 } from '../../../utils/foalTaskLogManager.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Foal Task Log and Streak Data Integration', () => {
   let testUser, testFoal;
@@ -80,7 +81,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
       });
 
       testFoal = await tx.horse.create({
-        data: {
+        data: await testHorseData(tx, {
           ...fixtureColor(),
           name: 'Test Foal Integration',
           sex: 'Filly',
@@ -93,7 +94,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
           taskLog: null,
           lastGroomed: null,
           daysGroomedInARow: 0,
-        },
+        }),
       });
     });
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load

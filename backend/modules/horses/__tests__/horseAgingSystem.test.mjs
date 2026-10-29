@@ -25,6 +25,7 @@ import logger from '../../../utils/logger.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // Equoria-kha18: a dob N Eastern game days ago, as a date-only value (the
 // owner ruling: day counts are Eastern calendar days). `Date.now() - N days`
@@ -202,27 +203,27 @@ describe('updateHorseAge() — DB-fixture paths (lines 95-135) (Equoria-jkht)', 
 
     // Horse born today, stored age=0 → calculatedAge=0 === storedAge → early return (lines 95-107)
     currentAgeHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-HAS-Current-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),
         age: 0,
         userId: fixtureUser.id,
-      },
+      }),
     });
 
     // Horse born 7 days ago (1 game-year), stored age=0 → calculatedAge=1 !== storedAge → DB update
     // Updated for Equoria-son6 game-year semantics (1 week = 1 game year)
     staleAgeHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-HAS-Stale-${ts}`,
         sex: 'Filly',
         dateOfBirth: gameCalendarDate(new Date(), -7),
         age: 0,
         userId: fixtureUser.id,
-      },
+      }),
     });
   }, 30000);
 
@@ -281,25 +282,25 @@ describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-
     });
     // age=0 (game-years): milestoneAge 0 → not in MILESTONE_AGES → eligible:false → not-eligible branch
     masHorseNotEligible = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-MAS-NotElig-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),
         age: 0,
         userId: masUser.id,
-      },
+      }),
     });
     // age=2 (game-years): milestoneAge 2 → in MILESTONE_AGES, no prior milestone → eligible:true → success branch
     masHorseEligible = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-MAS-Eligible-${ts}`,
         sex: 'Filly',
         dateOfBirth: gameCalendarDate(new Date(), -14),
         age: 2,
         userId: masUser.id,
-      },
+      }),
     });
   }, 30000);
 
@@ -350,14 +351,14 @@ describe('checkForMilestones() — Equoria-bvddn.16 age-2/3 dead path removal', 
       },
     });
     bvHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-BV16-${ts}`,
         sex: 'Filly',
         dateOfBirth: gameCalendarDate(new Date(), -14),
         age: 2,
         userId: bvUser.id,
-      },
+      }),
     });
   }, 30000);
 
@@ -430,14 +431,14 @@ describe('processHorseBirthdays() — dryRun else-branch (lines 416-417) (Equori
     // born 7 days ago (1 game-year), age=0 → calculatedAge(1) !== storedAge(0) → birthdaysFound++
     // Updated for Equoria-son6 game-year semantics (1 week = 1 game year)
     pbHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-PB-DryRun-${ts}`,
         sex: 'Colt',
         dateOfBirth: gameCalendarDate(new Date(), -7),
         age: 0,
         userId: pbUser.id,
-      },
+      }),
     });
   }, 30000);
 

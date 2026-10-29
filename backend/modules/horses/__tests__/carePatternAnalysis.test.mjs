@@ -17,6 +17,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 let user;
 let foal;
@@ -47,25 +48,25 @@ beforeAll(async () => {
   });
 
   foal = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-CareAnalysisFoal-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,
       userId: user.id,
-    },
+    }),
   });
 
   matureHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-CareAnalysisMature-${Date.now()}`,
       sex: 'Stallion',
       dateOfBirth: gameCalendarDate(new Date(), -Math.round(4 * 365.25)),
       age: 4,
       userId: user.id,
-    },
+    }),
   });
 }, 30000);
 

@@ -29,6 +29,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { processWeeklySalaries } from '../../grooms/index.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const scope = 'TestFixture-6p398_14-newStaff';
 const run = randomBytes(5).toString('hex');
@@ -46,7 +47,7 @@ let auth;
 
 async function makeHorse(key, { daysOld, storedAge, ...extra }) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${scope}-${key}-${run}`,
       sex: 'Mare',
@@ -56,7 +57,7 @@ async function makeHorse(key, { daysOld, storedAge, ...extra }) {
       healthStatus: 'Good',
       userId: user.id,
       ...extra,
-    },
+    }),
   });
   horseIds.push(horse.id);
   return horse;

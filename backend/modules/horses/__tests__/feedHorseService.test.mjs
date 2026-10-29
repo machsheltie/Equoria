@@ -28,6 +28,7 @@ import { startOfGameDay } from '../../../utils/horseHealth.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // Resolved once at module load — used by the SELECT FOR UPDATE sentinel describe block.
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -170,7 +171,7 @@ describe('feedHorse service — stat-boost integration (real DB)', () => {
     });
     userId = user.id;
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `SvcHorse${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'Stallion',
@@ -179,7 +180,7 @@ describe('feedHorse service — stat-boost integration (real DB)', () => {
         userId,
         equippedFeedType: 'elite',
         speed: 50,
-      },
+      }),
     });
     horseId = horse.id;
   });
@@ -310,7 +311,7 @@ describe('feedHorse service — pregnancy feeding counter (Phase B4, real DB)', 
     // In-foal mare: inFoalSinceDate set, equippedFeedType = 'performance',
     // empty counter map, no prior feeding today.
     const dam = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `Dam${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'mare',
@@ -320,7 +321,7 @@ describe('feedHorse service — pregnancy feeding counter (Phase B4, real DB)', 
         equippedFeedType: 'performance',
         inFoalSinceDate: new Date(),
         pregnancyFeedingsByTier: {},
-      },
+      }),
     });
     damId = dam.id;
   });
@@ -417,7 +418,7 @@ describe('feedHorse service — sequential-feed guard (Equoria-nsr7 / Equoria-5g
     });
     userId = user.id;
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `ConcHorse${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'Stallion',
@@ -427,7 +428,7 @@ describe('feedHorse service — sequential-feed guard (Equoria-nsr7 / Equoria-5g
         equippedFeedType: 'elite',
         speed: 50,
         lastFedDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Excellent hunger, not fed today: owner ruling 2026-10-23 (hunger fill bar) - a never-fed horse is Bad and can be fed again today
-      },
+      }),
     });
     horseId = horse.id;
   });
@@ -513,7 +514,7 @@ describe('feedHorse — optimistic-concurrency lost-update guard (Equoria-zvp4, 
     userId = user.id;
     // In-foal mare so we also exercise the pregnancy-counter side of the claim.
     const dam = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `OptDam${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'mare',
@@ -525,7 +526,7 @@ describe('feedHorse — optimistic-concurrency lost-update guard (Equoria-zvp4, 
         pregnancyFeedingsByTier: {},
         lastFedDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Excellent hunger, not fed today: owner ruling 2026-10-23 (hunger fill bar) - a never-fed horse is Bad and can be fed again today
         speed: 50,
-      },
+      }),
     });
     damId = dam.id;
   });

@@ -28,6 +28,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { getConformationAnalysis } from '../controllers/horseController.mjs';
 import { CONFORMATION_REGIONS } from '../services/conformationService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ts = `${randomBytes(8).toString('hex')}_${Math.random().toString(36).slice(2, 7)}`;
 let testUser;
@@ -41,7 +42,7 @@ function makeScores(value) {
 
 async function seedHorse(scores) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `LnbluConfTest_${randomBytes(8).toString('hex')}`,
       sex: 'Mare',
@@ -50,7 +51,7 @@ async function seedHorse(scores) {
       breedId: testBreed.id,
       userId: testUser.id,
       conformationScores: scores,
-    },
+    }),
   });
   createdHorseIds.push(horse.id);
   return horse;

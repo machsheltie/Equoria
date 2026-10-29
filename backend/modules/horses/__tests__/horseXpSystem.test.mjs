@@ -15,6 +15,7 @@ import {
   validateStatName,
   HORSE_POINTS_PER_STAT_POINT as P,
 } from '../services/horseXpModelService.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 // Owner ruling C15 (2026-10-16; Equoria-576c0 B13): 1,000 Horse Points per stat
 // allocation. Old contract: 100. The point amounts below are the old scenarios at
 // the new scale; every assertion keeps its meaning.
@@ -24,7 +25,7 @@ const USER_ID = 'test-user-horse-xp-sys';
 
 async function mkHorse(suffix, opts = {}) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}${suffix}`,
       sex: 'Colt',
@@ -34,7 +35,7 @@ async function mkHorse(suffix, opts = {}) {
       horseXp: opts.horseXp ?? 0,
       availableStatPoints: opts.availableStatPoints ?? 0,
       ...(opts.speed !== undefined && { speed: opts.speed }),
-    },
+    }),
   });
 }
 

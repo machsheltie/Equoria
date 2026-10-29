@@ -20,6 +20,7 @@ import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // ── Test data setup ────────────────────────────────────────────────────────
 const ts = `${randomBytes(8).toString('hex')}_${Math.random().toString(36).slice(2, 7)}`;
@@ -47,7 +48,7 @@ const BASE_SCORES = {
 /** Create a real DB horse for this suite; track its ID for cleanup. */
 async function seedHorse(scores) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `ConfApiTest_${randomBytes(8).toString('hex')}_${Math.random().toString(36).slice(2, 5)}`,
       sex: 'Mare',
@@ -56,7 +57,7 @@ async function seedHorse(scores) {
       breedId: testBreed.id,
       userId: testUser.id,
       conformationScores: scores,
-    },
+    }),
   });
   createdHorseIds.push(horse.id);
   return horse;

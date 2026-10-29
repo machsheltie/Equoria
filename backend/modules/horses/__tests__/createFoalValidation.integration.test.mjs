@@ -20,6 +20,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const app = (await import('../../../app.mjs')).default;
 const rand = () => randomBytes(4).toString('hex');
@@ -75,7 +76,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
     });
 
     adultStallion = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TFmhdul-Stallion_${ts}`,
         sex: 'Stallion',
@@ -84,11 +85,11 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
         breedId: testBreed.id,
         userId: testUser.id,
         lastFedDate: new Date(),
-      },
+      }),
     });
 
     adultMare = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TFmhdul-Mare_${ts}`,
         sex: 'Mare',
@@ -98,11 +99,11 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
         userId: testUser.id,
         lastFedDate: new Date(),
         lastBredDate: null,
-      },
+      }),
     });
 
     anotherAdultMare = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TFmhdul-Mare2_${ts}`,
         sex: 'Mare',
@@ -112,11 +113,11 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
         userId: testUser.id,
         lastFedDate: new Date(),
         lastBredDate: null,
-      },
+      }),
     });
 
     youngHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TFmhdul-Young_${ts}`,
         sex: 'Stallion',
@@ -125,7 +126,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
         breedId: testBreed.id,
         userId: testUser.id,
         lastFedDate: new Date(),
-      },
+      }),
     });
   }, 120000);
 
@@ -213,7 +214,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
 
   it('rejects when dam is under 3 game-years with 400', async () => {
     const youngMare = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TFmhdul-YoungMare_${ts}`,
         sex: 'Mare',
@@ -222,7 +223,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
         breedId: testBreed.id,
         userId: testUser.id,
         lastFedDate: new Date(),
-      },
+      }),
     });
     try {
       const res = await postFoals({

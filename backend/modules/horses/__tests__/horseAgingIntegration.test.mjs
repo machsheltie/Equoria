@@ -68,7 +68,7 @@ import { createSequentially } from '../../../tests/helpers/createSequentially.mj
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 // Equoria-fefh2.6: canonical fixture helper (injects colorGenotype/phenotype)
 // + id-scoped cleanup for the retirement-milestone tests.
-import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { createTestHorse, cleanupTestHorses, testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 // Static import — no logger mock (Equoria-hg9wy).
 import cronJobService from '../../../services/cronJobs.mjs';
 // Equoria-dgnle: real (mockless) error-path coverage. updateHorseAge throws a
@@ -144,7 +144,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
       const traits = { positive: ['athletic'], negative: [], hidden: ['mysteriousLineage'] };
       // dob is 7 game days ago so calculatedAge = floor(7 / 7) = 1 against a stored age of 0.
       const foal = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `TestFixture-MilestoneFoal-${randHex()}`,
           sex: 'Filly',
@@ -156,7 +156,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
           taskLog,
           daysGroomedInARow: 15,
           epigeneticModifiers: traits,
-        },
+        }),
       });
       createdHorseIds.push(foal.id);
 
@@ -177,9 +177,9 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
       // dob offsets are live-now-relative so day-deltas are stable without a Date mock.
       const horses = await createSequentially([
         // Foal turning 1 game-year old: 7 game days ago → calc 1, stored 0.
-        () =>
+        async () =>
           prisma.horse.create({
-            data: {
+            data: await testHorseData(prisma, {
               ...fixtureColor(),
               name: `TestFixture-MilestoneFoal-${randHex()}`,
               sex: 'Colt',
@@ -190,12 +190,12 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
               taskLog: { trustBuilding: 6, desensitization: 4 },
               daysGroomedInARow: 8,
               epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-            },
+            }),
           }),
         // Horse turning 3 game-years: 21 game days ago → calc 3, stored 2.
-        () =>
+        async () =>
           prisma.horse.create({
-            data: {
+            data: await testHorseData(prisma, {
               ...fixtureColor(),
               name: `TestFixture-TrainingReady-${randHex()}`,
               sex: 'Mare',
@@ -203,13 +203,13 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
               age: 2,
               userId: testUser.id,
               breedId: testBreed.id,
-            },
+            }),
           }),
         // Horse with no birthday (correct stored age): 31 game days ago → calc 4,
         // stored 4 → calculatedAge === storedAge → not counted.
-        () =>
+        async () =>
           prisma.horse.create({
-            data: {
+            data: await testHorseData(prisma, {
               ...fixtureColor(),
               name: `TestFixture-NoBirthday-${randHex()}`,
               sex: 'Stallion',
@@ -217,7 +217,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
               age: 4,
               userId: testUser.id,
               breedId: testBreed.id,
-            },
+            }),
           }),
       ]);
       horses.forEach(h => createdHorseIds.push(h.id));
@@ -355,9 +355,9 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
       // each birthday, and record zero errors — proving the loop visits every
       // horse (the "continue" behaviour) rather than aborting on the first.
       const horses = await createSequentially([
-        () =>
+        async () =>
           prisma.horse.create({
-            data: {
+            data: await testHorseData(prisma, {
               ...fixtureColor(),
               name: `TestFixture-CleanBatch-A-${randHex()}`,
               sex: 'Colt',
@@ -367,11 +367,11 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
               breedId: testBreed.id,
               taskLog: {},
               epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-            },
+            }),
           }),
-        () =>
+        async () =>
           prisma.horse.create({
-            data: {
+            data: await testHorseData(prisma, {
               ...fixtureColor(),
               name: `TestFixture-CleanBatch-B-${randHex()}`,
               sex: 'Mare',
@@ -379,11 +379,11 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
               age: 2, // floor(21/7)=3 > 2 → birthday
               userId: testUser.id,
               breedId: testBreed.id,
-            },
+            }),
           }),
-        () =>
+        async () =>
           prisma.horse.create({
-            data: {
+            data: await testHorseData(prisma, {
               ...fixtureColor(),
               name: `TestFixture-CleanBatch-C-${randHex()}`,
               sex: 'Stallion',
@@ -391,7 +391,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
               age: 1, // floor(14/7)=2 > 1 → birthday
               userId: testUser.id,
               breedId: testBreed.id,
-            },
+            }),
           }),
       ]);
       horses.forEach(h => createdHorseIds.push(h.id));

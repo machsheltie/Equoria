@@ -2,6 +2,7 @@ import { describe, afterAll, expect, it } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import * as foalModel from '../models/foalModel.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const { getFoalDevelopment } = foalModel;
 
@@ -28,14 +29,14 @@ const DATE_OF_BIRTH = new Date('2020-01-01');
 
 async function mkFoal(suffix, opts = {}) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}${suffix}`,
       sex: opts.sex ?? 'Colt',
       dateOfBirth: opts.dateOfBirth ?? DATE_OF_BIRTH,
       age: opts.age ?? 0,
       ...(opts.bondScore !== undefined && { bondScore: opts.bondScore }),
-    },
+    }),
   });
 }
 

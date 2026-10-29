@@ -44,6 +44,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-n7qa3: fail-loud scoped cleanup.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -87,7 +88,7 @@ beforeAll(async () => {
 
   // dob 9 real days ago → game-year 1 (7–13 real days).
   yearlingFoal = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-${TAG}-Yearling`,
       sex: 'Filly',
@@ -95,7 +96,7 @@ beforeAll(async () => {
       age: 1,
       bondScore: 30,
       userId: user.id,
-    },
+    }),
   });
 
   // Seed a FoalDevelopment row WITH a real completedMilestones store so the

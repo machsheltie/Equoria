@@ -34,6 +34,7 @@ import { createMockToken } from '../../../__tests__/factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v; closed 410, Equoria-h4zni)', () => {
   let __csrf__;
@@ -88,40 +89,40 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v; closed 410,
     dob.setUTCFullYear(dob.getUTCFullYear() - 5);
 
     horseA = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-hg62v-A-${suffix}`,
         userId: userA.id,
         sex: 'Mare',
         dateOfBirth: dob,
-      },
+      }),
     });
     horseAOriginalSire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-hg62v-A-sire-${suffix}`,
         userId: userA.id,
         sex: 'Stallion',
         dateOfBirth: dob,
-      },
+      }),
     });
     victimSire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-hg62v-victim-sire-${suffix}`,
         userId: userB.id,
         sex: 'Stallion',
         dateOfBirth: dob,
-      },
+      }),
     });
     victimDam = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-hg62v-victim-dam-${suffix}`,
         userId: userB.id,
         sex: 'Mare',
         dateOfBirth: dob,
-      },
+      }),
     });
     createdHorseIds.push(horseA.id, horseAOriginalSire.id, victimSire.id, victimDam.id);
   }, 120000);

@@ -30,6 +30,7 @@ import { createMockToken } from '../../../__tests__/factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2; closed 410, Equoria-h4zni)', () => {
   let __csrf__;
@@ -89,14 +90,14 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2; clos
     dob.setUTCFullYear(dob.getUTCFullYear() - 5);
 
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-tmyd2-${suffix}`,
         userId: user.id,
         sex: 'Mare',
         dateOfBirth: dob,
         breedId: originalBreed.id,
-      },
+      }),
     });
     createdHorseIds.push(horse.id);
   }, 120000);

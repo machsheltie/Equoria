@@ -48,6 +48,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const app = (await import('../../../app.mjs')).default;
 const rand = () => randomBytes(4).toString('hex');
@@ -162,22 +163,34 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
     });
 
     stallion = await prisma.horse.create({
-      data: adult(`TestFixture-6w3ur-Sire_${ts}`, 'Stallion', player.id, breedThoroughbred.id),
+      data: await testHorseData(
+        prisma,
+        adult(`TestFixture-6w3ur-Sire_${ts}`, 'Stallion', player.id, breedThoroughbred.id),
+      ),
     });
     mare = await prisma.horse.create({
-      data: adult(`TestFixture-6w3ur-Dam_${ts}`, 'Mare', player.id, breedThoroughbred.id),
+      data: await testHorseData(prisma, adult(`TestFixture-6w3ur-Dam_${ts}`, 'Mare', player.id, breedThoroughbred.id)),
     });
     secondMare = await prisma.horse.create({
-      data: adult(`TestFixture-6w3ur-Dam2_${ts}`, 'Mare', player.id, breedThoroughbred.id),
+      data: await testHorseData(prisma, adult(`TestFixture-6w3ur-Dam2_${ts}`, 'Mare', player.id, breedThoroughbred.id)),
     });
     crossBredStallion = await prisma.horse.create({
-      data: adult(`TestFixture-6w3ur-CrossSire_${ts}`, 'Stallion', player.id, breedAbaga.id),
+      data: await testHorseData(
+        prisma,
+        adult(`TestFixture-6w3ur-CrossSire_${ts}`, 'Stallion', player.id, breedAbaga.id),
+      ),
     });
     otherStallion = await prisma.horse.create({
-      data: adult(`TestFixture-6w3ur-OtherSire_${ts}`, 'Stallion', otherPlayer.id, breedThoroughbred.id),
+      data: await testHorseData(
+        prisma,
+        adult(`TestFixture-6w3ur-OtherSire_${ts}`, 'Stallion', otherPlayer.id, breedThoroughbred.id),
+      ),
     });
     otherMare = await prisma.horse.create({
-      data: adult(`TestFixture-6w3ur-OtherDam_${ts}`, 'Mare', otherPlayer.id, breedThoroughbred.id),
+      data: await testHorseData(
+        prisma,
+        adult(`TestFixture-6w3ur-OtherDam_${ts}`, 'Mare', otherPlayer.id, breedThoroughbred.id),
+      ),
     });
 
     // A BREEDLESS mare. `Horse.breedId` is nullable and this is not a synthetic
@@ -187,7 +200,7 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
     // error and PROCEEDS when the default breed row cannot be resolved. With no
     // supplied breedId there is nothing for the foaling job to derive from.
     breedlessMare = await prisma.horse.create({
-      data: adult(`TestFixture-6w3ur-BreedlessDam_${ts}`, 'Mare', player.id, null),
+      data: await testHorseData(prisma, adult(`TestFixture-6w3ur-BreedlessDam_${ts}`, 'Mare', player.id, null)),
     });
 
     // A breed row whose NAME has no entry in backend/data/breedProfiles.json.
@@ -201,12 +214,18 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       },
     });
     profilelessMare = await prisma.horse.create({
-      data: adult(`TestFixture-6w3ur-ProfilelessDam_${ts}`, 'Mare', player.id, breedWithoutProfile.id),
+      data: await testHorseData(
+        prisma,
+        adult(`TestFixture-6w3ur-ProfilelessDam_${ts}`, 'Mare', player.id, breedWithoutProfile.id),
+      ),
     });
     // Equoria-5nwwf: sire and dam must share a breed, so a profile-less mare needs a
     // profile-less stallion of her own breed to reach the profile check at all.
     profilelessStallion = await prisma.horse.create({
-      data: adult(`TestFixture-6w3ur-ProfilelessSire_${ts}`, 'Stallion', player.id, breedWithoutProfile.id),
+      data: await testHorseData(
+        prisma,
+        adult(`TestFixture-6w3ur-ProfilelessSire_${ts}`, 'Stallion', player.id, breedWithoutProfile.id),
+      ),
     });
   }, 120000);
 

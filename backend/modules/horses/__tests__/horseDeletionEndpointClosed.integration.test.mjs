@@ -69,6 +69,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 // Cross-module import goes through the users barrel (CONTRIBUTING.md § "Module
 // public API boundaries"), not the service's internal path.
 
@@ -103,7 +104,7 @@ async function makeUser(label) {
 
 async function makeHorse(ownerId, label, extra = {}) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
       sex: 'Mare',
@@ -113,7 +114,7 @@ async function makeHorse(ownerId, label, extra = {}) {
       healthStatus: 'Excellent',
       tack: TACK,
       ...extra,
-    },
+    }),
   });
 }
 

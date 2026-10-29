@@ -17,6 +17,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gatherLineage } from '../services/foalLineage.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const SCOPE = 'TestFixture-FoalLineage';
 const RUN = randomBytes(6).toString('hex');
@@ -28,7 +29,7 @@ const h = {};
 
 async function makeHorse(key, sex, extra = {}) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${SCOPE}-${key}-${RUN}`,
       sex,
@@ -36,7 +37,7 @@ async function makeHorse(key, sex, extra = {}) {
       age: 5,
       userId: user.id,
       ...extra,
-    },
+    }),
   });
   createdHorseIds.push(horse.id);
   h[key] = horse;

@@ -16,6 +16,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const PREFIX = 'TestFixture-9spb2-list';
 
@@ -42,7 +43,7 @@ describe('horse list: shod date, training cooldown and portrait (Equoria-9spb2)'
     const lastShod = new Date('2026-10-20T12:00:00.000Z');
     const trainingCooldown = new Date('2026-10-30T12:00:00.000Z');
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${PREFIX}-mare-${suffix}`,
         sex: 'Mare',
@@ -52,7 +53,7 @@ describe('horse list: shod date, training cooldown and portrait (Equoria-9spb2)'
         lastShod,
         trainingCooldown,
         imageUrl: '/images/portraits/test-portrait.png',
-      },
+      }),
     });
 
     const token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
@@ -86,7 +87,7 @@ describe('horse list: shod date, training cooldown and portrait (Equoria-9spb2)'
     });
     const lastGroomed = new Date('2026-10-27T15:30:00.000Z');
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${PREFIX}-groomed-${suffix}`,
         sex: 'Mare',
@@ -94,7 +95,7 @@ describe('horse list: shod date, training cooldown and portrait (Equoria-9spb2)'
         age: 5,
         userId: user.id,
         lastGroomed,
-      },
+      }),
     });
 
     const token = generateTestToken({ id: user.id, email: user.email, role: 'user' });

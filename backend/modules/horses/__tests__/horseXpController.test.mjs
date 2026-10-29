@@ -20,6 +20,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -50,14 +51,14 @@ beforeAll(async () => {
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-XpHorse-${Date.now()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),
       age: 5,
       userId: user.id,
-    },
+    }),
   });
 }, 30000);
 
@@ -283,7 +284,7 @@ describe('POST /api/v1/horses/:id/allocate-stat — successful allocation (merge
 
   beforeAll(async () => {
     allocHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-XpAllocHorse-${Date.now()}`,
         sex: 'Mare',
@@ -292,7 +293,7 @@ describe('POST /api/v1/horses/:id/allocate-stat — successful allocation (merge
         userId: user.id,
         availableStatPoints: 2,
         speed: 75,
-      },
+      }),
     });
 
     // Scoped, fail-loud cleanup (Equoria-n7qa3). allocHorse is owned by the

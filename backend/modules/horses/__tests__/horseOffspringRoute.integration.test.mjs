@@ -21,6 +21,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import config from '../../../config/config.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const PREFIX = 'TestFixture-oey9655';
 const createdUserIds = [];
@@ -56,7 +57,7 @@ async function makeUser(suffix) {
 
 async function makeHorse(userId, label, extra = {}) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}-${label}-${randomBytes(3).toString('hex')}`,
       sex: 'Mare',
@@ -65,7 +66,7 @@ async function makeHorse(userId, label, extra = {}) {
       userId,
       healthStatus: 'healthy',
       ...extra,
-    },
+    }),
   });
   createdHorseIds.push(horse.id);
   return horse;

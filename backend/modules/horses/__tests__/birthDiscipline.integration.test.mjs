@@ -36,6 +36,7 @@ import {
   birthDisciplineScores,
   pickFoalBirthDisciplineFromParents,
 } from '../services/birthDiscipline.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const dayMs = 24 * 60 * 60 * 1000;
@@ -234,15 +235,15 @@ describe('foaling (createFoalFromPregnancy)', () => {
       healthStatus: 'Good',
     };
     const sire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...base,
         name: `${prefix}-Sire-${label}`,
         sex: 'Stallion',
         ...(sireScores && { disciplineScores: sireScores }),
-      },
+      }),
     });
     const dam = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...base,
         name: `${prefix}-Dam-${label}`,
         sex: 'Mare',
@@ -250,7 +251,7 @@ describe('foaling (createFoalFromPregnancy)', () => {
         inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
         pregnancySireId: sire.id,
         pendingFoalName: `${prefix}-Foal-${label}`,
-      },
+      }),
     });
     return { sire, dam };
   }

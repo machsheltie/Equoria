@@ -42,6 +42,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { allocateStatPoint } from '../services/horseXpModelService.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const BASE_SPEED = 50;
 const CONCURRENCY = 5;
@@ -51,7 +52,7 @@ const createdHorseIds = [];
 
 async function makeHorse(availableStatPoints) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-wsj2i-horse-${randomBytes(8).toString('hex')}`,
       sex: 'Mare',
@@ -60,7 +61,7 @@ async function makeHorse(availableStatPoints) {
       userId: ownerId,
       speed: BASE_SPEED,
       availableStatPoints,
-    },
+    }),
   });
   createdHorseIds.push(horse.id);
   return horse;

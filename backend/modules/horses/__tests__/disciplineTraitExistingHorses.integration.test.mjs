@@ -24,6 +24,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { breedDefaultDiscipline } from '../services/birthDiscipline.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MIGRATION = resolve(
@@ -61,16 +62,16 @@ describe('existing horses get their breed default discipline at +5 (migration ba
     await expect(
       prisma.$transaction(
         async tx => {
-          const make = (label, breedId, disciplineScores) =>
+          const make = async (label, breedId, disciplineScores) =>
             tx.horse.create({
-              data: {
+              data: await testHorseData(tx, {
                 ...fixtureColor(),
                 name: `${TAG}-${label}`,
                 sex: 'Mare',
                 dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
                 breedId,
                 ...(disciplineScores === undefined ? {} : { disciplineScores }),
-              },
+              }),
               select: { id: true },
             });
           const none = await make('none', ridingBreed.id, undefined);

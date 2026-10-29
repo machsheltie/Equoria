@@ -14,6 +14,7 @@ import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -45,7 +46,7 @@ describe('SENTINEL: foal born → foalBorn Notification', () => {
     const dob = gameCalendarDate(new Date(), -5 * 365);
 
     sire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-FoalNotifSire-${Date.now()}`,
         sex: 'Stallion',
@@ -53,11 +54,11 @@ describe('SENTINEL: foal born → foalBorn Notification', () => {
         age: 5,
         breedId: breed.id,
         userId: user.id,
-      },
+      }),
     });
 
     dam = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-FoalNotifDam-${Date.now()}`,
         sex: 'Mare',
@@ -68,7 +69,7 @@ describe('SENTINEL: foal born → foalBorn Notification', () => {
         inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
         pregnancySireId: sire.id,
         pregnancyFeedingsByTier: {},
-      },
+      }),
     });
   }, 30000);
 

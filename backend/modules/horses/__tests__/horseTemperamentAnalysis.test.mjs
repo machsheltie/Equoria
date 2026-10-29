@@ -25,6 +25,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 let user;
 let horse;
@@ -50,14 +51,14 @@ beforeAll(async () => {
   });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-HorseTempHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,
       userId: user.id,
-    },
+    }),
   });
 }, 30000);
 
@@ -97,14 +98,14 @@ describe('analyzeHorseTemperament', () => {
   // flagCount 2. There is no flag path now (Equoria-efs4j).
   it('has no flags_and_stats path: a second horse with no interactions also uses basic_stats', async () => {
     const secondHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-HorseTempFlags-${Date.now()}`,
         sex: 'Colt',
         dateOfBirth: new Date(),
         age: 0,
         userId: user.id,
-      },
+      }),
     });
 
     // secondHorse is userId-scoped to `user`; the top-level fail-loud afterAll
@@ -232,14 +233,14 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
     });
 
     interHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-HT-InterHorse-${ts}`,
         sex: 'Filly',
         dateOfBirth: gameCalendarDate(new Date(), -30),
         age: 30,
         userId: interUser.id,
-      },
+      }),
     });
 
     // 7 interactions: bondingChange rising [0,1,1,2,3,4,5],
@@ -379,14 +380,14 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
     //   analyzeFromInteractions: confidenceLevel=0.9>0.7 → 'confident'
     //   analyzeBehavioralTrends: all slopes=0 → 'stable' overallDirection
     confidentHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-HTA-RBR-Confident-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date('2019-01-01'),
         age: 30,
         userId: rbrUser.id,
-      },
+      }),
     });
     for (let i = 0; i < 5; i++) {
       await prisma.groomInteraction.create({
@@ -404,14 +405,14 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
     // nervousHorse: negative bondingChange (-1) →
     //   confidenceLevel=0.25<0.4 → 'nervous'
     nervousHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-HTA-RBR-Nervous-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date('2019-01-01'),
         age: 30,
         userId: rbrUser.id,
-      },
+      }),
     });
     for (let i = 0; i < 5; i++) {
       await prisma.groomInteraction.create({
@@ -430,14 +431,14 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
     //   calculateTrend slope=-1 → 'declining' (line 714)
     //   avgTrendScore=-1/2=-0.5<-0.3 → 'negative' overallDirection (line 311)
     negTrendHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-HTA-RBR-NegTrend-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date('2019-01-01'),
         age: 30,
         userId: rbrUser.id,
-      },
+      }),
     });
     for (let i = 0; i < 7; i++) {
       await prisma.groomInteraction.create({
@@ -456,14 +457,14 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
     // neutralChangeHorse: 6 identical interactions →
     //   earlyPeriod == recentPeriod → all changes=0 → 'neutral' changeDirection (line 552)
     neutralChangeHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-HTA-RBR-Neutral-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date('2019-01-01'),
         age: 30,
         userId: rbrUser.id,
-      },
+      }),
     });
     for (let i = 0; i < 6; i++) {
       await prisma.groomInteraction.create({
@@ -484,14 +485,14 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
     //   bondingChange metric=-4 (<-0.5) → 'declining_bonding'
     //   overallChange=(-4-3)/2=-3.5<-0.5 → 'negative' changeDirection (line 550)
     worseningHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-HTA-RBR-Worsening-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date('2019-01-01'),
         age: 30,
         userId: rbrUser.id,
-      },
+      }),
     });
     for (let i = 0; i < 6; i++) {
       const isEarly = i < 3;

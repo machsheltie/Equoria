@@ -22,6 +22,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const PREFIX = `TestFixture-q242-legacyScore-${randomBytes(4).toString('hex')}`;
@@ -48,7 +49,7 @@ describe('the legacy-score route is removed (q242)', () => {
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${PREFIX}-horse`,
         sex: 'Mare',
@@ -57,7 +58,7 @@ describe('the legacy-score route is removed (q242)', () => {
         userId: user.id,
         healthStatus: 'Good',
         epigeneticModifiers: { positive: ['brave'], negative: [], hidden: ['heart'] },
-      },
+      }),
     });
   });
 

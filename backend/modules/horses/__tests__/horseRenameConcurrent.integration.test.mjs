@@ -20,6 +20,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const origin = 'http://localhost:3000';
 const tag = randomBytes(5).toString('hex');
@@ -57,7 +58,7 @@ beforeAll(async () => {
   });
   token = generateTestToken({ id: owner.id, email: owner.email, role: 'user' });
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: originalName,
       sex: 'Mare',
@@ -65,7 +66,7 @@ beforeAll(async () => {
       age: 6,
       userId: owner.id,
       healthStatus: 'Excellent',
-    },
+    }),
   });
 }, 60000);
 

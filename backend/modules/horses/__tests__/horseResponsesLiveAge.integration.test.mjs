@@ -30,6 +30,7 @@ import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { withAgeYears } from '../../../utils/horseAge.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const prefix = 'TestFixture-6pbka-liveAge';
 const origin = 'http://localhost:3000';
@@ -85,7 +86,7 @@ async function makeUser(label, role) {
 
 async function makeHorse(label, dateOfBirth, storedAge, extra = {}) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${prefix}-${label}-${tag()}`,
       sex: 'Mare',
@@ -96,7 +97,7 @@ async function makeHorse(label, dateOfBirth, storedAge, extra = {}) {
       healthStatus: 'Good',
       lastFedDate: lateEve,
       ...extra,
-    },
+    }),
   });
   horseIds.push(horse.id);
   return horse;

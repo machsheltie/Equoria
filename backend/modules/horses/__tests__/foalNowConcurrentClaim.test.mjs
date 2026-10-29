@@ -54,6 +54,7 @@ import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const FOALING_SERVICE_SRC = readFileSync(
   resolve(dirname(fileURLToPath(import.meta.url)), '../services/foalingService.mjs'),
@@ -69,7 +70,7 @@ describe('createFoalFromPregnancy — direct-branch atomic claim (Equoria-wgw5k,
     const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
     const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
     const sire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-WgwSire_${ts}`,
         sex: 'Stallion',
@@ -78,10 +79,10 @@ describe('createFoalFromPregnancy — direct-branch atomic claim (Equoria-wgw5k,
         breedId: breed.id,
         userId: user.id,
         healthStatus: 'Good',
-      },
+      }),
     });
     const dam = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-WgwDam_${ts}`,
         sex: 'Mare',
@@ -95,7 +96,7 @@ describe('createFoalFromPregnancy — direct-branch atomic claim (Equoria-wgw5k,
         inFoalSinceDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
         pregnancySireId: sire.id,
         pendingFoalName: `TestFixture-WgwFoal_${ts}`,
-      },
+      }),
     });
     return { damId: dam.id };
   }

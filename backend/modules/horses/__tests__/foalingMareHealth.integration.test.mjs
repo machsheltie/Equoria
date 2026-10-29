@@ -15,6 +15,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { horseHealthGrade } from '../../../utils/horseHealth.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const dayMs = 24 * 60 * 60 * 1000;
 const fixturePrefix = 'TestFixture-w4ivy';
@@ -27,7 +28,7 @@ const cleanup = createCleanupTracker();
 
 async function pregnantMare(label, care) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${fixturePrefix}-Dam-${label}-${tag}`,
       sex: 'Mare',
@@ -40,7 +41,7 @@ async function pregnantMare(label, care) {
       pregnancySireId: sire.id,
       pregnancyFeedingsByTier: {},
       ...care,
-    },
+    }),
   });
 }
 
@@ -71,7 +72,7 @@ beforeAll(async () => {
   });
   breedId = breed.id;
   sire = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${fixturePrefix}-Sire-${tag}`,
       sex: 'Stallion',
@@ -79,7 +80,7 @@ beforeAll(async () => {
       age: 5,
       breedId,
       userId: testUser.id,
-    },
+    }),
   });
 }, 60000);
 

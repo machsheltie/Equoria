@@ -28,6 +28,7 @@ import {
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_NAME_PREFIX = 'TestFixture-CanonicalSex-';
 
@@ -97,13 +98,13 @@ describe('Prisma $extends — canonicalizes sex on every horse write', () => {
 
   it('horse.create — lowercase "mare" persists as "Mare"', async () => {
     const created = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${FIXTURE_NAME_PREFIX}lowercase`,
         sex: 'mare',
         dateOfBirth: new Date('2020-01-01'),
         breedId: breed.id,
-      },
+      }),
     });
     expect(created.sex).toBe('Mare');
     const reread = await prisma.horse.findUnique({ where: { id: created.id } });
@@ -112,26 +113,26 @@ describe('Prisma $extends — canonicalizes sex on every horse write', () => {
 
   it('horse.create — uppercase "STALLION" persists as "Stallion"', async () => {
     const created = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${FIXTURE_NAME_PREFIX}uppercase`,
         sex: 'STALLION',
         dateOfBirth: new Date('2020-01-01'),
         breedId: breed.id,
-      },
+      }),
     });
     expect(created.sex).toBe('Stallion');
   });
 
   it('horse.create — Title Case "Filly" passes through unchanged', async () => {
     const created = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${FIXTURE_NAME_PREFIX}titlecase`,
         sex: 'Filly',
         dateOfBirth: new Date('2024-01-01'),
         breedId: breed.id,
-      },
+      }),
     });
     expect(created.sex).toBe('Filly');
   });
@@ -139,26 +140,26 @@ describe('Prisma $extends — canonicalizes sex on every horse write', () => {
   it('horse.create — invalid sex is rejected at the client layer', async () => {
     await expect(
       prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `${FIXTURE_NAME_PREFIX}invalid`,
           sex: 'alien',
           dateOfBirth: new Date('2020-01-01'),
           breedId: breed.id,
-        },
+        }),
       }),
     ).rejects.toThrow(/not a recognized horse sex/);
   });
 
   it('horse.update — lowercase "mare" persists as "Mare"', async () => {
     const created = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${FIXTURE_NAME_PREFIX}update-target`,
         sex: 'colt',
         dateOfBirth: new Date('2024-01-01'),
         breedId: breed.id,
-      },
+      }),
     });
     expect(created.sex).toBe('Colt');
     const updated = await prisma.horse.update({
@@ -172,32 +173,34 @@ describe('Prisma $extends — canonicalizes sex on every horse write', () => {
     const upserted = await prisma.horse.upsert({
       where: { id: -424242 },
       update: { sex: 'mare' },
-      create: {
+      create: await testHorseData(prisma, {
         name: `${FIXTURE_NAME_PREFIX}upsert`,
         sex: 'STALLION',
         dateOfBirth: new Date('2020-01-01'),
         breedId: breed.id,
-      },
+      }),
     });
     expect(upserted.sex).toBe('Stallion');
   });
 
   it('horse.createMany — every row canonicalized', async () => {
     await prisma.horse.createMany({
-      data: [
-        {
-          name: `${FIXTURE_NAME_PREFIX}many-1`,
-          sex: 'mare',
-          dateOfBirth: new Date('2020-01-01'),
-          breedId: breed.id,
-        },
-        {
-          name: `${FIXTURE_NAME_PREFIX}many-2`,
-          sex: 'STALLION',
-          dateOfBirth: new Date('2020-01-01'),
-          breedId: breed.id,
-        },
-      ],
+      data: await Promise.all(
+        [
+          {
+            name: `${FIXTURE_NAME_PREFIX}many-1`,
+            sex: 'mare',
+            dateOfBirth: new Date('2020-01-01'),
+            breedId: breed.id,
+          },
+          {
+            name: `${FIXTURE_NAME_PREFIX}many-2`,
+            sex: 'STALLION',
+            dateOfBirth: new Date('2020-01-01'),
+            breedId: breed.id,
+          },
+        ].map(row => testHorseData(prisma, row)),
+      ),
     });
     const rows = await prisma.horse.findMany({
       where: { name: { startsWith: `${FIXTURE_NAME_PREFIX}many-` } },
