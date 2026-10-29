@@ -233,9 +233,14 @@ describe('private stud approval races (Equoria-e7tgc.7)', () => {
 
     // The test holds the request row. The approval pays, pins both horses and
     // queues on that row for its final claim; the cancel then queues behind
-    // the approval. Postgres hands the row to the first waiter.
+    // the approval. Postgres hands the row to the first waiter only while the
+    // holder merely LOCKS it: the first waiter keeps the row's tuple lock until
+    // its own UPDATE lands. A holder that UPDATEs the row makes a new row
+    // version, both waiters are released to chase it, and either can win - the
+    // cancel did, in CI run 40874739804. So the hold is lock-only, in the mode
+    // an UPDATE takes (FOR NO KEY UPDATE), and changes nothing.
     const approved = await holdRowLockUntil(
-      tx => tx.breedingRecord.update({ where: { id: requestId }, data: { fee } }),
+      tx => tx.$queryRaw`SELECT "id" FROM "breeding_records" WHERE "id" = ${requestId} FOR NO KEY UPDATE`,
       () => actOnRequest(studOwner.token, requestId, 'approve'),
       {
         whileBlocked: async ({ waitForBlocked }) => {
