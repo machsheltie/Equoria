@@ -34,6 +34,7 @@ import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // multi-user/horse/groom IDOR fixture surfaces at the source instead of trips
 // the canonical NULL-phenotype sentinel (Equoria-a429/lfj5) in a later suite.
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
   // Equoria-0ys7m / Equoria-plw0h per-user CSRF binding: tokenA / userA are
@@ -131,22 +132,22 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
     __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${tokenA}`] });
 
     horseA = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `CweHorseA-${randomBytes(8).toString('hex')}`,
         userId: userA.id,
         sex: 'mare',
         dateOfBirth: new Date(),
-      },
+      }),
     });
     horseB = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `CweHorseB-${randomBytes(8).toString('hex')}`,
         userId: userB.id,
         sex: 'stallion',
         dateOfBirth: new Date(),
-      },
+      }),
     });
     groomA = await prisma.groom.create({
       data: {

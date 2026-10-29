@@ -38,6 +38,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 const SENTINEL = `TestFixture-HorseQueryIndexes-${randomBytes(6).toString('hex')}`;
 // Comfortable margin above what an empty lane-shaped table needs to flip
@@ -72,7 +73,7 @@ beforeAll(async () => {
   const sireIds = [];
   for (let i = 0; i < SIRE_POOL_SIZE; i += 1) {
     const sire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${SENTINEL}-sire-${i}`,
         sex: 'Stallion',
@@ -80,7 +81,7 @@ beforeAll(async () => {
         userId: user.id,
         forSale: i % 2 === 0,
         salePrice: i % 2 === 0 ? 1000 + i * 41 : 0,
-      },
+      }),
     });
     sireIds.push(sire.id);
   }
@@ -98,7 +99,7 @@ beforeAll(async () => {
       sireId: sireIds[i % sireIds.length],
     });
   }
-  await prisma.horse.createMany({ data: bulk });
+  await prisma.horse.createMany({ data: await Promise.all(bulk.map(row => testHorseData(prisma, row))) });
 
   // Planner statistics (pg_class.reltuples, per-column MCV/histogram) are
   // only refreshed by ANALYZE (or autovacuum, which is not guaranteed to

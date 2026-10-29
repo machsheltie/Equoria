@@ -17,6 +17,7 @@ import { calculateUserSalaryCost } from '../../modules/grooms/services/groomSala
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Groom Salary System', () => {
   let testUser;
@@ -47,7 +48,7 @@ describe('Groom Salary System', () => {
 
     // Create test horse
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-SalaryHorse-${testSuffix}`,
         userId: testUser.id,
@@ -59,7 +60,7 @@ describe('Groom Salary System', () => {
         agility: 50,
         stamina: 50,
         temperament: 'calm',
-      },
+      }),
     });
 
     // Create test groom

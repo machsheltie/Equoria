@@ -28,7 +28,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
-import { createTestHorse } from '../helpers/createTestHorse.mjs';
+import { createTestHorse, testHorseData } from '../helpers/createTestHorse.mjs';
 import { giveEligibleRider } from '../helpers/eligibleCompetitor.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
 import { liveAgeBelowClauses, liveHorseAgeYears } from '../../utils/horseAge.mjs';
@@ -73,7 +73,7 @@ async function makeUser() {
 
 async function makeHorse(user, { dateOfBirth, age, ...extra }) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${scope}-${rand()}`,
       sex: 'Mare',
@@ -82,7 +82,7 @@ async function makeHorse(user, { dateOfBirth, age, ...extra }) {
       healthStatus: 'Excellent',
       userId: user.id,
       ...extra,
-    },
+    }),
   });
   horseIds.push(horse.id);
   return horse;

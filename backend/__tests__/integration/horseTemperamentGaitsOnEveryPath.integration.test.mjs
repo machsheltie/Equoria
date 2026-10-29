@@ -24,7 +24,7 @@ import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 import { createTestHorse as createAuthTestHorse } from '../../tests/helpers/testAuth.mjs';
-import { createTestHorse } from '../helpers/createTestHorse.mjs';
+import { createTestHorse, testHorseData } from '../helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
 import { birthDateForAge } from '../../utils/horseAge.mjs';
@@ -212,17 +212,17 @@ describe('foaling (createFoalFromPregnancy)', () => {
       healthStatus: 'Good',
     };
     const sire = await prisma.horse.create({
-      data: { ...base, name: `${prefix}-Sire`, sex: 'Stallion' },
+      data: await testHorseData(prisma, { ...base, name: `${prefix}-Sire`, sex: 'Stallion' }),
     });
     const dam = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...base,
         name: `${prefix}-Dam`,
         sex: 'Mare',
         inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
         pregnancySireId: sire.id,
         pendingFoalName: `${prefix}-Foal`,
-      },
+      }),
     });
     const { foal } = await createFoalFromPregnancy({ damId: dam.id });
     expectBreedRolled(await storedRow(foal.id), { gaited: true });

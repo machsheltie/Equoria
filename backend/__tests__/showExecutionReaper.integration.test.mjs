@@ -40,6 +40,7 @@ import { competitionDateOfBirth, giveEligibleRider } from '../__tests__/helpers/
 import { createShow, enterShow } from '../modules/competition/shows/showController.mjs';
 import { reapStaleExecutingShows, STALE_CLAIM_THRESHOLD_MS } from '../services/jobs/impl/showExecutionReaper.mjs';
 import { releaseShowEscrow } from './helpers/releaseShowEscrow.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-c7mx0-reaper';
 const PRIZE = 1000; // divisible by the 50/30/20 slots — no floor crumbs
@@ -91,7 +92,7 @@ async function makeUser(money, suffix) {
 
 async function makeHorse(ownerId) {
   const h = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
@@ -106,7 +107,7 @@ async function makeHorse(ownerId) {
       balance: 60,
       precision: 60,
       boldness: 60,
-    },
+    }),
   });
   createdHorseIds.push(h.id);
   await giveEligibleRider(prisma, { horseId: h.id, userId: ownerId }, createdRiderIds);

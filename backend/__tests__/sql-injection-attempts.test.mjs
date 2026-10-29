@@ -29,6 +29,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { createHorseFromRequest } from '../modules/horses/services/createHorseService.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 describe('SQL Injection Attempts Integration Tests', () => {
   let testUser;
@@ -104,14 +105,14 @@ describe('SQL Injection Attempts Integration Tests', () => {
       });
 
       const horse = await client.horse.create({
-        data: {
+        data: await testHorseData(client, {
           ...fixtureColor(),
           name: `TestHorse-${uid}`,
           sex: 'mare',
           dateOfBirth: new Date('2016-01-01'),
           userId: user.id,
           age: 5,
-        },
+        }),
       });
 
       const groom = await client.groom.create({

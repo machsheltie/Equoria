@@ -9,6 +9,7 @@ import { randomBytes } from 'node:crypto';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../helpers/createTestHorse.mjs';
 
 describe('Schema Validation', () => {
   let testUser;
@@ -90,7 +91,7 @@ describe('Schema Validation', () => {
 
   it('should create horse with basic required fields', async () => {
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Schema Test Horse',
         sex: 'Mare',
@@ -98,7 +99,7 @@ describe('Schema Validation', () => {
         age: 365,
         userId: testUser.id,
         breedId: testBreed.id,
-      },
+      }),
     });
 
     expect(horse).toBeTruthy();
@@ -109,7 +110,7 @@ describe('Schema Validation', () => {
 
   it('should create horse with groom-related fields', async () => {
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Schema Test Horse 2',
         sex: 'Stallion',
@@ -122,7 +123,7 @@ describe('Schema Validation', () => {
         lastGroomed: new Date(),
         daysGroomedInARow: 5,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-      },
+      }),
     });
 
     expect(horse).toBeTruthy();
@@ -153,7 +154,7 @@ describe('Schema Validation', () => {
   it('should create groom assignment', async () => {
     // Create horse and groom first
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Schema Test Horse 3',
         sex: 'Filly',
@@ -161,7 +162,7 @@ describe('Schema Validation', () => {
         age: 180,
         userId: testUser.id,
         breedId: testBreed.id,
-      },
+      }),
     });
 
     const groom = await prisma.groom.create({
@@ -195,7 +196,7 @@ describe('Schema Validation', () => {
   it('should create groom interaction', async () => {
     // Create horse and groom first
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Schema Test Horse 4',
         sex: 'Colt',
@@ -203,7 +204,7 @@ describe('Schema Validation', () => {
         age: 270,
         userId: testUser.id,
         breedId: testBreed.id,
-      },
+      }),
     });
 
     const groom = await prisma.groom.create({

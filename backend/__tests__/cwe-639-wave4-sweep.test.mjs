@@ -32,6 +32,7 @@ import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // the canonical NULL-phenotype sentinel (Equoria-a429/lfj5) in a later suite.
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
   // Equoria-plw0h per-user CSRF binding: tokenA / userA are minted per-test in
@@ -115,26 +116,26 @@ describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
 
     // Horse owned by user A — age 5 to satisfy enterShow age gate
     horseA = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `CweHorseW4A-${randomBytes(8).toString('hex')}`,
         userId: userA.id,
         sex: 'mare',
         dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
         healthStatus: 'Excellent',
-      },
+      }),
     });
     // Horse owned by user B — same age/health profile so the only test variable
     // is the cross-user ownership signal.
     horseB = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `CweHorseW4B-${randomBytes(8).toString('hex')}`,
         userId: userB.id,
         sex: 'stallion',
         dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
         healthStatus: 'Excellent',
-      },
+      }),
     });
 
     // An open show user A can attempt to enter

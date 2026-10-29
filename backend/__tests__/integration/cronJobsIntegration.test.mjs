@@ -36,6 +36,7 @@ import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 // hidden and could trip the canonical NULL-phenotype sentinel (Equoria-a429/lfj5).
 import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 import { checkedInDeviceCookie } from '../../tests/helpers/staffDeviceFixture.mjs';
+import { testHorseData } from '../helpers/createTestHorse.mjs';
 
 // Import the real app — no mocks
 const app = (await import('../../app.mjs')).default;
@@ -102,7 +103,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
 
     // Create a real foal (age 0) so the foals/development endpoint has data
     testFoal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `CronTestFoal_${ts}`,
         sex: 'Colt',
@@ -111,7 +112,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
         userId: adminUser.id,
         bondScore: 65,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-      },
+      }),
     });
   }, 120000); // 120s — bcrypt + two DB creates can be slow under full-suite load
 

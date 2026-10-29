@@ -18,6 +18,7 @@ import {
   findKeysetPage,
   keysetWhere,
 } from '../utils/paginationHelper.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 describe('clampLimit', () => {
   it('defaults to 20 and caps at 100', () => {
@@ -110,7 +111,7 @@ describe('findKeysetPage against the real database (Equoria-cmw85.19)', () => {
       userId: user.id,
       createdAt: TIED,
     }));
-    await prisma.horse.createMany({ data });
+    await prisma.horse.createMany({ data: await Promise.all(data.map(row => testHorseData(prisma, row))) });
     const rows = await prisma.horse.findMany({
       where: { userId: user.id, name: { startsWith: `TestFixture-Keyset-${label}` } },
       select: { id: true },

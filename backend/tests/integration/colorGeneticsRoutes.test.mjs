@@ -22,6 +22,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', () => {
   let __csrf__;
@@ -71,9 +72,11 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
     otherToken = generateTestToken(otherUser);
 
     // Horse with full color data — exercises the populated branch.
-    // eslint-disable-next-line equoria/no-raw-test-horse-create -- populated-branch fixture sets an explicit colorGenotype + phenotype on purpose (the route reads these back and the assertions match them exactly); a fixtureColor() spread would override them. No NULL-phenotype risk.
+    // Populated-branch fixture: an explicit colorGenotype + phenotype on purpose (the
+    // route reads these back and the assertions match them exactly); testHorseData
+    // keeps a caller's color and adds only the breed, temperament and gaits.
     horseWithColor = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         name: `CGColorHorse_${ts}`,
         sex: 'Mare',
         dateOfBirth: gameCalendarDate(new Date(), -Math.round(4 * 365.25)),
@@ -94,15 +97,15 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
           legMarkings: { frontLeft: 'Sock', frontRight: 'None' },
           modifiers: { isSooty: true },
         },
-      },
+      }),
     });
     createdHorseIds.push(horseWithColor.id);
 
     // Untested horse: has a genotype but the owner has not paid for the vet's
     // colour genetics test (owner ruling 2026-10-26, q72), so it must stay hidden.
-    // eslint-disable-next-line equoria/no-raw-test-horse-create -- gate fixture: explicit genotype + phenotype with colorGeneticsTested left false on purpose.
+    // Gate fixture: explicit genotype + phenotype with colorGeneticsTested left false on purpose.
     untestedHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         name: `CGUntestedHorse_${ts}`,
         sex: 'Mare',
         dateOfBirth: gameCalendarDate(new Date(), -Math.round(4 * 365.25)),
@@ -110,7 +113,7 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
         userId: testUser.id,
         colorGenotype: { E_Extension: 'E/e', A_Agouti: 'A/A' },
         phenotype: { colorName: 'Bay', shade: 'Standard', faceMarking: 'Star' },
-      },
+      }),
     });
     createdHorseIds.push(untestedHorse.id);
 
@@ -124,6 +127,9 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
         age: 5,
         userId: testUser.id,
         // intentionally no colorGenotype / phenotype
+        // Equoria-576c0.5: every horse has a temperament and gaits; only the color is under test.
+        temperament: 'Calm',
+        gaitScores: { walk: 50, trot: 50, canter: 50, gallop: 50, gaiting: null },
       },
     });
     createdHorseIds.push(legacyHorse.id);

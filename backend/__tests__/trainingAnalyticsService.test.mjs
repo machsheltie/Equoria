@@ -24,6 +24,7 @@ import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // (NULL-phenotype risk) / user into the canonical DB (CLAUDE.md §2).
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { realDateOrReason } from './helpers/expectRealDate.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 // ─── Shared fixture helpers ────────────────────────────────────────────────────
 
@@ -245,14 +246,14 @@ describe('trainingAnalyticsService.getTrainingHistory', () => {
     });
 
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-TrainAnalytics-${rand}`,
         sex: 'Filly',
         dateOfBirth: new Date('2020-01-01'),
         age: 5,
         userId: testUser.id,
-      },
+      }),
     });
   }, 30000);
 

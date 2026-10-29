@@ -30,7 +30,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { processFoalMilestoneEvaluations, updateHorseAge } from '../utils/horseAgingSystem.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
-import { cleanupTestHorses } from './helpers/createTestHorse.mjs';
+import { cleanupTestHorses, testHorseData } from './helpers/createTestHorse.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
@@ -73,14 +73,14 @@ let owner;
 
 async function makeHorse(dateOfBirth) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}-${createdHorseIds.length}`,
       sex: 'Filly',
       age: 0,
       dateOfBirth,
       user: { connect: { id: owner.id } },
-    },
+    }),
   });
   createdHorseIds.push(horse.id);
   return prisma.horse.findUnique({ where: { id: horse.id } });

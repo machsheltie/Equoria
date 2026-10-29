@@ -42,6 +42,7 @@ import cronJobService from '../../services/cronJobs.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { testHorseData } from '../helpers/createTestHorse.mjs';
 
 const NAME_PREFIX = 'AgingRegression-';
 
@@ -101,7 +102,7 @@ describe('Horse weekly aging — integration regression (Equoria-j6jv)', () => {
     // on the next Eastern date from 20:00 ET and read one day short there.
     const dateOfBirth = gameCalendarDate(new Date(), -daysOld);
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${NAME_PREFIX}${label}-${randomBytes(4).toString('hex')}`,
         sex: 'Colt',
@@ -109,7 +110,7 @@ describe('Horse weekly aging — integration regression (Equoria-j6jv)', () => {
         age: 0, // game-years; cron recomputes from dateOfBirth
         userId: testUser.id,
         breedId: testBreed.id,
-      },
+      }),
     });
     createdHorseIds.push(horse.id);
 

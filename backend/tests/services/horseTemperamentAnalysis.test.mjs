@@ -30,6 +30,7 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
 import { createSequentially } from '../helpers/createSequentially.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Horse Temperament Analysis', () => {
   let testUser;
@@ -86,52 +87,52 @@ describe('Horse Temperament Analysis', () => {
 
     testHorses = await createSequentially([
       // Nervous/reactive horse
-      () =>
+      async () =>
         prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: `Test Horse Nervous ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             sex: 'filly',
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
             bondScore: 12,
-          },
+          }),
         }),
       // Confident/social horse
-      () =>
+      async () =>
         prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: `Test Horse Confident ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             sex: 'colt',
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
             bondScore: 35,
-          },
+          }),
         }),
       // Mixed temperament horse
-      () =>
+      async () =>
         prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: `Test Horse Mixed ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             sex: 'Colt',
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
             bondScore: 22,
-          },
+          }),
         }),
       // Developing temperament horse (no interactions)
-      () =>
+      async () =>
         prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: `Test Horse Developing ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             sex: 'mare',
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
             bondScore: 18,
-          },
+          }),
         }),
     ]);
   });

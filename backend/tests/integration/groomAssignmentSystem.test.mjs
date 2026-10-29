@@ -15,6 +15,7 @@ import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mj
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Enhanced Groom Assignment System Integration Tests', () => {
   // Equoria-2gqir: per-user CSRF (Equoria-plw0h) — the CSRF token MUST be
@@ -70,25 +71,25 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
 
     // Create test horses
     testHorse1 = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Assignment Test Horse 1',
         sex: 'Stallion',
         dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
         userId: testUser.id,
         bondScore: 30,
-      },
+      }),
     });
 
     testHorse2 = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Assignment Test Horse 2',
         sex: 'Mare',
         dateOfBirth: gameCalendarDate(new Date(), -730), // 2 years old
         userId: testUser.id,
         bondScore: 45,
-      },
+      }),
     });
 
     // Create test grooms
@@ -283,13 +284,13 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       });
 
       const otherHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'Other User Horse',
           sex: 'Stallion',
           dateOfBirth: gameCalendarDate(new Date(), -365),
           userId: otherUser.id,
-        },
+        }),
       });
 
       try {
@@ -395,7 +396,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const horses = [];
       for (let i = 0; i < 22; i++) {
         const horse = await prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             // Scoped fixture name (CLAUDE.md §2): the suite's cleanup sweep is
             // userId-scoped, but the TestFixture- prefix keeps these honest if
@@ -404,7 +405,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
             sex: 'Stallion',
             dateOfBirth: gameCalendarDate(new Date(), -365),
             userId: testUser.id,
-          },
+          }),
         });
         horses.push(horse);
       }

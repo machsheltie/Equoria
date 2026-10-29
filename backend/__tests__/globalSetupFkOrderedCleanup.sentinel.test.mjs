@@ -20,6 +20,7 @@ import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 const SENTINEL = `TestFixture-fefh2_29-${randomBytes(6).toString('hex')}`;
 
@@ -37,13 +38,13 @@ async function makeUserWithHorse() {
     },
   });
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${SENTINEL}-horse-${tag}`,
       sex: 'Mare',
       dateOfBirth: new Date(),
       userId: user.id,
-    },
+    }),
   });
   return { user, horse };
 }

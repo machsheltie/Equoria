@@ -31,6 +31,7 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const GENETICS_BUDGET_MS = 300;
@@ -80,9 +81,11 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
 
     perfToken = generateTestToken(perfUser);
 
-    // eslint-disable-next-line equoria/no-raw-test-horse-create -- perf fixture deliberately sets a full 17-locus colorGenotype + non-null phenotype so the populated-branch JSONB roundtrip latency is what gets measured; a fixtureColor() spread would override the chosen genotype. No NULL-phenotype risk.
+    // Perf fixture: a full 17-locus colorGenotype + non-null phenotype on purpose so the
+    // populated-branch JSONB roundtrip latency is what gets measured; testHorseData keeps
+    // a caller's color and adds only the breed, temperament and gaits.
     perfHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         name: `CGPerfHorse_${ts}`,
         sex: 'Mare',
         dateOfBirth: gameCalendarDate(new Date(), -Math.round(4 * 365.25)),
@@ -90,7 +93,7 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
         userId: perfUser.id,
         colorGenotype: FULL_GENOTYPE,
         phenotype: { colorName: 'Bay', markings: { face: 'star' } },
-      },
+      }),
     });
     createdHorseIds.push(perfHorse.id);
 

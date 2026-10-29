@@ -21,6 +21,7 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 describe('Cross-System Boundary Validation', () => {
   let testUser;
@@ -57,7 +58,7 @@ describe('Cross-System Boundary Validation', () => {
     });
 
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'CSB Test Horse',
         age: 4,
@@ -66,7 +67,7 @@ describe('Cross-System Boundary Validation', () => {
         sex: 'mare',
         dateOfBirth: gameCalendarDate(new Date(), -4 * 365),
         healthStatus: 'Excellent',
-      },
+      }),
     });
 
     testGroom = await prisma.groom.create({

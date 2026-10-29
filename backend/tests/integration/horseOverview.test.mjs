@@ -40,6 +40,7 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 // Logger mock removed (Equoria-z2dji, USER DECISION Option A): logger is a
 // non-behavior-shaping output side-channel; CLAUDE.md §3 is zero-exception
@@ -121,7 +122,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
 
     // Create test horse with real data
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'TestHorse Nova',
         age: 5,
@@ -139,7 +140,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
           saddleBonus: 5,
           bridleBonus: 3,
         },
-      },
+      }),
     });
   }, 120000); // 120s — cleanup + user/horse create can be slow under full-suite load
 
@@ -359,7 +360,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
 
       // Create minimal horse with real data
       const minimalHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'TestHorse Minimal',
           age: 3,
@@ -371,7 +372,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
           disciplineScores: {},
           totalEarnings: 0,
           tack: {},
-        },
+        }),
       });
 
       const response = await request(app)

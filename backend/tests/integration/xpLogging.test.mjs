@@ -21,6 +21,7 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../helpers/assignTrainer.mjs';
 import { birthDateForAge } from '../../utils/horseAge.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -57,7 +58,7 @@ beforeAll(async () => {
 
   // Horse must be >= 3 years old to be eligible for training
   testHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `XPHorse_${UNIQUE}`,
       sex: 'Mare',
@@ -69,7 +70,7 @@ beforeAll(async () => {
       lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       trainingCooldown: null, // no cooldown — horse is ready to train
       epigeneticModifiers: { positive: [], negative: [] },
-    },
+    }),
   });
   await assignTestTrainer(testHorse);
 }, 120000);
@@ -137,7 +138,7 @@ describe('XP Logging — Training Workflow', () => {
 
   it('does not award XP when training is rejected (horse too young)', async () => {
     const youngHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `YoungHorse_${UNIQUE}`,
         sex: 'Stallion',
@@ -148,7 +149,7 @@ describe('XP Logging — Training Workflow', () => {
         healthStatus: 'Good',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         epigeneticModifiers: { positive: [], negative: [] },
-      },
+      }),
     });
     await assignTestTrainer(youngHorse);
 

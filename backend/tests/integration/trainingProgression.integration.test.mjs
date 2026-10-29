@@ -47,6 +47,7 @@ import { randomBytes } from 'node:crypto';
 import { assignTestTrainer, cleanupTestTrainers } from '../helpers/assignTrainer.mjs';
 import { birthDateForAge } from '../../utils/horseAge.mjs';
 import { confirmEmail } from '../helpers/confirmEmail.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -237,7 +238,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
     const twoYearsAgo = birthDateForAge(2);
 
     const youngHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Training Integration Young Horse',
         age: 2, // Too young for training
@@ -253,7 +254,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
           negative: [],
           hidden: [],
         },
-      },
+      }),
     });
     await assignTestTrainer(youngHorse);
 
@@ -264,7 +265,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
     const fourYearsAgo = birthDateForAge(4);
 
     const matureHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Training Integration Mature Horse',
         age: 4, // Eligible for training
@@ -280,7 +281,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
           negative: [],
           hidden: ['strongHeart'],
         },
-      },
+      }),
     });
     await assignTestTrainer(matureHorse);
 

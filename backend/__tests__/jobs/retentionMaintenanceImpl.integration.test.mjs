@@ -32,6 +32,7 @@ import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 import { releaseShowEscrow } from '../helpers/releaseShowEscrow.mjs';
 import { createEscrowedShowRow } from '../../modules/competition/__tests__/helpers/escrowedShowRow.mjs';
 import { recordDocCoverageSnapshot, executeOvernightShows } from '../../services/jobs/impl/retentionMaintenance.mjs';
+import { testHorseData } from '../helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-RetMaintImpl';
 
@@ -134,7 +135,7 @@ describe('INTEGRATION: retentionMaintenance impl (Equoria-urqic.3.3) — real DB
       });
 
       execHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `${FIXTURE_PREFIX}-Horse-${uid}`,
           sex: 'Mare',
@@ -148,7 +149,7 @@ describe('INTEGRATION: retentionMaintenance impl (Equoria-urqic.3.3) — real DB
           balance: 60,
           precision: 60,
           boldness: 60,
-        },
+        }),
       });
 
       const pastDate = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours ago

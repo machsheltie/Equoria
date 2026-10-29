@@ -15,6 +15,7 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Enhanced Groom Interactions Integration Tests', () => {
   // Equoria-rnbzn: __csrf__ is bound to testUser (authToken) AFTER the user
@@ -70,7 +71,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
 
     // Create test horse
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Enhanced Test Horse',
         sex: 'Mare',
@@ -78,7 +79,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         userId: testUser.id,
         bondScore: 25,
         // breedId is optional, so we'll omit it for the test
-      },
+      }),
     });
 
     // Create test groom

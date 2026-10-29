@@ -29,6 +29,7 @@ import {
   startEmailCapture,
   stopEmailCapture,
 } from '../modules/staff/__tests__/helpers/staffFixtures.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 const prefix = 'TestFixture-o1vns';
 const prize = 1000;
@@ -78,7 +79,7 @@ async function makeUser(money, suffix) {
 
 async function makeHorse(label) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${prefix}-${label}-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
@@ -93,7 +94,7 @@ async function makeHorse(label) {
       balance: 60,
       precision: 60,
       boldness: 60,
-    },
+    }),
   });
   horseIds.push(horse.id);
   await giveEligibleRider(prisma, { horseId: horse.id, userId: entrant.id }, riderIds);

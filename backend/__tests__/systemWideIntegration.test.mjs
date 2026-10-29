@@ -24,6 +24,7 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../tests/helpers/assignTrainer.mjs';
 import { birthDateForAge } from '../utils/horseAge.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -65,7 +66,7 @@ describe('System-Wide Data Integrity', () => {
     csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'SWI Test Horse',
         age: 5,
@@ -75,7 +76,7 @@ describe('System-Wide Data Integrity', () => {
         dateOfBirth: birthDateForAge(5),
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-      },
+      }),
     });
     await assignTestTrainer(testHorse);
 
@@ -273,7 +274,7 @@ describe('System-Wide Data Integrity', () => {
   test('Horse delete does not cascade-orphan unrelated groom records — cross-system: Horse table → Groom table boundary', async () => {
     // Create a horse and groom owned by the test user
     const tempHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Cascade Boundary Test Horse',
         age: 4,
@@ -283,7 +284,7 @@ describe('System-Wide Data Integrity', () => {
         dateOfBirth: birthDateForAge(4),
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-      },
+      }),
     });
     await assignTestTrainer(tempHorse);
 

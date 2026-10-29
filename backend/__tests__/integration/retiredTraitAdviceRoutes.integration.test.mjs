@@ -59,6 +59,7 @@ import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 import { birthDateForAge } from '../../utils/horseAge.mjs';
 import { checkedInDeviceCookie } from '../../tests/helpers/staffDeviceFixture.mjs';
+import { testHorseData } from '../helpers/createTestHorse.mjs';
 
 const fixturePrefix = 'TestFixture-a7f1p-retired';
 const origin = 'http://localhost:3000';
@@ -93,7 +94,7 @@ async function makePlayer(role, accountRole = 'user') {
 
 async function makeHorse(ownerId, breedId) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${fixturePrefix}-horse-${tag()}`,
       sex: 'Mare',
@@ -103,7 +104,7 @@ async function makeHorse(ownerId, breedId) {
       userId: ownerId,
       healthStatus: 'Good',
       lastFedDate: new Date(),
-    },
+    }),
   });
 }
 

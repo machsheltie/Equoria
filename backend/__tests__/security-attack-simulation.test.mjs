@@ -60,6 +60,7 @@ import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 const { default: app } = await import('../app.mjs');
 
@@ -115,13 +116,13 @@ describe('Security Attack Simulation Tests', () => {
 
     // Victim-owned resources (real UUID owner, real DB rows).
     horseB = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-HorseB-${randomBytes(8).toString('hex')}`,
         userId: userB.id,
         sex: 'Stallion',
         dateOfBirth: new Date('2018-01-01'), // adult so age guards don't pre-empt ownership
-      },
+      }),
     });
 
     groomB = await prisma.groom.create({
@@ -136,13 +137,13 @@ describe('Security Attack Simulation Tests', () => {
     // A foal owned by userB. requireOwnership('foal') maps to the horse model
     // (foal == horse with userId owner); a young dateOfBirth keeps it foal-like.
     foalB = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-FoalB-${randomBytes(8).toString('hex')}`,
         userId: userB.id,
         sex: 'Filly',
         dateOfBirth: new Date(),
-      },
+      }),
     });
   });
 

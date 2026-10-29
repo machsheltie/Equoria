@@ -29,7 +29,7 @@ import cronJobService from '../services/cronJobs.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
 import { birthDateForAge, getHorseAgeDays, getHorseAgeYears } from '../utils/horseAge.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
-import { cleanupTestHorses } from './helpers/createTestHorse.mjs';
+import { cleanupTestHorses, testHorseData } from './helpers/createTestHorse.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 const PREFIX = `TestFixture-4urzd-${randomBytes(4).toString('hex')}`;
@@ -72,7 +72,7 @@ let owner;
 
 async function makeHorse(data) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}-${createdHorseIds.length}`,
       sex: 'Filly',
@@ -80,7 +80,7 @@ async function makeHorse(data) {
       bondScore: 50,
       user: { connect: { id: owner.id } },
       ...data,
-    },
+    }),
   });
   createdHorseIds.push(horse.id);
   return horse;

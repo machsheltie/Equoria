@@ -32,6 +32,7 @@ import { validateOutboundUrl, assertSafeOutboundUrl } from '../utils/ssrfGuard.m
 import dns from 'node:dns';
 import { startLocalDnsServer } from './helpers/localDnsServer.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -104,14 +105,14 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
 
     // Create test horse
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'OWASP Test Horse',
         breed: { connect: { id: testBreed.id } },
         sex: 'Stallion',
         dateOfBirth: gameCalendarDate(new Date(), -5 * 365), // 5 years old
         user: { connect: { id: testUser.id } },
-      },
+      }),
     });
   });
 
@@ -506,14 +507,14 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
         // Equoria-6ziwq: the suite's own breed. This used to find-or-create a
         // shared 'OWASP Test Breed' that nothing ever deleted.
         const otherHorse = await prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: 'Other User Horse',
             breed: { connect: { id: testBreed.id } },
             sex: 'Mare',
             dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
             user: { connect: { id: otherUser.id } },
-          },
+          }),
         });
 
         try {

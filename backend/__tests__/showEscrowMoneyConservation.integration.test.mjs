@@ -36,6 +36,7 @@ import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { competitionDateOfBirth, giveEligibleRider } from '../__tests__/helpers/eligibleCompetitor.mjs';
 import { createShow, enterShow } from '../modules/competition/shows/showController.mjs';
 import { executeClosedShows } from '../modules/competition/index.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-si69u-conserv';
 const cleanup = createCleanupTracker();
@@ -105,7 +106,7 @@ async function makeUser(money, suffix) {
 
 async function makeHorse(ownerId) {
   const h = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
@@ -120,7 +121,7 @@ async function makeHorse(ownerId) {
       balance: 60,
       precision: 60,
       boldness: 60,
-    },
+    }),
   });
   createdHorseIds.push(h.id);
   await giveEligibleRider(prisma, { horseId: h.id, userId: ownerId }, createdRiderIds);

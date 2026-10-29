@@ -18,6 +18,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Trait History Service', () => {
   let testUser, testHorse, testGroom;
@@ -37,14 +38,14 @@ describe('Trait History Service', () => {
     });
 
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'ServiceTest Horse',
         userId: testUser.id,
         dateOfBirth: gameCalendarDate(new Date(), -30), // 30 days old
         age: 0,
         sex: 'Stallion',
-      },
+      }),
     });
 
     testGroom = await prisma.groom.create({

@@ -37,6 +37,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 describe('API Response Optimization System', () => {
   let testUserId;
@@ -70,7 +71,7 @@ describe('API Response Optimization System', () => {
     // Create test horses for pagination testing
     for (let i = 0; i < 25; i++) {
       const horse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `OptimizationHorse${i}_${testRunId}`,
           userId: testUserId,
@@ -94,7 +95,7 @@ describe('API Response Optimization System', () => {
           flexibility: 50 + (i % 50),
           obedience: 50 + (i % 50),
           focus: 50 + (i % 50),
-        },
+        }),
       });
       testHorseIds.push(horse.id);
     }

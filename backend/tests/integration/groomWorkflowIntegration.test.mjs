@@ -21,6 +21,7 @@ import { assignGroom } from '../../modules/grooms/controllers/groomAssignmentHan
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 import { birthDateForAge } from '../../utils/horseAge.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 // ─── plain response capture ───────────────────────────────────────────────────
 
@@ -108,7 +109,7 @@ describe('Groom Workflow Integration Tests', () => {
     createdUserIds.add(testUser.id);
 
     testFoal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `Test Foal ${suffix}`,
         sex: 'Filly',
@@ -122,12 +123,12 @@ describe('Groom Workflow Integration Tests', () => {
         daysGroomedInARow: 0,
         consecutiveDaysFoalCare: 0,
         epigeneticModifiers: {},
-      },
+      }),
     });
     createdHorseIds.add(testFoal.id);
 
     testYoungHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `Test Young Horse ${suffix}`,
         sex: 'Colt',
@@ -141,12 +142,12 @@ describe('Groom Workflow Integration Tests', () => {
         daysGroomedInARow: 0,
         consecutiveDaysFoalCare: 0,
         epigeneticModifiers: {},
-      },
+      }),
     });
     createdHorseIds.add(testYoungHorse.id);
 
     testAdultHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `Test Adult Horse ${suffix}`,
         sex: 'Mare',
@@ -160,7 +161,7 @@ describe('Groom Workflow Integration Tests', () => {
         daysGroomedInARow: 0,
         consecutiveDaysFoalCare: 0,
         epigeneticModifiers: {},
-      },
+      }),
     });
     createdHorseIds.add(testAdultHorse.id);
   });

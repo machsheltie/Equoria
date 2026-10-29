@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../__tests__/helpers/createTestHorse.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -51,7 +52,7 @@ describe('Horse Seed Integration Tests', () => {
       });
 
       const testHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'TestSeed_ExistingHorse',
           age: 5,
@@ -61,7 +62,7 @@ describe('Horse Seed Integration Tests', () => {
           strength: 65,
           userId: testUser.id,
           dateOfBirth: new Date('2020-01-01'),
-        },
+        }),
       });
 
       const result = await checkHorseExists('TestSeed_ExistingHorse');

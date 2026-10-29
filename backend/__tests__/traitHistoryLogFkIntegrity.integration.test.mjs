@@ -20,6 +20,7 @@ import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-vllv4';
 
@@ -98,14 +99,14 @@ describe('trait_history_logs FK integrity (Equoria-vllv4)', () => {
 
   it('SENTINEL: deleting a horse CASCADES — trait_history_logs rows go too', async () => {
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
         sex: 'Mare',
         dateOfBirth: new Date('2020-01-01'),
         age: 5,
         userId: user.id,
-      },
+      }),
     });
     const log = await prisma.traitHistoryLog.create({
       data: {
@@ -126,14 +127,14 @@ describe('trait_history_logs FK integrity (Equoria-vllv4)', () => {
 
   it('SENTINEL: deleting a groom NULLS trait_history_logs.groomId, row survives', async () => {
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
         sex: 'Mare',
         dateOfBirth: new Date('2020-01-01'),
         age: 5,
         userId: user.id,
-      },
+      }),
     });
     const groom = await prisma.groom.create({
       data: {

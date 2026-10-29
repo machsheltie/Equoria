@@ -13,6 +13,7 @@ import { backfillHorseColors } from './backfill-horse-colors.mjs';
 import { calculatePhenotype } from '../modules/horses/services/phenotypeCalculationService.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
+import { testHorseData } from '../__tests__/helpers/createTestHorse.mjs';
 
 const stamp = `k0d28_${Date.now()}`;
 
@@ -39,14 +40,14 @@ let genelessId;
 
 async function createHorse(name, colorGenotype) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name,
       sex: 'mare',
       age: 0,
       dateOfBirth: gameCalendarDate(new Date(), 0),
       colorGenotype,
-    },
+    }),
   });
   // The pre-31E state the backfill exists for: no phenotype.
   await prisma.$executeRaw`UPDATE horses SET phenotype = NULL WHERE id = ${horse.id}`;

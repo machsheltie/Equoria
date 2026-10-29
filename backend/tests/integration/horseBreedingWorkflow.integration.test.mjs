@@ -28,6 +28,7 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { randomBytes } from 'node:crypto';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -194,7 +195,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
 
     // Create mare with proper schema fields (matching working tests)
     const mare = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Integration Test Mare',
         age: 5,
@@ -212,7 +213,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
           negative: [],
           hidden: ['strongHeart'],
         },
-      },
+      }),
     });
 
     expect(mare.name).toBe('Integration Test Mare');
@@ -226,7 +227,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
 
     // Create stallion with proper schema fields (matching working tests)
     const stallion = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Integration Test Stallion',
         age: 6,
@@ -244,7 +245,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
           negative: [],
           hidden: ['endurance'],
         },
-      },
+      }),
     });
 
     expect(stallion.name).toBe('Integration Test Stallion');
@@ -255,7 +256,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
     // ── STEP 3: Breeding Process & Foal Birth ───────────────────────────────
     // Create foal (simulating breeding result) with proper schema fields
     let foal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Integration Test Foal',
         age: 0, // Newborn
@@ -272,7 +273,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
           negative: [],
           hidden: [],
         },
-      },
+      }),
     });
 
     // APPLY AT-BIRTH TRAITS (Real business logic, no mocking)

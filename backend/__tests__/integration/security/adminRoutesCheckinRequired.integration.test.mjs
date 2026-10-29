@@ -41,6 +41,7 @@ import {
   stopEmailCapture,
   uid,
 } from '../../../modules/staff/__tests__/helpers/staffFixtures.mjs';
+import { testHorseData } from '../../helpers/createTestHorse.mjs';
 
 // ── Route walk ──────────────────────────────────────────────────────────────
 
@@ -272,13 +273,13 @@ describe("GET /horses?userId= (an admin's look at another stable) needs the chec
     const admin = await makeUser('admin');
     const player = await makeUser('user');
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-admincheckin-${uid()}`,
         sex: 'Mare',
         dateOfBirth: new Date('2020-01-01'),
         userId: player.id,
-      },
+      }),
     });
     horseIds.push(horse.id);
     const path = `/api/v1/horses?userId=${player.id}`;

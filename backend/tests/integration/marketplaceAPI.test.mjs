@@ -37,6 +37,7 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 describe('🛒 INTEGRATION: Marketplace API', () => {
   let __csrf__;
@@ -76,7 +77,7 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
 
     // Create a horse owned by seller
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `MarketHorse_${ts}`,
         sex: 'mare',
@@ -88,7 +89,7 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
         speed: 50,
         stamina: 50,
         agility: 40,
-      },
+      }),
     });
     createdHorseIds.push(testHorse.id);
   });
@@ -380,7 +381,7 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       // Create a fresh horse to delist (buyer now owns testHorse)
       const breed = await prisma.breed.findFirst();
       delistHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `DelistHorse_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'stallion',
@@ -391,7 +392,7 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
           healthStatus: 'Good',
           forSale: true,
           salePrice: 1000,
-        },
+        }),
       });
       createdHorseIds.push(delistHorse.id);
     });

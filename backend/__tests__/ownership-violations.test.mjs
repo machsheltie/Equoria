@@ -9,6 +9,7 @@ import { randomBytes } from 'node:crypto';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 /**
  * Integration tests to verify ownership enforcement for core resources.
@@ -86,23 +87,23 @@ describe('Ownership Violation Attempts Integration Tests', () => {
     __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${tokenA}`] });
 
     horseA = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `HorseA-${randomBytes(8).toString('hex')}`,
         userId: userA.id, // Matches schema field (line 144)
         sex: 'mare',
         dateOfBirth: new Date(),
-      },
+      }),
     });
 
     horseB = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `HorseB-${randomBytes(8).toString('hex')}`,
         userId: userB.id, // Matches schema field (line 144)
         sex: 'stallion',
         dateOfBirth: new Date(),
-      },
+      }),
     });
 
     groomA = await prisma.groom.create({

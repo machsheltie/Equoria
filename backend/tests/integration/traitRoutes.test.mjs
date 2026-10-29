@@ -22,6 +22,7 @@ import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mj
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 // Import the app (no mocking - full integration testing)
 const app = (await import('../../app.mjs')).default;
@@ -56,7 +57,7 @@ describe('Trait Routes Integration Tests', () => {
       // Create real test horse in database owned by test user
       const twoYearsAgo = gameCalendarDate(new Date(), -2 * 365);
       testHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `Test Discovery Horse ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'mare',
@@ -70,7 +71,7 @@ describe('Trait Routes Integration Tests', () => {
             negative: [],
             hidden: ['bold', 'trainabilityBoost'],
           },
-        },
+        }),
       });
       // Equoria-jw471: stripped trailing [DEBUG] horse-creation log.
     } catch (error) {

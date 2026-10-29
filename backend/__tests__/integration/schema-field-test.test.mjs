@@ -5,6 +5,7 @@
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../helpers/createTestHorse.mjs';
 
 // Equoria-qjsga: per-run unique fixture identity. The prior fixed
 // `schema-field-test-user` / `schemafieldtestuser` / `schema-field-test@example.com`
@@ -60,7 +61,7 @@ describe('Schema Field Test', () => {
 
     // Create horse with consecutiveDaysFoalCare field
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: TEST_HORSE_NAME,
         sex: 'Mare',
@@ -74,7 +75,7 @@ describe('Schema Field Test', () => {
         daysGroomedInARow: 5,
         consecutiveDaysFoalCare: 7, // This is the field we're testing
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-      },
+      }),
     });
 
     expect(horse).toBeTruthy();

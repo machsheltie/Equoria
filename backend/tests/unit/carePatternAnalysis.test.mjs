@@ -23,6 +23,7 @@ import { gameCalendarDate } from '../../utils/gameTime.mjs';
 // `rmHorse(...)`-in-finally that used a silent no-op catch arm — a swallowed
 // horse delete would leak a fixture into the canonical DB (CLAUDE.md §2).
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 const PREFIX = 'TestFixture-CarePattern-';
 const USER_ID = 'test-user-care-pattern';
@@ -54,13 +55,13 @@ const ELIGIBLE_DOB = () => gameDaysAgo(14);
 
 async function mkHorse(suffix, opts = {}) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}${suffix}`,
       sex: 'Colt',
       dateOfBirth: opts.dateOfBirth ?? ELIGIBLE_DOB(),
       bondScore: opts.bondScore ?? 50,
-    },
+    }),
   });
   // Equoria-1ohys: register a scoped, fail-loud cleanup (drained in afterEach).
   // horse.delete cascades to groomInteractions (foalId FK onDelete: Cascade).

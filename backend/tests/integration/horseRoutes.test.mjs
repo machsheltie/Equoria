@@ -18,6 +18,7 @@ import { assignTestTrainer, cleanupTestTrainers } from '../helpers/assignTrainer
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 import { birthDateForAge } from '../../utils/horseAge.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Horse Routes Integration Tests', () => {
   let __csrf__;
@@ -50,7 +51,7 @@ describe('Horse Routes Integration Tests', () => {
         },
       });
       const h1 = await tx.horse.create({
-        data: {
+        data: await testHorseData(tx, {
           ...fixtureColor(),
           name: `TrainableHorse_${ts}`,
           sex: 'Mare',
@@ -61,17 +62,17 @@ describe('Horse Routes Integration Tests', () => {
           lastFedDate: new Date(),
           lastVettedDate: new Date(),
           userId: u.id,
-        },
+        }),
       });
       const h2 = await tx.horse.create({
-        data: {
+        data: await testHorseData(tx, {
           ...fixtureColor(),
           name: `FoalHorse_${ts}`,
           sex: 'Stallion',
           dateOfBirth: birthDateForAge(1),
           age: 1,
           userId: u.id,
-        },
+        }),
       });
       return { user: u, trainable: h1, foal: h2 };
     });

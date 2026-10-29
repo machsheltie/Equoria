@@ -12,6 +12,7 @@ import { trainingAnalyticsService } from '../../modules/training/index.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Training Analytics Service', () => {
   let testUser;
@@ -65,7 +66,7 @@ describe('Training Analytics Service', () => {
         });
 
         testHorse = await tx.horse.create({
-          data: {
+          data: await testHorseData(tx, {
             ...fixtureColor(),
             name: `Training Test Horse ${timestamp}`,
             userId: testUser.id,
@@ -83,7 +84,7 @@ describe('Training Analytics Service', () => {
             flexibility: 54,
             obedience: 78,
             focus: 69,
-          },
+          }),
         });
 
         const disciplines = ['dressage', 'showJumping', 'racing', 'crossCountry'];
@@ -225,7 +226,7 @@ describe('Training Analytics Service', () => {
 
     test('should handle horse with no training history', async () => {
       const newHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'No Training Horse',
           userId: testUser.id,
@@ -243,7 +244,7 @@ describe('Training Analytics Service', () => {
           flexibility: 50,
           obedience: 50,
           focus: 50,
-        },
+        }),
       });
 
       const analytics = await trainingAnalyticsService.getTrainingHistory(newHorse.id);

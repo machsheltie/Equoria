@@ -36,6 +36,7 @@ import {
   startEmailCapture,
   stopEmailCapture,
 } from '../modules/staff/__tests__/helpers/staffFixtures.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 const prefix = 'TestFixture-c7mx0_1-quarantine';
 const staffApi = '/api/v1/staff';
@@ -172,7 +173,7 @@ beforeAll(async () => {
   creator = await makeUser(100000, 'creator');
   entrant = await makeUser(500, 'entrant');
   entrantHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${prefix}-horse-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
@@ -187,7 +188,7 @@ beforeAll(async () => {
       balance: 60,
       precision: 60,
       boldness: 60,
-    },
+    }),
   });
   horseIds.push(entrantHorse.id);
   await giveEligibleRider(prisma, { horseId: entrantHorse.id, userId: entrant.id }, riderIds);

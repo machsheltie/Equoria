@@ -15,6 +15,7 @@ import { getUserByEmail } from '../../modules/users/services/userModelService.mj
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 const UNIQUE = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
@@ -50,7 +51,7 @@ beforeAll(async () => {
   const horseNames = [`Comet_${UNIQUE}`, `Starlight_${UNIQUE}`];
   for (const name of horseNames) {
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name,
         sex: 'Mare',
@@ -58,7 +59,7 @@ beforeAll(async () => {
         age: 5,
         breed: { connect: { id: breed.id } },
         user: { connect: { id: testUser.id } },
-      },
+      }),
     });
     testHorseIds.push(horse.id);
   }

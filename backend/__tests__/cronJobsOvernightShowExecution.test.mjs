@@ -26,6 +26,7 @@ import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { createEscrowedShowRow } from '../modules/competition/__tests__/helpers/escrowedShowRow.mjs';
 import { releaseShowEscrow } from './helpers/releaseShowEscrow.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-CronOvernightExec';
 
@@ -80,7 +81,7 @@ beforeAll(async () => {
   });
 
   execHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-Horse-${uid}`,
       sex: 'Mare',
@@ -94,7 +95,7 @@ beforeAll(async () => {
       balance: 60,
       precision: 60,
       boldness: 60,
-    },
+    }),
   });
 
   const pastDate = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours ago

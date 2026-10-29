@@ -51,6 +51,7 @@ import { createSequentially } from '../tests/helpers/createSequentially.mjs'; //
 // suite RED instead of leaking fixtures into the canonical DB (CLAUDE.md §2).
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { confirmEmail } from '../tests/helpers/confirmEmail.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 /**
  * Extract cookie value from Set-Cookie header array
@@ -223,9 +224,9 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
     createdBreedId = breed.id;
 
     testHorses = await createSequentially([
-      () =>
+      async () =>
         prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: 'Training Horse 1',
             age: 4,
@@ -234,11 +235,11 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
             sex: 'mare',
             healthStatus: 'Good',
             dateOfBirth: new Date('2020-01-01'), // 4 years old
-          },
+          }),
         }),
-      () =>
+      async () =>
         prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: 'Training Horse 2',
             age: 5,
@@ -247,11 +248,11 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
             sex: 'stallion',
             healthStatus: 'Good',
             dateOfBirth: new Date('2019-01-01'), // 5 years old
-          },
+          }),
         }),
-      () =>
+      async () =>
         prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: 'Young Horse',
             age: 2,
@@ -260,7 +261,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
             sex: 'colt',
             healthStatus: 'Good',
             dateOfBirth: new Date('2022-01-01'), // 2 years old
-          },
+          }),
         }),
     ]);
   });

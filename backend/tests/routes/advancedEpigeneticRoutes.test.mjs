@@ -50,6 +50,7 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Advanced Epigenetic API Routes', () => {
   const cleanup = createCleanupTracker();
@@ -132,26 +133,26 @@ describe('Advanced Epigenetic API Routes', () => {
 
     // Young foal for developmental windows
     const youngFoal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `Test Foal API ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'filly',
         dateOfBirth: oneWeekAgo,
         userId: testUser.id,
         bondScore: 20,
-      },
+      }),
     });
     ids.horses.push(youngFoal.id);
     // Older foal with traits for interactions
     const olderFoal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `Test Horse API ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'colt',
         dateOfBirth: oneMonthAgo,
         userId: testUser.id,
         bondScore: 35,
-      },
+      }),
     });
     ids.horses.push(olderFoal.id);
     testHorses = [youngFoal, olderFoal];
@@ -230,14 +231,14 @@ describe('Advanced Epigenetic API Routes', () => {
       ids.users.push(otherUser.id);
 
       const otherHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `Other Horse ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'colt',
           dateOfBirth: new Date(),
           userId: otherUser.id,
           bondScore: 15,
-        },
+        }),
       });
       ids.horses.push(otherHorse.id);
 

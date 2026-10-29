@@ -23,6 +23,7 @@ import {
   getPersonalityTraitDefinitions,
 } from '../../modules/grooms/services/groomPersonalityTraits.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Groom Personality Trait System', () => {
   let testUser;
@@ -97,36 +98,36 @@ describe('Groom Personality Trait System', () => {
         testHorses = await Promise.all([
           // Nervous/fearful horse
           tx.horse.create({
-            data: {
+            data: await testHorseData(tx, {
               ...fixtureColor(),
               name: `Test Horse Nervous ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'filly',
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 10,
-            },
+            }),
           }),
           // Confident/brave horse
           tx.horse.create({
-            data: {
+            data: await testHorseData(tx, {
               ...fixtureColor(),
               name: `Test Horse Confident ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'colt',
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 35,
-            },
+            }),
           }),
           // Neutral horse
           tx.horse.create({
-            data: {
+            data: await testHorseData(tx, {
               ...fixtureColor(),
               name: `Test Horse Neutral ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'Colt',
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 20,
-            },
+            }),
           }),
         ]);
       },

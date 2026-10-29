@@ -54,6 +54,7 @@ import { createSequentially } from '../helpers/createSequentially.mjs';
 // load-order dependent (green alone, red in a shard).
 import { realDateOrReason } from '../../__tests__/helpers/expectRealDate.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Groom Retirement Service', () => {
   let testUser;
@@ -75,14 +76,14 @@ describe('Groom Retirement Service', () => {
 
     // Create test horse for assignment logs
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `Test Horse ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'Stallion',
         dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
         userId: testUser.id,
         bondScore: 50,
-      },
+      }),
     });
   });
 

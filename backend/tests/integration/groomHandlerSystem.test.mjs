@@ -15,6 +15,7 @@ import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mj
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Groom Handler System Integration Tests', () => {
   // Equoria-rnbzn: every endpoint exercised here is a GET (no CSRF-guarded
@@ -70,14 +71,14 @@ describe('Groom Handler System Integration Tests', () => {
 
     // Create test horse
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Handler Test Horse',
         sex: 'Stallion',
         dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
         userId: testUser.id,
         bondScore: 50,
-      },
+      }),
     });
 
     // Create test groom
@@ -167,14 +168,14 @@ describe('Groom Handler System Integration Tests', () => {
     it('should return no handler for a horse without assignment', async () => {
       // Create a horse without handler
       const noHandlerHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'No Handler Horse',
           sex: 'Mare',
           dateOfBirth: gameCalendarDate(new Date(), -730), // 2 years old
           userId: testUser.id,
           bondScore: 30,
-        },
+        }),
       });
 
       try {
@@ -210,13 +211,13 @@ describe('Groom Handler System Integration Tests', () => {
       });
 
       const otherHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'Other User Horse',
           sex: 'Stallion',
           dateOfBirth: gameCalendarDate(new Date(), -365),
           userId: otherUser.id,
-        },
+        }),
       });
 
       try {

@@ -69,6 +69,9 @@ describe('fixtureColor() guard (Equoria-g9sa)', () => {
         sex: 'Stallion',
         age: 1,
         dateOfBirth: new Date(),
+        // Equoria-576c0.5: every horse has a temperament and gaits; only the color is under test.
+        temperament: 'Calm',
+        gaitScores: { walk: 50, trot: 50, canter: 50, gallop: 50, gaiting: null },
       },
     });
     const [row] = await prisma.$queryRaw`
@@ -93,6 +96,9 @@ describe('fixtureColor() guard (Equoria-g9sa)', () => {
         age: 3,
         dateOfBirth: new Date(),
         ...fixtureColor(),
+        // Equoria-576c0.5: every horse has a temperament and gaits; only the color is under test.
+        temperament: 'Calm',
+        gaitScores: { walk: 50, trot: 50, canter: 50, gallop: 50, gaiting: null },
       },
     });
     // Assert exactly what horseColorNullSentinel asserts: phenotype NOT NULL

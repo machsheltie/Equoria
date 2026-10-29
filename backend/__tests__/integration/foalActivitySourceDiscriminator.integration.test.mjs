@@ -39,6 +39,7 @@ import {
   deriveTotalActivityCount,
   reconcileTaskLogFromActivities,
 } from '../../utils/foalActivityStore.mjs';
+import { testHorseData } from '../helpers/createTestHorse.mjs';
 
 const cleanup = createCleanupTracker();
 let user;
@@ -63,7 +64,7 @@ beforeAll(async () => {
   });
 
   foal = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-8yhe3-${Date.now()}`,
       sex: 'Filly',
@@ -71,7 +72,7 @@ beforeAll(async () => {
       age: 0,
       userId: user.id,
       taskLog: {},
-    },
+    }),
   });
 }, 30000);
 

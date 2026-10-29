@@ -33,7 +33,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import cronJobService from '../services/cronJobs.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
-import { cleanupTestHorses } from './helpers/createTestHorse.mjs';
+import { cleanupTestHorses, testHorseData } from './helpers/createTestHorse.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
 
@@ -44,7 +44,7 @@ let owner;
 /** A foal born `daysAgo` Eastern game days ago (date-only dob, written as production writes it) with a development record at `currentDay`. */
 async function makeFoal(daysAgo, currentDay = 0) {
   const foal = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}-${createdFoalIds.length}`,
       sex: 'Filly',
@@ -52,7 +52,7 @@ async function makeFoal(daysAgo, currentDay = 0) {
       dateOfBirth: gameCalendarDate(new Date(), -daysAgo),
       bondScore: 50,
       user: { connect: { id: owner.id } },
-    },
+    }),
   });
   createdFoalIds.push(foal.id);
   await prisma.foalDevelopment.create({ data: { foalId: foal.id, currentDay } });

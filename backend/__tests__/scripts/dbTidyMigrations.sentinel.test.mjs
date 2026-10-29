@@ -298,8 +298,11 @@ describe('database speed-up and tidy-up migrations (owner rulings 2026-10-26)', 
       );
       const horse = (name, finalDisplayColor, phenotype, markings, rider = null) =>
         client.query(
-          `INSERT INTO "horses" ("name", "sex", "dateOfBirth", "finalDisplayColor", "phenotype", "phenotypicMarkings", "rider")
-           VALUES ($1, 'Mare', '2024-01-01', $2, $3::jsonb, $4::jsonb, $5::jsonb)`,
+          // Equoria-576c0.5: every horse has a temperament and gaits (NOT NULL once required).
+          `INSERT INTO "horses" ("name", "sex", "dateOfBirth", "finalDisplayColor", "phenotype", "phenotypicMarkings", "rider",
+             "temperament", "gaitScores")
+           VALUES ($1, 'Mare', '2024-01-01', $2, $3::jsonb, $4::jsonb, $5::jsonb,
+             'Calm', '{"walk":50,"trot":50,"canter":50,"gallop":50,"gaiting":null}'::jsonb)`,
           [name, finalDisplayColor, phenotype, markings, rider],
         );
       // 1: colour only in the old column, no phenotype.

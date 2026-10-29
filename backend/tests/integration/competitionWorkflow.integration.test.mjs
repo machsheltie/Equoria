@@ -54,6 +54,7 @@ import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mj
 // rider. Fixture-only; no assertion changed.
 import { competitionDateOfBirth, giveEligibleRider } from '../../__tests__/helpers/eligibleCompetitor.mjs';
 import { confirmEmail } from '../helpers/confirmEmail.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 /**
  * Extract cookie value from Set-Cookie header array
  */
@@ -258,7 +259,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
         }));
 
       return tx.horse.create({
-        data: {
+        data: await testHorseData(tx, {
           ...fixtureColor(),
           name: 'Competition Integration Champion',
           age: 5, // 5 game-years (mature and experienced) — Equoria-8y0v
@@ -268,6 +269,8 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
           dateOfBirth: competitionDateOfBirth(5),
           healthStatus: 'Excellent',
           lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
+          // Calm is neutral (0%) in Racing, so the score band below holds (Equoria-576c0.5).
+          temperament: 'Calm',
           // Equoria-kacla: the canonical cron `executeClosedShows` scores
           // off the raw stat columns (speed/stamina/agility/precision/
           // boldness), NOT disciplineScores (which the removed legacy
@@ -291,7 +294,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
             negative: [],
             hidden: ['championHeart'],
           },
-        },
+        }),
       });
     });
 
@@ -639,7 +642,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
     // value in the show's discipline as flat points (decision B) and a health
     // percent (decision C); stats are never capped, so scores are not bounded at
     // 100 (old assertion: score <= 100). Racing base 0.5*80 + 0.3*78 + 0.2*0 =
-    // 63.4, + Racing training 75 = 138.4; Excellent health +5%, no temperament,
+    // 63.4, + Racing training 75 = 138.4; Excellent health +5%, a Calm temperament (0% in Racing),
     // a developing rider with no affinity 0, luck +1..+10% (unpinned here):
     // 138.4 x 1.06 = 146.7 -> 147 up to 138.4 x 1.15 = 159.16 -> 159.
     expect(Number(competitionResult.score)).toBeGreaterThanOrEqual(147);

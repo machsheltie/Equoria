@@ -29,6 +29,7 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 describe('Parameter Pollution Attack Integration Tests', () => {
   // Equoria-h4zni: the body-validation vehicle here was PUT /api/v1/horses/:id.
@@ -112,14 +113,14 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     // Create test horse owned by user
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-ParamPol-${randomBytes(8).toString('hex')}`,
         sex: 'mare',
         dateOfBirth: new Date('2015-01-01'),
         userId: testUser.id, // Matches schema field (line 144)
         age: 5,
-      },
+      }),
     });
     createdHorseIds.push(testHorse.id);
   });

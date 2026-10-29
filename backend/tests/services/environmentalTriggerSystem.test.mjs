@@ -25,6 +25,7 @@ import {
   triggerThresholds,
 } from '../../modules/traits/services/environmentalTriggerSystem.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 const analyze = async (horseId, project, ...rest) => project(await loadEnvironmentalTriggerSnapshot(horseId), ...rest);
 
 describe('Environmental Trigger System', () => {
@@ -87,36 +88,36 @@ describe('Environmental Trigger System', () => {
         testHorses = await Promise.all([
           // Young foal - high environmental sensitivity
           tx.horse.create({
-            data: {
+            data: await testHorseData(tx, {
               ...fixtureColor(),
               name: `Test Foal Young ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'filly',
               dateOfBirth: oneWeekAgo,
               userId: testUser.id,
               bondScore: 15,
-            },
+            }),
           }),
           // Older foal - moderate sensitivity
           tx.horse.create({
-            data: {
+            data: await testHorseData(tx, {
               ...fixtureColor(),
               name: `Test Foal Older ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'colt',
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 25,
-            },
+            }),
           }),
           // Reactive foal - high trigger sensitivity
           tx.horse.create({
-            data: {
+            data: await testHorseData(tx, {
               ...fixtureColor(),
               name: `Test Foal Reactive ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'filly',
               dateOfBirth: twoWeeksAgo,
               userId: testUser.id,
               bondScore: 10,
-            },
+            }),
           }),
         ]);
       },

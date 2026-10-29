@@ -25,7 +25,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { createTestHorse } from './helpers/createTestHorse.mjs';
+import { createTestHorse, testHorseData } from './helpers/createTestHorse.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
@@ -255,7 +255,7 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
     cleanup.add(() => prisma.groomEngagement.deleteMany({ where: { groomId: groom.id } }), 'groomEngagements');
     cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
     const foal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${PREFIX}-foal-${suffix}`,
         sex: 'Filly',
@@ -265,7 +265,7 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         bondScore: 40,
-      },
+      }),
     });
     horseIds.push(foal.id);
     const groom = await prisma.groom.create({

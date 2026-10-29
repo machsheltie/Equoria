@@ -19,6 +19,7 @@ import { generateTestToken } from '../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { walkPages } from './helpers/keysetWalk.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 const RUN = randomBytes(5).toString('hex');
 const TIED = new Date('2026-03-06T06:00:00.000Z');
@@ -207,14 +208,14 @@ describe('GET /marketplace/history (Equoria-cmw85.22)', () => {
       },
     });
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-SaleHistory-${RUN}`,
         sex: 'Mare',
         dateOfBirth: new Date('2018-01-01'),
         age: 5,
         userId: other.id,
-      },
+      }),
     });
     const sale = i => ({
       horseId: horse.id,
@@ -240,15 +241,19 @@ describe('GET /marketplace/history (Equoria-cmw85.22)', () => {
 describe('GET /horses size cap (Equoria-cmw85.22)', () => {
   it('serves the whole stable by default but never more than 200 horses, however large ?limit is', async () => {
     await prisma.horse.createMany({
-      data: Array.from({ length: 205 }, (_, i) => ({
-        ...fixtureColor(),
-        name: `TestFixture-StableCap-${i}-${RUN}`,
-        sex: 'Mare',
-        dateOfBirth: new Date('2018-01-01'),
-        age: 5,
-        userId: user.id,
-        createdAt: TIED,
-      })),
+      data: await Promise.all(
+        Array.from({ length: 205 }, (_, i) =>
+          testHorseData(prisma, {
+            ...fixtureColor(),
+            name: `TestFixture-StableCap-${i}-${RUN}`,
+            sex: 'Mare',
+            dateOfBirth: new Date('2018-01-01'),
+            age: 5,
+            userId: user.id,
+            createdAt: TIED,
+          }),
+        ),
+      ),
     });
 
     const huge = await get('/api/v1/horses', { limit: 100000 });

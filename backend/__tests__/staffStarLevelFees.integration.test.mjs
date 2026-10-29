@@ -29,6 +29,7 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { staffLevelFee, staffLevels } from '../constants/staffLevels.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 const prefix = 'TestFixture-nawn5';
 const tag = () => randomBytes(4).toString('hex');
@@ -265,7 +266,7 @@ describe("a trainer's session charges the level price", () => {
   it('training with an Advanced trainer hired from the marketplace charges 400', async () => {
     const { user, token } = await makeUser(1000);
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${prefix}-horse-${tag()}`,
         sex: 'Mare',
@@ -275,7 +276,7 @@ describe("a trainer's session charges the level price", () => {
         lastFedDate: new Date(),
         trainingCooldown: null,
         userId: user.id,
-      },
+      }),
     });
     horseIds.push(horse.id);
     const marketplaceId = await seedOffer(user.id, 'trainer', {
@@ -307,7 +308,7 @@ describe("a trainer's session charges the level price", () => {
   it('q226: a trainer hired at an old session rate charges its level price', async () => {
     const { user, token } = await makeUser(1000);
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${prefix}-horse-${tag()}`,
         sex: 'Mare',
@@ -317,7 +318,7 @@ describe("a trainer's session charges the level price", () => {
         lastFedDate: new Date(),
         trainingCooldown: null,
         userId: user.id,
-      },
+      }),
     });
     horseIds.push(horse.id);
     const marketplaceId = await seedOffer(user.id, 'trainer', {

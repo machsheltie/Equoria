@@ -31,6 +31,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
+import { testHorseData } from './helpers/createTestHorse.mjs';
 
 const PREFIX = 'TestFixture-f46tb';
 const ORIGIN = 'http://localhost:3000';
@@ -67,7 +68,7 @@ beforeAll(async () => {
   token = generateTestToken({ id: owner.id, email: owner.email, role: 'user' });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}-horse-${tag}`,
       sex: 'Mare',
@@ -75,7 +76,7 @@ beforeAll(async () => {
       age: 7,
       userId: owner.id,
       healthStatus: 'healthy',
-    },
+    }),
   });
   horseIds.push(horse.id);
 
