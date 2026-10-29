@@ -97,7 +97,7 @@ break their pedigrees and histories, so accounts stay.
   (`POST /api/v1/account/delete`, `DELETE /api/v1/users/:id`) refuse every
   request.
 - **Audit:** data-export requests are recorded in the security audit trail
-  (action `account_operation`) for abuse detection; that audit row is
+  (action `accountOperation`) for abuse detection; that audit row is
   subject to the retention window in Section 3 and contains no game data.
 
 ---

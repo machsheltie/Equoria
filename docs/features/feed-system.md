@@ -104,9 +104,9 @@ increments `pregnancyFeedingsByTier` for the equipped tier. At foaling:
 ```text
 totalFeedings = sum(recognized tier counts)
 weightedSum = sum(count × tier pregnancy weight)
-positive_chance = weightedSum / max(7, totalFeedings)
+positiveChance = weightedSum / max(7, totalFeedings)
 unfedDays = max(0, 7 - totalFeedings)
-negative_chance = unfedDays × 5
+negativeChance = unfedDays × 5
 ```
 
 The values are percentage chances. Unknown tier keys do not contribute. The

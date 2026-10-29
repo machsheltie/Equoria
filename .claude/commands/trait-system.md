@@ -91,11 +91,11 @@ cat .claude/docs/systems/trait-modifiers.md
 ```javascript
 // Flags that influence trait discovery
 {
-  "high_quality_care": "Groom assignment, daily interactions",
-  "training_intensity": "Training frequency and variety",
-  "nutrition_quality": "Feeding patterns",
-  "social_exposure": "Horse interactions",
-  "competitive_success": "Competition performance"
+  "highQualityCare": "Groom assignment, daily interactions",
+  "trainingIntensity": "Training frequency and variety",
+  "nutritionQuality": "Feeding patterns",
+  "socialExposure": "Horse interactions",
+  "competitiveSuccess": "Competition performance"
 }
 ```
 

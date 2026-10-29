@@ -54,7 +54,7 @@ not a production runbook.
 
 ## Authentication-sensitive rationale
 
-A historical refresh-token hashing migration invalidated stored token rows while older workers could still serve refresh requests. Missing tokens were temporarily liable to look like reuse. The runtime now distinguishes the zero-token upgrade cohort with `SESSION_UPGRADE_REQUIRED`; deployment sequencing must still prevent stale workers and new schema/data semantics from overlapping unsafely.
+A historical refresh-token hashing migration invalidated stored token rows while older workers could still serve refresh requests. Missing tokens were temporarily liable to look like reuse. The runtime now distinguishes the zero-token upgrade cohort with `sessionUpgradeRequired`; deployment sequencing must still prevent stale workers and new schema/data semantics from overlapping unsafely.
 
 The shared auth limiter currently allows **200 failed** attempts per 15-minute window and skips successful requests. Do not change that control to compensate for a migration. Source, security doctrine, and the drift sentinel own the value.
 
@@ -84,7 +84,7 @@ Railway's current start sequence lives in `.railway/railway.ts` and reaches Rail
 
 - [ ] Verify login, refresh, logout, verification, MFA, and affected authorization paths as applicable.
 - [ ] Compare expected and actual transformed/purged row counts.
-- [ ] Monitor server and audit logs for `SESSION_UPGRADE_REQUIRED`, token-reuse signals, authentication failures, rate-limit saturation, and unexpected authorization failures.
+- [ ] Monitor server and audit logs for `sessionUpgradeRequired`, token-reuse signals, authentication failures, rate-limit saturation, and unexpected authorization failures.
 - [ ] Confirm no stale application instances remain.
 - [ ] Record actual impact and any forward repair in the migration/issue evidence, not as a permanent status claim in this runbook.
 

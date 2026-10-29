@@ -93,8 +93,8 @@ model Horse {
     "agility": 68
   },
   "traits": {
-    "discovered": ["speed_demon", "endurance_boost"],
-    "hidden": ["legendary_bloodline"]
+    "discovered": ["speedDemon", "enduranceBoost"],
+    "hidden": ["legendaryBloodline"]
   },
   "genetics": {
     "sireId": "uuid-123",
@@ -180,7 +180,7 @@ CREATE INDEX idx_horse_traits ON "Horse" USING GIN (traits);
 // Query JSONB efficiently
 const horses = await prisma.$queryRaw`
   SELECT * FROM "Horse"
-  WHERE traits @> '{"discovered": ["speed_demon"]}'::jsonb
+  WHERE traits @> '{"discovered": ["speedDemon"]}'::jsonb
 `;
 ```
 
