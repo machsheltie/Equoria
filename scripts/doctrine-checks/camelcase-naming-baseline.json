@@ -783,7 +783,6 @@
   "backend/tests/unit/carePatternAnalysis.test.mjs": 6,
   "backend/tests/unit/epigeneticFlagDefinitions.test.mjs": 23,
   "backend/tests/unit/foalAuthRoutes.unit.test.mjs": 11,
-  "backend/utils/bondingModifiers.mjs": 2,
   "backend/utils/cacheHelper.mjs": 5,
   "backend/utils/carePatternAnalysis.mjs": 4,
   "backend/utils/competitionEntryRules.mjs": 36,

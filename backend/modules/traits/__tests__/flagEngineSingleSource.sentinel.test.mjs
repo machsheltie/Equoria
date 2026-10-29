@@ -120,6 +120,11 @@ describe('Epigenetic flag engine — single source of truth (Equoria-yzqhj.3)', 
     'services/weeklyFlagEvaluationService.mjs',
     'utils/flagEvaluationEngine.mjs',
     'utils/flagTriggerRules.mjs',
+    // Equoria-rk8rm: the two partial bonding helpers (flag fields, Equoria-v6sp2;
+    // trait fields) had no gameplay caller. A trait bonding effect comes back only
+    // with the owner's trait-effects ruling, as one calculation in the bond write.
+    'utils/epigeneticFlagInfluence.mjs',
+    'utils/bondingModifiers.mjs',
   ];
 
   const liveFiles = ['config/epigeneticFlagDefinitions.mjs', 'utils/carePatternAnalysis.mjs'];

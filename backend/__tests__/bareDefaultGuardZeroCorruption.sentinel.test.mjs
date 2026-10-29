@@ -21,7 +21,6 @@
  *
  * Sibling unit arms live beside their services:
  *   modules/traits/__tests__/traitDiscovery.test.mjs
- *   modules/horses/__tests__/bondingModifiers.test.mjs
  *   modules/horses/__tests__/enhancedMilestoneEvaluationSystem.test.mjs
  *   modules/traits/__tests__/applyEpigeneticTraitsAtBirthUnit.test.mjs
  */
@@ -137,7 +136,7 @@ const NOT_NULL_HORSE_COLUMNS = [
 // Production files that carried the harmful class on 2026-07-03 (issue body,
 // verified 2026-07-06 and again on fix day). Relative to backend/.
 const CLASS_1_FILES = [
-  'utils/bondingModifiers.mjs',
+  // utils/bondingModifiers.mjs was deleted (Equoria-rk8rm): no caller.
   'utils/traitDiscovery.mjs',
   'utils/applyEpigeneticTraitsAtBirth.mjs',
   'utils/enhancedMilestoneEvaluationSystem.mjs',

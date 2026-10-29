@@ -15,12 +15,12 @@
  * - Trait effect persistence: effects apply consistently across gameplay systems
  *
  * 🎯 FUNCTIONALITY TESTED:
- * 1. calculateBondingChange() - Trait-modified bonding for grooming/training/competition
- * 2. getCombinedTraitEffects() - Multi-trait effect combination and validation
- * 3. Bonding modifiers: social/calm bonuses, antisocial/nervous penalties
- * 4. Error handling: missing traits, malformed data, invalid activities
- * 5. Edge cases: empty trait arrays, unknown traits, invalid inputs
- * 6. Integration workflows: complete trait effect application across systems
+ * 1. getCombinedTraitEffects() - Multi-trait effect combination and validation
+ * 2. Edge cases: empty trait arrays, unknown traits, invalid inputs
+ *
+ * NOTE (Equoria-rk8rm): the calculateBondingChange() tests were removed with
+ * utils/bondingModifiers.mjs, which no gameplay code called; no live bond path
+ * applies a trait bonding effect.
  *
  * NOTE: calculateTemperamentDrift() tests were removed (TEMP-3).
  * temperamentDrift.mjs uses a legacy 6-type system incompatible with the
@@ -44,7 +44,6 @@
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
-import { calculateBondingChange } from '../../../utils/bondingModifiers.mjs';
 // TEMP-3: calculateTemperamentDrift import removed — temperamentDrift.mjs is deprecated (legacy 6-type system)
 
 describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', () => {
@@ -52,61 +51,6 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
     jest.clearAllMocks();
     // Reset Math.random for consistent testing
     Math.random = jest.fn(() => 0.5);
-  });
-
-  describe('Bonding Modifiers', () => {
-    it('should apply trait bonuses to grooming bonding', () => {
-      const horse = {
-        id: 1,
-        bondScore: 50,
-        epigeneticModifiers: {
-          positive: ['peopleTrusting', 'resilient'],
-          negative: [],
-          hidden: [],
-        },
-      };
-
-      const result = calculateBondingChange(horse, 'grooming', { duration: 60 });
-
-      expect(result.modifiedChange).toBeGreaterThan(result.originalChange);
-      expect(result.appliedTraits).toEqual(['peopleTrusting']);
-      expect(result.traitModifier).toBeGreaterThan(1);
-    });
-
-    it('traits off the roster (antisocial, nervous) no longer change bonding', () => {
-      const horse = {
-        id: 1,
-        bondScore: 50,
-        epigeneticModifiers: {
-          positive: [],
-          negative: ['antisocial', 'nervous'],
-          hidden: [],
-        },
-      };
-
-      const result = calculateBondingChange(horse, 'training', { success: true });
-
-      expect(result.modifiedChange).toBe(result.originalChange);
-      expect(result.appliedTraits).toEqual([]);
-      expect(result.traitModifier).toBe(1);
-    });
-
-    it('should calculate competition bonding with placement modifiers', () => {
-      const horse = {
-        id: 1,
-        bondScore: 70,
-        epigeneticModifiers: {
-          positive: ['peopleTrusting'],
-          negative: [],
-          hidden: [],
-        },
-      };
-
-      const result = calculateBondingChange(horse, 'competition', { placement: '1st' });
-
-      expect(result.modifiedChange).toBeGreaterThan(5); // Should be significant for 1st place
-      expect(result.traitModifier).toBeGreaterThan(1); // peopleTrusting bonus applied
-    });
   });
 
   describe('Trait Effects Combination', () => {
@@ -141,51 +85,6 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
       const effects = getCombinedTraitEffects(['unknownTrait', 'anotherUnknown']);
 
       expect(Object.keys(effects)).toHaveLength(0);
-    });
-  });
-
-  describe('Integration Error Handling', () => {
-    it('should handle missing trait data gracefully', () => {
-      const horse = {
-        id: 1,
-        name: 'Horse Without Traits',
-        // No epigeneticModifiers field
-      };
-
-      const result = calculateBondingChange(horse, 'grooming', { duration: 30 });
-
-      expect(result.modifiedChange).toBeGreaterThan(0);
-      expect(result.appliedTraits).toHaveLength(0);
-      expect(result.traitModifier).toBeCloseTo(1, 1); // Allow for small variations
-    });
-
-    it('should handle malformed trait data', () => {
-      const horse = {
-        id: 1,
-        epigeneticModifiers: 'invalidData', // Should be an object
-      };
-
-      const result = calculateBondingChange(horse, 'training', { success: true });
-
-      expect(result.error).toBeUndefined(); // Should handle gracefully
-      expect(result.modifiedChange).toBeGreaterThan(0);
-    });
-
-    it('should handle invalid activity types gracefully', () => {
-      const horse = {
-        id: 1,
-        epigeneticModifiers: {
-          positive: ['social'],
-          negative: [],
-          hidden: [],
-        },
-      };
-
-      const result = calculateBondingChange(horse, 'invalidActivity', {});
-
-      expect(result.error).toBeDefined();
-      expect(result.modifiedChange).toBe(0);
-      expect(result.traitModifier).toBe(1);
     });
   });
 });
