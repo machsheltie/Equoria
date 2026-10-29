@@ -51,7 +51,9 @@ interface BreedsServerResponse {
      * Genetic data, trimmed to ONLY `ratingProfiles` by the list endpoint
      * (Equoria-refgs). GET /api/v1/breeds projects breedGeneticProfile down to
      * `{ ratingProfiles }` and drops the heavy color-genetics / starterStats /
-     * temperamentWeights keys (those remain on GET /api/v1/breeds/:id). We read
+     * temperamentWeights keys. No player response carries those odds at all
+     * (owner ruling 2026-10-29 q274, Equoria-9kakx: the server's response guard
+     * trims every breedGeneticProfile to `{ ratingProfiles }`). We read
      * only `ratingProfiles` to derive statTendencies, so this trim is invisible
      * here — BreedGeneticProfile already types only the ratingProfiles slice.
      */

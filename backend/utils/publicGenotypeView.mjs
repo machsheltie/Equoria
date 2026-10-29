@@ -1,76 +1,34 @@
 /**
- * The public view of a horse's colour genotype (Equoria-2wdp8).
+ * The public view of a horse's colour genotype (Equoria-2wdp8, Equoria-9kakx).
  *
  * Owner ruling 2026-10-26 (q72): colour genetics stay hidden until the owner
  * pays the vet for Genetic Testing. Owner ruling 2026-10-28 (q164): the data
  * the game sends a player hides anything that could be used to find loopholes.
+ * Owner ruling 2026-10-29 (q274): a player pays the vet to get THEIR horse's
+ * colour genetics profile, and that is the only way colour genetics are revealed.
  *
  * Many routes send whole horse rows (the ownership middleware loads every
  * column; nested sire/dam rows travel with them), and every one of them carries
- * `colorGenotype`. `withoutUntestedGenotype` drops that key from every object
- * in a response body that is not itself marked `colorGeneticsTested: true`, so
- * a row whose test flag was not selected is held back too (fails closed).
+ * `colorGenotype`.
+ *   - `withoutUntestedGenotype` drops that key from every object in a response
+ *     body that is not itself marked `colorGeneticsTested: true`, so a row whose
+ *     test flag was not selected is held back too (fails closed).
+ *   - `withoutHiddenGenotype` (what the response guard runs) also drops a tested
+ *     genotype unless the viewer owns that horse or is the game admin (owner or
+ *     admin role; never a moderator). Ownership is read from the row's `userId`,
+ *     or, for a row without one, from the horse the request's ownership check
+ *     verified (`horseId`/`id` equal to it). Anything else is held back.
  *
- * Copy-on-write like publicTraitView.mjs: only containers that lead to a
- * dropped genotype are copied, a shared or cyclic container maps to one copy,
- * and the input is never mutated (a cached row handed to res.json stays whole
- * for game logic).
- *
+ * Copy-on-write (utils/copyOnWriteRewrite.mjs): the input is never mutated.
  * Pure: no database access.
  */
+import { rewriteMatching } from './copyOnWriteRewrite.mjs';
 
-// A plain object from any realm (Prisma rows under Jest's VM have another
-// realm's Object.prototype); class instances (Date, Decimal) are left alone.
-function isPlainObject(value) {
-  if (value === null || typeof value !== 'object') {
-    return false;
-  }
-  const proto = Object.getPrototypeOf(value);
-  return proto === null || Object.getPrototypeOf(proto) === null;
-}
+const holdsGenotype = node => Object.hasOwn(node, 'colorGenotype');
 
-const isContainer = value => Array.isArray(value) || isPlainObject(value);
-
-const holdsUntestedGenotype = node =>
-  !Array.isArray(node) && Object.hasOwn(node, 'colorGenotype') && node.colorGeneticsTested !== true;
-
-/** Every container holding an untested genotype, and every container above one. */
-function containersToCopy(root) {
-  const parentsOf = new Map();
-  const holders = [];
-  const visited = new Set();
-  const stack = isContainer(root) ? [root] : [];
-  while (stack.length > 0) {
-    const node = stack.pop();
-    if (visited.has(node)) {
-      continue;
-    }
-    visited.add(node);
-    if (holdsUntestedGenotype(node)) {
-      holders.push(node);
-    }
-    for (const key of Object.keys(node)) {
-      const child = node[key];
-      if (isContainer(child)) {
-        if (!parentsOf.has(child)) {
-          parentsOf.set(child, new Set());
-        }
-        parentsOf.get(child).add(node);
-        stack.push(child);
-      }
-    }
-  }
-  const copy = new Set();
-  const pending = [...holders];
-  while (pending.length > 0) {
-    const node = pending.pop();
-    if (copy.has(node)) {
-      continue;
-    }
-    copy.add(node);
-    pending.push(...(parentsOf.get(node) ?? []));
-  }
-  return copy;
+function withoutGenotypeKey(node) {
+  const { colorGenotype: _dropped, ...rest } = node;
+  return rest;
 }
 
 /**
@@ -82,25 +40,47 @@ function containersToCopy(root) {
  * @returns {T}
  */
 export function withoutUntestedGenotype(body) {
-  const toCopy = containersToCopy(body);
-  const memo = new Map();
-  const build = value => {
-    if (!toCopy.has(value)) {
-      return value;
-    }
-    if (memo.has(value)) {
-      return memo.get(value);
-    }
-    const out = Array.isArray(value) ? [] : {};
-    memo.set(value, out);
-    const drop = holdsUntestedGenotype(value);
-    for (const key of Object.keys(value)) {
-      if (drop && key === 'colorGenotype') {
-        continue;
-      }
-      out[key] = build(value[key]);
-    }
-    return out;
-  };
-  return build(body);
+  return rewriteMatching(
+    body,
+    node => holdsGenotype(node) && node.colorGeneticsTested !== true,
+    withoutGenotypeKey,
+  );
+}
+
+/**
+ * Whether `viewer` may see this row's (tested) genotype.
+ *
+ * @param {object} node
+ * @param {{ userId?: string|null, isAdmin?: boolean, ownedHorseId?: number|null }} viewer
+ */
+function viewerMaySee(node, viewer) {
+  if (viewer.isAdmin === true) {
+    return true;
+  }
+  if (Object.hasOwn(node, 'userId')) {
+    return (
+      typeof viewer.userId === 'string' && viewer.userId !== '' && node.userId === viewer.userId
+    );
+  }
+  const owned = viewer.ownedHorseId;
+  return Number.isInteger(owned) && (node.horseId === owned || node.id === owned);
+}
+
+/**
+ * `body` with `colorGenotype` removed from every object (at any depth) unless it
+ * is marked `colorGeneticsTested: true` AND the viewer owns the horse or is the
+ * game admin.
+ *
+ * @template T
+ * @param {T} body
+ * @param {{ userId?: string|null, isAdmin?: boolean, ownedHorseId?: number|null }} [viewer]
+ * @returns {T}
+ */
+export function withoutHiddenGenotype(body, viewer = {}) {
+  return rewriteMatching(
+    body,
+    node =>
+      holdsGenotype(node) && (node.colorGeneticsTested !== true || !viewerMaySee(node, viewer)),
+    withoutGenotypeKey,
+  );
 }

@@ -95,6 +95,7 @@ import { createCompressionMiddleware } from './services/apiResponseOptimizationS
 // Equoria-6dace: unrevealed hidden trait names never leave the server.
 import { hiddenTraitResponseGuard } from './middleware/hiddenTraitResponseGuard.mjs';
 import { hiddenGenotypeResponseGuard } from './middleware/hiddenGenotypeResponseGuard.mjs';
+import { hiddenBreedOddsResponseGuard } from './middleware/hiddenBreedOddsResponseGuard.mjs';
 import {
   createResourceManagementMiddleware,
   memoryMonitoringMiddleware,
@@ -294,6 +295,8 @@ app.use(performanceMonitoring());
 app.use(hiddenTraitResponseGuard);
 // Same place, same reason: an untested horse's genotype is never sent (Equoria-2wdp8).
 app.use(hiddenGenotypeResponseGuard);
+// And no breed's colour, shade, marking or temperament odds (Equoria-9kakx).
+app.use(hiddenBreedOddsResponseGuard);
 
 // Memory and resource management middleware
 app.use(

@@ -1,21 +1,36 @@
 /**
- * Response guard: no JSON response sends an untested horse's colour genotype
- * (Equoria-2wdp8; owner rulings 2026-10-26 q72 and 2026-10-28 q164).
+ * Response guard: no JSON response sends a colour genotype the viewer has not
+ * bought (Equoria-2wdp8, Equoria-9kakx; owner rulings 2026-10-26 q72,
+ * 2026-10-28 q164 and 2026-10-29 q274).
  *
- * The genotype is what the vet's Genetic Testing sells. GET /horses/:id/genetics
- * withholds it until the test is bought, but routes that send whole horse rows
- * (the ownership middleware loads every column) carried it anyway. This guard
- * drops `colorGenotype` from every object in a JSON body that is not marked
- * `colorGeneticsTested: true` (utils/publicGenotypeView.mjs), just before it
- * is serialised.
+ * The genotype is what the vet's Genetic Testing sells, to the horse's owner.
+ * GET /horses/:id/genetics withholds it until the test is bought, but routes
+ * that send whole horse rows (the ownership middleware loads every column)
+ * carried it anyway. This guard drops `colorGenotype` from every object in a
+ * JSON body unless that row is marked `colorGeneticsTested: true` and the
+ * viewer owns the horse or is the game admin (utils/publicGenotypeView.mjs),
+ * just before it is serialised. Ownership of a row without `userId` comes from
+ * the horse requireOwnership verified for this request (req.horse).
  *
  * Mounted once in app.mjs, beside hiddenTraitResponseGuard, ahead of every router.
  */
-import { withoutUntestedGenotype } from '../utils/publicGenotypeView.mjs';
+import { withoutHiddenGenotype } from '../utils/publicGenotypeView.mjs';
+import { satisfiesRole } from '../modules/staff/index.mjs';
+
+function viewerOf(req) {
+  const userId = req.user?.id;
+  const ownedHorseId = req.horse?.id;
+  return {
+    userId: typeof userId === 'string' ? userId : null,
+    isAdmin: satisfiesRole(req.user?.role, 'admin'),
+    // req.horse is set only by requireOwnership, after it verified req.user owns it.
+    ownedHorseId: req.user && Number.isInteger(ownedHorseId) ? ownedHorseId : null,
+  };
+}
 
 export function hiddenGenotypeResponseGuard(req, res, next) {
   const json = res.json.bind(res);
-  res.json = body => json(withoutUntestedGenotype(body));
+  res.json = body => json(withoutHiddenGenotype(body, viewerOf(req)));
   next();
 }
 

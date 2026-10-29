@@ -2,6 +2,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { AppError, ValidationError, NotFoundError, DatabaseError } from '../../../errors/index.mjs';
 import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
+import { publicBreedProfile } from '../../../utils/publicBreedProfileView.mjs';
 
 // Cache TTL constants (seconds)
 const BREED_LIST_TTL = 600; // 10 minutes — breed list rarely changes
@@ -87,11 +88,11 @@ export async function getAllBreeds(req, res, next) {
     //
     // The only LIST consumer (frontend useBreeds → deriveBreedTendencies,
     // Equoria-x83v4) reads ONLY breedGeneticProfile.ratingProfiles. The other
-    // client (lib/api/breeds.ts) types only id/name/description. The full blob
-    // (color genetics, starterStats, temperamentWeights, defaultTrait) is
-    // still served by the per-breed detail endpoint GET /api/v1/breeds/:id
-    // (getBreedById returns the whole row) and by the marketplace's own
-    // breed-by-id $queryRaw — neither of which is this list path.
+    // client (lib/api/breeds.ts) types only id/name/description. The colour,
+    // shade, marking and temperament odds are never sent to a player on any
+    // route (owner ruling 2026-10-29 q274, Equoria-9kakx): GET /breeds/:id
+    // projects the same way, and hiddenBreedOddsResponseGuard trims every
+    // breedGeneticProfile that travels in a joined breed row.
     //
     // Prisma cannot `select` a sub-key of a Json column (the projection unit is
     // the whole column), so we select the scalar fields + the full JSON column,
@@ -257,9 +258,11 @@ export async function getBreedById(req, res, next) {
 
     // Equoria-cmw85.28: public reference data, so HTTP caching is opted in.
     res.locals.cacheable = { maxAge: 300 };
+    // Owner ruling 2026-10-29 (q274, Equoria-9kakx): the breed's colour, shade,
+    // marking and temperament odds stay on the server; only its rating profiles go.
     res.status(200).json({
       success: true,
-      data: breed,
+      data: { ...breed, breedGeneticProfile: publicBreedProfile(breed.breedGeneticProfile) },
     });
   } catch (error) {
     logger.error(`Error getting breed by id ${id}: ${error.message}`);
