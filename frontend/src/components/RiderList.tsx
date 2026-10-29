@@ -6,6 +6,9 @@
  * - One-click rider hiring, fee on the button (owner ruling 2026-10-28, q230)
  * - Skill level transparency system (rookie=hidden, developing=partial, experienced=full)
  * - Marketplace refresh mechanics
+ * - Riders back for hire (released or unpaid riders, owner rulings 2026-10-28 q153/q177)
+ *   in the same list as the new riders, filtered and sorted with them, with no separate
+ *   section (owner ruling 2026-10-29, q284, Equoria-hwboq)
  * - Accessibility support with ARIA labels
  *
  * Mirrors GroomList.tsx for the Rider System.
@@ -41,7 +44,26 @@ import {
 } from '@/lib/http/actionMessage';
 import EmptyState from '@/components/ui/EmptyState';
 import StaffLevelStars from '@/components/common/StaffLevelStars';
+import ReturningStaffCard from '@/components/common/ReturningStaffCard';
+import { useHireRiderFromPool, useRiderPool } from '@/hooks/api/useStaffPool';
+import type { PoolRider } from '@/lib/api/staffPoolTypes';
 import { staffLevelLabel, staffLevelOrder } from '@/lib/staffLevels';
+import '@/styles/returningStaff.css';
+
+/** A refused hire of a rider back for hire, beyond the shared hire copy. */
+const poolHireRefused = {
+  ...hireRefused,
+  404: 'That rider has already left the hiring list.',
+  409: 'Another stable hired that rider a moment ago.',
+};
+
+/** One card in the hire list: a new rider, or one back for hire (q284). */
+type RiderEntry =
+  | { kind: 'offer'; rider: MarketplaceRider }
+  | { kind: 'returning'; rider: PoolRider };
+
+const entryName = (e: RiderEntry) => `${e.rider.firstName} ${e.rider.lastName}`;
+const entryExperience = (e: RiderEntry) => (e.kind === 'offer' ? e.rider.experience : 0);
 
 interface RiderListProps {
   onRiderHired?: (_rider: MarketplaceRider) => void;
@@ -75,34 +97,54 @@ const RiderList: React.FC<RiderListProps> = ({
   const hireMutation = useHireRider();
   const refreshMutation = useRefreshRiderMarketplace();
 
-  const filteredAndSortedRiders = useMemo(() => {
-    const riders = marketplaceData?.riders ?? [];
-    if (!riders.length) return [];
+  // Riders back for hire share the list (q284). Their load never holds up the new riders.
+  const pool = useRiderPool();
+  const poolHire = useHireRiderFromPool();
+  // The returning rider the last Hire click was for: its card shows "Hiring..." and any refusal.
+  const [poolHiringId, setPoolHiringId] = useState<number | null>(null);
+  const [joined, setJoined] = useState<string | null>(null);
 
-    let filtered = [...riders];
+  const filteredAndSortedRiders = useMemo(() => {
+    let filtered: RiderEntry[] = [
+      ...(marketplaceData?.riders ?? []).map((rider) => ({ kind: 'offer' as const, rider })),
+      ...(pool.data?.riders ?? []).map((rider) => ({ kind: 'returning' as const, rider })),
+    ];
 
     if (filterStarLevel !== 'all') {
-      filtered = filtered.filter((r) => r.starLevel === filterStarLevel);
+      filtered = filtered.filter((e) => e.rider.starLevel === filterStarLevel);
     }
     if (filterPersonality !== 'all') {
-      filtered = filtered.filter((r) => r.personality === filterPersonality);
+      filtered = filtered.filter((e) => e.rider.personality === filterPersonality);
     }
 
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'rate-asc':
-          return a.weeklyRate - b.weeklyRate;
+          return a.rider.weeklyRate - b.rider.weeklyRate;
         case 'rate-desc':
-          return b.weeklyRate - a.weeklyRate;
+          return b.rider.weeklyRate - a.rider.weeklyRate;
         case 'experience-desc':
-          return b.experience - a.experience;
+          return entryExperience(b) - entryExperience(a);
         default:
-          return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+          return entryName(a).localeCompare(entryName(b));
       }
     });
 
     return filtered;
-  }, [marketplaceData, filterStarLevel, filterPersonality, sortBy]);
+  }, [marketplaceData, pool.data, filterStarLevel, filterPersonality, sortBy]);
+
+  // One click hires a rider back for hire, the weekly price on the button (q230).
+  const handlePoolHire = (rider: PoolRider) => {
+    poolHire.reset();
+    setJoined(null);
+    setPoolHiringId(rider.id);
+    poolHire.mutate(rider.id, {
+      onSuccess: () => {
+        setPoolHiringId(null);
+        setJoined(rider.name);
+      },
+    });
+  };
 
   // Hiring a rider charges one week's pay, once (owner ruling 2026-10-22,
   // Equoria-yw6w1); the server charges the same figure.
@@ -272,7 +314,38 @@ const RiderList: React.FC<RiderListProps> = ({
             data-testid="rider-grid"
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
           >
-            {filteredAndSortedRiders.map((rider) => {
+            {filteredAndSortedRiders.map((entry) => {
+              if (entry.kind === 'returning') {
+                const returning = entry.rider;
+                return (
+                  <ReturningStaffCard
+                    key={`returning-${returning.id}`}
+                    testId={`returning-rider-${returning.id}`}
+                    name={returning.name}
+                    starLevel={returning.starLevel}
+                    personality={
+                      <RiderPersonalityBadge personality={returning.personality} size="sm" />
+                    }
+                    growth={returning.growth}
+                    bio={returning.bio}
+                    weeklyPrice={returning.weeklyRate}
+                    affordable={(user?.money ?? 0) >= returning.weeklyRate}
+                    hiring={poolHire.isPending && poolHiringId === returning.id}
+                    disabled={poolHire.isPending}
+                    onHire={() => handlePoolHire(returning)}
+                    errorMessage={
+                      poolHire.isError && poolHiringId === returning.id
+                        ? actionMessageFor(
+                            poolHire.error,
+                            poolHireRefused,
+                            hireRefusalCodes('rider')
+                          )
+                        : null
+                    }
+                  />
+                );
+              }
+              const rider = entry.rider;
               const hiringCost = calculateHiringCost(rider.weeklyRate);
               const affordable = canAfford(rider.weeklyRate);
 
@@ -359,6 +432,24 @@ const RiderList: React.FC<RiderListProps> = ({
           </div>
         )}
       </div>
+
+      <p role="status" className="returning-staff__more">
+        {joined ? `${joined} has joined your riders.` : ''}
+      </p>
+      {pool.isError && (
+        <div data-testid="rider-pool-error" className="space-y-2">
+          <InlineError message={"The riders back for hire didn't load."} />
+          <Button type="button" variant="secondary" size="sm" onClick={() => void pool.refetch()}>
+            Try Again
+          </Button>
+        </div>
+      )}
+      {pool.data && pool.data.total > pool.data.riders.length && (
+        <p className="returning-staff__more">
+          Showing the {pool.data.riders.length} riders who came back most recently, of{' '}
+          {pool.data.total}.
+        </p>
+      )}
 
       {/* Low balance warning */}
       {user && (user.money ?? 0) < 5000 && (

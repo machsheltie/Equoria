@@ -6,7 +6,7 @@
  * route wiring are unchanged — groomController.mjs re-exports these so the
  * public import surface is identical.
  *
- * Handlers: getUserGrooms, getGroomProfile. (getGroomDefinitions went with
+ * Handlers: getUserGrooms, getGroomProfile, getGroomRosterLimit, releaseGroom. (getGroomDefinitions went with
  * GET /grooms/definitions, owner ruling 2026-10-28, q151, Equoria-a7f1p.)
  *
  * Equoria-bvddn.7: the player-built hire (POST /grooms/hire, client-chosen
@@ -27,6 +27,8 @@ import {
   ensureGrowthProfileTx,
   revealedGrowthView,
 } from '../../../services/staffGrowthService.mjs';
+import { ENGAGEMENT_END_REASONS, releaseGroomTx } from '../services/groomEngagementService.mjs';
+import { MAX_GROOMS_PER_USER } from '../../../config/groomConfig.mjs';
 
 const GROOM_LIST_SELECT = {
   id: true,
@@ -235,5 +237,72 @@ export async function getGroomProfile(req, res) {
       message: 'Failed to retrieve groom profile',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
+  }
+}
+
+/**
+ * GET /api/v1/grooms/roster-cap
+ * How many grooms the player may hold and how many working grooms they have: the same
+ * cap and count the hire paths enforce (retired grooms do not count). The groom page
+ * shows the Release button when the roster is full (owner ruling 2026-10-29, q285).
+ */
+export async function getGroomRosterLimit(req, res) {
+  try {
+    const activeGrooms = await prisma.groom.count({
+      where: { userId: req.user.id, retired: false },
+    });
+    res.status(200).json({
+      success: true,
+      message: 'Groom roster limit retrieved',
+      data: { rosterCap: MAX_GROOMS_PER_USER, activeGrooms },
+    });
+  } catch (error) {
+    logger.error(`[groomController.getGroomRosterLimit] Error: ${error.message}`);
+    res.status(500).json({ success: false, message: 'Failed to get the groom limit', data: null });
+  }
+}
+
+/**
+ * POST /api/v1/grooms/:id/release
+ *
+ * Owner ruling 2026-10-29 (q285, Equoria-hwboq): the player releases one of their
+ * grooms with one click, with no confirmation page and no receipt. The groom goes back
+ * to the grooms-for-hire pool like every other leaver: at its current level with its
+ * reveals intact (q177), its open engagement closed and its active assignments ended
+ * (releaseGroomTx). Only a working groom on the caller's own staff can be released;
+ * anything else is 404, so another stable's groom is never confirmed to exist.
+ */
+export async function releaseGroom(req, res) {
+  const userId = req.user.id;
+  const groomId = Number.parseInt(req.params.id, 10);
+  try {
+    await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        const groom = await tx.groom.findFirst({
+          where: { id: groomId, userId, retired: false },
+          select: { id: true },
+        });
+        if (!groom) {
+          const notFound = new Error('Groom not found');
+          notFound.status = 404;
+          throw notFound;
+        }
+        await releaseGroomTx(tx, {
+          groomId,
+          userId,
+          reason: ENGAGEMENT_END_REASONS.RELEASED,
+          notify: false,
+        });
+      }),
+      { message: 'Grooms are busy right now, please retry in a moment.' },
+    );
+    logger.info(`[groomController.releaseGroom] Groom ${groomId} released by user ${userId}`);
+    res.status(200).json({ success: true, message: 'Groom released', data: { groomId } });
+  } catch (error) {
+    if (typeof error?.status === 'number') {
+      return res.status(error.status).json({ success: false, message: error.message, data: null });
+    }
+    logger.error(`[groomController.releaseGroom] Error: ${error.message}`);
+    res.status(500).json({ success: false, message: 'Failed to release groom', data: null });
   }
 }

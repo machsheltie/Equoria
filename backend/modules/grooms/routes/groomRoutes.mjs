@@ -29,6 +29,8 @@ import {
   getGroomProfile,
   getGroomAssignmentLogs,
   getGroomHorseSynergyPreview,
+  getGroomRosterLimit,
+  releaseGroom,
 } from '../controllers/groomController.mjs';
 import logger from '../../../utils/logger.mjs';
 import { handleValidationErrors } from './_groomRouteHelpers.mjs';
@@ -315,6 +317,29 @@ router.put('/:id/bonus-traits', authenticateToken, (req, res) => {
       'Manual bonus-trait assignment has been removed. Bonus traits are earned through groom care (bond and assignment coverage) and applied automatically during trait rolls.',
   });
 });
+
+/**
+ * GET /api/grooms/roster-cap
+ * The player's groom limit and working-groom count (q285: the Release button shows when
+ * the roster is full).
+ */
+router.get('/roster-cap', authenticateToken, getGroomRosterLimit);
+
+/**
+ * POST /api/grooms/:id/release
+ * Owner ruling 2026-10-29 (q285, Equoria-hwboq): one click releases one of the
+ * player's own grooms to the grooms-for-hire pool; no confirmation, no receipt.
+ * 404 for a groom that is not the caller's working groom.
+ */
+router.post(
+  '/:id/release',
+  authenticateToken,
+  [
+    param('id').isInt({ min: 1 }).withMessage('Groom ID must be a positive integer'),
+    handleValidationErrors,
+  ],
+  releaseGroom,
+);
 
 // ===== SUB-DOMAIN SUB-ROUTERS (Equoria-8mdpc god-file split) =====
 // Mounted after the parent's foundational routes so the parent's relative

@@ -16,9 +16,17 @@
  *   GET    /api/v1/grooms/:groomId/assignment-logs            → { success, logs }
  *   GET    /api/v1/groom-marketplace/free-agents              → PoolGroomList (grooms back for hire)
  *   POST   /api/v1/groom-marketplace/free-agents/hire         → { groom, cost, remainingMoney }
+ *   GET    /api/v1/grooms/roster-cap                          → GroomRosterLimit
+ *   POST   /api/v1/grooms/:groomId/release                    → { groomId } (q285)
  */
 
 import { apiClient } from '../http/apiClient.js';
+
+/** GET /api/v1/grooms/roster-cap: the hire limit and the player's working grooms. */
+export interface GroomRosterLimit {
+  rosterCap: number;
+  activeGrooms: number;
+}
 import type {
   Groom,
   GroomAssignment,
@@ -92,6 +100,12 @@ export const groomsApi = {
       '/api/v1/groom-marketplace/free-agents/hire',
       { groomId }
     ),
+  // Owner ruling 2026-10-29 (q285, Equoria-hwboq): the groom limit and working-groom
+  // count, so the page shows Release when the roster is full.
+  getRosterLimit: () => apiClient.get<GroomRosterLimit>('/api/v1/grooms/roster-cap'),
+  // One click releases the groom to the hiring pool; no confirmation, no receipt.
+  releaseGroom: (groomId: number) =>
+    apiClient.post<{ groomId: number }>(`/api/v1/grooms/${groomId}/release`),
   assignGroom: (data: { groomId: number; horseId: number; replacePrimary?: boolean }) =>
     apiClient.post<{ success: boolean }>('/api/v1/groom-assignments', data),
   deleteAssignment: (assignmentId: number) =>

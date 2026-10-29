@@ -5,6 +5,9 @@
  * - Marketplace groom listing with filtering and sorting capabilities
  * - One-click groom hiring, fee on the button (owner ruling 2026-10-28, q230)
  * - Marketplace refresh: free daily, or paid in one click with the fee on the button
+ * - Grooms back for hire (released or unpaid grooms, owner rulings 2026-10-28 q153/q177)
+ *   in the same list as the new grooms, filtered and sorted with them, with no separate
+ *   section (owner ruling 2026-10-29, q284, Equoria-hwboq)
  * - Responsive design with mobile and desktop layouts
  * - Real-time data updates using React Query
  * - Accessibility support with ARIA labels and keyboard navigation
@@ -37,12 +40,36 @@ import {
 import { userMessageFor } from '@/lib/http/userMessage';
 import { groomSpecialtyTitle } from '@/lib/staffLabels';
 import StaffLevelStars from '@/components/common/StaffLevelStars';
+import ReturningStaffCard from '@/components/common/ReturningStaffCard';
+import { useGroomPool, useHireGroomFromPool } from '@/hooks/api/useStaffPool';
+import type { PoolGroom } from '@/lib/api/staffPoolTypes';
 import { staffLevelLabel, staffLevelOrder } from '@/lib/staffLevels';
+import '@/styles/returningStaff.css';
 
 // Owner rulings 2026-10-28 (q226, q228): a groom costs their star level's price per
 // week, however many horses; hiring charges that one week. The server sends it as
 // weeklyFee on every offer.
 const calculateHiringCost = (groom: MarketplaceGroom): number => groom.weeklyFee;
+
+/** A refused hire of a groom back for hire, beyond the shared hire copy. */
+const poolHireRefused = {
+  ...hireRefused,
+  404: 'That groom has already left the hiring list.',
+  409: 'Another stable hired that groom a moment ago.',
+};
+
+/** One card in the hire list: a new groom, or one back for hire (q284). */
+type GroomEntry =
+  | { kind: 'offer'; groom: MarketplaceGroom }
+  | { kind: 'returning'; groom: PoolGroom };
+
+const entryName = (e: GroomEntry) =>
+  e.kind === 'offer' ? `${e.groom.firstName} ${e.groom.lastName}` : e.groom.name;
+const entryPrice = (e: GroomEntry) => e.groom.weeklyFee;
+const entrySpecialty = (e: GroomEntry) =>
+  e.kind === 'offer' ? e.groom.specialty : e.groom.speciality;
+const entryExperience = (e: GroomEntry) =>
+  e.kind === 'offer' ? e.groom.experience : ((e.groom as { experience?: number }).experience ?? 0);
 
 interface GroomListProps {
   onGroomHired?: (_groom: MarketplaceGroom) => void;
@@ -87,40 +114,60 @@ const GroomList: React.FC<GroomListProps> = ({
   // Refresh marketplace mutation
   const refreshMutation = useRefreshMarketplace();
 
-  // Filter and sort grooms
-  const filteredAndSortedGrooms = useMemo(() => {
-    const grooms = marketplaceData?.grooms || [];
-    if (!grooms.length) return [];
+  // Grooms back for hire share the list (q284). Their load never holds up the new grooms.
+  const pool = useGroomPool();
+  const poolHire = useHireGroomFromPool();
+  // The returning groom the last Hire click was for: its card shows "Hiring..." and any refusal.
+  const [poolHiringId, setPoolHiringId] = useState<number | null>(null);
+  const [joined, setJoined] = useState<string | null>(null);
 
-    let filtered = [...grooms];
+  // Filter and sort the new grooms and the grooms back for hire together
+  const filteredAndSortedGrooms = useMemo(() => {
+    let filtered: GroomEntry[] = [
+      ...(marketplaceData?.grooms || []).map((groom) => ({ kind: 'offer' as const, groom })),
+      ...(pool.data?.grooms ?? []).map((groom) => ({ kind: 'returning' as const, groom })),
+    ];
 
     // Apply filters
     if (filterStarLevel !== 'all') {
-      filtered = filtered.filter((g) => g.starLevel === filterStarLevel);
+      filtered = filtered.filter((e) => e.groom.starLevel === filterStarLevel);
     }
     if (filterSpecialty !== 'all') {
-      filtered = filtered.filter((g) => g.specialty === filterSpecialty);
+      filtered = filtered.filter((e) => entrySpecialty(e) === filterSpecialty);
     }
 
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'price-asc':
-          return calculateHiringCost(a) - calculateHiringCost(b);
+          return entryPrice(a) - entryPrice(b);
         case 'price-desc':
-          return calculateHiringCost(b) - calculateHiringCost(a);
+          return entryPrice(b) - entryPrice(a);
         case 'experience-asc':
-          return a.experience - b.experience;
+          return entryExperience(a) - entryExperience(b);
         case 'experience-desc':
-          return b.experience - a.experience;
+          return entryExperience(b) - entryExperience(a);
         case 'name':
         default:
-          return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+          return entryName(a).localeCompare(entryName(b));
       }
     });
 
     return filtered;
-  }, [marketplaceData, filterStarLevel, filterSpecialty, sortBy]);
+  }, [marketplaceData, pool.data, filterStarLevel, filterSpecialty, sortBy]);
+
+  // One click hires a groom back for hire, the weekly price on the button (q230).
+  const handlePoolHire = (groom: PoolGroom) => {
+    poolHire.reset();
+    setJoined(null);
+    setPoolHiringId(groom.id);
+    poolHire.mutate(groom.id, {
+      onSuccess: () => {
+        setPoolHiringId(null);
+        setJoined(groom.name);
+      },
+    });
+  };
 
   // Check if user can afford groom
   const canAffordGroom = (groom: MarketplaceGroom) => {
@@ -340,7 +387,37 @@ const GroomList: React.FC<GroomListProps> = ({
             data-testid="groom-grid"
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            {filteredAndSortedGrooms.map((groom) => {
+            {filteredAndSortedGrooms.map((entry) => {
+              if (entry.kind === 'returning') {
+                const returning = entry.groom;
+                return (
+                  <ReturningStaffCard
+                    key={`returning-${returning.id}`}
+                    testId={`returning-groom-${returning.id}`}
+                    name={returning.name}
+                    starLevel={returning.starLevel}
+                    personality={<GroomPersonalityBadge personality={returning.personality} />}
+                    detail={groomSpecialtyTitle(returning.speciality)}
+                    growth={returning.growth}
+                    bio={returning.bio}
+                    weeklyPrice={returning.weeklyFee}
+                    affordable={(user?.money ?? 0) >= returning.weeklyFee}
+                    hiring={poolHire.isPending && poolHiringId === returning.id}
+                    disabled={poolHire.isPending}
+                    onHire={() => handlePoolHire(returning)}
+                    errorMessage={
+                      poolHire.isError && poolHiringId === returning.id
+                        ? actionMessageFor(
+                            poolHire.error,
+                            poolHireRefused,
+                            hireRefusalCodes('groom')
+                          )
+                        : null
+                    }
+                  />
+                );
+              }
+              const groom = entry.groom;
               const hiringCost = calculateHiringCost(groom);
               const canAfford = canAffordGroom(groom);
 
@@ -430,6 +507,23 @@ const GroomList: React.FC<GroomListProps> = ({
           </div>
         )}
       </div>
+
+      <p role="status" className="returning-staff__more">
+        {joined ? `${joined} has joined your grooms.` : ''}
+      </p>
+      {pool.isError && (
+        <div data-testid="groom-pool-error" className="space-y-2">
+          <InlineError message={"The grooms back for hire didn't load."} />
+          <Button type="button" variant="secondary" size="sm" onClick={() => void pool.refetch()}>
+            Try Again
+          </Button>
+        </div>
+      )}
+      {pool.data && pool.data.total > pool.data.grooms.length && (
+        <p className="returning-staff__more">
+          Showing {pool.data.grooms.length} of the {pool.data.total} grooms back for hire.
+        </p>
+      )}
 
       {/* Insufficient Funds Warning */}
       {user && (user.money || 0) < 500 && (

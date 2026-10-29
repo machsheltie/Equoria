@@ -75,6 +75,11 @@ export const ENGAGEMENT_END_REASONS = {
   FEE_UNPAID: 'feeUnpaid',
   /** The groom aged out (groomRetirementService.processRetirement). */
   RETIREMENT: 'retirement',
+  /**
+   * The player pressed Release (owner ruling 2026-10-29, q285, Equoria-hwboq); the
+   * groom returned to the hire pool like any other leaver.
+   */
+  RELEASED: 'released',
 };
 
 /** The player is told their groom cannot work until this week's fee is paid. */
@@ -251,8 +256,10 @@ export async function endEngagementTx(tx, groomId, reason, endedAt) {
 }
 
 /**
- * Release a groom back to the grooms-for-hire pool. GAME-INTERNAL: no HTTP route
- * reaches this, exactly as no route reaches `processRetirement`.
+ * Release a groom back to the grooms-for-hire pool. The game calls it for an unpaid
+ * groom; the player's Release button (POST /api/v1/grooms/:id/release, owner ruling
+ * 2026-10-29, q285) calls it with `notify: false`: the player released the groom
+ * themselves, so there is nothing to tell them (no receipts).
  *
  * Everything the player can observe happens in ONE transaction, in this order:
  *   1. `Groom` freed — a GUARDED conditional update (`updateMany` whose `where`
@@ -283,13 +290,21 @@ export async function endEngagementTx(tx, groomId, reason, endedAt) {
  * @param {string} params.userId - the player releasing the groom (the precondition)
  * @param {string} params.reason - one of ENGAGEMENT_END_REASONS
  * @param {Object} [params.notificationPayloadExtras] - merged into the notice
+ * @param {boolean} [params.notify] - false: write no notification (default true)
  * @param {Date} [params.now]
  * @returns {Promise<{released: Object, endedAssignmentCount: number,
- *   closedAssignmentLogCount: number, horses: Array, notificationId: number,
+ *   closedAssignmentLogCount: number, horses: Array, notificationId: number|null,
  *   notificationPayload: Object}>}
  */
 export async function releaseGroomTx(tx, params) {
-  const { groomId, userId, reason, notificationPayloadExtras = {}, now = new Date() } = params;
+  const {
+    groomId,
+    userId,
+    reason,
+    notificationPayloadExtras = {},
+    notify = true,
+    now = new Date(),
+  } = params;
 
   const groom = await tx.groom.findUnique({
     where: { id: groomId },
@@ -360,12 +375,9 @@ export async function releaseGroomTx(tx, params) {
     ...notificationPayloadExtras,
   };
 
-  const notification = await createNotificationTx(
-    tx,
-    userId,
-    GROOM_RELEASED_NOTIFICATION_TYPE,
-    notificationPayload,
-  );
+  const notification = notify
+    ? await createNotificationTx(tx, userId, GROOM_RELEASED_NOTIFICATION_TYPE, notificationPayload)
+    : null;
 
   if (horses.length !== endedAssignments.count) {
     logger.error(
@@ -381,7 +393,7 @@ export async function releaseGroomTx(tx, params) {
     endedAssignmentCount: endedAssignments.count,
     closedAssignmentLogCount: closedLogs.count,
     horses,
-    notificationId: notification.id,
+    notificationId: notification?.id ?? null,
     notificationPayload,
   };
 }

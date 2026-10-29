@@ -5,7 +5,8 @@
  * level with what it has revealed intact (q177); the card shows its name, stars,
  * personality and ONLY its revealed items, as authored words (never stored codes);
  * hiring is one click with the weekly price on the button and no confirmation (q230).
- * The shape follows the hire cards above it on the same tab.
+ * Owner ruling 2026-10-29 (q284, Equoria-hwboq): the card sits in the same hire list
+ * as the newly generated staff, with no separate section.
  */
 
 import React from 'react';
@@ -88,46 +89,44 @@ const ReturningStaffCard: React.FC<ReturningStaffCardProps> = ({
   onHire,
   errorMessage,
 }) => (
-  <li>
-    <Surface variant="panel" data-testid={testId} className="returning-staff__card">
-      <div>
-        <h3 className="returning-staff__name">{name}</h3>
-        <div className="returning-staff__identity">
-          <StaffLevelStars level={starLevel} />
-          {personality}
-          {detail && <span className="returning-staff__speciality">{detail}</span>}
-        </div>
+  <Surface variant="panel" data-testid={testId} className="returning-staff__card">
+    <div>
+      <h3 className="returning-staff__name">{name}</h3>
+      <div className="returning-staff__identity">
+        <StaffLevelStars level={starLevel} />
+        {personality}
+        {detail && <span className="returning-staff__speciality">{detail}</span>}
       </div>
+    </div>
 
-      <RevealedItems growth={growth} />
+    <RevealedItems growth={growth} />
 
-      {bio && <p className="returning-staff__bio">&ldquo;{bio}&rdquo;</p>}
+    {bio && <p className="returning-staff__bio">&ldquo;{bio}&rdquo;</p>}
 
-      <div className="returning-staff__hire">
-        <Button
-          type="button"
-          onClick={onHire}
-          disabled={!affordable || disabled}
-          aria-busy={hiring || undefined}
-          className="returning-staff__hire-button"
-          aria-label={`Hire ${name}, ${weeklyPrice.toLocaleString('en-US')} coins a week`}
-          data-testid={`${testId}-hire`}
-        >
-          {hiring ? (
-            'Hiring...'
-          ) : (
-            <span className="returning-staff__price">
-              Hire — <Currency amount={weeklyPrice} /> /wk
-            </span>
-          )}
-        </Button>
-        {!affordable && (
-          <p className="returning-staff__short">Your balance doesn&rsquo;t cover a week yet.</p>
+    <div className="returning-staff__hire">
+      <Button
+        type="button"
+        onClick={onHire}
+        disabled={!affordable || disabled}
+        aria-busy={hiring || undefined}
+        className="returning-staff__hire-button"
+        aria-label={`Hire ${name}, ${weeklyPrice.toLocaleString('en-US')} coins a week`}
+        data-testid={`${testId}-hire`}
+      >
+        {hiring ? (
+          'Hiring...'
+        ) : (
+          <span className="returning-staff__price">
+            Hire — <Currency amount={weeklyPrice} /> /wk
+          </span>
         )}
-        {errorMessage && <InlineError message={errorMessage} className="returning-staff__error" />}
-      </div>
-    </Surface>
-  </li>
+      </Button>
+      {!affordable && (
+        <p className="returning-staff__short">Your balance doesn&rsquo;t cover a week yet.</p>
+      )}
+      {errorMessage && <InlineError message={errorMessage} className="returning-staff__error" />}
+    </div>
+  </Surface>
 );
 
 export default ReturningStaffCard;

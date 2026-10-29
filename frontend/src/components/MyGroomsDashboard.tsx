@@ -30,7 +30,8 @@ import {
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
 import AssignGroomModal from './AssignGroomModal';
-import { SkeletonBase, ErrorState } from '@/components/ui/state';
+import { SkeletonBase, ErrorState, InlineError } from '@/components/ui/state';
+import { actionMessageFor } from '@/lib/http/actionMessage';
 import GroomPersonalityBadge from './groom/GroomPersonalityBadge';
 import GroomPersonalityDisplay from './groom/GroomPersonalityDisplay';
 import GroomDetailPanel from './groom/GroomDetailPanel';
@@ -39,6 +40,8 @@ import {
   useGroomAssignments,
   useGroomSalaries,
   useDeleteAssignment,
+  useGroomRosterLimit,
+  useReleaseGroom,
 } from '../hooks/api/useGrooms';
 import { useHorses } from '../hooks/api/useHorses';
 import type { Groom, GroomAssignment, SalarySummary } from '@/lib/api-client';
@@ -54,6 +57,9 @@ import {
 import { groomSpecialtyTitle } from '@/lib/staffLabels';
 import StaffLevelStars from '@/components/common/StaffLevelStars';
 import { staffLevelLabel, staffLevelOrder } from '@/lib/staffLevels';
+
+// A release that finds the groom already gone (another tab, the weekly pass).
+const releaseRefused = { 404: 'That groom has already left your stable.' };
 
 interface MyGroomsDashboardProps {
   userId: string | number;
@@ -116,6 +122,21 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
 
   // Unassign mutation using centralized hook
   const unassignMutation = useDeleteAssignment();
+
+  // Owner ruling 2026-10-29 (q285, Equoria-hwboq): when the groom roster is full, each
+  // groom card offers Release: one click, no confirmation, no receipt. The groom goes
+  // back to the hiring pool. The limit and count come from the server.
+  const rosterLimit = useGroomRosterLimit();
+  const rosterFull =
+    rosterLimit.data !== undefined && rosterLimit.data.activeGrooms >= rosterLimit.data.rosterCap;
+  const releaseMutation = useReleaseGroom();
+  // The groom the last Release click was for: its card shows "Releasing..." and any refusal.
+  const [releasingId, setReleasingId] = useState<number | null>(null);
+  const handleReleaseClick = (groomId: number) => {
+    releaseMutation.reset();
+    setReleasingId(groomId);
+    releaseMutation.mutate(groomId, { onSuccess: () => setReleasingId(null) });
+  };
 
   // Equoria-j2a51: getUserGrooms/getAssignments now return real arrays (the
   // envelope is extracted in grooms.ts); default to [] defensively.
@@ -590,6 +611,31 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
               >
                 {isFullyAssigned ? `Caring for ${maxAssignments} horses` : 'Assign to Horse'}
               </Button>
+
+              {rosterFull && (
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => handleReleaseClick(groom.id)}
+                    disabled={releaseMutation.isPending}
+                    aria-busy={(releaseMutation.isPending && releasingId === groom.id) || undefined}
+                    aria-label={`Release ${groom.name}`}
+                    className="w-full mt-3"
+                    data-testid={`release-groom-${groom.id}`}
+                  >
+                    {releaseMutation.isPending && releasingId === groom.id
+                      ? 'Releasing...'
+                      : 'Release'}
+                  </Button>
+                  {releaseMutation.isError && releasingId === groom.id && (
+                    <InlineError
+                      message={actionMessageFor(releaseMutation.error, releaseRefused)}
+                      className="mt-2"
+                    />
+                  )}
+                </>
+              )}
             </Surface>
           );
         })}

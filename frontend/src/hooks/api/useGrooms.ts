@@ -40,6 +40,8 @@ export const groomKeys = {
   assignmentLogs: (groomId: number) => [...groomKeys.all, 'assignment-logs', groomId] as const,
   // Equoria-oey96.6 — talent-tree selections for a groom
   talents: (groomId: number) => [...groomKeys.all, 'talents', groomId] as const,
+  // Equoria-hwboq: the groom limit and working-groom count (q285).
+  rosterLimit: () => [...groomKeys.all, 'rosterLimit'] as const,
 };
 
 // Hooks
@@ -228,6 +230,33 @@ export function useSelectTalent() {
       queryClient.invalidateQueries({ queryKey: groomKeys.talents(groomId) });
       queryClient.invalidateQueries({ queryKey: groomKeys.profile(groomId) });
       queryClient.invalidateQueries({ queryKey: groomKeys.all });
+    },
+  });
+}
+
+/**
+ * The groom limit and how many working grooms the player has (owner ruling 2026-10-29,
+ * q285): read from the server, which enforces the same limit at hire.
+ */
+export function useGroomRosterLimit() {
+  return useQuery({
+    queryKey: groomKeys.rosterLimit(),
+    queryFn: () => groomsApi.getRosterLimit(),
+    staleTime: 60 * 1000,
+  });
+}
+
+/**
+ * Release one groom to the hiring pool (q285): one click, no confirmation, no receipt.
+ * Everything under the groom prefix refreshes (roster, assignments, weekly fees, the
+ * limit and the pool, where the groom now waits). A refusal is shown on the card.
+ */
+export function useReleaseGroom() {
+  const queryClient = useQueryClient();
+  return useMutation<{ groomId: number }, ApiError, number>({
+    mutationFn: (groomId) => groomsApi.releaseGroom(groomId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: groomKeys.all });
     },
   });
 }

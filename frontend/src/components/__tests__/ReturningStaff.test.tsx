@@ -1,13 +1,18 @@
 /**
- * Riders and grooms back for hire (Equoria-266h7).
+ * Riders and grooms back for hire (Equoria-266h7, Equoria-hwboq).
  *
  * Owner rulings 2026-10-28: released and unpaid staff return to a hiring pool (q153) at
  * their current level with their reveals intact (q177); a card shows name, stars,
  * personality and only REVEALED items as authored words; hiring is one click with the
  * weekly price on the button and no confirmation box (q230).
  *
+ * Owner ruling 2026-10-29 (q284): they sit in the SAME list as the newly generated
+ * staff, with no separate section. (Old contract, Equoria-266h7: a "Riders / Grooms
+ * Back for Hire" section below the marketplace, with its own empty state.)
+ *
  * Boundary-level: the real pool hooks run through the real api-client; only the network
- * is stubbed (MSW), with bodies shaped like the backend's free-agents responses.
+ * is stubbed (MSW), with bodies shaped like the backend's free-agents responses. The
+ * new staff come in through the lists' marketplaceData prop.
  */
 
 import React from 'react';
@@ -19,9 +24,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router';
 import { server } from '@/test/msw/server';
 import { MockAuthProvider } from '@/test/utils';
-import ReturningRiders from '../rider/ReturningRiders';
-import ReturningGrooms from '../groom/ReturningGrooms';
+import RiderList from '../RiderList';
+import GroomList from '../GroomList';
 import RidersPage from '@/pages/RidersPage';
+import type { RiderMarketplaceData } from '@/lib/api/types';
+import type { MarketplaceData } from '@/lib/api/groomStaffTypes';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const riderPoolUrl = `${base}/api/v1/riders/free-agents`;
@@ -64,11 +71,7 @@ const poolRider = {
   name: 'Wren Hollis',
   personality: 'daring',
   personalityLabel: 'Daring',
-  skillLevel: 'rookie',
-  skillLevelLabel: 'Rookie',
   starLevel: 'novice',
-  speciality: 'Dressage',
-  specialityLabel: 'Dressage',
   bio: 'Back in the saddle.',
   weeklyRate: 200,
   growth: growth('novice'),
@@ -91,6 +94,53 @@ const poolGroom = {
   growth: growth('novice'),
 };
 
+// One newly generated rider / groom, so a test can see both kinds in one list.
+const riderMarket: RiderMarketplaceData = {
+  riders: [
+    {
+      marketplaceId: 'mkt_rider_new',
+      firstName: 'Ada',
+      lastName: 'Brooks',
+      skillLevel: 'rookie',
+      starLevel: 'rookie',
+      personality: 'methodical',
+      experience: 0,
+      weeklyRate: 100,
+      bio: 'New to the circuit.',
+      availability: true,
+    },
+  ],
+  lastRefresh: '2026-10-29T00:00:00Z',
+  nextFreeRefresh: '2026-10-30T00:00:00Z',
+  refreshCost: 0,
+  canRefreshFree: true,
+};
+
+const groomMarket: MarketplaceData = {
+  grooms: [
+    {
+      marketplaceId: 'mkt_groom_new',
+      firstName: 'Zed',
+      lastName: 'Fisher',
+      specialty: 'general',
+      skillLevel: 'novice',
+      starLevel: 'rookie',
+      weeklyFee: 100,
+      personality: 'calm',
+      experience: 1,
+      sessionRate: 15,
+      bio: 'Steady hands.',
+      availability: true,
+    },
+  ],
+  lastRefresh: '2026-10-29T00:00:00Z',
+  nextFreeRefresh: '2026-10-30T00:00:00Z',
+  refreshCost: 0,
+  canRefreshFree: true,
+  refreshCount: 0,
+  maxHorsesPerGroom: 4,
+};
+
 const riderPage = (riders: unknown[], total = riders.length) =>
   HttpResponse.json({ success: true, data: { riders, total } });
 const groomPage = (grooms: unknown[], total = grooms.length) =>
@@ -111,10 +161,41 @@ function renderWith(node: React.ReactNode, money = 5000) {
   );
 }
 
-describe('ReturningRiders — riders back for hire (Equoria-266h7)', () => {
+const riderList = <RiderList marketplaceData={riderMarket} />;
+const groomList = <GroomList marketplaceData={groomMarket} />;
+
+describe('riders back for hire, in the rider hire list (Equoria-266h7, q284)', () => {
+  it('sits in the same list as the new riders, with no separate section', async () => {
+    server.use(http.get(riderPoolUrl, () => riderPage([poolRider])));
+    renderWith(riderList);
+
+    const grid = await screen.findByTestId('rider-grid');
+    expect(await within(grid).findByTestId('returning-rider-41')).toBeInTheDocument();
+    expect(within(grid).getByTestId('rider-card-mkt_rider_new')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /back for hire/i })).not.toBeInTheDocument();
+  });
+
+  it('is filtered and sorted with the new riders', async () => {
+    server.use(http.get(riderPoolUrl, () => riderPage([poolRider])));
+    const user = userEvent.setup();
+    renderWith(riderList);
+
+    const grid = await screen.findByTestId('rider-grid');
+    await within(grid).findByTestId('returning-rider-41');
+    // By name: Ada Brooks, then Wren Hollis.
+    const names = within(grid)
+      .getAllByRole('heading', { level: 3 })
+      .map((h) => h.textContent);
+    expect(names).toEqual(['Ada Brooks', 'Wren Hollis']);
+
+    await user.selectOptions(screen.getByTestId('star-level-filter'), 'novice');
+    expect(within(grid).getByTestId('returning-rider-41')).toBeInTheDocument();
+    expect(within(grid).queryByTestId('rider-card-mkt_rider_new')).not.toBeInTheDocument();
+  });
+
   it('shows name, stars, personality and only the revealed items, with the weekly price on Hire', async () => {
     server.use(http.get(riderPoolUrl, () => riderPage([poolRider])));
-    renderWith(<ReturningRiders />);
+    renderWith(riderList);
 
     const card = await screen.findByTestId('returning-rider-41');
     expect(within(card).getByRole('heading', { name: 'Wren Hollis' })).toBeInTheDocument();
@@ -151,7 +232,7 @@ describe('ReturningRiders — riders back for hire (Equoria-266h7)', () => {
       },
     };
     server.use(http.get(riderPoolUrl, () => riderPage([rookie])));
-    renderWith(<ReturningRiders />);
+    renderWith(riderList);
 
     const card = await screen.findByTestId('returning-rider-41');
     expect(within(card).getByTestId('returning-staff-reveals')).toHaveTextContent(
@@ -159,15 +240,15 @@ describe('ReturningRiders — riders back for hire (Equoria-266h7)', () => {
     );
   });
 
-  it('a successful empty pool shows the empty state, not an error', async () => {
+  it('a successful empty pool leaves just the new riders, and no error', async () => {
     server.use(http.get(riderPoolUrl, () => riderPage([])));
-    renderWith(<ReturningRiders />);
+    renderWith(riderList);
 
-    expect(await screen.findByText('No riders are back for hire')).toBeInTheDocument();
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(await screen.findByTestId('rider-card-mkt_rider_new')).toBeInTheDocument();
+    expect(screen.queryByTestId('rider-pool-error')).not.toBeInTheDocument();
   });
 
-  it('a failed load shows an error whose retry refetches the real list', async () => {
+  it('a failed load says so beside the list, keeps the new riders, and its retry refetches', async () => {
     let calls = 0;
     server.use(
       http.get(riderPoolUrl, () => {
@@ -176,13 +257,14 @@ describe('ReturningRiders — riders back for hire (Equoria-266h7)', () => {
       })
     );
     const user = userEvent.setup();
-    renderWith(<ReturningRiders />);
+    renderWith(riderList);
 
-    expect(await screen.findByText("The hiring list didn't load")).toBeInTheDocument();
-    expect(screen.queryByText('No riders are back for hire')).not.toBeInTheDocument();
+    const failure = await screen.findByTestId('rider-pool-error');
+    expect(failure).toHaveTextContent("The riders back for hire didn't load.");
+    expect(screen.getByTestId('rider-card-mkt_rider_new')).toBeInTheDocument();
     expect(screen.queryByText(/RAW-SERVER-TEXT/)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /try again/i }));
+    await user.click(within(failure).getByRole('button', { name: /try again/i }));
 
     expect(await screen.findByTestId('returning-rider-41')).toBeInTheDocument();
     expect(calls).toBe(2);
@@ -210,7 +292,7 @@ describe('ReturningRiders — riders back for hire (Equoria-266h7)', () => {
       })
     );
     const user = userEvent.setup();
-    renderWith(<ReturningRiders />);
+    renderWith(riderList);
 
     await user.click(await screen.findByTestId('returning-rider-41-hire'));
 
@@ -230,7 +312,7 @@ describe('ReturningRiders — riders back for hire (Equoria-266h7)', () => {
       http.post(riderHireUrl, () => refusal(409))
     );
     const user = userEvent.setup();
-    renderWith(<ReturningRiders />);
+    renderWith(riderList);
 
     await user.click(await screen.findByTestId('returning-rider-41-hire'));
 
@@ -246,7 +328,7 @@ describe('ReturningRiders — riders back for hire (Equoria-266h7)', () => {
       http.post(riderHireUrl, () => refusal(400, 'insufficientFunds'))
     );
     const user = userEvent.setup();
-    renderWith(<ReturningRiders />);
+    renderWith(riderList);
 
     await user.click(await screen.findByTestId('returning-rider-41-hire'));
 
@@ -256,7 +338,7 @@ describe('ReturningRiders — riders back for hire (Equoria-266h7)', () => {
 
   it('a rider the player cannot afford keeps the price on a disabled Hire', async () => {
     server.use(http.get(riderPoolUrl, () => riderPage([poolRider])));
-    renderWith(<ReturningRiders />, 150);
+    renderWith(riderList, 150);
 
     const hire = await screen.findByTestId('returning-rider-41-hire');
     expect(hire).toBeDisabled();
@@ -266,7 +348,7 @@ describe('ReturningRiders — riders back for hire (Equoria-266h7)', () => {
 
   it('says how many more are waiting when the pool is longer than one page', async () => {
     server.use(http.get(riderPoolUrl, () => riderPage([poolRider], 140)));
-    renderWith(<ReturningRiders />);
+    renderWith(riderList);
 
     expect(
       await screen.findByText('Showing the 1 riders who came back most recently, of 140.')
@@ -274,12 +356,16 @@ describe('ReturningRiders — riders back for hire (Equoria-266h7)', () => {
   });
 });
 
-describe('ReturningGrooms — grooms back for hire (Equoria-266h7)', () => {
-  it('shows the groom with stars, personality, care kind and revealed items only', async () => {
+describe('grooms back for hire, in the groom hire list (Equoria-266h7, q284)', () => {
+  it('sits in the same list as the new grooms, with stars, personality, care kind and revealed items only', async () => {
     server.use(http.get(groomPoolUrl, () => groomPage([poolGroom])));
-    renderWith(<ReturningGrooms />);
+    renderWith(groomList);
 
-    const card = await screen.findByTestId('returning-groom-77');
+    const grid = await screen.findByTestId('groom-grid');
+    const card = await within(grid).findByTestId('returning-groom-77');
+    expect(within(grid).getByTestId('groom-card-mkt_groom_new')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /back for hire/i })).not.toBeInTheDocument();
+
     expect(within(card).getByRole('heading', { name: 'Maeve Corran' })).toBeInTheDocument();
     expect(within(card).getByTestId('staff-level')).toHaveTextContent('Novice★★');
     expect(card).toHaveTextContent('Gentle');
@@ -290,6 +376,17 @@ describe('ReturningGrooms — grooms back for hire (Equoria-266h7)', () => {
     expect(
       within(card).getByRole('button', { name: /hire maeve corran, 200 coins a week/i })
     ).toBeEnabled();
+  });
+
+  it('the specialty filter applies to grooms back for hire too', async () => {
+    server.use(http.get(groomPoolUrl, () => groomPage([poolGroom])));
+    const user = userEvent.setup();
+    renderWith(groomList);
+
+    await screen.findByTestId('returning-groom-77');
+    await user.selectOptions(screen.getByTestId('specialty-filter'), 'general');
+    expect(screen.queryByTestId('returning-groom-77')).not.toBeInTheDocument();
+    expect(screen.getByTestId('groom-card-mkt_groom_new')).toBeInTheDocument();
   });
 
   it('one click hires the groom by id', async () => {
@@ -308,7 +405,7 @@ describe('ReturningGrooms — grooms back for hire (Equoria-266h7)', () => {
       })
     );
     const user = userEvent.setup();
-    renderWith(<ReturningGrooms />);
+    renderWith(groomList);
 
     await user.click(await screen.findByTestId('returning-groom-77-hire'));
 
@@ -323,32 +420,25 @@ describe('ReturningGrooms — grooms back for hire (Equoria-266h7)', () => {
       http.post(groomHireUrl, () => refusal(400, 'rosterCapReached'))
     );
     const user = userEvent.setup();
-    renderWith(<ReturningGrooms />);
+    renderWith(groomList);
 
     await user.click(await screen.findByTestId('returning-groom-77-hire'));
 
     const alert = await within(screen.getByTestId('returning-groom-77')).findByRole('alert');
     expect(alert).toHaveTextContent(/groom roster is full/i);
   });
-
-  it('a successful empty pool shows the empty state', async () => {
-    renderWith(<ReturningGrooms />);
-    expect(await screen.findByText('No grooms are back for hire')).toBeInTheDocument();
-  });
 });
 
-describe('Rider Hall — the Hire tab carries riders back for hire (Equoria-266h7)', () => {
-  it('shows the returning riders below the rider marketplace', async () => {
+describe('Rider Hall — the Hire tab is one list (q284)', () => {
+  it('shows a returning rider in the rider marketplace grid, with no "Back for Hire" section', async () => {
     server.use(http.get(riderPoolUrl, () => riderPage([poolRider])));
     const user = userEvent.setup();
     renderWith(<RidersPage />);
 
     await user.click(await screen.findByTestId('hire-tab'));
 
-    expect(await screen.findByTestId('rider-list')).toBeInTheDocument();
-    expect(
-      await screen.findByRole('heading', { name: 'Riders Back for Hire' })
-    ).toBeInTheDocument();
-    expect(await screen.findByTestId('returning-rider-41')).toBeInTheDocument();
+    const list = await screen.findByTestId('rider-list');
+    expect(await within(list).findByTestId('returning-rider-41')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Riders Back for Hire' })).not.toBeInTheDocument();
   });
 });

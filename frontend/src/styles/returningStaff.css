@@ -1,45 +1,9 @@
 /**
  * Riders and grooms back for hire (Equoria-266h7; owner rulings 2026-10-28 q153,
- * q177, q230). A section of the Rider Hall and Groom Quarters hire tabs, below the
- * newly generated staff. Authored CSS over the Celestial Night tokens; it repeats the
- * hire cards' shape so the two lists read as one hiring board.
+ * q177, q230). Their cards sit in the Rider Hall and Groom Quarters hire lists beside the newly
+ * generated staff, with no separate section (q284). Authored CSS over the Celestial
+ * Night tokens.
  */
-
-.returning-staff {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  margin-top: var(--space-7);
-  padding-top: var(--space-5);
-  border-top: 1px solid var(--alpha-gold-primary-30);
-}
-
-.returning-staff__intro {
-  margin-top: var(--space-1);
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-}
-
-.returning-staff__list {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-5);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-@media (min-width: 768px) {
-  .returning-staff__list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1024px) {
-  .returning-staff__list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
 
 .returning-staff__card {
   display: flex;

@@ -87,7 +87,8 @@ const MIGRATED = [
   // $transaction was the player-built hire (hireGroom), now retired, so the file
   // holds no transaction to pin. Equoria-xlw03 brought it back: the profile read draws a
   // missing growth profile in one wrapped transaction.
-  ['modules/grooms/controllers/groomRosterController.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-hwboq: + the player's Release button (POST /api/v1/grooms/:id/release).
+  ['modules/grooms/controllers/groomRosterController.mjs', { wrapped: 2, totalTx: 2 }],
   ['modules/grooms/controllers/groomMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
   // createShow wrapped → wrapped 1 / totalTx 1. executeClosedShows' 1 remaining
   // executor-path $transaction (per-entry prize payout) is intentionally unwrapped

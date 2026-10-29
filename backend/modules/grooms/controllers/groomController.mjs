@@ -12,7 +12,7 @@
  *   - assignment:    assignGroom, getGroomAssignmentLogs
  *                    (ensureDefaultAssignment deleted: no default groom, q153)
  *   - interaction:   getGroomHorseSynergyPreview (grooming itself: groomCareController)
- *   - roster:        getUserGrooms, getGroomProfile
+ *   - roster:        getUserGrooms, getGroomProfile, getGroomRosterLimit, releaseGroom (q285)
  *
  * getFoalAssignments, getGroomDefinitions and the bonus-traits handlers went with
  * their duplicate lookup routes (owner ruling 2026-10-28, q151, Equoria-a7f1p).
@@ -22,4 +22,9 @@ export { assignGroom, getGroomAssignmentLogs } from './groomAssignmentHandlers.m
 
 export { getGroomHorseSynergyPreview } from './groomInteractionController.mjs';
 
-export { getUserGrooms, getGroomProfile } from './groomRosterController.mjs';
+export {
+  getUserGrooms,
+  getGroomProfile,
+  getGroomRosterLimit,
+  releaseGroom,
+} from './groomRosterController.mjs';
