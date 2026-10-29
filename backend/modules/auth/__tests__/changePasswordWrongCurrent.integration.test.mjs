@@ -27,7 +27,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 const ORIGIN = 'http://localhost:3000';
 const PREFIX = 'pw9dtyj';
 const PASSWORD = 'CorrectHorse1!Battery';
-const NEW_PASSWORD = 'BrandNewPassword9!';
+const newPasswordValue = 'BrandNewPassword9!';
 
 const uid = () => randomBytes(5).toString('hex');
 const cleanup = createCleanupTracker();
@@ -62,7 +62,7 @@ async function changePassword(user, oldPassword) {
     .set('Authorization', `Bearer ${token}`)
     .set('Cookie', csrf.cookieHeader)
     .set('X-CSRF-Token', csrf.csrfToken)
-    .send({ oldPassword, newPassword: NEW_PASSWORD });
+    .send({ oldPassword, newPassword: newPasswordValue });
 }
 
 beforeAll(() => {
