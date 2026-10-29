@@ -11,8 +11,10 @@
  * is keyed to the schema field whose runtime contract is encoded in
  * SECURITY.md or a closed bd issue:
  *
- *   - mfaSecret comment must NOT claim plaintext / not-yet-encrypted
- *     (Equoria-yi13v 2026-05-18 — AES-256-GCM at-rest).
+ *   - (retired) mfaSecret comment had to reflect Equoria-yi13v at-rest
+ *     encryption. The column itself is gone: owner ruling 2026-10-29 (q305)
+ *     removed authenticator-app sign-in, and q304 retired the trainer discovery
+ *     slots. The cases below pin both sets of fields absent from the schema.
  *
  * Future entries (one assertion per closed-issue/schema-field pair) keep
  * the schema honest as encryption / retention / lifecycle invariants
@@ -51,19 +53,29 @@ function commentAboveField(schema, fieldName) {
   return '';
 }
 
+function modelBlock(schema, modelName) {
+  const start = schema.indexOf(`model ${modelName} {`);
+  if (start < 0) {
+    return '';
+  }
+  return schema.slice(start, schema.indexOf('\n}', start));
+}
+
 describe('schema.prisma comment accuracy (Equoria-rw2yo)', () => {
-  it('mfaSecret doc-comment reflects Equoria-yi13v at-rest encryption (not the stale plaintext claim)', () => {
-    const schema = loadSchema();
-    const c = commentAboveField(schema, 'mfaSecret');
-    expect(c.length).toBeGreaterThan(0);
+  it.each(['mfaSecret', 'mfaEnabled', 'mfaRecoveryCodes'])(
+    'User has no %s field: authenticator-app sign-in is removed (q305)',
+    fieldName => {
+      const user = modelBlock(loadSchema(), 'User');
+      expect(user).toMatch(/emailVerified/); // the block was found
+      expect(commentAboveField(user, fieldName)).toBe('');
+      expect(user).not.toMatch(new RegExp(`^\\s*${fieldName}\\s`, 'm'));
+    },
+  );
 
-    // Stale claims that MUST NOT appear after Equoria-yi13v landed:
-    expect(c).not.toMatch(/At-rest encryption is NOT yet applied/i);
-    expect(c).not.toMatch(/no encryption util exists in the codebase/i);
-
-    // Current invariants that MUST be reflected:
-    expect(c).toMatch(/encrypted at rest/i);
-    expect(c).toMatch(/AES-256-GCM/);
-    expect(c).toMatch(/fieldEncryption|FIELD_ENCRYPTION_KEY|Equoria-yi13v/);
+  it('Trainer has no discoverySlots field: trainer discovery is retired (q304)', () => {
+    const trainer = modelBlock(loadSchema(), 'Trainer');
+    expect(trainer).toMatch(/speciality/); // the block was found
+    expect(trainer).not.toMatch(/^\s*discoverySlots\s/m);
+    expect(trainer).not.toMatch(/discovery_slots/);
   });
 });
