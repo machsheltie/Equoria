@@ -47,9 +47,12 @@ jobs:
 
           # Check for .yaml/.yml files that look like status files
           while IFS= read -r STATUS_FILE; do
+            # find prints ./path; git log --name-only prints path. Strip the
+            # prefix and match whole lines as fixed strings (Equoria-2o6jm).
+            STATUS_FILE="${STATUS_FILE#./}"
             if grep -q "status.*done\|status.*completed" "$STATUS_FILE" 2>/dev/null; then
               # Check recent commits for changes to this file
-              CHANGED_IN_LAST_COMMITS=$(git log --oneline -n 50 --name-only -- "$STATUS_FILE" 2>/dev/null | grep -c "$STATUS_FILE" || true)
+              CHANGED_IN_LAST_COMMITS=$(git log --oneline -n 50 --name-only -- "$STATUS_FILE" 2>/dev/null | grep -cFx -- "$STATUS_FILE" || true)
 
               if [ "$CHANGED_IN_LAST_COMMITS" -gt 0 ]; then
                 # Check if the change has an associated user approval comment
