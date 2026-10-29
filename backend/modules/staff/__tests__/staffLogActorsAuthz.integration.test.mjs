@@ -117,12 +117,12 @@ describe('The ledger actor list (STAFF-CR-16)', () => {
 
     const asMod = await get(ACTORS, mod, modDevice);
     expect(asMod.status).toBe(403);
-    expect(asMod.body.code).toBe('STAFF_CAPABILITY_REQUIRED');
+    expect(asMod.body.code).toBe('staffCapabilityRequired');
     expect(asMod.body.actors).toBeUndefined();
     expect((await get(ACTORS, player)).status).toBe(404);
     const noDevice = await get(ACTORS, admin);
     expect(noDevice.status).toBe(403);
-    expect(noDevice.body.code).toBe('STAFF_CHECKIN_REQUIRED');
+    expect(noDevice.body.code).toBe('staffCheckinRequired');
   });
 
   it('refuses a query string', async () => {

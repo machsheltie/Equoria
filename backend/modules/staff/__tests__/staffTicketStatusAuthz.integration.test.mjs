@@ -130,7 +130,7 @@ describe('A change to the status the ticket already has', () => {
     expect(res.body).toEqual({
       success: false,
       message: 'The ticket already has that status.',
-      code: 'SAME_STATUS',
+      code: 'sameStatus',
     });
     expect((await prisma.staffTicket.findUnique({ where: { id: ticket.id } })).status).toBe(status);
     const { logRows, bells } = await trail(ticket);

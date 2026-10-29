@@ -33,9 +33,9 @@ const TICKETS = '/api/v1/staff/tickets';
 const NOT_A_PLAYER = {
   success: false,
   message: 'Tickets can only be about players',
-  code: 'NOT_A_PLAYER',
+  code: 'notAPlayer',
 };
-const noTarget = { success: false, message: 'Nothing by that ID', code: 'NO_TARGET' };
+const noTarget = { success: false, message: 'Nothing by that ID', code: 'noTarget' };
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('stafftarget');
@@ -306,7 +306,7 @@ describe('A ticket about a horse, show or post names a real one (STAFF-CR-07)', 
     // A horse's number is no player.
     const asPlayer = await file(ticketAbout({ targetType: 'user', targetId: String(horse.id) }));
     expect(asPlayer.status).toBe(404);
-    expect(asPlayer.body.code).toBe('NO_PLAYER');
+    expect(asPlayer.body.code).toBe('noPlayer');
     expect(await trail()).toEqual(before);
   });
 });

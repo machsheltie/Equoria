@@ -10,7 +10,7 @@
  *
  * - /me decides everything. Untrusted browser → check in by email code.
  *   Trusted → the areas the account's capabilities allow.
- * - If any area or action is refused with STAFF_CHECKIN_REQUIRED (the 30-day
+ * - If any area or action is refused with staffCheckinRequired (the 30-day
  *   trust ran out mid-visit), the page returns to check-in.
  * - If any area or action gets a 404, /me is asked again at once; a steward
  *   revoked mid-visit then gets /me's 404 and the gate replaces the office

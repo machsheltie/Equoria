@@ -47,7 +47,7 @@ const CODE_HASH_ROUNDS = 10;
 
 /** Outcome of a refused check-in step; the controller maps `reason` to HTTP. */
 export class StaffCheckinError extends Error {
-  /** @param {'EMAIL_UNVERIFIED'|'RATE_LIMITED'|'CODE_INVALID'} reason */
+  /** @param {'emailUnverified'|'rateLimited'|'codeInvalid'} reason */
   constructor(reason) {
     super(reason);
     this.name = 'StaffCheckinError';
@@ -171,10 +171,10 @@ async function newestLiveCodeTx(tx, account, now, { requireAttemptLeft }) {
  */
 export async function requestCheckinCode(account) {
   if (!account || !isStaffRole(account.role)) {
-    throw new StaffCheckinError('CODE_INVALID');
+    throw new StaffCheckinError('codeInvalid');
   }
   if (account.emailVerified !== true) {
-    throw new StaffCheckinError('EMAIL_UNVERIFIED');
+    throw new StaffCheckinError('emailUnverified');
   }
 
   const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
@@ -185,10 +185,10 @@ export async function requestCheckinCode(account) {
     // exact and a resend can never interleave with a verify.
     const fresh = await lockAccountTx(tx, account.id);
     if (!fresh || !isStaffRole(fresh.role)) {
-      throw new StaffCheckinError('CODE_INVALID');
+      throw new StaffCheckinError('codeInvalid');
     }
     if (fresh.emailVerified !== true) {
-      throw new StaffCheckinError('EMAIL_UNVERIFIED');
+      throw new StaffCheckinError('emailUnverified');
     }
     const now = new Date();
     const recent = await tx.staffCheckinCode.count({
@@ -198,7 +198,7 @@ export async function requestCheckinCode(account) {
       },
     });
     if (recent >= CHECKIN_REQUEST_LIMIT) {
-      throw new StaffCheckinError('RATE_LIMITED');
+      throw new StaffCheckinError('rateLimited');
     }
     await retireStaffCheckinCodesTx(tx, fresh.id, now);
     // createdAt from the same clock as passwordChangedAt/emailVerifiedAt, which
@@ -220,7 +220,7 @@ export async function requestCheckinCode(account) {
 /**
  * Check a code against the account's newest code. On success, consume it and
  * create a trusted device, returning the raw device token (shown once, as a
- * cookie). Any refusal throws StaffCheckinError('CODE_INVALID').
+ * cookie). Any refusal throws StaffCheckinError('codeInvalid').
  *
  * Two short transactions, each under the account row lock, with the bcrypt
  * compare between them so the lock is never held for the hash:
@@ -235,7 +235,7 @@ export async function requestCheckinCode(account) {
  */
 export async function verifyCheckinCode(account, code) {
   if (!account || !isStaffRole(account.role)) {
-    throw new StaffCheckinError('CODE_INVALID');
+    throw new StaffCheckinError('codeInvalid');
   }
   const normalized = typeof code === 'string' ? code.trim() : '';
 
@@ -255,33 +255,33 @@ export async function verifyCheckinCode(account, code) {
     return reserved.count === 1 ? { id: newest.id, codeHash: newest.codeHash } : null;
   });
   if (!candidate) {
-    throw new StaffCheckinError('CODE_INVALID');
+    throw new StaffCheckinError('codeInvalid');
   }
 
   const matches =
     /^\d{6}$/.test(normalized) && (await bcrypt.compare(normalized, candidate.codeHash));
   if (!matches) {
-    throw new StaffCheckinError('CODE_INVALID');
+    throw new StaffCheckinError('codeInvalid');
   }
 
   const rawToken = crypto.randomBytes(32).toString('base64url');
   const expiresAt = await prisma.$transaction(async tx => {
     const fresh = await lockAccountTx(tx, account.id);
     if (!mayCheckIn(fresh)) {
-      throw new StaffCheckinError('CODE_INVALID');
+      throw new StaffCheckinError('codeInvalid');
     }
     const now = new Date();
     // Guess cap not re-checked here: this guess already holds its reservation.
     const newest = await newestLiveCodeTx(tx, fresh, now, { requireAttemptLeft: false });
     if (!newest || newest.id !== candidate.id) {
-      throw new StaffCheckinError('CODE_INVALID');
+      throw new StaffCheckinError('codeInvalid');
     }
     const consumed = await tx.staffCheckinCode.updateMany({
       where: { id: candidate.id, usedAt: null },
       data: { usedAt: now },
     });
     if (consumed.count !== 1) {
-      throw new StaffCheckinError('CODE_INVALID');
+      throw new StaffCheckinError('codeInvalid');
     }
     const deviceExpiresAt = new Date(now.getTime() + TRUSTED_DEVICE_TTL_MS);
     const device = await tx.staffTrustedDevice.create({

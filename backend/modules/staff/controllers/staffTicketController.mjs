@@ -22,7 +22,7 @@ const STATUSES = new Set(['open', 'inProgress', 'resolved', 'declined']);
 const invalid = (res, message) => res.status(400).json({ success: false, message });
 const missing = res => res.status(404).json({ success: false, message: 'Ticket not found' });
 const noTarget = res =>
-  res.status(404).json({ success: false, message: 'Nothing by that ID', code: 'NO_TARGET' });
+  res.status(404).json({ success: false, message: 'Nothing by that ID', code: 'noTarget' });
 const badCursor = res => invalid(res, 'That page link is not valid. Reload and try again.');
 
 /** An absent cursor is null; a present one must decode, else undefined (refuse). */
@@ -43,14 +43,14 @@ function text(value, max) {
 }
 
 function respond(res, result, status = 200) {
-  if (result.error === 'not_found') {
+  if (result.error === 'notFound') {
     return missing(res);
   }
-  if (result.error === 'same_status') {
+  if (result.error === 'sameStatus') {
     return res.status(409).json({
       success: false,
       message: 'The ticket already has that status.',
-      code: 'SAME_STATUS',
+      code: 'sameStatus',
     });
   }
   if (result.error === 'conflict') {
@@ -107,22 +107,22 @@ export async function createTicket(req, res, next) {
       category,
       note,
     });
-    if (result.error === 'no_player') {
+    if (result.error === 'noPlayer') {
       return res
         .status(404)
-        .json({ success: false, message: 'No player by that name or ID', code: 'NO_PLAYER' });
+        .json({ success: false, message: 'No player by that name or ID', code: 'noPlayer' });
     }
-    if (result.error === 'not_a_player') {
+    if (result.error === 'notAPlayer') {
       return res.status(403).json({
         success: false,
         message: 'Tickets can only be about players',
-        code: 'NOT_A_PLAYER',
+        code: 'notAPlayer',
       });
     }
-    if (result.error === 'no_target') {
+    if (result.error === 'noTarget') {
       return noTarget(res);
     }
-    if (result.error === 'name_id_mismatch') {
+    if (result.error === 'nameIdMismatch') {
       return invalid(res, 'The name and ID point to different players');
     }
     return res.status(201).json(result);

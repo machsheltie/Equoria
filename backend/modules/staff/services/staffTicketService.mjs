@@ -66,7 +66,7 @@ async function filerStillStaff(tx, filedById) {
 /** Tickets a moderator did not file read as missing, not forbidden. */
 const visibleWhere = (staff, id) => (seesAll(staff) ? { id } : { id, ...ownedBy(staff) });
 
-const notFound = () => ({ error: 'not_found' });
+const notFound = () => ({ error: 'notFound' });
 
 function finalizeAll(notes) {
   for (const { userId, type, payload } of notes) {
@@ -74,10 +74,10 @@ function finalizeAll(notes) {
   }
 }
 
-const NO_PLAYER = { error: 'no_player' };
-const NOT_A_PLAYER = { error: 'not_a_player' };
-const NAME_ID_DISAGREE = { error: 'name_id_mismatch' };
-const NO_TARGET = { error: 'no_target' };
+const NO_PLAYER = { error: 'noPlayer' };
+const NOT_A_PLAYER = { error: 'notAPlayer' };
+const NAME_ID_DISAGREE = { error: 'nameIdMismatch' };
+const NO_TARGET = { error: 'noTarget' };
 
 /**
  * The player a ticket names, by ID, by username, or by both. Usernames match
@@ -324,7 +324,7 @@ export async function setStatus(staff, id, status) {
     // Owner ruling (b), 2026-10-13: any status may become any other; only
     // the status it already has is refused, so nothing is logged or belled.
     if (ticket.status === status) {
-      return { error: 'same_status' };
+      return { error: 'sameStatus' };
     }
     // Conditional on the status just read: of two racing changes, one wins.
     const changed = await tx.staffTicket.updateMany({

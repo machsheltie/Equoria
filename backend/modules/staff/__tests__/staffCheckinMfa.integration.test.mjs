@@ -96,7 +96,7 @@ describe('Staff check-in and capability guard (Equoria-puj1e.1)', () => {
 
     const before = await get(STATUS, mod);
     expect(before.status).toBe(403);
-    expect(before.body.code).toBe('STAFF_CHECKIN_REQUIRED');
+    expect(before.body.code).toBe('staffCheckinRequired');
 
     const meBefore = await get(ME, mod);
     expect(meBefore.status).toBe(200);
@@ -279,7 +279,7 @@ describe('Staff check-in and capability guard (Equoria-puj1e.1)', () => {
 
     const res = await get(STATUS, other, device);
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('STAFF_CHECKIN_REQUIRED');
+    expect(res.body.code).toBe('staffCheckinRequired');
     expect((await get(ME, other, device)).body.trusted).toBe(false);
   });
 
@@ -310,7 +310,7 @@ describe('Staff check-in and capability guard (Equoria-puj1e.1)', () => {
 
     const res = await get(STATUS, fresh, device);
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('STAFF_CHECKIN_REQUIRED');
+    expect(res.body.code).toBe('staffCheckinRequired');
   });
 
   it('refuses staff tools once the staff email is no longer verified', async () => {
@@ -320,7 +320,7 @@ describe('Staff check-in and capability guard (Equoria-puj1e.1)', () => {
 
     const res = await get(STATUS, mod, device);
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('STAFF_EMAIL_UNVERIFIED');
+    expect(res.body.code).toBe('staffEmailUnverified');
   });
 
   it('refuses an expired or revoked device', async () => {
@@ -331,13 +331,13 @@ describe('Staff check-in and capability guard (Equoria-puj1e.1)', () => {
       where: { userId: mod.id },
       data: { expiresAt: new Date(Date.now() - 1000) },
     });
-    expect((await get(STATUS, mod, device)).body.code).toBe('STAFF_CHECKIN_REQUIRED');
+    expect((await get(STATUS, mod, device)).body.code).toBe('staffCheckinRequired');
 
     await prisma.staffTrustedDevice.updateMany({
       where: { userId: mod.id },
       data: { expiresAt: new Date(Date.now() + 60_000), revokedAt: new Date() },
     });
-    expect((await get(STATUS, mod, device)).body.code).toBe('STAFF_CHECKIN_REQUIRED');
+    expect((await get(STATUS, mod, device)).body.code).toBe('staffCheckinRequired');
   });
 });
 

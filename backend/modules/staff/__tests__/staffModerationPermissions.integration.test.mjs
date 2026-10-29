@@ -66,7 +66,7 @@ describe('Only the owner appoints admins (Equoria-i1hgt)', () => {
   // Owner ruling q76 (Equoria-i1hgt): only the owner manages ANY staff role, so an
   // admin is now stopped at the route guard, before the target is read. This
   // pinned adminAppointmentOwnerOnly while admins still managed moderators.
-  it('refuses an admin appointing an admin with STAFF_CAPABILITY_REQUIRED', async () => {
+  it('refuses an admin appointing an admin with staffCapabilityRequired', async () => {
     const admin = await staffMember('admin');
     const player = await makeUser('user');
     const res = await setRole(admin, player, 'admin');

@@ -65,7 +65,7 @@ beforeEach(() => startEmailCapture());
 afterEach(() => stopEmailCapture());
 
 describe('Roles routes are owner-only (Equoria-puj1e.1, Equoria-i1hgt q76)', () => {
-  it('refuses a checked-in moderator with STAFF_CAPABILITY_REQUIRED on all three routes', async () => {
+  it('refuses a checked-in moderator with staffCapabilityRequired on all three routes', async () => {
     const mod = await makeUser('moderator');
     const modDevice = await checkIn(mod);
     const player = await makeUser('user');
@@ -77,13 +77,13 @@ describe('Roles routes are owner-only (Equoria-puj1e.1, Equoria-i1hgt q76)', () 
     ];
     for (const res of responses) {
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('STAFF_CAPABILITY_REQUIRED');
+      expect(res.body.code).toBe('staffCapabilityRequired');
     }
     expect(await roleOf(player.id)).toBe('user');
     expect(await logRowsAbout(player.id)).toHaveLength(0);
   });
 
-  it('refuses a checked-in admin with STAFF_CAPABILITY_REQUIRED on all three routes (owner ruling q76)', async () => {
+  it('refuses a checked-in admin with staffCapabilityRequired on all three routes (owner ruling q76)', async () => {
     const admin = await makeUser('admin');
     const adminDevice = await checkIn(admin);
     const player = await makeUser('user');
@@ -185,7 +185,7 @@ describe('Admin promotes and revokes moderators (Equoria-puj1e.1)', () => {
 
     const res = await get(LOG, mod, oldDevice);
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('STAFF_CHECKIN_REQUIRED');
+    expect(res.body.code).toBe('staffCheckinRequired');
     expect(await logRowsAbout(mod.id)).toHaveLength(2);
   });
 

@@ -54,6 +54,11 @@ const FILE_MESSAGES = {
 // The refusals that belong at the subject field, not at the button, keyed by
 // the backend's own code; a revoked steward's 404 has no such code.
 const SUBJECT_MESSAGES = new Map<unknown, string>([
+  ['noPlayer', 'No player by that name or ID.'],
+  ['notAPlayer', 'Tickets can only be about players, not stewards or yourself.'],
+  ['noTarget', 'Nothing by that ID.'],
+  // The old server's spellings cover the minutes a deploy serves this client
+  // against the old server (Equoria-pjvp8 phase 6 removes them).
   ['NO_PLAYER', 'No player by that name or ID.'],
   ['NOT_A_PLAYER', 'Tickets can only be about players, not stewards or yourself.'],
   ['NO_TARGET', 'Nothing by that ID.'],

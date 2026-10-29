@@ -359,13 +359,13 @@ describe('Filing a ticket', () => {
 
     const asAdmin = await post(TICKETS, admin, goodTicket(), adminDevice);
     expect(asAdmin.status).toBe(403);
-    expect(asAdmin.body.code).toBe('STAFF_CAPABILITY_REQUIRED');
+    expect(asAdmin.body.code).toBe('staffCapabilityRequired');
 
     expect((await post(TICKETS, player, goodTicket())).status).toBe(404);
 
     const noDevice = await post(TICKETS, mod, goodTicket());
     expect(noDevice.status).toBe(403);
-    expect(noDevice.body.code).toBe('STAFF_CHECKIN_REQUIRED');
+    expect(noDevice.body.code).toBe('staffCheckinRequired');
 
     expect(await prisma.staffTicket.count({ where: { filedById: mod.id } })).toBe(0);
   });
@@ -431,7 +431,7 @@ describe('Reading tickets', () => {
     expect((await get(TICKETS, player)).status).toBe(404);
     const res = await get(TICKETS, mod);
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('STAFF_CHECKIN_REQUIRED');
+    expect(res.body.code).toBe('staffCheckinRequired');
   });
 });
 
@@ -552,7 +552,7 @@ describe('Status changes', () => {
     const res = await post(`${TICKETS}/${ticket.id}/status`, mod, { status: 'resolved' }, modDevice);
 
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('STAFF_CAPABILITY_REQUIRED');
+    expect(res.body.code).toBe('staffCapabilityRequired');
     expect((await prisma.staffTicket.findUnique({ where: { id: ticket.id } })).status).toBe('open');
   });
 
@@ -668,7 +668,7 @@ describe('Naming the player by username or ID', () => {
     expect(byName.body).toEqual({
       success: false,
       message: 'No player by that name or ID',
-      code: 'NO_PLAYER',
+      code: 'noPlayer',
     });
     expect(byId.body).toEqual(byName.body);
   });
@@ -690,7 +690,7 @@ describe('Naming the player by username or ID', () => {
     const { admin, mod, modDevice } = await fixtureStaff();
     const res = await post(TICKETS, mod, aboutPlayer({ targetUsername: admin.username }), modDevice);
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('NOT_A_PLAYER');
+    expect(res.body.code).toBe('notAPlayer');
   });
 
   it('shows the current username in the list and the thread, and "former player" data when erased', async () => {

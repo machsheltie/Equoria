@@ -125,7 +125,7 @@ describe('StaffTickets: filing safety', () => {
   it('clears a settled refusal when the subject is edited', async () => {
     server.use(
       http.post(`${STAFF}/tickets`, () =>
-        json({ success: false, message: 'Nothing by that ID', code: 'NO_TARGET' }, 404)
+        json({ success: false, message: 'Nothing by that ID', code: 'noTarget' }, 404)
       )
     );
     const user = userEvent.setup();

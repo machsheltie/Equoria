@@ -546,7 +546,7 @@ describe('The conduct record', () => {
 describe('Lifting a freeze or ban early (owner ruling q101)', () => {
   const LIFTS = ['lift/account', 'lift/ip', 'lift/device'];
 
-  it('keeps the lift from moderators, with STAFF_CAPABILITY_REQUIRED on every lift route', async () => {
+  it('keeps the lift from moderators, with staffCapabilityRequired on every lift route', async () => {
     const player = await makePlayer();
     expect((await act(admin, player, 'ban/account')).status).toBe(200);
     for (const action of LIFTS) {

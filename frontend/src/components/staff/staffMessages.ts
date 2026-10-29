@@ -41,7 +41,13 @@ export const EMAIL_UNVERIFIED = 'Verify your email to keep using the office.';
 
 /** The 403 a capability guard gives a staff account whose email is not verified. */
 function isEmailUnverified(error: unknown): boolean {
-  return statusOf(error) === 403 && (error as Partial<ApiError>).code === 'STAFF_EMAIL_UNVERIFIED';
+  const code = (error as Partial<ApiError>).code;
+  // The old server's spelling covers the minutes a deploy serves this client
+  // against the old server (Equoria-pjvp8 phase 6 removes it).
+  return (
+    statusOf(error) === 403 &&
+    (code === 'staffEmailUnverified' || code === 'STAFF_EMAIL_UNVERIFIED')
+  );
 }
 
 export function staffErrorMessage(

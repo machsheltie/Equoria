@@ -93,7 +93,7 @@ describe('StaffTickets: the player a ticket is about', () => {
     stubTickets();
     server.use(
       http.post(`${STAFF}/tickets`, () =>
-        json({ success: false, message: 'No player by that name or ID', code: 'NO_PLAYER' }, 404)
+        json({ success: false, message: 'No player by that name or ID', code: 'noPlayer' }, 404)
       )
     );
     const user = userEvent.setup();
@@ -124,7 +124,7 @@ describe('StaffTickets: the player a ticket is about', () => {
     server.use(
       http.post(`${STAFF}/tickets`, () =>
         json(
-          { success: false, message: 'Tickets can only be about players', code: 'NOT_A_PLAYER' },
+          { success: false, message: 'Tickets can only be about players', code: 'notAPlayer' },
           403
         )
       )
@@ -149,7 +149,7 @@ describe('StaffTickets: the player a ticket is about', () => {
     stubTickets();
     server.use(
       http.post(`${STAFF}/tickets`, () =>
-        json({ success: false, message: 'Nothing by that ID', code: 'NO_TARGET' }, 404)
+        json({ success: false, message: 'Nothing by that ID', code: 'noTarget' }, 404)
       )
     );
     const user = userEvent.setup();
@@ -166,7 +166,7 @@ describe('StaffTickets: the player a ticket is about', () => {
     stubTickets();
     server.use(
       http.post(`${STAFF}/tickets`, () =>
-        json({ success: false, message: 'No player by that name or ID', code: 'NO_PLAYER' }, 404)
+        json({ success: false, message: 'No player by that name or ID', code: 'noPlayer' }, 404)
       )
     );
     const user = userEvent.setup();

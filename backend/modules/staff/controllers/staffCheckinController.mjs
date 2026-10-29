@@ -31,19 +31,19 @@ export const STAFF_DEVICE_COOKIE_OPTIONS = Object.freeze({
 });
 
 const REFUSALS = {
-  EMAIL_UNVERIFIED: {
+  emailUnverified: {
     status: 409,
-    code: 'STAFF_EMAIL_UNVERIFIED',
+    code: 'staffEmailUnverified',
     message: 'Verify your email address before checking in to the Steward’s Office.',
   },
-  RATE_LIMITED: {
+  rateLimited: {
     status: 429,
-    code: 'STAFF_CHECKIN_RATE_LIMITED',
+    code: 'staffCheckinRateLimited',
     message: 'Too many codes requested. Wait a few minutes and try again.',
   },
-  CODE_INVALID: {
+  codeInvalid: {
     status: 400,
-    code: 'STAFF_CHECKIN_CODE_INVALID',
+    code: 'staffCheckinCodeInvalid',
     message: 'That code is not valid. Request a new one if it has expired.',
   },
 };

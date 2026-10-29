@@ -117,7 +117,7 @@ async function requestCode(user) {
 async function expectRefused(user, code) {
   const res = await post(VERIFY, user, { code });
   expect(res.status).toBe(400);
-  expect(res.body.code).toBe('STAFF_CHECKIN_CODE_INVALID');
+  expect(res.body.code).toBe('staffCheckinCodeInvalid');
   expect(deviceCookieFrom(res)).toBeNull();
   expect(await devicesOf(user.id)).toBe(0);
   expect(await checkinLogsOf(user.id)).toBe(0);
@@ -262,7 +262,7 @@ describe('Check-in races resolve against the live account (STAFF-CR-01)', () => 
     // The verify got past its first transaction: a guess was reserved.
     expect((await codesOf(mod.id))[0].attempts).toBe(1);
     expect(verified.status).toBe(400);
-    expect(verified.body.code).toBe('STAFF_CHECKIN_CODE_INVALID');
+    expect(verified.body.code).toBe('staffCheckinCodeInvalid');
     expect(deviceCookieFrom(verified)).toBeNull();
     expect(await devicesOf(mod.id)).toBe(0);
     expect(await checkinLogsOf(mod.id)).toBe(0);

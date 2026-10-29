@@ -5,7 +5,7 @@
  *
  * Rules pinned here:
  *  - the Owner and Admins see which accounts share a device with a player;
- *    a Moderator is refused with STAFF_CAPABILITY_REQUIRED, and a plain player
+ *    a Moderator is refused with staffCapabilityRequired, and a plain player
  *    gets the ordinary staff-surface 404 (the surface is not disclosed);
  *  - every account counts, staff included (q126), and only the 90-day window;
  *  - an internet address seen with more than four accounts is flagged; four is

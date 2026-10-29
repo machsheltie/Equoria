@@ -116,7 +116,7 @@ describe('Staff action log read access (Equoria-puj1e.1)', () => {
     expect((await get(LOG, player)).status).toBe(404);
     const noDevice = await get(LOG, mod);
     expect(noDevice.status).toBe(403);
-    expect(noDevice.body.code).toBe('STAFF_CHECKIN_REQUIRED');
+    expect(noDevice.body.code).toBe('staffCheckinRequired');
   });
 
   it('pages 50 at a time, newest first, with a cursor that ends in null', async () => {

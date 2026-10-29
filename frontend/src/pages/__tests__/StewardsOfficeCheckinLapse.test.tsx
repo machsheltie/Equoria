@@ -4,7 +4,7 @@
  *
  * Reads already did (StewardsOfficePage.test.tsx). A filing, reply, status
  * change, role change or conduct action refused with 403
- * STAFF_CHECKIN_REQUIRED left the office on screen with an error, so the
+ * staffCheckinRequired left the office on screen with an error, so the
  * steward kept retrying an action that could only fail.
  *
  * Boundary-level: the real staff hooks over the real apiClient, the HTTP

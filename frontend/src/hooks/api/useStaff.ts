@@ -34,7 +34,11 @@ export const staffKeys = {
 };
 
 /** The code a capability-guarded route refuses with when this browser is not checked in. */
-export const checkinRequiredCode = 'STAFF_CHECKIN_REQUIRED';
+export const checkinRequiredCode = 'staffCheckinRequired';
+
+// The old server's spelling covers the minutes a deploy serves this client
+// against the old server (Equoria-pjvp8 phase 6 removes it).
+const legacyCheckinRequiredCode = 'STAFF_CHECKIN_REQUIRED';
 
 /** The refusal a capability-guarded route gives when this browser is not checked in. */
 export function isCheckinRequired(error: unknown): boolean {
@@ -42,7 +46,8 @@ export function isCheckinRequired(error: unknown): boolean {
     typeof error === 'object' &&
     error !== null &&
     (error as ApiError).statusCode === 403 &&
-    (error as ApiError).code === checkinRequiredCode
+    ((error as ApiError).code === checkinRequiredCode ||
+      (error as ApiError).code === legacyCheckinRequiredCode)
   );
 }
 
@@ -60,7 +65,7 @@ export function statusOf(error: unknown): number | undefined {
  * background refetch. /me's own 404 is the page's job and is not watched.
  *
  * An action refused because this browser's check-in has lapsed (403
- * STAFF_CHECKIN_REQUIRED) calls `onCheckinRequired`, so the page returns to
+ * staffCheckinRequired) calls `onCheckinRequired`, so the page returns to
  * check-in as it does when a read is refused that way (STAFF-RR-11).
  *
  * Owner ruling 2026-10-28 (q263, Equoria-jqdho): when a background /me check

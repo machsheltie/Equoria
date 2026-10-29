@@ -29,10 +29,10 @@ import {
 const respondNotFound = createNotFoundHandler({ spaHtml: null, logger });
 
 /** The refusal code a capability guard answers with when the role lacks the tool. */
-export const capabilityRequiredCode = 'STAFF_CAPABILITY_REQUIRED';
+export const capabilityRequiredCode = 'staffCapabilityRequired';
 
 /** The refusal code a capability guard answers with when this browser is not checked in. */
-export const checkinRequiredCode = 'STAFF_CHECKIN_REQUIRED';
+export const checkinRequiredCode = 'staffCheckinRequired';
 
 const respondGuardFailure = (res, error) => {
   logger.error(`[staff] guard lookup failed: ${error.message}`);
@@ -69,7 +69,7 @@ function buildCapabilityGuard(capabilities) {
       if (account.emailVerified !== true) {
         return res.status(403).json({
           success: false,
-          code: 'STAFF_EMAIL_UNVERIFIED',
+          code: 'staffEmailUnverified',
           message: 'Staff tools need a verified email address.',
         });
       }

@@ -226,7 +226,7 @@ describe("The Steward's Office", () => {
     server.use(
       http.post(`${STAFF}/checkin/request`, () => json({ sent: true }, 202)),
       http.post(`${STAFF}/checkin/verify`, () =>
-        json({ success: false, code: 'STAFF_CHECKIN_CODE_INVALID', message: 'raw server' }, 400)
+        json({ success: false, code: 'staffCheckinCodeInvalid', message: 'raw server' }, 400)
       )
     );
     const user = userEvent.setup();
@@ -245,7 +245,7 @@ describe("The Steward's Office", () => {
     stubStaff({ me: () => json({ ...moderatorMe, trusted: false }) });
     server.use(
       http.post(`${STAFF}/checkin/request`, () =>
-        json({ success: false, code: 'STAFF_EMAIL_UNVERIFIED', message: 'raw' }, 409)
+        json({ success: false, code: 'staffEmailUnverified', message: 'raw' }, 409)
       )
     );
     const user = userEvent.setup();
@@ -258,7 +258,7 @@ describe("The Steward's Office", () => {
     stubStaff({
       me: () => json(moderatorMe),
       log: () =>
-        json({ success: false, code: 'STAFF_CHECKIN_REQUIRED', message: 'Check in first' }, 403),
+        json({ success: false, code: 'staffCheckinRequired', message: 'Check in first' }, 403),
     });
     renderPage();
     expect(await screen.findByRole('heading', { name: 'Check in' })).toBeInTheDocument();

@@ -14,7 +14,7 @@ export interface ApiError {
   retryAfter?: number; // Seconds to wait before retrying (for 429)
   /**
    * The server's machine-readable refusal code when its error body carries one
-   * (e.g. `STAFF_CHECKIN_REQUIRED`). For branching only; never shown to players.
+   * (e.g. `staffCheckinRequired`). For branching only; never shown to players.
    */
   code?: string;
   /** The day a freeze ends (ISO), on the accountFrozen refusal. Shown only as a formatted date. */
