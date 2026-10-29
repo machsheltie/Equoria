@@ -20,6 +20,5 @@
   "backend/utils/cacheHelper.mjs": 696,
   "frontend/src/components/MyGroomsDashboard.tsx": 711,
   "frontend/src/components/competition/PrizeTransactionHistory.tsx": 824,
-  "frontend/src/components/onboarding/BreedSelector.tsx": 746,
   "frontend/src/pages/__tests__/RegisterPage.test.tsx": 1226
 }
