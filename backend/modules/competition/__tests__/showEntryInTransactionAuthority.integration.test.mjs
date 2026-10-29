@@ -409,8 +409,12 @@ describe('conformation settlement (Equoria-mwjst)', () => {
   it('equal scores entered at the same moment place by entry id', async () => {
     const { user } = await makePlayer('ties');
     const scores = { head: 70, neck: 70, shoulders: 70, back: 70, legs: 70, hooves: 70, topline: 70, hindquarters: 70 };
-    const a = await addHorse(user, 'tie-a', { conformationScores: scores, age: 5 });
-    const b = await addHorse(user, 'tie-b', { conformationScores: scores, age: 5 });
+    // Every input the score reads is stated, so the two scores are genuinely
+    // equal: a horse otherwise gets a temperament rolled from its breed
+    // (Equoria-576c0.5), and temperament feeds the handler-synergy component.
+    const scoreInputs = { conformationScores: scores, temperament: 'Calm', bondScore: 50, age: 5 };
+    const a = await addHorse(user, 'tie-a', scoreInputs);
+    const b = await addHorse(user, 'tie-b', scoreInputs);
     const show = await makeShow();
     await enterInTx({ userId: user.id, ...a, show });
     await enterInTx({ userId: user.id, ...b, show });
