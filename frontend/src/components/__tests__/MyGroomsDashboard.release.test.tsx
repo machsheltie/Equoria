@@ -1,9 +1,10 @@
 /**
  * MyGroomsDashboard — the Release button (Equoria-hwboq).
  *
- * Owner ruling 2026-10-29 (q285): when the groom roster is full, the player can release
- * a groom with one click (no confirmation page, no receipt); the groom goes back to
- * the hiring pool. With room on the roster there is no Release button.
+ * Owner ruling 2026-10-29 (q299, superseding q285's "only when the roster is full"): a
+ * groom can be released any time, like riders. Every hired groom's card offers Release;
+ * one click releases it (no confirmation page, no receipt) and the groom goes back to
+ * the hiring pool.
  *
  * Real hooks and the real api-client; only the network is answered by MSW.
  */
@@ -32,17 +33,11 @@ const groom = {
   isActive: true,
 };
 
-function renderDashboard(limit: { rosterCap: number; activeGrooms: number }) {
+function renderDashboard() {
   let released: number | null = null;
   server.use(
     http.get(`${base}/api/v1/grooms/user/${userId}`, () =>
       HttpResponse.json({ success: true, grooms: released === null ? [groom] : [] })
-    ),
-    http.get(`${base}/api/v1/grooms/roster-cap`, () =>
-      HttpResponse.json({
-        success: true,
-        data: released === null ? limit : { ...limit, activeGrooms: limit.activeGrooms - 1 },
-      })
     ),
     http.post(`${base}/api/v1/grooms/:id/release`, ({ params }) => {
       released = Number(params.id);
@@ -62,10 +57,10 @@ function renderDashboard(limit: { rosterCap: number; activeGrooms: number }) {
   return { releasedId: () => released };
 }
 
-describe('MyGroomsDashboard — Release (q285)', () => {
-  it('a full roster offers Release on each groom; one click releases it, with no confirmation', async () => {
+describe('MyGroomsDashboard — Release (q299)', () => {
+  it('a single hired groom, with plenty of room on the roster, still offers Release; one click releases it, with no confirmation', async () => {
     const user = userEvent.setup();
-    const { releasedId } = renderDashboard({ rosterCap: 10, activeGrooms: 10 });
+    const { releasedId } = renderDashboard();
 
     const card = await screen.findByTestId('groom-card-10');
     const release = await within(card).findByRole('button', { name: 'Release Alice Thornton' });
@@ -75,12 +70,5 @@ describe('MyGroomsDashboard — Release (q285)', () => {
     // No confirmation dialog was asked for, and the roster refreshes without the groom.
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(await screen.findByText(/no grooms hired/i)).toBeInTheDocument();
-  });
-
-  it('with room on the roster there is no Release button', async () => {
-    renderDashboard({ rosterCap: 10, activeGrooms: 1 });
-
-    const card = await screen.findByTestId('groom-card-10');
-    expect(within(card).queryByRole('button', { name: /release/i })).not.toBeInTheDocument();
   });
 });

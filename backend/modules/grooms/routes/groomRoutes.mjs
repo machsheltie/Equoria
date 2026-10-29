@@ -29,7 +29,6 @@ import {
   getGroomProfile,
   getGroomAssignmentLogs,
   getGroomHorseSynergyPreview,
-  getGroomRosterLimit,
   releaseGroom,
 } from '../controllers/groomController.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -316,13 +315,6 @@ router.put('/:id/bonus-traits', authenticateToken, (req, res) => {
       'Manual bonus-trait assignment has been removed. Bonus traits are earned through groom care (bond and assignment coverage) and applied automatically during trait rolls.',
   });
 });
-
-/**
- * GET /api/grooms/roster-cap
- * The player's groom limit and working-groom count (q285: the Release button shows when
- * the roster is full).
- */
-router.get('/roster-cap', authenticateToken, getGroomRosterLimit);
 
 /**
  * POST /api/grooms/:id/release

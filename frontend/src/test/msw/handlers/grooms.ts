@@ -44,10 +44,6 @@ export const groomHandlers = [
   http.get(`${base}/api/v1/groom-marketplace/free-agents`, () =>
     HttpResponse.json({ success: true, data: { grooms: [], total: 0 } })
   ),
-  // Equoria-hwboq: the groom limit (q285). Default: room on the roster, so no Release.
-  http.get(`${base}/api/v1/grooms/roster-cap`, () =>
-    HttpResponse.json({ success: true, data: { rosterCap: 10, activeGrooms: 0 } })
-  ),
   http.post(`${base}/api/v1/groom-marketplace/refresh`, () =>
     HttpResponse.json({
       success: true,

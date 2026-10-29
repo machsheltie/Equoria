@@ -6,7 +6,7 @@
  * route wiring are unchanged — groomController.mjs re-exports these so the
  * public import surface is identical.
  *
- * Handlers: getUserGrooms, getGroomProfile, getGroomRosterLimit, releaseGroom. (getGroomDefinitions went with
+ * Handlers: getUserGrooms, getGroomProfile, releaseGroom. (getGroomDefinitions went with
  * GET /grooms/definitions, owner ruling 2026-10-28, q151, Equoria-a7f1p.)
  *
  * Equoria-bvddn.7: the player-built hire (POST /grooms/hire, client-chosen
@@ -28,7 +28,6 @@ import {
   revealedGrowthView,
 } from '../../../services/staffGrowthService.mjs';
 import { engagementEndReasons, releaseGroomTx } from '../services/groomEngagementService.mjs';
-import { maxGroomsPerUser } from '../../../config/groomConfig.mjs';
 
 const GROOM_LIST_SELECT = {
   id: true,
@@ -237,28 +236,6 @@ export async function getGroomProfile(req, res) {
       message: 'Failed to retrieve groom profile',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
-  }
-}
-
-/**
- * GET /api/v1/grooms/roster-cap
- * How many grooms the player may hold and how many working grooms they have: the same
- * cap and count the hire paths enforce (retired grooms do not count). The groom page
- * shows the Release button when the roster is full (owner ruling 2026-10-29, q285).
- */
-export async function getGroomRosterLimit(req, res) {
-  try {
-    const activeGrooms = await prisma.groom.count({
-      where: { userId: req.user.id, retired: false },
-    });
-    res.status(200).json({
-      success: true,
-      message: 'Groom roster limit retrieved',
-      data: { rosterCap: maxGroomsPerUser, activeGrooms },
-    });
-  } catch (error) {
-    logger.error(`[groomController.getGroomRosterLimit] Error: ${error.message}`);
-    res.status(500).json({ success: false, message: 'Failed to get the groom limit', data: null });
   }
 }
 

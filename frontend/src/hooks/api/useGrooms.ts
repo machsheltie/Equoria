@@ -41,7 +41,6 @@ export const groomKeys = {
   // Equoria-oey96.6 — talent-tree selections for a groom
   talents: (groomId: number) => [...groomKeys.all, 'talents', groomId] as const,
   // Equoria-hwboq: the groom limit and working-groom count (q285).
-  rosterLimit: () => [...groomKeys.all, 'rosterLimit'] as const,
 };
 
 // Hooks
@@ -235,21 +234,10 @@ export function useSelectTalent() {
 }
 
 /**
- * The groom limit and how many working grooms the player has (owner ruling 2026-10-29,
- * q285): read from the server, which enforces the same limit at hire.
- */
-export function useGroomRosterLimit() {
-  return useQuery({
-    queryKey: groomKeys.rosterLimit(),
-    queryFn: () => groomsApi.getRosterLimit(),
-    staleTime: 60 * 1000,
-  });
-}
-
-/**
- * Release one groom to the hiring pool (q285): one click, no confirmation, no receipt.
- * Everything under the groom prefix refreshes (roster, assignments, weekly fees, the
- * limit and the pool, where the groom now waits). A refusal is shown on the card.
+ * Release one groom to the hiring pool, any time (q285, q299): one click, no
+ * confirmation, no receipt. Everything under the groom prefix refreshes (roster,
+ * assignments, weekly fees and the pool, where the groom now waits). A refusal is shown
+ * on the card.
  */
 export function useReleaseGroom() {
   const queryClient = useQueryClient();

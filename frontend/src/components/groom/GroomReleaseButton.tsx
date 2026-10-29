@@ -1,17 +1,16 @@
 /**
- * GroomReleaseButton — Release on a groom card when the groom roster is full
- * (owner ruling 2026-10-29, q285, Equoria-hwboq).
+ * GroomReleaseButton — Release on every hired groom's card (Equoria-hwboq).
  *
- * One click releases the groom to the hiring pool: no confirmation, no receipt. The
- * limit and the working-groom count come from the server (GET /api/v1/grooms/roster-cap);
- * with room on the roster the button is not shown. A refusal is shown under it.
+ * Owner ruling 2026-10-29 (q299, superseding q285's "only when the roster is full"): a
+ * groom can be released any time, like riders. One click releases the groom to the
+ * hiring pool: no confirmation, no receipt. A refusal is shown under it.
  */
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { InlineError } from '@/components/ui/state';
 import { actionMessageFor } from '@/lib/http/actionMessage';
-import { useGroomRosterLimit, useReleaseGroom } from '@/hooks/api/useGrooms';
+import { useReleaseGroom } from '@/hooks/api/useGrooms';
 
 // A release that finds the groom already gone (another tab, the weekly pass).
 const releaseRefused = { 404: 'That groom has already left your stable.' };
@@ -22,11 +21,7 @@ interface GroomReleaseButtonProps {
 }
 
 const GroomReleaseButton: React.FC<GroomReleaseButtonProps> = ({ groomId, groomName }) => {
-  const rosterLimit = useGroomRosterLimit();
   const release = useReleaseGroom();
-  const rosterFull =
-    rosterLimit.data !== undefined && rosterLimit.data.activeGrooms >= rosterLimit.data.rosterCap;
-  if (!rosterFull) return null;
 
   return (
     <>

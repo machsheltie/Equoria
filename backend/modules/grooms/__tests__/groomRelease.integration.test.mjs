@@ -7,8 +7,8 @@
  *     its current level with its reveals intact (q177), its engagement closed, its
  *     active assignments ended; another player can see it in the pool.
  *   - Another stable's groom, or one that is not the caller's, is 404 and untouched.
- *   - GET /api/v1/grooms/roster-cap gives the hire limit and the working-groom count,
- *     so the page knows when the roster is full and shows Release.
+ *   - Owner ruling 2026-10-29 (q299): release works any time, like riders, not only
+ *     when the roster is full — a player with one groom can release it.
  *
  * Real app, real DB; id-scoped fail-loud cleanup.
  */
@@ -161,17 +161,13 @@ describe('groom Release button (Equoria-hwboq, q285)', () => {
     expect(listed.growth.revealedCount).toBe(3);
   }, 60000);
 
-  it('the roster cap says how many working grooms the player has of the hire limit', async () => {
+  it('releases the only groom of a player whose roster has plenty of room (q299)', async () => {
     const { user, token } = await makeUser();
     const groom = await hireGroom(user, token);
-
-    const before = await call('get', '/api/v1/grooms/roster-cap', token);
-    expect(before.status).toBe(200);
-    expect(before.body.data).toEqual({ rosterCap: 10, activeGrooms: 1 });
+    expect(await prisma.groom.count({ where: { userId: user.id, retired: false } })).toBe(1);
 
     expect((await call('post', `/api/v1/grooms/${groom.id}/release`, token)).status).toBe(200);
-    const after = await call('get', '/api/v1/grooms/roster-cap', token);
-    expect(after.body.data).toEqual({ rosterCap: 10, activeGrooms: 0 });
+    expect(await prisma.groom.count({ where: { userId: user.id, retired: false } })).toBe(0);
   }, 60000);
 
   it("refuses another stable's groom with 404 and leaves it on that stable", async () => {
