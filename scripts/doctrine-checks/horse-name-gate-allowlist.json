@@ -26,10 +26,6 @@
       "reason": "System-derived, no player string: store horses are named `<Breed> #NNNNNN`. Breed names are DB-controlled (Breed.name is admin-created and uniquely indexed), not player input on this path.",
       "issue": "Equoria-qkgfh.1"
     },
-    "backend/modules/users/services/gdprHorseLineageErasure.mjs": {
-      "reason": "System-derived, no player string: lineage anonymization rewrites a horse's name to `Anonymized Horse #<id>` during GDPR erasure. Always inside the policy by construction. MOVED, not added (Equoria-49bc2): this writer was extracted verbatim out of gdprAccountService.mjs into its own module when that file crossed the 600-line threshold, and the write is now the batched parameterized `$executeRaw` that builds the same string in SQL. The list did not grow.",
-      "issue": "Equoria-qkgfh.1"
-    },
     "backend/modules/horses/services/horseCreation.mjs": {
       "reason": "MOVED, not added (Equoria-q4uem.7): the former horseModelService.mjs entry follows `createHorse` into horseCreation.mjs. The model-level insert (`createHorse`) that every acquisition path funnels through. It checks only `!name` and caps nothing itself, which is precisely the open door this check exists to keep visible: its callers are gated (or allow-listed) today, but a NEW caller could reach horses.name without meeting the policy. Deliberately left as an allow-list entry rather than gated in place, because clamping here would silently reshape a name a player supplied through a gated path — the normalisation the policy refuses. If this file is ever changed to validate, delete this entry.",
       "issue": "Equoria-qkgfh.1"

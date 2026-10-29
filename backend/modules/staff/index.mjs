@@ -34,8 +34,4 @@ export {
 // Equoria-n256i (owner ruling q289): every admin route asks for the emailed check-in.
 export { hasStaffCheckin, requireStaffCheckin } from './middleware/requireStaffCheckin.mjs';
 export { purgeStaleStaffCheckinRecords } from './services/staffCheckinRetentionService.mjs';
-export {
-  purgeSettledEmails,
-  runEmailOutbox,
-  scrubTicketEmailFilerTx,
-} from './services/ticketEmailOutbox.mjs';
+export { purgeSettledEmails, runEmailOutbox } from './services/ticketEmailOutbox.mjs';

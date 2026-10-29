@@ -302,25 +302,6 @@ export async function purgeSettledEmails(now = new Date()) {
   };
 }
 
-export const FORMER_STEWARD = 'A former steward';
-
-/**
- * Account erasure (STAFF-CR-10 review): the outbox rows about tickets this
- * user filed stop naming them. Runs inside the erasure transaction, before
- * the user row goes (while filedById still points at them). updatedAt is left
- * alone so retention timing is unchanged.
- * @returns {Promise<number>} rows scrubbed
- */
-export async function scrubTicketEmailFilerTx(tx, userId) {
-  return tx.$executeRaw`
-    UPDATE email_outbox
-    SET payload = jsonb_set(payload, '{filedBy}', to_jsonb(${FORMER_STEWARD}::text))
-    WHERE "templateKey" = ${TICKET_TEMPLATE}
-      AND (payload->>'ticketId') IN (
-        SELECT id::text FROM staff_tickets WHERE "filedById" = ${userId}
-      )`;
-}
-
 // Post-commit deliveries still running in this process. The request never waits
 // for them; whenTicketEmailKicksFinish lets a caller that must (a test, a
 // shutdown) wait for the real completion instead of guessing a time.

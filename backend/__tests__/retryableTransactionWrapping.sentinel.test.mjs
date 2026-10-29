@@ -107,7 +107,9 @@ const MIGRATED = [
   // createClub wrapped; array-form transferLeadership unwrapped → totalTx 2.
   ['modules/community/controllers/clubController.mjs', { wrapped: 1, totalTx: 2 }],
   ['modules/economy/feedShop/controllers/feedShopController.mjs', { wrapped: 1, totalTx: 1 }],
-  ['modules/users/services/gdprAccountService.mjs', { wrapped: 1, totalTx: 1 }],
+  // modules/users/services/gdprAccountService.mjs left this list with the file:
+  // Equoria-81uop deleted account erasure (no account is ever deleted, owner
+  // rulings 2026-09-22/25).
   // competitionRouteQueries.mjs no longer holds a $transaction: its entry tx
   // (enterShowDeferredTx) became showEscrowTx.enterShowTx, the one entry
   // transaction for both routes (Equoria-mwjst), pinned wrapped on the

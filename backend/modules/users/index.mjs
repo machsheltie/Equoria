@@ -28,9 +28,5 @@ export {
   levelProgress,
 } from './services/userModelService.mjs';
 
-// Operator erasure (GDPR). No production importer outside this module; consumed by other
-// modules' erasure-behaviour tests (breeding studRequestLifecycle, horses
-// horseDeletionEndpointClosed, staff staffErasureKeepsRecords / staffLogActorsAuthz /
-// staffTicketEmailOutbox), which erase a fixture user to prove their own data survives.
-// Equoria-7t1tn: kept pending an owner ruling on moving those tests vs keeping the name.
-export { eraseUserAccount } from './services/gdprAccountService.mjs';
+// Equoria-81uop: account erasure is gone (owner rulings 2026-09-22/25: no account is
+// ever deleted — not self-service, not on request, not by an operator).

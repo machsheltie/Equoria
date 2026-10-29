@@ -49,9 +49,9 @@
  *    # 2. After reviewing the dry-run output, actually delete:
  *    node backend/scripts/purge-leaked-test-fixtures.mjs --execute
  *
- *  The FK-ordered delete mirrors the proven ordering in
- *  backend/modules/users/services/gdprAccountService.mjs#eraseUserAccount —
- *  the same Restrict relations must clear before the final user.delete:
+ *  The delete is FK-ordered (it once mirrored the account-erasure service,
+ *  removed in Equoria-81uop) — every Restrict relation clears before the
+ *  final user.delete:
  *  Horse (+ self-referential sire/dam edges within the deleted set),
  *  Groom, Rider, Trainer, Show host/creator (nulled), forum content,
  *  direct messages, horse sales, club artifacts, show entries.
@@ -205,9 +205,8 @@ async function collectDryRunCounts() {
 }
 
 /**
- * FK-ordered, userId-scoped deletion of the matched test users. Mirrors the
- * proven ordering in gdprAccountService.eraseUserAccount — every Restrict
- * relation is cleared before the final user.delete. Runs in a single
+ * FK-ordered, userId-scoped deletion of the matched test users. Every
+ * Restrict relation is cleared before the final user.delete. Runs in a single
  * transaction so a partial failure rolls back (no half-deleted users).
  *
  * NOTE on lineage: unlike the GDPR path, this does NOT attempt to preserve

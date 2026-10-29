@@ -194,8 +194,9 @@ export const rejectPollutedRequest = (req, res, next) => {
  * Writing `horses.name` WITHOUT a player string: `foalingService`'s birth name
  * `UNNAMED_HORSE_NAME` ('unnamed', Equoria-4fnro) and its compensation restore
  * of an already-validated `pendingFoalName`, `onboardingService`'s
- * `<username>'s First Horse`, `marketplaceController`'s store horses, and
- * `gdprAccountService`'s lineage anonymization. Seeds, operator scripts, and
+ * `<username>'s First Horse` and `marketplaceController`'s store horses
+ * (`gdprAccountService`'s lineage anonymization went with account erasure,
+ * Equoria-81uop). Seeds, operator scripts, and
  * anything writing the database outside the app are ungated by construction and
  * no route validator can reach them.
  *

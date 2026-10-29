@@ -3,10 +3,6 @@ import logger from '../../../utils/logger.mjs';
 import { DatabaseError } from '../../../errors/index.mjs';
 import { invalidateCache } from '../../../utils/cacheHelper.mjs';
 import { addPlayerMonthlyTotals } from '../../../utils/monthlyTotals.mjs';
-// Same-module import: avoid routing through the users barrel (index.mjs) to
-// prevent a barrel<->service circular dependency, since the barrel re-exports
-// this very file (userModelService) alongside gdprAccountService (Equoria-kwjav).
-import { eraseUserAccount } from './gdprAccountService.mjs';
 
 const xpPerLevel = 100;
 // Default audit reason for an award whose caller supplies none (e.g. the admin
@@ -239,45 +235,6 @@ async function updateUser(id, updateData, client = prisma) {
 }
 
 /**
- * Deletes a user and all data scoped to that user.
- *
- * Delegates to the proven, scoped, transactional cascade in
- * `gdprAccountService.eraseUserAccount` (Equoria-s3rf) rather than a bare
- * `prisma.user.delete`. A bare delete fails with a Prisma FK Restrict
- * violation (P2003) for any non-empty account because the user owns
- * horses / grooms / forum threads / clubs / etc. whose relations are
- * `onDelete: Restrict` (Equoria-02nos). Reusing `eraseUserAccount` keeps
- * the FK-ordered deletion logic in one place (DRY).
- *
- * No HTTP route reaches this: players cannot delete their accounts (owner
- * ruling, Equoria-gfany), so `DELETE /api/v1/users/:id` now refuses. It
- * remains a server-side helper for erasure an operator runs by hand.
- *
- * Idempotent: returns `null` when the user does not exist, matching the
- * prior P2025 behaviour.
- *
- * @param {string} id - The user id to erase.
- * @returns {Promise<{ id: string }|null>} A minimal shape on success,
- *   `null` if the user did not exist.
- */
-async function deleteUser(id) {
-  try {
-    if (!id) {
-      throw new Error('User ID is required.');
-    }
-    const { deleted } = await eraseUserAccount(id);
-    if (!deleted) {
-      logger.error(`[deleteUser] User not found for deletion: ID ${id}`);
-      return null; // Return null to indicate user not found
-    }
-    return { id };
-  } catch (error) {
-    logger.error(`[deleteUser] Error: ${error.message}`);
-    throw new DatabaseError(`Delete failed: ${error.message}`);
-  }
-}
-
-/**
  * Tx-aware core for awarding user XP. Every mutation runs on the passed `db`
  * client — either the base prisma client or an interactive-transaction client —
  * so a caller that already holds a transaction can COMPOSE this without a nested
@@ -473,7 +430,6 @@ export {
   getUserWithHorses,
   getUserByEmail,
   updateUser,
-  deleteUser,
   addXpToUser,
   addXpToUserCore,
   getUserProgress,

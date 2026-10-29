@@ -27,10 +27,8 @@ import {
 } from '../../../__tests__/helpers/rowLockBarrier.mjs';
 import { _resetTransporter } from '../../../utils/emailService.mjs';
 import cronJobService from '../../../services/cronJobs.mjs';
-import { eraseUserAccount } from '../../users/index.mjs';
 import {
   FAILED_RETENTION_MS,
-  FORMER_STEWARD,
   LEASE_MS as leaseMs,
   MAX_ATTEMPTS as maxAttempts,
   runBudgetMs,
@@ -61,7 +59,6 @@ const { makeUser, createdUserIds } = createUserFactory('stoutbox');
 const { makePost, removeTargets } = createTargetFactory('StaffOutbox');
 
 let fixturePostId = null;
-const erasedFilerTickets = [];
 
 const goodTicket = () => ({
   targetType: 'post',
@@ -162,7 +159,7 @@ beforeAll(async () => {
   await new Promise(resolve => silentSmtp.listen(0, '127.0.0.1', resolve));
   const scope = () => ({ in: createdUserIds });
   // Test teardown of rows this suite created.
-  const tickets = () => ({ OR: [{ filedById: scope() }, { id: { in: erasedFilerTickets } }] });
+  const tickets = () => ({ filedById: scope() });
   cleanup.add(() => removeTicketEmails(tickets()), 'ticket emails');
   cleanup.add(() => prisma.staffTicket.deleteMany({ where: tickets() }), 'tickets');
   cleanup.add(() => prisma.emailOutbox.deleteMany({ where: { recipientId: scope() } }), 'outbox');
@@ -612,30 +609,5 @@ describe('Ticket email outbox (STAFF-CR-10)', () => {
 
     expect(summary.emailsDeleted).toBeGreaterThanOrEqual(1);
     expect(await outboxRow(key)).toBeNull();
-  });
-
-  it("stops naming an erased filer in their tickets' emails, leaving other filers' emails alone", async () => {
-    const { admin, mod, modDevice } = await staffPair();
-    const other = await makeUser('moderator');
-    const otherDevice = await checkIn(other);
-    const { ticket, row } = await fileWhileSmtpRefuses(admin, mod, modDevice);
-    // Erasure clears filedById, so teardown finds this ticket by id.
-    erasedFilerTickets.push(ticket.id);
-    const { row: otherRow } = await fileWhileSmtpRefuses(admin, other, otherDevice);
-    expect(row.payload.filedBy).toBe(mod.username);
-
-    expect(await eraseUserAccount(mod.id)).toEqual({ deleted: true });
-
-    const scrubbed = await outboxRow(row.idempotencyKey);
-    expect(scrubbed.payload).toEqual({ ticketId: ticket.id, category: 'Needs the admin', filedBy: FORMER_STEWARD });
-    expect(scrubbed.updatedAt.getTime()).toBe(row.updatedAt.getTime());
-    expect(JSON.stringify(scrubbed)).not.toContain(mod.username);
-    expect((await outboxRow(otherRow.idempotencyKey)).payload.filedBy).toBe(other.username);
-
-    // The erased filer's ticket email still goes, naming a former steward.
-    await runEmailOutbox({ clock: at(justAfter(row.nextAttemptAt)), keys: [row.idempotencyKey] });
-    const [email] = capturedTicketEmailsFor(admin.email);
-    expect(email.preview).toContain(FORMER_STEWARD);
-    expect(email.preview).not.toContain(mod.username);
   });
 });

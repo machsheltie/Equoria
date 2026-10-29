@@ -2,8 +2,9 @@
  * Equoria-gfany — players cannot delete their accounts.
  *
  * OWNER RULING 2026-09-22: "Players cannot delete their accounts." Scope ruled
- * 2026-09-24: remove the Settings control AND both player-reachable routes;
- * keep `eraseUserAccount()` for erasure an operator runs by hand.
+ * 2026-09-24: remove the Settings control AND both player-reachable routes.
+ * 2026-09-25: no deletion at all, not on request and not by an operator, so
+ * the erasure service and its tests were removed too (Equoria-81uop).
  *
  * The behaviour this replaces: two independent routes erased the caller's
  * whole account through `eraseUserAccount()` —
@@ -13,8 +14,7 @@
  * Both returned 200 and the user row, horses, staff, clubs and messages were
  * gone. The route-level tests that specified that (legacyUserDelete, the
  * DELETE blocks in userController/userRoutes, the password cases in
- * gdprAccountRoutes) were retired with the ruling; the erasure cascade itself
- * is still covered by the service-level tests.
+ * gdprAccountRoutes) were retired with the ruling.
  *
  * The invariant this file locks: neither route removes the caller's account,
  * for any id, password or payload, and each answers one byte-identical 403

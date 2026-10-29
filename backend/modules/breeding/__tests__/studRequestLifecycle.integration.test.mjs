@@ -16,16 +16,13 @@ import { describe, it, expect, beforeEach, afterEach, afterAll } from '@jest/glo
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { eraseUserAccount } from '../../users/index.mjs';
 import {
   sharedBreed,
   makePlayer,
   makeHorse,
-  moneyOf,
   disconnectLockClient,
   registerCleanup,
   requestPrivateStud,
-  actOnRequest,
   listAtStud,
   unlistAtStud,
   buyHorseHttp,
@@ -172,33 +169,5 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
     ).toBe(1);
     // The new owner is not bound by the old owner's request.
     expect(await prisma.breedingRecord.count({ where: { damId: mare.id, status: 'PENDING' } })).toBe(0);
-  });
-
-  it("GDPR: erasing the stallion owner keeps the mare owner's record readable and resolves his pending requests", async () => {
-    const completedId = await pendingRequest();
-    expect((await actOnRequest(studOwner.token, completedId, 'approve')).status).toBe(200);
-    const otherMare = await horse({ ownerId: mareOwner.user.id, sex: 'Mare' });
-    const pending = await requestPrivateStud(mareOwner.token, stud.id, { damId: otherMare.id, expectedStudFee: FEE });
-    expect(pending.status).toBe(201);
-    // Old contract: the stallion owner's data export listed both records first.
-    // Owner ruling 2026-10-28 (q157): the account data download is removed.
-
-    await expect(eraseUserAccount(studOwner.user.id)).resolves.toEqual({ deleted: true });
-
-    const kept = await recordOf(completedId);
-    expect(kept).toMatchObject({
-      status: 'COMPLETED',
-      fee: FEE,
-      stallionOwnerId: null,
-      stallionOwnerName: '',
-      mareOwnerId: mareOwner.user.id,
-      mareOwnerName: mareOwner.user.username,
-      damName: mare.name,
-    });
-    expect(await recordOf(pending.body.data.requestId)).toMatchObject({
-      status: 'DECLINED',
-      declineReason: 'accountClosed',
-    });
-    expect(await moneyOf(mareOwner.user.id)).toBe(5000 - FEE);
   });
 });

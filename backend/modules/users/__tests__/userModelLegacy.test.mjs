@@ -31,7 +31,6 @@ import {
   getUserByEmail,
   getUserWithHorses,
   updateUser,
-  deleteUser,
   addXpToUser,
   getUserProgress,
   getUserStats,
@@ -187,28 +186,6 @@ describe('👤 User Model — Database Operations & Business Logic (real DB)', (
 
     it('returns null when the user does not exist (P2025)', async () => {
       const result = await updateUser('00000000-0000-0000-0000-000000000000', { money: 1 });
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('deleteUser', () => {
-    it('deletes a real user via the real eraseUserAccount cascade', async () => {
-      // Track separately so we do not also try to delete it in afterAll.
-      const user = await createUser(uniqueUserData('delete'));
-      const result = await deleteUser(user.id);
-      expect(result).toEqual({ id: user.id });
-
-      // The row is really gone.
-      const persisted = await prisma.user.findUnique({ where: { id: user.id } });
-      expect(persisted).toBeNull();
-    });
-
-    it('throws DatabaseError if id is not provided', async () => {
-      await expect(deleteUser(null)).rejects.toThrow(new DatabaseError('Delete failed: User ID is required.'));
-    });
-
-    it('returns null when the user does not exist (idempotent erase)', async () => {
-      const result = await deleteUser('00000000-0000-0000-0000-000000000000');
       expect(result).toBeNull();
     });
   });

@@ -409,9 +409,8 @@ router.put(
  * `PUT` still serve the owner; only permission to destroy is withdrawn. It sits
  * BEHIND `authenticateToken` (anonymous is 401) and BEFORE the validator, so an
  * owned horse, a stranger's, a missing id and a malformed id share ONE body (no
- * oracle). Horse rows leave the DB only via `modules/users` `eraseUserAccount`
- * (which clears the `Restrict` lineage edges first) and the fixture-purge
- * script; `deleteHorseService` did neither and had no caller, so it was deleted.
+ * oracle). Horse rows leave the DB only via the fixture-purge script (account
+ * erasure, the other path, was removed in Equoria-81uop); `deleteHorseService` did neither and had no caller, so it was deleted.
  * Locked by __tests__/horseDeletionEndpointClosed.integration.test.mjs, whose
  * matcher needs the words "cannot be deleted" — reword the message with it.
  */

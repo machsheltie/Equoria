@@ -16,8 +16,9 @@ import logger from '../../../utils/logger.mjs';
  *
  * OWNER RULING 2026-09-22 (Equoria-gfany): "Players cannot delete their
  * accounts." Scope ruled 2026-09-24: remove the Settings control and both
- * player-reachable routes; keep `eraseUserAccount()` for erasure an operator
- * runs by hand. Both routes answer with this one body, whatever the id,
+ * player-reachable routes. 2026-09-25 the owner went further — no account is
+ * deleted at all, not on request and not by an operator — so the erasure
+ * service is gone too (Equoria-81uop). Both routes answer with this one body, whatever the id,
  * password or payload, so neither can be used as an existence or ownership
  * oracle. It sits behind `authenticateToken` (anonymous is still 401).
  *

@@ -1,7 +1,7 @@
 /**
  * Integration Tests: User Model — Real Database
  *
- * Tests createUser, getUserById, getUserWithHorses, and deleteUser
+ * Tests createUser, getUserById and getUserWithHorses
  * against the real test database. No mocks — every assertion exercises
  * the actual Prisma client and PostgreSQL constraint layer.
  *
@@ -15,7 +15,6 @@ import {
   createUser,
   getUserById,
   getUserWithHorses,
-  deleteUser,
 } from '../../backend/modules/users/services/userModelService.mjs';
 
 // Unique seed per run to prevent collisions across parallel test suites
@@ -120,33 +119,6 @@ describe('User Integration Tests', () => {
       expect(Array.isArray(result.horses)).toBe(true);
       // No horses were created for this user, so the array is empty
       expect(result.horses.length).toBe(0);
-    });
-  });
-
-  describe('User Deletion', () => {
-    test('deletes an existing user and returns the deleted record', async () => {
-      // Create a disposable user to delete
-      const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
-      const toDelete = await createUser({
-        username: `del${seed}`,
-        email: `del-${seed}@test.local`,
-        password: hashedPassword,
-        firstName: 'Delete',
-        lastName: 'Me',
-      });
-
-      const deleted = await deleteUser(toDelete.id);
-      expect(deleted).not.toBeNull();
-      expect(deleted.id).toBe(toDelete.id);
-
-      // Confirm it's actually gone
-      const lookup = await getUserById(toDelete.id);
-      expect(lookup).toBeNull();
-    });
-
-    test('returns null when deleting a non-existent user', async () => {
-      const result = await deleteUser('00000000-0000-0000-0000-000000000001');
-      expect(result).toBeNull();
     });
   });
 });

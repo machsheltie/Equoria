@@ -5,13 +5,15 @@
  * The admin filters the permanent ledger by steward. The filter's choices come
  * from GET /api/v1/staff/log/actors: every account that has ever written to the
  * log, drawn from the whole log rather than one page, so a steward who was
- * revoked or erased stays selectable. Only log.view.all may read it.
+ * revoked stays selectable. Only log.view.all may read it.
+ *
+ * Equoria-81uop: the erased-steward half of the first case went with account
+ * erasure (no account is ever deleted, owner rulings 2026-09-22/25).
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { eraseUserAccount } from '../../users/index.mjs';
 import { LOG_PAGE_SIZE, recordStaffActionTx } from '../services/staffActionLogService.mjs';
 import {
   STAFF_API,
@@ -55,31 +57,26 @@ beforeEach(() => startEmailCapture());
 afterEach(() => stopEmailCapture());
 
 describe('The ledger actor list (STAFF-CR-16)', () => {
-  it('lists a revoked and an erased steward once each, even past the first page', async () => {
+  it('lists a revoked steward once, even past the first page', async () => {
     const admin = await makeUser('admin');
     const revoked = await makeUser('moderator');
-    const erased = await makeUser('moderator');
     const adminDevice = await checkIn(admin);
     // Owner ruling q76 (Equoria-i1hgt): only the owner changes staff roles.
     const owner = await makeUser('owner');
     const ownerDevice = await checkIn(owner);
 
     const revokedEntry = await recordStaffActionTx(prisma, entryFor(revoked));
-    await recordStaffActionTx(prisma, entryFor(revoked));
-    const erasedEntry = await recordStaffActionTx(prisma, entryFor(erased));
+    const revokedSecond = await recordStaffActionTx(prisma, entryFor(revoked));
 
-    for (const mod of [revoked, erased]) {
-      const demoted = await post(
-        `${STAFF_API}/roles/${mod.id}`,
-        owner,
-        { role: 'user', reason: 'stepped down' },
-        ownerDevice,
-      );
-      expect(demoted.status).toBe(200);
-    }
-    expect(await eraseUserAccount(erased.id)).toEqual({ deleted: true });
+    const demoted = await post(
+      `${STAFF_API}/roles/${revoked.id}`,
+      owner,
+      { role: 'user', reason: 'stepped down' },
+      ownerDevice,
+    );
+    expect(demoted.status).toBe(200);
 
-    // Bury both stewards' entries below a full page of newer ones.
+    // Bury the steward's entries below a full page of newer ones.
     for (let i = 0; i < LOG_PAGE_SIZE; i += 1) {
       await recordStaffActionTx(prisma, entryFor(admin));
     }
@@ -88,7 +85,7 @@ describe('The ledger actor list (STAFF-CR-16)', () => {
     const pageIds = firstPage.body.entries.map(entry => entry.id);
     expect(pageIds.length).toBeGreaterThan(0);
     expect(pageIds).not.toContain(revokedEntry.id);
-    expect(pageIds).not.toContain(erasedEntry.id);
+    expect(pageIds).not.toContain(revokedSecond.id);
 
     const res = await get(ACTORS, admin, adminDevice);
     expect(res.status).toBe(200);
@@ -99,14 +96,15 @@ describe('The ledger actor list (STAFF-CR-16)', () => {
       expect.arrayContaining([
         { id: admin.id, username: admin.username },
         { id: revoked.id, username: revoked.username },
-        { id: erased.id, username: null },
       ]),
     );
 
-    // The erased steward's ID still filters the ledger to their entries.
-    const theirs = await get(`${LOG}?actorId=${erased.id}`, admin, adminDevice);
+    // The revoked steward's ID still filters the ledger to their entries.
+    const theirs = await get(`${LOG}?actorId=${revoked.id}`, admin, adminDevice);
     expect(theirs.status).toBe(200);
-    expect(theirs.body.entries.map(entry => entry.id)).toEqual([erasedEntry.id]);
+    expect(theirs.body.entries.map(entry => entry.id).sort((a, b) => a - b)).toEqual(
+      [revokedEntry.id, revokedSecond.id].sort((a, b) => a - b),
+    );
   });
 
   it('is refused to a moderator, a player and an unchecked-in admin', async () => {

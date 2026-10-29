@@ -10,4 +10,3 @@
  */
 
 export { postDailyNewsEntries, postGameNewsEntries } from './services/dailyNewsEntries.mjs';
-export { scrubNewsSignaturesForErasureTx } from './services/newsAccountRecords.mjs';

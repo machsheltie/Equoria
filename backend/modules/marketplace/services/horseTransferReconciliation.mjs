@@ -418,8 +418,7 @@ export async function reconcileStaffOnHorseTransfer(tx, { horseId }) {
  * rulings, Stacey 2026-10-02 and 2026-10-15: the player decides whether her
  * stallion stands at stud and for what fee; selling or transferring a
  * stallion clears its listing). Without this the buyer inherited the previous
- * owner's public listing and price (Equoria-q4uem.9). Same reset GDPR erasure
- * applies (gdprHorseLineageErasure.mjs). Unconditional: a horse that was not
+ * owner's public listing and price (Equoria-q4uem.9). Unconditional: a horse that was not
  * at stud already holds these values.
  *
  * @param {object} tx - the surrounding interactive Prisma transaction client

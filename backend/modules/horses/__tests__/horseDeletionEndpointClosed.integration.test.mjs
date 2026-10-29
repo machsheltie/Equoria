@@ -25,9 +25,10 @@
  *   already enumerates this router's mounted routes, and it is not written.
  *   At the time of this change the caller trace found no other such route:
  *   the only other horse DELETE is `/:id/stud-listing`, which delists rather
- *   than destroys, and the only production code that deletes horse rows is
- *   `modules/users` `eraseUserAccount` (which clears the `Restrict`
- *   lineage/sale FKs first) plus `scripts/purge-leaked-test-fixtures.mjs`.
+ *   than destroys, and the only code that deletes horse rows is
+ *   `scripts/purge-leaked-test-fixtures.mjs` (account erasure, which also did,
+ *   was removed in Equoria-81uop with its "GDPR erasure still deletes horses"
+ *   case here — no account is ever deleted, owner rulings 2026-09-22/25).
  *
  * What the guard is: `DELETE /api/v1/horses/:id` answers 403 for every
  * authenticated caller. The refusal sits BEHIND the authRouter's
@@ -69,7 +70,6 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 // Cross-module import goes through the users barrel (CONTRIBUTING.md § "Module
 // public API boundaries"), not the service's internal path.
-import { eraseUserAccount } from '../../users/index.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-9tque';
@@ -342,33 +342,4 @@ describe('Equoria-9tque — DELETE /api/v1/horses/:id is closed to players', () 
     expect(persisted.sex).toBe(before.sex);
     expect(persisted.name).toBe(before.name);
   }, 60000);
-});
-
-describe('Equoria-9tque — the legitimate server-owned deletion path still removes horses', () => {
-  const cleanup = createCleanupTracker();
-
-  afterEach(() => cleanup.run(), 30000);
-
-  it("GDPR right-to-erasure still deletes the erased account's horse rows", async () => {
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { id: ids.horseId } }),
-      'gdpr fixture horse (should already be gone)',
-    );
-    cleanup.add(
-      () => prisma.user.deleteMany({ where: { id: ids.userId } }),
-      'gdpr fixture user (should already be gone)',
-    );
-    const doomed = await makeUser('gdpr');
-    const doomedHorse = await makeHorse(doomed.id, 'gdprhorse');
-
-    // Fail-loud safety net only: eraseUserAccount is expected to remove both
-    // rows, so these cleanups should find nothing.
-    const ids = { horseId: doomedHorse.id, userId: doomed.id };
-
-    const result = await eraseUserAccount(doomed.id);
-    expect(result).toEqual({ deleted: true });
-
-    expect(await prisma.horse.findUnique({ where: { id: doomedHorse.id } })).toBeNull();
-    expect(await prisma.user.findUnique({ where: { id: doomed.id } })).toBeNull();
-  }, 90000);
 });
