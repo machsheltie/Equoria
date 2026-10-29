@@ -63,6 +63,7 @@ import {
   rollCoatImageUrl,
   defaultHorseImageUrl,
 } from '../../horses/index.mjs';
+import { generateStoreHorseTraitRoster } from '../../traits/index.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { horseArrivalCare } from '../../../utils/horseArrivalCare.mjs';
 
@@ -438,6 +439,10 @@ export const advanceOnboarding = async (req, res, next) => {
             context: `onboarding starter horse for user ${userId}`,
           });
 
+          // Equoria-q4uem.17 (owner ruling q308): no epigeneticModifiers here. The
+          // registration horse's hidden traits were rolled once when it was created
+          // and the store roster does not depend on breed, so filling that horse
+          // keeps them; only the brand-new horse below rolls.
           const updateData = {
             name: suppliedHorseName,
             breedId: breed.id,
@@ -502,6 +507,9 @@ export const advanceOnboarding = async (req, res, next) => {
                 // Owner ruling 2026-10-28 (Equoria-fd3f2): Excellent health and fully fed.
                 ...horseArrivalCare(),
                 temperament: generateTemperamentWithDefault(breed.name),
+                // Equoria-q4uem.17 (q308): registration made no horse, so its hidden
+                // roll happens here instead, exactly as the Horse Trader rolls it.
+                epigeneticModifiers: generateStoreHorseTraitRoster(),
               },
               include: { breed: { select: { id: true, name: true } } },
             });

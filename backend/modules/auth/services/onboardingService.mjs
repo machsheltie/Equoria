@@ -44,6 +44,12 @@
  *     temperament weights (was: a later raw UPDATE with Thoroughbred weights
  *     whatever the starter breed, which could fail and leave it NULL). A
  *     breed with no weights creates no horse, as for missing gait ranges.
+ *   - Equoria-q4uem.17 (owner ruling q308, 2026-10-29): the starter horse
+ *     carries hidden traits rolled exactly as a Horse Trader horse's are
+ *     (generateStoreHorseTraitRoster), set in the same insert. This is the
+ *     player's one roll: the onboarding wizard fills this horse's name, breed
+ *     and sex but never its traits (the roster does not depend on breed), and
+ *     rolls only when it has to create the horse because none exists here.
  */
 
 import logger from '../../../utils/logger.mjs';
@@ -61,6 +67,7 @@ import {
   DEFAULT_TEMPERAMENT_BREED,
   horseNameMaxLength,
 } from '../../horses/index.mjs';
+import { generateStoreHorseTraitRoster } from '../../traits/index.mjs';
 
 const STARTER_HORSE_AGE_GAME_YEARS = 3;
 
@@ -196,6 +203,8 @@ export async function createStarterHorseForNewUser(
         ...horseArrivalCare(),
         ...physique,
         temperament,
+        // Equoria-q4uem.17 (q308): the Horse Trader's hidden roll, 1-5 roster traits.
+        epigeneticModifiers: generateStoreHorseTraitRoster(),
         // Equoria-tl5l8: born with the starter breed's discipline at +5.
         ...(starterDisciplineScores && { disciplineScores: starterDisciplineScores }),
       },

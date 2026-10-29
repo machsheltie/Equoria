@@ -35,6 +35,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { TEMPERAMENT_TYPES } from '../../horses/index.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { isRosterTrait } from '../../../utils/epigeneticTraits.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const PLANTED_TEMPERAMENT = 'TestFixture-planted-temperament';
@@ -196,6 +197,13 @@ describe('POST /auth/advance-onboarding — starter horse is chosen once (Equori
       select: { temperament: true, epigeneticModifiers: true },
     });
     expect(TEMPERAMENT_TYPES).toContain(horse.temperament);
-    expect(horse.epigeneticModifiers).toEqual({ positive: [], negative: [], hidden: [] });
+    // Old contract: the brand-new wizard horse carried no traits at all. Owner
+    // ruling q308 (2026-10-29, Equoria-q4uem.17): it rolls the Horse Trader's
+    // hidden traits. Still nothing visible and nothing from the player's body.
+    expect(horse.epigeneticModifiers.positive).toEqual([]);
+    expect(horse.epigeneticModifiers.negative).toEqual([]);
+    expect(horse.epigeneticModifiers.hidden.length).toBeGreaterThanOrEqual(1);
+    expect(horse.epigeneticModifiers.hidden.length).toBeLessThanOrEqual(5);
+    expect(horse.epigeneticModifiers.hidden.every(isRosterTrait)).toBe(true);
   });
 });
