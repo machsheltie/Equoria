@@ -31,6 +31,7 @@ import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 import { gameCalendarDate } from '../../../../utils/gameTime.mjs';
 import {
+  careBeneathRetirement,
   getVetHealth,
   getFeedHealth,
   getDisplayedHealth,
@@ -90,7 +91,7 @@ export function healthCheckFee(vetHealth) {
  * refused her as already vetted.
  */
 export function vetHealthOf(horse, now = new Date()) {
-  return getVetHealth(horse.inFoalSinceDate ? { ...horse, age: null } : horse, now);
+  return getVetHealth(horse.inFoalSinceDate ? careBeneathRetirement(horse) : horse, now);
 }
 
 /** Vet health still Excellent: another health check would change nothing. */

@@ -28,6 +28,7 @@ import {
   startOfGameDay,
 } from './gameTime.mjs';
 import { retirementAgeYears } from '../constants/horseAgePolicy.mjs';
+import { liveHorseAgeYears } from './horseAge.mjs';
 
 // Re-exported for the feed path's "not yet fed today" SQL cutoff.
 export { startOfGameDay };
@@ -98,8 +99,22 @@ export function toHealthWord(raw) {
   return wordByGrade[healthGradeOf(raw)];
 }
 
-const isRetiredAge = horse =>
-  horse.age !== null && horse.age !== undefined && horse.age >= retirementAgeYears;
+// Equoria-66qkj: the live age on the Eastern calendar at `now`, so a 21st
+// birthday the nightly job has not recorded yet already counts.
+const isRetiredAge = (horse, now) => liveHorseAgeYears(horse, now) >= retirementAgeYears;
+
+/**
+ * The horse read on the care underneath its retirement: no age and no birth
+ * date, so the health words never answer 'retired'. Clearing `age` alone is not
+ * enough since the live age also reads `dateOfBirth` (Equoria-66qkj).
+ *
+ * @template T
+ * @param {T} horse
+ * @returns {T}
+ */
+export function careBeneathRetirement(horse) {
+  return { ...horse, age: null, dateOfBirth: null };
+}
 
 /**
  * Has the horse been fed on the same Eastern game day as `now`?
@@ -131,7 +146,7 @@ const hungerDayLimits = Object.freeze([2, 4, 6, 8]);
  * @returns {'Excellent'|'Very Good'|'Good'|'Fair'|'Bad'|'retired'}
  */
 export function getFeedHealth(horse, now = new Date()) {
-  if (isRetiredAge(horse)) {
+  if (isRetiredAge(horse, now)) {
     return retiredHealth;
   }
   const clock = horse.hungerSince ?? horse.lastFedDate;
@@ -158,7 +173,7 @@ export function getFeedHealth(horse, now = new Date()) {
  * @returns {{ canFeed: boolean, hungerSince: Date }}
  */
 export function hungerFeedingPlan(horse, now = new Date()) {
-  const level = healthWords.indexOf(getFeedHealth({ ...horse, age: null }, now));
+  const level = healthWords.indexOf(getFeedHealth(careBeneathRetirement(horse), now));
   if (level <= 0) {
     return { canFeed: !alreadyFedToday(horse.lastFedDate, now), hungerSince: now };
   }
@@ -204,7 +219,7 @@ const vetDayLimits = Object.freeze([7, 14, 21, 28]);
  * @returns {'Excellent'|'Very Good'|'Good'|'Fair'|'Bad'|'retired'}
  */
 export function getVetHealth(horse, now = new Date()) {
-  if (isRetiredAge(horse)) {
+  if (isRetiredAge(horse, now)) {
     return retiredHealth;
   }
   if (
@@ -264,7 +279,7 @@ export function getDisplayedHealth(horse, now = new Date()) {
  * @returns {'excellent'|'veryGood'|'good'|'fair'|'bad'}
  */
 export function horseHealthGrade(horse, now = new Date()) {
-  const care = { ...horse, age: null };
+  const care = careBeneathRetirement(horse);
   return healthGradeOf(healthAfterHunger(getVetHealth(care, now), getFeedHealth(care, now)));
 }
 

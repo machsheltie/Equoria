@@ -27,6 +27,7 @@
 
 import { retirementAgeYears } from '../../../constants/horseAgePolicy.mjs';
 import { HorseRetiredError } from '../../../errors/HorseRetiredError.mjs';
+import { liveHorseAgeYears } from '../../../utils/horseAge.mjs';
 
 /**
  * End every active groom, rider and trainer assignment on one horse.
@@ -88,9 +89,11 @@ export async function writeBirthdayTx(tx, { horseId, age, retiring }) {
 export async function releaseStaffIfRetiredTx(tx, horseId) {
   const horse = await tx.horse.findUnique({
     where: { id: horseId },
-    select: { age: true },
+    select: { age: true, dateOfBirth: true },
   });
-  if (!horse || horse.age === null || horse.age < retirementAgeYears) {
+  // Equoria-66qkj: the live age, so a 21st birthday the nightly job has not
+  // recorded yet already counts (utils/horseAge.mjs liveHorseAgeYears).
+  if (!horse || liveHorseAgeYears(horse) < retirementAgeYears) {
     return null;
   }
   return releaseHorseStaff(tx, horseId);
@@ -117,13 +120,9 @@ export async function releaseStaffIfRetiredTx(tx, horseId) {
  */
 export async function assertHorseTakesNewStaffTx(tx, horseId) {
   const [horse] = await tx.$queryRaw`
-    SELECT "age", "inFoalSinceDate" FROM "horses" WHERE "id" = ${horseId} FOR UPDATE`;
-  if (
-    horse &&
-    horse.age !== null &&
-    horse.age >= retirementAgeYears &&
-    horse.inFoalSinceDate === null
-  ) {
+    SELECT "age", "dateOfBirth", "inFoalSinceDate" FROM "horses" WHERE "id" = ${horseId} FOR UPDATE`;
+  // Equoria-66qkj: the live age (a pending 21st birthday already counts).
+  if (horse && liveHorseAgeYears(horse) >= retirementAgeYears && horse.inFoalSinceDate === null) {
     throw new HorseRetiredError();
   }
 }
