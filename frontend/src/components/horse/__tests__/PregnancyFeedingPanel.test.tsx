@@ -7,7 +7,7 @@
  *   1. Renders nothing (returns null) when not in foal.
  *   2. Days remaining countdown from inFoalSinceDate + 7 days.
  *   3. Per-tier feeding counter ("5× Performance", "2× Basic").
- *   4. Live positive/negative chance preview using the same formula as backend.
+ *   4. No trait-chance numbers (owner ruling 2026-10-29 q293, Equoria-9kakx).
  *   5. Overdue case (>7 days, foaling job hasn't run yet).
  *   6. Sire name display when supplied.
  *
@@ -97,25 +97,21 @@ describe('PregnancyFeedingPanel', () => {
     });
   });
 
-  describe('bonus preview', () => {
-    it('renders correct positive/negative for 5×elite + 2 missed (14.3% / 10%)', () => {
-      render(<PregnancyFeedingPanel inFoalSinceDate={daysAgo(5)} feedings={{ elite: 5 }} />);
-      const positive = screen.getByTestId('pregnancy-positive-chance');
-      const negative = screen.getByTestId('pregnancy-negative-chance');
-      expect(positive.textContent).toMatch(/14\.3\s*%/);
-      expect(negative.textContent).toMatch(/10\s*%/);
-    });
-
-    it('renders 0% positive / 35% negative for zero feedings', () => {
-      render(<PregnancyFeedingPanel inFoalSinceDate={daysAgo(0)} feedings={{}} />);
-      expect(screen.getByTestId('pregnancy-positive-chance').textContent).toMatch(/0(\.0)?\s*%/);
-      expect(screen.getByTestId('pregnancy-negative-chance').textContent).toMatch(/35\s*%/);
-    });
-
-    it('renders 20% positive for 7×elite (gestation cap, no missed days)', () => {
-      render(<PregnancyFeedingPanel inFoalSinceDate={daysAgo(6)} feedings={{ elite: 7 }} />);
-      expect(screen.getByTestId('pregnancy-positive-chance').textContent).toMatch(/20(\.0)?\s*%/);
-      expect(screen.getByTestId('pregnancy-negative-chance').textContent).toMatch(/0\s*%/);
+  // Owner ruling 2026-10-29 (q293, Equoria-9kakx): feeding still counts toward
+  // the foal's traits, but the panel shows no trait-chance numbers. Old
+  // contract: projected positive/negative trait chance percentages.
+  describe('no trait-chance numbers', () => {
+    it.each([
+      ['5 elite feedings', { elite: 5 }, 5],
+      ['no feedings', {}, 0],
+      ['7 elite feedings', { elite: 7 }, 6],
+    ])('shows no percentage or trait chance for %s', (_label, feedings, bredDaysAgo) => {
+      render(<PregnancyFeedingPanel inFoalSinceDate={daysAgo(bredDaysAgo)} feedings={feedings} />);
+      const panel = screen.getByTestId('pregnancy-feeding-panel');
+      expect(panel.textContent).not.toMatch(/%/);
+      expect(panel.textContent).not.toMatch(/chance/i);
+      expect(screen.queryByTestId('pregnancy-positive-chance')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('pregnancy-negative-chance')).not.toBeInTheDocument();
     });
   });
 
@@ -174,8 +170,6 @@ describe('PregnancyFeedingPanel', () => {
       expect(panel).toBeInTheDocument();
       // All key data slots present and scoped within the panel.
       expect(within(panel).getByTestId('pregnancy-days-remaining')).toBeInTheDocument();
-      expect(within(panel).getByTestId('pregnancy-positive-chance')).toBeInTheDocument();
-      expect(within(panel).getByTestId('pregnancy-negative-chance')).toBeInTheDocument();
     });
   });
 });

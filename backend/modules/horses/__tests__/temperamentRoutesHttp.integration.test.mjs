@@ -76,7 +76,9 @@ describe('GET /api/v1/horses/temperament-definitions (HTTP chain)', () => {
   // Owner ruling 2026-10-21: temperaments have no training or ridden/conformation
   // modifiers. Old contract: each definition carried trainingModifiers and
   // competitionModifiers objects of numbers.
-  it('each definition has the full typed shape (name, description, prevalenceNote, bestGroomPersonalities)', async () => {
+  // Owner ruling 2026-10-29 (q291, Equoria-9kakx): no breed hints. Old contract:
+  // each definition also carried a prevalenceNote string naming breeds.
+  it('each definition has the full typed shape (name, description, bestGroomPersonalities) and no breed hint', async () => {
     const res = await request(app)
       .get(ENDPOINT)
       .set('Authorization', `Bearer ${userToken}`)
@@ -89,7 +91,8 @@ describe('GET /api/v1/horses/temperament-definitions (HTTP chain)', () => {
       expect(def.name.length).toBeGreaterThan(0);
 
       expect(typeof def.description).toBe('string');
-      expect(typeof def.prevalenceNote).toBe('string');
+      expect(def).not.toHaveProperty('prevalenceNote');
+      expect(JSON.stringify(def)).not.toMatch(/breed|arabian|draft|pony|warmblood|thoroughbred/i);
 
       expect(def).not.toHaveProperty('trainingModifiers');
       expect(def).not.toHaveProperty('competitionModifiers');

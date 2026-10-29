@@ -91,6 +91,23 @@ describe('GeneticsTab color genetics (q72)', () => {
     expect(screen.queryByTestId('color-genetics-untested')).toBeNull();
   });
 
+  // Owner ruling 2026-10-29 (q294, Equoria-9kakx): the game admin sees all
+  // colour genetics, tested or not. The server sends her the genotype of an
+  // untested horse (no one else gets it); the tab shows it.
+  it('shows the genotype the server sends the admin for an untested horse', async () => {
+    stub({
+      horseId: 79,
+      horseName: 'x',
+      colorGeneticsTested: false,
+      colorGenotype: { E_Extension: 'e/e' },
+      phenotype: null,
+    });
+    renderTab();
+    expect(await screen.findByTestId('color-genotype-table')).toBeInTheDocument();
+    expect(screen.getByText('e/e')).toBeInTheDocument();
+    expect(screen.queryByTestId('color-genetics-untested')).toBeNull();
+  });
+
   it('lists the horse traits without strength, rarity or invented scores, and no flags panel', async () => {
     stub({ horseId: 79, horseName: 'x', colorGeneticsTested: false });
     renderTab();

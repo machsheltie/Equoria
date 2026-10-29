@@ -9,6 +9,7 @@
 import { TEMPERAMENT_TYPES } from '../data/temperamentTypes.mjs';
 import { TEMPERAMENT_GROOM_SYNERGY } from '../services/temperamentService.mjs';
 import logger from '../../../utils/logger.mjs';
+import { satisfiesRole } from '../../staff/index.mjs';
 
 /**
  * Canonical groom personalities — defined once at module scope (not per-request).
@@ -16,71 +17,61 @@ import logger from '../../../utils/logger.mjs';
 const CANONICAL_PERSONALITIES = Object.freeze(['gentle', 'energetic', 'patient', 'strict']);
 
 /**
- * Static descriptions and prevalence notes for all 12 temperament types.
+ * Static descriptions for all 12 temperament types.
  * Kept in the controller layer — does NOT belong in temperamentService (data separation).
+ * Owner ruling 2026-10-29 (q291, Equoria-9kakx): each temperament is described
+ * on its own, with no breed hints (the old prevalence notes named breeds).
  */
 const TEMPERAMENT_DESCRIPTIONS = Object.freeze({
   Spirited: {
     description:
       'High-energy and excitable. Responds well to stimulation and performs impressively when engaged.',
-    prevalenceNote: 'Common in hot-blooded racing and performance breeds',
   },
   Nervous: {
     description:
       'Easily startled and prone to anxiety. Requires calm, patient handling to reach full potential.',
-    prevalenceNote: 'More common in sensitive light horse breeds',
   },
   Calm: {
     description:
       'Easygoing and unflappable. Performs consistently under pressure with minimal coaching.',
-    prevalenceNote: 'Common in draft and stock horse breeds',
   },
   Bold: {
     description:
       'Confident and courageous. Takes on challenges without hesitation and excels in ridden competition.',
-    prevalenceNote: 'Common in sport and jumping breeds',
   },
   Steady: {
     description:
       'Reliable and predictable. Rarely has exceptional or poor days — always performs as expected.',
-    prevalenceNote: 'Well-distributed across working and sport horse breeds',
   },
   // Owner ruling 2026-10-21: Willing is a new temperament.
   Willing: {
     description:
       'Cooperative and eager to please. Takes direction readily and tries hard for a rider it trusts.',
-    prevalenceNote: 'Most common in draft and heavy breeds',
   },
   Independent: {
     description:
       "Self-reliant and strong-willed. Doesn't always respond to rider cues, but thinks for itself.",
-    prevalenceNote: 'More common in gaited and semi-feral lineage breeds',
   },
   Reactive: {
     description:
       'Highly attuned to the environment. Quick to respond but easily distracted during training.',
-    prevalenceNote: 'Common in Arabians and sensitive hot-blood breeds',
   },
   Stubborn: {
     description:
       'Willful and resistant to direction. Training progress is slow but gains are permanent once made.',
-    prevalenceNote: 'More common in pony and mule-influenced breeds',
   },
   // Owner ruling 2026-10-21: Playful was renamed Driven.
   Driven: {
     description:
       'Determined and hard-working. Gives full effort every time, though that drive can run ahead of the rider.',
-    prevalenceNote: 'Most common in racing, trotting and hot-blooded sport breeds',
   },
   Lazy: {
     description:
       'Low energy and unmotivated. Requires consistent encouragement but is easy to handle.',
-    prevalenceNote: 'Common in easy-keeping draft and pony breeds',
   },
   Aggressive: {
     description:
       'Dominant and combative. Challenging to manage but can excel competitively with the right handler.',
-    prevalenceNote: 'Rare; more common in stallions and certain warmbloods',
   },
 });
 
@@ -103,7 +94,7 @@ export async function getTemperamentDefinitions(req, res) {
           `[horseController.getTemperamentDefinitions] Unknown temperament "${name}" — missing description`,
         );
       }
-      const { description = name, prevalenceNote = '' } = desc ?? {};
+      const description = desc?.description ?? name;
 
       const synergyMap = TEMPERAMENT_GROOM_SYNERGY[name] ?? {};
 
@@ -119,7 +110,6 @@ export async function getTemperamentDefinitions(req, res) {
       return {
         name,
         description,
-        prevalenceNote,
         bestGroomPersonalities,
       };
     });
@@ -187,8 +177,23 @@ export async function getGenetics(req, res) {
 
     // Owner ruling 2026-10-26 (q72): colour genetics stay hidden until the owner
     // pays for the vet's Genetic Testing. The genotype never leaves the server
-    // for an untested horse.
-    if (horse.colorGeneticsTested !== true) {
+    // for an untested horse, except to the game admin (owner ruling 2026-10-29
+    // q294: the owner/admin role sees all colour genetics, tested or not).
+    const tested = horse.colorGeneticsTested === true;
+    if (!tested && satisfiesRole(req.user?.role, 'admin')) {
+      return res.status(200).json({
+        success: true,
+        message: 'Color genetics have not been tested for this horse',
+        data: {
+          horseId: horse.id,
+          horseName: horse.name,
+          colorGeneticsTested: false,
+          colorGenotype: horse.colorGenotype,
+          phenotype: horse.phenotype ?? null,
+        },
+      });
+    }
+    if (!tested) {
       return res.status(200).json({
         success: true,
         message: 'Color genetics have not been tested for this horse',

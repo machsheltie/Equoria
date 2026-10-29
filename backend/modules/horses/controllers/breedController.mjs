@@ -2,7 +2,6 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { AppError, ValidationError, NotFoundError, DatabaseError } from '../../../errors/index.mjs';
 import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
-import { publicBreedProfile } from '../../../utils/publicBreedProfileView.mjs';
 
 // Cache TTL constants (seconds)
 const BREED_LIST_TTL = 600; // 10 minutes — breed list rarely changes
@@ -10,7 +9,8 @@ const BREED_DETAIL_TTL = 600; // 10 minutes — breed detail rarely changes
 // Cache keys carry the profile shape version: v2 = camelCase profile keys
 // (migration 20261022130000). Entries cached before that deploy hold the old
 // snake_case shape and must not be served to the new frontend.
-const breedCacheVersion = 'v2';
+// v3: the list and detail carry no breedGeneticProfile (Equoria-9kakx, q292).
+const breedCacheVersion = 'v3';
 
 /**
  * Breed Controller
@@ -79,53 +79,19 @@ export async function createBreed(req, res, next) {
 // Get all breeds
 export async function getAllBreeds(req, res, next) {
   try {
-    // Equoria-refgs: trim the LIST payload. The old code did
-    // `prisma.breed.findMany()` with NO select, shipping the ENTIRE
-    // breedGeneticProfile JSONB (ratingProfiles + starterStats +
-    // temperamentWeights + the heavy color-genetics keys: alleleWeights,
-    // allowedAlleles, markingBias, shadeBias, disallowedCombinations) for
-    // all ~312 breeds on what is a combobox/catalog endpoint — 1-3 MB.
-    //
-    // The only LIST consumer (frontend useBreeds → deriveBreedTendencies,
-    // Equoria-x83v4) reads ONLY breedGeneticProfile.ratingProfiles. The other
-    // client (lib/api/breeds.ts) types only id/name/description. The colour,
-    // shade, marking and temperament odds are never sent to a player on any
-    // route (owner ruling 2026-10-29 q274, Equoria-9kakx): GET /breeds/:id
-    // projects the same way, and hiddenBreedOddsResponseGuard trims every
-    // breedGeneticProfile that travels in a joined breed row.
-    //
-    // Prisma cannot `select` a sub-key of a Json column (the projection unit is
-    // the whole column), so we select the scalar fields + the full JSON column,
-    // then project `ratingProfiles` out in JS. The projection runs INSIDE the
-    // queryFn, so the CACHED value is the trimmed shape too (smaller Redis
-    // payload as well as smaller wire payload).
+    // The list is a combobox/catalog endpoint: id, name and description only.
+    // Equoria-refgs trimmed the whole breedGeneticProfile blob (1-3 MB for ~312
+    // breeds) down to ratingProfiles; owner ruling 2026-10-29 q292 removed the
+    // breed picker's stat bars, its only reader, so no part of the profile is
+    // sent here at all (q274: a breed's odds never reach a player). This is
+    // public, HTTP-cacheable reference data, so it is the same for every viewer.
     const breeds = await getCachedQuery(
       `breeds:${breedCacheVersion}:list:all`,
-      async () => {
-        const rows = await prisma.breed.findMany({
+      () =>
+        prisma.breed.findMany({
           orderBy: { name: 'asc' },
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            breedGeneticProfile: true,
-          },
-        });
-        return rows.map(({ breedGeneticProfile, ...rest }) => {
-          // JSONB four-part guard (CONTRIBUTING.md §1): the column may be null /
-          // primitive / array / object. Only project ratingProfiles when the
-          // blob is a real object; otherwise emit null so the consumer falls
-          // back honestly (deriveBreedTendencies returns null → preset/DEFAULT).
-          const trimmedProfile =
-            breedGeneticProfile !== null &&
-            breedGeneticProfile !== undefined &&
-            typeof breedGeneticProfile === 'object' &&
-            !Array.isArray(breedGeneticProfile)
-              ? { ratingProfiles: breedGeneticProfile.ratingProfiles ?? null }
-              : null;
-          return { ...rest, breedGeneticProfile: trimmedProfile };
-        });
-      },
+          select: { id: true, name: true, description: true },
+        }),
       BREED_LIST_TTL,
     );
 
@@ -258,11 +224,13 @@ export async function getBreedById(req, res, next) {
 
     // Equoria-cmw85.28: public reference data, so HTTP caching is opted in.
     res.locals.cacheable = { maxAge: 300 };
-    // Owner ruling 2026-10-29 (q274, Equoria-9kakx): the breed's colour, shade,
-    // marking and temperament odds stay on the server; only its rating profiles go.
+    // Owner rulings 2026-10-29 (q274, q292; Equoria-9kakx): the breed's genetic
+    // profile (colour, shade, marking and temperament odds, stat ranges) stays on
+    // the server. Public, HTTP-cacheable, so the same for every viewer.
+    const { breedGeneticProfile: _profile, ...publicBreed } = breed;
     res.status(200).json({
       success: true,
-      data: { ...breed, breedGeneticProfile: publicBreedProfile(breed.breedGeneticProfile) },
+      data: publicBreed,
     });
   } catch (error) {
     logger.error(`Error getting breed by id ${id}: ${error.message}`);

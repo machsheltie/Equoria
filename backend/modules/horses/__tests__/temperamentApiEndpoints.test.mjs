@@ -59,6 +59,9 @@ describe('getTemperamentDefinitions', () => {
 
   // === Task 3.3: Each definition has all required fields ===
 
+  // Owner ruling 2026-10-29 (q291, Equoria-9kakx): the temperament reference
+  // describes the temperament only, with no breed hints. Old contract: each
+  // definition also carried a prevalenceNote ("Common in Arabians ...").
   it('each definition has all required fields', async () => {
     const req = {};
     const res = createMockRes();
@@ -69,7 +72,7 @@ describe('getTemperamentDefinitions', () => {
     for (const def of definitions) {
       expect(def).toHaveProperty('name');
       expect(def).toHaveProperty('description');
-      expect(def).toHaveProperty('prevalenceNote');
+      expect(def).not.toHaveProperty('prevalenceNote');
       expect(def).toHaveProperty('bestGroomPersonalities');
       expect(Array.isArray(def.bestGroomPersonalities)).toBe(true);
     }
@@ -211,9 +214,9 @@ describe('getTemperamentDefinitions', () => {
     expect(stubborn.bestGroomPersonalities).toEqual(['strict']);
   });
 
-  // === F8: description and prevalenceNote are non-empty strings ===
+  // === F8: description is a non-empty string that names no breed (q291) ===
 
-  it('all definitions have non-empty description and prevalenceNote strings', async () => {
+  it('all definitions have a non-empty description that gives no breed hint', async () => {
     const req = {};
     const res = createMockRes();
 
@@ -223,8 +226,7 @@ describe('getTemperamentDefinitions', () => {
     for (const def of definitions) {
       expect(typeof def.description).toBe('string');
       expect(def.description.length).toBeGreaterThan(0);
-      expect(typeof def.prevalenceNote).toBe('string');
-      expect(def.prevalenceNote.length).toBeGreaterThan(0);
+      expect(JSON.stringify(def)).not.toMatch(/breed|arabian|draft|pony|warmblood|thoroughbred/i);
     }
   });
 

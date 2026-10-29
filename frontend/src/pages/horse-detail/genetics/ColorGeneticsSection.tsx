@@ -67,6 +67,9 @@ function locusLabel(locus: string): string {
 
 const ColorGeneticsSection: React.FC<{ horseId: number | string }> = ({ horseId }) => {
   const query = useHorseCoatGenetics(horseId);
+  // The server sends a genotype only once tested (to the owner), or to the game
+  // admin, who sees all colour genetics tested or not (owner ruling 2026-10-29 q294).
+  const genotype = query.data?.colorGenotype;
 
   return (
     <section data-testid="color-genetics-section">
@@ -88,7 +91,7 @@ const ColorGeneticsSection: React.FC<{ horseId: number | string }> = ({ horseId 
           No color genetics are recorded for this horse.
         </p>
       )}
-      {query.isSuccess && query.data && !query.data.colorGeneticsTested && (
+      {query.isSuccess && query.data && !genotype && (
         <p data-testid="color-genetics-untested" className="text-[var(--text-secondary)]">
           This horse&apos;s color genetics are a secret until they are tested. The Veterinarian
           offers Genetic Testing.{' '}
@@ -97,7 +100,7 @@ const ColorGeneticsSection: React.FC<{ horseId: number | string }> = ({ horseId 
           </Link>
         </p>
       )}
-      {query.isSuccess && query.data && query.data.colorGeneticsTested && (
+      {query.isSuccess && genotype && (
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm" data-testid="color-genotype-table">
             <thead>
@@ -108,7 +111,7 @@ const ColorGeneticsSection: React.FC<{ horseId: number | string }> = ({ horseId 
               </tr>
             </thead>
             <tbody>
-              {Object.entries(query.data.colorGenotype).map(([locus, alleles]) => (
+              {Object.entries(genotype).map(([locus, alleles]) => (
                 <tr key={locus} className="border-t border-[var(--frosted-border)]">
                   <th
                     scope="row"

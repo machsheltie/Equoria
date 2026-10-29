@@ -4,7 +4,9 @@
  * Grid (mobile) / list (desktop) breed picker used in the onboarding wizard.
  * Features:
  *  - View toggle: grid cards (mobile-default) ↔ list rows (desktop-default)
- *  - Breed cards with portrait placeholder, name, stat tendency bars, lore blurb
+ *  - Breed cards with portrait placeholder, name and lore blurb (owner ruling
+ *    2026-10-29 q292, Equoria-9kakx: no breed stat bars, radar or
+ *    discipline-strength badges)
  *  - Gender selection (Mare / Stallion)
  *  - Name input with live preview chip
  *  - Skeleton loading + error state
@@ -12,11 +14,10 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { LayoutGrid, List, Search, Star, X } from 'lucide-react';
-import { type Breed, type BreedStatTendencies } from '@/hooks/api/useBreeds';
+import { type Breed } from '@/hooks/api/useBreeds';
 import { getBreedCategoryPlaceholder } from '@/lib/breed-images';
 import { Input } from '@/components/ui/form';
 import { HorseNameField } from './HorseNameField';
-import { topBreedDisciplines } from './breedDisciplineStrength';
 import { GridSkeleton, ListSkeleton } from './BreedSelectorSkeletons';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -34,186 +35,6 @@ interface BreedSelectorProps {
   breeds: Breed[];
   value: Partial<BreedSelectionValue>;
   onChange: (_value: Partial<BreedSelectionValue>) => void;
-}
-
-// ── Stat tendency mini bar ─────────────────────────────────────────────────────
-//
-// Intentional local pattern (Equoria-uas2 decision: Option B).
-// This compact 3-column, h-1 bar layout is designed specifically for tiny
-// breed card grids where showing 6 stats side-by-side in a 80×80px card is
-// the goal. It is NOT a token violation — all colors use CSS variables.
-// game/StatBar (from the game component library) renders one stat at full
-// width with label + value text and is unsuitable for this dense layout.
-// If a multi-stat compact variant is needed elsewhere, create a `size="compact"`
-// prop on game/StatBar rather than reusing this local component.
-
-const STAT_LABELS: (keyof BreedStatTendencies)[] = [
-  'speed',
-  'stamina',
-  'agility',
-  'balance',
-  'precision',
-  'boldness',
-];
-
-const STAT_DISPLAY: Record<keyof BreedStatTendencies, string> = {
-  speed: 'Spd',
-  stamina: 'Stm',
-  agility: 'Agi',
-  balance: 'Bal',
-  precision: 'Pre',
-  boldness: 'Bld',
-};
-
-function StatBars({ tendencies }: { tendencies: BreedStatTendencies }) {
-  return (
-    <div className="grid grid-cols-3 gap-x-3 gap-y-1.5">
-      {STAT_LABELS.map((key) => {
-        const t = tendencies[key];
-        return (
-          <div key={key} className="flex flex-col gap-0.5">
-            <span className="text-[9px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)]">
-              {STAT_DISPLAY[key]}
-            </span>
-            <div
-              className="h-1 rounded-full bg-[var(--celestial-navy-700)] overflow-hidden"
-              role="presentation"
-            >
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)]"
-                style={{ width: `${t.avg}%` }}
-              />
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Stat-tendency mini radar (Spec 11.3.4, Equoria-55bo.4) ────────────────────
-//
-// Compact 6-axis SVG radar of the breed's stat-tendency averages. Hand-rolled
-// (not recharts) to stay dependency-free and tiny enough for a breed card.
-// Purely decorative duplicate of StatBars data → role="img" + a text label
-// for screen readers; the bars remain the primary accessible representation.
-
-function StatRadar({ tendencies, size = 132 }: { tendencies: BreedStatTendencies; size?: number }) {
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = size / 2 - 14;
-  const n = STAT_LABELS.length;
-
-  const point = (i: number, value: number): [number, number] => {
-    // start at top (-90°), clockwise
-    const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
-    const rad = (Math.max(0, Math.min(100, value)) / 100) * r;
-    return [cx + rad * Math.cos(angle), cy + rad * Math.sin(angle)];
-  };
-
-  const valuePoints = STAT_LABELS.map((key, i) => point(i, tendencies[key].avg));
-  const polygon = valuePoints.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
-  // grid rings at 33% / 66% / 100%
-  const rings = [0.33, 0.66, 1].map((f) =>
-    STAT_LABELS.map((_, i) => point(i, f * 100))
-      .map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`)
-      .join(' ')
-  );
-
-  const summary = STAT_LABELS.map((k) => `${STAT_DISPLAY[k]} ${tendencies[k].avg}`).join(', ');
-
-  return (
-    <svg
-      viewBox={`0 0 ${size} ${size}`}
-      className="w-full h-auto"
-      role="img"
-      aria-label={`Stat tendency radar: ${summary}`}
-      data-testid="breed-stat-radar"
-    >
-      {rings.map((pts, i) => (
-        <polygon
-          key={i}
-          points={pts}
-          fill="none"
-          stroke="var(--celestial-navy-700)"
-          strokeWidth={1}
-        />
-      ))}
-      {STAT_LABELS.map((_, i) => {
-        const [x, y] = point(i, 100);
-        return (
-          <line
-            key={i}
-            x1={cx}
-            y1={cy}
-            x2={x}
-            y2={y}
-            stroke="var(--celestial-navy-700)"
-            strokeWidth={1}
-          />
-        );
-      })}
-      <polygon
-        points={polygon}
-        fill="var(--alpha-gold-ember-25)"
-        stroke="var(--gold-primary)"
-        strokeWidth={1.5}
-      />
-      {STAT_LABELS.map((key, i) => {
-        const [x, y] = point(i, 118);
-        return (
-          <text
-            key={key}
-            x={x}
-            y={y}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            className="fill-[var(--text-muted)]"
-            style={{ fontSize: 8 }}
-          >
-            {STAT_DISPLAY[key]}
-          </text>
-        );
-      })}
-    </svg>
-  );
-}
-
-// ── Top-3 discipline-strength badges (Spec 11.3.4, Equoria-55bo.4) ────────────
-// Derived from the breed's REAL statTendencies via breedDisciplineStrength
-// (game's discipline→stat 50/30/20 model). No backend field exists for this.
-
-function DisciplineStrengthBadges({
-  tendencies,
-  compact = false,
-}: {
-  tendencies: BreedStatTendencies;
-  compact?: boolean;
-}) {
-  const top = topBreedDisciplines(tendencies, 3);
-  if (top.length === 0) return null;
-  return (
-    <div
-      className="flex flex-wrap gap-1"
-      data-testid="breed-discipline-badges"
-      aria-label="Strongest disciplines for this breed"
-    >
-      {top.map(({ discipline, strength }) => (
-        <span
-          key={discipline}
-          title={`${discipline}: ${strength}/100 breed strength`}
-          className={[
-            'inline-flex items-center gap-1 rounded-full border font-semibold font-[var(--font-body)] whitespace-nowrap',
-            compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]',
-            'text-[var(--gold-primary)] bg-[var(--alpha-gold-primary-12)] border-[var(--alpha-gold-ember-28)]',
-          ].join(' ')}
-        >
-          {discipline}
-          <span className="opacity-70">{strength}</span>
-        </span>
-      ))}
-    </div>
-  );
 }
 
 // ── Breed card (grid view) ─────────────────────────────────────────────────────
@@ -274,19 +95,6 @@ function BreedCard({
       <p className="text-xs font-semibold text-[var(--text-primary)] font-[var(--font-body)] leading-tight mb-1 truncate">
         {breed.name}
       </p>
-
-      {/* Stat-tendency mini radar (Spec 11.3.4) */}
-      <StatRadar tendencies={breed.statTendencies} />
-
-      {/* Stat bars — kept as the accessible numeric representation */}
-      <div className="mt-1">
-        <StatBars tendencies={breed.statTendencies} />
-      </div>
-
-      {/* Top-3 discipline-strength badges (Spec 11.3.4) */}
-      <div className="mt-2">
-        <DisciplineStrengthBadges tendencies={breed.statTendencies} compact />
-      </div>
 
       {/* Selected indicator */}
       {isSelected && (
@@ -353,26 +161,6 @@ function BreedRow({
           </p>
         </div>
 
-        {/* Stat mini preview */}
-        <div className="hidden sm:grid grid-cols-3 gap-x-2 gap-y-1 w-24 flex-shrink-0">
-          {(['speed', 'stamina', 'agility'] as const).map((key) => {
-            const t = breed.statTendencies[key];
-            return (
-              <div key={key} className="flex flex-col gap-0.5">
-                <span className="text-[8px] uppercase tracking-widest text-[var(--text-muted)]">
-                  {STAT_DISPLAY[key]}
-                </span>
-                <div className="h-1 rounded-full bg-[var(--celestial-navy-700)] overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)]"
-                    style={{ width: `${t.avg}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
         {/* Selected badge */}
         {isSelected && (
           <Star
@@ -382,7 +170,7 @@ function BreedRow({
         )}
       </button>
 
-      {/* Expandable lore + full stats (desktop list view) */}
+      {/* Expandable lore (desktop list view) */}
       {isSelected && (
         <div className="px-3 pb-3 border-t border-[var(--alpha-gold-ember-15)]">
           <button
@@ -393,19 +181,10 @@ function BreedRow({
             {expanded ? '▲ Less detail' : '▼ More detail'}
           </button>
           {expanded && (
-            <div className="mt-2 space-y-3">
+            <div className="mt-2">
               <p className="text-xs text-role-secondary font-[var(--font-body)] italic leading-relaxed">
                 {breed.loreBlurb}
               </p>
-              <div className="flex items-start gap-3">
-                <div className="w-28 flex-shrink-0">
-                  <StatRadar tendencies={breed.statTendencies} />
-                </div>
-                <div className="flex-1 space-y-2">
-                  <StatBars tendencies={breed.statTendencies} />
-                  <DisciplineStrengthBadges tendencies={breed.statTendencies} />
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -651,11 +430,10 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
 
       {/* ── Lore blurb for selected breed ── */}
       {selectedBreed && (
-        <div className="rounded-xl p-3 bg-[var(--alpha-gold-primary-6)] border border-[var(--alpha-gold-ember-18)] space-y-2">
+        <div className="rounded-xl p-3 bg-[var(--alpha-gold-primary-6)] border border-[var(--alpha-gold-ember-18)]">
           <p className="text-xs italic text-role-secondary font-[var(--font-body)] leading-relaxed">
             &ldquo;{selectedBreed.loreBlurb}&rdquo;
           </p>
-          <DisciplineStrengthBadges tendencies={selectedBreed.statTendencies} />
         </div>
       )}
 

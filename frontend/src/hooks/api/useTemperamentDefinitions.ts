@@ -16,7 +16,6 @@ import { horsesApi } from '@/lib/api-client';
 export interface TemperamentDefinition {
   name: string;
   description: string;
-  prevalenceNote: string;
   bestGroomPersonalities: string[];
 }
 

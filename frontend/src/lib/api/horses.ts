@@ -24,10 +24,13 @@ export type HorseGeneticsResponse =
     }
   | {
       // Owner ruling 2026-10-26 (q72): until the Vet's Genetic Testing is paid
-      // for, the server sends no genotype at all.
+      // for, the server sends no genotype at all, except to the game admin
+      // (owner ruling 2026-10-29 q294: she sees all colour genetics).
       horseId: number;
       horseName: string;
       colorGeneticsTested: false;
+      colorGenotype?: Record<string, string>;
+      phenotype?: Record<string, unknown> | null;
     };
 
 /**
@@ -245,7 +248,6 @@ export const horsesApi = {
       definitions: {
         name: string;
         description: string;
-        prevalenceNote: string;
         bestGroomPersonalities: string[];
       }[];
     }>(`/api/v1/horses/temperament-definitions`),

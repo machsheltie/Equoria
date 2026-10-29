@@ -12,6 +12,13 @@
  * weights, shade and marking bias, temperament weights. The game admin (owner or
  * admin role) still gets everything.
  *
+ * Owner rulings 2026-10-29: q292 took the breed stat bars out of the breed
+ * picker, the only player reader of the profile's ratingProfiles, so no part of
+ * the profile is sent to a player now (old contract: { ratingProfiles } was
+ * kept). q294: the game admin sees every colour genotype, tested or not (old
+ * contract: an untested genotype was hidden from the admin too); moderators and
+ * players are unchanged.
+ *
  * Real app, real database, real auth; fixtures (a breed, users, horses) are this
  * file's own and are removed afterwards.
  */
@@ -48,8 +55,11 @@ const fullProfile = {
 let breed;
 let ownerToken;
 let adminToken;
+let moderatorToken;
 let ownHorse;
 let adminHorse;
+let adminUntestedHorse;
+let moderatorUntestedHorse;
 
 beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
@@ -74,6 +84,14 @@ beforeAll(async () => {
     })
   ).user;
   adminToken = generateTestToken({ id: admin.id, role: 'admin' });
+  const moderator = (
+    await createTestUser({
+      username: `${fixturePrefix}-mod-${tag}`,
+      email: `${fixturePrefix}-mod-${tag}@example.com`,
+      role: 'moderator',
+    })
+  ).user;
+  moderatorToken = generateTestToken({ id: moderator.id, role: 'moderator' });
 
   ownHorse = await createTestHorse({
     name: `${fixturePrefix}-own-${tag}`,
@@ -86,6 +104,20 @@ beforeAll(async () => {
     name: `${fixturePrefix}-admin-${tag}`,
     userId: admin.id,
     breed: { connect: { id: breed.id } },
+  });
+  adminUntestedHorse = await createTestHorse({
+    name: `${fixturePrefix}-adminUntested-${tag}`,
+    userId: admin.id,
+    breed: { connect: { id: breed.id } },
+    colorGenotype: genotype,
+    colorGeneticsTested: false,
+  });
+  moderatorUntestedHorse = await createTestHorse({
+    name: `${fixturePrefix}-modUntested-${tag}`,
+    userId: moderator.id,
+    breed: { connect: { id: breed.id } },
+    colorGenotype: genotype,
+    colorGeneticsTested: false,
   });
 }, 120000);
 
@@ -100,18 +132,38 @@ const withToken = (path, token) =>
   request(app).get(path).set('Authorization', `Bearer ${token}`).set('Origin', 'http://localhost:3000');
 
 describe('breed odds are not sent to players', () => {
-  it('GET /breeds/:id sends only the rating profiles, no colour, shade, marking or temperament odds', async () => {
+  it('GET /breeds/:id sends no genetic profile at all, to anyone', async () => {
     const res = await request(app).get(`/api/v1/breeds/${breed.id}`);
     expect(res.status).toBe(200);
     expect(res.body.data.name).toBe(breed.name);
-    expect(res.body.data.breedGeneticProfile).toEqual({ ratingProfiles });
+    expect(res.body.data).not.toHaveProperty('breedGeneticProfile');
+
+    // Public, HTTP-cacheable reference data: the admin gets the same body.
+    const asAdmin = await withToken(`/api/v1/breeds/${breed.id}`, adminToken);
+    expect(asAdmin.status).toBe(200);
+    expect(asAdmin.body.data).not.toHaveProperty('breedGeneticProfile');
   });
 
-  it('GET /horses/:id sends the joined breed without its odds', async () => {
+  it('GET /breeds sends no genetic profile (no stat ranges for the breed picker)', async () => {
+    const res = await request(app).get('/api/v1/breeds');
+    expect(res.status).toBe(200);
+    const row = res.body.data.find(b => b.id === breed.id);
+    expect(row).toBeDefined();
+    expect(row).not.toHaveProperty('breedGeneticProfile');
+    expect(JSON.stringify(res.body)).not.toContain('ratingProfiles');
+  });
+
+  it('GET /horses/:id sends the joined breed without its profile', async () => {
     const res = await withToken(`/api/v1/horses/${ownHorse.id}`, ownerToken);
     expect(res.status).toBe(200);
     expect(res.body.data.breed.name).toBe(breed.name);
-    expect(res.body.data.breed.breedGeneticProfile).toEqual({ ratingProfiles });
+    expect(res.body.data.breed).not.toHaveProperty('breedGeneticProfile');
+  });
+
+  it('a moderator gets no breed profile either', async () => {
+    const res = await withToken(`/api/v1/horses/${moderatorUntestedHorse.id}`, moderatorToken);
+    expect(res.status).toBe(200);
+    expect(res.body.data.breed).not.toHaveProperty('breedGeneticProfile');
   });
 
   it('the game admin still gets the whole profile', async () => {
@@ -120,13 +172,13 @@ describe('breed odds are not sent to players', () => {
     expect(res.body.data.breed.breedGeneticProfile).toEqual(fullProfile);
   });
 
-  it('withoutBreedOdds cuts every profile at any depth to its public keys without mutating the input', () => {
+  it('withoutBreedOdds removes every profile at any depth without mutating the input', () => {
     const row = { id: 1, breed: { id: 2, breedGeneticProfile: fullProfile } };
     const body = { data: [row, { breedGeneticProfile: 'not-an-object' }, { breedGeneticProfile: null }] };
     const out = withoutBreedOdds(body);
-    expect(out.data[0].breed.breedGeneticProfile).toEqual({ ratingProfiles });
-    expect(out.data[1].breedGeneticProfile).toBeNull();
-    expect(out.data[2].breedGeneticProfile).toBeNull();
+    expect(out.data[0].breed).toEqual({ id: 2 });
+    expect(out.data[1]).toEqual({});
+    expect(out.data[2]).toEqual({});
     expect(row.breed.breedGeneticProfile).toBe(fullProfile);
   });
 });
@@ -171,8 +223,32 @@ describe('a tested genotype goes only to the horse owner (and the game admin)', 
     expect(admin.stranger.colorGenotype).toEqual(genotype);
   });
 
-  it('an untested genotype stays hidden even from the admin', () => {
+  it('the game admin sees an untested genotype; nobody else does', () => {
     const body = { id: 1, userId: 'a', colorGeneticsTested: false, colorGenotype: genotype };
-    expect(withoutHiddenGenotype(body, { userId: 'a', isAdmin: true })).not.toHaveProperty('colorGenotype');
+    expect(withoutHiddenGenotype(body, { userId: 'a', isAdmin: true }).colorGenotype).toEqual(genotype);
+    expect(withoutHiddenGenotype(body, { userId: 'a', isAdmin: false })).not.toHaveProperty('colorGenotype');
+    expect(withoutHiddenGenotype(body)).not.toHaveProperty('colorGenotype');
+  });
+
+  it('the admin gets her untested horse genotype on the horse page and the genetics endpoint', async () => {
+    const page = await withToken(`/api/v1/horses/${adminUntestedHorse.id}`, adminToken);
+    expect(page.status).toBe(200);
+    expect(page.body.data.colorGenotype).toEqual(genotype);
+
+    const genetics = await withToken(`/api/v1/horses/${adminUntestedHorse.id}/genetics`, adminToken);
+    expect(genetics.status).toBe(200);
+    expect(genetics.body.data.colorGeneticsTested).toBe(false);
+    expect(genetics.body.data.colorGenotype).toEqual(genotype);
+  });
+
+  it('a moderator does not get the genotype of their own untested horse', async () => {
+    const page = await withToken(`/api/v1/horses/${moderatorUntestedHorse.id}`, moderatorToken);
+    expect(page.status).toBe(200);
+    expect(page.body.data).not.toHaveProperty('colorGenotype');
+
+    const genetics = await withToken(`/api/v1/horses/${moderatorUntestedHorse.id}/genetics`, moderatorToken);
+    expect(genetics.status).toBe(200);
+    expect(genetics.body.data.colorGeneticsTested).toBe(false);
+    expect(genetics.body.data).not.toHaveProperty('colorGenotype');
   });
 });

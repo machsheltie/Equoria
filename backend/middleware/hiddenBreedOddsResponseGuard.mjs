@@ -1,12 +1,13 @@
 /**
- * Response guard: no JSON response sends a breed's colour, shade, marking or
- * temperament odds (Equoria-9kakx; owner ruling 2026-10-29 q274).
+ * Response guard: no JSON response sends a breed's genetic profile (its colour,
+ * shade, marking and temperament odds, and its stat ranges) to a player
+ * (Equoria-9kakx; owner rulings 2026-10-29 q274 and q292).
  *
- * Whole breed rows travel in many responses (GET /breeds/:id, and every horse
- * read that joins `breed: true`). This guard cuts every `breedGeneticProfile`
- * in a JSON body down to its public keys (utils/publicBreedProfileView.mjs)
- * just before it is serialised. The game admin (owner or admin role) is sent
- * the whole profile; moderators and players never are.
+ * Whole breed rows travel in many responses (every horse read that joins
+ * `breed: true`). This guard removes every `breedGeneticProfile` from a JSON
+ * body (utils/publicBreedProfileView.mjs) just before it is serialised. The game
+ * admin (owner or admin role) is sent the whole profile; moderators and players
+ * never are.
  *
  * Mounted once in app.mjs, beside the hidden-trait and genotype guards, ahead
  * of every router; it reads req.user when the route answers, after auth ran.

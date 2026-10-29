@@ -6,6 +6,8 @@
  * the game sends a player hides anything that could be used to find loopholes.
  * Owner ruling 2026-10-29 (q274): a player pays the vet to get THEIR horse's
  * colour genetics profile, and that is the only way colour genetics are revealed.
+ * Owner ruling 2026-10-29 (q294): the game admin (owner or admin role) sees all
+ * colour genetics, tested or not. Moderators and players are unchanged.
  *
  * Many routes send whole horse rows (the ownership middleware loads every
  * column; nested sire/dam rows travel with them), and every one of them carries
@@ -13,9 +15,10 @@
  *   - `withoutUntestedGenotype` drops that key from every object in a response
  *     body that is not itself marked `colorGeneticsTested: true`, so a row whose
  *     test flag was not selected is held back too (fails closed).
- *   - `withoutHiddenGenotype` (what the response guard runs) also drops a tested
- *     genotype unless the viewer owns that horse or is the game admin (owner or
- *     admin role; never a moderator). Ownership is read from the row's `userId`,
+ *   - `withoutHiddenGenotype` (what the response guard runs) sends the game
+ *     admin (owner or admin role; never a moderator) every genotype, tested or
+ *     not. For anyone else it drops an untested genotype, and a tested one
+ *     unless the viewer owns that horse. Ownership is read from the row's `userId`,
  *     or, for a row without one, from the horse the request's ownership check
  *     verified (`horseId`/`id` equal to it). Anything else is held back.
  *
@@ -48,15 +51,12 @@ export function withoutUntestedGenotype(body) {
 }
 
 /**
- * Whether `viewer` may see this row's (tested) genotype.
+ * Whether a viewer who is not the game admin may see this row's (tested) genotype.
  *
  * @param {object} node
  * @param {{ userId?: string|null, isAdmin?: boolean, ownedHorseId?: number|null }} viewer
  */
-function viewerMaySee(node, viewer) {
-  if (viewer.isAdmin === true) {
-    return true;
-  }
+function viewerOwns(node, viewer) {
   if (Object.hasOwn(node, 'userId')) {
     return (
       typeof viewer.userId === 'string' && viewer.userId !== '' && node.userId === viewer.userId
@@ -67,9 +67,9 @@ function viewerMaySee(node, viewer) {
 }
 
 /**
- * `body` with `colorGenotype` removed from every object (at any depth) unless it
- * is marked `colorGeneticsTested: true` AND the viewer owns the horse or is the
- * game admin.
+ * `body` with `colorGenotype` removed from every object (at any depth) unless
+ * the viewer is the game admin, or the row is marked `colorGeneticsTested: true`
+ * AND the viewer owns the horse.
  *
  * @template T
  * @param {T} body
@@ -77,10 +77,12 @@ function viewerMaySee(node, viewer) {
  * @returns {T}
  */
 export function withoutHiddenGenotype(body, viewer = {}) {
+  if (viewer.isAdmin === true) {
+    return body;
+  }
   return rewriteMatching(
     body,
-    node =>
-      holdsGenotype(node) && (node.colorGeneticsTested !== true || !viewerMaySee(node, viewer)),
+    node => holdsGenotype(node) && (node.colorGeneticsTested !== true || !viewerOwns(node, viewer)),
     withoutGenotypeKey,
   );
 }

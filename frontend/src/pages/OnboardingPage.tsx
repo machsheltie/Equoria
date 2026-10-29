@@ -113,9 +113,9 @@ const HorseStep: React.FC<HorseStepProps> = ({ selection, onChange }) => {
         />
       </div>
 
-      {/* Real BreedSelector (Equoria-zanq, Spec 11.3.4) — grid/list, stat
-          tendencies, lore, gender, name, radiogroup + arrow-key nav. Replaces
-          the prior plain <select>. */}
+      {/* Real BreedSelector (Equoria-zanq, Spec 11.3.4) — grid/list, lore,
+          gender, name, radiogroup + arrow-key nav (no breed stat bars: owner
+          ruling 2026-10-29 q292). Replaces the prior plain <select>. */}
       {isLoading ? (
         <BreedSelectorSkeleton viewMode="grid" />
       ) : isError || !breeds ? (

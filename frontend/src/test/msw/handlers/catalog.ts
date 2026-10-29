@@ -17,40 +17,10 @@ export const catalogHandlers = [
         { id: 1, name: 'Thoroughbred', description: 'A fast breed' },
         { id: 2, name: 'Arabian', description: 'An endurance breed' },
         { id: 3, name: 'Warmblood', description: 'A dressage breed' },
-        // Equoria-x83v4: a post-import breed that carries real ratingProfiles.
-        // The GET /api/v1/breeds controller trims breedGeneticProfile to ONLY
-        // ratingProfiles (Equoria-refgs), which is exactly what useBreeds reads
-        // to derive statTendencies — so this mock mirrors the real trimmed shape.
-        // Shire is NOT in the hand-authored BREED_PRESETS map — exercising the
-        // ~300-breed derivation path against the real (trimmed) data shape.
-        {
-          id: 99,
-          name: 'Shire',
-          description: 'A heavy draft breed',
-          breedGeneticProfile: {
-            ratingProfiles: {
-              conformation: {
-                head: { mean: 70, stdDev: 6 },
-                neck: { mean: 72, stdDev: 6 },
-                shoulders: { mean: 74, stdDev: 7 },
-                back: { mean: 78, stdDev: 5 },
-                hindquarters: { mean: 82, stdDev: 5 },
-                legs: { mean: 80, stdDev: 6 },
-                hooves: { mean: 80, stdDev: 6 },
-                topline: { mean: 76, stdDev: 6 },
-              },
-              gaits: {
-                walk: { mean: 70, stdDev: 8 },
-                trot: { mean: 62, stdDev: 9 },
-                canter: { mean: 58, stdDev: 9 },
-                gallop: { mean: 50, stdDev: 9 },
-                gaiting: null,
-              },
-              isGaitedBreed: false,
-              gaitedGaitRegistry: null,
-            },
-          },
-        },
+        // GET /api/v1/breeds sends id, name and description only: no
+        // breedGeneticProfile (owner rulings 2026-10-29 q274/q292, Equoria-9kakx).
+        // Shire has no hand-authored lore, so it reads the neutral lore line.
+        { id: 99, name: 'Shire', description: 'A heavy draft breed' },
       ],
       count: 4,
     });

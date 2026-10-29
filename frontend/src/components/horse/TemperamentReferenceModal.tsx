@@ -5,7 +5,8 @@
  * Renders all 12 temperaments with their descriptions and best-matched groom
  * personalities so players can learn what each temperament means. Owner ruling
  * 2026-10-21: temperaments have no training or ridden/conformation modifiers,
- * so those rows were removed.
+ * so those rows were removed. Owner ruling 2026-10-29 (q291, Equoria-9kakx):
+ * each temperament is described on its own, with no breed hints.
  *
  * Triggered from the HorseDetailPage temperament line (Equoria-8k7k).
  *
@@ -102,11 +103,6 @@ const TemperamentReferenceModal = ({
                       )}
                     </div>
                     <p className="text-sm text-role-secondary mb-2">{def.description}</p>
-                    {def.prevalenceNote && (
-                      <p className="text-xs italic text-role-secondary mb-2">
-                        {def.prevalenceNote}
-                      </p>
-                    )}
                     {def.bestGroomPersonalities.length > 0 && (
                       <p className="text-xs text-role-secondary mt-2">
                         Best with grooms:{' '}

@@ -6,11 +6,8 @@
  * `inFoalSinceDate` set. Shows:
  *   1. Gestation day X of 7 + days remaining countdown.
  *   2. Per-tier feeding counters accrued during the gestation window.
- *   3. Live preview of the positiveChance / negativeChance epigenetic-trait
- *      probabilities that will be rolled at foaling — using the same formula
- *      as backend/utils/pregnancyBonus.mjs (mirrored in
- *      frontend/src/lib/utils/pregnancyChances.ts; the contract test in
- *      pregnancyChances.test.ts asserts numeric equality with the backend).
+ *   3. No trait-chance numbers: feeding still counts toward the foal's traits,
+ *      but the odds stay secret (owner ruling 2026-10-29 q293, Equoria-9kakx).
  *   4. Sire name (when supplied by the parent page after a useHorse lookup).
  *   5. "Foaling imminent" banner once 7+ days have elapsed but the foaling
  *      job hasn't materialised the foal yet.
@@ -25,11 +22,7 @@
  */
 
 import React from 'react';
-import {
-  calculatePregnancyEpigeneticChances,
-  getPregnancyProgress,
-  GESTATION_DAYS,
-} from '@/lib/utils/pregnancyChances';
+import { getPregnancyProgress, GESTATION_DAYS } from '@/lib/utils/pregnancyChances';
 
 const TIER_LABELS: Record<string, string> = {
   basic: 'Basic',
@@ -59,14 +52,6 @@ export interface PregnancyFeedingPanelProps {
   pregnancySireId?: number | null;
 }
 
-const formatPct = (value: number, fractionDigits = 1): string => {
-  // 0% always shows as "0%", larger values show with one decimal where useful.
-  if (value === 0) return '0%';
-  const rounded = Number(value.toFixed(fractionDigits));
-  // Strip trailing ".0" for readability when integer.
-  return Number.isInteger(rounded) ? `${rounded}%` : `${rounded.toFixed(fractionDigits)}%`;
-};
-
 export const PregnancyFeedingPanel: React.FC<PregnancyFeedingPanelProps> = ({
   inFoalSinceDate,
   feedings,
@@ -76,8 +61,6 @@ export const PregnancyFeedingPanel: React.FC<PregnancyFeedingPanelProps> = ({
   const progress = getPregnancyProgress(inFoalSinceDate);
   if (!progress) return null;
   const { gestationDay, daysRemaining, isOverdue } = progress;
-
-  const { positiveChance, negativeChance } = calculatePregnancyEpigeneticChances(feedings);
 
   // Sire row: render only when we have something meaningful to show.
   const hasSireInfo = Boolean(sireName) || pregnancySireId != null;
@@ -126,21 +109,6 @@ export const PregnancyFeedingPanel: React.FC<PregnancyFeedingPanelProps> = ({
             <li className="text-[rgb(160,175,200)] italic">No feedings recorded yet.</li>
           )}
         </ul>
-      </div>
-
-      <div className="text-xs text-[rgb(160,175,200)] space-y-0.5 pt-2 border-t border-purple-500/10">
-        <div>
-          Projected positive trait chance:{' '}
-          <strong className="text-emerald-300" data-testid="pregnancy-positive-chance">
-            {formatPct(positiveChance)}
-          </strong>
-        </div>
-        <div>
-          Projected negative trait chance:{' '}
-          <strong className="text-rose-300" data-testid="pregnancy-negative-chance">
-            {formatPct(negativeChance, 0)}
-          </strong>
-        </div>
       </div>
     </div>
   );

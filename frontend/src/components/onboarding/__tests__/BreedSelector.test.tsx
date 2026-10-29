@@ -16,28 +16,12 @@ const mockBreeds: Breed[] = [
     id: 1,
     name: 'Thoroughbred',
     description: 'A fast breed',
-    statTendencies: {
-      speed: { min: 75, max: 100, avg: 88 },
-      stamina: { min: 60, max: 85, avg: 73 },
-      agility: { min: 55, max: 80, avg: 68 },
-      balance: { min: 50, max: 75, avg: 63 },
-      precision: { min: 45, max: 70, avg: 58 },
-      boldness: { min: 70, max: 95, avg: 83 },
-    },
     loreBlurb: 'Born to race, bred for glory.',
   },
   {
     id: 2,
     name: 'Arabian',
     description: 'An endurance breed',
-    statTendencies: {
-      speed: { min: 65, max: 90, avg: 78 },
-      stamina: { min: 70, max: 95, avg: 83 },
-      agility: { min: 65, max: 90, avg: 78 },
-      balance: { min: 60, max: 85, avg: 73 },
-      precision: { min: 60, max: 85, avg: 73 },
-      boldness: { min: 55, max: 80, avg: 68 },
-    },
     loreBlurb: 'Sculpted by desert winds.',
   },
 ];
@@ -69,7 +53,6 @@ describe('BreedSelector', () => {
         id: 3,
         name: 'Clydesdale',
         description: 'A draft breed',
-        statTendencies: mockBreeds[0].statTendencies,
         loreBlurb: 'A gentle giant.',
       },
     ];
@@ -348,30 +331,14 @@ describe('BreedSelector', () => {
     });
   });
 
-  // Equoria-55bo.4 — Spec 11.3.4 visual enrichments derived from REAL
-  // statTendencies (mini-radar + top-3 discipline-strength badges).
-  describe('Stat radar + discipline badges (Equoria-55bo.4)', () => {
-    it('renders a stat-tendency mini radar per breed card', () => {
-      render(<BreedSelector breeds={mockBreeds} value={{}} onChange={onChange} />);
-      const radars = screen.getAllByTestId('breed-stat-radar');
-      // one radar per breed card in grid view
-      expect(radars.length).toBe(mockBreeds.length);
-      // radar exposes an accessible label built from the real avg values
-      expect(radars[0]).toHaveAttribute('aria-label', expect.stringContaining('Spd 88'));
-    });
+  // Owner ruling 2026-10-29 (q292, Equoria-9kakx): the breed picker shows no
+  // breed stat bars. Old contract (Equoria-55bo.4, Spec 11.3.4): every card
+  // carried stat bars, a stat radar and top-3 discipline-strength badges built
+  // from the breed's stat tendencies.
+  describe('no breed stat bars (q292)', () => {
+    const statText = /\b(Spd|Stm|Agi|Bal|Pre|Bld)\b/;
 
-    it('renders top-3 discipline-strength badges derived from real tendencies', () => {
-      render(<BreedSelector breeds={mockBreeds} value={{}} onChange={onChange} />);
-      const badgeGroups = screen.getAllByTestId('breed-discipline-badges');
-      expect(badgeGroups.length).toBeGreaterThan(0);
-      // Thoroughbred (speed 88 / boldness 83) → Racing is a top discipline
-      const firstGroup = badgeGroups[0];
-      expect(firstGroup.textContent).toMatch(/Racing|Steeplechase|Barrel Racing|Gymkhana/);
-      // exactly 3 badges (top-3) — each badge is a direct-child span
-      expect(firstGroup.querySelectorAll(':scope > span').length).toBe(3);
-    });
-
-    it('shows discipline badges in the selected-breed lore panel', () => {
+    it('grid cards show no stat bars, radar or discipline-strength badges', () => {
       render(
         <BreedSelector
           breeds={mockBreeds}
@@ -379,10 +346,29 @@ describe('BreedSelector', () => {
           onChange={onChange}
         />
       );
-      // grid cards + lore panel each render a badge group
-      expect(screen.getAllByTestId('breed-discipline-badges').length).toBeGreaterThan(
-        mockBreeds.length
+      const selector = screen.getByTestId('breed-selector');
+      expect(screen.queryByTestId('breed-stat-radar')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('breed-discipline-badges')).not.toBeInTheDocument();
+      expect(selector.textContent).not.toMatch(statText);
+      // The lore blurb still shows for the selected breed.
+      expect(selector.textContent).toContain('Born to race, bred for glory.');
+    });
+
+    it('list rows, expanded, show the lore and no stats', async () => {
+      const user = userEvent.setup();
+      render(
+        <BreedSelector
+          breeds={mockBreeds}
+          value={{ breedId: 1, breedName: 'Thoroughbred' }}
+          onChange={onChange}
+        />
       );
+      await user.click(screen.getByRole('button', { name: /list view/i }));
+      await user.click(screen.getByRole('button', { name: /more detail/i }));
+      const selector = screen.getByTestId('breed-selector');
+      expect(screen.queryByTestId('breed-stat-radar')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('breed-discipline-badges')).not.toBeInTheDocument();
+      expect(selector.textContent).not.toMatch(statText);
     });
   });
 });
