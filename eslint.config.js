@@ -31,6 +31,8 @@ export default [
       '.agent/**',
       '.agents/**',
       '.claude/**',
+      // Equoria-rh50p: the Codex app's git-ignored audit scratch (.codex/tmp).
+      '.codex/**',
       '.gemini/**',
       '.playwright-mcp/**',
       '_bmad/**',
