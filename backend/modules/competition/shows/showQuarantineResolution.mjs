@@ -259,13 +259,16 @@ export async function runQuarantinedShow(
           throw refusal('This show was already run', 409, 'showNotQuarantined');
         }
         await lockSettlementRows(tx, live, plan);
+        // Equoria-law5w: what each placing was really paid (escrow only).
+        const paidByHorse = new Map();
         for (const { staged, prize } of plan.pending) {
-          await settleEntryInTx(tx, live, staged, {
+          const paid = await settleEntryInTx(tx, live, staged, {
             prize,
             unpaidPrizeShare: plan.unpaidPrizeShare,
             now,
             statGainRng,
           });
+          paidByHorse.set(staged.horseId, paid);
         }
         if (plan.prizeRefund > 0) {
           await refundUnpaidPrizeShareInTx(tx, {
@@ -292,13 +295,13 @@ export async function runQuarantinedShow(
             settledPlacements: plan.pending.map(p => ({
               placement: p.staged.placement,
               horseId: p.staged.horseId,
-              prize: p.prize,
+              prize: paidByHorse.get(p.staged.horseId),
             })),
             entryFeesToHost: plan.feesToCreator,
             previewDigest,
           },
         });
-        return { plan, live };
+        return { plan, live, paidByHorse };
       },
       { timeout: settlementTimeoutMs, maxWait: 10_000 },
     );
@@ -325,8 +328,12 @@ export async function runQuarantinedShow(
   }
 
   // Committed. Caches and notifications are fail-soft, outside the transaction.
-  for (const { staged, prize } of settledPlan.plan.pending) {
-    await announceSettledEntry(settledPlan.live, staged, prize);
+  for (const { staged } of settledPlan.plan.pending) {
+    await announceSettledEntry(
+      settledPlan.live,
+      staged,
+      settledPlan.paidByHorse.get(staged.horseId),
+    );
   }
   return { showId, status: 'completed', settled: settledPlan.plan.pending.length };
 }

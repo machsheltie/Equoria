@@ -26,6 +26,8 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { createEscrowedShowRow } from './helpers/escrowedShowRow.mjs';
+import { releaseShowEscrow } from '../../../__tests__/helpers/releaseShowEscrow.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
@@ -88,20 +90,20 @@ beforeAll(async () => {
   // settle it entry-less in the gap between the two inserts.
   const pastClose = new Date(Date.now() - 60 * 60 * 1000);
   const notYetDue = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  const show = await prisma.show.create({
-    data: {
-      name: `TestFixture-koodu-Show-${uid()}`,
-      discipline: 'Dressage',
-      entryFee: 0,
-      levelMin: 1,
-      levelMax: 999,
-      prize: 1000,
-      runDate: notYetDue,
-      status: 'open',
-      openDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-      closeDate: notYetDue,
-      createdByUserId: creator.id,
-    },
+  // Equoria-law5w (owner ruling q52): a show pays prizes only from escrow, so the
+  // fixture escrows its prize the way createShow does (old fixture: unescrowed row).
+  const show = await createEscrowedShowRow(prisma, {
+    name: `TestFixture-koodu-Show-${uid()}`,
+    discipline: 'Dressage',
+    entryFee: 0,
+    levelMin: 1,
+    levelMax: 999,
+    prize: 1000,
+    runDate: notYetDue,
+    status: 'open',
+    openDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+    closeDate: notYetDue,
+    createdByUserId: creator.id,
   });
   kooduShowId = show.id;
   showIds.push(kooduShowId);
@@ -120,7 +122,11 @@ beforeAll(async () => {
     'competitionResult by showId',
   );
   cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } }), 'showEntry by showId');
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'show by id');
+  // Equoria-law5w: hand back any escrow a show still holds before the raw delete.
+  cleanup.add(async () => {
+    await releaseShowEscrow(showIds);
+    await prisma.show.deleteMany({ where: { id: { in: showIds } } });
+  }, 'show by id');
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: [entrantHorse.id] } } }), 'entrantHorse');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [entrant.id] } } }), 'entrant');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [creator.id] } } }), 'creator');

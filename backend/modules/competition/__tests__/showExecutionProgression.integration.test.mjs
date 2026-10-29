@@ -30,6 +30,8 @@
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { createEscrowedShowRow } from './helpers/escrowedShowRow.mjs';
+import { releaseShowEscrow } from '../../../__tests__/helpers/releaseShowEscrow.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createTestHorse } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
@@ -56,7 +58,11 @@ function registerCleanup({ showIds = [], horseIds = [], userIds = [], riderIds =
     cleanup.add(() => prisma.riderAssignment.deleteMany({ where: { horseId: { in: horseIds } } }), 'riderAssignment');
   }
   if (showIds.length) {
-    cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'show');
+    // Equoria-law5w: hand back any escrow a show still holds before the raw delete.
+    cleanup.add(async () => {
+      await releaseShowEscrow(showIds);
+      await prisma.show.deleteMany({ where: { id: { in: showIds } } });
+    }, 'show');
   }
   if (riderIds.length) {
     cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'rider');
@@ -71,27 +77,24 @@ function registerCleanup({ showIds = [], horseIds = [], userIds = [], riderIds =
 
 afterAll(() => cleanup.run(), 60000);
 
-// Build a closeable show (closeDate in the past, status open, prizeEscrow left
-// at its default 0 -> executor pays winners via the legacy direct-credit branch,
-// which still runs `tx.user.money increment` INSIDE the per-entry tx, so the
-// XP-with-money atomicity under test is exercised without needing to seed the
-// SystemAccount escrow balance).
+// Build a closeable show (closeDate in the past, status open). The executor pays
+// winners INSIDE the per-entry tx, so the XP-with-money atomicity is exercised.
+// Equoria-law5w (owner ruling q52): a show pays prizes only from escrow, so the
+// fixture escrows its prize the way createShow does (old fixture: unescrowed row).
 async function createCloseableShow({ creatorId, prize, tag }) {
   const pastClose = new Date(Date.now() - 60 * 60 * 1000);
-  return prisma.show.create({
-    data: {
-      name: `TestFixture-oey96.4-${tag}-${uid()}`,
-      discipline: 'Dressage',
-      entryFee: 0,
-      levelMin: 1,
-      levelMax: 999,
-      prize,
-      runDate: pastClose,
-      status: 'open',
-      openDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-      closeDate: pastClose,
-      createdByUserId: creatorId,
-    },
+  return createEscrowedShowRow(prisma, {
+    name: `TestFixture-oey96.4-${tag}-${uid()}`,
+    discipline: 'Dressage',
+    entryFee: 0,
+    levelMin: 1,
+    levelMax: 999,
+    prize,
+    runDate: pastClose,
+    status: 'open',
+    openDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+    closeDate: pastClose,
+    createdByUserId: creatorId,
   });
 }
 

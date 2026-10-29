@@ -38,6 +38,7 @@ import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { createEscrowedShowRow } from '../../modules/competition/__tests__/helpers/escrowedShowRow.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
@@ -301,18 +302,18 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
     // ────────────────────────────────────────────────────────────────────
     // STEP 2: Competition Setup — create competition show with config
     // ────────────────────────────────────────────────────────────────────
-    const testShow = await prisma.show.create({
-      data: {
-        name: 'Integration Test Championship',
-        discipline: 'Racing',
-        runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        // Owner ruling (2026-10-05/07/12; Equoria-576c0 B10 review): undated shows refuse entry, so the fixture show has a closing date (old fixture: none).
-        closeDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        entryFee: 500,
-        prize: 10000,
-        levelMin: 1, // Minimum level requirement
-        levelMax: 10, // Maximum level requirement
-      },
+    // Equoria-law5w (owner ruling q52): a show pays prizes only from escrow, so the
+    // fixture escrows its prize the way createShow does (old fixture: unescrowed row).
+    const testShow = await createEscrowedShowRow(prisma, {
+      name: 'Integration Test Championship',
+      discipline: 'Racing',
+      runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      // Owner ruling (2026-10-05/07/12; Equoria-576c0 B10 review): undated shows refuse entry, so the fixture show has a closing date (old fixture: none).
+      closeDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      entryFee: 500,
+      prize: 10000,
+      levelMin: 1, // Minimum level requirement
+      levelMax: 10, // Maximum level requirement
     });
 
     // Add custom requirements for testing (not in schema, but used in business logic)

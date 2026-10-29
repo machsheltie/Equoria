@@ -56,6 +56,32 @@ import { invalidateHorseXpCaches } from '../../horses/index.mjs';
 // ── BA-4: Overnight show execution ────────────────────────────────────────────
 
 /**
+ * Take one placement's prize out of the show's escrow (Equoria-law5w). A
+ * guarded conditional decrement: it succeeds only while the live
+ * Show.prizeEscrow still holds the whole share, so concurrent settlements can
+ * never overdraw it. Returns the coins taken: the share, or 0 when the escrow
+ * cannot cover it (logged, because a prize was withheld).
+ *
+ * @returns {Promise<number>}
+ */
+async function takeEscrowedPrizeInTx(tx, show, prize, staged) {
+  if (prize <= 0) {
+    return 0;
+  }
+  const taken = await tx.show.updateMany({
+    where: { id: show.id, prizeEscrow: { gte: prize } },
+    data: { prizeEscrow: { decrement: prize } },
+  });
+  if (taken.count === 1) {
+    return prize;
+  }
+  logger.warn(
+    `[showExecutionService] Show ${show.id}: escrow cannot cover the ${prize}-coin prize for placement ${staged.placement} (horse ${staged.horseId}); no prize paid`,
+  );
+  return 0;
+}
+
+/**
  * Settle one staged placement — a pure REPLAY of the ordering persisted at
  * claim time (Equoria-c7mx0): identity, score and placement come from the
  * staging, the prize from the staged placement through the untouched 50/30/20
@@ -75,42 +101,30 @@ export async function settleEntryInTx(
 ) {
   const { horseId, userId, horseName, placement, riderId } = staged;
 
+  // Equoria-law5w (owner ruling q52): a placement is paid only from the
+  // show's escrow. The guarded decrement takes the whole share or nothing, so
+  // a show whose prize was never escrowed (a seeded or legacy row) pays no
+  // coins and its result records prizeWon 0. Only Seasonal Events may pay
+  // unescrowed prizes, and they do not exist yet (Equoria-286xv).
+  const paid = await takeEscrowedPrizeInTx(tx, show, prize, staged);
+
   // Create competition result (row shape owned by competitionResultRecord)
   await tx.competitionResult.create({
-    data: buildRiddenResultRow({ show, staged, prize, now }),
+    data: buildRiddenResultRow({ show, staged, prize: paid, now }),
   });
 
-  // Equoria-si69u: pay the winner from SystemAccount[showEscrow]
-  // (which was credited at createShow), decrement Show.prizeEscrow
-  // by the same amount, and credit the winner's User.money. All in
-  // the same tx so a failure in any leg rolls back the whole prize
-  // payout and the competitionResult.create above.
-  //
-  // Backwards compat for the cohort of shows created BEFORE the
-  // si69u migration (or for test fixtures that build a Show row
-  // directly via prisma.show.create rather than through createShow):
-  // those rows have prizeEscrow = 0 even though the prize was
-  // notionally funded under the legacy "system implicitly mints
-  // at payout" model. Detect that case via `show.prizeEscrow >=
-  // prize` and skip the escrow debit. The winner is still paid
-  // under the legacy path so in-flight shows can drain. New shows
-  // always go through the escrow path.
-  if (prize > 0) {
-    if (show.prizeEscrow >= prize) {
-      await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, prize, {
-        category: 'showPayoutPrize',
-        description: `Prize payout for show ${show.id}, placement ${placement}`,
-        linkedUserId: userId,
-        metadata: { showId: show.id, placement },
-      });
-      await tx.show.update({
-        where: { id: show.id },
-        data: { prizeEscrow: { decrement: prize } },
-      });
-    }
+  if (paid > 0) {
+    // Equoria-si69u: the share leaves SystemAccount[showEscrow] (credited at
+    // createShow) in the same tx as the Show.prizeEscrow decrement above.
+    await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, paid, {
+      category: 'showPayoutPrize',
+      description: `Prize payout for show ${show.id}, placement ${placement}`,
+      linkedUserId: userId,
+      metadata: { showId: show.id, placement },
+    });
     await tx.user.update({
       where: { id: userId },
-      data: { money: { increment: prize } },
+      data: { money: { increment: paid } },
     });
     // Equoria-xal4m: the horse's lifetime winnings (Horse.totalEarnings, read
     // by the earnings leaderboard and horse pages) grow with the same prize,
@@ -118,7 +132,7 @@ export async function settleEntryInTx(
     // User before Horse, as everywhere (lock order).
     await tx.horse.update({
       where: { id: horseId },
-      data: { totalEarnings: { increment: prize } },
+      data: { totalEarnings: { increment: paid } },
     });
   }
   if (placement === 1) {
@@ -178,7 +192,8 @@ export async function settleEntryInTx(
   // Equoria-q4uem.10 (owner ruling R6): the result records what it awarded.
   await recordProgressionOnResult(tx, { showId: show.id, horseId }, progression);
   // Equoria-y3nia: the Monthly boards, after the result create (a replay is refused first).
-  await recordRiddenResultTotals(tx, { show, staged, prize, now });
+  await recordRiddenResultTotals(tx, { show, staged, prize: paid, now });
+  return paid;
 }
 
 /**
@@ -230,8 +245,8 @@ export async function announceSettledEntry(show, staged, prize) {
 }
 
 async function settleEntry(show, staged, options) {
-  await prisma.$transaction(tx => settleEntryInTx(tx, show, staged, options));
-  await announceSettledEntry(show, staged, options.prize);
+  const paid = await prisma.$transaction(tx => settleEntryInTx(tx, show, staged, options));
+  await announceSettledEntry(show, staged, paid);
 }
 
 /**

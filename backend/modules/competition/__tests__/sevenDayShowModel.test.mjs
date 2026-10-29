@@ -30,6 +30,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { releaseShowEscrow } from '../../../__tests__/helpers/releaseShowEscrow.mjs';
+import { createEscrowedShowRow } from './helpers/escrowedShowRow.mjs';
 // Equoria-576c0 B9: entering needs age 3-20 game years and an eligible rider
 // (owner entry rules + C10); horses that enter get a game-age dateOfBirth and a
 // rider. Fixture-only; no assertion changed.
@@ -508,20 +509,20 @@ describe('R8: cron executes only past-window open shows; idempotent', () => {
 
   beforeAll(async () => {
     const pastClose = new Date(Date.now() - 60 * 60 * 1000); // 1h ago
-    const show = await prisma.show.create({
-      data: {
-        name: `TestFixture-nx8-R8-${Date.now()}`,
-        discipline: 'Dressage',
-        entryFee: 0,
-        levelMin: 1,
-        levelMax: 999,
-        prize: 1000,
-        runDate: pastClose,
-        status: 'open',
-        openDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-        closeDate: pastClose,
-        createdByUserId: creator.id,
-      },
+    // Equoria-law5w (owner ruling q52): a show pays prizes only from escrow, so the
+    // fixture escrows its prize the way createShow does (old fixture: unescrowed row).
+    const show = await createEscrowedShowRow(prisma, {
+      name: `TestFixture-nx8-R8-${Date.now()}`,
+      discipline: 'Dressage',
+      entryFee: 0,
+      levelMin: 1,
+      levelMax: 999,
+      prize: 1000,
+      runDate: pastClose,
+      status: 'open',
+      openDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+      closeDate: pastClose,
+      createdByUserId: creator.id,
     });
     pastShowId = show.id;
     showIds.push(pastShowId);
