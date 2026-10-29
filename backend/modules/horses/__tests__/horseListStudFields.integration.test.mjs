@@ -22,6 +22,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
@@ -159,8 +160,9 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
     });
   }
 
-  function list(token, query = '') {
-    return request(app).get(`/api/v1/horses?limit=500${query}`).set('Authorization', `Bearer ${token}`);
+  function list(token, query = '', cookie = null) {
+    const req = request(app).get(`/api/v1/horses?limit=500${query}`).set('Authorization', `Bearer ${token}`);
+    return cookie ? req.set('Cookie', cookie) : req;
   }
 
   function detail(token, id) {
@@ -379,7 +381,12 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
 
     const strangerDetail = await detail(studOwner.token(), mare.id);
     const strangerList = await list(studOwner.token(), `&userId=${owner.user.id}`);
-    const adminList = await list(admin.token(), `&userId=${owner.user.id}`);
+    // Equoria-n256i (owner ruling q289): the admin ?userId= override is an admin tool, so
+    // it also needs the emailed staff check-in. Old contract: the admin role alone opened
+    // it. This test is about what an admin sees, so the admin holds a checked-in browser
+    // (the row cascades with the user). An admin without one is self-scoped.
+    const adminDevice = await checkedInDeviceCookie(admin.user.id);
+    const adminList = await list(admin.token(), `&userId=${owner.user.id}`, adminDevice);
 
     expect(strangerDetail.status).toBe(404);
     expect(strangerList.body.data.some(h => h.id === mare.id)).toBe(false);

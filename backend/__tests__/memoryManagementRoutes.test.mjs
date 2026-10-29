@@ -18,6 +18,7 @@
 // jest import removed - not used in this file
 import request from 'supertest';
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import { randomBytes } from 'node:crypto';
 import memoryManagementRoutes from '../modules/admin/routes/memoryManagementRoutes.mjs';
@@ -28,11 +29,13 @@ import {
   initializeMemoryManagement,
 } from '../services/memoryResourceManagementService.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
+import { checkedInDeviceCookie } from '../tests/helpers/staffDeviceFixture.mjs';
 
 describe('Memory Management Routes', () => {
   let testApp;
   let testUser;
   let authToken;
+  let adminDevice;
   let _memoryManager;
   let originalNodeEnv;
   let originalJestWorkerId;
@@ -76,9 +79,16 @@ describe('Memory Management Routes', () => {
       expiresIn: '1h',
     });
 
-    // Create test Express app
+    // Equoria-n256i (owner ruling q289): the admin routes here (POST /gc, POST /cleanup)
+    // also need the emailed staff check-in. Old contract: the admin role alone opened
+    // them. This admin holds a checked-in browser; the refusal without one is pinned below.
+    adminDevice = await checkedInDeviceCookie(testUser.id);
+
+    // Create test Express app (cookie-parser, as app.mjs mounts it, so the check-in
+    // guard can read the staff_device cookie)
     testApp = express();
     testApp.use(express.json());
+    testApp.use(cookieParser());
     testApp.use('/api/memory', memoryManagementRoutes);
 
     // Initialize memory management
@@ -202,6 +212,17 @@ describe('Memory Management Routes', () => {
   });
 
   describe('POST /api/memory/gc', () => {
+    test('refuses an admin who has not checked in on this browser (q289)', async () => {
+      const response = await request(testApp)
+        .post('/api/memory/gc')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({})
+        .expect(403);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.code).toBe('staffCheckinRequired');
+    });
+
     test('triggers garbage collection when available', async () => {
       if (!global.gc) {
         // Skip test if GC is not exposed
@@ -211,6 +232,7 @@ describe('Memory Management Routes', () => {
       const response = await request(testApp)
         .post('/api/memory/gc')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('Cookie', adminDevice)
         .send({ force: false })
         .expect(200);
 
@@ -229,6 +251,7 @@ describe('Memory Management Routes', () => {
       const response = await request(testApp)
         .post('/api/memory/gc')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('Cookie', adminDevice)
         .send({})
         .expect(400);
 
@@ -242,6 +265,7 @@ describe('Memory Management Routes', () => {
       const response = await request(testApp)
         .post('/api/memory/gc')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('Cookie', adminDevice)
         .send({ force: 'invalid' })
         .expect(400);
 
@@ -255,6 +279,7 @@ describe('Memory Management Routes', () => {
       const response = await request(testApp)
         .post('/api/memory/cleanup')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('Cookie', adminDevice)
         .send({ resourceTypes: ['all'] })
         .expect(200);
 
@@ -267,6 +292,7 @@ describe('Memory Management Routes', () => {
       const response = await request(testApp)
         .post('/api/memory/cleanup')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('Cookie', adminDevice)
         .send({ resourceTypes: ['timers', 'intervals'] })
         .expect(200);
 
@@ -279,6 +305,7 @@ describe('Memory Management Routes', () => {
       const response = await request(testApp)
         .post('/api/memory/cleanup')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('Cookie', adminDevice)
         .send({ resourceTypes: ['unknown-type'] })
         .expect(400);
 
@@ -290,6 +317,7 @@ describe('Memory Management Routes', () => {
       const response = await request(testApp)
         .post('/api/memory/cleanup')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('Cookie', adminDevice)
         .send({ resourceTypes: 'invalid' })
         .expect(400);
 

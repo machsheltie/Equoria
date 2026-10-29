@@ -37,6 +37,7 @@
 
 import request from 'supertest';
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import { body } from 'express-validator';
 import { register, login } from '../../modules/auth/controllers/authController.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
@@ -54,11 +55,14 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 import { randomBytes } from 'node:crypto';
 import { confirmEmail } from '../helpers/confirmEmail.mjs';
+import { checkedInDeviceCookie } from '../helpers/staffDeviceFixture.mjs';
 
 // Create test app with memory management
 const createTestApp = () => {
   const app = express();
   app.use(express.json());
+  // As app.mjs mounts it, so the staff check-in guard can read the staff_device cookie.
+  app.use(cookieParser());
 
   // Auth routes for testing
   app.post(
@@ -121,6 +125,7 @@ describe('🧠 Memory Management Integration Tests', () => {
   let app;
   let _testUser;
   let authToken;
+  let adminDevice;
   let memoryManager;
   let server;
   // Equoria-cs6wf: randomize fixture identifiers so a crashed prior run's
@@ -218,6 +223,12 @@ describe('🧠 Memory Management Integration Tests', () => {
 
     // Generate JWT token for authentication using test helper
     authToken = generateTestToken({ id: _testUser.id, email: _testUser.email, role: 'admin' });
+
+    // Equoria-n256i (owner ruling q289): POST /cleanup and /gc also need the emailed
+    // staff check-in. Old contract: the admin role alone opened them. This admin holds a
+    // checked-in browser (the row cascades with the user); the refusal without one is
+    // pinned in the security block below.
+    adminDevice = await checkedInDeviceCookie(_testUser.id);
   });
 
   afterEach(async () => {
@@ -323,6 +334,7 @@ describe('🧠 Memory Management Integration Tests', () => {
         .post('/api/memory/cleanup')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('Cookie', adminDevice)
         .send({ resourceTypes: ['all'] });
 
       expect(cleanupResponse.status).toBe(200);
@@ -364,6 +376,7 @@ describe('🧠 Memory Management Integration Tests', () => {
         .post('/api/memory/gc')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('Cookie', adminDevice)
         .send({ force: false });
 
       // GC might not be available in test environment
@@ -384,6 +397,7 @@ describe('🧠 Memory Management Integration Tests', () => {
         .post('/api/memory/gc')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('Cookie', adminDevice)
         .send({ force: true });
 
       // Should either succeed (if GC available) or fail gracefully
@@ -432,11 +446,29 @@ describe('🧠 Memory Management Integration Tests', () => {
       }
     });
 
+    test('should refuse an admin who has not checked in on this browser (q289)', async () => {
+      for (const [path, payload] of [
+        ['/api/memory/gc', {}],
+        ['/api/memory/cleanup', { resourceTypes: ['all'] }],
+      ]) {
+        const response = await request(app)
+          .post(path)
+          .set('Origin', 'http://localhost:3000')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send(payload);
+
+        expect(response.status).toBe(403);
+        expect(response.body.success).toBe(false);
+        expect(response.body.code).toBe('staffCheckinRequired');
+      }
+    });
+
     test('should validate input for memory operations', async () => {
       const invalidGcRequest = await request(app)
         .post('/api/memory/gc')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('Cookie', adminDevice)
         .send({ force: 'invalid' });
 
       expect(invalidGcRequest.status).toBe(400);
