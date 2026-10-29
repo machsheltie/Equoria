@@ -29,7 +29,7 @@ import { Button } from '@/components/ui/button';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
 import { CanonicalTabs } from '@/components/ui/game';
-import { SectionLoading, ErrorState } from '@/components/ui/state';
+import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
   GameDialog,
@@ -183,7 +183,14 @@ const InventoryPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { items, total, isLoading, error } = useInventory();
   const unequipMutation = useUnequipItem();
-  const { data: catalog } = useFeedCatalog();
+  // The catalog only adds feed details (stat-roll, pregnancy, description); a
+  // failure must say so with a retry, never drop them silently (Equoria-gejdf).
+  const {
+    data: catalog,
+    isError: catalogFailed,
+    isFetching: catalogFetching,
+    refetch: refetchCatalog,
+  } = useFeedCatalog();
 
   const catalogById = useMemo(() => {
     const map: Partial<Record<FeedItem['id'], FeedItem>> = {};
@@ -248,19 +255,35 @@ const InventoryPage: React.FC = () => {
         </div>
       );
     }
+    const showFeedDetailsError = catalogFailed && filtered.some((item) => item.category === 'feed');
     return (
-      <CardGrid aria-label={`${category} inventory items`}>
-        {filtered.map((item) => (
-          <InventoryCard
-            key={item.id}
-            item={item}
-            onUnequip={handleUnequip}
-            isUnequipping={unequippingId === item.id && unequipMutation.isPending}
-            onShowInfo={setActiveInfo}
-            feedCatalogById={catalogById}
-          />
-        ))}
-      </CardGrid>
+      <>
+        {showFeedDetailsError && (
+          <div data-testid="feed-details-error" className="mb-4 flex flex-wrap items-center gap-3">
+            <InlineError message="Feed details couldn't load right now." />
+            <Button
+              type="button"
+              size="sm"
+              pending={catalogFetching}
+              onClick={() => void refetchCatalog()}
+            >
+              Try Again
+            </Button>
+          </div>
+        )}
+        <CardGrid aria-label={`${category} inventory items`}>
+          {filtered.map((item) => (
+            <InventoryCard
+              key={item.id}
+              item={item}
+              onUnequip={handleUnequip}
+              isUnequipping={unequippingId === item.id && unequipMutation.isPending}
+              onShowInfo={setActiveInfo}
+              feedCatalogById={catalogById}
+            />
+          ))}
+        </CardGrid>
+      </>
     );
   };
 
