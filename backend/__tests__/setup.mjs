@@ -38,14 +38,14 @@ beforeAll(async () => {
  * Global test teardown - runs once after all tests
  */
 afterAll(async () => {
-  // Clean up and disconnect
   await cleanupDatabase();
-
-  // Force close all connections
-  await prisma.$disconnect();
-
-  // Wait for all async operations to complete
-  await new Promise(resolve => setTimeout(resolve, 100));
+  // No Prisma disconnect here (Equoria-fefh2.15, as in tests/setup.mjs). This
+  // afterAll is registered before the suite's own and runs FIRST, so a disconnect
+  // here killed work still in flight: a staff ticket's post-commit email delivery
+  // lost its transaction ("Transaction not found ... obtained before
+  // disconnecting") and the suite's cleanup then found the email unsettled
+  // (Security Gate, staffTicketsAuthz). PrismaCleanupEnvironment.teardown()
+  // drains Prisma after ALL suite hooks.
 });
 
 /**

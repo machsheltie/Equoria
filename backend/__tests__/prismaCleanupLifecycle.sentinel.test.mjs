@@ -66,6 +66,10 @@ describe('Prisma Jest cleanup lifecycle sentinel', () => {
     const setupSource = readBackendFile('tests/setup.mjs');
     expect(setupSource).not.toContain('cleanupPrismaInstances');
     expect(setupSource).not.toMatch(/afterAll\s*\(\s*async\s*\(\)\s*=>\s*\{[\s\S]*?\$disconnect/);
+    // The Security Gate's setup too: its afterAll runs before the suite's own, so a
+    // disconnect there killed a staff ticket's in-flight email delivery.
+    const securitySetupSource = readBackendFile('__tests__/setup.mjs');
+    expect(securitySetupSource).not.toMatch(/afterAll\s*\(\s*async\s*\(\)\s*=>\s*\{[\s\S]*?\$disconnect/);
 
     const environmentSource = readBackendFile('tests/config/PrismaCleanupEnvironment.mjs');
     expect(environmentSource).toContain('await cleanupPrismaInstances(this.global)');
