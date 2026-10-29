@@ -37,7 +37,6 @@ import {
   registerAndCompleteOnboarding,
   unwrapData,
   visitLiveRoute,
-  type RegisteredPlayer,
 } from './support/prodParity';
 
 /** How the backend reports a staged address on a later read (never in full). */
