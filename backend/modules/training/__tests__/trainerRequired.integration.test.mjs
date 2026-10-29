@@ -22,6 +22,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { canTrain } from '../controllers/trainingController.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const TAG = randomBytes(4).toString('hex');
 const PREFIX = `TestFixture-r8a6h-${TAG}`;
@@ -56,7 +57,7 @@ async function stable({ trainer }) {
   });
   userIds.push(user.id);
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}-horse-${seq}`,
       sex: 'Mare',
@@ -67,7 +68,7 @@ async function stable({ trainer }) {
       lastVettedDate: new Date(),
       trainingCooldown: null,
       userId: user.id,
-    },
+    }),
   });
   horseIds.push(horse.id);
   if (trainer !== 'none') {

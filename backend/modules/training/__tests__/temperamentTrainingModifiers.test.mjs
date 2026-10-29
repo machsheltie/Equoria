@@ -22,6 +22,7 @@ import { trainHorse } from '../controllers/trainingController.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // TEMPERAMENT_TYPES is part of the horses barrel's documented public API.
 const { TEMPERAMENT_TYPES } = horsesModule;
@@ -54,7 +55,7 @@ async function createBreed() {
 
 async function createHorse(userId, breedId, overrides = {}) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
@@ -67,7 +68,7 @@ async function createHorse(userId, breedId, overrides = {}) {
       lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       breed: { connect: { id: breedId } },
       user: { connect: { id: userId } },
-    },
+    }),
   });
   await assignTestTrainer(horse); // a trainer is required to train (owner ruling 2026-10-26)
   return horse;

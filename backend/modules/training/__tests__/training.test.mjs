@@ -52,6 +52,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -188,7 +189,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
     // Create test horses with User relationships
     adultHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Test Adult Horse',
         age: 4, // Eligible for training
@@ -204,14 +205,14 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           negative: [],
           hidden: [],
         },
-      },
+      }),
     });
     await assignTestTrainer(adultHorse);
 
     const twoYearsAgo = birthDateForAge(2);
 
     youngHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Test Young Horse',
         age: 2, // Too young for training
@@ -227,14 +228,14 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           negative: [],
           hidden: [],
         },
-      },
+      }),
     });
     await assignTestTrainer(youngHorse);
 
     const fiveYearsAgo = birthDateForAge(5);
 
     trainedHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Test Trained Horse',
         age: 5,
@@ -252,7 +253,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           negative: [],
           hidden: [],
         },
-      },
+      }),
     });
     await assignTestTrainer(trainedHorse);
 
@@ -339,7 +340,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       const fourYearsAgoForScore = birthDateForAge(4);
 
       const scoreTestHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'Score Test Horse',
           age: 4,
@@ -355,7 +356,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
             negative: [],
             hidden: [],
           },
-        },
+        }),
       });
       await assignTestTrainer(scoreTestHorse);
 
@@ -401,7 +402,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       const fiveYearsAgoForAccumulation = birthDateForAge(5);
 
       const horse1 = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'Accumulation Test Horse 1',
           age: 5,
@@ -417,14 +418,14 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
             negative: [],
             hidden: [],
           },
-        },
+        }),
       });
       await assignTestTrainer(horse1);
 
       const sixYearsAgoForAccumulation2 = birthDateForAge(6);
 
       const horse2 = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'Accumulation Test Horse 2',
           age: 6,
@@ -440,7 +441,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
             negative: [],
             hidden: [],
           },
-        },
+        }),
       });
       await assignTestTrainer(horse2);
 
@@ -506,7 +507,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       const sixYearsAgoForOldTrained = birthDateForAge(6);
 
       const oldTrainedHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'Old Trained Horse',
           age: 6,
@@ -522,7 +523,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
             negative: [],
             hidden: [],
           },
-        },
+        }),
       });
       await assignTestTrainer(oldTrainedHorse);
 
@@ -575,7 +576,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       const fourYearsAgoForXp = birthDateForAge(4);
 
       const xpTestHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'XP Test Horse',
           age: 4,
@@ -591,7 +592,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
             negative: [],
             hidden: [],
           },
-        },
+        }),
       });
       await assignTestTrainer(xpTestHorse);
 
@@ -640,7 +641,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       const fiveYearsAgoForLog = birthDateForAge(5);
 
       const logTestHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'Log Test Horse',
           age: 5,
@@ -656,7 +657,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
             negative: [],
             hidden: [],
           },
-        },
+        }),
       });
       await assignTestTrainer(logTestHorse);
 
@@ -733,7 +734,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       const fourYearsAgoForDate = birthDateForAge(4);
 
       const dateTestHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'Date Test Horse',
           age: 4,
@@ -749,7 +750,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
             negative: [],
             hidden: [],
           },
-        },
+        }),
       });
       await assignTestTrainer(dateTestHorse);
 

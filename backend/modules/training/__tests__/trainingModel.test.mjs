@@ -13,6 +13,7 @@ import dotenv from 'dotenv';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -58,7 +59,7 @@ describe('Training Model', () => {
     }
 
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'TestFixture-TM-Horse',
         sex: 'Mare',
@@ -66,7 +67,7 @@ describe('Training Model', () => {
         age: 7,
         userId: testUser.id,
         breedId: breed.id,
-      },
+      }),
     });
   });
 
@@ -157,7 +158,7 @@ describe('Training Model', () => {
       // If getHorseAge ever regresses to calendar math this fails.
       const thirtyFiveDaysAgo = gameCalendarDate(new Date(), -35); // date-only dob: the Eastern date
       const youngHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'TestFixture-TM-Horse-35d',
           sex: 'Colt',
@@ -165,7 +166,7 @@ describe('Training Model', () => {
           age: 0,
           userId: testUser.id,
           breedId: breed.id,
-        },
+        }),
       });
       try {
         const youngAge = await getHorseAge(youngHorse.id);

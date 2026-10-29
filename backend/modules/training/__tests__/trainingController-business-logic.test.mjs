@@ -44,6 +44,7 @@ import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -188,7 +189,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
 
     // Create test horses
     adultHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Controller Adult Horse',
         age: 4, // Eligible for training
@@ -204,12 +205,12 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
           negative: [],
           hidden: [],
         },
-      },
+      }),
     });
     await assignTestTrainer(adultHorse);
 
     youngHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Controller Young Horse',
         age: 2, // Too young for training
@@ -225,12 +226,12 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
           negative: [],
           hidden: [],
         },
-      },
+      }),
     });
     await assignTestTrainer(youngHorse);
 
     trainedHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Controller Trained Horse',
         age: 5,
@@ -248,13 +249,13 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
           negative: [],
           hidden: [],
         },
-      },
+      }),
     });
     await assignTestTrainer(trainedHorse);
 
     // Create horses for multi-horse user testing
     const controllerHorse1 = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Controller Horse 1',
         age: 6,
@@ -270,12 +271,12 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
           negative: [],
           hidden: [],
         },
-      },
+      }),
     });
     await assignTestTrainer(controllerHorse1);
 
     const controllerHorse2 = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Controller Horse 2',
         age: 3, // Just eligible
@@ -291,7 +292,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
           negative: [],
           hidden: [],
         },
-      },
+      }),
     });
     await assignTestTrainer(controllerHorse2);
 
@@ -415,7 +416,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
 
       // Create a fresh horse for training workflow testing
       const workflowHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'Workflow Test Horse',
           age: 4,
@@ -431,7 +432,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
             negative: [],
             hidden: [],
           },
-        },
+        }),
       });
       await assignTestTrainer(workflowHorse);
 
@@ -632,7 +633,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
 
       // Fixed: Create a fresh horse for this test since adultHorse may be in cooldown
       const freshHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'Fresh Route Test Horse',
           age: 4,
@@ -648,7 +649,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
             negative: [],
             hidden: [],
           },
-        },
+        }),
       });
       await assignTestTrainer(freshHorse);
 

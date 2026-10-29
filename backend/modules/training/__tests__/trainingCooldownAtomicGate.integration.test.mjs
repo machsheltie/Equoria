@@ -35,6 +35,7 @@ import { trainHorse } from '../controllers/trainingController.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -65,7 +66,7 @@ beforeAll(async () => {
   createdUserIds.push(testUser.id);
 
   testHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${tag}`,
       sex: 'Mare',
@@ -75,7 +76,7 @@ beforeAll(async () => {
       healthStatus: 'Excellent',
       lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       trainingCooldown: null,
-    },
+    }),
   });
   await assignTestTrainer(testHorse);
   createdHorseIds.push(testHorse.id);

@@ -21,6 +21,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-1ohys: fail-loud scoped cleanup — a failed delete must turn the suite
 // RED so leaked fixtures don't silently pollute the canonical DB (CLAUDE.md §2).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -44,14 +45,14 @@ beforeAll(async () => {
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-TrainingHorse-${Date.now()}`,
       sex: 'Stallion',
       dateOfBirth: new Date('2021-01-01'),
       age: 4,
       userId: user.id,
-    },
+    }),
   });
 }, 30000);
 

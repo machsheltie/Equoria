@@ -59,6 +59,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { confirmEmail } from '../../../tests/helpers/confirmEmail.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -256,7 +257,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     const birthDate = birthDateForAge(calculatedAge);
 
     const testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Progress Test Horse',
         breed: { connect: { id: breed.id } },
@@ -272,7 +273,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
           negative: [],
           hidden: [],
         },
-      },
+      }),
     });
     await assignTestTrainer(testHorse);
 

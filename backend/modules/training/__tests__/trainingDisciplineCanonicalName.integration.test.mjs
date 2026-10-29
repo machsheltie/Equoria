@@ -25,6 +25,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const rand = () => randomBytes(6).toString('hex');
 const cleanup = createCleanupTracker();
@@ -35,7 +36,7 @@ let plainBreed;
 
 async function makeHorse() {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-i42xr-${rand()}`,
       dateOfBirth: gameCalendarDate(new Date(), -(6 * 7 + 1)),
@@ -45,7 +46,7 @@ async function makeHorse() {
       breedId: plainBreed.id,
       healthStatus: 'Excellent',
       lastFedDate: new Date(),
-    },
+    }),
   });
   horseIds.push(horse.id);
   await assignTestTrainer(horse);

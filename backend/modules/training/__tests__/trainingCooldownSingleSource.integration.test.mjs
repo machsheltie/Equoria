@@ -23,6 +23,7 @@ import { canTrain, getTrainableHorses, getTrainingStatus, trainHorse } from '../
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -55,7 +56,7 @@ async function makeUserWithHorse() {
   });
   userIds.push(user.id);
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}-horse-${tag}`,
       sex: 'Mare',
@@ -65,7 +66,7 @@ async function makeUserWithHorse() {
       healthStatus: 'Excellent',
       lastFedDate: new Date(),
       trainingCooldown: null,
-    },
+    }),
   });
   await assignTestTrainer(horse);
   horseIds.push(horse.id);

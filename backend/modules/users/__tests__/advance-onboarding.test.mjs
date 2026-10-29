@@ -17,6 +17,7 @@ import { randomBytes } from 'node:crypto';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // Owner ruling 2026-10-28 (q211): onboarding refuses a breed with no conformation/gait
 // ranges. These tests used to take whatever breed row came first, which can be a
@@ -178,7 +179,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
     expect(breed).toBeTruthy();
 
     await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Uncustomized Starter',
         sex: 'Mare',
@@ -186,7 +187,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
         dateOfBirth: new Date(2023, 0, 1),
         userId: testUser.id,
         healthStatus: 'Excellent',
-      },
+      }),
     });
 
     const response = await request(app)
@@ -284,7 +285,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
     // only — temperament is deliberately absent, reproducing register output).
     await prisma.horse.deleteMany({ where: { userId: testUser.id } });
     await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Uncustomized Starter',
         sex: 'Mare',
@@ -292,7 +293,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
         dateOfBirth: new Date(2023, 0, 1),
         userId: testUser.id,
         healthStatus: 'Excellent',
-      },
+      }),
     });
 
     await request(app)
@@ -328,7 +329,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
     const SENTINEL_PLACEHOLDER = 'REGISTER_TIME_PLACEHOLDER_8VWLY';
     await prisma.horse.deleteMany({ where: { userId: testUser.id } });
     await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Pre-Onboarding Starter',
         sex: 'Mare',
@@ -337,7 +338,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
         userId: testUser.id,
         healthStatus: 'Excellent',
         temperament: SENTINEL_PLACEHOLDER,
-      },
+      }),
     });
 
     await request(app)

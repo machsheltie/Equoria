@@ -29,6 +29,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Breeding Prediction System', () => {
   let __csrf__;
@@ -83,7 +84,7 @@ describe('Breeding Prediction System', () => {
 
     // Create test stallion (5 years old)
     testStallion = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestStallion_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'stallion',
@@ -92,12 +93,12 @@ describe('Breeding Prediction System', () => {
         userId: testUser.id,
         breedId: testBreed.id,
         epigeneticModifiers: { positive: ['sensitive', 'noble'], negative: [], hidden: ['quick_learner'] },
-      },
+      }),
     });
 
     // Create test mare (4 years old)
     testMare = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestMare_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'mare',
@@ -106,7 +107,7 @@ describe('Breeding Prediction System', () => {
         userId: testUser.id,
         breedId: testBreed.id,
         epigeneticModifiers: { positive: ['athletic', 'confident'], negative: ['stubborn'], hidden: [] },
-      },
+      }),
     });
 
     // Create auth token

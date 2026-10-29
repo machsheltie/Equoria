@@ -26,6 +26,7 @@ import { canTrain } from '../controllers/trainingController.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -69,7 +70,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
 
     // Age exactly 20 — the last active game-year (inclusive max). Eligible.
     horse20 = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-oey96-15-age20-${timestamp}`,
         dateOfBirth: gameAgeDob(20),
@@ -82,13 +83,13 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
         agility: 50,
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-      },
+      }),
     });
     await assignTestTrainer(horse20);
 
     // Age 21 — retired / over the active max. Ineligible.
     horse21 = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-oey96-15-age21-${timestamp}`,
         dateOfBirth: gameAgeDob(21),
@@ -101,7 +102,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
         agility: 50,
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-      },
+      }),
     });
     await assignTestTrainer(horse21);
 
@@ -109,7 +110,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
     // through the getHorseAgeYears fallback (Equoria-vdw5), not just the stored
     // age integer. effectiveAge derives from getHorseAge → getHorseAgeYears here.
     horse21NoAgeField = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-oey96-15-age21-dob-${timestamp}`,
         dateOfBirth: gameAgeDob(21),
@@ -122,13 +123,13 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
         agility: 50,
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-      },
+      }),
     });
     await assignTestTrainer(horse21NoAgeField);
 
     // Age 5, INJURED — healthy age but cannot train while injured.
     horseInjured = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-oey96-15-injured-${timestamp}`,
         dateOfBirth: gameAgeDob(5),
@@ -140,13 +141,13 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
         stamina: 50,
         agility: 50,
         healthStatus: 'Injured',
-      },
+      }),
     });
     await assignTestTrainer(horseInjured);
 
     // Age 5, Excellent — control / happy path. Eligible.
     horseHealthy = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-oey96-15-healthy-${timestamp}`,
         dateOfBirth: gameAgeDob(5),
@@ -159,7 +160,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
         agility: 50,
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-      },
+      }),
     });
     await assignTestTrainer(horseHealthy);
   });

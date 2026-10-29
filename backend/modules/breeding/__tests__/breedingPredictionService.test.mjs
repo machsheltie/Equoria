@@ -27,6 +27,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-1ohys: fail-loud, scoped cleanup — a failed delete reds afterAll
 // instead of being swallowed (the leak class that trips horseColorNullSentinel).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // ── Pure-path tests — no fixture ──────────────────────────────────────────────
 
@@ -78,7 +79,7 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
     });
 
     bpsStallionCalm = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-BPS-StallionCalm-${ts}`,
         sex: 'Stallion',
@@ -86,11 +87,11 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
         age: 4,
         temperament: 'calm',
         userId: bpsUser.id,
-      },
+      }),
     });
 
     bpsMareGentle = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-BPS-MareGentle-${ts}`,
         sex: 'Mare',
@@ -98,29 +99,29 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
         age: 4,
         temperament: 'gentle',
         userId: bpsUser.id,
-      },
+      }),
     });
 
     bpsHorseNoTraits = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-BPS-NoTraits-${ts}`,
         sex: 'Mare',
         dateOfBirth: new Date(),
         age: 4,
         userId: bpsUser.id,
-      },
+      }),
     });
 
     bpsHorseRare = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-BPS-Rare-${ts}`,
         sex: 'Mare',
         dateOfBirth: new Date(),
         age: 4,
         userId: bpsUser.id,
-      },
+      }),
     });
 
     bpsHorseIds.push(bpsStallionCalm.id, bpsMareGentle.id, bpsHorseNoTraits.id, bpsHorseRare.id);

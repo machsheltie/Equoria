@@ -25,6 +25,7 @@ import { generateTestToken } from '../../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { birthDateForAge } from '../../../../utils/horseAge.mjs';
+import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 export const ORIGIN = 'http://localhost:3000';
 
@@ -58,7 +59,7 @@ export async function makePlayer(prefix, role, money) {
 
 export async function makeHorse(prefix, { ownerId, sex, breedId, ...overrides }) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${prefix}-${sex}-${tag()}`,
       sex,
@@ -72,7 +73,7 @@ export async function makeHorse(prefix, { ownerId, sex, breedId, ...overrides })
       healthStatus: 'Good',
       lastFedDate: new Date(),
       ...overrides,
-    },
+    }),
   });
 }
 

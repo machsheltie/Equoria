@@ -22,6 +22,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const rand = () => randomBytes(5).toString('hex');
 const cleanup = createCleanupTracker();
@@ -32,7 +33,7 @@ let breedId;
 /** A horse `days` Eastern calendar days old, with the stored age the nightly job last wrote. */
 async function makeHorse(days, storedAge) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-5b2nj-${rand()}`,
       dateOfBirth: gameCalendarDate(new Date(), -days),
@@ -42,7 +43,7 @@ async function makeHorse(days, storedAge) {
       breedId,
       healthStatus: 'Excellent',
       lastFedDate: new Date(),
-    },
+    }),
   });
   horseIds.push(horse.id);
   await assignTestTrainer(horse);

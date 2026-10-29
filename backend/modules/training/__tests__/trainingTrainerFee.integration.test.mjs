@@ -25,6 +25,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const TAG = randomBytes(4).toString('hex');
 const PREFIX = `TestFixture-3kegj-${TAG}`;
@@ -65,7 +66,7 @@ async function stable({ money, trainer = true }) {
   });
   userIds.push(user.id);
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}-horse-${seq}`,
       sex: 'Mare',
@@ -75,7 +76,7 @@ async function stable({ money, trainer = true }) {
       lastFedDate: new Date(),
       trainingCooldown: null,
       userId: user.id,
-    },
+    }),
   });
   horseIds.push(horse.id);
   let hired = null;

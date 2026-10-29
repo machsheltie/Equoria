@@ -20,6 +20,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const gaitedBreedName = 'American Saddlebred';
 const plainBreedName = 'Thoroughbred';
@@ -34,7 +35,7 @@ let plainBreed;
 
 async function makeHorse(breed, fields = {}) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-uszhf-${rand()}`,
       dateOfBirth: gameAgeDob(6),
@@ -45,7 +46,7 @@ async function makeHorse(breed, fields = {}) {
       healthStatus: 'Excellent',
       lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       ...fields,
-    },
+    }),
   });
   horseIds.push(horse.id);
   await assignTestTrainer(horse);

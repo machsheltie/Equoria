@@ -17,6 +17,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -283,14 +284,14 @@ describe('GET /api/v1/users/:userId/competition-stats — with results', () => {
     statsToken = generateTestToken({ id: statsUser.id, email: statsUser.email, role: 'user' });
 
     statsHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-StatsHorse-${Date.now()}`,
         sex: 'Stallion',
         dateOfBirth: new Date('2018-01-01'),
         age: 7,
         userId: statsUser.id,
-      },
+      }),
     });
 
     // Seed varied competition results to exercise placement branches.

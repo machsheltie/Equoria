@@ -26,6 +26,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const rand = () => randomBytes(5).toString('hex');
 const cleanup = createCleanupTracker();
@@ -57,7 +58,7 @@ beforeEach(async () => {
   buyer = await makeUser('buyer');
   const breed = await prisma.breed.findUnique({ where: { name: 'Thoroughbred' } });
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-kiwe5-${rand()}`,
       dateOfBirth: gameCalendarDate(new Date(), -(6 * 7 + 1)),
@@ -67,7 +68,7 @@ beforeEach(async () => {
       breedId: breed.id,
       healthStatus: 'Excellent',
       lastFedDate: new Date(),
-    },
+    }),
   });
   horseIds.push(horse.id);
   await assignTestTrainer(horse);

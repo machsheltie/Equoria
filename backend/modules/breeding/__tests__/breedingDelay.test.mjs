@@ -31,6 +31,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-1ohys: fail-loud, scoped cleanup — a failed delete reds afterEach
 // instead of being swallowed (the leak class that trips horseColorNullSentinel).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('createFoal — delayed pregnancy (B3)', () => {
   let csrf;
@@ -70,7 +71,7 @@ describe('createFoal — delayed pregnancy (B3)', () => {
 
     const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 7);
     const sire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `B3Sire_${ts}`,
         sex: 'Stallion',
@@ -80,10 +81,10 @@ describe('createFoal — delayed pregnancy (B3)', () => {
         userId: user.id,
         healthStatus: 'Good',
         lastFedDate: new Date(), // healthy so critical-health gate passes
-      },
+      }),
     });
     const dam = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `B3Dam_${ts}`,
         sex: 'Mare',
@@ -93,7 +94,7 @@ describe('createFoal — delayed pregnancy (B3)', () => {
         userId: user.id,
         healthStatus: 'Good',
         lastFedDate: new Date(), // healthy so critical-health gate passes
-      },
+      }),
     });
     sireId = sire.id;
     damId = dam.id;

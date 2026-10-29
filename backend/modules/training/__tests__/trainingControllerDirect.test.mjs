@@ -44,6 +44,7 @@ import { canTrain, trainHorse, getTrainingStatus, getTrainableHorses } from '../
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -107,7 +108,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     const fourYearsAgo = birthDateForAge(4);
 
     testHorseEligible = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Eligible Horse',
         dateOfBirth: fourYearsAgo,
@@ -120,7 +121,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         agility: 50,
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-      },
+      }),
     });
     await assignTestTrainer(testHorseEligible);
     testHorse4Years = testHorseEligible;
@@ -129,7 +130,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     const threeYearsAgo = birthDateForAge(3);
 
     testHorseAdult = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Adult Horse',
         dateOfBirth: threeYearsAgo,
@@ -142,7 +143,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         agility: 45,
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-      },
+      }),
     });
     await assignTestTrainer(testHorseAdult);
 
@@ -153,7 +154,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     const twoYearsAgo = gameCalendarDate(new Date(), -15);
 
     testHorseYoung = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Young Horse',
         dateOfBirth: twoYearsAgo,
@@ -166,13 +167,13 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         agility: 40,
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-      },
+      }),
     });
     await assignTestTrainer(testHorseYoung);
 
     // Create horse with recent training
     testHorseRecentTraining = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'Recently Trained Horse',
         dateOfBirth: fourYearsAgo,
@@ -185,7 +186,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         agility: 60,
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-      },
+      }),
     });
     await assignTestTrainer(testHorseRecentTraining);
 
@@ -271,7 +272,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       eightDaysAgo.setDate(eightDaysAgo.getDate() - 8);
 
       const oldTrainingHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'Old Training Horse',
           dateOfBirth: birthDateForAge(4), // 4 game-years (28 days) — Equoria-vdw5/ffsi
@@ -283,7 +284,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           agility: 50,
           healthStatus: 'Excellent',
           lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-        },
+        }),
       });
       await assignTestTrainer(oldTrainingHorse);
 
@@ -340,7 +341,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       const exactlySevenDaysAgo = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000 + 2000));
 
       const edgeCaseHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'Edge Case Horse',
           dateOfBirth: birthDateForAge(4), // 4 game-years (28 days) — Equoria-vdw5/ffsi
@@ -352,7 +353,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           agility: 50,
           healthStatus: 'Excellent',
           lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-        },
+        }),
       });
       await assignTestTrainer(edgeCaseHorse);
 
@@ -494,7 +495,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
 
       const expiredCooldownHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'Expired Cooldown Horse',
           dateOfBirth: birthDateForAge(4), // 4 game-years (28 days) — Equoria-vdw5/ffsi
@@ -506,7 +507,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           agility: 50,
           healthStatus: 'Excellent',
           lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-        },
+        }),
       });
       await assignTestTrainer(expiredCooldownHorse);
 
@@ -573,7 +574,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       const justOverSevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 - 1000); // Just over 7 days
 
       const expiredCooldownHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: 'Edge Case Horse',
           dateOfBirth: birthDateForAge(4), // 4 game-years (28 days) — Equoria-vdw5/ffsi
@@ -585,7 +586,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           agility: 50,
           healthStatus: 'Excellent',
           lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-        },
+        }),
       });
       await assignTestTrainer(expiredCooldownHorse);
 

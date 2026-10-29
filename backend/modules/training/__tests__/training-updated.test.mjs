@@ -50,6 +50,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
@@ -110,7 +111,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
 
     const dob5yr = birthDateForAge(5);
     const testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TrainHorse_${ts}`,
         sex: 'Mare',
@@ -118,14 +119,14 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
         userId: testUserId,
         age: 5,
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-      },
+      }),
     });
     await assignTestTrainer(testHorse);
     testHorseId = testHorse.id;
 
     // Second horse so the "allow training" test isn't blocked by a cooldown from earlier tests
     const secondHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TrainHorse2_${ts}`,
         sex: 'Mare',
@@ -133,7 +134,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
         userId: testUserId,
         age: 5,
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-      },
+      }),
     });
     await assignTestTrainer(secondHorse);
     secondHorseId = secondHorse.id;
