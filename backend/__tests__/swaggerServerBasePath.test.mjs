@@ -39,6 +39,21 @@ describe('Swagger server base path (Equoria-713fu)', () => {
     expect(res.body.message).not.toBe('Route not found');
   });
 
+  it('Try it out on the documented /health reaches the mounted root /health (Equoria-ygn9w)', async () => {
+    const spec = (await request(app).get('/api-docs/swagger.json').set('Origin', ORIGIN).expect(200)).body;
+    const pathItem = spec.paths['/health'];
+    expect(pathItem).toBeDefined();
+
+    // A path-level servers list overrides the document's; Swagger UI resolves a
+    // relative server URL against the address the spec was served from.
+    const servers = pathItem.servers ?? spec.servers;
+    const basePath = new URL(servers[0].url, ORIGIN).pathname.replace(/\/$/, '');
+    const res = await request(app).get(`${basePath}/health`).set('Origin', ORIGIN);
+
+    expect(res.status).toBe(200);
+    expect(res.body.message).not.toBe('Route not found');
+  });
+
   it('the raw YAML lists no legacy /api server', async () => {
     const res = await request(app).get('/api-docs/swagger.yaml').set('Origin', ORIGIN).expect(200);
     const raw = YAML.parse(res.text);

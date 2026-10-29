@@ -63,6 +63,11 @@ tags:
 paths:
   # ── Health ──────────────────────────────────────────────────────────────────
   /health:
+    # Equoria-ygn9w: /health is mounted at the site root, not under /api/v1.
+    # A relative server URL resolves against the address the spec is served from.
+    servers:
+      - url: '/'
+        description: 'Site root (health is not versioned)'
     get:
       tags: [Health]
       summary: 'Health check'
