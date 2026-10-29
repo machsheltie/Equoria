@@ -20,6 +20,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { getUserTrainers, getTrainerAssignments, getTrainerDiscovery } from '../controllers/trainerController.mjs';
 
 const fixturePrefix = 'TestFixture-pzoxz';
@@ -106,7 +107,7 @@ describe('a trainer read never sends undiscovered discovery slots (Equoria-pzoxz
       data: {
         ...fixtureColor(),
         name: `${fixturePrefix}-${suffix}-horse`,
-        dateOfBirth: new Date(Date.now() - 6 * 7 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -42),
         age: 6,
         sex: 'Mare',
         userId: user.id,
