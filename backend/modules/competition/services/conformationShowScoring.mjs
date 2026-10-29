@@ -254,9 +254,10 @@ export function calculateConformationShowScore(horse, groom, className) {
   const bondComponent = bondScore * CONFORMATION_SHOW_CONFIG.BOND_WEIGHT;
 
   // 4. Temperament synergy component (7%)
-  const temperament = horse.temperament ?? 'calm';
+  // Every horse has a temperament (Equoria-576c0.5: NOT NULL). Old contract: a
+  // missing one was scored as 'calm'.
   const personality = groom.personality ?? 'gentle';
-  const synergyScore = calculateSynergy(temperament, personality);
+  const synergyScore = calculateSynergy(horse.temperament, personality);
   const synergyComponent = synergyScore * CONFORMATION_SHOW_CONFIG.TEMPERAMENT_WEIGHT;
 
   // 5. Final score — integer clamped to [0, 100], no random factor
