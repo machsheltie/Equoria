@@ -36,9 +36,10 @@ import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
-import { SectionLoading, ErrorState } from '@/components/ui/state';
+import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
 import EmptyState from '@/components/ui/EmptyState';
 import { userMessageFor } from '@/lib/http/userMessage';
+import { actionMessageFor, buyFeedRefused } from '@/lib/http/actionMessage';
 import { useFeedCatalog, usePurchaseFeed, FeedItem } from '@/hooks/api/useFeedShop';
 
 const FEED_IMAGES: Record<FeedItem['id'], string> = {
@@ -62,7 +63,8 @@ const FeedShopPage: React.FC = () => {
       { feedTier: tier.id, packs },
       {
         onSuccess: () => toast.success(`Purchased ${100 * packs} units of ${tier.name}.`),
-        onError: (err) => toast.error((err as { message?: string })?.message ?? 'Purchase failed.'),
+        // A refusal is shown under this tier's Buy button (owner ruling 2026-10-28,
+        // q161; Equoria-c1sg6), never the server's own message.
       }
     );
   };
@@ -183,6 +185,9 @@ const FeedShopPage: React.FC = () => {
                     >
                       {`Buy ${totalUnits} units`}
                     </Button>
+                    {purchase.isError && purchase.variables?.feedTier === tier.id && (
+                      <InlineError message={actionMessageFor(purchase.error, buyFeedRefused)} />
+                    )}
                   </div>
                 );
 

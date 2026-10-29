@@ -27,6 +27,9 @@ import HorseMarketplacePage from '../HorseMarketplacePage';
 import CraftingPage from '../CraftingPage';
 import SettingsPage from '../SettingsPage';
 import ProfilePage from '../ProfilePage';
+import FeedShopPage from '../FeedShopPage';
+import InventoryPage from '../InventoryPage';
+import { MockAuthProvider } from '@/test/utils';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -322,5 +325,188 @@ describe('Refused actions show their reason at the button (Equoria-bvddn.40)', (
       )
     ).toBeInTheDocument();
     expect(screen.queryByText(/already exists/i)).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * The same ruling for the feed shop, feeding, unequipping and two Settings
+ * saves (Equoria-c1sg6). Old behaviour: each page toasted the server's message
+ * ("packs must be an integer ≥ 1", "Unknown feed tier: elite", "Item is not
+ * currently equipped", "Current password is incorrect", "Preference
+ * 'compactCards' must be a boolean") and showed nothing at the control.
+ */
+describe('Refused feed, inventory and Settings actions show at the control (Equoria-c1sg6)', () => {
+  it('a refused feed purchase shows under that tier only', async () => {
+    const tier = (id: string, name: string) => ({
+      id,
+      name,
+      description: `${name}.`,
+      packPrice: 100,
+      perUnit: 1,
+      statRollPct: 5,
+      pregnancyBonusPct: 2,
+    });
+    server.use(
+      http.get('*/api/v1/feed-shop/catalog', () =>
+        HttpResponse.json([tier('basic', 'Basic Feed'), tier('elite', 'Elite Feed')])
+      ),
+      http.post('*/api/v1/feed-shop/purchase', () =>
+        refusal('Insufficient funds. 1 pack(s) of Basic Feed cost 100 coins.', 400)
+      )
+    );
+    const user = userEvent.setup();
+    renderWith(<FeedShopPage />);
+
+    await user.click(await screen.findByTestId('buy-basic'));
+
+    const card = screen.getByTestId('feed-tier-basic');
+    expect(await within(card).findByRole('alert')).toHaveTextContent(
+      "That feed couldn't be bought. Your coins may not cover it."
+    );
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.queryByText(/insufficient funds/i)).not.toBeInTheDocument();
+  });
+
+  it('a refused feeding shows beside the Feed button in plain words', async () => {
+    server.use(
+      http.post(`${base}/api/v1/horses/:id/feed`, () => refusal('Unknown feed tier: elite', 400))
+    );
+    const user = userEvent.setup();
+    const horse = {
+      id: 51,
+      name: 'TestFixture-FeedHorse',
+      forSale: false,
+      lastFedDate: null,
+      equippedFeedType: 'elite',
+      feedHealth: 'good',
+    } as unknown as Horse;
+    renderWith(
+      <HorseActionBar
+        horse={horse}
+        onAssignRider={() => {}}
+        onListForSale={() => {}}
+        refetch={() => {}}
+      />
+    );
+
+    await user.click(screen.getByTestId('action-feed'));
+
+    const bar = screen.getByTestId('horse-action-bar');
+    expect(await within(bar).findByRole('alert')).toHaveTextContent(
+      "That horse couldn't be fed. It may already have been fed today, or its feed may have run out. Equip or buy more feed and try again."
+    );
+    expect(screen.queryByText(/unknown feed tier/i)).not.toBeInTheDocument();
+  });
+
+  it('a refused unequip shows on that item', async () => {
+    server.use(
+      http.get(`${base}/api/v1/inventory`, () =>
+        HttpResponse.json({
+          success: true,
+          message: 'ok',
+          data: {
+            items: [
+              {
+                id: 'inv-1',
+                itemId: 'all-purpose-saddle',
+                category: 'saddle',
+                name: 'All Purpose Saddle',
+                bonus: '+2',
+                quantity: 1,
+                equippedToHorseId: 7,
+                equippedToHorseName: 'Moonflower',
+              },
+            ],
+            total: 1,
+          },
+        })
+      ),
+      http.get(`${base}/api/v1/feed-shop/catalog`, () =>
+        HttpResponse.json({ success: true, message: 'ok', data: [] })
+      ),
+      http.post(`${base}/api/v1/inventory/unequip`, () =>
+        refusal('Item is not currently equipped', 400)
+      )
+    );
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={client()}>
+        <MockAuthProvider>
+          <MemoryRouter>
+            <InventoryPage />
+          </MemoryRouter>
+        </MockAuthProvider>
+      </QueryClientProvider>
+    );
+
+    await user.click(await screen.findByRole('button', { name: /unequip/i }));
+
+    const card = screen.getByTestId('inventory-item-inv-1');
+    expect(await within(card).findByRole('alert')).toHaveTextContent(
+      "That item isn't on a horse any more."
+    );
+    expect(screen.queryByText('Item is not currently equipped')).not.toBeInTheDocument();
+  });
+
+  function renderSettingsWith(qc: QueryClient) {
+    qc.setQueryData(['profile'], { user: player });
+    qc.setQueryData(['verificationStatus'], {
+      verified: true,
+      email: player.email,
+      verifiedAt: null,
+    });
+    return render(
+      <QueryClientProvider client={qc}>
+        <AuthProvider>
+          <MemoryRouter initialEntries={['/settings']}>
+            <SettingsPage />
+          </MemoryRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    );
+  }
+
+  it('a wrong current password is named at the password form, not as an ended session', async () => {
+    stubProfile();
+    server.use(
+      http.post(`${base}/api/v1/auth/change-password`, () =>
+        refusal('Current password is incorrect', 401)
+      )
+    );
+    const user = userEvent.setup();
+    renderSettingsWith(client());
+
+    await user.click(await screen.findByTestId('settings-show-password-form'));
+    await user.type(screen.getByLabelText('Current Password'), 'NotMyPassword1!');
+    await user.type(screen.getByLabelText(/New Password \(min 12/), 'BrandNewPassword9!');
+    await user.type(screen.getByLabelText('Confirm New Password'), 'BrandNewPassword9!');
+    await user.click(screen.getByTestId('settings-submit-password'));
+
+    const form = screen.getByTestId('settings-password-form');
+    expect(await within(form).findByRole('alert')).toHaveTextContent(
+      "Your current password isn't right. Check it and try again."
+    );
+    expect(screen.queryByText(/current password is incorrect/i)).not.toBeInTheDocument();
+  });
+
+  it('a refused display switch save shows beside that switch', async () => {
+    stubProfile();
+    server.use(
+      http.patch(`${base}/api/v1/auth/profile/preferences`, () =>
+        refusal("Preference 'compactCards' must be a boolean", 400)
+      )
+    );
+    const user = userEvent.setup();
+    renderSettingsWith(client());
+
+    await user.click(await screen.findByTestId('settings-nav-display'));
+    await user.click(within(screen.getByTestId('display-compact-cards')).getByRole('switch'));
+
+    const section = screen.getByTestId('settings-display');
+    expect(await within(section).findByRole('alert')).toHaveTextContent(
+      "That setting couldn't be saved. Reload Settings and try again."
+    );
+    expect(within(section).getAllByRole('alert')).toHaveLength(1);
+    expect(screen.queryByText(/must be a boolean/i)).not.toBeInTheDocument();
   });
 });

@@ -191,3 +191,54 @@ export const craftItemRefused: ActionCopy = {
   404: "That recipe couldn't be found. Reload and try again.",
   409: 'Your inventory changed while you were crafting. Try again.',
 };
+
+/**
+ * Feed, inventory and Settings refusals (Equoria-c1sg6, same ruling as above:
+ * q161). These pages toasted the server's message. Some of those messages are
+ * already plain words ("Already fed today. Try again tomorrow."), but others on
+ * the same status are not ("Unknown feed tier: elite", "packs must be an
+ * integer ≥ 1", "Preference 'x' must be a boolean"), and none carries a code
+ * to tell them apart, so each status gets one authored line.
+ */
+export const buyFeedRefused: ActionCopy = {
+  400: "That feed couldn't be bought. Your coins may not cover it.",
+  404: "That feed isn't in the shop any more. Reload and try again.",
+};
+
+export const feedHorseRefused: ActionCopy = {
+  400: "That horse couldn't be fed. It may already have been fed today, or its feed may have run out. Equip or buy more feed and try again.",
+  404: "That horse couldn't be found. Reload and try again.",
+  409: 'Your feed changed while you were feeding. Try again.',
+};
+
+export const unequipItemRefused: ActionCopy = {
+  400: "That item isn't on a horse any more.",
+  404: "That item couldn't be found. Reload and try again.",
+};
+
+export const savePreferenceRefused: ActionCopy = {
+  400: "That setting couldn't be saved. Reload Settings and try again.",
+};
+
+/** A refused password change (Equoria-c1sg6). */
+export const changePasswordRefused: ActionCopy = {
+  400: 'Enter your current password and a new one of at least 12 characters.',
+};
+
+/**
+ * A refused password change. The backend answers a wrong current password with
+ * a 401, which `actionMessageFor` reads as an ended session. An ended session
+ * reaches this caller marked `sessionExpired` by the transport; any other 401
+ * from this endpoint is the current password being refused.
+ */
+export function changePasswordMessageFor(error: unknown): string {
+  const status = statusOf(error);
+  const sessionExpired =
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { sessionExpired?: unknown }).sessionExpired === true;
+  if (status === 401 && !sessionExpired) {
+    return "Your current password isn't right. Check it and try again.";
+  }
+  return actionMessageFor(error, changePasswordRefused);
+}

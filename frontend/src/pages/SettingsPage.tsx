@@ -43,7 +43,12 @@ import { useSound } from '@/hooks/useSound';
 import type { UserPreferences } from '@/lib/api-client';
 import { sections, DEFAULT_PREFERENCES, type DisplayKey } from './settings/constants';
 import { AccountSection } from './settings/AccountSection';
-import { actionMessageFor, saveProfileRefused } from '@/lib/http/actionMessage';
+import {
+  actionMessageFor,
+  changePasswordMessageFor,
+  savePreferenceRefused,
+  saveProfileRefused,
+} from '@/lib/http/actionMessage';
 import { DisplaySection } from './settings/DisplaySection';
 import { SoundSection } from './settings/SoundSection';
 
@@ -182,9 +187,7 @@ const SettingsPage: React.FC = () => {
             },
           });
         },
-        onError: (err) => {
-          toast.error(err?.message ?? 'Could not change password.');
-        },
+        // A refusal is shown at the password form (q161; Equoria-c1sg6).
       }
     );
   };
@@ -211,11 +214,19 @@ const SettingsPage: React.FC = () => {
     compactCards: merged.compactCards,
   };
 
+  // The switch whose save was refused, with authored copy shown beside it
+  // (q161; Equoria-c1sg6), never the server's own message.
+  const [preferenceError, setPreferenceError] = useState<{
+    key: keyof UserPreferences;
+    message: string;
+  } | null>(null);
+
   const persist = (updates: Partial<UserPreferences>) => {
+    const key = Object.keys(updates)[0] as keyof UserPreferences;
+    setPreferenceError(null);
     updatePreferences.mutate(updates, {
       onError: (err) => {
-        const msg = err instanceof Error ? err.message : 'Could not save your preference.';
-        toast.error(`Couldn't save preference: ${msg}`);
+        setPreferenceError({ key, message: actionMessageFor(err, savePreferenceRefused) });
       },
     });
   };
@@ -289,10 +300,17 @@ const SettingsPage: React.FC = () => {
                 onChangePassword={handleChangePassword}
                 onResetPasswordForm={resetPasswordForm}
                 isChangingPassword={changePassword.isPending}
+                changePasswordError={
+                  changePassword.isError
+                    ? changePasswordMessageFor(changePassword.error)
+                    : undefined
+                }
               />
             )}
 
-            {activeSection === 'display' && <DisplaySection display={display} setDisp={setDisp} />}
+            {activeSection === 'display' && (
+              <DisplaySection display={display} setDisp={setDisp} saveError={preferenceError} />
+            )}
 
             {activeSection === 'sound' && (
               <SoundSection
@@ -307,6 +325,9 @@ const SettingsPage: React.FC = () => {
                   }
                 }}
                 playSound={playSound}
+                saveError={
+                  preferenceError?.key === 'soundEnabled' ? preferenceError.message : undefined
+                }
               />
             )}
           </div>

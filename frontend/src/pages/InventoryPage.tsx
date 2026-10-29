@@ -30,6 +30,7 @@ import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
 import { CanonicalTabs } from '@/components/ui/game';
 import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
+import { actionMessageFor, unequipItemRefused } from '@/lib/http/actionMessage';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
   GameDialog,
@@ -87,6 +88,8 @@ interface InventoryCardProps {
   item: InventoryItem;
   onUnequip: (_item: InventoryItem) => void;
   isUnequipping: boolean;
+  /** Authored copy for this item's refused unequip (q161; Equoria-c1sg6). */
+  unequipError?: string;
   onShowInfo: (_info: { title: string; description: string }) => void;
   feedCatalogById: Partial<Record<FeedItem['id'], FeedItem>>;
 }
@@ -95,6 +98,7 @@ const InventoryCard: React.FC<InventoryCardProps> = ({
   item,
   onUnequip,
   isUnequipping,
+  unequipError,
   onShowInfo,
   feedCatalogById,
 }) => {
@@ -152,6 +156,14 @@ const InventoryCard: React.FC<InventoryCardProps> = ({
         </Button>
       </div>
     );
+    if (unequipError) {
+      action = (
+        <div className="space-y-2">
+          {action}
+          <InlineError message={unequipError} />
+        </div>
+      );
+    }
   }
 
   const handleClick = description
@@ -209,9 +221,8 @@ const InventoryPage: React.FC = () => {
           toast.success(`${item.name} unequipped`);
           setUnequippingId(null);
         },
-        onError: (err: unknown) => {
-          const msg = err instanceof Error ? err.message : 'Failed to unequip item';
-          toast.error(msg);
+        // A refusal is shown on this item's card (q161; Equoria-c1sg6).
+        onError: () => {
           setUnequippingId(null);
         },
       }
@@ -278,6 +289,11 @@ const InventoryPage: React.FC = () => {
               item={item}
               onUnequip={handleUnequip}
               isUnequipping={unequippingId === item.id && unequipMutation.isPending}
+              unequipError={
+                unequipMutation.isError && unequipMutation.variables?.inventoryItemId === item.id
+                  ? actionMessageFor(unequipMutation.error, unequipItemRefused)
+                  : undefined
+              }
               onShowInfo={setActiveInfo}
               feedCatalogById={catalogById}
             />

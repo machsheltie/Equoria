@@ -46,6 +46,8 @@ export interface AccountSectionProps {
   onChangePassword: (_e: React.FormEvent) => void;
   onResetPasswordForm: () => void;
   isChangingPassword: boolean;
+  /** Authored copy for a refused password change, shown at the form (q161). */
+  changePasswordError?: string;
 }
 
 export const AccountSection: React.FC<AccountSectionProps> = ({
@@ -65,6 +67,7 @@ export const AccountSection: React.FC<AccountSectionProps> = ({
   onChangePassword,
   onResetPasswordForm,
   isChangingPassword,
+  changePasswordError,
 }) => (
   <Surface variant="panel" className="space-y-6" data-testid="settings-account">
     <h2 className="type-section-heading">Account Settings</h2>
@@ -170,6 +173,7 @@ export const AccountSection: React.FC<AccountSectionProps> = ({
               Change Password
             </Button>
           </div>
+          {changePasswordError && <InlineError message={changePasswordError} />}
         </form>
       )}
     </div>

@@ -9,6 +9,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/Surface';
+import { InlineError } from '@/components/ui/state';
 import { Toggle } from './constants';
 
 export interface SoundSectionProps {
@@ -18,6 +19,8 @@ export interface SoundSectionProps {
   soundEnabled: boolean;
   onToggleSound: (_val: boolean) => void;
   playSound: (_variant: string) => void;
+  /** Authored copy for a refused save of the sound switch (q161; Equoria-c1sg6). */
+  saveError?: string;
 }
 
 const PREVIEW_SOUNDS = [
@@ -34,6 +37,7 @@ export const SoundSection: React.FC<SoundSectionProps> = ({
   soundEnabled,
   onToggleSound,
   playSound,
+  saveError,
 }) => (
   <Surface variant="panel" className="space-y-6" data-testid="settings-sound">
     <h2 className="type-section-heading">Sound Settings</h2>
@@ -52,6 +56,7 @@ export const SoundSection: React.FC<SoundSectionProps> = ({
         onChange={onToggleSound}
         testId="sound-effects-toggle"
       />
+      {saveError && <InlineError message={saveError} />}
     </div>
 
     {soundEnabled && (
