@@ -13,11 +13,8 @@ import { describe, it, expect } from '@jest/globals';
 // calls. Per doctrine, observing logger calls cross-module is dropped
 // in favor of behavioural assertions on the function return values.
 
-import {
-  getTemperamentGroomSynergy,
-  TEMPERAMENT_GROOM_SYNERGY,
-} from '../modules/horses/services/temperamentService.mjs';
-import { TEMPERAMENT_TYPES } from '../modules/horses/data/temperamentTypes.mjs';
+import { getTemperamentGroomSynergy, TEMPERAMENT_GROOM_SYNERGY } from '../services/temperamentService.mjs';
+import { TEMPERAMENT_TYPES } from '../data/temperamentTypes.mjs';
 
 describe('Story 31D.4: Groom Temperament Synergy', () => {
   // ─── Unit tests: getTemperamentGroomSynergy() ────────────────────────────

@@ -14,15 +14,17 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma from '../../packages/database/prismaClient.mjs';
-import { assignTestTrainer, cleanupTestTrainers } from '../tests/helpers/assignTrainer.mjs';
-import * as horsesModule from '../modules/horses/index.mjs';
-import { TEMPERAMENT_TYPES } from '../modules/horses/data/temperamentTypes.mjs';
-import { trainHorse } from '../modules/training/controllers/trainingController.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+import * as horsesModule from '../../horses/index.mjs';
+import { trainHorse } from '../controllers/trainingController.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
-import { birthDateForAge } from '../utils/horseAge.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
+
+// TEMPERAMENT_TYPES is part of the horses barrel's documented public API.
+const { TEMPERAMENT_TYPES } = horsesModule;
 
 const SUITE_PREFIX = 'tmod';
 

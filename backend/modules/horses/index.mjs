@@ -75,6 +75,7 @@ export {
 // Consumed only by other modules' tests that check a stored temperament against the
 // canonical list: auth/__tests__/onboardingStarterHorseLocked.integration.test.mjs,
 // auth/__tests__/starterHorseTemperament.integration.test.mjs and
-// training/__tests__/trainerTrainingModifier.integration.test.mjs. No production
-// importer. Equoria-7t1tn moved the other test-only names out with their tests.
+// training/__tests__/trainerTrainingModifier.integration.test.mjs and
+// training/__tests__/temperamentTrainingModifiers.test.mjs. No production importer.
+// Equoria-7t1tn: kept as a small documented public API (orchestrator decision 2026-10-23).
 export { TEMPERAMENT_TYPES } from './data/temperamentTypes.mjs';

@@ -15,8 +15,7 @@ export { computeTrainerModifiers } from './services/trainerModifiers.mjs';
 
 // Consumed only by modules/training/__tests__/trainerTrainingModifier.integration.test.mjs
 // (a training test that pins the trainer-modifier caps); no production importer.
-// Equoria-7t1tn: the marketplace names that used to sit here moved out with the
-// tests that read them.
+// Equoria-7t1tn: kept as a small documented public API (orchestrator decision 2026-10-23).
 export {
   TRAINER_BONUS_CAP,
   TRAINER_CANONICAL_TEMPERAMENTS,
