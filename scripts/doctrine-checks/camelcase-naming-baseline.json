@@ -1050,7 +1050,7 @@
   "frontend/src/types/riderCareer.ts": 14,
   "frontend/src/types/riderPersonality.ts": 3,
   "packages/database/horseSexCanonical.mjs": 7,
-  "packages/database/prisma/schema.prisma": 5,
+  "packages/database/prisma/schema.prisma": 4,
   "packages/database/prismaTestLifecycle.mjs": 6,
   "packages/database/scripts/backfillEpigeneticTraitCasing.mjs": 3,
   "samples/Breeds/Saddlebred/AmericanSaddlebred.txt": 29,

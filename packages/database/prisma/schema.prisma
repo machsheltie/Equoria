@@ -2154,7 +2154,7 @@ enum AgeStage {
   newborn       // 0-2 real days   (game-year 0, early)
   weanling      // 3-6 real days   (game-year 0, late)
   yearling      // 7-13 real days  (game-year 1)
-  two_year_old  // 14-20 real days (game-year 2)
+  twoYearOld    // 14-20 real days (game-year 2)
 }
 
 // ── Equoria-9wby: Persistent CronRunLog ────────────────────────────────────────
