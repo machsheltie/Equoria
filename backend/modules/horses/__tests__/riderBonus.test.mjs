@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { applyRiderModifiers, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
+import { applyRiderModifiers, computeRiderModifiers, riderStarLevelBonus } from '../../../utils/riderBonus.mjs';
 
 describe('applyRiderModifiers', () => {
   it('returns score unchanged when both bonus and penalty are 0', () => {
@@ -82,9 +82,26 @@ describe('computeRiderModifiers (Equoria-5bkh)', () => {
     });
   });
 
-  // Owner ruling 2026-10-29 (q282) retired the riders' old skill word; the star level is
-  // the only level and gives no bonus for now (q244). Old contract: rookie -1% penalty,
-  // developing neutral, experienced +3% bonus.
+  // Owner rulings 2026-10-29: q282 retired the riders' old skill word; q302 put a star
+  // level bonus in its place. Old contract: rookie -1% penalty, developing neutral,
+  // experienced +3% bonus.
+  it('q302: the star level adds +0 / +1 / +2 / +3 / +4 % from Rookie to Expert', () => {
+    const levels = ['rookie', 'novice', 'intermediate', 'advanced', 'expert'];
+    expect(levels.map(riderStarLevelBonus)).toEqual([0, 0.01, 0.02, 0.03, 0.04]);
+    for (const [i, starLevel] of levels.entries()) {
+      const rider = { personality: 'methodical', starLevel, prestige: 0 };
+      const result = computeRiderModifiers({ rider, discipline: 'Endurance' });
+      expect(result.bonusPercent).toBeCloseTo(i * 0.01);
+      expect(result.penaltyPercent).toBe(0);
+    }
+  });
+
+  it('q302: an unknown or missing star level adds nothing', () => {
+    for (const starLevel of [undefined, null, 'master', 'Expert']) {
+      expect(riderStarLevelBonus(starLevel)).toBe(0);
+    }
+  });
+
   it('no skill-word term: a stray old rookie / developing / experienced word adds nothing', () => {
     for (const skillLevel of ['rookie', 'developing', 'experienced']) {
       const rider = { personality: 'methodical', skillLevel, prestige: 0 };
@@ -98,15 +115,14 @@ describe('computeRiderModifiers (Equoria-5bkh)', () => {
   // Owner rulings 2026-10-28: q229 dropped the old 1-10 level column, and q244 says stars
   // give no bonus for now, so every rider/trainer is at the old level 1
   // (staffCareerLevel) and the level term adds nothing.
-  // This case used to assert that level 10 gave +3.6%; the rulings changed it.
-  it('no level term: an Expert, or a stray old level 10, adds nothing', () => {
-    for (const extra of [{ starLevel: 'expert' }, { level: 10 }]) {
-      const rider = { personality: 'methodical', prestige: 0, ...extra };
-      expect(computeRiderModifiers({ rider, discipline: 'Endurance' })).toEqual({
-        bonusPercent: 0,
-        penaltyPercent: 0,
-      });
-    }
+  // This case used to assert that level 10 gave +3.6%; the rulings changed it. (It also
+  // checked that an Expert added nothing, until q302 gave the star level its own bonus.)
+  it('no old career-level term: a stray old level 10 adds nothing', () => {
+    const rider = { personality: 'methodical', prestige: 0, level: 10 };
+    expect(computeRiderModifiers({ rider, discipline: 'Endurance' })).toEqual({
+      bonusPercent: 0,
+      penaltyPercent: 0,
+    });
   });
 
   it('prestige 100 contributes +4% bonus', () => {
@@ -132,16 +148,17 @@ describe('computeRiderModifiers (Equoria-5bkh)', () => {
     expect(computeRiderModifiers({ rider, discipline: 'Racing' }).bonusPercent).toBe(0);
   });
 
-  it('elite rider (max all categories) sums to 6%, inside BONUS_CAP 10%', () => {
-    // prestige 100 (+0.04) + high affinity (+0.02) = 0.06. The level term adds nothing
-    // (q229/q244) and the skill word is gone (q282; it used to add +0.03, for 0.09).
+  it('elite rider (max all categories) sums to 10%, exactly BONUS_CAP', () => {
+    // Expert (+0.04, q302) + prestige 100 (+0.04) + high affinity (+0.02) = 0.10. The old
+    // career-level term adds nothing (q229/q244). Old contract: experienced +0.03 in
+    // place of the star level, for 0.09.
     const rider = {
       personality: 'methodical',
       starLevel: 'expert',
       prestige: 100,
     };
     const result = computeRiderModifiers({ rider, discipline: 'Dressage' });
-    expect(result.bonusPercent).toBeCloseTo(0.06);
+    expect(result.bonusPercent).toBeCloseTo(0.1);
     expect(result.penaltyPercent).toBe(0);
   });
 

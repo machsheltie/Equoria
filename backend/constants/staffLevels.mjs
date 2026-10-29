@@ -19,7 +19,7 @@
  * words: they still feed those types' existing modifiers. New trainers and grooms draw
  * their old tier with the old odds and then a star level inside it (`drawStaffLevel`),
  * so the two never disagree. Riders have no old skill word any more (owner ruling
- * 2026-10-29, q282, migration 20261030220000_riders_retire_skill_level_and_speciality):
+ * 2026-10-29, q282, migration 20261031140000_riders_retire_skill_level_and_speciality):
  * the star level is a rider's only level, and a rider stored without one is a Rookie.
  *
  * This file is pure data and arithmetic: no database, no module imports.
@@ -79,7 +79,9 @@ export function staffLevelLabel(level) {
  * trainer and groom sat at level 1. That level term therefore adds no show bonus, no
  * training bonus, no open talent tier and no mentoring. Staff growth (Equoria-xlw03)
  * raises riders' and grooms' star levels, but q244 still holds, so these modifiers keep
- * reading this constant.
+ * reading this constant. The one exception is a rider's own show bonus by star level
+ * (owner ruling 2026-10-29, q302: backend/utils/riderBonus.mjs riderStarLevelBonus),
+ * which reads the rider's starLevel, not this constant.
  */
 export const staffCareerLevel = 1;
 

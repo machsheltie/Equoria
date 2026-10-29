@@ -69,8 +69,6 @@ const makeRider = userId =>
       firstName: PREFIX,
       lastName: `Rider-${tag()}`,
       personality: 'calm',
-      skillLevel: 'experienced',
-      speciality: 'Show Jumping',
       weeklyRate: 200,
       starLevel: 'novice',
     },

@@ -88,8 +88,6 @@ describe('weekly rider + trainer retirement re-run (Equoria-g8fhu)', () => {
       firstName: 'TestFixture',
       lastName: `G8fhu-${lastName}-${suffix}`,
       personality: 'daring',
-      skillLevel: 'experienced',
-      speciality: 'Jumping',
       weeklyRate: 200,
       userId: owner.id,
     });

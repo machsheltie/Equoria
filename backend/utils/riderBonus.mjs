@@ -15,16 +15,16 @@
  *
  *   - `computeRiderModifiers({ rider, discipline })`
  *       Derives `{ bonusPercent, penaltyPercent }` from a Rider row
- *       (`personality`, `prestige`, `retired`) plus the
+ *       (`starLevel`, `personality`, `prestige`, `retired`) plus the
  *       competition discipline. Caps results at the validated ranges.
  *
  * Formula for computeRiderModifiers (Equoria-5bkh):
- *   - (no skill-word term: owner ruling 2026-10-29, q282, retired the riders' old skill
- *     word, and stars give no bonus for now, q244. Old contract: rookie -1% penalty,
- *     experienced +3% bonus.)
- *   - career level: +0.4% per level above 1. Every rider sits at level 1
- *     (staffCareerLevel; owner ruling 2026-10-28, q244: stars give no bonus for now),
- *     so this adds nothing, even for riders who have levelled up (Equoria-xlw03).
+ *   - star level (owner ruling 2026-10-29, q302; riders only): +0% Rookie, +1% Novice,
+ *     +2% Intermediate, +3% Advanced, +4% Expert, in the place of the retired skill
+ *     word (q282). Old contract: rookie -1% penalty, developing 0, experienced +3%.
+ *   - old career level: +0.4% per level above 1. Every rider sits at level 1
+ *     (staffCareerLevel, q229/q244), so this adds nothing; the star level term above is
+ *     what a rider's level is worth (q302).
  *   - prestige (0–100): +0.04% per prestige point, capped at +4% bonus
  *   - discipline-personality affinity (from RIDER_PERSONALITY_DATA):
  *       high match: +2% bonus
@@ -44,7 +44,7 @@
  *     frontend `RIDER_PERSONALITY_DATA` to avoid a frontend→backend import.
  *     A follow-up issue can extract it into a shared package.
  */
-import { staffCareerLevel } from '../constants/staffLevels.mjs';
+import { staffCareerLevel, staffLevels } from '../constants/staffLevels.mjs';
 
 // Single source of truth for rider cap constants (Equoria-pqdte). Previously
 // these were locally re-declared in simulateCompetition.mjs and
@@ -95,6 +95,21 @@ const RIDER_DISCIPLINE_AFFINITY = Object.freeze({
 
 const AFFINITY_BONUS = Object.freeze({ high: 0.02, medium: 0.01 });
 
+/** Bonus per star level step above the lowest (owner ruling 2026-10-29, q302). */
+const starLevelStepBonus = 0.01;
+
+/**
+ * A rider's show bonus from its star level (q302): +0% at the lowest level, one more
+ * percent per level, +4% at Expert. An unknown or missing level adds nothing.
+ *
+ * @param {unknown} starLevel
+ * @returns {number} decimal bonus (0 to 0.04)
+ */
+export function riderStarLevelBonus(starLevel) {
+  const step = staffLevels.indexOf(starLevel);
+  return step > 0 ? step * starLevelStepBonus : 0;
+}
+
 /**
  * Apply rider modifiers (bonus and penalty) to a competition score.
  *
@@ -137,6 +152,9 @@ function computeRiderModifiers({ rider, discipline } = {}) {
 
   let bonus = 0;
   let penalty = 0;
+
+  // ── star level contribution (q302): +0 / +1 / +2 / +3 / +4 % ────────────
+  bonus += riderStarLevelBonus(rider.starLevel);
 
   // ── career level contribution: +0.4% per level above 1 ─────────────────
   // Level 1 for every rider (q244), so 0 until staff growth (Equoria-xlw03).

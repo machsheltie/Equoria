@@ -83,12 +83,14 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
   it('scores, places, pays 50/30/20 and awards Horse Points 10/5/3 exactly', async () => {
     const { creator, showId } = await fixtures.createFundedShow({ prize: PRIZE, entryFee });
 
+    // Rider level (owner rulings 2026-10-29: q282 retired the old skill word, q302 gave
+    // the star level a show bonus of +0 / +1 / +2 / +3 / +4 % from Rookie to Expert).
+    // Old contract: A's 'experienced' rider +3 (119), B's 'rookie' rider -1 (72), C's
+    // 'developing' rider 0 (95).
     // A: base 0.5*80 + 0.3*70 + 0.2*60 = 73; three weeks of Dressage +15;
-    // Dressage saddle + Dressage bridle +10 -> 98. Luck +6, rider methodical in
-    // Dressage +2, Calm in Dressage +5, Excellent health +5 -> +18%.
-    // 98 x 1.18 = 115.64 -> 116. Its revealed Dressage trait and positive flags add
-    // nothing. (Owner ruling 2026-10-29, q282, retired the riders' old skill word: an
-    // 'experienced' rider used to add +3, for 119 here, and a 'rookie' cost B 1.)
+    // Dressage saddle + Dressage bridle +10 -> 98. Luck +6, Expert rider +4 and
+    // methodical in Dressage +2, Calm in Dressage +5, Excellent health +5 -> +22%.
+    // 98 x 1.22 = 119.56 -> 120. Its revealed Dressage trait adds nothing.
     const a = await makeCompetitor({
       stats: { precision: 80, focus: 70, obedience: 60 },
       traits: {
@@ -98,11 +100,11 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
       tack: { saddle: 'dressage-saddle', bridle: 'double-bridle' },
       temperament: 'Calm',
       health: 'Excellent',
-      rider: { personality: 'methodical' },
+      rider: { personality: 'methodical', starLevel: 'expert' },
     });
     // B: base 70; trained only in Racing, so 0 here; All Purpose saddle +
-    // bridle +4 -> 74. Luck +6, rider with no Dressage affinity 0, Nervous in
-    // Dressage -5, Fair health -3 -> -2%. 74 x 0.98 = 72.52 -> 73. Its hidden trait
+    // bridle +4 -> 74. Luck +6, Rookie rider +0 with no Dressage affinity 0, Nervous
+    // in Dressage -5, Fair health -3 -> -2%. 74 x 0.98 = 72.52 -> 73. Its hidden trait
     // adds nothing.
     const b = await makeCompetitor({
       stats: { precision: 70, focus: 70, obedience: 70 },
@@ -113,12 +115,12 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
       tack: { saddle: 'all-purpose-saddle', bridle: 'all-purpose-bridle' },
       temperament: 'Nervous',
       health: 'Fair',
-      rider: { personality: 'daring' },
+      rider: { personality: 'daring', starLevel: 'rookie' },
     });
     // C: base 76; one week of Dressage +5; Jump saddle (not Dressage) 0 +
-    // Snaffle bridle (Dressage, Show Jumping) +5 -> 86. Luck +6, rider
-    // with no Dressage affinity 0, Steady in Dressage +5, Good
-    // health 0 -> +11%. 86 x 1.11 = 95.46 -> 95.
+    // Snaffle bridle (Dressage, Show Jumping) +5 -> 86. Luck +6, Intermediate rider
+    // +2 with no Dressage affinity 0, Steady in Dressage +5, Good health 0 -> +13%.
+    // 86 x 1.13 = 97.18 -> 97.
     const c = await makeCompetitor({
       stats: { precision: 76, focus: 76, obedience: 76 },
       traits: {},
@@ -126,7 +128,7 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
       tack: { saddle: 'jumping-saddle', bridle: 'snaffle-bridle' },
       temperament: 'Steady',
       health: 'Good',
-      rider: { personality: 'intuitive' },
+      rider: { personality: 'intuitive', starLevel: 'intermediate' },
     });
 
     const entrants = [a, b, c];
@@ -155,8 +157,8 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
         horsePointsAwarded: row.horsePointsAwarded,
       };
     };
-    expect(resultOf(a)).toEqual({ score: 116, placement: 1, prizeWon: 500, horsePointsAwarded: 10 });
-    expect(resultOf(c)).toEqual({ score: 95, placement: 2, prizeWon: 300, horsePointsAwarded: 5 });
+    expect(resultOf(a)).toEqual({ score: 120, placement: 1, prizeWon: 500, horsePointsAwarded: 10 });
+    expect(resultOf(c)).toEqual({ score: 97, placement: 2, prizeWon: 300, horsePointsAwarded: 5 });
     expect(resultOf(b)).toEqual({ score: 73, placement: 3, prizeWon: 200, horsePointsAwarded: 3 });
 
     const horses = await prisma.horse.findMany({
