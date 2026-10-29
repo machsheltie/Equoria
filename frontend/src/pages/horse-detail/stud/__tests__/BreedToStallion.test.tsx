@@ -3,8 +3,9 @@
  *
  * Owner rulings q91/q94/q106 (2026-10-26/27): the button names the fee; the
  * player picks a mare and that is the one click. Her own stallion: free and at
- * once. A Public Stud: at once, fee charged. A Private Stud: a request is sent,
- * and the button is disabled when she cannot afford the fee. No confirm page,
+ * once. A Public Stud: at once, fee charged. A Private Stud: a request is sent.
+ * For either stud the button is disabled when she cannot afford the fee
+ * (q106 Private, q286 Public); the fee stays on it. No confirm page,
  * no foal preview, no before/after balance, no receipt.
  *
  * Real BreedToStallion, real hooks, real apiClient (CSRF included); MSW only at
@@ -211,6 +212,30 @@ describe('BreedToStallion', () => {
 
     expect(screen.getByRole('button', { name: 'Breed to Moonrise Sonata (500)' })).toBeDisabled();
     expect(screen.getByText('You need 500 coins to ask for Moonrise Sonata.')).toBeInTheDocument();
+  });
+
+  it('q286: a Public Stud she cannot afford is disabled, the fee still on the button', () => {
+    serveHorses();
+    renderBreed({ kind: 'public' }, 499);
+
+    expect(screen.getByRole('button', { name: 'Breed to Moonrise Sonata (500)' })).toBeDisabled();
+    expect(screen.getByText('You need 500 coins to breed to Moonrise Sonata.')).toBeInTheDocument();
+  });
+
+  it('q286: a Public Stud she can just afford stays open', () => {
+    serveHorses();
+    renderBreed({ kind: 'public' }, 500);
+
+    expect(screen.getByRole('button', { name: 'Breed to Moonrise Sonata (500)' })).toBeEnabled();
+    expect(screen.queryByText(/You need 500 coins/)).not.toBeInTheDocument();
+  });
+
+  it('her own stallion is free, so an empty purse never disables it', () => {
+    serveHorses();
+    renderBreed({ kind: 'own', fee: 0, ownerName: null }, 0);
+
+    expect(screen.getByRole('button', { name: 'Breed to Moonrise Sonata' })).toBeEnabled();
+    expect(screen.queryByText(/You need/)).not.toBeInTheDocument();
   });
 
   it('her own stallion: no fee on the button, and the pair is bred free', async () => {

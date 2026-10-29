@@ -6,8 +6,9 @@
  * is the one click. Her own stallion or a Public Stud: the mare is in foal at
  * once (7 days). A Private Stud: her request is sent. No confirm page, no foal
  * preview or odds, no before/after balance and no receipt; the result is said
- * in place. q106: the Private request is disabled when she cannot afford the
- * fee (the server refuses it too).
+ * in place. q106 (Private) and q286 (Public, 2026-10-29): the button is
+ * disabled when she cannot afford the fee, which stays on the button; the
+ * server refuses it too (insufficientFunds). Her own pair is free.
  */
 
 import React, { useId, useState } from 'react';
@@ -90,7 +91,7 @@ const BreedToStallion: React.FC<BreedToStallionProps> = ({ stallion, kind, fee, 
   const { data: horses } = useHorses();
 
   const balance = typeof user?.money === 'number' ? user.money : null;
-  const cannotAfford = kind === 'private' && balance !== null && balance < fee;
+  const cannotAfford = kind !== 'own' && balance !== null && balance < fee;
 
   const choose = (damId: number) => {
     setChosen(String(damId));
@@ -124,7 +125,8 @@ const BreedToStallion: React.FC<BreedToStallionProps> = ({ stallion, kind, fee, 
       </Button>
       {cannotAfford && (
         <p className="stud-quiet">
-          You need {fee.toLocaleString()} coins to ask for {stallion.name}.
+          You need {fee.toLocaleString()} coins to {kind === 'private' ? 'ask for' : 'breed to'}{' '}
+          {stallion.name}.
         </p>
       )}
 
