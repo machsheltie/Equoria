@@ -56,10 +56,32 @@ describe('Equoria-8jyiv — erasing a player who received club-election votes', 
   afterEach(() => cleanup.run(), 30000);
 
   it('withdraws their candidacy and the votes for it, leaving the rest of the election intact', async () => {
+    // Cleanup is registered before the creates it undoes (Equoria-bfqna); each id is
+    // pushed as its row is created and the lists are read when the cleanup runs, so a
+    // throw on a later create cannot strand the rows created before it.
+    // FK order: ballots → candidates → election → memberships → club → users.
+    // On success the subject's rows are already gone; these are then no-ops.
+    const ballotIds = [];
+    const candidateIds = [];
+    const electionIds = [];
+    const clubIds = [];
+    const userIds = [];
+    cleanup.add(() => prisma.clubBallot.deleteMany({ where: { id: { in: ballotIds } } }), 'ballots');
+    cleanup.add(() => prisma.clubCandidate.deleteMany({ where: { id: { in: candidateIds } } }), 'candidates');
+    cleanup.add(() => prisma.clubElection.deleteMany({ where: { id: { in: electionIds } } }), 'election');
+    // Every membership of this test's own club (no other row can belong to it).
+    cleanup.add(() => prisma.clubMembership.deleteMany({ where: { clubId: { in: clubIds } } }), 'memberships');
+    cleanup.add(() => prisma.club.deleteMany({ where: { id: { in: clubIds } } }), 'club');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
+
     const leader = await makeUser('leader'); // leads the club, votes for the subject
+    userIds.push(leader.id);
     const subject = await makeUser('subject'); // stands, receives a vote, is erased
+    userIds.push(subject.id);
     const rival = await makeUser('rival'); // stands in the same election
+    userIds.push(rival.id);
     const rivalVoter = await makeUser('rivalvoter'); // votes for the rival
+    userIds.push(rivalVoter.id);
 
     const club = await prisma.club.create({
       data: {
@@ -70,6 +92,7 @@ describe('Equoria-8jyiv — erasing a player who received club-election votes', 
         leaderId: leader.id,
       },
     });
+    clubIds.push(club.id);
     const now = Date.now();
     const election = await prisma.clubElection.create({
       data: {
@@ -80,36 +103,28 @@ describe('Equoria-8jyiv — erasing a player who received club-election votes', 
         endsAt: new Date(now + 86_400_000),
       },
     });
-    const memberships = await Promise.all(
-      [leader, subject, rival, rivalVoter].map(u =>
-        prisma.clubMembership.create({ data: { clubId: club.id, userId: u.id } }),
-      ),
-    );
+    electionIds.push(election.id);
+    // One at a time: a rejected Promise.all could leave a sibling create still in flight
+    // while the cleanup runs.
+    for (const u of [leader, subject, rival, rivalVoter]) {
+      await prisma.clubMembership.create({ data: { clubId: club.id, userId: u.id } });
+    }
     const subjectCandidacy = await prisma.clubCandidate.create({
       data: { electionId: election.id, userId: subject.id, statement: 'vote for me' },
     });
+    candidateIds.push(subjectCandidacy.id);
     const rivalCandidacy = await prisma.clubCandidate.create({
       data: { electionId: election.id, userId: rival.id, statement: 'no, me' },
     });
+    candidateIds.push(rivalCandidacy.id);
     const ballotForSubject = await prisma.clubBallot.create({
       data: { electionId: election.id, voterId: leader.id, candidateId: subjectCandidacy.id },
     });
+    ballotIds.push(ballotForSubject.id);
     const ballotForRival = await prisma.clubBallot.create({
       data: { electionId: election.id, voterId: rivalVoter.id, candidateId: rivalCandidacy.id },
     });
-
-    // FK order: ballots → candidates → election → memberships → club → users.
-    // On success the subject's rows are already gone; these are then no-ops.
-    const ballotIds = [ballotForSubject.id, ballotForRival.id];
-    const candidateIds = [subjectCandidacy.id, rivalCandidacy.id];
-    const membershipIds = memberships.map(m => m.id);
-    const userIds = [leader.id, subject.id, rival.id, rivalVoter.id];
-    cleanup.add(() => prisma.clubBallot.deleteMany({ where: { id: { in: ballotIds } } }), 'ballots');
-    cleanup.add(() => prisma.clubCandidate.deleteMany({ where: { id: { in: candidateIds } } }), 'candidates');
-    cleanup.add(() => prisma.clubElection.deleteMany({ where: { id: election.id } }), 'election');
-    cleanup.add(() => prisma.clubMembership.deleteMany({ where: { id: { in: membershipIds } } }), 'memberships');
-    cleanup.add(() => prisma.club.deleteMany({ where: { id: club.id } }), 'club');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
+    ballotIds.push(ballotForRival.id);
 
     // Pre-fix: throws PostgresError 23001 on clubCandidate.deleteMany.
     await expect(eraseUserAccount(subject.id)).resolves.toEqual({ deleted: true });

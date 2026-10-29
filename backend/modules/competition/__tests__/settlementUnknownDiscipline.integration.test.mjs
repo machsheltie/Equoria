@@ -115,9 +115,47 @@ const STATS = { precision: true, focus: true, obedience: true, intelligence: tru
 
 describe('nightly settlement with a discipline outside the 24', () => {
   it('settles the legacy show without stat gains, and the valid show in the same run still settles', async () => {
-    const creator = await makeUser('c', 2 * PRIZE);
-    const owner = await makeUser('o', 0);
+    // Cleanup is registered before the creates it undoes (Equoria-bfqna): each id is
+    // pushed as its row is created and the lists are read when the cleanup runs, so a
+    // throw on a later create cannot strand the rows created before it.
+    const userIds = [];
     const horseIds = [];
+    const fixtureShowIds = [];
+    // Registered first (the tracker runs callbacks in registration order): a show
+    // this test funded but did not finish settling is settled through the real
+    // executor before any row is deleted, so its escrow credit reaches its owners
+    // instead of being orphaned.
+    cleanup.add(async () => {
+      const funded = await prisma.show.findMany({
+        where: {
+          id: { in: fixtureShowIds },
+          status: 'open',
+          OR: [{ prizeEscrow: { gt: 0 } }, { feeEscrow: { gt: 0 } }],
+        },
+        select: { id: true },
+      });
+      if (funded.length) {
+        await prisma.show.updateMany({
+          where: { id: { in: funded.map(s => s.id) } },
+          data: { discipline: 'Dressage', closeDate: new Date(Date.now() - 60 * 1000) },
+        });
+        await executeClosedShows({ body: { showIds: funded.map(s => s.id) } }, null);
+      }
+    }, 'settle still-funded shows');
+    cleanup.add(
+      () => prisma.competitionResult.deleteMany({ where: { showId: { in: fixtureShowIds } } }),
+      'competitionResult',
+    );
+    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: fixtureShowIds } } }), 'showEntry');
+    cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: fixtureShowIds } } }), 'show');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'userTransaction');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'user');
+
+    const creator = await makeUser('c', 2 * PRIZE);
+    userIds.push(creator.id);
+    const owner = await makeUser('o', 0);
+    userIds.push(owner.id);
     // Bands far apart so luck (+1..+10%) cannot reorder them.
     const bands = [90, 60, 30];
     const legacyHorses = [];
@@ -131,34 +169,10 @@ describe('nightly settlement with a discipline outside the 24', () => {
 
     // Legacy show first in id order, so the old code would fail before the valid one.
     const legacyShow = await createFundedShow(creator.id);
+    fixtureShowIds.push(legacyShow.id);
     const validShow = await createFundedShow(creator.id);
+    fixtureShowIds.push(validShow.id);
     const showIds = [legacyShow.id, validShow.id];
-    // Registered first (the tracker runs callbacks in registration order): a show
-    // this test funded but did not finish settling is settled through the real
-    // executor before any row is deleted, so its escrow credit reaches its owners
-    // instead of being orphaned.
-    cleanup.add(async () => {
-      const funded = await prisma.show.findMany({
-        where: { id: { in: showIds }, status: 'open', OR: [{ prizeEscrow: { gt: 0 } }, { feeEscrow: { gt: 0 } }] },
-        select: { id: true },
-      });
-      if (funded.length) {
-        await prisma.show.updateMany({
-          where: { id: { in: funded.map(s => s.id) } },
-          data: { discipline: 'Dressage', closeDate: new Date(Date.now() - 60 * 1000) },
-        });
-        await executeClosedShows({ body: { showIds: funded.map(s => s.id) } }, null);
-      }
-    }, 'settle still-funded shows');
-    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: { in: showIds } } }), 'competitionResult');
-    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } }), 'showEntry');
-    cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'show');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
-    cleanup.add(
-      () => prisma.userTransaction.deleteMany({ where: { userId: { in: [creator.id, owner.id] } } }),
-      'userTransaction',
-    );
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [creator.id, owner.id] } } }), 'user');
 
     // The legacy row: a discipline outside the 24, and both shows due tonight.
     const pastClose = new Date(Date.now() - 60 * 60 * 1000);

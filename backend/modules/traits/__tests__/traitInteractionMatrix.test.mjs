@@ -141,39 +141,46 @@ describe('generateInteractionMatrix temporalModel section (was modelTemporalInte
   it('maturityFactor reaches ~1.0 at the 90-game-day maturity boundary (not /365)', async () => {
     const ts = Date.now();
     const rand = () => randomBytes(3).toString('hex');
-    const matureUser = await prisma.user.create({
-      data: {
-        emailVerified: true,
-        email: `rjs2n-${rand()}-${rand()}@test.com`,
-        username: `rjs2n${rand()}${rand()}`,
-        password: 'irrelevant-hash',
-        firstName: 'Rjs2n',
-        lastName: 'Tester',
-        money: 1000,
-      },
-    });
-    // Exactly 90 game-days old (date-only arithmetic on the Eastern game calendar, horseAge.mjs).
-    const dob = gameCalendarDate(new Date(), -90); // date-only: the Eastern date
-    const matureHorse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-Rjs2nMature-${ts}`,
-        sex: 'Filly',
-        dateOfBirth: dob,
-        age: 0,
-        userId: matureUser.id,
-        epigeneticFlags: ['brave', 'confident'],
-      },
-    });
+    let matureUser;
+    let matureHorse;
 
     // Equoria-1ohys: fail-loud scoped cleanup for the in-test fixtures. FK
     // order: horse before user (Horse.userId onDelete: Restrict). Run in the
     // finally so a delete failure surfaces loudly instead of leaking the row.
+    // Equoria-bfqna: the tracker is declared and its entries registered before the
+    // creates, and the creates run inside the try, so a throw on the horse create
+    // still removes the user. Ids are read when the cleanup runs.
     const matureCleanup = createCleanupTracker();
-    matureCleanup.add(() => prisma.horse.delete({ where: { id: matureHorse.id } }), 'matureHorse');
-    matureCleanup.add(() => prisma.user.delete({ where: { id: matureUser.id } }), 'matureUser');
+    const live = row => [row?.id].filter(Boolean);
+    matureCleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: live(matureHorse) } } }), 'matureHorse');
+    matureCleanup.add(() => prisma.user.deleteMany({ where: { id: { in: live(matureUser) } } }), 'matureUser');
 
     try {
+      matureUser = await prisma.user.create({
+        data: {
+          emailVerified: true,
+          email: `rjs2n-${rand()}-${rand()}@test.com`,
+          username: `rjs2n${rand()}${rand()}`,
+          password: 'irrelevant-hash',
+          firstName: 'Rjs2n',
+          lastName: 'Tester',
+          money: 1000,
+        },
+      });
+      // Exactly 90 game-days old (date-only arithmetic on the Eastern game calendar, horseAge.mjs).
+      const dob = gameCalendarDate(new Date(), -90); // date-only: the Eastern date
+      matureHorse = await prisma.horse.create({
+        data: {
+          ...fixtureColor(),
+          name: `TestFixture-Rjs2nMature-${ts}`,
+          sex: 'Filly',
+          dateOfBirth: dob,
+          age: 0,
+          userId: matureUser.id,
+          epigeneticFlags: ['brave', 'confident'],
+        },
+      });
+
       const result = (await generateInteractionMatrix(matureHorse.id, { timeWindow: 30 })).temporalModel;
       expect(Array.isArray(result.interactionEvolution)).toBe(true);
       expect(result.interactionEvolution.length).toBeGreaterThan(0);

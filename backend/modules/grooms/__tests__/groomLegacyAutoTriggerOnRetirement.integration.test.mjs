@@ -204,6 +204,24 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
     // Ownerless grooms exist in this database (marketplace stock that no player
     // has hired). Both of these are ownerless, mutually unrelated, and neither
     // belongs to `user`.
+
+    // Narrow, id-scoped cleanup: these rows are NOT reachable from `user`, so
+    // the userId-scoped entries registered in beforeEach cannot reclaim them.
+    // Registered before the creates (Equoria-bfqna); each id is pushed as its groom is
+    // created and the list is read when the cleanup runs, so a throw on the second
+    // create still reclaims the first. FK order: any legacy log first, then the
+    // schedules, then the grooms.
+    const ownerlessIds = [];
+    cleanup.add(
+      () => prisma.groomLegacyLog.deleteMany({ where: { retiredGroomId: { in: ownerlessIds } } }),
+      'groomLegacyLog:ownerless',
+    );
+    cleanup.add(
+      () => prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: ownerlessIds } } }),
+      'groomRetirementSchedule:ownerless',
+    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: ownerlessIds } } }), 'groom:ownerless');
+
     const ownerlessMentor = await prisma.groom.create({
       data: {
         name: `${TAG}-OwnerlessMentor`,
@@ -216,6 +234,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
         isActive: true,
       },
     });
+    ownerlessIds.push(ownerlessMentor.id);
     const ownerlessStranger = await prisma.groom.create({
       data: {
         name: `${TAG}-OwnerlessStranger`,
@@ -228,24 +247,6 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
         isActive: true,
       },
     });
-
-    // Narrow, id-scoped cleanup: these rows are NOT reachable from `user`, so
-    // the userId-scoped entries registered in beforeEach cannot reclaim them.
-    // Registered before the act so a mid-test failure still cleans up. FK order:
-    // any legacy log first, then the schedules, then the grooms.
-    const ownerlessIds = [ownerlessMentor.id, ownerlessStranger.id];
-    cleanup.add(
-      () => prisma.groomLegacyLog.deleteMany({ where: { retiredGroomId: { in: ownerlessIds } } }),
-      `groomLegacyLog:ownerless:${ownerlessIds.join(',')}`,
-    );
-    cleanup.add(
-      () => prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: ownerlessIds } } }),
-      `groomRetirementSchedule:ownerless:${ownerlessIds.join(',')}`,
-    );
-    cleanup.add(
-      () => prisma.groom.deleteMany({ where: { id: { in: ownerlessIds } } }),
-      `groom:ownerless:${ownerlessIds.join(',')}`,
-    );
 
     const result = await processRetirement(ownerlessMentor.id, RETIREMENT_REASONS.VOLUNTARY, true);
 
