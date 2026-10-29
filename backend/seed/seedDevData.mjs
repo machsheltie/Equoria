@@ -17,7 +17,7 @@ import { dirname, join } from 'path';
 // Equoria-o7pnn: seeded horses must arrive with a permanent temperament — the
 // same breed-weighted generator the register/advanceOnboarding paths use — so
 // dev databases never contain NULL-temperament horses.
-import { generateTemperamentWithDefault } from '../modules/horses/index.mjs';
+import { generateGaitScores, generateTemperamentWithDefault } from '../modules/horses/index.mjs';
 import { creditSystemAccount } from '../modules/economy/index.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -317,6 +317,7 @@ async function seedHorses(users, breeds) {
         // creation (mirrors authController register/advanceOnboarding). Only set
         // here on create — never overwritten for an existing horse above.
         temperament: generateTemperamentWithDefault(horseData.breed),
+        gaitScores: generateGaitScores(horseData.breed),
         age: horseData.age,
         // Randomized stats
         speed: randomStat(),

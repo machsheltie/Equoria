@@ -43,6 +43,8 @@ export {
   generateBreedPhysiqueOrRefuse,
   breedScoresMissingCode,
 } from './services/breedPhysique.mjs';
+// Equoria-576c0.5: seeds roll a seeded horse's gaits from its breed's ranges.
+export { generateGaitScores } from './services/gaitService.mjs';
 // Equoria-tl5l8: the birth discipline (+5 trained value) store and starter horses are born with.
 export { breedBirthDisciplineScores } from './services/birthDiscipline.mjs';
 export { getHorseById } from './services/horseRouteQueries.mjs';
@@ -68,6 +70,7 @@ export { coatColorNames, canonicalCoatColorName } from './services/coatColorName
 export { defaultHorseImageUrl, rollCoatImageUrl } from './services/coatImageService.mjs';
 export {
   DEFAULT_TEMPERAMENT_BREED,
+  generateTemperament,
   generateTemperamentWithDefault,
   getTemperamentGroomSynergy,
 } from './services/temperamentService.mjs';

@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs';
 import { fetchCsrf } from './csrfHelper.mjs';
 import { fixtureColor } from './fixtureColor.mjs';
 import { releaseShowEscrow } from '../../__tests__/helpers/releaseShowEscrow.mjs';
+import { withBreedTemperamentAndGaits } from '../../__tests__/helpers/createTestHorse.mjs';
 import { birthDateForAge } from '../../utils/horseAge.mjs';
 
 const DEFAULT_ORIGIN = 'http://localhost:3000';
@@ -243,8 +244,9 @@ export async function createTestHorse(horseData = {}) {
     delete defaultData.userId;
   }
 
+  // Equoria-576c0.5: born with its breed's temperament and gaits, like any new horse.
   const horse = await prisma.horse.create({
-    data: defaultData,
+    data: await withBreedTemperamentAndGaits(prisma, defaultData),
   });
   _createdHorseIds.add(horse.id);
   return horse;

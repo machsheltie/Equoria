@@ -4,7 +4,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 // Equoria-o7pnn: seeded horses must arrive with a permanent breed-weighted
 // temperament so dev databases never contain NULL-temperament horses.
-import { generateTemperamentWithDefault } from '../modules/horses/index.mjs';
+import { generateGaitScores, generateTemperamentWithDefault } from '../modules/horses/index.mjs';
 import { birthDateForAge } from '../utils/horseAge.mjs';
 
 /**
@@ -80,6 +80,7 @@ async function seedUserWithHorses() {
           sex: 'stallion',
           // Equoria-o7pnn: permanent breed-weighted temperament, assigned once.
           temperament: generateTemperamentWithDefault(breed.name),
+          gaitScores: generateGaitScores(breed.name),
           healthStatus: 'Good',
           disciplineScores: {
             Racing: 15,
@@ -97,6 +98,7 @@ async function seedUserWithHorses() {
           sex: 'mare',
           // Equoria-o7pnn: permanent breed-weighted temperament, assigned once.
           temperament: generateTemperamentWithDefault(breed.name),
+          gaitScores: generateGaitScores(breed.name),
           healthStatus: 'Good',
           disciplineScores: {
             'Show Jumping': 20,
@@ -114,6 +116,7 @@ async function seedUserWithHorses() {
           sex: 'colt',
           // Equoria-o7pnn: permanent breed-weighted temperament, assigned once.
           temperament: generateTemperamentWithDefault(breed.name),
+          gaitScores: generateGaitScores(breed.name),
           healthStatus: 'Good',
         },
       }),

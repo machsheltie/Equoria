@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 // Equoria-o7pnn: test-data horses must arrive with a permanent breed-weighted
 // temperament so dev databases never contain NULL-temperament horses (mirrors
 // the register/advanceOnboarding creation paths).
-import { generateTemperamentWithDefault } from '../modules/horses/index.mjs';
+import { generateGaitScores, generateTemperamentWithDefault } from '../modules/horses/index.mjs';
 import { birthDateForAge } from '../utils/horseAge.mjs';
 
 async function createTestData() {
@@ -46,6 +46,7 @@ async function createTestData() {
         userId: testUser.id,
         // Equoria-o7pnn: permanent breed-weighted temperament, assigned once.
         temperament: generateTemperamentWithDefault(breed.name),
+        gaitScores: generateGaitScores(breed.name),
         speed: 50,
         stamina: 45,
         strength: 40,
@@ -68,6 +69,7 @@ async function createTestData() {
         userId: testUser.id,
         // Equoria-o7pnn: permanent breed-weighted temperament, assigned once.
         temperament: generateTemperamentWithDefault(breed.name),
+        gaitScores: generateGaitScores(breed.name),
         speed: 60,
         stamina: 55,
         strength: 50,
@@ -92,6 +94,7 @@ async function createTestData() {
         userId: testUser.id,
         // Equoria-o7pnn: permanent breed-weighted temperament, assigned once.
         temperament: generateTemperamentWithDefault(breed.name),
+        gaitScores: generateGaitScores(breed.name),
         speed: 80,
         stamina: 75,
         strength: 70,

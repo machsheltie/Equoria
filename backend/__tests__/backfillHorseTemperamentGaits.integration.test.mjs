@@ -13,7 +13,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma from '../../packages/database/prismaClient.mjs';
+import prisma, { Prisma } from '../../packages/database/prismaClient.mjs';
 import { horseTemperamentValues } from '../constants/schema.mjs';
 import { generateGaitScores } from '../modules/horses/services/gaitService.mjs';
 import { getBreedProfile } from '../modules/horses/data/breedProfileLoader.mjs';
@@ -61,6 +61,10 @@ async function plant(label, breedId, data = {}) {
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),
       ...(breedId ? { breedId } : {}),
+      // A legacy row from before both became required (Equoria-576c0.5): planted NULL
+      // explicitly, since createTestHorse otherwise rolls both from the breed.
+      temperament: null,
+      gaitScores: Prisma.DbNull,
       ...data,
     },
     horseIds,

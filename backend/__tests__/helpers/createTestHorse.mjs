@@ -48,6 +48,51 @@
  */
 
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
+import { generateTemperament } from '../../modules/horses/services/temperamentService.mjs';
+import { generateGaitScores } from '../../modules/horses/services/gaitService.mjs';
+
+/**
+ * Equoria-576c0.5 (owner ruling 2026-10-19, O5 option A): every horse has a
+ * temperament and gait scores, rolled from its breed. Returns `data` with
+ * whichever of the two the caller left out rolled from the fixture's breed
+ * (scalar `breedId` or `breed: { connect: { id } }`), exactly as a new horse of
+ * that breed gets them. A caller-supplied value is kept, and so is an explicit
+ * `null` (a test planting a pre-ruling legacy row, e.g. for the backfill script).
+ * A breedless fixture, or a test-made breed with no profile, has nothing to roll
+ * from and is returned unchanged.
+ *
+ * @param {import('@prisma/client').PrismaClient} prisma
+ * @param {object} data Prisma `horse.create` data
+ * @returns {Promise<object>}
+ */
+export async function withBreedTemperamentAndGaits(prisma, data) {
+  const needsTemperament = data.temperament === undefined;
+  const needsGaits = data.gaitScores === undefined;
+  const breedId = data.breedId ?? data.breed?.connect?.id;
+  if ((!needsTemperament && !needsGaits) || breedId === undefined || breedId === null) {
+    return data;
+  }
+  const breed = await prisma.breed.findUnique({ where: { id: breedId }, select: { name: true } });
+  if (!breed) {
+    return data;
+  }
+  const rolled = {};
+  try {
+    if (needsTemperament) {
+      rolled.temperament = generateTemperament(breed.name);
+    }
+    if (needsGaits) {
+      rolled.gaitScores = generateGaitScores(breed.name);
+    }
+  } catch (err) {
+    // A profile source that failed to load is an infrastructure fault: rethrow it.
+    if (err?.cause) {
+      throw err;
+    }
+    return data;
+  }
+  return { ...data, ...rolled };
+}
 
 /**
  * Insert a horse row with a valid colorGenotype + phenotype auto-generated.
@@ -79,9 +124,10 @@ export async function createTestHorse(prisma, data, collector, breedGeneticProfi
     Object.prototype.hasOwnProperty.call(data, 'colorGenotype') ||
     Object.prototype.hasOwnProperty.call(data, 'phenotype');
 
-  const finalData = callerSuppliedColor
-    ? { ...data }
-    : { ...fixtureColor(breedGeneticProfile), ...data };
+  const finalData = await withBreedTemperamentAndGaits(
+    prisma,
+    callerSuppliedColor ? { ...data } : { ...fixtureColor(breedGeneticProfile), ...data },
+  );
 
   const horse = await prisma.horse.create({ data: finalData });
 

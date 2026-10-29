@@ -7,7 +7,8 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { validateConformationScores } from './conformationService.mjs';
-import { validateGaitScores } from './gaitService.mjs';
+import { validateGaitScores, generateGaitScores } from './gaitService.mjs';
+import { generateTemperament } from './temperamentService.mjs';
 import { generateGenotype } from './genotypeGenerationService.mjs';
 import { calculateBreedPhenotype } from './phenotypeCalculationService.mjs';
 import { generateMarkings } from './markingGenerationService.mjs';
@@ -38,6 +39,30 @@ async function chooseCoatImageUrl(client, resolvedBreedId, phenotype, imageUrl) 
     select: { name: true },
   });
   return (breedRow && rollCoatImageUrl(breedRow.name, phenotype)) || imageUrl;
+}
+
+/**
+ * Equoria-576c0.5 (owner ruling 2026-10-19, O5 option A): every horse has a
+ * temperament and gait scores. A caller that omits either gets the same roll a new
+ * horse of its breed gets (the breed's temperament weights; the breed's gait ranges,
+ * special gaits only for a gaited breed). A breed with no weights or ranges throws:
+ * the horse is not created, never given a guessed value.
+ */
+async function breedRolledTemperamentAndGaits(client, resolvedBreedId, temperament, gaitScores) {
+  if (temperament && gaitScores) {
+    return { temperament, gaitScores };
+  }
+  const breedRow = await client.breed.findUnique({
+    where: { id: resolvedBreedId },
+    select: { name: true },
+  });
+  if (!breedRow) {
+    throw new Error(`Breed ${resolvedBreedId} not found`);
+  }
+  return {
+    temperament: temperament || generateTemperament(breedRow.name),
+    gaitScores: gaitScores || generateGaitScores(breedRow.name),
+  };
 }
 
 async function createHorse(horseData, client = prisma) {
@@ -208,6 +233,13 @@ async function createHorse(horseData, client = prisma) {
       }
     }
 
+    const rolled = await breedRolledTemperamentAndGaits(
+      client,
+      breedIdOf(breedId, breed) ?? Number(breedId),
+      temperament,
+      gaitScores,
+    );
+
     const resolvedImageUrl = await chooseCoatImageUrl(
       client,
       breedIdOf(breedId, breed),
@@ -230,7 +262,7 @@ async function createHorse(horseData, client = prisma) {
         ...(shade && { shade }),
         ...(resolvedImageUrl && { imageUrl: resolvedImageUrl }),
         ...(trait && { trait }),
-        ...(temperament && { temperament }),
+        temperament: rolled.temperament,
         ...(precision !== undefined && { precision }),
         ...(strength !== undefined && { strength }),
         ...(speed !== undefined && { speed }),
@@ -262,7 +294,7 @@ async function createHorse(horseData, client = prisma) {
         conformationScores: validateConformationScores(
           horseData.conformationScores || defaultConformationScores,
         ),
-        ...(gaitScores && { gaitScores: validateGaitScores(gaitScores) }),
+        gaitScores: validateGaitScores(rolled.gaitScores),
         // Birth discipline +5 (Equoria-tl5l8): see services/birthDiscipline.mjs.
         ...(disciplineScores && { disciplineScores }),
       },

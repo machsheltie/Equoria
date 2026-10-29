@@ -25,7 +25,11 @@ import logger from '../utils/logger.mjs';
 // is mapped before createMany (createMany can't run a per-row fn), generated once
 // at creation — the "temperament is permanent" invariant.
 // Equoria-94z3m: both symbols now resolve through the horses module barrel.
-import { generateStoreStats, generateTemperamentWithDefault } from '../modules/horses/index.mjs';
+import {
+  generateGaitScores,
+  generateStoreStats,
+  generateTemperamentWithDefault,
+} from '../modules/horses/index.mjs';
 import { birthDateForAge } from '../utils/horseAge.mjs';
 import { staffLevels } from '../constants/staffLevels.mjs';
 
@@ -146,6 +150,7 @@ async function seedPerformanceHorses() {
         // Equoria-o7pnn: permanent breed-weighted temperament mapped per row
         // before createMany (assigned once at creation).
         temperament: generateTemperamentWithDefault(breed.name),
+        gaitScores: generateGaitScores(breed.name),
         healthStatus: 'Excellent',
         bondScore: Math.floor(Math.random() * 50) + 50,
         horseXp: Math.floor(Math.random() * 1000),

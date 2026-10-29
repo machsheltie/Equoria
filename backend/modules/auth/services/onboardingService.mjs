@@ -39,10 +39,11 @@
  *     still exists, but the gap is visible in production logs
  *     so the long-term sentinel job (Equoria-fhag) is not the only
  *     line of defense.
- *   - Equoria-f5372: temperament is applied via raw SQL on the existing
- *     column so a stale Prisma client create-input type cannot break
- *     registration AND a color-generation failure cannot leave
- *     temperament NULL.
+ *   - Equoria-576c0.5 (owner ruling 2026-10-19, O5 option A): the starter
+ *     horse is created WITH its temperament, rolled from the starter breed's
+ *     temperament weights (was: a later raw UPDATE with Thoroughbred weights
+ *     whatever the starter breed, which could fail and leave it NULL). A
+ *     breed with no weights creates no horse, as for missing gait ranges.
  */
 
 import logger from '../../../utils/logger.mjs';
@@ -53,7 +54,7 @@ import {
   generateGenotype,
   calculatePhenotype,
   generateMarkings,
-  generateTemperamentWithDefault,
+  generateTemperament,
   generateBreedPhysiqueOrRefuse,
   breedScoresMissingCode,
   breedBirthDisciplineScores,
@@ -158,6 +159,11 @@ export async function createStarterHorseForNewUser(
       throw refusal;
     }
 
+    // Equoria-576c0.5: a permanent temperament from the starter breed's weights,
+    // set in the same insert. A breed without weights throws before the insert, so no
+    // horse is created (the outer catch logs it; registration still succeeds).
+    const temperament = generateTemperament(breedName);
+
     const starterHorse = await prisma.horse.create({
       data: {
         name: starterHorseName(user.username),
@@ -189,6 +195,7 @@ export async function createStarterHorseForNewUser(
         // Owner ruling 2026-10-28 (Equoria-fd3f2): Excellent health and fully fed.
         ...horseArrivalCare(),
         ...physique,
+        temperament,
         // Equoria-tl5l8: born with the starter breed's discipline at +5.
         ...(starterDisciplineScores && { disciplineScores: starterDisciplineScores }),
       },
@@ -233,37 +240,6 @@ export async function createStarterHorseForNewUser(
           userId: user.id,
           error: colorError.message,
           stack: colorError.stack,
-        },
-      );
-    }
-
-    // Equoria-f5372: assign a permanent temperament. The starter horse is
-    // seeded with the default breed (Equoria-b9zgr), so temperament is
-    // generated from the same default breed's weights. Written via raw SQL on
-    // the existing column (independent of the color block) so a
-    // color-generation failure can never leave temperament NULL, and so a
-    // stale Prisma client create-input type can never break registration.
-    try {
-      const starterTemperament = generateTemperamentWithDefault(null);
-      await prisma.$executeRaw`
-        UPDATE horses
-        SET temperament = ${starterTemperament}
-        WHERE id = ${starterHorse.id}
-      `;
-      logger.info(
-        '[onboardingService.createStarterHorseForNewUser] Starter horse temperament applied',
-        { horseId: starterHorse.id, temperament: starterTemperament },
-      );
-    } catch (temperamentError) {
-      // Non-fatal at the request level (the user is registered and the horse
-      // exists); logged at error level so the regression is visible.
-      logger.error(
-        '[onboardingService.createStarterHorseForNewUser] FAILED to apply starter horse temperament (horse will have NULL temperament until backfilled):',
-        {
-          horseId: starterHorse.id,
-          userId: user.id,
-          error: temperamentError.message,
-          stack: temperamentError.stack,
         },
       );
     }

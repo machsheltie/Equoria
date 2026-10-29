@@ -30,6 +30,14 @@ import { createHorse } from '../services/horseCreation.mjs';
 
 const PREFIX = `TestFixture-horseModel-${randomBytes(4).toString('hex')}`;
 
+// Owner ruling 2026-10-19 (O5, Equoria-576c0.5): every horse has a temperament and gait
+// scores, and createHorse refuses to roll them for a breed with no profile. This suite's
+// dedicated fixture breed has none, so each horse carries the pair explicitly.
+const temperamentAndGaits = {
+  temperament: 'Calm',
+  gaitScores: { walk: 50, trot: 50, canter: 50, gallop: 50, gaiting: null },
+};
+
 let breedId;
 let sireId;
 let damId;
@@ -43,6 +51,7 @@ async function makeParent(suffix, sex) {
     sex,
     dateOfBirth: new Date('2019-01-01'),
     breed: { connect: { id: breedId } },
+    ...temperamentAndGaits,
   });
   createdHorseIds.push(horse.id);
   return horse.id;
@@ -80,6 +89,7 @@ describe('Horse Model epigeneticModifiers contract (real DB)', () => {
         sex: 'Filly',
         dateOfBirth: new Date(),
         breed: { connect: { id: breedId } },
+        ...temperamentAndGaits,
         sireId,
         damId,
       });
@@ -115,6 +125,7 @@ describe('Horse Model epigeneticModifiers contract (real DB)', () => {
         sex: 'Colt',
         dateOfBirth: new Date(),
         breed: { connect: { id: breedId } },
+        ...temperamentAndGaits,
         sireId,
         damId,
         epigeneticModifiers: supplied,
@@ -135,6 +146,7 @@ describe('Horse Model epigeneticModifiers contract (real DB)', () => {
         sex: 'Mare',
         dateOfBirth: new Date('2019-01-01'),
         breed: { connect: { id: breedId } },
+        ...temperamentAndGaits,
         sireId,
         damId,
       });
@@ -151,6 +163,7 @@ describe('Horse Model epigeneticModifiers contract (real DB)', () => {
         sex: 'Filly',
         dateOfBirth: new Date(),
         breed: { connect: { id: breedId } },
+        ...temperamentAndGaits,
       });
       createdHorseIds.push(result.id);
 
@@ -167,6 +180,7 @@ describe('Horse Model epigeneticModifiers contract (real DB)', () => {
         sex: 'Colt',
         dateOfBirth: new Date(),
         breed: { connect: { id: breedId } },
+        ...temperamentAndGaits,
         sireId,
       });
       createdHorseIds.push(result.id);
@@ -182,6 +196,7 @@ describe('Horse Model epigeneticModifiers contract (real DB)', () => {
         sex: 'Filly',
         dateOfBirth: new Date(),
         breed: { connect: { id: breedId } },
+        ...temperamentAndGaits,
         damId,
       });
       createdHorseIds.push(result.id);
@@ -201,6 +216,7 @@ describe('Horse Model epigeneticModifiers contract (real DB)', () => {
         sex: 'Colt',
         dateOfBirth: new Date(),
         breed: { connect: { id: breedId } },
+        ...temperamentAndGaits,
         sireId,
         damId,
         epigeneticModifiers: supplied,

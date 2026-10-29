@@ -6,7 +6,7 @@ import logger from '../utils/logger.mjs';
 // types (temperamentService.mjs). The live seed-create path uses the same
 // breed-weighted generator the register/advanceOnboarding paths use (the
 // o7pnn convention) so dev databases never contain non-canonical temperaments.
-import { generateTemperamentWithDefault } from '../modules/horses/index.mjs';
+import { generateGaitScores, generateTemperamentWithDefault } from '../modules/horses/index.mjs';
 import { birthDateForAge } from '../utils/horseAge.mjs';
 
 // Get __dirname equivalent for ES modules
@@ -276,6 +276,7 @@ const seedHorses = async (prisma, users) => {
       endurance: 75,
       intelligence: 60,
       temperament: 'Spirited',
+      gaitScores: generateGaitScores('Thoroughbred'),
       healthStatus: 'Excellent',
       forSale: false,
     },
@@ -300,6 +301,7 @@ const seedHorses = async (prisma, users) => {
       // the breed-weighted generator for the horse's breed ('Arabian') — assigned
       // once at create, respecting the temperament-permanence invariant.
       temperament: generateTemperamentWithDefault('Arabian'),
+      gaitScores: generateGaitScores('Arabian'),
       healthStatus: 'Excellent',
       forSale: true,
       salePrice: 15000,
