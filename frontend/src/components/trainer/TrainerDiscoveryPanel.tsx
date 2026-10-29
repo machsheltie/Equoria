@@ -44,7 +44,6 @@ export interface TrainerDiscoveryProfile {
   slots: TrainerDiscoverySlot[];
   discoveredCount: number;
   totalSlots: number;
-  nextDiscoveryAt?: number; // sessions remaining until next reveal
 }
 
 // Category metadata
@@ -82,7 +81,6 @@ export function buildEmptyTrainerDiscoveryProfile(trainerId: number): TrainerDis
     slots,
     discoveredCount: 0,
     totalSlots: 6,
-    nextDiscoveryAt: 5,
   };
 }
 
@@ -184,13 +182,8 @@ const TrainerDiscoveryPanel: React.FC<TrainerDiscoveryPanelProps> = ({
         </div>
       )}
 
-      {/* Next discovery hint */}
-      {revealedCount < revealableCount && profile.nextDiscoveryAt && (
-        <p className="text-xs text-[var(--text-muted)] italic">
-          ~{profile.nextDiscoveryAt} more training session
-          {profile.nextDiscoveryAt !== 1 ? 's' : ''} to reveal the next trait
-        </p>
-      )}
+      {/* Equoria-colgp (owner ruling q160, 2026-10-28): no next-reveal hint. The
+          server's nextDiscoveryAt is a staff level, not a count of sessions. */}
 
       {/* Category Sections */}
       {categories.map((category) => {
@@ -266,7 +259,7 @@ export function TrainerDiscoveryPanelLive({ trainerId }: TrainerDiscoveryPanelLi
     );
   }
 
-  // Server sends back { slots, totalSlots, discoveredCount, nextDiscoveryAt } —
+  // Server sends back { slots, totalSlots, discoveredCount, ... } —
   // the presentational component wants a TrainerDiscoveryProfile with a trainerId
   // attached. We already know the trainerId from props.
   const profile: TrainerDiscoveryProfile = {
@@ -274,7 +267,6 @@ export function TrainerDiscoveryPanelLive({ trainerId }: TrainerDiscoveryPanelLi
     slots: data.slots as TrainerDiscoverySlot[],
     discoveredCount: data.discoveredCount,
     totalSlots: data.totalSlots,
-    nextDiscoveryAt: data.nextDiscoveryAt,
   };
 
   return <TrainerDiscoveryPanel profile={profile} />;
