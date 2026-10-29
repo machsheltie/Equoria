@@ -103,7 +103,7 @@ import { registerGroomPayrollRun, registerQuarantinedShowTools } from '../module
 import { processWeeklySalaries } from '../modules/grooms/index.mjs';
 import {
   diagnoseQuarantinedShow,
-  previewQuarantinedShow,
+  testRunQuarantinedShow,
   runQuarantinedShow,
 } from '../modules/competition/index.mjs';
 // Equoria-q4uem.4 (WS4 S3): application-level cross-domain reads. This router
@@ -135,7 +135,7 @@ import bankUserTransactionsRoutes from '../modules/bank/routes/bankUserTransacti
 export function buildRouters() {
   registerQuarantinedShowTools({
     diagnoseQuarantinedShow,
-    previewQuarantinedShow,
+    testRunQuarantinedShow,
     runQuarantinedShow,
   });
   // Unscoped on purpose: the owner's run is the whole weekly payday.

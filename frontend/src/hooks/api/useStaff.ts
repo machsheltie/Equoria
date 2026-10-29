@@ -326,24 +326,35 @@ export function useDiagnoseQuarantinedShow() {
   });
 }
 
-/** Step one of Run Show: placements and prize money, nothing moved. */
-export function usePreviewQuarantinedShow() {
+/**
+ * Test run: the real settlement, always rolled back (Equoria-yqi49). The list
+ * refreshes because a passed test run is what unlocks Run Show.
+ */
+export function useTestRunQuarantinedShow() {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationKey: [...staffKeys.all, 'preview-show'],
-    mutationFn: (showId: number) => staffApi.previewQuarantinedShow(showId),
+    mutationKey: [...staffKeys.all, 'test-run-show'],
+    mutationFn: (showId: number) => staffApi.testRunQuarantinedShow(showId),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: staffKeys.quarantinedShows });
+      queryClient.invalidateQueries({ queryKey: staffKeys.log });
+    },
   });
 }
 
-/** Step two of Run Show: settle once. The ledger and the list both change. */
+/** Run Show: settle once. The ledger and the list both change, on failure too. */
 export function useRunQuarantinedShow() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: [...staffKeys.all, 'run-show'],
-    mutationFn: (args: { showId: number; previewDigest: string }) =>
-      staffApi.runQuarantinedShow(args.showId, args.previewDigest),
-    onSuccess: () => {
+    mutationFn: (showId: number) => staffApi.runQuarantinedShow(showId),
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: staffKeys.quarantinedShows });
       queryClient.invalidateQueries({ queryKey: staffKeys.log });
+    },
+    // The owner may be the host or an entrant: her own coin balance can change.
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 }

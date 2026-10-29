@@ -37,8 +37,7 @@ export { isValidConformationClass } from './services/conformationShowScoring.mjs
 export { executeClosedShows } from './shows/showExecutionService.mjs';
 // Equoria-ehlbj: the owner's quarantined-show tools (diagnose, preview, run). The app
 // layer hands them to the staff routes' port (staff cannot import this module).
-export {
-  diagnoseQuarantinedShow,
-  previewQuarantinedShow,
-  runQuarantinedShow,
-} from './shows/showQuarantineResolution.mjs';
+export { testRunQuarantinedShow, runQuarantinedShow } from './shows/showQuarantineResolution.mjs';
+export { diagnoseQuarantinedShow } from './shows/showQuarantineDiagnosis.mjs';
+// Equoria-yqi49: every failed try of a show is kept for the owner's Diagnose.
+export { recordShowFailure } from './shows/showFailureLog.mjs';

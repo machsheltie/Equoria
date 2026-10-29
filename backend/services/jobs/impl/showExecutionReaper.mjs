@@ -56,7 +56,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { executeClosedShows } from '../../../modules/competition/index.mjs';
+import { executeClosedShows, recordShowFailure } from '../../../modules/competition/index.mjs';
 
 /** A claim older than this is considered stranded by a crashed executor. */
 export const STALE_CLAIM_THRESHOLD_MS = 2 * 60 * 60 * 1000;
@@ -110,6 +110,18 @@ function emitReaperAlert(staleShows, releasedIds, quarantinedIds) {
   } catch (err) {
     logger.warn(`[ShowExecutionReaper] alert emit failed: ${err?.message ?? err}`);
   }
+}
+
+/**
+ * Equoria-yqi49: a counted stranding is a failed try with no caught error (the
+ * process stopped mid-show). The owner's Diagnose lists it with the claim time.
+ */
+function recordStranding(show) {
+  const claimed = show.claimedAt ? show.claimedAt.toISOString() : 'at an unknown time';
+  return recordShowFailure(show.id, {
+    source: 'reaperStranded',
+    message: `The run stopped part-way through this show and never finished (claimed ${claimed}); the server likely restarted or ran out of memory.`,
+  });
 }
 
 /**
@@ -174,6 +186,7 @@ export async function reapStaleExecutingShows({ showIds } = {}) {
     });
     if (quarantined.count === 1) {
       quarantinedIds.push(show.id);
+      await recordStranding(show);
       continue;
     }
     const released = await prisma.show.updateMany({
@@ -182,6 +195,7 @@ export async function reapStaleExecutingShows({ showIds } = {}) {
     });
     if (released.count === 1) {
       releasedIds.push(show.id);
+      await recordStranding(show);
     } else {
       logger.info(
         `[ShowExecutionReaper] Skipping show ${show.id} — its state moved between scan and release`,

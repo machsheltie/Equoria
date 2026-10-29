@@ -13,6 +13,7 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { deployedCommitSha } from '../../../utils/deployedCommitSha.mjs';
 
 /** The list is bounded; quarantine is rare, so this is far above any real backlog. */
 export const quarantinedShowsLimit = 200;
@@ -41,5 +42,52 @@ export async function listQuarantinedShows(client = prisma) {
       _count: { select: { entries: true } },
     },
   });
-  return shows.map(({ _count, ...show }) => ({ ...show, entryCount: _count.entries }));
+  const toolUses = await latestToolUses(
+    client,
+    shows.map(s => String(s.id)),
+  );
+  return shows.map(({ _count, ...show }) => ({
+    ...show,
+    entryCount: _count.entries,
+    ...testRunState(toolUses.get(String(show.id))),
+  }));
+}
+
+/**
+ * The newest use of the owner's tools on each show (Equoria-yqi49). The tools
+ * record every test run and run in the staff action log under this capability,
+ * with `after.action` 'testRun' or 'runShow' and the commit the server ran.
+ */
+async function latestToolUses(client, targetIds) {
+  if (targetIds.length === 0) {
+    return new Map();
+  }
+  const rows = await client.staffActionLog.findMany({
+    where: {
+      capability: 'shows.quarantine.resolve',
+      targetType: 'show',
+      targetId: { in: targetIds },
+    },
+    orderBy: { id: 'desc' },
+    distinct: ['targetId'],
+    select: { targetId: true, outcome: true, after: true, createdAt: true },
+  });
+  return new Map(rows.map(row => [row.targetId, row]));
+}
+
+/**
+ * Whether Run Show is unlocked: the newest tool use is a passed test run on the
+ * commit the server runs now. The run route checks the same thing again.
+ */
+function testRunState(latest) {
+  const after = latest?.after && typeof latest.after === 'object' ? latest.after : {};
+  if (!latest || after.action !== 'testRun') {
+    return { lastTestRun: null, runShowReady: false };
+  }
+  const passed = latest.outcome === 'succeeded';
+  const sameCommit = (after.commitSha ?? null) === deployedCommitSha();
+  return {
+    lastTestRun: { testedAt: latest.createdAt, passed, sameCommit },
+    runShowReady: passed && sameCommit,
+  };
 }

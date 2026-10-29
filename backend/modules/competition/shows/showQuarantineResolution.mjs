@@ -1,27 +1,30 @@
 /**
- * The owner's tools for a quarantined show (Equoria-ehlbj, owner rulings
- * 2026-10-23 q29, q30, q41).
+ * The owner's tools for a quarantined show (Equoria-ehlbj, Equoria-yqi49; owner
+ * rulings 2026-10-23 q29, q30, q41).
  *
  * A show is quarantined after three failed executions (the reaper, Equoria-
  * c7mx0.1) or when its half-settled payout cannot be finished after three
- * nightly tries (Equoria-o1vns). Only the Owner sees it. Three actions:
+ * nightly tries (Equoria-o1vns). Only the Owner sees it. Her tools:
  *
- *   - diagnoseQuarantinedShow: one export she can hand to Claude Code or Codex:
- *     the show, its entries, the staged placements, the attempt count, the last
- *     errors the cron records hold and the show's ledger rows. Nothing about the
- *     game is redacted; no secret is in it (no email, password hash or token).
- *   - previewQuarantinedShow: computes placements and prize money and moves
- *     nothing. It returns a `previewDigest` naming exactly what it computed.
- *   - runQuarantinedShow: settles the show once, in ONE transaction, only if the
- *     show is still quarantined and the digest still matches what she saw. The
- *     first statement flips quarantined -> completed (a guarded updateMany), so a
- *     second run, or a concurrent one, finds nothing to claim and changes
- *     nothing. The staff audit record commits with the settlement.
+ *   - Diagnose (showQuarantineDiagnosis.mjs): a plain-text report she copies
+ *     and hands to Claude Code or Codex.
+ *   - testRunQuarantinedShow: runs the REAL settlement inside a transaction that
+ *     is always rolled back, and reports what would happen: placements, prizes,
+ *     entry fees, the coin count check, or the error. The result is recorded
+ *     (staff action log) with the commit the server runs.
+ *   - runQuarantinedShow: allowed only when the latest tool use on the show is a
+ *     passed test run on the commit the server runs now, and the show is still
+ *     exactly as it was tested. Settles once, in ONE transaction: the first
+ *     write flips quarantined -> completed (a guarded updateMany), so a second
+ *     run or a concurrent one finds nothing to claim. Coins are counted before
+ *     and after; a mismatch aborts and rolls everything back. A failure leaves
+ *     the show quarantined and is added to the diagnosis.
  *
  * Two kinds of quarantined show, told apart by what the show already did:
  *   - unexecuted: crashed before it paid anyone (no executedAt, no results). The
- *     staged ordering is replayed; with none usable it is scored fresh at
- *     preview time and staged then, so the confirm replays what she saw.
+ *     staged ordering is replayed; with none usable it is scored fresh at test
+ *     run time and staged then (the only write a test run keeps), so Run Show
+ *     pays exactly the placings she saw instead of rolling luck again.
  *   - half-settled: it was 'completed' and paid some placings. Only the staged
  *     placements with no result row are paid, like the nightly re-drive.
  */
@@ -31,6 +34,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import AppError from '../../../errors/AppError.mjs';
 import logger from '../../../utils/logger.mjs';
 import { recordStaffActionTx, recordStaffFailure } from '../../staff/index.mjs';
+import { systemAccountBurn, systemAccountShowEscrow } from '../../economy/index.mjs';
 import { refundUnpaidPrizeShareInTx, settleShowFeeEscrowInTx } from './showEscrowTx.mjs';
 import { announceSettledEntry, settleEntryInTx } from './showExecutionService.mjs';
 import { scoreOrdering, scoringHorseSelect } from './showOrdering.mjs';
@@ -40,18 +44,21 @@ import {
   readRecoverableOrdering,
 } from './showSettlementRecovery.mjs';
 import { readStagedOrdering } from '../services/competitionScoring.mjs';
+import { recordShowFailure } from './showFailureLog.mjs';
+import { deployedCommitSha } from '../../../utils/deployedCommitSha.mjs';
 
 /** The one owner-only capability behind every quarantine tool. */
 export const quarantineResolveCapability = 'shows.quarantine.resolve';
 
+/** The `after.action` of the two recorded tool uses. */
+export const testRunAction = 'testRun';
+export const runShowAction = 'runShow';
+
 /** A settlement of a whole field in one transaction is allowed this long. */
 const settlementTimeoutMs = 120_000;
 
-/** How many failed cron runs the diagnosis carries. */
-const diagnosisCronRuns = 10;
-
-/** Cron jobs whose records can hold a quarantined show's errors. */
-const showCronJobNames = ['showExecutionReaper', 'nightlyShowExecution'];
+/** Thrown inside a test run's transaction so that it always rolls back. */
+const rollbackTestRun = Symbol('rollbackTestRun');
 
 function refusal(message, statusCode, code) {
   const error = new AppError(message, statusCode);
@@ -59,7 +66,7 @@ function refusal(message, statusCode, code) {
   return error;
 }
 
-async function loadQuarantinedShow(client, showId) {
+export async function loadQuarantinedShow(client, showId) {
   const show = await client.show.findUnique({
     where: { id: showId },
     include: {
@@ -121,7 +128,7 @@ export function planQuarantinedSettlement(show) {
   };
 }
 
-/** The digest of what a plan pays, so a confirm can only run what was previewed. */
+/** The digest of what a plan pays, so Run Show only runs what was tested. */
 function planDigest(show, plan) {
   const payload = JSON.stringify({
     showId: show.id,
@@ -135,150 +142,328 @@ function planDigest(show, plan) {
   return createHash('sha256').update(payload).digest('hex');
 }
 
-/**
- * Step 1 of Run Show: compute placements and prize money; move nothing.
- *
- * Only an unexecuted show with no usable staged ordering is touched, and only
- * its staging column: the fresh scoring is staged (guarded on 'quarantined') so
- * the confirm replays this very ordering instead of rolling luck again.
- *
- * @param {number} showId
- * @param {{ scoreRng?: () => number, now?: Date }} [options] test seams
- */
-export async function previewQuarantinedShow(showId, { scoreRng, now = new Date() } = {}) {
-  let show = await loadQuarantinedShow(prisma, showId);
-  let plan = planQuarantinedSettlement(show);
-  let stagedNow = false;
-  if (plan.kind === 'unexecuted' && !plan.ordering) {
-    const ordering = await scoreOrdering(show, show.entries, scoreRng, now);
-    const staged = await prisma.show.updateMany({
-      where: { id: showId, status: 'quarantined' },
-      data: { stagedOrdering: ordering },
-    });
-    if (staged.count !== 1) {
-      throw refusal('This show is no longer quarantined', 409, 'showNotQuarantined');
-    }
-    stagedNow = true;
-    show = await loadQuarantinedShow(prisma, showId);
-    plan = planQuarantinedSettlement(show);
-  }
-  if (!plan.ordering) {
-    throw refusal(
-      'The staged placements of this show cannot be read. Use Diagnose and hand the export to Claude Code or Codex.',
-      422,
-      'stagedOrderingUnreadable',
-    );
-  }
-  const owners = await prisma.user.findMany({
-    where: { id: { in: [...new Set(plan.pending.map(p => p.staged.userId))] } },
-    select: { id: true, username: true },
-  });
-  const ownerNames = new Map(owners.map(u => [u.id, u.username]));
-  return {
-    showId,
-    name: show.name,
-    kind: plan.kind,
-    stagedNow,
-    attempts: show.executionAttempts,
-    entryCount: show.entries.length,
-    placements: plan.pending.map(({ staged, prize }) => ({
-      placement: staged.placement,
-      horseId: staged.horseId,
-      horseName: staged.horseName,
-      ownerId: staged.userId,
-      ownerName: ownerNames.get(staged.userId) ?? null,
-      score: staged.score,
-      prize,
-    })),
-    prizeToPlacings: plan.pending.reduce((sum, p) => sum + p.prize, 0),
-    unpaidPrizeShareToHost: plan.unpaidPrizeShare + plan.prizeRefund,
-    entryFeesToHost: plan.feesToCreator,
-    previewDigest: planDigest(show, plan),
-  };
-}
-
-/** Lock every account and horse the settlement writes, ascending (lock order). */
-async function lockSettlementRows(tx, show, plan) {
+/** Every account the settlement can pay: the placings' owners and the host. */
+function settlementUserIds(show, plan) {
   const userIds = new Set(plan.pending.map(p => p.staged.userId));
   if (show.createdByUserId) {
     userIds.add(show.createdByUserId);
   }
-  for (const id of [...userIds].sort()) {
+  return [...userIds].sort();
+}
+
+/** Lock every row the settlement writes or counts (lock order: User, Horse, then system accounts). */
+async function lockSettlementRows(tx, userIds, plan) {
+  for (const id of userIds) {
     await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${id} FOR UPDATE`;
   }
   for (const horseId of plan.pending.map(p => p.staged.horseId).sort((a, b) => a - b)) {
     await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ${horseId} FOR UPDATE`;
   }
+  for (const name of [systemAccountBurn, systemAccountShowEscrow].sort()) {
+    await tx.$queryRaw`SELECT "name" FROM "system_accounts" WHERE "name" = ${name} FOR UPDATE`;
+  }
+}
+
+/** The coins the settlement can move: the accounts it pays and the escrow and burn accounts. */
+async function countCoins(tx, userIds, showId) {
+  const [users, accounts, show] = await Promise.all([
+    tx.user.findMany({ where: { id: { in: userIds } }, select: { money: true } }),
+    tx.systemAccount.findMany({
+      where: { name: { in: [systemAccountShowEscrow, systemAccountBurn] } },
+      select: { name: true, balance: true },
+    }),
+    tx.show.findUnique({ where: { id: showId }, select: { prizeEscrow: true, feeEscrow: true } }),
+  ]);
+  const balance = name => accounts.find(a => a.name === name)?.balance ?? 0;
+  return {
+    players: users.reduce((sum, u) => sum + u.money, 0),
+    escrowAccount: balance(systemAccountShowEscrow),
+    burnAccount: balance(systemAccountBurn),
+    showEscrow: show.prizeEscrow + show.feeEscrow,
+  };
 }
 
 /**
- * Step 2 of Run Show: settle the quarantined show once, in one transaction.
+ * Coins in = coins out: the total across the paid accounts, the escrow account
+ * and the burn account is unchanged, and the escrow account lost exactly what
+ * this show's escrow columns lost.
+ */
+function checkConservation(before, after) {
+  const total = c => c.players + c.escrowAccount + c.burnAccount;
+  const escrowOut = before.escrowAccount - after.escrowAccount;
+  const showEscrowOut = before.showEscrow - after.showEscrow;
+  const balanced = total(before) === total(after) && escrowOut === showEscrowOut;
+  return {
+    balanced,
+    coinsIn: escrowOut,
+    coinsOut: after.players - before.players + (after.burnAccount - before.burnAccount),
+    showEscrowOut,
+  };
+}
+
+/**
+ * The settlement both tools run, inside the caller's transaction.
+ *
+ * @param {object} tx
+ * @param {number} showId
+ * @param {{ expectedDigest?: string, now: Date, statGainRng?: () => number,
+ *   afterSettle?: (tx: object) => Promise<void> }} options `afterSettle` is a test
+ *   seam that runs after the payouts and before the coin count.
+ */
+async function settleQuarantinedInTx(
+  tx,
+  showId,
+  { expectedDigest, now, statGainRng, afterSettle },
+) {
+  const live = await loadQuarantinedShow(tx, showId);
+  const plan = planQuarantinedSettlement(live);
+  if (!plan.ordering) {
+    throw refusal(
+      'The staged placements of this show cannot be read. Use Diagnose and hand the report to Claude Code or Codex.',
+      422,
+      'stagedOrderingUnreadable',
+    );
+  }
+  const digest = planDigest(live, plan);
+  if (expectedDigest !== undefined && digest !== expectedDigest) {
+    throw refusal('The show changed since its test run. Test run it again.', 409, 'testRunStale');
+  }
+  // The guard: only one run can flip quarantined -> completed.
+  const claimed = await tx.show.updateMany({
+    where: { id: showId, status: 'quarantined' },
+    data: { status: 'completed', executedAt: live.executedAt ?? now, claimedAt: null },
+  });
+  if (claimed.count !== 1) {
+    throw refusal('This show was already run', 409, 'showNotQuarantined');
+  }
+  const userIds = settlementUserIds(live, plan);
+  await lockSettlementRows(tx, userIds, plan);
+  const coinsBefore = await countCoins(tx, userIds, showId);
+
+  // Equoria-law5w: what each placing was really paid (escrow only).
+  const paidByHorse = new Map();
+  for (const { staged, prize } of plan.pending) {
+    const paid = await settleEntryInTx(tx, live, staged, {
+      prize,
+      unpaidPrizeShare: plan.unpaidPrizeShare,
+      now,
+      statGainRng,
+    });
+    paidByHorse.set(staged.horseId, paid);
+  }
+  if (plan.prizeRefund > 0) {
+    await refundUnpaidPrizeShareInTx(tx, {
+      showId,
+      creatorId: live.createdByUserId,
+      amount: plan.prizeRefund,
+    });
+  }
+  await settleShowFeeEscrowInTx(tx, showId);
+  await clearStagedOrdering(showId, tx);
+  if (afterSettle) {
+    await afterSettle(tx);
+  }
+
+  const conservation = checkConservation(coinsBefore, await countCoins(tx, userIds, showId));
+  if (!conservation.balanced) {
+    const error = new Error(
+      `Coin count mismatch: ${conservation.coinsIn} coins left escrow (${conservation.showEscrowOut} from this show) but ${conservation.coinsOut} reached players or the burn account`,
+    );
+    error.code = 'conservationMismatch';
+    throw error;
+  }
+  return { live, plan, digest, paidByHorse, conservation };
+}
+
+/** What a settlement did, in the shape the owner's page shows. */
+async function describeSettlement({ live, plan, paidByHorse, conservation }, client) {
+  const owners = await client.user.findMany({
+    where: { id: { in: [...new Set(plan.pending.map(p => p.staged.userId))] } },
+    select: { id: true, username: true },
+  });
+  const ownerNames = new Map(owners.map(u => [u.id, u.username]));
+  return {
+    name: live.name,
+    kind: plan.kind,
+    attempts: live.executionAttempts,
+    entryCount: live.entries.length,
+    placements: plan.pending.map(({ staged }) => ({
+      placement: staged.placement,
+      horseId: staged.horseId,
+      horseName: staged.horseName,
+      ownerName: ownerNames.get(staged.userId) ?? null,
+      score: staged.score,
+      prize: paidByHorse.get(staged.horseId) ?? 0,
+    })),
+    prizeToPlacings: [...paidByHorse.values()].reduce((sum, paid) => sum + paid, 0),
+    unpaidPrizeShareToHost: plan.unpaidPrizeShare + plan.prizeRefund,
+    entryFeesToHost: plan.feesToCreator,
+    coinsIn: conservation.coinsIn,
+    coinsOut: conservation.coinsOut,
+  };
+}
+
+/** Record a failed tool use: in the staff action log, and in the show's failures. */
+async function recordToolFailure(showId, actor, action, error) {
+  const commitSha = deployedCommitSha();
+  await recordShowFailure(showId, { source: action, error });
+  await recordStaffFailure({
+    actorId: actor.id,
+    actorRole: actor.role,
+    capability: quarantineResolveCapability,
+    targetType: 'show',
+    targetId: String(showId),
+    after: { action, commitSha },
+    error: error.message,
+  }).catch(logError =>
+    logger.error(`[showQuarantineResolution] Could not record the failure: ${logError.message}`),
+  );
+}
+
+/**
+ * Stage a fresh scoring for an unexecuted show with no usable ordering, so the
+ * test run and Run Show settle the same placings. Guarded on 'quarantined'.
+ */
+async function stageOrderingIfMissing(showId, { scoreRng, now }) {
+  const show = await loadQuarantinedShow(prisma, showId);
+  const plan = planQuarantinedSettlement(show);
+  if (plan.kind !== 'unexecuted' || plan.ordering) {
+    return false;
+  }
+  const ordering = await scoreOrdering(show, show.entries, scoreRng, now);
+  const staged = await prisma.show.updateMany({
+    where: { id: showId, status: 'quarantined' },
+    data: { stagedOrdering: ordering },
+  });
+  if (staged.count !== 1) {
+    throw refusal('This show is no longer quarantined', 409, 'showNotQuarantined');
+  }
+  return true;
+}
+
+/**
+ * Test run: the real settlement, in a transaction that is always rolled back.
  *
  * @param {number} showId
- * @param {{ actor: { id: string, role: string }, previewDigest: string, now?: Date, statGainRng?: () => number }} params
+ * @param {{ actor: { id: string, role: string }, now?: Date, scoreRng?: () => number,
+ *   statGainRng?: () => number, afterSettle?: (tx: object) => Promise<void> }} params
+ * @returns {Promise<object>} `{ passed: true, ... }` with what would happen, or
+ *   `{ passed: false, error }`. Refusals (not found, not quarantined, unreadable
+ *   placements) are thrown.
+ */
+export async function testRunQuarantinedShow(
+  showId,
+  { actor, now = new Date(), scoreRng, statGainRng, afterSettle },
+) {
+  const stagedNow = await stageOrderingIfMissing(showId, { scoreRng, now });
+  const commitSha = deployedCommitSha();
+  let outcome = null;
+  try {
+    await prisma.$transaction(
+      async tx => {
+        const settled = await settleQuarantinedInTx(tx, showId, { now, statGainRng, afterSettle });
+        outcome = { settled, described: await describeSettlement(settled, tx) };
+        throw rollbackTestRun;
+      },
+      { timeout: settlementTimeoutMs, maxWait: 10_000 },
+    );
+  } catch (error) {
+    if (error !== rollbackTestRun) {
+      if (AppError.isAppError(error)) {
+        throw error;
+      }
+      logger.error(
+        `[showQuarantineResolution] Test run of show ${showId} failed: ${error.message}`,
+      );
+      await recordToolFailure(showId, actor, testRunAction, error);
+      return { showId, passed: false, error: error.message, commitSha, stagedNow };
+    }
+  }
+  const testedAt = new Date();
+  await recordStaffActionTx(prisma, {
+    actorId: actor.id,
+    actorRole: actor.role,
+    capability: quarantineResolveCapability,
+    targetType: 'show',
+    targetId: String(showId),
+    after: {
+      action: testRunAction,
+      commitSha,
+      testedAt: testedAt.toISOString(),
+      digest: outcome.settled.digest,
+      prizeToPlacings: outcome.described.prizeToPlacings,
+      entryFeesToHost: outcome.described.entryFeesToHost,
+    },
+  });
+  return {
+    showId,
+    passed: true,
+    stagedNow,
+    commitSha,
+    testedAt: testedAt.toISOString(),
+    ...outcome.described,
+  };
+}
+
+/** The latest tool use on a show, or null. */
+export function latestToolUse(showId, client = prisma) {
+  return client.staffActionLog.findFirst({
+    where: {
+      capability: quarantineResolveCapability,
+      targetType: 'show',
+      targetId: String(showId),
+    },
+    orderBy: { id: 'desc' },
+    select: { id: true, outcome: true, after: true, createdAt: true },
+  });
+}
+
+/** Refuse unless the latest tool use is a passed test run on the commit running now. */
+async function requireFreshTestRun(showId) {
+  const last = await latestToolUse(showId);
+  const after = last?.after && typeof last.after === 'object' ? last.after : {};
+  if (!last || after.action !== testRunAction || last.outcome !== 'succeeded') {
+    throw refusal(
+      'Test run this show first; Run Show unlocks when it passes.',
+      409,
+      'testRunRequired',
+    );
+  }
+  if ((after.commitSha ?? null) !== deployedCommitSha()) {
+    throw refusal(
+      'The game was updated since the last test run. Test run it again.',
+      409,
+      'testRunStale',
+    );
+  }
+  return after.digest;
+}
+
+/**
+ * Run Show: settle the quarantined show once, in one transaction.
+ *
+ * @param {number} showId
+ * @param {{ actor: { id: string, role: string }, now?: Date, statGainRng?: () => number,
+ *   afterSettle?: (tx: object) => Promise<void> }} params
  * @returns {Promise<{ showId: number, status: 'completed', settled: number }>}
  */
 export async function runQuarantinedShow(
   showId,
-  { actor, previewDigest, now = new Date(), statGainRng },
+  { actor, now = new Date(), statGainRng, afterSettle },
 ) {
-  if (typeof previewDigest !== 'string' || previewDigest === '') {
-    throw refusal('Preview this show first, then confirm.', 400, 'previewRequired');
-  }
-  const before = await loadQuarantinedShow(prisma, showId);
-  const beforePlan = planQuarantinedSettlement(before);
-  if (!beforePlan.ordering) {
-    throw refusal('Preview this show first, then confirm.', 409, 'previewRequired');
-  }
-  if (planDigest(before, beforePlan) !== previewDigest) {
-    throw refusal('The show changed since the preview. Preview it again.', 409, 'previewStale');
-  }
+  await loadQuarantinedShow(prisma, showId);
+  const expectedDigest = await requireFreshTestRun(showId);
 
-  let settledPlan;
+  let settled;
   try {
-    settledPlan = await prisma.$transaction(
+    settled = await prisma.$transaction(
       async tx => {
-        // What is paid is exactly what she previewed: the same read, plan and digest,
-        // taken before the claim (the claim stamps executedAt, which would change
-        // the show's kind).
-        const live = await loadQuarantinedShow(tx, showId);
-        const plan = planQuarantinedSettlement(live);
-        if (!plan.ordering || planDigest(live, plan) !== previewDigest) {
-          throw refusal(
-            'The show changed since the preview. Preview it again.',
-            409,
-            'previewStale',
-          );
-        }
-        // The guard: only one run can flip quarantined -> completed.
-        const claimed = await tx.show.updateMany({
-          where: { id: showId, status: 'quarantined' },
-          data: { status: 'completed', executedAt: before.executedAt ?? now, claimedAt: null },
+        const result = await settleQuarantinedInTx(tx, showId, {
+          expectedDigest,
+          now,
+          statGainRng,
+          afterSettle,
         });
-        if (claimed.count !== 1) {
-          throw refusal('This show was already run', 409, 'showNotQuarantined');
-        }
-        await lockSettlementRows(tx, live, plan);
-        // Equoria-law5w: what each placing was really paid (escrow only).
-        const paidByHorse = new Map();
-        for (const { staged, prize } of plan.pending) {
-          const paid = await settleEntryInTx(tx, live, staged, {
-            prize,
-            unpaidPrizeShare: plan.unpaidPrizeShare,
-            now,
-            statGainRng,
-          });
-          paidByHorse.set(staged.horseId, paid);
-        }
-        if (plan.prizeRefund > 0) {
-          await refundUnpaidPrizeShareInTx(tx, {
-            showId,
-            creatorId: live.createdByUserId,
-            amount: plan.prizeRefund,
-          });
-        }
-        await settleShowFeeEscrowInTx(tx, showId);
-        await clearStagedOrdering(showId, tx);
         await recordStaffActionTx(tx, {
           actorId: actor.id,
           actorRole: actor.role,
@@ -287,21 +472,25 @@ export async function runQuarantinedShow(
           targetId: String(showId),
           before: {
             status: 'quarantined',
-            executionAttempts: live.executionAttempts,
-            kind: plan.kind,
+            executionAttempts: result.live.executionAttempts,
+            kind: result.plan.kind,
           },
           after: {
+            action: runShowAction,
             status: 'completed',
-            settledPlacements: plan.pending.map(p => ({
+            commitSha: deployedCommitSha(),
+            settledPlacements: result.plan.pending.map(p => ({
               placement: p.staged.placement,
               horseId: p.staged.horseId,
-              prize: paidByHorse.get(p.staged.horseId),
+              prize: result.paidByHorse.get(p.staged.horseId),
             })),
-            entryFeesToHost: plan.feesToCreator,
-            previewDigest,
+            entryFeesToHost: result.plan.feesToCreator,
+            coinsIn: result.conservation.coinsIn,
+            coinsOut: result.conservation.coinsOut,
+            digest: result.digest,
           },
         });
-        return { plan, live, paidByHorse };
+        return result;
       },
       { timeout: settlementTimeoutMs, maxWait: 10_000 },
     );
@@ -310,16 +499,7 @@ export async function runQuarantinedShow(
       throw error;
     }
     logger.error(`[showQuarantineResolution] Show ${showId} did not settle: ${error.message}`);
-    await recordStaffFailure({
-      actorId: actor.id,
-      actorRole: actor.role,
-      capability: quarantineResolveCapability,
-      targetType: 'show',
-      targetId: String(showId),
-      error: error.message,
-    }).catch(logError =>
-      logger.error(`[showQuarantineResolution] Could not record the failure: ${logError.message}`),
-    );
+    await recordToolFailure(showId, actor, runShowAction, error);
     throw refusal(
       `The show did not settle and nothing was changed: ${error.message}`,
       500,
@@ -328,108 +508,8 @@ export async function runQuarantinedShow(
   }
 
   // Committed. Caches and notifications are fail-soft, outside the transaction.
-  for (const { staged } of settledPlan.plan.pending) {
-    await announceSettledEntry(
-      settledPlan.live,
-      staged,
-      settledPlan.paidByHorse.get(staged.horseId),
-    );
+  for (const { staged } of settled.plan.pending) {
+    await announceSettledEntry(settled.live, staged, settled.paidByHorse.get(staged.horseId));
   }
-  return { showId, status: 'completed', settled: settledPlan.plan.pending.length };
-}
-
-/**
- * The export the owner hands to Claude Code or Codex. Read-only. Nothing about
- * the game is redacted; accounts appear as id and username only.
- *
- * @param {number} showId
- * @returns {Promise<object>}
- */
-export async function diagnoseQuarantinedShow(showId) {
-  const show = await loadQuarantinedShow(prisma, showId);
-  const plan = planQuarantinedSettlement(show);
-  const [results, cronRuns, ledger, escrowAccount] = await Promise.all([
-    // Owner-only export (shows.quarantine.view), so it deliberately names
-    // scoreInputs: the Owner may see score breakdowns (q01, Equoria-4q02c).
-    prisma.competitionResult.findMany({
-      where: { showId },
-      orderBy: { id: 'asc' },
-      select: {
-        id: true,
-        score: true,
-        placement: true,
-        discipline: true,
-        runDate: true,
-        showName: true,
-        prizeWon: true,
-        statGains: true,
-        horsePointsAwarded: true,
-        scoreInputs: true,
-        horseId: true,
-        showId: true,
-        createdAt: true,
-        viewedAt: true,
-      },
-    }),
-    prisma.cronRunLog.findMany({
-      where: { jobName: { in: showCronJobNames }, status: 'error' },
-      orderBy: { startedAt: 'desc' },
-      take: diagnosisCronRuns,
-      select: {
-        id: true,
-        jobName: true,
-        startedAt: true,
-        finishedAt: true,
-        errorsCount: true,
-        errorMessage: true,
-        summary: true,
-      },
-    }),
-    prisma.userTransaction.findMany({
-      where: {
-        OR: [
-          { metadata: { path: ['showId'], equals: showId } },
-          ...(show.createdByUserId
-            ? [
-                {
-                  userId: show.createdByUserId,
-                  category: 'showCreatePrizeEscrow',
-                  description: { contains: `"${show.name}"` },
-                },
-              ]
-            : []),
-        ],
-      },
-      orderBy: { id: 'asc' },
-    }),
-    prisma.systemAccount.findUnique({ where: { name: 'showEscrow' } }),
-  ]);
-  const { entries, competitionResults: _resultStubs, ...showRow } = show;
-  return {
-    format: 'equoria-quarantined-show-diagnosis/1',
-    exportedAt: new Date().toISOString(),
-    show: showRow,
-    kind: plan.kind,
-    attempts: show.executionAttempts,
-    entries: entries.map(({ horse, ...entry }) => ({
-      ...entry,
-      horse: { id: horse.id, name: horse.name, userId: horse.userId },
-    })),
-    stagedPlacements: show.stagedOrdering,
-    results,
-    settlementPlan: {
-      orderingReadable: plan.ordering !== null,
-      placementsStillToPay: plan.pending.map(p => ({
-        placement: p.staged.placement,
-        horseId: p.staged.horseId,
-        prize: p.prize,
-      })),
-      unpaidPrizeShare: plan.unpaidPrizeShare,
-      prizeRefund: plan.prizeRefund,
-      entryFeesToHost: plan.feesToCreator,
-    },
-    lastCronErrors: cronRuns,
-    ledger,
-    showEscrowAccountBalance: escrowAccount?.balance ?? null,
-  };
+  return { showId, status: 'completed', settled: settled.plan.pending.length };
 }

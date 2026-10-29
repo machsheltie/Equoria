@@ -165,8 +165,22 @@ async function redriveFails(showId) {
   }
 }
 
+const failureRows = showId =>
+  prisma.cronRunLog.findMany({
+    where: { jobName: 'showFailure', summary: { path: ['showId'], equals: showId } },
+    orderBy: { id: 'asc' },
+  });
+
 beforeAll(async () => {
   const staffScope = () => ({ in: staff.createdUserIds });
+  // Equoria-yqi49: the failed tries these shows record for the owner's Diagnose.
+  cleanup.add(
+    () =>
+      prisma.cronRunLog.deleteMany({
+        where: { jobName: 'showFailure', OR: showIds.map(id => ({ summary: { path: ['showId'], equals: id } })) },
+      }),
+    'show failure rows',
+  );
   cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds } } }), 'notifications');
   cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: { in: showIds } } }), 'results');
   cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } }), 'entries');
@@ -227,6 +241,16 @@ describe('Equoria-o1vns — an unpayable placing is quarantined after 3 failed n
     const kept = await prisma.show.findUnique({ where: { id: showId }, select: { stagedOrdering: true } });
     expect(kept.stagedOrdering).toHaveLength(2);
   }, 90_000);
+
+  it('every failed payout try was recorded for Diagnose with its error and stack (Equoria-yqi49)', async () => {
+    const failures = await failureRows(showId);
+    expect(failures).toHaveLength(3);
+    for (const failure of failures) {
+      expect(failure.summary).toMatchObject({ showId, source: 'nightlyPayout' });
+      expect(typeof failure.errorMessage).toBe('string');
+      expect(failure.summary.stack).toMatch(/modules[\\/]competition[\\/]shows[\\/]showExecutionService\.mjs/);
+    }
+  });
 
   describe('the owner finds it in her quarantined list', () => {
     beforeEach(() => startEmailCapture());

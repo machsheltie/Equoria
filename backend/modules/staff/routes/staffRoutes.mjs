@@ -50,7 +50,7 @@ import {
   diagnoseShow,
   getQuarantinedShows,
   getShowScoreInputs,
-  previewShow,
+  testRunShow,
   runShow,
 } from '../controllers/staffShowsController.mjs';
 import { runGroomPayroll } from '../controllers/staffPayrollController.mjs';
@@ -118,7 +118,8 @@ router.post('/tickets/:id/status', requireStaffCapability('ticket.resolve'), cha
 
 // Owner only (Equoria-ehlbj, rulings q29/q30/q41): shows quarantined after 3 failed
 // executions (Equoria-c7mx0.1) or 3 failed payouts (Equoria-o1vns), and the tools to
-// resolve them: Diagnose (a downloadable export), then Run Show in two steps.
+// resolve them: Diagnose (a report to copy), Test run (always rolled back), and Run Show,
+// which a passed test run on the deployed commit unlocks (Equoria-yqi49).
 router.get(
   '/shows/quarantined',
   requireStaffCapability('shows.quarantine.view'),
@@ -130,9 +131,9 @@ router.get(
   diagnoseShow,
 );
 router.post(
-  '/shows/quarantined/:showId/preview',
+  '/shows/quarantined/:showId/test-run',
   requireStaffCapability('shows.quarantine.resolve'),
-  previewShow,
+  testRunShow,
 );
 router.post(
   '/shows/quarantined/:showId/run',

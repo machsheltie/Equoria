@@ -170,6 +170,10 @@ function describeEntry(
       }
       return `${actor} lifted ${target}'s freeze or ban`;
     case 'shows.quarantine.resolve':
+      // Equoria-yqi49: a test run is recorded too, and moves nothing.
+      if (after.action === 'testRun') {
+        return `${actor} test ran held ${target}`;
+      }
       return `${actor} settled held ${target}`;
     default:
       // A staff tool the ledger has no sentence for yet: never show its stored code.

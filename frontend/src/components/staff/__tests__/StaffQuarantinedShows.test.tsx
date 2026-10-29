@@ -1,9 +1,15 @@
 /**
- * StaffQuarantinedShows: the owner's Diagnose and two-step Run show
- * (Equoria-ehlbj, owner rulings 2026-10-23)
+ * StaffQuarantinedShows: the owner's Diagnose, Test run and Run show
+ * (Equoria-ehlbj, Equoria-yqi49; owner rulings 2026-10-23 q29, q41)
+ *
+ * OLD contract (Equoria-ehlbj): Diagnose downloaded a JSON file; Run show was a
+ * preview then Confirm with the preview digest. NEW ruling (q29 safeguards,
+ * Equoria-yqi49): Diagnose shows a report with one Copy report button; Test run
+ * runs the settlement and undoes it; Run show stays locked until a test run has
+ * passed on the code running now. The download and preview tests changed with it.
  *
  * The real staff hooks over the real apiClient; MSW stubs the HTTP boundary.
- * The browser file download (Blob and object URL) is the only thing replaced.
+ * The browser clipboard is the only thing replaced.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -28,10 +34,15 @@ const quarantined = {
   feeEscrow: 50,
   entryCount: 1,
   updatedAt: '2026-10-22T00:00:00Z',
+  lastTestRun: null,
+  runShowReady: false,
 };
 
-const preview = {
+const testRun = {
   showId: 41,
+  passed: true,
+  testedAt: '2026-10-29T00:00:00Z',
+  commitSha: 'c0ffee',
   name: 'Autumn Classic',
   kind: 'unexecuted',
   attempts: 3,
@@ -49,7 +60,8 @@ const preview = {
   prizeToPlacings: 500,
   unpaidPrizeShareToHost: 500,
   entryFeesToHost: 50,
-  previewDigest: 'digest-abc',
+  coinsIn: 1050,
+  coinsOut: 1050,
 };
 
 function renderSection() {
@@ -91,82 +103,125 @@ describe('StaffQuarantinedShows', () => {
     expect(await screen.findByText('No shows held back')).toBeInTheDocument();
   });
 
-  it('Diagnose downloads the export as a file', async () => {
+  it('Diagnose shows the report and Copy report puts it on the clipboard', async () => {
+    const report = '# Equoria: quarantined show 41 — diagnosis\nFailed tries (3, newest first)';
     server.use(
       http.get(`${STAFF}/shows/quarantined/41/diagnose`, () =>
-        HttpResponse.json({
-          diagnosis: { format: 'equoria-quarantined-show-diagnosis/1', attempts: 3 },
-        })
+        HttpResponse.json({ diagnosis: { showId: 41, commitSha: 'c0ffee', report } })
       )
     );
-    const created: Blob[] = [];
-    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
-      created.push(blob as Blob);
-      return 'blob:diagnosis';
-    });
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
-    const click = vi
-      .spyOn(HTMLAnchorElement.prototype, 'click')
-      .mockImplementation(() => undefined);
     const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
     renderSection();
 
     await user.click(await screen.findByRole('button', { name: 'Diagnose Autumn Classic' }));
 
-    await waitFor(() => expect(click).toHaveBeenCalled());
-    expect(created).toHaveLength(1);
-    const text = await new Promise<string>((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.readAsText(created[0]);
-    });
-    expect(text).toContain('equoria-quarantined-show-diagnosis/1');
+    expect(await screen.findByLabelText('Diagnosis report')).toHaveValue(report);
+    await user.click(screen.getByRole('button', { name: 'Copy report' }));
+    expect(writeText).toHaveBeenCalledWith(report);
+    expect(await screen.findByText('Copied.')).toBeInTheDocument();
   });
 
-  it('Run show previews first, moves nothing, and settles only on Confirm with the previewed digest', async () => {
-    let runBody: unknown = null;
+  it('Run show is locked until a test run passes; the test run shows what it would pay', async () => {
+    let ran = false;
+    let listCalls = 0;
     server.use(
-      http.post(`${STAFF}/shows/quarantined/41/preview`, () => HttpResponse.json({ preview })),
-      http.post(`${STAFF}/shows/quarantined/41/run`, async ({ request }) => {
-        runBody = await request.json();
+      http.get(`${STAFF}/shows/quarantined`, () => {
+        listCalls += 1;
+        // After the test run the server reports Run show unlocked.
+        return HttpResponse.json({
+          shows: [
+            listCalls > 1
+              ? {
+                  ...quarantined,
+                  lastTestRun: { testedAt: testRun.testedAt, passed: true, sameCommit: true },
+                  runShowReady: true,
+                }
+              : quarantined,
+          ],
+        });
+      }),
+      http.post(`${STAFF}/shows/quarantined/41/test-run`, () => HttpResponse.json({ testRun })),
+      http.post(`${STAFF}/shows/quarantined/41/run`, () => {
+        ran = true;
         return HttpResponse.json({ result: { showId: 41, status: 'completed', settled: 1 } });
       })
     );
     const user = userEvent.setup();
     renderSection();
 
-    await user.click(await screen.findByRole('button', { name: 'Run Autumn Classic' }));
+    const runButton = await screen.findByRole('button', { name: 'Run Autumn Classic' });
+    expect(runButton).toBeDisabled();
+    expect(screen.getByText(/Run show unlocks after a test run passes/)).toBeInTheDocument();
 
-    expect(await screen.findByText(/Nothing has moved yet/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Test run Autumn Classic' }));
+
+    expect(await screen.findByText(/The test run passed and was undone/)).toBeInTheDocument();
     expect(screen.getByText(/Ember Glow/)).toBeInTheDocument();
     expect(screen.getByText('500 coins')).toBeInTheDocument();
     expect(
       screen.getByText(/The host receives 50 coins in entry fees and 500 coins of unpaid prize/)
     ).toBeInTheDocument();
-    expect(runBody).toBeNull();
+    expect(ran).toBe(false);
 
-    await user.click(screen.getByRole('button', { name: 'Confirm and run Autumn Classic' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Run Autumn Classic' })).toBeEnabled()
+    );
+    await user.click(screen.getByRole('button', { name: 'Run Autumn Classic' }));
 
     expect(await screen.findByText(/Autumn Classic has been run and paid/)).toBeInTheDocument();
-    expect(runBody).toEqual({ previewDigest: 'digest-abc' });
+    expect(ran).toBe(true);
   });
 
-  it('a show that changed since the preview says so and keeps the preview open', async () => {
+  it('a failed test run says so in words, never the raw server error, and Run show stays locked', async () => {
     server.use(
-      http.post(`${STAFF}/shows/quarantined/41/preview`, () => HttpResponse.json({ preview })),
+      http.post(`${STAFF}/shows/quarantined/41/test-run`, () =>
+        HttpResponse.json({
+          testRun: {
+            showId: 41,
+            passed: false,
+            error: 'PrismaClientKnownRequestError P2025',
+            commitSha: null,
+          },
+        })
+      )
+    );
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(await screen.findByRole('button', { name: 'Test run Autumn Classic' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /The test run failed. Nothing was changed/
+    );
+    expect(screen.queryByText(/P2025/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Run Autumn Classic' })).toBeDisabled();
+  });
+
+  it('a run refused because the game was updated asks for a new test run', async () => {
+    server.use(
+      http.get(`${STAFF}/shows/quarantined`, () =>
+        HttpResponse.json({
+          shows: [
+            {
+              ...quarantined,
+              runShowReady: true,
+              lastTestRun: { testedAt: testRun.testedAt, passed: true, sameCommit: true },
+            },
+          ],
+        })
+      ),
       http.post(`${STAFF}/shows/quarantined/41/run`, () =>
-        HttpResponse.json({ code: 'previewStale', message: 'changed' }, { status: 409 })
+        HttpResponse.json({ code: 'testRunStale', message: 'stale' }, { status: 409 })
       )
     );
     const user = userEvent.setup();
     renderSection();
 
     await user.click(await screen.findByRole('button', { name: 'Run Autumn Classic' }));
-    await user.click(await screen.findByRole('button', { name: 'Confirm and run Autumn Classic' }));
 
-    expect(await screen.findByText(/changed or was already run/)).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Confirm and run Autumn Classic' })
+      await screen.findByText(/since the last test run. Test run it again/)
     ).toBeInTheDocument();
   });
 });

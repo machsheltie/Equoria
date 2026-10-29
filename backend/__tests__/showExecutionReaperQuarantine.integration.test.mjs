@@ -139,8 +139,22 @@ const showState = showId =>
     },
   });
 
+const failureRows = showId =>
+  prisma.cronRunLog.findMany({
+    where: { jobName: 'showFailure', summary: { path: ['showId'], equals: showId } },
+    orderBy: { id: 'asc' },
+  });
+
 beforeAll(async () => {
   const staffScope = () => ({ in: staff.createdUserIds });
+  // Equoria-yqi49: the failed tries these shows record for the owner's Diagnose.
+  cleanup.add(
+    () =>
+      prisma.cronRunLog.deleteMany({
+        where: { jobName: 'showFailure', OR: showIds.map(id => ({ summary: { path: ['showId'], equals: id } })) },
+      }),
+    'show failure rows',
+  );
   cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: { in: showIds } } }), 'results');
   cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } }), 'entries');
   cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
@@ -221,6 +235,14 @@ describe('Equoria-c7mx0.1 — the reaper counts failed attempts and quarantines 
     });
     expect(state._count.competitionResults).toBe(0);
   }, 60_000);
+
+  it('each counted stranding is recorded for Diagnose, with its time and claim (Equoria-yqi49)', async () => {
+    const failures = await failureRows(quarantinedId);
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toMatchObject({ status: 'error', errorsCount: 1 });
+    expect(failures[0].summary).toMatchObject({ showId: quarantinedId, source: 'reaperStranded' });
+    expect(failures[0].errorMessage).toMatch(/stopped part-way through this show/);
+  });
 
   it('a quarantined show is never retried: not by the reaper, not by the nightly executor', async () => {
     const reaped = await reapStaleExecutingShows({ showIds: [quarantinedId] });

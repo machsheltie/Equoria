@@ -52,6 +52,7 @@ import { createNotification } from '../../../utils/notificationService.mjs';
 import { recordRiddenResultTotals } from '../../../utils/monthlyTotals.mjs';
 import { recordStaffShowsTx } from '../../../services/staffGrowthService.mjs';
 import { invalidateHorseXpCaches } from '../../horses/index.mjs';
+import { recordShowFailure } from './showFailureLog.mjs';
 
 // ── BA-4: Overnight show execution ────────────────────────────────────────────
 
@@ -317,6 +318,12 @@ async function payOutPlacements(show, stagedOrdering, settledHorseIds, { now, st
         `[showExecutionService] Show ${show.id}: settlement of horse ${staged.horseId} (placement ${staged.placement}) failed and rolled back: ${error.message}`,
       );
       failures.push(error);
+      // Equoria-yqi49: each failed try is kept for the owner's Diagnose.
+      await recordShowFailure(show.id, {
+        source: 'nightlyPayout',
+        error,
+        detail: { horseId: staged.horseId, placement: staged.placement },
+      });
     }
   }
 
@@ -542,6 +549,7 @@ export async function executeClosedShows(req, res, options) {
           `[showExecutionService] Show ${show.id} (${show.name}) did not settle: ${error.message}`,
         );
         failures.push(error);
+        await recordShowFailure(show.id, { source: 'nightlyRun', error }); // Equoria-yqi49
       }
     }
 

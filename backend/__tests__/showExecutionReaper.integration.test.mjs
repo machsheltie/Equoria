@@ -194,6 +194,10 @@ afterAll(async () => {
   // on SystemAccount[showEscrow] before the raw deletes below.
   await releaseShowEscrow(createdShowIds);
   for (const sid of createdShowIds) {
+    // Equoria-yqi49: each counted stranding is recorded for the owner's Diagnose.
+    await prisma.cronRunLog.deleteMany({
+      where: { jobName: 'showFailure', summary: { path: ['showId'], equals: sid } },
+    });
     await prisma.competitionResult
       .deleteMany({ where: { showId: sid } })
       .catch(err => console.warn(`[cleanup] ${err.message}`));

@@ -143,7 +143,9 @@ export async function debitMoneyOrThrow(
  * them only through these constants so a typo at a call site is a compile-time
  * error, not a silent miss.
  */
-export const SYSTEM_ACCOUNT_SHOW_ESCROW = 'showEscrow';
+/** The show escrow account. camelCase name for new code (Equoria-pjvp8); same value. */
+export const systemAccountShowEscrow = 'showEscrow';
+export const SYSTEM_ACCOUNT_SHOW_ESCROW = systemAccountShowEscrow;
 /** The fee/purchase sink. camelCase name for new code (Equoria-pjvp8); same value. */
 export const systemAccountBurn = 'burn';
 export const SYSTEM_ACCOUNT_BURN = systemAccountBurn;

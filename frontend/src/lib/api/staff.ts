@@ -20,7 +20,7 @@
  *   POST /api/v1/staff/tickets/:id/status → { ticket }
  *   GET  /api/v1/staff/shows/quarantined  → { shows }                         (owner only)
  *   GET  /api/v1/staff/shows/quarantined/:id/diagnose → { diagnosis }         (owner only)
- *   POST /api/v1/staff/shows/quarantined/:id/preview  → { preview }           (owner only)
+ *   POST /api/v1/staff/shows/quarantined/:id/test-run → { testRun }           (owner only)
  *   POST /api/v1/staff/shows/quarantined/:id/run      → { result }            (owner only)
  */
 
@@ -191,31 +191,45 @@ export interface QuarantinedShow {
   feeEscrow: number;
   entryCount: number;
   updatedAt: string;
+  /** The newest test run, when the newest tool use was one (Equoria-yqi49). */
+  lastTestRun: { testedAt: string; passed: boolean; sameCommit: boolean } | null;
+  /** A passed test run on the code running now unlocks Run Show. */
+  runShowReady: boolean;
 }
 
-/** What Run Show would pay; nothing has moved (Equoria-ehlbj). */
-export interface QuarantinedShowPreview {
+/** A test run: the real settlement, rolled back; nothing moved (Equoria-yqi49). */
+export type QuarantinedShowTestRun =
+  | {
+      showId: number;
+      passed: true;
+      testedAt: string;
+      commitSha: string | null;
+      name: string;
+      kind: 'unexecuted' | 'halfSettled';
+      attempts: number;
+      entryCount: number;
+      placements: Array<{
+        placement: number;
+        horseId: number;
+        horseName: string | null;
+        ownerName: string | null;
+        score: number;
+        prize: number;
+      }>;
+      prizeToPlacings: number;
+      unpaidPrizeShareToHost: number;
+      entryFeesToHost: number;
+      coinsIn: number;
+      coinsOut: number;
+    }
+  | { showId: number; passed: false; error: string; commitSha: string | null };
+
+/** The report handed to Claude Code or Codex (Markdown text). */
+export interface QuarantinedShowDiagnosis {
   showId: number;
-  name: string;
-  kind: 'unexecuted' | 'halfSettled';
-  attempts: number;
-  entryCount: number;
-  placements: Array<{
-    placement: number;
-    horseId: number;
-    horseName: string | null;
-    ownerName: string | null;
-    score: number;
-    prize: number;
-  }>;
-  prizeToPlacings: number;
-  unpaidPrizeShareToHost: number;
-  entryFeesToHost: number;
-  previewDigest: string;
+  commitSha: string | null;
+  report: string;
 }
-
-/** The export handed to Claude Code or Codex; its shape is the backend's own. */
-export type QuarantinedShowDiagnosis = Record<string, unknown>;
 
 const BASE = '/api/v1/staff';
 
@@ -279,14 +293,14 @@ export const staffApi = {
     apiClient.get<{ diagnosis: QuarantinedShowDiagnosis }>(
       `${BASE}/shows/quarantined/${showId}/diagnose`
     ),
-  previewQuarantinedShow: (showId: number) =>
-    apiClient.post<{ preview: QuarantinedShowPreview }>(
-      `${BASE}/shows/quarantined/${showId}/preview`,
+  testRunQuarantinedShow: (showId: number) =>
+    apiClient.post<{ testRun: QuarantinedShowTestRun }>(
+      `${BASE}/shows/quarantined/${showId}/test-run`,
       {}
     ),
-  runQuarantinedShow: (showId: number, previewDigest: string) =>
+  runQuarantinedShow: (showId: number) =>
     apiClient.post<{ result: { showId: number; status: 'completed'; settled: number } }>(
       `${BASE}/shows/quarantined/${showId}/run`,
-      { previewDigest }
+      {}
     ),
 };

@@ -15,6 +15,7 @@ export {
   SYSTEM_ACCOUNT_BURN,
   SYSTEM_ACCOUNT_SHOW_ESCROW,
   systemAccountBurn,
+  systemAccountShowEscrow,
   creditSystemAccount,
   debitMoneyOrThrow,
   debitSystemAccountOrThrow,
