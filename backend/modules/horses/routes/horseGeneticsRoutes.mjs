@@ -2,11 +2,10 @@
  * Horse Genetics / Phenotype Sub-Router (Equoria-y8u2j split)
  *
  * Extracted from backend/modules/horses/routes/horseRoutes.mjs as part of the
- * god-file split. Owns the 4 read-only phenotype / genetics endpoints under
+ * god-file split. Owns the read-only phenotype / genetics endpoints under
  * /horses/:id/...
  *
  *   GET    /:id/conformation            — 8-region conformation scores + overall
- *   GET    /:id/conformation/analysis   — percentile rankings vs breed
  *   GET    /:id/gaits                   — gait quality scores (walk/trot/etc)
  *   GET    /:id/genetics                — full color genotype + phenotype
  *
@@ -25,17 +24,15 @@
  * GET /:id/color was removed with the duplicate lookups (owner ruling 2026-10-28,
  * q151, Equoria-a7f1p): the horse page reads the coat and markings from the
  * phenotype on GET /horses/:id.
+ *
+ * GET /:id/conformation/analysis was removed with the Conformation tab's
+ * percentile numbers (owner request 2026-10-29, Equoria-oxbda).
  */
 
 import express from 'express';
 import { queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
-import {
-  getConformation,
-  getConformationAnalysis,
-  getGaits,
-  getGenetics,
-} from '../controllers/horseController.mjs';
+import { getConformation, getGaits, getGenetics } from '../controllers/horseController.mjs';
 import logger from '../../../utils/logger.mjs';
 import { validateHorseId, rejectPollutedRequest } from './_validators.mjs';
 
@@ -55,30 +52,6 @@ router.get(
   async (req, res) => {
     try {
       await getConformation(req, res);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-/**
- * GET /horses/:id/conformation/analysis
- * Get conformation analysis with percentile rankings compared to breed.
- *
- * Security: Validates horse ownership before returning analysis data.
- */
-router.get(
-  '/:id/conformation/analysis',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      await getConformationAnalysis(req, res);
     } catch (error) {
       res.status(500).json({
         success: false,

@@ -1,37 +1,24 @@
 // Integration tests for conformation API endpoints (Story 31B-3).
-// Validates GET /conformation and GET /conformation/analysis responses,
-// legacy horse handling, percentile calculations, and error cases.
+// Validates GET /conformation responses, legacy horse handling, and error
+// cases. GET /conformation/analysis (percentiles) was retired by owner request
+// 2026-10-29 (Equoria-oxbda); its HTTP retirement check lives in
+// conformationRoutesHttp.integration.test.mjs.
 //
 // Real database — no mocked Prisma calls per project policy.
 
-import { describe, beforeAll, afterAll, beforeEach, expect, test } from '@jest/globals';
+import { describe, beforeAll, expect, test } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import bcrypt from 'bcryptjs';
-import { randomBytes } from 'node:crypto';
 
 // NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
 // previous jest.unstable_mockModule-of-logger was purely cosmetic
 // noise suppression — no logger assertions besides .mockClear() in
 // beforeEach. The real logger fires at LOG_LEVEL=error per setup.mjs.
 
-import { getConformation, getConformationAnalysis } from '../controllers/horseController.mjs';
+import { getConformation } from '../controllers/horseController.mjs';
 import { CONFORMATION_REGIONS } from '../services/conformationService.mjs';
-import { getBreedProfile } from '../data/breedProfileLoader.mjs';
-// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // ── Test data setup ────────────────────────────────────────────────────────
-const ts = `${randomBytes(8).toString('hex')}_${Math.random().toString(36).slice(2, 7)}`;
-let testUser;
 let testBreed;
-const createdHorseIds = [];
-
-/** Uniform scores across all 8 regions + overall */
-function makeScores(value) {
-  return Object.fromEntries([...CONFORMATION_REGIONS.map(r => [r, value]), ['overallConformation', value]]);
-}
 
 const BASE_SCORES = {
   head: 82,
@@ -44,24 +31,6 @@ const BASE_SCORES = {
   topline: 74,
   overallConformation: 74,
 };
-
-/** Create a real DB horse for this suite; track its ID for cleanup. */
-async function seedHorse(scores) {
-  const horse = await prisma.horse.create({
-    data: await testHorseData(prisma, {
-      ...fixtureColor(),
-      name: `ConfApiTest_${randomBytes(8).toString('hex')}_${Math.random().toString(36).slice(2, 5)}`,
-      sex: 'Mare',
-      dateOfBirth: new Date('2020-01-01'),
-      age: 4,
-      breedId: testBreed.id,
-      userId: testUser.id,
-      conformationScores: scores,
-    }),
-  });
-  createdHorseIds.push(horse.id);
-  return horse;
-}
 
 /** Create a mock req/res with req.horse pre-populated (mirrors middleware behaviour). */
 function makeMockReqRes(horseOverrides = {}) {
@@ -89,31 +58,11 @@ function makeMockReqRes(horseOverrides = {}) {
 }
 
 beforeAll(async () => {
-  const hashed = await bcrypt.hash('TestPassword123!', 1);
-  testUser = await prisma.user.create({
-    data: {
-      emailVerified: true,
-      username: `confApiUser_${ts}`,
-      email: `confapi_${ts}@test.com`,
-      password: hashed,
-      firstName: 'ConfApi',
-      lastName: 'Test',
-    },
-  });
   testBreed = await prisma.breed.upsert({
     where: { name: 'Thoroughbred' },
     update: {},
     create: { name: 'Thoroughbred', description: 'Thoroughbred (conformation API test)' },
   });
-});
-
-afterAll(async () => {
-  if (createdHorseIds.length) {
-    await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } });
-  }
-  if (testUser?.id) {
-    await prisma.user.deleteMany({ where: { id: testUser.id } });
-  }
 });
 
 // ── GET /conformation ──────────────────────────────────────────────────────
@@ -186,147 +135,5 @@ describe('getConformation', () => {
     expect(response.success).toBe(true);
     expect(response.data.conformationScores).toHaveProperty('overallConformation');
     expect(typeof response.data.conformationScores.overallConformation).toBe('number');
-  });
-});
-
-// ── GET /conformation/analysis ─────────────────────────────────────────────
-
-describe('getConformationAnalysis', () => {
-  beforeEach(async () => {
-    // Delete only horses THIS suite created so each test starts with a
-    // known subset of the breed population. Other suites' Thoroughbred horses
-    // may still be present — assertions use ranges rather than exact counts.
-    if (createdHorseIds.length) {
-      await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } });
-      createdHorseIds.length = 0;
-    }
-  });
-
-  test('returns percentile analysis per region for a horse with scores', async () => {
-    // Seed a small population so the analysis path exercises breedMean lookup
-    await seedHorse(makeScores(60));
-    await seedHorse(makeScores(70));
-    await seedHorse(makeScores(83));
-    await seedHorse(makeScores(91));
-
-    const { req, res } = makeMockReqRes({ conformationScores: BASE_SCORES });
-
-    await getConformationAnalysis(req, res);
-
-    expect(res.statusCode).toBe(200);
-    const response = res.body;
-    expect(response.success).toBe(true);
-    expect(response.message).toBe('Conformation analysis retrieved successfully');
-    expect(response.data.horseId).toBe(0);
-    expect(response.data.horseName).toBe('Midnight Star');
-    expect(response.data.breedId).toBe(testBreed.id);
-    expect(response.data.breedName).toBe('Thoroughbred');
-    expect(response.data.breedMeanAvailable).toBe(true);
-    expect(response.data.totalHorsesInBreed).toBeGreaterThanOrEqual(4);
-
-    const { analysis } = response.data;
-    for (const region of CONFORMATION_REGIONS) {
-      expect(analysis).toHaveProperty(region);
-      expect(analysis[region]).toHaveProperty('score');
-      expect(analysis[region]).toHaveProperty('breedMean');
-      expect(analysis[region]).toHaveProperty('percentile');
-      expect(typeof analysis[region].percentile).toBe('number');
-      expect(analysis[region].percentile).toBeGreaterThanOrEqual(0);
-      expect(analysis[region].percentile).toBeLessThanOrEqual(100);
-    }
-
-    const { overallConformation } = response.data;
-    expect(overallConformation).toHaveProperty('score');
-    expect(overallConformation).toHaveProperty('breedMean');
-    expect(overallConformation).toHaveProperty('percentile');
-  });
-
-  test('horse with max scores ranks higher than horses with lower scores', async () => {
-    await seedHorse(makeScores(50));
-    await seedHorse(makeScores(60));
-    await seedHorse(makeScores(70));
-    await seedHorse(makeScores(80));
-
-    const { req, res } = makeMockReqRes({ conformationScores: makeScores(99) });
-
-    await getConformationAnalysis(req, res);
-
-    const data = res.body.data;
-    for (const region of CONFORMATION_REGIONS) {
-      expect(data.analysis[region].percentile).toBeGreaterThanOrEqual(60);
-    }
-    expect(data.overallConformation.percentile).toBeGreaterThanOrEqual(60);
-  });
-
-  test('horse with low scores ranks lower than horses with higher scores', async () => {
-    await seedHorse(makeScores(60));
-    await seedHorse(makeScores(70));
-    await seedHorse(makeScores(80));
-    await seedHorse(makeScores(90));
-
-    const { req, res } = makeMockReqRes({ conformationScores: makeScores(20) });
-
-    await getConformationAnalysis(req, res);
-
-    const data = res.body.data;
-    for (const region of CONFORMATION_REGIONS) {
-      expect(data.analysis[region].percentile).toBeLessThanOrEqual(40);
-    }
-    expect(data.overallConformation.percentile).toBeLessThanOrEqual(40);
-  });
-
-  test('returns 200 with null data for legacy horse without scores', async () => {
-    const { req, res } = makeMockReqRes({ conformationScores: null });
-
-    await getConformationAnalysis(req, res);
-
-    expect(res.statusCode).toBe(200);
-    const response = res.body;
-    expect(response.success).toBe(true);
-    expect(response.data).toBeNull();
-  });
-
-  test('filters out horses without conformation scores from percentile count', async () => {
-    // Seed 1 horse with null scores and 2 with valid scores
-    await seedHorse(null);
-    await seedHorse(makeScores(60));
-    await seedHorse(makeScores(90));
-
-    const { req, res } = makeMockReqRes({ conformationScores: BASE_SCORES });
-
-    await getConformationAnalysis(req, res);
-
-    const response = res.body;
-    // Valid horses only (null excluded) — at least the 2 we just seeded
-    expect(response.data.totalHorsesInBreed).toBeGreaterThanOrEqual(2);
-    expect(response.success).toBe(true);
-  });
-
-  test('returns 200 when no breedId on horse', async () => {
-    const { req, res } = makeMockReqRes({ breedId: null });
-
-    await getConformationAnalysis(req, res);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body.data).toBeNull();
-  });
-
-  test('uses breed mean from breedProfiles.json, not the database average', async () => {
-    const { req, res } = makeMockReqRes({ conformationScores: BASE_SCORES });
-
-    await getConformationAnalysis(req, res);
-
-    const response = res.body;
-    expect(response.data.breedMeanAvailable).toBe(true);
-
-    const tbProfile = getBreedProfile('Thoroughbred').ratingProfiles.conformation;
-    for (const region of CONFORMATION_REGIONS) {
-      expect(response.data.analysis[region].breedMean).toBe(tbProfile[region].mean);
-    }
-
-    const expectedOverallMean = Math.round(
-      CONFORMATION_REGIONS.reduce((sum, r) => sum + tbProfile[r].mean, 0) / CONFORMATION_REGIONS.length,
-    );
-    expect(response.data.overallConformation.breedMean).toBe(expectedOverallMean);
   });
 });

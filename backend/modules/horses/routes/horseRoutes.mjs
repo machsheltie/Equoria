@@ -183,7 +183,7 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
 router.get('/temperament-definitions', queryRateLimiter, getTemperamentDefinitions);
 
 // Genetics / phenotype read-only routes (GET /:id/conformation,
-// /:id/conformation/analysis, /:id/gaits, /:id/genetics) extracted
+// /:id/gaits, /:id/genetics) extracted
 // to horseGeneticsRoutes.mjs as part of the Equoria-y8u2j god-file split.
 // All extracted routes are /:id/<sub-path> (2+ segments), so they don't
 // conflict with this parent's GET /:id (1 segment) — mount position is not

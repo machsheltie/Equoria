@@ -414,21 +414,6 @@ paths:
         '404': { description: 'Horse not found' }
         '500': { description: 'Internal server error' }
 
-  '/horses/{id}/conformation/analysis':
-    get:
-      tags: [Horses]
-      summary: 'Get conformation analysis with breed percentile rankings'
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }
-      responses:
-        '200': { description: 'Conformation analysis retrieved successfully' }
-        '400': { description: 'Invalid horse ID' }
-        '401': { description: Unauthorized }
-        '403': { description: 'Forbidden — horse belongs to another user' }
-        '404': { description: 'Horse not found' }
-        '500': { description: 'Internal server error' }
-
   '/horses/{id}/gaits':
     get:
       tags: [Horses]

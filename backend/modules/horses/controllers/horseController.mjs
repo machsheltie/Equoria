@@ -15,7 +15,6 @@
  *
  *   horseConformationController.mjs
  *     - getConformation
- *     - getConformationAnalysis
  *     - getGaits
  *
  *   horseGeneticsController.mjs
@@ -43,11 +42,7 @@ export {
   getHorsePersonalityImpact,
 } from './horseOverviewController.mjs';
 
-export {
-  getConformation,
-  getConformationAnalysis,
-  getGaits,
-} from './horseConformationController.mjs';
+export { getConformation, getGaits } from './horseConformationController.mjs';
 
 export { getTemperamentDefinitions, getGenetics } from './horseGeneticsController.mjs';
 

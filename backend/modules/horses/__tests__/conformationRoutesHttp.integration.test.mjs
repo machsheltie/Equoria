@@ -11,7 +11,6 @@
  *
  * Routes covered:
  *   GET /api/v1/horses/:id/conformation
- *   GET /api/v1/horses/:id/conformation/analysis
  *
  * Real database. Real auth. Real CSRF middleware in the chain (these are GETs
  * so no token is required). No bypass headers. ES modules. Fixtures prefixed
@@ -191,77 +190,19 @@ describe('GET /api/v1/horses/:id/conformation (HTTP chain)', () => {
   });
 });
 
-// ── GET /api/v1/horses/:id/conformation/analysis ───────────────────────────
+// ── GET /api/v1/horses/:id/conformation/analysis (retired) ─────────────────
+// Old contract: per-region percentile rankings vs the breed. Owner request
+// 2026-10-29 (Equoria-oxbda): the Conformation tab's percentile numbers are
+// gone and nothing else read them, so the route is retired.
 
-describe('GET /api/v1/horses/:id/conformation/analysis (HTTP chain)', () => {
-  it('returns 200 + per-region + overall percentile analysis for an owned horse', async () => {
+describe('GET /api/v1/horses/:id/conformation/analysis (retired, Equoria-oxbda)', () => {
+  it('is no longer served, even for the owner of the horse', async () => {
     const res = await request(app)
       .get(`/api/v1/horses/${horseWithConformation.id}/conformation/analysis`)
-      .set('Authorization', `Bearer ${tokenA}`)
-      .set('Origin', 'http://localhost:3000');
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeTruthy();
-    expect(res.body.data.horseId).toBe(horseWithConformation.id);
-    expect(res.body.data).toHaveProperty('breedName');
-    expect(res.body.data).toHaveProperty('breedMeanAvailable');
-    expect(res.body.data).toHaveProperty('totalHorsesInBreed');
-
-    const { analysis, overallConformation } = res.body.data;
-    for (const region of CONFORMATION_REGIONS) {
-      expect(analysis).toHaveProperty(region);
-      expect(analysis[region]).toHaveProperty('score');
-      expect(analysis[region]).toHaveProperty('breedMean');
-      expect(analysis[region]).toHaveProperty('percentile');
-      expect(typeof analysis[region].percentile).toBe('number');
-      expect(analysis[region].percentile).toBeGreaterThanOrEqual(0);
-      expect(analysis[region].percentile).toBeLessThanOrEqual(100);
-    }
-
-    expect(overallConformation).toHaveProperty('score');
-    expect(overallConformation).toHaveProperty('breedMean');
-    expect(overallConformation).toHaveProperty('percentile');
-  });
-
-  it('returns 200 with data:null for a legacy (no-scores) owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${legacyHorse.id}/conformation/analysis`)
-      .set('Authorization', `Bearer ${tokenA}`)
-      .set('Origin', 'http://localhost:3000');
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeNull();
-  });
-
-  it('returns 401 when unauthenticated on the analysis endpoint', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${horseWithConformation.id}/conformation/analysis`)
-      .set('Origin', 'http://localhost:3000');
-
-    expect(res.status).toBe(401);
-    expect(res.body.success).toBe(false);
-  });
-
-  it("returns 404 when user A queries user B's horse via analysis (CWE-639)", async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${horseOwnedByB.id}/conformation/analysis`)
       .set('Authorization', `Bearer ${tokenA}`)
       .set('Origin', 'http://localhost:3000');
 
     expect(res.status).toBe(404);
-    expect(res.body.success).toBe(false);
-    expect(res.body.message).toMatch(/horse not found/i);
-  });
-
-  it('returns 400 for a malformed horse ID on analysis endpoint', async () => {
-    const res = await request(app)
-      .get('/api/v1/horses/abc/conformation/analysis')
-      .set('Authorization', `Bearer ${tokenA}`)
-      .set('Origin', 'http://localhost:3000');
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
+    expect(res.body?.data?.analysis).toBeUndefined();
   });
 });
