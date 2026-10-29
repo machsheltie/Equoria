@@ -111,8 +111,10 @@ describe('groomLegacy helpers', () => {
       expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_LEVEL_BONUS');
     });
 
-    it('skill bonus percent is 10', () => {
-      expect(LEGACY_CONSTANTS.PROTEGE_SKILL_BONUS_PERCENT).toBe(10);
+    // Equoria-h82zc: old contract was a 10% protégé skill bonus; the game never
+    // applied it, so the promise was dropped (rulings 10-21, q244).
+    it('has no protégé skill bonus (the game never applied one)', () => {
+      expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_SKILL_BONUS_PERCENT');
     });
   });
 
@@ -478,9 +480,10 @@ describe('AC5: Bonus effectiveness for legacy grooms', () => {
     expect(screen.queryByTestId('bonus-level')).not.toBeInTheDocument();
   });
 
-  it('shows skill bonus percent', () => {
+  it('promises no skill bonus (the game never applied one, Equoria-h82zc)', () => {
     render(<GroomLegacyPanel groom={activeGroom} mentorInfo={sampleMentorInfo} />);
-    expect(screen.getByTestId('bonus-skill')).toHaveTextContent('+10% skill effectiveness');
+    expect(screen.queryByTestId('bonus-skill')).not.toBeInTheDocument();
+    expect(screen.getByTestId('legacy-bonuses-section')).not.toHaveTextContent(/skill/i);
   });
 
   it('shows inherited perk bonus text', () => {

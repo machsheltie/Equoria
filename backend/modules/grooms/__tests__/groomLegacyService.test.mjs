@@ -73,7 +73,9 @@ describe('getLegacyPerks — pure function', () => {
     // Equoria-ixya8 (owner-changed behaviour, see header): no protégé experience bonus.
     expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_EXPERIENCE_BONUS');
     expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_LEVEL_BONUS');
-    expect(typeof LEGACY_CONSTANTS.PROTEGE_SKILL_BONUS).toBe('number');
+    // Equoria-h82zc: old contract said a numeric protégé skill bonus existed; it was
+    // never applied, and the orchestrator ruled (rulings 10-21, q244) to drop it.
+    expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_SKILL_BONUS');
     expect(LEGACY_PERKS.calm).toHaveLength(3);
     expect(LEGACY_PERKS.energetic).toHaveLength(3);
     expect(LEGACY_PERKS.methodical).toHaveLength(3);

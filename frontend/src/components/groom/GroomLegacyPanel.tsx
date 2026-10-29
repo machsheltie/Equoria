@@ -25,7 +25,6 @@ import {
   MentorInfo,
   ProtégéInfo,
   LegacyPerk,
-  LEGACY_CONSTANTS,
   checkLegacyEligibility,
 } from '../../types/groomLegacy';
 
@@ -275,9 +274,6 @@ function LegacyBonusesSection() {
     >
       <h4 className="text-xs font-semibold text-[rgb(220,235,255)] mb-2">Legacy Protégé Bonuses</h4>
       <ul className="space-y-1 text-xs text-slate-400">
-        <li data-testid="bonus-skill">
-          +{LEGACY_CONSTANTS.PROTEGE_SKILL_BONUS_PERCENT}% skill effectiveness bonus
-        </li>
         <li data-testid="bonus-perk">1 inherited perk from mentor's personality type</li>
       </ul>
     </div>

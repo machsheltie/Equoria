@@ -31,7 +31,8 @@ export const LEGACY_CONSTANTS = {
   MINIMUM_MENTOR_STAR_LEVEL: 'advanced',
   // Equoria-ixya8: the old +50 starting experience is gone (staff never gain XP, owner
   // ruling 2026-10-21; every groom starts as a Rookie, q177).
-  PROTEGE_SKILL_BONUS: 0.1, // 10% bonus to starting skills
+  // Equoria-h82zc: the +10% protégé skill bonus was never applied by
+  // generateLegacyProtege, so the constant and the promise of it are gone.
 };
 
 /**
