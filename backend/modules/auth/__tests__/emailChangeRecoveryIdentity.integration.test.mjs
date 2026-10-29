@@ -219,7 +219,7 @@ describe('Finding 5 — fresh authentication gates the change request', () => {
     const target = `${PREFIX}-wrongpw-${uid()}@test.com`;
     const res = await requestChange({ email: target, password: 'NotMyPassword9!' });
 
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(400);
     const pending = await prisma.emailVerificationToken.findMany({ where: { userId: user.id } });
     expect(pending).toHaveLength(0);
     expect(readCaptured('email-change')).toHaveLength(0);
@@ -255,7 +255,7 @@ describe('Finding 5 — fresh authentication gates the change request', () => {
 
     try {
       const withoutTotp = await requestChange({ email: target, password: PASSWORD });
-      expect(withoutTotp.status).toBe(401);
+      expect(withoutTotp.status).toBe(400);
       expect(await prisma.emailVerificationToken.count({ where: { userId: user.id } })).toBe(0);
 
       const withTotp = await requestChange({

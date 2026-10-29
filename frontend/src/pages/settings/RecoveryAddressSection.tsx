@@ -22,8 +22,8 @@
  *    is this section changing into its waiting state. No toast, no overlay
  *    (FRONTEND_ASYNC_STATE_DOCTRINE §3).
  *  - Whether to ask for a code is READ from `GET /auth/email-change/status`, not
- *    guessed: the backend refuses a wrong password and a missing code with the
- *    same bare 401, so a failed attempt cannot tell them apart.
+ *    guessed: on a second-factor account the backend gives a wrong password
+ *    and a wrong code one coded answer (Equoria-wkpns), on purpose.
  *  - No jargon reaches the player: the words MFA, TOTP and two-factor appear
  *    nowhere in the copy.
  */
@@ -332,7 +332,7 @@ export const RecoveryAddressSection: React.FC = () => {
             {requestError && !errorDismissed && (
               <InlineError
                 message={
-                  recoveryAddressMessage(requestError, { secondFactorRequired }) ??
+                  recoveryAddressMessage(requestError) ??
                   'That did not work. Check your details and try again.'
                 }
                 className="w-full"

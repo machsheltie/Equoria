@@ -176,23 +176,35 @@ describe('recoveryAddressMessage — every branch', () => {
     expectNoRawLeak(copy);
   });
 
-  it('401 blames the password alone when the account has no second factor', () => {
-    const copy = recoveryAddressMessage(apiError(401), { secondFactorRequired: false });
+  // Equoria-wkpns: the refusals below were one bare 401 (which the transport
+  // refreshed and re-sent); they are now coded 400s, and a 401 is only ever an
+  // ended session.
+  it('currentPasswordIncorrect blames the password alone', () => {
+    const copy = recoveryAddressMessage(apiError(400, 'x', { code: 'currentPasswordIncorrect' }));
     expect(copy).toMatch(/that password wasn't accepted/i);
     expect(copy).not.toMatch(/code/i);
     expectNoRawLeak(copy);
   });
 
-  it('401 names BOTH the password and the code when the account carries one', () => {
-    // The backend refuses a wrong password and a wrong/missing TOTP with the
-    // same bare 401, so naming only one of them would blame the wrong field.
-    const copy = recoveryAddressMessage(apiError(401), { secondFactorRequired: true });
+  it('passwordOrCodeIncorrect names BOTH the password and the code', () => {
+    // One answer for both on a second-factor account, so naming only one of
+    // them would blame the wrong field.
+    const copy = recoveryAddressMessage(apiError(400, 'x', { code: 'passwordOrCodeIncorrect' }));
     expect(copy).toMatch(/password or code/i);
     expectNoRawLeak(copy);
   });
 
-  it('401 defaults to the password-only copy when the caller says nothing', () => {
-    expect(recoveryAddressMessage(apiError(401))).toMatch(/that password wasn't accepted/i);
+  it('mfaCodeRequired asks for the code without jargon', () => {
+    const copy = recoveryAddressMessage(apiError(400, 'x', { code: 'mfaCodeRequired' }));
+    expect(copy).toMatch(/six-digit code/i);
+    expect(copy).not.toMatch(/mfa|totp|two-factor/i);
+    expectNoRawLeak(copy);
+  });
+
+  it('401 is an ended session, never a refused password', () => {
+    const copy = recoveryAddressMessage(apiError(401));
+    expect(copy).toMatch(/session expired/i);
+    expect(copy).not.toMatch(/password/i);
   });
 
   it('429 renders the wait the backend actually asked for', () => {

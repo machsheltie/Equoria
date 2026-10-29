@@ -111,21 +111,19 @@ export function secondFactorMessage(error: ApiError | null | undefined): string 
  * Copy for a refused recovery-address change request (Finding 9,
  * Equoria-6p398.11).
  *
- * `emailChangeService.requestEmailChange` answers a wrong password and a
- * missing/invalid TOTP with the SAME bare 401, so the 401 copy cannot name one
- * cause on its own. `secondFactorRequired` — read from
- * `GET /auth/email-change/status`, not guessed — is what lets the copy name the
- * two things the player actually typed instead of blaming the wrong one.
+ * `emailChangeService.requestEmailChange` refuses fresh authentication with a
+ * coded 400 (Equoria-wkpns; it was a 401, which the transport refreshed and
+ * re-sent, counting one wrong code twice toward the lockout):
+ * currentPasswordIncorrect, mfaCodeRequired, or passwordOrCodeIncorrect — one
+ * answer for a wrong password or code on a second-factor account, so the copy
+ * names both things the player typed. A 401 is only ever an ended session.
  *
  * 429 covers both throttles on that endpoint: the MFA lockout and the
  * five-minute resend cooldown. Both are a wait, not a lockout of the account,
  * and the backend's own `retryAfter` seconds are rendered when present so the
  * player is not told to guess.
  */
-export function recoveryAddressMessage(
-  error: ApiError | null | undefined,
-  options: { secondFactorRequired?: boolean } = {}
-): string | null {
+export function recoveryAddressMessage(error: ApiError | null | undefined): string | null {
   if (!error) return null;
   const status = error.statusCode;
 
@@ -133,13 +131,20 @@ export function recoveryAddressMessage(
     return "Can't reach the stable. Check your connection and try again.";
   }
   if (status === 400) {
+    if (error.code === 'currentPasswordIncorrect') {
+      return "That password wasn't accepted. Enter your current Equoria password and try again.";
+    }
+    if (error.code === 'passwordOrCodeIncorrect') {
+      return "That password or code wasn't accepted. Re-enter your password and the code showing now.";
+    }
+    if (error.code === 'mfaCodeRequired') {
+      return 'This account also needs the six-digit code from your authenticator app. Reload Settings to show the code box, then try again.';
+    }
     // Also the "already the address on this account" and pending-cap refusals.
     return 'Check the address you entered, then try again. If several changes are already waiting, confirm or let them lapse first.';
   }
   if (status === 401) {
-    return options.secondFactorRequired
-      ? "That password or code wasn't accepted. Re-enter your password and the code showing now."
-      : "That password wasn't accepted. Enter your current Equoria password and try again.";
+    return 'Your session expired — log in again, then retry the change.';
   }
   if (status === 409) {
     return 'That address already belongs to another stable. Choose a different one.';

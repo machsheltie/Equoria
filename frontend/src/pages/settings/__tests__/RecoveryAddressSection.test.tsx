@@ -146,6 +146,18 @@ function stubRequestRejected(status: number, message: string, extra: object = {}
   );
 }
 
+/** Count session refreshes; a refused credential must never trigger one. */
+function countRefreshes() {
+  let calls = 0;
+  server.use(
+    http.post(`${base}/api/v1/auth/refresh-token`, () => {
+      calls += 1;
+      return HttpResponse.json({ success: true, message: 'Token refreshed' });
+    })
+  );
+  return () => calls;
+}
+
 function renderSection(ui: ReactNode = <RecoveryAddressSection />) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -295,7 +307,9 @@ describe('RecoveryAddressSection — the way back in', () => {
 
   it('reports a refused password inline, keeps what was typed, and claims nothing was sent', async () => {
     stubStatus();
-    stubRequestRejected(401, 'Current password is incorrect');
+    // Equoria-wkpns: a coded 400 (it was a 401, which the transport refreshed and re-sent).
+    stubRequestRejected(400, 'Current password is incorrect', { code: 'currentPasswordIncorrect' });
+    const refreshes = countRefreshes();
     const user = userEvent.setup();
     renderSection();
     await openTheForm(user);
@@ -312,6 +326,46 @@ describe('RecoveryAddressSection — the way back in', () => {
     // Submitted state is preserved until success.
     expect(screen.getByLabelText(/new email address/i)).toHaveValue(REPLACEMENT);
     expect(screen.queryByTestId('recovery-address-waiting')).not.toBeInTheDocument();
+    expect(requestCalls, 'one attempt is one password check').toBe(1);
+    expect(refreshes(), 'a wrong password is not an ended session').toBe(0);
+  });
+
+  it('names the password or code once on a second-factor account, sent once', async () => {
+    stubStatus({ secondFactorRequired: true });
+    stubRequestRejected(400, 'The password or one-time code is incorrect', {
+      code: 'passwordOrCodeIncorrect',
+    });
+    const refreshes = countRefreshes();
+    const user = userEvent.setup();
+    renderSection();
+    await openTheForm(user);
+
+    await user.type(screen.getByLabelText(/new email address/i), REPLACEMENT);
+    await user.type(screen.getByLabelText(/current password/i), 'CorrectHorse1!');
+    await user.type(screen.getByLabelText(/six-digit code/i), '000000');
+    await user.click(screen.getByRole('button', { name: /send the confirmation/i }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent("That password or code wasn't accepted.");
+    expect(alert).not.toHaveTextContent(/one-time code is incorrect/);
+    expect(requestCalls, 'one wrong code is one lockout strike').toBe(1);
+    expect(refreshes()).toBe(0);
+  });
+
+  it('asks for the code when the server wants one the form did not show', async () => {
+    stubStatus();
+    stubRequestRejected(400, 'A current one-time code is required', { code: 'mfaCodeRequired' });
+    const user = userEvent.setup();
+    renderSection();
+    await openTheForm(user);
+
+    await user.type(screen.getByLabelText(/new email address/i), REPLACEMENT);
+    await user.type(screen.getByLabelText(/current password/i), 'CorrectHorse1!');
+    await user.click(screen.getByRole('button', { name: /send the confirmation/i }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/six-digit code from your authenticator app/i);
+    expect(alert).not.toHaveTextContent(/check the address/i);
   });
 
   it('names the wait when the resend cooldown refuses the request', async () => {

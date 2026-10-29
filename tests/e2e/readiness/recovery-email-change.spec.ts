@@ -276,7 +276,7 @@ test.describe('Recovery address — Settings to a moved identity', () => {
       email: replacement,
       password: `${player.password}-not-it`,
     });
-    expect(refused.status()).toBe(401);
+    expect(refused.status()).toBe(400); // Equoria-wkpns: coded refusal, not an ended session
 
     const alert = page.getByRole('alert');
     await expect(alert).toBeVisible();
@@ -399,7 +399,7 @@ test.describe('Recovery address — Settings to a moved identity', () => {
         response.request().method() === 'POST'
     );
     await page.locator('[data-testid="recovery-address-submit"]').click();
-    expect((await refusedResponse).status()).toBe(401);
+    expect((await refusedResponse).status()).toBe(400);
     await expect(page.getByRole('alert')).toContainText(/password or code wasn't accepted/i);
     await expect(page.locator('[data-testid="recovery-address-waiting"]')).toHaveCount(0);
 

@@ -131,6 +131,15 @@ export async function revokePendingEmailChanges(client, userId, currentEmail, no
   return result.count;
 }
 
+const passwordOrCodeMessage = 'The password or one-time code is incorrect';
+
+/** A coded 400 refusal; emailChangeController renders `code` into the body. */
+function refusal(message, code) {
+  const error = new AppError(message, 400);
+  error.code = code;
+  return error;
+}
+
 /**
  * Step 1 — verify fresh authentication and stage the replacement address.
  *
@@ -189,16 +198,28 @@ export async function requestEmailChange({
     }
   }
 
+  // Equoria-wkpns: every fresh-authentication refusal is a coded 400, never a
+  // 401. The frontend client reads a 401 as an expired session and re-sends
+  // the request, which recorded one wrong code twice against the lockout.
+  // A missing code is refused before the password is checked, and a wrong
+  // password and a wrong code share one answer on a second-factor account, so
+  // this endpoint never confirms a password without the second factor.
+  if (user.mfaEnabled && (typeof totpToken !== 'string' || totpToken.trim().length === 0)) {
+    throw refusal(
+      'A current one-time code is required to change your email address',
+      'mfaCodeRequired',
+    );
+  }
+
   const passwordValid = await bcrypt.compare(password, user.password);
   if (!passwordValid) {
     logger.warn('[emailChangeService] Rejected email change — wrong password', { userId: user.id });
-    throw new AppError('Current password is incorrect', 401);
+    throw user.mfaEnabled
+      ? refusal(passwordOrCodeMessage, 'passwordOrCodeIncorrect')
+      : refusal('Current password is incorrect', 'currentPasswordIncorrect');
   }
 
   if (user.mfaEnabled) {
-    if (typeof totpToken !== 'string' || totpToken.trim().length === 0) {
-      throw new AppError('A current TOTP code is required to change your email address', 401);
-    }
     // Replay check first so a replayed code feeds the lockout counter exactly
     // like an invalid one (Equoria-y932s / uqq8n).
     const isReplay = mfaReplayProtectionService.hasBeenUsed(user.id, totpToken);
@@ -208,7 +229,7 @@ export async function requestEmailChange({
         : false;
     if (!otpValid) {
       await mfaLockoutService.recordFailure(user.id);
-      throw new AppError('Invalid TOTP token', 401);
+      throw refusal(passwordOrCodeMessage, 'passwordOrCodeIncorrect');
     }
     mfaReplayProtectionService.recordSuccessfulVerification(user.id, totpToken);
     await mfaLockoutService.recordSuccess(user.id);

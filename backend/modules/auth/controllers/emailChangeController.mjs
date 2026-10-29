@@ -156,6 +156,11 @@ export const requestEmailChangeController = async (req, res, next) => {
         retryAfter: error.retryAfter,
       });
     }
+    // Equoria-wkpns: the central errorHandler drops `code`, and a coded
+    // refusal is how the client tells a wrong password from a missing code.
+    if (AppError.isAppError(error) && error.statusCode === 400 && typeof error.code === 'string') {
+      return res.status(400).json({ success: false, message: error.message, code: error.code });
+    }
     if (AppError.isAppError(error) || error instanceof ValidationError) {
       return next(error);
     }

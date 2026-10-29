@@ -230,3 +230,60 @@ describe('apiClient — change-password refusals and expired sessions', () => {
     expect(changePasswordCalls).toBe(2);
   });
 });
+
+/** The email-change request (Equoria-wkpns): same contract as change-password. */
+describe('apiClient — email-change refusals and expired sessions', () => {
+  const body = { email: 'new-rider@example.com', password: 'NotMyPassword1!', totpToken: '000000' };
+  let emailChangeCalls = 0;
+
+  beforeEach(() => {
+    emailChangeCalls = 0;
+    server.use(
+      http.post(`${base}/api/v1/auth/refresh-token`, () => {
+        refreshCalls += 1;
+        return HttpResponse.json({ success: true, message: 'Token refreshed' });
+      })
+    );
+  });
+
+  it('sends a wrong password or code once and never refreshes for it', async () => {
+    server.use(
+      http.post(`${base}/api/v1/auth/email-change/request`, () => {
+        emailChangeCalls += 1;
+        return HttpResponse.json(
+          { success: false, message: 'refused', code: 'passwordOrCodeIncorrect' },
+          { status: 400 }
+        );
+      })
+    );
+
+    const error = await apiClient.post('/api/v1/auth/email-change/request', body).then(
+      () => null,
+      (caught: ApiError) => caught
+    );
+
+    expect(error?.code).toBe('passwordOrCodeIncorrect');
+    expect(emailChangeCalls, 'one wrong code is one lockout strike').toBe(1);
+    expect(refreshCalls).toBe(0);
+  });
+
+  it('still refreshes and retries once when the access token has expired', async () => {
+    server.use(
+      http.post(`${base}/api/v1/auth/email-change/request`, () => {
+        emailChangeCalls += 1;
+        if (emailChangeCalls === 1) {
+          return HttpResponse.json(
+            { status: 'error', message: 'Access token expired' },
+            { status: 401 }
+          );
+        }
+        return HttpResponse.json({ success: true, message: 'Confirm the change.' });
+      })
+    );
+
+    await apiClient.post('/api/v1/auth/email-change/request', body);
+
+    expect(refreshCalls).toBe(1);
+    expect(emailChangeCalls).toBe(2);
+  });
+});
