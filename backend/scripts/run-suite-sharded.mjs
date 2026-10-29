@@ -117,6 +117,7 @@ import {
   canonicalPassBatches,
   isPlantedTestPath,
   planLanes,
+  quietTimingSuites,
   toBackendRelative,
 } from './tree-lane-plan.mjs';
 
@@ -179,8 +180,8 @@ function normalizePath(p) {
 const CANONICAL_DB_SUITES = [
   '__tests__/horseColorDiversitySentinel.test.mjs',
   // Equoria-jeci6: absolute wall-clock bounds need a quiet machine (see above).
-  'modules/auth/__tests__/forgotPasswordTimingOracle.integration.test.mjs',
-  'modules/auth/__tests__/loginTimingOracle.sentinel.test.mjs',
+  // One list, shared with CI's quiet step (tree-lane-plan.mjs, Equoria-xh7zd).
+  ...quietTimingSuites,
 ];
 const canonicalSet = new Set(
   CANONICAL_DB_SUITES.map(rel => normalizePath(path.join(BACKEND, rel))),

@@ -53,6 +53,20 @@ export const TREE_SUITE_FILES = Object.freeze([
 ]);
 
 /**
+ * Backend-relative timing sentinels that need a quiet machine (Equoria-jeci6,
+ * Equoria-xh7zd). They assert wall-clock bounds, so a busy neighbour (the other
+ * lane, a second Jest worker, a heap grown over hundreds of suites) can fail
+ * them with no code change. The local gate runs them in its serial canonical
+ * pass (run-suite-sharded.mjs); CI runs them in their own fresh single-process
+ * step of the shard that owns them (test.yml `quiet:`).
+ * check-ci-shard-exclusivity.mjs proves CI's quiet step selects exactly this list.
+ */
+export const quietTimingSuites = Object.freeze([
+  'modules/auth/__tests__/forgotPasswordTimingOracle.integration.test.mjs',
+  'modules/auth/__tests__/loginTimingOracle.sentinel.test.mjs',
+]);
+
+/**
  * Most suites per tree batch (one fresh --runInBand process each). Kept near
  * the ~120-suite shards the 768MB lane heap was measured on. Batches pass
  * backend-relative paths (~60 chars each), far below the Windows

@@ -141,6 +141,12 @@ export function extractShardPatterns(workflowText) {
     if (patternMatch && current) {
       current.pattern = parseYamlScalar(patternMatch[1]);
     }
+    // Equoria-xh7zd: optional `quiet:` — suites the same shard job runs in its
+    // own fresh single-process step after the main run (timing sentinels).
+    const quietMatch = line.match(/^\s*quiet:\s*(.+)$/);
+    if (quietMatch && current) {
+      current.quiet = parseYamlScalar(quietMatch[1]);
+    }
   }
   if (current && current.pattern !== undefined) {
     patterns.push(current);
@@ -150,6 +156,49 @@ export function extractShardPatterns(workflowText) {
     throw new Error('check-ci-shard-exclusivity: no shard patterns found in matrix.include');
   }
   return patterns;
+}
+
+/**
+ * A shard job runs the files its main `pattern` selects plus, in a separate
+ * fresh step, the files its optional `quiet` pattern selects (Equoria-xh7zd).
+ * Both count as "this shard" for exclusivity and exhaustiveness; whether a quiet
+ * file ALSO sits in a main run is validateQuietPass's job.
+ */
+function shardSelector(p) {
+  const main = new RegExp(p.pattern);
+  const quiet = p.quiet ? new RegExp(p.quiet) : null;
+  return { test: (file) => main.test(file) || (quiet !== null && quiet.test(file)) };
+}
+
+/**
+ * Equoria-xh7zd: CI's quiet steps must select exactly `expectedQuietFiles`
+ * (backend/scripts/tree-lane-plan.mjs quietTimingSuites, the list the local
+ * gate's serial canonical pass also runs), and no shard's MAIN pattern may also
+ * select one of them (it would run twice, once under load). Returns violation
+ * strings; empty = consistent.
+ */
+export function validateQuietPass({ patterns, testFiles, expectedQuietFiles }) {
+  const violations = [];
+  const quietRes = patterns.filter((p) => p.quiet).map((p) => new RegExp(p.quiet));
+  const mainRes = patterns.map((p) => ({ shard: p.shard, re: new RegExp(p.pattern) }));
+  const selected = testFiles.filter((file) => quietRes.some((re) => re.test(file)));
+  const expected = new Set(expectedQuietFiles);
+  for (const file of selected) {
+    if (!expected.has(file)) {
+      violations.push(`${file} is selected by a quiet: pattern but is not in quietTimingSuites`);
+    }
+    for (const m of mainRes) {
+      if (m.re.test(file)) {
+        violations.push(`${file} is in a quiet step AND in shard ${m.shard}'s main run`);
+      }
+    }
+  }
+  for (const file of expected) {
+    if (!selected.includes(file)) {
+      violations.push(`${file} is in quietTimingSuites but no quiet: pattern selects it`);
+    }
+  }
+  return violations;
 }
 
 /**
@@ -165,7 +214,7 @@ export function validateShardExclusivity({ patterns, testFiles }) {
   const compiled = patterns.map((p) => ({
     shard: p.shard,
     pattern: p.pattern,
-    re: new RegExp(p.pattern),
+    re: shardSelector(p),
   }));
   const violations = [];
   for (const file of testFiles) {
@@ -192,7 +241,7 @@ export function validateShardExclusivity({ patterns, testFiles }) {
  * EXACTLY ONE shard.
  */
 export function validateShardExhaustiveness({ patterns, testFiles }) {
-  const compiled = patterns.map((p) => new RegExp(p.pattern));
+  const compiled = patterns.map((p) => shardSelector(p));
   const uncovered = [];
   for (const file of testFiles) {
     if (!compiled.some((re) => re.test(file))) {
@@ -231,8 +280,19 @@ async function main() {
   const testFiles = enumerateJestTestFiles(jestConfig);
   const overlaps = validateShardExclusivity({ patterns, testFiles });
   const uncovered = validateShardExhaustiveness({ patterns, testFiles });
+  const { quietTimingSuites } = await import(
+    pathToFileURL(path.join(ROOT, 'backend/scripts/tree-lane-plan.mjs')).href
+  );
+  const quietIssues = validateQuietPass({
+    patterns,
+    testFiles,
+    expectedQuietFiles: quietTimingSuites.map((rel) => `backend/${rel}`),
+  });
 
-  if (overlaps.length > 0 || uncovered.length > 0) {
+  if (overlaps.length > 0 || uncovered.length > 0 || quietIssues.length > 0) {
+    for (const v of quietIssues) {
+      console.error(`[ci-shard-exclusivity] FAIL — quiet timing step (Equoria-xh7zd): ${v}`);
+    }
     if (overlaps.length > 0) {
       console.error(
         `[ci-shard-exclusivity] FAIL — ${overlaps.length} test file(s) match >1 shard pattern (Equoria-2ixd1):`
@@ -258,7 +318,7 @@ async function main() {
     process.exit(1);
   }
   console.log(
-    `[ci-shard-exclusivity] OK — ${testFiles.length} jest test files map to exactly one of ${patterns.length} shards (0 overlaps, 0 uncovered)`
+    `[ci-shard-exclusivity] OK — ${testFiles.length} jest test files map to exactly one of ${patterns.length} shards (0 overlaps, 0 uncovered); the quiet timing step selects exactly ${quietTimingSuites.length} suites`
   );
 }
 

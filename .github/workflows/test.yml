@@ -307,8 +307,15 @@ jobs:
           - shard: 1
             pattern: 'tests/(?!integration/)|(models|seed)/[^/]+\.test\.mjs$|backend/(scripts|eslint-plugins)/[^/]+\.test\.mjs$'
           # Shard 2 — integration tests + module co-located tests
+          # Equoria-xh7zd: the timing sentinels (backend/scripts/tree-lane-plan.mjs
+          # quietTimingSuites) are left out of the main run and run afterwards in
+          # this job's own fresh single-process step (`quiet:`), like the local
+          # gate's serial canonical pass (Equoria-jeci6). In the main run a second
+          # worker and a heap grown over ~360 suites added ~75ms to one branch
+          # (run 40802408751) with no code difference between the branches.
           - shard: 2
-            pattern: 'tests/integration|modules/(?!docs/__tests__/)(?!.*(?:groomSalaryPassScoped\.sentinel|flagEngineSingleSource\.sentinel|riderRetirementHidden\.integration)\.test\.mjs$).*/__tests__'
+            pattern: 'tests/integration|modules/(?!docs/__tests__/)(?!.*(?:groomSalaryPassScoped\.sentinel|flagEngineSingleSource\.sentinel|riderRetirementHidden\.integration|forgotPasswordTimingOracle\.integration|loginTimingOracle\.sentinel)\.test\.mjs$).*/__tests__'
+            quiet: 'modules/auth/__tests__/(?:forgotPasswordTimingOracle\.integration|loginTimingOracle\.sentinel)\.test\.mjs$'
           # Shard 3 — legacy/top-level __tests__ dirs (largest volume),
           # EXCLUDING the module co-located modules/<x>/__tests__ suites that
           # shard 2 owns. The old bare '__tests__/' substring also matched every
@@ -424,6 +431,25 @@ jobs:
           else
             npm run test:backend:ci -- "${jest_args[@]}" 2>&1 | tee test-results/jest.log
           fi
+
+      # Equoria-xh7zd / Equoria-jeci6: timing sentinels assert wall-clock bounds,
+      # so they run alone, after the main run, in a fresh Jest process (one file
+      # at a time, no second worker, no coverage instrumentation). Runs even when
+      # the main run failed, so a timing regression is never hidden behind it.
+      # Jest exits 1 on "No tests found", so a pattern that stops matching fails.
+      # check-ci-shard-exclusivity.mjs proves `quiet` selects exactly
+      # quietTimingSuites and that no main pattern also selects them.
+      - name: Run timing sentinels alone — shard ${{ matrix.shard }}
+        if: ${{ !cancelled() && matrix.quiet }}
+        working-directory: ./backend
+        env:
+          QUIET_PATTERN: ${{ matrix.quiet }}
+        run: |
+          set -o pipefail
+          mkdir -p test-results
+          node --experimental-vm-modules --max-old-space-size=4096 node_modules/jest/bin/jest.js \
+            --runInBand --ci --forceExit --testPathPatterns="$QUIET_PATTERN" \
+            2>&1 | tee test-results/jest-quiet.log
 
       - name: Summarize backend failure — shard ${{ matrix.shard }}
         if: failure()
