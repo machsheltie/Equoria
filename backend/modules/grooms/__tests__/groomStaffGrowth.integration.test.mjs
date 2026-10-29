@@ -168,7 +168,8 @@ describe('groom growth (Equoria-xlw03)', () => {
     const { user, token } = await makeUser();
     const { token: otherToken } = await makeUser();
     const own = await hireGroom(user, token);
-    await prisma.$transaction(tx => recordStaffShowsTx(tx, 'groom', own.id, 600));
+    // 300 shows in all: Advanced (q279).
+    await prisma.$transaction(tx => recordStaffShowsTx(tx, 'groom', own.id, 300));
     const before = await profileOf(own.id);
     expect(before.items.filter(i => i.revealed)).toHaveLength(9);
 

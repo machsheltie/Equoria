@@ -60,21 +60,34 @@ describe('staff growth rules (Equoria-xlw03)', () => {
     ]);
   });
 
-  it('each step needs 100 / 200 / 300 / 400 more shows; Expert has no next step', () => {
+  // Owner ruling 2026-10-29 (q279) replaced "100 / 200 / 300 / 400 MORE shows per step"
+  // (Expert at 1000 in all) with running totals: Novice 100, Intermediate 200,
+  // Advanced 300, Expert 400.
+  it('q279: the thresholds are running totals, Novice 100 / Intermediate 200 / Advanced 300 / Expert 400', () => {
     expect(['rookie', 'novice', 'intermediate', 'advanced', 'expert'].map(growthShowsForNextLevel)).toEqual([
       100,
-      200,
-      300,
-      400,
+      100,
+      100,
+      100,
       null,
     ]);
     const items = drawGrowthItems(pools, seeded(7));
-    const all = applyGrowthShows({ starLevel: 'rookie', showsAtLevel: 0, items }, 1000, seeded(9));
+    const levelAt = total => applyGrowthShows({ starLevel: 'rookie', showsAtLevel: 0, items }, total, seeded(9));
+    expect([99, 100, 199, 200, 299, 300, 399].map(t => levelAt(t).starLevel)).toEqual([
+      'rookie',
+      'novice',
+      'novice',
+      'intermediate',
+      'intermediate',
+      'advanced',
+      'advanced',
+    ]);
+    const all = levelAt(400);
     expect(all.starLevel).toBe('expert');
     expect(all.levelsGained).toEqual(['novice', 'intermediate', 'advanced', 'expert']);
     expect(all.items.every(i => i.revealed)).toBe(true);
-    const short = applyGrowthShows({ starLevel: 'rookie', showsAtLevel: 0, items }, 999, seeded(9));
-    expect([short.starLevel, short.showsAtLevel]).toEqual(['advanced', 399]);
+    const short = levelAt(399);
+    expect([short.starLevel, short.showsAtLevel]).toEqual(['advanced', 99]);
     expect(short.items.filter(i => i.revealed)).toHaveLength(9);
   });
 

@@ -4,8 +4,9 @@
  *   - Every rider is generated as a Rookie with 12 hidden items: 4 horse traits, 4
  *     disciplines and 2 temperaments, each positive or negative, and 2 favorite breeds
  *     (positive only). A Rookie shows its personality only.
- *   - Shows completed level a rider up: 100 at Rookie, then 200, 300, 400 more (counted
- *     from the last level-up). Each level-up reveals 3 random items; Expert shows all.
+ *   - Shows completed level a rider up at running totals (owner ruling 2026-10-29,
+ *     q279): Novice 100, Intermediate 200, Advanced 300, Expert 400. One show is one
+ *     horse ridden (q280). Each level-up reveals 3 random items; Expert shows all.
  *   - A level-up charges nothing; the price follows the new level from the next payday.
  *   - A dismissed or unpaid rider returns to the riders-for-hire pool at its current
  *     level with its reveals intact, and another player can hire it there.
@@ -280,7 +281,64 @@ describe('rider growth (Equoria-xlw03)', () => {
     }
   }, 60000);
 
-  it('level-ups need 100, 200, 300 and 400 shows, each step counted afresh; 3 reveals each, all at Expert', async () => {
+  it('q280: a rider who rides 3 horses in one show counts 3 shows', async () => {
+    const { user, token } = await makeUser();
+    const rider = await hireRookie(user, token);
+    await prisma.riderGrowthProfile.update({
+      where: { riderId: rider.id },
+      data: { showsAtLevel: 97 },
+    });
+    const pastClose = new Date(Date.now() - 60 * 60 * 1000);
+    const show = await prisma.show.create({
+      data: {
+        name: `${fixturePrefix}-show-${tag()}`,
+        discipline: 'Dressage',
+        entryFee: 0,
+        levelMin: 1,
+        levelMax: 999,
+        prize: 0,
+        runDate: pastClose,
+        status: 'open',
+        openDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+        closeDate: pastClose,
+        createdByUserId: user.id,
+      },
+    });
+    showIds.push(show.id);
+    for (let i = 0; i < 3; i += 1) {
+      const horse = await createTestHorse(
+        prisma,
+        {
+          name: `${fixturePrefix}-horse-${tag()}`,
+          sex: 'Mare',
+          age: 7,
+          dateOfBirth: birthDateForAge(7),
+          userId: user.id,
+          healthStatus: 'Excellent',
+          lastFedDate: new Date(),
+        },
+        horseIds,
+      );
+      await prisma.riderAssignment.create({
+        data: { riderId: rider.id, horseId: horse.id, userId: user.id, isActive: true },
+      });
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: horse.id, userId: user.id, feePaid: 0 },
+      });
+    }
+
+    await executeClosedShows({ body: { showIds: [show.id] } }, null);
+
+    const row = await prisma.rider.findUnique({ where: { id: rider.id } });
+    expect(row.totalCompetitions).toBe(3);
+    // 97 + 3 = 100 shows in all: Novice, with the count restarted.
+    expect(row.starLevel).toBe('novice');
+    expect((await profileOf(rider.id)).showsAtLevel).toBe(0);
+  }, 60000);
+
+  // Owner ruling 2026-10-29 (q279): running totals (Novice 100, Intermediate 200,
+  // Advanced 300, Expert 400), replacing 100 / 200 / 300 / 400 more shows per step.
+  it('level-ups come at 100, 200, 300 and 400 shows in all; 3 reveals each, all at Expert', async () => {
     const { user, token } = await makeUser();
     const rider = await hireRookie(user, token);
     const record = shows => prisma.$transaction(tx => recordStaffShowsTx(tx, 'rider', rider.id, shows));
@@ -294,14 +352,14 @@ describe('rider growth (Equoria-xlw03)', () => {
     expect(await state()).toEqual(['rookie', 99, 0]);
     await record(1);
     expect(await state()).toEqual(['novice', 0, 3]);
-    await record(199);
-    expect(await state()).toEqual(['novice', 199, 3]);
+    await record(99);
+    expect(await state()).toEqual(['novice', 99, 3]);
     await record(1);
     expect(await state()).toEqual(['intermediate', 0, 6]);
-    await record(300);
+    await record(100);
     expect(await state()).toEqual(['advanced', 0, 9]);
-    await record(399);
-    expect(await state()).toEqual(['advanced', 399, 9]);
+    await record(99);
+    expect(await state()).toEqual(['advanced', 99, 9]);
     await record(1);
     expect(await state()).toEqual(['expert', 0, 12]);
     await record(50);
@@ -315,7 +373,8 @@ describe('rider growth (Equoria-xlw03)', () => {
   it('a dismissed rider returns to the pool at its level with its reveals intact, and another player can hire it', async () => {
     const { user, token } = await makeUser();
     const rider = await hireRookie(user, token);
-    await prisma.$transaction(tx => recordStaffShowsTx(tx, 'rider', rider.id, 300));
+    // 200 shows in all: Intermediate (q279).
+    await prisma.$transaction(tx => recordStaffShowsTx(tx, 'rider', rider.id, 200));
     const before = await profileOf(rider.id);
     const ownerView = (await send('get', `/api/v1/riders/${rider.id}/discovery`, token)).body.data;
     expect(ownerView.starLevel).toBe('intermediate');

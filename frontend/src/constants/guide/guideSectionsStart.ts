@@ -316,7 +316,7 @@ export const guideSectionsStart: readonly GuideSection[] = [
       {
         kind: 'list',
         items: [
-          '**Riders and grooms grow with every show.** They start as Rookies and climb a level as they complete shows. A new level brings the new price.',
+          '**Riders and grooms grow with every show.** They start as Rookies and climb a level as they complete shows: Novice at 100 shows, Intermediate at 200, Advanced at 300 and Expert at 400. Every horse they ride or present counts, so three horses in one show count as three. A new level brings the new price.',
           '**Every rider and groom has hidden likes and dislikes**: certain horse traits, disciplines and temperaments, and a couple of favorite breeds. A Rookie shows you only their personality. Each new level reveals a little more, and an Expert has nothing left to hide.',
           "**Trainers don't grow.** A trainer keeps the level they came with.",
           'A rider or groom who leaves your staff goes back to the hiring list with their level, and with everything already revealed about them.',

@@ -8,20 +8,22 @@
  *                each + or -; 2 temperaments, each + or -; 2 favorite breeds (positive
  *                only); everything else neutral. A Rookie shows its personality only.
  *                Each level-up reveals 3 random hidden items (no ordering preference);
- *                an Expert shows everything. Level-ups by shows completed: Rookie to
- *                Novice 100, Novice to Intermediate 200, Intermediate to Advanced 300,
- *                Advanced to Expert 400. A fired or unpaid staff member returns to the
- *                hiring pool at its current level with its reveals intact.
+ *                an Expert shows everything. A fired or unpaid staff member returns to
+ *                the hiring pool at its current level with its reveals intact.
  *   q235         The price follows the new star level from the next payday after a
  *                level-up (the weekly pass charges `hiredStaffFee`, which reads the
  *                current star level; a level-up itself charges nothing).
  *   q244         Stars give no bonus for now, so the hidden modifiers' effects on
  *                scores are NOT applied: see `staffGrowthModifierEffectsEnabled`.
  *
- * Shows per step are counted from the last level-up ("to go from rookie to novice ...
- * 100 shows, novice to intermediate 200 shows ..."): each step needs that many MORE
- * shows, so a Rookie reaches Novice at 100 shows, Intermediate at 300, Advanced at 600
- * and Expert at 1000 in all.
+ * Owner rulings 2026-10-29 (Equoria-waqkr):
+ *   q279         The thresholds are running totals of shows: a Rookie reaches Novice at
+ *                100 shows, Intermediate at 200, Advanced at 300 and Expert at 400 in
+ *                all. Each step is therefore 100 more shows than the last level-up.
+ *                (This replaces the 2026-10-28 reading of 100 / 200 / 300 / 400 MORE
+ *                shows per step.)
+ *   q280         One show is one horse ridden or presented: a rider or groom who takes
+ *                3 horses into one show counts 3 (the callers record one per entry).
  *
  * Trainers are not covered by this ruling and do not grow.
  *
@@ -55,12 +57,15 @@ export const growthItemTotal = Object.values(growthItemCounts).reduce((a, b) => 
 /** Hidden items revealed by each level-up. */
 export const growthRevealsPerLevelUp = 3;
 
-/** Shows completed at a level that take a staff member to the next one. */
+/**
+ * Shows completed at a level that take a staff member to the next one: 100 each, so the
+ * running totals are 100 / 200 / 300 / 400 (q279).
+ */
 const showsPerStep = Object.freeze({
   rookie: 100,
-  novice: 200,
-  intermediate: 300,
-  advanced: 400,
+  novice: 100,
+  intermediate: 100,
+  advanced: 100,
 });
 
 /**
