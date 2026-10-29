@@ -30,6 +30,17 @@
  *   NEW ruling: update the stale test to authenticate as admin; NO assertion
  *     changed (same statuses, bodies and invariants).
  *
+ * Equoria-mlnpu (owner ruling q289, Equoria-n256i): admin tools also need the
+ * emailed staff check-in.
+ *   OLD contract: an admin access token + CSRF was enough to create a breed.
+ *   NEW ruling: the admin must also hold a checked-in device, so every POST
+ *     answered 403 here. The admin now carries a real trusted-device cookie
+ *     (backend/tests/helpers/staffDeviceFixture.mjs), as the sibling suite
+ *     does. The fixture admin is also email-verified: since Equoria-voasj ("no
+ *     play until the email is confirmed") an unverified account is refused
+ *     with 403 before any admin check, and the sibling suite's admin already is.
+ *   No assertion changed.
+ *
  * Relocated to root tests/ so it RUNS via the root jest config (npm test / CI)
  * — it is excluded from the pre-push gate, which uses backend/jest.config.mjs
  * (rootDir: backend) and never collects repo-root tests/ (Equoria-jcgid).
@@ -44,6 +55,7 @@ import app from '../backend/app.mjs';
 import prisma from '../packages/database/prismaClient.mjs';
 import config from '../backend/config/config.mjs';
 import { fetchCsrf } from '../backend/tests/helpers/csrfHelper.mjs';
+import { checkedInDeviceCookie } from '../backend/tests/helpers/staffDeviceFixture.mjs';
 import { invalidateCachePattern } from '../backend/utils/cacheHelper.mjs';
 
 const NAME_PREFIX = 'TestFixture-Breed-';
@@ -72,7 +84,9 @@ function adminAccessCookie() {
 
 async function adminCreateBreed(body) {
   const cookie = adminAccessCookie();
-  const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: cookie });
+  // Equoria-n256i (owner ruling q289): admin tools need the emailed staff check-in.
+  const device = await checkedInDeviceCookie(adminUser.id);
+  const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [cookie, device] });
   return request(app)
     .post('/api/v1/breeds')
     .set('Origin', ORIGIN)
@@ -91,6 +105,7 @@ beforeAll(async () => {
       firstName: 'Breed',
       lastName: 'Admin',
       role: 'admin',
+      emailVerified: true,
       dateOfBirth: new Date('1990-01-01'),
     },
   });
