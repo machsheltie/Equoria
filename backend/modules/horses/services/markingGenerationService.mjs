@@ -139,6 +139,16 @@ export function generateFaceMarking(markingBias, rng) {
 // ---------------------------------------------------------------------------
 
 /**
+ * The breed's cap on marked legs (markingBias.maxLegsMarked, default 4).
+ *
+ * @param {Object|null} markingBias
+ * @returns {number}
+ */
+function maxMarkedLegs(markingBias) {
+  return markingBias?.maxLegsMarked ?? LEG_MARKING_DEFAULTS.maxLegsMarked;
+}
+
+/**
  * Generate independent leg markings for all 4 legs.
  * Each leg first rolls against `legsGeneralProbability`.
  * If a leg is marked, the type is drawn from `legSpecificProbabilities`.
@@ -153,7 +163,7 @@ export function generateLegMarkings(markingBias, rng) {
     markingBias?.legsGeneralProbability ?? LEG_MARKING_DEFAULTS.legsGeneralProbability;
   const typeWeights =
     markingBias?.legSpecificProbabilities ?? LEG_MARKING_DEFAULTS.legSpecificProbabilities;
-  const maxLegs = markingBias?.maxLegsMarked ?? LEG_MARKING_DEFAULTS.maxLegsMarked;
+  const maxLegs = maxMarkedLegs(markingBias);
 
   const result = {};
   let markedCount = 0;
@@ -390,6 +400,29 @@ export function inheritMarkings(
         return 'none';
       },
     );
+  }
+
+  // Equoria-2r7xv: the breed's cap on marked legs holds for inherited foals too.
+  // Legs are inherited one by one, so parents marked on different legs could
+  // give a cap-1 breed a foal with two or more; keep the first marked legs in
+  // leg order (as generateLegMarkings does) and clear the rest. Applied after
+  // the loop so every roll is still drawn and later seeded values do not shift.
+  const maxLegs = maxMarkedLegs(markingBias);
+  let markedLegs = 0;
+  // legMarkings was filled in leg order above.
+  for (const leg of Object.keys(legMarkings)) {
+    if (
+      legMarkings[leg] === 'none' ||
+      legMarkings[leg] === null ||
+      legMarkings[leg] === undefined
+    ) {
+      continue;
+    }
+    if (markedLegs >= maxLegs) {
+      legMarkings[leg] = 'none';
+    } else {
+      markedLegs++;
+    }
   }
 
   // P-2: Pre-compute per-flag probabilities so each reroll uses exactly 1 rng() draw
