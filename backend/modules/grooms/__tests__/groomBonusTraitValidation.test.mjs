@@ -1,5 +1,6 @@
 /**
- * Pure-export unit tests for:
+ * Pure-export unit tests for (was backend/__tests__/groomAndLegacyPureExports.test.mjs;
+ * Equoria-7t1tn moved it here once only grooms code remained in it):
  *  - groomBonusTraitService (validateBonusTraits)
  *
  * Equoria-58xq6: the legacy-score calculators (getLegacyScoreDefinitions,
@@ -9,7 +10,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 
-import { validateBonusTraits } from '../modules/grooms/services/groomBonusTraitService.mjs';
+import { validateBonusTraits } from '../services/groomBonusTraitService.mjs';
 
 // Owner ruling 2026-10-28 q154 (Equoria-4fa7s): a show handler is the horse's
 // groom and any groom may handle in any class. Old contract: groomHandlerService's
