@@ -27,7 +27,7 @@
  *   - A horse is traitless when its epigeneticModifiers is NULL or an object whose
  *     positive, negative, hidden and dormant lists are all empty or absent. Any other
  *     stored value (a legacy array, a string) is not guessed at: the horse is skipped
- *     and listed under `unrecognised`.
+ *     and listed under `unrecognized`.
  *   - A horse with any trait is never touched, so a second run does nothing.
  *
  * Safety
@@ -64,14 +64,14 @@ class DryRunRollback extends Error {
 /**
  * Classify a stored epigeneticModifiers value.
  * @param {unknown} modifiers
- * @returns {'traitless'|'hasTraits'|'unrecognised'}
+ * @returns {'traitless'|'hasTraits'|'unrecognized'}
  */
 export function classifyTraitModifiers(modifiers) {
   if (modifiers === null || modifiers === undefined) {
     return 'traitless';
   }
   if (typeof modifiers !== 'object' || Array.isArray(modifiers)) {
-    return 'unrecognised';
+    return 'unrecognized';
   }
   for (const key of traitListKeys) {
     const list = modifiers[key];
@@ -79,7 +79,7 @@ export function classifyTraitModifiers(modifiers) {
       continue;
     }
     if (!Array.isArray(list)) {
-      return 'unrecognised';
+      return 'unrecognized';
     }
     if (list.length > 0) {
       return 'hasTraits';
@@ -164,7 +164,7 @@ export async function runTraitlessHorseBackfill({
 } = {}) {
   const horses = await selectHorses(client, { horseIds, userId });
   const filled = [];
-  const unrecognised = [];
+  const unrecognized = [];
   let alreadyHaveTraits = 0;
   for (const horse of horses) {
     const kind = classifyTraitModifiers(horse.epigeneticModifiers);
@@ -172,8 +172,8 @@ export async function runTraitlessHorseBackfill({
       alreadyHaveTraits++;
       continue;
     }
-    if (kind === 'unrecognised') {
-      unrecognised.push({ id: horse.id, name: horse.name });
+    if (kind === 'unrecognized') {
+      unrecognized.push({ id: horse.id, name: horse.name });
       continue;
     }
     const result = await fillHorse(client, horse.id, { dryRun, rng });
@@ -186,7 +186,7 @@ export async function runTraitlessHorseBackfill({
     horsesScanned: horses.length,
     alreadyHaveTraits,
     filled,
-    unrecognised,
+    unrecognized,
   };
 }
 
@@ -226,8 +226,8 @@ async function main() {
   for (const h of result.filled) {
     console.log(`${apply ? 'FILLED' : 'WOULD FILL'} ${JSON.stringify(h)}`);
   }
-  for (const u of result.unrecognised) {
-    console.log(`UNRECOGNISED ${JSON.stringify(u)}`);
+  for (const u of result.unrecognized) {
+    console.log(`UNRECOGNIZED ${JSON.stringify(u)}`);
   }
   console.log(
     JSON.stringify({
@@ -235,7 +235,7 @@ async function main() {
       horsesScanned: result.horsesScanned,
       alreadyHaveTraits: result.alreadyHaveTraits,
       horsesFilled: result.filled.length,
-      unrecognised: result.unrecognised.length,
+      unrecognized: result.unrecognized.length,
     }),
   );
 }

@@ -112,8 +112,8 @@ describe('classifyTraitModifiers', () => {
     expect(classifyTraitModifiers({ hidden: ['bold'] })).toBe('hasTraits');
     expect(classifyTraitModifiers({ negative: ['fragile'] })).toBe('hasTraits');
     expect(classifyTraitModifiers({ dormant: ['bold'] })).toBe('hasTraits');
-    expect(classifyTraitModifiers(['calm'])).toBe('unrecognised');
-    expect(classifyTraitModifiers('calm')).toBe('unrecognised');
+    expect(classifyTraitModifiers(['calm'])).toBe('unrecognized');
+    expect(classifyTraitModifiers('calm')).toBe('unrecognized');
   });
 });
 
@@ -134,7 +134,7 @@ describe('runTraitlessHorseBackfill against the real database', () => {
     expect(result.rolledBack).toBe(true);
     expect(result.horsesScanned).toBe(horseIds.length);
     expect(result.alreadyHaveTraits).toBe(3);
-    expect(result.unrecognised).toEqual([{ id: ids.legacyArray, name: `${tag}-legacyArray` }]);
+    expect(result.unrecognized).toEqual([{ id: ids.legacyArray, name: `${tag}-legacyArray` }]);
     expect(result.filled.map(f => f.id).sort((a, b) => a - b)).toEqual(
       [ids.ownedEmpty, ids.emptyAdult, ids.nullAdult, ids.emptyFoalKeepsKeys].sort((a, b) => a - b),
     );
