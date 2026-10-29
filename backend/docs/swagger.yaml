@@ -330,9 +330,9 @@ paths:
   /horses/temperament-definitions:
     get:
       tags: [Horses]
-      summary: 'Get all temperament type definitions with game effects'
-      description: 'Returns all 11 temperament types with descriptions, training modifiers, competition modifiers, and best groom personality matches. Requires authentication.'
-      security: [{ bearerAuth: [] }]
+      summary: 'Get all temperament type definitions'
+      description: 'Returns all 12 temperament types, each with a personality description and the groom personalities it bonds best with. Temperaments carry no training or scoring modifiers; outside the show temperament matrix they touch only groom bond and trainer fit. Public: no authentication required.'
+      security: []
       responses:
         '200':
           description: 'Temperament definitions retrieved successfully'
@@ -353,22 +353,19 @@ paths:
                         type: array
                         items:
                           type: object
-                          required: [name, description, prevalenceNote, bestGroomPersonalities]
+                          required: [name, description, bestGroomPersonalities]
                           properties:
                             name:
                               type: string
                               description: 'Canonical temperament name (e.g. "Bold", "Nervous", "Calm")'
                             description:
                               type: string
-                              description: 'Human-readable behavioural summary'
-                            prevalenceNote:
-                              type: string
-                              description: 'Prose note on how common this temperament is in the population'
+                              description: 'Player-facing personality summary, ending with what temperament touches (shows, groom bond, trainer fit); no numbers'
                             bestGroomPersonalities:
                               type: array
                               description: 'Groom personalities that pair positively with this temperament (synergy > 0). Empty when no personality has a positive synergy.'
                               items: { type: string }
-        '401': { description: Unauthorized }
+        '429': { description: 'Too many requests' }
         '500': { description: 'Internal server error' }
 
   '/horses/{id}/xp':

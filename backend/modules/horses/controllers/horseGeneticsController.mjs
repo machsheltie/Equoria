@@ -21,57 +21,60 @@ const CANONICAL_PERSONALITIES = Object.freeze(['gentle', 'energetic', 'patient',
  * Kept in the controller layer — does NOT belong in temperamentService (data separation).
  * Owner ruling 2026-10-29 (q291, Equoria-9kakx): each temperament is described
  * on its own, with no breed hints (the old prevalence notes named breeds).
+ * Owner rulings 2026-10-29 q303/q307 (Equoria-gbyzs): personality first, then a
+ * general line on what temperament really touches — shows, groom bond, trainer
+ * fit (ruling 2026-10-21) — with no numbers, no training or performance claims,
+ * no "potential", and no groom/trainer personality names (the "Best with grooms"
+ * line shows those).
  */
 const TEMPERAMENT_DESCRIPTIONS = Object.freeze({
   Spirited: {
     description:
-      'High-energy and excitable. Responds well to stimulation and performs impressively when engaged.',
+      'Bright-eyed and full of go, a Spirited horse greets every day as if something wonderful is about to happen. That fire goes with them into the show ring and lights up their time with their groom and their trainer.',
   },
   Nervous: {
     description:
-      'Easily startled and prone to anxiety. Requires calm, patient handling to reach full potential.',
+      'Sensitive and watchful, a Nervous horse notices every rustle and shadow and needs to know they are safe. Their worries travel with them into the show ring, and into how they learn to trust their groom and their trainer.',
   },
   Calm: {
     description:
-      'Easygoing and unflappable. Performs consistently under pressure with minimal coaching.',
+      'Easygoing and unflappable, a Calm horse takes the world as it comes, from a busy show ground to a new face at the stall door. That even nature carries into the show ring and into easy partnerships with their groom and their trainer.',
   },
   Bold: {
     description:
-      'Confident and courageous. Takes on challenges without hesitation and excels in ridden competition.',
+      'Confident and curious, a Bold horse walks straight up to anything unfamiliar to see what it is. That courage follows them into the show ring and shapes how they get on with their groom and their trainer.',
   },
   Steady: {
     description:
-      'Reliable and predictable. Rarely has exceptional or poor days — always performs as expected.',
+      'Dependable as the sunrise, a Steady horse is the same sensible partner on a quiet morning as on a big show day. That evenness shows in the show ring, with their groom and with their trainer.',
   },
-  // Owner ruling 2026-10-21: Willing is a new temperament.
   Willing: {
     description:
-      'Cooperative and eager to please. Takes direction readily and tries hard for a rider it trusts.',
+      'Cooperative and eager to please. A Willing horse tries their heart out for the people they trust, and it shows in the show ring, with their groom and with their trainer.',
   },
   Independent: {
     description:
-      "Self-reliant and strong-willed. Doesn't always respond to rider cues, but thinks for itself.",
+      'Thoughtful and self-possessed, an Independent horse likes to make up their own mind before agreeing to anything. That streak follows them into the show ring and into every bond they form with their groom and their trainer.',
   },
   Reactive: {
     description:
-      'Highly attuned to the environment. Quick to respond but easily distracted during training.',
+      'Quick and keenly aware, a Reactive horse feels everything around them: the wind, the crowd, the mood of the barn. That sensitivity matters in the show ring, and in how they settle with their groom and their trainer.',
   },
   Stubborn: {
     description:
-      'Willful and resistant to direction. Training progress is slow but gains are permanent once made.',
+      'Opinionated and unhurried, a Stubborn horse knows exactly what they think and sees no reason to change their mind. That will goes with them into the show ring, and their groom and their trainer feel it too.',
   },
-  // Owner ruling 2026-10-21: Playful was renamed Driven.
   Driven: {
     description:
-      'Determined and hard-working. Gives full effort every time, though that drive can run ahead of the rider.',
+      'Determined and hard-working. A Driven horse gives everything they have, every single time, and that heart shows in the show ring, with their groom and with their trainer.',
   },
   Lazy: {
     description:
-      'Low energy and unmotivated. Requires consistent encouragement but is easy to handle.',
+      'Easygoing to a fault, a Lazy horse would happily doze in the sun all afternoon and sees no reason to rush. That relaxed outlook carries into the show ring and into their days with their groom and their trainer.',
   },
   Aggressive: {
     description:
-      'Dominant and combative. Challenging to manage but can excel competitively with the right handler.',
+      'Proud and quick to assert themselves, an Aggressive horse wants everyone in the barn to know who is in charge. That edge follows them into the show ring, and it colors how they get on with their groom and their trainer.',
   },
 });
 

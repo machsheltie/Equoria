@@ -230,6 +230,38 @@ describe('getTemperamentDefinitions', () => {
     }
   });
 
+  // === F9: descriptions promise only what temperament really touches (q303/q307) ===
+  // Owner ruling 2026-10-21: temperament affects only the show matrix, groom bond
+  // and trainer fit (no training or scoring modifiers); 10-07: no "potential".
+  // Owner ruling 2026-10-29 q303: personality plus what it touches, no numbers;
+  // q307: the touches sentence is general, naming no groom or trainer personality
+  // (the "Best with grooms" line already shows those).
+
+  it('every description is personality plus shows, groom and trainer, with no invented effects', async () => {
+    const req = {};
+    const res = createMockRes();
+
+    await getTemperamentDefinitions(req, res);
+
+    const { definitions } = res.body.data;
+    expect(definitions).toHaveLength(12);
+    for (const def of definitions) {
+      const text = def.description;
+      // No training, potential, numbers or ridden-performance claims.
+      expect(text).not.toMatch(
+        /train(ing|s|ed)?\b|potential|\d|perform|excel|coach|rider|cues|progress|gains|exceptional|poor days|score|stat\b/i,
+      );
+      // No groom/trainer personality words (q307).
+      expect(text).not.toMatch(
+        /gentle|energetic|lively|patient|strict|firm|focused|encouraging|technical|competitive|methodical/i,
+      );
+      // It names what temperament really touches.
+      expect(text).toMatch(/show ring/i);
+      expect(text).toMatch(/\bgroom\b/i);
+      expect(text).toMatch(/\btrainer\b/i);
+    }
+  });
+
   // === F6: 500 error path — missing modifier throws and returns error response ===
 
   it('returns 500 when internal error is thrown during definition assembly', async () => {
