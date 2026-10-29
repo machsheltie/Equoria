@@ -1,8 +1,15 @@
 /**
  * Epigenetic Flag Definitions
  *
- * Defines epigenetic flags that can be applied to horses based on their care history,
- * environmental factors, and developmental milestones.
+ * The names, authored labels, polarity and conflicts of the stored epigenetic
+ * flags (Horse.epigeneticFlags).
+ *
+ * Equoria-cmakh: the per-flag `triggerConditions` (care consistency, task
+ * diversity, bond trend...) were removed. The evaluator that once had its own
+ * hard-coded copy of those rules was deleted (Equoria-1vep2), and owner rulings
+ * 2026-10-27 (q112-q118) make the grooming-day reveal ladder
+ * (modules/traits/services/traitRevealEngine.mjs) the only thing that changes a
+ * horse's traits, so care-pattern trigger rules described nothing that runs.
  *
  * Equoria-v6sp2 / Equoria-rqz1z: the per-flag `influences` (trait-weight and
  * competition/training/bonding/health modifiers) were removed. No live gameplay
@@ -41,10 +48,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     sourceCategory: SOURCE_CATEGORIES.NOVELTY,
     description: 'Horse shows courage and confidence in new situations',
     conflictsWith: ['fearful', 'anxious'],
-    triggerConditions: {
-      careConsistency: 0.7,
-      taskDiversity: 0.5,
-    },
   },
 
   CONFIDENT: {
@@ -54,11 +57,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     sourceCategory: SOURCE_CATEGORIES.BONDING,
     description: 'Horse displays self-assurance and composure',
     conflictsWith: ['insecure', 'fearful'],
-    triggerConditions: {
-      strongBondGrowth: true,
-      diverseExperiences: true,
-      excellentQuality: 0.5,
-    },
   },
 
   AFFECTIONATE: {
@@ -68,12 +66,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     sourceCategory: SOURCE_CATEGORIES.BONDING,
     description: 'Horse forms strong bonds with handlers and shows trust',
     conflictsWith: ['antisocial', 'withdrawn'],
-    triggerConditions: {
-      frequentInteractions: true,
-      positiveBondTrend: true,
-      consistentGroom: true,
-      highPositiveRatio: 0.7,
-    },
   },
 
   RESILIENT: {
@@ -83,10 +75,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     sourceCategory: SOURCE_CATEGORIES.ENVIRONMENT,
     description: 'Horse adapts well to challenges',
     conflictsWith: ['fragile', 'sensitive'],
-    triggerConditions: {
-      adaptabilityShown: true,
-      challengeOvercome: true,
-    },
   },
 
   // NEGATIVE FLAGS (5)
@@ -97,10 +85,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     sourceCategory: SOURCE_CATEGORIES.NOVELTY,
     description: 'Horse shows excessive fear and anxiety in new situations',
     conflictsWith: ['brave', 'confident'],
-    triggerConditions: {
-      careGaps: 'frequent',
-      inconsistentCare: true,
-    },
   },
 
   INSECURE: {
@@ -110,12 +94,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     sourceCategory: SOURCE_CATEGORIES.BONDING,
     description: 'Horse lacks confidence and seeks constant reassurance',
     conflictsWith: ['confident', 'brave'],
-    triggerConditions: {
-      decliningBond: true,
-      frequentGroomChanges: true,
-      lowPositiveRatio: true,
-      neglectPeriods: true,
-    },
   },
 
   ALOOF: {
@@ -125,12 +103,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     sourceCategory: SOURCE_CATEGORIES.BONDING,
     description: 'Horse maintains emotional distance and resists bonding',
     conflictsWith: ['affectionate', 'social'],
-    triggerConditions: {
-      avoidanceBehavior: true,
-      lowInteractionQuality: true,
-      emotionalWithdrawal: true,
-      resistanceToHandling: true,
-    },
   },
 
   SKITTISH: {
@@ -140,11 +112,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     sourceCategory: SOURCE_CATEGORIES.ENVIRONMENT,
     description: 'Horse is easily startled and overreacts to environmental stimuli',
     conflictsWith: ['calm', 'steady'],
-    triggerConditions: {
-      overreactions: 'frequent',
-      stimuliSensitivity: 'high',
-      unpredictableBehavior: true,
-    },
   },
 
   FRAGILE: {
@@ -154,11 +121,6 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     sourceCategory: SOURCE_CATEGORIES.ENVIRONMENT,
     description: 'Horse is emotionally sensitive and easily overwhelmed',
     conflictsWith: ['resilient', 'hardy'],
-    triggerConditions: {
-      overwhelmingSituations: true,
-      sensitiveReactions: true,
-      emotionalBreakdowns: true,
-    },
   },
 };
 

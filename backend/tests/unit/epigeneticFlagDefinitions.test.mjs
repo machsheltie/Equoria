@@ -84,7 +84,10 @@ describe('Epigenetic Flag Definitions', () => {
         expect(flag).toHaveProperty('description');
         expect(flag).toHaveProperty('type');
         expect(flag).toHaveProperty('sourceCategory');
-        expect(flag).toHaveProperty('triggerConditions');
+        // Equoria-cmakh: no published trigger rules. Owner rulings 2026-10-27
+        // (q112-q118): traits change only through the grooming-day reveal
+        // ladder, so care-pattern triggerConditions describe nothing that runs.
+        expect(flag).not.toHaveProperty('triggerConditions');
 
         // Validate types
         expect(typeof flag.name).toBe('string');
@@ -92,7 +95,6 @@ describe('Epigenetic Flag Definitions', () => {
         expect(typeof flag.description).toBe('string');
         expect(Object.values(FLAG_TYPES)).toContain(flag.type);
         expect(Object.values(SOURCE_CATEGORIES)).toContain(flag.sourceCategory);
-        expect(typeof flag.triggerConditions).toBe('object');
       });
     });
 

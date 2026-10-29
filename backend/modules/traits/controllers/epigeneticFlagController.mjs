@@ -3,12 +3,14 @@
  * API endpoints for epigenetic flag evaluation and management
  *
  * 🎯 PURPOSE:
- * Provides REST API endpoints for evaluating and retrieving epigenetic flags
- * based on care patterns and trigger conditions.
+ * Provides REST API endpoints for reading a horse's stored epigenetic flags and
+ * the flag definitions (names, labels, polarity). Nothing here evaluates or
+ * assigns a flag.
  *
  * 📋 BUSINESS RULES:
- * - No player endpoint assigns flags (Equoria-gu8jk): POST /flags/evaluate and
- *   its evaluateFlags handler were removed; the weekly flag job assigns them
+ * - No endpoint assigns flags (Equoria-gu8jk, Equoria-a7f1p); the weekly flag
+ *   job was retired too (Equoria-koxep): traits change only through the
+ *   grooming-day reveal ladder
  * - GET /horses/:id/flags - Get all flags for a horse
  * - Requires authentication for all endpoints
  * - Validates horse ownership for user operations
