@@ -57,7 +57,9 @@ const MIGRATED = [
   // commit as ONE wrapped transaction (they were two unwrapped statements),
   // alongside the pre-existing forgotPassword + resetPassword transactions.
   ['modules/auth/controllers/passwordController.mjs', { wrapped: 3, totalTx: 3 }],
-  ['modules/auth/controllers/onboardingController.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-mif2g: completeOnboarding reads its step gate and writes the flag
+  // in one wrapped transaction, alongside advanceOnboarding's.
+  ['modules/auth/controllers/onboardingController.mjs', { wrapped: 2, totalTx: 2 }],
   ['modules/crafting/controllers/craftingController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/economy/vet/controllers/vetController.mjs', { wrapped: 1, totalTx: 1 }],
   // Equoria-6p398.19: unequipDecoration became a wrapped transaction (it now

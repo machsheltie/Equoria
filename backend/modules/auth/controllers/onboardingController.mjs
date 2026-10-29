@@ -124,32 +124,69 @@ function generateStarterStats(breedName) {
   return stats;
 }
 
+/** Refusal code for complete-onboarding before the welcome wizard is done (Equoria-mif2g). */
+export const onboardingWizardNotFinishedCode = 'onboardingWizardNotFinished';
+
 /**
  * POST /api/v1/auth/complete-onboarding
  * Marks the authenticated user's onboarding as complete in User.settings.
+ *
+ * Equoria-mif2g: only a player who has finished the welcome wizard may end
+ * onboarding. OLD: any account could call this at onboardingStep 0, skip the
+ * wizard for good (OnboardingGuard never showed it again) and keep the
+ * registration stand-in starter horse. NEW: an account still at step 0 and not
+ * completed is refused with 409 `onboardingWizardNotFinished` and nothing is
+ * written. The tour's Skip (OnboardingSpotlight, shown only from step >= 1) and
+ * an already-finished player are unaffected.
  */
 export const completeOnboarding = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { settings: true },
-    });
+    // The gate is read and the flag written in ONE transaction, and the read
+    // takes the User row lock (lock order User first), so a concurrent wizard
+    // post (advance-onboarding, which writes the same row) is either fully
+    // committed before this reads or waits until this commits — never a read
+    // of a step that has already moved (the Equoria-kuqq9 pattern).
+    const outcome = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        const rows = await tx.$queryRaw`
+          SELECT "settings" FROM "User" WHERE "id" = ${userId} FOR UPDATE
+        `;
+        if (rows.length === 0) {
+          return 'notFound';
+        }
+        const settings =
+          typeof rows[0].settings === 'object' &&
+          rows[0].settings !== null &&
+          !Array.isArray(rows[0].settings)
+            ? rows[0].settings
+            : {};
+        const step = typeof settings.onboardingStep === 'number' ? settings.onboardingStep : 0;
+        if (settings.completedOnboarding !== true && step < 1) {
+          return 'wizardNotFinished';
+        }
 
-    if (!user) {
+        // Finding 1 (Equoria-6p398.1): write ONLY `completedOnboarding`. The prior
+        // whole-document write replayed a stale snapshot and could erase the weekly
+        // bank-claim marker committed by a concurrent POST /bank/claim.
+        const affected = await updateUserSettingsPaths(tx, userId, {
+          set: { completedOnboarding: true },
+        });
+        return affected === 1 ? 'completed' : 'notFound';
+      }),
+      { message: 'Onboarding service is busy right now, please retry in a moment.' },
+    );
+
+    if (outcome === 'notFound') {
       throw new AppError('User not found', 404);
     }
-
-    // Finding 1 (Equoria-6p398.1): write ONLY `completedOnboarding`. The prior
-    // whole-document write replayed a stale snapshot and could erase the weekly
-    // bank-claim marker committed by a concurrent POST /bank/claim.
-    const affected = await updateUserSettingsPaths(prisma, userId, {
-      set: { completedOnboarding: true },
-    });
-
-    if (affected !== 1) {
-      throw new AppError('User not found', 404);
+    if (outcome === 'wizardNotFinished') {
+      return res.status(409).json({
+        success: false,
+        code: onboardingWizardNotFinishedCode,
+        message: 'Finish the welcome wizard and choose your starter horse first.',
+      });
     }
 
     logger.info(`[onboardingController.completeOnboarding] User ${userId} completed onboarding`);
