@@ -193,6 +193,40 @@ beforeEach(() => startEmailCapture());
 
 afterEach(() => stopEmailCapture());
 
+// First in the file, while the outbox holds none of this suite's rows. It
+// reproduces the old defect only while the outbox is otherwise empty (as in a
+// targeted run); on a busier table the planner picks a safe plan either way.
+describe('one claim takes one row (Equoria-7ykaq)', () => {
+  it("claims exactly one of a kick's due rows when the statistics say the table holds about one row", async () => {
+    // The planner state that stranded ticket emails: statistics taken while
+    // the outbox held one row. The old UPDATE ... FROM (subquery) then
+    // re-ran the subquery for each row and one claim took all of them.
+    const lone = await makeUser('admin');
+    // No real ticket; a negative id never matches one. The rows go with
+    // their recipients in the outbox teardown.
+    const ticketId = -(Date.now() % 1_000_000_000);
+    await prisma.$transaction(tx =>
+      enqueueTicketEmailsTx(tx, [lone], { ticketId, category: 'Claim', filedBy: 'Test' }),
+    );
+    await prisma.$executeRawUnsafe('ANALYZE email_outbox');
+
+    const admins = [];
+    for (let i = 0; i < 6; i += 1) {
+      admins.push(await makeUser('admin'));
+    }
+    const keys = await prisma.$transaction(tx =>
+      enqueueTicketEmailsTx(tx, admins, { ticketId: ticketId - 1, category: 'Claim', filedBy: 'Test' }),
+    );
+
+    const claimed = await claimDueEmails({ now: new Date(Date.now() + 1000), keys });
+
+    expect(claimed).toHaveLength(1);
+    const rows = await prisma.emailOutbox.findMany({ where: { idempotencyKey: { in: keys } }, orderBy: { id: 'asc' } });
+    expect(rows.map(row => row.status)).toEqual(['sending', 'pending', 'pending', 'pending', 'pending', 'pending']);
+    expect(rows.slice(1).every(row => row.attempts === 0 && row.claimedAt === null)).toBe(true);
+  });
+});
+
 describe('Ticket email outbox (STAFF-CR-10)', () => {
   it('commits the email with the ticket, and the scheduled worker sends what the kick could not', async () => {
     const { admin, mod, modDevice } = await staffPair();

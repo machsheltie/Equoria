@@ -100,13 +100,16 @@ export async function claimDueEmails({ now = new Date(), keys = null } = {}) {
   const scope = keys ? Prisma.sql`AND "idempotencyKey" IN (${Prisma.join(keys)})` : Prisma.empty;
   // Composed with Prisma.sql and passed whole, so the nested fragments are
   // never mistaken for values.
+  //
+  // The due row is picked in a MATERIALIZED CTE, run exactly once
+  // (Equoria-7ykaq). As an UPDATE ... FROM (subquery) the pick was up to the
+  // planner: when the table's statistics said it held about one row, it put
+  // email_outbox outermost and re-ran the subquery for each row, and SKIP
+  // LOCKED stepped past the rows the statement had just claimed, so one claim
+  // marked every due row 'sending' and returned them all. The caller delivers
+  // only the first; the rest sat claimed, unsent, until the lease ran out.
   return prisma.$queryRaw(Prisma.sql`
-    UPDATE email_outbox AS o
-    SET status = 'sending', "claimedAt" = ${utc(now)},
-        -- Retaking a lapsed claim resumes the attempt its worker never finished.
-        attempts = CASE WHEN o.status = 'sending' THEN o.attempts ELSE o.attempts + 1 END,
-        "updatedAt" = ${utc(now)}
-    FROM (
+    WITH due AS MATERIALIZED (
       SELECT id FROM email_outbox
       WHERE ((status = 'pending' AND "nextAttemptAt" <= ${utc(now)})
           OR (status = 'sending' AND "claimedAt" <= ${utc(leaseCutoff)}))
@@ -114,7 +117,13 @@ export async function claimDueEmails({ now = new Date(), keys = null } = {}) {
       ORDER BY id
       LIMIT 1
       FOR UPDATE SKIP LOCKED
-    ) AS due
+    )
+    UPDATE email_outbox AS o
+    SET status = 'sending', "claimedAt" = ${utc(now)},
+        -- Retaking a lapsed claim resumes the attempt its worker never finished.
+        attempts = CASE WHEN o.status = 'sending' THEN o.attempts ELSE o.attempts + 1 END,
+        "updatedAt" = ${utc(now)}
+    FROM due
     WHERE o.id = due.id
     RETURNING o.id, o."idempotencyKey", o."recipientId", o."templateKey", o.payload,
               o.attempts, o."claimedAt"`);
