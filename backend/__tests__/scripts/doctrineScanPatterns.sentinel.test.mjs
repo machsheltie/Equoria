@@ -59,12 +59,17 @@ function extractBashAlternation(varName) {
  * violation to OUR specific planted fixture rather than to any unrelated content
  * the shared scan tree happens to hold (see the Equoria-d2wbw note below).
  */
-function runCheck(scriptBasename) {
+function runCheck(scriptBasename, baseEnv = process.env) {
   const full = path.join(CHECK_DIR, scriptBasename);
   const isShell = scriptBasename.endsWith('.sh');
   try {
     const stdout = execFileSync(isShell ? 'bash' : process.execPath, [full], {
       cwd: REPO_ROOT,
+      // Equoria-8kkuf: never hand the check a GIT_* variable. Under `git push`
+      // the pre-push hook exports GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE, which
+      // would point the check's `git ls-files` at another tree (or at nothing),
+      // so the verdict would describe the hook's git, not this checkout.
+      env: Object.fromEntries(Object.entries(baseEnv).filter(([name]) => !name.toUpperCase().startsWith('GIT_'))),
       // Merge stderr into the captured stream: the .mjs checks print their
       // violation list to stderr, the bash check to stdout. We want both.
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -205,7 +210,7 @@ function clearStaleTokenDir(tokenDir) {
 // Plant a file, run a check, assert it FIRES *on our plant*, then remove the
 // file and assert the check no longer reports *our plant* — robust to
 // concurrent foreign fixtures in the shared scan tree (Equoria-d2wbw).
-function expectFiresThenClean(relPath, contents, scriptBasename) {
+function expectFiresThenClean(relPath, contents, scriptBasename, baseEnv = process.env) {
   const abs = path.join(REPO_ROOT, relPath);
   clearStaleTokenDir(tokenDirOf(abs));
   const createdDirs = missingAncestorDirs(abs);
@@ -213,7 +218,7 @@ function expectFiresThenClean(relPath, contents, scriptBasename) {
   fs.writeFileSync(abs, contents, 'utf-8');
   let fired;
   try {
-    fired = runCheck(scriptBasename);
+    fired = runCheck(scriptBasename, baseEnv);
   } finally {
     removePlant(abs, createdDirs);
   }
@@ -224,7 +229,7 @@ function expectFiresThenClean(relPath, contents, scriptBasename) {
   // plant. A foreign file elsewhere in the shared tree may still make the
   // overall exit code non-zero; that is not a failure of OUR plant's removal,
   // so we assert on the output's mention of OUR path, not the exit code.
-  expect(outputNamesPath(runCheck(scriptBasename).output, relPath)).toBe(false);
+  expect(outputNamesPath(runCheck(scriptBasename, baseEnv).output, relPath)).toBe(false);
 }
 
 // Plant a violation at a path that is OUTSIDE the check's scope, run the check,
@@ -308,6 +313,31 @@ describe('doctrine checks fire on planted violations after the shared-module ref
         'check-no-bypass-headers.sh',
       );
     }
+  });
+
+  // Equoria-8kkuf: the backend half of the bypass check lists its tree with
+  // `git ls-files`. Inside `git push` the pre-push hook exports GIT_DIR,
+  // GIT_WORK_TREE and GIT_INDEX_FILE, and the check inherited them from this
+  // process, so its verdict depended on the gate's git environment instead of
+  // on this checkout: a redirected or broken git printed "git ls-files failed"
+  // (a non-zero exit that names no plant), which is the exact failing pair
+  // recorded in the 2026-10-23 gate (shard KblFz4 batch 3, line 305). Jest
+  // gives a test a copy of process.env, so the hook environment is handed to
+  // runCheck explicitly, exactly as a gate process would hold it.
+  test('check-no-bypass-headers.sh judges this checkout even when the environment carries hook-style GIT_* variables', () => {
+    const elsewhere = path.join(os.tmpdir(), `equoria-8kkuf-not-the-repo-${process.pid}`);
+    const hookEnv = {
+      ...process.env,
+      GIT_DIR: path.join(elsewhere, '.git'),
+      GIT_WORK_TREE: elsewhere,
+      GIT_INDEX_FILE: path.join(elsewhere, 'index'),
+    };
+    expectFiresThenClean(
+      'backend/middleware/__doctrine_jest_plant_70pb9__.mjs',
+      "export const skip = req => req.get('x-test-skip-csrf') === '1';\n",
+      'check-no-bypass-headers.sh',
+      hookEnv,
+    );
   });
 
   test('check-no-bypass-headers.sh ignores bypass literals inside backend test trees', () => {
