@@ -131,6 +131,28 @@ describe('CompetitionBrowserPage — filters apply to the list (Equoria-oey96.12
     expect(cards[0]).toHaveTextContent('Silverbrook Dressage Cup');
   });
 
+  // Equoria-esz55: bible vol 13 [LOCKED] lists Prize among the five filters.
+  it('the prize filter narrows the list', async () => {
+    // The prize is always 10x the entry fee (owner ruling 2026-10-23).
+    server.use(
+      http.get(`${base}/api/v1/competition`, () =>
+        HttpResponse.json({
+          success: true,
+          data: SHOWS.map((s) => ({ ...s, prizePool: s.entryFee * 10 })),
+        })
+      )
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await visibleNames();
+    await user.click(screen.getByTestId('filter-prize-range'));
+    const cards = await within(screen.getByTestId('ridden-tab-panel')).findAllByTestId(
+      'competition-card'
+    );
+    expect(cards).toHaveLength(1);
+    expect(cards[0]).toHaveTextContent('Highmeadow Jumping Classic');
+  });
+
   it('labels entry fees in coins, never dollars', async () => {
     renderPage();
     await visibleNames();

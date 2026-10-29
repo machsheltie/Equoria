@@ -12,6 +12,11 @@
  *
  * Entry fees are in coins and the three paid buckets do not overlap:
  * free = 0, under100 = 1 to 99, range = 100 to 500, over500 = more than 500.
+ *
+ * Prize (Equoria-esz55, bible vol 13 [LOCKED] filter list): the prize is always
+ * 10x the entry fee (owner ruling 2026-10-23), so its buckets are the fee
+ * buckets times ten: none = 0, under1000 = 1 to 999, range = 1,000 to 5,000,
+ * over5000 = more than 5,000. A show whose payload carries no prize reads as 0.
  */
 
 import { gameDayIndex } from '@/lib/gameTime';
@@ -19,6 +24,7 @@ import { gameDayIndex } from '@/lib/gameTime';
 export type DisciplineFilter = 'all' | string;
 export type DateRangeFilter = 'all' | 'closing' | 'today' | 'week' | 'month';
 export type EntryFeeFilter = 'all' | 'free' | 'under100' | 'range' | 'over500';
+export type PrizeFilter = 'all' | 'none' | 'under1000' | 'range' | 'over5000';
 /**
  * A show level, 1 to 20 (Equoria-i33ow). The server applies it (GET
  * /api/v1/competition?level=N lists the shows whose bracket holds that level).
@@ -29,12 +35,16 @@ export interface CompetitionFilterState {
   discipline: DisciplineFilter;
   dateRange: DateRangeFilter;
   entryFee: EntryFeeFilter;
+  /** Absent reads as 'all'. */
+  prize?: PrizeFilter;
 }
 
 /** The fields of a listed show the filters read. */
 export interface FilterableCompetition {
   discipline: string;
   entryFee: number;
+  /** The show's prize in coins (the list DTO's prizePool). */
+  prizePool?: number | null;
   closeDate?: string | null;
   entryDeadline?: string | null;
   runDate?: string | null;
@@ -94,6 +104,21 @@ function matchesEntryFee(fee: number, bucket: EntryFeeFilter): boolean {
   }
 }
 
+function matchesPrize(prize: number, bucket: PrizeFilter): boolean {
+  switch (bucket) {
+    case 'none':
+      return prize === 0;
+    case 'under1000':
+      return prize > 0 && prize < 1000;
+    case 'range':
+      return prize >= 1000 && prize <= 5000;
+    case 'over5000':
+      return prize > 5000;
+    default:
+      return true;
+  }
+}
+
 export function applyCompetitionFilters<T extends FilterableCompetition>(
   competitions: readonly T[],
   filters: CompetitionFilterState,
@@ -104,6 +129,7 @@ export function applyCompetitionFilters<T extends FilterableCompetition>(
     (competition) =>
       (wanted === null || disciplineToken(competition.discipline) === wanted) &&
       matchesDateRange(competition, filters.dateRange, now) &&
-      matchesEntryFee(competition.entryFee, filters.entryFee)
+      matchesEntryFee(competition.entryFee, filters.entryFee) &&
+      matchesPrize(competition.prizePool ?? 0, filters.prize ?? 'all')
   );
 }

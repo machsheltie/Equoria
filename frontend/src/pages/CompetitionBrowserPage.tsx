@@ -19,6 +19,7 @@ import CompetitionFilters, {
   type DateRangeFilter,
   type EntryFeeFilter,
   type LevelFilter,
+  type PrizeFilter,
 } from '@/components/competition/CompetitionFilters';
 import { CompetitionList } from '@/components/competition';
 import CompetitionDetailModal, {
@@ -61,6 +62,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
   const [disciplineFilter, setDisciplineFilter] = useState<DisciplineFilter>('all');
   const [dateRangeFilter, setDateRangeFilter] = useState<DateRangeFilter>('all');
   const [entryFeeFilter, setEntryFeeFilter] = useState<EntryFeeFilter>('all');
+  const [prizeFilter, setPrizeFilter] = useState<PrizeFilter>('all');
   // The filters narrow the list the player sees (Equoria-oey96.12); the page
   // owns this so CompetitionList stays presentational.
   const visibleCompetitions = useMemo(
@@ -69,8 +71,9 @@ const CompetitionBrowserPage = (): JSX.Element => {
         discipline: disciplineFilter,
         dateRange: dateRangeFilter,
         entryFee: entryFeeFilter,
+        prize: prizeFilter,
       }),
-    [riddenCompetitions, disciplineFilter, dateRangeFilter, entryFeeFilter]
+    [riddenCompetitions, disciplineFilter, dateRangeFilter, entryFeeFilter, prizeFilter]
   );
   const [selectedCompetition, setSelectedCompetition] = useState<ModalCompetition | null>(null);
   const [selectedHorseId, setSelectedHorseId] = useState<number | ''>('');
@@ -163,6 +166,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
     setDisciplineFilter('all');
     setDateRangeFilter('all');
     setEntryFeeFilter('all');
+    setPrizeFilter('all');
     setLevelFilter('all');
   }, []);
 
@@ -310,6 +314,8 @@ const CompetitionBrowserPage = (): JSX.Element => {
               onEntryFeeChange={setEntryFeeFilter}
               levelFilter={levelFilter}
               onLevelChange={setLevelFilter}
+              prizeFilter={prizeFilter}
+              onPrizeChange={setPrizeFilter}
               onClearFilters={handleClearFilters}
               className="mb-6"
             />

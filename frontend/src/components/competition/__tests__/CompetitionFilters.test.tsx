@@ -93,20 +93,15 @@ describe('CompetitionFilters', () => {
       expect(onDisciplineChange).toHaveBeenCalledWith('racing');
     });
 
-    it('groups disciplines by category', () => {
+    // Equoria-esz55: competition bible vol 13 [LOCKED] — the discipline filter is
+    // one flat list, never grouped (old contract: grouped by category in optgroups).
+    it('lists every discipline in one flat list, never grouped', () => {
       render(<CompetitionFilters {...defaultProps} />);
       const select = screen.getByTestId('filter-discipline');
 
-      // Check for optgroup elements
-      const optgroups = select.querySelectorAll('optgroup');
-      expect(optgroups.length).toBeGreaterThan(0);
-
-      // Check for category labels in optgroups
-      const optgroupLabels = Array.from(optgroups).map((og) => og.getAttribute('label'));
-      expect(optgroupLabels).toContain('Western');
-      expect(optgroupLabels).toContain('English');
-      expect(optgroupLabels).toContain('Racing');
-      expect(optgroupLabels).toContain('Specialized');
+      expect(select.querySelectorAll('optgroup')).toHaveLength(0);
+      const options = Array.from(select.querySelectorAll('option')).map((o) => o.textContent);
+      expect(options).toEqual(['All Disciplines', ...DISCIPLINES.map((d) => d.name)]);
     });
 
     it('resets to "All Disciplines" when cleared', async () => {
@@ -192,6 +187,41 @@ describe('CompetitionFilters', () => {
       expect(screen.getByTestId('filter-fee-under100')).toBeInTheDocument();
       expect(screen.getByTestId('filter-fee-range')).toBeInTheDocument();
       expect(screen.getByTestId('filter-fee-over500')).toBeInTheDocument();
+    });
+  });
+
+  // Equoria-esz55: bible vol 13 [LOCKED] — filters are Discipline, Level, Entry Fee,
+  // Prize and Run Date. The prize is always 10x the entry fee (owner ruling
+  // 2026-10-23), so the prize buckets are the entry-fee buckets times ten.
+  describe('Prize Filter', () => {
+    it('renders the prize options in coins', () => {
+      render(<CompetitionFilters {...defaultProps} />);
+      for (const value of ['all', 'none', 'under1000', 'range', 'over5000']) {
+        expect(screen.getByTestId(`filter-prize-${value}`)).toBeInTheDocument();
+      }
+      expect(screen.getByTestId('filter-prize-range')).toHaveAttribute(
+        'aria-label',
+        '1,000 to 5,000 coins'
+      );
+    });
+
+    it('calls onPrizeChange with the chosen bucket and marks it pressed', async () => {
+      const onPrizeChange = vi.fn();
+      render(
+        <CompetitionFilters
+          {...defaultProps}
+          prizeFilter="over5000"
+          onPrizeChange={onPrizeChange}
+        />
+      );
+      expect(screen.getByTestId('filter-prize-over5000')).toHaveAttribute('aria-pressed', 'true');
+      await userEvent.click(screen.getByTestId('filter-prize-under1000'));
+      expect(onPrizeChange).toHaveBeenCalledWith('under1000');
+    });
+
+    it('a chosen prize enables Clear Filters', () => {
+      render(<CompetitionFilters {...defaultProps} prizeFilter="none" />);
+      expect(screen.getByTestId('filter-clear')).not.toBeDisabled();
     });
   });
 

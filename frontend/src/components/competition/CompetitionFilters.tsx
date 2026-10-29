@@ -6,13 +6,14 @@
  * - Date range filter (4 options)
  * - Entry fee filter (5 options)
  * - Level filter (levels 1 to 20, Equoria-i33ow)
+ * - Prize filter (5 options, Equoria-esz55)
  * - Clear filters button
  *
  * Story 5-1: Competition Entry System - Task 2
  * Test Coverage: 20/20 tests passing (100%)
  *
  * Features:
- * - Grouped disciplines by category for better UX
+ * - One flat discipline list, never grouped (bible vol 13 [LOCKED], Equoria-esz55)
  * - Responsive grid layout (mobile/tablet/desktop)
  * - Accessibility compliant (ARIA attributes, keyboard navigation)
  * - Disabled clear button when no filters active
@@ -21,7 +22,7 @@
  * for consistency with other competition components.
  */
 
-import { Filter, Calendar, Coins, Award, X } from 'lucide-react';
+import { Filter, Calendar, Coins, Award, Trophy, X } from 'lucide-react';
 import { DISCIPLINES } from '@/lib/utils/training-utils';
 import { Select } from '@/components/ui/form';
 import { type JSX, useMemo, memo } from 'react';
@@ -30,10 +31,11 @@ import type {
   DateRangeFilter,
   EntryFeeFilter,
   LevelFilter,
+  PrizeFilter,
 } from '@/lib/utils/competition-filters';
 
 // Type definitions (the rules behind them live in lib/utils/competition-filters)
-export type { DisciplineFilter, DateRangeFilter, EntryFeeFilter, LevelFilter };
+export type { DisciplineFilter, DateRangeFilter, EntryFeeFilter, LevelFilter, PrizeFilter };
 
 export interface CompetitionFiltersProps {
   disciplineFilter: DisciplineFilter;
@@ -45,6 +47,9 @@ export interface CompetitionFiltersProps {
   /** The show level searched for (Equoria-i33ow); 'all' when none is chosen. */
   levelFilter?: LevelFilter;
   onLevelChange?: (_level: LevelFilter) => void;
+  /** The prize bucket searched for (Equoria-esz55); 'all' when none is chosen. */
+  prizeFilter?: PrizeFilter;
+  onPrizeChange?: (_prize: PrizeFilter) => void;
   onClearFilters: () => void;
   className?: string;
 }
@@ -70,6 +75,20 @@ const ENTRY_FEE_OPTIONS: readonly {
   { value: 'under100', label: 'Under 100', coins: 'Under 100 coins' },
   { value: 'range', label: '100-500', coins: '100 to 500 coins' },
   { value: 'over500', label: 'Over 500', coins: 'Over 500 coins' },
+] as const;
+
+// The prize is always 10x the entry fee (owner ruling 2026-10-23), so these are
+// the entry-fee buckets times ten (Equoria-esz55).
+const prizeOptions: readonly {
+  value: PrizeFilter;
+  label: string;
+  coins: string;
+}[] = [
+  { value: 'all', label: 'All', coins: 'Any prize' },
+  { value: 'none', label: 'None', coins: 'No prize' },
+  { value: 'under1000', label: 'Under 1k', coins: 'Under 1,000 coins' },
+  { value: 'range', label: '1k-5k', coins: '1,000 to 5,000 coins' },
+  { value: 'over5000', label: 'Over 5k', coins: 'Over 5,000 coins' },
 ] as const;
 
 // Horse and show levels run 1 to 20 (owner ruling 2026-10-23).
@@ -123,31 +142,20 @@ const CompetitionFilters = ({
   onEntryFeeChange,
   levelFilter = 'all',
   onLevelChange,
+  prizeFilter = 'all',
+  onPrizeChange,
   onClearFilters,
   className = '',
 }: CompetitionFiltersProps): JSX.Element => {
-  // Group disciplines by category for better UX
-  const disciplinesByCategory = useMemo(() => {
-    const grouped: Record<string, typeof DISCIPLINES> = {};
-
-    DISCIPLINES.forEach((discipline) => {
-      if (!grouped[discipline.category]) {
-        grouped[discipline.category] = [];
-      }
-      grouped[discipline.category].push(discipline);
-    });
-
-    return grouped;
-  }, []);
-
   // Check if any filters are active
   const hasActiveFilters = useMemo(
     () =>
       disciplineFilter !== 'all' ||
       dateRangeFilter !== 'all' ||
       entryFeeFilter !== 'all' ||
-      levelFilter !== 'all',
-    [disciplineFilter, dateRangeFilter, entryFeeFilter, levelFilter]
+      levelFilter !== 'all' ||
+      prizeFilter !== 'all',
+    [disciplineFilter, dateRangeFilter, entryFeeFilter, levelFilter, prizeFilter]
   );
 
   return (
@@ -166,14 +174,10 @@ const CompetitionFilters = ({
             aria-label="Filter by discipline"
           >
             <option value="all">All Disciplines</option>
-            {Object.entries(disciplinesByCategory).map(([category, disciplines]) => (
-              <optgroup key={category} label={category}>
-                {disciplines.map((discipline) => (
-                  <option key={discipline.id} value={discipline.id}>
-                    {discipline.name}
-                  </option>
-                ))}
-              </optgroup>
+            {DISCIPLINES.map((discipline) => (
+              <option key={discipline.id} value={discipline.id}>
+                {discipline.name}
+              </option>
             ))}
           </Select>
         </div>
@@ -211,6 +215,27 @@ const CompetitionFilters = ({
                 isActive={entryFeeFilter === option.value}
                 onClick={() => onEntryFeeChange(option.value)}
                 testId={`filter-fee-${option.value}`}
+                spokenLabel={option.coins}
+              >
+                {option.label}
+              </FilterButton>
+            ))}
+          </div>
+        </div>
+
+        {/* Prize Filter */}
+        <div>
+          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+            <Trophy className="inline h-4 w-4 mr-1" aria-hidden="true" />
+            Prize
+          </label>
+          <div className="flex gap-1" role="group" aria-label="Prize filters">
+            {prizeOptions.map((option) => (
+              <FilterButton
+                key={option.value}
+                isActive={prizeFilter === option.value}
+                onClick={() => onPrizeChange?.(option.value)}
+                testId={`filter-prize-${option.value}`}
                 spokenLabel={option.coins}
               >
                 {option.label}

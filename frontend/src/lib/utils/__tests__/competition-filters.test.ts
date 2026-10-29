@@ -10,7 +10,7 @@ import { applyCompetitionFilters, competitionClosesAt } from '../competition-fil
 // before the Eastern game day turns over.
 const NOW = new Date('2026-10-23T03:30:00.000Z');
 
-const ALL = { discipline: 'all', dateRange: 'all', entryFee: 'all' } as const;
+const ALL = { discipline: 'all', dateRange: 'all', entryFee: 'all', prize: 'all' } as const;
 
 function show(discipline: string, entryFee: number, closeDate?: string | null) {
   return { discipline, entryFee, closeDate };
@@ -39,6 +39,31 @@ describe('entry fee (coins)', () => {
     expect(fees('under100')).toEqual([1, 99]);
     expect(fees('range')).toEqual([100, 500]);
     expect(fees('over500')).toEqual([501]);
+  });
+});
+
+// Equoria-esz55: the prize is 10x the entry fee (owner ruling 2026-10-23), so the
+// prize buckets are the entry-fee buckets times ten and never overlap either.
+describe('prize (coins)', () => {
+  const shows = [0, 10, 990, 1000, 5000, 5010].map((prizePool) => ({
+    ...show('Dressage', prizePool / 10),
+    prizePool,
+  }));
+  const prizes = (bucket: 'none' | 'under1000' | 'range' | 'over5000') =>
+    applyCompetitionFilters(shows, { ...ALL, prize: bucket }, NOW).map((s) => s.prizePool);
+
+  it('buckets never overlap', () => {
+    expect(prizes('none')).toEqual([0]);
+    expect(prizes('under1000')).toEqual([10, 990]);
+    expect(prizes('range')).toEqual([1000, 5000]);
+    expect(prizes('over5000')).toEqual([5010]);
+  });
+
+  it('a show with no prize recorded matches only "all" and "no prize"', () => {
+    const unknown = show('Dressage', 0);
+    expect(applyCompetitionFilters([unknown], ALL, NOW)).toEqual([unknown]);
+    expect(applyCompetitionFilters([unknown], { ...ALL, prize: 'none' }, NOW)).toEqual([unknown]);
+    expect(applyCompetitionFilters([unknown], { ...ALL, prize: 'range' }, NOW)).toEqual([]);
   });
 });
 
