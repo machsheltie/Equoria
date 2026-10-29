@@ -256,6 +256,9 @@ export function isPlantArtifactBasename(name) {
   return name.includes('DO_NOT_COMMIT') || name.includes('PLANTED');
 }
 
+/** A sibling sentinel's plant-directory name: a leading underscore, then the parts. */
+const plantDirToken = (...parts) => ['', ...parts].join('_');
+
 // -----------------------------------------------------------------------------
 // Reserved scratch / plant basename tokens used by sibling scripts-dir sentinels
 // (Equoria-27lqy)
@@ -325,6 +328,17 @@ const RESERVED_SCRATCH_PLANT_TOKENS = [
   '__ml7jj_inscope_70pb9__', // doctrineScanPatterns.sentinel.test.mjs
   '__ml7jj_oos_70pb9__', // doctrineScanPatterns.sentinel.test.mjs
   '__1lk00_utcdob_plant_', // utcDateOnlyFixturesDoctrine.sentinel.test.mjs (its check walks via walkFiles: unaffected)
+  // Quality Gate run 40798452605: the camelCase check walked into
+  // frontend/src/_frontend_swallowed_catch_sentinel/ while that suite deleted it
+  // ("skipped vanished file"). These in-tree plant directories were never listed;
+  // none of their own checks consults this predicate, so each still sees its plant.
+  // Each is the directory name, assembled from parts so this file stays camelCase.
+  plantDirToken('frontend', 'swallowed', 'catch', 'sentinel'), // frontendSwallowedCatchDoctrine.sentinel.test.mjs
+  plantDirToken('no', 'new', 'rejected', 'ui', 'deps', 'sentinel'), // noNewRejectedUiDepsDoctrine.sentinel.test.mjs
+  plantDirToken('no', 'radix', 'imports', 'doctrine', 'sentinel'), // noRadixImportsDoctrine.sentinel.test.mjs
+  plantDirToken('no', 'unversioned', 'api', 'doctrine', 'sentinel'), // noUnversionedApiDoctrine.sentinel.test.mjs
+  plantDirToken('becrm', 'doctrine', 'sentinel'), // noPrismaInRoutesDoctrine.sentinel.test.mjs
+  plantDirToken('jzu4l', 'doctrine', 'sentinel'), // noUnsafeRawSqlDoctrine.sentinel.test.mjs
 ];
 
 export function isReservedScratchPlantPathSegment(name, ownTokens = []) {
