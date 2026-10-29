@@ -11,10 +11,12 @@
  *   - POST /marketplace/store/buy          allow-list { breedId, sex }; any
  *                                          other field (every protected trait
  *                                          field included) is refused with 400.
- *   - POST /grooms/:id/legacy/create       allow-list of the protégé's own
- *                                          profile fields; bonusTraitMap,
- *                                          rareTraitPerks and traitsShaped are
- *                                          refused with 400.
+ *   - POST /grooms/:id/legacy/create       removed (Equoria-bhoka): players never
+ *                                          create grooms (owner ruling 2026-10-21,
+ *                                          Q14). Old contract: an allow-list of the
+ *                                          protégé's own fields, trait fields
+ *                                          refused with 400. New contract: 404 for
+ *                                          every body, and nothing is written.
  *
  * (POST /auth/advance-onboarding is covered by
  * modules/auth/__tests__/onboardingStarterHorseLocked.integration.test.mjs.)
@@ -224,35 +226,22 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
       groomIds.push(mentor.id);
     });
 
+    // Equoria-bhoka (owner ruling 2026-10-21, Q14): the route is gone, so the protégé
+    // body alone and every trait-carrying body answer 404 and write nothing.
     it.each([
-      ['bonusTraitMap', { legendaryBloodline: 0.3, playerInjected: 1 }],
-      ['rareTraitPerks', { 'fey-touched': { revealed: true, triggerCount: 9 } }],
-      ['traitsShaped', ['legendaryBloodline']],
-    ])('refuses { %s } with 400 and creates no protégé', async (field, value) => {
+      ['no extra field', {}],
+      ['bonusTraitMap', { bonusTraitMap: { legendaryBloodline: 0.3, playerInjected: 1 } }],
+      ['rareTraitPerks', { rareTraitPerks: { 'fey-touched': { revealed: true, triggerCount: 9 } } }],
+      ['traitsShaped', { traitsShaped: ['legendaryBloodline'] }],
+    ])('answers 404 (%s) and creates no protégé', async (_label, extra) => {
       const groomsBefore = await prisma.groom.count({ where: { userId: player.id } });
 
       const res = await send('post', `/api/v1/grooms/${mentor.id}/legacy/create`, {
         ...PROTEGE,
-        [field]: value,
+        ...extra,
       });
 
-      expect(res.status).toBe(400);
-      expect(res.body.success).toBe(false);
-      expect(await prisma.groom.count({ where: { userId: player.id } })).toBe(groomsBefore);
-      expect(await prisma.groomLegacyLog.count({ where: { retiredGroomId: mentor.id } })).toBe(0);
-    });
-
-    // Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): no groom reaches the mentoring
-    // level for now, so the allowed body gets past the allow-list and is refused by the
-    // eligibility check instead. Old contract (a level-8 mentor): 201 and a protégé whose
-    // perks were the game's.
-    it('passes the allow-list with its own profile fields (control), then meets the mentoring level', async () => {
-      const groomsBefore = await prisma.groom.count({ where: { userId: player.id } });
-
-      const res = await send('post', `/api/v1/grooms/${mentor.id}/legacy/create`, PROTEGE);
-
-      expect(res.status).toBe(400);
-      expect(res.body.message).toContain('not eligible for legacy creation');
+      expect(res.status).toBe(404);
       expect(await prisma.groom.count({ where: { userId: player.id } })).toBe(groomsBefore);
       expect(await prisma.groomLegacyLog.count({ where: { retiredGroomId: mentor.id } })).toBe(0);
     });

@@ -15,22 +15,18 @@
  * MINIMUM_MENTOR_STAR_LEVEL (Advanced, the old 7), so no groom mentors for now. Old
  * contract: a retired level-8 groom was eligible and generated a protégé.
  *
- * generateLegacyProtege:
- *   mentor at Expert stars → throws insufficientLevel, creates nothing
- *   ineligible mentor (not retired) → throws
- *
- * buildProtegeGroomData (Equoria-ixya8): a protégé is stored as a Rookie with no
- * experience, whatever skill word the request carries. Owner rulings: staff never gain
- * XP (2026-10-21) and every groom starts as a Rookie (q177). Old contract:
- * LEGACY_CONSTANTS.PROTEGE_EXPERIENCE_BONUS = 50 was written to the protégé's
- * experience and fed its star level.
+ * generateLegacyProtege / buildProtegeGroomData are gone (Equoria-bhoka). Owner ruling
+ * 2026-10-21 (Q14): players never create grooms. Old contract: a player created a
+ * protégé from a retired mentor (refused for now by q244), stored as a Rookie with no
+ * experience (Equoria-ixya8). New contract: no such path exists; the 404 is pinned in
+ * modules/traits/__tests__/playerBodyCannotCarryTraits.integration.test.mjs.
  *
  * Player-facing perks (Equoria-gghoi): the backend table is the only perk table; the
  * frontend reads authored names/descriptions from these responses, never effect codes.
  *
  * getUserLegacyHistory:
  *   non-existent userId → []
- *   after generating protégé → returns entry
+ *   with a game-made legacy log → returns entry
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -39,9 +35,7 @@ import {
   LEGACY_PERKS,
   getLegacyPerks,
   checkLegacyEligibility,
-  generateLegacyProtege,
   getUserLegacyHistory,
-  buildProtegeGroomData,
   getPlayerLegacyPerks,
   findPlayerLegacyPerk,
 } from '../services/groomLegacyService.mjs';
@@ -280,56 +274,7 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
     });
   });
 
-  it('generateLegacyProtege: an Expert mentor is refused and nothing is created (q244)', async () => {
-    const protegeData = {
-      name: `TestFixture-GLS-Protege-${Date.now()}`,
-      personality: 'calm',
-      skillLevel: 'novice',
-      speciality: 'general',
-    };
-    await expect(generateLegacyProtege(glsGroomEligible.id, protegeData, glsUser.id)).rejects.toThrow(
-      'insufficientLevel',
-    );
-    await expect(prisma.groom.count({ where: { name: protegeData.name } })).resolves.toBe(0);
-    await expect(prisma.groomLegacyLog.count({ where: { retiredGroomId: glsGroomEligible.id } })).resolves.toBe(0);
-  });
-
-  it('generateLegacyProtege: ineligible mentor (not retired) → throws', async () => {
-    const protegeData = {
-      name: `TestFixture-GLS-ProtegeX-${Date.now()}`,
-      personality: 'calm',
-      skillLevel: 'novice',
-      speciality: 'general',
-    };
-    await expect(generateLegacyProtege(glsGroomActive.id, protegeData, glsUser.id)).rejects.toThrow(
-      'not eligible for legacy creation',
-    );
-  });
-
-  it('buildProtegeGroomData: an expert-worded protégé is stored as a Rookie with no experience (Equoria-ixya8)', async () => {
-    const perk = getLegacyPerks('methodical')[0];
-    const data = buildProtegeGroomData(
-      {
-        name: `TestFixture-GLS-ProtegeRookie-${Date.now()}`,
-        personality: 'calm',
-        skillLevel: 'expert',
-        speciality: 'general',
-      },
-      glsGroomEligible,
-      perk,
-      glsUser.id,
-    );
-    expect(data.starLevel).toBe('rookie');
-    expect(data.experience).toBe(0);
-    expect(data.bonusTraitMap.legacyPerk).toBe(perk.id);
-
-    // The row the game would create, written to the real database.
-    const stored = await prisma.groom.create({ data });
-    expect(stored.starLevel).toBe('rookie');
-    expect(stored.experience).toBe(0);
-  });
-
-  it('getUserLegacyHistory: returns entries after generating protégé', async () => {
+  it('getUserLegacyHistory: returns entries for a game-made legacy log', async () => {
     const history = await getUserLegacyHistory(glsUser.id);
     // At minimum: the pre-created legacy for glsGroomHasLegacy
     expect(Array.isArray(history)).toBe(true);

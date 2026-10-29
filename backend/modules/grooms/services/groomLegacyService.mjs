@@ -1,8 +1,11 @@
 /**
  * Groom Legacy Service
  *
- * This service handles the legacy replacement system where retired high-level grooms
- * can mentor new hires (protégés) who inherit perks and bonuses.
+ * This service handles the legacy system where retired high-level grooms mentor one
+ * of the player's existing grooms (a protégé), who inherits a perk. The GAME makes the
+ * pairing at retirement (autoCreateLegacyOnRetirement); players never create grooms
+ * (owner ruling 2026-10-21, Q14; Equoria-bhoka removed POST /grooms/:id/legacy/create
+ * and the protégé-creation service behind it).
  *
  * Legacy Rules:
  * - Only retired grooms at Advanced or above are eligible (the star level equivalent to
@@ -10,26 +13,13 @@
  *   every groom's mentoring level is staffCareerStarLevel (Rookie, old level 1), so no
  *   groom mentors until staff growth (Equoria-xlw03) - as before, when every game-made
  *   groom sat at level 1.
- * - Each retired groom can only create one legacy protégé
+ * - Each retired groom mentors at most one protégé
  * - Protégés inherit one random perk from mentor's personality type
- * - Protégés start as a Rookie with no experience, like every groom (staff never gain
- *   XP, owner ruling 2026-10-21; every groom starts as a Rookie, q177; Equoria-ixya8)
  * - Legacy relationships are permanently tracked
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
-// Equoria-ypb7d fix round 1 (F8): a legacy protégé is a THIRD groom-creation path
-// alongside the two hire controllers, and it was left unmigrated. A protégé born with
-// no `startAge` breaks invariant A1 ("drawn once at creation or hire"), and one born
-// with a `userId` but no engagement row breaks invariant E1 ("`Groom.userId IS NOT
-// NULL` <=> an open engagement row exists"). Both self-healed via the weekly
-// backstops, so the damage was bounded to a window rather than permanent — but
-// "self-heals incidentally" is not the same as "is correct at birth", and relying on a
-// backstop without saying so is how an invariant quietly stops being one.
-import { drawStartAge } from './groomAgeService.mjs';
-import { openEngagementTx } from './groomEngagementService.mjs';
 import { staffCareerStarLevel, staffLevelAtLeast } from '../../../constants/staffLevels.mjs';
 
 /**
@@ -223,115 +213,6 @@ export async function checkLegacyEligibility(groomId) {
 }
 
 /**
- * The row a legacy protégé is created with. Exported so the starting values can be
- * checked while no groom can mentor yet (q244 keeps generateLegacyProtege refusing).
- * @param {Object} protegeData - The protégé's profile fields from the request
- * @param {{ name: string }} mentorGroom - The retired mentor
- * @param {{ id: string, effect: Object }} selectedPerk - The inherited legacy perk
- * @param {string} userId - The player whose staff the protégé joins
- * @returns {Object} Prisma groom create data
- */
-export function buildProtegeGroomData(protegeData, mentorGroom, selectedPerk, userId) {
-  return {
-    name: protegeData.name,
-    personality: protegeData.personality,
-    skillLevel: protegeData.skillLevel,
-    // Equoria-ixya8: a protégé starts as a Rookie like every groom (q177) and with
-    // no experience (staff never gain XP, owner ruling 2026-10-21) - neither the
-    // skill word nor a legacy bonus lifts its star level.
-    starLevel: staffCareerStarLevel,
-    speciality: protegeData.speciality,
-    userId,
-    experience: 0,
-    sessionRate: protegeData.sessionRate || 15.0,
-    bio: protegeData.bio || `Protégé of ${mentorGroom.name}`,
-    availability: protegeData.availability || {},
-    // Equoria-ypb7d.1 (F8): a protégé enters the game at an age like anyone
-    // else, drawn from the same 18..24 band. Deliberately NOT inherited from
-    // or related to the mentor: the owner's addendum forbids anything but
-    // chance influencing retirement timing, and a protégé of an old mentor
-    // starting old would be exactly that. Their retirement age is still drawn
-    // by the weekly pass's `ensureRetirementDrawn` backstop, because this
-    // service must not handle that value at all (the hiding doctrine).
-    startAge: drawStartAge(),
-    // Add legacy bonus to bonus trait map
-    bonusTraitMap: {
-      legacyPerk: selectedPerk.id,
-      legacyMentor: mentorGroom.name,
-      ...selectedPerk.effect,
-    },
-  };
-}
-
-/**
- * Generate a legacy protégé from a retired mentor groom
- * @param {number} mentorGroomId - ID of the mentor groom
- * @param {Object} protegeData - Data for the new protégé groom
- * @param {string} userId - ID of the user hiring the protégé
- * @returns {Promise<Object>} Created protégé and legacy information
- */
-export async function generateLegacyProtege(mentorGroomId, protegeData, userId) {
-  // Check eligibility first
-  const eligibility = await checkLegacyEligibility(mentorGroomId);
-  if (!eligibility.eligible) {
-    throw new Error(
-      `Mentor groom ${mentorGroomId} is not eligible for legacy creation: ${eligibility.reason}`,
-    );
-  }
-
-  // Get mentor groom details
-  const mentorGroom = await prisma.groom.findUnique({
-    where: { id: mentorGroomId },
-  });
-
-  // Select random perk from available perks
-  const availablePerks = getLegacyPerks(mentorGroom.personality);
-  const selectedPerk = availablePerks[Math.floor(Math.random() * availablePerks.length)];
-
-  // Create protégé and legacy log in transaction
-  const result = await withRetryableTxMapping(
-    prisma.$transaction(async prismaTx => {
-      // Create the protégé groom.
-      // Equoria-tu4k9: legacy protégés are INTENTIONALLY EXEMPT from
-      // MAX_GROOMS_PER_USER (product decision, 2026-07-03). Unlike the two hire
-      // paths — hireGroom (Equoria-n4m5j) and hireFromMarketplace
-      // (Equoria-hduc5) — which enforce the roster cap, generating a protégé
-      // from a retired mentor is a legacy reward that MAY take a user above the
-      // normal cap. The absence of a cap guard here is DELIBERATE; do not add
-      // one (it would break the intended reward).
-      const protege = await prismaTx.groom.create({
-        data: buildProtegeGroomData(protegeData, mentorGroom, selectedPerk, userId),
-      });
-
-      // Equoria-ypb7d.2 (F8): a protégé arrives ON A PLAYER'S STAFF, so the
-      // engagement that says so is opened here, in the same transaction as the
-      // groom — not left to the fee pass's `ensureEngagementTx` backstop to
-      // discover next Monday. Same rule as both hire paths.
-      await openEngagementTx(prismaTx, protege.id, userId);
-
-      // Create legacy log
-      const legacyLog = await prismaTx.groomLegacyLog.create({
-        data: {
-          retiredGroomId: mentorGroomId,
-          legacyGroomId: protege.id,
-          inheritedPerk: selectedPerk.id,
-        },
-      });
-
-      return { protege, legacyLog, inheritedPerk: selectedPerk };
-    }),
-    { message: 'Groom legacy service is busy right now, please retry in a moment.' },
-  );
-
-  logger.info(
-    `Created legacy protégé ${result.protege.name} (ID: ${result.protege.id}) from mentor ${mentorGroom.name} (ID: ${mentorGroomId})`,
-  );
-  logger.info(`Inherited perk: ${result.inheritedPerk.name}`);
-
-  return result;
-}
-
-/**
  * Get available legacy perks for a personality type
  * @param {string} personality - Personality type (calm, energetic, methodical)
  * @returns {Array} Array of available perks
@@ -407,9 +288,8 @@ export async function getUserLegacyHistory(userId) {
  * LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL (Advanced).
  * Protégé selection: the least experienced active (non-retired) groom of the same user,
  * excluding the retiring groom itself, that is not already a legacy protégé.
- * If no eligible protégé exists yet, returns null and logs an info message —
- * the user can still trigger generateLegacyProtege manually when they hire a
- * new groom.
+ * If no eligible protégé exists yet, returns null and logs an info message (there
+ * is no player-made protégé: Equoria-bhoka, owner ruling 2026-10-21 Q14).
  *
  * Called by groomRetirementService.processRetirement AFTER its transaction
  * commits, never inside it: a legacy log is a bonus, and failing to create one
@@ -494,7 +374,6 @@ export async function autoCreateLegacyOnRetirement(retiredGroom) {
 
 export default {
   checkLegacyEligibility,
-  generateLegacyProtege,
   getLegacyPerks,
   getPlayerLegacyPerks,
   findPlayerLegacyPerk,

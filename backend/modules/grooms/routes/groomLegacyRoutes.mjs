@@ -5,29 +5,27 @@
  * so the routes below resolve to:
  *   GET  /grooms/legacy/history
  *   GET  /grooms/:id/legacy/eligibility
- *   POST /grooms/:id/legacy/create
+ *
+ * POST /grooms/:id/legacy/create was removed (Equoria-bhoka): players never create
+ * grooms (owner ruling 2026-10-21, Q14); the game generates new grooms weekly and
+ * pairs a retiring mentor with an existing groom itself (autoCreateLegacyOnRetirement).
  *
  * Extracted verbatim from groomRoutes.mjs — handler chains, validation,
  * ownership middleware, and response shapes are byte-compatible with the
  * originals (this is code-motion, not a refactor).
  *
  * Route ordering: the two-segment `/legacy/history` collection route and the
- * three-segment `/:id/legacy/*` resource routes differ in segment count and
+ * three-segment `/:id/legacy/eligibility` resource route differ in segment count and
  * pattern, so Express cannot confuse them.
  */
 
 import express from 'express';
-import { body, param } from 'express-validator';
+import { param } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
-import {
-  checkLegacyEligibility,
-  generateLegacyProtege,
-  getUserLegacyHistory,
-} from '../services/groomLegacyService.mjs';
+import { checkLegacyEligibility, getUserLegacyHistory } from '../services/groomLegacyService.mjs';
 import logger from '../../../utils/logger.mjs';
 import { handleValidationErrors } from './_groomRouteHelpers.mjs';
-import { allowOnlyBodyFields } from '../../../middleware/bodyFieldAllowList.mjs';
 
 const router = express.Router();
 
@@ -74,123 +72,6 @@ router.get(
         success: false,
         message: 'Failed to check legacy eligibility',
         error: error.message,
-      });
-    }
-  },
-);
-
-/**
- * @swagger
- * /api/grooms/{id}/legacy/create:
- *   post:
- *     summary: Create a legacy protégé from a retired mentor groom
- *     tags: [Grooms]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Mentor groom ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *               - personality
- *               - skillLevel
- *               - speciality
- *             properties:
- *               name:
- *                 type: string
- *                 minLength: 2
- *                 maxLength: 100
- *               personality:
- *                 type: string
- *                 enum: [calm, energetic, methodical]
- *               skillLevel:
- *                 type: string
- *                 enum: [novice, intermediate, expert]
- *               speciality:
- *                 type: string
- *                 enum: [foalCare, generalGrooming, specializedDisciplines]
- *               sessionRate:
- *                 type: number
- *                 minimum: 5
- *                 maximum: 100
- *               bio:
- *                 type: string
- *                 maxLength: 500
- *               availability:
- *                 type: object
- *     responses:
- *       201:
- *         description: Legacy protégé created successfully
- *       400:
- *         description: Invalid request data or mentor not eligible
- *       404:
- *         description: Mentor groom not found
- *       500:
- *         description: Internal server error
- */
-router.post(
-  '/:id/legacy/create',
-  // Equoria-gu8jk: only the protégé's own profile fields. bonusTraitMap is the
-  // game's legacy perk and rareTraitPerks / traitsShaped are never player-set,
-  // so those (and any other unlisted field) are refused with 400.
-  allowOnlyBodyFields([
-    'name',
-    'personality',
-    'skillLevel',
-    'speciality',
-    'sessionRate',
-    'bio',
-    'availability',
-  ]),
-  param('id').isInt().withMessage('Groom ID must be an integer'),
-  body('name')
-    .isLength({ min: 2, max: 100 })
-    .withMessage('Name must be between 2 and 100 characters'),
-  body('personality').isIn(['calm', 'energetic', 'methodical']).withMessage('Invalid personality'),
-  body('skillLevel').isIn(['novice', 'intermediate', 'expert']).withMessage('Invalid skill level'),
-  body('speciality')
-    .isIn(['foalCare', 'generalGrooming', 'specializedDisciplines'])
-    .withMessage('Invalid speciality'),
-  body('sessionRate')
-    .optional()
-    .isFloat({ min: 5, max: 100 })
-    .withMessage('Session rate must be between 5 and 100'),
-  body('bio').optional().isLength({ max: 500 }).withMessage('Bio must be 500 characters or less'),
-  body('availability').optional().isObject().withMessage('Availability must be an object'),
-  handleValidationErrors,
-  requireOwnership('groom'),
-  async (req, res) => {
-    try {
-      const mentorGroomId = parseInt(req.params.id);
-      const userId = req.user.id;
-      const protegeData = req.body;
-
-      const result = await generateLegacyProtege(mentorGroomId, protegeData, userId);
-
-      res.status(201).json({
-        success: true,
-        data: result,
-        message: 'Legacy protégé created successfully',
-      });
-    } catch (error) {
-      // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
-      if (error?.status === 503) {
-        return res.status(503).json({ success: false, message: error.message });
-      }
-      logger.error('Error creating legacy protégé:', error);
-      res.status(400).json({
-        success: false,
-        message: error.message,
       });
     }
   },

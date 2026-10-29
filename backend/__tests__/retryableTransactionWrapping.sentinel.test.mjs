@@ -111,7 +111,9 @@ const MIGRATED = [
   // (enterShowDeferredTx) became showEscrowTx.enterShowTx, the one entry
   // transaction for both routes (Equoria-mwjst), pinned wrapped on the
   // showEscrowTx.mjs row above.
-  ['modules/grooms/services/groomLegacyService.mjs', { wrapped: 1, totalTx: 1 }],
+  // modules/grooms/services/groomLegacyService.mjs left this list with its only
+  // transaction: Equoria-bhoka deleted generateLegacyProtege (players never create
+  // grooms, owner ruling 2026-10-21 Q14).
   // Equoria-95yrv fix round 1 (F1) added these two: BOTH assignment doors became
   // transactional, because the ten-horse cap and the create it guards have to be one
   // atomic act (they were a count and a create with nothing between them, so two

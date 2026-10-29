@@ -534,8 +534,8 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
   // Equoria-c0vo: auto-create GroomLegacyLog for mentor-level retirees (Advanced,
   // see groomLegacyService) by pairing the mentor with the same user's least
   // experienced active groom as protégé.
-  // If no eligible protégé exists, defer — the legacy can be created later via
-  // the manual generateLegacyProtege flow when a new groom is hired.
+  // If no eligible protégé exists, no legacy is made (players never create a
+  // protégé: Equoria-bhoka removed the manual flow, owner ruling 2026-10-21 Q14).
   let legacyLog = null;
   try {
     legacyLog = await autoCreateLegacyOnRetirement(retiredGroom);

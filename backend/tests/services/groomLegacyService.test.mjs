@@ -3,7 +3,10 @@
  *
  * Tests for the groom legacy replacement system including:
  * - Legacy eligibility checking
- * - Protégé generation
+ * - (Protégé generation is gone: players never create grooms, owner ruling
+ *   2026-10-21 Q14, Equoria-bhoka. Old contract: generateLegacyProtege made a
+ *   protégé from an eligible retired mentor; the route's 404 is pinned in
+ *   modules/traits/__tests__/playerBodyCannotCarryTraits.integration.test.mjs.)
  * - Perk inheritance
  * - Legacy tracking
  *
@@ -15,7 +18,6 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { randomBytes } from 'node:crypto';
 import {
   checkLegacyEligibility,
-  generateLegacyProtege,
   getLegacyPerks,
   getUserLegacyHistory,
 } from '../../modules/grooms/services/groomLegacyService.mjs';
@@ -249,55 +251,6 @@ describe('Groom Legacy Service', () => {
         where: { retiredGroomId: retiredGroom.id },
       });
       await prisma.groom.deleteMany({ where: { id: protege.id } });
-    });
-  });
-
-  describe('Protégé Generation', () => {
-    // Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): no 1-10 level; the mentoring
-    // level is the old level 1 (staffCareerStarLevel) for every groom, below Advanced, so no
-    // groom mentors for now. Old contract: this level-8 groom was eligible / made a protégé.
-    test('a retired Expert groom makes no protégé and no legacy log (q244)', async () => {
-      const protegeData = {
-        name: `Young Apprentice ${randomBytes(4).toString('hex')}`,
-        personality: 'energetic',
-        skillLevel: 'novice',
-        speciality: 'foalCare',
-      };
-
-      await expect(generateLegacyProtege(retiredGroom.id, protegeData, testUser.id)).rejects.toThrow(
-        'not eligible for legacy creation',
-      );
-
-      expect(await prisma.groom.count({ where: { name: protegeData.name } })).toBe(0);
-      expect(await prisma.groomLegacyLog.count({ where: { retiredGroomId: retiredGroom.id } })).toBe(0);
-    });
-
-    test('should reject generation for ineligible mentor', async () => {
-      // Create ineligible groom
-      const ineligibleGroom = await prisma.groom.create({
-        data: {
-          name: `Ineligible Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          personality: 'calm',
-          skillLevel: 'novice',
-          speciality: 'foalCare',
-          userId: testUser.id,
-          retired: true,
-        },
-      });
-
-      const protegeData = {
-        name: 'Failed Apprentice',
-        personality: 'calm',
-        skillLevel: 'novice',
-        speciality: 'foalCare',
-      };
-
-      await expect(generateLegacyProtege(ineligibleGroom.id, protegeData, testUser.id)).rejects.toThrow(
-        'not eligible for legacy creation',
-      );
-
-      // Cleanup
-      await prisma.groom.deleteMany({ where: { id: ineligibleGroom.id } });
     });
   });
 
