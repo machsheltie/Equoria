@@ -74,9 +74,6 @@ break their pedigrees and histories, so accounts stay.
   routes that once allowed self-service deletion
   (`POST /api/v1/account/delete`, `DELETE /api/v1/users/:id`) refuse every
   request.
-- **Audit:** data-export requests are recorded in the security audit trail
-  (action `accountOperation`) for abuse detection; that audit row is
-  subject to the retention window in Section 3 and contains no game data.
 
 ---
 
