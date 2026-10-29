@@ -20,11 +20,7 @@ import { gameDateKey, gameDayIndex, startOfGameDayIndex } from '../../../utils/g
 import { InsufficientFundsError } from '../../economy/index.mjs';
 import { collectGroomFeesTx } from './groomFeeCollection.mjs';
 import { resettleGroomWeekTx } from './groomFeeArrearsService.mjs';
-import {
-  arrearsOwedStatuses,
-  arrearsSettledStatus,
-  calculateWeeklyFee,
-} from './groomFeeBasisService.mjs';
+import { calculateWeeklyFee } from './groomFeeBasisService.mjs';
 import { getPayWeekStart } from './groomSalaryService.mjs';
 
 const nothing = outcome => ({ outcome, amount: 0, afterCommit: null });
@@ -101,17 +97,7 @@ export async function replayGroomPayrollTx(
   if (collected.skipped) {
     return nothing('alreadyPaid');
   }
-  // The failed payday may have recorded this week as uncollected (owed). It is paid
-  // now, in this same transaction, so it must never be collected again as a debt.
-  await tx.groomSalaryPayment.updateMany({
-    where: {
-      groomId: groom.id,
-      userId,
-      paymentType: 'weeklySalary',
-      status: { in: [...arrearsOwedStatuses] },
-      paymentDate: { gte: payWeekStart, lt: payWeekEnd },
-    },
-    data: { status: arrearsSettledStatus },
-  });
+  // The failed payday may have recorded this week as owed; collectGroomFeesTx settles
+  // that row in this same transaction (Equoria-lhoah), as it does for Pay Groom.
   return { outcome: 'paid', amount: collected.amount, afterCommit: null };
 }

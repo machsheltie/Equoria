@@ -23,7 +23,8 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { gameDateKey, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 import { systemAccountBurn } from '../../economy/index.mjs';
-import { settleEndedGroomPayWeek } from '../index.mjs';
+import { processWeeklySalaries, settleEndedGroomPayWeek } from '../index.mjs';
+import { getGroomPayStatus, payGroom } from '../services/groomPlayerPayService.mjs';
 import { getPayWeekStart } from '../services/groomSalaryService.mjs';
 import { checkGroomMayWork } from '../services/groomEngagementService.mjs';
 
@@ -244,6 +245,41 @@ describe('Pay Groom: an owed week is paid with this week (Equoria-bgdfb)', () =>
     const after = await prisma.groom.findUnique({ where: { id: groom.id } });
     expect(after.feeUnpaidSince).toBeNull();
     expect(checkGroomMayWork(after).allowed).toBe(true);
+  });
+});
+
+describe('Pay Groom after a failed owner payday in the same week (Equoria-lhoah)', () => {
+  it('the week the player paid is never owed again: no debt at settlement, no second charge next week', async () => {
+    const { user, token } = await makeUser(50);
+    const groom = await makeGroom(user.id);
+
+    // The owner's manual payday fails for this groom: the player is short of coins.
+    const run = await processWeeklySalaries(new Date(), { userId: user.id });
+    expect(run.graced).toBe(1);
+    const missed = await payments(user.id, 'missedInsufficientFunds');
+    expect(missed.map(r => [r.groomId, r.weekKey])).toEqual([[groom.id, gameDateKey(thisWeek())]]);
+
+    // The player tops up and presses Pay Groom in the same week: this week, once.
+    await prisma.user.update({ where: { id: user.id }, data: { money: 1000 } });
+    const res = await payRoute(token, groom.id);
+    expect(res.status).toBe(200);
+    expect(res.body.data.paid.amount).toBe(100);
+    expect(await moneyOf(user.id)).toBe(900);
+    expect(await payments(user.id, 'missedInsufficientFunds')).toHaveLength(0);
+
+    // Sunday settlement: the week was paid, so nothing is owed and nothing changes.
+    const settled = await settleEndedGroomPayWeek(nextWeekInstant(), { userId: user.id });
+    expect(settled.graced).toBe(0);
+    expect(settled.released).toBe(0);
+    expect((await prisma.groom.findUnique({ where: { id: groom.id } })).feeUnpaidSince).toBeNull();
+    expect(await payments(user.id, 'missedInsufficientFunds')).toHaveLength(0);
+
+    // Next week the button shows only next week's fee, and pressing it takes only that.
+    const nextStatus = await getGroomPayStatus(user.id, nextWeekInstant());
+    expect(nextStatus.grooms[0]).toMatchObject({ owed: 0, amountDue: 100, paidThisWeek: false });
+    const nextPaid = await payGroom(user.id, groom.id, nextWeekInstant());
+    expect(nextPaid.amount).toBe(100);
+    expect(await moneyOf(user.id)).toBe(800);
   });
 });
 

@@ -167,6 +167,22 @@ export async function collectGroomFeesTx(tx, params) {
     });
   }
 
+  // Equoria-lhoah: a failed payday earlier in THIS week may have recorded the week as
+  // owed (missedInsufficientFunds / missedCollectionError, dated this week's start).
+  // This debit pays the week, so that row is settled here, in the same transaction:
+  // left owed, the next week's collection would read it as arrears and charge the
+  // week a second time.
+  await tx.groomSalaryPayment.updateMany({
+    where: {
+      userId,
+      paymentType: 'weeklySalary',
+      status: { in: [...arrearsOwedStatuses] },
+      groomId: { in: unpaidAssignments.map(entry => entry.groom.id) },
+      paymentDate: { gte: payWeekStart, lt: payWeekEnd },
+    },
+    data: { status: arrearsSettledStatus },
+  });
+
   // Per-groom payment rows. INSIDE the tx so a partial failure
   // rolls back the debit + SystemAccount credit together with
   // the payment rows — no orphan ledger drift. paymentDate uses
