@@ -747,3 +747,41 @@
   --role-neutral-bg: var(--glass-surface-subtle-bg); /* rgba(15, 23, 42, 0.4) */
   --role-neutral-border: var(--glass-border); /* rgba(148, 163, 184, 0.2) — existing token */
 }
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  CONFORMATION RATING LADDER (owner request 2026-10-29, Equoria-oxbda)       */
+/*                                                                             */
+/*  One hue per conformation quality word, read as a hierarchy:                */
+/*  Poor red → Fair orange → Average yellow → Good green → Very Good blue →    */
+/*  Excellent purple. Text hues are lifted so each clears 4.5:1 inside its own */
+/*  12% badge tint on the conformation card (night-sky ground): Poor 5.85,     */
+/*  Fair 6.22, Average 8.62, Good 7.58, Very Good 6.13, Excellent 6.05.        */
+/*  Badge background = the hue at 12%; border = the hue at 30%. The badge      */
+/*  always carries the word, so colour is never the only signal.               */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --conformation-rating-poor: #ff8080;
+  --conformation-rating-poor-bg: rgba(255, 128, 128, 0.12);
+  --conformation-rating-poor-border: rgba(255, 128, 128, 0.3);
+
+  --conformation-rating-fair: #fb923c;
+  --conformation-rating-fair-bg: rgba(251, 146, 60, 0.12);
+  --conformation-rating-fair-border: rgba(251, 146, 60, 0.3);
+
+  --conformation-rating-average: #facc15;
+  --conformation-rating-average-bg: rgba(250, 204, 21, 0.12);
+  --conformation-rating-average-border: rgba(250, 204, 21, 0.3);
+
+  --conformation-rating-good: #4ade80;
+  --conformation-rating-good-bg: rgba(74, 222, 128, 0.12);
+  --conformation-rating-good-border: rgba(74, 222, 128, 0.3);
+
+  --conformation-rating-very-good: #70b2ff;
+  --conformation-rating-very-good-bg: rgba(112, 178, 255, 0.12);
+  --conformation-rating-very-good-border: rgba(112, 178, 255, 0.3);
+
+  --conformation-rating-excellent: #c896ff;
+  --conformation-rating-excellent-bg: rgba(200, 150, 255, 0.12);
+  --conformation-rating-excellent-border: rgba(200, 150, 255, 0.3);
+}

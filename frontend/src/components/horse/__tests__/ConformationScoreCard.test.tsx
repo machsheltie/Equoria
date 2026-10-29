@@ -3,7 +3,7 @@
  *
  * Tests cover:
  * - Score display rendering (numeric + progress bar)
- * - Quality rating badges with correct colors
+ * - Quality rating badges in the rating-ladder colours (Equoria-oxbda)
  * - Breed comparison display and logic
  * - Click/keyboard interactions
  * - Accessibility (ARIA labels, keyboard nav)
@@ -62,49 +62,29 @@ describe('ConformationScoreCard', () => {
     });
   });
 
+  // Old contract: Excellent emerald, Very Good gold, Good amber, Average slate,
+  // Fair orange, Poor rose (raw Tailwind palette classes). Owner request
+  // 2026-10-29 (Equoria-oxbda): the words read as a hierarchy — Poor red, Fair
+  // orange, Average yellow, Good green, Very Good blue, Excellent purple —
+  // through the Celestial Night --conformation-rating-* tokens.
   describe('Quality Rating Badge', () => {
-    it('should display Excellent for scores 90-100', () => {
-      render(<ConformationScoreCard region="head" score={95} />);
-      expect(screen.getByText('Excellent')).toBeInTheDocument();
-      // Dark theme uses -400 contrast levels
-      expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-emerald-400');
-    });
-
-    it('should display Very Good for scores 80-89', () => {
-      render(<ConformationScoreCard region="head" score={85} />);
-      expect(screen.getByText('Very Good')).toBeInTheDocument();
-      // Component now uses gold token instead of blue for "Very Good"
-      expect(screen.getByTestId('quality-badge-head').className).toMatch(
-        /text-\[var\(--gold-primary\)\]/
+    it.each([
+      [95, 'Excellent', 'excellent'],
+      [85, 'Very Good', 'very-good'],
+      [75, 'Good', 'good'],
+      [65, 'Average', 'average'],
+      // Owner ruling q251 (Equoria-y8vg9): the 50-59 band reads "Fair".
+      [55, 'Fair', 'fair'],
+      [40, 'Poor', 'poor'],
+    ])('a score of %i reads %s in its own rating colour', (score, word, token) => {
+      render(<ConformationScoreCard region="head" score={score} />);
+      const badge = screen.getByTestId('quality-badge-head');
+      expect(badge).toHaveTextContent(word);
+      expect(badge).toHaveClass(
+        `text-[var(--conformation-rating-${token})]`,
+        `bg-[var(--conformation-rating-${token}-bg)]`,
+        `border-[var(--conformation-rating-${token}-border)]`
       );
-    });
-
-    it('should display Good for scores 70-79', () => {
-      render(<ConformationScoreCard region="head" score={75} />);
-      expect(screen.getByText('Good')).toBeInTheDocument();
-      expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-amber-400');
-    });
-
-    it('should display Average for scores 60-69', () => {
-      render(<ConformationScoreCard region="head" score={65} />);
-      expect(screen.getByText('Average')).toBeInTheDocument();
-      // Component uses CSS-variable token for secondary text on Average
-      expect(screen.getByTestId('quality-badge-head').className).toMatch(
-        /text-\[var\(--text-secondary\)\]/
-      );
-    });
-
-    // Owner ruling q251 (Equoria-y8vg9): the 50-59 band reads "Fair".
-    it('should display Fair for scores 50-59', () => {
-      render(<ConformationScoreCard region="head" score={55} />);
-      expect(screen.getByText('Fair')).toBeInTheDocument();
-      expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-orange-400');
-    });
-
-    it('should display Poor for scores 0-49', () => {
-      render(<ConformationScoreCard region="head" score={40} />);
-      expect(screen.getByText('Poor')).toBeInTheDocument();
-      expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-rose-400');
     });
   });
 
@@ -135,16 +115,17 @@ describe('ConformationScoreCard', () => {
       expect(progressBar).toHaveAttribute('aria-valuemax', '100');
     });
 
-    it('should apply correct color class for Excellent scores', () => {
+    // Owner request 2026-10-29 (Equoria-oxbda): the bar takes its word's colour.
+    it('fills the bar purple for an Excellent score', () => {
       render(<ConformationScoreCard region="head" score={95} />);
       const progressBar = screen.getByRole('progressbar');
-      expect(progressBar).toHaveClass('bg-emerald-500');
+      expect(progressBar).toHaveClass('bg-[var(--conformation-rating-excellent)]');
     });
 
-    it('should apply correct color class for Poor scores', () => {
+    it('fills the bar red for a Poor score', () => {
       render(<ConformationScoreCard region="head" score={40} />);
       const progressBar = screen.getByRole('progressbar');
-      expect(progressBar).toHaveClass('bg-rose-500');
+      expect(progressBar).toHaveClass('bg-[var(--conformation-rating-poor)]');
     });
   });
 

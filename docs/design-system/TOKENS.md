@@ -90,9 +90,29 @@ Pill shape is opt-in via a `pill` prop which uses `--radius-pill` directly.
 
 ---
 
+## 4. Conformation Rating Ladder
+
+Defined in `tokens.css` under `CONFORMATION RATING LADDER` (owner request
+2026-10-29, Equoria-oxbda). One hue per conformation quality word, read as a
+hierarchy. Each word has a text token, a `-bg` token (the hue at 12%) and a
+`-border` token (the hue at 30%). Contrast is the text inside its own badge
+tint on the conformation card's night-sky ground.
+
+| Word      | Text token                        | Value     | Contrast |
+| --------- | --------------------------------- | --------- | -------- |
+| Poor      | `--conformation-rating-poor`      | `#ff8080` | 5.85:1   |
+| Fair      | `--conformation-rating-fair`      | `#fb923c` | 6.22:1   |
+| Average   | `--conformation-rating-average`   | `#facc15` | 8.62:1   |
+| Good      | `--conformation-rating-good`      | `#4ade80` | 7.58:1   |
+| Very Good | `--conformation-rating-very-good` | `#70b2ff` | 6.13:1   |
+| Excellent | `--conformation-rating-excellent` | `#c896ff` | 6.05:1   |
+
+---
+
 ## Changelog
 
 | Date       | Change                                                                                     |
 | ---------- | ------------------------------------------------------------------------------------------ |
 | 2026-06-09 | Initial creation (Equoria-o5hub.6 P2.1) — role tokens, text roles, radius mapping          |
 | 2026-08-19 | Corrected authority, inline-link token, muted-text guidance, and stale decision references |
+| 2026-10-29 | Conformation rating ladder tokens (Equoria-oxbda)                                          |

@@ -215,18 +215,6 @@ export const horsesApi = {
         overallConformation: number;
       };
     }>(`/api/v1/breeds/${breedId}/conformation-averages`),
-  // Equoria-ac5y — per-region percentile ranking vs same-breed population
-  getConformationAnalysis: (horseId: number | string) =>
-    apiClient.get<{
-      horseId: number;
-      horseName: string;
-      breedId: number;
-      breedName: string;
-      breedMeanAvailable: boolean;
-      totalHorsesInBreed: number;
-      analysis: Record<string, { score: number; breedMean: number | null; percentile: number }>;
-      overallConformation: { score: number; breedMean: number | null; percentile: number };
-    }>(`/api/v1/horses/${horseId}/conformation/analysis`),
   // Equoria-aa6b — gait scores endpoint
   getGaits: (horseId: number | string) =>
     apiClient.get<{

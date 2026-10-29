@@ -2,7 +2,8 @@
  * ConformationTab Component
  *
  * Main component for displaying horse conformation scores:
- * - 8 region score cards (Head, Neck, Shoulder, Back, Hindquarters, Legs, Hooves, Overall)
+ * - 8 region score cards (Head, Neck, Shoulders, Back, Hindquarters, Legs, Hooves, Topline)
+ *   — no Overall card and no percentile tile (owner request 2026-10-29, Equoria-oxbda)
  * - Breed comparison toggle
  * - Responsive grid layout
  * - Loading and error states
@@ -12,14 +13,9 @@
 
 import { userMessageFor } from '@/lib/http/userMessage';
 import { useState } from 'react';
-import { AlertCircle, Info, TrendingUp } from 'lucide-react';
+import { AlertCircle, Info } from 'lucide-react';
 import ConformationScoreCard from './ConformationScoreCard';
-// Equoria-ac5y — per-region percentile ranking vs same-breed population
-import {
-  useHorseConformation,
-  useBreedAverages,
-  useConformationAnalysis,
-} from '@/hooks/api/useConformation';
+import { useHorseConformation, useBreedAverages } from '@/hooks/api/useConformation';
 import { useHorseVisitData } from '@/pages/horse-detail/horseVisitContext';
 
 export interface ConformationTabProps {
@@ -48,10 +44,6 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
     isLoading: breedLoading,
     error: breedError,
   } = useBreedAverages(breedId || 0);
-
-  // Equoria-ac5y — percentile analysis against same-breed population
-  const { data: ownAnalysisData } = useConformationAnalysis(visit ? '' : horseId);
-  const analysisData = visit ? undefined : ownAnalysisData;
 
   // Loading state
   if (conformationLoading || (showComparison && breedId && breedLoading)) {
@@ -115,7 +107,6 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
     { key: 'legs', label: 'Legs', score: conformation.legs },
     { key: 'hooves', label: 'Hooves', score: conformation.hooves },
     { key: 'topline', label: 'Topline', score: conformation.topline },
-    { key: 'overallConformation', label: 'Overall', score: conformation.overallConformation },
   ];
 
   const canShowComparison = showComparison && breedId && breedData && !breedError;
@@ -195,55 +186,6 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
         })}
       </div>
 
-      {/* Equoria-ac5y — Percentile ranking tile (per-region + overall) */}
-      {analysisData && (
-        <div
-          className="rounded-lg border border-amber-500/30 bg-[rgba(217,164,65,0.06)] p-4"
-          data-testid="conformation-percentile-tile"
-        >
-          <div className="flex items-start gap-2 mb-3">
-            <TrendingUp className="h-5 w-5 text-[var(--gold-primary)] mt-0.5" aria-hidden="true" />
-            <div>
-              <p className="text-sm font-semibold text-[var(--text-primary)]">
-                Percentile vs {analysisData.breedName} Population
-              </p>
-              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                Ranked against {analysisData.totalHorsesInBreed} same-breed horse
-                {analysisData.totalHorsesInBreed === 1 ? '' : 's'} in the database.
-              </p>
-            </div>
-          </div>
-          <div
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2"
-            data-testid="conformation-percentile-grid"
-          >
-            {Object.entries(analysisData.analysis).map(([region, data]) => (
-              <div
-                key={region}
-                className="rounded-md border border-[var(--glass-hover)] bg-[var(--glass-bg)] px-3 py-2"
-                data-testid={`conformation-percentile-${region}`}
-              >
-                <p className="text-xs text-[var(--text-secondary)] capitalize">{region}</p>
-                <p className="text-sm font-semibold text-[var(--text-primary)]">
-                  {data.percentile}
-                  <span className="text-xs text-[var(--text-secondary)]"> percentile</span>
-                </p>
-              </div>
-            ))}
-            <div
-              className="rounded-md border border-[var(--alpha-gold-primary-40)] bg-[rgba(217,164,65,0.12)] px-3 py-2"
-              data-testid="conformation-percentile-overall"
-            >
-              <p className="text-xs text-[var(--gold-primary)]">Overall</p>
-              <p className="text-sm font-semibold text-[var(--gold-primary)]">
-                {analysisData.overallConformation.percentile}
-                <span className="text-xs text-[var(--text-secondary)]"> percentile</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Educational Footer */}
       <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-4">
         <p className="text-xs font-semibold text-[rgb(220,235,255)] mb-2">
@@ -254,7 +196,6 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
             • Conformation scores assess physical structure and balance across 8 key body regions
           </li>
           <li>• Scores range from 0-100, with higher scores indicating better conformation</li>
-          <li>• The Overall score is calculated as the average of all 8 body region scores</li>
           <li>• Good conformation contributes to better movement quality and longevity</li>
           {canShowComparison && (
             <li>

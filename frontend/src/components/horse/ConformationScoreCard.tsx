@@ -19,7 +19,6 @@ import {
   getBreedComparison,
   getRegionDescription,
   getRegionDisplayName,
-  getScoreColor,
 } from '@/lib/utils/conformation-utils';
 
 export interface ConformationScoreCardProps {
@@ -42,7 +41,6 @@ const ConformationScoreCard = ({
   const qualityRating = getQualityRating(score);
   const displayName = getRegionDisplayName(region);
   const description = getRegionDescription(region);
-  const scoreColor = getScoreColor(score);
 
   // Only show comparison if enabled and breed average is provided
   const shouldShowComparison = showComparison && breedAverage !== undefined;
@@ -100,7 +98,7 @@ const ConformationScoreCard = ({
       {/* Progress Bar */}
       <div className="relative w-full h-3 bg-[rgba(15,35,70,0.4)] rounded-full overflow-hidden mb-3">
         <div
-          className={`absolute top-0 left-0 h-full transition-all duration-500 ${scoreColor}`}
+          className={`absolute top-0 left-0 h-full transition-all duration-500 ${qualityRating.fillColor}`}
           style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
           role="progressbar"
           aria-valuenow={score}

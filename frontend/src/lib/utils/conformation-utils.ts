@@ -3,7 +3,6 @@
  *
  * Provides utility functions for horse conformation scoring system:
  * - Quality rating calculations (0-100 to the six quality words)
- * - Overall score calculations (average of 7 regions)
  * - Breed comparison analysis
  * - Score formatting and display helpers
  * - Region descriptions for tooltips
@@ -15,6 +14,8 @@ export interface QualityRating {
   label: string;
   color: string;
   bgColor: string;
+  /** Solid fill for the score bar, in the same hue as the word. */
+  fillColor: string;
 }
 
 export interface BreedComparison {
@@ -44,44 +45,59 @@ export interface ConformationQualityBand extends QualityRating {
  *
  * Owner ruling q251 (Equoria-y8vg9, 2026-10-28): six words —
  * Excellent 90+, Very Good 80+, Good 70+, Average 60+, Fair 50+, Poor below 50.
- * Ordered highest band first.
+ * Owner request 2026-10-29 (Equoria-oxbda): the words read as a colour
+ * hierarchy — Poor red, Fair orange, Average yellow, Good green, Very Good
+ * blue, Excellent purple — through the Celestial Night
+ * `--conformation-rating-*` tokens. Ordered highest band first.
  */
 export const conformationQualityBands: readonly ConformationQualityBand[] = Object.freeze([
   {
     min: 90,
     label: 'Excellent',
-    color: 'text-emerald-400',
-    bgColor: 'bg-[rgba(16,185,129,0.1)] border-emerald-500/30',
+    color: 'text-[var(--conformation-rating-excellent)]',
+    bgColor:
+      'bg-[var(--conformation-rating-excellent-bg)] border-[var(--conformation-rating-excellent-border)]',
+    fillColor: 'bg-[var(--conformation-rating-excellent)]',
   },
   {
     min: 80,
     label: 'Very Good',
-    color: 'text-[var(--gold-primary)]',
-    bgColor: 'bg-[var(--alpha-gold-primary-10)] border-[var(--alpha-gold-ember-30)]',
+    color: 'text-[var(--conformation-rating-very-good)]',
+    bgColor:
+      'bg-[var(--conformation-rating-very-good-bg)] border-[var(--conformation-rating-very-good-border)]',
+    fillColor: 'bg-[var(--conformation-rating-very-good)]',
   },
   {
     min: 70,
     label: 'Good',
-    color: 'text-amber-400',
-    bgColor: 'bg-[rgba(245,158,11,0.1)] border-amber-500/30',
+    color: 'text-[var(--conformation-rating-good)]',
+    bgColor:
+      'bg-[var(--conformation-rating-good-bg)] border-[var(--conformation-rating-good-border)]',
+    fillColor: 'bg-[var(--conformation-rating-good)]',
   },
   {
     min: 60,
     label: 'Average',
-    color: 'text-[var(--text-secondary)]',
-    bgColor: 'bg-slate-400/[0.08] border-slate-400/30',
+    color: 'text-[var(--conformation-rating-average)]',
+    bgColor:
+      'bg-[var(--conformation-rating-average-bg)] border-[var(--conformation-rating-average-border)]',
+    fillColor: 'bg-[var(--conformation-rating-average)]',
   },
   {
     min: 50,
     label: 'Fair',
-    color: 'text-orange-400',
-    bgColor: 'bg-[rgba(249,115,22,0.1)] border-orange-500/30',
+    color: 'text-[var(--conformation-rating-fair)]',
+    bgColor:
+      'bg-[var(--conformation-rating-fair-bg)] border-[var(--conformation-rating-fair-border)]',
+    fillColor: 'bg-[var(--conformation-rating-fair)]',
   },
   {
     min: 0,
     label: 'Poor',
-    color: 'text-rose-400',
-    bgColor: 'bg-[rgba(239,68,68,0.1)] border-rose-500/30',
+    color: 'text-[var(--conformation-rating-poor)]',
+    bgColor:
+      'bg-[var(--conformation-rating-poor-bg)] border-[var(--conformation-rating-poor-border)]',
+    fillColor: 'bg-[var(--conformation-rating-poor)]',
   },
 ]);
 
@@ -95,36 +111,12 @@ export function getQualityRating(score: number): QualityRating {
   const band =
     conformationQualityBands.find((b) => clampedScore >= b.min) ??
     conformationQualityBands[conformationQualityBands.length - 1];
-  return { label: band.label, color: band.color, bgColor: band.bgColor };
-}
-
-/**
- * Calculate overall conformation score (average of 7 regions)
- * Excludes the 'overall' field itself
- */
-export function calculateOverallScore(conformation: ConformationScores): number {
-  const scores = [
-    conformation.head,
-    conformation.neck,
-    conformation.shoulder,
-    conformation.back,
-    conformation.hindquarters,
-    conformation.legs,
-    conformation.hooves,
-  ];
-
-  // Filter out invalid scores (negative, NaN, null)
-  const validScores = scores.filter((score) => typeof score === 'number' && score >= 0);
-
-  if (validScores.length === 0) {
-    return 0;
-  }
-
-  const sum = validScores.reduce((acc, score) => acc + score, 0);
-  const average = sum / validScores.length;
-
-  // Round to 1 decimal place
-  return Math.round(average * 10) / 10;
+  return {
+    label: band.label,
+    color: band.color,
+    bgColor: band.bgColor,
+    fillColor: band.fillColor,
+  };
 }
 
 /**
@@ -188,7 +180,6 @@ export function getRegionDescription(region: string): string {
     hindquarters: 'Hip angle, croup slope, muscle development, and power generation capacity',
     legs: 'Bone structure, joint angles, symmetry, straightness, and soundness indicators',
     hooves: 'Size, shape, balance, quality, wall thickness, and overall hoof health',
-    overall: 'Combined overall conformation score calculated as average of all 7 body regions',
   };
 
   return descriptions[region.toLowerCase()] || 'Conformation assessment for this region';
@@ -216,18 +207,4 @@ export function isValidConformation(conformation: Partial<ConformationScores>): 
   }
 
   return true;
-}
-
-/**
- * Get color class for score value (for progress bars)
- */
-export function getScoreColor(score: number): string {
-  const clampedScore = Math.max(0, Math.min(100, score));
-
-  if (clampedScore >= 90) return 'bg-emerald-500';
-  if (clampedScore >= 80) return 'bg-blue-500';
-  if (clampedScore >= 70) return 'bg-amber-500';
-  if (clampedScore >= 60) return 'bg-slate-600';
-  if (clampedScore >= 50) return 'bg-orange-500';
-  return 'bg-rose-500';
 }
