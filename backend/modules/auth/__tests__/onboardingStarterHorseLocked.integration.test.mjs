@@ -125,6 +125,30 @@ describe('POST /auth/advance-onboarding — starter horse is chosen once (Equori
     expect(after.settings).toMatchObject(settings);
   });
 
+  it('simultaneous wizard posts choose the starter horse once: one 200, the rest 409 (Equoria-kuqq9)', async () => {
+    // OLD: the step-0 gate was read before the transaction, so every
+    // simultaneous post passed it and each drew a temperament; the last commit
+    // won and the player could not choose. NEW: the gate is re-checked inside
+    // the transaction that writes the horse, so exactly one post wins.
+    const settings = { completedOnboarding: false, onboardingStep: 0 };
+    const { user, advance } = await playerWith(settings);
+    const horse = await plantedStarter(user.id);
+
+    const names = ['Racer One', 'Racer Two', 'Racer Three', 'Racer Four'];
+    const results = await Promise.all(
+      names.map(horseName => advance({ horseName, breedId: breeds[1].id, gender: 'Stallion' })),
+    );
+
+    const statuses = results.map(r => r.status).sort();
+    expect(statuses).toEqual([200, 409, 409, 409]);
+    const winner = results.find(r => r.status === 200);
+    const after = await prisma.horse.findUnique({ where: { id: horse.id }, select: ROW });
+    expect(after.name).toBe(winner.body.data.horse.name);
+    expect(await prisma.horse.count({ where: { userId: user.id } })).toBe(1);
+    const userAfter = await prisma.user.findUnique({ where: { id: user.id }, select: { settings: true } });
+    expect(userAfter.settings).toMatchObject({ completedOnboarding: false, onboardingStep: 1 });
+  });
+
   it('still lets the tour advance with no horse payload after the wizard', async () => {
     const { user, advance } = await playerWith({ completedOnboarding: false, onboardingStep: 1 });
     await plantedStarter(user.id);

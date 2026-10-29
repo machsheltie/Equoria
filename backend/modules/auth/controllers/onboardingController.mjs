@@ -354,6 +354,33 @@ export const advanceOnboarding = async (req, res, next) => {
     // subclass) so the isAppError-gated next(error) below forwards it as 503.
     await withRetryableTxMapping(
       prisma.$transaction(async tx => {
+        // Equoria-kuqq9: the step-0 gate above was read before this transaction,
+        // so simultaneous wizard posts all passed it and each drew a temperament
+        // (last commit won). The settings write now runs FIRST, guarded by a
+        // compare-and-swap on the gate (still step 0, not completed). It takes
+        // the User row lock (User before Horse), so a concurrent post waits,
+        // re-checks the gate against the committed row and matches nothing.
+        const gateExpect = hasHorseCustomization
+          ? {
+              completedOnboarding: { equals: false },
+              onboardingStep: { equals: 0, whenMissing: 0 },
+            }
+          : undefined;
+        const affectedSettings = await updateUserSettingsPaths(tx, userId, {
+          set: updatedSettings,
+          expect: gateExpect,
+        });
+        if (affectedSettings !== 1) {
+          const stillThere = await tx.user.findUnique({
+            where: { id: userId },
+            select: { id: true },
+          });
+          if (!stillThere) {
+            throw new AppError('User not found', 404);
+          }
+          throw new AppError('Your starter horse has already been chosen.', 409);
+        }
+
         if (hasHorseCustomization) {
           const breed = await tx.breed.findUnique({
             where: { id: normalizedBreedId },
@@ -442,13 +469,6 @@ export const advanceOnboarding = async (req, res, next) => {
               include: { breed: { select: { id: true, name: true } } },
             });
           }
-        }
-
-        const affectedSettings = await updateUserSettingsPaths(tx, userId, {
-          set: updatedSettings,
-        });
-        if (affectedSettings !== 1) {
-          throw new AppError('User not found', 404);
         }
       }),
       { message: 'Onboarding service is busy right now, please retry in a moment.' },
