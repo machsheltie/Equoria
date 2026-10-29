@@ -2,8 +2,8 @@
  * coatShade.test.mjs
  *
  * Equoria-1fyfa (GEN-10): a shade a breed weights zero is never picked, by the
- * genotype-hash path (every breed today) or by the rolled path
- * ("shadeSelection": "rolled"). Pure function, real code.
+ * rolled path (every breed's new horses, owner ruling q277) or by the
+ * genotype-hash path (no roll given). Pure function, real code.
  */
 
 import { selectShade } from '../services/coatShade.mjs';
