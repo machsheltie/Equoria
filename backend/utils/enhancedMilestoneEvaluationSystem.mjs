@@ -24,9 +24,9 @@ import { minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
 export const MILESTONE_TYPES = {
   IMPRINTING: 'imprinting',
   SOCIALIZATION: 'socialization',
-  CURIOSITY_PLAY: 'curiosity_play',
-  TRUST_HANDLING: 'trust_handling',
-  CONFIDENCE_REACTIVITY: 'confidence_reactivity',
+  CURIOSITY_PLAY: 'curiosityPlay',
+  TRUST_HANDLING: 'trustHandling',
+  CONFIDENCE_REACTIVITY: 'confidenceReactivity',
 };
 
 // Developmental windows in days

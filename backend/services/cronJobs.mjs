@@ -238,7 +238,7 @@ class CronJobService {
 
   /**
    * Equoria-bfo1t: Log trait revelation — Winston line + queryable
-   * TraitHistoryLog persistence (sourceType 'daily_evaluation').
+   * TraitHistoryLog persistence (sourceType 'dailyEvaluation').
    * @param {number} foalId
    * @param {string} foalName
    * @param {Object} newTraits

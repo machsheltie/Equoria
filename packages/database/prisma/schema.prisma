@@ -1404,7 +1404,7 @@ model MilestoneTraitLog {
   id            Int      @id @default(autoincrement())
   /// Horse that underwent milestone evaluation
   horseId       Int
-  /// Type of milestone (imprinting, socialization, curiosity_play, trust_handling, confidence_reactivity)
+  /// Type of milestone (imprinting, socialization, curiosityPlay, trustHandling, confidenceReactivity)
   milestoneType String
   /// Final score calculated for this milestone
   score         Int

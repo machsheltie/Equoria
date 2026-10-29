@@ -214,7 +214,7 @@ export async function getTraitDefinitions(req, res) {
  * counts by traitName, definitional category and game day, plus a total. Filters:
  *   ?startDate=ISO   inclusive lower bound on timestamp
  *   ?endDate=ISO     inclusive upper bound on timestamp
- *   ?sourceType=str  scope to one sourceType (e.g. 'daily_evaluation')
+ *   ?sourceType=str  scope to one sourceType (e.g. 'dailyEvaluation')
  *
  * Admin and owner only (adminRouter's requireRole('admin')). Rows for a trait
  * still hidden on its horse count for the owner alone (Equoria-4tleh).

@@ -9,7 +9,7 @@
  *
  * Data source: TraitHistoryLog rows. Each row stores the revealed trait *key*
  * (e.g. "confident", "fearful") in `traitName`, a
- * `sourceType` (the daily cron writes "daily_evaluation" — Equoria-bfo1t), and a
+ * `sourceType` (the daily cron writes "dailyEvaluation" — Equoria-bfo1t), and a
  * `timestamp`. There is NO stored category column.
  *
  * IMPORTANT DATA-REALITY NOTE (OPTIMAL_FIX §1):
@@ -53,7 +53,7 @@ export function classifyTraitCategory(traitName) {
  * @param {Date|string} [options.startDate] - inclusive lower bound on timestamp
  * @param {Date|string} [options.endDate]   - inclusive upper bound on timestamp
  * @param {string}      [options.sourceType] - filter to one sourceType (e.g.
- *                       'daily_evaluation' to scope to nightly-cron reveals only)
+ *                       'dailyEvaluation' to scope to nightly-cron reveals only)
  * @param {boolean}     [options.includeHidden=false] - count rows naming a
  *                       trait still hidden on its horse. Only for a caller
  *                       holding `traits.hidden.view` (the owner, Equoria-4tleh);

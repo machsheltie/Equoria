@@ -230,17 +230,17 @@ describe('EvaluationExplanation Component', () => {
       ).toBeInTheDocument();
     });
 
-    it('should work with curiosity_play milestone', () => {
+    it('should work with curiosityPlay milestone', () => {
       render(
         <EvaluationExplanation
           {...defaultProps}
-          milestone="curiosity_play"
+          milestone="curiosityPlay"
           score={4}
           traits={['playful']}
         />
       );
       expect(
-        screen.getByText(/Evaluation explanation for curiosity_play with score 4/)
+        screen.getByText(/Evaluation explanation for curiosityPlay with score 4/)
       ).toBeInTheDocument();
     });
   });

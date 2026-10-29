@@ -15,6 +15,7 @@ import {
   disciplineAffinityKey,
   normalizeTraitKey,
   normalizeEpigeneticModifiers,
+  normalizeStoredEpigeneticModifiers,
 } from '../../../utils/epigeneticTraitKeyMap.mjs';
 import { DISCIPLINES } from '../../../constants/schema.mjs';
 import { getAllTraitEffects } from '../../../utils/traitEffects.mjs';
@@ -115,6 +116,42 @@ describe('normalizeEpigeneticModifiers — rewrites all three arrays', () => {
   it('handles null/garbage shapes without throwing', () => {
     expect(normalizeEpigeneticModifiers(null)).toEqual({ positive: [], negative: [], hidden: [] });
     expect(normalizeEpigeneticModifiers([])).toEqual({ positive: [], negative: [], hidden: [] });
+  });
+});
+
+describe('normalizeStoredEpigeneticModifiers — the backfill keeps every stored key (Equoria-5ybnr)', () => {
+  // The legacy (underscore) spelling of a canonical id, built here so this test
+  // adds no snake_case literal of its own: eagerLearner -> eager + _ + learner.
+  const legacyOf = canonical => canonical.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`);
+  it('normalizes the four trait lists and keeps dormant, revealEvaluatedThroughDay and any other key', () => {
+    const stored = {
+      positive: [legacyOf('eagerLearner')],
+      negative: [],
+      hidden: [legacyOf('legendaryBloodline')],
+      dormant: [legacyOf('legacyTalent'), 'fragile'],
+      revealEvaluatedThroughDay: 5,
+      futureKey: { kept: true },
+    };
+    expect(normalizeStoredEpigeneticModifiers(stored)).toEqual({
+      positive: ['eagerLearner'],
+      negative: [],
+      hidden: ['legendaryBloodline'],
+      dormant: ['legacyTalent', 'fragile'],
+      revealEvaluatedThroughDay: 5,
+      futureKey: { kept: true },
+    });
+  });
+  it('adds no list the row did not have and leaves the input untouched', () => {
+    const stored = { positive: [legacyOf('lowImmunity')], revealEvaluatedThroughDay: 2 };
+    expect(normalizeStoredEpigeneticModifiers(stored)).toEqual({
+      positive: ['lowImmunity'],
+      revealEvaluatedThroughDay: 2,
+    });
+    expect(stored).toEqual({ positive: [legacyOf('lowImmunity')], revealEvaluatedThroughDay: 2 });
+  });
+  it('returns non-object shapes as they are', () => {
+    expect(normalizeStoredEpigeneticModifiers(null)).toBeNull();
+    expect(normalizeStoredEpigeneticModifiers([legacyOf('eagerLearner')])).toEqual([legacyOf('eagerLearner')]);
   });
 });
 

@@ -125,9 +125,37 @@ export function normalizeEpigeneticModifiers(modifiers) {
   };
 }
 
+/** The `epigeneticModifiers` lists that hold trait ids. */
+const storedTraitListKeys = Object.freeze(['positive', 'negative', 'hidden', 'dormant']);
+
+/**
+ * A stored `epigeneticModifiers` value with every trait id in its four lists
+ * (positive, negative, hidden, dormant) normalized, and every other key
+ * (revealEvaluatedThroughDay, ...) kept as stored. A list the row does not have
+ * is not added. Returns a new object; a non-object value is returned as is.
+ * This is what a backfill may write back (Equoria-5ybnr: writing
+ * normalizeEpigeneticModifiers' three-list shape erased the rest).
+ *
+ * @param {unknown} modifiers - the stored column value
+ * @returns {unknown}
+ */
+export function normalizeStoredEpigeneticModifiers(modifiers) {
+  if (!modifiers || typeof modifiers !== 'object' || Array.isArray(modifiers)) {
+    return modifiers;
+  }
+  const next = { ...modifiers };
+  for (const key of storedTraitListKeys) {
+    if (Array.isArray(next[key])) {
+      next[key] = next[key].map(normalizeTraitKey);
+    }
+  }
+  return next;
+}
+
 export default {
   LEGACY_TRAIT_KEY_MAP,
   disciplineAffinityKey,
   normalizeTraitKey,
   normalizeEpigeneticModifiers,
+  normalizeStoredEpigeneticModifiers,
 };

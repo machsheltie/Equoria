@@ -315,7 +315,7 @@ export async function notifyTraitRevelation(foal, newTraits, currentDay) {
  *
  * Equoria-bfo1t: emits a Winston line AND persists each revealed trait
  * (positive + negative + hidden) to the queryable TraitHistoryLog model via
- * traitHistoryService.logTraitAssignment, with sourceType 'daily_evaluation'.
+ * traitHistoryService.logTraitAssignment, with sourceType 'dailyEvaluation'.
  * Persistence is best-effort per-trait — a single failed insert is logged and
  * does not abort the others or the surrounding flow.
  *
@@ -346,7 +346,7 @@ export async function logTraitRevelation(
         {
           horseId: foalId,
           traitName,
-          sourceType: 'daily_evaluation',
+          sourceType: 'dailyEvaluation',
           isEpigenetic: true,
           bondScore: foal?.bondScore ?? null,
         },
@@ -389,7 +389,7 @@ export async function logTraitRevelation(
         await logTraitAssignment({
           horseId: foalId,
           traitName,
-          sourceType: 'daily_evaluation',
+          sourceType: 'dailyEvaluation',
           isEpigenetic: true,
           bondScore,
         });

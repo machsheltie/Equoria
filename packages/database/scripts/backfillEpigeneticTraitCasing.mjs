@@ -1,7 +1,11 @@
 /**
  * Forward-only DB backfill: snake_case → canonical camelCase epigenetic-trait
- * keys inside every horse's `epigeneticModifiers` {positive,negative,hidden}
- * arrays (Equoria-9o3n7.6, §C).
+ * keys inside every horse's `epigeneticModifiers` {positive,negative,hidden,
+ * dormant} arrays (Equoria-9o3n7.6, §C). Every other stored key
+ * (revealEvaluatedThroughDay, ...) is written back unchanged (Equoria-5ybnr).
+ *
+ * Migration 20261029150000_trait_values_camelcase converts the same ids at
+ * deploy, so on a migrated database this script finds nothing to change.
  *
  * ⚠️ NOT AUTO-EXECUTED. This script is intentionally NOT wired into any
  * migration runner, app boot, or CI step. Per the worktree mandate it must be
@@ -30,7 +34,7 @@
 import { PrismaClient } from '@prisma/client';
 import {
   LEGACY_TRAIT_KEY_MAP,
-  normalizeEpigeneticModifiers,
+  normalizeStoredEpigeneticModifiers,
 } from '../../../backend/utils/epigeneticTraitKeyMap.mjs';
 
 const prisma = new PrismaClient();
@@ -44,13 +48,9 @@ function needsBackfill(modifiers) {
   if (!modifiers || typeof modifiers !== 'object' || Array.isArray(modifiers)) {
     return false;
   }
-  const before = JSON.stringify({
-    positive: modifiers.positive ?? [],
-    negative: modifiers.negative ?? [],
-    hidden: modifiers.hidden ?? [],
-  });
-  const after = JSON.stringify(normalizeEpigeneticModifiers(modifiers));
-  return before !== after;
+  return (
+    JSON.stringify(modifiers) !== JSON.stringify(normalizeStoredEpigeneticModifiers(modifiers))
+  );
 }
 
 export async function backfillEpigeneticTraitCasing({ apply = false, prismaClient = prisma } = {}) {
@@ -72,7 +72,7 @@ export async function backfillEpigeneticTraitCasing({ apply = false, prismaClien
     if (!needsBackfill(horse.epigeneticModifiers)) {
       continue;
     }
-    const normalized = normalizeEpigeneticModifiers(horse.epigeneticModifiers);
+    const normalized = normalizeStoredEpigeneticModifiers(horse.epigeneticModifiers);
     changed += 1;
 
     console.log(

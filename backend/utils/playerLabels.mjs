@@ -1,7 +1,7 @@
 /**
  * Authored words for stored values that reach a player (Equoria-bdpvw).
  *
- * Owner ruling 2026-10-23: players never see a raw code name (daily_evaluation,
+ * Owner ruling 2026-10-23: players never see a raw code name (dailyEvaluation,
  * trustBuilding); a code hands out hints about the game's internals. Payloads a
  * player can read in the network tab carry these words, not the stored values.
  */

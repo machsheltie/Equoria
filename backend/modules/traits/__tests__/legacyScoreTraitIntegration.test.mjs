@@ -244,7 +244,7 @@ describe('Legacy Score Trait Integration System', () => {
       const milestoneData = [
         { milestoneType: 'imprinting', taskConsistency: 8, taskDiversity: 6, bondScore: 80 },
         { milestoneType: 'socialization', taskConsistency: 9, taskDiversity: 7, bondScore: 85 },
-        { milestoneType: 'curiosity_play', taskConsistency: 7, taskDiversity: 5, bondScore: 75 },
+        { milestoneType: 'curiosityPlay', taskConsistency: 7, taskDiversity: 5, bondScore: 75 },
       ];
 
       for (const milestone of milestoneData) {

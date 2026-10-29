@@ -86,7 +86,7 @@ describe('INTEGRATION: daily trait reveal notification (Equoria-yy1a5)', () => {
 
     await cronJobService.notifyTraitRevelation(
       foal,
-      { positive: ['resilient'], negative: [], hidden: ['legendary_bloodline'] },
+      { positive: ['resilient'], negative: [], hidden: ['legendaryBloodline'] },
       2,
     );
 

@@ -68,7 +68,7 @@ describe('MilestoneCard Component', () => {
     description: 'Building trust and bonding',
     ageWindow: { min: 31, max: 90 },
     focus: 'Social development',
-    status: 'in_progress',
+    status: 'inProgress',
     requirements: [],
     rewards: { milestonePoints: 75, potentialTraits: [] },
   };
@@ -101,7 +101,7 @@ describe('MilestoneCard Component', () => {
       expect(screen.getByTestId('clock-icon')).toBeInTheDocument();
     });
 
-    it('should display Clock icon for non-current in_progress milestone', () => {
+    it('should display Clock icon for non-current inProgress milestone', () => {
       render(<MilestoneCard milestone={currentMilestone} foalAge={45} isCurrent={false} />);
       expect(screen.getByTestId('clock-icon')).toBeInTheDocument();
     });
@@ -123,7 +123,7 @@ describe('MilestoneCard Component', () => {
       expect(screen.getByText('Upcoming')).toBeInTheDocument();
     });
 
-    it('should display "Upcoming" for non-current in_progress milestone', () => {
+    it('should display "Upcoming" for non-current inProgress milestone', () => {
       render(<MilestoneCard milestone={currentMilestone} foalAge={45} isCurrent={false} />);
       expect(screen.getByText('Upcoming')).toBeInTheDocument();
     });

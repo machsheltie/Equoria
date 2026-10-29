@@ -144,7 +144,7 @@ describe('INTEGRATION: foalTraitEvaluation impl module (Equoria-urqic.3)', () =>
   });
 
   describe('logTraitRevelation(...)', () => {
-    it('persists each revealed trait to TraitHistoryLog with sourceType daily_evaluation', async () => {
+    it('persists each revealed trait to TraitHistoryLog with sourceType dailyEvaluation', async () => {
       const foal = await makeFoal(2, { bondScore: 60 });
       const reloaded = await reload(foal.id);
 
@@ -157,7 +157,7 @@ describe('INTEGRATION: foalTraitEvaluation impl module (Equoria-urqic.3)', () =>
       );
 
       const rows = await prisma.traitHistoryLog.findMany({ where: { horseId: foal.id } });
-      const daily = rows.filter(r => r.sourceType === 'daily_evaluation');
+      const daily = rows.filter(r => r.sourceType === 'dailyEvaluation');
       expect(daily.length).toBeGreaterThanOrEqual(1);
       expect(daily.some(r => r.traitName === 'resilient')).toBe(true);
 

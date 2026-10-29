@@ -37,7 +37,7 @@ const createMilestone = (
   type: MilestoneType,
   minAge: number,
   maxAge: number,
-  status: 'pending' | 'in_progress' | 'completed' = 'pending'
+  status: 'pending' | 'inProgress' | 'completed' = 'pending'
 ): Milestone => ({
   type,
   name: `${type} milestone`,
@@ -58,12 +58,12 @@ describe('calculateMilestoneProgress', () => {
   });
 
   it('should calculate progress within window', () => {
-    const milestone = createMilestone('curiosity_play', 8, 14);
+    const milestone = createMilestone('curiosityPlay', 8, 14);
     expect(calculateMilestoneProgress(milestone, 11)).toBe(50); // 3/6 days = 50%
   });
 
   it('should cap progress at 100%', () => {
-    const milestone = createMilestone('trust_handling', 15, 21);
+    const milestone = createMilestone('trustHandling', 15, 21);
     expect(calculateMilestoneProgress(milestone, 25)).toBe(100);
   });
 
@@ -84,29 +84,29 @@ describe('getMilestoneStatus', () => {
     expect(getMilestoneStatus(milestone, 5)).toBe('completed');
   });
 
-  it('should return in_progress when foal age within window', () => {
+  it('should return inProgress when foal age within window', () => {
     const milestone = createMilestone('socialization', 8, 14);
-    expect(getMilestoneStatus(milestone, 10)).toBe('in_progress');
+    expect(getMilestoneStatus(milestone, 10)).toBe('inProgress');
   });
 
   it('should return pending when foal age before window', () => {
-    const milestone = createMilestone('curiosity_play', 15, 21);
+    const milestone = createMilestone('curiosityPlay', 15, 21);
     expect(getMilestoneStatus(milestone, 10)).toBe('pending');
   });
 
   it('should return completed when foal age past window', () => {
-    const milestone = createMilestone('trust_handling', 15, 21);
+    const milestone = createMilestone('trustHandling', 15, 21);
     expect(getMilestoneStatus(milestone, 25)).toBe('completed');
   });
 
-  it('should handle age exactly at min (in_progress)', () => {
+  it('should handle age exactly at min (inProgress)', () => {
     const milestone = createMilestone('imprinting', 1, 7);
-    expect(getMilestoneStatus(milestone, 1)).toBe('in_progress');
+    expect(getMilestoneStatus(milestone, 1)).toBe('inProgress');
   });
 
-  it('should handle age exactly at max (in_progress)', () => {
+  it('should handle age exactly at max (inProgress)', () => {
     const milestone = createMilestone('imprinting', 1, 7);
-    expect(getMilestoneStatus(milestone, 7)).toBe('in_progress');
+    expect(getMilestoneStatus(milestone, 7)).toBe('inProgress');
   });
 });
 
@@ -117,7 +117,7 @@ describe('getDaysUntilMilestone', () => {
   });
 
   it('should return days until milestone starts', () => {
-    const milestone = createMilestone('curiosity_play', 15, 21);
+    const milestone = createMilestone('curiosityPlay', 15, 21);
     expect(getDaysUntilMilestone(milestone, 10)).toBe(5);
   });
 
@@ -136,8 +136,8 @@ describe('getCurrentMilestone', () => {
   const milestones = [
     createMilestone('imprinting', 1, 7),
     createMilestone('socialization', 8, 14),
-    createMilestone('curiosity_play', 15, 21),
-    createMilestone('trust_handling', 22, 28),
+    createMilestone('curiosityPlay', 15, 21),
+    createMilestone('trustHandling', 22, 28),
   ];
 
   it('should return current milestone when foal age within window', () => {
@@ -162,7 +162,7 @@ describe('getCurrentMilestone', () => {
 
   it('should return milestone when age at exact min', () => {
     const current = getCurrentMilestone(milestones, 15);
-    expect(current?.type).toBe('curiosity_play');
+    expect(current?.type).toBe('curiosityPlay');
   });
 
   it('should return milestone when age at exact max', () => {
@@ -180,8 +180,8 @@ describe('calculateDevelopmentProgress', () => {
     const milestones = [
       createMilestone('imprinting', 1, 7, 'completed'),
       createMilestone('socialization', 8, 14, 'completed'),
-      createMilestone('curiosity_play', 15, 21),
-      createMilestone('trust_handling', 22, 28),
+      createMilestone('curiosityPlay', 15, 21),
+      createMilestone('trustHandling', 22, 28),
     ];
     // 2/4 completed = 50%, foal age 30 is past all windows (no current milestone)
     expect(calculateDevelopmentProgress(milestones, 30)).toBe(50);
@@ -191,8 +191,8 @@ describe('calculateDevelopmentProgress', () => {
     const milestones = [
       createMilestone('imprinting', 1, 7, 'completed'),
       createMilestone('socialization', 8, 14), // In progress
-      createMilestone('curiosity_play', 15, 21),
-      createMilestone('trust_handling', 22, 28),
+      createMilestone('curiosityPlay', 15, 21),
+      createMilestone('trustHandling', 22, 28),
     ];
     // 1/4 completed (25%) + partial progress of current milestone (8-14, age 11 = 50% of 25% = 12.5%)
     // Total: 37% (rounded)
@@ -213,8 +213,8 @@ describe('calculateDevelopmentProgress', () => {
     const milestones = [
       createMilestone('imprinting', 1, 7, 'completed'),
       createMilestone('socialization', 8, 14, 'completed'),
-      createMilestone('curiosity_play', 15, 21, 'completed'),
-      createMilestone('trust_handling', 22, 28, 'completed'),
+      createMilestone('curiosityPlay', 15, 21, 'completed'),
+      createMilestone('trustHandling', 22, 28, 'completed'),
     ];
     expect(calculateDevelopmentProgress(milestones, 30)).toBe(100);
   });
@@ -332,16 +332,16 @@ describe('formatMilestoneName', () => {
     expect(formatMilestoneName('socialization')).toBe('Socialization');
   });
 
-  it('should format curiosity_play', () => {
-    expect(formatMilestoneName('curiosity_play')).toBe('Curiosity & Play');
+  it('should format curiosityPlay', () => {
+    expect(formatMilestoneName('curiosityPlay')).toBe('Curiosity & Play');
   });
 
-  it('should format trust_handling', () => {
-    expect(formatMilestoneName('trust_handling')).toBe('Trust & Handling');
+  it('should format trustHandling', () => {
+    expect(formatMilestoneName('trustHandling')).toBe('Trust & Handling');
   });
 
-  it('should format confidence_reactivity', () => {
-    expect(formatMilestoneName('confidence_reactivity')).toBe('Confidence & Reactivity');
+  it('should format confidenceReactivity', () => {
+    expect(formatMilestoneName('confidenceReactivity')).toBe('Confidence & Reactivity');
   });
 });
 
@@ -358,20 +358,20 @@ describe('getMilestoneDescription', () => {
     expect(desc).toContain('interaction');
   });
 
-  it('should return description for curiosity_play', () => {
-    const desc = getMilestoneDescription('curiosity_play');
+  it('should return description for curiosityPlay', () => {
+    const desc = getMilestoneDescription('curiosityPlay');
     expect(desc).toContain('Exploration');
     expect(desc).toContain('playful');
   });
 
-  it('should return description for trust_handling', () => {
-    const desc = getMilestoneDescription('trust_handling');
+  it('should return description for trustHandling', () => {
+    const desc = getMilestoneDescription('trustHandling');
     expect(desc).toContain('Human');
     expect(desc).toContain('trust');
   });
 
-  it('should return description for confidence_reactivity', () => {
-    const desc = getMilestoneDescription('confidence_reactivity');
+  it('should return description for confidenceReactivity', () => {
+    const desc = getMilestoneDescription('confidenceReactivity');
     expect(desc).toContain('temperament');
     expect(desc).toContain('confidence');
   });
@@ -391,19 +391,19 @@ describe('getEvaluationExplanation', () => {
   });
 
   it('should return Neutral explanation for neutral scores', () => {
-    const explanation = getEvaluationExplanation(1, 'curiosity_play', []);
+    const explanation = getEvaluationExplanation(1, 'curiosityPlay', []);
     expect(explanation).toContain('average');
     expect(explanation).toContain('Curiosity & Play');
   });
 
   it('should return Poor explanation for slightly negative scores', () => {
-    const explanation = getEvaluationExplanation(-2, 'trust_handling', []);
+    const explanation = getEvaluationExplanation(-2, 'trustHandling', []);
     expect(explanation).toContain('inconsistent');
     expect(explanation).toContain('Trust & Handling');
   });
 
   it('should return Bad explanation for very negative scores', () => {
-    const explanation = getEvaluationExplanation(-5, 'confidence_reactivity', []);
+    const explanation = getEvaluationExplanation(-5, 'confidenceReactivity', []);
     expect(explanation).toContain('insufficient');
     expect(explanation).toContain('Confidence & Reactivity');
   });

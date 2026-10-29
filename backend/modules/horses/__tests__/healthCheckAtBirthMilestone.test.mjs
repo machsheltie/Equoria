@@ -28,9 +28,9 @@ describe('MILESTONE_TYPES', () => {
   it('contains all five developmental milestone keys', () => {
     expect(MILESTONE_TYPES.IMPRINTING).toBe('imprinting');
     expect(MILESTONE_TYPES.SOCIALIZATION).toBe('socialization');
-    expect(MILESTONE_TYPES.CURIOSITY_PLAY).toBe('curiosity_play');
-    expect(MILESTONE_TYPES.TRUST_HANDLING).toBe('trust_handling');
-    expect(MILESTONE_TYPES.CONFIDENCE_REACTIVITY).toBe('confidence_reactivity');
+    expect(MILESTONE_TYPES.CURIOSITY_PLAY).toBe('curiosityPlay');
+    expect(MILESTONE_TYPES.TRUST_HANDLING).toBe('trustHandling');
+    expect(MILESTONE_TYPES.CONFIDENCE_REACTIVITY).toBe('confidenceReactivity');
   });
 });
 

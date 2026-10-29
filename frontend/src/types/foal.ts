@@ -17,14 +17,14 @@ import type { Horse } from './breeding';
 export type MilestoneType =
   | 'imprinting' // Day 1: Initial bonding
   | 'socialization' // Week 1 (Days 1-7): Social awareness
-  | 'curiosity_play' // Week 2 (Days 8-14): Exploration behavior
-  | 'trust_handling' // Week 3 (Days 15-21): Human interaction
-  | 'confidence_reactivity'; // Week 4 (Days 22-30): Final temperament formation
+  | 'curiosityPlay' // Week 2 (Days 8-14): Exploration behavior
+  | 'trustHandling' // Week 3 (Days 15-21): Human interaction
+  | 'confidenceReactivity'; // Week 4 (Days 22-30): Final temperament formation
 
 /**
  * Milestone status
  */
-export type MilestoneStatus = 'pending' | 'in_progress' | 'completed';
+export type MilestoneStatus = 'pending' | 'inProgress' | 'completed';
 
 /**
  * Milestone definition and status
@@ -184,7 +184,7 @@ export function getMilestoneStatus(milestone: Milestone, foalAge: number): Miles
   if (milestone.status === 'completed') return 'completed';
 
   if (foalAge >= milestone.ageWindow.min && foalAge <= milestone.ageWindow.max) {
-    return 'in_progress';
+    return 'inProgress';
   }
 
   if (foalAge < milestone.ageWindow.min) {
@@ -290,9 +290,9 @@ export function formatMilestoneName(milestoneType: MilestoneType): string {
   const names: Record<MilestoneType, string> = {
     imprinting: 'Imprinting',
     socialization: 'Socialization',
-    curiosity_play: 'Curiosity & Play',
-    trust_handling: 'Trust & Handling',
-    confidence_reactivity: 'Confidence & Reactivity',
+    curiosityPlay: 'Curiosity & Play',
+    trustHandling: 'Trust & Handling',
+    confidenceReactivity: 'Confidence & Reactivity',
   };
   return names[milestoneType] || milestoneType;
 }
@@ -304,9 +304,9 @@ export function getMilestoneDescription(milestoneType: MilestoneType): string {
   const descriptions: Record<MilestoneType, string> = {
     imprinting: 'The critical first day of bonding and trust formation',
     socialization: 'Social awareness and interaction with handlers',
-    curiosity_play: 'Exploration behavior and playful learning',
-    trust_handling: 'Human interaction and handling trust',
-    confidence_reactivity: 'Final temperament formation and confidence development',
+    curiosityPlay: 'Exploration behavior and playful learning',
+    trustHandling: 'Human interaction and handling trust',
+    confidenceReactivity: 'Final temperament formation and confidence development',
   };
   return descriptions[milestoneType] || '';
 }

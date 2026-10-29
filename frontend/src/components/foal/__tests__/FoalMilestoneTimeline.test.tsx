@@ -193,7 +193,7 @@ describe('FoalMilestoneTimeline Component', () => {
       description: 'Building trust and bonding',
       ageWindow: { min: 31, max: 90 },
       focus: 'Social development',
-      status: 'in_progress',
+      status: 'inProgress',
       requirements: [],
       rewards: { milestonePoints: 75, potentialTraits: [] },
     },

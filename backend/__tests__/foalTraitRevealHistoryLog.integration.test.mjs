@@ -8,7 +8,7 @@
  * path (CronJobService.logTraitRevelation, the exact method evaluateFoalTraits
  * calls) against the REAL database (no mocks) and asserts:
  *   1. One TraitHistoryLog row per revealed trait (positive + negative + hidden).
- *   2. sourceType reflects the daily-cron origin ('daily_evaluation').
+ *   2. sourceType reflects the daily-cron origin ('dailyEvaluation').
  *   3. bondScore / ageInDays are persisted.
  *   4. A run that reveals nothing writes no rows.
  *
@@ -81,7 +81,7 @@ describe('INTEGRATION: daily cron persists revealed traits to TraitHistoryLog (E
     );
   }
 
-  it('writes one TraitHistoryLog row per revealed trait with daily_evaluation source', async () => {
+  it('writes one TraitHistoryLog row per revealed trait with dailyEvaluation source', async () => {
     const foal = await makeFoal({ bondScore: 72 });
 
     await cronJobService.logTraitRevelation(
@@ -101,7 +101,7 @@ describe('INTEGRATION: daily cron persists revealed traits to TraitHistoryLog (E
     const names = rows.map(r => r.traitName).sort();
     expect(names).toEqual(['intelligent', 'nervous', 'resilient']);
     for (const row of rows) {
-      expect(row.sourceType).toBe('daily_evaluation');
+      expect(row.sourceType).toBe('dailyEvaluation');
       expect(row.bondScore).toBe(72);
       expect(row.isEpigenetic).toBe(true);
       // ageInDays is computed from dateOfBirth — a non-negative integer.

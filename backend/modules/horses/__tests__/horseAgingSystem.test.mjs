@@ -396,7 +396,7 @@ describe('checkForMilestones() — Equoria-bvddn.16 age-2/3 dead path removal', 
 
     const logs = await prisma.milestoneTraitLog.findMany({ where: { horseId: bvHorse.id } });
     expect(logs.length).toBeGreaterThanOrEqual(1);
-    expect(logs.some(l => l.milestoneType === 'curiosity_play')).toBe(true);
+    expect(logs.some(l => l.milestoneType === 'curiosityPlay')).toBe(true);
   });
 });
 
