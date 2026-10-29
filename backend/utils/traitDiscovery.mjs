@@ -22,6 +22,11 @@
  * activity names nothing produces since Equoria-fr2kg) and
  * checkEnrichmentDiscoveries were removed (owner ruling 2026-10-16, fr2kg
  * F14). Groom-driven trait discovery is unaffected.
+ *
+ * Equoria-qw4kp: each condition's revealableTraits list was removed. All nine
+ * names (loyal, trusting, calm, devoted, ...) were off the owner's 2026-10-27
+ * twenty-trait roster, nothing read the lists, and checkDiscoveryConditions
+ * never returned them.
  */
 
 import logger from './logger.mjs';
@@ -37,7 +42,6 @@ const DISCOVERY_CONDITIONS = {
     description: 'Strong bond formed',
     priority: 'high',
     category: 'bonding',
-    revealableTraits: ['loyal', 'trusting', 'calm'],
   },
 
   EXCELLENT_BOND: {
@@ -46,7 +50,6 @@ const DISCOVERY_CONDITIONS = {
     description: 'Exceptional bond achieved',
     priority: 'legendary',
     category: 'bonding',
-    revealableTraits: ['devoted', 'empathetic', 'intuitive'],
   },
 
   // Combined conditions
@@ -56,7 +59,6 @@ const DISCOVERY_CONDITIONS = {
     description: 'Perfect care conditions achieved',
     priority: 'legendary',
     category: 'milestones',
-    revealableTraits: ['exceptional', 'thriving', 'balanced'],
   },
 
   // Equoria-kqdde: MATURE_BOND (age 3+ with bond 70) and CONSISTENT_TRAINING

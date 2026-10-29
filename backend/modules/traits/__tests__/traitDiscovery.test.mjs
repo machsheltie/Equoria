@@ -71,6 +71,9 @@ describe('DISCOVERY_CONDITIONS — structure and synchronous condition branches'
       expect(typeof cond.condition).toBe('function');
       expect(typeof cond.description).toBe('string');
       expect(typeof cond.priority).toBe('string');
+      // Equoria-qw4kp: no revealable-trait list. Its names (loyal, trusting, calm,
+      // devoted ...) were all off the 2026-10-27 roster and nothing read them.
+      expect(cond).not.toHaveProperty('revealableTraits');
     }
   });
 

@@ -198,7 +198,7 @@ export async function getTraitDefinitions(req, res) {
   try {
     logger.info('[adminController] GET /api/admin/traits/definitions');
     // The 20-trait roster (owner ruling 2026-10-27, q117). Admin tooling may see
-    // rarity (null until the owner rules it); player routes never do (q112).
+    // the owner's ruled rarity (q134); player routes never do (q112).
     const definitions = traitRosterIds.map(getTraitMetadata);
     res.json({ success: true, data: definitions });
   } catch (error) {
