@@ -23,6 +23,8 @@
  *   - POST /ultra-rare-traits/groom/:id/assign-perks → Groom.rareTraitPerks
  *   - POST /personality-evolution/horse/:id/evolve   → Horse.temperament
  *   - POST /personality-evolution/batch-evolve       → Horse.temperament
+ *   - POST /personality-evolution/apply-effects      → nothing (a no-op stub
+ *     that answered 410 until the whole namespace went, Equoria-xix5n)
  *   - POST /milestones/evaluate-milestone            → MilestoneTraitLog and
  *     UltraRareTraitEvent rows, scored from a body-supplied bondScore/taskLog
  * They are gone: an authenticated owner with a valid CSRF pair gets the app's
@@ -185,6 +187,7 @@ describe('Player trait-write routes are removed (Equoria-gu8jk)', () => {
       () => '/api/v1/personality-evolution/batch-evolve',
       () => ({ entities: [{ entityId: foal.id, entityType: 'horse' }] }),
     ],
+    ['POST /personality-evolution/apply-effects', () => '/api/v1/personality-evolution/apply-effects', () => ({})],
     [
       'POST /milestones/evaluate-milestone',
       () => '/api/v1/milestones/evaluate-milestone',

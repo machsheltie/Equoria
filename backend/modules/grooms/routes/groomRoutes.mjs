@@ -293,9 +293,8 @@ router.get(
  * No caller to preserve: the frontend only read `bonusTraitMap`
  * (GroomBonusTraitPanel, since deleted unused, Equoria-1vep2), and no server code calls `assignBonusTraits`
  * except this route's controller. The real earned-bonus path
- * (`checkBonusEligibility` -> `traitAssignmentLogic.mjs`) applies
- * probability bonuses at trait-roll time and never writes `bonusTraitMap`;
- * it is untouched. `assignBonusTraits`/`updateGroomBonusTraits` are left in
+ * (`checkBonusEligibility` -> `traitAssignmentLogic.mjs`, the latter deleted
+ * unused in Equoria-xix5n) never wrote `bonusTraitMap`; it is untouched. `assignBonusTraits`/`updateGroomBonusTraits` are left in
  * place (service-level tests still exercise them directly) — removing dead
  * code is out of scope. GET /:id/bonus-traits (read-only, not part of the
  * exploit) was left too; it went later as a duplicate lookup (Equoria-a7f1p,

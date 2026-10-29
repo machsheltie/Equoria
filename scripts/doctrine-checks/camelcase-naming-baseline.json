@@ -514,7 +514,6 @@
   "backend/modules/horses/__tests__/horseXpAwardServerAuthoritative.integration.test.mjs": 8,
   "backend/modules/horses/__tests__/horseXpSystem.test.mjs": 6,
   "backend/modules/horses/__tests__/inFoalFeedConservation.test.mjs": 5,
-  "backend/modules/horses/__tests__/personalityEvolutionController.integration.test.mjs": 2,
   "backend/modules/horses/__tests__/personalityModifierEngine.test.mjs": 31,
   "backend/modules/horses/__tests__/phenotypeCalculationService.test.mjs": 6,
   "backend/modules/horses/__tests__/populateBreedsFromSql.test.mjs": 8,

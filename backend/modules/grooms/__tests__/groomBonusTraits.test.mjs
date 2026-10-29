@@ -7,10 +7,11 @@
  *
  * Features tested:
  * - Groom bonus trait assignment and validation
- * - Probability modifier calculations
- * - Integration with milestone evaluation system
- * - Business rules enforcement (bond > 60, 75% window coverage)
  * - API endpoints for bonus trait management
+ *
+ * Equoria-xix5n: the probability-modifier cases called
+ * utils/traitAssignmentLogic.mjs, which no production code reached; it was
+ * deleted with the other dead trait modules and so were those cases.
  *
  * Testing approach: Real database operations with zero mocking to validate actual business logic
  */
@@ -211,126 +212,6 @@ describe('Groom Bonus Traits System', () => {
         noble: 0.1,
         quick_learner: 0.15,
       });
-    });
-  });
-
-  describe('Trait Assignment Logic Integration', () => {
-    it('should apply bonus probability when conditions are met', async () => {
-      // Create groom assignment with high bond and good coverage
-      // Horse is 30 days old, milestone window is 30 days, need 75% coverage = 22.5 days
-      await prisma.groomAssignment.create({
-        data: {
-          groomId: testGroom.id,
-          foalId: testHorse.id,
-          userId: testUser.id,
-          startDate: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000), // 28 days ago
-          endDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago (26 days coverage > 22.5 needed)
-        },
-      });
-
-      // Create groom interactions to establish bond > 60
-      // Horse is 30 days old, so milestone window is 30 days
-      // Create interactions within the last 25 days to ensure they're in the window
-      for (let i = 0; i < 10; i++) {
-        await prisma.groomInteraction.create({
-          data: {
-            groomId: testGroom.id,
-            foalId: testHorse.id, // GroomInteraction uses foalId
-            interactionType: 'enrichment',
-            duration: 30,
-            bondingChange: 8, // GroomInteraction uses bondingChange
-            quality: 'excellent', // GroomInteraction uses quality
-            cost: 25.0,
-            notes: `Test interaction ${i + 1}`,
-            timestamp: new Date(Date.now() - (26 - i * 2) * 24 * 60 * 60 * 1000), // Spread over 26 days, within assignment period
-          },
-        });
-      }
-
-      // Exercises the real trait-assignment probability logic.
-      const { calculateTraitProbabilityWithBonus } = await import('../../../utils/traitAssignmentLogic.mjs');
-
-      const baseProbability = 0.1; // 10% base chance for 'sensitive' trait
-      const result = await calculateTraitProbabilityWithBonus(testHorse.id, 'sensitive', baseProbability, testGroom.id);
-
-      expect(result.finalProbability).toBeCloseTo(0.3, 5); // 10% + 20% bonus (handle floating point precision)
-      expect(result.bonusApplied).toBe(true);
-      expect(result.bonusAmount).toBe(0.2);
-    });
-
-    it('should not apply bonus when bond is too low', async () => {
-      // Create groom assignment but with low bond
-      await prisma.groomAssignment.create({
-        data: {
-          groomId: testGroom.id,
-          foalId: testHorse.id,
-          userId: testUser.id,
-          startDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
-          endDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-        },
-      });
-
-      // Create minimal interactions (bond < 60)
-      await prisma.groomInteraction.create({
-        data: {
-          groomId: testGroom.id,
-          foalId: testHorse.id, // GroomInteraction uses foalId
-          interactionType: 'grooming',
-          duration: 15,
-          bondingChange: 3, // GroomInteraction uses bondingChange
-          quality: 'fair', // GroomInteraction uses quality
-          cost: 25.0,
-          timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-        },
-      });
-
-      const { calculateTraitProbabilityWithBonus } = await import('../../../utils/traitAssignmentLogic.mjs');
-
-      const baseProbability = 0.1;
-      const result = await calculateTraitProbabilityWithBonus(testHorse.id, 'sensitive', baseProbability, testGroom.id);
-
-      expect(result.finalProbability).toBe(0.1); // No bonus applied
-      expect(result.bonusApplied).toBe(false);
-      expect(result.reason).toBe('Bond score too low');
-    });
-
-    it('should not apply bonus when coverage is insufficient', async () => {
-      // Create groom assignment with insufficient coverage (< 75%)
-      await prisma.groomAssignment.create({
-        data: {
-          groomId: testGroom.id,
-          foalId: testHorse.id,
-          userId: testUser.id,
-          startDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // Only 10 days
-          endDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-        },
-      });
-
-      // Create enough interactions to have good bond score but insufficient coverage
-      for (let i = 0; i < 15; i++) {
-        await prisma.groomInteraction.create({
-          data: {
-            groomId: testGroom.id,
-            foalId: testHorse.id,
-            interactionType: 'enrichment',
-            duration: 30,
-            bondingChange: 8, // High bonding to ensure bond > 60
-            quality: 'excellent',
-            cost: 25.0,
-            notes: `High bond interaction ${i + 1}`,
-            timestamp: new Date(Date.now() - (8 - i * 0.5) * 24 * 60 * 60 * 1000), // Spread over short period
-          },
-        });
-      }
-
-      const { calculateTraitProbabilityWithBonus } = await import('../../../utils/traitAssignmentLogic.mjs');
-
-      const baseProbability = 0.1;
-      const result = await calculateTraitProbabilityWithBonus(testHorse.id, 'sensitive', baseProbability, testGroom.id);
-
-      expect(result.finalProbability).toBe(0.1); // No bonus applied
-      expect(result.bonusApplied).toBe(false);
-      expect(result.reason).toBe('Insufficient assignment coverage');
     });
   });
 

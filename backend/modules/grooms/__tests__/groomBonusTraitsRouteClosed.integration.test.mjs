@@ -16,9 +16,9 @@
  * render GroomBonusTraitPanel; it never PUTs this route) and no server-side
  * caller exists either — `assignBonusTraits` is invoked only from
  * `groomBonusTraitsController.updateGroomBonusTraits`, i.e. only from this
- * route. The real earned-bonus path (`checkBonusEligibility`, consumed by
- * `traitAssignmentLogic.mjs`) computes probability bonuses at trait-roll time
- * and never writes `bonusTraitMap`. Per the owner's default ruling
+ * route. The earned-bonus path (`checkBonusEligibility`, once consumed by
+ * `traitAssignmentLogic.mjs`, deleted unused in Equoria-xix5n) never wrote
+ * `bonusTraitMap`. Per the owner's default ruling
  * ("Were players ever meant to author a groom's bonusTraitMap? ... no —
  * close the route"), this closes PUT outright, mirroring the horse-XP
  * (Equoria-6p398.3) and user-XP (Equoria-bvddn.1) closed-route precedent.

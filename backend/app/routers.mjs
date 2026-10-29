@@ -69,7 +69,6 @@ import dynamicCompatibilityRoutes from '../modules/grooms/routes/dynamicCompatib
 import leaderboardRoutes from '../modules/leaderboards/routes/leaderboardRoutes.mjs';
 // Equoria-q4uem.4 (WS4 S1): the former labs module was dissolved into traits,
 // horses and admin.
-import personalityEvolutionRoutes from '../modules/horses/routes/personalityEvolutionRoutes.mjs';
 import apiOptimizationRoutes from '../modules/admin/routes/apiOptimizationRoutes.mjs';
 import memoryManagementRoutes from '../modules/admin/routes/memoryManagementRoutes.mjs';
 import documentationRoutes from '../modules/docs/routes/documentationRoutes.mjs';
@@ -290,7 +289,6 @@ export function buildRouters() {
     requireStaffCheckin('admin'),
     dynamicCompatibilityRoutes,
   );
-  authRouter.use('/personality-evolution', personalityEvolutionRoutes);
 
   // ADMIN ROUTES (Admin role required)
   // Equoria-wbt8l: the News Desk; per-type rules live in the news module.

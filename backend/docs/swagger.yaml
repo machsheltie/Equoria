@@ -2025,21 +2025,6 @@ paths:
       responses:
         '200': { description: 'Compatibility score' }
 
-  /personality-evolution:
-    post:
-      tags: [Labs]
-      summary: '[EXPERIMENTAL] Trigger personality evolution evaluation'
-      description: 'Non-SLO endpoint. Response shape subject to change without notice.'
-      security: [{ bearerAuth: [] }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        '200': { description: 'Personality evolution result' }
-
 components:
   securitySchemes:
     bearerAuth:
