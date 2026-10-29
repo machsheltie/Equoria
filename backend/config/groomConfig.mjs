@@ -37,7 +37,8 @@
  * count PLUS an authoritative post-lock in-tx re-count (Equoria-n4m5j / hduc5).
  * The direct hire it once shared with was retired by Equoria-bvddn.7.
  */
-export const MAX_GROOMS_PER_USER = 10;
+export const maxGroomsPerUser = 10;
+export const MAX_GROOMS_PER_USER = maxGroomsPerUser;
 
 // camelCase spellings for new consumers (Equoria-pjvp8 ratchet); GROOM_CONFIG
 // below carries the same values.

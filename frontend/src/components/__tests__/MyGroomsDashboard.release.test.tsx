@@ -18,7 +18,7 @@ import { server } from '@/test/msw/server';
 import MyGroomsDashboard from '../MyGroomsDashboard';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const USER_ID = 1;
+const userId = 1;
 
 const groom = {
   id: 10,
@@ -35,7 +35,7 @@ const groom = {
 function renderDashboard(limit: { rosterCap: number; activeGrooms: number }) {
   let released: number | null = null;
   server.use(
-    http.get(`${base}/api/v1/grooms/user/${USER_ID}`, () =>
+    http.get(`${base}/api/v1/grooms/user/${userId}`, () =>
       HttpResponse.json({ success: true, grooms: released === null ? [groom] : [] })
     ),
     http.get(`${base}/api/v1/grooms/roster-cap`, () =>
@@ -55,7 +55,7 @@ function renderDashboard(limit: { rosterCap: number; activeGrooms: number }) {
   render(
     <QueryClientProvider client={qc}>
       <BrowserRouter>
-        <MyGroomsDashboard userId={USER_ID} />
+        <MyGroomsDashboard userId={userId} />
       </BrowserRouter>
     </QueryClientProvider>
   );

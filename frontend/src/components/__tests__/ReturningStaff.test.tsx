@@ -98,7 +98,7 @@ const poolGroom = {
 const riderMarket: RiderMarketplaceData = {
   riders: [
     {
-      marketplaceId: 'mkt_rider_new',
+      marketplaceId: 'mktRiderNew',
       firstName: 'Ada',
       lastName: 'Brooks',
       skillLevel: 'rookie',
@@ -119,7 +119,7 @@ const riderMarket: RiderMarketplaceData = {
 const groomMarket: MarketplaceData = {
   grooms: [
     {
-      marketplaceId: 'mkt_groom_new',
+      marketplaceId: 'mktGroomNew',
       firstName: 'Zed',
       lastName: 'Fisher',
       specialty: 'general',
@@ -171,7 +171,7 @@ describe('riders back for hire, in the rider hire list (Equoria-266h7, q284)', (
 
     const grid = await screen.findByTestId('rider-grid');
     expect(await within(grid).findByTestId('returning-rider-41')).toBeInTheDocument();
-    expect(within(grid).getByTestId('rider-card-mkt_rider_new')).toBeInTheDocument();
+    expect(within(grid).getByTestId('rider-card-mktRiderNew')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /back for hire/i })).not.toBeInTheDocument();
   });
 
@@ -190,7 +190,7 @@ describe('riders back for hire, in the rider hire list (Equoria-266h7, q284)', (
 
     await user.selectOptions(screen.getByTestId('star-level-filter'), 'novice');
     expect(within(grid).getByTestId('returning-rider-41')).toBeInTheDocument();
-    expect(within(grid).queryByTestId('rider-card-mkt_rider_new')).not.toBeInTheDocument();
+    expect(within(grid).queryByTestId('rider-card-mktRiderNew')).not.toBeInTheDocument();
   });
 
   it('shows name, stars, personality and only the revealed items, with the weekly price on Hire', async () => {
@@ -244,7 +244,7 @@ describe('riders back for hire, in the rider hire list (Equoria-266h7, q284)', (
     server.use(http.get(riderPoolUrl, () => riderPage([])));
     renderWith(riderList);
 
-    expect(await screen.findByTestId('rider-card-mkt_rider_new')).toBeInTheDocument();
+    expect(await screen.findByTestId('rider-card-mktRiderNew')).toBeInTheDocument();
     expect(screen.queryByTestId('rider-pool-error')).not.toBeInTheDocument();
   });
 
@@ -261,7 +261,7 @@ describe('riders back for hire, in the rider hire list (Equoria-266h7, q284)', (
 
     const failure = await screen.findByTestId('rider-pool-error');
     expect(failure).toHaveTextContent("The riders back for hire didn't load.");
-    expect(screen.getByTestId('rider-card-mkt_rider_new')).toBeInTheDocument();
+    expect(screen.getByTestId('rider-card-mktRiderNew')).toBeInTheDocument();
     expect(screen.queryByText(/RAW-SERVER-TEXT/)).not.toBeInTheDocument();
 
     await user.click(within(failure).getByRole('button', { name: /try again/i }));
@@ -363,7 +363,7 @@ describe('grooms back for hire, in the groom hire list (Equoria-266h7, q284)', (
 
     const grid = await screen.findByTestId('groom-grid');
     const card = await within(grid).findByTestId('returning-groom-77');
-    expect(within(grid).getByTestId('groom-card-mkt_groom_new')).toBeInTheDocument();
+    expect(within(grid).getByTestId('groom-card-mktGroomNew')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /back for hire/i })).not.toBeInTheDocument();
 
     expect(within(card).getByRole('heading', { name: 'Maeve Corran' })).toBeInTheDocument();
@@ -386,7 +386,7 @@ describe('grooms back for hire, in the groom hire list (Equoria-266h7, q284)', (
     await screen.findByTestId('returning-groom-77');
     await user.selectOptions(screen.getByTestId('specialty-filter'), 'general');
     expect(screen.queryByTestId('returning-groom-77')).not.toBeInTheDocument();
-    expect(screen.getByTestId('groom-card-mkt_groom_new')).toBeInTheDocument();
+    expect(screen.getByTestId('groom-card-mktGroomNew')).toBeInTheDocument();
   });
 
   it('one click hires the groom by id', async () => {

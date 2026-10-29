@@ -70,7 +70,7 @@ import {
  * Why an engagement ended. Written by the game only — no request reaches any of
  * these functions directly.
  */
-export const ENGAGEMENT_END_REASONS = {
+export const engagementEndReasons = Object.freeze({
   /** A full pay week went unpaid; the groom returned to the hire pool. */
   FEE_UNPAID: 'feeUnpaid',
   /** The groom aged out (groomRetirementService.processRetirement). */
@@ -80,7 +80,10 @@ export const ENGAGEMENT_END_REASONS = {
    * groom returned to the hire pool like any other leaver.
    */
   RELEASED: 'released',
-};
+});
+
+/** The same reasons under the older name, for existing callers. */
+export const ENGAGEMENT_END_REASONS = engagementEndReasons;
 
 /** The player is told their groom cannot work until this week's fee is paid. */
 export const GROOM_FEE_UNPAID_NOTIFICATION_TYPE = 'groomFeeUnpaid';

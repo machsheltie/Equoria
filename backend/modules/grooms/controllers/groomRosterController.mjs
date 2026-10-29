@@ -27,8 +27,8 @@ import {
   ensureGrowthProfileTx,
   revealedGrowthView,
 } from '../../../services/staffGrowthService.mjs';
-import { ENGAGEMENT_END_REASONS, releaseGroomTx } from '../services/groomEngagementService.mjs';
-import { MAX_GROOMS_PER_USER } from '../../../config/groomConfig.mjs';
+import { engagementEndReasons, releaseGroomTx } from '../services/groomEngagementService.mjs';
+import { maxGroomsPerUser } from '../../../config/groomConfig.mjs';
 
 const GROOM_LIST_SELECT = {
   id: true,
@@ -254,7 +254,7 @@ export async function getGroomRosterLimit(req, res) {
     res.status(200).json({
       success: true,
       message: 'Groom roster limit retrieved',
-      data: { rosterCap: MAX_GROOMS_PER_USER, activeGrooms },
+      data: { rosterCap: maxGroomsPerUser, activeGrooms },
     });
   } catch (error) {
     logger.error(`[groomController.getGroomRosterLimit] Error: ${error.message}`);
@@ -290,7 +290,7 @@ export async function releaseGroom(req, res) {
         await releaseGroomTx(tx, {
           groomId,
           userId,
-          reason: ENGAGEMENT_END_REASONS.RELEASED,
+          reason: engagementEndReasons.RELEASED,
           notify: false,
         });
       }),
