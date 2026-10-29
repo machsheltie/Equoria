@@ -476,7 +476,7 @@
   "backend/modules/horses/__tests__/foalingJob.test.mjs": 2,
   "backend/modules/horses/__tests__/foalingNotification.sentinel.test.mjs": 2,
   "backend/modules/horses/__tests__/gaitBreedingInheritance.test.mjs": 7,
-  "backend/modules/horses/__tests__/gaitRoutesHttp.integration.test.mjs": 9,
+  "backend/modules/horses/__tests__/gaitRoutesHttp.integration.test.mjs": 8,
   "backend/modules/horses/__tests__/gaitScoreGeneration.test.mjs": 9,
   "backend/modules/horses/__tests__/gaitService.test.mjs": 12,
   "backend/modules/horses/__tests__/genotypeGenerationService.test.mjs": 21,

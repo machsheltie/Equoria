@@ -3,27 +3,27 @@
  *
  * Every horse has a temperament (NOT NULL), and the ridden scorer refuses one
  * outside the owner's matrix. A scoring test that isolates another term gives
- * its horse a temperament worth 0% in the show's discipline, the first such
- * entry in the matrix row. A discipline outside the 24 has no row; any
- * temperament is fine there, so this returns 'Calm'.
+ * its horse a temperament worth 0% in the show's discipline. A discipline
+ * outside the 24 has no matrix row; any temperament is fine there, so this
+ * returns 'Calm'.
  */
 
-import { TEMPERAMENT_MATRIX } from '../../modules/competition/rules/disciplineRules.mjs';
+import { temperamentPercent } from '../../modules/competition/rules/disciplineRules.mjs';
+import { horseTemperamentValues } from '../../constants/schema.mjs';
 
 /**
  * @param {string} discipline
  * @returns {string} a temperament scoring 0% in that discipline
  */
 export function neutralTemperament(discipline) {
-  const row = TEMPERAMENT_MATRIX[discipline];
-  if (!row) {
+  if (horseTemperamentValues.every(t => temperamentPercent(discipline, t) === null)) {
     return 'Calm';
   }
-  const entry = Object.entries(row).find(([, effect]) => effect === 0);
-  if (!entry) {
+  const neutral = horseTemperamentValues.find(t => temperamentPercent(discipline, t) === 0);
+  if (!neutral) {
     throw new Error(`neutralTemperament: the ${discipline} row has no 0% temperament`);
   }
-  return entry[0];
+  return neutral;
 }
 
 export default neutralTemperament;
