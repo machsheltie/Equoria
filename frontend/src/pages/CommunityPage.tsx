@@ -176,9 +176,12 @@ const CommunityPageContent: React.FC = () => {
   const activityData = activityQuery.data ?? [];
   const activities: Activity[] = activityData.map((act) => {
     let type = ActivityType.ACHIEVEMENT;
-    if (act.type === 'FORUM_POST') type = ActivityType.ACHIEVEMENT;
-    if (act.type === 'CLUB_CREATED') type = ActivityType.ACHIEVEMENT;
-    if (act.type === 'COMPETITION_WIN') type = ActivityType.COMPETITION;
+    // forumPost and clubCreated read as achievements (the default). The old
+    // server's spelling covers the minutes a deploy serves this client against
+    // the old server (Equoria-pjvp8 phase 6 removes it).
+    if (act.type === 'competitionWin' || act.type === 'COMPETITION_WIN') {
+      type = ActivityType.COMPETITION;
+    }
 
     return {
       id: String(act.id),

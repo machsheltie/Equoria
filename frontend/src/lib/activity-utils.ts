@@ -16,7 +16,7 @@ export enum ActivityType {
   COMPETITION = 'competition',
   PURCHASE = 'purchase',
   ACHIEVEMENT = 'achievement',
-  LEVEL_UP = 'level_up',
+  LEVEL_UP = 'levelUp',
   SALE = 'sale',
 }
 
@@ -246,7 +246,7 @@ export function getActivityDescription(activity: Activity): string {
       if (newLevel) {
         return `Reached level ${newLevel}`;
       }
-      return 'Completed level_up activity';
+      return 'Completed level up activity';
     }
 
     case ActivityType.SALE: {

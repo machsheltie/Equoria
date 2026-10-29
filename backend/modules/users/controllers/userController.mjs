@@ -174,7 +174,7 @@ export const getUserActivity = async (req, res, next) => {
     const activities = xpEvents.map(event => ({
       id: event.id,
       userId: event.userId,
-      type: 'XP_GAIN',
+      type: 'xpGain',
       description: event.reason,
       timestamp: event.timestamp,
       metadata: { amount: event.amount },
@@ -224,21 +224,21 @@ export const getCommunityActivity = async (req, res, next) => {
     const activities = [
       ...threads.map(t => ({
         id: `thread-${t.id}`,
-        type: 'FORUM_POST',
+        type: 'forumPost',
         description: `${t.author.username} started a new thread: "${t.title}"`,
         timestamp: t.createdAt,
         metadata: { threadId: t.id, section: t.section },
       })),
       ...clubs.map(c => ({
         id: `club-${c.id}`,
-        type: 'CLUB_CREATED',
+        type: 'clubCreated',
         description: `New club formed: ${c.name}`,
         timestamp: c.createdAt,
         metadata: { clubId: c.id, type: c.type },
       })),
       ...wins.map(w => ({
         id: `win-${w.id}`,
-        type: 'COMPETITION_WIN',
+        type: 'competitionWin',
         description: `${w.horse.user?.username || 'Someone'}'s horse ${w.horse.name} won the ${w.showName}!`,
         timestamp: w.runDate,
         metadata: { horseId: w.horseId, score: w.score },

@@ -44,7 +44,7 @@ describe('activity-utils', () => {
     });
 
     it('should have LEVEL_UP type', () => {
-      expect(ActivityType.LEVEL_UP).toBe('level_up');
+      expect(ActivityType.LEVEL_UP).toBe('levelUp');
     });
 
     it('should have SALE type', () => {
@@ -279,6 +279,17 @@ describe('activity-utils', () => {
         data: { newLevel: 10 },
       };
       expect(getActivityDescription(activity)).toBe('Reached level 10');
+    });
+
+    // Players never see code names (owner ruling 2026-10-23).
+    it('says "level up" in words when a LEVEL_UP has no new level', () => {
+      const activity: Activity = {
+        id: '6b',
+        type: ActivityType.LEVEL_UP,
+        timestamp: new Date(),
+        data: { horseName: 'Storm' },
+      };
+      expect(getActivityDescription(activity)).toBe('Completed level up activity');
     });
 
     it('should generate description for SALE', () => {

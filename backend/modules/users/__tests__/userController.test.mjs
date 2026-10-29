@@ -393,7 +393,7 @@ describe('GET /api/v1/users/:id/activity', () => {
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 
-  it('includes XP_GAIN events when xpEvents exist', async () => {
+  it('includes xpGain events when xpEvents exist', async () => {
     // Seed an xpEvent row directly
     const event = await prisma.xpEvent.create({
       data: {
@@ -412,7 +412,7 @@ describe('GET /api/v1/users/:id/activity', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.length).toBeGreaterThan(0);
-    const xpEvent = res.body.data.find(e => e.type === 'XP_GAIN');
+    const xpEvent = res.body.data.find(e => e.type === 'xpGain');
     expect(xpEvent).toBeDefined();
     expect(xpEvent.metadata).toHaveProperty('amount');
   });
