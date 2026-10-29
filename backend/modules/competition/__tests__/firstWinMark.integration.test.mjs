@@ -28,6 +28,8 @@ let showOld;
 let showMid;
 let showNew;
 
+let ownerId;
+
 const seed = (horseId, show, placement, runDate, viewedAt = null) =>
   prisma.competitionResult.create({
     data: {
@@ -41,6 +43,8 @@ const seed = (horseId, show, placement, runDate, viewedAt = null) =>
       prizeWon: 100,
       horsePointsAwarded: placement === 1 ? 10 : 5,
       viewedAt,
+      // Equoria-r9q06 (owner ruling q256): settlement records the entrant; here the owner entered.
+      entrantUserId: ownerId,
     },
   });
 
@@ -51,6 +55,7 @@ beforeAll(async () => {
     email: `${SUITE}-u-${tag}@example.com`,
   });
   token = created.token;
+  ownerId = created.user.id;
   horseA = await createTestHorse({ name: `${SUITE}-A-${tag}`, userId: created.user.id });
   horseB = await createTestHorse({ name: `${SUITE}-B-${tag}`, userId: created.user.id });
   showOld = await createTestShow({ name: `${SUITE}-Old-${tag}`, discipline: 'Dressage' });

@@ -87,6 +87,8 @@ describe('🎯 INTEGRATION: /progress returns real Game-Statistics fields (Equor
         horseId: plain.id,
         showId: show1.id,
         prizeWon: 500,
+        // Equoria-r9q06 (owner ruling q256): settlement records the entrant; here the owner entered.
+        entrantUserId: user.id,
       },
     });
     const r2 = await prisma.competitionResult.create({
@@ -99,6 +101,8 @@ describe('🎯 INTEGRATION: /progress returns real Game-Statistics fields (Equor
         horseId: plain.id,
         showId: show2.id,
         prizeWon: 0,
+        // Equoria-r9q06 (owner ruling q256): settlement records the entrant; here the owner entered.
+        entrantUserId: user.id,
       },
     });
     createdResultIds.push(r1.id, r2.id);
