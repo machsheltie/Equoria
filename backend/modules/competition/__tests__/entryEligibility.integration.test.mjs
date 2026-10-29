@@ -223,15 +223,8 @@ describe.each(PATHS)('%s applies the entry rules', (_label, enter) => {
       'gaitingRequired',
       'Gaited shows require a horse with gaiting ability',
     );
-    // A pre-ruling row with no gaits recorded at all (Equoria-576c0.5: a legacy NULL plant).
-    const unrecorded = await makeHorse({ breedId: gaitedBreed.id, gaitScores: null });
-    await expectRefused(
-      show.id,
-      unrecorded.id,
-      400,
-      'gaitingRequired',
-      'Gaited shows require a horse with gaiting ability',
-    );
+    // (Old contract: a gaited-breed horse with no gaits recorded at all was refused
+    // too; gaitScores is NOT NULL now, Equoria-576c0.5, so no such horse exists.)
     const gaited = await makeHorse({
       breedId: gaitedBreed.id,
       gaitScores: { walk: 60, trot: 60, canter: 60, gallop: 60, gaiting: [{ name: 'Rack', score: 70 }] },
