@@ -262,24 +262,24 @@ export async function checkConformationEntryInTx(tx, { horseId, groomId, userId 
   const locked = await tx.$queryRaw`
     SELECT "id" FROM "grooms" WHERE "id" = ${groomId} AND "userId" = ${userId} FOR UPDATE`;
   if (locked.length !== 1) {
-    throw new EntryRefusalError('GROOM_NOT_ON_STAFF');
+    throw new EntryRefusalError('groomNotOnStaff');
   }
   const groom = await tx.groom.findUnique({ where: { id: groomId } });
   const work = checkGroomMayWork(groom);
   if (!work.allowed) {
-    throw new EntryRefusalError('GROOM_CANNOT_WORK', work.reason);
+    throw new EntryRefusalError('groomCannotWork', work.reason);
   }
 
   const horse = await tx.horse.findUnique({ where: { id: horseId } });
   if (hasBadHealth(horse)) {
     throw new EntryRefusalError(
-      'CONFORMATION_INELIGIBLE',
+      'conformationIneligible',
       badHealthMessage(horse.name, 'enter competitions'),
     );
   }
   const result = await validateConformationEntry(horse, groom, userId, tx);
   if (!result.valid) {
-    throw new EntryRefusalError('CONFORMATION_INELIGIBLE', undefined, result.errors);
+    throw new EntryRefusalError('conformationIneligible', undefined, result.errors);
   }
   return {
     groomId: groom.id,

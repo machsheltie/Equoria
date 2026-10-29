@@ -142,7 +142,7 @@ async function enterAll(horse, disciplines) {
 
 function expectTypeLimit(res, activeTypes) {
   expect(res.status).toBe(400);
-  expect(res.body.code).toBe('DISCIPLINE_TYPE_LIMIT');
+  expect(res.body.code).toBe('disciplineTypeLimit');
   for (const t of activeTypes) {
     expect(res.body.message).toContain(t);
   }
@@ -203,7 +203,7 @@ describe('at most 3 discipline types active at once (B10, C13)', () => {
       userId: user.id,
     });
     await expect(attempt).rejects.toBeInstanceOf(EntryRefusalError);
-    await expect(attempt).rejects.toMatchObject({ code: 'DISCIPLINE_TYPE_LIMIT' });
+    await expect(attempt).rejects.toMatchObject({ code: 'disciplineTypeLimit' });
     expect(await prisma.showEntry.count({ where: { showId: conformation.id } })).toBe(0);
   });
 
@@ -221,7 +221,7 @@ describe('at most 3 discipline types active at once (B10, C13)', () => {
 
     const statuses = results.map(r => r.status).sort();
     expect(statuses).toEqual([201, 400]);
-    expect(results.find(r => r.status === 400).body.code).toBe('DISCIPLINE_TYPE_LIMIT');
+    expect(results.find(r => r.status === 400).body.code).toBe('disciplineTypeLimit');
     const entered = await prisma.showEntry.count({
       where: { horseId: horse.id, showId: { in: [third.id, fourth.id] } },
     });
@@ -239,7 +239,7 @@ describe('undated ridden shows (B10 review)', () => {
     for (const res of [await enter(undated.id, horse.id), await enterViaCompetition(undated.id, horse.id)]) {
       expect({ status: res.status, code: res.body.code, message: res.body.message }).toEqual({
         status: 409,
-        code: 'SHOW_UNDATED',
+        code: 'showUndated',
         message: 'This show has no closing date and is not taking entries',
       });
     }

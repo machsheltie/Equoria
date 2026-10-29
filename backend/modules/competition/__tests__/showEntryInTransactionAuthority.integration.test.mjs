@@ -197,7 +197,7 @@ describe('entry rules are decided inside the entry transaction (Equoria-mwjst)',
     await prisma.horse.update({ where: { id: horse.id }, data: { userId: buyer.id } });
 
     await expect(enterInTx({ userId: seller.id, horse, groom, show })).rejects.toMatchObject({
-      code: 'HORSE_NOT_FOUND',
+      code: 'horseNotFound',
       status: 404,
     });
     await expectNoCharge(seller.id, show, before);
@@ -219,7 +219,7 @@ describe('entry rules are decided inside the entry transaction (Equoria-mwjst)',
       ]);
 
     await expect(enterInTx({ userId: user.id, horse, groom, show, beforeRules: release })).rejects.toMatchObject({
-      code: 'GROOM_NOT_ON_STAFF',
+      code: 'groomNotOnStaff',
     });
     await expectNoCharge(user.id, show, before);
   });
@@ -233,7 +233,7 @@ describe('entry rules are decided inside the entry transaction (Equoria-mwjst)',
     const markUnpaid = () => prisma.groom.update({ where: { id: groom.id }, data: { feeUnpaidSince: new Date() } });
 
     await expect(enterInTx({ userId: user.id, horse, groom, show, beforeRules: markUnpaid })).rejects.toMatchObject({
-      code: 'GROOM_CANNOT_WORK',
+      code: 'groomCannotWork',
     });
     await expectNoCharge(user.id, show, before);
   });
@@ -248,7 +248,7 @@ describe('entry rules are decided inside the entry transaction (Equoria-mwjst)',
     const res = await enterHttp(token, horse, groom, show);
 
     expect(res.status).toBe(400);
-    expect(res.body.code).toBe('GROOM_CANNOT_WORK');
+    expect(res.body.code).toBe('groomCannotWork');
     await expectNoCharge(user.id, show, before);
   });
 });

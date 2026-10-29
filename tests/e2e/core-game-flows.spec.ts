@@ -254,7 +254,7 @@ test.describe('AC5: Competition Entry', () => {
     // Equoria-0vhop (item 2) / Equoria-g3n8c review: this flow used to run on
     // the shared global-setup account. Its ShowEntry and the hired rider's
     // weekly fee persisted, so a retry (or a later local run) met
-    // ALREADY_ENTERED, a full rider roster, and a drained, polluted ledger.
+    // alreadyEntered, a full rider roster, and a drained, polluted ledger.
     // It now runs as its own disposable player (fixtures/seededPlayer.ts):
     // every attempt gets a fresh starter horse, nothing leaks into the shared
     // account, and no cleanup is needed. The assertions are unchanged.

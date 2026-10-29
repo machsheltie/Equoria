@@ -170,37 +170,37 @@ describe.each(PATHS)('%s applies the entry rules', (_label, enter) => {
   it('refuses a horse under 3', async () => {
     const show = await makeShow();
     const horse = await makeHorse({ years: 2 });
-    await expectRefused(show.id, horse.id, 400, 'AGE_TOO_YOUNG', 'Horse must be at least 3 years old to compete');
+    await expectRefused(show.id, horse.id, 400, 'ageTooYoung', 'Horse must be at least 3 years old to compete');
   });
 
   it('refuses a horse over 20', async () => {
     const show = await makeShow();
     const horse = await makeHorse({ years: 21 });
-    await expectRefused(show.id, horse.id, 400, 'AGE_TOO_OLD', 'Horses over 20 years old cannot compete');
+    await expectRefused(show.id, horse.id, 400, 'ageTooOld', 'Horses over 20 years old cannot compete');
   });
 
   it('refuses a horse with no rider assigned (C10)', async () => {
     const show = await makeShow();
     const horse = await makeHorse({ withRider: false });
-    await expectRefused(show.id, horse.id, 400, 'RIDER_REQUIRED', 'An assigned rider is required to compete');
+    await expectRefused(show.id, horse.id, 400, 'riderRequired', 'An assigned rider is required to compete');
   });
 
   it('refuses a horse whose only assignment is inactive (C10)', async () => {
     const show = await makeShow();
     const horse = await makeHorse({ assignment: { isActive: false } });
-    await expectRefused(show.id, horse.id, 400, 'RIDER_REQUIRED', 'An assigned rider is required to compete');
+    await expectRefused(show.id, horse.id, 400, 'riderRequired', 'An assigned rider is required to compete');
   });
 
   it('refuses a horse whose rider is retired (C10)', async () => {
     const show = await makeShow();
     const horse = await makeHorse({ rider: { retired: true } });
-    await expectRefused(show.id, horse.id, 400, 'RIDER_RETIRED', "This horse's rider is retired");
+    await expectRefused(show.id, horse.id, 400, 'riderRetired', "This horse's rider is retired");
   });
 
   it('refuses a horse whose rider is employed by someone else (C10)', async () => {
     const show = await makeShow();
     const horse = await makeHorse({ rider: { userId: otherUser.id } });
-    await expectRefused(show.id, horse.id, 400, 'RIDER_NOT_EMPLOYED', "This horse's rider is not employed by you");
+    await expectRefused(show.id, horse.id, 400, 'riderNotEmployed', "This horse's rider is not employed by you");
   });
 
   // Equoria-uszhf (owner ruling 2026-10-19): Gaited is a breed property, so the
@@ -217,7 +217,7 @@ describe.each(PATHS)('%s applies the entry rules', (_label, enter) => {
       show.id,
       noGait.id,
       400,
-      'GAITING_REQUIRED',
+      'gaitingRequired',
       'Gaited shows require a horse with gaiting ability',
     );
     const unrecorded = await makeHorse({ breedId: gaitedBreed.id });
@@ -225,7 +225,7 @@ describe.each(PATHS)('%s applies the entry rules', (_label, enter) => {
       show.id,
       unrecorded.id,
       400,
-      'GAITING_REQUIRED',
+      'gaitingRequired',
       'Gaited shows require a horse with gaiting ability',
     );
     const gaited = await makeHorse({
@@ -257,7 +257,7 @@ describe.each(PATHS)('%s applies the entry rules', (_label, enter) => {
     const res = await enter(show.id, horse.id);
     expect({ status: res.status, code: res.body.code, message: res.body.message }).toEqual({
       status: 409,
-      code: 'ALREADY_ENTERED',
+      code: 'alreadyEntered',
       message: 'Horse is already entered in this show',
     });
     expect(await prisma.showEntry.count({ where: { showId: show.id, horseId: horse.id } })).toBe(1);
@@ -266,7 +266,7 @@ describe.each(PATHS)('%s applies the entry rules', (_label, enter) => {
   it('keeps refusing an injured horse (unchanged until B7)', async () => {
     const show = await makeShow();
     const horse = await makeHorse({ healthStatus: 'injured' });
-    await expectRefused(show.id, horse.id, 400, 'HORSE_INJURED', 'Injured horses cannot compete');
+    await expectRefused(show.id, horse.id, 400, 'horseInjured', 'Injured horses cannot compete');
   });
 
   it('no longer refuses on the XP level bracket (R9)', async () => {

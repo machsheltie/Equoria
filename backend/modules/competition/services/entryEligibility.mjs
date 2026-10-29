@@ -72,7 +72,7 @@ export async function checkEntryEligibility(
   // the player who owned it.
   const owned = await tx.horse.findFirst({ where: { id: horseId, userId }, select: { id: true } });
   if (!owned) {
-    throw new EntryRefusalError('HORSE_NOT_FOUND');
+    throw new EntryRefusalError('horseNotFound');
   }
   const existing = await tx.showEntry.findFirst({
     where: { showId, horseId },

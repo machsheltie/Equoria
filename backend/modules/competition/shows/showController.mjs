@@ -125,7 +125,7 @@ export async function createShow(req, res) {
               data: { money: { decrement: prize } },
             });
             if (debited.count === 0) {
-              throw new Error('INSUFFICIENT_FUNDS');
+              throw new Error('insufficientFunds');
             }
             // Credit the escrow account by the same amount in the same tx.
             await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, prize, {
@@ -168,7 +168,7 @@ export async function createShow(req, res) {
           message: `You can host up to ${weeklyShowCreationLimit(req.user)} shows a week. Try again next week.`,
         });
       }
-      if (txError.message === 'INSUFFICIENT_FUNDS') {
+      if (txError.message === 'insufficientFunds') {
         return res.status(400).json({
           success: false,
           code: 'insufficientFunds',
@@ -185,7 +185,7 @@ export async function createShow(req, res) {
   } catch (error) {
     // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
     if (error?.status === 503) {
-      return res.status(503).json({ success: false, code: 'SERVICE_BUSY', message: error.message });
+      return res.status(503).json({ success: false, code: 'serviceBusy', message: error.message });
     }
     if (error.code === 'P2002') {
       return res.status(409).json({
@@ -197,7 +197,7 @@ export async function createShow(req, res) {
     logger.error('showController.createShow error:', error);
     return res
       .status(500)
-      .json({ success: false, code: 'INTERNAL_ERROR', message: 'Failed to create show' });
+      .json({ success: false, code: 'internalError', message: 'Failed to create show' });
   }
 }
 
@@ -280,7 +280,7 @@ export async function getShows(req, res) {
     logger.error('showController.getShows error:', error);
     return res
       .status(500)
-      .json({ success: false, code: 'INTERNAL_ERROR', message: 'Failed to fetch shows' });
+      .json({ success: false, code: 'internalError', message: 'Failed to fetch shows' });
   }
 }
 
@@ -299,7 +299,7 @@ export async function enterShow(req, res) {
     if (!horseId || typeof horseId !== 'number') {
       return res
         .status(400)
-        .json({ success: false, code: 'HORSE_ID_REQUIRED', message: 'horseId is required' });
+        .json({ success: false, code: 'horseIdRequired', message: 'horseId is required' });
     }
 
     // Same select as POST /competition/enter.
@@ -308,26 +308,26 @@ export async function enterShow(req, res) {
     if (!show) {
       return res
         .status(404)
-        .json({ success: false, code: 'SHOW_NOT_FOUND', message: 'Show not found' });
+        .json({ success: false, code: 'showNotFound', message: 'Show not found' });
     }
     if (show.showType === 'conformation') {
       return res.status(400).json({
         success: false,
-        code: 'CONFORMATION_ENTRY_ONLY',
+        code: 'conformationEntryOnly',
         message: CONFORMATION_ENTRY_ONLY_MESSAGE,
       });
     }
     if (show.status !== 'open') {
       return res.status(409).json({
         success: false,
-        code: 'SHOW_NOT_OPEN',
+        code: 'showNotOpen',
         message: 'This show is no longer accepting entries',
       });
     }
     if (show.closeDate && new Date(show.closeDate) <= new Date()) {
       return res
         .status(409)
-        .json({ success: false, code: 'ENTRY_PERIOD_CLOSED', message: 'Entry period has closed' });
+        .json({ success: false, code: 'entryPeriodClosed', message: 'Entry period has closed' });
     }
     // Equoria-nx8t1 R3: entries are UNLIMITED — no maxEntries cap is enforced.
 
@@ -342,7 +342,7 @@ export async function enterShow(req, res) {
     if (!horse) {
       return res
         .status(404)
-        .json({ success: false, code: 'HORSE_NOT_FOUND', message: 'Horse not found' });
+        .json({ success: false, code: 'horseNotFound', message: 'Horse not found' });
     }
     // Equoria-576c0 B9: the horse's entry rules (age 3-20, rider, Gaited, double
     // entry, injured) run inside enterShowAtomicTx through the shared
@@ -363,19 +363,19 @@ export async function enterShow(req, res) {
       if (sendEntryRefusal(res, txError)) {
         return res;
       }
-      if (txError.message === 'INSUFFICIENT_FUNDS') {
+      if (txError.message === 'insufficientFunds') {
         return res.status(402).json({
           success: false,
-          code: 'INSUFFICIENT_FUNDS',
+          code: 'insufficientFunds',
           message: 'Insufficient funds for entry fee',
         });
       }
       // Equoria-8pb6w: the show was claimed by the executor between the pre-tx
       // guard and the tx-internal status recheck — reject the late entry.
-      if (txError.message === 'ENTRY_CLOSED') {
+      if (txError.message === 'entryClosed') {
         return res.status(409).json({
           success: false,
-          code: 'SHOW_NOT_OPEN',
+          code: 'showNotOpen',
           message: 'This show is no longer accepting entries',
         });
       }
@@ -387,18 +387,18 @@ export async function enterShow(req, res) {
   } catch (error) {
     // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
     if (error?.status === 503) {
-      return res.status(503).json({ success: false, code: 'SERVICE_BUSY', message: error.message });
+      return res.status(503).json({ success: false, code: 'serviceBusy', message: error.message });
     }
     if (error.code === 'P2002') {
       return res.status(409).json({
         success: false,
-        code: 'ALREADY_ENTERED',
+        code: 'alreadyEntered',
         message: 'Horse is already entered in this show',
       });
     }
     logger.error('showController.enterShow error:', error);
     return res
       .status(500)
-      .json({ success: false, code: 'INTERNAL_ERROR', message: 'Failed to enter show' });
+      .json({ success: false, code: 'internalError', message: 'Failed to enter show' });
   }
 }

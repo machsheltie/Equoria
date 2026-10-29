@@ -222,12 +222,12 @@ export async function enterConformationShow(req, res) {
       if (sendEntryRefusal(res, txError)) {
         return res;
       }
-      if (txError.message === 'INSUFFICIENT_FUNDS') {
+      if (txError.message === 'insufficientFunds') {
         return res
           .status(402)
           .json({ success: false, message: 'Insufficient funds for entry fee' });
       }
-      if (txError.message === 'ENTRY_CLOSED') {
+      if (txError.message === 'entryClosed') {
         return res
           .status(409)
           .json({ success: false, message: 'This show is no longer accepting entries' });

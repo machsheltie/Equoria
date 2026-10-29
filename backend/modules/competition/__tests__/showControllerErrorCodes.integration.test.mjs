@@ -2,7 +2,7 @@
  * showControllerErrorCodes.integration.test.mjs (Equoria-576c0 B9 round 2)
  *
  * showController's server-error responses carry stable codes like every other
- * refusal: 500 -> INTERNAL_ERROR, 503 (retryable transaction) -> SERVICE_BUSY.
+ * refusal: 500 -> internalError, 503 (retryable transaction) -> serviceBusy.
  * Old contract: { success: false, message } with no code.
  *
  * The 500 paths are reached through real HTTP with inputs the database itself
@@ -62,19 +62,19 @@ beforeAll(async () => {
 afterAll(() => cleanup.run(), 60000);
 
 describe('showController server errors carry stable codes', () => {
-  it('GET /api/v1/shows answers a database failure with 500 INTERNAL_ERROR', async () => {
+  it('GET /api/v1/shows answers a database failure with 500 internalError', async () => {
     const res = await request(app)
       .get('/api/v1/shows?status=not-a-status')
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`);
     expect({ status: res.status, code: res.body.code, message: res.body.message }).toEqual({
       status: 500,
-      code: 'INTERNAL_ERROR',
+      code: 'internalError',
       message: 'Failed to fetch shows',
     });
   });
 
-  it('POST /api/v1/shows/:id/enter answers a database failure with 500 INTERNAL_ERROR', async () => {
+  it('POST /api/v1/shows/:id/enter answers a database failure with 500 internalError', async () => {
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post(`/api/v1/shows/${show.id}/enter`)
@@ -85,7 +85,7 @@ describe('showController server errors carry stable codes', () => {
       .send({ horseId: 2 ** 40 }); // outside the Int column range
     expect({ status: res.status, code: res.body.code, message: res.body.message }).toEqual({
       status: 500,
-      code: 'INTERNAL_ERROR',
+      code: 'internalError',
       message: 'Failed to enter show',
     });
   });

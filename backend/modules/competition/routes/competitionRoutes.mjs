@@ -329,12 +329,12 @@ router.post(
       if (!show) {
         return res
           .status(404)
-          .json({ success: false, code: 'SHOW_NOT_FOUND', message: 'Show not found' });
+          .json({ success: false, code: 'showNotFound', message: 'Show not found' });
       }
       if (show.showType === 'conformation') {
         return res.status(400).json({
           success: false,
-          code: 'CONFORMATION_ENTRY_ONLY',
+          code: 'conformationEntryOnly',
           message: CONFORMATION_ENTRY_ONLY_MESSAGE,
         });
       }
@@ -344,14 +344,14 @@ router.post(
       if (show.status !== 'open') {
         return res.status(409).json({
           success: false,
-          code: 'SHOW_NOT_OPEN',
+          code: 'showNotOpen',
           message: 'This show is no longer accepting entries',
         });
       }
       if (show.closeDate && new Date(show.closeDate) <= new Date()) {
         return res.status(409).json({
           success: false,
-          code: 'ENTRY_PERIOD_CLOSED',
+          code: 'entryPeriodClosed',
           message: 'Entry period has closed',
         });
       }
@@ -375,27 +375,27 @@ router.post(
         if (sendEntryRefusal(res, txError)) {
           return res;
         }
-        if (txError.message === 'INSUFFICIENT_FUNDS') {
+        if (txError.message === 'insufficientFunds') {
           return res.status(402).json({
             success: false,
-            code: 'INSUFFICIENT_FUNDS',
+            code: 'insufficientFunds',
             message: 'Insufficient funds for entry fee',
           });
         }
         // Equoria-8pb6w: the show was claimed by the executor between the
         // pre-tx guard and the tx-internal status recheck — reject the late
         // entry rather than let a fee land on an already-scoring show.
-        if (txError.message === 'ENTRY_CLOSED') {
+        if (txError.message === 'entryClosed') {
           return res.status(409).json({
             success: false,
-            code: 'SHOW_NOT_OPEN',
+            code: 'showNotOpen',
             message: 'This show is no longer accepting entries',
           });
         }
         if (txError.code === 'P2002') {
           return res.status(409).json({
             success: false,
-            code: 'ALREADY_ENTERED',
+            code: 'alreadyEntered',
             message: 'Horse is already entered in this show',
           });
         }

@@ -67,7 +67,7 @@ export function openForEntriesWhere(showId, now = new Date()) {
  * passes its in-transaction rules here and gets back the presenting groom.
  *
  * Throws an EntryRefusalError (the shared entry rules, Equoria-576c0 B9, or
- * prepareEntry's), `INSUFFICIENT_FUNDS` or `ENTRY_CLOSED` (mapped to HTTP by
+ * prepareEntry's), `insufficientFunds` or `entryClosed` (mapped to HTTP by
  * the caller).
  *
  * @param {object} input
@@ -96,7 +96,7 @@ export function enterShowTx(
             data: { money: { decrement: show.entryFee } },
           });
           if (debited.count === 0) {
-            throw new Error('INSUFFICIENT_FUNDS');
+            throw new Error('insufficientFunds');
           }
           // Equoria-si69u: route the entry fee to SystemAccount[showEscrow]
           // instead of directly to the creator's wallet. At show execute time
@@ -124,7 +124,7 @@ export function enterShowTx(
         // applies the feeEscrow increment AND re-checks status='open' INSIDE the
         // tx, taking a row lock. count===0 => the executor already claimed the
         // show ('open' -> 'executing') between the pre-tx guard and now => throw
-        // ENTRY_CLOSED to roll back the fee debit + escrow credit + entry
+        // entryClosed to roll back the fee debit + escrow credit + entry
         // (surfaced as HTTP 409). Free shows (entryFee 0) carry no natural
         // increment, so the increment:0 no-op still performs the status-scoped
         // lock + recheck — without it a free entry would silently bypass the guard.
@@ -134,7 +134,7 @@ export function enterShowTx(
           data: { feeEscrow: { increment: show.entryFee } },
         });
         if (stillOpen.count === 0) {
-          throw new Error('ENTRY_CLOSED');
+          throw new Error('entryClosed');
         }
 
         // groomId/groomSnapshot: the conformation entry's presenting groom and its

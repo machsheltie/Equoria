@@ -39,12 +39,12 @@ export const MAX_ACTIVE_DISCIPLINE_TYPES = 3;
 
 /** Stable refusal codes with their HTTP status and player-facing message. */
 export const ENTRY_REFUSALS = Object.freeze({
-  AGE_TOO_YOUNG: Object.freeze({
+  ageTooYoung: Object.freeze({
     status: 400,
     message: 'Horse must be at least 3 years old to compete',
   }),
-  AGE_TOO_OLD: Object.freeze({ status: 400, message: 'Horses over 20 years old cannot compete' }),
-  HORSE_INJURED: Object.freeze({ status: 400, message: 'Injured horses cannot compete' }),
+  ageTooOld: Object.freeze({ status: 400, message: 'Horses over 20 years old cannot compete' }),
+  horseInjured: Object.freeze({ status: 400, message: 'Injured horses cannot compete' }),
   // camelCase: new codes may not add snake-case names (Equoria-pjvp8 ratchet).
   // Owner ruling 2026-10-23 (Equoria-u0jop); was horseCriticalHealth.
   horseBadHealth: Object.freeze({
@@ -52,12 +52,12 @@ export const ENTRY_REFUSALS = Object.freeze({
     message:
       'Horses in Bad health cannot compete. A horse must be in Fair health or better to breed, train or enter a show. Feed and vet to restore health.',
   }),
-  RIDER_REQUIRED: Object.freeze({
+  riderRequired: Object.freeze({
     status: 400,
     message: 'An assigned rider is required to compete',
   }),
-  RIDER_RETIRED: Object.freeze({ status: 400, message: "This horse's rider is retired" }),
-  RIDER_NOT_EMPLOYED: Object.freeze({
+  riderRetired: Object.freeze({ status: 400, message: "This horse's rider is retired" }),
+  riderNotEmployed: Object.freeze({
     status: 400,
     message: "This horse's rider is not employed by you",
   }),
@@ -74,42 +74,42 @@ export const ENTRY_REFUSALS = Object.freeze({
     status: 400,
     message: 'Only gaited breeds can show in Gaited',
   }),
-  GAITING_REQUIRED: Object.freeze({
+  gaitingRequired: Object.freeze({
     status: 400,
     message: 'Gaited shows require a horse with gaiting ability',
   }),
-  ALREADY_ENTERED: Object.freeze({ status: 409, message: 'Horse is already entered in this show' }),
-  SHOW_UNDATED: Object.freeze({
+  alreadyEntered: Object.freeze({ status: 409, message: 'Horse is already entered in this show' }),
+  showUndated: Object.freeze({
     status: 409,
     message: 'This show has no closing date and is not taking entries',
   }),
-  DISCIPLINE_TYPE_LIMIT: Object.freeze({
+  disciplineTypeLimit: Object.freeze({
     status: 400,
     message:
       'This horse already has shows in 3 discipline types. A new type can be entered once every show of one of them has run.',
   }),
   // Equoria-mwjst: re-checked inside the entry transaction. Not-found and
   // not-yours stay one answer (CWE-639).
-  HORSE_NOT_FOUND: Object.freeze({ status: 404, message: 'Horse not found' }),
-  GROOM_NOT_ON_STAFF: Object.freeze({
+  horseNotFound: Object.freeze({ status: 404, message: 'Horse not found' }),
+  groomNotOnStaff: Object.freeze({
     status: 400,
     message: 'Groom not found or not on your staff',
   }),
-  GROOM_CANNOT_WORK: Object.freeze({ status: 400, message: 'This groom cannot work right now' }),
-  CONFORMATION_INELIGIBLE: Object.freeze({
+  groomCannotWork: Object.freeze({ status: 400, message: 'This groom cannot work right now' }),
+  conformationIneligible: Object.freeze({
     status: 400,
     message: 'Horse does not meet conformation show entry requirements',
   }),
 });
 
 /**
- * The player-facing message for a refusal. DISCIPLINE_TYPE_LIMIT names the
+ * The player-facing message for a refusal. disciplineTypeLimit names the
  * horse's active types when they are known.
  * @param {keyof ENTRY_REFUSALS} code
  * @param {{ activeTypes?: string[] }} [context]
  */
 export function entryRefusalMessage(code, { activeTypes } = {}) {
-  if (code === 'DISCIPLINE_TYPE_LIMIT' && activeTypes?.length) {
+  if (code === 'disciplineTypeLimit' && activeTypes?.length) {
     return `This horse already has shows in ${activeTypes.length} discipline types (${activeTypes.join(', ')}). A new type can be entered once every show of one of them has run.`;
   }
   return ENTRY_REFUSALS[code].message;
@@ -268,10 +268,10 @@ export async function loadActiveAssignments(db, horseIds) {
 export function ageRefusal(dateOfBirth, now = new Date()) {
   const ageYears = getHorseAgeYears(dateOfBirth, now);
   if (ageYears < MIN_ENTRY_AGE_YEARS) {
-    return 'AGE_TOO_YOUNG';
+    return 'ageTooYoung';
   }
   if (ageYears > MAX_ENTRY_AGE_YEARS) {
-    return 'AGE_TOO_OLD';
+    return 'ageTooOld';
   }
   return null;
 }
@@ -288,7 +288,7 @@ export function ageRefusal(dateOfBirth, now = new Date()) {
  */
 export function healthRefusal(horse, now = new Date()) {
   if (String(horse?.healthStatus).toLowerCase() === 'injured') {
-    return 'HORSE_INJURED';
+    return 'horseInjured';
   }
   return horse && hasBadHealth(horse, now) ? 'horseBadHealth' : null;
 }
@@ -296,13 +296,13 @@ export function healthRefusal(horse, now = new Date()) {
 /** C10 rider rule over the horse's active assignment: a refusal code or null. */
 export function riderRefusal(assignment, userId) {
   if (!assignment?.rider) {
-    return 'RIDER_REQUIRED';
+    return 'riderRequired';
   }
   if (assignment.rider.retired === true) {
-    return 'RIDER_RETIRED';
+    return 'riderRetired';
   }
   if (assignment.rider.userId !== userId) {
-    return 'RIDER_NOT_EMPLOYED';
+    return 'riderNotEmployed';
   }
   if (assignment.rider.feeUnpaidSince) {
     return 'riderFeeUnpaid';
@@ -318,7 +318,7 @@ export function disciplineTypeRefusal(show, activeTypes = []) {
   if (activeTypes.includes(disciplineTypeOf(show))) {
     return null;
   }
-  return activeTypes.length >= MAX_ACTIVE_DISCIPLINE_TYPES ? 'DISCIPLINE_TYPE_LIMIT' : null;
+  return activeTypes.length >= MAX_ACTIVE_DISCIPLINE_TYPES ? 'disciplineTypeLimit' : null;
 }
 
 /**
@@ -334,7 +334,7 @@ export function gaitingRefusal(discipline, gaitScores, breed) {
   if (!breedAllowsDiscipline(breed, discipline)) {
     return 'gaitedBreedRequired';
   }
-  return discipline === 'Gaited' && !hasGaiting(gaitScores) ? 'GAITING_REQUIRED' : null;
+  return discipline === 'Gaited' && !hasGaiting(gaitScores) ? 'gaitingRequired' : null;
 }
 
 /**
@@ -367,13 +367,13 @@ export function evaluateEntryRules({
   now = new Date(),
 }) {
   if (alreadyEntered) {
-    return 'ALREADY_ENTERED';
+    return 'alreadyEntered';
   }
   // Owner ruling (2026-10-05/07/12): undated shows refuse entry. Only a show
   // snapshot that carries closeDate is judged (the eligibility summary has no
   // show); conformation keeps its own schedule (7 days from createdAt).
   if (show.showType !== 'conformation' && show.closeDate === null) {
-    return 'SHOW_UNDATED';
+    return 'showUndated';
   }
   if (show.showType === 'conformation') {
     // C11: conformation's own age 0+ / groom rules live in its controller; it

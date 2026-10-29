@@ -359,7 +359,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
       // Equoria-576c0 B9: both entry paths share one checkEntryEligibility, so one
       // message and a stable code. Old contract: this path alone said "...in this
       // competition".
-      expect(response.body.code).toBe('ALREADY_ENTERED');
+      expect(response.body.code).toBe('alreadyEntered');
       expect(response.body.message).toBe('Horse is already entered in this show');
     });
 

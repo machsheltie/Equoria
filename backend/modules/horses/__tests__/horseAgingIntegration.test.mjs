@@ -249,7 +249,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
   describe('Retirement Milestone — age 21 / 147 days (Equoria-fefh2.6)', () => {
     // Retirement has no persisted flag: enforcement is the shared entry
     // rules' age gate (backend/utils/competitionEntryRules.mjs ageRefusal →
-    // AGE_TOO_OLD past 20 game-years). These tests pin the observable contract of the milestone
+    // ageTooOld past 20 game-years). These tests pin the observable contract of the milestone
     // itself: the 140→147-day crossing fires exactly one milestone
     // ('retirement') and the horse lands at 21 game-years. No Math.random
     // pin is needed — no trait gate (7/14/21-day) sits inside 140→147, so

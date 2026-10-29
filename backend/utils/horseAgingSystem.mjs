@@ -228,7 +228,7 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
     if (crossesThreshold(previousAge, newAge, retirementMilestoneDays)) {
       // Retirement enforcement is implicit: competition entry for horses over
       // 20 game-years is refused by the shared entry rules
-      // (backend/utils/competitionEntryRules.mjs ageRefusal → AGE_TOO_OLD).
+      // (backend/utils/competitionEntryRules.mjs ageRefusal → ageTooOld).
       // No Horse.retired flag is
       // persisted here — a stored flag duplicating the age-derived gate would
       // have to be kept in sync with it and could drift. This milestone's job

@@ -13,7 +13,7 @@
  * refund).
  *
  * THE FIX re-asserts status='open' INSIDE the tx via a status-scoped conditional
- * updateMany (count===0 -> throw ENTRY_CLOSED -> whole tx rolls back -> HTTP
+ * updateMany (count===0 -> throw entryClosed -> whole tx rolls back -> HTTP
  * 409). Because the paid path's feeEscrow increment carries the status
  * predicate but a FREE show (entryFee 0) has no increment to carry it, the free
  * branch gets the same status-scoped touch (increment: 0) — otherwise free
@@ -42,7 +42,7 @@ import { enterShowAtomicTx } from '../shows/showEscrowTx.mjs';
 import { enterShowDeferredTx } from '../services/competitionRouteQueries.mjs';
 // Equoria-576c0 B9: both entry txs run the shared entry rules first (age 3-20,
 // an eligible rider; the XP bracket is gone, R9). The horses are eligible, so
-// the 8pb6w status guard (ENTRY_CLOSED) remains the thing under test here.
+// the 8pb6w status guard (entryClosed) remains the thing under test here.
 import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
 
 const PREFIX = 'TestFixture-8pb6w-raceguard';
@@ -141,7 +141,7 @@ function entryLedgerRows(showId) {
 /**
  * The shared assertion: entering `enterFn` against a show whose DB status has
  * been flipped to 'executing' (while the caller still holds an 'open' snapshot)
- * must throw ENTRY_CLOSED and leave EVERY balance and the ShowEntry table
+ * must throw entryClosed and leave EVERY balance and the ShowEntry table
  * exactly as they were.
  */
 async function assertRejectsClosed(enterFn, entryFee) {
@@ -160,7 +160,7 @@ async function assertRejectsClosed(enterFn, entryFee) {
       horseId: entrantHorse.id,
       userId: entrant.id,
     }),
-  ).rejects.toThrow('ENTRY_CLOSED');
+  ).rejects.toThrow('entryClosed');
 
   const after = await snapshot(show.id);
   // Wallets and the per-show feeEscrow column UNCHANGED: the whole tx (fee
@@ -227,19 +227,19 @@ beforeAll(async () => {
 afterAll(() => cleanup.run(), 60000);
 
 describe('entry claim-race guard (Equoria-8pb6w)', () => {
-  it('SENTINEL: enterShowAtomicTx (paid) racing the claim → 409/ENTRY_CLOSED, no charge, no entry', async () => {
+  it('SENTINEL: enterShowAtomicTx (paid) racing the claim → 409/entryClosed, no charge, no entry', async () => {
     await assertRejectsClosed(enterShowAtomicTx, 100);
   });
 
-  it('SENTINEL: enterShowAtomicTx (FREE show — the trap) racing the claim → ENTRY_CLOSED, no entry', async () => {
+  it('SENTINEL: enterShowAtomicTx (FREE show — the trap) racing the claim → entryClosed, no entry', async () => {
     await assertRejectsClosed(enterShowAtomicTx, 0);
   });
 
-  it('SENTINEL: enterShowDeferredTx (paid) racing the claim → 409/ENTRY_CLOSED, no charge, no entry', async () => {
+  it('SENTINEL: enterShowDeferredTx (paid) racing the claim → 409/entryClosed, no charge, no entry', async () => {
     await assertRejectsClosed(enterShowDeferredTx, 100);
   });
 
-  it('SENTINEL: enterShowDeferredTx (FREE show — the trap) racing the claim → ENTRY_CLOSED, no entry', async () => {
+  it('SENTINEL: enterShowDeferredTx (FREE show — the trap) racing the claim → entryClosed, no entry', async () => {
     await assertRejectsClosed(enterShowDeferredTx, 0);
   });
 

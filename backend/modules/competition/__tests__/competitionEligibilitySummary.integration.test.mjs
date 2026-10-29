@@ -119,7 +119,7 @@ describe('GET /competition/eligibility follows the entry rules (B9)', () => {
       eligible: false,
       ageEligible: false,
       currentAge: 21,
-      refusal: { code: 'AGE_TOO_OLD', message: 'Horses over 20 years old cannot compete' },
+      refusal: { code: 'ageTooOld', message: 'Horses over 20 years old cannot compete' },
     });
   });
 
@@ -129,7 +129,7 @@ describe('GET /competition/eligibility follows the entry rules (B9)', () => {
     expect(e).toMatchObject({
       eligible: false,
       riderEligible: false,
-      refusal: { code: 'RIDER_REQUIRED', message: 'An assigned rider is required to compete' },
+      refusal: { code: 'riderRequired', message: 'An assigned rider is required to compete' },
     });
   });
 
@@ -142,7 +142,7 @@ describe('GET /competition/eligibility follows the entry rules (B9)', () => {
     expect(await summary(noGait.id, 'Gaited')).toMatchObject({
       eligible: false,
       traitEligible: false,
-      refusal: { code: 'GAITING_REQUIRED' },
+      refusal: { code: 'gaitingRequired' },
     });
     const gaited = await makeHorse({
       breedId: gaitedBreed.id,
@@ -194,7 +194,7 @@ describe('GET /competition/eligibility follows the entry rules (B9)', () => {
     expect(await summary(horse.id, 'Western Pleasure')).toMatchObject({
       eligible: false,
       activeDisciplineTypes: ['Dressage', 'Racing', 'Show Jumping'],
-      refusal: { code: 'DISCIPLINE_TYPE_LIMIT' },
+      refusal: { code: 'disciplineTypeLimit' },
     });
     expect(await summary(horse.id, 'Racing')).toMatchObject({ eligible: true, refusal: null });
   });
