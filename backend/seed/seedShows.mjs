@@ -1,5 +1,7 @@
 import { generateMockShows } from '../utils/generateMockShows.mjs';
-import { PrismaClient } from '@prisma/client';
+// The shared client (as seedDevData.mjs uses): @prisma/client does not resolve from backend/.
+import prisma from '../../packages/database/prismaClient.mjs';
+import { creditSystemAccount } from '../modules/economy/index.mjs';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -9,8 +11,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const envPath = join(__dirname, '../../.env');
 dotenv.config({ path: envPath });
-
-const prisma = new PrismaClient();
 
 /**
  * Check if a show with the given name already exists
@@ -30,25 +30,43 @@ async function checkShowExists(name) {
 }
 
 /**
- * Create a show in the database
- * @param {Object} showData - Show data object
+ * Create a show in the database, funded like a hosted show (Equoria-law5w).
+ *
+ * A show pays prizes only from its escrow (owner ruling q52), so a seeded show
+ * holds its prize the way createShow does: the prize is 10x the entry fee
+ * (owner ruling 2026-10-23) and SystemAccount[showEscrow] is credited by it in
+ * the same transaction that writes Show.prizeEscrow. A seed has no host to
+ * debit, so the prize enters the economy here instead of at payout.
+ *
+ * @param {Object} showData - Show data object; any `prize` it carries is ignored.
  * @returns {Object|null} - Created show or null if failed
  */
 async function createShow(showData) {
   try {
-    const show = await prisma.show.create({
-      data: {
-        name: showData.name,
-        discipline: showData.discipline,
-        levelMin: showData.levelMin,
-        levelMax: showData.levelMax,
-        entryFee: showData.entryFee,
-        prize: showData.prize,
-        runDate: showData.runDate,
-        // Entries close when the show runs, as createShow sets it; an undated
-        // show could never be entered (owner ruling 2026-10-05/07/12: undated shows refuse entry (Equoria-576c0 B10)).
-        closeDate: showData.closeDate ?? showData.runDate,
-      },
+    const prize = showData.entryFee * 10;
+    const show = await prisma.$transaction(async tx => {
+      if (prize > 0) {
+        await creditSystemAccount(tx, 'showEscrow', prize, {
+          category: 'showCreatePrizeEscrow',
+          description: `Prize escrow for seeded show "${showData.name}"`,
+        });
+      }
+      return tx.show.create({
+        data: {
+          name: showData.name,
+          discipline: showData.discipline,
+          levelMin: showData.levelMin,
+          levelMax: showData.levelMax,
+          entryFee: showData.entryFee,
+          prize,
+          prizeEscrow: prize,
+          feeEscrow: 0,
+          runDate: showData.runDate,
+          // Entries close when the show runs, as createShow sets it; an undated
+          // show could never be entered (owner ruling 2026-10-05/07/12: undated shows refuse entry (Equoria-576c0 B10)).
+          closeDate: showData.closeDate ?? showData.runDate,
+        },
+      });
     });
     console.log(`✅ Created show: ${show.name} (ID: ${show.id})`);
     return show;
