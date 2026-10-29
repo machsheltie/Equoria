@@ -103,6 +103,10 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
   it('training: the trainer gains no XP, and the horse gains only +5 in the trained discipline', async () => {
     const fiveYearsAgo = birthDateForAge(5);
     const stats = Object.fromEntries(horseStats.map((s, i) => [s, 40 + i]));
+    cleanup.add(() => prisma.trainerAssignment.deleteMany({ where: { trainerId: trainer.id } }), 'trainerAssignment');
+    cleanup.add(() => prisma.trainingLog.deleteMany({ where: { horseId: horse.id } }), 'trainingLog');
+    cleanup.add(() => prisma.horseXpEvent.deleteMany({ where: { horseId: horse.id } }), 'horseXpEvent');
+    cleanup.add(() => prisma.trainer.delete({ where: { id: trainer.id } }), 'trainer');
     const horse = await createTestHorse(
       prisma,
       {
@@ -135,10 +139,6 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         userId: user.id,
       },
     });
-    cleanup.add(() => prisma.trainerAssignment.deleteMany({ where: { trainerId: trainer.id } }), 'trainerAssignment');
-    cleanup.add(() => prisma.trainingLog.deleteMany({ where: { horseId: horse.id } }), 'trainingLog');
-    cleanup.add(() => prisma.horseXpEvent.deleteMany({ where: { horseId: horse.id } }), 'horseXpEvent');
-    cleanup.add(() => prisma.trainer.delete({ where: { id: trainer.id } }), 'trainer');
     await prisma.trainerAssignment.create({
       data: { trainerId: trainer.id, horseId: horse.id, userId: user.id, isActive: true },
     });
@@ -172,6 +172,13 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
   // Owner ruling 2026-10-22 (Equoria-0d4wa): rider prestige also stays at its
   // generated value - a win never raises it (old contract: +2 for 1st, +1 for 2nd).
   it('shows: the rider gains no XP or prestige and keeps its generated level', async () => {
+    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
+    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
+    cleanup.add(() => prisma.riderAssignment.deleteMany({ where: { riderId: rider.id } }), 'riderAssignment');
+    cleanup.add(() => prisma.show.delete({ where: { id: show.id } }), 'show');
+    cleanup.add(() => prisma.horseXpEvent.deleteMany({ where: { horseId: horse.id } }), 'horseXpEvent');
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user.id } }), 'notifications');
+    cleanup.add(() => prisma.rider.delete({ where: { id: rider.id } }), 'rider');
     const horse = await createTestHorse(
       prisma,
       {
@@ -214,13 +221,6 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         createdByUserId: user.id,
       },
     });
-    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
-    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
-    cleanup.add(() => prisma.riderAssignment.deleteMany({ where: { riderId: rider.id } }), 'riderAssignment');
-    cleanup.add(() => prisma.show.delete({ where: { id: show.id } }), 'show');
-    cleanup.add(() => prisma.horseXpEvent.deleteMany({ where: { horseId: horse.id } }), 'horseXpEvent');
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user.id } }), 'notifications');
-    cleanup.add(() => prisma.rider.delete({ where: { id: rider.id } }), 'rider');
     await prisma.riderAssignment.create({
       data: { riderId: rider.id, horseId: horse.id, userId: user.id, isActive: true },
     });
@@ -248,6 +248,12 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
 
   it('grooming: the groom gains no XP and keeps its generated level', async () => {
     const suffix = tag();
+    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { groomId: groom.id } }), 'groomInteractions');
+    cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: foal.id } }), 'foalActivities');
+    cleanup.add(() => prisma.groomHorseSynergy.deleteMany({ where: { groomId: groom.id } }), 'groomSynergies');
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { groomId: groom.id } }), 'groomAssignments');
+    cleanup.add(() => prisma.groomEngagement.deleteMany({ where: { groomId: groom.id } }), 'groomEngagements');
+    cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
     const foal = await prisma.horse.create({
       data: {
         ...fixtureColor(),
@@ -275,12 +281,6 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         userId: user.id,
       },
     });
-    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { groomId: groom.id } }), 'groomInteractions');
-    cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: foal.id } }), 'foalActivities');
-    cleanup.add(() => prisma.groomHorseSynergy.deleteMany({ where: { groomId: groom.id } }), 'groomSynergies');
-    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { groomId: groom.id } }), 'groomAssignments');
-    cleanup.add(() => prisma.groomEngagement.deleteMany({ where: { groomId: groom.id } }), 'groomEngagements');
-    cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
     await prisma.groomAssignment.create({
       data: { groomId: groom.id, foalId: foal.id, userId: user.id, isActive: true },
     });

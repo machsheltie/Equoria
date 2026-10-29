@@ -58,6 +58,38 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
     extraUserIds = [];
 
+    // Equoria-1ohys: register scoped, fail-loud cleanup in FK-delete order
+    // (directMessage → showEntry → show → refreshToken → user; children before
+    // parents). `allIds` includes per-test extra users (tempRecipient) so their
+    // messages purge before the user rows. Replaces the swallowed no-op catch
+    // arms on the message/show deletes — a cleanup failure now fails the suite.
+    // Scoped by user id / hostUserId — never a bare deleteMany (CLAUDE.md §2).
+    const allIds = () => [userA?.id, userB?.id, ...extraUserIds].filter(Boolean);
+    cleanup.add(() => {
+      const ids = allIds();
+      return ids.length > 0
+        ? prisma.directMessage.deleteMany({
+            where: { OR: [{ senderId: { in: ids } }, { recipientId: { in: ids } }] },
+          })
+        : undefined;
+    }, 'directMessage');
+    cleanup.add(() => {
+      const ids = allIds();
+      return ids.length > 0 ? prisma.showEntry.deleteMany({ where: { show: { hostUserId: { in: ids } } } }) : undefined;
+    }, 'showEntry');
+    cleanup.add(() => {
+      const ids = allIds();
+      return ids.length > 0 ? prisma.show.deleteMany({ where: { hostUserId: { in: ids } } }) : undefined;
+    }, 'show');
+    cleanup.add(() => {
+      const ids = allIds();
+      return ids.length > 0 ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } }) : undefined;
+    }, 'refreshToken');
+    cleanup.add(() => {
+      const ids = allIds();
+      return ids.length > 0 ? prisma.user.deleteMany({ where: { id: { in: ids } } }) : undefined;
+    }, 'user');
+
     userA = await prisma.user.create({
       data: {
         email: `cwe639w5a-${randomBytes(8).toString('hex')}@example.com`,
@@ -92,38 +124,6 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
     // resolves for that user's Bearer mutations, so csrfProtection validates.
     __csrfA__ = await fetchCsrf(app, { extraCookies: [`accessToken=${tokenA}`] });
     __csrfB__ = await fetchCsrf(app, { extraCookies: [`accessToken=${tokenB}`] });
-
-    // Equoria-1ohys: register scoped, fail-loud cleanup in FK-delete order
-    // (directMessage → showEntry → show → refreshToken → user; children before
-    // parents). `allIds` includes per-test extra users (tempRecipient) so their
-    // messages purge before the user rows. Replaces the swallowed no-op catch
-    // arms on the message/show deletes — a cleanup failure now fails the suite.
-    // Scoped by user id / hostUserId — never a bare deleteMany (CLAUDE.md §2).
-    const allIds = () => [userA?.id, userB?.id, ...extraUserIds].filter(Boolean);
-    cleanup.add(() => {
-      const ids = allIds();
-      return ids.length > 0
-        ? prisma.directMessage.deleteMany({
-            where: { OR: [{ senderId: { in: ids } }, { recipientId: { in: ids } }] },
-          })
-        : undefined;
-    }, 'directMessage');
-    cleanup.add(() => {
-      const ids = allIds();
-      return ids.length > 0 ? prisma.showEntry.deleteMany({ where: { show: { hostUserId: { in: ids } } } }) : undefined;
-    }, 'showEntry');
-    cleanup.add(() => {
-      const ids = allIds();
-      return ids.length > 0 ? prisma.show.deleteMany({ where: { hostUserId: { in: ids } } }) : undefined;
-    }, 'show');
-    cleanup.add(() => {
-      const ids = allIds();
-      return ids.length > 0 ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } }) : undefined;
-    }, 'refreshToken');
-    cleanup.add(() => {
-      const ids = allIds();
-      return ids.length > 0 ? prisma.user.deleteMany({ where: { id: { in: ids } } }) : undefined;
-    }, 'user');
   });
 
   afterEach(() => cleanup.run());

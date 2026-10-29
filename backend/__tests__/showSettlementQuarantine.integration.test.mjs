@@ -166,10 +166,6 @@ async function redriveFails(showId) {
 }
 
 beforeAll(async () => {
-  creator = await makeUser(100000, 'creator');
-  entrant = await makeUser(1000, 'entrant');
-  horses = [await makeHorse('first'), await makeHorse('second')];
-
   const staffScope = () => ({ in: staff.createdUserIds });
   cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds } } }), 'notifications');
   cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: { in: showIds } } }), 'results');
@@ -184,6 +180,10 @@ beforeAll(async () => {
   cleanup.add(() => prisma.notification.deleteMany({ where: { userId: staffScope() } }), 'staff notifications');
   cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: staffScope() } }), 'refresh tokens');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: staffScope() } }), 'staff users');
+
+  creator = await makeUser(100000, 'creator');
+  entrant = await makeUser(1000, 'entrant');
+  horses = [await makeHorse('first'), await makeHorse('second')];
 }, 60_000);
 
 afterAll(() => cleanup.run(), 60_000);

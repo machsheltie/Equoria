@@ -80,9 +80,9 @@ async function expectOneRetryable503(results) {
 }
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [rowA?.id, rowB?.id].filter(Boolean) } } }), 'users');
   rowA = await makeUser('a');
   rowB = await makeUser('b');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [rowA.id, rowB.id] } } }), 'users');
 });
 
 afterAll(() => cleanup.run(), 30000);

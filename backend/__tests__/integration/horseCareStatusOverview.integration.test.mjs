@@ -55,6 +55,11 @@ const makeHorse = async (fields = {}) => {
 };
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: { in: horseIds } } }), 'interactions');
+  cleanup.add(() => prisma.trainingLog.deleteMany({ where: { horseId: { in: horseIds } } }), 'training logs');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
+  cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
   owner = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -76,11 +81,6 @@ beforeAll(async () => {
       user: { connect: { id: owner.id } },
     },
   });
-  cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: { in: horseIds } } }), 'interactions');
-  cleanup.add(() => prisma.trainingLog.deleteMany({ where: { horseId: { in: horseIds } } }), 'training logs');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
-  cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
 }, 60000);
 
 afterAll(() => cleanup.run(), 60000);

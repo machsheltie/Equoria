@@ -45,6 +45,11 @@ let user;
 let foal;
 
 beforeAll(async () => {
+  // Equoria-1ohys: FK order — foalActivity -> foal horse -> user.
+  cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: foal.id } }), 'foalActivity');
+  cleanup.add(() => prisma.horse.delete({ where: { id: foal.id } }), 'foal');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -68,13 +73,6 @@ beforeAll(async () => {
       taskLog: {},
     },
   });
-
-  // Equoria-1ohys: FK order — foalActivity -> foal horse -> user.
-  cleanup.add(async () => {
-    await prisma.foalActivity.deleteMany({ where: { foalId: foal.id } });
-    await prisma.horse.delete({ where: { id: foal.id } });
-    await prisma.user.delete({ where: { id: user.id } });
-  }, 'foalActivity + foal + user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

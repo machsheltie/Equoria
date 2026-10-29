@@ -53,6 +53,18 @@ beforeAll(async () => {
 
   const hashed = await bcrypt.hash('TestPass123!', 1);
 
+  // Equoria-1ohys: register scoped, fail-loud deletes for the 3 fixture users.
+  // These users own no horses (no Horse.userId Restrict to order around), so a
+  // plain id-scoped user delete is the correct teardown. Registered before the
+  // creates so a throw on a later create still removes the earlier users.
+  cleanup.add(
+    () =>
+      prisma.user.deleteMany({
+        where: { id: { in: [testUser?.id, rateLimitActivityUser?.id, rateLimitRecordUser?.id].filter(Boolean) } },
+      }),
+    'fixture users',
+  );
+
   testUser = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -87,13 +99,6 @@ beforeAll(async () => {
   authToken = buildToken(testUser);
   activityToken = buildToken(rateLimitActivityUser);
   recordToken = buildToken(rateLimitRecordUser);
-
-  // Equoria-1ohys: register scoped, fail-loud deletes for the 3 fixture users.
-  // These users own no horses (no Horse.userId Restrict to order around), so a
-  // plain id-scoped user delete is the correct teardown.
-  for (const u of [testUser, rateLimitActivityUser, rateLimitRecordUser]) {
-    cleanup.add(() => prisma.user.delete({ where: { id: u.id } }), `user#${u.id}`);
-  }
 
   const { authenticateToken } = await import('../../middleware/auth.mjs');
   const { foalRateLimiter } = await import('../../middleware/rateLimiting.mjs');

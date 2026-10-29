@@ -140,6 +140,21 @@ const showState = showId =>
   });
 
 beforeAll(async () => {
+  const staffScope = () => ({ in: staff.createdUserIds });
+  cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: { in: showIds } } }), 'results');
+  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } }), 'entries');
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
+  cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
+  cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'transactions');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
+  cleanup.add(() => prisma.staffActionLog.deleteMany({ where: { actorId: staffScope() } }), 'action log');
+  cleanup.add(() => prisma.notification.deleteMany({ where: { userId: staffScope() } }), 'staff notifications');
+  cleanup.add(() => prisma.staffCheckinCode.deleteMany({ where: { userId: staffScope() } }), 'checkin codes');
+  cleanup.add(() => prisma.staffTrustedDevice.deleteMany({ where: { userId: staffScope() } }), 'devices');
+  cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: staffScope() } }), 'refresh tokens');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: staffScope() } }), 'staff users');
+
   creator = await makeUser(100000, 'creator');
   entrant = await makeUser(500, 'entrant');
   entrantHorse = await prisma.horse.create({
@@ -162,21 +177,6 @@ beforeAll(async () => {
   });
   horseIds.push(entrantHorse.id);
   await giveEligibleRider(prisma, { horseId: entrantHorse.id, userId: entrant.id }, riderIds);
-
-  const staffScope = () => ({ in: staff.createdUserIds });
-  cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: { in: showIds } } }), 'results');
-  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } }), 'entries');
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
-  cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
-  cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'transactions');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
-  cleanup.add(() => prisma.staffActionLog.deleteMany({ where: { actorId: staffScope() } }), 'action log');
-  cleanup.add(() => prisma.notification.deleteMany({ where: { userId: staffScope() } }), 'staff notifications');
-  cleanup.add(() => prisma.staffCheckinCode.deleteMany({ where: { userId: staffScope() } }), 'checkin codes');
-  cleanup.add(() => prisma.staffTrustedDevice.deleteMany({ where: { userId: staffScope() } }), 'devices');
-  cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: staffScope() } }), 'refresh tokens');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: staffScope() } }), 'staff users');
 }, 60_000);
 
 afterAll(() => cleanup.run(), 60_000);

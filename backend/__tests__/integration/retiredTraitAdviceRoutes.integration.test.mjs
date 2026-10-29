@@ -133,6 +133,14 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
   let adminGroom;
 
   beforeAll(async () => {
+    // Registered before any create so a throw partway through still cleans up.
+    // Users last: horses and grooms reference them (the tracker runs in order).
+    const horses = () => [ownHorse?.id, otherHorse?.id, adminHorse?.id].filter(Boolean);
+    const grooms = () => [ownGroom?.id, otherGroom?.id, adminGroom?.id].filter(Boolean);
+    const users = () => [owner?.user.id, other?.user.id, admin?.user.id].filter(Boolean);
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horses() } } }), 'horses');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: grooms() } } }), 'grooms');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: users() } } }), 'users');
     const breed = await prisma.breed.upsert({
       where: { name: 'Thoroughbred' },
       update: {},
@@ -144,16 +152,9 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
     ownHorse = await makeHorse(owner.user.id, breed.id);
     otherHorse = await makeHorse(other.user.id, breed.id);
     adminHorse = await makeHorse(admin.user.id, breed.id);
-    const horses = [ownHorse.id, otherHorse.id, adminHorse.id];
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horses } } }), 'horses');
     ownGroom = await makeGroom(owner.user.id);
     otherGroom = await makeGroom(other.user.id);
     adminGroom = await makeGroom(admin.user.id);
-    const grooms = [ownGroom.id, otherGroom.id, adminGroom.id];
-    cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: grooms } } }), 'grooms');
-    // Users last: horses and grooms reference them (the tracker runs in order).
-    const users = [owner.user.id, other.user.id, admin.user.id];
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: users } } }), 'users');
   });
 
   afterAll(async () => {

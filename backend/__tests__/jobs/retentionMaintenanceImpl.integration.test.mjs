@@ -94,6 +94,31 @@ describe('INTEGRATION: retentionMaintenance impl (Equoria-urqic.3.3) — real DB
     beforeAll(async () => {
       const uid = randomBytes(4).toString('hex');
 
+      // Scoped, FK-ordered, fail-loud cleanup (mirrors
+      // cronJobsOvernightShowExecution.test.mjs).
+      cleanup.add(
+        () => (pastShowId ? prisma.competitionResult.deleteMany({ where: { showId: pastShowId } }) : undefined),
+        'competitionResult',
+      );
+      cleanup.add(
+        () => (pastShowId ? prisma.showEntry.deleteMany({ where: { showId: pastShowId } }) : undefined),
+        'showEntry',
+      );
+      // Equoria-law5w: hand back any escrow the show still holds before the raw delete.
+      cleanup.add(async () => {
+        if (!pastShowId) {
+          return;
+        }
+        await releaseShowEscrow([pastShowId]);
+        await prisma.show.delete({ where: { id: pastShowId } });
+      }, 'show');
+      cleanup.add(() => prisma.horse.delete({ where: { id: execHorse.id } }), 'horse');
+      cleanup.add(() => prisma.user.delete({ where: { id: execUser.id } }), 'user');
+      cleanup.add(
+        () => prisma.user.deleteMany({ where: { username: { startsWith: FIXTURE_PREFIX } } }),
+        'defensive-user-sweep',
+      );
+
       execUser = await prisma.user.create({
         data: {
           emailVerified: true,
@@ -153,22 +178,6 @@ describe('INTEGRATION: retentionMaintenance impl (Equoria-urqic.3.3) — real DB
           feePaid: 0,
         },
       });
-
-      // Scoped, FK-ordered, fail-loud cleanup (mirrors
-      // cronJobsOvernightShowExecution.test.mjs).
-      cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: pastShowId } }), 'competitionResult');
-      cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: pastShowId } }), 'showEntry');
-      // Equoria-law5w: hand back any escrow the show still holds before the raw delete.
-      cleanup.add(async () => {
-        await releaseShowEscrow([pastShowId]);
-        await prisma.show.delete({ where: { id: pastShowId } });
-      }, 'show');
-      cleanup.add(() => prisma.horse.delete({ where: { id: execHorse.id } }), 'horse');
-      cleanup.add(() => prisma.user.delete({ where: { id: execUser.id } }), 'user');
-      cleanup.add(
-        () => prisma.user.deleteMany({ where: { username: { startsWith: FIXTURE_PREFIX } } }),
-        'defensive-user-sweep',
-      );
     }, 30000);
 
     afterAll(() => cleanup.run(), 30000);

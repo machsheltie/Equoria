@@ -54,6 +54,33 @@ describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
   beforeEach(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
 
+    // Equoria-1ohys: register scoped, fail-loud cleanup in FK-delete order
+    // (showEntry → show → refreshToken → horse → user; children before
+    // parents, Horse.userId is Restrict). Replaces the swallowed no-op catch
+    // arms on the showEntry/show deletes — a cleanup failure now fails the
+    // suite. Scoped by showId / userId / id-IN — never a bare deleteMany
+    // (CLAUDE.md §2).
+    cleanup.add(
+      () => (show?.id ? prisma.showEntry.deleteMany({ where: { showId: show.id } }) : undefined),
+      'showEntry',
+    );
+    cleanup.add(() => (show?.id ? prisma.show.delete({ where: { id: show.id } }) : undefined), 'show');
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return ids.length > 0 ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } }) : undefined;
+    }, 'refreshToken');
+    cleanup.add(
+      () =>
+        prisma.horse.deleteMany({
+          where: { id: { in: [horseA?.id, horseB?.id].filter(Boolean) } },
+        }),
+      'horse',
+    );
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return prisma.user.deleteMany({ where: { id: { in: ids } } });
+    }, 'user');
+
     userA = await prisma.user.create({
       data: {
         email: `cwe639w4a-${randomBytes(8).toString('hex')}@example.com`,
@@ -124,33 +151,6 @@ describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
         status: 'open',
       },
     });
-
-    // Equoria-1ohys: register scoped, fail-loud cleanup in FK-delete order
-    // (showEntry → show → refreshToken → horse → user; children before
-    // parents, Horse.userId is Restrict). Replaces the swallowed no-op catch
-    // arms on the showEntry/show deletes — a cleanup failure now fails the
-    // suite. Scoped by showId / userId / id-IN — never a bare deleteMany
-    // (CLAUDE.md §2).
-    cleanup.add(
-      () => (show?.id ? prisma.showEntry.deleteMany({ where: { showId: show.id } }) : undefined),
-      'showEntry',
-    );
-    cleanup.add(() => (show?.id ? prisma.show.delete({ where: { id: show.id } }) : undefined), 'show');
-    cleanup.add(() => {
-      const ids = [userA?.id, userB?.id].filter(Boolean);
-      return ids.length > 0 ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } }) : undefined;
-    }, 'refreshToken');
-    cleanup.add(
-      () =>
-        prisma.horse.deleteMany({
-          where: { id: { in: [horseA?.id, horseB?.id].filter(Boolean) } },
-        }),
-      'horse',
-    );
-    cleanup.add(() => {
-      const ids = [userA?.id, userB?.id].filter(Boolean);
-      return prisma.user.deleteMany({ where: { id: { in: ids } } });
-    }, 'user');
   });
 
   afterEach(() => cleanup.run());

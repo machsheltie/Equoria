@@ -53,6 +53,35 @@ describe('CWE-639 wave-6 sweep (Equoria-9ov8 post-wave-5 audit)', () => {
   beforeEach(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
 
+    // Equoria-1ohys: register scoped, fail-loud cleanup in FK-delete order
+    // (ballot → candidate → election → membership → club → refreshToken →
+    // user; children before parents). Replaces the swallowed no-op catch arms
+    // on the club-graph deletes — a cleanup failure now fails the suite.
+    // Scoped by electionId / clubId / user id — never a bare deleteMany
+    // (CLAUDE.md §2).
+    cleanup.add(() => prisma.clubBallot.deleteMany({ where: { electionId: openElection?.id ?? -1 } }), 'clubBallot');
+    cleanup.add(
+      () => prisma.clubCandidate.deleteMany({ where: { electionId: openElection?.id ?? -1 } }),
+      'clubCandidate',
+    );
+    cleanup.add(
+      () => (club?.id ? prisma.clubElection.deleteMany({ where: { clubId: club.id } }) : undefined),
+      'clubElection',
+    );
+    cleanup.add(
+      () => (club?.id ? prisma.clubMembership.deleteMany({ where: { clubId: club.id } }) : undefined),
+      'clubMembership',
+    );
+    cleanup.add(() => (club?.id ? prisma.club.delete({ where: { id: club.id } }) : undefined), 'club');
+    cleanup.add(() => {
+      const ids = [leader?.id, stranger?.id].filter(Boolean);
+      return ids.length > 0 ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } }) : undefined;
+    }, 'refreshToken');
+    cleanup.add(() => {
+      const ids = [leader?.id, stranger?.id].filter(Boolean);
+      return ids.length > 0 ? prisma.user.deleteMany({ where: { id: { in: ids } } }) : undefined;
+    }, 'user');
+
     leader = await prisma.user.create({
       data: {
         email: `cwe639w6lead-${randomBytes(8).toString('hex')}@example.com`,
@@ -105,35 +134,6 @@ describe('CWE-639 wave-6 sweep (Equoria-9ov8 post-wave-5 audit)', () => {
         endsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     });
-
-    // Equoria-1ohys: register scoped, fail-loud cleanup in FK-delete order
-    // (ballot → candidate → election → membership → club → refreshToken →
-    // user; children before parents). Replaces the swallowed no-op catch arms
-    // on the club-graph deletes — a cleanup failure now fails the suite.
-    // Scoped by electionId / clubId / user id — never a bare deleteMany
-    // (CLAUDE.md §2).
-    cleanup.add(() => prisma.clubBallot.deleteMany({ where: { electionId: openElection?.id ?? -1 } }), 'clubBallot');
-    cleanup.add(
-      () => prisma.clubCandidate.deleteMany({ where: { electionId: openElection?.id ?? -1 } }),
-      'clubCandidate',
-    );
-    cleanup.add(
-      () => (club?.id ? prisma.clubElection.deleteMany({ where: { clubId: club.id } }) : undefined),
-      'clubElection',
-    );
-    cleanup.add(
-      () => (club?.id ? prisma.clubMembership.deleteMany({ where: { clubId: club.id } }) : undefined),
-      'clubMembership',
-    );
-    cleanup.add(() => (club?.id ? prisma.club.delete({ where: { id: club.id } }) : undefined), 'club');
-    cleanup.add(() => {
-      const ids = [leader?.id, stranger?.id].filter(Boolean);
-      return ids.length > 0 ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } }) : undefined;
-    }, 'refreshToken');
-    cleanup.add(() => {
-      const ids = [leader?.id, stranger?.id].filter(Boolean);
-      return ids.length > 0 ? prisma.user.deleteMany({ where: { id: { in: ids } } }) : undefined;
-    }, 'user');
   });
 
   afterEach(() => cleanup.run());

@@ -38,6 +38,33 @@ let pastShowId;
 beforeAll(async () => {
   const uid = randomBytes(4).toString('hex');
 
+  // Equoria-1ohys: register scoped, FK-ordered, fail-loud cleanup. Order:
+  // competitionResult/showEntry (children of show + horse) -> show -> horse
+  // (Horse.userId is Restrict, so horse before user) -> user. The defensive
+  // username-prefix sweep runs last to reap any row leaked by an interrupted run.
+  cleanup.add(
+    () => (pastShowId ? prisma.competitionResult.deleteMany({ where: { showId: pastShowId } }) : undefined),
+    'competitionResult',
+  );
+  cleanup.add(
+    () => (pastShowId ? prisma.showEntry.deleteMany({ where: { showId: pastShowId } }) : undefined),
+    'showEntry',
+  );
+  // Equoria-law5w: hand back any escrow the show still holds before the raw delete.
+  cleanup.add(async () => {
+    if (!pastShowId) {
+      return;
+    }
+    await releaseShowEscrow([pastShowId]);
+    await prisma.show.delete({ where: { id: pastShowId } });
+  }, 'show');
+  cleanup.add(() => prisma.horse.delete({ where: { id: execHorse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: execUser.id } }), 'user');
+  cleanup.add(
+    () => prisma.user.deleteMany({ where: { username: { startsWith: FIXTURE_PREFIX } } }),
+    'defensive-user-sweep',
+  );
+
   execUser = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -97,24 +124,6 @@ beforeAll(async () => {
       feePaid: 0,
     },
   });
-
-  // Equoria-1ohys: register scoped, FK-ordered, fail-loud cleanup. Order:
-  // competitionResult/showEntry (children of show + horse) -> show -> horse
-  // (Horse.userId is Restrict, so horse before user) -> user. The defensive
-  // username-prefix sweep runs last to reap any row leaked by an interrupted run.
-  cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: pastShowId } }), 'competitionResult');
-  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: pastShowId } }), 'showEntry');
-  // Equoria-law5w: hand back any escrow the show still holds before the raw delete.
-  cleanup.add(async () => {
-    await releaseShowEscrow([pastShowId]);
-    await prisma.show.delete({ where: { id: pastShowId } });
-  }, 'show');
-  cleanup.add(() => prisma.horse.delete({ where: { id: execHorse.id } }), 'horse');
-  cleanup.add(() => prisma.user.delete({ where: { id: execUser.id } }), 'user');
-  cleanup.add(
-    () => prisma.user.deleteMany({ where: { username: { startsWith: FIXTURE_PREFIX } } }),
-    'defensive-user-sweep',
-  );
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

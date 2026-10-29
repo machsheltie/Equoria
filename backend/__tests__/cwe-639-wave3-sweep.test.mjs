@@ -59,6 +59,39 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
   beforeEach(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
 
+    // Equoria-1ohys: register scoped, fail-loud cleanup in FK-delete order
+    // (children before parents; Horse.userId is Restrict). run() drains the
+    // queue each afterEach so per-test fixtures registered later (e.g. the
+    // groomAssignment created inside the removeAssignment test) are also
+    // covered. Each delete is scoped by userId / id-IN — never a bare
+    // deleteMany against the canonical DB (CLAUDE.md §2).
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return ids.length > 0 ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } }) : undefined;
+    }, 'refreshToken');
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return ids.length > 0 ? prisma.groomAssignment.deleteMany({ where: { userId: { in: ids } } }) : undefined;
+    }, 'groomAssignment');
+    cleanup.add(
+      () =>
+        prisma.groom.deleteMany({
+          where: { id: { in: [groomA?.id, groomB?.id].filter(Boolean) } },
+        }),
+      'groom',
+    );
+    cleanup.add(
+      () =>
+        prisma.horse.deleteMany({
+          where: { id: { in: [horseA?.id, horseB?.id].filter(Boolean) } },
+        }),
+      'horse',
+    );
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return prisma.user.deleteMany({ where: { id: { in: ids } } });
+    }, 'user');
+
     userA = await prisma.user.create({
       data: {
         email: `cwe639w3a-${randomBytes(8).toString('hex')}@example.com`,
@@ -125,39 +158,6 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
         personality: 'calm',
       },
     });
-
-    // Equoria-1ohys: register scoped, fail-loud cleanup in FK-delete order
-    // (children before parents; Horse.userId is Restrict). run() drains the
-    // queue each afterEach so per-test fixtures registered later (e.g. the
-    // groomAssignment created inside the removeAssignment test) are also
-    // covered. Each delete is scoped by userId / id-IN — never a bare
-    // deleteMany against the canonical DB (CLAUDE.md §2).
-    cleanup.add(() => {
-      const ids = [userA?.id, userB?.id].filter(Boolean);
-      return ids.length > 0 ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } }) : undefined;
-    }, 'refreshToken');
-    cleanup.add(() => {
-      const ids = [userA?.id, userB?.id].filter(Boolean);
-      return ids.length > 0 ? prisma.groomAssignment.deleteMany({ where: { userId: { in: ids } } }) : undefined;
-    }, 'groomAssignment');
-    cleanup.add(
-      () =>
-        prisma.groom.deleteMany({
-          where: { id: { in: [groomA?.id, groomB?.id].filter(Boolean) } },
-        }),
-      'groom',
-    );
-    cleanup.add(
-      () =>
-        prisma.horse.deleteMany({
-          where: { id: { in: [horseA?.id, horseB?.id].filter(Boolean) } },
-        }),
-      'horse',
-    );
-    cleanup.add(() => {
-      const ids = [userA?.id, userB?.id].filter(Boolean);
-      return prisma.user.deleteMany({ where: { id: { in: ids } } });
-    }, 'user');
   });
 
   afterEach(() => cleanup.run());

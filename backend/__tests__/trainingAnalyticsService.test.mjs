@@ -224,6 +224,14 @@ describe('trainingAnalyticsService.getTrainingHistory', () => {
     // Date.now()+Math.random() pattern flagged by Equoria-3gti).
     const rand = randomBytes(8).toString('hex');
 
+    // Equoria-1ohys: scoped, FK-ordered, fail-loud cleanup. Order: trainingLog
+    // (child of horse) -> horse (Horse.userId is Restrict, so before user) ->
+    // user. The tracker runs all three even if one throws, then fails afterAll
+    // loudly if any did — no more best-effort swallow.
+    cleanup.add(() => prisma.trainingLog.deleteMany({ where: { horseId: testHorse.id } }), 'trainingLog');
+    cleanup.add(() => prisma.horse.delete({ where: { id: testHorse.id } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: testUser.id } }), 'user');
+
     testUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -246,14 +254,6 @@ describe('trainingAnalyticsService.getTrainingHistory', () => {
         userId: testUser.id,
       },
     });
-
-    // Equoria-1ohys: scoped, FK-ordered, fail-loud cleanup. Order: trainingLog
-    // (child of horse) -> horse (Horse.userId is Restrict, so before user) ->
-    // user. The tracker runs all three even if one throws, then fails afterAll
-    // loudly if any did — no more best-effort swallow.
-    cleanup.add(() => prisma.trainingLog.deleteMany({ where: { horseId: testHorse.id } }), 'trainingLog');
-    cleanup.add(() => prisma.horse.delete({ where: { id: testHorse.id } }), 'horse');
-    cleanup.add(() => prisma.user.delete({ where: { id: testUser.id } }), 'user');
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);

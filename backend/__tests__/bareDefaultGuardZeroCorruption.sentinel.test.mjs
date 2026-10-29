@@ -49,6 +49,11 @@ describe('Equoria-4maxb — legitimate 0 on NOT NULL Horse columns survives the 
 
   beforeAll(async () => {
     const uniq = randomBytes(8).toString('hex');
+    // Scoped, fail-loud cleanup: horses (by the ids this suite created) before
+    // the user (Horse.userId is onDelete:Restrict).
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
+    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
+
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -77,11 +82,6 @@ describe('Equoria-4maxb — legitimate 0 on NOT NULL Horse columns survives the 
       horseIds,
     );
     calmUnbondedId = calmUnbonded.id;
-
-    // Scoped, fail-loud cleanup: horses (by the ids this suite created) before
-    // the user (Horse.userId is onDelete:Restrict).
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
-    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
   }, 60000);
 
   afterAll(() => cleanup.run(), 60000);

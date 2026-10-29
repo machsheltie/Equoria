@@ -64,6 +64,40 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
     extraHorseIds = [];
 
+    // Equoria-1ohys: register scoped, fail-loud cleanup in FK-delete order
+    // (refreshToken/groomAssignment by userId → groom → horse → user; children
+    // before parents, Horse.userId is Restrict). run() drains the tracker queue
+    // each afterEach, so per-test fixtures registered later (e.g. horseA2 in the
+    // compare-epigenetics test) are also covered and the next beforeEach starts
+    // from an empty queue. Scoped by userId / id-IN — never a bare deleteMany
+    // (CLAUDE.md §2).
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return ids.length > 0 ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } }) : undefined;
+    }, 'refreshToken');
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return ids.length > 0 ? prisma.groomAssignment.deleteMany({ where: { userId: { in: ids } } }) : undefined;
+    }, 'groomAssignment');
+    cleanup.add(
+      () =>
+        prisma.groom.deleteMany({
+          where: { id: { in: [groomA?.id, groomB?.id].filter(Boolean) } },
+        }),
+      'groom',
+    );
+    cleanup.add(
+      () =>
+        prisma.horse.deleteMany({
+          where: { id: { in: [horseA?.id, horseB?.id, ...extraHorseIds].filter(Boolean) } },
+        }),
+      'horse',
+    );
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return prisma.user.deleteMany({ where: { id: { in: ids } } });
+    }, 'user');
+
     userA = await prisma.user.create({
       data: {
         email: `cwe639a-${randomBytes(8).toString('hex')}@example.com`,
@@ -130,40 +164,6 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
         personality: 'calm',
       },
     });
-
-    // Equoria-1ohys: register scoped, fail-loud cleanup in FK-delete order
-    // (refreshToken/groomAssignment by userId → groom → horse → user; children
-    // before parents, Horse.userId is Restrict). run() drains the tracker queue
-    // each afterEach, so per-test fixtures registered later (e.g. horseA2 in the
-    // compare-epigenetics test) are also covered and the next beforeEach starts
-    // from an empty queue. Scoped by userId / id-IN — never a bare deleteMany
-    // (CLAUDE.md §2).
-    cleanup.add(() => {
-      const ids = [userA?.id, userB?.id].filter(Boolean);
-      return ids.length > 0 ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } }) : undefined;
-    }, 'refreshToken');
-    cleanup.add(() => {
-      const ids = [userA?.id, userB?.id].filter(Boolean);
-      return ids.length > 0 ? prisma.groomAssignment.deleteMany({ where: { userId: { in: ids } } }) : undefined;
-    }, 'groomAssignment');
-    cleanup.add(
-      () =>
-        prisma.groom.deleteMany({
-          where: { id: { in: [groomA?.id, groomB?.id].filter(Boolean) } },
-        }),
-      'groom',
-    );
-    cleanup.add(
-      () =>
-        prisma.horse.deleteMany({
-          where: { id: { in: [horseA?.id, horseB?.id, ...extraHorseIds].filter(Boolean) } },
-        }),
-      'horse',
-    );
-    cleanup.add(() => {
-      const ids = [userA?.id, userB?.id].filter(Boolean);
-      return prisma.user.deleteMany({ where: { id: { in: ids } } });
-    }, 'user');
   });
 
   afterEach(() => cleanup.run());

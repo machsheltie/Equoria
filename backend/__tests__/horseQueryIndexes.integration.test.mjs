@@ -54,6 +54,9 @@ const suiteCleanup = createCleanupTracker();
 let user;
 
 beforeAll(async () => {
+  suiteCleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: SENTINEL } } }), 'horses');
+  suiteCleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -102,9 +105,6 @@ beforeAll(async () => {
   // have run yet within this test). Without this, EXPLAIN below sees the
   // pre-insert (empty) statistics and keeps choosing Seq Scan.
   await prisma.$executeRawUnsafe('ANALYZE horses');
-
-  suiteCleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: SENTINEL } } }), 'horses');
-  suiteCleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 });
 
 afterAll(() => suiteCleanup.run());

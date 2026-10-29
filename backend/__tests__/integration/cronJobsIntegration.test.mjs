@@ -53,6 +53,26 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
     // directly via generateTestToken). bcrypt rounds=10 can exceed 60s under
     // full-suite --runInBand load (cronJobs timeout, Equoria-v1qf follow-up).
     const hashedPassword = await bcrypt.hash('AdminPassword123!', 1);
+    // Equoria-1ohys: register fail-loud, scoped cleanup. FK order: foal child
+    // rows -> horse (Horse.userId onDelete:Restrict) -> groom -> user.
+    cleanup.add(async () => {
+      if (!testFoal) {
+        return;
+      }
+      await prisma.foalTrainingHistory.deleteMany({ where: { horseId: testFoal.id } });
+      await prisma.foalDevelopment.deleteMany({ where: { foalId: testFoal.id } });
+      await prisma.foalActivity.deleteMany({ where: { foalId: testFoal.id } });
+      await prisma.groomAssignment.deleteMany({ where: { foalId: testFoal.id } });
+      await prisma.horse.deleteMany({ where: { id: testFoal.id } });
+    }, 'foal children + foal horse');
+    cleanup.add(async () => {
+      if (!adminUser) {
+        return;
+      }
+      await prisma.groom.deleteMany({ where: { userId: adminUser.id } });
+      await prisma.user.deleteMany({ where: { id: adminUser.id } });
+    }, 'admin groom + user');
+
     adminUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -90,26 +110,6 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
     });
-
-    // Equoria-1ohys: register fail-loud, scoped cleanup. FK order: foal child
-    // rows -> horse (Horse.userId onDelete:Restrict) -> groom -> user.
-    cleanup.add(async () => {
-      if (!testFoal) {
-        return;
-      }
-      await prisma.foalTrainingHistory.deleteMany({ where: { horseId: testFoal.id } });
-      await prisma.foalDevelopment.deleteMany({ where: { foalId: testFoal.id } });
-      await prisma.foalActivity.deleteMany({ where: { foalId: testFoal.id } });
-      await prisma.groomAssignment.deleteMany({ where: { foalId: testFoal.id } });
-      await prisma.horse.deleteMany({ where: { id: testFoal.id } });
-    }, 'foal children + foal horse');
-    cleanup.add(async () => {
-      if (!adminUser) {
-        return;
-      }
-      await prisma.groom.deleteMany({ where: { userId: adminUser.id } });
-      await prisma.user.deleteMany({ where: { id: adminUser.id } });
-    }, 'admin groom + user');
   }, 120000); // 120s — bcrypt + two DB creates can be slow under full-suite load
 
   afterAll(() => cleanup.run(), 120000); // 120s — DB operations can be slow under full-suite --runInBand load
