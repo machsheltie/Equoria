@@ -329,33 +329,6 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         expect(response.body.success).toBe(false);
         expect(response.body.message).toBe('Horse not found');
       });
-
-      it('should return 400 for horse without temperament', async () => {
-        // Create horse without temperament
-        const horseWithoutTemperament = await prisma.horse.create({
-          data: await testHorseData(prisma, {
-            ...fixtureColor(),
-            name: 'NoTemperamentHorse',
-            userId: testUser.id,
-            dateOfBirth: new Date(),
-            sex: 'colt',
-            breedId: testBreed.id,
-            temperament: null, // a pre-ruling row with no temperament (Equoria-576c0.5: legacy NULL plant)
-          }),
-        });
-
-        const response = await request(app)
-          .get(`/api/v1/horses/${horseWithoutTemperament.id}/personality-impact`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Authorization', authToken)
-          .expect(400);
-
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain('temperament not set');
-
-        // Cleanup
-        await prisma.horse.deleteMany({ where: { id: horseWithoutTemperament.id } });
-      });
     });
   });
 });

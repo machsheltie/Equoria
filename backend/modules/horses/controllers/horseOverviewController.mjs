@@ -281,12 +281,8 @@ export async function getHorsePersonalityImpact(req, res) {
       });
     }
 
-    if (!horse.temperament) {
-      return res.status(400).json({
-        success: false,
-        message: 'Horse temperament not set. Cannot calculate personality compatibility.',
-      });
-    }
+    // Every horse has a temperament (Equoria-576c0.5: NOT NULL). Old contract: a
+    // horse without one got a 400 "Horse temperament not set".
 
     // Get all grooms for the user
     const grooms = await prisma.groom.findMany({
