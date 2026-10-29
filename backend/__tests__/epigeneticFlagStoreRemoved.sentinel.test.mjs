@@ -21,7 +21,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const backendRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+const backendRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(backendRoot, '..');
 const schemaPath = join(repoRoot, 'packages/database/prisma/schema.prisma');
 const migrationPath = join(
