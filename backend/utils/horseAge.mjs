@@ -147,6 +147,10 @@ export function gameYearsFromDays(ageInDays) {
  * include it). If `dateOfBirth` is missing, `ageYears` defaults to 0 per
  * the underlying helper's null-safety rules.
  *
+ * A present `age` (the stored column) is replaced by the live age
+ * (liveHorseAgeYears), so from 00:00 Eastern on a birthday the response already
+ * says the new age while the nightly job has not run yet (Equoria-6pbka).
+ *
  * @template T
  * @param {T & { dateOfBirth?: Date|string|null }} horse
  * @param {Date} [now=new Date()]
@@ -156,10 +160,12 @@ export function withAgeYears(horse, now = new Date()) {
   if (!horse || typeof horse !== 'object') {
     return horse;
   }
-  return {
-    ...horse,
-    ageYears: getHorseAgeYears(horse.dateOfBirth, now),
-  };
+  const decorated = { ...horse, ageYears: getHorseAgeYears(horse.dateOfBirth, now) };
+  if ('age' in horse) {
+    // Equoria-6pbka: the stored column lags a birthday until the nightly job.
+    decorated.age = liveHorseAgeYears(horse, now);
+  }
+  return decorated;
 }
 
 /**

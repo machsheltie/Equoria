@@ -246,6 +246,8 @@ export async function bookVetAppointment(req, res) {
               id: true,
               name: true,
               age: true,
+              // The response's health words read the live age (Equoria-6pbka).
+              dateOfBirth: true,
               healthStatus: true,
               lastVettedDate: true,
               lastFedDate: true,

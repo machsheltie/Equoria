@@ -44,7 +44,7 @@ export async function assignGroomToFoal(foalId, groomId, userId, options = {}) {
   // Validate foal exists
   const foal = await prisma.horse.findUnique({
     where: { id: foalId },
-    select: { id: true, name: true, age: true },
+    select: { id: true, name: true },
   });
 
   if (!foal) {

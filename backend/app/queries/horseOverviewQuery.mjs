@@ -11,7 +11,7 @@ import { canGroomToday } from '../../modules/grooms/index.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import logger from '../../utils/logger.mjs';
 import { getFeedHealth, getVetHealth, getDisplayedHealth } from '../../utils/horseHealth.mjs';
-import { getHorseAgeYears } from '../../utils/horseAge.mjs';
+import { getHorseAgeYears, liveHorseAgeYears } from '../../utils/horseAge.mjs';
 import { asFlagObject } from '../../utils/jsonbArrayGuard.mjs';
 
 /**
@@ -170,7 +170,9 @@ export async function getHorseOverview(req, res) {
     const overviewData = {
       id: horse.id,
       name: horse.name,
-      age: horse.age, // transitional: kept for backwards compat; deprecated in OpenAPI (Equoria-lvjy)
+      // transitional: kept for backwards compat; deprecated in OpenAPI (Equoria-lvjy).
+      // The live age, not the stored column the nightly job writes (Equoria-6pbka).
+      age: liveHorseAgeYears(horse),
       // Game-year age computed from dateOfBirth (1 week = 1 game-year).
       // Frontend reads `horse.ageYears ?? horse.age` — this is the primary path.
       ageYears: getHorseAgeYears(horse.dateOfBirth),
