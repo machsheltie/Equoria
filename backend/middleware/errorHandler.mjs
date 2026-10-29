@@ -95,6 +95,11 @@ const errorHandler = (err, req, res, next) => {
     error = new AppError(message, 404);
   }
 
+  // Equoria-rit5r: body parsers refuse compressed bodies (inflate:false) with encoding.unsupported.
+  if (err.type === 'encoding.unsupported') {
+    error = new AppError('Compressed request bodies are not accepted', 415);
+  }
+
   // Send error response
   try {
     const statusCode = error.statusCode || 500;

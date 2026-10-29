@@ -249,8 +249,17 @@ logger.info('[rateLimit] effective ceilings at boot', {
 });
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb', verify: verifyJsonBody }));
-app.use(express.urlencoded({ extended: true, limit: '10mb', verify: verifyUrlEncodedBody }));
+// Equoria-rit5r: inflate:false refuses compressed request bodies. body-parser 1.20.8 lets a gzip body
+// with trailing junk throw past every handler and crash the process; browsers never compress requests.
+app.use(express.json({ limit: '10mb', inflate: false, verify: verifyJsonBody }));
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: '10mb',
+    inflate: false,
+    verify: verifyUrlEncodedBody,
+  }),
+);
 app.use(rejectPollutedRequestBody);
 // 21R-SEC-4 (Equoria-iq84): query-side companion to rejectPollutedRequestBody.
 // Express's qs parser turns `?__proto__[isAdmin]=1` into a polluting nested
