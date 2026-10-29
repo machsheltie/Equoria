@@ -41,6 +41,17 @@ describe('grooms carry star levels, not the old 1-10 level (Equoria-2xxvd)', () 
 
   beforeAll(async () => {
     const suffix = tag();
+    const groomIds = () => [expertGroom?.id, retiredExpert?.id, rookieOnStaff?.id].filter(Boolean);
+    cleanup.add(
+      () =>
+        prisma.groomLegacyLog.deleteMany({
+          where: { OR: [{ retiredGroomId: { in: groomIds() } }, { legacyGroomId: { in: groomIds() } }] },
+        }),
+      'legacy logs',
+    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: groomIds() } } }), 'grooms');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
+
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -77,17 +88,6 @@ describe('grooms carry star levels, not the old 1-10 level (Equoria-2xxvd)', () 
     rookieOnStaff = await prisma.groom.create({
       data: groomData('rookie', { skillLevel: 'novice', starLevel: 'rookie', experience: 1 }),
     });
-
-    const groomIds = [expertGroom.id, retiredExpert.id, rookieOnStaff.id];
-    cleanup.add(
-      () =>
-        prisma.groomLegacyLog.deleteMany({
-          where: { OR: [{ retiredGroomId: { in: groomIds } }, { legacyGroomId: { in: groomIds } }] },
-        }),
-      'legacy logs',
-    );
-    cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: groomIds } } }), 'grooms');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
   });
 
   afterAll(() => cleanup.run(), 60000);

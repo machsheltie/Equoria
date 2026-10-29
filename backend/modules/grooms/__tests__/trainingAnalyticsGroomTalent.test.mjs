@@ -34,6 +34,12 @@ let groom;
 const sharedCleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // Register scoped, FK-ordered cleanup: groom + horse (Restrict on
+  // Groom.userId/Horse.userId) before the owning user. All id-scoped.
+  sharedCleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'shared groom');
+  sharedCleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'shared horse');
+  sharedCleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'shared user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -65,12 +71,6 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-
-  // Register scoped, FK-ordered cleanup: groom + horse (Restrict on
-  // Groom.userId/Horse.userId) before the owning user. All id-scoped.
-  sharedCleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'shared groom');
-  sharedCleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'shared horse');
-  sharedCleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'shared user');
 }, 30000);
 
 afterAll(() => sharedCleanup.run(), 30000);
@@ -265,6 +265,19 @@ describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
 
+    // Register scoped, FK-ordered cleanup: groom* child (talent selections,
+    // scoped to these groom ids) first, then the grooms (Groom.userId Restrict,
+    // scoped by the TestFixture-TT- name prefix), then the owning user last.
+    ttCleanup.add(
+      () =>
+        prisma.groomTalentSelections.deleteMany({
+          where: { groomId: { in: [ttGroomCalmL5?.id, ttGroomCalmL5Fresh?.id].filter(Boolean) } },
+        }),
+      'tt talent selections',
+    );
+    ttCleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-TT-' } } }), 'tt grooms');
+    ttCleanup.add(() => prisma.user.delete({ where: { id: ttUser.id } }), 'tt user');
+
     ttUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -311,19 +324,6 @@ describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
     await prisma.groomTalentSelections.create({
       data: { groomId: ttGroomCalmL5.id, tier1: 'gentleHands' },
     });
-
-    // Register scoped, FK-ordered cleanup: groom* child (talent selections,
-    // scoped to these groom ids) first, then the grooms (Groom.userId Restrict,
-    // scoped by the TestFixture-TT- name prefix), then the owning user last.
-    ttCleanup.add(
-      () =>
-        prisma.groomTalentSelections.deleteMany({
-          where: { groomId: { in: [ttGroomCalmL5.id, ttGroomCalmL5Fresh.id] } },
-        }),
-      'tt talent selections',
-    );
-    ttCleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-TT-' } } }), 'tt grooms');
-    ttCleanup.add(() => prisma.user.delete({ where: { id: ttUser.id } }), 'tt user');
   }, 30000);
 
   afterAll(() => ttCleanup.run(), 30000);
@@ -387,6 +387,23 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
 
+    // Register scoped, FK-ordered cleanup: groom* child (talent selections,
+    // scoped to these groom ids — also covers any selection selectTalent created
+    // mid-test) first, then the grooms (Groom.userId Restrict, scoped by the
+    // TestFixture-ST2- name prefix), then the owning user last.
+    st2Cleanup.add(
+      () =>
+        prisma.groomTalentSelections.deleteMany({
+          where: { groomId: { in: [st2GroomCalmL3?.id, st2GroomCalmL8?.id, st2GroomQuality?.id].filter(Boolean) } },
+        }),
+      'st2 talent selections',
+    );
+    st2Cleanup.add(
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-ST2-' } } }),
+      'st2 grooms',
+    );
+    st2Cleanup.add(() => prisma.user.delete({ where: { id: st2User.id } }), 'st2 user');
+
     st2User = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -436,23 +453,6 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
           data: { groomId: st2GroomQuality.id, tier1: 'enthusiasmBoost' },
         }),
     ]);
-
-    // Register scoped, FK-ordered cleanup: groom* child (talent selections,
-    // scoped to these groom ids — also covers any selection selectTalent created
-    // mid-test) first, then the grooms (Groom.userId Restrict, scoped by the
-    // TestFixture-ST2- name prefix), then the owning user last.
-    st2Cleanup.add(
-      () =>
-        prisma.groomTalentSelections.deleteMany({
-          where: { groomId: { in: [st2GroomCalmL3.id, st2GroomCalmL8.id, st2GroomQuality.id] } },
-        }),
-      'st2 talent selections',
-    );
-    st2Cleanup.add(
-      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-ST2-' } } }),
-      'st2 grooms',
-    );
-    st2Cleanup.add(() => prisma.user.delete({ where: { id: st2User.id } }), 'st2 user');
   }, 30000);
 
   afterAll(() => st2Cleanup.run(), 30000);

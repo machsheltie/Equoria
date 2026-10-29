@@ -118,8 +118,6 @@ let alice;
 let bob;
 
 beforeAll(async () => {
-  alice = await makeUser('alice');
-  bob = await makeUser('bob');
   cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: { in: horseIds } } }), 'groomInteraction');
   cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: { in: horseIds } } }), 'foalActivity');
   cleanup.add(() => prisma.groomHorseSynergy.deleteMany({ where: { horseId: { in: horseIds } } }), 'groomHorseSynergy');
@@ -127,6 +125,8 @@ beforeAll(async () => {
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
   cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: groomIds } } }), 'grooms');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
+  alice = await makeUser('alice');
+  bob = await makeUser('bob');
 }, 60000);
 
 afterAll(async () => {
@@ -455,14 +455,14 @@ describe('home reminder: next-actions groom-foal', () => {
     const groom = await makeGroom(owner, 'nextact-groom');
     const groomed = await makeHorse(owner, 'nextact-groomed', { ageDays: 2 });
     const waiting = await makeHorse(owner, 'nextact-waiting', { ageDays: 2 });
-    for (const foal of [groomed, waiting]) {
-      await assign(owner, foal, groom);
-      await prisma.foalDevelopment.create({ data: { foalId: foal.id } });
-    }
     cleanup.add(
       () => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: [groomed.id, waiting.id] } } }),
       'foalDevelopment',
     );
+    for (const foal of [groomed, waiting]) {
+      await assign(owner, foal, groom);
+      await prisma.foalDevelopment.create({ data: { foalId: foal.id } });
+    }
     expect((await post(owner, groomUrl(groomed), { activity: 'leading' })).status).toBe(200);
 
     const res = await get(owner, '/api/v1/next-actions');

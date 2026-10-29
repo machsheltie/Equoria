@@ -85,6 +85,13 @@ describe('Equoria-ic0vv — processRetirement for a groom on nobody’s staff', 
   let horseB;
 
   beforeEach(async () => {
+    // Reverse dependency order: notifications, assignments (cascade from groom too,
+    // but explicit), groom, horses, users.
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: ids.userIds } } }), 'notifications');
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { groomId: ids.groomId } }), 'assignments');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: ids.groomId } }), 'groom');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: ids.horseIds } } }), 'horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: ids.userIds } } }), 'users');
     playerA = await makeUser('playerA');
     playerB = await makeUser('playerB');
     horsesA = [await makeHorse(playerA.id, 'a1'), await makeHorse(playerA.id, 'a2')];
@@ -108,13 +115,6 @@ describe('Equoria-ic0vv — processRetirement for a groom on nobody’s staff', 
       userIds: [playerA.id, playerB.id],
       horseIds: [...horsesA.map(h => h.id), horseB.id],
     };
-    // Reverse dependency order: notifications, assignments (cascade from groom too,
-    // but explicit), groom, horses, users.
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: ids.userIds } } }), 'notifications');
-    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { groomId: ids.groomId } }), 'assignments');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { id: ids.groomId } }), 'groom');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: ids.horseIds } } }), 'horses');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: ids.userIds } } }), 'users');
   }, 60000);
 
   afterEach(async () => {

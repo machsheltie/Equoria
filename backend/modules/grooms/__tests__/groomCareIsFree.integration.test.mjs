@@ -68,6 +68,14 @@ describe('Equoria-tfo3c — a real grooming session writes no price and takes no
 
   beforeAll(async () => {
     const suffix = tag();
+    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { groomId: groom.id } }), 'interactions');
+    cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: horse.id } }), 'activities');
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: user.id } }), 'assignments');
+    cleanup.add(() => prisma.groomHorseSynergy.deleteMany({ where: { groomId: groom.id } }), 'synergies');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -106,14 +114,6 @@ describe('Equoria-tfo3c — a real grooming session writes no price and takes no
     await prisma.groomAssignment.create({
       data: { groomId: groom.id, foalId: horse.id, userId: user.id, isActive: true },
     });
-
-    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { groomId: groom.id } }), 'interactions');
-    cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: horse.id } }), 'activities');
-    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: user.id } }), 'assignments');
-    cleanup.add(() => prisma.groomHorseSynergy.deleteMany({ where: { groomId: groom.id } }), 'synergies');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
-    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   }, 60000);
 
   afterAll(() => cleanup.run(), 60000);

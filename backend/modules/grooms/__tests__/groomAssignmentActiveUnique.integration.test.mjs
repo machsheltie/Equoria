@@ -44,6 +44,11 @@ describe('groom assignment active-only unique index (Equoria-kccmt)', () => {
 
   beforeEach(async () => {
     const suffix = tag();
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { foalId: horse.id } }), 'groomAssignment');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
+
     owner = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -76,11 +81,6 @@ describe('groom assignment active-only unique index (Equoria-kccmt)', () => {
         userId: owner.id,
       },
     });
-
-    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { foalId: horse.id } }), 'groomAssignment');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
   }, 30000);
 
   afterEach(() => cleanup.run(), 30000);

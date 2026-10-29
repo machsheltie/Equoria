@@ -143,6 +143,29 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
 
+    // Scoped, fail-loud cleanup (Equoria-1ohys): swallowed catch arms replaced
+    // by the tracker so a failed delete fails the suite instead of leaking a
+    // fixture into the canonical DB. Name-prefix scoping ('TestFixture-GLS-')
+    // preserved exactly. FK order — groomLegacyLog rows (both the retiredGroom
+    // and legacyGroom relations are scoped to the prefix) before grooms
+    // (Groom.userId is Restrict), then the user last.
+    cleanup.add(
+      () =>
+        prisma.groomLegacyLog.deleteMany({
+          where: { retiredGroom: { name: { startsWith: 'TestFixture-GLS-' } } },
+        }),
+      'groomLegacyLog:retiredGroom',
+    );
+    cleanup.add(
+      () =>
+        prisma.groomLegacyLog.deleteMany({
+          where: { legacyGroom: { name: { startsWith: 'TestFixture-GLS-' } } },
+        }),
+      'groomLegacyLog:legacyGroom',
+    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GLS-' } } }), 'groom');
+    cleanup.add(() => prisma.user.delete({ where: { id: glsUser?.id } }), 'user');
+
     glsUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -215,29 +238,6 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
         inheritedPerk: 'playtimePro',
       },
     });
-
-    // Scoped, fail-loud cleanup (Equoria-1ohys): swallowed catch arms replaced
-    // by the tracker so a failed delete fails the suite instead of leaking a
-    // fixture into the canonical DB. Name-prefix scoping ('TestFixture-GLS-')
-    // preserved exactly. FK order — groomLegacyLog rows (both the retiredGroom
-    // and legacyGroom relations are scoped to the prefix) before grooms
-    // (Groom.userId is Restrict), then the user last.
-    cleanup.add(
-      () =>
-        prisma.groomLegacyLog.deleteMany({
-          where: { retiredGroom: { name: { startsWith: 'TestFixture-GLS-' } } },
-        }),
-      'groomLegacyLog:retiredGroom',
-    );
-    cleanup.add(
-      () =>
-        prisma.groomLegacyLog.deleteMany({
-          where: { legacyGroom: { name: { startsWith: 'TestFixture-GLS-' } } },
-        }),
-      'groomLegacyLog:legacyGroom',
-    );
-    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GLS-' } } }), 'groom');
-    cleanup.add(() => prisma.user.delete({ where: { id: glsUser?.id } }), 'user');
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);

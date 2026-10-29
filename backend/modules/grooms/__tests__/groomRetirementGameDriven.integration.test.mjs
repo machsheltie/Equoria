@@ -262,16 +262,16 @@ describe('Equoria-m9lz1 — the hidden retirement age', () => {
   let groom;
 
   beforeEach(async () => {
-    owner = await makeUser('ageowner');
-    groom = await makeGroom(owner.id, 'agegroom');
-
-    const ids = { groomId: groom.id, userId: owner.id };
     cleanup.add(
       () => prisma.groomRetirementSchedule.deleteMany({ where: { groomId: ids.groomId } }),
       'retirement schedule',
     );
     cleanup.add(() => prisma.groom.deleteMany({ where: { id: ids.groomId } }), 'groom');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: ids.userId } }), 'user');
+    owner = await makeUser('ageowner');
+    groom = await makeGroom(owner.id, 'agegroom');
+
+    const ids = { groomId: groom.id, userId: owner.id };
   }, 30000);
 
   afterEach(() => cleanup.run(), 30000);
@@ -339,6 +339,12 @@ describe('Equoria-m9lz1 — retirement ages across many grooms are in range and 
   afterEach(() => cleanup.run(), 60000);
 
   it('30 generated grooms all fall in 50..65 inclusive and are not all identical', async () => {
+    cleanup.add(
+      () => prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: ids.groomIds } } }),
+      'retirement schedules',
+    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: ids.groomIds } } }), 'grooms');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: ids.userId } }), 'user');
     const owner = await makeUser('distowner');
     const groomIds = [];
     for (let i = 0; i < 30; i++) {
@@ -347,12 +353,6 @@ describe('Equoria-m9lz1 — retirement ages across many grooms are in range and 
     }
 
     const ids = { groomIds, userId: owner.id };
-    cleanup.add(
-      () => prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: ids.groomIds } } }),
-      'retirement schedules',
-    );
-    cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: ids.groomIds } } }), 'grooms');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: ids.userId } }), 'user');
 
     const ages = [];
     for (const id of groomIds) {
@@ -379,6 +379,15 @@ describe('Equoria-m9lz1 — no player-visible groom response discloses the retir
   let retirementAge;
 
   beforeEach(async () => {
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { id: ids.assignmentId } }), 'groom assignment');
+    cleanup.add(() => prisma.groomAssignmentLog.deleteMany({ where: { id: ids.logId } }), 'groom assignment log');
+    cleanup.add(
+      () => prisma.groomRetirementSchedule.deleteMany({ where: { groomId: ids.groomId } }),
+      'retirement schedule',
+    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: ids.groomId } }), 'groom');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: ids.horseId } }), 'fixture horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: ids.userId } }), 'user');
     owner = await makeUser('hideowner');
     horse = await makeHorse(owner.id, 'hidehorse');
     groom = await makeGroom(owner.id, 'hidegroom');
@@ -398,15 +407,6 @@ describe('Equoria-m9lz1 — no player-visible groom response discloses the retir
       horseId: horse.id,
       userId: owner.id,
     };
-    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { id: ids.assignmentId } }), 'groom assignment');
-    cleanup.add(() => prisma.groomAssignmentLog.deleteMany({ where: { id: ids.logId } }), 'groom assignment log');
-    cleanup.add(
-      () => prisma.groomRetirementSchedule.deleteMany({ where: { groomId: ids.groomId } }),
-      'retirement schedule',
-    );
-    cleanup.add(() => prisma.groom.deleteMany({ where: { id: ids.groomId } }), 'groom');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: ids.horseId } }), 'fixture horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: ids.userId } }), 'user');
   }, 30000);
 
   afterEach(() => cleanup.run(), 30000);
@@ -468,6 +468,24 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
   let logId;
 
   beforeEach(async () => {
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: ids.userIds } } }), 'notifications');
+    cleanup.add(
+      () => prisma.groomLegacyLog.deleteMany({ where: { retiredGroomId: { in: ids.groomIds } } }),
+      'legacy logs',
+    );
+    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { id: ids.interactionId } }), 'groom interaction');
+    cleanup.add(
+      () => prisma.groomAssignment.deleteMany({ where: { id: { in: ids.assignmentIds } } }),
+      'groom assignments',
+    );
+    cleanup.add(() => prisma.groomAssignmentLog.deleteMany({ where: { id: ids.logId } }), 'groom assignment log');
+    cleanup.add(
+      () => prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: ids.groomIds } } }),
+      'retirement schedules',
+    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: ids.groomIds } } }), 'grooms');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: ids.horseId } }), 'fixture horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: ids.userIds } } }), 'fixture users');
     owner = await makeUser('gameowner');
     bystander = await makeUser('bystander');
     horse = await makeHorse(owner.id, 'gamehorse');
@@ -529,24 +547,6 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
       horseId: horse.id,
       userIds: [owner.id, bystander.id],
     };
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: ids.userIds } } }), 'notifications');
-    cleanup.add(
-      () => prisma.groomLegacyLog.deleteMany({ where: { retiredGroomId: { in: ids.groomIds } } }),
-      'legacy logs',
-    );
-    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { id: ids.interactionId } }), 'groom interaction');
-    cleanup.add(
-      () => prisma.groomAssignment.deleteMany({ where: { id: { in: ids.assignmentIds } } }),
-      'groom assignments',
-    );
-    cleanup.add(() => prisma.groomAssignmentLog.deleteMany({ where: { id: ids.logId } }), 'groom assignment log');
-    cleanup.add(
-      () => prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: ids.groomIds } } }),
-      'retirement schedules',
-    );
-    cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: ids.groomIds } } }), 'grooms');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: ids.horseId } }), 'fixture horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: ids.userIds } } }), 'fixture users');
   }, 60000);
 
   afterEach(() => cleanup.run(), 60000);

@@ -33,6 +33,9 @@ let groom;
 const moduleCleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  moduleCleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
+  moduleCleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+  moduleCleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -64,9 +67,6 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-  moduleCleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
-  moduleCleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
-  moduleCleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => moduleCleanup.run(), 30000);
@@ -196,6 +196,17 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
 
+    cleanup.add(
+      () =>
+        prisma.groomInteraction.deleteMany({
+          where: { foalId: { in: [improvingHorse?.id, decliningHorse?.id, stableHorse?.id].filter(Boolean) } },
+        }),
+      'trend-interactions',
+    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-' } } }), 'trend-horses');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: trendGroom.id } }), 'trendGroom');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: trendUser.id } }), 'trendUser');
+
     trendUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -316,17 +327,6 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
         },
       });
     }
-
-    cleanup.add(
-      () =>
-        prisma.groomInteraction.deleteMany({
-          where: { foalId: { in: [improvingHorse.id, decliningHorse.id, stableHorse.id] } },
-        }),
-      'trend-interactions',
-    );
-    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-' } } }), 'trend-horses');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { id: trendGroom.id } }), 'trendGroom');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: trendUser.id } }), 'trendUser');
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);
@@ -379,6 +379,14 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
   beforeAll(async () => {
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
+
+    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: branchHorse.id } }), 'branch-interactions');
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-Branch' } } }),
+      'branch-horses',
+    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-' } } }), 'branch-grooms');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: branchUser.id } }), 'branchUser');
 
     branchUser = await prisma.user.create({
       data: {
@@ -452,14 +460,6 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
         },
       ],
     });
-
-    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: branchHorse.id } }), 'branch-interactions');
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-Branch' } } }),
-      'branch-horses',
-    );
-    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-' } } }), 'branch-grooms');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: branchUser.id } }), 'branchUser');
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);
@@ -615,6 +615,18 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
 
+    // GroomInteraction.foalId/groomId both onDelete: Cascade — deleting the
+    // RR7-prefixed horses + grooms cascades EVERY interaction created in this
+    // suite (including per-test ones on rr7HighBondHorse), so
+    // the per-test finally-deletes were removed in favour of this suite sweep.
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }), 'rr7-grooms');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }), 'rr7-horses');
+    cleanup.add(() => (rr7User ? prisma.user.deleteMany({ where: { id: rr7User.id } }) : undefined), 'rr7User');
+    cleanup.add(
+      () => (rr7NoGroomUser ? prisma.user.deleteMany({ where: { id: rr7NoGroomUser.id } }) : undefined),
+      'rr7NoGroomUser',
+    );
+
     rr7User = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -697,15 +709,6 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
         userId: rr7NoGroomUser.id,
       },
     });
-
-    // GroomInteraction.foalId/groomId both onDelete: Cascade — deleting the
-    // RR7-prefixed horses + grooms cascades EVERY interaction created in this
-    // suite (including per-test ones on rr7HighBondHorse), so
-    // the per-test finally-deletes were removed in favour of this suite sweep.
-    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }), 'rr7-grooms');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }), 'rr7-horses');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: rr7User?.id } }), 'rr7User');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: rr7NoGroomUser?.id } }), 'rr7NoGroomUser');
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);

@@ -148,6 +148,10 @@ let groomNotFoundHorse;
 const groomNotFoundCleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // Register scoped, FK-ordered cleanup (horse before user — Horse.userId Restrict).
+  groomNotFoundCleanup.add(() => prisma.horse.delete({ where: { id: groomNotFoundHorse.id } }), 'groomNotFound horse');
+  groomNotFoundCleanup.add(() => prisma.user.delete({ where: { id: groomNotFoundUser.id } }), 'groomNotFound user');
+
   groomNotFoundUser = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -169,10 +173,6 @@ beforeAll(async () => {
       userId: groomNotFoundUser.id,
     },
   });
-
-  // Register scoped, FK-ordered cleanup (horse before user — Horse.userId Restrict).
-  groomNotFoundCleanup.add(() => prisma.horse.delete({ where: { id: groomNotFoundHorse.id } }), 'groomNotFound horse');
-  groomNotFoundCleanup.add(() => prisma.user.delete({ where: { id: groomNotFoundUser.id } }), 'groomNotFound user');
 }, 30000);
 
 afterAll(() => groomNotFoundCleanup.run(), 30000);
@@ -208,6 +208,23 @@ beforeAll(async () => {
   const ts = Date.now();
   const rand = () => Math.random().toString(36).slice(2, 8);
 
+  // Register scoped, FK-ordered cleanup: groom* children first (cascade-owned
+  // by groom/foal), then horses + groom (Restrict on Horse.userId/Groom.userId),
+  // then the owning user last.
+  successCleanup.add(
+    () =>
+      prisma.groomAssignment.deleteMany({
+        where: { foalId: { in: [foalForSuccessAssign.id] } },
+      }),
+    'success groomAssignments',
+  );
+  successCleanup.add(
+    () => prisma.horse.delete({ where: { id: foalForSuccessAssign.id } }),
+    'success foalForSuccessAssign',
+  );
+  successCleanup.add(() => prisma.groom.delete({ where: { id: groomForSuccessAssign.id } }), 'success groom');
+  successCleanup.add(() => prisma.user.delete({ where: { id: successUser.id } }), 'success user');
+
   successUser = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -240,23 +257,6 @@ beforeAll(async () => {
       userId: successUser.id,
     },
   });
-
-  // Register scoped, FK-ordered cleanup: groom* children first (cascade-owned
-  // by groom/foal), then horses + groom (Restrict on Horse.userId/Groom.userId),
-  // then the owning user last.
-  successCleanup.add(
-    () =>
-      prisma.groomAssignment.deleteMany({
-        where: { foalId: { in: [foalForSuccessAssign.id] } },
-      }),
-    'success groomAssignments',
-  );
-  successCleanup.add(
-    () => prisma.horse.delete({ where: { id: foalForSuccessAssign.id } }),
-    'success foalForSuccessAssign',
-  );
-  successCleanup.add(() => prisma.groom.delete({ where: { id: groomForSuccessAssign.id } }), 'success groom');
-  successCleanup.add(() => prisma.user.delete({ where: { id: successUser.id } }), 'success user');
 }, 30000);
 
 afterAll(() => successCleanup.run(), 30000);

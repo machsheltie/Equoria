@@ -47,6 +47,24 @@ describe('Equoria-5v6g: groom horse auto-updates GroomHorseSynergy', () => {
   const perTestCleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    // Equoria-1ohys: fail-loud scoped cleanup. FK order — GroomHorseSynergy +
+    // GroomInteraction (Cascade children of groom/foal) before the foal; foal +
+    // grooms (children of user; Horse.userId is Restrict) before the user.
+    // Scoped by groomId / foalId / id / userId; never a bare deleteMany. (The
+    // explicit synergy/interaction deletes are belt-and-braces — they would also
+    // cascade with the horse/groom deletes.)
+    cleanup.add(
+      () => (groom ? prisma.groomHorseSynergy.deleteMany({ where: { groomId: groom.id } }) : undefined),
+      'groomHorseSynergy',
+    );
+    cleanup.add(
+      () => (foal ? prisma.groomInteraction.deleteMany({ where: { foalId: foal.id } }) : undefined),
+      'groomInteraction',
+    );
+    cleanup.add(() => prisma.horse.delete({ where: { id: foal?.id } }), 'horse');
+    cleanup.add(() => (user ? prisma.groom.deleteMany({ where: { userId: user.id } }) : undefined), 'grooms');
+    cleanup.add(() => prisma.user.delete({ where: { id: user?.id } }), 'user');
+
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -95,18 +113,6 @@ describe('Equoria-5v6g: groom horse auto-updates GroomHorseSynergy', () => {
     const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${token}`] });
     csrfToken = csrf.csrfToken;
     cookieHeader = csrf.cookieHeader;
-
-    // Equoria-1ohys: fail-loud scoped cleanup. FK order — GroomHorseSynergy +
-    // GroomInteraction (Cascade children of groom/foal) before the foal; foal +
-    // grooms (children of user; Horse.userId is Restrict) before the user.
-    // Scoped by groomId / foalId / id / userId; never a bare deleteMany. (The
-    // explicit synergy/interaction deletes are belt-and-braces — they would also
-    // cascade with the horse/groom deletes.)
-    cleanup.add(() => prisma.groomHorseSynergy.deleteMany({ where: { groomId: groom?.id } }), 'groomHorseSynergy');
-    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: foal?.id } }), 'groomInteraction');
-    cleanup.add(() => prisma.horse.delete({ where: { id: foal?.id } }), 'horse');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user?.id } }), 'grooms');
-    cleanup.add(() => prisma.user.delete({ where: { id: user?.id } }), 'user');
   }, 60000);
 
   // Drain per-test fixtures every cycle (fail-loud). Runs before afterAll, so a

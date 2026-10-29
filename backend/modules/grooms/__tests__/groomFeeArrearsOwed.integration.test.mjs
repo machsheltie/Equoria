@@ -179,9 +179,9 @@ describe('Equoria-bgdfb — the missed week is collected with the next one, once
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    registerUserCleanup(cleanup, () => user, 'collect');
     user = await makeUser('collect', 0); // no money: week one cannot be paid
     ({ groom } = await makeStaffedGroom(user.id, 'collect'));
-    registerUserCleanup(cleanup, () => user, 'collect');
   }, 60000);
 
   afterAll(() => cleanup.run(), 60000);
@@ -262,9 +262,9 @@ describe('Equoria-bgdfb — a debt does not outlive the groom it was owed for', 
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    registerUserCleanup(cleanup, () => user, 'release');
     user = await makeUser('release', 0); // never able to pay
     ({ groom } = await makeStaffedGroom(user.id, 'release'));
-    registerUserCleanup(cleanup, () => user, 'release');
   }, 60000);
 
   afterAll(() => cleanup.run(), 60000);
@@ -308,9 +308,9 @@ describe('Equoria-bgdfb F2 — the debt never blocks the current week', () => {
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    registerUserCleanup(cleanup, () => user, 'partial');
     user = await makeUser('partial', 0); // week one cannot be paid
     ({ groom } = await makeStaffedGroom(user.id, 'partial'));
-    registerUserCleanup(cleanup, () => user, 'partial');
   }, 60000);
 
   afterAll(() => cleanup.run(), 60000);
@@ -384,9 +384,9 @@ describe('Equoria-bgdfb F3 — a debt does not outlive the career either', () =>
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    registerUserCleanup(cleanup, () => user, 'retire');
     user = await makeUser('retire', 0); // the week cannot be paid
     ({ groom } = await makeStaffedGroom(user.id, 'retire'));
-    registerUserCleanup(cleanup, () => user, 'retire');
   }, 60000);
 
   afterAll(() => cleanup.run(), 60000);

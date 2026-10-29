@@ -35,6 +35,12 @@ const get = path =>
   request(app).get(`/api/v1/groom-handlers${path}`).set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
 
 beforeAll(async () => {
+  // The tracker runs in order: children before parents (Horse.userId and
+  // Groom.userId are onDelete:Restrict).
+  cleanup.add(() => prisma.groomAssignment.delete({ where: { id: assignment.id } }), 'groom assignment');
+  cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -73,12 +79,6 @@ beforeAll(async () => {
   const assignment = await prisma.groomAssignment.create({
     data: { groomId: groom.id, foalId: horse.id, userId: user.id, isActive: true },
   });
-  // The tracker runs in order: children before parents (Horse.userId and
-  // Groom.userId are onDelete:Restrict).
-  cleanup.add(() => prisma.groomAssignment.delete({ where: { id: assignment.id } }), 'groom assignment');
-  cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
-  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

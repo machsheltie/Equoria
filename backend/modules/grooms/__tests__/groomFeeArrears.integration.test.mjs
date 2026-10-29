@@ -201,6 +201,7 @@ describe('q228 — the fee is per GROOM, at their star level price', () => {
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    registerUserCleanup(cleanup, () => user, 'basis');
     user = await makeUser('basis', 20000);
     horses = await Promise.all([
       makeHorse(user.id, 'basis-h1'),
@@ -216,7 +217,6 @@ describe('q228 — the fee is per GROOM, at their star level price', () => {
         data: { groomId: busy.id, foalId: horse.id, userId: user.id, isActive: true },
       });
     }
-    registerUserCleanup(cleanup, () => user, 'basis');
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);
@@ -269,6 +269,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    registerUserCleanup(cleanup, () => user, 'arrears');
     // No money at all: the fee cannot be paid.
     user = await makeUser('arrears', 0);
     horse = await makeHorse(user.id, 'arrears-horse');
@@ -292,8 +293,6 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
       data: { groomId: groom.id, horseId: horse.id },
     });
     logId = log.id;
-
-    registerUserCleanup(cleanup, () => user, 'arrears');
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);
@@ -589,6 +588,7 @@ describe('Equoria-ypb7d.3 — paying clears the arrears', () => {
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    registerUserCleanup(cleanup, () => user, 'cleared');
     user = await makeUser('cleared', 20000);
     groom = await makeGroom(user.id, 'cleared-groom', {
       // Already in grace for week one, and the user now has money.
@@ -598,7 +598,6 @@ describe('Equoria-ypb7d.3 — paying clears the arrears', () => {
       where: { id: user.id },
       data: { groomSalaryGracePeriod: getPayWeekStart(WEEK_ONE) },
     });
-    registerUserCleanup(cleanup, () => user, 'cleared');
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);
@@ -632,6 +631,7 @@ describe('Equoria-ypb7d.3 — a retired groom is no longer billed', () => {
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    registerUserCleanup(cleanup, () => user, 'retired-billing');
     user = await makeUser('retired-billing', 20000);
     groom = await makeGroom(user.id, 'retired-billing-groom', { startAge: 20 });
     // Retire the groom directly on the row: this block is about what the FEE pass does
@@ -641,7 +641,6 @@ describe('Equoria-ypb7d.3 — a retired groom is no longer billed', () => {
       where: { id: groom.id },
       data: { retired: true, retirementReason: 'age', retirementTimestamp: new Date() },
     });
-    registerUserCleanup(cleanup, () => user, 'retired-billing');
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);

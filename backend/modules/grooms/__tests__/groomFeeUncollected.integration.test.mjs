@@ -135,10 +135,10 @@ describe('Equoria-2ti1j — a non-funds throw must not grant a free week of staf
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    registerUserCleanup(cleanup, () => user, 'rich');
     // Plenty of money: the fee will go uncollected because the DATABASE refused the
     // transaction, never because the player could not pay. That is the whole point.
     user = await makeUser('rich', 100000);
-    registerUserCleanup(cleanup, () => user, 'rich');
     groom = await makeGroom(user.id, 'groom');
     salary = calculateWeeklyFee(groom);
   }, 60000);
@@ -237,8 +237,8 @@ describe('Equoria-2ti1j — a collection error never costs the player the groom'
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
-    user = await makeUser('carried', 100000);
     registerUserCleanup(cleanup, () => user, 'carried');
+    user = await makeUser('carried', 100000);
     // Already in grace since the EARLIER pay week — the exact state in which
     // `handleUnpaidFees` releases a groom for non-payment.
     groom = await makeGroom(user.id, 'in-grace', { feeUnpaidSince: getPayWeekStart(WEEK_ONE) });

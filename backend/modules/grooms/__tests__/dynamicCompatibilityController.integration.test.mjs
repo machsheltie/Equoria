@@ -67,6 +67,22 @@ const cleanup = createCleanupTracker();
 beforeAll(async () => {
   const uid = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
+  // FK-ordered, id-scoped, fail-loud sweep.
+  cleanup.add(
+    () =>
+      prisma.groomInteraction.deleteMany({
+        where: { groomId: { in: [...grooms.map(g => g.id), foreignGroom?.id].filter(Boolean) } },
+      }),
+    'groom interactions',
+  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: foreignUser.id } }), 'foreign horse');
+  cleanup.add(() => prisma.groom.deleteMany({ where: { userId: foreignUser.id } }), 'foreign groom');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: foreignUser.id } }), 'foreign user');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
+  cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
+  cleanup.add(() => prisma.breed.deleteMany({ where: { id: breedId ?? -1 } }), 'breed');
+
   const breed = await prisma.breed.create({
     data: {
       name: `TestFixture-CompatBreed-${uid}`,
@@ -229,20 +245,6 @@ beforeAll(async () => {
   // tryPopulateUserFromAccessCookie binds issuance to user.id — the same
   // sessionIdentifier the Bearer-authed mutations below resolve to.
   csrfPair = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-
-  // FK-ordered, id-scoped, fail-loud sweep.
-  cleanup.add(
-    () =>
-      prisma.groomInteraction.deleteMany({ where: { groomId: { in: [...grooms.map(g => g.id), foreignGroom.id] } } }),
-    'groom interactions',
-  );
-  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: foreignUser.id } }), 'foreign horse');
-  cleanup.add(() => prisma.groom.deleteMany({ where: { userId: foreignUser.id } }), 'foreign groom');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: foreignUser.id } }), 'foreign user');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
-  cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
-  cleanup.add(() => prisma.breed.deleteMany({ where: { id: breedId } }), 'breed');
 }, 60000);
 
 afterAll(() => cleanup.run(), 60000);

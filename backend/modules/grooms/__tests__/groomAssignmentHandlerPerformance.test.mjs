@@ -26,6 +26,14 @@ let groom;
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: groom and horse
+  // (Horse.userId is onDelete:Restrict) before the user row. A failed delete
+  // fails the suite instead of being swallowed and leaking a fixture into the
+  // canonical DB.
+  cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -57,14 +65,6 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: groom and horse
-  // (Horse.userId is onDelete:Restrict) before the user row. A failed delete
-  // fails the suite instead of being swallowed and leaking a fixture into the
-  // canonical DB.
-  cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
-  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

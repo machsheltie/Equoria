@@ -42,6 +42,10 @@ function expectedModifier(rows) {
 }
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { groomId: groom.id } }), 'interactions');
+  cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -72,10 +76,6 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-  cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { groomId: groom.id } }), 'interactions');
-  cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 60_000);
 
 afterAll(() => cleanup.run(), 60_000);

@@ -200,6 +200,23 @@ describe('Equoria-m9lz1 — POST /api/v1/grooms/:id/retirement/process is closed
   let assignmentLogId;
 
   beforeEach(async () => {
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: ids.userIds } } }), 'notifications');
+    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { id: ids.interactionId } }), 'groom interaction');
+    cleanup.add(
+      () => prisma.groomAssignment.deleteMany({ where: { id: { in: ids.assignmentIds } } }),
+      'groom assignments',
+    );
+    cleanup.add(
+      () => prisma.groomAssignmentLog.deleteMany({ where: { id: ids.assignmentLogId } }),
+      'groom assignment log',
+    );
+    cleanup.add(
+      () => prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: ids.groomIds } } }),
+      'retirement schedules',
+    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: ids.groomIds } } }), 'grooms');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: ids.horseId } }), 'fixture horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: ids.userIds } } }), 'fixture users');
     owner = await makeUser('owner');
     stranger = await makeUser('stranger');
     horse = await makeHorse(owner.id, 'horse');
@@ -257,23 +274,6 @@ describe('Equoria-m9lz1 — POST /api/v1/grooms/:id/retirement/process is closed
       horseId: horse.id,
       userIds: [owner.id, stranger.id],
     };
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: ids.userIds } } }), 'notifications');
-    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { id: ids.interactionId } }), 'groom interaction');
-    cleanup.add(
-      () => prisma.groomAssignment.deleteMany({ where: { id: { in: ids.assignmentIds } } }),
-      'groom assignments',
-    );
-    cleanup.add(
-      () => prisma.groomAssignmentLog.deleteMany({ where: { id: ids.assignmentLogId } }),
-      'groom assignment log',
-    );
-    cleanup.add(
-      () => prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: ids.groomIds } } }),
-      'retirement schedules',
-    );
-    cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: ids.groomIds } } }), 'grooms');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: ids.horseId } }), 'fixture horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: ids.userIds } } }), 'fixture users');
   }, 30000);
 
   afterEach(() => cleanup.run(), 30000);

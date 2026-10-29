@@ -63,6 +63,13 @@ describe('Equoria-fby1t — the player can see how old their groom is', () => {
 
   beforeAll(async () => {
     const suffix = tag();
+    cleanup.add(
+      () => prisma.groomRetirementSchedule.deleteMany({ where: { groomId: groom.id } }),
+      'retirement schedule',
+    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -87,13 +94,6 @@ describe('Equoria-fby1t — the player can see how old their groom is', () => {
       },
     });
     retirementAge = await ensureRetirementSchedule(prisma, groom.id);
-
-    cleanup.add(
-      () => prisma.groomRetirementSchedule.deleteMany({ where: { groomId: groom.id } }),
-      'retirement schedule',
-    );
-    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
-    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   }, 60000);
 
   afterAll(() => cleanup.run(), 60000);

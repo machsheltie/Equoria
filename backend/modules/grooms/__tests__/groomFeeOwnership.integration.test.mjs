@@ -71,6 +71,16 @@ describe('Equoria-6p398.14 — fee counts only horses the employer owns', () => 
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    const ids = () => [employer?.id, stranger?.id].filter(Boolean);
+    cleanup.add(() => prisma.groomSalaryPayment.deleteMany({ where: { userId: { in: ids() } } }), 'salary payments');
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: ids() } } }), 'transactions');
+    cleanup.add(() => prisma.groomEngagement.deleteMany({ where: { userId: { in: ids() } } }), 'engagements');
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { groomId: groom.id } }), 'assignments');
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: ids() } } }), 'notifications');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: ids() } } }), 'horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: ids() } } }), 'users');
+
     employer = await makeUser('employer');
     stranger = await makeUser('stranger');
     groom = await prisma.groom.create({
@@ -95,16 +105,6 @@ describe('Equoria-6p398.14 — fee counts only horses the employer owns', () => 
     await prisma.groomAssignment.create({
       data: { groomId: groom.id, foalId: transferred.id, userId: employer.id, isActive: true },
     });
-
-    const ids = [employer.id, stranger.id];
-    cleanup.add(() => prisma.groomSalaryPayment.deleteMany({ where: { userId: { in: ids } } }), 'salary payments');
-    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: ids } } }), 'transactions');
-    cleanup.add(() => prisma.groomEngagement.deleteMany({ where: { userId: { in: ids } } }), 'engagements');
-    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { groomId: groom.id } }), 'assignments');
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: ids } } }), 'notifications');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: ids } } }), 'horses');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: ids } } }), 'users');
   }, 60000);
 
   afterAll(() => cleanup.run(), 60000);

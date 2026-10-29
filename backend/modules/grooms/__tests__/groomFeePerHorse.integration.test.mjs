@@ -119,6 +119,15 @@ describe('q228 — the weekly pass and the summary charge the same thing', () =>
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    cleanup.add(() => prisma.groomSalaryPayment.deleteMany({ where: { userId: user.id } }), 'salary payments');
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: user.id } }), 'transactions');
+    cleanup.add(() => prisma.groomEngagement.deleteMany({ where: { userId: user.id } }), 'engagements');
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: user.id } }), 'assignments');
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user.id } }), 'notifications');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
     await prisma.systemAccount.upsert({
       where: { name: SYSTEM_ACCOUNT_BURN },
       create: { name: SYSTEM_ACCOUNT_BURN, balance: 0 },
@@ -133,15 +142,6 @@ describe('q228 — the weekly pass and the summary charge the same thing', () =>
       const horse = await makeHorse(user.id, label);
       await assign(workingGroom.id, horse.id, user.id);
     }
-
-    cleanup.add(() => prisma.groomSalaryPayment.deleteMany({ where: { userId: user.id } }), 'salary payments');
-    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: user.id } }), 'transactions');
-    cleanup.add(() => prisma.groomEngagement.deleteMany({ where: { userId: user.id } }), 'engagements');
-    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: user.id } }), 'assignments');
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user.id } }), 'notifications');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
-    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   }, 60000);
 
   afterAll(() => cleanup.run(), 60000);
@@ -189,6 +189,12 @@ describe('Equoria-95yrv — a groom works at most twenty horses (q68)', () => {
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    cleanup.add(() => prisma.groomAssignmentLog.deleteMany({ where: { groomId: groom.id } }), 'assignment logs');
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: user.id } }), 'assignments');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
     user = await makeUser('cap');
     groom = await makeGroom(user.id, 'capped');
 
@@ -197,12 +203,6 @@ describe('Equoria-95yrv — a groom works at most twenty horses (q68)', () => {
       await assign(groom.id, horse.id, user.id);
     }
     spareHorse = await makeHorse(user.id, 'eleventh');
-
-    cleanup.add(() => prisma.groomAssignmentLog.deleteMany({ where: { groomId: groom.id } }), 'assignment logs');
-    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: user.id } }), 'assignments');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
-    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   }, 60000);
 
   afterAll(() => cleanup.run(), 60000);

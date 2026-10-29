@@ -80,6 +80,15 @@ describe('calculateUserSalaryCost — DB fixture (Equoria-jkht)', () => {
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
 
+    // Scoped, fail-loud cleanup (Equoria-1ohys): swallowed catch arms replaced
+    // by the tracker so a failed delete fails the suite. FK order — horse then
+    // groom (each cascades the GroomAssignment child: foalId and groomId are
+    // both onDelete: Cascade), then the user last (Horse.userId + Groom.userId
+    // are Restrict).
+    cleanup.add(() => prisma.horse.delete({ where: { id: gssHorse.id } }), 'horse');
+    cleanup.add(() => prisma.groom.delete({ where: { id: gssGroom.id } }), 'groom');
+    cleanup.add(() => prisma.user.delete({ where: { id: gssUser.id } }), 'user');
+
     gssUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -122,15 +131,6 @@ describe('calculateUserSalaryCost — DB fixture (Equoria-jkht)', () => {
         isActive: true,
       },
     });
-
-    // Scoped, fail-loud cleanup (Equoria-1ohys): swallowed catch arms replaced
-    // by the tracker so a failed delete fails the suite. FK order — horse then
-    // groom (each cascades the GroomAssignment child: foalId and groomId are
-    // both onDelete: Cascade), then the user last (Horse.userId + Groom.userId
-    // are Restrict).
-    cleanup.add(() => prisma.horse.delete({ where: { id: gssHorse.id } }), 'horse');
-    cleanup.add(() => prisma.groom.delete({ where: { id: gssGroom.id } }), 'groom');
-    cleanup.add(() => prisma.user.delete({ where: { id: gssUser.id } }), 'user');
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);

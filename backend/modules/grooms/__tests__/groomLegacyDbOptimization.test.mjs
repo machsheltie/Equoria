@@ -21,6 +21,12 @@ let groom;
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys): swallowed catch arms are
+  // replaced by the tracker so a failed delete fails the suite. FK order —
+  // groom before user (Groom.userId is Restrict).
+  cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -41,12 +47,6 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys): swallowed catch arms are
-  // replaced by the tracker so a failed delete fails the suite. FK order —
-  // groom before user (Groom.userId is Restrict).
-  cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

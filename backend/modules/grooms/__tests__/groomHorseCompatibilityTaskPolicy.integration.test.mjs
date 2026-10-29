@@ -127,6 +127,20 @@ function getAuthed(path) {
 beforeAll(async () => {
   const uid = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
+  // The tracker runs callbacks in registration order: children before parents.
+  cleanup.add(
+    () => prisma.horse.deleteMany({ where: { userId: { in: [user?.id, foreignUser?.id].filter(Boolean) } } }),
+    'horses',
+  );
+  cleanup.add(
+    () => prisma.groom.deleteMany({ where: { userId: { in: [user?.id, foreignUser?.id].filter(Boolean) } } }),
+    'grooms',
+  );
+  cleanup.add(
+    () => prisma.user.deleteMany({ where: { id: { in: [user?.id, foreignUser?.id].filter(Boolean) } } }),
+    'users',
+  );
+  cleanup.add(() => prisma.breed.deleteMany({ where: { id: breedId ?? -1 } }), 'breed');
   const breed = await prisma.breed.create({
     data: { name: `TestFixture-CompatPolicy-${uid}`, description: 'compat policy fixture' },
   });
@@ -159,11 +173,6 @@ beforeAll(async () => {
       level: 1,
     },
   });
-  // The tracker runs callbacks in registration order: children before parents.
-  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: [user.id, foreignUser.id] } } }), 'horses');
-  cleanup.add(() => prisma.groom.deleteMany({ where: { userId: { in: [user.id, foreignUser.id] } } }), 'grooms');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [user.id, foreignUser.id] } } }), 'users');
-  cleanup.add(() => prisma.breed.deleteMany({ where: { id: breedId } }), 'breed');
   // Equoria-oey96.37 (owner ruling 2026-07-07): /compatibility is admin-only, so the
   // caller is an admin; ownership checks still apply to her own fixtures.
   token = generateTestToken({ id: user.id, email: user.email, role: 'admin' });

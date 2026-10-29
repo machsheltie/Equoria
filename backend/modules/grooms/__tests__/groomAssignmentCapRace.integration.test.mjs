@@ -156,6 +156,12 @@ describe('Equoria-95yrv F1 — two assignments racing one short of the cap seat 
 
   beforeEach(async () => {
     const suffix = tag();
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: user.id } }), 'assignments');
+    cleanup.add(() => prisma.groomAssignmentLog.deleteMany({ where: { groomId: groom.id } }), 'assignment logs');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -188,12 +194,6 @@ describe('Equoria-95yrv F1 — two assignments racing one short of the cap seat 
     }
     // The two horses that will race for it.
     contested = [await makeHorse(user.id, 'racer-a'), await makeHorse(user.id, 'racer-b')];
-
-    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: user.id } }), 'assignments');
-    cleanup.add(() => prisma.groomAssignmentLog.deleteMany({ where: { groomId: groom.id } }), 'assignment logs');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
-    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   }, 60000);
 
   afterEach(() => cleanup.run(), 60000);

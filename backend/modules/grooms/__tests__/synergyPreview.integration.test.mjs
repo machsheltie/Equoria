@@ -33,6 +33,15 @@ describe('31D-4 (Equoria-ictn): GET /api/grooms/:groomId/horses/:horseId/synergy
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    // Equoria-1ohys: fail-loud scoped cleanup. FK order — horse + grooms
+    // (children of user; Horse.userId is Restrict) before the user. Groom*
+    // child rows (interaction/synergy/assignmentLog) cascade-delete with the
+    // groom/horse, so no separate child delete is needed for this read-only
+    // preview suite. Scoped by id / userId; never a bare deleteMany.
+    cleanup.add(() => prisma.horse.delete({ where: { id: nervousHorse?.id } }), 'horse');
+    cleanup.add(() => (user ? prisma.groom.deleteMany({ where: { userId: user.id } }) : undefined), 'grooms');
+    cleanup.add(() => prisma.user.delete({ where: { id: user?.id } }), 'user');
+
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -85,15 +94,6 @@ describe('31D-4 (Equoria-ictn): GET /api/grooms/:groomId/horses/:horseId/synergy
         isActive: true,
       },
     });
-
-    // Equoria-1ohys: fail-loud scoped cleanup. FK order — horse + grooms
-    // (children of user; Horse.userId is Restrict) before the user. Groom*
-    // child rows (interaction/synergy/assignmentLog) cascade-delete with the
-    // groom/horse, so no separate child delete is needed for this read-only
-    // preview suite. Scoped by id / userId; never a bare deleteMany.
-    cleanup.add(() => prisma.horse.delete({ where: { id: nervousHorse?.id } }), 'horse');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user?.id } }), 'grooms');
-    cleanup.add(() => prisma.user.delete({ where: { id: user?.id } }), 'user');
   }, 60000);
 
   afterAll(() => cleanup.run(), 60000);

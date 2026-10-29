@@ -318,6 +318,19 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    // `userId` is NULL on the pooled groom, so the by-user sweep below cannot find it.
+    // Delete it by id, before the user its closed engagement references.
+    cleanup.add(
+      () => (pooledGroom ? prisma.groomEngagement.deleteMany({ where: { groomId: pooledGroom.id } }) : undefined),
+      'pooled groom engagement',
+    );
+    cleanup.add(() => prisma.groom.delete({ where: { id: pooledGroom?.id } }), 'pooled groom');
+    cleanup.add(() => prisma.groomAssignmentLog.deleteMany({ where: { horseId: horse.id } }), 'assignment logs');
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user.id } }), 'notifications');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
+    cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
     user = await makeUser('retire');
     horse = await prisma.horse.create({
       data: {
@@ -354,19 +367,6 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
         endReason: 'feeUnpaid',
       },
     });
-
-    // `userId` is NULL on the pooled groom, so the by-user sweep below cannot find it.
-    // Delete it by id, before the user its closed engagement references.
-    cleanup.add(
-      () => prisma.groomEngagement.deleteMany({ where: { groomId: pooledGroom?.id } }),
-      'pooled groom engagement',
-    );
-    cleanup.add(() => prisma.groom.delete({ where: { id: pooledGroom?.id } }), 'pooled groom');
-    cleanup.add(() => prisma.groomAssignmentLog.deleteMany({ where: { horseId: horse.id } }), 'assignment logs');
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user.id } }), 'notifications');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
-    cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);

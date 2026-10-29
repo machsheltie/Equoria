@@ -184,8 +184,8 @@ describe('Equoria-ypb7d.2 — hiring opens an engagement, never an ownership', (
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
-    user = await makeUser('open', 20000);
     registerUserCleanup(cleanup, () => user, 'open');
+    user = await makeUser('open', 20000);
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);
@@ -284,6 +284,16 @@ describe('Equoria-ypb7d.2 — two players cannot hire the same free agent', () =
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    cleanup.add(() => prisma.groomEngagement.deleteMany({ where: { groomId: groom.id } }), 'engagements');
+    cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
+    for (const [label, getUser] of [
+      ['race-owner', () => owner],
+      ['race-a', () => bidderA],
+      ['race-b', () => bidderB],
+    ]) {
+      registerUserCleanup(cleanup, getUser, label);
+    }
+
     owner = await makeUser('race-owner', 1000);
     bidderA = await makeUser('race-a', 20000);
     bidderB = await makeUser('race-b', 20000);
@@ -307,16 +317,6 @@ describe('Equoria-ypb7d.2 — two players cannot hire the same free agent', () =
         endReason: ENGAGEMENT_END_REASONS.FEE_UNPAID,
       },
     });
-
-    cleanup.add(() => prisma.groomEngagement.deleteMany({ where: { groomId: groom.id } }), 'engagements');
-    cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
-    for (const [label, getUser] of [
-      ['race-owner', () => owner],
-      ['race-a', () => bidderA],
-      ['race-b', () => bidderB],
-    ]) {
-      registerUserCleanup(cleanup, getUser, label);
-    }
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);
@@ -402,6 +402,7 @@ describe('Equoria-ypb7d.2 — retirement closes the engagement but keeps the his
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    registerUserCleanup(cleanup, () => user, 'retire-eng');
     user = await makeUser('retire-eng', 20000);
     groom = await makeGroom(user.id, 'retire-eng-groom', { startAge: 20 });
     const retirementAge = await ensureRetirementSchedule(prisma, groom.id);
@@ -409,7 +410,6 @@ describe('Equoria-ypb7d.2 — retirement closes the engagement but keeps the his
       where: { id: groom.id },
       data: { careerWeeks: retirementAge - 20 },
     });
-    registerUserCleanup(cleanup, () => user, 'retire-eng');
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);
