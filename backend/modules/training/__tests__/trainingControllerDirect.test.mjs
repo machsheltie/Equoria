@@ -457,11 +457,19 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     it('should return complete status for eligible horse with no training history', async () => {
       // Use the eligible test horse (4 years old, no training history)
       const result = await getTrainingStatus(testHorseEligible.id, 'Racing');
+      // The horse's stored Racing score (an earlier case in this file trains it).
+      const { disciplineScores } = await prisma.horse.findUnique({
+        where: { id: testHorseEligible.id },
+        select: { disciplineScores: true },
+      });
 
       expect(result).toEqual({
         eligible: true,
         reason: null,
         horseAge: 4, // testHorseEligible is 4 years old
+        // Equoria-t6rdk: the status carries the horse's score in the discipline
+        // (old contract: no score field, so the popup previewed 0 + 5).
+        score: disciplineScores?.Racing ?? 0,
         lastTrainingDate: null,
         nextEligibleDate: null,
         cooldown: null,
@@ -536,6 +544,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         eligible: false,
         reason: 'Horse is under age',
         horseAge: 2,
+        score: 0, // Equoria-t6rdk: the horse's score in the discipline
         lastTrainingDate: null,
         nextEligibleDate: null,
         cooldown: null,

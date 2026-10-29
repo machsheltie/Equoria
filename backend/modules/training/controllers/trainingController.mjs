@@ -400,9 +400,17 @@ async function getTrainingStatus(horseId, requestedDiscipline) {
     // The cooldown is Horse.trainingCooldown, the column the train call claims
     // (Equoria-w0qb7); the last session date is shown from TrainingLog (history).
     let cooldownEnd = null;
+    // The horse's own score in this discipline (Equoria-t6rdk), so the training
+    // popup previews the real "current + 5", never "0 + 5". Null for a name that
+    // is no discipline.
+    let score = null;
     try {
       const horseRow = await getHorseById(horseId);
       cooldownEnd = activeTrainingCooldownEnd(horseRow?.trainingCooldown);
+      if (canonicalTrainingDiscipline(discipline)) {
+        const stored = asFlagObject(horseRow?.disciplineScores)[discipline];
+        score = Number.isFinite(stored) ? stored : 0;
+      }
     } catch (error) {
       logger.warn(
         `[trainingController.getTrainingStatus] Error reading training cooldown: ${error.message}`,
@@ -437,6 +445,7 @@ async function getTrainingStatus(horseId, requestedDiscipline) {
       reason: eligibilityCheck.reason,
       ...(eligibilityCheck.code ? { code: eligibilityCheck.code } : {}),
       horseAge: age,
+      score,
       lastTrainingDate: lastTrainingDateInDiscipline, // Still show discipline-specific for UI
       nextEligibleDate, // ISO string when cooldown is active, null otherwise
       cooldown: cooldownInfo,
