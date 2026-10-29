@@ -107,7 +107,7 @@ describe('no premature foal aging (Equoria-3i34b)', () => {
 
     for (let i = 0; i < 3; i++) {
       const result = await runPass(foal.id);
-      expect(result).toMatchObject({ traitsRevealed: 0, reason: 'day_not_elapsed' });
+      expect(result).toMatchObject({ traitsRevealed: 0, reason: 'dayNotElapsed' });
     }
 
     const after = await loadFoal(foal.id);
@@ -123,7 +123,7 @@ describe('no premature foal aging (Equoria-3i34b)', () => {
     const afterFirst = await loadFoal(foal.id);
 
     const extra = await runPass(foal.id);
-    expect(extra).toMatchObject({ traitsRevealed: 0, reason: 'day_not_elapsed' });
+    expect(extra).toMatchObject({ traitsRevealed: 0, reason: 'dayNotElapsed' });
     const afterExtra = await loadFoal(foal.id);
     expect(afterExtra.foalDevelopment.currentDay).toBe(1);
     expect(afterExtra.epigeneticModifiers).toEqual(afterFirst.epigeneticModifiers);

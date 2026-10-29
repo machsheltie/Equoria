@@ -217,7 +217,7 @@ export async function selectTraitsWithGroomBonuses(
     if (selected) {
       selectedTraits.push({
         name: candidate.name,
-        source: 'randomized_with_groom_bonus',
+        source: 'randomizedWithGroomBonus',
         probability: candidate.finalProbability,
         bonusApplied: candidate.bonusApplied,
         bonusAmount: candidate.bonusAmount,

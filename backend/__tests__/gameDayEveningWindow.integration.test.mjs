@@ -167,9 +167,9 @@ describe.each(EVENINGS)('the Eastern evening window (%s) — Equoria-4urzd', (_l
       await cronJobService.evaluateFoalTraits(foalYesterday),
     ]);
 
-    expect(resultToday).toMatchObject({ traitsRevealed: 0, reason: 'day_not_elapsed' });
+    expect(resultToday).toMatchObject({ traitsRevealed: 0, reason: 'dayNotElapsed' });
     // Day 0 elapsed: the pass evaluated it (reveals are random, so not pinned) and advanced.
-    expect(resultYesterday.reason).not.toBe('day_not_elapsed');
+    expect(resultYesterday.reason).not.toBe('dayNotElapsed');
     expect(resultYesterday).toMatchObject({ currentDay: 1 });
     expect((await loadHorse(today.id)).foalDevelopment.currentDay).toBe(0);
     expect((await loadHorse(yesterday.id)).foalDevelopment.currentDay).toBe(1);

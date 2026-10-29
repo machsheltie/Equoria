@@ -139,7 +139,7 @@ export async function evaluateFoalTraits(service, foal) {
     logger.info(
       `[CronJobService.evaluateFoalTraits] Foal ${foal.id} has completed development (day ${currentDay})`,
     );
-    return { traitsRevealed: 0, reason: 'development_complete' };
+    return { traitsRevealed: 0, reason: 'developmentComplete' };
   }
 
   // Equoria-3i34b: no premature aging. Day N is evaluated
@@ -148,7 +148,7 @@ export async function evaluateFoalTraits(service, foal) {
   // currentDay already equal to the elapsed days and does nothing.
   const elapsedDays = getHorseAgeDays(foal.dateOfBirth);
   if (currentDay >= elapsedDays) {
-    return { traitsRevealed: 0, reason: 'day_not_elapsed', currentDay };
+    return { traitsRevealed: 0, reason: 'dayNotElapsed', currentDay };
   }
 
   // Equoria-mwjst: claim the day in a transaction. The claim is a
@@ -167,11 +167,11 @@ export async function evaluateFoalTraits(service, foal) {
     logger.info(
       `[CronJobService.evaluateFoalTraits] Foal ${foal.id} day ${currentDay} was already evaluated by another run`,
     );
-    return { traitsRevealed: 0, reason: 'already_evaluated', currentDay };
+    return { traitsRevealed: 0, reason: 'alreadyEvaluated', currentDay };
   }
 
   const nextDay = Math.min(currentDay + 1, FINAL_DEVELOPMENT_DAY);
-  return { traitsRevealed: 0, reason: 'no_new_traits', currentDay: nextDay };
+  return { traitsRevealed: 0, reason: 'noNewTraits', currentDay: nextDay };
 }
 
 /**

@@ -131,7 +131,7 @@ describe('INTEGRATION: a foal development day is evaluated once (Equoria-mwjst)'
     Math.random.mockReturnValue(0);
     const second = await foalTraitImpl.evaluateFoalTraits(service, afterFirst);
 
-    expect(second).toEqual({ traitsRevealed: 0, reason: 'development_complete' });
+    expect(second).toEqual({ traitsRevealed: 0, reason: 'developmentComplete' });
     const afterSecond = await reload(foal.id);
     expect(revealedNames(afterSecond)).toEqual([]);
     expect(await prisma.traitHistoryLog.count({ where: { horseId: foal.id } })).toBe(0);

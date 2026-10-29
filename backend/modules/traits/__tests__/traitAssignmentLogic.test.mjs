@@ -294,7 +294,7 @@ describe('selectTraitsWithGroomBonuses() — selected=true path and break path (
     const result = await selectTraitsWithGroomBonuses(horse.id, candidates, null, 1);
     expect(result.selectedTraits).toHaveLength(1);
     expect(result.selectedTraits[0].name).toBe('Brave');
-    expect(result.selectedTraits[0].source).toBe('randomized_with_groom_bonus');
+    expect(result.selectedTraits[0].source).toBe('randomizedWithGroomBonus');
   });
 
   it('breaks after maxTraits reached (covers break branch at line 215)', async () => {

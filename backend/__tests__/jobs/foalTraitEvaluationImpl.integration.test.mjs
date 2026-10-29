@@ -83,7 +83,7 @@ describe('INTEGRATION: foalTraitEvaluation impl module (Equoria-urqic.3)', () =>
   const reload = foalId => prisma.horse.findUnique({ where: { id: foalId }, include: { foalDevelopment: true } });
 
   describe('evaluateFoalTraits(service, foal)', () => {
-    it('returns development_complete for a foal past the final development day (day 7)', async () => {
+    it('returns developmentComplete for a foal past the final development day (day 7)', async () => {
       // Pure branch — no DB write needed; uses a synthetic foal object.
       const result = await foalTraitImpl.evaluateFoalTraits(
         {
@@ -99,7 +99,7 @@ describe('INTEGRATION: foalTraitEvaluation impl module (Equoria-urqic.3)', () =>
           epigeneticModifiers: null,
         },
       );
-      expect(result).toEqual({ traitsRevealed: 0, reason: 'development_complete' });
+      expect(result).toEqual({ traitsRevealed: 0, reason: 'developmentComplete' });
     });
 
     it('advances currentDay 0 -> 1 on a real run via the impl function', async () => {

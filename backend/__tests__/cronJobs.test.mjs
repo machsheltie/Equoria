@@ -111,7 +111,7 @@ describe('CronJobService.stop()', () => {
 // ─── evaluateFoalTraits() — pure early-exit branch ───────────────────────────
 
 describe('CronJobService.evaluateFoalTraits() — currentDay > 6 early exit', () => {
-  it('returns development_complete when currentDay is 7', async () => {
+  it('returns developmentComplete when currentDay is 7', async () => {
     const foal = {
       id: 999901,
       name: 'TestFoal-CronBranch-7',
@@ -119,10 +119,10 @@ describe('CronJobService.evaluateFoalTraits() — currentDay > 6 early exit', ()
       epigeneticModifiers: null,
     };
     const result = await cronJobService.evaluateFoalTraits(foal);
-    expect(result).toEqual({ traitsRevealed: 0, reason: 'development_complete' });
+    expect(result).toEqual({ traitsRevealed: 0, reason: 'developmentComplete' });
   });
 
-  it('returns development_complete when currentDay is 20', async () => {
+  it('returns developmentComplete when currentDay is 20', async () => {
     const foal = {
       id: 999902,
       name: 'TestFoal-CronBranch-20',
@@ -130,11 +130,11 @@ describe('CronJobService.evaluateFoalTraits() — currentDay > 6 early exit', ()
       epigeneticModifiers: { positive: ['resilient'], negative: [], hidden: [] },
     };
     const result = await cronJobService.evaluateFoalTraits(foal);
-    expect(result.reason).toBe('development_complete');
+    expect(result.reason).toBe('developmentComplete');
     expect(result.traitsRevealed).toBe(0);
   });
 
-  it('returns development_complete when currentDay is exactly boundary+1 (day 7)', async () => {
+  it('returns developmentComplete when currentDay is exactly boundary+1 (day 7)', async () => {
     // Boundary: day 6 is still in development; day 7 exits early
     const foal = {
       id: 999903,
@@ -143,7 +143,7 @@ describe('CronJobService.evaluateFoalTraits() — currentDay > 6 early exit', ()
       epigeneticModifiers: null,
     };
     const result = await cronJobService.evaluateFoalTraits(foal);
-    expect(result).toEqual({ traitsRevealed: 0, reason: 'development_complete' });
+    expect(result).toEqual({ traitsRevealed: 0, reason: 'developmentComplete' });
   });
 });
 
