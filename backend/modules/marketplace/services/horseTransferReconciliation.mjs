@@ -454,8 +454,8 @@ export async function reconcileHorseOnTransfer(tx, { horseId, sellerId }) {
   // declined (S-Q2) and a sold mare's pending request is cancelled (S-Q4).
   // The caller finalizes these notifications after its commit.
   const studNotifications = [
-    ...(await declinePendingRequestsForSire(tx, { sireId: horseId, reason: 'STALLION_SOLD' })),
-    ...(await cancelPendingRequestForMare(tx, { damId: horseId, reason: 'MARE_TRANSFERRED' })),
+    ...(await declinePendingRequestsForSire(tx, { sireId: horseId, reason: 'stallionSold' })),
+    ...(await cancelPendingRequestForMare(tx, { damId: horseId, reason: 'mareTransferred' })),
   ];
 
   // Test-only seam, AFTER every reconciliation write and before the sale record

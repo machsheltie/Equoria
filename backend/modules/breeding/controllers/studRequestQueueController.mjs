@@ -74,7 +74,7 @@ export function rejectStudRequest(req, res) {
     requestId: Number(req.params.id),
     callerId: req.user.id,
     field: 'stallionOwnerId',
-    data: { status: 'DECLINED', declineReason: 'REJECTED' },
+    data: { status: 'DECLINED', declineReason: 'rejected' },
     notifyField: 'mareOwnerId',
     type: 'studRequestDeclined',
   });
@@ -86,7 +86,7 @@ export function cancelStudRequest(req, res) {
     requestId: Number(req.params.id),
     callerId: req.user.id,
     field: 'mareOwnerId',
-    data: { status: 'CANCELLED', declineReason: 'CANCELLED_BY_OWNER' },
+    data: { status: 'CANCELLED', declineReason: 'cancelledByOwner' },
     notifyField: 'stallionOwnerId',
     type: 'studRequestCancelled',
   });

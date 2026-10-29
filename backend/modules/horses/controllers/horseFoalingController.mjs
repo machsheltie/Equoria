@@ -126,7 +126,7 @@ export async function createFoal(req, res) {
               data: { userId: ownerId },
             });
             if (pinned.count !== 1) {
-              throw claimFailure('SIRE_NOT_OWNED');
+              throw claimFailure('sireNotOwned');
             }
           };
           const claimDam = async () => {
@@ -139,7 +139,7 @@ export async function createFoal(req, res) {
               }),
             });
             if (affected === 0) {
-              throw claimFailure('DAM_NOT_CLAIMABLE');
+              throw claimFailure('damNotClaimable');
             }
           };
           if (sire.id < dam.id) {
@@ -155,7 +155,7 @@ export async function createFoal(req, res) {
             select: { id: true },
           });
           if (pending) {
-            throw claimFailure('MARE_HAS_PENDING_REQUEST', { damName: dam.name });
+            throw claimFailure('mareHasPendingRequest', { damName: dam.name });
           }
 
           const owner = await tx.user.findUnique({
@@ -202,19 +202,19 @@ export async function createFoal(req, res) {
       },
     });
   } catch (error) {
-    if (error.claimFailure === 'SIRE_NOT_OWNED') {
+    if (error.claimFailure === 'sireNotOwned') {
       // Byte-identical to the route's ownership 404 (horseFoalRoutes.mjs).
       return res.status(404).json({ success: false, message: 'Sire not found' });
     }
-    if (error.claimFailure === 'MARE_HAS_PENDING_REQUEST') {
+    if (error.claimFailure === 'mareHasPendingRequest') {
       return res.status(409).json({
         success: false,
-        code: 'MARE_HAS_PENDING_REQUEST',
+        code: 'mareHasPendingRequest',
         message: pendingRequestMessage(error.damName),
         data: null,
       });
     }
-    if (error.claimFailure === 'DAM_NOT_CLAIMABLE') {
+    if (error.claimFailure === 'damNotClaimable') {
       // Rolled back. Tell apart "sold mid-request" (the route's ownership 404)
       // from "a concurrent breed already claimed her" (the long-standing 400).
       const current = await getHorseById(req.body.damId);

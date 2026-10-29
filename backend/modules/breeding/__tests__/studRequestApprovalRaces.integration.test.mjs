@@ -227,7 +227,7 @@ describe('private stud approval races (Equoria-e7tgc.7)', () => {
     });
   });
 
-  it('C2, approve wins against a cancel: the cancel queues behind the approval on the request row and answers REQUEST_NOT_PENDING', async () => {
+  it('C2, approve wins against a cancel: the cancel queues behind the approval on the request row and answers requestNotPending', async () => {
     const requestId = await pendingRequest();
     let cancelPromise;
 
@@ -255,7 +255,7 @@ describe('private stud approval races (Equoria-e7tgc.7)', () => {
   });
 
   describe('S-Q3: the approval finds the mare already in foal', () => {
-    it('in foal before the approval: DECLINED MARE_INELIGIBLE, both notified, nothing moves', async () => {
+    it('in foal before the approval: DECLINED mareIneligible, both notified, nothing moves', async () => {
       const requestId = await pendingRequest();
       await prisma.horse.update({ where: { id: mare.id }, data: { inFoalSinceDate: new Date() } });
 
@@ -265,7 +265,7 @@ describe('private stud approval races (Equoria-e7tgc.7)', () => {
       await expectNothingMoved();
     });
 
-    it('she conceives while the approval waits on her row: the paid fee rolls back and the request is DECLINED MARE_INELIGIBLE', async () => {
+    it('she conceives while the approval waits on her row: the paid fee rolls back and the request is DECLINED mareIneligible', async () => {
       const requestId = await pendingRequest();
 
       // The approval read her open, moved the fee inside its transaction and

@@ -289,7 +289,7 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
     const res = await bookStud(mareOwner.token, stud.id, { damId: mare.id, expectedStudFee: FEE - 100 });
 
     expect(res.status).toBe(409);
-    expect(res.body).toMatchObject({ success: false, code: 'STUD_FEE_CHANGED', data: { studFee: FEE } });
+    expect(res.body).toMatchObject({ success: false, code: 'studFeeChanged', data: { studFee: FEE } });
     expect(await moneyOf(mareOwner.user.id)).toBe(5000);
     expect((await prisma.horse.findUnique({ where: { id: mare.id } })).inFoalSinceDate).toBeNull();
   });
@@ -309,14 +309,14 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
       expect(await prisma.userTransaction.count({ where: { userId: { in: userIds } } })).toBe(0);
     });
 
-    it('repriced mid-flow: rolls back and answers 409 STUD_FEE_CHANGED with the NEW fee', async () => {
+    it('repriced mid-flow: rolls back and answers 409 studFeeChanged with the NEW fee', async () => {
       const res = await holdRowLockUntil(
         tx => tx.horse.update({ where: { id: stud.id }, data: { studFee: FEE + 500 } }),
         () => bookStud(mareOwner.token, stud.id, { damId: mare.id, expectedStudFee: FEE }),
       );
 
       expect(res.status).toBe(409);
-      expect(res.body).toMatchObject({ code: 'STUD_FEE_CHANGED', data: { studFee: FEE + 500 } });
+      expect(res.body).toMatchObject({ code: 'studFeeChanged', data: { studFee: FEE + 500 } });
       expect(await moneyOf(mareOwner.user.id)).toBe(5000);
       expect(await moneyOf(studOwner.user.id)).toBe(100);
       expect((await prisma.horse.findUnique({ where: { id: mare.id } })).inFoalSinceDate).toBeNull();
@@ -376,7 +376,7 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
     expect(await moneyOf(mareOwner.user.id)).toBe(5000);
   });
 
-  it('own stallion on the stud endpoint: 400 OWN_STALLION (own pairs breed free through /horses/foals)', async () => {
+  it('own stallion on the stud endpoint: 400 ownStallion (own pairs breed free through /horses/foals)', async () => {
     const ownStud = await horse({
       ownerId: mareOwner.user.id,
       sex: 'Stallion',
@@ -387,7 +387,7 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
     const res = await bookStud(mareOwner.token, ownStud.id, { damId: mare.id, expectedStudFee: 50 });
 
     expect(res.status).toBe(400);
-    expect(res.body.code).toBe('OWN_STALLION');
+    expect(res.body.code).toBe('ownStallion');
     expect(await moneyOf(mareOwner.user.id)).toBe(5000);
   });
 
@@ -425,7 +425,7 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
     const res = await bookStud(mareOwner.token, stud.id, { damId: mare.id, expectedStudFee: FEE });
 
     expect(res.status).toBe(409);
-    expect(res.body.code).toBe('MARE_HAS_PENDING_REQUEST');
+    expect(res.body.code).toBe('mareHasPendingRequest');
     expect(await moneyOf(mareOwner.user.id)).toBe(5000);
     expect(await moneyOf(studOwner.user.id)).toBe(100);
     expect((await prisma.horse.findUnique({ where: { id: mare.id } })).inFoalSinceDate).toBeNull();

@@ -20,11 +20,11 @@ export async function closeBreedingRecordsForErasureTx(tx, userId) {
   const resolvedAt = new Date();
   await tx.breedingRecord.updateMany({
     where: { stallionOwnerId: userId, status: 'PENDING' },
-    data: { status: 'DECLINED', declineReason: 'ACCOUNT_CLOSED', resolvedAt },
+    data: { status: 'DECLINED', declineReason: 'accountClosed', resolvedAt },
   });
   await tx.breedingRecord.updateMany({
     where: { mareOwnerId: userId, status: 'PENDING' },
-    data: { status: 'CANCELLED', declineReason: 'ACCOUNT_CLOSED', resolvedAt },
+    data: { status: 'CANCELLED', declineReason: 'accountClosed', resolvedAt },
   });
   await tx.breedingRecord.updateMany({
     where: { mareOwnerId: userId },

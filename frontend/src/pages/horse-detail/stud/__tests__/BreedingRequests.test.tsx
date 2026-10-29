@@ -234,7 +234,15 @@ describe('BreedingRequests', () => {
           success: true,
           data: {
             requests: [
-              { ...pending, id: 1, status: 'DECLINED', declineReason: 'REJECTED' },
+              { ...pending, id: 1, status: 'DECLINED', declineReason: 'rejected' },
+              // The old server's spelling during a deploy (phase 6 removes it).
+              {
+                ...pending,
+                id: 4,
+                status: 'DECLINED',
+                declineReason: 'REJECTED',
+                sire: { id: 8, name: 'Old Mill' },
+              },
               {
                 ...pending,
                 id: 2,
@@ -263,8 +271,10 @@ describe('BreedingRequests', () => {
     const withdrawn = screen.getByText('Wren to Lark Hollow').closest('li');
     expect(within(rejected as HTMLElement).getByText('Declined')).toBeInTheDocument();
     expect(within(sold as HTMLElement).getByText('Could not go ahead')).toBeInTheDocument();
+    const legacy = screen.getByText('Wren to Old Mill').closest('li');
     expect(within(withdrawn as HTMLElement).getByText('Withdrawn')).toBeInTheDocument();
-    expect(screen.queryByText(/stallionSold|REJECTED/)).not.toBeInTheDocument();
+    expect(within(legacy as HTMLElement).getByText('Declined')).toBeInTheDocument();
+    expect(screen.queryByText(/stallionSold|rejected|REJECTED/)).not.toBeInTheDocument();
   });
 
   it('Withdraw on a request already answered: the list refreshes to its true state', async () => {

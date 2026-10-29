@@ -146,7 +146,7 @@ export async function listHorseAtStud(req, res) {
               ? []
               : await declinePendingRequestsForSire(tx, {
                   sireId: horseId,
-                  reason: 'LISTING_CHANGED',
+                  reason: 'listingChanged',
                 });
           return {
             updated: await tx.horse.findUnique({
@@ -214,7 +214,7 @@ export async function unlistHorseAtStud(req, res) {
           // Owner ruling S-Q2 (2026-10-16): unlisting declines pending requests.
           const declined = await declinePendingRequestsForSire(tx, {
             sireId: horseId,
-            reason: 'LISTING_CHANGED',
+            reason: 'listingChanged',
           });
           return {
             updated: await tx.horse.findUnique({

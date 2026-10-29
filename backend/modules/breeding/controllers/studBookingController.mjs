@@ -96,7 +96,7 @@ export async function bookPublicStud(req, res) {
           if (sire.userId === requesterId) {
             throw new BookingRefusal(400, {
               success: false,
-              code: 'OWN_STALLION',
+              code: 'ownStallion',
               message: 'This is your own stallion. Breed your mare to him free from his page.',
             });
           }
@@ -133,7 +133,7 @@ export async function bookPublicStud(req, res) {
               if (error instanceof TransferPayeeNotFoundError) {
                 throw new BookingRefusal(409, {
                   success: false,
-                  code: 'STUD_OWNER_UNAVAILABLE',
+                  code: 'studOwnerUnavailable',
                   message: "The stallion's owner can't take bookings right now.",
                 });
               }
@@ -200,7 +200,7 @@ export async function bookPublicStud(req, res) {
           if (pending) {
             throw new BookingRefusal(409, {
               success: false,
-              code: 'MARE_HAS_PENDING_REQUEST',
+              code: 'mareHasPendingRequest',
               message: pendingRequestMessage(dam.name),
             });
           }

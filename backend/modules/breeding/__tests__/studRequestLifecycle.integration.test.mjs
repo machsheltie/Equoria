@@ -98,13 +98,13 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
     expect(bad.status).toBe(400);
   });
 
-  it('S-Q2: unlisting declines pending requests (LISTING_CHANGED) and notifies the mare owner', async () => {
+  it('S-Q2: unlisting declines pending requests (listingChanged) and notifies the mare owner', async () => {
     const requestId = await pendingRequest();
 
     const res = await unlistAtStud(studOwner.token, stud.id);
 
     expect(res.status).toBe(200);
-    expect(await recordOf(requestId)).toMatchObject({ status: 'DECLINED', declineReason: 'LISTING_CHANGED' });
+    expect(await recordOf(requestId)).toMatchObject({ status: 'DECLINED', declineReason: 'listingChanged' });
     expect(await prisma.notification.count({ where: { userId: mareOwner.user.id, type: 'studRequestDeclined' } })).toBe(
       1,
     );
@@ -116,7 +116,7 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
     const res = await listAtStud(studOwner.token, stud.id, { studFee: FEE, mode: 'public' });
 
     expect(res.status).toBe(200);
-    expect(await recordOf(requestId)).toMatchObject({ status: 'DECLINED', declineReason: 'LISTING_CHANGED' });
+    expect(await recordOf(requestId)).toMatchObject({ status: 'DECLINED', declineReason: 'listingChanged' });
   });
 
   it('S-Q2/S6: a fee change that stays private leaves the request PENDING at its pinned fee', async () => {
@@ -142,7 +142,7 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
     );
   });
 
-  it('a sale of the stallion resets its listing and declines its pending requests (STALLION_SOLD)', async () => {
+  it('a sale of the stallion resets its listing and declines its pending requests (stallionSold)', async () => {
     const requestId = await pendingRequest();
     const buyer = await player('stallionBuyer', 5000);
     await prisma.horse.update({ where: { id: stud.id }, data: { forSale: true, salePrice: 1000 } });
@@ -152,7 +152,7 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
     expect(sale.status).toBe(200);
     const sold = await prisma.horse.findUnique({ where: { id: stud.id } });
     expect(sold).toMatchObject({ userId: buyer.user.id, studStatus: 'Not at Stud', studFee: 0 });
-    expect(await recordOf(requestId)).toMatchObject({ status: 'DECLINED', declineReason: 'STALLION_SOLD' });
+    expect(await recordOf(requestId)).toMatchObject({ status: 'DECLINED', declineReason: 'stallionSold' });
     expect(await prisma.notification.count({ where: { userId: mareOwner.user.id, type: 'studRequestDeclined' } })).toBe(
       1,
     );
@@ -166,7 +166,7 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
     const sale = await buyHorseHttp(buyer.token, mare.id);
 
     expect(sale.status).toBe(200);
-    expect(await recordOf(requestId)).toMatchObject({ status: 'CANCELLED', declineReason: 'MARE_TRANSFERRED' });
+    expect(await recordOf(requestId)).toMatchObject({ status: 'CANCELLED', declineReason: 'mareTransferred' });
     expect(
       await prisma.notification.count({ where: { userId: studOwner.user.id, type: 'studRequestCancelled' } }),
     ).toBe(1);
@@ -197,7 +197,7 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
     });
     expect(await recordOf(pending.body.data.requestId)).toMatchObject({
       status: 'DECLINED',
-      declineReason: 'ACCOUNT_CLOSED',
+      declineReason: 'accountClosed',
     });
     expect(await moneyOf(mareOwner.user.id)).toBe(5000 - FEE);
   });

@@ -45,13 +45,16 @@ const statusWords: Record<Side, Record<StudRequestStatus, string>> = {
 
 /**
  * The row's words. A decline whose stored reason is not the stallion owner's
- * reject (REJECTED) was the game's, read the same way as its notification
- * (GameNotifRow studSentence).
+ * reject (rejected) was the game's, read the same way as its notification
+ * (GameNotifRow studSentence). The old server's REJECTED covers the minutes a
+ * deploy serves this client against the old server (Equoria-pjvp8 phase 6
+ * removes it).
  */
 function statusLine(side: Side, request: StudRequest): string {
   if (
     request.status === 'DECLINED' &&
     request.declineReason !== null &&
+    request.declineReason !== 'rejected' &&
     request.declineReason !== 'REJECTED'
   ) {
     return 'Could not go ahead';

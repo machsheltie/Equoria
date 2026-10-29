@@ -67,7 +67,7 @@ class Decline extends Error {
   }
 }
 
-/** Only the one-pending-per-mare partial index maps to MARE_HAS_PENDING_REQUEST (review M-5). */
+/** Only the one-pending-per-mare partial index maps to mareHasPendingRequest (review M-5). */
 function isPendingIndexViolation(error) {
   // Duck-typed: under Jest's ESM VM a Prisma error class can be a different
   // realm's copy, so `instanceof` is not reliable; the code is.
@@ -107,7 +107,7 @@ export async function requestPrivateStud(req, res) {
           if (sire.userId === requesterId) {
             throw new BookingRefusal(400, {
               success: false,
-              code: 'OWN_STALLION',
+              code: 'ownStallion',
               message: 'This is your own stallion. Breed your mare to him free from his page.',
             });
           }
@@ -248,7 +248,7 @@ export async function requestPrivateStud(req, res) {
     if (isPendingIndexViolation(error)) {
       return res.status(409).json({
         success: false,
-        code: 'MARE_HAS_PENDING_REQUEST',
+        code: 'mareHasPendingRequest',
         message:
           'This mare already has a pending stud request. Cancel it before asking another stallion.',
       });
@@ -292,16 +292,16 @@ export async function approveStudRequest(req, res) {
 
           if (dam && dam.userId === approverId) {
             throw new Decline(
-              'OWN_STALLION',
+              'ownStallion',
               `You now own ${dam.name}; breed her to your stallion free from his page.`,
             );
           }
           if (!sire || sire.userId !== approverId || sire.studStatus !== PRIVATE_STUD) {
-            throw new Decline('STALLION_UNAVAILABLE', 'The stallion is no longer at private stud.');
+            throw new Decline('stallionUnavailable', 'The stallion is no longer at private stud.');
           }
           if (!dam || !mareOwnerId || dam.userId !== mareOwnerId) {
             throw new Decline(
-              'MARE_TRANSFERRED',
+              'mareTransferred',
               'The mare no longer belongs to the player who asked.',
             );
           }
@@ -314,7 +314,7 @@ export async function approveStudRequest(req, res) {
               });
             }
             throw new Decline(
-              verdict.kind === 'sire' ? 'STALLION_UNAVAILABLE' : 'MARE_INELIGIBLE',
+              verdict.kind === 'sire' ? 'stallionUnavailable' : 'mareIneligible',
               verdict.message,
             );
           }
@@ -327,12 +327,12 @@ export async function approveStudRequest(req, res) {
             });
             if (!current || current.userId !== mareOwnerId) {
               return new Decline(
-                'MARE_TRANSFERRED',
+                'mareTransferred',
                 'The mare no longer belongs to the player who asked.',
               );
             }
             if (current.inFoalSinceDate) {
-              return new Decline('MARE_INELIGIBLE', `${dam.name} is already in foal.`);
+              return new Decline('mareIneligible', `${dam.name} is already in foal.`);
             }
             return null;
           };
@@ -355,7 +355,7 @@ export async function approveStudRequest(req, res) {
               if (error instanceof TransferPayeeNotFoundError) {
                 throw new BookingRefusal(409, {
                   success: false,
-                  code: 'STUD_OWNER_UNAVAILABLE',
+                  code: 'studOwnerUnavailable',
                   message: 'Your account could not take the stud fee right now.',
                 });
               }
@@ -365,7 +365,7 @@ export async function approveStudRequest(req, res) {
               throw (
                 (await declineForMareState()) ??
                 new Decline(
-                  'INSUFFICIENT_FUNDS',
+                  'insufficientFunds',
                   `The mare's owner could not pay the ${fee}-coin stud fee.`,
                 )
               );
@@ -380,7 +380,7 @@ export async function approveStudRequest(req, res) {
             });
             if (pinned.count !== 1) {
               throw new Decline(
-                'STALLION_UNAVAILABLE',
+                'stallionUnavailable',
                 'The stallion is no longer at private stud.',
               );
             }
@@ -396,7 +396,7 @@ export async function approveStudRequest(req, res) {
             if (claimed.count !== 1) {
               throw (
                 (await declineForMareState()) ??
-                new Decline('MARE_INELIGIBLE', `${dam.name} can no longer be bred.`)
+                new Decline('mareIneligible', `${dam.name} can no longer be bred.`)
               );
             }
           };
@@ -498,7 +498,7 @@ async function declineAfterFailedApproval(res, { requestId, approverId, decline 
     finalizeAll(outcome.notifications);
     return res.status(409).json({
       success: false,
-      code: 'REQUEST_DECLINED',
+      code: 'requestDeclined',
       message: decline.message,
       data: { declineReason: decline.reason },
     });

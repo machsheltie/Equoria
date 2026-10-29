@@ -71,7 +71,7 @@ export function feePredicate(fee) {
 export function feeChanged(studFee) {
   return new BookingRefusal(409, {
     success: false,
-    code: 'STUD_FEE_CHANGED',
+    code: 'studFeeChanged',
     message: `This stallion's stud fee is now ${studFee}. Confirm the new fee to book.`,
     data: { studFee },
   });
@@ -124,7 +124,7 @@ export const REQUEST_NOT_FOUND = Object.freeze({
 });
 export const REQUEST_NOT_PENDING = Object.freeze({
   success: false,
-  code: 'REQUEST_NOT_PENDING',
+  code: 'requestNotPending',
   message: 'This request has already been answered or withdrawn.',
 });
 

@@ -132,7 +132,7 @@ describe('own-pair breeding: free, recorded, sire-pinned, and blocked by a pendi
 
     const blocked = await breedOwnPair(owner.token, stallion.id, mare.id);
     expect(blocked.status).toBe(409);
-    expect(blocked.body.code).toBe('MARE_HAS_PENDING_REQUEST');
+    expect(blocked.body.code).toBe('mareHasPendingRequest');
     expect((await prisma.horse.findUnique({ where: { id: mare.id } })).inFoalSinceDate).toBeNull();
 
     // Her owner cancels (the cancel endpoint is slice 3; the row state is what the lock reads).
@@ -180,7 +180,7 @@ describe('own-pair breeding: free, recorded, sire-pinned, and blocked by a pendi
     );
 
     expect(res.status).toBe(409);
-    expect(res.body.code).toBe('MARE_HAS_PENDING_REQUEST');
+    expect(res.body.code).toBe('mareHasPendingRequest');
     expect((await prisma.horse.findUnique({ where: { id: mare.id } })).inFoalSinceDate).toBeNull();
   });
 });
