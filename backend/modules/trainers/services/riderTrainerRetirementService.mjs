@@ -54,16 +54,30 @@ export async function autoRetireOverdueTrainers() {
     return { retiredCount: 0, deactivatedAssignmentCount: 0, retiredIds: [] };
   }
 
-  const ids = eligible.map(t => t.id);
+  const ids = eligible.map(t => t.id).sort((a, b) => a - b);
 
-  const updateResult = await prisma.trainer.updateMany({
-    where: { id: { in: ids } },
-    data: { retired: true },
-  });
-
-  const assignmentResult = await prisma.trainerAssignment.updateMany({
-    where: { trainerId: { in: ids }, isActive: true },
-    data: { isActive: false },
+  // Equoria-g8fhu: one transaction, like the rider pass. As two separate writes,
+  // a failure after the retire left the trainer still on its horses, and a
+  // re-run skipped it (already retired), so the assignments never ended.
+  // Horse rows are locked before staff rows (ascending ids; Equoria-r9u5k).
+  const { updateResult, assignmentResult } = await prisma.$transaction(async tx => {
+    const active = await tx.trainerAssignment.findMany({
+      where: { trainerId: { in: ids }, isActive: true },
+      select: { horseId: true },
+    });
+    const horseIds = [...new Set(active.map(a => a.horseId))].sort((a, b) => a - b);
+    if (horseIds.length > 0) {
+      await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ANY(${horseIds}) ORDER BY "id" FOR UPDATE`;
+    }
+    const ended = await tx.trainerAssignment.updateMany({
+      where: { trainerId: { in: ids }, isActive: true },
+      data: { isActive: false },
+    });
+    const flipped = await tx.trainer.updateMany({
+      where: { id: { in: ids }, retired: false },
+      data: { retired: true },
+    });
+    return { updateResult: flipped, assignmentResult: ended };
   });
 
   logger.info(
