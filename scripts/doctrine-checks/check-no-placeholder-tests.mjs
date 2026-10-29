@@ -21,7 +21,6 @@
  * WHAT IS NOT FLAGGED (deliberate — these are different shapes with real
  * work/assertions around them, owned by other doctrine concerns):
  *   - did-not-throw coverage tests that do real work first
- *     (e.g. showSchedulerRunCycle.test.mjs)
  *   - conditional-fallback assertions inside if/else branches whose sibling
  *     branch asserts for real (e.g. marketplaces.test.mjs,
  *     traitCompetitionImpact.test.mjs) — the graceful-skip concern is

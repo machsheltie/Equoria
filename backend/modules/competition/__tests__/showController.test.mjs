@@ -757,7 +757,7 @@ describe('POST /api/v1/shows/execute — executeClosedShows', () => {
     // Sentinel: the rejected request produced NO execution payload — the
     // controller never ran (the gate short-circuited before it). We assert the
     // response shape rather than show DB-state because, per the existing suite
-    // comment, the nightly cron / showScheduler is ALSO a sanctioned concurrent
+    // comment, the nightly settlement job is ALSO a sanctioned concurrent
     // executor that may legitimately claim a due show under a parallel run —
     // so "shows still open" would be a racy assertion. "No data.executed from
     // THIS non-admin call" is the honest, race-free invariant.
@@ -786,8 +786,8 @@ describe('POST /api/v1/shows/execute — executeClosedShows', () => {
     // The durable, race-free invariant: after this scoped execute BOTH of this
     // suite's shows are no longer 'open' — they have been claimed/completed by
     // a sanctioned executor. We assert state rather than the `executed` counter
-    // because in production (and under a parallel test run) the nightly cron /
-    // showScheduler is ALSO a sanctioned executor that may legitimately claim a
+    // because in production (and under a parallel test run) the nightly
+    // settlement job is ALSO a sanctioned executor that may legitimately claim a
     // due show first; in that case THIS call's `executed` is < 2 even though
     // the work was correctly done exactly once. State is the honest assertion;
     // the counter is inherently shared across concurrent sanctioned executors.

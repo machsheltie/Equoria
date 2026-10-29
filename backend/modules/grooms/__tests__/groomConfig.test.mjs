@@ -89,11 +89,6 @@ describe('GROOM_CONFIG task arrays', () => {
   it('ELIGIBLE_GENERAL_GROOMING_TASKS includes brushing', () => {
     expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('brushing');
   });
-
-  it('TASK_CATEGORIES has ENRICHMENT and GROOMING', () => {
-    expect(GROOM_CONFIG.TASK_CATEGORIES.ENRICHMENT).toBeDefined();
-    expect(GROOM_CONFIG.TASK_CATEGORIES.GROOMING).toBeDefined();
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -160,11 +155,6 @@ describe('groomConfig — task category invariants & age eligibility (merged fro
   it('each task category has no internal duplicates', () => {
     expect(new Set(ELIGIBLE_FOAL_ENRICHMENT_TASKS).size).toBe(ELIGIBLE_FOAL_ENRICHMENT_TASKS.length);
     expect(new Set(FOAL_GROOMING_TASKS).size).toBe(FOAL_GROOMING_TASKS.length);
-  });
-
-  it('TASK_CATEGORIES maps ENRICHMENT→enrichment and GROOMING→grooming', () => {
-    expect(GROOM_CONFIG.TASK_CATEGORIES.ENRICHMENT).toBe('enrichment');
-    expect(GROOM_CONFIG.TASK_CATEGORIES.GROOMING).toBe('grooming');
   });
 
   // Owner ruling 2026-10-26 (q87) replaced the old +2: each daily groom adds +5.

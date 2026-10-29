@@ -95,12 +95,6 @@ export const GROOM_CONFIG = {
   // Days a care streak (Horse.daysGroomedInARow) survives without grooming
   // before it resets (Equoria-0gl9o: formerly also BURNOUT_RESET_GRACE_DAYS).
   FOAL_STREAK_GRACE_DAYS: careStreakGraceDays,
-
-  // Task type categories for mutual exclusivity checking
-  TASK_CATEGORIES: {
-    ENRICHMENT: 'enrichment',
-    GROOMING: 'grooming',
-  },
 };
 
 // Named exports for foal task categories
