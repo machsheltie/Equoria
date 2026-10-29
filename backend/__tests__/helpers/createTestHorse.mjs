@@ -53,13 +53,15 @@
  */
 
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
-import { DEFAULT_TEMPERAMENT_BREED } from '../../modules/horses/services/temperamentService.mjs';
 import { generateGaitScores } from '../../modules/horses/services/gaitService.mjs';
 import { getBreedProfile } from '../../modules/horses/data/breedProfileLoader.mjs';
 import { seededRng } from './seededRng.mjs';
 
+/** The default breed (Thoroughbred, as temperamentService's default) for a fixture that names none. */
+const defaultFixtureBreed = 'Thoroughbred';
+
 /** Fixed seed: a fixture's gait scores are the same on every run. */
-const FIXTURE_GAIT_SEED = 5760;
+const fixtureGaitSeed = 5760;
 
 /**
  * The breed's most likely temperament (its highest temperamentWeights entry).
@@ -103,19 +105,19 @@ export async function withBreedTemperamentAndGaits(prisma, data) {
   const roll = breedName => ({
     ...(needsTemperament ? { temperament: fixtureTemperament(breedName) } : {}),
     ...(needsGaits
-      ? { gaitScores: generateGaitScores(breedName, { random: seededRng(FIXTURE_GAIT_SEED) }) }
+      ? { gaitScores: generateGaitScores(breedName, { random: seededRng(fixtureGaitSeed) }) }
       : {}),
   });
   let rolled;
   try {
-    rolled = roll(breed?.name ?? DEFAULT_TEMPERAMENT_BREED);
+    rolled = roll(breed?.name ?? defaultFixtureBreed);
   } catch (err) {
     // A profile source that failed to load is an infrastructure fault: rethrow it.
     if (err?.cause || !breed) {
       throw err;
     }
     // A test-made breed with no profile: roll from the default breed's profile.
-    rolled = roll(DEFAULT_TEMPERAMENT_BREED);
+    rolled = roll(defaultFixtureBreed);
   }
   return { ...data, ...rolled };
 }
@@ -133,12 +135,12 @@ let defaultBreedIdPromise = null;
 export function defaultTestBreedId(prisma) {
   if (!defaultBreedIdPromise) {
     defaultBreedIdPromise = prisma.breed
-      .findFirst({ where: { name: DEFAULT_TEMPERAMENT_BREED }, select: { id: true } })
+      .findFirst({ where: { name: defaultFixtureBreed }, select: { id: true } })
       .then(row => {
         if (!row) {
           defaultBreedIdPromise = null;
           throw new Error(
-            `defaultTestBreedId: no "${DEFAULT_TEMPERAMENT_BREED}" breed row; seed the reference breeds`,
+            `defaultTestBreedId: no "${defaultFixtureBreed}" breed row; seed the reference breeds`,
           );
         }
         return row.id;
@@ -147,7 +149,7 @@ export function defaultTestBreedId(prisma) {
   return defaultBreedIdPromise;
 }
 
-const RELATION_WRITE_KEYS = ['connect', 'create', 'connectOrCreate'];
+const relationWriteKeys = ['connect', 'create', 'connectOrCreate'];
 
 /** True when `data` uses Prisma's relation (checked) input style, e.g. `user: { connect }`. */
 function usesRelationInput(data) {
@@ -157,7 +159,7 @@ function usesRelationInput(data) {
       typeof v === 'object' &&
       !Array.isArray(v) &&
       !(v instanceof Date) &&
-      RELATION_WRITE_KEYS.some(k => Object.prototype.hasOwnProperty.call(v, k)),
+      relationWriteKeys.some(k => Object.prototype.hasOwnProperty.call(v, k)),
   );
 }
 
