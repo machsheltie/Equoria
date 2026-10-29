@@ -62,7 +62,7 @@ describe('analyzeTraitSnapshot', () => {
         trait2: 'confident',
         strength: 0.8,
         amplificationFactor: 1.3,
-        category: 'confidence_cluster',
+        category: 'confidenceCluster',
         description: 'Confidence and social traits reinforce each other',
       },
     ]);
@@ -74,7 +74,7 @@ describe('analyzeTraitSnapshot', () => {
       amplificationFactor: 1.3,
       synergyCount: 1,
     });
-    expect(Object.keys(synergies.synergyCategories)).toEqual(['confidence_cluster']);
+    expect(Object.keys(synergies.synergyCategories)).toEqual(['confidenceCluster']);
   });
 
   it('finds conflicting pairs and compounds suppression per trait', () => {
@@ -119,7 +119,7 @@ describe('analyzeTraitSnapshot', () => {
   it('assesses stability from conflicts and bond', () => {
     const calm = analyzeTraitSnapshot(snapshot(), { now: NOW }).stability;
     expect(calm.overallStability).toBeCloseTo(0.6, 10);
-    expect(calm.stabilityFactors).toEqual(['trait_synergies', 'strong_bonding']);
+    expect(calm.stabilityFactors).toEqual(['traitSynergies', 'strongBonding']);
     expect(calm.volatilityRisks).toEqual([]);
     // Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts (old contract: recommendations listed care advice).
     expect(calm).not.toHaveProperty('recommendations');
@@ -132,8 +132,8 @@ describe('analyzeTraitSnapshot', () => {
       { now: NOW },
     ).stability;
     expect(conflicted.overallStability).toBeCloseTo(0.8 - 0.3, 10);
-    expect(conflicted.stabilityFactors).toEqual(['trait_synergies']);
-    expect(conflicted.volatilityRisks).toEqual(['multiple_trait_conflicts', 'reactive_temperament']);
+    expect(conflicted.stabilityFactors).toEqual(['traitSynergies']);
+    expect(conflicted.volatilityRisks).toEqual(['multipleTraitConflicts', 'reactiveTemperament']);
     expect(conflicted).not.toHaveProperty('recommendations');
   });
 
@@ -161,8 +161,8 @@ describe('analyzeTraitSnapshot', () => {
     const matrix = analyzeTraitSnapshot(snapshot({ epigeneticFlags: traits }), { now: NOW });
 
     expect(matrix.complexInteractions.traitClusters.map(c => c.name)).toEqual([
-      'confidence_cluster',
-      'intelligence_cluster',
+      'confidenceCluster',
+      'intelligenceCluster',
     ]);
     expect(matrix.complexInteractions.emergentProperties.map(p => p.name)).toEqual([
       'Natural Leadership',
@@ -170,8 +170,8 @@ describe('analyzeTraitSnapshot', () => {
     ]);
     expect(matrix.complexInteractions.complexityScore).toBe(1);
     expect(matrix.matrixVisualization.clusters).toEqual([
-      { name: 'confidence_cluster', traits: ['confident', 'social', 'brave'], color: '#4CAF50' },
-      { name: 'intelligence_cluster', traits: ['intelligent', 'curious'], color: '#2196F3' },
+      { name: 'confidenceCluster', traits: ['confident', 'social', 'brave'], color: '#4CAF50' },
+      { name: 'intelligenceCluster', traits: ['intelligent', 'curious'], color: '#2196F3' },
     ]);
     expect(matrix.matrixVisualization.nodes.map(n => n.id)).toEqual(traits);
     expect(matrix.summary).toEqual({
@@ -249,7 +249,7 @@ describe('trait interaction rule tables', () => {
       }
     }
     expect(() => {
-      rules.UNKNOWN_TRAIT_DOMINANCE.dominance_score = 1;
+      rules.UNKNOWN_TRAIT_DOMINANCE.dominanceScore = 1;
     }).toThrow(TypeError);
   });
 });

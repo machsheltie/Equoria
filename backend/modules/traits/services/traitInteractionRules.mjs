@@ -16,38 +16,38 @@ export const MATURITY_PERIOD_DAYS = 90;
 
 // Trait synergy clusters - traits that enhance each other
 export const TRAIT_SYNERGIES = deepFreeze({
-  confidence_cluster: {
+  confidenceCluster: {
     traits: ['brave', 'confident', 'social'],
-    synergy_strength: 0.8,
-    amplification_factor: 1.3,
+    synergyStrength: 0.8,
+    amplificationFactor: 1.3,
     description: 'Confidence and social traits reinforce each other',
     color: '#4CAF50',
   },
-  intelligence_cluster: {
+  intelligenceCluster: {
     traits: ['curious', 'intelligent', 'adaptable'],
-    synergy_strength: 0.7,
-    amplification_factor: 1.25,
+    synergyStrength: 0.7,
+    amplificationFactor: 1.25,
     description: 'Intelligence traits create learning synergies',
     color: '#2196F3',
   },
-  stability_cluster: {
+  stabilityCluster: {
     traits: ['calm', 'patient', 'stable'],
-    synergy_strength: 0.9,
-    amplification_factor: 1.4,
+    synergyStrength: 0.9,
+    amplificationFactor: 1.4,
     description: 'Stability traits create emotional balance',
     color: '#9C27B0',
   },
-  social_cluster: {
+  socialCluster: {
     traits: ['social', 'affectionate', 'outgoing'],
-    synergy_strength: 0.75,
-    amplification_factor: 1.2,
+    synergyStrength: 0.75,
+    amplificationFactor: 1.2,
     description: 'Social traits enhance interpersonal connections',
     color: '#FF9800',
   },
-  sensitivity_cluster: {
+  sensitivityCluster: {
     traits: ['sensitive', 'empathetic', 'intuitive'],
-    synergy_strength: 0.6,
-    amplification_factor: 1.15,
+    synergyStrength: 0.6,
+    amplificationFactor: 1.15,
     description: 'Sensitivity traits create emotional awareness',
     color: '#607D8B',
   },
@@ -55,85 +55,85 @@ export const TRAIT_SYNERGIES = deepFreeze({
 
 // Trait conflict definitions - traits that oppose each other
 export const TRAIT_CONFLICTS = deepFreeze({
-  fear_confidence: {
-    trait_pairs: [
+  fearConfidence: {
+    traitPairs: [
       ['fearful', 'brave'],
       ['fearful', 'confident'],
       ['insecure', 'confident'],
     ],
-    conflict_strength: 0.9,
-    suppression_factor: 0.6,
+    conflictStrength: 0.9,
+    suppressionFactor: 0.6,
     description: 'Fear-based traits conflict with confidence traits',
   },
-  reactive_calm: {
-    trait_pairs: [
+  reactiveCalm: {
+    traitPairs: [
       ['reactive', 'calm'],
       ['reactive', 'patient'],
       ['volatile', 'stable'],
     ],
-    conflict_strength: 0.8,
-    suppression_factor: 0.7,
+    conflictStrength: 0.8,
+    suppressionFactor: 0.7,
     description: 'Reactive traits conflict with calm stability',
   },
-  social_antisocial: {
-    trait_pairs: [
+  socialAntisocial: {
+    traitPairs: [
       ['social', 'antisocial'],
       ['outgoing', 'withdrawn'],
       ['affectionate', 'aloof'],
     ],
-    conflict_strength: 0.85,
-    suppression_factor: 0.65,
+    conflictStrength: 0.85,
+    suppressionFactor: 0.65,
     description: 'Social and antisocial traits are mutually exclusive',
   },
-  fragile_resilient: {
-    trait_pairs: [
+  fragileResilient: {
+    traitPairs: [
       ['fragile', 'resilient'],
       ['fragile', 'hardy'],
       ['delicate', 'robust'],
     ],
-    conflict_strength: 0.7,
-    suppression_factor: 0.75,
+    conflictStrength: 0.7,
+    suppressionFactor: 0.75,
     description: 'Physical fragility conflicts with resilience',
   },
-  impulsive_methodical: {
-    trait_pairs: [
+  impulsiveMethodical: {
+    traitPairs: [
       ['impulsive', 'methodical'],
       ['spontaneous', 'deliberate'],
       ['hasty', 'careful'],
     ],
-    conflict_strength: 0.6,
-    suppression_factor: 0.8,
+    conflictStrength: 0.6,
+    suppressionFactor: 0.8,
     description: 'Impulsive traits conflict with methodical approaches',
   },
 });
 
 // Trait dominance hierarchy - some traits are naturally more dominant
 export const TRAIT_DOMINANCE = deepFreeze({
-  high_dominance: {
+  highDominance: {
     traits: ['confident', 'brave', 'intelligent', 'dominant', 'assertive'],
-    dominance_score: 0.9,
+    dominanceScore: 0.9,
     description: 'Highly dominant traits that tend to override others',
   },
-  moderate_dominance: {
+  moderateDominance: {
     traits: ['social', 'curious', 'adaptable', 'resilient', 'stable'],
-    dominance_score: 0.6,
+    dominanceScore: 0.6,
     description: 'Moderately dominant traits with balanced expression',
   },
-  low_dominance: {
+  lowDominance: {
     traits: ['sensitive', 'gentle', 'patient', 'submissive', 'compliant'],
-    dominance_score: 0.3,
+    dominanceScore: 0.3,
     description: 'Low dominance traits that are easily suppressed',
   },
   recessive: {
     traits: ['fearful', 'fragile', 'insecure', 'withdrawn', 'timid'],
-    dominance_score: 0.1,
+    dominanceScore: 0.1,
     description: 'Recessive traits that are often masked by others',
   },
 });
 
 export const UNKNOWN_TRAIT_DOMINANCE = deepFreeze({
-  dominance_score: 0.5,
-  level: 'moderate_dominance',
+  dominanceScore: 0.5,
+  level: 'moderateDominance',
   description: 'Unknown trait with moderate dominance',
 });
 
@@ -171,13 +171,13 @@ export const EMERGENT_PROPERTIES = deepFreeze([
 export const TRAIT_PATTERNS = deepFreeze([
   {
     requires: ['curious', 'intelligent'],
-    pattern: 'learning_acceleration',
+    pattern: 'learningAcceleration',
     description: 'Curiosity and intelligence create accelerated learning potential',
     confidence: 0.75,
   },
   {
     requires: ['social', 'confident'],
-    pattern: 'leadership_emergence',
+    pattern: 'leadershipEmergence',
     description: 'Social confidence may lead to leadership behaviors',
     confidence: 0.6,
   },

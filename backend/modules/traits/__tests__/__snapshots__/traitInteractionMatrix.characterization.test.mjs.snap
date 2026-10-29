@@ -25,7 +25,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
     "traitClusters": [
       {
         "description": "Confidence and social traits reinforce each other",
-        "name": "confidence_cluster",
+        "name": "confidenceCluster",
         "strength": 0.8,
         "traits": [
           "brave",
@@ -37,9 +37,9 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
   "conflicts": {
     "analysisTimestamp": "<analysisTimestamp>",
     "conflictCategories": {
-      "fear_confidence": [
+      "fearConfidence": [
         {
-          "category": "fear_confidence",
+          "category": "fearConfidence",
           "description": "Fear-based traits conflict with confidence traits",
           "strength": 0.9,
           "suppressionFactor": 0.6,
@@ -47,9 +47,9 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
           "trait2": "brave",
         },
       ],
-      "reactive_calm": [
+      "reactiveCalm": [
         {
-          "category": "reactive_calm",
+          "category": "reactiveCalm",
           "description": "Reactive traits conflict with calm stability",
           "strength": 0.8,
           "suppressionFactor": 0.7,
@@ -57,9 +57,9 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
           "trait2": "calm",
         },
       ],
-      "social_antisocial": [
+      "socialAntisocial": [
         {
-          "category": "social_antisocial",
+          "category": "socialAntisocial",
           "description": "Social and antisocial traits are mutually exclusive",
           "strength": 0.85,
           "suppressionFactor": 0.65,
@@ -70,7 +70,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
     },
     "conflictPairs": [
       {
-        "category": "fear_confidence",
+        "category": "fearConfidence",
         "description": "Fear-based traits conflict with confidence traits",
         "strength": 0.9,
         "suppressionFactor": 0.6,
@@ -78,7 +78,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
         "trait2": "brave",
       },
       {
-        "category": "reactive_calm",
+        "category": "reactiveCalm",
         "description": "Reactive traits conflict with calm stability",
         "strength": 0.8,
         "suppressionFactor": 0.7,
@@ -86,7 +86,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
         "trait2": "calm",
       },
       {
-        "category": "social_antisocial",
+        "category": "socialAntisocial",
         "description": "Social and antisocial traits are mutually exclusive",
         "strength": 0.85,
         "suppressionFactor": 0.65,
@@ -141,7 +141,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
       {
         "baseDominanceScore": 0.9,
         "description": "Highly dominant traits that tend to override others",
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "environmentalModifier": 1,
         "trait": "brave",
@@ -149,7 +149,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "reactive",
@@ -157,7 +157,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "calm",
@@ -165,7 +165,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "antisocial",
@@ -173,7 +173,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
       {
         "baseDominanceScore": 0.6,
         "description": "Moderately dominant traits with balanced expression",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.492,
         "environmentalModifier": 0.8200000000000001,
         "trait": "social",
@@ -192,7 +192,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
     "primaryTrait": {
       "baseDominanceScore": 0.9,
       "description": "Highly dominant traits that tend to override others",
-      "dominanceLevel": "high_dominance",
+      "dominanceLevel": "highDominance",
       "dominanceScore": 0.9,
       "environmentalModifier": 1,
       "trait": "brave",
@@ -201,7 +201,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "antisocial",
@@ -209,7 +209,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
       {
         "baseDominanceScore": 0.6,
         "description": "Moderately dominant traits with balanced expression",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.492,
         "environmentalModifier": 0.8200000000000001,
         "trait": "social",
@@ -227,7 +227,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "reactive",
@@ -235,7 +235,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "calm",
@@ -247,7 +247,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
     "clusters": [
       {
         "color": "#4CAF50",
-        "name": "confidence_cluster",
+        "name": "confidenceCluster",
         "traits": [
           "brave",
           "social",
@@ -322,11 +322,11 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
     "horseId": "<horseId>",
     "overallStability": 0.5,
     "stabilityFactors": [
-      "trait_synergies",
+      "traitSynergies",
     ],
     "volatilityRisks": [
-      "multiple_trait_conflicts",
-      "reactive_temperament",
+      "multipleTraitConflicts",
+      "reactiveTemperament",
     ],
   },
   "summary": {
@@ -356,10 +356,10 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
     "analysisTimestamp": "<analysisTimestamp>",
     "horseId": "<horseId>",
     "synergyCategories": {
-      "confidence_cluster": [
+      "confidenceCluster": [
         {
           "amplificationFactor": 1.3,
-          "category": "confidence_cluster",
+          "category": "confidenceCluster",
           "description": "Confidence and social traits reinforce each other",
           "strength": 0.8,
           "trait1": "brave",
@@ -370,7 +370,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
     "synergyPairs": [
       {
         "amplificationFactor": 1.3,
-        "category": "confidence_cluster",
+        "category": "confidenceCluster",
         "description": "Confidence and social traits reinforce each other",
         "strength": 0.8,
         "trait1": "brave",
@@ -426,7 +426,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
     "analysisTimestamp": "<analysisTimestamp>",
     "conflicts": [
       {
-        "category": "fear_confidence",
+        "category": "fearConfidence",
         "description": "Fear-based traits conflict with confidence traits",
         "strength": 0.9,
         "suppressionFactor": 0.6,
@@ -434,7 +434,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
         "trait2": "brave",
       },
       {
-        "category": "reactive_calm",
+        "category": "reactiveCalm",
         "description": "Reactive traits conflict with calm stability",
         "strength": 0.8,
         "suppressionFactor": 0.7,
@@ -442,7 +442,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
         "trait2": "calm",
       },
       {
-        "category": "social_antisocial",
+        "category": "socialAntisocial",
         "description": "Social and antisocial traits are mutually exclusive",
         "strength": 0.85,
         "suppressionFactor": 0.65,
@@ -452,7 +452,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
     ],
     "dominantTraits": [
       {
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "trait": "brave",
       },
@@ -463,7 +463,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
     "synergies": [
       {
         "amplificationFactor": 1.3,
-        "category": "confidence_cluster",
+        "category": "confidenceCluster",
         "description": "Confidence and social traits reinforce each other",
         "strength": 0.8,
         "trait1": "brave",
@@ -659,7 +659,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
     "traitClusters": [
       {
         "description": "Confidence and social traits reinforce each other",
-        "name": "confidence_cluster",
+        "name": "confidenceCluster",
         "strength": 0.8,
         "traits": [
           "confident",
@@ -669,7 +669,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       },
       {
         "description": "Intelligence traits create learning synergies",
-        "name": "intelligence_cluster",
+        "name": "intelligenceCluster",
         "strength": 0.7,
         "traits": [
           "intelligent",
@@ -693,7 +693,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.9,
         "description": "Highly dominant traits that tend to override others",
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "environmentalModifier": 1,
         "trait": "confident",
@@ -701,7 +701,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.9,
         "description": "Highly dominant traits that tend to override others",
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "environmentalModifier": 1,
         "trait": "brave",
@@ -709,7 +709,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.9,
         "description": "Highly dominant traits that tend to override others",
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "environmentalModifier": 1,
         "trait": "intelligent",
@@ -717,7 +717,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.6,
         "description": "Moderately dominant traits with balanced expression",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.72,
         "environmentalModifier": 1.2,
         "trait": "social",
@@ -725,7 +725,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.6,
         "description": "Moderately dominant traits with balanced expression",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.6,
         "environmentalModifier": 1,
         "trait": "curious",
@@ -733,7 +733,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.6,
         "description": "Moderately dominant traits with balanced expression",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.6,
         "environmentalModifier": 1,
         "trait": "adaptable",
@@ -741,7 +741,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "calm",
@@ -749,7 +749,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.3,
         "description": "Low dominance traits that are easily suppressed",
-        "dominanceLevel": "low_dominance",
+        "dominanceLevel": "lowDominance",
         "dominanceScore": 0.3,
         "environmentalModifier": 1,
         "trait": "sensitive",
@@ -760,7 +760,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
     "primaryTrait": {
       "baseDominanceScore": 0.9,
       "description": "Highly dominant traits that tend to override others",
-      "dominanceLevel": "high_dominance",
+      "dominanceLevel": "highDominance",
       "dominanceScore": 0.9,
       "environmentalModifier": 1,
       "trait": "confident",
@@ -769,7 +769,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.6,
         "description": "Moderately dominant traits with balanced expression",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.72,
         "environmentalModifier": 1.2,
         "trait": "social",
@@ -777,7 +777,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.6,
         "description": "Moderately dominant traits with balanced expression",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.6,
         "environmentalModifier": 1,
         "trait": "curious",
@@ -785,7 +785,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.6,
         "description": "Moderately dominant traits with balanced expression",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.6,
         "environmentalModifier": 1,
         "trait": "adaptable",
@@ -793,7 +793,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "calm",
@@ -801,7 +801,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.3,
         "description": "Low dominance traits that are easily suppressed",
-        "dominanceLevel": "low_dominance",
+        "dominanceLevel": "lowDominance",
         "dominanceScore": 0.3,
         "environmentalModifier": 1,
         "trait": "sensitive",
@@ -811,7 +811,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.9,
         "description": "Highly dominant traits that tend to override others",
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "environmentalModifier": 1,
         "trait": "brave",
@@ -819,7 +819,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "baseDominanceScore": 0.9,
         "description": "Highly dominant traits that tend to override others",
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "environmentalModifier": 1,
         "trait": "intelligent",
@@ -831,7 +831,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
     "clusters": [
       {
         "color": "#4CAF50",
-        "name": "confidence_cluster",
+        "name": "confidenceCluster",
         "traits": [
           "confident",
           "brave",
@@ -840,7 +840,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       },
       {
         "color": "#2196F3",
-        "name": "intelligence_cluster",
+        "name": "intelligenceCluster",
         "traits": [
           "intelligent",
           "curious",
@@ -940,8 +940,8 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
     "horseId": "<horseId>",
     "overallStability": 0.8,
     "stabilityFactors": [
-      "trait_synergies",
-      "strong_bonding",
+      "traitSynergies",
+      "strongBonding",
     ],
     "volatilityRisks": [],
   },
@@ -996,10 +996,10 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
     "analysisTimestamp": "<analysisTimestamp>",
     "horseId": "<horseId>",
     "synergyCategories": {
-      "confidence_cluster": [
+      "confidenceCluster": [
         {
           "amplificationFactor": 1.3,
-          "category": "confidence_cluster",
+          "category": "confidenceCluster",
           "description": "Confidence and social traits reinforce each other",
           "strength": 0.8,
           "trait1": "confident",
@@ -1007,7 +1007,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
         },
         {
           "amplificationFactor": 1.3,
-          "category": "confidence_cluster",
+          "category": "confidenceCluster",
           "description": "Confidence and social traits reinforce each other",
           "strength": 0.8,
           "trait1": "confident",
@@ -1015,17 +1015,17 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
         },
         {
           "amplificationFactor": 1.3,
-          "category": "confidence_cluster",
+          "category": "confidenceCluster",
           "description": "Confidence and social traits reinforce each other",
           "strength": 0.8,
           "trait1": "brave",
           "trait2": "social",
         },
       ],
-      "intelligence_cluster": [
+      "intelligenceCluster": [
         {
           "amplificationFactor": 1.25,
-          "category": "intelligence_cluster",
+          "category": "intelligenceCluster",
           "description": "Intelligence traits create learning synergies",
           "strength": 0.7,
           "trait1": "intelligent",
@@ -1033,7 +1033,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
         },
         {
           "amplificationFactor": 1.25,
-          "category": "intelligence_cluster",
+          "category": "intelligenceCluster",
           "description": "Intelligence traits create learning synergies",
           "strength": 0.7,
           "trait1": "intelligent",
@@ -1041,7 +1041,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
         },
         {
           "amplificationFactor": 1.25,
-          "category": "intelligence_cluster",
+          "category": "intelligenceCluster",
           "description": "Intelligence traits create learning synergies",
           "strength": 0.7,
           "trait1": "curious",
@@ -1052,7 +1052,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
     "synergyPairs": [
       {
         "amplificationFactor": 1.3,
-        "category": "confidence_cluster",
+        "category": "confidenceCluster",
         "description": "Confidence and social traits reinforce each other",
         "strength": 0.8,
         "trait1": "confident",
@@ -1060,7 +1060,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       },
       {
         "amplificationFactor": 1.3,
-        "category": "confidence_cluster",
+        "category": "confidenceCluster",
         "description": "Confidence and social traits reinforce each other",
         "strength": 0.8,
         "trait1": "confident",
@@ -1068,7 +1068,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       },
       {
         "amplificationFactor": 1.3,
-        "category": "confidence_cluster",
+        "category": "confidenceCluster",
         "description": "Confidence and social traits reinforce each other",
         "strength": 0.8,
         "trait1": "brave",
@@ -1076,7 +1076,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       },
       {
         "amplificationFactor": 1.25,
-        "category": "intelligence_cluster",
+        "category": "intelligenceCluster",
         "description": "Intelligence traits create learning synergies",
         "strength": 0.7,
         "trait1": "intelligent",
@@ -1084,7 +1084,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       },
       {
         "amplificationFactor": 1.25,
-        "category": "intelligence_cluster",
+        "category": "intelligenceCluster",
         "description": "Intelligence traits create learning synergies",
         "strength": 0.7,
         "trait1": "intelligent",
@@ -1092,7 +1092,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       },
       {
         "amplificationFactor": 1.25,
-        "category": "intelligence_cluster",
+        "category": "intelligenceCluster",
         "description": "Intelligence traits create learning synergies",
         "strength": 0.7,
         "trait1": "curious",
@@ -1107,12 +1107,12 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       {
         "confidence": 0.75,
         "description": "Curiosity and intelligence create accelerated learning potential",
-        "pattern": "learning_acceleration",
+        "pattern": "learningAcceleration",
       },
       {
         "confidence": 0.6,
         "description": "Social confidence may lead to leadership behaviors",
-        "pattern": "leadership_emergence",
+        "pattern": "leadershipEmergence",
       },
     ],
     "horseId": "<horseId>",
@@ -1160,17 +1160,17 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
     "conflicts": [],
     "dominantTraits": [
       {
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "trait": "confident",
       },
       {
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "trait": "brave",
       },
       {
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "trait": "intelligent",
       },
@@ -1181,7 +1181,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
     "synergies": [
       {
         "amplificationFactor": 1.3,
-        "category": "confidence_cluster",
+        "category": "confidenceCluster",
         "description": "Confidence and social traits reinforce each other",
         "strength": 0.8,
         "trait1": "confident",
@@ -1189,7 +1189,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       },
       {
         "amplificationFactor": 1.3,
-        "category": "confidence_cluster",
+        "category": "confidenceCluster",
         "description": "Confidence and social traits reinforce each other",
         "strength": 0.8,
         "trait1": "confident",
@@ -1197,7 +1197,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       },
       {
         "amplificationFactor": 1.3,
-        "category": "confidence_cluster",
+        "category": "confidenceCluster",
         "description": "Confidence and social traits reinforce each other",
         "strength": 0.8,
         "trait1": "brave",
@@ -1205,7 +1205,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       },
       {
         "amplificationFactor": 1.25,
-        "category": "intelligence_cluster",
+        "category": "intelligenceCluster",
         "description": "Intelligence traits create learning synergies",
         "strength": 0.7,
         "trait1": "intelligent",
@@ -1213,7 +1213,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       },
       {
         "amplificationFactor": 1.25,
-        "category": "intelligence_cluster",
+        "category": "intelligenceCluster",
         "description": "Intelligence traits create learning synergies",
         "strength": 0.7,
         "trait1": "intelligent",
@@ -1221,7 +1221,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       },
       {
         "amplificationFactor": 1.25,
-        "category": "intelligence_cluster",
+        "category": "intelligenceCluster",
         "description": "Intelligence traits create learning synergies",
         "strength": 0.7,
         "trait1": "curious",
@@ -1259,7 +1259,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
     "traitClusters": [
       {
         "description": "Social traits enhance interpersonal connections",
-        "name": "social_cluster",
+        "name": "socialCluster",
         "strength": 0.75,
         "traits": [
           "social",
@@ -1272,9 +1272,9 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
   "conflicts": {
     "analysisTimestamp": "<analysisTimestamp>",
     "conflictCategories": {
-      "social_antisocial": [
+      "socialAntisocial": [
         {
-          "category": "social_antisocial",
+          "category": "socialAntisocial",
           "description": "Social and antisocial traits are mutually exclusive",
           "strength": 0.85,
           "suppressionFactor": 0.65,
@@ -1285,7 +1285,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
     },
     "conflictPairs": [
       {
-        "category": "social_antisocial",
+        "category": "socialAntisocial",
         "description": "Social and antisocial traits are mutually exclusive",
         "strength": 0.85,
         "suppressionFactor": 0.65,
@@ -1316,7 +1316,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       {
         "baseDominanceScore": 0.6,
         "description": "Moderately dominant traits with balanced expression",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.51,
         "environmentalModifier": 0.85,
         "trait": "social",
@@ -1324,7 +1324,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "outgoing",
@@ -1332,7 +1332,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "reactive",
@@ -1340,7 +1340,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "aloof",
@@ -1348,7 +1348,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.425,
         "environmentalModifier": 0.85,
         "trait": "affectionate",
@@ -1356,7 +1356,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.425,
         "environmentalModifier": 0.85,
         "trait": "trusting",
@@ -1375,7 +1375,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
     "primaryTrait": {
       "baseDominanceScore": 0.6,
       "description": "Moderately dominant traits with balanced expression",
-      "dominanceLevel": "moderate_dominance",
+      "dominanceLevel": "moderateDominance",
       "dominanceScore": 0.51,
       "environmentalModifier": 0.85,
       "trait": "social",
@@ -1384,7 +1384,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "aloof",
@@ -1392,7 +1392,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.425,
         "environmentalModifier": 0.85,
         "trait": "affectionate",
@@ -1400,7 +1400,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.425,
         "environmentalModifier": 0.85,
         "trait": "trusting",
@@ -1418,7 +1418,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "outgoing",
@@ -1426,7 +1426,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "reactive",
@@ -1438,7 +1438,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
     "clusters": [
       {
         "color": "#FF9800",
-        "name": "social_cluster",
+        "name": "socialCluster",
         "traits": [
           "social",
           "affectionate",
@@ -1519,10 +1519,10 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
     "horseId": "<horseId>",
     "overallStability": 0.7000000000000001,
     "stabilityFactors": [
-      "trait_synergies",
+      "traitSynergies",
     ],
     "volatilityRisks": [
-      "reactive_temperament",
+      "reactiveTemperament",
     ],
   },
   "summary": {
@@ -1558,10 +1558,10 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
     "analysisTimestamp": "<analysisTimestamp>",
     "horseId": "<horseId>",
     "synergyCategories": {
-      "social_cluster": [
+      "socialCluster": [
         {
           "amplificationFactor": 1.2,
-          "category": "social_cluster",
+          "category": "socialCluster",
           "description": "Social traits enhance interpersonal connections",
           "strength": 0.75,
           "trait1": "social",
@@ -1569,7 +1569,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
         },
         {
           "amplificationFactor": 1.2,
-          "category": "social_cluster",
+          "category": "socialCluster",
           "description": "Social traits enhance interpersonal connections",
           "strength": 0.75,
           "trait1": "social",
@@ -1577,7 +1577,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
         },
         {
           "amplificationFactor": 1.2,
-          "category": "social_cluster",
+          "category": "socialCluster",
           "description": "Social traits enhance interpersonal connections",
           "strength": 0.75,
           "trait1": "affectionate",
@@ -1588,7 +1588,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
     "synergyPairs": [
       {
         "amplificationFactor": 1.2,
-        "category": "social_cluster",
+        "category": "socialCluster",
         "description": "Social traits enhance interpersonal connections",
         "strength": 0.75,
         "trait1": "social",
@@ -1596,7 +1596,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       },
       {
         "amplificationFactor": 1.2,
-        "category": "social_cluster",
+        "category": "socialCluster",
         "description": "Social traits enhance interpersonal connections",
         "strength": 0.75,
         "trait1": "social",
@@ -1604,7 +1604,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       },
       {
         "amplificationFactor": 1.2,
-        "category": "social_cluster",
+        "category": "socialCluster",
         "description": "Social traits enhance interpersonal connections",
         "strength": 0.75,
         "trait1": "affectionate",
@@ -1660,7 +1660,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
     "analysisTimestamp": "<analysisTimestamp>",
     "conflicts": [
       {
-        "category": "social_antisocial",
+        "category": "socialAntisocial",
         "description": "Social and antisocial traits are mutually exclusive",
         "strength": 0.85,
         "suppressionFactor": 0.65,
@@ -1675,7 +1675,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
     "synergies": [
       {
         "amplificationFactor": 1.2,
-        "category": "social_cluster",
+        "category": "socialCluster",
         "description": "Social traits enhance interpersonal connections",
         "strength": 0.75,
         "trait1": "social",
@@ -1683,7 +1683,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       },
       {
         "amplificationFactor": 1.2,
-        "category": "social_cluster",
+        "category": "socialCluster",
         "description": "Social traits enhance interpersonal connections",
         "strength": 0.75,
         "trait1": "social",
@@ -1691,7 +1691,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
       },
       {
         "amplificationFactor": 1.2,
-        "category": "social_cluster",
+        "category": "socialCluster",
         "description": "Social traits enhance interpersonal connections",
         "strength": 0.75,
         "trait1": "affectionate",
@@ -1728,7 +1728,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
     "traitClusters": [
       {
         "description": "Confidence and social traits reinforce each other",
-        "name": "confidence_cluster",
+        "name": "confidenceCluster",
         "strength": 0.8,
         "traits": [
           "brave",
@@ -1752,7 +1752,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
       {
         "baseDominanceScore": 0.9,
         "description": "Highly dominant traits that tend to override others",
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "environmentalModifier": 1,
         "trait": "brave",
@@ -1760,7 +1760,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
       {
         "baseDominanceScore": 0.9,
         "description": "Highly dominant traits that tend to override others",
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "environmentalModifier": 1,
         "trait": "confident",
@@ -1768,7 +1768,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
       {
         "baseDominanceScore": 0.6,
         "description": "Moderately dominant traits with balanced expression",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.69,
         "environmentalModifier": 1.15,
         "trait": "social",
@@ -1779,7 +1779,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
     "primaryTrait": {
       "baseDominanceScore": 0.9,
       "description": "Highly dominant traits that tend to override others",
-      "dominanceLevel": "high_dominance",
+      "dominanceLevel": "highDominance",
       "dominanceScore": 0.9,
       "environmentalModifier": 1,
       "trait": "brave",
@@ -1789,7 +1789,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
       {
         "baseDominanceScore": 0.9,
         "description": "Highly dominant traits that tend to override others",
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "environmentalModifier": 1,
         "trait": "confident",
@@ -1797,7 +1797,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
       {
         "baseDominanceScore": 0.6,
         "description": "Moderately dominant traits with balanced expression",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.69,
         "environmentalModifier": 1.15,
         "trait": "social",
@@ -1809,7 +1809,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
     "clusters": [
       {
         "color": "#4CAF50",
-        "name": "confidence_cluster",
+        "name": "confidenceCluster",
         "traits": [
           "brave",
           "confident",
@@ -1863,8 +1863,8 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
     "horseId": "<horseId>",
     "overallStability": 0.8,
     "stabilityFactors": [
-      "trait_synergies",
-      "strong_bonding",
+      "traitSynergies",
+      "strongBonding",
     ],
     "volatilityRisks": [],
   },
@@ -1901,10 +1901,10 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
     "analysisTimestamp": "<analysisTimestamp>",
     "horseId": "<horseId>",
     "synergyCategories": {
-      "confidence_cluster": [
+      "confidenceCluster": [
         {
           "amplificationFactor": 1.3,
-          "category": "confidence_cluster",
+          "category": "confidenceCluster",
           "description": "Confidence and social traits reinforce each other",
           "strength": 0.8,
           "trait1": "brave",
@@ -1912,7 +1912,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
         },
         {
           "amplificationFactor": 1.3,
-          "category": "confidence_cluster",
+          "category": "confidenceCluster",
           "description": "Confidence and social traits reinforce each other",
           "strength": 0.8,
           "trait1": "brave",
@@ -1920,7 +1920,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
         },
         {
           "amplificationFactor": 1.3,
-          "category": "confidence_cluster",
+          "category": "confidenceCluster",
           "description": "Confidence and social traits reinforce each other",
           "strength": 0.8,
           "trait1": "confident",
@@ -1931,7 +1931,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
     "synergyPairs": [
       {
         "amplificationFactor": 1.3,
-        "category": "confidence_cluster",
+        "category": "confidenceCluster",
         "description": "Confidence and social traits reinforce each other",
         "strength": 0.8,
         "trait1": "brave",
@@ -1939,7 +1939,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
       },
       {
         "amplificationFactor": 1.3,
-        "category": "confidence_cluster",
+        "category": "confidenceCluster",
         "description": "Confidence and social traits reinforce each other",
         "strength": 0.8,
         "trait1": "brave",
@@ -1947,7 +1947,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
       },
       {
         "amplificationFactor": 1.3,
-        "category": "confidence_cluster",
+        "category": "confidenceCluster",
         "description": "Confidence and social traits reinforce each other",
         "strength": 0.8,
         "trait1": "confident",
@@ -1962,7 +1962,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
       {
         "confidence": 0.6,
         "description": "Social confidence may lead to leadership behaviors",
-        "pattern": "leadership_emergence",
+        "pattern": "leadershipEmergence",
       },
     ],
     "horseId": "<horseId>",
@@ -2010,12 +2010,12 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
     "conflicts": [],
     "dominantTraits": [
       {
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "trait": "brave",
       },
       {
-        "dominanceLevel": "high_dominance",
+        "dominanceLevel": "highDominance",
         "dominanceScore": 0.9,
         "trait": "confident",
       },
@@ -2026,7 +2026,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
     "synergies": [
       {
         "amplificationFactor": 1.3,
-        "category": "confidence_cluster",
+        "category": "confidenceCluster",
         "description": "Confidence and social traits reinforce each other",
         "strength": 0.8,
         "trait1": "brave",
@@ -2034,7 +2034,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
       },
       {
         "amplificationFactor": 1.3,
-        "category": "confidence_cluster",
+        "category": "confidenceCluster",
         "description": "Confidence and social traits reinforce each other",
         "strength": 0.8,
         "trait1": "brave",
@@ -2042,7 +2042,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
       },
       {
         "amplificationFactor": 1.3,
-        "category": "confidence_cluster",
+        "category": "confidenceCluster",
         "description": "Confidence and social traits reinforce each other",
         "strength": 0.8,
         "trait1": "confident",
@@ -2088,7 +2088,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) unknownTr
       {
         "baseDominanceScore": 0.5,
         "description": "Unknown trait with moderate dominance",
-        "dominanceLevel": "moderate_dominance",
+        "dominanceLevel": "moderateDominance",
         "dominanceScore": 0.5,
         "environmentalModifier": 1,
         "trait": "developing",
@@ -2099,7 +2099,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) unknownTr
     "primaryTrait": {
       "baseDominanceScore": 0.5,
       "description": "Unknown trait with moderate dominance",
-      "dominanceLevel": "moderate_dominance",
+      "dominanceLevel": "moderateDominance",
       "dominanceScore": 0.5,
       "environmentalModifier": 1,
       "trait": "developing",

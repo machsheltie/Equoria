@@ -203,7 +203,7 @@ describe('generateInteractionMatrix', () => {
 // ── traitInteractionMatrix — with-flags branch coverage (Equoria-jkht) ───────
 // Two fixture horses exercise the non-empty-traits code paths:
 //   tiSynergyHorse: ['brave','confident','fearful'] + bondScore=50
-//     → brave+confident synergy (confidence_cluster), fearful+brave/confident conflicts
+//     → brave+confident synergy (confidenceCluster), fearful+brave/confident conflicts
 //   tiConflictHorse: ['fearful','brave','reactive','calm','social','antisocial']
 //     → 3 conflicts (> 2), has 'reactive' trait
 
@@ -291,17 +291,17 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
     expect(result.suppressionEffects['brave']).toBeDefined();
   });
 
-  it('stability section adds trait_synergies/strong_bonding stabilityFactors', async () => {
+  it('stability section adds traitSynergies/strongBonding stabilityFactors', async () => {
     const result = (await generateInteractionMatrix(tiSynergyHorse.id)).stability;
-    expect(result.stabilityFactors).toContain('trait_synergies');
-    expect(result.stabilityFactors).toContain('strong_bonding');
+    expect(result.stabilityFactors).toContain('traitSynergies');
+    expect(result.stabilityFactors).toContain('strongBonding');
     expect(typeof result.overallStability).toBe('number');
   });
 
-  it('stability section adds multiple_trait_conflicts/reactive_temperament volatilityRisks', async () => {
+  it('stability section adds multipleTraitConflicts/reactiveTemperament volatilityRisks', async () => {
     const result = (await generateInteractionMatrix(tiConflictHorse.id)).stability;
-    expect(result.volatilityRisks).toContain('multiple_trait_conflicts');
-    expect(result.volatilityRisks).toContain('reactive_temperament');
+    expect(result.volatilityRisks).toContain('multipleTraitConflicts');
+    expect(result.volatilityRisks).toContain('reactiveTemperament');
   });
 
   it('dominance section returns sorted dominanceHierarchy with primaryTrait for non-empty flags', async () => {

@@ -19,40 +19,35 @@ const deepFreeze = value => {
 };
 
 export const ENVIRONMENTAL_TRIGGERS = deepFreeze({
-  harsh_environment: {
+  harshEnvironment: {
     name: 'Harsh Environment',
-    factors: ['rough_handling', 'time_pressure'],
-    traits_affected: ['fearful', 'reactive', 'insecure', 'fragile'],
+    factors: ['roughHandling', 'timePressure'],
+    traitsAffected: ['fearful', 'reactive', 'insecure', 'fragile'],
   },
-  confidence_building: {
+  confidenceBuilding: {
     name: 'Confidence Building Environment',
-    factors: ['calm_atmosphere', 'patient_handling', 'positive_reinforcement', 'gradual_exposure'],
-    traits_affected: ['brave', 'confident', 'social', 'curious'],
+    factors: ['calmAtmosphere', 'patientHandling', 'positiveReinforcement', 'gradualExposure'],
+    traitsAffected: ['brave', 'confident', 'social', 'curious'],
   },
-  social_stimulation: {
+  socialStimulation: {
     name: 'Social Stimulation Environment',
-    factors: ['multiple_handlers', 'group_activities', 'varied_interactions', 'social_exposure'],
-    traits_affected: ['social', 'affectionate', 'outgoing'],
+    factors: ['multipleHandlers', 'groupActivities', 'variedInteractions', 'socialExposure'],
+    traitsAffected: ['social', 'affectionate', 'outgoing'],
   },
   isolation: {
     name: 'Isolation Environment',
-    factors: ['limited_contact', 'minimal_interaction', 'solitary_confinement', 'neglect'],
-    traits_affected: ['antisocial', 'withdrawn', 'insecure'],
+    factors: ['limitedContact', 'minimalInteraction', 'solitaryConfinement', 'neglect'],
+    traitsAffected: ['antisocial', 'withdrawn', 'insecure'],
   },
-  sensory_enrichment: {
+  sensoryEnrichment: {
     name: 'Sensory Enrichment Environment',
-    factors: ['varied_textures', 'different_sounds', 'visual_stimulation', 'tactile_experiences'],
-    traits_affected: ['curious', 'intelligent', 'adaptable'],
+    factors: ['variedTextures', 'differentSounds', 'visualStimulation', 'tactileExperiences'],
+    traitsAffected: ['curious', 'intelligent', 'adaptable'],
   },
-  routine_stability: {
+  routineStability: {
     name: 'Routine Stability Environment',
-    factors: [
-      'consistent_schedule',
-      'familiar_handlers',
-      'predictable_environment',
-      'stable_routine',
-    ],
-    traits_affected: ['calm', 'patient', 'stable'],
+    factors: ['consistentSchedule', 'familiarHandlers', 'predictableEnvironment', 'stableRoutine'],
+    traitsAffected: ['calm', 'patient', 'stable'],
   },
 });
 
@@ -63,15 +58,15 @@ export const ENVIRONMENTAL_TRIGGERS = deepFreeze({
  * may be a dotted path (groom.epigeneticInfluenceType).
  */
 export const TRIGGER_SCORE_RULES = deepFreeze({
-  harsh_environment: [
+  harshEnvironment: [
     [{ field: 'quality', op: 'eq', value: 'poor' }, 0.2],
     [{ field: 'bondingChange', op: 'lt', value: 0 }, 0.2],
   ],
-  confidence_building: [
+  confidenceBuilding: [
     [{ field: 'bondingChange', op: 'gt', value: 1 }, 0.3],
     [{ field: 'quality', op: 'eq', value: 'excellent' }, 0.2],
   ],
-  social_stimulation: [
+  socialStimulation: [
     [{ field: 'interactionType', op: 'eq', value: 'enrichment' }, 0.2],
     [{ field: 'duration', op: 'gt', value: 30 }, 0.1],
   ],
@@ -79,11 +74,11 @@ export const TRIGGER_SCORE_RULES = deepFreeze({
     [{ field: 'bondingChange', op: 'lt', value: -1 }, 0.3],
     [{ field: 'duration', op: 'lt', value: 15 }, 0.2],
   ],
-  sensory_enrichment: [
+  sensoryEnrichment: [
     [{ field: 'taskType', op: 'eq', value: 'desensitization' }, 0.3],
     [{ field: 'taskType', op: 'eq', value: 'showgroundExposure' }, 0.2],
   ],
-  routine_stability: [
+  routineStability: [
     [{ field: 'groom.epigeneticInfluenceType', op: 'eq', value: 'calm' }, 0.2],
     [{ field: 'quality', op: 'in', value: ['good', 'excellent'] }, 0.1],
   ],
@@ -101,23 +96,23 @@ export const TRIGGER_WINDOW_DAYS = 30;
  * whether that should stay is owner question WS7-Q2.
  */
 export const FACTOR_PRESENCE_RULES = deepFreeze({
-  calm_atmosphere: {
+  calmAtmosphere: {
     anyInteraction: [
       { field: 'bondingChange', op: 'gt', value: 1 },
       { field: 'quality', op: 'eq', value: 'excellent' },
     ],
   },
-  patient_handling: {
+  patientHandling: {
     anyInteraction: [
       { field: 'bondingChange', op: 'gt', value: 1 },
       { field: 'quality', op: 'eq', value: 'excellent' },
     ],
   },
-  multiple_handlers: { distinctGroomsAbove: 1 },
-  limited_contact: { countBelow: 3 },
-  varied_textures: { anyInteraction: [{ field: 'taskType', op: 'eq', value: 'desensitization' }] },
-  different_sounds: { anyInteraction: [{ field: 'taskType', op: 'eq', value: 'desensitization' }] },
-  consistent_schedule: { countAbove: 5 },
+  multipleHandlers: { distinctGroomsAbove: 1 },
+  limitedContact: { countBelow: 3 },
+  variedTextures: { anyInteraction: [{ field: 'taskType', op: 'eq', value: 'desensitization' }] },
+  differentSounds: { anyInteraction: [{ field: 'taskType', op: 'eq', value: 'desensitization' }] },
+  consistentSchedule: { countAbove: 5 },
 });
 export const DEFAULT_FACTOR_PRESENT_ABOVE = 0.7;
 

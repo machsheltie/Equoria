@@ -101,7 +101,7 @@ export function detectTriggers({ horseId, interactions, now }) {
         type: triggerType,
         name: triggerDef.name,
         strength: triggerScore,
-        affectedTraits: triggerDef.traits_affected,
+        affectedTraits: triggerDef.traitsAffected,
         factors: presentFactors(recent, triggerDef.factors),
       });
       totalTriggerStrength += triggerScore;
@@ -180,7 +180,7 @@ export function cumulativeExposure({ horseId, interactions, now }) {
 
     if ((index + 1) % CUMULATIVE_EFFECTS_EVERY === 0) {
       const recent = interactions.slice(Math.max(0, index - 4), index + 1);
-      cumulativeEffects[`interaction_${index + 1}`] = analyzeCumulativeEffects(recent);
+      cumulativeEffects[`interaction${index + 1}`] = analyzeCumulativeEffects(recent);
     }
   });
 

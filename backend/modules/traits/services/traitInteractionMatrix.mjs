@@ -162,7 +162,7 @@ export function analyzeTraitSnapshot(snapshot, { timeWindow = 30, now = new Date
     nodes: traits.map(trait => ({
       id: trait,
       type: 'trait',
-      dominance: getTraitDominanceInfo(trait).dominance_score,
+      dominance: getTraitDominanceInfo(trait).dominanceScore,
     })),
     edges: [
       ...synergyPairs.map(pair => ({ ...pairEdge(pair, 'synergy'), color: 'green' })),
@@ -228,8 +228,8 @@ function findTraitSynergies(traits) {
         synergies.push({
           trait1: cluster.traits[i],
           trait2: cluster.traits[j],
-          strength: definition.synergy_strength,
-          amplificationFactor: definition.amplification_factor,
+          strength: definition.synergyStrength,
+          amplificationFactor: definition.amplificationFactor,
           category: cluster.name,
           description: definition.description,
         });
@@ -243,13 +243,13 @@ function findTraitSynergies(traits) {
 function findTraitConflicts(traits) {
   const conflicts = [];
   for (const [category, conflict] of Object.entries(TRAIT_CONFLICTS)) {
-    for (const [trait1, trait2] of conflict.trait_pairs) {
+    for (const [trait1, trait2] of conflict.traitPairs) {
       if (traits.includes(trait1) && traits.includes(trait2)) {
         conflicts.push({
           trait1,
           trait2,
-          strength: conflict.conflict_strength,
-          suppressionFactor: conflict.suppression_factor,
+          strength: conflict.conflictStrength,
+          suppressionFactor: conflict.suppressionFactor,
           category,
           description: conflict.description,
         });
@@ -268,7 +268,7 @@ function identifyTraitClusters(traits) {
       clusters.push({
         name,
         traits: matchingTraits,
-        strength: cluster.synergy_strength,
+        strength: cluster.synergyStrength,
         description: cluster.description,
       });
     }
@@ -304,7 +304,7 @@ function compoundPairEffects(pairs, keys) {
 function getTraitDominanceInfo(trait) {
   for (const [level, info] of Object.entries(TRAIT_DOMINANCE)) {
     if (info.traits.includes(trait)) {
-      return { dominance_score: info.dominance_score, level, description: info.description };
+      return { dominanceScore: info.dominanceScore, level, description: info.description };
     }
   }
   return UNKNOWN_TRAIT_DOMINANCE;
@@ -315,7 +315,7 @@ function identifyDominantTraits(traits) {
   return traits
     .map(trait => {
       const info = getTraitDominanceInfo(trait);
-      return { trait, dominanceScore: info.dominance_score, dominanceLevel: info.level };
+      return { trait, dominanceScore: info.dominanceScore, dominanceLevel: info.level };
     })
     .filter(t => t.dominanceScore > 0.6)
     .sort((a, b) => b.dominanceScore - a.dominanceScore);
@@ -337,9 +337,9 @@ function evaluateDominance(snapshot, traits) {
       const environmentalModifier = calculateEnvironmentalDominanceModifier(snapshot, trait);
       return {
         trait,
-        baseDominanceScore: info.dominance_score,
+        baseDominanceScore: info.dominanceScore,
         environmentalModifier,
-        dominanceScore: info.dominance_score * environmentalModifier,
+        dominanceScore: info.dominanceScore * environmentalModifier,
         dominanceLevel: info.level,
         description: info.description,
       };
@@ -391,18 +391,18 @@ function assessStability(snapshot, traits, counts) {
 
   const stabilityFactors = [];
   if (counts.synergies > 0) {
-    stabilityFactors.push('trait_synergies');
+    stabilityFactors.push('traitSynergies');
   }
   if (snapshot.bondScore > 30) {
-    stabilityFactors.push('strong_bonding');
+    stabilityFactors.push('strongBonding');
   }
 
   const volatilityRisks = [];
   if (counts.conflicts > 2) {
-    volatilityRisks.push('multiple_trait_conflicts');
+    volatilityRisks.push('multipleTraitConflicts');
   }
   if (traits.includes('reactive')) {
-    volatilityRisks.push('reactive_temperament');
+    volatilityRisks.push('reactiveTemperament');
   }
 
   return { overallStability, stabilityFactors, volatilityRisks };

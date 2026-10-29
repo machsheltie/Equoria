@@ -72,7 +72,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
   let etsHorseYoung; // 15 days old → ageInDays ≤30 (ageModifier=0.7)
   let etsHorseDeveloping; // 45 days old → ageInDays ≤90 (ageModifier=0.8)
   let etsHorseMature; // 200 days old → ageInDays >90 (ageModifier=1.0) + past critical periods
-  let etsGroom1; // epigeneticInfluenceType='calm' → routine_stability branch coverage
+  let etsGroom1; // epigeneticInfluenceType='calm' → routineStability branch coverage
   let etsGroom2; // second groom for multiple-groom fixture interactions
   let etsHorseNewFoal; // 1 day old → ageModifier=0.6, sensitivity=0.7 for generateEnvironmentalReport
   const cleanup = createCleanupTracker();
@@ -175,7 +175,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
     // and analyzeCumulativeEffects (fires at index 4)
     await prisma.groomInteraction.createMany({
       data: [
-        // harsh_environment: quality=poor✓, bondingChange<0✓ → interactionScore=0.4 → fires (avg=0.4>0.3)
+        // harshEnvironment: quality=poor✓, bondingChange<0✓ → interactionScore=0.4 → fires (avg=0.4>0.3)
         {
           foalId: etsHorseMature.id,
           groomId: etsGroom1.id,
@@ -184,7 +184,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
           quality: 'poor',
           bondingChange: -1,
         },
-        // confidence_building: bondingChange>1✓, quality=excellent✓ → fires (avg=0.5>0.3)
+        // confidenceBuilding: bondingChange>1✓, quality=excellent✓ → fires (avg=0.5>0.3)
         // calculateInteractionExposure: bondingChange=3>2✓ (*1.3), quality=excellent✓ (*1.2)
         {
           foalId: etsHorseMature.id,
@@ -203,7 +203,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
           quality: 'good',
           bondingChange: -2,
         },
-        // sensory_enrichment taskType=desensitization branch; routine_stability groom.calm✓ branch
+        // sensoryEnrichment taskType=desensitization branch; routineStability groom.calm✓ branch
         {
           foalId: etsHorseMature.id,
           groomId: etsGroom1.id,
@@ -213,7 +213,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
           bondingChange: 0,
           taskType: 'desensitization',
         },
-        // routine_stability quality=excellent✓; analyzeCumulativeEffects fires at index=4 (5th interaction)
+        // routineStability quality=excellent✓; analyzeCumulativeEffects fires at index=4 (5th interaction)
         {
           foalId: etsHorseMature.id,
           groomId: etsGroom1.id,
@@ -222,7 +222,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
           quality: 'excellent',
           bondingChange: 1,
         },
-        // sensory_enrichment taskType=showgroundExposure branch
+        // sensoryEnrichment taskType=showgroundExposure branch
         {
           foalId: etsHorseMature.id,
           groomId: etsGroom2.id,
@@ -292,16 +292,16 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
 
   // ── detectEnvironmentalTriggers — horse with interactions ─────────────────
 
-  it('detectEnvironmentalTriggers: harsh_environment + confidence_building + isolation detected', async () => {
+  it('detectEnvironmentalTriggers: harshEnvironment + confidenceBuilding + isolation detected', async () => {
     const result = await analyze(etsHorseMature.id, detectTriggers);
     expect(result.horseId).toBe(etsHorseMature.id);
     expect(result.detectedTriggers.length).toBeGreaterThan(0);
     expect(result.interactionCount).toBe(6);
     const types = result.detectedTriggers.map(t => t.type);
-    expect(types).toContain('harsh_environment');
-    expect(types).toContain('confidence_building');
+    expect(types).toContain('harshEnvironment');
+    expect(types).toContain('confidenceBuilding');
     expect(Array.isArray(result.environmentalFactors)).toBe(true);
-    const harshTrigger = result.detectedTriggers.find(t => t.type === 'harsh_environment');
+    const harshTrigger = result.detectedTriggers.find(t => t.type === 'harshEnvironment');
     expect(Array.isArray(harshTrigger.factors)).toBe(true);
   });
 
@@ -314,8 +314,8 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
     expect(result.exposureTimeline).toHaveLength(6);
     expect(typeof result.exposureByType).toBe('object');
     // analyzeCumulativeEffects fires at index 4 (5th interaction): (4+1)%5===0
-    expect(result.cumulativeEffects['interaction_5']).toBeDefined();
-    expect(['positive', 'negative', 'neutral']).toContain(result.cumulativeEffects['interaction_5'].bondingTrend);
+    expect(result.cumulativeEffects['interaction5']).toBeDefined();
+    expect(['positive', 'negative', 'neutral']).toContain(result.cumulativeEffects['interaction5'].bondingTrend);
   });
 
   // ── evaluateTraitExpressionProbability — with detected triggers ───────────
