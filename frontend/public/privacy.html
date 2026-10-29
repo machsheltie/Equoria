@@ -54,7 +54,7 @@
   <body>
     <h1>Equoria Privacy Policy</h1>
     <p>
-      <strong>Last updated:</strong> 2026-10-26 <strong>Applies to:</strong> the Equoria horse
+      <strong>Last updated:</strong> 2026-10-29 <strong>Applies to:</strong> the Equoria horse
       breeding &amp; competition simulation game (web).
     </p>
     <p>
@@ -158,7 +158,7 @@
     <ul>
       <li>
         <strong>Account &amp; game data:</strong> kept for as long as Equoria operates. Accounts are
-        not deleted, including when you stop playing (see Section 5).
+        not deleted, including when you stop playing (see Section 4).
       </li>
       <li>
         <strong>Security audit trail (<code>AuditLog</code>):</strong> retained for a rolling window
@@ -173,35 +173,7 @@
       </li>
     </ul>
     <hr />
-    <h2>4. Your right to access your data (data export / portability)</h2>
-    <p>
-      You can download a <strong>complete, machine-readable (JSON) copy</strong> of the personal
-      data we hold about you at any time.
-    </p>
-    <ul>
-      <li>
-        <strong>How:</strong> authenticated request to <code>GET /api/v1/account/export</code>.
-      </li>
-      <li>
-        <strong>What you get:</strong> your profile (excluding the password hash), settings, horses,
-        competition history, transactions, notifications, grooms, riders, trainers, sent/received
-        messages, forum threads/posts, club memberships, XP events, and horse-sale records —
-        everything keyed to your account.
-      </li>
-      <li>
-        <strong>Scope guarantee:</strong> the export is strictly scoped to your own user id. It is
-        structurally impossible to export another user's data through this endpoint (there is no
-        user-id parameter; the endpoint only ever reads <code>req.user.id</code>).
-      </li>
-      <li>
-        <strong>Implementation:</strong>
-        <code>backend/modules/users/services/gdprAccountService.mjs</code>
-        (<code>buildUserDataExport</code>) /
-        <code>backend/modules/users/controllers/gdprAccountController.mjs</code>.
-      </li>
-    </ul>
-    <hr />
-    <h2>5. Account deletion</h2>
+    <h2>4. Account deletion</h2>
     <p>
       <strong>Equoria does not delete player accounts</strong> — not from inside the game, and not
       on request. Your horses, their lineage, competition results and club history are part of a
@@ -214,8 +186,8 @@
         again whenever you like.
       </li>
       <li>
-        <strong>What you can still do:</strong> download a full copy of your data at any time
-        (Section 4), and change your username, password and recovery email address in Settings.
+        <strong>What you can still do:</strong> change your username, password and recovery email
+        address in Settings.
       </li>
       <li>
         <strong>Implementation:</strong> the game offers no deletion control, and the server routes
@@ -229,7 +201,7 @@
       </li>
     </ul>
     <hr />
-    <h2>6. How we protect your data</h2>
+    <h2>5. How we protect your data</h2>
     <ul>
       <li>Passwords are hashed with bcrypt (12+ rounds); never stored or exported in plaintext.</li>
       <li>TOTP MFA secrets are encrypted at rest (AES-256-GCM).</li>
@@ -248,7 +220,7 @@
       source/tests, and <code>docs/SECURITY_TESTING.md</code>.
     </p>
     <hr />
-    <h2>7. Data sharing</h2>
+    <h2>6. Data sharing</h2>
     <p>
       We do not sell your personal data and do not share it with advertisers. Data is processed only
       to operate the game. Some data is visible to other players
@@ -256,13 +228,13 @@
       you make, messages you send) — that visibility is the feature, not a separate disclosure.
     </p>
     <hr />
-    <h2>8. Changes to this policy</h2>
+    <h2>7. Changes to this policy</h2>
     <p>
       Material changes will be reflected in this document with an updated "Last updated" date and,
       where appropriate, an in-game notice.
     </p>
     <hr />
-    <h2>9. Contact</h2>
+    <h2>8. Contact</h2>
     <ul>
       <li><strong>Privacy / data requests:</strong> privacy@equoria.com</li>
       <li><strong>Security issues:</strong> see <code>SECURITY.md</code> (security@equoria.com)</li>
