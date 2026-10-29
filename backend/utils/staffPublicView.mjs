@@ -13,6 +13,10 @@
  *   hidden influence and perk tables, a rider's start age) and any hidden field
  *   added later stays on the server.
  *
+ * - A trainer's speciality is a secret until the trainer is an Expert (owner
+ *   ruling 2026-10-29, q278, Equoria-45u5g): below Expert the row carries no
+ *   speciality, no speciality label, and a bio with the speciality taken out.
+ *
  * The words match frontend/src/lib/staffLabels.ts.
  */
 
@@ -135,8 +139,40 @@ const allowedFields = Object.freeze({
 });
 
 /**
+ * Whether a trainer's speciality may be shown: only at Expert (q278). A row or offer
+ * without a star level is treated as below Expert.
+ *
+ * @param {{ starLevel?: string }} row
+ * @returns {boolean}
+ */
+export function trainerSpecialityKnown(row) {
+  return row?.starLevel === 'expert';
+}
+
+const escapeRegExp = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * A below-Expert trainer's bio with its speciality taken out (q278). The game's bios
+ * name it as "in / to / focusing on <discipline>"; those words go. A bio that still
+ * names the speciality after that is withheld (null) rather than leak it.
+ *
+ * @param {string|null|undefined} bio
+ * @param {string|null|undefined} speciality
+ * @returns {string|null|undefined}
+ */
+export function trainerBioWithoutSpeciality(bio, speciality) {
+  if (typeof bio !== 'string' || typeof speciality !== 'string' || speciality.trim() === '') {
+    return bio;
+  }
+  const name = escapeRegExp(speciality.trim());
+  const stripped = bio.replace(new RegExp(`\\s+(?:in|to|focusing on)\\s+${name}\\b`, 'gi'), '');
+  return new RegExp(`\\b${name}\\b`, 'i').test(stripped) ? null : stripped;
+}
+
+/**
  * A hired staff row or a marketplace offer as the player receives it: only the
- * allowed fields, plus the authored labels.
+ * allowed fields, plus the authored labels. A trainer below Expert carries no
+ * speciality (q278).
  *
  * @param {'groom'|'rider'|'trainer'} kind
  * @param {Object} row
@@ -153,5 +189,14 @@ export function publicStaffRow(kind, row) {
       out[key] = value;
     }
   }
-  return { ...out, ...staffLabels(kind, row) };
+  const labels = staffLabels(kind, row);
+  if (kind === 'trainer' && !trainerSpecialityKnown(row)) {
+    delete out.speciality;
+    delete out.specialty;
+    delete labels.specialityLabel;
+    if (Object.hasOwn(out, 'bio')) {
+      out.bio = trainerBioWithoutSpeciality(out.bio, row.speciality ?? row.specialty);
+    }
+  }
+  return { ...out, ...labels };
 }

@@ -180,6 +180,8 @@ describe('staff reads send authored words, never hidden fields', () => {
             {
               ...offer,
               skillLevel: 'expert',
+              // An Expert offer: its speciality is sent (q278).
+              starLevel: 'expert',
               personality: 'technical',
               speciality: 'Eventing',
               marketplaceId: `mkt_trainer_${suffix}`,
@@ -198,11 +200,15 @@ describe('staff reads send authored words, never hidden fields', () => {
     const row = res.body.data.find(t => t.id === trainer.id);
     expect(row).not.toHaveProperty('discoverySlots');
     expect(JSON.stringify(res.body)).not.toContain('Hidden knack');
+    // Owner ruling 2026-10-29 (q278, Equoria-45u5g): this trainer is below Expert (the
+    // starLevel default, Rookie), so its speciality is not sent. Old contract: every
+    // trainer row carried specialityLabel.
     expect(labelsOf(row)).toEqual({
       skillLevelLabel: 'Developing',
       personalityLabel: 'Encouraging',
-      specialityLabel: 'Dressage',
+      specialityLabel: undefined,
     });
+    expect(row).not.toHaveProperty('speciality');
     expect(row.personality).toBe('encouraging');
   });
 

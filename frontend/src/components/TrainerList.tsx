@@ -306,7 +306,7 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
           >
             {filteredAndSortedTrainers.map((trainer) => {
               const showSpeciality =
-                trainer.skillLevel === 'expert' && trainer.speciality.trim().length > 0;
+                trainer.skillLevel === 'expert' && (trainer.speciality ?? '').trim().length > 0;
 
               return (
                 <Surface
@@ -366,7 +366,7 @@ const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
                       </p>
                       <div className="flex flex-wrap gap-1">
                         <span className="px-1.5 py-0.5 bg-[var(--badge-rare-bg)] text-[var(--status-rare)] text-[10px] rounded-[var(--radius-sm)]">
-                          {disciplineLabel(trainer.speciality)}
+                          {disciplineLabel(trainer.speciality ?? '')}
                         </span>
                       </div>
                     </div>

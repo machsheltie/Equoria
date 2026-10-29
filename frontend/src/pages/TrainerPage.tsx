@@ -57,7 +57,8 @@ interface TrainerView {
   skillLevel: string;
   starLevel?: string;
   personality: string;
-  speciality: string;
+  /** Sent only for an Expert (q278). */
+  speciality?: string;
   sessionRate: number;
   bio?: string;
   /** Hired trainers only. */
@@ -193,7 +194,9 @@ const TrainerPage: React.FC = () => {
 
   const personality = trainer ? getTrainerPersonalityInfo(trainer.personality) : null;
   const specialityKnown =
-    trainer !== null && trainer.skillLevel === 'expert' && trainer.speciality.trim().length > 0;
+    trainer !== null &&
+    trainer.skillLevel === 'expert' &&
+    (trainer.speciality ?? '').trim().length > 0;
 
   return (
     <PageContainer variant="wide" padded={false} className="pb-8">
@@ -244,7 +247,7 @@ const TrainerPage: React.FC = () => {
                 <div className="flex justify-between gap-4">
                   <dt className="text-[var(--text-muted)]">Specialty</dt>
                   <dd className="text-[var(--text-primary)]" data-testid="trainer-speciality">
-                    {specialityKnown ? disciplineLabel(trainer.speciality) : 'Not yet known'}
+                    {specialityKnown ? disciplineLabel(trainer.speciality ?? '') : 'Not yet known'}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">

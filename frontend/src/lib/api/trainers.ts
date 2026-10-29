@@ -25,7 +25,9 @@ export interface TrainerEntry {
    *  Owner ruling 2026-10-28 (q229): the only level a trainer has. */
   starLevel: string;
   personality: string; // focused | encouraging | technical | competitive | patient
-  speciality: string;
+  /** Sent only for an Expert: below Expert the speciality is a secret (owner ruling
+   *  2026-10-29, q278); the server leaves it out. */
+  speciality?: string;
   sessionRate: number;
   experience: number;
   careerWeeks: number;
@@ -42,7 +44,9 @@ export interface MarketplaceTrainer {
   /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw. */
   starLevel?: string;
   personality: string;
-  speciality: string;
+  /** Sent only for an Expert: below Expert the speciality is a secret (owner ruling
+   *  2026-10-29, q278); the server leaves it out. */
+  speciality?: string;
   sessionRate: number;
   bio: string;
   availability: boolean;

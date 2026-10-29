@@ -98,15 +98,18 @@ function generateLastName() {
   return lastNames[Math.floor(Math.random() * lastNames.length)];
 }
 
+// Owner ruling 2026-10-29 (q278, Equoria-45u5g): a trainer's speciality is a secret
+// until Expert, so only the expert bios name it. (Every expert-tier trainer is an
+// Expert on the star scale; the old tiers below it never are.)
 function generateBio(firstName, skillLevel, specialty) {
   const bios = {
     novice: [
-      `${firstName} is a newer trainer building their reputation in ${specialty}.`,
-      `Enthusiastic and dedicated, ${firstName} brings fresh training methods to ${specialty}.`,
+      `${firstName} is a newer trainer building their reputation.`,
+      `Enthusiastic and dedicated, ${firstName} brings fresh training methods.`,
     ],
     developing: [
-      `${firstName} has several years of training experience focusing on ${specialty}.`,
-      `A reliable trainer, ${firstName} has helped many horses improve in ${specialty}.`,
+      `${firstName} has several years of training experience.`,
+      `A reliable trainer, ${firstName} has helped many horses improve.`,
     ],
     expert: [
       `${firstName} is a highly sought-after ${specialty} trainer with a proven track record.`,
