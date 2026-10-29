@@ -360,7 +360,7 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
     const sold = await horseRow(listedHorse.id);
     expect(sold.userId).toBe(buyer.id);
     // Nothing that identifies an item survives on the buyer's horse.
-    for (const key of ['saddle', 'bridle', 'halter', 'saddle_pad', 'girth', 'reins']) {
+    for (const key of ['saddle', 'bridle', 'halter', 'saddlePad', 'girth', 'reins']) {
       expect(sold.tack[key]).toBeUndefined();
     }
     expect(sold.tack.decorations ?? []).toEqual([]);

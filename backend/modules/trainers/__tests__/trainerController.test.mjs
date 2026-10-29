@@ -469,7 +469,7 @@ describe('trainerController (real DB)', () => {
       const trainer = await createTrainer(user.id, { starLevel: 'expert' });
       const seeded = Array.from({ length: 6 }, (_, i) => ({
         slotIndex: i,
-        category: ['discipline_specialization', 'training_method', 'horse_compatibility'][Math.floor(i / 2)],
+        category: ['disciplineSpecialization', 'trainingMethod', 'horseCompatibility'][Math.floor(i / 2)],
         label: `Seed-${i}`,
         description: `d${i}`,
         icon: '✨',

@@ -239,12 +239,12 @@ export function generateDiscoverySlots(speciality, personality) {
   const compat2 = COMPATIBILITY_POOL[(safeIdx + 1) % COMPATIBILITY_POOL.length];
 
   return [
-    { slotIndex: 0, category: 'discipline_specialization', ...disciplinePool[0] },
-    { slotIndex: 1, category: 'discipline_specialization', ...disciplinePool[1] },
-    { slotIndex: 2, category: 'training_method', ...personalityPool[0] },
-    { slotIndex: 3, category: 'training_method', ...personalityPool[1] },
-    { slotIndex: 4, category: 'horse_compatibility', ...compat1 },
-    { slotIndex: 5, category: 'horse_compatibility', strength: 'strong', ...compat2 },
+    { slotIndex: 0, category: 'disciplineSpecialization', ...disciplinePool[0] },
+    { slotIndex: 1, category: 'disciplineSpecialization', ...disciplinePool[1] },
+    { slotIndex: 2, category: 'trainingMethod', ...personalityPool[0] },
+    { slotIndex: 3, category: 'trainingMethod', ...personalityPool[1] },
+    { slotIndex: 4, category: 'horseCompatibility', ...compat1 },
+    { slotIndex: 5, category: 'horseCompatibility', strength: 'strong', ...compat2 },
   ];
 }
 

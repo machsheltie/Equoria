@@ -20,9 +20,9 @@ import React from 'react';
 
 // Discovery categories
 export type TrainerDiscoveryCategory =
-  | 'discipline_specialization'
-  | 'training_method'
-  | 'horse_compatibility';
+  | 'disciplineSpecialization'
+  | 'trainingMethod'
+  | 'horseCompatibility';
 
 export interface TrainerDiscoveredTrait {
   id: string;
@@ -52,9 +52,9 @@ const CATEGORY_META: Record<
   TrainerDiscoveryCategory,
   { label: string; icon: string; comingSoon?: boolean }
 > = {
-  discipline_specialization: { label: 'Discipline Specialization', icon: '🏆' },
-  training_method: { label: 'Training Method', icon: '📋' },
-  horse_compatibility: { label: 'Horse Compatibility', icon: '🐴', comingSoon: true },
+  disciplineSpecialization: { label: 'Discipline Specialization', icon: '🏆' },
+  trainingMethod: { label: 'Training Method', icon: '📋' },
+  horseCompatibility: { label: 'Horse Compatibility', icon: '🐴', comingSoon: true },
 };
 
 const categoryMeta = (category: TrainerDiscoveryCategory) => CATEGORY_META[category];
@@ -69,9 +69,9 @@ const STRENGTH_META = {
 // Helper: build an empty discovery profile (all undiscovered)
 export function buildEmptyTrainerDiscoveryProfile(trainerId: number): TrainerDiscoveryProfile {
   const categories: TrainerDiscoveryCategory[] = [
-    'discipline_specialization',
-    'training_method',
-    'horse_compatibility',
+    'disciplineSpecialization',
+    'trainingMethod',
+    'horseCompatibility',
   ];
   const slots: TrainerDiscoverySlot[] = categories.flatMap((category, ci) => [
     { slotIndex: ci * 2, category, discovered: false },
@@ -136,9 +136,9 @@ const TrainerDiscoveryPanel: React.FC<TrainerDiscoveryPanelProps> = ({
   newlyDiscovered,
 }) => {
   const categories: TrainerDiscoveryCategory[] = [
-    'discipline_specialization',
-    'training_method',
-    'horse_compatibility',
+    'disciplineSpecialization',
+    'trainingMethod',
+    'horseCompatibility',
   ];
 
   const getSlotsForCategory = (category: TrainerDiscoveryCategory): TrainerDiscoverySlot[] =>

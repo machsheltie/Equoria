@@ -9,7 +9,11 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { readDiscoverySlots, writeDiscoverySlots } from '../services/trainerDiscoveryService.mjs';
+import {
+  generateDiscoverySlots,
+  readDiscoverySlots,
+  writeDiscoverySlots,
+} from '../services/trainerDiscoveryService.mjs';
 
 let trainer;
 
@@ -58,5 +62,22 @@ describe('trainerDiscoveryService — typed Prisma path', () => {
     });
     expect(row).toBeTruthy();
     expect(Array.isArray(row.discoverySlots)).toBe(true);
+  });
+});
+
+// Equoria-pjvp8.4 phase 3i (owner ruling 2026-10-21): the stored slot category
+// is camelCase, never discipline_specialization / training_method /
+// horse_compatibility.
+describe('generateDiscoverySlots — camelCase categories', () => {
+  it('stores disciplineSpecialization, trainingMethod and horseCompatibility', () => {
+    const slots = generateDiscoverySlots('Dressage', 'patient');
+    expect(slots.map(slot => slot.category)).toEqual([
+      'disciplineSpecialization',
+      'disciplineSpecialization',
+      'trainingMethod',
+      'trainingMethod',
+      'horseCompatibility',
+      'horseCompatibility',
+    ]);
   });
 });

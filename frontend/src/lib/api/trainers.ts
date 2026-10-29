@@ -72,9 +72,9 @@ export interface TrainerAssignmentEntry {
 }
 
 export type TrainerDiscoveryCategory =
-  | 'discipline_specialization'
-  | 'training_method'
-  | 'horse_compatibility';
+  | 'disciplineSpecialization'
+  | 'trainingMethod'
+  | 'horseCompatibility';
 
 export interface TrainerDiscoveryTrait {
   id: string;

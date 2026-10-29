@@ -83,7 +83,7 @@ import { __TESTING_ONLY_awaitMarketplaceRaceBarrier } from './marketplaceRaceBar
  * shop is not the only supplier:
  *
  *   - `TACK_INVENTORY` — the shop catalogue's non-decorative categories
- *     (saddle, bridle, halter, saddle_pad, leg_wraps, girth, reins,
+ *     (saddle, bridle, halter, saddlePad, legWraps, girth, reins,
  *     breastplate); `decorations` carries the decorative array;
  *   - `CRAFTING_RECIPES` — crafted items are equippable and carry categories
  *     the shop does not sell, `blanket` today (`crafted-cloth-blanket`,

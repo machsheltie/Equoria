@@ -52,7 +52,9 @@ export function tackBonusLabel(disciplines) {
 /**
  * An item category as a word (Equoria-no441, owner rulings 2026-10-28
  * q164/q165: players read names, not stored codes). Accepts either spelling of
- * a two-word category (saddle_pad / saddlePad); an unknown one reads "Tack".
+ * a two-word category (saddlePad, or the legacy saddle_pad that rows written
+ * before 20261030110000_tack_trainer_values_camelcase held); an unknown one
+ * reads "Tack".
  * Matches frontend/src/lib/tackLabels.ts.
  */
 const tackCategoryWords = Object.freeze({
@@ -230,7 +232,7 @@ export const TACK_INVENTORY = [
   // ── Saddle Pads ──────────────────────────────────────────────────────────
   {
     id: 'basic-saddle-pad',
-    category: 'saddle_pad',
+    category: 'saddlePad',
     comingSoon: true,
     name: 'Cotton Saddle Pad',
     description: 'Standard cotton pad providing cushioning and sweat absorption under the saddle.',
@@ -240,7 +242,7 @@ export const TACK_INVENTORY = [
   },
   {
     id: 'memory-foam-pad',
-    category: 'saddle_pad',
+    category: 'saddlePad',
     comingSoon: true,
     name: 'Memory Foam Saddle Pad',
     description:
@@ -253,7 +255,7 @@ export const TACK_INVENTORY = [
   // ── Leg Wraps & Boots ────────────────────────────────────────────────────
   {
     id: 'polo-wraps',
-    category: 'leg_wraps',
+    category: 'legWraps',
     comingSoon: true,
     name: 'Polo Wraps',
     description: 'Soft fleece wraps providing light support and protection during exercise.',
@@ -263,7 +265,7 @@ export const TACK_INVENTORY = [
   },
   {
     id: 'splint-boots',
-    category: 'leg_wraps',
+    category: 'legWraps',
     comingSoon: true,
     name: 'Splint Boots',
     description:
@@ -274,7 +276,7 @@ export const TACK_INVENTORY = [
   },
   {
     id: 'sport-medicine-boots',
-    category: 'leg_wraps',
+    category: 'legWraps',
     comingSoon: true,
     name: 'Sport Medicine Boots',
     description:
@@ -368,7 +370,7 @@ export const TACK_INVENTORY = [
   },
   {
     id: 'surcingle',
-    category: 'saddle_pad',
+    category: 'saddlePad',
     comingSoon: true,
     name: 'Surcingle',
     description:
