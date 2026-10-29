@@ -57,7 +57,7 @@ jobs:
 
                 if ! echo "$LAST_CHANGE" | grep -qiE "user.*approv|user.*sign|approved by|user.*confirm"; then
                   VIOLATIONS="$VIOLATIONS\n  - $STATUS_FILE: status changed to 'done' without documented user approval"
-                  ((VIOLATION_COUNT++))
+                  VIOLATION_COUNT=$((VIOLATION_COUNT + 1))
                 fi
               fi
             fi
@@ -69,7 +69,7 @@ jobs:
           # Pattern: "Closed without user approval" / "Self-authorized closure" / "Agent decision"
           if echo "$RECENT_COMMITS" | grep -qiE "closed.*without.*user|self.*auth|agent.*decid|agent.*approv"; then
             VIOLATIONS="$VIOLATIONS\n  - Commit messages contain agent authorization language (should be user-only)"
-            ((VIOLATION_COUNT++))
+            VIOLATION_COUNT=$((VIOLATION_COUNT + 1))
           fi
 
           if [ "$VIOLATION_COUNT" -gt 0 ]; then
