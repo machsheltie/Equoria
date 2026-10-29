@@ -474,7 +474,7 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
       },
     });
 
-    // Fresh assignment — createdAt = now (< MIN_GROOM_ASSIGNMENT_DAYS = 2 days)
+    // Fresh assignment — createdAt = now
     await prisma.groomAssignment.create({
       data: {
         groomId: cssFreshGroom.id,
@@ -484,7 +484,7 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
       },
     });
 
-    // Old assignment — createdAt = 10 days ago (> 2 days → passes date check)
+    // Old assignment — createdAt = 10 days ago
     await prisma.groomAssignment.create({
       data: {
         groomId: cssOldGroom.id,
@@ -564,18 +564,23 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
     });
   });
 
-  // ── lines 350-358: assignment createdAt date validation ───────────────────────
+  // ── assignment age: any active assignment is enough ───────────────────────────
+  // Old contract (Equoria-rr7): an assignment younger than 2 days was refused
+  // with "at least N days". Owner ruling 2026-10-29 (q272, Equoria-roa3f): any
+  // groom currently assigned is enough, however recently.
 
-  describe('validateConformationEntry — lines 350-358: assignment date check (Equoria-rr7)', () => {
-    it('line 355 true arm: pushes "at least N days" error when groom assignment is < MIN_GROOM_ASSIGNMENT_DAYS old', async () => {
+  describe('validateConformationEntry — assignment age (Equoria-roa3f)', () => {
+    it('accepts a groom assigned moments ago', async () => {
       const horse = { id: cssHorse.id, age: 2, healthStatus: 'Good', conformationScores: null };
       const groom = { id: cssFreshGroom.id };
       const result = await validateConformationEntry(horse, groom, cssUser.id);
-      expect(result.errors.some(e => e.includes('at least'))).toBe(true);
+      expect(result.errors).toEqual([]);
+      expect(result.valid).toBe(true);
+      expect(result.assignment).not.toBeNull();
     });
 
-    it('line 355 false arm: no assignment-days error when assignment is >= MIN_GROOM_ASSIGNMENT_DAYS old', async () => {
-      // cssOldGroom assignment was created 10 days ago → daysSinceAssignment >= 2 → no error
+    it('accepts a groom assigned long ago', async () => {
+      // cssOldGroom assignment was created 10 days ago
       const horse = { id: cssHorse.id, age: 2, healthStatus: 'Good', conformationScores: null };
       const groom = { id: cssOldGroom.id };
       const result = await validateConformationEntry(horse, groom, cssUser.id);

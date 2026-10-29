@@ -127,8 +127,8 @@ export class ConformationGroomMissingError extends Error {
  *  - horse is not owned by userId
  *  - groom is not on userId's staff (Equoria-ypb7d.2: `Groom.userId` is an
  *    engagement, not ownership — players never own grooms)
- *  - groom is not actively assigned to the horse
- *  - groom assignment is younger than MIN_GROOM_ASSIGNMENT_DAYS
+ *  - groom is not actively assigned to the horse (how long it has been
+ *    assigned does not matter: owner ruling 2026-10-29, q272, Equoria-roa3f)
  *  - horse.age < 0 (negative age is invalid)
  *
  * Health is not judged here. Owner rulings 2026-10-23 (Equoria-0d4wa,
@@ -192,18 +192,6 @@ export async function validateConformationEntry(horse, groom, userId, client = p
 
     if (!assignment) {
       errors.push('Groom must be assigned to this horse before entering conformation shows');
-    } else {
-      const createdAtTime = assignment.createdAt ? new Date(assignment.createdAt).getTime() : NaN;
-      if (!Number.isFinite(createdAtTime)) {
-        errors.push('Groom assignment record is missing a valid date');
-      } else {
-        const daysSinceAssignment = (Date.now() - createdAtTime) / (1000 * 60 * 60 * 24);
-        if (daysSinceAssignment < CONFORMATION_SHOW_CONFIG.MIN_GROOM_ASSIGNMENT_DAYS) {
-          errors.push(
-            `Groom must be assigned to horse for at least ${CONFORMATION_SHOW_CONFIG.MIN_GROOM_ASSIGNMENT_DAYS} days before show entry`,
-          );
-        }
-      }
     }
 
     // Age validation — reject only invalid (< 0); Weanlings (0-<1) are allowed — AC4

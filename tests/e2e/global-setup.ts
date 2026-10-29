@@ -8,7 +8,7 @@ import path from 'path';
 // ── Prisma client resolution (mirrors tests/e2e/fixtures/coatGenotypeHorses.ts) ──
 // The conformation-entry seed (Equoria-6yu1m) writes directly through Prisma
 // because the public show/health/assignment shapes the entry flow needs
-// (early runDate, fresh feed/vet dates, a backdated groom assignment) are not
+// (early runDate, fresh feed/vet dates) are not
 // expressible through the HTTP API alone. Resolve prismaClient.mjs from the
 // worktree root so this works regardless of Playwright's launch cwd.
 const __filename = fileURLToPath(import.meta.url);
@@ -254,9 +254,9 @@ async function globalSetup(config: FullConfig) {
     //       'critical' (conformationShowController). getDisplayedHealth = worse-of
     //       feedHealth + vetHealth; feedHealth is 'critical' when lastFedDate is
     //       null regardless of healthStatus, so BOTH dates must be set fresh.
-    //   (c) a groom assigned to the horse whose GroomAssignment.createdAt is
-    //       older than MIN_GROOM_ASSIGNMENT_DAYS (= 2). assignGroupToFoal stamps
-    //       createdAt = now(), so we backdate it to >= 3 days ago.
+    //   (c) a groom assigned to the horse. Any groom currently assigned is
+    //       enough (owner ruling 2026-10-29, q272, Equoria-roa3f), so the fresh
+    //       assignment is used as made.
     // Fail-loud: throw if any precondition cannot be created. Scoped writes only;
     // no broad deleteMany.
     console.log('Seeding conformation-entry preconditions (Equoria-6yu1m)...');
@@ -422,26 +422,6 @@ async function globalSetup(config: FullConfig) {
       }
       console.log(`[conformation-seed] groom assignment created: id=${assignmentId}`);
 
-      // (6) Backdate the assignment createdAt to >= 3 days ago so it clears
-      //     MIN_GROOM_ASSIGNMENT_DAYS (= 2). Scoped to the single assignment id.
-      const backdated = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-      const backdatedAssignment = await prisma.groomAssignment.update({
-        where: { id: assignmentId },
-        data: { createdAt: backdated },
-        select: { id: true, createdAt: true, isActive: true },
-      });
-      const ageDays =
-        (now.getTime() - new Date(backdatedAssignment.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-      if (ageDays < 2) {
-        throw new Error(
-          `[conformation-seed] backdated assignment age ${ageDays.toFixed(2)}d is below the 2-day minimum`
-        );
-      }
-      console.log(
-        `[conformation-seed] assignment ${assignmentId} backdated: createdAt=${new Date(
-          backdatedAssignment.createdAt
-        ).toISOString()} age=${ageDays.toFixed(2)}d isActive=${backdatedAssignment.isActive}`
-      );
       console.log('[conformation-seed] conformation-entry preconditions seeded OK.');
     }
 

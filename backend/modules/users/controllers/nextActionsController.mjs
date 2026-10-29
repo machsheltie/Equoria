@@ -273,7 +273,7 @@ export async function getNextActions(req, res) {
       const [assignments, activeTypes, groomReady, entries] = await Promise.all([
         loadActiveAssignments(prisma, horseIds),
         loadActiveDisciplineTypes(prisma, horseIds),
-        loadHorsesWithConformationGroom(prisma, horseIds, userId, now),
+        loadHorsesWithConformationGroom(prisma, horseIds, userId),
         prisma.showEntry.findMany({
           where: { horseId: { in: horseIds }, showId: { in: openShows.map(s => s.id) } },
           select: { showId: true, horseId: true },

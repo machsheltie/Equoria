@@ -34,8 +34,8 @@
  *     the paginated, runDate-asc GET /api/v1/competition feed;
  *   - the E2E horse in Excellent health with fresh lastFedDate AND
  *     lastVettedDate (a null lastFedDate alone forces displayedHealth=critical);
- *   - a groom hired + assigned to the horse, with the GroomAssignment.createdAt
- *     backdated past CONFORMATION_SHOW_CONFIG.MIN_GROOM_ASSIGNMENT_DAYS (= 2).
+ *   - a groom hired + assigned to the horse (any groom currently assigned is
+ *     enough: owner ruling 2026-10-29, q272, Equoria-roa3f).
  * The eligibility endpoint still computes the verdict against the real DB — the
  * seed only arranges the real preconditions; it does not bypass the gate.
  *
@@ -149,7 +149,7 @@ test.describe('Conformation Show Entry (real mutation)', () => {
 
     // ── (b) The seed guarantees an ELIGIBLE horse — assert it, hard ───────────
     // global-setup seeds the E2E horse Excellent + freshly fed/vetted, hires a
-    // groom, assigns it, and backdates the assignment past MIN_GROOM_ASSIGNMENT_DAYS.
+    // groom and assigns it.
     // So the REAL eligibility endpoint MUST report eligible. If it does not, the
     // backend's own error list is the diagnosis — surface it verbatim so the lead
     // sees exactly which precondition the backend rejected.

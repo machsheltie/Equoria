@@ -565,7 +565,10 @@ describe('validateConformationEntry (real DB)', () => {
     expect(result.errors).toContain('Groom must be assigned to this horse before entering conformation shows');
   });
 
-  test('rejects when groom assigned too recently (< 2 days)', async () => {
+  // Old contract: a groom assigned less than 2 days ago was refused ("at least
+  // N days"). Owner ruling 2026-10-29 (q272, Equoria-roa3f): any groom
+  // currently assigned is enough.
+  test('accepts a groom assigned only an hour ago', async () => {
     // Create a fresh user/horse/groom with a recent assignment.
     const u = await prisma.user.create({
       data: {
@@ -624,8 +627,8 @@ describe('validateConformationEntry (real DB)', () => {
       { id: g.id, name: 'RecentGroom', userId: u.id, showHandlingSkill: 'skilled', personality: 'gentle' },
       u.id,
     );
-    expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes('at least'))).toBe(true);
+    expect(result.errors).toEqual([]);
+    expect(result.valid).toBe(true);
   });
 
   // Old contract: this validator refused any health other than Excellent/Good.

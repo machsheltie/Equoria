@@ -19,7 +19,6 @@
 
 import logger from '../../../utils/logger.mjs';
 import { CONFORMATION_CLASSES } from '../../../constants/schema.mjs';
-import { minConformationGroomAssignmentDays } from '../../../utils/competitionEntryRules.mjs';
 
 import { calculateOverallConformation } from '../../horses/index.mjs';
 
@@ -33,9 +32,6 @@ export const CONFORMATION_SHOW_CONFIG = Object.freeze({
   HANDLER_WEIGHT: 0.2,
   BOND_WEIGHT: 0.08,
   TEMPERAMENT_WEIGHT: 0.07,
-
-  /** Minimum days groom must be assigned before show */
-  MIN_GROOM_ASSIGNMENT_DAYS: minConformationGroomAssignmentDays,
 
   /**
    * Minimum age for show entry (0 = Weanlings allowed).

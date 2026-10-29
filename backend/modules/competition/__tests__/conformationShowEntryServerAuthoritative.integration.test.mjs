@@ -86,7 +86,6 @@ async function makeEntrant(label, { money = 1000, horseXp = 0 } = {}) {
       foal: { connect: { id: horse.id } },
       user: { connect: { id: user.id } },
       isActive: true,
-      // validateConformationEntry requires an assignment at least 2 days old.
       createdAt: new Date(Date.now() - 5 * DAY_MS),
     },
   });

@@ -143,7 +143,6 @@ async function createGroomAssignment(groomId, foalId, userId, overrides = {}) {
       foal: { connect: { id: foalId } },
       user: { connect: { id: userId } },
       isActive: true,
-      // Assignment must be > 2 days old per validateConformationEntry timing.
       createdAt: overrides.createdAt ?? new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
     },
   });
@@ -385,29 +384,31 @@ describe('enterConformationShow (real DB)', () => {
     });
   });
 
-  describe('G2 — groom assigned too recently returns 400', () => {
-    it('returns 400 with assignment timing error when groom was assigned < 2 days ago', async () => {
+  // Old contract (G2): a groom assigned less than 2 days before entry was
+  // refused with 400 "at least N days". Owner ruling 2026-10-29 (q272,
+  // Equoria-roa3f): any groom currently assigned is enough.
+  describe('G2 — a groom assigned moments ago is enough', () => {
+    it('returns 201 and creates the entry when the groom was just assigned', async () => {
       const user = await createUser();
       const horse = await createHorse(user.id);
       const groom = await createGroom(user.id);
       const show = await createConformationShow();
-      // Recent assignment (12 hours ago).
-      await createGroomAssignment(groom.id, horse.id, user.id, {
-        createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
-      });
+      await createGroomAssignment(groom.id, horse.id, user.id, { createdAt: new Date() });
 
       const req = buildReq({
         user: { id: user.id },
-        body: { horseId: horse.id, groomId: groom.id, showId: show.id, className: 'Mares' },
+        body: { horseId: horse.id, groomId: groom.id, showId: show.id },
       });
       const res = buildRes();
 
       await enterConformationShow(req, res);
 
-      expect(res.statusValue).toBe(400);
-      const body = res.jsonValue;
-      expect(body.success).toBe(false);
-      expect(body.errors.some(e => /at least/i.test(e))).toBe(true);
+      expect(res.statusValue).toBe(201);
+      expect(res.jsonValue.success).toBe(true);
+      const persisted = await prisma.showEntry.findFirst({
+        where: { showId: show.id, horseId: horse.id },
+      });
+      expect(persisted).not.toBeNull();
     });
   });
 });

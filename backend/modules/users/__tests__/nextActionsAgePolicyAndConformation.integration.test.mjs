@@ -166,11 +166,16 @@ describe('the compete suggestion lists conformation shows with a groom check (Eq
     expect(conformationCompete(await nextActions(user))).toHaveLength(0);
   });
 
-  it('does not suggest it when the groom was only just assigned', async () => {
+  // Old contract: no suggestion while the groom had been assigned under 2 days.
+  // Owner ruling 2026-10-29 (q272, Equoria-roa3f): any groom currently
+  // assigned is enough, so a just-assigned groom earns the suggestion.
+  it('suggests it when the groom was only just assigned', async () => {
     const user = await makeUser();
     const horse = await makeHorse(user, { years: 1, trainingCooldown: new Date(Date.now() + dayMs) });
     await giveGroom(user, horse, { assignedDaysAgo: 0 });
-    expect(conformationCompete(await nextActions(user))).toHaveLength(0);
+    const compete = conformationCompete(await nextActions(user));
+    expect(compete).toHaveLength(1);
+    expect(compete[0]).toMatchObject({ horseId: horse.id });
   });
 
   it('does not suggest it when the groom cannot work (retired)', async () => {
