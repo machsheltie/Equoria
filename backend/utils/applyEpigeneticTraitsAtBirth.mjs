@@ -44,6 +44,10 @@
  * for reproducible rolls in tests. With neither, Math.random is used.
  *
  * Canonical trait keys (camelCase) only — see backend/utils/epigeneticTraitKeyMap.mjs.
+ *
+ * Every log line here is per birth and routine, so it is debug (Equoria-erpmu):
+ * at info, the flat-rate test's ~37,000 seeded births wrote ~121,000 lines and
+ * took 930 s instead of 1 s.
  */
 
 import logger from './logger.mjs';
@@ -116,7 +120,7 @@ export function applyEpigeneticTraitsAtBirth({
   seed,
   rng: injectedRng,
 }) {
-  logger.info('[applyEpigeneticTraitsAtBirth] Starting staged trait assignment at birth');
+  logger.debug('[applyEpigeneticTraitsAtBirth] Starting staged trait assignment at birth');
 
   if (!mare) {
     throw new Error('Mare object is required');
@@ -136,7 +140,7 @@ export function applyEpigeneticTraitsAtBirth({
   // A negative roll's chance, scaled by the mare's health and capped at certainty.
   const negativeChance = chance => Math.min(1, chance * negativeRollMultiplier);
 
-  logger.info(`[applyEpigeneticTraitsAtBirth] Feed quality: ${currentFeedQuality}`);
+  logger.debug(`[applyEpigeneticTraitsAtBirth] Feed quality: ${currentFeedQuality}`);
 
   // ── Stage 0 — INHERITANCE (§A) ─────────────────────────────────────────────
   // Normalize incoming parent traits to canonical keys so legacy snake-case
@@ -170,7 +174,7 @@ export function applyEpigeneticTraitsAtBirth({
       } else {
         addPositive(trait);
       }
-      logger.info(
+      logger.debug(
         `[applyEpigeneticTraitsAtBirth] Inherited parent trait '${trait}' (p=${p.toFixed(2)})`,
       );
     }
@@ -179,13 +183,13 @@ export function applyEpigeneticTraitsAtBirth({
   // ── Stage 1 — well-kept mare (bible 08, q175) ─────────────────────────────
   if (currentFeedQuality >= wellKeptMareFeedQuality && rng() < wellKeptMareResilientChance) {
     addPositive('resilient');
-    logger.info('[applyEpigeneticTraitsAtBirth] Applied resilient (well-kept mare)');
+    logger.debug('[applyEpigeneticTraitsAtBirth] Applied resilient (well-kept mare)');
   }
 
   // ── Stage 2 — inbreeding ────────────────────────────────────────────────────
   const inbreedingAnalysis = analyzeInbreeding(lineage);
   if (inbreedingAnalysis.inbreedingDetected) {
-    logger.info(
+    logger.debug(
       `[applyEpigeneticTraitsAtBirth] Inbreeding detected: ${inbreedingAnalysis.severity}`,
     );
 
@@ -197,7 +201,7 @@ export function applyEpigeneticTraitsAtBirth({
           : 0.25;
     if (rng() < negativeChance(fragileChance)) {
       addNegative('fragile');
-      logger.info('[applyEpigeneticTraitsAtBirth] Applied fragile (inbreeding)');
+      logger.debug('[applyEpigeneticTraitsAtBirth] Applied fragile (inbreeding)');
     }
   }
 
@@ -229,7 +233,7 @@ export function applyEpigeneticTraitsAtBirth({
     }
   }
 
-  logger.info(`[applyEpigeneticTraitsAtBirth] Final traits: ${JSON.stringify(result)}`);
+  logger.debug(`[applyEpigeneticTraitsAtBirth] Final traits: ${JSON.stringify(result)}`);
   return result;
 }
 
