@@ -86,12 +86,17 @@ async function globalSetup(config: FullConfig) {
     // Equoria-voasj (owner ruling q248): a new player is held on /verify-email
     // and refused every gameplay route until she opens the emailed link. Open
     // the real captured link, as the beta gate does (Equoria-3juhn).
-    // New users then land on / or /onboarding (OnboardingGuard redirects new users)
+    // This user registered seconds ago, so the wizard is the ONLY correct
+    // destination. "Enter the Realm" navigates to / and OnboardingGuard then
+    // redirects to /onboarding; waiting for "/ or /onboarding" resolved on the
+    // transient "/", the wizard branch below was skipped, and every spec ran as
+    // a player who had never onboarded (Equoria-cgx4h: no complete-onboarding
+    // call in the whole of run 40806583509, whose E2E job hit its timeout).
     console.log('Confirming email, then waiting for navigation after registration...');
     try {
       await confirmEmailInBrowser(page, email);
       await page.waitForURL(
-        new RegExp(`^${baseURL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/(onboarding)?$`),
+        new RegExp(`^${baseURL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/onboarding$`),
         { timeout: 30000 }
       );
     } catch (e) {
