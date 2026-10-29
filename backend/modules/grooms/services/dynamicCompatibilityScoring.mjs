@@ -61,7 +61,7 @@ export async function loadCompatibilityInputs(
 ) {
   const horse = await client.horse.findUnique({
     where: { id: horseId },
-    select: { id: true, userId: true, bondScore: true, epigeneticFlags: true },
+    select: { id: true, userId: true, bondScore: true },
   });
   let grooms = [];
   if (!ownerGrooms) {
@@ -176,7 +176,7 @@ export function scoreCompatibility(inputs, groomId, context) {
     recommendationLevel = 'not_recommended';
   }
 
-  const confidence = calculateConfidence(groom, horse, historicalModifier);
+  const confidence = calculateConfidence(groom, historicalModifier);
 
   return {
     groomId,
@@ -436,14 +436,11 @@ function calculateTimeOfDayModifier(context) {
     : TIME_OF_DAY_DEFAULT;
 }
 
-function calculateConfidence(groom, horse, historicalModifier) {
+function calculateConfidence(groom, historicalModifier) {
   let confidence = 0.7; // Base confidence
 
   // Higher confidence with more experience
   confidence += Math.min(0.2, groom.experience * 0.001);
-
-  // Higher confidence with clear horse flags (epigeneticFlags may be null)
-  confidence += Math.min(0.1, (horse.epigeneticFlags?.length ?? 0) * 0.02);
 
   // Higher confidence with historical data
   if (historicalModifier !== 1.0) {

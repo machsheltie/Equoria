@@ -192,7 +192,6 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
         dateOfBirth: new Date(),
         age: 0,
         userId: gptUser.id,
-        epigeneticFlags: ['fearful'],
       },
     });
 
@@ -269,28 +268,32 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     expect(result.experienceLevel).toBe('expert');
   });
 
-  it('analyzePersonalityCompatibility returns overallScore>0.7 for calm expert + fearful horse (strengths + >0.7 branch)', async () => {
-    const result = await analyzePersonalityCompatibility(calmExpertGroom.id, fearfulHorse.id);
-    expect(result.overallScore).toBeGreaterThan(0.7);
-    // overallScore=0.725 → 'good' (excellent requires >=0.8)
+  // CONTRACT CHANGED BY THE OWNER, 2026-10-29 (q300, Equoria-efs4j): the old
+  // epigeneticFlags store is dropped with every reader. Old contract: this horse
+  // was fearful, so the calm expert scored > 0.7 (strengths, "Excellent") and the
+  // energetic groom < 0.4 (challenges, "calm, patient groom"). New contract: no
+  // horse has flags, so both get the no-flag result a flagless horse always got.
+  it.each([
+    ['calm expert', () => calmExpertGroom],
+    ['energetic', () => energeticGroom],
+  ])('analyzePersonalityCompatibility gives the %s groom the moderate no-flag match', async (_label, getGroom) => {
+    const result = await analyzePersonalityCompatibility(getGroom().id, fearfulHorse.id);
+    expect(result.overallScore).toBe(0.6);
     expect(result.compatibilityLevel).toBe('good');
-    expect(result.strengths.length).toBeGreaterThan(0);
-    expect(result.recommendations.some(r => r.includes('Excellent compatibility'))).toBe(true);
-  });
-
-  it('analyzePersonalityCompatibility returns overallScore<0.4 for energetic + fearful horse (challenges + low-compat branches)', async () => {
-    const result = await analyzePersonalityCompatibility(energeticGroom.id, fearfulHorse.id);
-    expect(result.overallScore).toBeLessThan(0.4);
-    expect(result.challenges.length).toBeGreaterThan(0);
-    expect(result.recommendations.some(r => r.includes('calm, patient groom'))).toBe(true);
+    expect(result.strengths).toEqual([]);
+    expect(result.challenges).toEqual([]);
+    expect(result.recommendations.some(r => r.includes('Moderate compatibility'))).toBe(true);
+    expect(result).not.toHaveProperty('horseFlags');
   });
 });
 
 // ── groomPersonalityTraits — branch coverage (Equoria-jkht) ──────────────────────
-// Covers: analyzePersonalityCompatibility low/excellent/moderate + fearful/reactive
-//         sub-branches; calculatePersonalityModifiers negative/neutral/task-type
-//         paths; calculateExperienceLevel medium/high/expert; getCompatibilityLevel
-//         all 5 thresholds.
+// Covers: analyzePersonalityCompatibility moderate branch; calculatePersonalityModifiers
+//         task-type paths; calculateExperienceLevel medium/high/expert.
+// The low/excellent compatibility, fearful/reactive advice, negative/neutral
+// modifier paths and the poor/excellent levels were reachable only through horse
+// flags and went with the epigeneticFlags store (owner ruling 2026-10-29, q300,
+// Equoria-efs4j).
 
 describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
   let gpUser;
@@ -299,7 +302,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
   let gpCalmGroomMedium;
   let gpCalmGroomHigh;
   let gpHorseFearfulReactive;
-  let gpHorseCompatible;
+  // The second horse (once fully compatible) has no case left since the flag store went (Equoria-efs4j).
   let gpHorseNeutral;
   let gpHorseBrave;
   const cleanup = createCleanupTracker();
@@ -366,7 +369,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
         }),
     ]);
 
-    [gpHorseFearfulReactive, gpHorseCompatible, gpHorseNeutral, gpHorseBrave] = await createSequentially([
+    [gpHorseFearfulReactive, , gpHorseNeutral, gpHorseBrave] = await createSequentially([
       () =>
         prisma.horse.create({
           data: {
@@ -376,7 +379,6 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
             dateOfBirth: new Date(),
             age: 0,
             userId: gpUser.id,
-            epigeneticFlags: ['fearful', 'reactive'],
           },
         }),
       () =>
@@ -388,7 +390,6 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
             dateOfBirth: new Date(),
             age: 0,
             userId: gpUser.id,
-            epigeneticFlags: ['fearful', 'insecure', 'reactive', 'fragile'],
           },
         }),
       () =>
@@ -400,7 +401,6 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
             dateOfBirth: new Date(),
             age: 0,
             userId: gpUser.id,
-            epigeneticFlags: ['reactive'],
           },
         }),
       () =>
@@ -412,7 +412,6 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
             dateOfBirth: new Date(),
             age: 0,
             userId: gpUser.id,
-            epigeneticFlags: ['brave', 'confident'],
           },
         }),
     ]);
@@ -427,55 +426,25 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     return cleanup.run();
   }, 30000);
 
-  // ── analyzePersonalityCompatibility — overallScore < 0.4 ──────────────────────
-  it('overallScore < 0.4: low recommendations + fearful and reactive sub-branches', async () => {
-    const result = await analyzePersonalityCompatibility(gpEnergeticGroom.id, gpHorseFearfulReactive.id);
-    expect(result.overallScore).toBeLessThan(0.4);
-    expect(result.recommendations.some(r => r.includes('different groom personality'))).toBe(true);
-    expect(result.recommendations.some(r => r.includes('calm, patient groom'))).toBe(true);
-    expect(result.recommendations.some(r => r.includes('Avoid energetic'))).toBe(true);
-  });
-
-  // ── analyzePersonalityCompatibility — overallScore > 0.7 ──────────────────────
-  it('overallScore > 0.7: excellent compatibility recommendations', async () => {
-    const result = await analyzePersonalityCompatibility(gpCalmGroomExpert.id, gpHorseCompatible.id);
-    expect(result.overallScore).toBeGreaterThan(0.7);
-    expect(result.recommendations.some(r => r.includes('Excellent compatibility'))).toBe(true);
-  });
-
   // ── analyzePersonalityCompatibility — moderate (else) branch ──────────────────
   it('overallScore 0.4–0.7: moderate compatibility recommendations', async () => {
-    // energetic groom + horse with 'reactive' only → all trait compatibilities = 0 → overallScore ≈ 0.5
+    // Every pair is 0.6 since the flag store went (Equoria-efs4j): the moderate branch.
     const result = await analyzePersonalityCompatibility(gpEnergeticGroom.id, gpHorseNeutral.id);
     expect(result.overallScore).toBeGreaterThanOrEqual(0.4);
     expect(result.overallScore).toBeLessThanOrEqual(0.7);
     expect(result.recommendations.some(r => r.includes('Moderate compatibility'))).toBe(true);
   });
 
-  // ── calculatePersonalityModifiers — negative compatibility ────────────────────
-  it('negative compatibility path: incompatible traits reduce bondingModifier below 1', async () => {
-    // energetic groom + fearful horse: enthusiastic+stimulating are incompatibleWith fearful → bondingModifier *= 0.8 twice
-    const result = await calculatePersonalityModifiers(gpEnergeticGroom.id, gpHorseFearfulReactive.id, 'grooming');
-    expect(result.bondingModifier).toBeLessThan(1.0);
-  });
-
-  // ── calculatePersonalityModifiers — neutral compatibility ─────────────────────
-  it('neutral compatibility path: all-zero compatibility applies taskEffectiveness *= 1.05 per trait', async () => {
-    // energetic groom + horse with 'reactive' only: no matches in any compatible/incompatible list → all neutral
-    const result = await calculatePersonalityModifiers(gpEnergeticGroom.id, gpHorseNeutral.id, 'grooming');
-    expect(result.taskEffectiveness).toBeGreaterThan(1.0);
-  });
-
   // ── calculatePersonalityModifiers — trustBuilding task branch ────────────────
-  it('trustBuilding task: gentle trait trustBuilding effect applied when compatible', async () => {
-    // outer calm groom + fearful horse → gentle trait has trustBuilding:1.4 and is compatibleWith fearful
+  it('trustBuilding task: gentle trait trustBuilding effect applied', async () => {
+    // outer calm groom → gentle trait has trustBuilding:1.4 (neutral compatibility, Equoria-efs4j)
     const result = await calculatePersonalityModifiers(groom.id, gpHorseFearfulReactive.id, 'trustBuilding');
     expect(result.taskEffectiveness).toBeGreaterThan(1.0);
   });
 
   // ── calculatePersonalityModifiers — desensitization task branch ───────────────
-  it('desensitization task: enthusiastic stimulationBonus applied when compatible with brave horse', async () => {
-    // energetic groom + brave horse → enthusiastic is compatibleWith brave and has stimulationBonus
+  it('desensitization task: enthusiastic stimulationBonus applied', async () => {
+    // energetic groom → enthusiastic has stimulationBonus (neutral compatibility, Equoria-efs4j)
     const result = await calculatePersonalityModifiers(gpEnergeticGroom.id, gpHorseBrave.id, 'desensitization');
     expect(result.taskEffectiveness).toBeGreaterThan(1.0);
   });
@@ -494,17 +463,6 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
   it('experience=250 → experienceLevel is expert', async () => {
     const traits = await getGroomPersonalityTraits(gpCalmGroomExpert.id);
     expect(traits.experienceLevel).toBe('expert');
-  });
-
-  // ── getCompatibilityLevel — 5 threshold branches ──────────────────────────────
-  it("compatibilityLevel is 'poor' for energetic groom + fearful+reactive horse (score ≈ 0.3)", async () => {
-    const result = await analyzePersonalityCompatibility(gpEnergeticGroom.id, gpHorseFearfulReactive.id);
-    expect(result.compatibilityLevel).toBe('poor');
-  });
-
-  it("compatibilityLevel is 'excellent' for calm expert groom + fully compatible horse (score ≈ 1.0)", async () => {
-    const result = await analyzePersonalityCompatibility(gpCalmGroomExpert.id, gpHorseCompatible.id);
-    expect(result.compatibilityLevel).toBe('excellent');
   });
 });
 

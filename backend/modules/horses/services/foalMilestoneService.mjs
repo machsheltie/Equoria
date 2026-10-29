@@ -69,21 +69,16 @@ function readMilestoneStore(store) {
 }
 
 /**
- * Whether the foal has at least one DISCOVERED/expressed epigenetic trait.
+ * Whether the foal has at least one DISCOVERED/expressed epigenetic trait:
+ * a VISIBLE (revealed) trait in `epigeneticModifiers.positive` / `.negative`.
+ * `hidden` is intentionally excluded — a hidden trait is not yet discovered.
+ * (The old epigeneticFlags store also counted until owner ruling 2026-10-29,
+ * q300, removed it, Equoria-efs4j; nothing had written it.)
  *
- * Two real, persisted representations count as "discovered":
- *   - `epigeneticFlags` (String[]) — flags expressed through foal care (empty
- *     at birth; a non-empty list means care applied a real flag).
- *   - `epigeneticModifiers.positive` / `.negative` — VISIBLE (revealed) traits.
- *     `hidden` is intentionally excluded — a hidden trait is not yet discovered.
- *
- * @param {{ epigeneticFlags?: unknown, epigeneticModifiers?: unknown }} horse
+ * @param {{ epigeneticModifiers?: unknown }} horse
  * @returns {boolean}
  */
 function hasDiscoveredEpigeneticTrait(horse) {
-  if (Array.isArray(horse.epigeneticFlags) && horse.epigeneticFlags.length > 0) {
-    return true;
-  }
   const mods = horse.epigeneticModifiers;
   if (mods !== null && mods !== undefined && typeof mods === 'object' && !Array.isArray(mods)) {
     const positive = Array.isArray(mods.positive) ? mods.positive : [];
@@ -165,7 +160,6 @@ export async function detectAndRecordFoalMilestonesCore(tx, foalId, { now = new 
     select: {
       id: true,
       bondScore: true,
-      epigeneticFlags: true,
       epigeneticModifiers: true,
     },
   });

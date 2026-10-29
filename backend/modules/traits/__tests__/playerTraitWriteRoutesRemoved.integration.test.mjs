@@ -4,11 +4,12 @@
  *
  * OWNER RULING: players must NEVER be able to write traits for themselves, by
  * any path. Only scheduled game jobs and game-internal birth/care code may
- * write Horse.epigeneticModifiers / epigeneticFlags / temperament /
- * personality, TraitHistoryLog, MilestoneTraitLog, Groom.bonusTraitMap and
- * GroomAssignmentLog.traitsShaped. (Horse.temporaryEpigeneticFlags /
- * ultraRareTraits, UltraRareTraitEvent and Groom.rareTraitPerks were dropped
- * by Equoria-efs4j / Equoria-qfho0; the routes that wrote them stay pinned.)
+ * write Horse.epigeneticModifiers / temperament / personality,
+ * TraitHistoryLog, MilestoneTraitLog, Groom.bonusTraitMap and
+ * GroomAssignmentLog.traitsShaped. (Horse.epigeneticFlags /
+ * temporaryEpigeneticFlags / ultraRareTraits, UltraRareTraitEvent and
+ * Groom.rareTraitPerks were dropped by Equoria-efs4j / Equoria-qfho0; the
+ * routes that wrote them stay pinned.)
  *
  * Every route below used to let the owner of a horse (or groom) write one of
  * those stores on demand:
@@ -118,7 +119,6 @@ describe('Player trait-write routes are removed (Equoria-gu8jk)', () => {
       where: { id: foal.id },
       select: {
         epigeneticModifiers: true,
-        epigeneticFlags: true,
         temperament: true,
         personality: true,
       },

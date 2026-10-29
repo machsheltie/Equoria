@@ -125,7 +125,6 @@ export async function getFoalHandler(req, res) {
         userId: foal.userId,
         breedId: foal.breedId,
         bondScore: foal.bondScore,
-        epigeneticFlags: foal.epigeneticFlags || [],
         // Unrevealed hidden traits are never named, to anyone (Equoria-6dace).
         epigeneticModifiers: publicTraitModifiers(foal.epigeneticModifiers),
       },

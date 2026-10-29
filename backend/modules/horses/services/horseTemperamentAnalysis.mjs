@@ -1,11 +1,15 @@
 /**
  * Horse Temperament Analysis Service
  *
- * Analyzes horse temperaments based on interaction history and flag patterns.
+ * Analyzes horse temperaments based on interaction history.
  * Provides comprehensive temperament classification and behavioral analysis.
  *
+ * Owner ruling 2026-10-29 (q300, Equoria-efs4j): the old epigeneticFlags store and
+ * its flag-based classification are gone. Real horses never had a flag, so they
+ * always took the interaction or basic-stats path, which is unchanged.
+ *
  * Business Rules:
- * - Temperament analysis from interaction patterns and epigenetic flags
+ * - Temperament analysis from interaction patterns
  * - Behavioral trend analysis over time
  * - Bonding preference analysis based on groom interactions
  * - Temperament stability and change detection
@@ -13,7 +17,6 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
 
 // Temperament classification definitions
 const TEMPERAMENT_CLASSIFICATIONS = {
@@ -100,7 +103,6 @@ export async function analyzeHorseTemperament(horseId) {
     select: {
       id: true,
       name: true,
-      epigeneticFlags: true,
       bondScore: true,
       dateOfBirth: true,
     },
@@ -134,10 +136,6 @@ export async function analyzeHorseTemperament(horseId) {
     // Use interaction-based analysis
     dataSource = 'interactions';
     reliabilityScore = Math.min(1.0, interactions.length / 20); // Max reliability at 20+ interactions
-  } else if (asFlagArray(horse.epigeneticFlags).length > 0) {
-    // Use flag-based analysis
-    dataSource = 'flags_and_stats';
-    reliabilityScore = Math.min(0.8, asFlagArray(horse.epigeneticFlags).length / 5); // Max 0.8 reliability from flags
   } else {
     // Use basic stats only
     dataSource = 'basic_stats';
@@ -145,7 +143,7 @@ export async function analyzeHorseTemperament(horseId) {
   }
 
   // Analyze temperament using available data
-  const temperamentAnalysis = await performTemperamentAnalysis(horse, interactions, dataSource);
+  const temperamentAnalysis = performTemperamentAnalysis(horse, interactions, dataSource);
 
   return {
     horseId: horse.id,
@@ -159,93 +157,6 @@ export async function analyzeHorseTemperament(horseId) {
     reliabilityScore,
     analysisDate: new Date(),
     interactionCount: interactions.length,
-    flagCount: asFlagArray(horse.epigeneticFlags).length,
-  };
-}
-
-/**
- * Classify temperament from epigenetic flags
- * @param {Array} flags - Array of epigenetic flag names
- * @returns {Object} Temperament classification
- */
-export async function classifyTemperamentFromFlags(flags) {
-  // JSONB column may be null / non-array on legacy or bare-created rows.
-  flags = asFlagArray(flags);
-  if (flags.length === 0) {
-    return {
-      primaryTemperament: 'undetermined',
-      temperamentTraits: [],
-      confidence: 0.2,
-      reasoning: 'No flags available for analysis',
-    };
-  }
-
-  // Score each temperament type based on flag matches
-  const temperamentScores = {};
-
-  Object.entries(TEMPERAMENT_CLASSIFICATIONS).forEach(([tempType, tempDef]) => {
-    let score = 0;
-    let matches = 0;
-
-    tempDef.traits.forEach(trait => {
-      if (flags.includes(trait)) {
-        score += 1;
-        matches += 1;
-      }
-    });
-
-    // Normalize score by number of possible traits
-    temperamentScores[tempType] = {
-      score: tempDef.traits.length > 0 ? score / tempDef.traits.length : 0,
-      matches,
-      totalTraits: tempDef.traits.length,
-    };
-  });
-
-  // Find best match
-  let bestMatch = 'developing';
-  let bestScore = 0;
-  let confidence;
-
-  Object.entries(temperamentScores).forEach(([tempType, scoreData]) => {
-    if (scoreData.score > bestScore) {
-      bestScore = scoreData.score;
-      bestMatch = tempType;
-    }
-  });
-
-  // Calculate confidence based on match quality
-  if (bestScore >= 0.6) {
-    confidence = 0.8; // High confidence for strong matches
-  } else if (bestScore >= 0.3) {
-    confidence = 0.6; // Moderate confidence
-  } else {
-    confidence = 0.4; // Low confidence
-    bestMatch = 'complex'; // Mixed signals
-  }
-
-  // Check for conflicting flags
-  const positiveFlags = flags.filter(flag =>
-    ['brave', 'confident', 'social', 'calm'].includes(flag),
-  );
-  const negativeFlags = flags.filter(flag =>
-    ['fearful', 'insecure', 'reactive', 'fragile'].includes(flag),
-  );
-
-  if (positiveFlags.length > 0 && negativeFlags.length > 0) {
-    bestMatch = 'complex';
-    confidence = Math.min(confidence, 0.7);
-  }
-
-  const classification = TEMPERAMENT_CLASSIFICATIONS[bestMatch];
-
-  return {
-    primaryTemperament: bestMatch,
-    temperamentTraits: classification.traits,
-    confidence,
-    flagMatches: temperamentScores[bestMatch]?.matches || 0,
-    totalFlags: flags.length,
-    reasoning: `Based on ${flags.length} flags with ${temperamentScores[bestMatch]?.matches || 0} matches`,
   };
 }
 
@@ -486,7 +397,7 @@ export async function detectTemperamentChanges(horseId) {
 /**
  * Perform comprehensive temperament analysis
  */
-async function performTemperamentAnalysis(horse, interactions, dataSource) {
+function performTemperamentAnalysis(horse, interactions, dataSource) {
   let analysis = {
     primaryTemperament: 'developing',
     traits: [],
@@ -498,25 +409,6 @@ async function performTemperamentAnalysis(horse, interactions, dataSource) {
   if (dataSource === 'interactions' && interactions.length >= 5) {
     // Interaction-based analysis
     analysis = analyzeFromInteractions(horse, interactions);
-  } else if (dataSource === 'flags_and_stats' && asFlagArray(horse.epigeneticFlags).length > 0) {
-    // Flag-based analysis
-    const horseFlags = asFlagArray(horse.epigeneticFlags);
-    const flagClassification = await classifyTemperamentFromFlags(horseFlags);
-    analysis.primaryTemperament = flagClassification.primaryTemperament;
-    analysis.traits = flagClassification.temperamentTraits;
-
-    // Supplement with basic stats
-    analysis.confidenceLevel = Math.max(0.1, Math.min(0.9, horse.bondScore / 40));
-    analysis.socialTendency = horseFlags.includes('social')
-      ? 0.8
-      : horseFlags.includes('antisocial')
-        ? 0.2
-        : 0.5;
-    analysis.adaptability = horseFlags.includes('curious')
-      ? 0.7
-      : horseFlags.includes('fearful')
-        ? 0.3
-        : 0.5;
   } else {
     // Basic stats only
     analysis.confidenceLevel = Math.max(0.1, Math.min(0.9, horse.bondScore / 40));

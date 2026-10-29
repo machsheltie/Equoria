@@ -1,16 +1,21 @@
 /**
  * horseTemperamentAnalysis service unit tests (Equoria-rr7 coverage sprint).
  *
- * Tests all 6 async exported functions with real DB fixtures.
+ * Tests the exported functions with real DB fixtures.
  * Horse with no interactions exercises zero-data code paths.
- * classifyTemperamentFromFlags is pure (no DB) and tested independently.
+ *
+ * CONTRACT CHANGED BY THE OWNER, 2026-10-29 (q300, Equoria-efs4j): the old
+ * epigeneticFlags store is dropped with every reader. Old contract: a horse with
+ * flags and fewer than 5 interactions took a 'flags_and_stats' path, the result
+ * carried flagCount, and classifyTemperamentFromFlags was exported. New
+ * contract: no flag path, no flagCount, no classifier. A flagless horse (every
+ * real horse) takes the same basic_stats or interactions path as before.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import {
   analyzeHorseTemperament,
-  classifyTemperamentFromFlags,
   analyzeBehavioralTrends,
   analyzeBondingPreferences,
   detectTemperamentChanges,
@@ -27,7 +32,7 @@ const topCleanup = createCleanupTracker();
 
 beforeAll(async () => {
   // Scoped, fail-loud cleanup (Equoria-n7qa3). Delete every horse owned by this
-  // user (covers `horse` AND the per-test `flaggedHorse`, both userId-scoped)
+  // user (covers `horse` AND the per-test `secondHorse`, both userId-scoped)
   // BEFORE the user, since Horse.userId is onDelete:Restrict (schema:282).
   topCleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
   topCleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
@@ -78,19 +83,20 @@ describe('analyzeHorseTemperament', () => {
     expect(typeof result.dataSource).toBe('string');
     expect(typeof result.reliabilityScore).toBe('number');
     expect(typeof result.interactionCount).toBe('number');
-    expect(typeof result.flagCount).toBe('number');
+    expect(result).not.toHaveProperty('flagCount');
   });
 
-  it('uses basic_stats data source for horse with no flags and no interactions', async () => {
+  it('uses basic_stats data source for horse with no interactions', async () => {
     const result = await analyzeHorseTemperament(horse.id);
     expect(result.dataSource).toBe('basic_stats');
     expect(result.reliabilityScore).toBe(0.3);
     expect(result.interactionCount).toBe(0);
-    expect(result.flagCount).toBe(0);
   });
 
-  it('uses flags_and_stats data source for horse with epigenetic flags', async () => {
-    const flaggedHorse = await prisma.horse.create({
+  // Old contract: this horse carried two flags and took 'flags_and_stats' with
+  // flagCount 2. There is no flag path now (Equoria-efs4j).
+  it('has no flags_and_stats path: a second horse with no interactions also uses basic_stats', async () => {
+    const secondHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
         name: `TestFixture-HorseTempFlags-${Date.now()}`,
@@ -98,54 +104,17 @@ describe('analyzeHorseTemperament', () => {
         dateOfBirth: new Date(),
         age: 0,
         userId: user.id,
-        epigeneticFlags: ['brave', 'confident'],
       },
     });
 
-    // flaggedHorse is userId-scoped to `user`; the top-level fail-loud afterAll
+    // secondHorse is userId-scoped to `user`; the top-level fail-loud afterAll
     // sweeps all horses for this user (Equoria-n7qa3), so no per-test delete is
     // needed here. Routing a delete through finally would mask a test-body
     // assertion failure, so it is intentionally omitted.
-    const result = await analyzeHorseTemperament(flaggedHorse.id);
-    expect(result.dataSource).toBe('flags_and_stats');
-    expect(result.flagCount).toBe(2);
-    expect(result.reliabilityScore).toBeGreaterThan(0);
-  });
-});
-
-// ── classifyTemperamentFromFlags ──────────────────────────────────────────────
-
-describe('classifyTemperamentFromFlags', () => {
-  it('returns undetermined for empty flag array', async () => {
-    const result = await classifyTemperamentFromFlags([]);
-    expect(result.primaryTemperament).toBe('undetermined');
-    expect(result.confidence).toBe(0.2);
-    expect(typeof result.reasoning).toBe('string');
-    expect(Array.isArray(result.temperamentTraits)).toBe(true);
-  });
-
-  it('returns undetermined for null flags', async () => {
-    const result = await classifyTemperamentFromFlags(null);
-    expect(result.primaryTemperament).toBe('undetermined');
-  });
-
-  it('returns classification object with required fields for valid flags', async () => {
-    const result = await classifyTemperamentFromFlags(['brave', 'confident']);
-    expect(result).toBeDefined();
-    expect(typeof result.primaryTemperament).toBe('string');
-    expect(typeof result.confidence).toBe('number');
-    expect(Array.isArray(result.temperamentTraits)).toBe(true);
-  });
-
-  it('returns complex temperament for conflicting flags', async () => {
-    const result = await classifyTemperamentFromFlags(['brave', 'fearful']);
-    expect(result.primaryTemperament).toBe('complex');
-  });
-
-  it('returns higher confidence for clear flag set', async () => {
-    const empty = await classifyTemperamentFromFlags([]);
-    const withFlags = await classifyTemperamentFromFlags(['brave', 'confident']);
-    expect(withFlags.confidence).toBeGreaterThanOrEqual(empty.confidence);
+    const result = await analyzeHorseTemperament(secondHorse.id);
+    expect(result.dataSource).toBe('basic_stats');
+    expect(result.primaryTemperament).toBe('developing');
+    expect(result.reliabilityScore).toBe(0.3);
   });
 });
 
@@ -216,24 +185,6 @@ describe('detectTemperamentChanges', () => {
   });
 });
 
-// ── classifyTemperamentFromFlags — high-confidence path (bestScore >= 0.6) ──────
-
-describe('classifyTemperamentFromFlags() — high-confidence path (Equoria-jkht)', () => {
-  it('returns confidence=0.8 for a strongly-matched flag set (calm temperament: 3/3 traits)', async () => {
-    // 'calm' temperament has traits: ['calm','patient','stable']; 3/3 match → score=1.0 >= 0.6
-    const result = await classifyTemperamentFromFlags(['calm', 'patient', 'stable']);
-    expect(result.primaryTemperament).toBe('calm');
-    expect(result.confidence).toBe(0.8);
-  });
-
-  it('returns confidence=0.8 for a 2/3 match on the calm temperament', async () => {
-    // 2/3 = 0.667 >= 0.6 → confidence=0.8
-    const result = await classifyTemperamentFromFlags(['calm', 'patient']);
-    expect(result.primaryTemperament).toBe('calm');
-    expect(result.confidence).toBe(0.8);
-  });
-});
-
 // ── interactions-based paths (lines 143-175, 287-554) ────────────────────────
 // DB fixture: user + groom + horse (no flags) + 7 groomInteractions.
 // 7 interactions covers: analyzeHorseTemperament interactions≥5 path,
@@ -288,7 +239,6 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
         dateOfBirth: gameCalendarDate(new Date(), -30),
         age: 30,
         userId: interUser.id,
-        epigeneticFlags: [],
       },
     });
 
@@ -436,7 +386,6 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
         dateOfBirth: new Date('2019-01-01'),
         age: 30,
         userId: rbrUser.id,
-        epigeneticFlags: [],
       },
     });
     for (let i = 0; i < 5; i++) {
@@ -462,7 +411,6 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
         dateOfBirth: new Date('2019-01-01'),
         age: 30,
         userId: rbrUser.id,
-        epigeneticFlags: [],
       },
     });
     for (let i = 0; i < 5; i++) {
@@ -489,7 +437,6 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
         dateOfBirth: new Date('2019-01-01'),
         age: 30,
         userId: rbrUser.id,
-        epigeneticFlags: [],
       },
     });
     for (let i = 0; i < 7; i++) {
@@ -516,7 +463,6 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
         dateOfBirth: new Date('2019-01-01'),
         age: 30,
         userId: rbrUser.id,
-        epigeneticFlags: [],
       },
     });
     for (let i = 0; i < 6; i++) {
@@ -545,7 +491,6 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
         dateOfBirth: new Date('2019-01-01'),
         age: 30,
         userId: rbrUser.id,
-        epigeneticFlags: [],
       },
     });
     for (let i = 0; i < 6; i++) {

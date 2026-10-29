@@ -5,16 +5,22 @@
  * matching-trait +5): there is NO flat matching-trait bonus. Each active trait
  * does only what that trait individually defines, and until traits are
  * reworked, traits contribute NOTHING to a show score. Traits and flags are one
- * family (owner ruling 2026-10-19), so a horse's epigenetic flags do not move
+ * family (owner ruling 2026-10-19), so a horse's epigenetic flags did not move
  * its rider's percentages either.
  *
  * Four horses with identical stats, health (Good, 0%), temperament (Bold,
  * Dressage-neutral) and rider (experienced + methodical in Dressage: +5%), in
  * one Dressage show: no traits; a revealed Dressage affinity trait; a spread
- * of revealed, negative and hidden traits; four positive flags. Every one
- * scores the same: base 200 x (1 + (6 luck + 5 rider) / 100) = 222.
- * (A base of 200 makes a 0.4% rider-flag nudge cross a rounding boundary, so
- * the test would see it.)
+ * of revealed, negative and hidden traits; and the horse that carried four
+ * positive flags. Every one scores the same: base 200 x (1 + (6 luck + 5
+ * rider) / 100) = 222. (A base of 200 makes a 0.4% rider-flag nudge cross a
+ * rounding boundary, so the test would have seen one.)
+ *
+ * Owner ruling 2026-10-29 (q300, Equoria-efs4j): the epigeneticFlags store and
+ * the rider-flag factor are gone, so the fourth horse now carries no flags and
+ * is the same horse as the first. It is kept so the entry count, the luck and
+ * tie-break rolls and the expected 222 are exactly as before: a real (flagless)
+ * horse scores what it scored before the store was dropped.
  *
  * The scores tie, so the tie re-roll orders them; the injected rng rolls +6%
  * luck for the four entries, then distinct tie-break rolls.
@@ -43,7 +49,7 @@ function scoreRngSequence() {
 }
 
 describe('traits contribute nothing to a ridden show score (owner ruling 2026-10-23)', () => {
-  it('a horse with any traits or flags scores exactly what the same horse scores without them', async () => {
+  it('a horse with any traits scores exactly what the same horse scores without them', async () => {
     const horseIds = [];
     cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
     cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
@@ -123,10 +129,8 @@ describe('traits contribute nothing to a ridden show score (owner ruling 2026-10
         hidden: ['legendaryBloodline', 'disciplineAffinityDressage'],
       },
     });
-    const flagged = await makeHorse({
-      epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient'],
-    });
-    const horses = { plain, matchingTrait, manyTraits, flagged };
+    const formerlyFlagged = await makeHorse({});
+    const horses = { plain, matchingTrait, manyTraits, formerlyFlagged };
 
     await prisma.showEntry.createMany({
       data: Object.values(horses).map(h => ({
@@ -149,6 +153,6 @@ describe('traits contribute nothing to a ridden show score (owner ruling 2026-10
     const scores = Object.fromEntries(
       Object.entries(horses).map(([label, h]) => [label, Number(results.find(r => r.horseId === h.id).score)]),
     );
-    expect(scores).toEqual({ plain: 222, matchingTrait: 222, manyTraits: 222, flagged: 222 });
+    expect(scores).toEqual({ plain: 222, matchingTrait: 222, manyTraits: 222, formerlyFlagged: 222 });
   }, 60000);
 });

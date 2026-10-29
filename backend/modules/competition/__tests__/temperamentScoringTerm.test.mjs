@@ -44,7 +44,6 @@ function score(base, temperament, { discipline = 'Dressage', rider = null } = {}
         horse: {
           id: 1,
           name: 'TestFixture-b6',
-          epigeneticFlags: null,
           temperament,
           // Owner ruling 2026-10-23 (decision C, Equoria-k1p62): health is a percent
           // term in every score; Good health is 0%, so this test still isolates the

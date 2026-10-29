@@ -192,10 +192,9 @@ describe('POST /auth/advance-onboarding — starter horse is chosen once (Equori
     expect(res.status).toBe(200);
     const horse = await prisma.horse.findFirst({
       where: { userId: user.id },
-      select: { temperament: true, epigeneticModifiers: true, epigeneticFlags: true },
+      select: { temperament: true, epigeneticModifiers: true },
     });
     expect(TEMPERAMENT_TYPES).toContain(horse.temperament);
     expect(horse.epigeneticModifiers).toEqual({ positive: [], negative: [], hidden: [] });
-    expect(horse.epigeneticFlags).toEqual([]);
   });
 });

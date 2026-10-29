@@ -184,8 +184,6 @@ model Horse {
   trait                   String?
   temperament             String?
   personality             String?
-  /// Epigenetic trait flags for horses under 3 years old (PERMANENT once assigned)
-  epigeneticFlags         String[]              @default([])
   /// Base stats
   /// Equoria-507mt: NOT NULL post-migration 20260530130000_507mt_horse_stats_nonnull.
   /// 0 NULLs observed pre-migration. Companion code commits strip the
@@ -407,6 +405,11 @@ model Horse {
   /// so each group is now one index — the declared survivor. The declarations
   /// that remain are still load-bearing for the differ; do not delete them.
   ///
+  /// AS OF Equoria-efs4j (owner ruling 2026-10-29, q300) the epigeneticFlags
+  /// column is DROPPED by migration 20261031010000_drop_epigenetic_flags, and its
+  /// declared survivor idx_horses_epigenetic_flags_gin went with it, so history
+  /// now leaves NINE of the sixteen, not ten.
+  ///
   /// AS OF Equoria-34dad (owner decision 32) the three never-used GIN indexes
   /// idx_horses_epigeneticmodifiers_gin, idx_horses_stats_gin and
   /// idx_horses_ultrararetraits_gin are DROPPED by migration
@@ -471,7 +474,6 @@ model Horse {
   @@index([userId, breedId], map: "idx_horses_userid_breedid")
   @@index([userId, createdAt], map: "idx_horses_userid_createdat")
   @@index([disciplineScores], map: "idx_horses_discipline_scores_filter", type: Gin)
-  @@index([epigeneticFlags(ops: ArrayOps)], map: "idx_horses_epigenetic_flags_gin", type: Gin)
   @@map("horses")
 }
 

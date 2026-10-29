@@ -139,7 +139,6 @@ describe('Advanced Epigenetic API Routes', () => {
         dateOfBirth: oneWeekAgo,
         userId: testUser.id,
         bondScore: 20,
-        epigeneticFlags: ['curious', 'developing'],
       },
     });
     ids.horses.push(youngFoal.id);
@@ -152,7 +151,6 @@ describe('Advanced Epigenetic API Routes', () => {
         dateOfBirth: oneMonthAgo,
         userId: testUser.id,
         bondScore: 35,
-        epigeneticFlags: ['confident', 'brave', 'social'],
       },
     });
     ids.horses.push(olderFoal.id);
@@ -251,23 +249,8 @@ describe('Advanced Epigenetic API Routes', () => {
     });
   });
 
-  describe('Trait Interaction Endpoints', () => {
-    test('GET /api/v1/horses/:id/trait-interactions should return trait interaction analysis', async () => {
-      const response = await request(app)
-        .get(`/api/v1/horses/${testHorses[1].id}/trait-interactions`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(response.body.data.horseId).toBe(testHorses[1].id);
-      expect(response.body.data.traitInteractions).toBeDefined();
-      expect(response.body.data.synergies).toBeDefined();
-      expect(response.body.data.conflicts).toBeDefined();
-      expect(response.body.data.dominance).toBeDefined();
-    });
-  });
+  // The trait-interactions route went with the old epigeneticFlags store (owner
+  // ruling 2026-10-29, q300, Equoria-efs4j); retiredTraitAdviceRoutes pins the 404.
 
   describe('Input Validation', () => {
     test('should handle non-existent horse IDs', async () => {

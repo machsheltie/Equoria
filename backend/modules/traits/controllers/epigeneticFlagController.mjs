@@ -3,24 +3,23 @@
  * API endpoints for epigenetic flag evaluation and management
  *
  * 🎯 PURPOSE:
- * Provides REST API endpoints for reading a horse's stored epigenetic flags and
- * the flag definitions (names, labels, polarity). Nothing here evaluates or
+ * Provides REST API endpoints for the flag definitions (names, labels,
+ * polarity) and a horse's care-pattern analysis. Nothing here evaluates or
  * assigns a flag.
  *
  * 📋 BUSINESS RULES:
  * - No endpoint assigns flags (Equoria-gu8jk, Equoria-a7f1p); the weekly flag
  *   job was retired too (Equoria-koxep): traits change only through the
  *   grooming-day reveal ladder
- * - GET /horses/:id/flags - Get all flags for a horse
+ * - GET /horses/:id/flags, which showed the old epigeneticFlags store, was
+ *   removed with the store (owner ruling 2026-10-29, q300, Equoria-efs4j)
  * - Requires authentication for all endpoints
  * - Validates horse ownership for user operations
  */
 
 import logger from '../../../utils/logger.mjs';
-import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import {
   getAllFlagDefinitions,
-  getFlagDefinition,
   getFlagsByType,
 } from '../../../config/epigeneticFlagDefinitions.mjs';
 import { analyzeCarePatterns } from '../../../utils/carePatternAnalysis.mjs';
@@ -39,64 +38,6 @@ const publicFlagView = definition => ({
   displayName: definition.displayName,
   type: definition.type,
 });
-
-/**
- * Get epigenetic flags for a horse
- * GET /api/horses/:id/flags
- */
-export async function getHorseFlags(req, res) {
-  try {
-    // Horse ownership already validated by requireOwnership middleware
-    // Middleware caches validated horse in req.validatedResources
-    const horse = req.validatedResources?.horse;
-    if (!horse) {
-      logger.error(
-        '[epigeneticFlagController.getHorseFlags] Horse not found in validated resources',
-      );
-      return res.status(404).json({
-        success: false,
-        message: 'Horse not found or you do not own this horse',
-      });
-    }
-
-    const _horseId = horse.id;
-
-    // Get flag definitions for assigned flags
-    const flagDetails = (horse.epigeneticFlags || []).map(flagName => {
-      const definition = getFlagDefinition(flagName);
-      return definition
-        ? publicFlagView(definition)
-        : { name: flagName, displayName: flagName, type: 'unknown' };
-    });
-
-    // Calculate horse age in canonical game-years (1 game-week = 1 game-year,
-    // floor(ageDays / 7)) — consistent with horseController serializer and the
-    // leaderboard /horse/:horseId route. NOT calendar-years (Equoria-8qu4).
-    const ageInYears = getHorseAgeYears(horse.dateOfBirth);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Horse flags retrieved successfully',
-      data: {
-        horseId: horse.id,
-        horseName: horse.name,
-        ageInYears,
-        currentBondScore: horse.bondScore || 0,
-        flagCount: flagDetails.length,
-        flags: flagDetails,
-        maxFlags: 5,
-        canReceiveMoreFlags: flagDetails.length < 5 && ageInYears < 3,
-      },
-    });
-  } catch (error) {
-    logger.error(`[epigeneticFlagController.getHorseFlags] Error: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error retrieving horse flags',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
-  }
-}
 
 /**
  * Get flag definitions
@@ -174,7 +115,6 @@ export async function getCarePatterns(req, res) {
 }
 
 export default {
-  getHorseFlags,
   getFlagDefinitions,
   getCarePatterns,
 };

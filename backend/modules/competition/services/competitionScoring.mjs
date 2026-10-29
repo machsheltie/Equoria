@@ -8,8 +8,8 @@
  *   2. backend/modules/competition/shows/showExecutionService.mjs#executeClosedShows
  *      (the nightly 7-day-show cron — 50/30/20 discipline base + luck + rider; B4a).
  *
- * The two engines differ ON PURPOSE for the rest of the formula, but BOTH
- * apply the SAME rider flag-compatibility adjustment to the rider percents
+ * The two engines differed ON PURPOSE for the rest of the formula, but BOTH
+ * applied the SAME rider flag-compatibility adjustment to the rider percents
  * before using them (the instant simulator through `applyRiderModifiers`; the
  * nightly scorer as one summed percent term, Equoria-576c0 B5). Pre-pqdte that block was literally
  * copy-pasted, including the two cap constants:
@@ -21,7 +21,8 @@
  *
  * After pqdte:
  *   - riderBonus.mjs exports BONUS_CAP / PENALTY_CAP (single source of truth).
- *   - This module exports `applyRiderCompatibility` that both engines call.
+ *   - This module exported `applyRiderCompatibility` that both engines called
+ *     (deleted with the flag store, Equoria-efs4j).
  *   - The shared sentinel test
  *     `competitionScoringShared.test.mjs` asserts neither engine re-declares
  *     a local cap constant — drift is now a CI failure, not a silent bug.
@@ -41,12 +42,12 @@
  * Equoria-k1p62 brings the owner's locked factors into it (rulings
  * 2026-10-23): the trained value and saddle/bridle tack as flat points, health
  * as a percent term, and no trait effect at all until traits are reworked -
- * so the scorer no longer calls applyRiderCompatibility below (horse flags
- * are traits).
+ * so the scorer stopped calling applyRiderCompatibility (horse flags are
+ * traits). Owner ruling 2026-10-29 (q300, Equoria-efs4j) removed the old flag
+ * store, so the helper and its flag-valence factor are deleted.
  */
 
-import { BONUS_CAP, PENALTY_CAP, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
-import { calculateRiderFlagCompatibility } from '../../../utils/riderFlagCompatibility.mjs';
+import { computeRiderModifiers } from '../../../utils/riderBonus.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
   DISCIPLINE_STATS,
@@ -131,52 +132,6 @@ export function applyPercentTerms(base, percentTerms) {
 }
 
 /**
- * Apply behavioral-flag rider compatibility (Equoria-yzqhj.6, grys6) to the
- * rider's effective bonus/penalty percentages.
- *
- * NOT APPLIED to show scores since the owner ruling of 2026-10-23 (Equoria-k1p62):
- * traits, flags included, contribute nothing until traits are reworked. Kept
- * for that rework; scoreShowEntries does not call it.
- *
- * Pure function. Returns `{ bonusPercent, penaltyPercent }` clamped to the
- * canonical `BONUS_CAP` / `PENALTY_CAP` so the output is always a legal
- * input to `applyRiderModifiers`. When the input flags net to zero valence
- * (or are absent), the rider percents are returned unchanged — the no-flag
- * regression-safe path.
- *
- * Sign convention (mirrors pre-pqdte block in both engines):
- *   - Positive-valence net flags → bonus grows (* compatFactor),
- *     penalty shrinks (* (2 - compatFactor)).
- *   - Negative-valence net flags → bonus shrinks, penalty grows.
- *   - Both are clamped to [0, CAP] so the helper can never invert the
- *     sign of the rider effect.
- *
- * @param {Object} input
- * @param {number} input.bonusPercent   - Rider's pre-compat bonus in [0, BONUS_CAP].
- * @param {number} input.penaltyPercent - Rider's pre-compat penalty in [0, PENALTY_CAP].
- * @param {unknown} input.epigeneticFlags - Horse's behavioral flags (JSONB).
- * @returns {{ bonusPercent: number, penaltyPercent: number }}
- */
-export function applyRiderCompatibility({
-  bonusPercent = 0,
-  penaltyPercent = 0,
-  epigeneticFlags = null,
-} = {}) {
-  const compatFactor = calculateRiderFlagCompatibility(epigeneticFlags);
-  if (compatFactor === 1.0) {
-    // Net-zero valence (or no flags) — unchanged. Regression-safe path.
-    return { bonusPercent, penaltyPercent };
-  }
-  const adjustedBonus = Math.max(0, Math.min(BONUS_CAP, bonusPercent * compatFactor));
-  const adjustedPenalty = Math.max(0, Math.min(PENALTY_CAP, penaltyPercent * (2 - compatFactor)));
-  return {
-    bonusPercent: adjustedBonus,
-    penaltyPercent: adjustedPenalty,
-    compatFactor, // exposed for logging at the call site
-  };
-}
-
-/**
  * Score the entries of a nightly (cron-path) show (extracted from
  * executeClosedShows, Equoria-c7mx0): the discipline's 50/30/20 base
  * (Equoria-576c0 B4a; was a flat 5-stat average) plus the flat points, times
@@ -256,8 +211,9 @@ export function scoreShowEntries({
     });
     // Owner ruling 2026-10-23 (Equoria-k1p62): traits contribute nothing to a
     // show score until they are reworked, and flags are traits (2026-10-19),
-    // so the horse's flags no longer adjust the rider percents
-    // (applyRiderCompatibility, Equoria-grys6, is not applied).
+    // so the horse's flags no longer adjust the rider percents (the old
+    // applyRiderCompatibility, Equoria-grys6, was deleted with the flag store,
+    // Equoria-efs4j).
     // Temperament (R1, B6): +5 / 0 / -5 from the owner's matrix. A null or
     // unknown-name temperament contributes 0, as every horse did before B6,
     // and is logged once per show (O5 interim, approved 2026-10-17). A legacy discipline has
@@ -430,7 +386,6 @@ export function readStagedOrdering(show, entries) {
 }
 
 export default {
-  applyRiderCompatibility,
   scoreShowEntries,
   rankScoredEntries,
   readStagedOrdering,

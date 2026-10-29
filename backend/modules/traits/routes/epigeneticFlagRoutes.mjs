@@ -7,7 +7,6 @@
  * flag evaluation, retrieval, and care pattern analysis.
  *
  * 📋 API ENDPOINTS:
- * - GET /api/horses/:id/flags - Get horse flags
  * - GET /api/flags/definitions - Get flag definitions
  * - GET /api/horses/:id/care-patterns - Get care patterns (debug)
  *
@@ -21,15 +20,14 @@
  *
  * GET /analytics (stable-wide trait distribution) is gone (Equoria-a7f1p; owner
  * ruling 2026-10-21: flags are not a separate system).
+ *
+ * GET /horses/:id/flags, which only showed the old epigeneticFlags store, is gone
+ * with the store (owner ruling 2026-10-29, q300, Equoria-efs4j).
  */
 
 import express from 'express';
 import { param, query, validationResult } from 'express-validator';
-import {
-  getHorseFlags,
-  getFlagDefinitions,
-  getCarePatterns,
-} from '../controllers/epigeneticFlagController.mjs';
+import { getFlagDefinitions, getCarePatterns } from '../controllers/epigeneticFlagController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -52,32 +50,6 @@ const validateFlagTypeQuery = [
     .isIn(['positive', 'negative', 'adaptive'])
     .withMessage('Flag type must be positive, negative, or adaptive'),
 ];
-
-/**
- * GET /api/horses/:id/flags
- * Get all epigenetic flags for a specific horse
- *
- * @param {number} id - Horse ID
- * @returns {Object} Horse flags with definitions and details
- */
-router.get(
-  '/horses/:id/flags',
-  authenticateToken,
-  validateHorseIdParam,
-  requireOwnership('horse', { idParam: 'id' }),
-  async (req, res) => {
-    try {
-      await getHorseFlags(req, res);
-    } catch (error) {
-      logger.error(`[epigeneticFlagRoutes] Error in /horses/:id/flags: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      });
-    }
-  },
-);
 
 /**
  * GET /api/flags/definitions

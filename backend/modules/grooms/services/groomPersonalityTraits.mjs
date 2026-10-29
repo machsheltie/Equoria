@@ -10,11 +10,20 @@
  * - Personality traits affect interaction outcomes with different horse types
  * - Traits can develop and strengthen over time based on experience
  * - Compatibility scoring between groom personalities and horse temperaments
+ *
+ * Owner ruling 2026-10-29 (q300, Equoria-efs4j): the old epigeneticFlags store is
+ * gone. Compatibility used to compare each trait's compatibleWith/incompatibleWith
+ * lists with the horse's flags; every real horse had none, so every trait scored
+ * the no-flag neutral value and every groom the no-flag overall value. Those two
+ * values are now the constants below, so real horses score exactly as before.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { staffCareerLevel } from '../../../constants/staffLevels.mjs';
-import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
+
+// The values a horse with no flags always received (Equoria-efs4j).
+const neutralTraitCompatibility = 0.1;
+const neutralOverallCompatibility = 0.6;
 
 // Personality trait definitions
 const PERSONALITY_TRAIT_DEFINITIONS = {
@@ -275,11 +284,7 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
 
   const horse = await prisma.horse.findUnique({
     where: { id: horseId },
-    select: {
-      id: true,
-      epigeneticFlags: true,
-      bondScore: true,
-    },
+    select: { id: true },
   });
 
   if (!horse) {
@@ -291,45 +296,27 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
   let qualityModifier = 1.0;
   let taskEffectiveness = 1.0;
 
-  // Apply trait effects based on horse characteristics
+  // Every trait has the neutral compatibility (no flag store, Equoria-efs4j). It is
+  // positive and below the 0.2 general-bonding threshold, so only these effects apply.
+  const compatibility = neutralTraitCompatibility;
   groomTraits.traits.forEach(trait => {
-    const compatibility = calculateTraitCompatibility(trait, horse.epigeneticFlags);
-
-    if (compatibility > 0) {
-      // Apply positive effects with compatibility scaling
-      if (trait.effects.bondingModifier) {
-        bondingModifier *= 1.0 + (trait.effects.bondingModifier - 1.0) * compatibility;
-      }
-      if (trait.effects.qualityModifier) {
-        qualityModifier *= 1.0 + (trait.effects.qualityModifier - 1.0) * compatibility;
-      }
-
-      // Task-specific bonuses
-      if (taskType === 'trustBuilding' && trait.effects.trustBuilding) {
-        taskEffectiveness *= 1.0 + (trait.effects.trustBuilding - 1.0) * compatibility;
-      }
-      if (taskType === 'desensitization' && trait.effects.stimulationBonus) {
-        taskEffectiveness *= 1.0 + (trait.effects.stimulationBonus - 1.0) * compatibility;
-      }
-
-      // Apply general task effectiveness for all compatible traits
-      taskEffectiveness *= 1.0 + 0.1 * compatibility; // Base 10% bonus per compatible trait
-
-      // Apply general bonding bonus for compatible traits that don't have specific bonding modifiers
-      if (!trait.effects.bondingModifier && compatibility > 0.2) {
-        bondingModifier *= 1.0 + 0.15 * compatibility; // 15% bonding bonus for compatible traits
-      }
-    } else if (compatibility < 0) {
-      // Apply negative effects for incompatible combinations
-      bondingModifier *= 0.8; // Reduce bonding effectiveness
-      taskEffectiveness *= 0.9; // Reduce task effectiveness
-    } else {
-      // Neutral compatibility - still apply some base trait effects
-      if (trait.effects.qualityModifier && trait.effects.qualityModifier > 1.0) {
-        qualityModifier *= 1.0 + (trait.effects.qualityModifier - 1.0) * 0.5; // 50% of effect for neutral
-      }
-      taskEffectiveness *= 1.05; // Small base bonus for any trait
+    if (trait.effects.bondingModifier) {
+      bondingModifier *= 1.0 + (trait.effects.bondingModifier - 1.0) * compatibility;
     }
+    if (trait.effects.qualityModifier) {
+      qualityModifier *= 1.0 + (trait.effects.qualityModifier - 1.0) * compatibility;
+    }
+
+    // Task-specific bonuses
+    if (taskType === 'trustBuilding' && trait.effects.trustBuilding) {
+      taskEffectiveness *= 1.0 + (trait.effects.trustBuilding - 1.0) * compatibility;
+    }
+    if (taskType === 'desensitization' && trait.effects.stimulationBonus) {
+      taskEffectiveness *= 1.0 + (trait.effects.stimulationBonus - 1.0) * compatibility;
+    }
+
+    // General task effectiveness for every trait
+    taskEffectiveness *= 1.0 + 0.1 * compatibility; // Base 10% bonus per trait
   });
 
   // Calculate overall compatibility score
@@ -341,7 +328,6 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
     taskEffectiveness: Math.max(0.3, taskEffectiveness),
     compatibilityScore,
     epigeneticInfluenceType: groomTraits.primaryPersonality,
-    horseFlags: horse.epigeneticFlags,
   };
 }
 
@@ -356,12 +342,7 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
 
   const horse = await prisma.horse.findUnique({
     where: { id: horseId },
-    select: {
-      id: true,
-      name: true,
-      epigeneticFlags: true,
-      bondScore: true,
-    },
+    select: { id: true },
   });
 
   if (!horse) {
@@ -369,36 +350,16 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
   }
 
   const overallScore = calculateOverallCompatibility(groomTraits, horse);
+  // Strengths and challenges named the horse's flags; with the neutral trait
+  // compatibility (Equoria-efs4j) no trait ever reached either list.
   const strengths = [];
   const challenges = [];
   const recommendations = [];
-
-  // Analyze each trait for compatibility
-  groomTraits.traits.forEach(trait => {
-    const compatibility = calculateTraitCompatibility(trait, horse.epigeneticFlags);
-
-    if (compatibility > 0.2) {
-      strengths.push(
-        `${trait.name}: ${trait.description} - works well with ${asFlagArray(horse.epigeneticFlags).join(', ') || 'neutral temperament'}`,
-      );
-    } else if (compatibility < -0.1) {
-      challenges.push(
-        `${trait.name}: May be too ${trait.name} for ${asFlagArray(horse.epigeneticFlags).join(', ') || 'this horse'}`,
-      );
-    }
-  });
 
   // Generate recommendations based on compatibility
   if (overallScore < 0.4) {
     recommendations.push('Consider using a different groom personality type for this horse');
     recommendations.push('If using this groom, focus on gentle interactions');
-
-    if (asFlagArray(horse.epigeneticFlags).includes('fearful')) {
-      recommendations.push('This horse would benefit from a calm, patient groom');
-    }
-    if (asFlagArray(horse.epigeneticFlags).includes('reactive')) {
-      recommendations.push('Avoid energetic or stimulating approaches with this horse');
-    }
   } else if (overallScore > 0.7) {
     recommendations.push('Excellent compatibility - this groom is well-suited for this horse');
     recommendations.push('Consider increasing interaction frequency to maximize benefits');
@@ -411,7 +372,6 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
     groomId,
     horseId,
     epigeneticInfluenceType: groomTraits.primaryPersonality,
-    horseFlags: horse.epigeneticFlags,
     overallScore,
     strengths,
     challenges,
@@ -489,54 +449,14 @@ function applyExperienceModifiers(effects, traitStrength) {
 }
 
 /**
- * Calculate trait compatibility with horse flags
+ * Overall compatibility between a groom and a horse: the no-flag neutral value
+ * for every pair since the flag store was removed (Equoria-efs4j).
+ * @param {Object} _groomTraits - personalityTraitsFor(groom)
+ * @param {Object} _horse - the horse row
+ * @returns {number}
  */
-function calculateTraitCompatibility(trait, horseFlags) {
-  // JSONB column may be null / non-array on legacy or bare-created rows.
-  horseFlags = asFlagArray(horseFlags);
-  if (horseFlags.length === 0) {
-    return 0.1; // Neutral compatibility for horses with no flags
-  }
-
-  let compatibilityScore = 0;
-
-  // Check compatible flags
-  trait.compatibleWith.forEach(compatibleFlag => {
-    if (horseFlags.includes(compatibleFlag)) {
-      compatibilityScore += 0.3; // Strong positive compatibility
-    }
-  });
-
-  // Check incompatible flags
-  trait.incompatibleWith.forEach(incompatibleFlag => {
-    if (horseFlags.includes(incompatibleFlag)) {
-      compatibilityScore -= 0.4; // Strong negative compatibility
-    }
-  });
-
-  return Math.max(-0.5, Math.min(1.0, compatibilityScore));
-}
-
-/**
- * Calculate overall compatibility between groom and horse
- */
-export function calculateOverallCompatibility(groomTraits, horse) {
-  if (asFlagArray(horse.epigeneticFlags).length === 0) {
-    return 0.6; // Neutral compatibility for horses with no flags
-  }
-
-  let totalCompatibility = 0;
-  let traitCount = 0;
-
-  groomTraits.traits.forEach(trait => {
-    const compatibility = calculateTraitCompatibility(trait, horse.epigeneticFlags);
-    totalCompatibility += compatibility * trait.strength; // Weight by trait strength
-    traitCount += trait.strength;
-  });
-
-  const baseScore = traitCount > 0 ? totalCompatibility / traitCount : 0;
-
-  return Math.max(0, Math.min(1.0, baseScore + 0.5));
+export function calculateOverallCompatibility(_groomTraits, _horse) {
+  return neutralOverallCompatibility;
 }
 
 /**

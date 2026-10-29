@@ -88,16 +88,9 @@ describe('GET /api/v1/horses/:id/environmental-analysis', () => {
   });
 });
 
-describe('GET /api/v1/horses/:id/trait-interactions', () => {
-  it('returns 200 for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${horse.id}/trait-interactions`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-});
+// GET /horses/:id/trait-interactions analyzed only the old epigeneticFlags store
+// and went with it (owner ruling 2026-10-29, q300, Equoria-efs4j);
+// retiredTraitAdviceRoutes pins the 404.
 
 // Owner ruling 2026-10-07 (Equoria-huuaf): no potential, no developmental windows, no
 // forecasts, no advice. Old contract: these nine routes answered 200 with windows,

@@ -48,9 +48,8 @@ import { staffCareerLevel } from '../constants/staffLevels.mjs';
 // Single source of truth for rider cap constants (Equoria-pqdte). Previously
 // these were locally re-declared in simulateCompetition.mjs and
 // showExecutionService.mjs#executeClosedShows (with a comment admitting drift —
-// `// mirrors riderBonus.mjs BONUS_CAP`). Both engines now consume these via
-// modules/competition/services/competitionScoring.mjs#applyRiderCompatibility,
-// so a change here propagates to every scoring path automatically.
+// `// mirrors riderBonus.mjs BONUS_CAP`). applyRiderModifiers below validates against
+// them, so a change here propagates to every scoring path automatically.
 export const BONUS_CAP = 0.1; // 10%
 export const PENALTY_CAP = 0.08; // 8%
 

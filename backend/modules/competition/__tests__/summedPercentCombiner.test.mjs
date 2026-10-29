@@ -50,7 +50,7 @@ const goodHealth = careForHealth('Good');
 function score(base, { rng = () => 0, rider = null, discipline = 'Dressage' } = {}) {
   const [{ score: s }] = scoreShowEntries({
     show: { id: 0, discipline },
-    entries: [{ horseId: 1, horse: { name: 'TestFixture-b5', epigeneticFlags: null, ...goodHealth, ...flat(base) } }],
+    entries: [{ horseId: 1, horse: { name: 'TestFixture-b5', ...goodHealth, ...flat(base) } }],
     assignmentByHorseId: new Map(rider ? [[1, { rider }]] : []),
     rng,
   });
@@ -85,7 +85,7 @@ describe('luck is +1..+10% in whole percents (C1)', () => {
       show: { id: 0, discipline: 'Dressage' },
       entries: [1, 2, 3].map(horseId => ({
         horseId,
-        horse: { name: `h${horseId}`, epigeneticFlags: null, ...flat(60) },
+        horse: { name: `h${horseId}`, ...flat(60) },
       })),
       assignmentByHorseId: new Map(),
       rng,

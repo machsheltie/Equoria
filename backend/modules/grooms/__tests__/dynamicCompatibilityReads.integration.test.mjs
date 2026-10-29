@@ -1,7 +1,7 @@
 /**
  * Dynamic compatibility reads one input set (Equoria-q4uem.7 S6).
  *
- * Mechanism (no Prisma mock, no spy), as in traitInteractionSnapshotReads: the
+ * Mechanism (no Prisma mock, no spy), as in environmentalTriggerSnapshotReads: the
  * shared client module adopts a `globalThis.__prisma` handle installed before it
  * loads, pointed at a REAL PrismaClient with query-event logging, so every SQL
  * statement is observed against the real test DB.

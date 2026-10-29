@@ -94,7 +94,6 @@ describe('Environmental Trigger System', () => {
               dateOfBirth: oneWeekAgo,
               userId: testUser.id,
               bondScore: 15,
-              epigeneticFlags: ['developing'],
             },
           }),
           // Older foal - moderate sensitivity
@@ -106,7 +105,6 @@ describe('Environmental Trigger System', () => {
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 25,
-              epigeneticFlags: ['curious'],
             },
           }),
           // Reactive foal - high trigger sensitivity
@@ -118,7 +116,6 @@ describe('Environmental Trigger System', () => {
               dateOfBirth: twoWeeksAgo,
               userId: testUser.id,
               bondScore: 10,
-              epigeneticFlags: ['reactive'],
             },
           }),
         ]);

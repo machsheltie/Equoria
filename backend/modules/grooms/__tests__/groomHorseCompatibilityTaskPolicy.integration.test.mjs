@@ -76,8 +76,6 @@ let horse;
 let foreignUser;
 let foreignGroom;
 let foreignHorse;
-let fearfulFlagHorse;
-let braveFlagHorse;
 const groomsByPersonality = {};
 const cleanup = createCleanupTracker();
 
@@ -93,7 +91,6 @@ function horseData(ownerId, name) {
     temperament: 'developing',
     bondScore: 25,
     healthStatus: 'Good',
-    epigeneticFlags: [],
   };
 }
 
@@ -190,15 +187,6 @@ beforeAll(async () => {
     });
   }
   horse = await prisma.horse.create({ data: horseData(user.id, `Policy Horse ${uid}`) });
-  // Flags that make a trait with a task bonus compatible (see groomPersonalityTraits.mjs):
-  // calm 'gentle' (trustBuilding 1.4) is compatibleWith fearful; energetic 'enthusiastic'
-  // (stimulationBonus 1.4) is compatibleWith brave.
-  fearfulFlagHorse = await prisma.horse.create({
-    data: { ...horseData(user.id, `Policy Fearful Horse ${uid}`), epigeneticFlags: ['fearful'] },
-  });
-  braveFlagHorse = await prisma.horse.create({
-    data: { ...horseData(user.id, `Policy Brave Horse ${uid}`), epigeneticFlags: ['brave'] },
-  });
   foreignGroom = await prisma.groom.create({
     data: groomData(foreignUser.id, `Foreign Policy Groom ${uid}`, 'calm'),
   });
@@ -388,8 +376,18 @@ describe('ownership is enforced on every compatibility route', () => {
 });
 
 // Characterization (Equoria-q4uem.3 fix round 1): trustBuilding and desensitization
-// through the FULL scorer, with a groom whose trait carries that task's bonus and a horse
-// whose flags make the trait compatible. Pins today's values; no mechanics change.
+// through the FULL scorer, with a groom whose trait carries that task's bonus. Pins
+// today's values; no mechanics change.
+//
+// CONTRACT CHANGED BY THE OWNER, 2026-10-29 (q300, Equoria-efs4j): the epigeneticFlags
+// store is dropped with every reader. Old contract: a fearful-flag horse (calm) and a
+// brave-flag horse (energetic) made the bonus trait compatible: base 0.725, control
+// overall 0.84825, task overall 1.102725 / 0.933075, control task effectiveness
+// 1.14736335, task effectiveness 1.21482831498. New contract: the horse is the plain
+// flagless fixture, which gets the no-flag values it always got: base 0.6 (x 1.17 =
+// control 0.702), every trait at the neutral compatibility 0.1, so control task
+// effectiveness 1.01^4 = 1.04060401 and the task bonus 1.071397647112 (gentle 1.196 and
+// consistent 1.098 trust) / 1.060999848596 (enthusiastic 1.196 stimulation).
 //
 // Observed behaviour, pinned as-is: the trait task bonus is computed by
 // calculatePersonalityModifiers (taskEffectiveness rises), but the scorer uses only that
@@ -404,12 +402,12 @@ describe('trait task bonuses through the full scorer (characterization)', () => 
   // 1.0527, control 0.957, task effectiveness 1.23548085528. Base is unchanged.
   const cases = [
     // [taskType, personality, horse, policy modifier, task overall, task effectiveness]
-    ['trustBuilding', 'calm', () => fearfulFlagHorse, 1.3, 1.102725, 1.21482831498],
-    ['desensitization', 'energetic', () => braveFlagHorse, 1.1, 0.933075, 1.21482831498],
+    ['trustBuilding', 'calm', () => horse, 1.3, 0.9126, 1.071397647112],
+    ['desensitization', 'energetic', () => horse, 1.1, 0.7722, 1.060999848596],
   ];
-  const CONTROL_OVERALL = 0.84825;
-  const CONTROL_TASK_EFFECTIVENESS = 1.14736335;
-  const BASE_COMPATIBILITY = 0.725;
+  const CONTROL_OVERALL = 0.702;
+  const CONTROL_TASK_EFFECTIVENESS = 1.04060401;
+  const BASE_COMPATIBILITY = 0.6;
 
   it.each(cases)(
     '%s with a %s groom: policy modifier applied, trait bonus present in taskEffectiveness, coatCheck control lower',

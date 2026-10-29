@@ -70,7 +70,6 @@ describe('the discipline trait at a show (Equoria-n7ph5)', () => {
       id: 1,
       name: 'TestFixture-n7ph5-show',
       temperament: null,
-      epigeneticFlags: null,
       disciplineScores: birthScores,
       ...careForHealth('Good'),
       ...flat(100),

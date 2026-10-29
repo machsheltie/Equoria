@@ -9,7 +9,6 @@
  * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export { applyRiderCompatibility } from './services/competitionScoring.mjs';
 // A horse's discipline score before show-day percentages, from the nightly
 // scorer's own flat-score function: the horse page's Discipline Scores read it
 // (app layer, Equoria-a0fim).

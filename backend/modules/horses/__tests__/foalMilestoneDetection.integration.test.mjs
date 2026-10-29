@@ -63,7 +63,7 @@ let user;
 let token;
 
 // Create a fixture foal and register scoped cleanup for its child rows.
-async function makeFoal({ suffix, days, ageYears, bondScore = 0, epigeneticModifiers, epigeneticFlags }) {
+async function makeFoal({ suffix, days, ageYears, bondScore = 0, epigeneticModifiers }) {
   const data = {
     ...fixtureColor(),
     name: `TestFixture-${TAG}-${suffix}`,
@@ -75,9 +75,6 @@ async function makeFoal({ suffix, days, ageYears, bondScore = 0, epigeneticModif
   };
   if (epigeneticModifiers !== undefined) {
     data.epigeneticModifiers = epigeneticModifiers;
-  }
-  if (epigeneticFlags !== undefined) {
-    data.epigeneticFlags = epigeneticFlags;
   }
   const foal = await prisma.horse.create({ data });
   createdFoalIds.push(foal.id);

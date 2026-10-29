@@ -676,8 +676,11 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('--closure: three pure services evaluate no route module or controller file (acceptance criterion 3)', () => {
+    // traitInteractionMatrix.mjs was the traits example until it was deleted with the
+    // epigeneticFlags store (owner ruling 2026-10-29, q300, Equoria-efs4j);
+    // storeHorseTraitRoster.mjs is the traits module's pure service now.
     for (const file of [
-      'backend/modules/traits/services/traitInteractionMatrix.mjs',
+      'backend/modules/traits/services/storeHorseTraitRoster.mjs',
       'backend/modules/horses/services/conformationService.mjs',
       'backend/modules/horses/services/horseXpModelService.mjs',
     ]) {

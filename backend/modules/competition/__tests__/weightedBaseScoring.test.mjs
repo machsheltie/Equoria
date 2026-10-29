@@ -41,7 +41,6 @@ const STATS = [
 // isolates its own factor. Old fixture: no health fields (then: no health term).
 const horse = (overrides = {}) => ({
   name: 'TestFixture-b4a',
-  epigeneticFlags: null,
   ...careForHealth('Good'),
   lastFedDate: new Date(),
   ...Object.fromEntries(STATS.map(s => [s, 50])),

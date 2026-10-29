@@ -1,8 +1,9 @@
 /**
  * Epigenetic Flag Definitions
  *
- * The names, authored labels, polarity and conflicts of the stored epigenetic
- * flags (Horse.epigeneticFlags).
+ * The names, authored labels, polarity and conflicts of the epigenetic flags,
+ * served by GET /flags/definitions. (The Horse.epigeneticFlags store they once
+ * described was dropped, owner ruling 2026-10-29, q300, Equoria-efs4j.)
  *
  * Equoria-cmakh: the per-flag `triggerConditions` (care consistency, task
  * diversity, bond trend...) were removed. The evaluator that once had its own

@@ -3,7 +3,7 @@
  *
  * buildCompatibilityFixtures(prisma, token, colour) creates owned fixtures: an
  * owner with five grooms (calm, an expert calm, energetic, methodical,
- * balanced) and five horses of chosen bond and epigenetic flags; a
+ * balanced) and horses of chosen bond; a
  * second owner whose only groom has an unknown personality type; a third owner
  * with a horse and no grooms. Interaction histories sit inside and outside the
  * 14-day history window, at most 10 per pair inside it (which 10 of more is
@@ -113,19 +113,25 @@ const GROOMS = [
   ['methodical-novice', 'methodical', 20, 1, 'B'],
 ];
 
-// [key, bondScore, epigeneticFlags, owner]
+// [key, bondScore, owner]
+// Owner ruling 2026-10-29 (q300, Equoria-efs4j): the epigeneticFlags store is
+// dropped. These horses carried flags (the keys still name them so every case
+// key is unchanged); now every horse is flagless like 'flagless' and every real
+// horse. The golden digests of the cases that named a flagged horse were
+// re-recorded from the PRE-removal code on these flagless fixtures, so the
+// characterization proves the new code scores a flagless horse exactly as the
+// old code did; every 'flagless' and 'missing' case kept its original digest.
 const HORSES = [
-  ['flagless', 10, [], 'A'],
-  ['nervous', 12, ['nervous', 'fearful', 'insecure'], 'A'],
-  ['confident', 30, ['brave', 'confident', 'curious'], 'A'],
-  ['reactive', 5, ['reactive'], 'A'],
-  ['mixed', 26, ['calm', 'social', 'fearful'], 'A'],
-  ['b-horse', 20, ['curious'], 'B'],
-  ['c-horse', 12, ['brave'], 'C'],
-  // All-negative flags and no interactions: the temperament analysis says
-  // 'nervous', so the energetic+nervous/fearful risk rule and the calm+nervous/
-  // fearful strength rule (the `in` operator) fire.
-  ['anxious', 8, ['fearful', 'insecure', 'reactive', 'fragile'], 'A'],
+  ['flagless', 10, 'A'],
+  ['nervous', 12, 'A'],
+  ['confident', 30, 'A'],
+  ['reactive', 5, 'A'],
+  ['mixed', 26, 'A'],
+  ['b-horse', 20, 'B'],
+  ['c-horse', 12, 'C'],
+  // Once all-negative flags and no interactions (the temperament analysis said
+  // 'nervous'); now a flagless low-bond horse with no interactions.
+  ['anxious', 8, 'A'],
 ];
 
 // Interaction histories per [groom, horse]: [daysAgo, fields]
@@ -206,7 +212,7 @@ export async function buildCompatibilityFixtures(prisma, token, colour) {
     labels.set(`groom:${grooms[key].id}`, key);
   }
   const horses = {};
-  for (const [key, bondScore, epigeneticFlags, owner] of HORSES) {
+  for (const [key, bondScore, owner] of HORSES) {
     horses[key] = await prisma.horse.create({
       data: {
         ...colour(),
@@ -216,7 +222,6 @@ export async function buildCompatibilityFixtures(prisma, token, colour) {
         age: 0,
         userId: owners[owner].id,
         bondScore,
-        epigeneticFlags,
       },
     });
     labels.set(`horse:${horses[key].id}`, key);

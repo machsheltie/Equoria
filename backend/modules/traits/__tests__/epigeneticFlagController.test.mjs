@@ -1,7 +1,10 @@
 /**
  * epigeneticFlagController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: getHorseFlags, getFlagDefinitions, getCarePatterns. (batchEvaluateFlags
+ * Covers: getFlagDefinitions, getCarePatterns. getHorseFlags and GET
+ * /flags/horses/:id/flags went with the old epigeneticFlags store (owner ruling
+ * 2026-10-29, q300, Equoria-efs4j); retiredTraitAdviceRoutes pins the 404.
+ * (batchEvaluateFlags
  * and POST /flags/batch-evaluate were removed by owner ruling 2026-10-28, q203,
  * Equoria-a7f1p; retiredTraitAdviceRoutes pins the 404.) (evaluateFlags and POST /flags/evaluate were removed by
  * Equoria-gu8jk — players never assign flags.)
@@ -13,7 +16,6 @@ import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -100,73 +102,12 @@ describe('GET /api/v1/flags/definitions', () => {
   });
 });
 
-// ─── GET /api/v1/flags/horses/:id/flags ─────────────────────────────────────────
-
-describe('GET /api/v1/flags/horses/:id/flags', () => {
-  it('returns 200 with flags for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/flags/horses/${horse.id}/flags`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
-  it('returns 404 for a horse not owned by user', async () => {
-    const res = await request(app)
-      .get('/api/v1/flags/horses/999999999/flags')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(404);
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/flags/horses/${horse.id}/flags`).set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-
-  // Sentinel for Equoria-8qu4: ageInYears must be canonical game-years
-  // (floor(ageDays / 7)), NOT calendar-years (ageDays / 365.25). A horse
-  // born 35 real days ago is 5 game-years old, not ~0.10 calendar-years.
-  it('reports ageInYears in canonical game-years, not calendar-years', async () => {
-    const thirtyFiveDaysAgo = gameCalendarDate(new Date(), -35); // date-only dob: the Eastern date
-    const youngHorse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-FlagAge-${randomBytes(4).toString('hex')}`,
-        sex: 'Filly',
-        dateOfBirth: thirtyFiveDaysAgo,
-        age: 5,
-        userId: user.id,
-      },
-    });
-    // Equoria-1ohys: register for the suite-level fail-loud horse sweep instead
-    // of a swallowed finally-delete (a throwing finally would mask the assertions).
-    horseIds.push(youngHorse.id);
-
-    const res = await request(app)
-      .get(`/api/v1/flags/horses/${youngHorse.id}/flags`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    // Game-years: floor(35 / 7) === 5. Calendar-years bug would give ~0.10.
-    expect(Number(res.body.data.ageInYears)).toBe(5);
-    // Under 3 game-years gate must use the same canonical unit.
-    expect(res.body.data.canReceiveMoreFlags).toBe(false);
-  });
-});
-
 // ─── No advertised effects (Equoria-v6sp2, Equoria-rqz1z) ───────────────────────
 // Owner ruling 2026-10-27 (q117): trait names only — "Do not add what each
 // actually does yet." No live gameplay code consumed the flag registry's
 // competition/training/bonding/trait-weight modifiers, so the flag endpoints
 // must not tell a player a flag does anything: each flag is its name, its
-// authored name and its polarity, and the horse view carries no influence summary.
+// authored name and its polarity.
 
 describe('flag endpoints advertise no effects', () => {
   it('GET /flags/definitions sends each flag as name, displayName and type only', async () => {
@@ -180,33 +121,6 @@ describe('flag endpoints advertise no effects', () => {
     for (const flag of res.body.data.flags) {
       expect(Object.keys(flag).sort()).toEqual(['displayName', 'name', 'type']);
     }
-  });
-
-  it('GET /flags/horses/:id/flags sends no influence summary and no flag effects', async () => {
-    const flagged = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-FlagNoEffect-${randomBytes(4).toString('hex')}`,
-        sex: 'Filly',
-        dateOfBirth: new Date('2022-01-01'),
-        age: 3,
-        userId: user.id,
-        epigeneticFlags: ['brave', 'fearful'],
-      },
-    });
-    horseIds.push(flagged.id);
-
-    const res = await request(app)
-      .get(`/api/v1/flags/horses/${flagged.id}/flags`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.data).not.toHaveProperty('influenceSummary');
-    expect(res.body.data.flags).toEqual([
-      { name: 'brave', displayName: 'Brave', type: 'positive' },
-      { name: 'fearful', displayName: 'Fearful', type: 'negative' },
-    ]);
   });
 });
 

@@ -186,7 +186,6 @@ beforeAll(async () => {
           flexibility: 50,
           obedience: 50,
           focus: 50,
-          epigeneticFlags: [],
         },
       }),
     );
@@ -240,7 +239,6 @@ beforeAll(async () => {
       flexibility: 50,
       obedience: 50,
       focus: 50,
-      epigeneticFlags: [],
     },
   });
 

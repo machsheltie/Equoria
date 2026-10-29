@@ -24,14 +24,22 @@
  * neither engine re-declares the caps locally — if a future change re-adds
  * `const RIDER_BONUS_CAP = 0.1` anywhere outside the helper, this test
  * fails immediately.
+ *
+ * CONTRACT CHANGED BY THE OWNER, 2026-10-29 (q300, Equoria-efs4j): the old
+ * epigeneticFlags store and every reader of it are removed. Old contract:
+ * competitionScoring exported applyRiderCompatibility (the rider flag-compat
+ * helper, unused by the scorer since 2026-10-23) and (a)/(b) pinned it. New
+ * contract: the helper and utils/riderFlagCompatibility.mjs are gone, and this
+ * file pins that they stay gone; the cap and scorer sentinels are unchanged.
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
 import { BONUS_CAP, PENALTY_CAP, applyRiderModifiers } from '../../../utils/riderBonus.mjs';
-import { applyRiderCompatibility } from '../services/competitionScoring.mjs';
+import * as competitionScoring from '../services/competitionScoring.mjs';
+import * as competitionModule from '../index.mjs';
 
 const ROOT = resolve(process.cwd());
 
@@ -45,34 +53,11 @@ describe('competitionScoring shared helper (Equoria-pqdte)', () => {
     expect(PENALTY_CAP).toBe(0.08);
   });
 
-  it('exposes applyRiderCompatibility(bonusPercent, penaltyPercent, epigeneticFlags)', () => {
-    expect(typeof applyRiderCompatibility).toBe('function');
-    // No flags → no change (identity, regression-safe).
-    expect(applyRiderCompatibility({ bonusPercent: 0.05, penaltyPercent: 0, epigeneticFlags: [] })).toEqual({
-      bonusPercent: 0.05,
-      penaltyPercent: 0,
-    });
-  });
-
-  it('clamps the modified bonus to BONUS_CAP and the penalty to PENALTY_CAP', () => {
-    // Force a strongly positive compatibility factor by passing positive flags,
-    // then assert the bonus cannot exceed BONUS_CAP.
-    const positiveFlags = ['brave', 'confident', 'affectionate', 'resilient'];
-    const { bonusPercent } = applyRiderCompatibility({
-      bonusPercent: 0.1, // already at cap
-      penaltyPercent: 0,
-      epigeneticFlags: positiveFlags,
-    });
-    expect(bonusPercent).toBeLessThanOrEqual(BONUS_CAP);
-
-    // Same for penalty (negative flags raise it, must clamp).
-    const negativeFlags = ['fearful', 'insecure', 'skittish', 'fragile'];
-    const { penaltyPercent } = applyRiderCompatibility({
-      bonusPercent: 0,
-      penaltyPercent: 0.08, // already at cap
-      epigeneticFlags: negativeFlags,
-    });
-    expect(penaltyPercent).toBeLessThanOrEqual(PENALTY_CAP);
+  it('the rider flag-compat helper is gone with the flag store (Equoria-efs4j)', () => {
+    expect(competitionScoring).not.toHaveProperty('applyRiderCompatibility');
+    expect(competitionScoring.default).not.toHaveProperty('applyRiderCompatibility');
+    expect(competitionModule).not.toHaveProperty('applyRiderCompatibility');
+    expect(existsSync(resolve(ROOT, 'utils/riderFlagCompatibility.mjs'))).toBe(false);
   });
 
   // ── SENTINEL: source-level enforcement of single source of truth ───────

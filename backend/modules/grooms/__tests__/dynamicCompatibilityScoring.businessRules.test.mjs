@@ -11,6 +11,15 @@
  * - Adaptive scoring based on interaction outcomes
  * - Multi-factor compatibility analysis
  * - Predictive compatibility modeling
+ *
+ * CONTRACT CHANGED BY THE OWNER, 2026-10-29 (q300, Equoria-efs4j): the old
+ * epigeneticFlags store is dropped with every reader. Old contract: the three
+ * horses carried flags (fearful/reactive/insecure, brave/confident/social,
+ * curious/calm) and four cases below pinned flag-driven results (energetic +
+ * fearful < 0.4 and 'not_recommended', methodical + curious/calm under 0.8,
+ * 'energetic'/'fearful' risk factors, a bonding prediction under 2). New
+ * contract: every horse is flagless, so those cases pin the no-flag values a
+ * flagless horse always got: base compatibility 0.6 for every pair.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -105,7 +114,6 @@ describe('Dynamic Compatibility Scoring', () => {
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 8,
-              epigeneticFlags: ['fearful', 'reactive', 'insecure'],
             },
           }),
           // Confident social horse
@@ -117,7 +125,6 @@ describe('Dynamic Compatibility Scoring', () => {
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 38,
-              epigeneticFlags: ['brave', 'confident', 'social'],
             },
           }),
           // Moderate temperament horse
@@ -129,7 +136,6 @@ describe('Dynamic Compatibility Scoring', () => {
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 25,
-              epigeneticFlags: ['curious', 'calm'],
             },
           }),
         ]);
@@ -196,8 +202,11 @@ describe('Dynamic Compatibility Scoring', () => {
 
       const compatibility = await analyzePair(energeticGroom.id, fearfulHorse.id, scoreCompatibility, context);
 
-      expect(compatibility.overallScore).toBeLessThan(0.4); // Low compatibility
-      expect(compatibility.recommendationLevel).toBe('not_recommended');
+      // No flags: base 0.6, then the novice's experience and the noisy, unfamiliar
+      // afternoon context.
+      expect(compatibility.baseCompatibility).toBe(0.6);
+      expect(compatibility.overallScore).toBeCloseTo(0.423792, 6);
+      expect(compatibility.recommendationLevel).toBe('acceptable');
     });
 
     test('should calculate moderate compatibility with contextual improvements', async () => {
@@ -214,10 +223,10 @@ describe('Dynamic Compatibility Scoring', () => {
 
       const compatibility = await analyzePair(methodicalGroom.id, moderateHorse.id, scoreCompatibility, context);
 
-      expect(compatibility.overallScore).toBeGreaterThan(0.5);
-      expect(compatibility.overallScore).toBeLessThan(0.8);
+      expect(compatibility.baseCompatibility).toBe(0.6);
+      expect(compatibility.overallScore).toBeCloseTo(1.1800404, 6);
       expect(compatibility.taskSpecificModifier).toBeGreaterThan(1.0); // Methodical good for technical tasks
-      expect(compatibility.recommendationLevel).toBe('recommended');
+      expect(compatibility.recommendationLevel).toBe('highly_recommended');
     });
 
     test('should apply experience bonuses correctly', async () => {
@@ -274,8 +283,8 @@ describe('Dynamic Compatibility Scoring', () => {
 
       const factors = await analyzeCompatibilityFactors(energeticGroom.id, fearfulHorse.id);
 
-      expect(factors.riskFactors.length).toBeGreaterThan(0);
-      expect(factors.riskFactors.some(factor => factor.includes('energetic') || factor.includes('fearful'))).toBe(true);
+      // A flagless horse with no interactions gives no temperament-based risk.
+      expect(factors.riskFactors).toEqual([]);
     });
   });
 
@@ -316,8 +325,10 @@ describe('Dynamic Compatibility Scoring', () => {
 
       const prediction = await analyzePair(energeticGroom.id, fearfulHorse.id, predictInteraction, context);
 
-      expect(prediction.predictedBondingChange).toBeLessThan(2); // Low bonding gain
-      expect(prediction.successProbability).toBeLessThan(0.5);
+      const compatibility = await analyzePair(energeticGroom.id, fearfulHorse.id, scoreCompatibility, context);
+      expect(compatibility.baseCompatibility).toBe(0.6);
+      expect(prediction.predictedBondingChange).toBe(2);
+      expect(prediction.successProbability).toBeCloseTo(Math.max(0.1, Math.min(0.95, compatibility.overallScore)), 10);
     });
   });
 

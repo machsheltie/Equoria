@@ -42,7 +42,6 @@
  * GET    /api/v1/horses/:id                         horse detail
  * GET    /api/v1/horses/:id/training-history        training log
  * GET    /api/v1/horses/:id/environmental-analysis  epigenetic environment
- * GET    /api/v1/horses/:id/trait-interactions      trait synergy analysis
  * GET    /api/v1/horses/:id/developmental-timeline  foal milestone timeline
  * GET    /api/v1/horses/:id/forecast                genetic potential forecast
  * GET    /api/v1/horses/:id/breeding-data           breeding stats

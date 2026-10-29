@@ -2,7 +2,7 @@
  * jsonbArrayGuard.mjs
  *
  * Defensive normalization helper for JSONB columns that are SUPPOSED to hold
- * an array (e.g. horse.epigeneticFlags) but, per the project JSONB type-guard
+ * an array (e.g. epigeneticModifiers.positive) but, per the project JSONB type-guard
  * convention (.claude/rules/CONTRIBUTING.md "Backend Conventions" #1), can
  * arrive as null, undefined, a primitive, or a non-array object on
  * legacy/bare-created rows.

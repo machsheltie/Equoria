@@ -33,6 +33,10 @@
  * - Flags are not a separate system; they fold into the one trait system
  *   (2026-10-21):
  *     GET  /flags/analytics
+ * - The old epigeneticFlags store is dropped; its readers go with it
+ *   (2026-10-29, q300, Equoria-efs4j). Both routes showed only that store:
+ *     GET  /horses/:id/trait-interactions
+ *     GET  /flags/horses/:id/flags
  *
  * Old contract: each route reached its handler (200 for the owner, a handler
  * or ownership 404 otherwise). Ruling: each now answers the app's JSON
@@ -200,6 +204,9 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
     ['post', id => `/api/v1/trait-discovery/check-conditions/${id}`, {}],
     ['get', id => `/api/v1/trait-discovery/discovery-status/${id}`],
     ['get', id => `/api/v1/ultra-rare-traits/horse/${id}`],
+    // Equoria-efs4j (q300): kept below until the flag store was dropped.
+    ['get', id => `/api/v1/horses/${id}/trait-interactions`],
+    ['get', id => `/api/v1/flags/horses/${id}/flags`],
     [
       'post',
       () => '/api/v1/ultra-rare-traits/effects/calculate',
@@ -237,11 +244,10 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
   // Neighbours that stay: each still reaches its handler for the owner.
   const kept = [
     ['GET /horses/:id/environmental-analysis', id => `/api/v1/horses/${id}/environmental-analysis`],
-    ['GET /horses/:id/trait-interactions', id => `/api/v1/horses/${id}/trait-interactions`],
     // GET /epigenetic-traits/history/:horseId was kept here until owner ruling
     // 2026-10-28 (q152) removed the trait reports; removedTraitReportRoutes pins it.
     ['GET /traits/discovery-status/:horseId', id => `/api/v1/traits/discovery-status/${id}`],
-    ['GET /flags/horses/:id/flags', id => `/api/v1/flags/horses/${id}/flags`],
+    ['GET /flags/horses/:id/care-patterns', id => `/api/v1/flags/horses/${id}/care-patterns`],
     ['GET /flags/definitions', () => '/api/v1/flags/definitions'],
   ];
 

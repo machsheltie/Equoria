@@ -94,7 +94,6 @@ describe('foal milestones claim no traits (Equoria-kqdde)', () => {
     expect(result).not.toHaveProperty('ultraRareEvaluation');
     const after = await prisma.horse.findUnique({ where: { id: foal.id } });
     expect(after.epigeneticModifiers).toEqual(modifiers);
-    expect(after.epigeneticFlags).toEqual([]);
     expect(traitsApi).not.toHaveProperty('evaluateAndPersistUltraRareTraits');
   }, 60_000);
 });

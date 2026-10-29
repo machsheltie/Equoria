@@ -104,7 +104,6 @@ describe('Groom Personality Trait System', () => {
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 10,
-              epigeneticFlags: ['fearful', 'insecure'],
             },
           }),
           // Confident/brave horse
@@ -116,7 +115,6 @@ describe('Groom Personality Trait System', () => {
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 35,
-              epigeneticFlags: ['brave', 'confident'],
             },
           }),
           // Neutral horse
@@ -128,7 +126,6 @@ describe('Groom Personality Trait System', () => {
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 20,
-              epigeneticFlags: [],
             },
           }),
         ]);
@@ -221,94 +218,61 @@ describe('Groom Personality Trait System', () => {
     });
   });
 
+  // CONTRACT CHANGED BY THE OWNER, 2026-10-29 (q300, Equoria-efs4j): the old
+  // epigeneticFlags store is dropped with every reader. Old contract: these horses
+  // carried flags (fearful/insecure, brave/confident, none), so a calm groom scored
+  // > 0.7 with the nervous horse and an energetic groom < 0.5. New contract: no
+  // horse has flags, so every pair gets the no-flag values a flagless horse always
+  // got: overall compatibility 0.6, no strengths or challenges, moderate advice,
+  // and modifiers that do not depend on the horse.
   describe('calculatePersonalityModifiers', () => {
-    test('should calculate modifiers for calm groom with nervous horse', async () => {
-      const [calmGroom] = testGrooms;
-      const [nervousHorse] = testHorses;
+    test.each([
+      ['calm', 0, 'trustBuilding'],
+      ['energetic', 1, 'desensitization'],
+      ['methodical', 2, 'hoofHandling'],
+    ])('a %s groom gets the same no-flag modifiers with every horse', async (_label, groomIndex, taskType) => {
+      const groom = testGrooms[groomIndex];
+      const results = [];
+      for (const horse of testHorses) {
+        results.push(await calculatePersonalityModifiers(groom.id, horse.id, taskType));
+      }
 
-      const modifiers = await calculatePersonalityModifiers(calmGroom.id, nervousHorse.id, 'trustBuilding');
-
-      expect(modifiers).toBeDefined();
-      expect(modifiers.bondingModifier).toBeGreaterThan(1.0); // Calm grooms excel with nervous horses
-      expect(modifiers.qualityModifier).toBeGreaterThan(1.0); // Higher quality interactions
-      expect(modifiers.taskEffectiveness).toBeGreaterThan(1.0); // More effective
-      expect(modifiers.compatibilityScore).toBeGreaterThan(0.7); // High compatibility
+      for (const modifiers of results) {
+        expect(modifiers).toEqual(results[0]);
+        expect(modifiers.compatibilityScore).toBe(0.6);
+        expect(modifiers.bondingModifier).toBeGreaterThanOrEqual(1.0);
+        expect(modifiers.qualityModifier).toBeGreaterThanOrEqual(1.0);
+        expect(modifiers.taskEffectiveness).toBeGreaterThan(1.0);
+      }
     });
 
-    test('should calculate modifiers for energetic groom with confident horse', async () => {
-      const energeticGroom = testGrooms[1];
-
-      const confidentHorse = testHorses[1];
-
-      const modifiers = await calculatePersonalityModifiers(energeticGroom.id, confidentHorse.id, 'desensitization');
-
-      expect(modifiers).toBeDefined();
-      expect(modifiers.bondingModifier).toBeGreaterThan(1.0); // Good match
-      expect(modifiers.taskEffectiveness).toBeGreaterThan(1.0); // Effective for stimulating tasks
-      expect(modifiers.compatibilityScore).toBeGreaterThan(0.6); // Good compatibility
-    });
-
-    test('should calculate modifiers for energetic groom with nervous horse', async () => {
-      const energeticGroom = testGrooms[1];
-      const [nervousHorse] = testHorses;
-
-      const modifiers = await calculatePersonalityModifiers(energeticGroom.id, nervousHorse.id, 'trustBuilding');
-
-      expect(modifiers).toBeDefined();
-      expect(modifiers.compatibilityScore).toBeLessThan(0.5); // Poor compatibility
-      expect(modifiers.taskEffectiveness).toBeLessThan(1.0); // Less effective
-    });
-
-    test('should calculate modifiers for methodical groom with any horse', async () => {
-      const methodicalGroom = testGrooms[2];
-
-      const neutralHorse = testHorses[2];
-
-      const modifiers = await calculatePersonalityModifiers(methodicalGroom.id, neutralHorse.id, 'hoofHandling');
-
-      expect(modifiers).toBeDefined();
-      expect(modifiers.qualityModifier).toBeGreaterThan(1.0); // Consistent high quality
-      expect(modifiers.taskEffectiveness).toBeGreaterThan(1.0); // Methodical approach effective
-      expect(modifiers.compatibilityScore).toBeGreaterThan(0.5); // Generally compatible
+    test('the result names no horse flags', async () => {
+      const modifiers = await calculatePersonalityModifiers(testGrooms[0].id, testHorses[0].id, 'trustBuilding');
+      expect(modifiers).not.toHaveProperty('horseFlags');
     });
   });
 
   describe('analyzePersonalityCompatibility', () => {
-    test('should analyze compatibility between groom and horse personalities', async () => {
-      const [calmGroom] = testGrooms;
-      const [nervousHorse] = testHorses;
+    test('every groom and horse pair is the moderate no-flag match', async () => {
+      for (const groom of testGrooms) {
+        for (const horse of testHorses) {
+          const compatibility = await analyzePersonalityCompatibility(groom.id, horse.id);
 
-      const compatibility = await analyzePersonalityCompatibility(calmGroom.id, nervousHorse.id);
-
-      expect(compatibility).toBeDefined();
-      expect(compatibility.overallScore).toBeGreaterThan(0.7); // High compatibility
-      expect(compatibility.strengths).toBeDefined();
-      expect(Array.isArray(compatibility.strengths)).toBe(true);
-      expect(compatibility.challenges).toBeDefined();
-      expect(Array.isArray(compatibility.challenges)).toBe(true);
-      expect(compatibility.recommendations).toBeDefined();
-      expect(Array.isArray(compatibility.recommendations)).toBe(true);
-
-      // Should identify specific strengths
-      expect(compatibility.strengths.length).toBeGreaterThan(0);
-      expect(compatibility.strengths.some(s => s.includes('calm') || s.includes('patient'))).toBe(true);
+          expect(compatibility.overallScore).toBe(0.6);
+          expect(compatibility.compatibilityLevel).toBe('good');
+          expect(compatibility.strengths).toEqual([]);
+          expect(compatibility.challenges).toEqual([]);
+          expect(compatibility.recommendations).toEqual([
+            'Moderate compatibility - monitor interactions closely',
+            "Adjust approach based on horse's daily mood",
+          ]);
+        }
+      }
     });
 
-    test('should identify poor compatibility combinations', async () => {
-      const energeticGroom = testGrooms[1];
-      const [nervousHorse] = testHorses;
-
-      const compatibility = await analyzePersonalityCompatibility(energeticGroom.id, nervousHorse.id);
-
-      expect(compatibility).toBeDefined();
-      expect(compatibility.overallScore).toBeLessThan(0.5); // Poor compatibility
-      expect(compatibility.challenges.length).toBeGreaterThan(0);
-      expect(compatibility.recommendations.length).toBeGreaterThan(0);
-
-      // Should suggest alternatives or modifications
-      expect(
-        compatibility.recommendations.some(r => r.includes('calm') || r.includes('gentle') || r.includes('avoid')),
-      ).toBe(true);
+    test('the result names no horse flags', async () => {
+      const compatibility = await analyzePersonalityCompatibility(testGrooms[0].id, testHorses[0].id);
+      expect(compatibility).not.toHaveProperty('horseFlags');
     });
   });
 

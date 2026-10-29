@@ -1,12 +1,16 @@
 /**
  * Horse Temperament Analysis Tests
  *
- * Tests horse temperament analysis based on interaction history and flag patterns.
+ * Tests horse temperament analysis based on interaction history.
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
+ *
+ * Flag-based classification (classifyTemperamentFromFlags) and the fixtures'
+ * flags went with the old epigeneticFlags store (owner ruling 2026-10-29, q300,
+ * Equoria-efs4j). None of the remaining cases read a flag: each horse's result
+ * came from its interactions or basic stats, as it still does.
  *
  * Business Rules Tested:
  * - Temperament analysis from interaction patterns
- * - Flag-based temperament classification
  * - Behavioral trend analysis over time
  * - Bonding preference analysis
  * - Temperament stability and change detection
@@ -16,7 +20,6 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { randomBytes } from 'node:crypto';
 import { analyzeHorseTemperament } from '../../modules/horses/index.mjs';
 import {
-  classifyTemperamentFromFlags,
   analyzeBehavioralTrends,
   analyzeBondingPreferences,
   detectTemperamentChanges,
@@ -77,7 +80,7 @@ describe('Horse Temperament Analysis', () => {
         }),
     ]);
 
-    // Create test horses with different flag patterns and interaction histories
+    // Create test horses with different interaction histories
     const now = new Date();
     const oneMonthAgo = gameCalendarDate(now, -30);
 
@@ -92,7 +95,6 @@ describe('Horse Temperament Analysis', () => {
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
             bondScore: 12,
-            epigeneticFlags: ['fearful', 'reactive', 'insecure'],
           },
         }),
       // Confident/social horse
@@ -105,7 +107,6 @@ describe('Horse Temperament Analysis', () => {
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
             bondScore: 35,
-            epigeneticFlags: ['brave', 'confident', 'social'],
           },
         }),
       // Mixed temperament horse
@@ -118,10 +119,9 @@ describe('Horse Temperament Analysis', () => {
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
             bondScore: 22,
-            epigeneticFlags: ['curious', 'social', 'reactive'],
           },
         }),
-      // Developing temperament horse (no flags yet)
+      // Developing temperament horse (no interactions)
       () =>
         prisma.horse.create({
           data: {
@@ -131,7 +131,6 @@ describe('Horse Temperament Analysis', () => {
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
             bondScore: 18,
-            epigeneticFlags: [],
           },
         }),
     ]);
@@ -201,8 +200,12 @@ describe('Horse Temperament Analysis', () => {
       expect(temperament.socialTendency).toBeDefined();
       expect(temperament.adaptability).toBeDefined();
 
-      // Should identify nervous/reactive temperament
-      expect(['nervous', 'reactive', 'sensitive'].includes(temperament.primaryTemperament)).toBe(true);
+      // Old contract: two interactions (< 5) and fearful/reactive/insecure flags took
+      // the flag path and read 'nervous'. The flag store is gone (owner ruling
+      // 2026-10-29, q300, Equoria-efs4j): with fewer than 5 interactions a horse uses
+      // basic stats, as every real (flagless) horse always did; bond 12 / 40 = 0.3.
+      expect(temperament.dataSource).toBe('basic_stats');
+      expect(temperament.primaryTemperament).toBe('developing');
       expect(temperament.confidenceLevel).toBeLessThan(0.5);
     });
 
@@ -242,9 +245,13 @@ describe('Horse Temperament Analysis', () => {
       const temperament = await analyzeHorseTemperament(confidentHorse.id);
 
       expect(temperament.primaryTemperament).toBeDefined();
-      expect(['confident', 'bold', 'outgoing'].includes(temperament.primaryTemperament)).toBe(true);
+      // Old contract: brave/confident/social flags took the flag path ('confident',
+      // social 0.8). Without the flag store (Equoria-efs4j) two interactions (< 5)
+      // mean basic stats: bond 35 / 40 = 0.875, social and adaptability neutral 0.5.
+      expect(temperament.dataSource).toBe('basic_stats');
+      expect(temperament.primaryTemperament).toBe('developing');
       expect(temperament.confidenceLevel).toBeGreaterThan(0.6);
-      expect(temperament.socialTendency).toBeGreaterThan(0.5);
+      expect(temperament.socialTendency).toBe(0.5);
     });
 
     test('should analyze temperament for horse with no interaction history', async () => {
@@ -254,54 +261,8 @@ describe('Horse Temperament Analysis', () => {
 
       expect(temperament).toBeDefined();
       expect(temperament.primaryTemperament).toBe('developing');
-      expect(temperament.dataSource).toBe('basic_stats'); // No flags, so uses basic stats
+      expect(temperament.dataSource).toBe('basic_stats'); // No interactions, so uses basic stats
       expect(temperament.reliabilityScore).toBeLessThan(0.7); // Lower reliability without interaction data
-    });
-  });
-
-  describe('classifyTemperamentFromFlags', () => {
-    test('should classify temperament from positive flags', async () => {
-      const flags = ['brave', 'confident', 'social'];
-
-      const classification = await classifyTemperamentFromFlags(flags);
-
-      expect(classification).toBeDefined();
-      expect(classification.primaryTemperament).toBeDefined();
-      expect(classification.temperamentTraits).toBeDefined();
-      expect(Array.isArray(classification.temperamentTraits)).toBe(true);
-      expect(classification.confidence).toBeGreaterThan(0.7);
-
-      // Should identify confident/outgoing temperament
-      expect(['confident', 'bold', 'outgoing'].includes(classification.primaryTemperament)).toBe(true);
-    });
-
-    test('should classify temperament from negative flags', async () => {
-      const flags = ['fearful', 'insecure', 'reactive'];
-
-      const classification = await classifyTemperamentFromFlags(flags);
-
-      expect(classification.primaryTemperament).toBeDefined();
-      expect(['nervous', 'reactive', 'sensitive'].includes(classification.primaryTemperament)).toBe(true);
-      expect(classification.confidence).toBeGreaterThan(0.6); // High confidence in clear negative pattern
-    });
-
-    test('should handle mixed flags appropriately', async () => {
-      const flags = ['brave', 'reactive', 'social'];
-
-      const classification = await classifyTemperamentFromFlags(flags);
-
-      expect(classification.primaryTemperament).toBeDefined();
-      expect(['complex', 'mixed', 'variable'].includes(classification.primaryTemperament)).toBe(true);
-      expect(classification.confidence).toBeLessThan(0.8); // Lower confidence for mixed signals
-    });
-
-    test('should handle empty flags array', async () => {
-      const flags = [];
-
-      const classification = await classifyTemperamentFromFlags(flags);
-
-      expect(classification.primaryTemperament).toBe('undetermined');
-      expect(classification.confidence).toBeLessThan(0.3);
     });
   });
 

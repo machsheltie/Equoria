@@ -87,7 +87,6 @@ describe('care patterns never write traits (Equoria-koxep)', () => {
         age: 0,
         userId: user.id,
         bondScore: 0,
-        epigeneticFlags: [],
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
       horseIds,
@@ -103,7 +102,6 @@ describe('care patterns never write traits (Equoria-koxep)', () => {
     await cronJobService.evaluateFoalTraits(loaded);
 
     const after = await prisma.horse.findUnique({ where: { id: foal.id } });
-    expect(after.epigeneticFlags).toEqual([]);
     expect(after.epigeneticModifiers.positive).toEqual([]);
     expect(after.epigeneticModifiers.negative).toEqual([]);
     expect(after.epigeneticModifiers.hidden).toEqual([]);

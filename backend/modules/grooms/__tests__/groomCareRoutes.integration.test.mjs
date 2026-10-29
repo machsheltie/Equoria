@@ -251,12 +251,13 @@ describe('groom horse: a grown horse', () => {
   // Equoria-tvmyx: the old flag-multiplier path turned a base gain of 5 into 6.5
   // (Affectionate) or 3.5 (Aloof), which an Int column rejects. Grooming now adds
   // the ruled +5 and no trait or flag changes it, so the write is always an integer.
-  it('an Affectionate horse (and a stale Aloof flag) still gains exactly +5, a whole number', async () => {
+  // (The stale Aloof flag this horse also carried went with the epigeneticFlags
+  // store: owner ruling 2026-10-29, q300, Equoria-efs4j.)
+  it('an Affectionate horse still gains exactly +5, a whole number', async () => {
     const horse = await makeHorse(alice, 'flags', { bondScore: 20 });
     await prisma.horse.update({
       where: { id: horse.id },
       data: {
-        epigeneticFlags: ['affectionate', 'aloof'],
         epigeneticModifiers: { positive: ['affectionate'], negative: [], hidden: [] },
       },
     });

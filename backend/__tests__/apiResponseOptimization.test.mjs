@@ -80,7 +80,6 @@ describe('API Response Optimization System', () => {
           dateOfBirth: gameCalendarDate(new Date(), -(3 + (i % 10)) * 365),
           healthStatus: 'Good',
           temperament: 'confident',
-          epigeneticFlags: ['BRAVE', 'INTELLIGENT'],
           disciplineScores: {
             Racing: 50 + (i % 50),
             Dressage: 40 + (i % 60),

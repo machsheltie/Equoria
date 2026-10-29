@@ -87,12 +87,13 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
     // Dressage saddle + Dressage bridle +10 -> 98. Luck +6, rider experienced
     // (+3) and methodical in Dressage (+2) = +5, Calm in Dressage +5, Excellent
     // health +5 -> +21%. 98 x 1.21 = 118.58 -> 119. Its revealed Dressage
-    // trait and positive flags add nothing.
+    // trait adds nothing. (It also carried two positive flags, which added
+    // nothing, until the flag store was dropped: owner ruling 2026-10-29, q300,
+    // Equoria-efs4j. The expected scores are unchanged.)
     const a = await makeCompetitor({
       stats: { precision: 80, focus: 70, obedience: 60 },
       traits: {
         epigeneticModifiers: { positive: ['disciplineAffinityDressage'], negative: [], hidden: [] },
-        epigeneticFlags: ['brave', 'confident'],
       },
       training: { Dressage: 15 },
       tack: { saddle: 'dressage-saddle', bridle: 'double-bridle' },

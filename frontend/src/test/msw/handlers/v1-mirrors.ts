@@ -239,15 +239,12 @@ export const v1MirrorHandlers = [
   }),
 
   // Advanced Horse Analysis (mirrors /api/horses/:id/{environmental-analysis,
-  // trait-interactions, developmental-timeline, forecast})
+  // developmental-timeline, forecast})
   http.get(`${base}/api/v1/horses/:id/environmental-analysis`, () =>
     HttpResponse.json({
       success: true,
       data: { factors: [], summary: 'Normal environment' },
     })
-  ),
-  http.get(`${base}/api/v1/horses/:id/trait-interactions`, () =>
-    HttpResponse.json({ success: true, data: { interactions: [] } })
   ),
   http.get(`${base}/api/v1/horses/:id/developmental-timeline`, () =>
     HttpResponse.json({ success: true, data: { milestones: [] } })
@@ -256,24 +253,9 @@ export const v1MirrorHandlers = [
     HttpResponse.json({ success: true, data: { forecasts: [] } })
   ),
 
-  // Behavioral epigenetic flags (Equoria-yzqhj.8) — GeneticsTab renders the
-  // BehavioralFlagsPanel which fetches these. Safe honest defaults: no flags
-  // yet, care-patterns ineligible. Per-test overrides supply richer shapes.
-  http.get(`${base}/api/v1/flags/horses/:id/flags`, ({ params }) =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        horseId: Number(params.id),
-        horseName: 'TestFixture-Horse',
-        ageInYears: 4,
-        currentBondScore: 50,
-        flagCount: 0,
-        flags: [],
-        maxFlags: 5,
-        canReceiveMoreFlags: false,
-      },
-    })
-  ),
+  // Flag care patterns and definitions. GET /flags/horses/:id/flags and
+  // /horses/:id/trait-interactions showed the old epigeneticFlags store and were
+  // removed with it (owner ruling 2026-10-29, q300, Equoria-efs4j).
   http.get(`${base}/api/v1/flags/horses/:id/care-patterns`, () =>
     HttpResponse.json({ success: true, data: { eligible: false, patterns: {} } })
   ),

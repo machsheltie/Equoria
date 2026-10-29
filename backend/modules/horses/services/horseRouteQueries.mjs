@@ -24,7 +24,7 @@ import { findKeysetPage } from '../../../utils/paginationHelper.mjs';
  * Equoria-55bo.5). Exported so the route handler can pass the cached
  * callback through `getCachedQuery()` without inlining the shape.
  *
- * Field selection EXCLUDES large JSONB (colorGenotype / epigeneticFlags)
+ * Field selection EXCLUDES large JSONB (colorGenotype)
  * but INCLUDES phenotype (~500 bytes/row) because HorseCard.tsx reads
  * `phenotype.colorName` to render the coat-color chip.
  */

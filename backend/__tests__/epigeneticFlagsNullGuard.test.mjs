@@ -20,8 +20,9 @@
 import { describe, it, expect } from '@jest/globals';
 import { asFlagArray } from '../utils/jsonbArrayGuard.mjs';
 // enhancedReportingService and its null-guard cases went with the trait
-// reports (owner ruling 2026-10-28, q152; Equoria-a7f1p).
-import { classifyTemperamentFromFlags } from '../modules/horses/services/horseTemperamentAnalysis.mjs';
+// reports (owner ruling 2026-10-28, q152; Equoria-a7f1p). The temperament
+// classifier's cases went with the epigeneticFlags store (owner ruling
+// 2026-10-29, q300, Equoria-efs4j): no code reads that column any more.
 
 describe('asFlagArray — JSONB four-part guard', () => {
   it('returns [] for null, undefined, primitives, and non-array objects', () => {
@@ -35,17 +36,5 @@ describe('asFlagArray — JSONB four-part guard', () => {
   it('returns the array unchanged when it is a real array', () => {
     const arr = ['fearful', 'confident'];
     expect(asFlagArray(arr)).toBe(arr);
-  });
-});
-
-describe('horseTemperamentAnalysis — does not crash on null/non-array flags (Equoria-wiudw)', () => {
-  it('classifyTemperamentFromFlags tolerates null', async () => {
-    const result = await classifyTemperamentFromFlags(null);
-    expect(result.primaryTemperament).toBe('undetermined');
-  });
-
-  it('classifyTemperamentFromFlags tolerates a non-array object', async () => {
-    const result = await classifyTemperamentFromFlags({ not: 'array' });
-    expect(result.primaryTemperament).toBe('undetermined');
   });
 });

@@ -1,7 +1,7 @@
 /**
  * The environmental report reads one snapshot (Equoria-q4uem.7 S4).
  *
- * Mechanism (no Prisma mock, no spy), as in traitInteractionSnapshotReads: the
+ * Mechanism (no Prisma mock, no spy): the
  * shared client module adopts a `globalThis.__prisma` handle installed before it
  * loads, pointed at a REAL PrismaClient with Prisma's query-event logging, so
  * every SQL statement the analysis sends is observed against the real test DB.
