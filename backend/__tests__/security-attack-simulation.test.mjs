@@ -57,7 +57,6 @@ import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { createMockToken } from '../__tests__/factories/index.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
-
 import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
 import { testHorseData } from './helpers/createTestHorse.mjs';
