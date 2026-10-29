@@ -1271,25 +1271,27 @@ jobs:
     steps:
       - name: All gates passed
         run: |
-          echo "## 🚀 Equoria Deployment Gate" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Gate | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| Doctrine Gate | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Lint | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| DB Migration | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend Tests (3 shards) | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Coverage ≥ 70% | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security Gate | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Beta Readiness Gate | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| E2E Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Production Build | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "_Advisory (non-blocking): Performance tests_" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 🚀 Equoria Deployment Gate"
+            echo ""
+            echo "| Gate | Status |"
+            echo "|---|---|"
+            echo "| Doctrine Gate | ✅ Passed |"
+            echo "| Lint | ✅ Passed |"
+            echo "| DB Migration | ✅ Passed |"
+            echo "| Backend Tests (3 shards) | ✅ Passed |"
+            echo "| Coverage ≥ 70% | ✅ Passed |"
+            echo "| Security Gate | ✅ Passed |"
+            echo "| Beta Readiness Gate | ✅ Passed |"
+            echo "| Frontend Tests | ✅ Passed |"
+            echo "| E2E Tests | ✅ Passed |"
+            echo "| Production Build | ✅ Passed |"
+            echo ""
+            echo "**Commit:** ${{ github.sha }}"
+            echo "**Branch:** ${{ github.ref_name }}"
+            echo ""
+            echo "_Advisory (non-blocking): Performance tests_"
+          } >> "$GITHUB_STEP_SUMMARY"
           echo "🚀 Ready for Railway deployment"
 
   # ──────────────────────────────────────────────────────────────────────────────

@@ -45,32 +45,30 @@
 # ─────────────────────────────────────────────────────────────────────────
 # WHAT THIS CHECK DOES NOT COVER (stated, not hidden)
 # ─────────────────────────────────────────────────────────────────────────
-# actionlint can shell out to `shellcheck` and `pyflakes` to lint the bodies
-# of `run:` steps. Both integrations are DISABLED here, pending triage:
+# SHELL INSIDE `run:` BLOCKS — shellcheck (Equoria-wwjwc)
+# ─────────────────────────────────────────────────────────────────────────
+# actionlint shells out to `shellcheck` to lint every `run:` body. The 69
+# findings that once kept this disabled were triaged and fixed in the
+# workflows (Equoria-wwjwc). The SC1083 hits were never `${{ }}`
+# (actionlint replaces expressions with underscores before shellcheck sees
+# them); they were git's `@{N}` reflog syntax, now quoted. The only
+# suppressions are three line-scoped `# shellcheck disable=SC2034`
+# directives in session-close-validation.yml, each with its reason. No
+# actionlint `-ignore`, no config-file ignore, no blanket disable.
 #
-#   1. Determinism. Whether they run depends on whether those two unrelated
-#      binaries happen to be installed. ubuntu-latest ships shellcheck;
-#      Windows Git Bash does not. A gate whose verdict depends on the host's
-#      incidental tooling is not a gate.
-#   2. SC1083 is a structural false positive against GitHub Actions: every
-#      `${{ ... }}` expression in a `run:` block reads to shellcheck as a
-#      literal brace. There is no per-expression fix.
+# Where shellcheck comes from differs by host, and the check says so:
+#   - CI (GITHUB_ACTIONS=true or CI=true): shellcheck is REQUIRED. The
+#     ubuntu-latest runner image ships it; if it is ever missing the check
+#     FAILS rather than linting less. This is where the class is gated.
+#   - A developer machine without shellcheck (Windows Git Bash has none):
+#     the shell lint is SKIPPED WITH A NOTICE on stderr, and every other
+#     actionlint check still runs. Installing shellcheck locally makes the
+#     local run match CI; it is optional, never installed by this check.
 #
-# Measured with shellcheck 0.11.0 on the tree at the time of writing: 69
-# findings — 50x SC2086 (unquoted expansion), 7x SC2129 (redirect grouping),
-# 6x SC1083 (the `${{ }}` false positive), 3x SC2034 (unused variable),
-# and one each of SC2059, SC2046, SC2044.
-#
-# Do NOT read that list as "all cosmetic". SC2086, SC2046 and SC2044 are
-# correctness-capable — unquoted expansion and word-splitting over `find`
-# output are real bug classes, and 52 of the 69 findings fall in them. What
-# can honestly be said is narrower: none of them is the class Equoria-axyem
-# was about (a step referencing a deleted file), and NONE OF THEM HAS BEEN
-# TRIAGED. Enabling the integration means pinning shellcheck as a second
-# required tool on every developer machine and CI job, triaging all 69, and
-# finding a way to suppress the SC1083 class. That is its own bead, not this
-# check's scope. Until that bead is done, shell-script correctness inside
-# `run:` bodies is an OPEN, UNTRIAGED GAP of this check.
+# pyflakes lints only `shell: python` steps. The workflows have none, so
+# the integration has nothing to check. It is used when pyflakes is on
+# PATH; when it is not, this check FAILS if any workflow declares
+# `shell: python`, so a Python step can never land unlinted by accident.
 #
 # actionlint's own workflow/expression/action checks all run at full
 # strength. There is no allowlist, no baseline file, and no `-ignore` regex.
@@ -224,10 +222,56 @@ if [ "$too_old" -eq 1 ]; then
   exit 1
 fi
 
+# ── shellcheck integration (see header) ─────────────────────────────────
+in_ci=0
+if [ "${GITHUB_ACTIONS:-}" = 'true' ] || [ "${CI:-}" = 'true' ]; then
+  in_ci=1
+fi
+
+shellcheck_flag=''
+if command -v shellcheck >/dev/null 2>&1; then
+  # By name, not by `command -v` path: a Git Bash path (/c/...) means
+  # nothing to a native Windows actionlint.exe, which resolves PATH itself.
+  # Silent on success like every other doctrine check; doctrine-gate.yml
+  # prints the CI shellcheck version in its own step.
+  shellcheck_flag='-shellcheck=shellcheck'
+elif [ "$in_ci" -eq 1 ]; then
+  echo >&2
+  echo "shellcheck is not on PATH, but this is CI (GITHUB_ACTIONS/CI=true)." >&2
+  echo "CI is where shell inside run: blocks is gated (Equoria-wwjwc), so a" >&2
+  echo "missing shellcheck fails the check instead of linting less." >&2
+  echo "ubuntu-latest ships shellcheck; if the runner image dropped it, add an" >&2
+  echo "explicit install step to .github/workflows/doctrine-gate.yml." >&2
+  exit 1
+else
+  shellcheck_flag='-shellcheck='
+  echo "NOTICE check-workflows-lint: shellcheck not on PATH; the shell lint of run:" >&2
+  echo "  blocks is skipped on this machine and enforced in CI (doctrine-gate.yml)." >&2
+  echo "  All other actionlint checks ran." >&2
+fi
+
+# ── pyflakes integration (see header) ───────────────────────────────────
+pyflakes_flag=''
+if ! command -v pyflakes >/dev/null 2>&1; then
+  pyflakes_flag='-pyflakes='
+  python_steps="$(grep -nE '^[[:space:]]*(-[[:space:]]+)?shell:[[:space:]]*["'"'"']?python' "$WORKFLOWS_DIR"/*.yml "$WORKFLOWS_DIR"/*.yaml 2>/dev/null)"
+  if [ -n "$python_steps" ]; then
+    echo >&2
+    echo "A workflow declares 'shell: python' but pyflakes is not on PATH, so" >&2
+    echo "actionlint cannot lint it. Install pyflakes where this check runs" >&2
+    echo "(including the doctrine-gate CI job) or use a non-Python step:" >&2
+    printf '  %s\n' "$python_steps" >&2
+    exit 1
+  fi
+fi
+
 # ── Lint ────────────────────────────────────────────────────────────────
-# -shellcheck= / -pyflakes= disable the external integrations (see header).
 # -oneline keeps failures greppable; -no-color keeps CI logs readable.
-output="$("$BIN" -no-color -oneline -shellcheck= -pyflakes= 2>&1)"
+lint_args=(-no-color -oneline "$shellcheck_flag")
+if [ -n "$pyflakes_flag" ]; then
+  lint_args+=("$pyflakes_flag")
+fi
+output="$("$BIN" "${lint_args[@]}" 2>&1)"
 rc=$?
 
 if [ $rc -eq 0 ]; then

@@ -92,5 +92,14 @@ jobs:
           "$dir/actionlint" --version
           echo "$dir" >> "$GITHUB_PATH"
 
+      # Equoria-wwjwc: check-workflows-lint.sh runs actionlint's shellcheck
+      # integration over every run: block, and in CI it FAILS if shellcheck
+      # is missing (on a laptop without it, it skips with a notice). The
+      # ubuntu-latest image ships shellcheck; this step records the version
+      # that gated the run and fails early, with a clear name, if the image
+      # ever drops it.
+      - name: Verify shellcheck (actionlint run-block lint)
+        run: shellcheck --version
+
       - name: Run doctrine-checks suite
         run: bash scripts/doctrine-checks/run-all.sh

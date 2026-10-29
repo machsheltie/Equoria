@@ -46,7 +46,7 @@ jobs:
           VIOLATION_COUNT=0
 
           # Check for .yaml/.yml files that look like status files
-          for STATUS_FILE in $(find . -name "*sprint*status*" -o -name "*status*.yaml" -o -name "*status*.yml" 2>/dev/null); do
+          while IFS= read -r STATUS_FILE; do
             if grep -q "status.*done\|status.*completed" "$STATUS_FILE" 2>/dev/null; then
               # Check recent commits for changes to this file
               CHANGED_IN_LAST_COMMITS=$(git log --oneline -n 50 --name-only -- "$STATUS_FILE" 2>/dev/null | grep -c "$STATUS_FILE" || true)
@@ -61,7 +61,7 @@ jobs:
                 fi
               fi
             fi
-          done
+          done < <(find . -name "*sprint*status*" -o -name "*status*.yaml" -o -name "*status*.yml" 2>/dev/null)
 
           # Check commit messages for agent-level closure claims
           RECENT_COMMITS=$(git log -n 10 --format="%B" 2>/dev/null)
@@ -72,7 +72,7 @@ jobs:
             ((VIOLATION_COUNT++))
           fi
 
-          if [ $VIOLATION_COUNT -gt 0 ]; then
+          if [ "$VIOLATION_COUNT" -gt 0 ]; then
             echo "VIOLATIONS=$VIOLATIONS" >> "$GITHUB_OUTPUT"
             echo "VIOLATION_COUNT=$VIOLATION_COUNT" >> "$GITHUB_OUTPUT"
             echo "FOUND_VIOLATIONS=true" >> "$GITHUB_OUTPUT"

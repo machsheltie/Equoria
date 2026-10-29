@@ -278,25 +278,31 @@ contains an executable. The version string is parsed as the first `X.Y.Z` in
 `actionlint --version`, and anything unparseable (`(devel)`, empty) is
 **rejected**, never assumed current.
 
-#### Known gap: shell inside `run:` blocks
+#### Shell inside `run:` blocks (shellcheck)
 
-The check disables actionlint's optional `shellcheck` and `pyflakes`
-integrations (`-shellcheck= -pyflakes=`). Stated, not hidden:
+The check runs actionlint's `shellcheck` integration over every `run:` body
+(Equoria-wwjwc). The 69 findings that once kept it disabled were triaged and
+fixed in the workflows: unquoted `$GITHUB_OUTPUT`/`$GITHUB_STEP_SUMMARY`
+targets quoted (and consecutive appends grouped), `for ... in $(find ...)`
+replaced by a `while read` loop, `kill $(cat ...)` quoted, a variable
+`printf` format replaced by `printf '%b\n'`. The SC1083 hits were never
+`${{ }}` (actionlint substitutes expressions before shellcheck sees them);
+they were git's `@{N}` reflog syntax, now quoted. The only suppressions are
+three line-scoped `# shellcheck disable=SC2034` directives in
+`session-close-validation.yml`, each with its reason.
 
-- **Determinism.** `ubuntu-latest` ships shellcheck; Windows Git Bash does not.
-  A gate whose verdict depends on the host's incidental tooling is not a gate.
-- **`SC1083` is a structural false positive** against Actions syntax: every
-  `${{ ... }}` inside a `run:` block reads to shellcheck as a literal brace.
+Hosts differ, and the check says so rather than hiding it:
 
-Measured with shellcheck 0.11.0: **69 findings** — 50x SC2086, 7x SC2129, 6x
-SC1083, 3x SC2034, and one each of SC2059, SC2046, SC2044. Do not read that as
-"all cosmetic": SC2086, SC2046 and SC2044 are correctness-capable (unquoted
-expansion, word-splitting over `find` output), and 52 of the 69 fall in those
-codes. The honest statement is narrower — none is the class Equoria-axyem was
-about, and **none has been triaged**. Enabling the integration means pinning
-shellcheck as a second required tool everywhere, triaging all 69, and
-suppressing the SC1083 class; that is its own bead. Until then, shell
-correctness inside `run:` bodies is an **open, untriaged gap**.
+- **CI** (`GITHUB_ACTIONS=true` or `CI=true`): shellcheck is required. The
+  `ubuntu-latest` image ships it, `doctrine-gate.yml` prints its version, and
+  the check fails if it is missing. This is where the class is gated.
+- **A laptop without shellcheck** (Windows Git Bash has none): the shell lint
+  is skipped with a `NOTICE` on stderr; every other actionlint check runs.
+  Installing shellcheck locally is optional and makes the local run match CI.
+
+`pyflakes` lints only `shell: python` steps, and there are none. It is used
+when on PATH; otherwise the check fails if any workflow declares
+`shell: python`, so a Python step cannot land unlinted.
 
 actionlint's own workflow, expression, and action checks run at full strength,
 with no allowlist, baseline, or `-ignore` regex. A missing or empty

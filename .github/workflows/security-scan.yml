@@ -68,7 +68,7 @@ jobs:
         # silenced real failures. The downstream "Comment on PR" step (if:
         # failure()) fires correctly when this step exits non-zero.
         run: |
-          echo "## Backend Dependency Scan" >> $GITHUB_STEP_SUMMARY
+          echo "## Backend Dependency Scan" >> "$GITHUB_STEP_SUMMARY"
           npm audit --json > audit-backend.json || true
 
           # Parse audit results
@@ -77,17 +77,21 @@ jobs:
           MODERATE=$(jq '.metadata.vulnerabilities.moderate // 0' audit-backend.json)
           LOW=$(jq '.metadata.vulnerabilities.low // 0' audit-backend.json)
 
-          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
-          echo "high=$HIGH" >> $GITHUB_OUTPUT
-          echo "moderate=$MODERATE" >> $GITHUB_OUTPUT
-          echo "low=$LOW" >> $GITHUB_OUTPUT
+          {
+            echo "critical=$CRITICAL"
+            echo "high=$HIGH"
+            echo "moderate=$MODERATE"
+            echo "low=$LOW"
+          } >> "$GITHUB_OUTPUT"
 
-          echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🟡 Moderate | $MODERATE |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🟢 Low | $LOW |" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "| Severity | Count |"
+            echo "|----------|-------|"
+            echo "| 🔴 Critical | $CRITICAL |"
+            echo "| 🟠 High | $HIGH |"
+            echo "| 🟡 Moderate | $MODERATE |"
+            echo "| 🟢 Low | $LOW |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
           # Equoria-3csks: the gate is the expiry-tracked allowlist script, the
           # same one the Quality Gate Security Gate job runs, so an advisory
@@ -104,9 +108,9 @@ jobs:
             echo '```'
             echo "$GATE_OUTPUT"
             echo '```'
-          } >> $GITHUB_STEP_SUMMARY
+          } >> "$GITHUB_STEP_SUMMARY"
           if [ "$GATE_EXIT" -ne 0 ]; then
-            echo "⚠️ Unallowlisted critical or high severity vulnerabilities detected!" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ Unallowlisted critical or high severity vulnerabilities detected!" >> "$GITHUB_STEP_SUMMARY"
             exit "$GATE_EXIT"
           fi
 
@@ -120,7 +124,7 @@ jobs:
         # Equoria-4zvy: continue-on-error removed. Mirrors backend audit step:
         # the script's `exit 1` for critical/high vulnerabilities IS the gate.
         run: |
-          echo "## Frontend Dependency Scan" >> $GITHUB_STEP_SUMMARY
+          echo "## Frontend Dependency Scan" >> "$GITHUB_STEP_SUMMARY"
           npm audit --json > audit-frontend.json || true
 
           # Parse audit results
@@ -129,17 +133,21 @@ jobs:
           MODERATE=$(jq '.metadata.vulnerabilities.moderate // 0' audit-frontend.json)
           LOW=$(jq '.metadata.vulnerabilities.low // 0' audit-frontend.json)
 
-          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
-          echo "high=$HIGH" >> $GITHUB_OUTPUT
-          echo "moderate=$MODERATE" >> $GITHUB_OUTPUT
-          echo "low=$LOW" >> $GITHUB_OUTPUT
+          {
+            echo "critical=$CRITICAL"
+            echo "high=$HIGH"
+            echo "moderate=$MODERATE"
+            echo "low=$LOW"
+          } >> "$GITHUB_OUTPUT"
 
-          echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🟡 Moderate | $MODERATE |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🟢 Low | $LOW |" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "| Severity | Count |"
+            echo "|----------|-------|"
+            echo "| 🔴 Critical | $CRITICAL |"
+            echo "| 🟠 High | $HIGH |"
+            echo "| 🟡 Moderate | $MODERATE |"
+            echo "| 🟢 Low | $LOW |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
           # Equoria-3csks: the gate is the expiry-tracked allowlist script, the
           # same one the Quality Gate Security Gate job runs, so an advisory
@@ -156,9 +164,9 @@ jobs:
             echo '```'
             echo "$GATE_OUTPUT"
             echo '```'
-          } >> $GITHUB_STEP_SUMMARY
+          } >> "$GITHUB_STEP_SUMMARY"
           if [ "$GATE_EXIT" -ne 0 ]; then
-            echo "⚠️ Unallowlisted critical or high severity vulnerabilities detected!" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ Unallowlisted critical or high severity vulnerabilities detected!" >> "$GITHUB_STEP_SUMMARY"
             exit "$GATE_EXIT"
           fi
 
@@ -395,13 +403,15 @@ jobs:
             MEDIUM=$(jq '[.site[].alerts[] | select(.riskcode == "2")] | length' report_json.json)
             LOW=$(jq '[.site[].alerts[] | select(.riskcode == "1")] | length' report_json.json)
 
-            echo "### ZAP Security Scan Results" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| High | $HIGH |" >> $GITHUB_STEP_SUMMARY
-            echo "| Medium | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
-            echo "| Low | $LOW |" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "### ZAP Security Scan Results"
+              echo ""
+              echo "| Severity | Count |"
+              echo "|----------|-------|"
+              echo "| High | $HIGH |"
+              echo "| Medium | $MEDIUM |"
+              echo "| Low | $LOW |"
+            } >> "$GITHUB_STEP_SUMMARY"
 
             # Fail if high severity findings
             if [ "$HIGH" -gt 0 ]; then
@@ -524,7 +534,7 @@ jobs:
         working-directory: backend
         run: |
           if [ -f server.pid ]; then
-            kill $(cat server.pid) || true
+            kill "$(cat server.pid)" || true
             rm server.pid
           fi
 

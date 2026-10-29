@@ -68,7 +68,7 @@ jobs:
           if [ -n "$DIVERGED_BRANCHES" ]; then
             echo "❌ FAILED: Found branches that diverge from origin/master (Principle 1 violation)"
             echo "These branches must be merged or deleted:"
-            printf "$DIVERGED_BRANCHES\n"
+            printf '%b\n' "$DIVERGED_BRANCHES"
             exit 1
           fi
           echo "✓ No branches diverge from origin/master"
@@ -78,15 +78,24 @@ jobs:
           echo "Verifying all commits in this push are directly on master..."
 
           # Get the commits in this push
-          if git rev-parse origin/master@{1} &> /dev/null; then
+          if git rev-parse "origin/master@{1}" &> /dev/null; then
             # Previous fetch exists, compare with it
-            PUSHED_COMMITS=$(git rev-list origin/master@{0}..origin/master@{1} 2>/dev/null || echo "")
+            # Equoria-wwjwc: PUSHED_COMMITS is unused today (SC2034, true positive);
+            # kept so the lint triage changes no behaviour.
+            # shellcheck disable=SC2034
+            PUSHED_COMMITS=$(git rev-list "origin/master@{0}..origin/master@{1}" 2>/dev/null || echo "")
           else
             # First push to master, assume previous state was correct
+            # Equoria-wwjwc: unused, see above.
+            # shellcheck disable=SC2034
             PUSHED_COMMITS=""
           fi
 
           # Get all commits reachable from master
+          # Equoria-wwjwc: the value is unused (SC2034, true positive), but under
+          # bash -e this assignment fails the step when local master is missing;
+          # deleting it would change that behaviour.
+          # shellcheck disable=SC2034
           MASTER_COMMITS=$(git rev-list master)
 
           # Verify master is up to date

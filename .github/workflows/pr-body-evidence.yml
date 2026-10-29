@@ -180,4 +180,4 @@ jobs:
           rc=$?
           set -e
           rm -f "$PR_BODY_FILE"
-          exit $rc
+          exit "$rc"
