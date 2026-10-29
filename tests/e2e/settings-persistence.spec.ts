@@ -24,6 +24,7 @@
 import { test, expect } from '@playwright/test';
 import { randomBytes } from 'crypto';
 import { skipGuidedTourAfterWizard } from './helpers/guidedTour';
+import { confirmEmailViaApi } from './helpers/emailConfirmation';
 
 const BACKEND = 'http://localhost:3001';
 const FRONTEND = 'http://localhost:3000';
@@ -58,6 +59,9 @@ test.describe('Settings preferences persistence (21S-5)', () => {
       headers: { Origin: FRONTEND },
     });
     expect(reg.status(), `Registration failed: ${await reg.text()}`).toBe(201);
+    // Equoria-voasj (owner ruling q248): confirm through the real emailed link,
+    // or every gameplay route answers 403 emailNotVerified (Equoria-3juhn).
+    await confirmEmailViaApi(request, userEmail, BACKEND);
   });
 
   test.afterAll(async ({ request }) => {

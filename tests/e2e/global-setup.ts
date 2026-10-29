@@ -1,6 +1,7 @@
 import { chromium, expect, type FullConfig } from '@playwright/test';
 import { startSessionKeepAlive } from './helpers/sessionKeepAlive';
 import { skipGuidedTourAfterWizard } from './helpers/guidedTour';
+import { confirmEmailInBrowser } from './helpers/emailConfirmation';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
@@ -81,10 +82,14 @@ async function globalSetup(config: FullConfig) {
     console.log('Clicking Submit...');
     await page.click('button[type="submit"]');
 
-    // ── 2. Wait for post-registration redirect ──────────────────────────────
-    // New users may land on / or /onboarding (OnboardingGuard redirects new users)
-    console.log('Waiting for navigation after registration...');
+    // ── 2. Confirm the email, then wait for the post-registration redirect ──
+    // Equoria-voasj (owner ruling q248): a new player is held on /verify-email
+    // and refused every gameplay route until she opens the emailed link. Open
+    // the real captured link, as the beta gate does (Equoria-3juhn).
+    // New users then land on / or /onboarding (OnboardingGuard redirects new users)
+    console.log('Confirming email, then waiting for navigation after registration...');
     try {
+      await confirmEmailInBrowser(page, email);
       await page.waitForURL(
         new RegExp(`^${baseURL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/(onboarding)?$`),
         { timeout: 30000 }

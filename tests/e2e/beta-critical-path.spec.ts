@@ -17,6 +17,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readTestCredentials } from './helpers/credentials';
 import { skipGuidedTourAfterWizard } from './helpers/guidedTour';
+import { confirmEmailInBrowser } from './helpers/emailConfirmation';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -129,7 +130,10 @@ test.describe('Path 1: New-player critical path', () => {
     await page.fill('input[name="confirmPassword"]', password);
     await page.click('button[type="submit"]');
 
-    // ── 2. OnboardingGuard redirects new user to /onboarding ─────────────
+    // ── 2. Confirm the email, then OnboardingGuard sends her to /onboarding ─
+    // Equoria-voasj (owner ruling q248): held on /verify-email until the real
+    // emailed link is opened (Equoria-3juhn).
+    await confirmEmailInBrowser(page, email);
     await page.waitForURL(/\/onboarding$/, { timeout: 30000 });
     await expect(page.locator('h1')).toContainText('Welcome to Equoria', { timeout: 15000 });
 

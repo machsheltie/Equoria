@@ -29,6 +29,9 @@
  * Everything here runs over real, player-facing routes:
  *   - `POST /api/v1/auth/register` — public router, no CSRF, sets the auth
  *     cookies and returns a bound CSRF token (authController.register).
+ *   - `GET /api/v1/auth/verify-email` with the token from the real emailed
+ *     link (captured by the backend's non-production email sink), because an
+ *     unconfirmed player is refused gameplay routes (Equoria-voasj, -3juhn).
  *   - `POST /api/v1/auth/advance-onboarding` with the starter-horse
  *     customization the wizard's final step sends, which takes the player to
  *     step 10 and sets `completedOnboarding: true` (onboardingController) so
@@ -86,6 +89,7 @@ import os from 'os';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import type { AuthedSession } from '../helpers/api';
+import { confirmEmailViaApi } from '../helpers/emailConfirmation';
 
 export type SeededPlayerSession = AuthedSession & {
   userId: string;
@@ -172,6 +176,12 @@ export async function createSeededPlayerSession(browser: Browser): Promise<Seede
   expect(typeof userId, 'register must return data.user.id').toBe('string');
   expect(typeof csrfToken, 'register must return data.csrfToken').toBe('string');
   expect(csrfToken!.length, 'register csrfToken must be non-empty').toBeGreaterThan(20);
+
+  // ── 1b. Confirm the email through the real emailed link. Equoria-voasj (owner
+  //        ruling q248): an unconfirmed player is refused every gameplay route,
+  //        so without this every call below answers 403 emailNotVerified
+  //        (Equoria-3juhn).
+  await confirmEmailViaApi(request, email);
 
   // ── 2. Resolve a real breedId. IDs are auto-incremented and do NOT start at 1.
   const breedsResponse = await request.get('/api/v1/breeds');

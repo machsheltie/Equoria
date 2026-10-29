@@ -39,6 +39,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { randomBytes } from 'crypto';
 import { skipGuidedTourAfterWizard } from './helpers/guidedTour';
+import { confirmEmailViaApi } from './helpers/emailConfirmation';
 
 const BACKEND = 'http://localhost:3001';
 const FRONTEND = 'http://localhost:3000';
@@ -73,6 +74,9 @@ async function registerPlayer(
     headers: { Origin: FRONTEND },
   });
   expect(res.status(), `Registration failed: ${await res.text()}`).toBe(201);
+  // Equoria-voasj (owner ruling q248): confirm through the real emailed link,
+  // or every gameplay route answers 403 emailNotVerified (Equoria-3juhn).
+  await confirmEmailViaApi(request, player.email, BACKEND);
   return player;
 }
 

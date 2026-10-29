@@ -13,6 +13,7 @@
 
 import { test, expect } from '@playwright/test';
 import { randomBytes } from 'crypto';
+import { confirmEmailViaApi } from './helpers/emailConfirmation';
 
 const BACKEND = 'http://localhost:3001';
 const SUITE_PREFIX = 'seslife_e2e';
@@ -39,6 +40,9 @@ test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
       headers: { Origin: 'http://localhost:3000' },
     });
     expect(reg.status(), `Registration failed: ${await reg.text()}`).toBe(201);
+    // Equoria-voasj (owner ruling q248): confirm through the real emailed link,
+    // or every gameplay route answers 403 emailNotVerified (Equoria-3juhn).
+    await confirmEmailViaApi(request, userEmail, BACKEND);
   });
 
   test.afterAll(async ({ request }) => {

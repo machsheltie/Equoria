@@ -14,6 +14,7 @@
  * storageState from the global-setup user (who already completed onboarding).
  */
 import { test, expect, type Page } from '@playwright/test';
+import { confirmEmailInBrowser } from './helpers/emailConfirmation';
 
 test.describe('Onboarding Flow', () => {
   // All tests in this group use a fresh session (no auth cookies)
@@ -36,19 +37,21 @@ test.describe('Onboarding Flow', () => {
   async function registerFreshPlayer(page: Page): Promise<void> {
     const timestamp = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
     const password = 'Password123!';
+    const email = `e2e_wizard_${timestamp}@example.com`;
 
     await page.goto('/register', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('h2')).toContainText('Join the Realm', { timeout: 15000 });
     await page.fill('input[name="firstName"]', 'Onboard');
     await page.fill('input[name="lastName"]', 'Tester');
     await page.fill('input[name="username"]', `e2e_wizard_${timestamp}`);
-    await page.fill('input[name="email"]', `e2e_wizard_${timestamp}@example.com`);
+    await page.fill('input[name="email"]', email);
     // Equoria-iqzn / Equoria-9tlha: COPPA age gate requires a valid adult DOB.
     await page.fill('input[name="dateOfBirth"]', '1990-01-01');
     await page.fill('input[name="password"]', password);
     await page.fill('input[name="confirmPassword"]', password);
     await page.click('button[type="submit"]');
-    await page.waitForURL(/\/(onboarding)?$/, { timeout: 30000 });
+    // Equoria-voasj / -3juhn: held on /verify-email until the emailed link is opened.
+    await confirmEmailInBrowser(page, email);
 
     await page.goto('/onboarding', { waitUntil: 'domcontentloaded' });
   }
@@ -89,8 +92,10 @@ test.describe('Onboarding Flow', () => {
 
     // After registration, user should land on / or /onboarding
     // (depends on whether OnboardingGuard triggers)
-    // After registration: OnboardingGuard redirects new users to /onboarding
-    await page.waitForURL(/\/(onboarding)?$/, { timeout: 30000 });
+    // After registration the new player is held on /verify-email until she
+    // opens the emailed link (Equoria-voasj, owner ruling q248); then
+    // OnboardingGuard sends her to /onboarding (Equoria-3juhn).
+    await confirmEmailInBrowser(page, email);
 
     // Verify the page loaded (not stuck on register)
     const url = page.url();

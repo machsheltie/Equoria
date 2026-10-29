@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { isCommittedTestSecret } from './backend/utils/runtimeSecretPolicy.mjs';
@@ -36,6 +37,18 @@ for (const [key, value] of Object.entries(envTest)) {
 // local run enforces e.g. the 30/min profile limit and fast runs fail on 429s
 // CI never sees. CI's own value, when set, wins.
 process.env.E2E_RATE_LIMIT_MAX ??= '100000';
+
+// Equoria-3juhn: since Equoria-voasj (owner ruling q248) an unconfirmed player
+// is refused every gameplay route, so each player this suite registers confirms
+// through the real emailed link (tests/e2e/helpers/emailConfirmation.ts). The
+// backend's non-production capture sink writes that link to this file. Set on
+// process.env so the backend web server (which inherits this env) and every test
+// worker (which re-evaluates this config) read the same path. It lives in the
+// OS temp directory, not test-results/ (this config's outputDir, which
+// Playwright empties at the start of a run). Not deleted here: workers
+// re-evaluate the config mid-run, and each player's email is unique, so rows
+// left from earlier runs are never picked up.
+process.env.EMAIL_CAPTURE_FILE ??= path.join(os.tmpdir(), 'equoria-e2e-email-outbox.jsonl');
 
 export default defineConfig({
   testDir: './tests/e2e',
