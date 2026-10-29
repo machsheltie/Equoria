@@ -81,8 +81,6 @@ describe('rider assign under concurrency (Equoria-j8s5c)', () => {
             firstName: 'TestFixture',
             lastName: `J8s5c-${label}-${tag()}`,
             personality: 'daring',
-            skillLevel: 'experienced',
-            speciality: 'Jumping',
             weeklyRate: 200,
             userId: owner.id,
           },

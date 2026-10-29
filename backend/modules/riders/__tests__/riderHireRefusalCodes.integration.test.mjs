@@ -55,8 +55,6 @@ async function seedRiders(userId, active) {
         firstName: 'Seed',
         lastName: `Rider${randomBytes(3).toString('hex')}`,
         personality: 'calm',
-        skillLevel: 'experienced',
-        speciality: 'Show Jumping',
         weeklyRate: offerRate,
       },
     });
@@ -70,10 +68,8 @@ async function seedMarketplace(userId, count) {
     firstName: 'Offer',
     lastName: `Rider${i}`,
     personality: 'calm',
-    skillLevel: 'rookie',
     // Owner ruling 2026-10-28 (q226): the hire charges the offer's star level price.
     starLevel: 'rookie',
-    speciality: 'Show Jumping',
     weeklyRate: offerRate,
     experience: 5,
     bio: 'refusal-code fixture',

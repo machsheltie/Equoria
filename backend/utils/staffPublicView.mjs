@@ -16,20 +16,22 @@
  * - A trainer's speciality is a secret until the trainer is an Expert (owner
  *   ruling 2026-10-29, q278, Equoria-45u5g): below Expert the row carries no
  *   speciality, no speciality label, and a bio with the speciality taken out.
+ * - A rider has no old skill word and no speciality (owner rulings 2026-10-29,
+ *   q282/q283): its star level is its only level, so a rider row or offer carries
+ *   neither, nor their labels, even an offer stored before the ruling.
  *
  * The words match frontend/src/lib/staffLabels.ts.
  */
 
 import { isValidDiscipline } from '../constants/schema.mjs';
 
+// Trainers' and grooms' old skill words (riders' were retired, q282).
 const skillLevelLabels = Object.freeze({
   novice: 'Novice',
   intermediate: 'Intermediate',
   expert: 'Expert',
   master: 'Master',
-  rookie: 'Rookie',
   developing: 'Developing',
-  experienced: 'Experienced',
 });
 
 const personalityLabels = Object.freeze({
@@ -94,8 +96,14 @@ export function staffSpecialityLabel(kind, speciality) {
     : 'Another Discipline';
 }
 
-/** The three labels for one row or offer. A groom offer spells it `specialty`. */
+/**
+ * The labels for one row or offer. A groom offer spells it `specialty`. A rider has
+ * only its personality label (q282/q283).
+ */
 export function staffLabels(kind, row) {
+  if (kind === 'rider') {
+    return { personalityLabel: staffPersonalityLabel(row?.personality) };
+  }
   return {
     skillLevelLabel: staffSkillLevelLabel(row?.skillLevel),
     personalityLabel: staffPersonalityLabel(row?.personality),
@@ -134,7 +142,12 @@ const sharedFields = [
 /** Per kind, every field a screen reads from a hired row or an offer. */
 const allowedFields = Object.freeze({
   groom: new Set([...sharedFields, 'sessionRate', 'weeklyFee']),
-  rider: new Set([...sharedFields, 'weeklyRate', 'totalWins', 'totalCompetitions', 'prestige']),
+  // q282/q283: no skill word and no speciality for a rider.
+  rider: new Set(
+    [...sharedFields, 'weeklyRate', 'totalWins', 'totalCompetitions', 'prestige'].filter(
+      field => !['skillLevel', 'speciality', 'specialty'].includes(field),
+    ),
+  ),
   trainer: new Set([...sharedFields, 'sessionRate']),
 });
 

@@ -30,7 +30,6 @@ const marketplace = {
       marketplaceId: 'mk-1',
       firstName: 'Ada',
       lastName: 'Vane',
-      skillLevel: 'experienced',
       personality: 'methodical',
       experience: 300,
       weeklyRate: 100,

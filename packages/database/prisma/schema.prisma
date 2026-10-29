@@ -1553,15 +1553,14 @@ model Rider {
   lastName     String
   /// Personality type (daring | methodical | intuitive | competitive)
   personality  String
-  /// Skill level (rookie | developing | experienced)
-  skillLevel   String
   /// Star level (owner ruling 2026-10-28, Equoria-nawn5): rookie | novice | intermediate |
-  /// advanced | expert (1-5 stars). Drawn once when the game generates the rider; the
-  /// price comes from it (backend/constants/staffLevels.mjs). The allowed words are a CHECK
-  /// constraint in migration 20261028120000_staff_star_levels.
+  /// advanced | expert (1-5 stars). Every rider starts a Rookie and climbs by shows
+  /// (staff growth); the price comes from it (backend/constants/staffLevels.mjs). The
+  /// allowed words are a CHECK constraint in migration 20261028120000_staff_star_levels.
+  /// It is a rider's only level: the old skill word and the visible speciality were
+  /// dropped (owner rulings 2026-10-29, q282/q283; migration
+  /// 20261030210000_riders_retire_skill_level_and_speciality).
   starLevel    String            @default("rookie")
-  /// Preferred discipline specialty
-  speciality   String
   /// Weekly rate in game currency: always the star level's price (owner ruling
   /// 2026-10-28, q226; migration 20261028180000_staff_level_is_stars).
   weeklyRate   Int               @default(200)

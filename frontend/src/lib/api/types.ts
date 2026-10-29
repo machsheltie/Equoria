@@ -462,9 +462,9 @@ export interface Rider {
   name: string;
   firstName: string;
   lastName: string;
-  skillLevel: string; // rookie | developing | experienced
   /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw.
-   *  Owner ruling 2026-10-28 (q229): the only level a rider has. */
+   *  Owner rulings 2026-10-28 (q229) and 2026-10-29 (q282): the only level a rider has;
+   *  a rider has no skill word and no visible speciality (q283). */
   starLevel: string;
   personality: string; // daring | methodical | intuitive | competitive
   experience: number; // total XP
@@ -499,7 +499,6 @@ export interface MarketplaceRider {
   marketplaceId: string;
   firstName: string;
   lastName: string;
-  skillLevel: string;
   /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw. */
   starLevel?: string;
   personality: string;

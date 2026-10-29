@@ -14,7 +14,7 @@
  * Failing-test-first per .claude/rules/EDGE_CASE_FIX_DISCIPLINE.md §1:
  *   Before the fix, the rider-assigned horse scores no better than the
  *   unassigned horse — luck dominates entirely. After the fix, the elite
- *   rider's ~9% bonus shifts win frequency materially above 50%.
+ *   rider's ~6% bonus shifts win frequency materially above 50%.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -106,14 +106,13 @@ beforeAll(async () => {
     data: await testHorseData(prisma, { ...horseStats, name: `TestFixture-${TAG}-NoRider` }),
   });
 
-  // Create an elite rider: experienced + max prestige + matching discipline
+  // Create an elite rider: max prestige + matching discipline (the old skill word is
+  // retired, owner ruling 2026-10-29, q282)
   elitRider = await prisma.rider.create({
     data: {
       firstName: 'TestFixture',
       lastName: `${TAG}-EliteRider`,
       personality: 'methodical', // Dressage affinity = high (+2%)
-      skillLevel: 'experienced', // +3%
-      speciality: 'Dressage',
       prestige: 100, // +4%
       userId: user.id,
     },
@@ -147,15 +146,15 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
    * Model of each independent head-to-head run (both horses base = 70; B5,
    * owner rulings C1/C2):
    *   noRider score = round(70 * (1 + L1/100)),       L1 uniform on 1..10
-   *   rider  score  = round(70 * (1 + (L2 + 9)/100)), L2 uniform on 1..10
-   * The elite rider's modifier is experienced(+3%) + prestige100(+4%) +
-   * methodical/Dressage-high(+2%) = 9%. (It used to add a level-10 +3.6% and hit the
+   *   rider  score  = round(70 * (1 + (L2 + 6)/100)), L2 uniform on 1..10
+   * The elite rider's modifier is prestige100(+4%) + methodical/Dressage-high(+2%) = 6%.
+   * (Owner ruling 2026-10-29, q282, retired the old skill word, whose 'experienced'
+   * +3% made it 9%; with 9% the rider won 99 of the 100 pairs.) (It used to add a level-10 +3.6% and hit the
    * 10% cap; Owner rulings 2026-10-28: q229 dropped the old 1-10 level column, and q244
    * says stars give no bonus for now, so every rider/trainer is at the old level 1
    * (staffCareerLevel) and the level term adds nothing.) Exact enumeration of the 100
-   * (L1, L2) pairs: the lowest rider
-   * score, 70 x 1.10 = 77, only ties the highest no-rider 77, so
-   * P(rider strictly wins) = 99/100 and riderWins averages 297.
+   * (L1, L2) pairs gives P(rider strictly wins) = 89/100, so riderWins averages 267
+   * (sd ≈ 5.4): the threshold below is ≈ 12σ under it.
    *
    * Under the null hypothesis of NO edge (broken modifier, rider term 0),
    * exact enumeration gives P(strict win) = 0.42 (ties are common with
@@ -172,7 +171,7 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
    */
   it('elite rider wins a statistically-bounded majority of head-to-head runs vs no-rider horse', async () => {
     const RUNS = 300;
-    // Binomial bound: the healthy model wins ~297 of 300 (p = 0.99, B5); the no-edge
+    // Binomial bound: the healthy model wins ~267 of 300 (p = 0.89, q282); the no-edge
     // null averages 126, ≈ 8.5σ below this threshold.
     // Far below the rider's expected wins, far above the no-edge null (150).
     const MIN_RIDER_WINS = 199;
@@ -286,8 +285,8 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
     const avgRider = totalRiderScore / RUNS;
     const avgNoRider = totalNoRiderScore / RUNS;
 
-    // Primary statistical assertion: the healthy model (p = 1 since B5) always
-    // clears it, and it sits ≈ 8.5 null-σ above the no-edge center (p = 0.42),
+    // Primary statistical assertion: the healthy model (p = 0.89, ≈ 12σ above the
+    // threshold) clears it, and it sits ≈ 8.5 null-σ above the no-edge center (p = 0.42),
     // so a broken modifier fails.
     expect(riderWins).toBeGreaterThanOrEqual(MIN_RIDER_WINS);
 

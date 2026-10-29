@@ -84,8 +84,6 @@ async function makeRider(key) {
       firstName: `${scope}-rider-${key}`,
       lastName: run,
       personality: 'calm',
-      skillLevel: 'rookie',
-      speciality: 'Dressage',
       userId: user.id,
     },
   });

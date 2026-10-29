@@ -90,8 +90,6 @@ async function staffHorse(key, horse) {
       firstName: `${SCOPE}-rider-${key}`,
       lastName: RUN,
       personality: 'calm',
-      skillLevel: 'rookie',
-      speciality: 'Dressage',
       userId: user.id,
     },
   });

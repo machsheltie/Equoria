@@ -112,7 +112,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
       const [rider] = res.body.data.riders;
       expect(rider).toHaveProperty('marketplaceId');
       expect(rider).toHaveProperty('firstName');
-      expect(rider).toHaveProperty('skillLevel');
+      // q282: the star level is a rider's only level (old contract: skillLevel).
+      expect(rider).toHaveProperty('starLevel');
+      expect(rider).not.toHaveProperty('skillLevel');
       expect(rider).toHaveProperty('weeklyRate');
     });
 
@@ -296,7 +298,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
       if (res.body.data.length > 0) {
         const rider = res.body.data[0];
         expect(rider).toHaveProperty('name');
-        expect(rider).toHaveProperty('skillLevel');
+        // q282: the star level is a rider's only level (old contract: skillLevel).
+        expect(rider).toHaveProperty('starLevel');
+        expect(rider).not.toHaveProperty('skillLevel');
         expect(rider).toHaveProperty('weeklyRate');
       }
     });

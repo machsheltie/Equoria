@@ -40,6 +40,9 @@ describe('the five levels', () => {
   });
 });
 
+// Riders draw no old skill tier any more (owner ruling 2026-10-29, q282): every new
+// rider is a Rookie (riderMarketplace). Old contract: riders drew rookie/developing/
+// experienced here too.
 describe('drawing a new staff member', () => {
   // A deterministic sequence: the first value picks the tier, the second the level in it.
   const seq = values => {
@@ -48,11 +51,6 @@ describe('drawing a new staff member', () => {
   };
 
   it.each([
-    ['rider', [0.0, 0.0], 'rookie', 'rookie'],
-    ['rider', [0.0, 0.9], 'rookie', 'novice'],
-    ['rider', [0.5, 0.0], 'developing', 'intermediate'],
-    ['rider', [0.5, 0.9], 'developing', 'advanced'],
-    ['rider', [0.9, 0.5], 'experienced', 'expert'],
     ['trainer', [0.0, 0.9], 'novice', 'novice'],
     ['trainer', [0.9, 0.0], 'expert', 'expert'],
     ['groom', [0.0, 0.0], 'novice', 'rookie'],
@@ -63,8 +61,10 @@ describe('drawing a new staff member', () => {
     expect(drawStaffLevel(type, seq(rolls))).toEqual({ skillLevel, starLevel });
   });
 
-  it("keeps each type's old skill odds", () => {
-    expect(staffSkillOdds('rider')).toEqual({ rookie: 45, developing: 40, experienced: 15 });
+  // Owner ruling 2026-10-29 (q282) retired the riders' old skill word (old contract:
+  // riders drew rookie / developing / experienced at 45/40/15).
+  it('keeps the trainer and groom old skill odds; riders have none', () => {
+    expect(() => staffSkillOdds('rider')).toThrow('Unknown staff type');
     expect(staffSkillOdds('trainer')).toEqual({ novice: 45, developing: 40, expert: 15 });
     expect(staffSkillOdds('groom')).toEqual({ novice: 40, intermediate: 35, expert: 20, master: 5 });
   });
@@ -72,11 +72,9 @@ describe('drawing a new staff member', () => {
 
 describe('placing staff from before star levels', () => {
   it.each([
-    ['rider', 'rookie', 150, 'rookie'],
-    ['rider', 'rookie', 225, 'novice'],
-    ['rider', 'developing', 399, 'intermediate'],
-    ['rider', 'developing', 400, 'advanced'],
-    ['rider', 'experienced', 800, 'expert'],
+    // q282: a rider has no old skill word; one stored without a star level is a Rookie.
+    ['rider', 'rookie', 225, 'rookie'],
+    ['rider', 'experienced', 800, 'rookie'],
     ['trainer', 'novice', 149, 'rookie'],
     ['trainer', 'novice', 150, 'novice'],
     ['trainer', 'developing', 274, 'intermediate'],
@@ -99,9 +97,10 @@ describe('placing staff from before star levels', () => {
       starLevel: 'advanced',
       fee: 400,
     });
-    expect(offerLevelAndFee('rider', { skillLevel: 'rookie', weeklyRate: 250 }, 250)).toEqual({
-      starLevel: 'novice',
-      fee: 200,
+    // q282: an old rider offer with only its retired skill word is a Rookie.
+    expect(offerLevelAndFee('rider', { skillLevel: 'experienced', weeklyRate: 650 }, 650)).toEqual({
+      starLevel: 'rookie',
+      fee: 100,
     });
     expect(offerLevelAndFee('groom', { skillLevel: 'expert', experience: 9 }, 9)).toEqual({
       starLevel: 'advanced',

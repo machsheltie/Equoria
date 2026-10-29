@@ -89,8 +89,6 @@ async function createRider(userId, overrides = {}) {
       firstName: overrides.firstName ?? 'Maria',
       lastName: overrides.lastName ?? 'Garcia',
       personality: 'methodical',
-      skillLevel: 'experienced',
-      speciality: 'Dressage',
       starLevel: overrides.starLevel ?? 'rookie',
       retired: overrides.retired ?? false,
       user: { connect: { id: userId } },

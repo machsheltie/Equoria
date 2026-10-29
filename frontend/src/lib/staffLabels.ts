@@ -18,10 +18,9 @@ const skillLevelLabels: Readonly<Record<string, string>> = Object.freeze({
   intermediate: 'Intermediate',
   expert: 'Expert',
   master: 'Master',
-  // Rider: rookie, developing, experienced. Trainer: novice, developing, expert.
-  rookie: 'Rookie',
+  // Trainer: novice, developing, expert. (Riders have no skill word: owner ruling
+  // 2026-10-29, q282, the star level is a rider's only level.)
   developing: 'Developing',
-  experienced: 'Experienced',
 });
 
 const personalityLabels: Readonly<Record<string, string>> = Object.freeze({

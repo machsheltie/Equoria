@@ -211,25 +211,12 @@ describe('RIDER_MARKETPLACE_CONFIG', () => {
     expect(RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBe(6);
   });
 
-  it('SKILL_DISTRIBUTION sums to 100', () => {
-    const sum = Object.values(RIDER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION).reduce((a, b) => a + b, 0);
-    expect(sum).toBe(100);
-  });
-
-  // Owner ruling 2026-10-21: specialties are an even pick across every competition
-  // discipline. Old contract: a 6-discipline percentage spread summing to 100.
-  it('SPECIALTIES lists every competition discipline once', () => {
-    expect(RIDER_MARKETPLACE_CONFIG.SPECIALTIES).toHaveLength(24);
-    expect(new Set(RIDER_MARKETPLACE_CONFIG.SPECIALTIES).size).toBe(24);
-    expect(RIDER_MARKETPLACE_CONFIG.SPECIALTIES).toContain('Pleasure Driving');
-  });
-
-  // OLD CONTRACT: a random rate inside a per-skill range. OWNER RULING 2026-10-28
-  // (Equoria-nawn5): the price is the star level's (Rookie 100 ... Expert 500).
-  it('has a skill distribution for all skill levels', () => {
-    for (const level of ['rookie', 'developing', 'experienced']) {
-      expect(RIDER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION[level]).toBeDefined();
-    }
+  // Owner rulings 2026-10-29 (q282/q283) retired the riders' old skill word and
+  // visible speciality. Old contract: SKILL_DISTRIBUTION (rookie/developing/
+  // experienced) summing to 100 and SPECIALTIES listing every discipline.
+  it('has no skill-word odds and no speciality list', () => {
+    expect(RIDER_MARKETPLACE_CONFIG).not.toHaveProperty('SKILL_DISTRIBUTION');
+    expect(RIDER_MARKETPLACE_CONFIG).not.toHaveProperty('SPECIALTIES');
   });
 });
 
@@ -241,9 +228,9 @@ describe('generateRandomRider', () => {
     const r = generateRandomRider();
     expect(typeof r.firstName).toBe('string');
     expect(typeof r.lastName).toBe('string');
-    expect(typeof r.skillLevel).toBe('string');
+    expect(r).not.toHaveProperty('skillLevel');
     expect(typeof r.personality).toBe('string');
-    expect(typeof r.speciality).toBe('string');
+    expect(r).not.toHaveProperty('speciality');
     expect(typeof r.weeklyRate).toBe('number');
     expect(typeof r.experience).toBe('number');
     expect(typeof r.bio).toBe('string');
@@ -254,13 +241,6 @@ describe('generateRandomRider', () => {
   it('marketplaceId starts with mkt_rider_', () => {
     const r = generateRandomRider();
     expect(r.marketplaceId.startsWith('mkt_rider_')).toBe(true);
-  });
-
-  it('skillLevel is one of known levels', () => {
-    const valid = new Set(['rookie', 'developing', 'experienced']);
-    for (let i = 0; i < 20; i++) {
-      expect(valid.has(generateRandomRider().skillLevel)).toBe(true);
-    }
   });
 
   // OLD CONTRACT: a random rate inside a per-skill range. OWNER RULING 2026-10-28

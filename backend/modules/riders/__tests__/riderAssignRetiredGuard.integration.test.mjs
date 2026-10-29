@@ -62,8 +62,6 @@ async function seedRider(userId, { retired }) {
       firstName: 'Seed',
       lastName: `Rider${randomBytes(3).toString('hex')}`,
       personality: 'calm',
-      skillLevel: 'experienced',
-      speciality: 'Show Jumping',
       weeklyRate: 100,
       retired,
     },

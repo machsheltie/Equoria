@@ -58,8 +58,6 @@ export async function giveEligibleRider(
       firstName: 'TestFixture',
       lastName: `Rider-${horseId}`,
       personality: 'gentle',
-      skillLevel: 'developing',
-      speciality: 'Dressage',
       userId,
       ...rider,
     },

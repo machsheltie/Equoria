@@ -89,8 +89,6 @@ beforeAll(async () => {
       firstName: 'Sentinel',
       lastName: 'Rider',
       personality: 'calm',
-      skillLevel: 'experienced',
-      speciality: 'Show Jumping',
       weeklyRate: HIRING_COST,
       starLevel: offerStarLevel,
       experience: 5,

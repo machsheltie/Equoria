@@ -118,8 +118,6 @@ describe('staff reads send authored words, never hidden fields', () => {
         firstName: 'Rae',
         lastName: `${fixturePrefix}-${suffix}`,
         personality: 'daring',
-        skillLevel: 'experienced',
-        speciality: 'Show Jumping',
         startAge: 22,
         userId: user.id,
       },
@@ -217,12 +215,16 @@ describe('staff reads send authored words, never hidden fields', () => {
     expect(res.statusCode).toBe(200);
     const row = res.body.data.find(r => r.id === rider.id);
     expect(row).not.toHaveProperty('startAge');
+    // Owner rulings 2026-10-29 (q282/q283): a rider has no old skill word and no
+    // speciality, so only its personality label is sent. Old contract: skillLevelLabel
+    // 'Experienced' and specialityLabel 'Show Jumping' beside row.skillLevel.
     expect(labelsOf(row)).toEqual({
-      skillLevelLabel: 'Experienced',
+      skillLevelLabel: undefined,
       personalityLabel: 'Daring',
-      specialityLabel: 'Show Jumping',
+      specialityLabel: undefined,
     });
-    expect(row.skillLevel).toBe('experienced');
+    expect(row).not.toHaveProperty('skillLevel');
+    expect(row).not.toHaveProperty('speciality');
   });
 
   it('a groom roster row carries labels', async () => {
@@ -247,7 +249,9 @@ describe('staff reads send authored words, never hidden fields', () => {
       'rider',
       getRiderMarketplace,
       'riders',
-      { skillLevelLabel: 'Rookie', personalityLabel: 'Methodical', specialityLabel: 'Dressage' },
+      // q282/q283: an offer stored with the retired skill word and a speciality sends
+      // neither (old contract: 'Rookie' and 'Dressage' labels).
+      { skillLevelLabel: undefined, personalityLabel: 'Methodical', specialityLabel: undefined },
     ],
     [
       'trainer',

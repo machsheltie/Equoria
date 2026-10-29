@@ -77,8 +77,6 @@ describe('rider retirement ends the assignment on the horse (Equoria-r9u5k)', ()
         firstName: 'TestFixture',
         lastName: `R9u5k-${tag()}`,
         personality: 'daring',
-        skillLevel: 'experienced',
-        speciality: 'Jumping',
         weeklyRate: 200,
         userId: owner.id,
       },

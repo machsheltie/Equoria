@@ -34,7 +34,7 @@ const RIDERS_PATH = `${base}/api/v1/riders/user/:userId`;
 const ASSIGNMENTS_PATH = `${base}/api/v1/riders/assignments`;
 
 // One hired rider, used by the success + retry-recovery paths so a rider card
-// renders. skillLevel 'experienced' is a real SKILL_LEVEL_VISIBILITY key;
+// renders (it has no old skill word: owner ruling 2026-10-29, q282);
 // personality 'methodical' is a real rider personality.
 const oneRider = [
   {
@@ -42,7 +42,6 @@ const oneRider = [
     name: 'Ada Vane',
     firstName: 'Ada',
     lastName: 'Vane',
-    skillLevel: 'experienced',
     personality: 'methodical',
     experience: 300,
     starLevel: 'novice',

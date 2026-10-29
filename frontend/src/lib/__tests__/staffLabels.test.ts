@@ -6,17 +6,10 @@
 import { describe, it, expect } from 'vitest';
 import { groomSpecialtyTitle, personalityLabel, skillLevelLabel } from '../staffLabels';
 
-// Mirrors of the backend value sets (groom constants, riderMarketplace,
-// trainerMarketplace). The frontend does not import backend modules.
-const skillLevels = [
-  'novice',
-  'intermediate',
-  'expert',
-  'master',
-  'rookie',
-  'developing',
-  'experienced',
-];
+// Mirrors of the backend value sets (groom constants, trainerMarketplace). The
+// frontend does not import backend modules. Riders' rookie / developing /
+// experienced words were retired (owner ruling 2026-10-29, q282).
+const skillLevels = ['novice', 'intermediate', 'expert', 'master', 'developing'];
 const personalities = [
   'gentle',
   'energetic',

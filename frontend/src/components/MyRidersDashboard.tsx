@@ -48,12 +48,6 @@ interface MyRidersDashboardProps {
   onBrowseMarketplace?: () => void;
 }
 
-const SKILL_LEVEL_VISIBILITY: Record<string, string> = {
-  rookie: 'Unknown potential',
-  developing: 'Partial reveal',
-  experienced: 'Full reveal',
-};
-
 const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
   userId,
   ridersData,
@@ -263,13 +257,11 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
                     <h3 className="text-lg font-bold text-role-primary group-hover:text-[var(--gold-primary)] transition-colors">
                       {rider.firstName} {rider.lastName}
                     </h3>
+                    {/* Owner ruling 2026-10-29 (q282): the star level is the only level
+                        (the old skill word's "Unknown potential" line is gone). */}
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className="text-xs text-role-muted">
                         <StaffLevelStars level={rider.starLevel} />
-                      </span>
-                      <span className="text-role-disabled text-xs">·</span>
-                      <span className="text-xs text-role-muted">
-                        {SKILL_LEVEL_VISIBILITY[rider.skillLevel]}
                       </span>
                     </div>
                   </div>

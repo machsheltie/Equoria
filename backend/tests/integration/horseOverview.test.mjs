@@ -191,9 +191,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
           firstName: 'Jenna',
           lastName: `TestFixture-97se-${randomBytes(4).toString('hex')}`,
           personality: 'daring',
-          skillLevel: 'experienced',
           starLevel: 'advanced',
-          speciality: 'Dressage',
           weeklyRate: 400,
           userId: testUser.id,
         },
@@ -270,8 +268,9 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
         // Owner ruling 2026-10-28 (q229) changed this contract: the rider's old 1-10
         // level gave way to the star level.
         starLevel: 'advanced',
-        speciality: 'Dressage',
       });
+      // Owner ruling 2026-10-29 (q283): no visible rider speciality (old contract:
+      // speciality: 'Dressage').
 
       // Verify tack info
       expect(data.tack).toEqual({

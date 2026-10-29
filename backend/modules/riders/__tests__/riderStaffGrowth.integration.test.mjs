@@ -85,9 +85,7 @@ async function hireRookie(user, token) {
           firstName: 'TestFixture',
           lastName: `xlw03-${tag()}`,
           personality: 'methodical',
-          skillLevel: 'developing',
           starLevel: 'rookie',
-          speciality: 'Dressage',
           weeklyRate: 100,
           experience: 0,
           bio: 'hire fixture',
@@ -395,12 +393,13 @@ describe('rider growth (Equoria-xlw03)', () => {
     expect(listed.starLevel).toBe('intermediate');
     expect(listed.weeklyRate).toBe(300);
     expect(shownLabels(listed.growth)).toEqual(shownLabels(ownerView));
-    // The listing's public speciality is the fixture's own 'Dressage', not a growth
-    // reveal; it is pinned here and left out of the hidden-label scan, which otherwise
-    // failed whenever a hidden discipline happened to be Dressage too (CI run 40800576959).
-    const { speciality, ...listedWithoutSpeciality } = listed;
-    expect(speciality).toBe('Dressage');
-    const listBody = JSON.stringify(listedWithoutSpeciality);
+    // Owner ruling 2026-10-29 (q283): a rider has no visible speciality, so the whole
+    // listing is scanned. (The flake in CI run 40800576959 was the old public speciality,
+    // the fixture's 'Dressage', matching a hidden discipline item.)
+    expect(listed).not.toHaveProperty('speciality');
+    expect(listed).not.toHaveProperty('specialityLabel');
+    expect(listed).not.toHaveProperty('skillLevel');
+    const listBody = JSON.stringify(listed);
     for (const label of await labelsOf(before.items.filter(i => !i.revealed))) {
       expect(listBody).not.toContain(`"${label}"`);
     }
@@ -436,9 +435,7 @@ describe('rider growth (Equoria-xlw03)', () => {
         firstName: 'TestFixture',
         lastName: `xlw03-legacy-${tag()}`,
         personality: 'daring',
-        skillLevel: 'developing',
         starLevel: 'advanced',
-        speciality: 'Racing',
       },
     });
     riderIds.push(legacy.id);

@@ -89,8 +89,6 @@ beforeAll(async () => {
     firstName: 'Race',
     lastName: `Rider${i}`,
     personality: 'calm',
-    skillLevel: 'experienced',
-    speciality: 'Show Jumping',
     weeklyRate: 100,
     experience: 5,
     bio: 'race fixture',

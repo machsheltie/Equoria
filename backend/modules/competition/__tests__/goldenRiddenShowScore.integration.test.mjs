@@ -84,12 +84,11 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
     const { creator, showId } = await fixtures.createFundedShow({ prize: PRIZE, entryFee });
 
     // A: base 0.5*80 + 0.3*70 + 0.2*60 = 73; three weeks of Dressage +15;
-    // Dressage saddle + Dressage bridle +10 -> 98. Luck +6, rider experienced
-    // (+3) and methodical in Dressage (+2) = +5, Calm in Dressage +5, Excellent
-    // health +5 -> +21%. 98 x 1.21 = 118.58 -> 119. Its revealed Dressage
-    // trait adds nothing. (It also carried two positive flags, which added
-    // nothing, until the flag store was dropped: owner ruling 2026-10-29, q300,
-    // Equoria-efs4j. The expected scores are unchanged.)
+    // Dressage saddle + Dressage bridle +10 -> 98. Luck +6, rider methodical in
+    // Dressage +2, Calm in Dressage +5, Excellent health +5 -> +18%.
+    // 98 x 1.18 = 115.64 -> 116. Its revealed Dressage trait and positive flags add
+    // nothing. (Owner ruling 2026-10-29, q282, retired the riders' old skill word: an
+    // 'experienced' rider used to add +3, for 119 here, and a 'rookie' cost B 1.)
     const a = await makeCompetitor({
       stats: { precision: 80, focus: 70, obedience: 60 },
       traits: {
@@ -99,12 +98,12 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
       tack: { saddle: 'dressage-saddle', bridle: 'double-bridle' },
       temperament: 'Calm',
       health: 'Excellent',
-      rider: { skillLevel: 'experienced', personality: 'methodical' },
+      rider: { personality: 'methodical' },
     });
     // B: base 70; trained only in Racing, so 0 here; All Purpose saddle +
-    // bridle +4 -> 74. Luck +6, rider rookie (penalty 1) with no Dressage
-    // affinity = -1, Nervous in Dressage -5, Fair health -3 -> -3%.
-    // 74 x 0.97 = 71.78 -> 72. Its hidden trait adds nothing.
+    // bridle +4 -> 74. Luck +6, rider with no Dressage affinity 0, Nervous in
+    // Dressage -5, Fair health -3 -> -2%. 74 x 0.98 = 72.52 -> 73. Its hidden trait
+    // adds nothing.
     const b = await makeCompetitor({
       stats: { precision: 70, focus: 70, obedience: 70 },
       traits: {
@@ -114,11 +113,11 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
       tack: { saddle: 'all-purpose-saddle', bridle: 'all-purpose-bridle' },
       temperament: 'Nervous',
       health: 'Fair',
-      rider: { skillLevel: 'rookie', personality: 'daring' },
+      rider: { personality: 'daring' },
     });
     // C: base 76; one week of Dressage +5; Jump saddle (not Dressage) 0 +
     // Snaffle bridle (Dressage, Show Jumping) +5 -> 86. Luck +6, rider
-    // developing with no Dressage affinity 0, Steady in Dressage +5, Good
+    // with no Dressage affinity 0, Steady in Dressage +5, Good
     // health 0 -> +11%. 86 x 1.11 = 95.46 -> 95.
     const c = await makeCompetitor({
       stats: { precision: 76, focus: 76, obedience: 76 },
@@ -127,7 +126,7 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
       tack: { saddle: 'jumping-saddle', bridle: 'snaffle-bridle' },
       temperament: 'Steady',
       health: 'Good',
-      rider: { skillLevel: 'developing', personality: 'intuitive' },
+      rider: { personality: 'intuitive' },
     });
 
     const entrants = [a, b, c];
@@ -156,9 +155,9 @@ describe('golden ridden show score: every live factor, settled by the nightly ex
         horsePointsAwarded: row.horsePointsAwarded,
       };
     };
-    expect(resultOf(a)).toEqual({ score: 119, placement: 1, prizeWon: 500, horsePointsAwarded: 10 });
+    expect(resultOf(a)).toEqual({ score: 116, placement: 1, prizeWon: 500, horsePointsAwarded: 10 });
     expect(resultOf(c)).toEqual({ score: 95, placement: 2, prizeWon: 300, horsePointsAwarded: 5 });
-    expect(resultOf(b)).toEqual({ score: 72, placement: 3, prizeWon: 200, horsePointsAwarded: 3 });
+    expect(resultOf(b)).toEqual({ score: 73, placement: 3, prizeWon: 200, horsePointsAwarded: 3 });
 
     const horses = await prisma.horse.findMany({
       where: { id: { in: entrants.map(e => e.horse.id) } },

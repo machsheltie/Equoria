@@ -101,8 +101,6 @@ async function makeSingleOfferMarketplace(userId) {
       firstName: 'Cas',
       lastName: 'Rider',
       personality: 'focused',
-      skillLevel: 'experienced',
-      speciality: 'dressage',
       weeklyRate: WEEKLY_RATE,
       starLevel: offerStarLevel,
       experience: 5,

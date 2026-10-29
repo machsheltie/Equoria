@@ -15,10 +15,12 @@
  * drawn once, when the game generates it, and never changes.
  *
  * The stored value is `starLevel` on riders, trainers and grooms (migration
- * 20261028120000_staff_star_levels). The older per-type `skillLevel` words stay as they
- * are: they still feed each type's existing modifiers, which the ruling did not change.
- * New staff draw their old tier with the old odds and then a star level inside it
- * (`drawStaffLevel`), so the two never disagree.
+ * 20261028120000_staff_star_levels). Trainers and grooms keep their older `skillLevel`
+ * words: they still feed those types' existing modifiers. New trainers and grooms draw
+ * their old tier with the old odds and then a star level inside it (`drawStaffLevel`),
+ * so the two never disagree. Riders have no old skill word any more (owner ruling
+ * 2026-10-29, q282, migration 20261030210000_riders_retire_skill_level_and_speciality):
+ * the star level is a rider's only level, and a rider stored without one is a Rookie.
  *
  * This file is pure data and arithmetic: no database, no module imports.
  */
@@ -111,16 +113,11 @@ export function staffLevelAtLeast(level, minLevel) {
  * lower level, at or above it the higher. Kept in step with the backfill in migration
  * 20261028120000_staff_star_levels.
  *
- * Riders   (old odds 45/40/15, weekly rates 150-300 / 300-500 / 500-800)
+ * (Riders' old words were retired, q282: `legacyStaffLevel('rider', ...)` is a Rookie.)
  * Trainers (old odds 45/40/15, session rates 100-200 / 200-350 / 350-600)
  * Grooms   (old odds 40/35/20/5; novice grooms split by years of experience, 1-3)
  */
 const legacyTiers = Object.freeze({
-  rider: Object.freeze({
-    rookie: Object.freeze({ odds: 45, levels: ['rookie', 'novice'], splitAt: 225 }),
-    developing: Object.freeze({ odds: 40, levels: ['intermediate', 'advanced'], splitAt: 400 }),
-    experienced: Object.freeze({ odds: 15, levels: ['expert'] }),
-  }),
   trainer: Object.freeze({
     novice: Object.freeze({ odds: 45, levels: ['rookie', 'novice'], splitAt: 150 }),
     developing: Object.freeze({ odds: 40, levels: ['intermediate', 'advanced'], splitAt: 275 }),
@@ -209,6 +206,10 @@ export function drawStaffLevel(staffType, random = Math.random) {
  * @returns {string}
  */
 export function legacyStaffLevel(staffType, skillLevel, measure) {
+  if (staffType === 'rider') {
+    // q282: riders have no old skill word to place them by.
+    return 'rookie';
+  }
   const tiers = tiersFor(staffType);
   const tier =
     typeof skillLevel === 'string' && Object.hasOwn(tiers, skillLevel) ? tiers[skillLevel] : null;

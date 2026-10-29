@@ -9,7 +9,7 @@
  * its rider's percentages either.
  *
  * Four horses with identical stats, health (Good, 0%), temperament (Bold,
- * Dressage-neutral) and rider (experienced + methodical in Dressage: +5%), in
+ * Dressage-neutral) and rider (prestige 75 +3% + methodical in Dressage +2%: +5%), in
  * one Dressage show: no traits; a revealed Dressage affinity trait; a spread
  * of revealed, negative and hidden traits; and the horse that carried four
  * positive flags. Every one scores the same: base 200 x (1 + (6 luck + 5
@@ -111,7 +111,9 @@ describe('traits contribute nothing to a ridden show score (owner ruling 2026-10
         {
           horseId: horse.id,
           userId: owner.id,
-          rider: { skillLevel: 'experienced', personality: 'methodical' },
+          // Owner ruling 2026-10-29 (q282) retired the old skill word ('experienced'
+          // gave the +3% this prestige now gives), keeping the rider at +5%.
+          rider: { prestige: 75, personality: 'methodical' },
         },
         riderCleanup,
       );

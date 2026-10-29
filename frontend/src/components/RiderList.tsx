@@ -4,7 +4,6 @@
  * Rider hiring marketplace interface providing:
  * - Marketplace rider listing with filtering and sorting
  * - One-click rider hiring, fee on the button (owner ruling 2026-10-28, q230)
- * - Skill level transparency system (rookie=hidden, developing=partial, experienced=full)
  * - Marketplace refresh mechanics
  * - Riders back for hire (released or unpaid riders, owner rulings 2026-10-28 q153/q177)
  *   in the same list as the new riders, filtered and sorted with them, with no separate
@@ -69,14 +68,6 @@ interface RiderListProps {
   onRiderHired?: (_rider: MarketplaceRider) => void;
   marketplaceData?: RiderMarketplaceData;
 }
-
-// How much of a rider's ability the card reveals still follows the rider's
-// skill tier. The level the player sees is the star level (Equoria-nawn5).
-const statsVisibility: Record<string, string> = {
-  rookie: 'Stats hidden — unknown potential',
-  developing: 'Some stats revealed',
-  experienced: 'All stats visible',
-};
 
 const RiderList: React.FC<RiderListProps> = ({
   onRiderHired: _onRiderHired,
@@ -231,10 +222,11 @@ const RiderList: React.FC<RiderListProps> = ({
         </Surface>
       )}
 
-      {/* Skill Level Transparency Note */}
+      {/* Owner rulings 2026-10-28/29 (q160, q282, q283): every new rider is a Rookie whose
+          strengths and weaknesses, disciplines included, show only as it grows. */}
       <div className="px-4 py-3 rounded-[var(--radius-md)] bg-[var(--role-info-bg)] border border-[var(--role-info-border)] text-xs text-[var(--role-info-text)]">
-        <strong>Level = Information, not quality.</strong> Rookies are cheap but their abilities are
-        hidden — they could be exceptional. Experienced riders reveal all stats, good or bad.
+        Every new rider starts as a Rookie. What they are good at, disciplines included, shows
+        itself as they ride in shows and climb the levels.
       </div>
 
       {/* Filters */}
@@ -378,12 +370,6 @@ const RiderList: React.FC<RiderListProps> = ({
                       <span className="font-semibold inline-flex items-center gap-1">
                         <Currency amount={rider.weeklyRate} />
                         /wk
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[var(--text-muted)]">Stats:</span>
-                      <span className="text-[10px] text-[var(--text-muted)] italic">
-                        {statsVisibility[rider.skillLevel] ?? statsVisibility.rookie}
                       </span>
                     </div>
                   </div>

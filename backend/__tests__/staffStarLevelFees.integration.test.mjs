@@ -225,9 +225,7 @@ describe("a rider's weekly payday charges the level price", () => {
         firstName: prefix,
         lastName: `Rider-${tag()}`,
         personality: 'calm',
-        skillLevel: 'developing',
         starLevel: 'intermediate',
-        speciality: 'Show Jumping',
         weeklyRate: staffLevelFee('intermediate'),
       },
     });
@@ -247,9 +245,7 @@ describe("a rider's weekly payday charges the level price", () => {
         firstName: prefix,
         lastName: `Rider-${tag()}`,
         personality: 'calm',
-        skillLevel: 'rookie',
         starLevel: 'novice',
-        speciality: 'Dressage',
         weeklyRate: 250,
       },
     });

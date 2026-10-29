@@ -54,9 +54,7 @@ const poolRiderSelect = Object.freeze({
   firstName: true,
   lastName: true,
   personality: true,
-  skillLevel: true,
   starLevel: true,
-  speciality: true,
   bio: true,
   freeAgentSince: true,
 });

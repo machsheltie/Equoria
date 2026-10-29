@@ -38,10 +38,12 @@ const flat = v => ({
 // give no bonus for now, so every rider/trainer is at the old level 1 (staffCareerLevel)
 // and the level term adds nothing.
 // These fixtures used to reach 9% and the 10% cap through that level term.
-// computeRiderModifiers: experienced +3%, prestige 100 +4%, methodical/Dressage +2% = +9%.
-const RIDER_9 = { skillLevel: 'experienced', prestige: 100, personality: 'methodical' };
-// experienced +3% bonus, retired -8% penalty = -5%.
-const RIDER_RETIRED = { skillLevel: 'experienced', prestige: 0, personality: 'gentle', retired: true };
+// Owner ruling 2026-10-29 (q282) retired the riders' old skill word, so these fixtures
+// lost its 'experienced' +3% (RIDER_9 was +9%, RIDER_RETIRED -5%).
+// computeRiderModifiers: prestige 100 +4%, methodical/Dressage +2% = +6%.
+const RIDER_6 = { prestige: 100, personality: 'methodical' };
+// retired -8% penalty, no bonus = -8%.
+const RIDER_RETIRED = { prestige: 0, personality: 'gentle', retired: true };
 
 // Owner ruling 2026-10-23 (decision C, Equoria-k1p62): health is a percent term in
 // every score. Good health (fed today, Good vet finding) is 0%, so this test still
@@ -103,15 +105,15 @@ describe('luck is +1..+10% in whole percents (C1)', () => {
 
 describe('modifiers are summed and applied once (C2)', () => {
   it('the rider percent is added to luck, not multiplied after it', () => {
-    // 100 x (1 + 0.01 + 0.09) = 110. (Old: (100 - 9) x 1.09 = 99.19 -> 99.)
-    expect(score(100, { rng: () => 0, rider: RIDER_9 })).toBe(110);
-    // 100 x (1 + 0.10 + 0.09) = 119; applying the two separately would give 100 x 1.1 x 1.09 = 119.9 -> 120.
-    expect(score(100, { rng: () => 0.999999, rider: RIDER_9 })).toBe(119);
+    // 100 x (1 + 0.01 + 0.06) = 107. (Old: (100 - 6) x 1.06 = 99.64 -> 100.)
+    expect(score(100, { rng: () => 0, rider: RIDER_6 })).toBe(107);
+    // 100 x (1 + 0.10 + 0.06) = 116; applying the two separately would give 100 x 1.1 x 1.06 = 116.6 -> 117.
+    expect(score(100, { rng: () => 0.999999, rider: RIDER_6 })).toBe(116);
   });
 
   it('a rider penalty is a negative term in the same sum', () => {
-    // 100 x (1 + 0.01 + 0.03 - 0.08) = 96
-    expect(score(100, { rng: () => 0, rider: RIDER_RETIRED })).toBe(96);
+    // 100 x (1 + 0.01 - 0.08) = 93
+    expect(score(100, { rng: () => 0, rider: RIDER_RETIRED })).toBe(93);
   });
 
   it('the final score rounds x.5 up and x.4 down, once, at the end', () => {

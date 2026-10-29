@@ -63,8 +63,6 @@ describe('Equoria-r1nr: rider/trainer progression service', () => {
         firstName: `TestFixture-${id}-First`,
         lastName: 'Rider',
         personality: 'competitive',
-        skillLevel: 'rookie',
-        speciality: 'Show Jumping',
         weeklyRate: 200,
         userId: user.id,
       },

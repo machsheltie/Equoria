@@ -82,26 +82,17 @@ describe('computeRiderModifiers (Equoria-5bkh)', () => {
     });
   });
 
-  it('rookie skillLevel applies small penalty, no other bonuses', () => {
-    const rider = { personality: 'methodical', skillLevel: 'rookie', prestige: 0 };
-    const result = computeRiderModifiers({ rider, discipline: 'Dressage' });
-    // skillLevel: rookie => +0.01 penalty. discipline match Dressage/methodical => +0.02 bonus
-    expect(result.penaltyPercent).toBeCloseTo(0.01);
-    expect(result.bonusPercent).toBeCloseTo(0.02);
-  });
-
-  it('developing skillLevel is neutral (no bonus, no penalty)', () => {
-    const rider = { personality: 'methodical', skillLevel: 'developing', prestige: 0 };
-    const result = computeRiderModifiers({ rider, discipline: 'Endurance' });
-    // No discipline match for methodical+Endurance, no level/prestige
-    expect(result).toEqual({ bonusPercent: 0, penaltyPercent: 0 });
-  });
-
-  it('experienced rider contributes +3% bonus', () => {
-    const rider = { personality: 'methodical', skillLevel: 'experienced', prestige: 0 };
-    const result = computeRiderModifiers({ rider, discipline: 'Endurance' });
-    expect(result.bonusPercent).toBeCloseTo(0.03);
-    expect(result.penaltyPercent).toBe(0);
+  // Owner ruling 2026-10-29 (q282) retired the riders' old skill word; the star level is
+  // the only level and gives no bonus for now (q244). Old contract: rookie -1% penalty,
+  // developing neutral, experienced +3% bonus.
+  it('no skill-word term: a stray old rookie / developing / experienced word adds nothing', () => {
+    for (const skillLevel of ['rookie', 'developing', 'experienced']) {
+      const rider = { personality: 'methodical', skillLevel, prestige: 0 };
+      expect(computeRiderModifiers({ rider, discipline: 'Endurance' })).toEqual({
+        bonusPercent: 0,
+        penaltyPercent: 0,
+      });
+    }
   });
 
   // Owner rulings 2026-10-28: q229 dropped the old 1-10 level column, and q244 says stars
@@ -110,7 +101,7 @@ describe('computeRiderModifiers (Equoria-5bkh)', () => {
   // This case used to assert that level 10 gave +3.6%; the rulings changed it.
   it('no level term: an Expert, or a stray old level 10, adds nothing', () => {
     for (const extra of [{ starLevel: 'expert' }, { level: 10 }]) {
-      const rider = { personality: 'methodical', skillLevel: 'developing', prestige: 0, ...extra };
+      const rider = { personality: 'methodical', prestige: 0, ...extra };
       expect(computeRiderModifiers({ rider, discipline: 'Endurance' })).toEqual({
         bonusPercent: 0,
         penaltyPercent: 0,
@@ -119,46 +110,44 @@ describe('computeRiderModifiers (Equoria-5bkh)', () => {
   });
 
   it('prestige 100 contributes +4% bonus', () => {
-    const rider = { personality: 'methodical', skillLevel: 'developing', prestige: 100 };
+    const rider = { personality: 'methodical', prestige: 100 };
     const result = computeRiderModifiers({ rider, discipline: 'Endurance' });
     expect(result.bonusPercent).toBeCloseTo(0.04);
   });
 
   it('high-affinity discipline match grants +2% bonus', () => {
     // methodical + Dressage = high (+2%)
-    const rider = { personality: 'methodical', skillLevel: 'developing', prestige: 0 };
+    const rider = { personality: 'methodical', prestige: 0 };
     expect(computeRiderModifiers({ rider, discipline: 'Dressage' }).bonusPercent).toBeCloseTo(0.02);
   });
 
   it('medium-affinity discipline match grants +1% bonus', () => {
     // methodical + Reining = medium (+1%)
-    const rider = { personality: 'methodical', skillLevel: 'developing', prestige: 0 };
+    const rider = { personality: 'methodical', prestige: 0 };
     expect(computeRiderModifiers({ rider, discipline: 'Reining' }).bonusPercent).toBeCloseTo(0.01);
   });
 
   it('no discipline-personality match grants no affinity bonus', () => {
-    const rider = { personality: 'methodical', skillLevel: 'developing', prestige: 0 };
+    const rider = { personality: 'methodical', prestige: 0 };
     expect(computeRiderModifiers({ rider, discipline: 'Racing' }).bonusPercent).toBe(0);
   });
 
-  it('elite rider (max all categories) sums to 9%, inside BONUS_CAP 10%', () => {
-    // experienced (+0.03) + prestige 100 (+0.04) + high affinity (+0.02) = 0.09. The
-    // level term (up to +0.036) adds nothing (q229/q244), so the cap is not reached.
+  it('elite rider (max all categories) sums to 6%, inside BONUS_CAP 10%', () => {
+    // prestige 100 (+0.04) + high affinity (+0.02) = 0.06. The level term adds nothing
+    // (q229/q244) and the skill word is gone (q282; it used to add +0.03, for 0.09).
     const rider = {
       personality: 'methodical',
-      skillLevel: 'experienced',
       starLevel: 'expert',
       prestige: 100,
     };
     const result = computeRiderModifiers({ rider, discipline: 'Dressage' });
-    expect(result.bonusPercent).toBeCloseTo(0.09);
+    expect(result.bonusPercent).toBeCloseTo(0.06);
     expect(result.penaltyPercent).toBe(0);
   });
 
   it('retired rider receives full penalty regardless of other stats', () => {
     const rider = {
       personality: 'methodical',
-      skillLevel: 'experienced',
       starLevel: 'expert',
       prestige: 100,
       retired: true,
@@ -170,7 +159,6 @@ describe('computeRiderModifiers (Equoria-5bkh)', () => {
   it('output is always safe to pass to applyRiderModifiers', () => {
     const rider = {
       personality: 'daring',
-      skillLevel: 'experienced',
       starLevel: 'expert',
       prestige: 100,
       retired: true,
@@ -184,7 +172,7 @@ describe('computeRiderModifiers (Equoria-5bkh)', () => {
   });
 
   it('case-insensitive personality match', () => {
-    const rider = { personality: 'METHODICAL', skillLevel: 'developing', prestige: 0 };
+    const rider = { personality: 'METHODICAL', prestige: 0 };
     expect(computeRiderModifiers({ rider, discipline: 'Dressage' }).bonusPercent).toBeCloseTo(0.02);
   });
 });

@@ -4,6 +4,11 @@
  * Covers all exported functions from backend/modules/riders/services/riderMarketplace.mjs.
  * No database required — all functions are pure random generators or date checks.
  *
+ * Owner rulings 2026-10-29 (q282/q283, Equoria-waqkr) changed the offer shape: a rider
+ * has no old skill word (rookie / developing / experienced, drawn at 45/40/15 with
+ * experience by tier) and no visible speciality discipline. Every new rider is a Rookie
+ * with 0 experience whose bio names no discipline.
+ *
  * Exported:
  *   - RIDER_MARKETPLACE_CONFIG (constant)
  *   - generateRandomRider()
@@ -49,15 +54,9 @@ describe('RIDER_MARKETPLACE_CONFIG', () => {
     }
   });
 
-  it('SKILL_DISTRIBUTION percentages sum to 100', () => {
-    const total = Object.values(RIDER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION).reduce((s, v) => s + v, 0);
-    expect(total).toBe(100);
-  });
-
-  // Owner ruling 2026-10-21: specialties are an even pick across every competition
-  // discipline. Old contract: a 6-discipline percentage spread summing to 100.
-  it('SPECIALTIES is every competition discipline', () => {
-    expect(RIDER_MARKETPLACE_CONFIG.SPECIALTIES).toEqual(DISCIPLINE_VALUES);
+  it('has no skill-word odds and no speciality list (q282/q283)', () => {
+    expect(RIDER_MARKETPLACE_CONFIG).not.toHaveProperty('SKILL_DISTRIBUTION');
+    expect(RIDER_MARKETPLACE_CONFIG).not.toHaveProperty('SPECIALTIES');
   });
 });
 
@@ -69,27 +68,20 @@ describe('generateRandomRider', () => {
     expect(rider).toHaveProperty('marketplaceId');
     expect(rider).toHaveProperty('firstName');
     expect(rider).toHaveProperty('lastName');
-    expect(rider).toHaveProperty('skillLevel');
+    expect(rider).toHaveProperty('starLevel');
     expect(rider).toHaveProperty('personality');
-    expect(rider).toHaveProperty('speciality');
     expect(rider).toHaveProperty('weeklyRate');
     expect(rider).toHaveProperty('experience');
     expect(rider).toHaveProperty('bio');
     expect(rider).toHaveProperty('availability');
     expect(rider).not.toHaveProperty('knownAffinities');
+    expect(rider).not.toHaveProperty('skillLevel');
+    expect(rider).not.toHaveProperty('speciality');
   });
 
   it('marketplaceId starts with mkt_rider_', () => {
     const rider = generateRandomRider();
     expect(rider.marketplaceId).toMatch(/^mkt_rider_/);
-  });
-
-  it('skillLevel is one of the defined levels', () => {
-    const validLevels = Object.keys(RIDER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION);
-    for (let i = 0; i < 20; i++) {
-      const rider = generateRandomRider();
-      expect(validLevels).toContain(rider.skillLevel);
-    }
   });
 
   it('personality is one of the 4 valid personalities', () => {
@@ -100,18 +92,10 @@ describe('generateRandomRider', () => {
     }
   });
 
-  it('speciality is one of the defined disciplines', () => {
-    const validSpecialties = RIDER_MARKETPLACE_CONFIG.SPECIALTIES;
-    for (let i = 0; i < 20; i++) {
-      const rider = generateRandomRider();
-      expect(validSpecialties).toContain(rider.speciality);
-    }
-  });
-
   // Owner rulings 2026-10-28 (q160/q177, Equoria-xlw03) changed this contract: every new
   // rider is a Rookie, and the old affinity hint (knownAffinities, the specialty shown for
   // experienced riders) is gone — hidden items are revealed only by levelling up.
-  it('every new rider is a Rookie, whatever its skill tier', () => {
+  it('every new rider is a Rookie', () => {
     for (let i = 0; i < 50; i++) {
       const rider = generateRandomRider();
       expect(rider.starLevel).toBe('rookie');
@@ -137,65 +121,25 @@ describe('generateRandomRider', () => {
     expect(rider.lastName.length).toBeGreaterThan(0);
   });
 
-  it('rookie riders have experience of 0', () => {
-    // Run many times to eventually get a rookie
-    let foundRookie = false;
-    for (let i = 0; i < 100; i++) {
-      const rider = generateRandomRider();
-      if (rider.skillLevel === 'rookie') {
-        expect(rider.experience).toBe(0);
-        foundRookie = true;
-        break;
-      }
+  // Old contract: experience 0 / 0-49 / 50-149 by skill tier. Staff earn no XP and the
+  // tiers are retired (q282), so every new rider starts at 0.
+  it('every new rider has experience 0 (50-run sweep)', () => {
+    for (let i = 0; i < 50; i++) {
+      expect(generateRandomRider().experience).toBe(0);
     }
-    // Equoria-ftaqy: removed the 'graceful pass if extremely unlucky'
-    // silent-pass branch. Rookies are 45% of the distribution; failing to
-    // find one in 100 iterations has probability < 1e-25 — that case is
-    // not 'unlucky', it's the RNG being broken. Fail loudly if it happens.
-    expect(foundRookie).toBe(true);
   });
 
-  it('developing riders have experience in [0, 49]', () => {
-    let foundDeveloping = false;
-    for (let i = 0; i < 100; i++) {
-      const rider = generateRandomRider();
-      if (rider.skillLevel === 'developing') {
-        expect(rider.experience).toBeGreaterThanOrEqual(0);
-        expect(rider.experience).toBeLessThanOrEqual(49);
-        foundDeveloping = true;
-        break;
-      }
-    }
-    // Equoria-ftaqy: hard fail if not found — see rookie test above.
-    expect(foundDeveloping).toBe(true);
-  });
-
-  it('experienced riders have experience in [50, 149]', () => {
-    let foundExperienced = false;
-    for (let i = 0; i < 100; i++) {
-      const rider = generateRandomRider();
-      if (rider.skillLevel === 'experienced') {
-        expect(rider.experience).toBeGreaterThanOrEqual(50);
-        expect(rider.experience).toBeLessThanOrEqual(149);
-        foundExperienced = true;
-        break;
-      }
-    }
-    // Equoria-ftaqy: hard fail if not found.
-    expect(foundExperienced).toBe(true);
-  });
-
-  // Owner rulings 2026-10-28 (q160/q177, Equoria-xlw03) changed this contract: every new
-  // rider is a Rookie, and the old affinity hint (knownAffinities, the specialty shown for
-  // experienced riders) is gone — hidden items are revealed only by levelling up.
-  it('no offer carries an affinity hint, experienced riders included', () => {
-    let foundExperienced = false;
+  // Owner rulings 2026-10-28 (q160/q177) removed the affinity hint; 2026-10-29 (q283)
+  // removed the visible speciality: disciplines are learned only through growth.
+  it('no offer carries an affinity hint, a speciality, or a discipline in its bio', () => {
     for (let i = 0; i < 100; i++) {
       const rider = generateRandomRider();
       expect(rider).not.toHaveProperty('knownAffinities');
-      foundExperienced = foundExperienced || rider.skillLevel === 'experienced';
+      expect(rider).not.toHaveProperty('speciality');
+      for (const discipline of DISCIPLINE_VALUES) {
+        expect(rider.bio).not.toContain(discipline);
+      }
     }
-    expect(foundExperienced).toBe(true);
   });
 
   it('generates unique marketplaceIds on repeated calls', () => {
@@ -219,12 +163,12 @@ describe('generateRiderMarketplace', () => {
     expect(generateRiderMarketplace(1)).toHaveLength(1);
   });
 
-  it('first rider is always a starter rider (rookie/methodical/Dressage)', () => {
+  it('first rider is always a starter rider (Rookie, methodical, no speciality)', () => {
     const marketplace = generateRiderMarketplace(6);
     const starter = marketplace[0];
-    expect(starter.skillLevel).toBe('rookie');
+    expect(starter.starLevel).toBe('rookie');
     expect(starter.personality).toBe('methodical');
-    expect(starter.speciality).toBe('Dressage');
+    expect(starter).not.toHaveProperty('speciality');
   });
 
   it('starter rider is a Rookie at the Rookie price', () => {
@@ -251,7 +195,8 @@ describe('generateRiderMarketplace', () => {
     marketplace.forEach(rider => {
       expect(rider).toHaveProperty('marketplaceId');
       expect(rider).toHaveProperty('firstName');
-      expect(rider).toHaveProperty('skillLevel');
+      expect(rider).toHaveProperty('starLevel');
+      expect(rider).not.toHaveProperty('skillLevel');
       expect(rider).toHaveProperty('weeklyRate');
       expect(rider).toHaveProperty('availability');
       expect(rider).not.toHaveProperty('knownAffinities');
@@ -261,7 +206,7 @@ describe('generateRiderMarketplace', () => {
   it('returns array of length 1 for size=1 (only starter)', () => {
     const marketplace = generateRiderMarketplace(1);
     expect(marketplace).toHaveLength(1);
-    expect(marketplace[0].skillLevel).toBe('rookie');
+    expect(marketplace[0].starLevel).toBe('rookie');
     expect(marketplace[0].personality).toBe('methodical');
   });
 });
@@ -354,18 +299,10 @@ describe('riderMarketplace — distribution, bio & config invariants (merged fro
     }
   });
 
-  it('respects skill-level distribution over a large (1000) sample within ±10%', () => {
+  // Old contract: a 45/40/15 rookie/developing/experienced spread (retired, q282).
+  it('a large (1000) sample is all Rookies with no old skill word', () => {
     const sample = generateRiderMarketplace(1000);
-    const counts = { rookie: 0, developing: 0, experienced: 0 };
-    sample.forEach(r => {
-      counts[r.skillLevel]++;
-    });
-    const expected = RIDER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION;
-    Object.keys(counts).forEach(skill => {
-      const actual = (counts[skill] / 1000) * 100;
-      expect(actual).toBeGreaterThanOrEqual(expected[skill] - 10);
-      expect(actual).toBeLessThanOrEqual(expected[skill] + 10);
-    });
+    expect(sample.every(r => r.starLevel === 'rookie' && !('skillLevel' in r))).toBe(true);
   });
 
   it('weekly prices run 100 to 500 by star level', () => {

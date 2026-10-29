@@ -59,8 +59,6 @@ async function makeRider() {
       firstName: 'Seed',
       lastName: `Rider${rand()}`,
       personality: 'calm',
-      skillLevel: 'experienced',
-      speciality: 'Show Jumping',
       weeklyRate: 100,
     },
   });

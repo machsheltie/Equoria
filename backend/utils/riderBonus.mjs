@@ -15,11 +15,13 @@
  *
  *   - `computeRiderModifiers({ rider, discipline })`
  *       Derives `{ bonusPercent, penaltyPercent }` from a Rider row
- *       (`personality`, `skillLevel`, `prestige`) plus the
+ *       (`personality`, `prestige`, `retired`) plus the
  *       competition discipline. Caps results at the validated ranges.
  *
  * Formula for computeRiderModifiers (Equoria-5bkh):
- *   - skillLevel: rookie=-2%, developing=0%, experienced=+3% (bonus)
+ *   - (no skill-word term: owner ruling 2026-10-29, q282, retired the riders' old skill
+ *     word, and stars give no bonus for now, q244. Old contract: rookie -1% penalty,
+ *     experienced +3% bonus.)
  *   - career level: +0.4% per level above 1. Every rider sits at level 1
  *     (staffCareerLevel; owner ruling 2026-10-28, q244: stars give no bonus for now),
  *     so this adds nothing, even for riders who have levelled up (Equoria-xlw03).
@@ -28,8 +30,7 @@
  *       high match: +2% bonus
  *       medium match: +1% bonus
  *       no match: 0% bonus
- *   - retired rider: -8% penalty (max). Otherwise penalty stays at 0 unless
- *     skillLevel === 'rookie' (in which case penalty = 1%).
+ *   - retired rider: -8% penalty (max). Otherwise penalty stays at 0.
  *
  * The function CAPS bonus at 0.10 (10%) and penalty at 0.08 (8%) so it can
  * always be safely passed to `applyRiderModifiers` (which enforces those
@@ -125,7 +126,7 @@ function applyRiderModifiers(score, bonusPercent = 0, penaltyPercent = 0) {
  * Output is always within `applyRiderModifiers`' validated range.
  *
  * @param {Object} params
- * @param {Object|null} params.rider - Rider row (personality, skillLevel, prestige, retired)
+ * @param {Object|null} params.rider - Rider row (personality, prestige, retired)
  * @param {string} params.discipline - The show's discipline (e.g. "Dressage")
  * @returns {{ bonusPercent: number, penaltyPercent: number }}
  */
@@ -136,16 +137,6 @@ function computeRiderModifiers({ rider, discipline } = {}) {
 
   let bonus = 0;
   let penalty = 0;
-
-  // ── skillLevel contribution ─────────────────────────────────────────────
-  const skillLevel = typeof rider.skillLevel === 'string' ? rider.skillLevel.toLowerCase() : '';
-  if (skillLevel === 'experienced') {
-    bonus += 0.03;
-  } else if (skillLevel === 'rookie') {
-    // Rookies have a small penalty — they don't bring stat advantage yet.
-    penalty += 0.01;
-  }
-  // 'developing' = neutral
 
   // ── career level contribution: +0.4% per level above 1 ─────────────────
   // Level 1 for every rider (q244), so 0 until staff growth (Equoria-xlw03).

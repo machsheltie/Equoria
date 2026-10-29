@@ -20,8 +20,6 @@ export interface PoolRider {
   personalityLabel: string;
   /** Equoria-nawn5: star level (rookie..expert); shown through StaffLevelStars, never raw. */
   starLevel: string;
-  speciality?: string;
-  specialityLabel?: string;
   bio?: string | null;
   /** One week at the rider's current level's price; hiring charges this once. */
   weeklyRate: number;

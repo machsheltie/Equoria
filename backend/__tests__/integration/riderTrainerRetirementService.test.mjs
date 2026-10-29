@@ -97,8 +97,6 @@ describe('rider retirement at a hidden age (Equoria-osum, Equoria-or2ua)', () =>
         firstName: `${PREFIX}${name}`,
         lastName: 'Smith',
         personality: 'daring',
-        skillLevel: 'experienced',
-        speciality: 'Show Jumping',
         careerWeeks,
         startAge,
         retired: false,

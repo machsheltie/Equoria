@@ -124,8 +124,6 @@ async function makeRider(ownerId) {
       firstName: 'TestFixture',
       lastName: `Task18-${tag()}`,
       personality: 'daring',
-      skillLevel: 'experienced',
-      speciality: 'Jumping',
       weeklyRate: 200,
       userId: ownerId,
     },

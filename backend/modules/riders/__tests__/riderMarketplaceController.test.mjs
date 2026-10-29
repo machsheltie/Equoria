@@ -122,7 +122,8 @@ describe('riderMarketplaceController (real DB)', () => {
         marketplaceId: expect.stringMatching(/^mkt_rider_/),
         firstName: expect.any(String),
         lastName: expect.any(String),
-        skillLevel: expect.stringMatching(/^(rookie|developing|experienced)$/),
+        // q282: a rider's only level is its star level.
+        starLevel: 'rookie',
         personality: expect.any(String),
         weeklyRate: expect.any(Number),
       });
