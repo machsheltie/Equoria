@@ -87,6 +87,9 @@ const GUARDED_FILES = [
   'modules/grooms/__tests__/groomSalaryBatchedWrites.integration.test.mjs',
   // Equoria-h7518: the paid-week unique (weekKey). Runs the pass for its own fixture user.
   'modules/grooms/__tests__/groomSalaryWeekKey.integration.test.mjs',
+  // Equoria-sgkjp: a fee transaction failed after its debit rolls back. Runs the pass for
+  // its own fixture user only.
+  'modules/grooms/__tests__/groomFeeRollbackAfterDebit.integration.test.mjs',
   // Equoria-6p398.14: retired horses are not billed. Runs the pass for its own fixture user.
   'modules/horses/__tests__/horseRetirementStaffRelease.integration.test.mjs',
   // Equoria-6p398.14 follow-up: an in-foal 21+ mare's groom is billed the normal fee.

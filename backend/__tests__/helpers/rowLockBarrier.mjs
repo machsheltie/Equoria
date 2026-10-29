@@ -111,6 +111,20 @@ export async function waitForBlockedSessions(client, barrierPid, count, timeoutM
   }
 }
 
+/**
+ * The pids of the sessions DIRECTLY blocked by `barrierPid`, ascending. For a
+ * test that must act on a queued session itself, e.g. `pg_cancel_backend` to
+ * fail a transaction at the exact statement it is queued on (Equoria-sgkjp).
+ * @returns {Promise<number[]>}
+ */
+export async function blockedSessionPids(client, barrierPid) {
+  const rows = await client.$queryRaw`
+    SELECT pid::int AS pid FROM pg_stat_activity
+    WHERE ${barrierPid}::int = ANY (pg_blocking_pids(pid))
+    ORDER BY pid`;
+  return rows.map(row => Number(row.pid));
+}
+
 /** `lock` for a barrier: the horse row FOR UPDATE, or FOR SHARE when mode is 'SHARE'. */
 export const horseRowLock =
   (horseId, mode = 'UPDATE') =>
