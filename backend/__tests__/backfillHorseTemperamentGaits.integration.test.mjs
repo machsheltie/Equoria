@@ -9,11 +9,16 @@
  *
  * Drives the real script's exported core against the real database, scoped to horses
  * this file plants (so no other horse row is read or written).
+ *
+ * Old contract: the database suite planted NULL temperament / gaitScores rows and
+ * checked the fill. New rule (Equoria-576c0.5): both columns are NOT NULL, so no such
+ * row can exist; the planning logic is still pinned on in-memory rows, and against the
+ * database the script finds nothing to do and changes nothing.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma, { Prisma } from '../../packages/database/prismaClient.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import { horseTemperamentValues } from '../constants/schema.mjs';
 import { generateGaitScores } from '../modules/horses/services/gaitService.mjs';
 import { getBreedProfile } from '../modules/horses/data/breedProfileLoader.mjs';
@@ -59,12 +64,7 @@ async function plant(label, breedId, data = {}) {
     {
       name: `${tag}-${label}`,
       sex: 'Mare',
-      dateOfBirth: new Date('2020-01-01'),
-      ...(breedId ? { breedId } : {}),
-      // A legacy row from before both became required (Equoria-576c0.5): planted NULL
-      // explicitly, since createTestHorse otherwise rolls both from the breed.
-      temperament: null,
-      gaitScores: Prisma.DbNull,
+      breedId,
       ...data,
     },
     horseIds,
@@ -77,8 +77,6 @@ const read = id => prisma.horse.findUnique({ where: { id }, select: { temperamen
 beforeAll(async () => {
   breeds.thoroughbred = await breedNamed('Thoroughbred');
   breeds.saddlebred = await breedNamed('American Saddlebred');
-  // A breed with no profile anywhere: no temperament weights and no gait ranges.
-  breeds.noRanges = await breedNamed(`${tag}-NoRangesBreed`);
 });
 
 afterAll(async () => {
@@ -159,60 +157,23 @@ describe('planTemperamentGaitBackfill', () => {
 });
 
 describe('runTemperamentGaitBackfill (real database, planted horses only)', () => {
-  it('dry run fills every fillable NULL inside the transaction, then rolls it all back', async () => {
-    const tbBoth = await plant('tb-both', breeds.thoroughbred.id);
-    const asbGaits = await plant('asb-gaits', breeds.saddlebred.id, { temperament: 'Willing' });
-    const noBreed = await plant('no-breed', null);
-    const noRanges = await plant('no-ranges', breeds.noRanges.id);
-    const ids = [tbBoth, asbGaits, noBreed, noRanges];
+  it('finds no NULL to fill, in a dry run or applied, and changes no row', async () => {
+    const tb = await plant('tb', breeds.thoroughbred.id, { temperament: 'Calm' });
+    const asb = await plant('asb', breeds.saddlebred.id, { temperament: 'Driven' });
+    const ids = [tb, asb];
+    const before = await Promise.all(ids.map(read));
 
-    const dry = await runTemperamentGaitBackfill({ dryRun: true, horseIds: ids });
-    expect(dry.rolledBack).toBe(true);
-    expect(dry.before).toEqual({ nullTemperament: 3, nullGaitScores: 4 });
-    expect(dry.temperamentFilled).toBe(1);
-    expect(dry.gaitScoresFilled).toBe(2);
-    expect(dry.after).toEqual({ nullTemperament: 2, nullGaitScores: 2 });
-    expect(dry.skipped.map(s => s.id).sort((a, b) => a - b)).toEqual([noBreed, noRanges].sort((a, b) => a - b));
-
-    for (const id of ids) {
-      const row = await read(id);
-      expect(row.gaitScores).toBeNull();
+    for (const dryRun of [true, false]) {
+      const run = await runTemperamentGaitBackfill({ dryRun, horseIds: ids });
+      expect(run).toMatchObject({
+        rolledBack: dryRun,
+        before: { nullTemperament: 0, nullGaitScores: 0 },
+        temperamentFilled: 0,
+        gaitScoresFilled: 0,
+        after: { nullTemperament: 0, nullGaitScores: 0 },
+        skipped: [],
+      });
+      expect(await Promise.all(ids.map(read))).toEqual(before);
     }
-    expect((await read(tbBoth)).temperament).toBeNull();
-    expect((await read(asbGaits)).temperament).toBe('Willing');
-  });
-
-  it('apply commits the fill, keeps existing values, and a second run changes nothing', async () => {
-    const tb = await plant('apply-tb', breeds.thoroughbred.id, {
-      gaitScores: { walk: 1, trot: 2, canter: 3, gallop: 4, gaiting: null },
-    });
-    const asb = await plant('apply-asb', breeds.saddlebred.id, { temperament: 'Driven' });
-    const noRanges = await plant('apply-no-ranges', breeds.noRanges.id);
-    const ids = [tb, asb, noRanges];
-
-    const wet = await runTemperamentGaitBackfill({ dryRun: false, horseIds: ids });
-    expect(wet).toMatchObject({
-      rolledBack: false,
-      temperamentFilled: 1,
-      gaitScoresFilled: 1,
-      after: { nullTemperament: 1, nullGaitScores: 1 },
-    });
-
-    const tbRow = await read(tb);
-    expect(horseTemperamentValues).toContain(tbRow.temperament);
-    expect(tbRow.gaitScores).toEqual({ walk: 1, trot: 2, canter: 3, gallop: 4, gaiting: null });
-
-    const asbRow = await read(asb);
-    expect(asbRow.temperament).toBe('Driven');
-    expect(asbRow.gaitScores.gaiting.map(g => g.name)).toEqual(
-      getBreedProfile('American Saddlebred').ratingProfiles.gaitedGaitRegistry,
-    );
-
-    expect(await read(noRanges)).toEqual({ temperament: null, gaitScores: null });
-
-    const again = await runTemperamentGaitBackfill({ dryRun: false, horseIds: ids });
-    expect(again).toMatchObject({ temperamentFilled: 0, gaitScoresFilled: 0 });
-    expect(await read(tb)).toEqual(tbRow);
-    expect(await read(asb)).toEqual(asbRow);
   });
 });
