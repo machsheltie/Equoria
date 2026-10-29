@@ -54,6 +54,7 @@ import {
 } from '../../../utils/notificationService.mjs';
 import { UNNAMED_HORSE_NAME } from './horseNamePolicy.mjs';
 import { releaseStaffIfRetiredTx } from './horseRetirementStaff.mjs';
+import { foalBornPayload, linkBreedingRecordToFoalTx } from './foalBirthRecords.mjs';
 import { horseHealthGrade, negativeTraitChanceMultiplier } from '../../../utils/horseHealth.mjs';
 import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 
@@ -96,28 +97,6 @@ function collectActiveTraits(modifiers) {
 
 /** Error code thrown when the guarded pregnancy claim matches no row. */
 export const PREGNANCY_NOT_CLAIMABLE = 'PREGNANCY_NOT_CLAIMABLE';
-
-function foalBornPayload(foal, dam, sire) {
-  return { foalName: foal.name, foalId: foal.id, damName: dam.name, sireName: sire.name };
-}
-
-/**
- * Equoria-wnlf0 (audit BRE-11): name the foal on the breeding that made it — the
- * dam's latest COMPLETED record for this sire with no foal yet (written at
- * conception by an own pair, a public booking or an approved private request).
- * A pregnancy older than breeding records has none; then nothing is linked.
- * Runs inside the foaling transaction, after the dam's row is claimed.
- */
-async function linkBreedingRecordToFoalTx(tx, { damId, sireId, foalId }) {
-  const record = await tx.breedingRecord.findFirst({
-    where: { damId, sireId, status: 'COMPLETED', foalId: null },
-    orderBy: { id: 'desc' },
-    select: { id: true },
-  });
-  if (record) {
-    await tx.breedingRecord.update({ where: { id: record.id }, data: { foalId } });
-  }
-}
 
 function pickFirstUnused(pool, existing) {
   for (const trait of pool) {
