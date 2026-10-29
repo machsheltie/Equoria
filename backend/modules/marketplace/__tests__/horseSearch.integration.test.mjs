@@ -70,7 +70,7 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
         userId: ownerId,
         healthStatus: 'Good',
         lastFedDate: new Date(),
-        phenotype: { colorName: 'Bay' },
+        phenotype: { colorName: 'Standard Bay' },
         ...overrides,
       }),
     });
@@ -223,7 +223,7 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
       ageYears: 4,
       breedId: otherBreed.id,
       sex: 'Mare',
-      phenotype: { colorName: 'Steel Gray' },
+      phenotype: { colorName: 'Steel Grey' },
       ...forSale(500),
     });
     await horse({ label: 'filly', ageYears: 1, sex: 'Filly', ...forSale(500) });
@@ -234,9 +234,10 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
     expect(labels(await search('&forSale=true&sex=Mare')).sort()).toEqual(['filly', 'other']);
     // Equoria-merxy (owner ruling 2026-10-28, q190): color is a dropdown of every coat
     // color, so it matches one color exactly (any case), never part of a name.
-    expect(labels(await search('&forSale=true&color=steel%20gray'))).toEqual(['other']);
-    expect(labels(await search('&forSale=true&color=Gray'))).toEqual([]);
-    expect(labels(await search('&forSale=true&color=Bay')).sort()).toEqual(['a10', 'a4', 'filly']);
+    // Equoria-7woyj: the owner's names (q311 grey; Bay is Standard Bay...).
+    expect(labels(await search('&forSale=true&color=steel%20grey'))).toEqual(['other']);
+    expect(labels(await search('&forSale=true&color=Dapple%20Grey'))).toEqual([]);
+    expect(labels(await search('&forSale=true&color=Standard%20Bay')).sort()).toEqual(['a10', 'a4', 'filly']);
   });
 
   it('refuses a color that is not a coat color in the game (Equoria-merxy)', async () => {
@@ -251,9 +252,12 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     const colors = res.body.data;
-    expect(colors).toEqual(expect.arrayContaining(['Bay', 'Chestnut', 'Steel Gray', 'Cremello', 'Brindle']));
+    expect(colors).toEqual(
+      expect.arrayContaining(['Standard Bay', 'Standard Chestnut', 'Steel Grey', 'Cremello', 'Brindle']),
+    );
     expect(colors).not.toContain('Unknown');
-    expect(colors.some(c => /grey|colour/i.test(c))).toBe(false);
+    expect(colors).not.toContain('Bay');
+    expect(colors.some(c => /gray|colour/i.test(c))).toBe(false);
     expect([...colors].sort((a, b) => a.localeCompare(b, 'en'))).toEqual(colors);
     expect((await request(app).get('/api/v1/marketplace/colors')).status).toBe(401);
   });
@@ -310,7 +314,7 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
     expect(row.revealedTraits).toEqual({ positive: [REVEALED], negative: [] });
     expect(JSON.stringify(res.body)).not.toContain(SECRET);
     expect(row.owner).toEqual({ username: expect.stringContaining(`${PREFIX}-seller`) });
-    expect(row.color).toBe('Bay');
+    expect(row.color).toBe('Standard Bay');
     expect(row).not.toHaveProperty('userId');
   });
 

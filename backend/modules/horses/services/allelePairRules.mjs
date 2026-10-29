@@ -154,7 +154,7 @@ export function isLethalCombination(locus, allelePair) {
  */
 const alleleDominanceOrder = {
   E_Extension: ['E', 'e'],
-  A_Agouti: ['A', 'At', 'a'],
+  A_Agouti: ['A+', 'A', 'At', 'a'], // A+ wild bay (Equoria-7woyj, q315)
   Cr_Cream: ['Cr', 'n'],
   D_Dun: ['D', 'nd1', 'nd2'],
   Z_Silver: ['Z', 'n'],
@@ -171,6 +171,8 @@ const alleleDominanceOrder = {
   EDXW: ['n'],
   MFSD12_Mushroom: ['N'],
   Prl_Pearl: ['prl', 'n'],
+  Sdp_Snowdrop: ['sdp', 'n'], // Equoria-7woyj (q313)
+  Sun_Sunshine: ['sun', 'n'],
   BR1_Brindle1: ['n'],
 };
 

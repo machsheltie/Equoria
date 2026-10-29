@@ -92,14 +92,14 @@ describe('Equoria-yp4sa: foal pairs come out in one canonical order', () => {
     },
   );
 
-  it('n/n sire x Z/Z dam gives a Silver foal (black base: Silver Dapple)', () => {
+  it('n/n sire x Z/Z dam gives a Silver foal (black base: Silver Black, owner name Equoria-7woyj)', () => {
     const sire = buildGenotype({ A_Agouti: 'a/a', Z_Silver: 'n/n' });
     const dam = buildGenotype({ A_Agouti: 'a/a', Z_Silver: 'Z/Z' });
     const rng = seededRng(0x51);
     for (let i = 0; i < 50; i++) {
       const foal = inheritColorGenotype(sire, dam, null, rng);
       expect(foal.Z_Silver).toBe('Z/n');
-      expect(calculatePhenotype(foal).colorName).toBe('Silver Dapple');
+      expect(calculatePhenotype(foal).colorName).toBe('Silver Black');
     }
   });
 
@@ -120,7 +120,7 @@ describe('Equoria-i5ah4: the breed whitelist ignores allele order', () => {
     for (let i = 0; i < 500; i++) {
       const foal = inheritColorGenotype(sire, dam, profile, rng);
       expect(foal.A_Agouti).toBe('A/a');
-      expect(calculatePhenotype(foal).colorName).toBe('Bay');
+      expect(calculatePhenotype(foal).colorName).toBe('Standard Bay');
     }
   });
 
@@ -130,7 +130,7 @@ describe('Equoria-i5ah4: the breed whitelist ignores allele order', () => {
     const dam = buildGenotype({ E_Extension: 'e/e', Cr_Cream: 'n/n' });
     const foal = inheritColorGenotype(sire, dam, profile, seededRng(7));
     expect(foal.Cr_Cream).toBe('Cr/n');
-    expect(calculatePhenotype(foal).colorName).toBe('Palomino');
+    expect(calculatePhenotype(foal).colorName).toBe('Classic Palomino');
   });
 
   it('disallowedCombinations matches either spelling', () => {
@@ -149,7 +149,7 @@ describe('Equoria-q39od: breed check keeps valid genes and never invents alleles
     for (let i = 0; i < 200; i++) {
       const foal = inheritColorGenotype(sire, dam, profile, rng);
       expect(foal.E_Extension).toBe('E/e');
-      expect(calculatePhenotype(foal).colorName).not.toBe('Chestnut');
+      expect(calculatePhenotype(foal).colorName).not.toBe('Standard Chestnut');
     }
   });
 

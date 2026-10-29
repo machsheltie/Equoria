@@ -21,7 +21,7 @@ const LOCI: Record<string, { label: string; meaning: string }> = {
   },
   A_Agouti: {
     label: 'Agouti',
-    meaning: 'Restricts black pigment to mane, tail and legs (bay versus black).',
+    meaning: 'Restricts black pigment to mane, tail and legs (wild bay, bay, seal brown or black).',
   },
   Cr_Cream: {
     label: 'Cream',
@@ -33,7 +33,7 @@ const LOCI: Record<string, { label: string; meaning: string }> = {
     label: 'Champagne',
     meaning: 'Soft body dilution with mottled skin and light eyes.',
   },
-  G_Gray: { label: 'Gray', meaning: 'Progressive loss of pigment with age (dominant).' },
+  G_Gray: { label: 'Grey', meaning: 'Progressive loss of pigment with age (dominant).' },
   Rn_Roan: {
     label: 'Roan',
     meaning: 'White hairs mixed through the body; head and legs stay dark.',
@@ -56,6 +56,14 @@ const LOCI: Record<string, { label: string; meaning: string }> = {
   PATN1_Pattern1: { label: 'Leopard Pattern', meaning: 'Changes the extent of leopard spotting.' },
   EDXW: { label: 'Extreme White', meaning: 'A variant giving large white coverage.' },
   MFSD12_Mushroom: { label: 'Mushroom', meaning: 'A sepia-toned recessive dilution of red.' },
+  Sdp_Snowdrop: {
+    label: 'Snowdrop',
+    meaning: 'A recessive dilution; with one sunshine copy it shows as snowdrop sunshine.',
+  },
+  Sun_Sunshine: {
+    label: 'Sunshine',
+    meaning: 'A recessive dilution; with one snowdrop copy it shows as snowdrop sunshine.',
+  },
 };
 
 /** A locus this table does not know reads as its name with the code prefix dropped. */

@@ -10,6 +10,10 @@
  *   - Every shade of a color is equally likely (q270; q296 2026-10-29 extends it
  *     to Buckskin, the Champagnes and the Cream Champagnes).
  *
+ * Equoria-7woyj (owner rulings q309-q316, 2026-10-29): a color family's shade is
+ * part of the owner's name (Bay + dark = Mahogany Bay, Seal Brown + sealskin =
+ * Sealskin), so the shade checks below count the owner names.
+ *
  * Drives the real generator and color engine with the breed's real seed file
  * profile and a seeded RNG, so every run checks the same reproducible sample.
  */
@@ -29,7 +33,7 @@ const rolls = 100000;
 function sealBased(genotype) {
   // The base color alone, from the real engine: Extension + Agouti only.
   const base = calculatePhenotype({ E_Extension: genotype.E_Extension, A_Agouti: genotype.A_Agouti });
-  return base.colorName === 'Seal Brown';
+  return base.colorName === 'Standard Seal Brown';
 }
 
 describe('American Saddlebred coat colors (Equoria-de7ts)', () => {
@@ -67,30 +71,30 @@ describe('American Saddlebred coat colors (Equoria-de7ts)', () => {
   });
 
   it('rolls Seal Brown and Seal Perlino', () => {
-    expect(colorCounts.get('Seal Brown')).toBeGreaterThan(0);
+    expect(colorCounts.get('Dark Seal Brown')).toBeGreaterThan(0);
     expect(colorCounts.get('Seal Perlino')).toBeGreaterThan(0);
   });
 
+  // Each shade's owner name(s); dark chestnut is Dark Chestnut or Liver Chestnut.
   const newShades = {
-    Bay: ['standard', 'dark', 'light', 'blood', 'copper', 'wild'],
-    Chestnut: ['medium', 'dark', 'light', 'golden'],
-    Palomino: ['pale', 'golden', 'copper', 'chocolate'],
-    'Seal Brown': ['dark', 'light', 'sealskin'],
+    Bay: [['Standard Bay'], ['Mahogany Bay'], ['Golden Bay'], ['Blood Bay'], ['Copper Bay'], ['Wild Bay']],
+    Chestnut: [['Red Chestnut'], ['Dark Chestnut', 'Liver Chestnut'], ['Light Yellow Chestnut'], ['Golden Chestnut']],
+    Palomino: [['Light Palomino'], ['Golden Palomino'], ['Dark Palomino'], ['Chocolate Palomino']],
+    'Seal Brown': [['Dark Seal Brown'], ['Light Seal Brown'], ['Sealskin']],
   };
 
-  it.each(Object.entries(newShades))('rolls every %s shade, each about equally often', (colorName, shades) => {
-    const total = colorCounts.get(colorName);
-    const rolled = [...shadeCounts.keys()]
-      .filter(key => key.startsWith(`${colorName}|`))
-      .map(key => key.slice(colorName.length + 1))
-      .sort();
-    expect(rolled).toEqual([...shades].sort());
+  it.each(Object.entries(newShades))('rolls every %s shade, each about equally often', (family, shades) => {
+    const count = names => names.reduce((sum, name) => sum + (colorCounts.get(name) ?? 0), 0);
+    const total = shades.reduce((sum, names) => sum + count(names), 0);
+    expect(colorCounts.has(family)).toBe(false);
+    for (const name of shades.flat()) {
+      expect([name, shadeCounts.get(`${name}|standard`) > 0]).toEqual([name, true]);
+    }
     // Equal weights pending the owner's q270: each shade within 40% of a fair share.
     const fair = total / shades.length;
-    for (const shade of shades) {
-      const count = shadeCounts.get(`${colorName}|${shade}`);
-      expect(count).toBeGreaterThan(fair * 0.6);
-      expect(count).toBeLessThan(fair * 1.4);
+    for (const names of shades) {
+      expect(count(names)).toBeGreaterThan(fair * 0.6);
+      expect(count(names)).toBeLessThan(fair * 1.4);
     }
   });
 });
@@ -111,10 +115,11 @@ describe('American Saddlebred shade weights (Equoria-de7ts, owner ruling q296)',
     const total = 30000;
     for (let i = 0; i < total; i++) {
       const { colorName, shade } = calculateBreedPhenotype(genotype, profile, rng);
-      expect(colorName).toBe('Buckskin');
-      counts.set(shade, (counts.get(shade) ?? 0) + 1);
+      expect(shade).toBe('standard');
+      counts.set(colorName, (counts.get(colorName) ?? 0) + 1);
     }
-    expect([...counts.keys()].sort()).toEqual(['burnished', 'cream', 'golden']);
+    // burnished, cream, golden as the owner's names (Equoria-7woyj)
+    expect([...counts.keys()].sort()).toEqual(['Buttermilk Buckskin', 'Classic Buckskin', 'Golden Buckskin']);
     const fair = total / 3;
     for (const count of counts.values()) {
       expect(count).toBeGreaterThan(fair * 0.9);
@@ -127,15 +132,16 @@ describe('shade roll (Equoria-de7ts)', () => {
   it('rolls the shade of any breed by its weights (owner ruling q277)', () => {
     const profile = { shadeBias: { Chestnut: { light: 0.5, golden: 0.5 } } };
     const genotype = { E_Extension: 'e/e', A_Agouti: 'A/a' };
-    expect(calculateBreedPhenotype(genotype, profile, () => 0).shade).toBe('light');
-    expect(calculateBreedPhenotype(genotype, profile, () => 0.99).shade).toBe('golden');
+    // Equoria-7woyj: the rolled shade picks the owner's name (light, golden).
+    expect(calculateBreedPhenotype(genotype, profile, () => 0).colorName).toBe('Light Yellow Chestnut');
+    expect(calculateBreedPhenotype(genotype, profile, () => 0.99).colorName).toBe('Golden Chestnut');
   });
 
   it('picks the shade from the roll, by weight', () => {
     const shadeBias = { Bay: { dark: 0.5, wild: 0.5 } };
     const genotype = { E_Extension: 'E/e', A_Agouti: 'A/a' };
-    expect(calculatePhenotype(genotype, shadeBias, () => 0).shade).toBe('dark');
-    expect(calculatePhenotype(genotype, shadeBias, () => 0.99).shade).toBe('wild');
+    expect(calculatePhenotype(genotype, shadeBias, () => 0).colorName).toBe('Mahogany Bay');
+    expect(calculatePhenotype(genotype, shadeBias, () => 0.99).colorName).toBe('Wild Bay');
   });
 });
 
@@ -145,8 +151,8 @@ describe('calculatePhenotype — seal names (Equoria-de7ts)', () => {
     expect(calculatePhenotype(genotype).colorName).toBe('Seal Perlino');
   });
 
-  it('still names bay with double cream Perlino and seal brown alone Seal Brown', () => {
+  it('still names bay with double cream Perlino and seal brown alone Standard Seal Brown', () => {
     expect(calculatePhenotype({ E_Extension: 'E/e', A_Agouti: 'A/At', Cr_Cream: 'Cr/Cr' }).colorName).toBe('Perlino');
-    expect(calculatePhenotype({ E_Extension: 'E/e', A_Agouti: 'At/At' }).colorName).toBe('Seal Brown');
+    expect(calculatePhenotype({ E_Extension: 'E/e', A_Agouti: 'At/At' }).colorName).toBe('Standard Seal Brown');
   });
 });

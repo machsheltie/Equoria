@@ -232,6 +232,9 @@ export function generateAdvancedMarkings(advancedMarkingsBias, rng, hasAppaloosa
  * Determine whether a color name represents a true chestnut (eligible for flaxen).
  * Gold/Amber/Classic Champagne variants, Palomino, and other diluted chestnuts
  * are excluded — flaxen only applies to base chestnut.
+ * Equoria-7woyj: the owner's chestnut names (Red Chestnut, Liver Chestnut...) are
+ * base chestnut; Chestnut Pearl (formerly Apricot) and the new snowdrop/sunshine
+ * chestnuts stay excluded, so flaxen keeps its old reach (q314 defers modifiers).
  *
  * @param {string} colorName
  * @returns {boolean}
@@ -241,7 +244,10 @@ function isBaseChestnut(colorName) {
     return false;
   }
   const lower = colorName.toLowerCase();
-  return lower.includes('chestnut') && !lower.includes('champagne');
+  return (
+    lower.includes('chestnut') &&
+    !['champagne', 'pearl', 'snowdrop', 'sunshine'].some(word => lower.includes(word))
+  );
 }
 
 /**

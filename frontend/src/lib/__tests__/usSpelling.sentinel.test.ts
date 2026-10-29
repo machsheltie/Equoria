@@ -4,7 +4,9 @@
  * Owner ruling 2026-10-28 (q190): "It should be Color. Not Colour. I am not in
  * Europe." Every string and JSX text in frontend/src is read through the
  * TypeScript parser (so comments are not text) and checked for British
- * spellings: colour, grey, honour, centre, immortalise, optimise and the like.
+ * spellings: colour, honour, centre, immortalise, optimise and the like.
+ * Owner ruling q311 (2026-10-29, Equoria-7woyj): the coat color is spelled grey
+ * everywhere (Dapple Grey, the Grey gene), so grey is no longer checked here.
  *
  * pages/horse-detail/ was left out until its Color sweep landed (agent/horsepage,
  * ColorGeneticsSection); it is checked like everything else now.
@@ -19,7 +21,6 @@ const srcRoot = path.resolve(__dirname, '..', '..');
 const british = new RegExp(
   [
     'colour',
-    '\\bgrey',
     'honour',
     'favour',
     'behaviour',
@@ -90,7 +91,6 @@ describe('US spelling in player-facing text (Equoria-at90e)', () => {
   it('the pattern catches the spellings it guards against', () => {
     for (const word of [
       'Colour',
-      'grey',
       'Visitors Centre',
       'immortalised',
       'Optimises',
@@ -102,6 +102,7 @@ describe('US spelling in player-facing text (Equoria-at90e)', () => {
     for (const word of [
       'Color',
       'gray',
+      'Dapple Grey', // owner ruling q311: grey is the coat color spelling
       'Visitors Center',
       'Falabella',
       'aria-labelledby',

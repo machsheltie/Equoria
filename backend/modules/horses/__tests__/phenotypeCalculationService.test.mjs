@@ -59,26 +59,37 @@ function buildGenotype(overrides = {}) {
 // Base color determination
 // ---------------------------------------------------------------------------
 
+// Equoria-7woyj (owner rulings q309-q316, 2026-10-29): color families with no breed
+// shade read as the owner's standard name: Standard Bay, Standard Chestnut, Nonfading
+// Black, Classic Palomino, Classic Buckskin, Standard Seal Brown.
 describe('calculatePhenotype — base color', () => {
   it('returns Chestnut for e/e Extension regardless of Agouti', () => {
-    expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', A_Agouti: 'A/A' })).colorName).toBe('Chestnut');
-    expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', A_Agouti: 'a/a' })).colorName).toBe('Chestnut');
+    expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', A_Agouti: 'A/A' })).colorName).toBe(
+      'Standard Chestnut',
+    );
+    expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', A_Agouti: 'a/a' })).colorName).toBe(
+      'Standard Chestnut',
+    );
   });
 
   it('returns Bay for E/e + A/a (dominant agouti)', () => {
-    expect(calculatePhenotype(buildGenotype({ E_Extension: 'E/e', A_Agouti: 'A/a' })).colorName).toBe('Bay');
+    expect(calculatePhenotype(buildGenotype({ E_Extension: 'E/e', A_Agouti: 'A/a' })).colorName).toBe('Standard Bay');
   });
 
   it('returns Bay for E/E + A/A', () => {
-    expect(calculatePhenotype(buildGenotype({ E_Extension: 'E/E', A_Agouti: 'A/A' })).colorName).toBe('Bay');
+    expect(calculatePhenotype(buildGenotype({ E_Extension: 'E/E', A_Agouti: 'A/A' })).colorName).toBe('Standard Bay');
   });
 
   it('returns Black for E/e + a/a (recessive agouti)', () => {
-    expect(calculatePhenotype(buildGenotype({ E_Extension: 'E/e', A_Agouti: 'a/a' })).colorName).toBe('Black');
+    expect(calculatePhenotype(buildGenotype({ E_Extension: 'E/e', A_Agouti: 'a/a' })).colorName).toBe(
+      'Nonfading Black',
+    );
   });
 
   it('returns Black for E/E + a/a', () => {
-    expect(calculatePhenotype(buildGenotype({ E_Extension: 'E/E', A_Agouti: 'a/a' })).colorName).toBe('Black');
+    expect(calculatePhenotype(buildGenotype({ E_Extension: 'E/E', A_Agouti: 'a/a' })).colorName).toBe(
+      'Nonfading Black',
+    );
   });
 });
 
@@ -88,11 +99,13 @@ describe('calculatePhenotype — base color', () => {
 
 describe('calculatePhenotype — Cream dilutions', () => {
   it('Chestnut + Cr/n → Palomino', () => {
-    expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', Cr_Cream: 'Cr/n' })).colorName).toBe('Palomino');
+    expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', Cr_Cream: 'Cr/n' })).colorName).toBe(
+      'Classic Palomino',
+    );
   });
 
   it('Bay + Cr/n → Buckskin', () => {
-    expect(calculatePhenotype(buildGenotype({ Cr_Cream: 'Cr/n' })).colorName).toBe('Buckskin');
+    expect(calculatePhenotype(buildGenotype({ Cr_Cream: 'Cr/n' })).colorName).toBe('Classic Buckskin');
   });
 
   it('Black + Cr/n → Smoky Black', () => {
@@ -136,7 +149,9 @@ describe('calculatePhenotype — Dun dilutions', () => {
   });
 
   it('nd2/nd2 (non-dun) does not produce dun color', () => {
-    expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', D_Dun: 'nd2/nd2' })).colorName).toBe('Chestnut');
+    expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', D_Dun: 'nd2/nd2' })).colorName).toBe(
+      'Standard Chestnut',
+    );
   });
 
   it('nd1/nd2 pseudo-dun on Bay → Bay Dun (P-5)', () => {
@@ -153,9 +168,9 @@ describe('calculatePhenotype — Dun dilutions', () => {
 // ---------------------------------------------------------------------------
 
 describe('calculatePhenotype — Silver dilutions', () => {
-  it('Black + Z/n → Silver Dapple (Equoria-egh7: canonical name)', () => {
+  it('Black + Z/n → Silver Black (owner name, Equoria-7woyj; was Silver Dapple)', () => {
     expect(calculatePhenotype(buildGenotype({ E_Extension: 'E/e', A_Agouti: 'a/a', Z_Silver: 'Z/n' })).colorName).toBe(
-      'Silver Dapple',
+      'Silver Black',
     );
   });
 
@@ -164,7 +179,9 @@ describe('calculatePhenotype — Silver dilutions', () => {
   });
 
   it('Chestnut + Z/n → Chestnut (silver has no effect on chestnut)', () => {
-    expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', Z_Silver: 'Z/n' })).colorName).toBe('Chestnut');
+    expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', Z_Silver: 'Z/n' })).colorName).toBe(
+      'Standard Chestnut',
+    );
   });
 
   it('Black + Dun + Silver → Silver Grulla', () => {
@@ -202,9 +219,9 @@ describe('calculatePhenotype — Champagne dilutions', () => {
     ).toBe('Gold Cream Champagne');
   });
 
-  it('Bay + Ch/n + Dun → Amber Dun Champagne', () => {
+  it('Bay + Ch/n + Dun → Amber Champagne Dun (owner word order, Equoria-7woyj)', () => {
     expect(calculatePhenotype(buildGenotype({ Ch_Champagne: 'Ch/n', D_Dun: 'D/nd2' })).colorName).toBe(
-      'Amber Dun Champagne',
+      'Amber Champagne Dun',
     );
   });
 });
@@ -214,24 +231,26 @@ describe('calculatePhenotype — Champagne dilutions', () => {
 // ---------------------------------------------------------------------------
 
 describe('calculatePhenotype — Pearl dilutions', () => {
-  it('Chestnut + prl/prl → Apricot (Equoria-rh15: canonical name)', () => {
-    expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', Prl_Pearl: 'prl/prl' })).colorName).toBe('Apricot');
+  it('Chestnut + prl/prl → Chestnut Pearl (owner name, Equoria-7woyj; was Apricot)', () => {
+    expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', Prl_Pearl: 'prl/prl' })).colorName).toBe(
+      'Chestnut Pearl',
+    );
   });
 
   it('Bay + prl/prl → Bay Pearl', () => {
     expect(calculatePhenotype(buildGenotype({ Prl_Pearl: 'prl/prl' })).colorName).toBe('Bay Pearl');
   });
 
-  it('Black + prl/prl → Pearl Black (Equoria-rh15: canonical inverted name)', () => {
+  it('Black + prl/prl → Black Pearl (owner name, Equoria-7woyj; was Pearl Black)', () => {
     expect(
       calculatePhenotype(buildGenotype({ E_Extension: 'E/e', A_Agouti: 'a/a', Prl_Pearl: 'prl/prl' })).colorName,
-    ).toBe('Pearl Black');
+    ).toBe('Black Pearl');
   });
 
-  it('Chestnut + prl/n + Cr/n (pseudo-double-dilute) → Pale Gold (Equoria-rh15)', () => {
+  it('Chestnut + prl/n + Cr/n (pseudo-double-dilute) → Palomino Pearl (owner name, Equoria-7woyj; was Pale Gold)', () => {
     expect(
       calculatePhenotype(buildGenotype({ E_Extension: 'e/e', Prl_Pearl: 'prl/n', Cr_Cream: 'Cr/n' })).colorName,
-    ).toBe('Pale Gold');
+    ).toBe('Palomino Pearl');
   });
 
   it('Bay + prl/n + Cr/n → Buckskin Pearl', () => {
@@ -259,14 +278,14 @@ describe('calculatePhenotype — Mushroom', () => {
     );
   });
 
-  it('Bay + M/N → Bay (no effect)', () => {
-    expect(calculatePhenotype(buildGenotype({ MFSD12_Mushroom: 'M/N' })).colorName).toBe('Bay');
+  it('Bay + M/N → Mushroom Bay (owner name q315, Equoria-7woyj)', () => {
+    expect(calculatePhenotype(buildGenotype({ MFSD12_Mushroom: 'M/N' })).colorName).toBe('Mushroom Bay');
   });
 
-  it('Black + M/N → Black (no effect)', () => {
+  it('Black + M/N → Mushroom Black (owner name q316: looks black, named mushroom)', () => {
     expect(
       calculatePhenotype(buildGenotype({ E_Extension: 'E/e', A_Agouti: 'a/a', MFSD12_Mushroom: 'M/N' })).colorName,
-    ).toBe('Black');
+    ).toBe('Mushroom Black');
   });
 });
 
@@ -275,29 +294,20 @@ describe('calculatePhenotype — Mushroom', () => {
 // ---------------------------------------------------------------------------
 
 describe('calculatePhenotype — Gray pattern', () => {
-  it('G/g sets isGray = true', () => {
+  it('G/g sets isGrey = true', () => {
     const result = calculatePhenotype(buildGenotype({ G_Gray: 'G/g' }));
-    expect(result.isGray).toBe(true);
+    expect(result.isGrey).toBe(true);
   });
 
   it('Gray overrides base color name with a gray stage name', () => {
     const result = calculatePhenotype(buildGenotype({ G_Gray: 'G/g' }));
-    const grayNames = [
-      'Gray', // Equoria-erfm: plain 'Gray' early-stage default
-      'Steel Gray',
-      'Rose Gray',
-      'White Gray',
-      'Fleabitten Gray',
-      'Steel Dark Dapple Gray',
-      'Steel Light Dapple Gray',
-      'Rose Dark Dapple Gray',
-      'Rose Light Dapple Gray',
-    ];
+    // Owner names, spelled grey (q311, Equoria-7woyj).
+    const grayNames = ['Dapple Grey', 'Steel Grey', 'Rose Grey', 'White Grey', 'Fleabitten Grey', 'Light Dapple Grey'];
     expect(grayNames).toContain(result.colorName);
   });
 
-  it('g/g leaves isGray = false', () => {
-    expect(calculatePhenotype(buildGenotype()).isGray).toBe(false);
+  it('g/g leaves isGrey = false', () => {
+    expect(calculatePhenotype(buildGenotype()).isGrey).toBe(false);
   });
 });
 
@@ -390,7 +400,7 @@ describe('calculatePhenotype — Dominant White', () => {
       }),
     );
     expect(result.colorName).toBe('Dominant White');
-    expect(result.isGray).toBe(false);
+    expect(result.isGrey).toBe(false);
     expect(result.isAppaloosa).toBe(false);
     expect(result.isRoan).toBe(false);
   });
@@ -404,7 +414,7 @@ describe('calculatePhenotype — pinto/pattern flags', () => {
   it('TO/to sets hasTobiano = true without changing colorName', () => {
     const result = calculatePhenotype(buildGenotype({ TO_Tobiano: 'TO/to' }));
     expect(result.hasTobiano).toBe(true);
-    expect(result.colorName).toBe('Bay'); // color unchanged
+    expect(result.colorName).toBe('Standard Bay'); // color unchanged
   });
 
   it('O/n sets hasFrameOvero = true', () => {
@@ -442,23 +452,23 @@ describe('calculatePhenotype — pinto/pattern flags', () => {
 
 describe('calculatePhenotype — EDXW extension modifier (Equoria-1set)', () => {
   it('EDXW = n/n is no-op (e/e still produces Chestnut)', () => {
-    expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', EDXW: 'n/n' })).colorName).toBe('Chestnut');
+    expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', EDXW: 'n/n' })).colorName).toBe('Standard Chestnut');
   });
 
   it('EDXW != n/n forces functional E even with e/e Extension → Bay (with A Agouti)', () => {
     expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', A_Agouti: 'A/A', EDXW: 'EDXW1/n' })).colorName).toBe(
-      'Bay',
+      'Standard Bay',
     );
   });
 
   it('EDXW + e/e + a/a → Black (not Chestnut)', () => {
     expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', A_Agouti: 'a/a', EDXW: 'EDXW1/n' })).colorName).toBe(
-      'Black',
+      'Nonfading Black',
     );
   });
 
   it('EDXW does not affect existing E/E or E/e horses (Bay stays Bay)', () => {
-    expect(calculatePhenotype(buildGenotype({ E_Extension: 'E/e', EDXW: 'EDXW1/n' })).colorName).toBe('Bay');
+    expect(calculatePhenotype(buildGenotype({ E_Extension: 'E/e', EDXW: 'EDXW1/n' })).colorName).toBe('Standard Bay');
   });
 });
 
@@ -468,21 +478,19 @@ describe('calculatePhenotype — EDXW extension modifier (Equoria-1set)', () => 
 
 describe('calculatePhenotype — Seal Brown base (Equoria-4lgb)', () => {
   it('At/At + E/e → Seal Brown', () => {
-    expect(calculatePhenotype(buildGenotype({ A_Agouti: 'At/At' })).colorName).toBe('Seal Brown');
+    expect(calculatePhenotype(buildGenotype({ A_Agouti: 'At/At' })).colorName).toBe('Standard Seal Brown');
   });
 
   it('At/a + E/e → Seal Brown (At dominates a)', () => {
-    expect(calculatePhenotype(buildGenotype({ A_Agouti: 'At/a' })).colorName).toBe('Seal Brown');
+    expect(calculatePhenotype(buildGenotype({ A_Agouti: 'At/a' })).colorName).toBe('Standard Seal Brown');
   });
 
   it('A/At + E/e → Bay (A dominates At)', () => {
-    expect(calculatePhenotype(buildGenotype({ A_Agouti: 'A/At' })).colorName).toBe('Bay');
+    expect(calculatePhenotype(buildGenotype({ A_Agouti: 'A/At' })).colorName).toBe('Standard Bay');
   });
 
-  it('Seal Brown + Cr/n → Smoky Seal Brown', () => {
-    expect(calculatePhenotype(buildGenotype({ A_Agouti: 'At/At', Cr_Cream: 'Cr/n' })).colorName).toBe(
-      'Smoky Seal Brown',
-    );
+  it('Seal Brown + Cr/n → Seal Buckskin (owner name q310, Equoria-7woyj)', () => {
+    expect(calculatePhenotype(buildGenotype({ A_Agouti: 'At/At', Cr_Cream: 'Cr/n' })).colorName).toBe('Seal Buckskin');
   });
 
   it('Seal Brown + Ch/n → Sable Champagne', () => {
@@ -491,8 +499,8 @@ describe('calculatePhenotype — Seal Brown base (Equoria-4lgb)', () => {
     );
   });
 
-  it('Seal Brown + D/nd2 → Seal Brown Dun', () => {
-    expect(calculatePhenotype(buildGenotype({ A_Agouti: 'At/At', D_Dun: 'D/nd2' })).colorName).toBe('Seal Brown Dun');
+  it('Seal Brown + D/nd2 → Seal Dun (owner name q310, Equoria-7woyj)', () => {
+    expect(calculatePhenotype(buildGenotype({ A_Agouti: 'At/At', D_Dun: 'D/nd2' })).colorName).toBe('Seal Dun');
   });
 });
 
@@ -532,11 +540,11 @@ describe('calculatePhenotype — Dilute compound names (Equoria-egh7)', () => {
     ).toBe('Silver Dapple Grulla');
   });
 
-  it('Black + Z/n + Cr/n → Silver Dapple (no dun branch)', () => {
+  it('Black + Z/n + Cr/n → Silver Smoky Black (owner name, Equoria-7woyj; was Silver Dapple)', () => {
     expect(
       calculatePhenotype(buildGenotype({ E_Extension: 'E/e', A_Agouti: 'a/a', Z_Silver: 'Z/n', Cr_Cream: 'Cr/n' }))
         .colorName,
-    ).toBe('Silver Dapple');
+    ).toBe('Silver Smoky Black');
   });
 });
 
@@ -557,7 +565,7 @@ describe('calculatePhenotype — Ivory Champagne and pearl-cream variants (Equor
     );
   });
 
-  it('Chestnut + prl/n + Cr/n + Ch/n → Ivory Champagne (pearl pseudo-double-dilute)', () => {
+  it('Chestnut + prl/n + Cr/n + Ch/n → Gold Cream Pearl Champagne (owner name q309, Equoria-7woyj; was Ivory Champagne)', () => {
     expect(
       calculatePhenotype(
         buildGenotype({
@@ -567,7 +575,7 @@ describe('calculatePhenotype — Ivory Champagne and pearl-cream variants (Equor
           Ch_Champagne: 'Ch/n',
         }),
       ).colorName,
-    ).toBe('Ivory Champagne');
+    ).toBe('Gold Cream Pearl Champagne');
   });
 });
 
@@ -638,7 +646,7 @@ describe('calculatePhenotype — null/empty fallback', () => {
     const result = calculatePhenotype(null);
     expect(result.colorName).toBe('Unknown');
     expect(result.shade).toBe('standard');
-    expect(result.isGray).toBe(false);
+    expect(result.isGrey).toBe(false);
   });
 
   it('returns Unknown colorName for empty object', () => {
@@ -732,7 +740,7 @@ describe('createHorseFromRequest — phenotype integration', () => {
     expect(typeof horse.phenotype.shade).toBe('string');
 
     // Required boolean pattern flags
-    expect(typeof horse.phenotype.isGray).toBe('boolean');
+    expect(typeof horse.phenotype.isGrey).toBe('boolean');
     expect(typeof horse.phenotype.isRoan).toBe('boolean');
     expect(typeof horse.phenotype.isAppaloosa).toBe('boolean');
     expect(typeof horse.phenotype.isWhite).toBe('boolean');

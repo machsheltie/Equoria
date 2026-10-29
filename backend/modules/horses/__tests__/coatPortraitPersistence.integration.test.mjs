@@ -119,7 +119,7 @@ describe('coat portrait persistence (Equoria-de7ts)', () => {
 
   it('createHorse stores one variant of the color, and the horse keeps it', async () => {
     const user = await fixtureUser('create');
-    const phenotype = { colorName: 'Bay', shade: 'blood' };
+    const phenotype = { colorName: 'Blood Bay', shade: 'standard' };
     const horse = await horseFor(user, saddlebred, { colorGenotype: bayDunGenotype, phenotype });
     expect(coatImageVariants(saddlebred, phenotype)).toContain(horse.imageUrl);
 
@@ -142,19 +142,19 @@ describe('coat portrait persistence (Equoria-de7ts)', () => {
     const user = await fixtureUser('fallback');
     const noPortrait = await horseFor(user, saddlebred, {
       colorGenotype: bayDunGenotype,
-      phenotype: { colorName: 'Smoky Seal Brown', shade: 'standard' },
+      phenotype: { colorName: 'Seal Buckskin', shade: 'standard' },
     });
     expect(noPortrait.imageUrl).toBe(defaultHorseImageUrl);
 
     const thoroughbred = await horseFor(user, 'Thoroughbred', {
       colorGenotype: bayDunGenotype,
-      phenotype: { colorName: 'Bay', shade: 'blood' },
+      phenotype: { colorName: 'Blood Bay', shade: 'standard' },
     });
     expect(thoroughbred.imageUrl).toBe(defaultHorseImageUrl);
 
     const chosen = await horseFor(user, saddlebred, {
       colorGenotype: bayDunGenotype,
-      phenotype: { colorName: 'Bay', shade: 'blood' },
+      phenotype: { colorName: 'Blood Bay', shade: 'standard' },
       imageUrl: '/images/breeds/american_saddlebred.png',
     });
     expect(chosen.imageUrl).toBe('/images/breeds/american_saddlebred.png');

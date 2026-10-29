@@ -17,7 +17,7 @@ import { testHorseData } from '../__tests__/helpers/createTestHorse.mjs';
 
 const stamp = `k0d28_${Date.now()}`;
 
-// A Silver Dapple foal's inherited genes: not something generateGenotype(null)
+// A Silver Black foal's inherited genes: not something generateGenotype(null)
 // produces by chance (starter weights keep Z/n at 3%, a/a at 30%).
 const inheritedGenotype = {
   ...fixtureColor().colorGenotype,
@@ -73,7 +73,7 @@ describe('backfill-horse-colors (Equoria-k0d28)', () => {
     const inherited = await prisma.horse.findUnique({ where: { id: inheritedId } });
     expect(inherited.colorGenotype).toEqual(inheritedGenotype);
     expect(inherited.phenotype.colorName).toBe(calculatePhenotype(inheritedGenotype).colorName);
-    expect(inherited.phenotype.colorName).toBe('Silver Dapple');
+    expect(inherited.phenotype.colorName).toBe('Silver Black'); // owner name, Equoria-7woyj
 
     const geneless = await prisma.horse.findUnique({ where: { id: genelessId } });
     expect(Object.keys(geneless.colorGenotype).length).toBeGreaterThan(0);

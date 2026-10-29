@@ -9,6 +9,7 @@
  */
 
 import { selectShade } from './coatShade.mjs';
+import { dilutedColorName, dominantWhiteName, familyShadeName } from './coatColorNaming.mjs';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -30,412 +31,6 @@ function djb2Hash(str) {
   return Math.abs(hash);
 }
 
-/**
- * Returns true if the allele string indicates dun is active.
- * Active dun: at least one 'D' allele (D/nd2, D/nd1, D/D).
- * nd1/nd2 is also dun-dilute (pseudo-dun).
- * nd2/nd2 and nd1/nd1 = non-dun.
- *
- * @param {string} dunAllele
- * @returns {boolean}
- */
-function isDunActive(dunAllele) {
-  if (!dunAllele) {
-    return false;
-  }
-  const parts = dunAllele.split('/');
-  // D allele present → dun active
-  if (parts.includes('D')) {
-    return true;
-  }
-  // nd1/nd2 compound → weakly dun (treat as dun for color purposes)
-  if (parts.includes('nd1') && parts.includes('nd2')) {
-    return true;
-  }
-  return false;
-}
-
-/**
- * Returns true if Cream is single-dilute (Cr/n).
- * @param {string} crAllele
- * @returns {boolean}
- */
-function isCreamSingle(crAllele) {
-  return crAllele === 'Cr/n' || crAllele === 'n/Cr';
-}
-
-/**
- * Returns true if Cream is double-dilute (Cr/Cr).
- * @param {string} crAllele
- * @returns {boolean}
- */
-function isCreamDouble(crAllele) {
-  return crAllele === 'Cr/Cr';
-}
-
-/**
- * Returns true if Silver (Z_Silver) is active.
- * @param {string} zAllele
- * @returns {boolean}
- */
-function isSilverActive(zAllele) {
-  return zAllele === 'Z/n' || zAllele === 'Z/Z';
-}
-
-/**
- * Returns true if Champagne (Ch_Champagne) is active.
- * @param {string} chAllele
- * @returns {boolean}
- */
-function isChampagneActive(chAllele) {
-  return chAllele === 'Ch/n' || chAllele === 'Ch/Ch';
-}
-
-/**
- * Returns true if Pearl is homozygous (prl/prl).
- * @param {string} prlAllele
- * @returns {boolean}
- */
-function isPearlHomozygous(prlAllele) {
-  return prlAllele === 'prl/prl';
-}
-
-/**
- * Returns true if Pearl + Cream pseudo-double-dilute is active.
- * This is the case when Prl_Pearl = prl/n AND Cr_Cream = Cr/n.
- * @param {string} prlAllele
- * @param {string} crAllele
- * @returns {boolean}
- */
-function isPseudoDoubleDilute(prlAllele, crAllele) {
-  return (prlAllele === 'prl/n' || prlAllele === 'n/prl') && isCreamSingle(crAllele);
-}
-
-/**
- * Returns true if Mushroom (MFSD12_Mushroom) is active.
- * @param {string} mushAllele
- * @returns {boolean}
- */
-function isMushroomActive(mushAllele) {
-  return mushAllele === 'M/N' || mushAllele === 'M/M';
-}
-
-/**
- * Returns true if EDXW (Extended Dominant White extension modifier) is active.
- * Equoria-1set: EDXW acts as a functional Extension allele — when any non-'n/n'
- * variant is present, the phenotype gains black-pigment capability regardless
- * of underlying e/e Extension. EDXW = 'n/n' is no-op (most common state).
- *
- * @param {string} edxwAllele
- * @returns {boolean}
- */
-function isEdxwActive(edxwAllele) {
-  return typeof edxwAllele === 'string' && edxwAllele !== 'n/n' && edxwAllele.length > 0;
-}
-
-/**
- * Classify the Agouti allele pair into a category.
- * Equoria-4lgb: Agouti dominance hierarchy is A > At > a.
- *
- * @param {string} agAllele
- * @returns {'A'|'At'|'a'}
- */
-function classifyAgouti(agAllele) {
-  if (typeof agAllele !== 'string' || agAllele.length === 0) {
-    return 'A';
-  }
-  const parts = agAllele.split('/');
-  if (parts.includes('A')) {
-    return 'A';
-  }
-  if (parts.includes('At')) {
-    return 'At';
-  }
-  return 'a';
-}
-
-// ---------------------------------------------------------------------------
-// Base color determination
-// ---------------------------------------------------------------------------
-
-/**
- * Determine base color from Extension + Agouti.
- *
- * Equoria-1set: EDXW != 'n/n' forces functional Extension (black-pigment
- * expression) even if E_Extension = e/e. EDXW n/n is no-op.
- * Equoria-4lgb: Adds 'seal_brown' base for the At Agouti allele.
- *
- * @param {Object} genotype
- * @returns {'chestnut'|'bay'|'seal_brown'|'black'}
- */
-function getBaseColor(genotype) {
-  const ext = genotype.E_Extension ?? 'E/e';
-  const ag = genotype.A_Agouti ?? 'A/a';
-  const edxw = genotype.EDXW ?? 'n/n';
-
-  const hasFunctionalE = ext !== 'e/e' || isEdxwActive(edxw);
-
-  // e/e and no EDXW override → chestnut (recessive red — no black pigment)
-  if (!hasFunctionalE) {
-    return 'chestnut';
-  }
-
-  // Agouti hierarchy: A > At > a
-  const agCategory = classifyAgouti(ag);
-  if (agCategory === 'A') {
-    return 'bay';
-  }
-  if (agCategory === 'At') {
-    return 'seal_brown';
-  }
-  return 'black';
-}
-
-// ---------------------------------------------------------------------------
-// Dilution engine
-// ---------------------------------------------------------------------------
-
-/**
- * Apply all dilution loci to the base color.
- * Returns the resolved color name string.
- *
- * Canonical modifier order (Equoria-er4n naming style guide):
- *   Silver -> Cream -> Dun -> Champagne base
- * Champagne always wins naming because it renames the whole base color.
- *
- * Equoria-4lgb: Seal brown produces bay-equivalent compounds for most dilutes
- * (Smoky Seal Brown, Seal Brown Dun, etc.); Champagne+Seal Brown = 'Sable Champagne'.
- *
- * @param {'chestnut'|'bay'|'seal_brown'|'black'} baseColor
- * @param {Object} genotype
- * @returns {string} color name
- */
-function applyDilutions(baseColor, genotype) {
-  const cr = genotype.Cr_Cream ?? 'n/n';
-  const dun = genotype.D_Dun ?? 'nd2/nd2';
-  const z = genotype.Z_Silver ?? 'n/n';
-  const ch = genotype.Ch_Champagne ?? 'n/n';
-  const prl = genotype.Prl_Pearl ?? 'n/n';
-  const mush = genotype.MFSD12_Mushroom ?? 'N/N';
-
-  const hasCreamSingle = isCreamSingle(cr);
-  const hasCreamDouble = isCreamDouble(cr);
-  const hasDun = isDunActive(dun);
-  const hasSilver = isSilverActive(z);
-  const hasChampagne = isChampagneActive(ch);
-  const hasPearlHomo = isPearlHomozygous(prl);
-  const hasPseudoDilute = isPseudoDoubleDilute(prl, cr);
-  const hasMushroom = isMushroomActive(mush);
-
-  // Treat pseudo-double-dilute (pearl + cream) like double cream for color name
-  const effectiveCreamDouble = hasCreamDouble || hasPseudoDilute;
-
-  // --- Champagne path (takes priority over cream for naming) ---
-  if (hasChampagne) {
-    return resolveChampagneColor(
-      baseColor,
-      hasCreamSingle,
-      effectiveCreamDouble,
-      hasDun,
-      hasSilver,
-    );
-  }
-
-  // --- Pearl homozygous (no champagne, no cream) ---
-  // Equoria-rh15: 'Apricot' = chestnut + prl/prl. 'Pearl Black' = black + prl/prl
-  // (canonical inverted form per dev notes — replaces previous 'Black Pearl').
-  if (hasPearlHomo && !hasCreamSingle && !effectiveCreamDouble) {
-    switch (baseColor) {
-      case 'chestnut':
-        return 'Apricot';
-      case 'bay':
-        return 'Bay Pearl';
-      case 'seal_brown':
-        return 'Seal Brown Pearl';
-      case 'black':
-        return 'Pearl Black';
-    }
-  }
-
-  // --- Double cream (or pseudo-double-dilute) ---
-  if (effectiveCreamDouble) {
-    // Pearl pseudo-dilute names. Equoria-rh15: chestnut variant = 'Pale Gold'.
-    if (hasPseudoDilute && !hasCreamDouble) {
-      switch (baseColor) {
-        case 'chestnut':
-          return 'Pale Gold';
-        case 'bay':
-          return 'Buckskin Pearl';
-        case 'seal_brown':
-          return 'Seal Brown Pearl Cream';
-        case 'black':
-          return 'Smoky Black Pearl';
-      }
-    }
-    switch (baseColor) {
-      case 'chestnut':
-        return 'Cremello';
-      case 'bay':
-        return 'Perlino';
-      case 'seal_brown':
-        // Owner ruling 2026-10-28 (Equoria-de7ts): At + Cr/Cr is Seal Perlino.
-        return 'Seal Perlino';
-      case 'black':
-        return 'Smoky Cream';
-    }
-  }
-
-  // --- Single cream ---
-  if (hasCreamSingle) {
-    if (hasDun) {
-      // Cream + dun stack. Equoria-egh7: explicit compound names.
-      switch (baseColor) {
-        case 'chestnut':
-          return 'Dunalino';
-        case 'bay':
-          return 'Dunskin';
-        case 'seal_brown':
-          return 'Seal Brown Dunskin';
-        case 'black':
-          return hasSilver ? 'Silver Dapple Grulla' : 'Smoky Grulla';
-      }
-    }
-    if (hasSilver && baseColor === 'black') {
-      return 'Silver Dapple'; // Equoria-egh7: alt canonical name for silver+smoky black
-    }
-    switch (baseColor) {
-      case 'chestnut':
-        return 'Palomino';
-      case 'bay':
-        return 'Buckskin';
-      case 'seal_brown':
-        return 'Smoky Seal Brown';
-      case 'black':
-        return 'Smoky Black';
-    }
-  }
-
-  // --- Silver (no cream, no champagne) ---
-  if (hasSilver) {
-    if (hasDun) {
-      switch (baseColor) {
-        case 'black':
-          return 'Silver Grulla';
-        case 'bay':
-          return 'Silver Bay Dun';
-        case 'seal_brown':
-          return 'Silver Seal Brown Dun';
-        case 'chestnut':
-          break; // silver has no effect on chestnut — fall through to dun
-      }
-    }
-    switch (baseColor) {
-      case 'black':
-        return 'Silver Dapple'; // Equoria-egh7: canonical name (replaces 'Silver Black')
-      case 'bay':
-        return 'Silver Bay';
-      case 'seal_brown':
-        return 'Silver Seal Brown';
-      case 'chestnut':
-        break; // no visible silver effect on chestnut — fall through
-    }
-  }
-
-  // --- Dun (no cream, no silver, no champagne) ---
-  if (hasDun) {
-    switch (baseColor) {
-      case 'chestnut':
-        return 'Red Dun';
-      case 'bay':
-        return 'Bay Dun';
-      case 'seal_brown':
-        return 'Seal Brown Dun';
-      case 'black':
-        return 'Grulla';
-    }
-  }
-
-  // --- Mushroom (chestnut only, no other dilutes) ---
-  if (hasMushroom && baseColor === 'chestnut') {
-    return 'Mushroom Chestnut';
-  }
-
-  // --- No dilutions ---
-  switch (baseColor) {
-    case 'chestnut':
-      return 'Chestnut';
-    case 'bay':
-      return 'Bay';
-    case 'seal_brown':
-      return 'Seal Brown';
-    case 'black':
-      return 'Black';
-  }
-
-  return 'Unknown';
-}
-
-/**
- * Resolve champagne-modified color names.
- * Champagne takes naming priority over cream and dun.
- *
- * Equoria-rh15: Double-cream + Champagne (any base) collapses to 'Ivory Champagne'.
- * Equoria-4lgb: Seal Brown + Champagne = 'Sable Champagne' (base noun = 'Sable').
- *
- * @param {'chestnut'|'bay'|'seal_brown'|'black'} baseColor
- * @param {boolean} hasCreamSingle
- * @param {boolean} hasCreamDouble - true for actual Cr/Cr OR pearl pseudo-double-dilute
- * @param {boolean} hasDun
- * @param {boolean} hasSilver
- * @returns {string}
- */
-function resolveChampagneColor(baseColor, hasCreamSingle, hasCreamDouble, hasDun, hasSilver) {
-  // Equoria-rh15: Double-cream + Champagne → Ivory Champagne (canonical 'palest possible')
-  if (hasCreamDouble) {
-    if (hasSilver && baseColor !== 'chestnut' && hasDun) {
-      return 'Silver Ivory Dun Champagne';
-    }
-    if (hasSilver && baseColor !== 'chestnut') {
-      return 'Silver Ivory Champagne';
-    }
-    if (hasDun) {
-      return 'Ivory Dun Champagne';
-    }
-    return 'Ivory Champagne';
-  }
-
-  const base =
-    {
-      chestnut: 'Gold',
-      bay: 'Amber',
-      seal_brown: 'Sable',
-      black: 'Classic',
-    }[baseColor] ?? 'Gold';
-
-  // Most specific: Silver + Dun + Champagne (must check before separate Silver or Dun branches)
-  if (hasSilver && baseColor !== 'chestnut' && hasDun) {
-    return hasCreamSingle ? `Silver ${base} Cream Dun Champagne` : `Silver ${base} Dun Champagne`;
-  }
-
-  // Silver + Champagne (no dun)
-  if (hasSilver && baseColor !== 'chestnut') {
-    return hasCreamSingle ? `Silver ${base} Cream Champagne` : `Silver ${base} Champagne`;
-  }
-
-  // Dun + Champagne (no silver)
-  if (hasDun) {
-    return hasCreamSingle ? `${base} Cream Dun Champagne` : `${base} Dun Champagne`;
-  }
-
-  // Base Champagne (no silver, no dun)
-  const parts = [base];
-  if (hasCreamSingle) {
-    parts.push('Cream');
-  }
-  parts.push('Champagne');
-  return parts.join(' ');
-}
-
 // ---------------------------------------------------------------------------
 // Pattern overlays
 // ---------------------------------------------------------------------------
@@ -453,32 +48,38 @@ export const appaloosaPatternNames = Object.freeze([
 ]);
 /** Appaloosa names for the minimal LP pattern (LP without PATN1). */
 export const appaloosaMinimalNames = Object.freeze(['Varnish Roan', 'Fewspot Leopard', 'Snowcap']);
-/** Gray names, chosen by genotype hash. Equoria-erfm: plain 'Gray' is the early-stage default. */
-export const grayColorNames = Object.freeze([
-  'Gray',
-  'Steel Gray',
-  'Rose Gray',
-  'White Gray',
-  'Fleabitten Gray',
-  'Steel Dark Dapple Gray',
-  'Steel Light Dapple Gray',
-  'Rose Dark Dapple Gray',
-  'Rose Light Dapple Gray',
+/**
+ * Grey names, chosen by genotype hash. Equoria-erfm: the first is the early-stage
+ * default. Owner rulings q311 (2026-10-29): the owner's names, spelled grey; the
+ * dark dapples merge into dapple grey and rose grey (portrait match q269). The
+ * list keeps all nine slots so each genotype keeps the grey it had.
+ */
+export const greyColorNames = Object.freeze([
+  'Dapple Grey',
+  'Steel Grey',
+  'Rose Grey',
+  'White Grey',
+  'Fleabitten Grey',
+  'Dapple Grey',
+  'Light Dapple Grey',
+  'Rose Grey',
+  'Rose Grey',
 ]);
 
 /**
- * Apply pattern overlays to the phenotype.
- * Patterns add boolean flags and may override colorName (gray, roan, appaloosa, dominant white).
+ * Apply pattern overlays to the phenotype and name the color.
+ * Patterns add boolean flags and may override colorName (dominant white, appaloosa,
+ * grey, brindle). Roan is part of the diluted name (coatColorNaming.mjs) unless grey
+ * or appaloosa hides it.
  *
  * @param {Object} genotype
- * @param {string} colorName - base color after dilutions
  * @param {number} genotypeHash - deterministic hash for subtype selection
- * @returns {Object} { colorName, isGray, isRoan, isAppaloosa, isWhite, hasTobiano, hasFrameOvero, hasSabino, hasSplash, isBrindle }
+ * @returns {Object} { colorName, isGrey, isRoan, isAppaloosa, isWhite, hasTobiano, hasFrameOvero, hasSabino, hasSplash, isBrindle, isFemaleOnly }
  */
-function applyPatterns(genotype, colorName, genotypeHash) {
+function applyPatterns(genotype, genotypeHash) {
   const result = {
-    colorName,
-    isGray: false,
+    colorName: 'Unknown',
+    isGrey: false,
     isRoan: false,
     isAppaloosa: false,
     isWhite: false,
@@ -490,10 +91,10 @@ function applyPatterns(genotype, colorName, genotypeHash) {
     isFemaleOnly: false, // Equoria-er4n: split out of colorName parenthetical
   };
 
-  // --- Dominant White (highest priority) ---
-  const w = genotype.W_DominantWhite ?? 'w/w';
-  if (w !== 'w/w') {
-    result.colorName = 'Dominant White';
+  // --- Dominant White (highest priority; q315 names) ---
+  const whiteName = dominantWhiteName(genotype.W_DominantWhite);
+  if (whiteName) {
+    result.colorName = whiteName;
     result.isWhite = true;
     return result; // White overrides all other patterns
   }
@@ -504,65 +105,24 @@ function applyPatterns(genotype, colorName, genotypeHash) {
   const hasLP = lp === 'LP/lp' || lp === 'LP/LP';
   const hasPATN1 = patn1 === 'PATN1/patn1' || patn1 === 'PATN1/PATN1';
 
-  if (hasLP) {
-    result.isAppaloosa = true;
-    if (hasPATN1) {
-      result.colorName = appaloosaPatternNames[genotypeHash % appaloosaPatternNames.length];
-    } else {
-      result.colorName = appaloosaMinimalNames[genotypeHash % appaloosaMinimalNames.length];
-    }
-  }
-
-  // --- Gray --- (equal-weighted subtypes via hash)
+  // --- Grey --- (equal-weighted subtypes via hash)
   const g = genotype.G_Gray ?? 'g/g';
-  if (g === 'G/g' || g === 'G/G') {
-    result.isGray = true;
-    result.colorName = grayColorNames[genotypeHash % grayColorNames.length];
-  }
+  const hasGrey = g === 'G/g' || g === 'G/G';
 
-  // --- Roan (applied after gray since gray overrides roan in display name) ---
-  // Equoria-erfm: Modern registry naming convention (AQHA/APHA):
-  //   Chestnut base → 'Red Roan'   (or 'Strawberry Roan' synonym — Red Roan is canonical)
-  //   Bay base      → 'Bay Roan'
-  //   Black base    → 'Blue Roan'
-  // Both 'Red Roan' and 'Bay Roan' are now produced as distinct names.
+  // --- Roan: shows unless grey or appaloosa hides it ---
   const rn = genotype.Rn_Roan ?? 'rn/rn';
-  if ((rn === 'Rn/rn' || rn === 'Rn/Rn') && !result.isGray && !result.isAppaloosa) {
-    result.isRoan = true;
-    switch (colorName) {
-      case 'Chestnut':
-      case 'Palomino':
-      case 'Red Dun':
-      case 'Dunalino':
-        result.colorName = 'Red Roan';
-        break;
-      case 'Bay':
-      case 'Buckskin':
-      case 'Bay Dun':
-      case 'Dunskin':
-        result.colorName = 'Bay Roan';
-        break;
-      case 'Seal Brown':
-      case 'Smoky Seal Brown':
-      case 'Seal Brown Dun':
-        result.colorName = 'Seal Brown Roan';
-        break;
-      case 'Black':
-      case 'Smoky Black':
-      case 'Grulla':
-      case 'Smoky Grulla':
-        result.colorName = 'Blue Roan';
-        break;
-      case 'Silver Dapple':
-      case 'Silver Bay':
-        // Equoria-er4n: namespace silver-base roan to avoid collision with the
-        // LP minimal pattern named 'Varnish Roan'.
-        result.colorName = colorName === 'Silver Bay' ? 'Silver Bay Roan' : 'Silver Roan';
-        break;
-      default:
-        // Other colors (champagne, pearl, etc.) keep colorName + set isRoan flag
-        break;
-    }
+  result.isRoan = (rn === 'Rn/rn' || rn === 'Rn/Rn') && !hasGrey && !hasLP;
+
+  if (hasGrey) {
+    result.isGrey = true;
+    result.isAppaloosa = hasLP;
+    result.colorName = greyColorNames[genotypeHash % greyColorNames.length];
+  } else if (hasLP) {
+    result.isAppaloosa = true;
+    const names = hasPATN1 ? appaloosaPatternNames : appaloosaMinimalNames;
+    result.colorName = names[genotypeHash % names.length];
+  } else {
+    result.colorName = dilutedColorName(genotype, result.isRoan);
   }
 
   // --- Tobiano ---
@@ -630,7 +190,7 @@ export function calculatePhenotype(genotype, shadeBias = null, shadeRng = null) 
     return {
       colorName: 'Unknown',
       shade: 'standard',
-      isGray: false,
+      isGrey: false,
       isRoan: false,
       isAppaloosa: false,
       isWhite: false,
@@ -651,22 +211,17 @@ export function calculatePhenotype(genotype, shadeBias = null, shadeRng = null) 
   }
   const genotypeHash = djb2Hash(JSON.stringify(sortedGenotype));
 
-  // 1. Determine base color
-  const baseColor = getBaseColor(genotype);
+  // 1. Name the color: base, dilutions and pattern overlays
+  const patterns = applyPatterns(genotype, genotypeHash);
 
-  // 2. Apply dilutions
-  const colorAfterDilutions = applyDilutions(baseColor, genotype);
-
-  // 3. Apply pattern overlays
-  const patterns = applyPatterns(genotype, colorAfterDilutions, genotypeHash);
-
-  // 4. Select shade
-  const shade = selectShade(patterns.colorName, shadeBias, genotypeHash, shadeRng);
+  // 2. Select shade; a color family's shade picks the owner's name (Bay + dark = Mahogany Bay)
+  const rolledShade = selectShade(patterns.colorName, shadeBias, genotypeHash, shadeRng);
+  const { colorName, shade } = familyShadeName(patterns.colorName, rolledShade, genotypeHash);
 
   return {
-    colorName: patterns.colorName,
+    colorName,
     shade,
-    isGray: patterns.isGray,
+    isGrey: patterns.isGrey,
     isRoan: patterns.isRoan,
     isAppaloosa: patterns.isAppaloosa,
     isWhite: patterns.isWhite,

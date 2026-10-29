@@ -263,7 +263,7 @@ const seedHorses = async (prisma, users) => {
       name: 'Lightning Bolt',
       age: 3,
       sex: 'Stallion',
-      phenotype: { colorName: 'Bay' },
+      phenotype: { colorName: 'Standard Bay' },
       // 1 game-year = 7 real days; a 3 game-year horse is born 21 real days ago.
       dateOfBirth: birthDateForAge(3),
       breedId: createdBreeds.find(b => b.name === 'Thoroughbred')?.id,
@@ -284,7 +284,7 @@ const seedHorses = async (prisma, users) => {
       name: 'Desert Rose',
       age: 5,
       sex: 'Mare',
-      phenotype: { colorName: 'Chestnut' },
+      phenotype: { colorName: 'Standard Chestnut' },
       // 1 game-year = 7 real days; a 5 game-year horse is born 35 real days ago.
       dateOfBirth: birthDateForAge(5),
       breedId: createdBreeds.find(b => b.name === 'Arabian')?.id,

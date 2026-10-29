@@ -533,7 +533,6 @@
   "backend/modules/horses/services/horseTemperamentAnalysis.mjs": 14,
   "backend/modules/horses/services/horseXpModelService.mjs": 10,
   "backend/modules/horses/services/markingGenerationService.mjs": 30,
-  "backend/modules/horses/services/phenotypeCalculationService.mjs": 11,
   "backend/modules/horses/services/temperamentService.mjs": 11,
   "backend/modules/leaderboards/__tests__/leaderboardPiiExposure.sentinel.test.mjs": 12,
   "backend/modules/leaderboards/__tests__/userSummaryRouteRegistration.sentinel.test.mjs": 2,

@@ -220,7 +220,7 @@ describe('generateGenotype', () => {
     expect(colors.size).toBeGreaterThan(1);
     // Specifically, chestnut and black-based colors should BOTH be reachable —
     // not 100% Bay. (Probability of zero chestnut in 200 draws at ~40% is ~1e-44.)
-    expect(colors.has('Chestnut')).toBe(true);
+    expect(colors.has('Standard Chestnut')).toBe(true); // owner name, Equoria-7woyj
   });
 
   it('falls back to first allowed_allele when no weight is defined for a locus', () => {
@@ -267,10 +267,11 @@ describe('generateGenotype', () => {
 
   it('a prl/prl genotype renders a Pearl phenotype via calculatePhenotype (Equoria-26qjf.1 AC3)', () => {
     // AC3 second half: a homozygous Pearl genotype on a chestnut base must
-    // phenotype as a Pearl color (Apricot = chestnut + prl/prl, per Equoria-rh15).
+    // phenotype as a Pearl color (Chestnut Pearl = chestnut + prl/prl; owner name,
+    // Equoria-7woyj, was Apricot).
     const genotype = { ...GENERIC_DEFAULTS, E_Extension: 'e/e', Prl_Pearl: 'prl/prl' };
     const phenotype = calculatePhenotype(genotype, null);
-    expect(phenotype.colorName).toBe('Apricot');
+    expect(phenotype.colorName).toBe('Chestnut Pearl');
   });
 
   it('breeds without Prl/Brindle weights default to wild-type n/n (Equoria-26qjf.1 AC5 no-regression)', () => {
@@ -333,14 +334,15 @@ describe('GENERIC_STARTER_WEIGHTS coherence (Equoria-43cj5)', () => {
     expect(total).toBe(N);
 
     // All three base colors must be reachable (no black-only / chestnut-only regression).
-    expect(counts.Bay ?? 0).toBeGreaterThan(0);
-    expect(counts.Chestnut ?? 0).toBeGreaterThan(0);
-    expect(counts.Black ?? 0).toBeGreaterThan(0);
+    // Equoria-7woyj: with no breed shades they read as the owner's standard names.
+    expect(counts['Standard Bay'] ?? 0).toBeGreaterThan(0);
+    expect(counts['Standard Chestnut'] ?? 0).toBeGreaterThan(0);
+    expect(counts['Nonfading Black'] ?? 0).toBeGreaterThan(0);
 
     // Bay + Chestnut should dominate (each well above any rare-pattern color),
     // reflecting real domestic-horse base-color frequency. Generous floor (15%).
-    expect((counts.Bay ?? 0) / N).toBeGreaterThan(0.15);
-    expect((counts.Chestnut ?? 0) / N).toBeGreaterThan(0.15);
+    expect((counts['Standard Bay'] ?? 0) / N).toBeGreaterThan(0.15);
+    expect((counts['Standard Chestnut'] ?? 0) / N).toBeGreaterThan(0.15);
   });
 
   it('starter colors are diverse but rare patterns stay rare (pattern suppression intact)', () => {

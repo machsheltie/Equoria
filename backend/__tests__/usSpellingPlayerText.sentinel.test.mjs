@@ -5,9 +5,11 @@
  * Europe." Player messages, shop and staff descriptions and refund lines all
  * start life as backend strings, so every string literal in the backend source
  * (read through the TypeScript parser, so comments are not text) is checked for
- * British spellings: colour, grey, honour, centre, specialised, optimises and
- * the like. Stored column names and externally owned names are not strings
- * here and are untouched.
+ * British spellings: colour, honour, centre, specialised, optimises and
+ * the like. Owner ruling q311 (2026-10-29, Equoria-7woyj): coat colors are
+ * spelled grey everywhere (Dapple Grey...), so grey is no longer checked.
+ * Stored column names and externally owned names are not strings here and
+ * are untouched.
  */
 import { describe, it, expect } from '@jest/globals';
 import fs from 'node:fs';
@@ -21,7 +23,6 @@ const skippedDirs = new Set(['node_modules', '__tests__', 'tests', 'docs', 'cove
 const british = new RegExp(
   [
     'colour',
-    '\\bgrey',
     'honour',
     'favour',
     'behaviour',

@@ -870,9 +870,10 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
     // Since both parents are e/e, foal MUST also be e/e — inheritance not random
     expect(foal.colorGenotype.E_Extension).toBe('e/e');
 
-    // Phenotype must be Chestnut (e/e → chestnut)
+    // Phenotype must be a chestnut (e/e → chestnut); Equoria-7woyj: the owner's
+    // chestnut names (Standard, Red, Dark, Liver, Light Yellow, Golden Chestnut).
     expect(foal.phenotype).toBeDefined();
-    expect(foal.phenotype.colorName).toBe('Chestnut');
+    expect(foal.phenotype.colorName).toMatch(/^(Standard|Red|Dark|Liver|Light Yellow|Golden) Chestnut$/);
 
     foalHorseId = foal.id;
   });
