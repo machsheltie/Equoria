@@ -7,8 +7,8 @@
  *   - About 7% of Saddlebreds are seal-based (the At agouti allele), giving
  *     Seal Brown in Dark, Light and Sealskin, and Seal Perlino (At + Cr/Cr).
  *   - New shades: Bay Blood/Copper/Wild, Chestnut Golden, Palomino Chocolate.
- *   - Shade weights are pending the owner (q270): every shade of a color is
- *     equally likely until she picks.
+ *   - Every shade of a color is equally likely (q270; q296 2026-10-29 extends it
+ *     to Buckskin, the Champagnes and the Cream Champagnes).
  *
  * Drives the real generator and color engine with the breed's real seed file
  * profile and a seeded RNG, so every run checks the same reproducible sample.
@@ -91,6 +91,34 @@ describe('American Saddlebred coat colors (Equoria-de7ts)', () => {
       const count = shadeCounts.get(`${colorName}|${shade}`);
       expect(count).toBeGreaterThan(fair * 0.6);
       expect(count).toBeLessThan(fair * 1.4);
+    }
+  });
+});
+
+describe('American Saddlebred shade weights (Equoria-de7ts, owner ruling q296)', () => {
+  // Owner ruling 2026-10-29 (q296): every Saddlebred color rolls all its shades
+  // equally, Buckskin, the Champagnes and the Cream Champagnes included.
+  const { profile } = parseBreedSourceFile(readFileSync(breedFile, 'utf8'), 'American Saddlebred.txt');
+
+  it.each(Object.entries(profile.shadeBias))('gives every %s shade the same weight', (colorName, weights) => {
+    expect(new Set(Object.values(weights)).size).toBe(1);
+  });
+
+  it('rolls every Buckskin shade about equally often', () => {
+    const rng = seededRng(20261029);
+    const genotype = { E_Extension: 'E/e', A_Agouti: 'A/a', Cr_Cream: 'Cr/n' };
+    const counts = new Map();
+    const total = 30000;
+    for (let i = 0; i < total; i++) {
+      const { colorName, shade } = calculateBreedPhenotype(genotype, profile, rng);
+      expect(colorName).toBe('Buckskin');
+      counts.set(shade, (counts.get(shade) ?? 0) + 1);
+    }
+    expect([...counts.keys()].sort()).toEqual(['burnished', 'cream', 'golden']);
+    const fair = total / 3;
+    for (const count of counts.values()) {
+      expect(count).toBeGreaterThan(fair * 0.9);
+      expect(count).toBeLessThan(fair * 1.1);
     }
   });
 });

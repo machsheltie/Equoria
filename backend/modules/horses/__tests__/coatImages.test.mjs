@@ -24,16 +24,10 @@ const publicDir = join(repoRoot, 'frontend', 'public');
 const breed = 'American Saddlebred';
 const entry = coatImages[breed];
 
-// Colors a Saddlebred can roll that have no portrait yet (the owner will
-// address the Cream Champagnes herself; Dominant White got portraits 2026-10-29).
-const noPortraitYet = [
-  'Amber Cream Champagne',
-  'Classic Cream Champagne',
-  'Gold Cream Champagne',
-  'Ivory Champagne',
-  'Sable Cream Champagne',
-  'Smoky Seal Brown',
-];
+// Colors a Saddlebred can roll that have no portrait yet. Dominant White got
+// portraits 2026-10-29, then the Amber, Classic and Gold Cream Champagnes and
+// Ivory Champagne the same day.
+const noPortraitYet = ['Sable Cream Champagne', 'Smoky Seal Brown'];
 
 describe('coat-color portrait table (Equoria-de7ts)', () => {
   it('names only files that exist, and uses every file the owner delivered', () => {
@@ -59,6 +53,17 @@ describe('coat-color portrait table (Equoria-de7ts)', () => {
     ]);
     expect(files('Amber Champagne')).toEqual(['amberchampagne1.webp', 'amberchampagne2.webp']);
     expect(files('Sable Champagne')).toEqual(['sablechampagne1.webp', 'sablechampagne2.webp']);
+  });
+
+  it('gives the Cream Champagnes and Ivory Champagne their own two portraits, whatever the shade', () => {
+    const files = (colorName, shade) => coatImageVariants(breed, { colorName, shade }).map(url => url.split('/').pop());
+    expect(files('Amber Cream Champagne', 'rich')).toEqual(['ambercreamchampagne1.webp', 'ambercreamchampagne2.webp']);
+    expect(files('Classic Cream Champagne', 'silver')).toEqual([
+      'classiccreamchampagne1.webp',
+      'classiccreamchampagne2.webp',
+    ]);
+    expect(files('Gold Cream Champagne', 'pale')).toEqual(['goldcreamchampagne1.webp', 'goldcreamchampagne2.webp']);
+    expect(files('Ivory Champagne', 'standard')).toEqual(['ivorychampagne1.webp', 'ivorychampagne2.webp']);
   });
 
   it('gives every portrait at least two variants', () => {
@@ -94,6 +99,7 @@ describe('coat-color portrait table (Equoria-de7ts)', () => {
       '/images/breeds/american_saddlebred/dominantwhite1.webp',
       '/images/breeds/american_saddlebred/dominantwhite2.webp',
     ]);
+    expect(rollCoatImageUrl(breed, { colorName: 'Sable Cream Champagne', shade: 'standard' })).toBeNull();
     expect(rollCoatImageUrl(breed, { colorName: 'Bay', shade: 'no such shade' })).toBeNull();
     expect(rollCoatImageUrl('Arabian', bay)).toBeNull();
     expect(rollCoatImageUrl(breed, null)).toBeNull();

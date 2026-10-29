@@ -72,6 +72,10 @@ const saddlebredImages = {
   whitegrey: numbered('whitegrey'),
   fleabittengrey: numbered('fleabittengrey'),
   dominantwhite: numbered('dominantwhite'),
+  ambercreamchampagne: numbered('ambercreamchampagne'),
+  classiccreamchampagne: numbered('classiccreamchampagne'),
+  goldcreamchampagne: numbered('goldcreamchampagne'),
+  ivorychampagne: numbered('ivorychampagne'),
 };
 
 const saddlebredColors = {
@@ -119,6 +123,10 @@ const saddlebredColors = {
   'Fleabitten Gray': 'fleabittengrey',
   // Owner added these portraits 2026-10-29.
   'Dominant White': 'dominantwhite',
+  'Amber Cream Champagne': 'ambercreamchampagne',
+  'Classic Cream Champagne': 'classiccreamchampagne',
+  'Gold Cream Champagne': 'goldcreamchampagne',
+  'Ivory Champagne': 'ivorychampagne',
 };
 
 export const coatImages = Object.freeze({
