@@ -20,7 +20,6 @@ import {
   TrainerAssignmentEntry,
   MarketplaceTrainer,
   TrainerMarketplaceData,
-  TrainerDiscoveryData,
 } from '@/lib/api-client';
 // Equoria-8cnzr — single error-taxonomy mapping point. Used for mutation
 // failure toasts so a raw server body message is never surfaced (§3).
@@ -28,13 +27,7 @@ import { userMessageFor } from '@/lib/http/userMessage';
 import { actionMessageFor, assignStaffRefusalCodes } from '@/lib/http/actionMessage';
 
 // Re-export types for convenience
-export type {
-  TrainerEntry,
-  TrainerAssignmentEntry,
-  MarketplaceTrainer,
-  TrainerMarketplaceData,
-  TrainerDiscoveryData,
-};
+export type { TrainerEntry, TrainerAssignmentEntry, MarketplaceTrainer, TrainerMarketplaceData };
 
 // Query Keys
 export const trainerKeys = {
@@ -42,7 +35,6 @@ export const trainerKeys = {
   user: (userId: string | number) => [...trainerKeys.all, 'user', userId] as const,
   assignments: () => [...trainerKeys.all, 'assignments'] as const,
   marketplace: () => [...trainerKeys.all, 'marketplace'] as const,
-  discovery: (trainerId: number) => [...trainerKeys.all, 'discovery', trainerId] as const,
   rosterLimit: () => [...trainerKeys.all, 'rosterLimit'] as const,
 };
 
@@ -205,18 +197,5 @@ export function useDismissTrainer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: trainerKeys.all });
     },
-  });
-}
-
-/**
- * Trainer discovery slots — 3 categories × 2 slots, unlocked by trainer level.
- * Returns the live server-generated profile (never a client-side empty stub).
- */
-export function useTrainerDiscovery(trainerId: number | null | undefined) {
-  return useQuery<TrainerDiscoveryData, ApiError>({
-    queryKey: trainerId ? trainerKeys.discovery(trainerId) : trainerKeys.all,
-    queryFn: () => trainersApi.getDiscovery(trainerId as number),
-    enabled: Boolean(trainerId),
-    staleTime: 60 * 1000, // 1 minute — recompiles on trainer level up
   });
 }

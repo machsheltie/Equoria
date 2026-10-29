@@ -2,7 +2,7 @@
  * TrainersPage — World > Trainers Location (Epic 13)
  *
  * The Trainers location in the World hub. Two modes:
- * - Manage: View current trainers, assignments, career progress, trait discovery
+ * - Manage: View current trainers, assignments, career progress
  * - Hire: Browse and hire trainer candidates from marketplace
  *
  * Follows the "Hire → Assign → Discover → Retire" staff system pattern.

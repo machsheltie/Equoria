@@ -106,10 +106,6 @@ export type {
   MarketplaceTrainer,
   TrainerMarketplaceData,
   TrainerAssignmentEntry,
-  TrainerDiscoveryCategory,
-  TrainerDiscoveryTrait,
-  TrainerDiscoverySlot,
-  TrainerDiscoveryData,
 } from './api/trainers.js';
 
 // ── Vet Clinic ────────────────────────────────────────────────────────────────

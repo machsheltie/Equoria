@@ -9,6 +9,8 @@
  *   values (which stay: the screens filter and hire by them).
  * - GET /trainers/user/:id sent the whole trainer row, including discoverySlots:
  *   every hidden trait a trainer has, before the player discovers any of them.
+ *   (The slots themselves were retired with the trainer discovery panel, owner
+ *   ruling 2026-10-29, q304; the roster stays an allow-list.)
  * - GET /riders/user/:id sent the whole rider row, including startAge.
  * - The marketplaces sent each stored offer verbatim, so any field stored on an
  *   offer reached the browser. An offer is now copied through an allow-list.
@@ -109,7 +111,6 @@ describe('staff reads send authored words, never hidden fields', () => {
         personality: 'encouraging',
         skillLevel: 'developing',
         speciality: 'Dressage',
-        discoverySlots: [{ slotIndex: 0, category: 'secretBonus', label: 'Hidden knack', strength: 'strong' }],
         userId: user.id,
       },
     });

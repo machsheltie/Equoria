@@ -5,21 +5,12 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { hiredStaffFee, staffCareerLevel } from '../../../constants/staffLevels.mjs';
+import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
 import { publicStaffRow, staffLabels } from '../../../utils/staffPublicView.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 // Equoria-6p398.14 follow-up: a retired horse (21+, not in foal) is given no new trainer.
 import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
 import { getTrainerRosterCap } from '../config/trainerConfig.mjs';
-import {
-  generateDiscoverySlots,
-  readDiscoverySlots,
-  writeDiscoverySlots,
-} from '../services/trainerDiscoveryService.mjs';
-import {
-  getRevealedDiscoveryCount,
-  getNextDiscoveryRevealLevel,
-} from '../../../utils/discoverySlotReveal.mjs';
 
 /**
  * Build an error the assignment catch blocks turn into a specific HTTP
@@ -51,8 +42,7 @@ export async function getUserTrainers(req, res) {
       orderBy: { createdAt: 'asc' },
     });
 
-    // Equoria-no441: allow-listed fields plus authored labels; the undiscovered
-    // traits in discoverySlots never leave the server.
+    // Equoria-no441: allow-listed fields plus authored labels only.
     const formatted = trainers.map(t =>
       publicStaffRow('trainer', {
         ...t,
@@ -287,69 +277,6 @@ export async function deleteTrainerAssignment(req, res) {
   } catch (error) {
     logger.error(`[trainerController] deleteTrainerAssignment error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to unassign trainer', data: null });
-  }
-}
-
-/**
- * GET /api/trainers/:id/discovery
- * Returns discovery slots for a trainer (career affinity discoveries).
- * 3 categories × 2 slots = 6 total.
- * Trait content is persisted in discovery_slots JSONB; visibility is computed
- * by the stepped reveal cadence (Equoria-oey96.25): slots unlock at career levels
- * 2, 4, 6, 8, 9, 10. Every trainer sits at level 1 (owner ruling 2026-10-28, q244:
- * stars give nothing for now), so none is revealed until staff growth (xlw03).
- */
-export async function getTrainerDiscovery(req, res) {
-  try {
-    const userId = req.user.id;
-    const trainerId = parseInt(req.params.id, 10);
-
-    const trainer = await prisma.trainer.findFirst({ where: { id: trainerId, userId } });
-    if (!trainer) {
-      return res.status(404).json({ success: false, message: 'Trainer not found' });
-    }
-
-    // Read persisted trait pool; auto-seed for legacy trainers with empty slots.
-    let slotPool = await readDiscoverySlots(trainerId);
-    if (slotPool.length === 0) {
-      slotPool = generateDiscoverySlots(trainer.speciality, trainer.personality);
-      await writeDiscoverySlots(trainerId, slotPool);
-    }
-
-    const discoveredCount = getRevealedDiscoveryCount(staffCareerLevel);
-
-    const slots = slotPool.map(slot => ({
-      slotIndex: slot.slotIndex,
-      category: slot.category,
-      discovered: slot.slotIndex < discoveredCount,
-      trait:
-        slot.slotIndex < discoveredCount
-          ? {
-              id: `${slot.category}_${slot.slotIndex}`,
-              label: slot.label,
-              description: slot.description,
-              icon: slot.icon,
-              strength: slot.strength,
-            }
-          : undefined,
-    }));
-
-    res.status(200).json({
-      success: true,
-      message: 'Trainer discovery data retrieved',
-      data: {
-        trainerId,
-        totalSlots: 6,
-        discoveredCount,
-        slots,
-        nextDiscoveryAt: getNextDiscoveryRevealLevel(discoveredCount) ?? undefined,
-      },
-    });
-  } catch (error) {
-    logger.error(`[trainerController] getTrainerDiscovery error: ${error.message}`);
-    res
-      .status(500)
-      .json({ success: false, message: 'Failed to get trainer discovery', data: null });
   }
 }
 

@@ -342,38 +342,6 @@ describe('GET /api/v1/trainers/user/:userId', () => {
   });
 });
 
-// ─── GET /api/v1/trainers/:id/discovery ─────────────────────────────────────────
-
-describe('GET /api/v1/trainers/:id/discovery', () => {
-  it('returns 200 with discovery slots for owned trainer', async () => {
-    const res = await request(app)
-      .get(`/api/v1/trainers/${trainer.id}/discovery`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.trainerId).toBe(trainer.id);
-    expect(Array.isArray(res.body.data.slots)).toBe(true);
-  });
-
-  it('returns 404 for trainer not owned by user', async () => {
-    const res = await request(app)
-      .get('/api/v1/trainers/999999999/discovery')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(404);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/trainers/${trainer.id}/discovery`).set('Origin', ORIGIN);
-    expect(res.status).toBe(401);
-  });
-});
-
 // ─── DELETE /api/v1/trainers/:id/dismiss ────────────────────────────────────────
 
 describe('DELETE /api/v1/trainers/:id/dismiss', () => {

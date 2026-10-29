@@ -6,7 +6,8 @@
  * - Slot usage ("2 of 4 trainer slots used")
  * - Trainer cards with personality, star level, assignment status
  * - Retirement warnings
- * - Expandable career + discovery panels
+ * - Expandable career panel (the discovery panel was retired by the owner's
+ *   2026-10-29 ruling, q304)
  *
  * Data is wired to real API hooks:
  *   useUserTrainers(userId)       → /api/trainers/user/:id
@@ -25,7 +26,6 @@ import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import { ErrorState, InlineError } from '@/components/ui/state';
 import TrainerPersonalityBadge from './trainer/TrainerPersonalityBadge';
 import TrainerCareerPanel, { type TrainerCareerData } from './trainer/TrainerCareerPanel';
-import { TrainerDiscoveryPanelLive } from './trainer/TrainerDiscoveryPanel';
 import TrainerAssignmentCard from './trainer/TrainerAssignmentCard';
 import TrainerDismissControl from './trainer/TrainerDismissControl';
 import {
@@ -65,7 +65,6 @@ interface MyTrainersDashboardProps {
 
 const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ userId }) => {
   const [expandedTrainerId, setExpandedTrainerId] = useState<number | null>(null);
-  const [expandedSection, setExpandedSection] = useState<'career' | 'discovery'>('career');
   const [selectedTrainerIdForAssign, setSelectedTrainerIdForAssign] = useState<number | null>(null);
 
   // isError/error/refetch are destructured so the dashboard renders a real ERROR
@@ -382,7 +381,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ userId }) => 
                 }
               />
 
-              {/* Expand Career / Discovery */}
+              {/* Expand Career */}
               <button
                 type="button"
                 onClick={() => {
@@ -390,14 +389,13 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ userId }) => 
                     setExpandedTrainerId(null);
                   } else {
                     setExpandedTrainerId(trainer.id);
-                    setExpandedSection('career');
                   }
                 }}
                 className="w-full text-left text-xs text-role-muted hover:text-role-secondary flex items-center justify-between py-1 transition-colors"
                 aria-expanded={isExpanded}
                 data-testid={`expand-toggle-${trainer.id}`}
               >
-                <span>Career &amp; Discovery Details</span>
+                <span>Career Details</span>
                 {isExpanded ? (
                   <ChevronUp className="w-3.5 h-3.5" />
                 ) : (
@@ -407,34 +405,10 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ userId }) => 
 
               {isExpanded && (
                 <div className="mt-3 pt-3 border-t border-white/10">
-                  {/* Section Tabs */}
-                  <div className="flex gap-1 mb-4">
-                    {(['career', 'discovery'] as const).map((section) => (
-                      <button
-                        key={section}
-                        type="button"
-                        onClick={() => setExpandedSection(section)}
-                        className={`flex-1 py-1.5 text-xs rounded-lg font-medium transition-colors capitalize ${
-                          expandedSection === section
-                            ? 'bg-white/10 text-role-primary'
-                            : 'text-role-muted hover:text-role-secondary'
-                        }`}
-                      >
-                        {section}
-                      </button>
-                    ))}
-                  </div>
-
-                  {expandedSection === 'career' && (
-                    <TrainerCareerPanel
-                      trainer={careerData}
-                      assignmentCount={trainerAssignments.length}
-                    />
-                  )}
-
-                  {expandedSection === 'discovery' && (
-                    <TrainerDiscoveryPanelLive trainerId={trainer.id} />
-                  )}
+                  <TrainerCareerPanel
+                    trainer={careerData}
+                    assignmentCount={trainerAssignments.length}
+                  />
                 </div>
               )}
             </div>

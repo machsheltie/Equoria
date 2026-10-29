@@ -10,7 +10,6 @@
  *   POST /api/v1/trainers/assignments         → { success }
  *   DELETE /api/v1/trainers/assignments/:id   → { success }
  *   DELETE /api/v1/trainers/:id/dismiss       → { success }
- *   GET  /api/v1/trainers/:id/discovery       → TrainerDiscoveryData
  */
 
 import { apiClient } from '../http/apiClient.js';
@@ -75,34 +74,6 @@ export interface TrainerAssignmentEntry {
   isActive: boolean;
 }
 
-export type TrainerDiscoveryCategory =
-  | 'disciplineSpecialization'
-  | 'trainingMethod'
-  | 'horseCompatibility';
-
-export interface TrainerDiscoveryTrait {
-  id: string;
-  label: string;
-  description: string;
-  icon: string;
-  strength: 'mild' | 'moderate' | 'strong';
-}
-
-export interface TrainerDiscoverySlot {
-  slotIndex: number;
-  category: TrainerDiscoveryCategory;
-  discovered: boolean;
-  trait?: TrainerDiscoveryTrait;
-}
-
-export interface TrainerDiscoveryData {
-  trainerId: number;
-  totalSlots: number;
-  discoveredCount: number;
-  slots: TrainerDiscoverySlot[];
-  nextDiscoveryAt?: number;
-}
-
 /** GET /api/v1/trainers/roster-cap — the limit the hire path enforces (q222). */
 export interface TrainerRosterLimit {
   rosterCap: number;
@@ -132,6 +103,4 @@ export const trainersApi = {
     apiClient.delete<{ success: boolean }>(`/api/v1/trainers/assignments/${assignmentId}`),
   dismissTrainer: (trainerId: number) =>
     apiClient.delete<{ success: boolean }>(`/api/v1/trainers/${trainerId}/dismiss`),
-  getDiscovery: (trainerId: number) =>
-    apiClient.get<TrainerDiscoveryData>(`/api/v1/trainers/${trainerId}/discovery`),
 };
