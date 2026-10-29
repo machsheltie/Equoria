@@ -308,6 +308,7 @@ model Horse {
   showEntries             ShowEntry[]
   breedingRecordsAsSire   BreedingRecord[]      @relation("BreedingRecordSire")
   breedingRecordsAsDam    BreedingRecord[]      @relation("BreedingRecordDam")
+  breedingRecordAsFoal    BreedingRecord?       @relation("BreedingRecordFoal")
   hallOfFameNomination    HallOfFameNomination?
   hallOfFameInduction     HallOfFameInduction?
 
@@ -2417,6 +2418,10 @@ model BreedingRecord {
   sire              Horse?         @relation("BreedingRecordSire", fields: [sireId], references: [id], onDelete: SetNull)
   damId             Int?
   dam               Horse?         @relation("BreedingRecordDam", fields: [damId], references: [id], onDelete: SetNull)
+  /// Equoria-wnlf0 (BRE-11): the foal this breeding produced, set in the foaling
+  /// transaction. Null until the birth (and for PENDING/DECLINED/CANCELLED rows).
+  foalId            Int?           @unique
+  foal              Horse?         @relation("BreedingRecordFoal", fields: [foalId], references: [id], onDelete: SetNull)
   mareOwnerId       String?
   mareOwner         User?          @relation("BreedingRecordsAsMareOwner", fields: [mareOwnerId], references: [id], onDelete: SetNull)
   stallionOwnerId   String?

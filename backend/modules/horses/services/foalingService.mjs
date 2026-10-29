@@ -101,6 +101,24 @@ function foalBornPayload(foal, dam, sire) {
   return { foalName: foal.name, foalId: foal.id, damName: dam.name, sireName: sire.name };
 }
 
+/**
+ * Equoria-wnlf0 (audit BRE-11): name the foal on the breeding that made it — the
+ * dam's latest COMPLETED record for this sire with no foal yet (written at
+ * conception by an own pair, a public booking or an approved private request).
+ * A pregnancy older than breeding records has none; then nothing is linked.
+ * Runs inside the foaling transaction, after the dam's row is claimed.
+ */
+async function linkBreedingRecordToFoalTx(tx, { damId, sireId, foalId }) {
+  const record = await tx.breedingRecord.findFirst({
+    where: { damId, sireId, status: 'COMPLETED', foalId: null },
+    orderBy: { id: 'desc' },
+    select: { id: true },
+  });
+  if (record) {
+    await tx.breedingRecord.update({ where: { id: record.id }, data: { foalId } });
+  }
+}
+
 function pickFirstUnused(pool, existing) {
   for (const trait of pool) {
     if (!existing.includes(trait)) {
@@ -476,6 +494,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     // A mare who turned 21 in foal kept her staff until now (owner ruling 2026-10-23).
     await releaseStaffIfRetiredTx(tx, damId);
     const foal = await createHorse({ ...horseData, userId: ownerId }, tx);
+    await linkBreedingRecordToFoalTx(tx, { damId, sireId, foalId: foal.id });
     if (ownerId) {
       await createNotificationTx(tx, ownerId, 'foalBorn', foalBornPayload(foal, dam, sire));
     }
