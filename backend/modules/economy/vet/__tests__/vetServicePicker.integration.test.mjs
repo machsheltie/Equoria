@@ -29,6 +29,7 @@ import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const startMoney = 5000;
@@ -53,7 +54,7 @@ const day = date => date.toISOString().slice(0, 10);
 
 async function makeHorse(key, data) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-VetPicker-${key}-${randomBytes(3).toString('hex')}`,
       sex: 'Mare',
@@ -63,7 +64,7 @@ async function makeHorse(key, data) {
       healthStatus: 'Excellent',
       lastVettedDate: new Date('2024-01-01'),
       ...data,
-    },
+    }),
   });
   horses[key] = horse;
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), `horse ${key}`);

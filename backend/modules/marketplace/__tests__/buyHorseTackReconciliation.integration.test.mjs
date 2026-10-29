@@ -53,6 +53,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { buyAndEquip, seedLegacyShopTack } from '../../../__tests__/helpers/tackShopBuy.mjs';
 import { allTackItems } from '../../economy/index.mjs';
 import { __TESTING_ONLY_setMarketplaceRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-6p398-12-tack';
@@ -91,7 +92,7 @@ async function makeUser(role, money) {
 
 async function makeHorse(ownerId, { forSale = false, salePrice = 0 } = {}) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${tag()}`,
       sex: 'Mare',
@@ -101,7 +102,7 @@ async function makeHorse(ownerId, { forSale = false, salePrice = 0 } = {}) {
       healthStatus: 'Excellent',
       forSale,
       salePrice,
-    },
+    }),
   });
 }
 

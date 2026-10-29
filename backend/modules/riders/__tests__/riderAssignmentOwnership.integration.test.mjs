@@ -30,6 +30,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createBarrierClient, holdLock } from '../../../__tests__/helpers/rowLockBarrier.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-6p398-6-owner';
@@ -61,7 +62,7 @@ async function makeUser(role, money) {
 
 async function makeHorse(ownerId) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${tag()}`,
       sex: 'Mare',
@@ -69,7 +70,7 @@ async function makeHorse(ownerId) {
       age: 6,
       userId: ownerId,
       healthStatus: 'Excellent',
-    },
+    }),
   });
 }
 

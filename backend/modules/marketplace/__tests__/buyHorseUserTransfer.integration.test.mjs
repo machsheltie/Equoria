@@ -29,6 +29,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const origin = 'http://localhost:3000';
 const fixturePrefix = 'TestFixture-t8v8t-transfer';
@@ -74,7 +75,7 @@ async function setMoney(userId, amount) {
 
 async function makeListedHorse(sellerId) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${fixturePrefix}-horse-${tag()}`,
       sex: 'Mare',
@@ -84,7 +85,7 @@ async function makeListedHorse(sellerId) {
       healthStatus: 'Excellent',
       forSale: true,
       salePrice: price,
-    },
+    }),
   });
   horseIds.push(horse.id);
   return horse;

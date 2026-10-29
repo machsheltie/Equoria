@@ -15,6 +15,7 @@ import { fetchCsrf, attachCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -66,7 +67,7 @@ describe('SENTINEL: marketplace purchase → horsePurchased + horseSold Notifica
     });
 
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-MpNotifHorse-${Date.now()}`,
         sex: 'Stallion',
@@ -75,7 +76,7 @@ describe('SENTINEL: marketplace purchase → horsePurchased + horseSold Notifica
         userId: seller.id,
         forSale: true,
         salePrice: 500,
-      },
+      }),
     });
 
     buyerToken = generateTestToken({ id: buyer.id, email: buyer.email, role: 'user' });

@@ -32,6 +32,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -186,14 +187,14 @@ describe('inventoryController integration', () => {
 
       // Create horse owned by user; tracked for scoped afterEach cleanup.
       const horse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `TestFixture-InvHorse-${Date.now()}`,
           sex: 'Filly',
           dateOfBirth: new Date('2022-01-01'),
           age: 3,
           userId: user.id,
-        },
+        }),
       });
       createdHorseIds.push(horse.id);
 
@@ -279,7 +280,7 @@ describe('inventoryController integration', () => {
 
     it('returns 200 and unequips item when it was equipped', async () => {
       const horse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `TestFixture-InvHorse-${Date.now()}`,
           sex: 'Filly',
@@ -287,7 +288,7 @@ describe('inventoryController integration', () => {
           age: 3,
           userId: user.id,
           tack: { saddle: 'all-purpose-saddle' },
-        },
+        }),
       });
       createdHorseIds.push(horse.id);
 

@@ -19,6 +19,7 @@ import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 // merged from legacy backend/tests, Equoria-wvuin — pure catalog + bonus + controller-direct
 import { TACK_INVENTORY, purchaseTackItem, unequipDecoration } from '../controllers/tackShopController.mjs';
 import { createCleanupTracker } from '../../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -47,14 +48,14 @@ beforeAll(async () => {
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-TackHorse-${Date.now()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-01-01'),
       age: 6,
       userId: user.id,
-    },
+    }),
   });
 }, 30000);
 

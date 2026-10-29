@@ -39,6 +39,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { bookVetAppointment, healthCheckFee, VET_SERVICES } from '../controllers/vetController.mjs';
+import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-2hfss-vet';
 const STARTING_MONEY = 10000;
@@ -82,7 +83,7 @@ beforeAll(async () => {
   createdUserIds.push(user.id);
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${tag}`,
       sex: 'Mare',
@@ -93,7 +94,7 @@ beforeAll(async () => {
       // Owner ruling 2026-10-26 (Equoria-7dmzp): a horse vetted within the last week is
       // refused a second health check, so this fixture was last vetted long ago.
       lastVettedDate: new Date('2024-01-01'),
-    },
+    }),
   });
   createdHorseIds.push(horse.id);
 }, 60000);

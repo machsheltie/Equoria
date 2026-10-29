@@ -36,6 +36,7 @@ import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../../__tests__/helpers/failLoudCleanup.mjs';
 import { buyAndEquip } from '../../../../__tests__/helpers/tackShopBuy.mjs';
+import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-6p398-12-tackdoc';
@@ -67,7 +68,7 @@ async function makeUser(role, money) {
 
 async function makeHorse(ownerId, { forSale = false, salePrice = 0 } = {}) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${uniq()}`,
       sex: 'Mare',
@@ -77,7 +78,7 @@ async function makeHorse(ownerId, { forSale = false, salePrice = 0 } = {}) {
       healthStatus: 'Excellent',
       forSale,
       salePrice,
-    },
+    }),
   });
 }
 

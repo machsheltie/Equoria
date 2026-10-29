@@ -27,6 +27,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-bvddn8-trainer';
@@ -57,7 +58,7 @@ async function makeUser() {
 
 async function makeHorse(ownerId, label) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${label}-${tag()}`,
       sex: 'Mare',
@@ -65,7 +66,7 @@ async function makeHorse(ownerId, label) {
       age: 6,
       userId: ownerId,
       healthStatus: 'Excellent',
-    },
+    }),
   });
 }
 

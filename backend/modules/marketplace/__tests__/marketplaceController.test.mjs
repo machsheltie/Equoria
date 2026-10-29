@@ -38,6 +38,7 @@ import { listHorse } from '../controllers/marketplaceController.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -197,13 +198,13 @@ describe('marketplaceController integration', () => {
 
     it('returns 400 when price is below 100', async () => {
       const horse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `TestFixture-MPHorse-${Date.now()}`,
           sex: 'Mare',
           dateOfBirth: new Date('2020-01-01'),
           user: { connect: { id: user.id } },
-        },
+        }),
       });
       const csrf = await fetchCsrfFor(token);
       const res = await request(app)
@@ -234,14 +235,14 @@ describe('marketplaceController integration', () => {
 
     it('returns 200 and lists an owned horse for sale', async () => {
       const horse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `TestFixture-MPHorse-${Date.now()}`,
           sex: 'Filly',
           dateOfBirth: new Date('2021-01-01'),
           age: 4,
           userId: user.id,
-        },
+        }),
       });
       createdHorseIds.push(horse.id);
 

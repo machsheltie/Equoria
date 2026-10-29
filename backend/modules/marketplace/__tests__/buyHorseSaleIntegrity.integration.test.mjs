@@ -31,6 +31,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-6p398-4-integrity';
@@ -66,7 +67,7 @@ async function makeUser(role, money) {
 
 async function makeListedHorse(sellerId, salePrice) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${tag()}`,
       sex: 'Mare',
@@ -76,7 +77,7 @@ async function makeListedHorse(sellerId, salePrice) {
       healthStatus: 'Excellent',
       forSale: true,
       salePrice,
-    },
+    }),
   });
   horseIds.push(horse.id);
   return horse;

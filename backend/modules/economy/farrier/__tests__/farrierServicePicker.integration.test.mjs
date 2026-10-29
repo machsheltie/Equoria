@@ -19,6 +19,7 @@ import { generateTestToken } from '../../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const cleanup = createCleanupTracker();
@@ -40,7 +41,7 @@ const money = async () => (await prisma.user.findUnique({ where: { id: user.id }
 
 async function makeHorse(key, data) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-FarrierPicker-${key}-${randomBytes(3).toString('hex')}`,
       sex: 'Mare',
@@ -48,7 +49,7 @@ async function makeHorse(key, data) {
       age: 6,
       userId: user.id,
       ...data,
-    },
+    }),
   });
   horses[key] = horse;
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), `horse ${key}`);

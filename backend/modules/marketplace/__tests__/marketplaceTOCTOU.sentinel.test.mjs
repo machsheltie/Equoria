@@ -36,6 +36,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf, attachCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -108,7 +109,7 @@ describe('SENTINEL: marketplace purchase TOCTOU (Equoria-alei5)', () => {
       },
     });
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-MpTOCTOU-${randomBytes(4).toString('hex')}`,
         sex: 'Stallion',
@@ -117,7 +118,7 @@ describe('SENTINEL: marketplace purchase TOCTOU (Equoria-alei5)', () => {
         userId: seller.id,
         forSale: true,
         salePrice: 500,
-      },
+      }),
     });
     tokenA = generateTestToken({ id: buyerA.id, email: buyerA.email, role: 'user' });
     tokenB = generateTestToken({ id: buyerB.id, email: buyerB.email, role: 'user' });

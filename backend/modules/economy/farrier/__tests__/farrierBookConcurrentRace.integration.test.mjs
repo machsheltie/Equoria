@@ -19,6 +19,7 @@ import prisma from '../../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { HORSE_STAT_VALUES } from '../../../../constants/schema.mjs';
 import { shoeHorse, shoeingCost } from '../controllers/farrierController.mjs';
+import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-6g8wm-farrier';
 const N = 5;
@@ -57,7 +58,7 @@ async function makeFixture(money) {
   });
   createdUserIds.push(user.id);
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${tag}`,
       sex: 'Mare',
@@ -65,7 +66,7 @@ async function makeFixture(money) {
       age: 6,
       userId: user.id,
       healthStatus: 'healthy',
-    },
+    }),
   });
   createdHorseIds.push(horse.id);
   return { user, horse };

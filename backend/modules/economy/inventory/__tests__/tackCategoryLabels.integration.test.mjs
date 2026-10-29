@@ -20,6 +20,7 @@ import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../../utils/gameTime.mjs';
 import { allTackItems } from '../../index.mjs';
+import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 // The stored code the catalogue gives a saddle pad (a two-word category).
 const padCategory = allTackItems().find(item => item.id === 'basic-saddle-pad').category;
@@ -64,14 +65,14 @@ describe('tack and feed items carry their category word', () => {
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${fixturePrefix}-${run}`,
         sex: 'Mare',
         dateOfBirth: gameCalendarDate(new Date(), -6 * 365),
         age: 6,
         userId: user.id,
-      },
+      }),
     });
   }, 60000);
 

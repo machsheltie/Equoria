@@ -20,6 +20,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Equip / Unequip feed endpoints', () => {
   let user;
@@ -58,14 +59,14 @@ describe('Equip / Unequip feed endpoints', () => {
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
 
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `EqHorse${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'mare',
         dateOfBirth: new Date('2020-01-01'),
         age: 5,
         userId: user.id,
-      },
+      }),
     });
     horseId = horse.id;
   }, 120000); // 120s — user+horse create can be slow under full-suite load

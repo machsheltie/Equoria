@@ -30,6 +30,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createBarrierClient, horseRowLock, raceBehindLock } from '../../../__tests__/helpers/rowLockBarrier.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const fixturePrefix = 'TestFixture-j8s5c-trainer';
@@ -62,7 +63,7 @@ describe('trainer assign: two trainers, one horse (Equoria-j8s5c)', () => {
     });
     token = generateTestToken({ id: owner.id, email: owner.email, role: 'user' });
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${fixturePrefix}-horse-${suffix}`,
         sex: 'Mare',
@@ -70,7 +71,7 @@ describe('trainer assign: two trainers, one horse (Equoria-j8s5c)', () => {
         age: 6,
         userId: owner.id,
         healthStatus: 'Excellent',
-      },
+      }),
     });
     trainers = [];
     for (const label of ['a', 'b']) {

@@ -27,6 +27,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createBarrierClient, horseRowLock, raceBehindLock } from '../../../__tests__/helpers/rowLockBarrier.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const fixturePrefix = 'TestFixture-j8s5c-rider';
@@ -63,7 +64,7 @@ describe('rider assign under concurrency (Equoria-j8s5c)', () => {
     for (const label of ['a', 'b']) {
       horses.push(
         await prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: `${fixturePrefix}-horse-${label}-${suffix}`,
             sex: 'Mare',
@@ -71,7 +72,7 @@ describe('rider assign under concurrency (Equoria-j8s5c)', () => {
             age: 6,
             userId: owner.id,
             healthStatus: 'Excellent',
-          },
+          }),
         }),
       );
       riders.push(
@@ -134,7 +135,7 @@ describe('rider assign under concurrency (Equoria-j8s5c)', () => {
     for (let i = 0; i < 19; i += 1) {
       seated.push(
         await prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: `${fixturePrefix}-horse-seated${i}-${tag()}`,
             sex: 'Mare',
@@ -142,7 +143,7 @@ describe('rider assign under concurrency (Equoria-j8s5c)', () => {
             age: 6,
             userId: owner.id,
             healthStatus: 'Excellent',
-          },
+          }),
         }),
       );
     }

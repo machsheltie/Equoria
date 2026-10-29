@@ -47,6 +47,7 @@ import {
   openRowLockBarrier,
   waitForBlockedSessions,
 } from '../../../../__tests__/helpers/rowLockBarrier.mjs';
+import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 const origin = 'http://localhost:3000';
 const fixturePrefix = 'TestFixture-6p398-19-tack';
@@ -118,7 +119,7 @@ describe('Horse.tack replace / decoration return / equip-vs-purchase (Equoria-6p
     });
     token = generateTestToken({ id: owner.id, email: owner.email, role: 'user' });
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${fixturePrefix}-horse-${tag}`,
         sex: 'Mare',
@@ -126,7 +127,7 @@ describe('Horse.tack replace / decoration return / equip-vs-purchase (Equoria-6p
         age: 6,
         userId: owner.id,
         healthStatus: 'Excellent',
-      },
+      }),
     });
   }, 60000);
 

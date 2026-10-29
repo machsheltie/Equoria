@@ -21,6 +21,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { studStatuses } from '../../../constants/schema.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const PREFIX = 'TestFixture-q4uem91-search';
 const SECRET = 'q4uem91SearchSecretTrait';
@@ -60,7 +61,7 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
 
   async function horse({ ownerId = seller.user.id, label, ageYears = 5, ...overrides }) {
     const h = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         name: `${PREFIX}-${run}-${label}`,
         sex: 'Stallion',
         dateOfBirth: birthDateForAge(ageYears),
@@ -71,7 +72,7 @@ describe('marketplace all-horses search (Equoria-q4uem.9.1)', () => {
         lastFedDate: new Date(),
         phenotype: { colorName: 'Bay' },
         ...overrides,
-      },
+      }),
     });
     horseIds.push(h.id);
     return h;

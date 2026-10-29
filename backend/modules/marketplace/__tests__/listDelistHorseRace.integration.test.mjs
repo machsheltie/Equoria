@@ -29,6 +29,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import config from '../../../config/config.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-kj4g7';
 const SALE_PRICE = 250;
@@ -64,7 +65,7 @@ async function makeUser(suffix) {
 
 async function makeHorse(forSale) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
@@ -74,7 +75,7 @@ async function makeHorse(forSale) {
       healthStatus: 'healthy',
       forSale,
       salePrice: forSale ? SALE_PRICE : 0,
-    },
+    }),
   });
   createdHorseIds.push(horse.id);
   return horse;

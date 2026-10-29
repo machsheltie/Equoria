@@ -30,6 +30,7 @@ import { loadActiveAssignments, riderRefusal } from '../../../utils/competitionE
 import { settleEndedRiderPayWeek } from '../index.mjs';
 import { payRider } from '../services/riderPlayerPayService.mjs';
 import { getRiderPayWeekStart, riderPayWeekKey } from '../services/riderPayWeek.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const PREFIX = 'TestFixture-gafyt';
 const tag = () => randomBytes(4).toString('hex');
@@ -108,7 +109,7 @@ async function makeRider(userId, weeklyRate, extra = {}) {
 
 async function makeAssignedHorse(userId, riderId) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}-horse-${tag()}`,
       sex: 'Mare',
@@ -116,7 +117,7 @@ async function makeAssignedHorse(userId, riderId) {
       age: 5,
       userId,
       healthStatus: 'Excellent',
-    },
+    }),
   });
   horseIds.push(horse.id);
   await prisma.riderAssignment.create({ data: { riderId, horseId: horse.id, userId } });

@@ -29,6 +29,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createBarrierClient, holdLock } from '../../../__tests__/helpers/rowLockBarrier.mjs';
 import { processRiderRetirement } from '../../riders/index.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const fixturePrefix = 'TestFixture-r9u5k';
@@ -61,7 +62,7 @@ describe('rider retirement ends the assignment on the horse (Equoria-r9u5k)', ()
     });
     token = generateTestToken({ id: owner.id, email: owner.email, role: 'user' });
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${fixturePrefix}-horse-${suffix}`,
         sex: 'Mare',
@@ -69,7 +70,7 @@ describe('rider retirement ends the assignment on the horse (Equoria-r9u5k)', ()
         age: 6,
         userId: owner.id,
         healthStatus: 'Excellent',
-      },
+      }),
     });
     rider = await prisma.rider.create({
       data: {

@@ -22,6 +22,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { getUserTrainers, getTrainerAssignments, getTrainerDiscovery } from '../controllers/trainerController.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const fixturePrefix = 'TestFixture-pzoxz';
 const suffix = randomBytes(6).toString('hex');
@@ -104,7 +105,7 @@ describe('a trainer read never sends undiscovered discovery slots (Equoria-pzoxz
       throw new Error('Needs the seeded Thoroughbred breed; refusing to skip.');
     }
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${fixturePrefix}-${suffix}-horse`,
         dateOfBirth: gameCalendarDate(new Date(), -42),
@@ -112,7 +113,7 @@ describe('a trainer read never sends undiscovered discovery slots (Equoria-pzoxz
         sex: 'Mare',
         userId: user.id,
         breedId: breed.id,
-      },
+      }),
     });
     await prisma.trainerAssignment.create({
       data: { trainerId: trainer.id, horseId: horse.id, userId: user.id, isActive: true },

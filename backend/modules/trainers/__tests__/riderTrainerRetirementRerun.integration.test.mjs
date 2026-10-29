@@ -25,6 +25,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { processRiderTrainerRetirement } from '../index.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // The one-week notice type (riders riderRetirementService.riderRetiringNotificationType).
 const riderRetiringNotificationType = 'riderRetiring';
@@ -73,7 +74,7 @@ describe('weekly rider + trainer retirement re-run (Equoria-g8fhu)', () => {
       },
     });
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${fixturePrefix}-horse-${suffix}`,
         sex: 'Mare',
@@ -81,7 +82,7 @@ describe('weekly rider + trainer retirement re-run (Equoria-g8fhu)', () => {
         age: 6,
         userId: owner.id,
         healthStatus: 'Excellent',
-      },
+      }),
     });
     const riderData = lastName => ({
       firstName: 'TestFixture',

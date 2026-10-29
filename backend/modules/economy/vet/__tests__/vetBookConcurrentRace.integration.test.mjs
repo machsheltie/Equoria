@@ -21,6 +21,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { bookVetAppointment, healthCheckFee, VET_SERVICES } from '../controllers/vetController.mjs';
+import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-6g8wm-vet';
 const N = 5;
@@ -67,7 +68,7 @@ beforeAll(async () => {
   createdUserIds.push(user.id);
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${tag}`,
       sex: 'Mare',
@@ -75,7 +76,7 @@ beforeAll(async () => {
       age: 6,
       userId: user.id,
       healthStatus: 'healthy',
-    },
+    }),
   });
   createdHorseIds.push(horse.id);
 }, 60000);

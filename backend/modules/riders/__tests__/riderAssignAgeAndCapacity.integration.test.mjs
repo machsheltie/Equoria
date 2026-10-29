@@ -24,6 +24,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const prefix = 'TestFixture-y2ksc-rider';
 const rand = () => randomBytes(4).toString('hex');
@@ -36,7 +37,7 @@ let breedId;
 /** A horse `days` Eastern calendar days old, with the stored age the nightly job last wrote. */
 async function makeHorse(days, storedAge) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${prefix}-${rand()}`,
       sex: 'Mare',
@@ -45,7 +46,7 @@ async function makeHorse(days, storedAge) {
       userId: user.id,
       breedId,
       healthStatus: 'Excellent',
-    },
+    }),
   });
   horseIds.push(horse.id);
   return horse;

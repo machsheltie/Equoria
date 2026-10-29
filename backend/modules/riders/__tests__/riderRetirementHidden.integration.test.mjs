@@ -36,6 +36,7 @@ import {
 } from '../services/riderRetirementScheduleService.mjs';
 import { generateRiderMarketplace } from '../services/riderMarketplace.mjs';
 import { processRiderRetirement, backfillRiderRetirementSchedules } from '../index.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // Anything that reads, writes or draws the hidden age: the relation key or client
 // accessor, the table, the ensure/draw functions, the band constants.
@@ -80,7 +81,7 @@ async function makeUser(money = 100000) {
 
 async function makeHorse(userId) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}-horse-${tag()}`,
       sex: 'Mare',
@@ -88,7 +89,7 @@ async function makeHorse(userId) {
       age: 6,
       userId,
       healthStatus: 'Excellent',
-    },
+    }),
   });
   horseIds.push(horse.id);
   return horse;
