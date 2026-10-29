@@ -1,8 +1,14 @@
 /**
  * backfill-horse-colors.mjs
  *
- * One-time script: generates colorGenotype and phenotype for all existing horses
- * that were created before the color genetics system (Epic 31E).
+ * One-time script: gives a phenotype to every horse that has none, for horses
+ * created before the color genetics system (Epic 31E).
+ *
+ * Equoria-k0d28 (GEN-09): a horse that already has a colorGenotype (a foal's
+ * inherited genes) keeps it; only its phenotype is derived from it. A genotype
+ * is generated only for a horse whose colorGenotype is empty. Each UPDATE runs
+ * in its own transaction and is guarded in its WHERE clause, so a row changed
+ * since it was read (phenotype set, or genotype written) is left alone.
  *
  * Safe to run multiple times — skips horses that already have phenotype set.
  *
@@ -14,17 +20,43 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { fileURLToPath } from 'node:url';
 import {
   generateGenotype,
-  calculatePhenotype,
+  calculateBreedPhenotype,
   generateMarkings,
 } from '../modules/horses/index.mjs';
 
-async function run() {
-  // Prisma's JSON null filter is complex; use raw SQL instead for reliability
-  const horses = await prisma.$queryRaw`
-    SELECT id, "breedId" FROM horses WHERE phenotype IS NULL
-  `;
+/**
+ * Whether a stored colorGenotype carries genes (a non-empty object).
+ *
+ * @param {unknown} colorGenotype
+ * @returns {boolean}
+ */
+function hasGenotype(colorGenotype) {
+  return (
+    colorGenotype !== null &&
+    typeof colorGenotype === 'object' &&
+    !Array.isArray(colorGenotype) &&
+    Object.keys(colorGenotype).length > 0
+  );
+}
 
-  console.log(`Found ${horses.length} horses without color data. Generating...`);
+/**
+ * Give a phenotype to every horse without one (optionally only the given ids).
+ *
+ * @param {{ horseIds?: number[]|null, log?: (msg: string) => void }} [options]
+ * @returns {Promise<{ found: number, updated: number, keptGenotype: number, skipped: number, failed: number }>}
+ */
+export async function backfillHorseColors({ horseIds = null, log = console.log } = {}) {
+  // Prisma's JSON null filter is complex; use raw SQL instead for reliability
+  const horses = Array.isArray(horseIds)
+    ? await prisma.$queryRaw`
+        SELECT id, "breedId", "colorGenotype" FROM horses
+        WHERE phenotype IS NULL AND id = ANY(${horseIds}::int[])
+      `
+    : await prisma.$queryRaw`
+        SELECT id, "breedId", "colorGenotype" FROM horses WHERE phenotype IS NULL
+      `;
+
+  log(`Found ${horses.length} horses without color data. Generating...`);
 
   // Batch-fetch breed genetic profiles via raw SQL (avoids stale Prisma client schema issues)
   const breedIds = [...new Set(horses.map(h => h.breedId).filter(Boolean))];
@@ -38,8 +70,7 @@ async function run() {
     }
   }
 
-  let updated = 0;
-  let failed = 0;
+  const result = { found: horses.length, updated: 0, keptGenotype: 0, skipped: 0, failed: 0 };
 
   for (const horse of horses) {
     try {
@@ -47,8 +78,12 @@ async function run() {
         ? (breedProfileById.get(horse.breedId) ?? null)
         : null;
 
-      const colorGenotype = generateGenotype(breedGeneticProfile);
-      const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shadeBias ?? null);
+      const keepGenotype = hasGenotype(horse.colorGenotype);
+      const colorGenotype = keepGenotype
+        ? horse.colorGenotype
+        : generateGenotype(breedGeneticProfile);
+      // q277: the shade is rolled by the breed's odds, as for any new horse.
+      const baseColor = calculateBreedPhenotype(colorGenotype, breedGeneticProfile);
       const markings = generateMarkings(
         breedGeneticProfile,
         baseColor.colorName,
@@ -56,34 +91,62 @@ async function run() {
         colorGenotype,
       );
       const phenotype = { ...baseColor, ...markings };
+      const genotypeJson = JSON.stringify(colorGenotype);
+      const phenotypeJson = JSON.stringify(phenotype);
 
-      // Use raw SQL since the Prisma client in packages/database may be stale
-      await prisma.$executeRaw`
-        UPDATE horses
-        SET "colorGenotype" = ${JSON.stringify(colorGenotype)}::jsonb,
-            phenotype = ${JSON.stringify(phenotype)}::jsonb
-        WHERE id = ${horse.id}
-      `;
+      // Raw SQL since the Prisma client in packages/database may be stale.
+      const changed = await prisma.$transaction(tx =>
+        keepGenotype
+          ? tx.$executeRaw`
+              UPDATE horses
+              SET phenotype = ${phenotypeJson}::jsonb
+              WHERE id = ${horse.id}
+                AND phenotype IS NULL
+                AND "colorGenotype" = ${genotypeJson}::jsonb
+            `
+          : tx.$executeRaw`
+              UPDATE horses
+              SET "colorGenotype" = ${genotypeJson}::jsonb,
+                  phenotype = ${phenotypeJson}::jsonb
+              WHERE id = ${horse.id}
+                AND phenotype IS NULL
+                AND ("colorGenotype" IS NULL
+                     OR "colorGenotype" = 'null'::jsonb
+                     OR "colorGenotype" = '{}'::jsonb)
+            `,
+      );
 
-      updated++;
-      if (updated % 50 === 0) {
-        console.log(`  ${updated}/${horses.length} updated...`);
+      if (changed === 0) {
+        result.skipped++;
+        continue;
+      }
+      result.updated++;
+      if (keepGenotype) {
+        result.keptGenotype++;
+      }
+      if (result.updated % 50 === 0) {
+        log(`  ${result.updated}/${horses.length} updated...`);
       }
     } catch (err) {
       console.error(`  Failed to update horse ${horse.id}:`, err.message);
-      failed++;
+      result.failed++;
     }
   }
 
-  console.log(`\nDone. Updated: ${updated}, Failed: ${failed}`);
-  await prisma.$disconnect();
+  log(
+    `\nDone. Updated: ${result.updated} (kept inherited genotype: ${result.keptGenotype}), ` +
+      `Skipped (changed since read): ${result.skipped}, Failed: ${result.failed}`,
+  );
+  return result;
 }
 
-// Equoria-5z0if: main-module guard. run() mutates Horse.colorGenotype/phenotype —
+// Equoria-5z0if: main-module guard. The backfill mutates Horse.colorGenotype/phenotype —
 // must NOT run on bare import.
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  run().catch(err => {
-    console.error('Fatal error:', err);
-    process.exit(1);
-  });
+  backfillHorseColors()
+    .then(() => prisma.$disconnect())
+    .catch(err => {
+      console.error('Fatal error:', err);
+      process.exit(1);
+    });
 }
