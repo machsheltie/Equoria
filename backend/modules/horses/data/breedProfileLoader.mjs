@@ -23,7 +23,7 @@
  * merge that grafted topline from the JSON has been removed. The JSON file
  * is RETAINED, not deleted: it still has live consumers (the no-preload
  * test suite via this loader, backend/tests/load/run-bulk-foaling-cron.mjs,
- * backend/scripts/backfill-horse-temperament.mjs, breedProfileData.test.mjs,
+ * backend/scripts/backfill-horse-temperament-gaits.mjs, breedProfileData.test.mjs,
  * and others). Removing it remains a separate follow-up gated on migrating
  * those consumers onto a preloaded DB cache.
  *
