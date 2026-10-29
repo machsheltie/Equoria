@@ -40,8 +40,10 @@ export async function runSalaryProcessing() {
 
 export default Object.freeze({
   jobName: 'weeklySalaries',
-  // Sunday 00:05 Eastern: five minutes after the pay week ends at Sunday midnight.
-  schedule: '5 0 * * 0',
+  // Sunday 00:07 Eastern: just after the pay week ends at Sunday midnight. Not 00:05 —
+  // that minute is dailyHorseAging's, and the cron collision sentinel keeps every
+  // locked job on its own start minute (Equoria-bvddn.15). 00:07 is free every day.
+  schedule: '7 0 * * 0',
   lockKey: 'cronJobService:weeklySalaries',
   // Heartbeat staleness budget (Equoria-cmw85.9): 168h period + 24h tolerance, as the primary registry.
   staleAfterMs: 192 * 60 * 60 * 1000,
