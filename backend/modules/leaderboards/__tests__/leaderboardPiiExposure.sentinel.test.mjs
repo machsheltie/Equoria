@@ -60,6 +60,20 @@ let fixtureHorse;
 const createdHorseIds = [];
 
 beforeAll(async () => {
+  // Equoria-1ohys: scoped, FK-ordered, fail-loud cleanup — only our TestFixture
+  // records (CLAUDE.md §2). Order: xpEvent (child of user) -> horse (id-IN, child
+  // of user; Horse.userId is Restrict) -> user. The tracker runs all three even
+  // if one throws, then fails afterAll loudly if any did.
+  cleanup.add(
+    () =>
+      prisma.xpEvent.deleteMany({
+        where: { userId: fixtureUser.id, reason: { startsWith: 'TestFixture-PIISentinel-' } },
+      }),
+    'xpEvent',
+  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: fixtureUser.id } }), 'user');
+
   // Create fixture user with distinct first/last/username so the sentinel can
   // detect whether the response carries real names vs the username handle.
   fixtureUser = await prisma.user.create({
@@ -106,20 +120,6 @@ beforeAll(async () => {
 
   // Bust any stale in-process leaderboard cache so fixtures are visible
   await invalidateCachePattern('leaderboard:*');
-
-  // Equoria-1ohys: scoped, FK-ordered, fail-loud cleanup — only our TestFixture
-  // records (CLAUDE.md §2). Order: xpEvent (child of user) -> horse (id-IN, child
-  // of user; Horse.userId is Restrict) -> user. The tracker runs all three even
-  // if one throws, then fails afterAll loudly if any did.
-  cleanup.add(
-    () =>
-      prisma.xpEvent.deleteMany({
-        where: { userId: fixtureUser.id, reason: { startsWith: 'TestFixture-PIISentinel-' } },
-      }),
-    'xpEvent',
-  );
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horse');
-  cleanup.add(() => prisma.user.delete({ where: { id: fixtureUser.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

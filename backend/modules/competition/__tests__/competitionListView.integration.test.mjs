@@ -46,6 +46,13 @@ async function findListed(showId) {
 }
 
 beforeAll(async () => {
+  cleanup.add(
+    () => prisma.show.deleteMany({ where: { id: { in: [cappedShow?.id, uncappedShow?.id].filter(Boolean) } } }),
+    'shows',
+  );
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -80,10 +87,6 @@ beforeAll(async () => {
   await prisma.showEntry.create({
     data: { showId: cappedShow.id, horseId: horse.id, userId: user.id, feePaid: 150 },
   });
-
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: [cappedShow.id, uncappedShow.id] } } }), 'shows');
-  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

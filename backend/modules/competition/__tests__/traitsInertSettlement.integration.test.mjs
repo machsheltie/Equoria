@@ -44,6 +44,14 @@ function scoreRngSequence() {
 
 describe('traits contribute nothing to a ridden show score (owner ruling 2026-10-23)', () => {
   it('a horse with any traits or flags scores exactly what the same horse scores without them', async () => {
+    const horseIds = [];
+    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
+    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
+    cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
+    const riderCleanup = createCleanupTracker();
+    cleanup.add(() => riderCleanup.run(), 'riders');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
     const owner = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -55,7 +63,6 @@ describe('traits contribute nothing to a ridden show score (owner ruling 2026-10
         money: 0,
       },
     });
-    const horseIds = [];
     // Registered first so it runs last: riders, horses (results and entries
     // cascade), then the owner.
     const show = await prisma.show.create({
@@ -73,13 +80,6 @@ describe('traits contribute nothing to a ridden show score (owner ruling 2026-10
         createdByUserId: owner.id,
       },
     });
-    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
-    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
-    cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
-    const riderCleanup = createCleanupTracker();
-    cleanup.add(() => riderCleanup.run(), 'riders');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
 
     const makeHorse = async extra => {
       const horse = await createTestHorse(

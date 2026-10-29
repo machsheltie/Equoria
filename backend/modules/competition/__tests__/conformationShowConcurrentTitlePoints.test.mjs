@@ -78,6 +78,11 @@ describe('executeConformationShow — concurrent results for the same horse (Equ
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
 
+    cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-CFTP-' } } }), 'show');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-CFTP-' } } }), 'groom');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-CFTP-' } } }), 'horse');
+    cleanup.add(() => (tpUser ? prisma.user.delete({ where: { id: tpUser.id } }) : undefined), 'user');
+
     tpUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -157,11 +162,6 @@ describe('executeConformationShow — concurrent results for the same horse (Equ
     await prisma.showEntry.create({
       data: { showId: tpShowB.id, horseId: tpHorse.id, userId: tpUser.id },
     });
-
-    cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-CFTP-' } } }), 'show');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-CFTP-' } } }), 'groom');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-CFTP-' } } }), 'horse');
-    cleanup.add(() => (tpUser ? prisma.user.delete({ where: { id: tpUser.id } }) : undefined), 'user');
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);

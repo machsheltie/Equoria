@@ -43,6 +43,11 @@ const STATS_100 = {
 
 describe('nightly settlement scores temperament as a percent term (B6)', () => {
   it('Calm +5%, Nervous -5%, and a null temperament settles with 0 in the same run', async () => {
+    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
+    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
+    cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
     const owner = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -94,11 +99,6 @@ describe('nightly settlement scores temperament as a percent term (B6)', () => {
         createdByUserId: owner.id,
       },
     });
-    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
-    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
-    cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
 
     await prisma.showEntry.createMany({
       data: [calm, unrecorded, nervous].map(h => ({

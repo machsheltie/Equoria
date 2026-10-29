@@ -32,6 +32,11 @@ afterAll(() => cleanup.run(), 60000);
 
 describe('nightly settlement applies the health modifier (decision C)', () => {
   it('Excellent +5%, Good 0, Fair -3%, Poor and Critical -5% (Bad)', async () => {
+    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
+    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
+    cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
     const owner = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -97,11 +102,6 @@ describe('nightly settlement applies the health modifier (decision C)', () => {
         createdByUserId: owner.id,
       },
     });
-    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
-    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
-    cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
 
     await prisma.showEntry.createMany({
       data: horses.map(({ horse }) => ({

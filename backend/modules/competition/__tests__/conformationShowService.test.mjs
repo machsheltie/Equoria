@@ -422,6 +422,16 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
 
+    // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: shows (cascade to
+    // ShowEntry + CompetitionResult) -> grooms (cascade to GroomAssignment) ->
+    // horses (cascade) -> user (Horse.userId is onDelete:Restrict, so horses
+    // MUST be deleted first). A cleanup failure now fails the suite instead of
+    // being swallowed.
+    cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }), 'show');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }), 'groom');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }), 'horse');
+    cleanup.add(() => (cssUser ? prisma.user.delete({ where: { id: cssUser.id } }) : undefined), 'user');
+
     cssUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -537,16 +547,6 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
         userId: cssUser.id,
       },
     });
-
-    // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: shows (cascade to
-    // ShowEntry + CompetitionResult) -> grooms (cascade to GroomAssignment) ->
-    // horses (cascade) -> user (Horse.userId is onDelete:Restrict, so horses
-    // MUST be deleted first). A cleanup failure now fails the suite instead of
-    // being swallowed.
-    cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }), 'show');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }), 'groom');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }), 'horse');
-    cleanup.add(() => (cssUser ? prisma.user.delete({ where: { id: cssUser.id } }) : undefined), 'user');
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);

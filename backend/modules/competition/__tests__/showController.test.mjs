@@ -45,6 +45,33 @@ let pastShowId; // show with closeDate in the past, with entries
 let pastShowNoEntriesId; // show with closeDate in the past, no entries
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: per-show entries +
+  // results -> show (createdByUserId FK); horse entries -> horse -> owning user
+  // (Horse.userId is onDelete:Restrict). createdShowId is set by the tests, so
+  // its closure reads it at run() time. A cleanup failure now fails the suite
+  // instead of being swallowed.
+  cleanup.add(() => dropShow(createdShowId), 'createdShow');
+  cleanup.add(() => prisma.showEntry.deleteMany({ where: { horseId: horse.id } }), 'horseEntries');
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
+  // executeClosedShows fixtures cleanup
+  cleanup.add(async () => {
+    if (pastShowId) {
+      await prisma.competitionResult.deleteMany({ where: { showId: pastShowId } });
+      await prisma.showEntry.deleteMany({ where: { showId: pastShowId } });
+      await releaseShowEscrow([pastShowId]);
+      await prisma.show.delete({ where: { id: pastShowId } });
+    }
+  }, 'pastShow');
+  cleanup.add(() => dropShow(pastShowNoEntriesId), 'pastShowNoEntries');
+  cleanup.add(() => (execHorse ? prisma.horse.delete({ where: { id: execHorse.id } }) : undefined), 'execHorse');
+  cleanup.add(() => (execUser ? prisma.user.delete({ where: { id: execUser.id } }) : undefined), 'execUser');
+  cleanup.add(
+    () => (execAdminUser ? prisma.user.delete({ where: { id: execAdminUser.id } }) : undefined),
+    'execAdminUser',
+  );
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -169,33 +196,6 @@ beforeAll(async () => {
     },
   });
   pastShowNoEntriesId = pastShowNoEntries.id;
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: per-show entries +
-  // results -> show (createdByUserId FK); horse entries -> horse -> owning user
-  // (Horse.userId is onDelete:Restrict). createdShowId is set by the tests, so
-  // its closure reads it at run() time. A cleanup failure now fails the suite
-  // instead of being swallowed.
-  cleanup.add(() => dropShow(createdShowId), 'createdShow');
-  cleanup.add(() => prisma.showEntry.deleteMany({ where: { horseId: horse.id } }), 'horseEntries');
-  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
-
-  // executeClosedShows fixtures cleanup
-  cleanup.add(async () => {
-    if (pastShowId) {
-      await prisma.competitionResult.deleteMany({ where: { showId: pastShowId } });
-      await prisma.showEntry.deleteMany({ where: { showId: pastShowId } });
-      await releaseShowEscrow([pastShowId]);
-      await prisma.show.delete({ where: { id: pastShowId } });
-    }
-  }, 'pastShow');
-  cleanup.add(() => dropShow(pastShowNoEntriesId), 'pastShowNoEntries');
-  cleanup.add(() => (execHorse ? prisma.horse.delete({ where: { id: execHorse.id } }) : undefined), 'execHorse');
-  cleanup.add(() => (execUser ? prisma.user.delete({ where: { id: execUser.id } }) : undefined), 'execUser');
-  cleanup.add(
-    () => (execAdminUser ? prisma.user.delete({ where: { id: execAdminUser.id } }) : undefined),
-    'execAdminUser',
-  );
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);
@@ -402,6 +402,19 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
   const validationCleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    // Scoped, fail-loud cleanup (Equoria-1ohys): this inner afterAll runs before the
+    // module one deletes `user`, so owned horses go first (Horse.userId Restrict).
+    validationCleanup.add(
+      () => (ageTestHorseId ? prisma.horse.delete({ where: { id: ageTestHorseId } }) : undefined),
+      'ageTestHorse',
+    );
+    validationCleanup.add(
+      () => (injuredHorseId ? prisma.horse.delete({ where: { id: injuredHorseId } }) : undefined),
+      'injuredHorse',
+    );
+    validationCleanup.add(() => dropShow(completedShowId), 'completedShow');
+    validationCleanup.add(() => dropShow(feeShowId), 'feeShow');
+
     // Horse too young (age < 3)
     const youngHorse = await prisma.horse.create({
       data: {
@@ -465,19 +478,6 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
       },
     });
     feeShowId = feeShow.id;
-
-    // Scoped, fail-loud cleanup (Equoria-1ohys): this inner afterAll runs before the
-    // module one deletes `user`, so owned horses go first (Horse.userId Restrict).
-    validationCleanup.add(
-      () => (ageTestHorseId ? prisma.horse.delete({ where: { id: ageTestHorseId } }) : undefined),
-      'ageTestHorse',
-    );
-    validationCleanup.add(
-      () => (injuredHorseId ? prisma.horse.delete({ where: { id: injuredHorseId } }) : undefined),
-      'injuredHorse',
-    );
-    validationCleanup.add(() => dropShow(completedShowId), 'completedShow');
-    validationCleanup.add(() => dropShow(feeShowId), 'feeShow');
   }, 30000);
 
   afterAll(() => validationCleanup.run(), 30000);
@@ -551,6 +551,9 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
   });
 
   it('returns 402 when user has insufficient funds for entry fee (line 209-212)', async () => {
+    // Fail-loud tracker (Equoria-1ohys); horse before its owner (Restrict FK).
+    validationCleanup.add(() => prisma.horse.delete({ where: { id: brokeHorse.id } }), 'brokeHorse');
+    validationCleanup.add(() => prisma.user.delete({ where: { id: brokeUser.id } }), 'brokeUser');
     const brokeUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -575,9 +578,6 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
       },
     });
     await eligible.giveEligibleRider(prisma, { horseId: brokeHorse.id, userId: brokeUser.id }, cleanup);
-    // Fail-loud tracker (Equoria-1ohys); horse before its owner (Restrict FK).
-    validationCleanup.add(() => prisma.horse.delete({ where: { id: brokeHorse.id } }), 'brokeHorse');
-    validationCleanup.add(() => prisma.user.delete({ where: { id: brokeUser.id } }), 'brokeUser');
 
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${brokeToken}`] });
     const res = await request(app)

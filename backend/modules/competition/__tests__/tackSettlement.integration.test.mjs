@@ -66,6 +66,11 @@ async function makeHorse(ownerId, base, tack, horseIds) {
 
 describe('nightly settlement adds saddle and bridle points (decision A, k1p62.2)', () => {
   it('scores discipline tack only in its own discipline, All Purpose anywhere, and nothing else', async () => {
+    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
+    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
+    cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
     const owner = await makeOwner();
     const horseIds = [];
     const cases = [
@@ -108,11 +113,6 @@ describe('nightly settlement adds saddle and bridle points (decision A, k1p62.2)
         createdByUserId: owner.id,
       },
     });
-    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
-    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
-    cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
 
     await prisma.showEntry.createMany({
       data: horses.map(({ horse }) => ({

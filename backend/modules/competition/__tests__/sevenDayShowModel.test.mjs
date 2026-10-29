@@ -52,6 +52,37 @@ const cleanup = createCleanupTracker();
 const uid = () => `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys). showIds is populated by the
+  // tests, so the closures read it at run() time (afterAll). FK order: per-show
+  // results + entries -> show; then per-horse results -> horse -> user
+  // (Horse.userId is onDelete:Restrict, so the owned horses are deleted before
+  // their owners). A cleanup failure now fails the suite instead of being
+  // swallowed.
+  cleanup.add(async () => {
+    // Equoria-r3mv2: hand back the escrow these shows still hold before the raw deletes.
+    await releaseShowEscrow(showIds);
+    for (const id of showIds) {
+      await prisma.competitionResult.deleteMany({ where: { showId: id } });
+      await prisma.showEntry.deleteMany({ where: { showId: id } });
+      await prisma.show.delete({ where: { id } });
+    }
+  }, 'shows');
+  cleanup.add(async () => {
+    if (entrantHorseId) {
+      await prisma.competitionResult.deleteMany({ where: { horseId: entrantHorseId } });
+      await prisma.horse.delete({ where: { id: entrantHorseId } });
+    }
+  }, 'entrantHorse');
+  cleanup.add(async () => {
+    if (creatorHorseId) {
+      await prisma.competitionResult.deleteMany({ where: { horseId: creatorHorseId } });
+      await prisma.horse.delete({ where: { id: creatorHorseId } });
+    }
+  }, 'creatorHorse');
+  cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
+  cleanup.add(() => (entrant ? prisma.user.delete({ where: { id: entrant.id } }) : undefined), 'entrant');
+  cleanup.add(() => (creator ? prisma.user.delete({ where: { id: creator.id } }) : undefined), 'creator');
+
   creator = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -107,37 +138,6 @@ beforeAll(async () => {
   });
   creatorHorseId = creatorHorse.id;
   await giveEligibleRider(prisma, { horseId: creatorHorse.id, userId: creator.id }, riderIds);
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys). showIds is populated by the
-  // tests, so the closures read it at run() time (afterAll). FK order: per-show
-  // results + entries -> show; then per-horse results -> horse -> user
-  // (Horse.userId is onDelete:Restrict, so the owned horses are deleted before
-  // their owners). A cleanup failure now fails the suite instead of being
-  // swallowed.
-  cleanup.add(async () => {
-    // Equoria-r3mv2: hand back the escrow these shows still hold before the raw deletes.
-    await releaseShowEscrow(showIds);
-    for (const id of showIds) {
-      await prisma.competitionResult.deleteMany({ where: { showId: id } });
-      await prisma.showEntry.deleteMany({ where: { showId: id } });
-      await prisma.show.delete({ where: { id } });
-    }
-  }, 'shows');
-  cleanup.add(async () => {
-    if (entrantHorseId) {
-      await prisma.competitionResult.deleteMany({ where: { horseId: entrantHorseId } });
-      await prisma.horse.delete({ where: { id: entrantHorseId } });
-    }
-  }, 'entrantHorse');
-  cleanup.add(async () => {
-    if (creatorHorseId) {
-      await prisma.competitionResult.deleteMany({ where: { horseId: creatorHorseId } });
-      await prisma.horse.delete({ where: { id: creatorHorseId } });
-    }
-  }, 'creatorHorse');
-  cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
-  cleanup.add(() => (entrant ? prisma.user.delete({ where: { id: entrant.id } }) : undefined), 'entrant');
-  cleanup.add(() => (creator ? prisma.user.delete({ where: { id: creator.id } }) : undefined), 'creator');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

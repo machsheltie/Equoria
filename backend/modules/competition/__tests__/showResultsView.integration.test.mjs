@@ -110,6 +110,26 @@ function result(show, horse, fields) {
 }
 
 beforeAll(async () => {
+  cleanup.add(
+    () =>
+      prisma.competitionResult.deleteMany({
+        where: { showId: { in: [riddenShow?.id, conformationShow?.id].filter(Boolean) } },
+      }),
+    'competitionResult',
+  );
+  cleanup.add(
+    () => prisma.show.deleteMany({ where: { id: { in: [riddenShow?.id, conformationShow?.id].filter(Boolean) } } }),
+    'show',
+  );
+  cleanup.add(
+    () =>
+      prisma.horse.deleteMany({
+        where: { id: { in: [viewerHorse?.id, rivalHorse?.id, legacyHorse?.id].filter(Boolean) } },
+      }),
+    'horse',
+  );
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [viewer?.id, rival?.id].filter(Boolean) } } }), 'user');
+
   viewer = await makeUser('v');
   rival = await makeUser('r');
   viewerToken = generateTestToken({ id: viewer.id, email: viewer.email, role: 'user' });
@@ -118,20 +138,6 @@ beforeAll(async () => {
   legacyHorse = await makeHorse(rival.id, 'legacy');
   riddenShow = await makeShow('ridden');
   conformationShow = await makeShow('conf', { discipline: 'conformation', showType: 'conformation', prize: 0 });
-
-  cleanup.add(
-    () =>
-      prisma.competitionResult.deleteMany({
-        where: { showId: { in: [riddenShow.id, conformationShow.id] } },
-      }),
-    'competitionResult',
-  );
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: [riddenShow.id, conformationShow.id] } } }), 'show');
-  cleanup.add(
-    () => prisma.horse.deleteMany({ where: { id: { in: [viewerHorse.id, rivalHorse.id, legacyHorse.id] } } }),
-    'horse',
-  );
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [viewer.id, rival.id] } } }), 'user');
 
   await prisma.competitionResult.createMany({
     data: [

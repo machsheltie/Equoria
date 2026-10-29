@@ -37,6 +37,26 @@ const showIds = [];
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys) — only the rows this suite
+  // created. FK order: per-show results + entries -> show (createdByUserId FK)
+  // -> horse -> users (Horse.userId is onDelete:Restrict). A cleanup failure now
+  // fails the suite instead of being swallowed.
+  cleanup.add(async () => {
+    // Equoria-law5w: hand back any escrow a show still holds before the raw delete.
+    await releaseShowEscrow(showIds);
+    for (const id of showIds) {
+      await prisma.competitionResult.deleteMany({ where: { showId: id } });
+      await prisma.showEntry.deleteMany({ where: { showId: id } });
+      await prisma.show.delete({ where: { id } });
+    }
+  }, 'shows');
+  cleanup.add(
+    () => (entrantHorse ? prisma.horse.delete({ where: { id: entrantHorse.id } }) : undefined),
+    'entrantHorse',
+  );
+  cleanup.add(() => (entrant ? prisma.user.delete({ where: { id: entrant.id } }) : undefined), 'entrant');
+  cleanup.add(() => (creator ? prisma.user.delete({ where: { id: creator.id } }) : undefined), 'creator');
+
   creator = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -103,26 +123,6 @@ beforeAll(async () => {
   await prisma.showEntry.create({
     data: { showId: raceShowId, horseId: entrantHorse.id, userId: entrant.id, feePaid: 0 },
   });
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys) — only the rows this suite
-  // created. FK order: per-show results + entries -> show (createdByUserId FK)
-  // -> horse -> users (Horse.userId is onDelete:Restrict). A cleanup failure now
-  // fails the suite instead of being swallowed.
-  cleanup.add(async () => {
-    // Equoria-law5w: hand back any escrow a show still holds before the raw delete.
-    await releaseShowEscrow(showIds);
-    for (const id of showIds) {
-      await prisma.competitionResult.deleteMany({ where: { showId: id } });
-      await prisma.showEntry.deleteMany({ where: { showId: id } });
-      await prisma.show.delete({ where: { id } });
-    }
-  }, 'shows');
-  cleanup.add(
-    () => (entrantHorse ? prisma.horse.delete({ where: { id: entrantHorse.id } }) : undefined),
-    'entrantHorse',
-  );
-  cleanup.add(() => (entrant ? prisma.user.delete({ where: { id: entrant.id } }) : undefined), 'entrant');
-  cleanup.add(() => (creator ? prisma.user.delete({ where: { id: creator.id } }) : undefined), 'creator');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

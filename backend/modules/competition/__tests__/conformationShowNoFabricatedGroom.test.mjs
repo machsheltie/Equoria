@@ -38,6 +38,12 @@ describe('executeConformationShow — no fabricated groom (Equoria-axad9.1)', ()
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
 
+    // FK-ordered, scoped, fail-loud cleanup.
+    cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-AXAD-' } } }), 'show');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-AXAD-' } } }), 'groom');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-AXAD-' } } }), 'horse');
+    cleanup.add(() => (user ? prisma.user.delete({ where: { id: user.id } }) : undefined), 'user');
+
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -134,12 +140,6 @@ describe('executeConformationShow — no fabricated groom (Equoria-axad9.1)', ()
     await prisma.showEntry.create({
       data: { showId: showAllGroomed.id, horseId: horseWithGroom.id, userId: user.id },
     });
-
-    // FK-ordered, scoped, fail-loud cleanup.
-    cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-AXAD-' } } }), 'show');
-    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-AXAD-' } } }), 'groom');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-AXAD-' } } }), 'horse');
-    cleanup.add(() => (user ? prisma.user.delete({ where: { id: user.id } }) : undefined), 'user');
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);

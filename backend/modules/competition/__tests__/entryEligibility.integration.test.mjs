@@ -42,6 +42,14 @@ let otherUser;
 let token;
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } }), 'entries');
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
+  cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
+  cleanup.add(
+    () => prisma.user.deleteMany({ where: { id: { in: [entrant?.id, otherUser?.id].filter(Boolean) } } }),
+    'users',
+  );
   entrant = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -65,11 +73,6 @@ beforeAll(async () => {
     },
   });
   token = generateTestToken({ id: entrant.id, email: entrant.email, role: 'user' });
-  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } }), 'entries');
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
-  cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [entrant.id, otherUser.id] } } }), 'users');
 }, 60000);
 
 afterAll(() => cleanup.run(), 60000);

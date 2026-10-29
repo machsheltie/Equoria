@@ -73,6 +73,16 @@ async function makeShow(tag, data) {
 }
 
 beforeAll(async () => {
+  const showIds = () => Object.values(shows).map(s => s.id);
+
+  cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: { in: showIds() } } }), 'competitionResult');
+  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds() } } }), 'showEntry');
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds() } } }), 'show');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+  cleanup.add(
+    () => prisma.user.deleteMany({ where: { id: { in: [owner?.id, stranger?.id].filter(Boolean) } } }),
+    'user',
+  );
   owner = await makeUser('o');
   stranger = await makeUser('s');
   ownerToken = generateTestToken({ id: owner.id, email: owner.email, role: 'user' });
@@ -108,13 +118,6 @@ beforeAll(async () => {
     runDate: day('2026-09-01T07:00:00.000Z'),
     executedAt: day('2026-09-01T07:01:00.000Z'),
   });
-  const showIds = Object.values(shows).map(s => s.id);
-
-  cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: { in: showIds } } }), 'competitionResult');
-  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } }), 'showEntry');
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'show');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [owner.id, stranger.id] } } }), 'user');
 
   await prisma.showEntry.createMany({
     data: [shows.upcoming, shows.won, shows.ribbon].map(s => ({

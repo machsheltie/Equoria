@@ -31,6 +31,11 @@ afterAll(() => cleanup.run(), 60000);
 
 describe('nightly settlement adds the trained value in the show discipline (decision B)', () => {
   it('adds the accumulated discipline training as flat points before the percentages', async () => {
+    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
+    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
+    cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
     const owner = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -97,11 +102,6 @@ describe('nightly settlement adds the trained value in the show discipline (deci
         createdByUserId: owner.id,
       },
     });
-    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
-    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
-    cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
 
     await prisma.showEntry.createMany({
       data: horses.map(({ horse }) => ({

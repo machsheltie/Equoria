@@ -108,6 +108,25 @@ const RIDER_CONFIG = {
 const POSITIVE_FLAGS = ['brave', 'confident', 'affectionate', 'resilient']; // net +4 -> factor 1.08
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys). createdShowIds is populated by
+  // runScopedShow during the tests, so the closures read the id arrays at run()
+  // time. FK order: results + entries -> shows; riderAssignments -> riders +
+  // horses; horses -> user (Horse.userId is onDelete:Restrict). A cleanup
+  // failure now fails the suite instead of being swallowed.
+  cleanup.add(
+    () => prisma.competitionResult.deleteMany({ where: { showId: { in: createdShowIds } } }),
+    'competitionResult',
+  );
+  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: createdShowIds } } }), 'showEntry');
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: createdShowIds } } }), 'show');
+  cleanup.add(
+    () => prisma.riderAssignment.deleteMany({ where: { horseId: { in: createdHorseIds } } }),
+    'riderAssignment',
+  );
+  cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: createdRiderIds } } }), 'rider');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horse');
+  cleanup.add(() => (user ? prisma.user.delete({ where: { id: user.id } }) : undefined), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -156,25 +175,6 @@ beforeAll(async () => {
       { riderId: riderForNoFlag.id, horseId: horseNoFlagWithRider.id, userId: user.id, isActive: true },
     ],
   });
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys). createdShowIds is populated by
-  // runScopedShow during the tests, so the closures read the id arrays at run()
-  // time. FK order: results + entries -> shows; riderAssignments -> riders +
-  // horses; horses -> user (Horse.userId is onDelete:Restrict). A cleanup
-  // failure now fails the suite instead of being swallowed.
-  cleanup.add(
-    () => prisma.competitionResult.deleteMany({ where: { showId: { in: createdShowIds } } }),
-    'competitionResult',
-  );
-  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: createdShowIds } } }), 'showEntry');
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: createdShowIds } } }), 'show');
-  cleanup.add(
-    () => prisma.riderAssignment.deleteMany({ where: { horseId: { in: createdHorseIds } } }),
-    'riderAssignment',
-  );
-  cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: createdRiderIds } } }), 'rider');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horse');
-  cleanup.add(() => (user ? prisma.user.delete({ where: { id: user.id } }) : undefined), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

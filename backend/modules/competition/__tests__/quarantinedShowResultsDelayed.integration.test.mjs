@@ -27,6 +27,10 @@ let show;
 const get = path => request(app).get(path).set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
   owner = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -65,10 +69,6 @@ beforeAll(async () => {
   await prisma.showEntry.create({
     data: { showId: show.id, horseId: horse.id, userId: owner.id, feePaid: 0 },
   });
-  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
 });
 
 afterAll(() => cleanup.run(), 60000);

@@ -42,6 +42,24 @@ const showIds = [];
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-9jv9c / rd899). Dependency-ordered:
+  // results + entries before the show row; horse before its owner; entrant
+  // and creator last. A failed delete now fails the suite instead of being
+  // swallowed by a warning-only catch (the leak class behind Equoria-a429/lfj5).
+  cleanup.add(
+    () => prisma.competitionResult.deleteMany({ where: { showId: { in: showIds } } }),
+    'competitionResult by showId',
+  );
+  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } }), 'showEntry by showId');
+  // Equoria-law5w: hand back any escrow a show still holds before the raw delete.
+  cleanup.add(async () => {
+    await releaseShowEscrow(showIds);
+    await prisma.show.deleteMany({ where: { id: { in: showIds } } });
+  }, 'show by id');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: [entrantHorse.id] } } }), 'entrantHorse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [entrant.id] } } }), 'entrant');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [creator.id] } } }), 'creator');
+
   creator = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -112,24 +130,6 @@ beforeAll(async () => {
     data: { showId: kooduShowId, horseId: entrantHorse.id, userId: entrant.id, feePaid: 0 },
   });
   await prisma.show.update({ where: { id: kooduShowId }, data: { closeDate: pastClose, runDate: pastClose } });
-
-  // Scoped, fail-loud cleanup (Equoria-9jv9c / rd899). Dependency-ordered:
-  // results + entries before the show row; horse before its owner; entrant
-  // and creator last. A failed delete now fails the suite instead of being
-  // swallowed by a warning-only catch (the leak class behind Equoria-a429/lfj5).
-  cleanup.add(
-    () => prisma.competitionResult.deleteMany({ where: { showId: { in: showIds } } }),
-    'competitionResult by showId',
-  );
-  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } }), 'showEntry by showId');
-  // Equoria-law5w: hand back any escrow a show still holds before the raw delete.
-  cleanup.add(async () => {
-    await releaseShowEscrow(showIds);
-    await prisma.show.deleteMany({ where: { id: { in: showIds } } });
-  }, 'show by id');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: [entrantHorse.id] } } }), 'entrantHorse');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [entrant.id] } } }), 'entrant');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [creator.id] } } }), 'creator');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

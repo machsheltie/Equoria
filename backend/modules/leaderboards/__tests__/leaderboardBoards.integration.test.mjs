@@ -74,6 +74,19 @@ function results(horseId, { shows, winsIn = {}, pending = 0 }) {
 }
 
 beforeAll(async () => {
+  const userIds = () => Object.values(users).map(u => u.id);
+  const horseIds = () => Object.values(horses).map(h => h.id);
+  cleanup.add(() => prisma.horseMonthlyTotal.deleteMany({ where: { horseId: { in: horseIds() } } }), 'horseTotals');
+  cleanup.add(() => prisma.playerMonthlyTotal.deleteMany({ where: { playerId: { in: userIds() } } }), 'playerTotals');
+  cleanup.add(() => prisma.competitionResult.deleteMany({ where: { horseId: { in: horseIds() } } }), 'results');
+  cleanup.add(
+    () =>
+      prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-LBBoards-show-', endsWith: `-${RUN}` } } }),
+    'shows',
+  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds() } } }), 'horses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds() } } }), 'users');
+
   for (const key of ['u1', 'u2', 'u3']) {
     const created = await createTestUser({
       username: `LBB_${key}_${RUN}`,
@@ -92,9 +105,6 @@ beforeAll(async () => {
       userId: users[owner].id,
     });
   }
-  const userIds = Object.values(users).map(u => u.id);
-  const horseIds = Object.values(horses).map(h => h.id);
-
   await prisma.show.createMany({
     data: Array.from({ length: showCount }, (_, i) => ({
       name: `TestFixture-LBBoards-show-${i}-${RUN}`,
@@ -112,13 +122,6 @@ beforeAll(async () => {
   });
   const byName = new Map(shows.map(s => [s.name, s.id]));
   showIds = Array.from({ length: showCount }, (_, i) => byName.get(`TestFixture-LBBoards-show-${i}-${RUN}`));
-
-  cleanup.add(() => prisma.horseMonthlyTotal.deleteMany({ where: { horseId: { in: horseIds } } }), 'horseTotals');
-  cleanup.add(() => prisma.playerMonthlyTotal.deleteMany({ where: { playerId: { in: userIds } } }), 'playerTotals');
-  cleanup.add(() => prisma.competitionResult.deleteMany({ where: { horseId: { in: horseIds } } }), 'results');
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
 
   // Player xp: u2 500 > u1 300 > u3 100.
   await prisma.user.update({ where: { id: users.u1.id }, data: { xp: 300 } });

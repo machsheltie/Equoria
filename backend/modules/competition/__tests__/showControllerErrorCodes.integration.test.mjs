@@ -27,6 +27,8 @@ let token;
 let show;
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -55,8 +57,6 @@ beforeAll(async () => {
       createdByUserId: user.id,
     },
   });
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 60000);
 
 afterAll(() => cleanup.run(), 60000);

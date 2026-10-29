@@ -208,10 +208,6 @@ async function assertAcceptsOpenFree(enterFn) {
 }
 
 beforeAll(async () => {
-  creator = await makeUser(100000, 'creator');
-  entrant = await makeUser(5000, 'entrant');
-  entrantHorse = await makeHorse(entrant.id);
-
   cleanup.add(async () => {
     for (const id of showIds) {
       await prisma.showEntry.deleteMany({ where: { showId: id } });
@@ -222,6 +218,10 @@ beforeAll(async () => {
   cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
   cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'userTransactions');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
+
+  creator = await makeUser(100000, 'creator');
+  entrant = await makeUser(5000, 'entrant');
+  entrantHorse = await makeHorse(entrant.id);
 }, 60000);
 
 afterAll(() => cleanup.run(), 60000);

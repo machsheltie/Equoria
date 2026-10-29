@@ -50,6 +50,14 @@ async function addResult(horseId, showId, { placement, score, discipline, runDat
 }
 
 beforeAll(async () => {
+  cleanup.add(
+    () => prisma.competitionResult.deleteMany({ where: { horseId: { in: horses.map(h => h.id) } } }),
+    'results',
+  );
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horses.map(h => h.id) } } }), 'horses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
+
   const created = await createTestUser({
     username: `LBRead_${RUN}`,
     email: `lbread_${RUN}@test.com`,
@@ -91,14 +99,6 @@ beforeAll(async () => {
     score: 4_500_000,
     discipline: disciplineB,
   });
-
-  cleanup.add(
-    () => prisma.competitionResult.deleteMany({ where: { horseId: { in: horses.map(h => h.id) } } }),
-    'results',
-  );
-  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horses.map(h => h.id) } } }), 'horses');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
 }, 120_000);
 
 afterAll(() => cleanup.run(), 120_000);

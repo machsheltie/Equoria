@@ -25,6 +25,13 @@ describe('SENTINEL: competition placement → competitionStatGain Notification',
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: notifications ->
+    // horse -> user (Horse.userId is onDelete:Restrict). A cleanup failure now
+    // fails the suite instead of being swallowed.
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user.id } }), 'notification');
+    cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
     user = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -47,13 +54,6 @@ describe('SENTINEL: competition placement → competitionStatGain Notification',
         userId: user.id,
       },
     });
-
-    // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: notifications ->
-    // horse -> user (Horse.userId is onDelete:Restrict). A cleanup failure now
-    // fails the suite instead of being swallowed.
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user.id } }), 'notification');
-    cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);

@@ -163,6 +163,18 @@ describe('POST /api/v1/competition/conformation/execute — no early settlement 
   beforeAll(async () => {
     const tag = randomBytes(4).toString('hex');
 
+    // Scoped, fail-loud cleanup (Equoria-1ohys) — only rows this suite created.
+    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show?.id ?? -1 } }), 'showEntry');
+    cleanup.add(
+      () =>
+        prisma.competitionResult.deleteMany({ where: { horseId: { in: [horse1?.id, horse2?.id].filter(Boolean) } } }),
+      'competitionResult',
+    );
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { groomId: groom.id } }), 'groomAssignment');
+    cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
+    cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: SUITE } } }), 'show');
+    cleanup.add(() => cleanupTestData(), 'cleanupTestData');
+
     const created = await createTestUser({
       username: `${SUITE}-${tag}`,
       email: `${SUITE}-${tag}@example.com`,
@@ -227,18 +239,6 @@ describe('POST /api/v1/competition/conformation/execute — no early settlement 
     // request clears csrfProtection and reaches the route matcher — the 404
     // asserted below is then the router's answer, not the CSRF guard's.
     csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${hostToken}`] });
-
-    // Scoped, fail-loud cleanup (Equoria-1ohys) — only rows this suite created.
-    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show?.id } }), 'showEntry');
-    cleanup.add(
-      () =>
-        prisma.competitionResult.deleteMany({ where: { horseId: { in: [horse1?.id, horse2?.id].filter(Boolean) } } }),
-      'competitionResult',
-    );
-    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { groomId: groom.id } }), 'groomAssignment');
-    cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
-    cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: SUITE } } }), 'show');
-    cleanup.add(() => cleanupTestData(), 'cleanupTestData');
   }, 120000);
 
   afterAll(() => cleanup.run());

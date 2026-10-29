@@ -79,6 +79,11 @@ async function makeHorse(ownerId, stats, horseIds) {
 
 describe('nightly settlement scores the discipline’s 50/30/20 base (B4a)', () => {
   it('a Dressage specialist beats a higher-average all-rounder in a Dressage show', async () => {
+    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
+    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
+    cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
     const owner = await makeOwner();
     const horseIds = [];
     // Old flat base (speed+stamina+agility+precision+boldness)/5 = 34; Dressage 0.5*90+0.3*80+0.2*70 = 83.
@@ -109,11 +114,6 @@ describe('nightly settlement scores the discipline’s 50/30/20 base (B4a)', () 
         createdByUserId: owner.id,
       },
     });
-    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
-    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
-    cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horse');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
 
     await prisma.showEntry.createMany({
       data: [specialist, allRounder].map(h => ({ showId: show.id, horseId: h.id, userId: owner.id, feePaid: 0 })),

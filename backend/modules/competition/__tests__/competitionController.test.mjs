@@ -27,6 +27,28 @@ const extraShowIds = [];
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: results -> shows ->
+  // horse -> user (Horse.userId is onDelete:Restrict, so the owned horse MUST
+  // be deleted before its owner). A cleanup failure now fails the suite so a
+  // leaked fixture surfaces at the source instead of a swallowed catch. The
+  // competitionResult sweep is retained (defensive, scoped) even though this
+  // suite no longer creates one — the show-results GET path could persist rows
+  // in other runs, and a scoped delete is harmless when there are none.
+  cleanup.add(
+    () =>
+      prisma.competitionResult.deleteMany({
+        where: { OR: [{ horseId: horse?.id ?? -1 }, { showId: show?.id ?? -1 }] },
+      }),
+    'competitionResult',
+  );
+  cleanup.add(
+    () => (extraShowIds.length ? prisma.show.deleteMany({ where: { id: { in: extraShowIds } } }) : undefined),
+    'extraShows',
+  );
+  cleanup.add(() => prisma.show.delete({ where: { id: show.id } }), 'show');
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -63,25 +85,6 @@ beforeAll(async () => {
       status: 'open',
     },
   });
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: results -> shows ->
-  // horse -> user (Horse.userId is onDelete:Restrict, so the owned horse MUST
-  // be deleted before its owner). A cleanup failure now fails the suite so a
-  // leaked fixture surfaces at the source instead of a swallowed catch. The
-  // competitionResult sweep is retained (defensive, scoped) even though this
-  // suite no longer creates one — the show-results GET path could persist rows
-  // in other runs, and a scoped delete is harmless when there are none.
-  cleanup.add(
-    () => prisma.competitionResult.deleteMany({ where: { OR: [{ horseId: horse.id }, { showId: show.id }] } }),
-    'competitionResult',
-  );
-  cleanup.add(
-    () => (extraShowIds.length ? prisma.show.deleteMany({ where: { id: { in: extraShowIds } } }) : undefined),
-    'extraShows',
-  );
-  cleanup.add(() => prisma.show.delete({ where: { id: show.id } }), 'show');
-  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
-  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);
