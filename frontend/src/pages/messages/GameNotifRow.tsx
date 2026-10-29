@@ -33,7 +33,7 @@ const GameNotifShell: React.FC<{
   icon?: React.ReactNode;
   badgeLabel: string;
   badgeVariant: GameBadgeProps['variant'];
-  title: string;
+  title: React.ReactNode;
   body: React.ReactNode;
 }> = ({ notif, iconBg, emoji, icon, badgeLabel, badgeVariant, title, body }) => (
   <Surface
@@ -112,6 +112,9 @@ const FoalBornRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
   const foalName = typeof p.foalName === 'string' ? p.foalName : 'New foal';
   const damName = typeof p.damName === 'string' ? p.damName : 'an unknown dam';
   const sireName = typeof p.sireName === 'string' ? p.sireName : 'an unknown sire';
+  // Equoria-nzl9e: the name opens the newborn's horse page (one horse page, 2026-10-16).
+  const foalId =
+    typeof p.foalId === 'number' && Number.isInteger(p.foalId) && p.foalId > 0 ? p.foalId : null;
   return (
     <GameNotifShell
       notif={notif}
@@ -119,7 +122,15 @@ const FoalBornRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
       emoji="👶"
       badgeLabel="Foal Born"
       badgeVariant="default"
-      title={foalName}
+      title={
+        foalId ? (
+          <Link to={`/horses/${foalId}`} className="text-[var(--link-gold)] hover:underline">
+            {foalName}
+          </Link>
+        ) : (
+          foalName
+        )
+      }
       body={
         <p>
           Out of {damName} by {sireName}.
