@@ -184,7 +184,6 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
         pregnancyFeedingsByTier: {},
         lastBredDate: null,
         pendingFoalName: null,
-        pendingFoalBreedId: null,
       },
     });
   }
@@ -233,10 +232,9 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
 
     // Wjxw: pendingFoalName must be persisted so the foaling job can honour
     // caller intent at delivery time. Equoria-5nwwf (owner ruling 2026-10-20):
-    // the foal's breed is NOT caller intent — it is the parents' breed — so no
-    // pendingFoalBreedId is stored (this asserted testBreed.id before the ruling).
+    // the foal's breed is NOT caller intent — it is the parents' breed — and
+    // Equoria-ry8lk dropped the pendingFoalBreedId column that once held it.
     expect(dbDam.pendingFoalName).toBe(foalData.name);
-    expect(dbDam.pendingFoalBreedId).toBeNull();
   });
 
   it('should reject a second pregnancy while the mare is already in foal', async () => {
@@ -461,7 +459,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     });
   });
 
-  // ── Equoria-wjxw: pendingFoalName / pendingFoalBreedId persistence ───────────
+  // ── Equoria-wjxw: pendingFoalName persistence ───────────────────────────────
 
   it('should persist pendingFoalName on the dam after createFoal and store no foal breed (Equoria-5nwwf)', async () => {
     await resetDamPregnancy();
@@ -480,10 +478,9 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
 
     const dbDam = await prisma.horse.findUnique({ where: { id: testDam.id } });
     expect(dbDam.pendingFoalName).toBe(pendingName);
-    expect(dbDam.pendingFoalBreedId).toBeNull();
   });
 
-  it('should create foal with name and breedId from pending fields when foaling job runs', async () => {
+  it('should create the foal with the pending name and the parents breed when foaling job runs', async () => {
     await resetDamPregnancy();
 
     const pendingName = `StarfireFoal_${ts}`;
@@ -496,7 +493,6 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
         pregnancySireId: testSire.id,
         pregnancyFeedingsByTier: {},
         pendingFoalName: pendingName,
-        pendingFoalBreedId: testBreed.id,
       },
     });
 
@@ -507,7 +503,6 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
       options: {
         damSnapshot: snapshot,
         name: snapshot.pendingFoalName ?? undefined,
-        breedId: snapshot.pendingFoalBreedId ?? undefined,
         userId: testUser.id,
         skipDamReset: true,
       },
@@ -529,7 +524,6 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
         pregnancySireId: testSire.id,
         pregnancyFeedingsByTier: {},
         pendingFoalName: null,
-        pendingFoalBreedId: null,
       },
     });
 
@@ -540,7 +534,6 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
       options: {
         damSnapshot: snapshot,
         name: snapshot.pendingFoalName ?? undefined,
-        breedId: snapshot.pendingFoalBreedId ?? undefined,
         userId: testUser.id,
         skipDamReset: true,
       },

@@ -10,9 +10,9 @@
  *
  * Every way a pregnancy can begin is covered: an own pair, a public stud
  * booking, a private stud request, and the stallion owner's approval of a
- * private stud request. Then the foal: whatever breed a client sends, and
- * whatever a pre-ruling pregnancy still carries in `pendingFoalBreedId`, the
- * foal is born its parents' breed.
+ * private stud request. Then the foal: whatever breed a client sends, the
+ * foal is born its parents' breed. (A pre-ruling pregnancy's
+ * `pendingFoalBreedId` case went with the column, Equoria-ry8lk.)
  *
  * Real DB, real HTTP, real CSRF, scoped fail-loud fixtures. No mocks.
  */
@@ -249,30 +249,12 @@ describe('sire and dam must be the same breed; the foal is born that breed (Equo
       });
 
       expect(res.status).toBe(200);
-      expect((await dam(mare.id)).pendingFoalBreedId).toBeNull();
 
       const born = await foalNow(mare);
       const foal = await prisma.horse.findUnique({ where: { id: born.id } });
       expect(foal.breedId).toBe(breed.id);
       expect(foal.sireId).toBe(sire.id);
       expect(foal.damId).toBe(mare.id);
-    });
-
-    it('ignores a foal breed left on a mare by a pregnancy that began before the ruling', async () => {
-      const sire = await horse({ ownerId: mareOwner.user.id, sex: 'Stallion' });
-      const mare = await horse({
-        ownerId: mareOwner.user.id,
-        sex: 'Mare',
-        inFoalSinceDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-        pregnancySireId: sire.id,
-        pendingFoalBreedId: otherBreedRow.id,
-      });
-
-      const born = await foalNow(mare);
-
-      const foal = await prisma.horse.findUnique({ where: { id: born.id } });
-      expect(foal.breedId).toBe(breed.id);
-      expect((await dam(mare.id)).pendingFoalBreedId).toBeNull();
     });
   });
 });

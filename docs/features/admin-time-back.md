@@ -79,8 +79,7 @@ earlier in its life), `StaffMarketplaceState.lastRefresh`.
 
 **Rule 2 — pending deadlines:** `Horse.trainingCooldown`, `Show.closeDate` and
 `Show.runDate` (status `open` only), `ClubElection.startsAt` / `endsAt` (status
-not `closed`), `Horse.temporaryEpigeneticFlags[].expiresAt` (JSON),
-`Groom.feeUnpaidSince` (bucketed by pay week — a pause under 7 days changes
+not `closed`), `Groom.feeUnpaidSince` (bucketed by pay week — a pause under 7 days changes
 nothing). `Show.openDate` is always the creation time, so it is never pending.
 
 **Rule 3 — job counters:** `Groom.careerWeeks` (groomCareerProgression, Mon

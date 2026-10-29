@@ -485,46 +485,8 @@ describe('runFoalingJob (B5)', () => {
     expect(refreshedDam.pendingFoalName).toBeNull();
   });
 
-  // Equoria-5nwwf (owner ruling 2026-10-20): nobody chooses a foal's breed. This
-  // case used to assert that a breed left on the dam as `pendingFoalBreedId` WON
-  // over the dam's own breed; the ruling retires that: the foal is born its
-  // parents' breed, and a pre-ruling pendingFoalBreedId is ignored (and cleared).
-  it('a pendingFoalBreedId left on the dam is ignored: the foal is born the breed of the parents', async () => {
-    const user = await createUser('pfbreed');
-    createdUserIds.push(user.id);
-
-    // A different breed left on the dam by a pregnancy that began before the ruling.
-    const foalBreed = await prisma.breed.upsert({
-      where: { name: 'American Quarter Horse' },
-      update: {},
-      create: { name: 'American Quarter Horse', description: 'B5 wjxw test breed' },
-    });
-
-    const { dam } = await createMareSirePair({
-      userId: user.id,
-      breedId, // dam's own breed = Thoroughbred
-      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
-      pregnancyFeedingsByTier: {},
-    });
-
-    await prisma.horse.update({
-      where: { id: dam.id },
-      data: { pendingFoalBreedId: foalBreed.id },
-    });
-
-    const result = await runFoalingJob();
-    expect(result.foalsBorn).toBeGreaterThanOrEqual(1);
-
-    const foals = await prisma.horse.findMany({ where: { damId: dam.id } });
-    expect(foals.length).toBe(1);
-    expect(foals[0].breedId).toBe(breedId);
-    expect(foals[0].breedId).not.toBe(foalBreed.id);
-
-    // pendingFoalBreedId should be cleared after foaling.
-    const refreshedDam = await prisma.horse.findUnique({ where: { id: dam.id } });
-    expect(refreshedDam.pendingFoalBreedId).toBeNull();
-  });
-
+  // Equoria-ry8lk: the case that left a pre-ruling breed on the dam as
+  // `pendingFoalBreedId` went with the column; no dam can carry one now.
   it('createFoalFromPregnancy direct call: reads pendingFoalName from the dam when options omit it; the breed is that of the parents (Equoria-5nwwf)', async () => {
     const user = await createUser('directpend');
     createdUserIds.push(user.id);
@@ -546,7 +508,6 @@ describe('runFoalingJob (B5)', () => {
       where: { id: dam.id },
       data: {
         pendingFoalName: 'DirectCallFoalSentinel',
-        pendingFoalBreedId: pendingBreed.id,
       },
     });
 
@@ -559,7 +520,6 @@ describe('runFoalingJob (B5)', () => {
     // dam reset must clear pendingFoal fields.
     const refreshedDam = await prisma.horse.findUnique({ where: { id: dam.id } });
     expect(refreshedDam.pendingFoalName).toBeNull();
-    expect(refreshedDam.pendingFoalBreedId).toBeNull();
   });
 
   it("createFoalFromPregnancy takes no breed from its caller: the foal is born the dam's breed (Equoria-5nwwf)", async () => {

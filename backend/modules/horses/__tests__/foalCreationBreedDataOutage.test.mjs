@@ -257,7 +257,6 @@ describe("POST /horses/foals — breed-data outage reports 500, not the breed's 
     expect(dbDam.inFoalSinceDate).toBeNull();
     expect(dbDam.pregnancySireId).toBeNull();
     expect(dbDam.lastBredDate).toBeNull();
-    expect(dbDam.pendingFoalBreedId).toBeNull();
   });
 
   it('also 500s when the caller explicitly supplies the affected breedId', async () => {

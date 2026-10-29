@@ -638,7 +638,7 @@
   "backend/modules/traits/__tests__/epigeneticTraitKeyMap.test.mjs": 17,
   "backend/modules/traits/__tests__/flagDefinitionsRosterParity.integration.test.mjs": 5,
   "backend/modules/traits/__tests__/helpers/environmentalTriggerGrid.mjs": 3,
-  "backend/modules/traits/__tests__/playerBodyCannotCarryTraits.integration.test.mjs": 5,
+  "backend/modules/traits/__tests__/playerBodyCannotCarryTraits.integration.test.mjs": 4,
   "backend/modules/traits/__tests__/pregnancyBonusApprovedTraits.sentinel.test.mjs": 4,
   "backend/modules/traits/__tests__/publicTraitView.test.mjs": 1,
   "backend/modules/traits/__tests__/rareTraitRoster.sentinel.test.mjs": 9,

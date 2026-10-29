@@ -27,8 +27,7 @@ export function asFlagArray(value) {
  * Object-shaped sibling of asFlagArray (Equoria-liy7c).
  *
  * Several JSONB columns are SUPPOSED to hold a plain object (a map / record),
- * e.g. horse.ultraRareTraits ({ ultraRare, exotic }), horse.epigeneticModifiers
- * ({ positive, negative, hidden }), groom.rareTraitPerks, bonusTraitMap, and the
+ * e.g. horse.epigeneticModifiers ({ positive, negative, hidden }), bonusTraitMap, and the
  * colorGenotype/genotype locus maps. Per the project JSONB type-guard convention
  * (.claude/rules/CONTRIBUTING.md "Backend Conventions" #1) these can arrive as
  * null, undefined, a primitive, or an array on legacy / bare-created rows.

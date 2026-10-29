@@ -141,7 +141,6 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
           pregnancyFeedingsByTier: {},
           lastBredDate: null,
           pendingFoalName: null,
-          pendingFoalBreedId: null,
         },
       });
     }

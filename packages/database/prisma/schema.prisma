@@ -186,10 +186,6 @@ model Horse {
   personality             String?
   /// Epigenetic trait flags for horses under 3 years old (PERMANENT once assigned)
   epigeneticFlags         String[]              @default([])
-  /// Temporary / environment-triggered epigenetic flags (Equoria-yzqhj.5).
-  /// JSON array of { flag: string, expiresAt: ISO-string, source: string }.
-  /// Expired entries are swept daily by the temporaryFlagExpiry cron.
-  temporaryEpigeneticFlags Json                 @default("[]")
   /// Base stats
   /// Equoria-507mt: NOT NULL post-migration 20260530130000_507mt_horse_stats_nonnull.
   /// 0 NULLs observed pre-migration. Companion code commits strip the
@@ -219,7 +215,6 @@ model Horse {
   pregnancySireId         Int?
   pregnancyFeedingsByTier Json                  @default("{}")
   pendingFoalName         String?
-  pendingFoalBreedId      Int?
   forSale                 Boolean?              @default(false)
   salePrice               Int?                  @default(0)
   /// Health and care
@@ -252,8 +247,6 @@ model Horse {
   // RiderAssignment row is the only record of who rides a horse.
   disciplineScores        Json?
   epigeneticModifiers     Json?                 @default("{\"hidden\": [], \"negative\": [], \"positive\": []}")
-  /// Ultra-rare and exotic traits with acquisition metadata
-  ultraRareTraits         Json?                 @default("{\"ultraRare\": [], \"exotic\": []}")
   /// Conformation scoring (1-100 scale per body region)
   conformationScores      Json?                 @default("{\"head\": 20, \"neck\": 20, \"shoulders\": 20, \"back\": 20, \"legs\": 20, \"hooves\": 20, \"topline\": 20, \"hindquarters\": 20, \"overallConformation\": 20}")
   /// Gait quality scores (permanent, generated at birth)
@@ -287,7 +280,6 @@ model Horse {
   monthlyTotals           HorseMonthlyTotal[]
   traitHistoryLogs        TraitHistoryLog[]
   milestoneTraitLogs      MilestoneTraitLog[]
-  ultraRareTraitEvents    UltraRareTraitEvent[]
   groomHorseSynergies     GroomHorseSynergy[]
   groomAssignmentLogs     GroomAssignmentLog[]
   riderAssignments        RiderAssignment[]
@@ -324,10 +316,8 @@ model Horse {
   /// NULL for almost every horse, so this index is tiny.
   @@index([inFoalSinceDate])
   /// Equoria-ezx1y: indexes for high-traffic WHERE-filter queries.
-  /// - sireId  → backend/modules/users/services/gdprAccountService.mjs:286
-  ///   (cascade `prisma.horse.updateMany({ where: { sireId: { in: horseIds } } })`)
-  /// - damId   → backend/modules/users/services/gdprAccountService.mjs:282
-  ///   (same shape for the dam side; also backend/tests/load/run-bulk-foaling-cron.mjs)
+  /// - sireId / damId → lineage lookups (the account-erasure cascade that first
+  ///   needed them was removed, Equoria-81uop; also backend/tests/load/run-bulk-foaling-cron.mjs)
   /// - forSale + salePrice composite →
   ///     backend/modules/marketplace/controllers/marketplaceController.mjs:60
   ///   (browseListings: `where: { forSale: true, userId: { not: userId } }`
@@ -503,7 +493,7 @@ model Groom {
   starLevel         String             @default("rookie")
   /// Canonical groom personality (gentle | energetic | patient | strict).
   /// Used by groom synergy (Epic 31D-4), temperament compatibility,
-  /// groomPersonalityEffects, getTemperamentGroomSynergy(), and
+  /// getTemperamentGroomSynergy(), and
   /// trait-development bonuses. THIS is the user-facing personality.
   /// Equoria-4ukc: consolidation deferred — semantically distinct from
   /// epigeneticInfluenceType (see below).
@@ -520,8 +510,6 @@ model Groom {
   epigeneticInfluenceType  String             @default("balanced")
   /// Bonus trait map for rare trait acquisition (JSON object with trait names and probability bonuses)
   bonusTraitMap     Json               @default("{}")
-  /// Rare trait booster perks for ultra-rare and exotic traits (JSON object with perk definitions)
-  rareTraitPerks    Json               @default("{}")
   /// Session rate (per session, not hourly)
   sessionRate       Decimal            @default(15.0) @db.Decimal(10, 2)
   /// Availability schedule
@@ -606,7 +594,6 @@ model Groom {
   groomSalaryPayments GroomSalaryPayment[]
   traitHistoryLogs    TraitHistoryLog[]
   milestoneTraitLogs  MilestoneTraitLog[]
-  ultraRareTraitEvents UltraRareTraitEvent[]
   groomHorseSynergies GroomHorseSynergy[]
   groomAssignmentLogs GroomAssignmentLog[]
   /// Equoria-mwjst: conformation entries this groom presents at settlement.
@@ -651,7 +638,7 @@ model Groom {
 ///   emitted by every bare `prisma.groom.findMany()` / `findUnique()` in the
 ///   repository, and several of those responses are serialized straight to the
 ///   player (groomRosterController, groomHandlerController,
-///   horseOverviewController, gdprAccountService, …). A 1:1 relation is absent
+///   horseOverviewController, …). A 1:1 relation is absent
 ///   from all of them by construction: Prisma returns a relation only when the
 ///   caller explicitly `include`s or `select`s it. The single reader is
 ///   backend/modules/grooms/services/groomRetirementService.mjs.
@@ -1457,47 +1444,6 @@ model MilestoneTraitLog {
   @@index([groomId])
   @@index([timestamp])
   @@map("milestone_trait_logs")
-}
-
-model UltraRareTraitEvent {
-  /// Unique identifier for each ultra-rare trait event
-  id              Int      @id @default(autoincrement())
-  /// Horse that triggered or unlocked the trait
-  horseId         Int
-  /// Name of the ultra-rare or exotic trait
-  traitName       String
-  /// Tier of the trait (ultra-rare or exotic)
-  traitTier       String
-  /// Event type (triggered, unlocked, failed_trigger, etc.)
-  eventType       String
-  /// Base probability before groom bonuses
-  baseChance      Decimal? @db.Decimal(5, 4)
-  /// Final probability after all modifiers
-  finalChance     Decimal? @db.Decimal(5, 4)
-  /// Groom that influenced the trait acquisition
-  groomId         Int?
-  /// Applied groom perks and bonuses
-  appliedPerks    Json?    @default("[]")
-  /// Trigger conditions that were met
-  triggerConditions Json?  @default("{}")
-  /// Success status of the trait acquisition
-  success         Boolean  @default(false)
-  /// Additional notes and context
-  notes           String?
-  /// Timestamp of the event
-  timestamp       DateTime @default(now())
-
-  // Relations
-  horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
-  groom Groom? @relation(fields: [groomId], references: [id], onDelete: SetNull)
-
-  @@index([traitName])
-  @@index([traitTier])
-  @@index([eventType])
-  @@index([groomId])
-  @@index([timestamp])
-  @@index([horseId, traitName])
-  @@map("ultra_rare_trait_events")
 }
 
 model GroomHorseSynergy {

@@ -53,7 +53,6 @@ beforeAll(async () => {
 afterAll(async () => {
   const cleanup = createCleanupTracker();
   const ids = [...horseIds];
-  cleanup.add(() => prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: { in: ids } } }), 'ultraRareTraitEvents');
   cleanup.add(() => prisma.milestoneTraitLog.deleteMany({ where: { horseId: { in: ids } } }), 'milestoneTraitLogs');
   cleanup.add(() => prisma.traitHistoryLog.deleteMany({ where: { horseId: { in: ids } } }), 'traitHistoryLog');
   cleanup.add(() => cleanupTestHorses(prisma, horseIds), 'horses');
@@ -93,7 +92,6 @@ describe('foal milestones claim no traits (Equoria-kqdde)', () => {
 
     expect(result.success).toBe(true);
     expect(result).not.toHaveProperty('ultraRareEvaluation');
-    expect(await prisma.ultraRareTraitEvent.count({ where: { horseId: foal.id } })).toBe(0);
     const after = await prisma.horse.findUnique({ where: { id: foal.id } });
     expect(after.epigeneticModifiers).toEqual(modifiers);
     expect(after.epigeneticFlags).toEqual([]);

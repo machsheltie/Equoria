@@ -4,10 +4,11 @@
  *
  * OWNER RULING: players must NEVER be able to write traits for themselves, by
  * any path. Only scheduled game jobs and game-internal birth/care code may
- * write Horse.epigeneticModifiers / epigeneticFlags / temporaryEpigeneticFlags /
- * ultraRareTraits / temperament / personality, TraitHistoryLog,
- * MilestoneTraitLog, UltraRareTraitEvent, Groom.bonusTraitMap /
- * rareTraitPerks and GroomAssignmentLog.traitsShaped.
+ * write Horse.epigeneticModifiers / epigeneticFlags / temperament /
+ * personality, TraitHistoryLog, MilestoneTraitLog, Groom.bonusTraitMap and
+ * GroomAssignmentLog.traitsShaped. (Horse.temporaryEpigeneticFlags /
+ * ultraRareTraits, UltraRareTraitEvent and Groom.rareTraitPerks were dropped
+ * by Equoria-efs4j / Equoria-qfho0; the routes that wrote them stay pinned.)
  *
  * Every route below used to let the owner of a horse (or groom) write one of
  * those stores on demand:
@@ -101,7 +102,6 @@ describe('Player trait-write routes are removed (Equoria-gu8jk)', () => {
 
   afterAll(async () => {
     await prisma.traitHistoryLog.deleteMany({ where: { horseId: { in: horseIds } } });
-    await prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: { in: horseIds } } });
     if (groom) {
       await prisma.groom.deleteMany({ where: { id: groom.id } });
     }
@@ -119,24 +119,19 @@ describe('Player trait-write routes are removed (Equoria-gu8jk)', () => {
       select: {
         epigeneticModifiers: true,
         epigeneticFlags: true,
-        temporaryEpigeneticFlags: true,
-        ultraRareTraits: true,
         temperament: true,
         personality: true,
       },
     });
     const g = await prisma.groom.findUnique({
       where: { id: groom.id },
-      select: { bonusTraitMap: true, rareTraitPerks: true },
+      select: { bonusTraitMap: true },
     });
     return {
       horse,
       groom: g,
       traitHistory: await prisma.traitHistoryLog.count({ where: { horseId: { in: horseIds } } }),
       milestoneLogs: await prisma.milestoneTraitLog.count({ where: { horseId: { in: horseIds } } }),
-      ultraRareEvents: await prisma.ultraRareTraitEvent.count({
-        where: { horseId: { in: horseIds } },
-      }),
     };
   }
 

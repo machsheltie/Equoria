@@ -17,7 +17,8 @@
  *   columns exist in the schema — `Groom.sessionRate`, `GroomInteraction.cost`,
  *   `CompetitionResult.score`, `CompetitionResult.prizeWon`,
  *   `UltraRareTraitEvent.baseChance` and `.finalChance`; the issue's count of
- *   seven predates `Horse.earnings`, which Equoria-8nmxm removed by migration.
+ *   seven predates `Horse.earnings`, which Equoria-8nmxm removed by migration
+ *   (and the two UltraRareTraitEvent columns went with that table, Equoria-qfho0).
  *   `Groom.sessionRate` is the one the player
  *   feels, because `GroomList.tsx` declares it `number` and gates hiring on
  *   `(user.money || 0) >= sessionRate * 7`. Object times seven is `NaN`, and

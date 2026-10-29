@@ -50,11 +50,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROTECTED_HORSE_FIELDS = {
   epigeneticModifiers: { positive: ['legendaryBloodline'], negative: [], hidden: [] },
   epigeneticFlags: ['brave'],
-  temporaryEpigeneticFlags: [{ flag: 'brave', expiresAt: '2099-01-01', source: 'player' }],
-  ultraRareTraits: { ultraRare: [{ name: 'phoenixBorn' }], exotic: [] },
   temperament: 'TestFixture-planted-temperament',
   personality: 'TestFixture-planted-personality',
 };
+// Equoria-efs4j / Equoria-qfho0 dropped these columns; a hostile body may still
+// name them, so the refusal cases keep sending them (they are not read back).
+const retiredHorseFields = {
+  temporaryEpigeneticFlags: [{ flag: 'brave', expiresAt: '2099-01-01', source: 'player' }],
+  ultraRareTraits: { ultraRare: [{ name: 'phoenixBorn' }], exotic: [] },
+};
+const hostileHorseFields = { ...PROTECTED_HORSE_FIELDS, ...retiredHorseFields };
 
 describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
   let player;
@@ -141,7 +146,7 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
       select: Object.fromEntries(Object.keys(PROTECTED_HORSE_FIELDS).map(k => [k, true])),
     });
 
-  it.each(Object.entries(PROTECTED_HORSE_FIELDS))(
+  it.each(Object.entries(hostileHorseFields))(
     'PUT /horses/:id refuses { %s } with 400 and changes nothing',
     async (field, value) => {
       const before = await horseRow();
@@ -159,7 +164,7 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
     return u.money;
   }
 
-  it.each(Object.entries(PROTECTED_HORSE_FIELDS))(
+  it.each(Object.entries(hostileHorseFields))(
     'POST /marketplace/store/buy refuses { %s } with 400: no horse, no charge',
     async (field, value) => {
       const horsesBefore = await prisma.horse.count({ where: { userId: player.id } });
@@ -200,7 +205,6 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
     expect(bought.epigeneticModifiers.hidden.length).toBeLessThanOrEqual(5);
     expect(bought.epigeneticModifiers.hidden.every(isRosterTrait)).toBe(true);
     expect(bought.epigeneticFlags).toEqual([]);
-    expect(bought.ultraRareTraits).toEqual({ ultraRare: [], exotic: [] });
   });
 
   describe('POST /grooms/:id/legacy/create', () => {

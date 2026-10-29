@@ -164,7 +164,6 @@ describe('feedHorse — in-foal feed conservation, exact equality (Equoria-qi1ns
         inFoalSinceDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
         pregnancySireId: sire.id,
         pendingFoalName: `TestFixture-Qi1nsFoal_${ts}`,
-        pendingFoalBreedId: breed.id,
         lastFedDate: null,
         pregnancyFeedingsByTier: {},
       },

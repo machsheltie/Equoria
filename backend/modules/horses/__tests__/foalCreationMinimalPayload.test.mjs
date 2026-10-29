@@ -226,7 +226,6 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
         pregnancyFeedingsByTier: {},
         lastBredDate: null,
         pendingFoalName: null,
-        pendingFoalBreedId: null,
       },
     });
   });
@@ -269,8 +268,8 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       // m9lz1 fix round 3 had pinned the validated breed on the dam at conception
       // (`pendingFoalBreedId` = mare.breedId); the ruling replaces that: nobody
       // chooses a foal's breed, the pair must share one, and the foaling job reads
-      // it from the parents. A non-null value here is now the regression.
-      expect(dbDam.pendingFoalBreedId).toBeNull();
+      // it from the parents. Equoria-ry8lk dropped the column itself, so the null
+      // checks on it here went with it.
     });
 
     it('names the foal `unnamed` and takes the breed from the dam when the player sent neither', async () => {
@@ -302,7 +301,6 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       expect(res.status).toBe(200);
       const dbDam = await prisma.horse.findUnique({ where: { id: secondMare.id } });
       expect(dbDam.pendingFoalName).toBe(explicitName);
-      expect(dbDam.pendingFoalBreedId).toBeNull();
     });
   });
 
@@ -413,7 +411,6 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
 
       const dbDam = await prisma.horse.findUnique({ where: { id: mare.id } });
       expect(dbDam.inFoalSinceDate).toBeTruthy();
-      expect(dbDam.pendingFoalBreedId).toBeNull();
     });
 
     it('does not validate or read a breedId that does not exist', async () => {
@@ -422,7 +419,6 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
 
       const dbDam = await prisma.horse.findUnique({ where: { id: mare.id } });
       expect(dbDam.inFoalSinceDate).toBeTruthy();
-      expect(dbDam.pendingFoalBreedId).toBeNull();
     });
   });
 
@@ -457,7 +453,6 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       expect(dbDam.inFoalSinceDate).toBeNull();
       expect(dbDam.pregnancySireId).toBeNull();
       expect(dbDam.lastBredDate).toBeNull();
-      expect(dbDam.pendingFoalBreedId).toBeNull();
     });
 
     it('does not let a breedId rescue a breedless dam (Equoria-5nwwf: no one chooses the foal breed)', async () => {
@@ -508,7 +503,6 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       expect(res.status).toBe(200);
       const dbDam = await prisma.horse.findUnique({ where: { id: mare.id } });
       expect(dbDam.inFoalSinceDate).toBeTruthy();
-      expect(dbDam.pendingFoalBreedId).toBeNull();
     });
 
     // The controller separates "this breed has no profile" (400, the player's

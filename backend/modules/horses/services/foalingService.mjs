@@ -458,7 +458,6 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
         pregnancySireId: null,
         pregnancyFeedingsByTier: {},
         pendingFoalName: null,
-        pendingFoalBreedId: null,
       },
     });
     if (claim.count === 0) {
