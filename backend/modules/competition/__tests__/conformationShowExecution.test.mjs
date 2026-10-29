@@ -44,6 +44,7 @@ import { executeConformationShow } from '../services/conformationShowService.mjs
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const SUITE_PREFIX = 'cfexe';
 
@@ -101,7 +102,7 @@ async function createUser() {
 
 async function createHorse(userId, overrides = {}) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: overrides.name ?? `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
       sex: overrides.sex ?? 'Mare',
@@ -115,7 +116,7 @@ async function createHorse(userId, overrides = {}) {
       currentTitle: overrides.currentTitle ?? null,
       breedingValueBoost: overrides.breedingValueBoost ?? 0,
       user: { connect: { id: userId } },
-    },
+    }),
   });
 }
 

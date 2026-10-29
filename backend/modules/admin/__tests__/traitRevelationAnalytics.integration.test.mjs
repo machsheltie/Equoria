@@ -36,6 +36,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ROUTE = '/api/v1/admin/traits/analytics';
 
@@ -68,13 +69,13 @@ async function makeUser(label) {
 
 async function makeHorse(userId, name) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-yznve-${name}-${randomBytes(6).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: new Date('2023-01-01T00:00:00.000Z'),
       user: { connect: { id: userId } },
-    },
+    }),
   });
   createdHorseIds.push(horse.id);
   return horse;

@@ -18,6 +18,7 @@ import { generateTestToken } from '../../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { whenTicketEmailKicksFinish } from '../../services/ticketEmailOutbox.mjs';
+import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 export const ORIGIN = 'http://localhost:3000';
 export const STAFF_API = '/api/v1/staff';
@@ -82,13 +83,13 @@ export function createTargetFactory(prefix) {
   const made = { horse: [], show: [], thread: [] };
   async function makeHorse(owner) {
     const row = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-${prefix}-${uid()}`,
         sex: 'Mare',
         dateOfBirth: new Date('2020-01-01'),
         userId: owner.id,
-      },
+      }),
     });
     made.horse.push(row.id);
     return row;

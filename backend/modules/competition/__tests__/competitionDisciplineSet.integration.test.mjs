@@ -19,6 +19,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { getAllDisciplines } from '../../../utils/competitionLogic.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const uid = () => randomBytes(5).toString('hex');
@@ -43,14 +44,14 @@ beforeAll(async () => {
   });
   token = generateTestToken({ id: owner.id, email: owner.email, role: 'user' });
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-b3set-${uid()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-01-01'),
       age: 7,
       userId: owner.id,
-    },
+    }),
   });
 });
 

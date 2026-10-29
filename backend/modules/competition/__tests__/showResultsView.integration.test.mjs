@@ -23,6 +23,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const uid = () => randomBytes(5).toString('hex');
@@ -68,7 +69,7 @@ async function makeUser(tag) {
 
 async function makeHorse(userId, tag) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-q10a2-${tag}-${uid()}`,
       sex: 'Mare',
@@ -76,7 +77,7 @@ async function makeHorse(userId, tag) {
       age: 7,
       userId,
       speed: 77,
-    },
+    }),
   });
 }
 

@@ -26,6 +26,7 @@ import { releaseShowEscrow } from '../../../__tests__/helpers/releaseShowEscrow.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const uid = () => `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
 
@@ -82,7 +83,7 @@ beforeAll(async () => {
   });
 
   entrantHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-dyj3y-Horse-${uid()}`,
       sex: 'Mare',
@@ -96,7 +97,7 @@ beforeAll(async () => {
       balance: 60,
       precision: 60,
       boldness: 60,
-    },
+    }),
   });
 
   // A closeable show: status 'open' with a past closeDate, so executeClosedShows

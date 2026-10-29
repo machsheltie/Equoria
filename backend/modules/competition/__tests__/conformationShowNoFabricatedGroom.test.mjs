@@ -24,6 +24,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { executeConformationShow, ConformationGroomMissingError } from '../services/conformationShowService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('executeConformationShow — no fabricated groom (Equoria-axad9.1)', () => {
   let user;
@@ -57,7 +58,7 @@ describe('executeConformationShow — no fabricated groom (Equoria-axad9.1)', ()
     });
 
     horseWithGroom = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-AXAD-Groomed-${ts}-${rand()}`,
         sex: 'Filly',
@@ -66,11 +67,11 @@ describe('executeConformationShow — no fabricated groom (Equoria-axad9.1)', ()
         userId: user.id,
         healthStatus: 'Good',
         bondScore: 50,
-      },
+      }),
     });
 
     horseNoGroom = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-AXAD-NoGroom-${ts}-${rand()}`,
         sex: 'Filly',
@@ -79,7 +80,7 @@ describe('executeConformationShow — no fabricated groom (Equoria-axad9.1)', ()
         userId: user.id,
         healthStatus: 'Good',
         bondScore: 50,
-      },
+      }),
     });
 
     groom = await prisma.groom.create({

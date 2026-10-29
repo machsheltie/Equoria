@@ -36,6 +36,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import logger from '../../../utils/logger.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const PREFIX = 'TestFixture-ExecClosedNotif-';
 
@@ -63,7 +64,7 @@ beforeAll(async () => {
 
   // Healthy horse with explicit non-default stats so it scores deterministically.
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}Horse-${uid()}`,
       sex: 'Mare',
@@ -77,7 +78,7 @@ beforeAll(async () => {
       balance: 60,
       precision: 60,
       boldness: 60,
-    },
+    }),
   });
 
   // closeDate in the past so executeClosedShows picks it up on the first run.

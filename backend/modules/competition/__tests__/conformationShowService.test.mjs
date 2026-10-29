@@ -28,6 +28,7 @@ import {
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // ── isValidConformationClass ──────────────────────────────────────────────────
 
@@ -445,7 +446,7 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
     });
 
     cssHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-CSS-Horse-${ts}`,
         sex: 'Filly',
@@ -453,7 +454,7 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
         age: 2,
         userId: cssUser.id,
         healthStatus: 'Good',
-      },
+      }),
     });
 
     cssFreshGroom = await prisma.groom.create({

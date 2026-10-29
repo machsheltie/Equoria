@@ -18,6 +18,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const uid = () => randomBytes(5).toString('hex');
@@ -88,14 +89,14 @@ beforeAll(async () => {
   ownerToken = generateTestToken({ id: owner.id, email: owner.email, role: 'user' });
   strangerToken = generateTestToken({ id: stranger.id, email: stranger.email, role: 'user' });
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-q10a3-horse-${uid()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-01-01'),
       age: 7,
       userId: owner.id,
-    },
+    }),
   });
 
   shows.upcoming = await makeShow('upcoming', { status: 'open', runDate: day('2026-10-20T07:00:00.000Z') });

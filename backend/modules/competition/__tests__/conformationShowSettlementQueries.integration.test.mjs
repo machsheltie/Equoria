@@ -61,6 +61,8 @@ const {
   applyBreedingValueBoost,
 } = await import('../services/conformationShowService.mjs');
 const { fixtureColor } = await import('../../../tests/helpers/fixtureColor.mjs');
+// Imported after the client handle is installed: the helper's imports load the shared client.
+const { testHorseData } = await import('../../../__tests__/helpers/createTestHorse.mjs');
 const { createCleanupTracker } = await import('../../../__tests__/helpers/failLoudCleanup.mjs');
 
 const PREFIX = 'TestFixture-cmw8511';
@@ -153,7 +155,7 @@ beforeAll(async () => {
   for (let i = 0; i < RECORDED + LEGACY; i++) {
     const legacy = i >= RECORDED;
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${PREFIX}-horse-${i}-${tag}`,
         sex: 'Filly',
@@ -169,7 +171,7 @@ beforeAll(async () => {
         titlePoints: i % 4 === 0 ? 23 : i % 4 === 1 ? 45 : 0,
         currentTitle: i % 4 === 1 ? 'Noteworthy' : null,
         breedingValueBoost: i % 3 === 0 ? 0.14 : 0,
-      },
+      }),
     });
     horseIds.push(horse.id);
     const groom = legacy ? legacyGroom : recordedGroom;

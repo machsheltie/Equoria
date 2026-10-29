@@ -23,6 +23,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const TAG = `RiderModFix-${randomBytes(4).toString('hex')}`;
 
@@ -99,10 +100,10 @@ beforeAll(async () => {
   };
 
   horseWithRider = await prisma.horse.create({
-    data: { ...horseStats, name: `TestFixture-${TAG}-WithRider` },
+    data: await testHorseData(prisma, { ...horseStats, name: `TestFixture-${TAG}-WithRider` }),
   });
   horseWithoutRider = await prisma.horse.create({
-    data: { ...horseStats, name: `TestFixture-${TAG}-NoRider` },
+    data: await testHorseData(prisma, { ...horseStats, name: `TestFixture-${TAG}-NoRider` }),
   });
 
   // Create an elite rider: experienced + max prestige + matching discipline

@@ -18,6 +18,7 @@ import { createNotification } from '../../../utils/notificationService.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('SENTINEL: competition placement → competitionStatGain Notification', () => {
   let user;
@@ -45,14 +46,14 @@ describe('SENTINEL: competition placement → competitionStatGain Notification',
     });
 
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-CompNotifHorse-${Date.now()}`,
         sex: 'Mare',
         dateOfBirth: new Date('2019-01-01'),
         age: 6,
         userId: user.id,
-      },
+      }),
     });
   }, 30000);
 

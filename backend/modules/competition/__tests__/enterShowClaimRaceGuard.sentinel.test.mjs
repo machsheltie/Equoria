@@ -44,6 +44,7 @@ import { enterShowDeferredTx } from '../services/competitionRouteQueries.mjs';
 // an eligible rider; the XP bracket is gone, R9). The horses are eligible, so
 // the 8pb6w status guard (entryClosed) remains the thing under test here.
 import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const PREFIX = 'TestFixture-8pb6w-raceguard';
 const uid = () => `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
@@ -75,7 +76,7 @@ async function makeUser(money, suffix) {
 
 async function makeHorse(ownerId) {
   const h = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}-horse-${uid()}`,
       sex: 'Mare',
@@ -84,7 +85,7 @@ async function makeHorse(ownerId) {
       userId: ownerId,
       healthStatus: 'Excellent',
       lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-    },
+    }),
   });
   horseIds.push(h.id);
   await giveEligibleRider(prisma, { horseId: h.id, userId: ownerId }, riderIds);

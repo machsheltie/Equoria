@@ -41,6 +41,7 @@ import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 // no-op catch arms that hid a failed delete, leaking the fixture user/horse
 // into the canonical DB (CLAUDE.md §2). The tracker fails afterAll loudly.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -96,7 +97,7 @@ beforeAll(async () => {
   // so it appears on the horseEarnings board.
   const breed = await prisma.breed.findFirst();
   fixtureHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-PIISentinel-${RNG}`,
       userId: fixtureUser.id,
@@ -105,7 +106,7 @@ beforeAll(async () => {
       dateOfBirth: new Date('2020-01-01'),
       age: 4,
       totalEarnings: 9999999, // top earnings so it appears on the leaderboard
-    },
+    }),
   });
   createdHorseIds.push(fixtureHorse.id);
 

@@ -34,6 +34,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { TEMPERAMENT_TYPES } from '../../horses/index.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const PLANTED_TEMPERAMENT = 'TestFixture-planted-temperament';
@@ -84,7 +85,7 @@ describe('POST /auth/advance-onboarding — starter horse is chosen once (Equori
 
   async function plantedStarter(userId) {
     return prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'TestFixture-Kept Starter',
         userId,
@@ -94,7 +95,7 @@ describe('POST /auth/advance-onboarding — starter horse is chosen once (Equori
         dateOfBirth: new Date(2023, 0, 1),
         temperament: PLANTED_TEMPERAMENT,
         speed: 11,
-      },
+      }),
     });
   }
 

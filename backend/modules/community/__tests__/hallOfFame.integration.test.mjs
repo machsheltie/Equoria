@@ -26,6 +26,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate, gameDateParts, sameGameClockDaysLater, startOfGameWeek } from '../../../utils/gameTime.mjs';
 import { castHallOfFameVote, nominateHorse, runHallOfFameRounds } from '../services/hallOfFameService.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const PREFIX = 'TestFixture-vb1n0';
 const ORIGIN = 'http://localhost:3000';
@@ -62,14 +63,14 @@ function fixtures() {
   /** A horse `ageYears` old at `at`. */
   async function horse(owner, ageYears, at = new Date()) {
     const row = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${PREFIX}-${randomBytes(4).toString('hex')}`,
         sex: 'Mare',
         dateOfBirth: gameCalendarDate(at, -(ageYears * 7 + 1)),
         age: ageYears,
         userId: owner.id,
-      },
+      }),
     });
     horses.push(row);
     return row;

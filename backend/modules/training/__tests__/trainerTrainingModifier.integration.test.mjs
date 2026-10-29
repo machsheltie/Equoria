@@ -115,7 +115,8 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
    * A fresh, training-eligible (5yo, no cooldown) horse with a given
    * temperament and optional epigenetic traits.
    */
-  async function makeHorse(label, { temperament = null, positiveTraits = [], fixtureTrainer = true } = {}) {
+  // Equoria-576c0.5: a horse given no temperament gets its breed's (temperament has no training effect).
+  async function makeHorse(label, { temperament, positiveTraits = [], fixtureTrainer = true } = {}) {
     const fiveYearsAgo = birthDateForAge(5);
     const horse = await createTestHorse(
       prisma,
@@ -223,7 +224,7 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
 
   // -- T2b: player XP is flat too (owner ruling q31, 2026-10-23) -------------
   it('T2b: the player XP a session awards is a flat 5, whatever the horse’s traits', async () => {
-    const horse = await makeHorse('t2b-flat-xp', { temperament: null, positiveTraits: ['intelligent'] });
+    const horse = await makeHorse('t2b-flat-xp', { positiveTraits: ['intelligent'] });
 
     const result = await trainHorse(horse.id, 'Dressage');
 
@@ -234,7 +235,7 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
 
   // -- T3: the result no longer reports trainer / trait score scaling ---------
   it('T3: trainHorse reports no trainerModifier and no trait score delta', async () => {
-    const horse = await makeHorse('t3-payload', { temperament: null, positiveTraits: ['intelligent'] });
+    const horse = await makeHorse('t3-payload', { positiveTraits: ['intelligent'] });
     const result = await trainHorse(horse.id, 'Dressage');
 
     expect(result.success).toBe(true);

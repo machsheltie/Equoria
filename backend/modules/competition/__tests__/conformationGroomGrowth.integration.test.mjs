@@ -19,6 +19,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { executeConformationShow } from '../services/conformationShowService.mjs';
 import { ensureGrowthProfileTx } from '../../../services/staffGrowthService.mjs';
 import { getTraitDefinition } from '../../../utils/epigeneticTraits.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const prefix = 'TestFixture-xlw03-confgroom';
@@ -100,7 +101,7 @@ describe('groom growth through conformation shows (Equoria-xlw03)', () => {
       data: { showsAtLevel: 99 },
     });
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${prefix}-horse-${tag()}`,
         sex: 'Filly',
@@ -109,7 +110,7 @@ describe('groom growth through conformation shows (Equoria-xlw03)', () => {
         userId: user.id,
         healthStatus: 'Good',
         bondScore: 50,
-      },
+      }),
     });
     horseIds.push(horse.id);
     await prisma.groomAssignment.create({

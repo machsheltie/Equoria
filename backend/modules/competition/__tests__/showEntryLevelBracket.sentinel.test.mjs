@@ -27,6 +27,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const PREFIX = 'TestFixture-g8qg0';
@@ -71,7 +72,7 @@ async function makeShow() {
 
 async function makeHorse(horseXp) {
   const h = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}-horse-${uid()}`,
       sex: 'Mare',
@@ -81,7 +82,7 @@ async function makeHorse(horseXp) {
       healthStatus: 'Excellent',
       lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       horseXp,
-    },
+    }),
   });
   horseIds.push(h.id);
   await giveEligibleRider(prisma, { horseId: h.id, userId: entrant.id }, riderIds);

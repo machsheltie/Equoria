@@ -31,6 +31,7 @@ import { CONFORMATION_CLASSES } from '../../../constants/schema.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const SUITE_PREFIX = 'cfsco';
 
@@ -487,7 +488,7 @@ describe('validateConformationEntry (real DB)', () => {
     });
 
     const dbHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'ValidHorse',
         sex: 'Mare',
@@ -498,7 +499,7 @@ describe('validateConformationEntry (real DB)', () => {
         temperament: 'calm',
         conformationScores: FULL_CONFORMATION_SCORES,
         user: { connect: { id: user.id } },
-      },
+      }),
     });
     const dbGroom = await prisma.groom.create({
       data: {
@@ -582,7 +583,7 @@ describe('validateConformationEntry (real DB)', () => {
       },
     });
     const h = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: 'RecentHorse',
         sex: 'Mare',
@@ -592,7 +593,7 @@ describe('validateConformationEntry (real DB)', () => {
         bondScore: 50,
         temperament: 'calm',
         user: { connect: { id: u.id } },
-      },
+      }),
     });
     const g = await prisma.groom.create({
       data: {

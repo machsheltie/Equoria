@@ -26,6 +26,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const PREFIX = 'TestFixture-cmw8512';
@@ -91,7 +92,9 @@ beforeAll(async () => {
   // A show with a big field: ROWS horses, one result each.
   bigShow = await prisma.show.create({ data: showData('field') });
   showIds.push(bigShow.id);
-  await prisma.horse.createMany({ data: Array.from({ length: ROWS }, (_, i) => horseData(`field-${i}`)) });
+  await prisma.horse.createMany({
+    data: await Promise.all(Array.from({ length: ROWS }, (_, i) => testHorseData(prisma, horseData(`field-${i}`)))),
+  });
   const fieldHorses = await prisma.horse.findMany({
     where: { userId: owner.id, name: { startsWith: `${PREFIX}-field-` } },
     select: { id: true },

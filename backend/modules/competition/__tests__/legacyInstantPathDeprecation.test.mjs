@@ -33,6 +33,7 @@ import { releaseShowEscrow } from '../../../__tests__/helpers/releaseShowEscrow.
 // (owner entry rules + C10); horses that enter get a game-age dateOfBirth and a
 // rider. Fixture-only; no assertion changed.
 import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -107,7 +108,7 @@ beforeAll(async () => {
   entrantToken = generateTestToken({ id: entrant.id, email: entrant.email, role: 'user' });
 
   const entrantHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-kacla-EntrantHorse-${Date.now()}`,
       sex: 'Mare',
@@ -116,13 +117,13 @@ beforeAll(async () => {
       userId: entrant.id,
       healthStatus: 'Excellent',
       lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-    },
+    }),
   });
   entrantHorseId = entrantHorse.id;
   await giveEligibleRider(prisma, { horseId: entrantHorse.id, userId: entrant.id }, riderIds);
 
   const creatorHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-kacla-CreatorHorse-${Date.now()}`,
       sex: 'Stallion',
@@ -131,7 +132,7 @@ beforeAll(async () => {
       userId: creator.id,
       healthStatus: 'Excellent',
       lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-    },
+    }),
   });
   creatorHorseId = creatorHorse.id;
   await giveEligibleRider(prisma, { horseId: creatorHorse.id, userId: creator.id }, riderIds);

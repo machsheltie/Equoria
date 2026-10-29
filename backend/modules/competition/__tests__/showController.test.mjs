@@ -18,7 +18,8 @@ import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { releaseShowEscrow } from '../../../__tests__/helpers/releaseShowEscrow.mjs';
-import * as eligible from '../../../__tests__/helpers/eligibleCompetitor.mjs'; // B9 entry rules
+import * as eligible from '../../../__tests__/helpers/eligibleCompetitor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs'; // B9 entry rules
 async function dropShow(id) {
   if (!id) {
     return;
@@ -85,7 +86,7 @@ beforeAll(async () => {
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-ShowHorse-${Date.now()}`,
       sex: 'Stallion',
@@ -93,7 +94,7 @@ beforeAll(async () => {
       age: 7,
       userId: user.id,
       ...eligible.healthyAndFed(),
-    },
+    }),
   });
   await eligible.giveEligibleRider(prisma, { horseId: horse.id, userId: user.id }, cleanup);
 
@@ -132,7 +133,7 @@ beforeAll(async () => {
   execAdminDevice = await checkedInDeviceCookie(execAdminUser.id);
 
   execHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-ExecHorse-${Date.now()}`,
       sex: 'Mare',
@@ -146,7 +147,7 @@ beforeAll(async () => {
       balance: 60,
       precision: 60,
       boldness: 60,
-    },
+    }),
   });
 
   const pastDate = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours ago
@@ -417,7 +418,7 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
 
     // Horse too young (age < 3)
     const youngHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-YoungHorse-${Date.now()}`,
         sex: 'Colt',
@@ -425,13 +426,13 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
         age: 1,
         userId: user.id,
         healthStatus: 'Excellent',
-      },
+      }),
     });
     ageTestHorseId = youngHorse.id;
 
     // Injured horse
     const injuredHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-InjuredHorse-${Date.now()}`,
         sex: 'Mare',
@@ -439,7 +440,7 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
         age: 7,
         userId: user.id,
         healthStatus: 'injured',
-      },
+      }),
     });
     injuredHorseId = injuredHorse.id;
 
@@ -567,7 +568,7 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
     });
     const brokeToken = generateTestToken({ id: brokeUser.id, email: brokeUser.email, role: 'user' });
     const brokeHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-BrokeHorse-${Date.now()}`,
         sex: 'Stallion',
@@ -575,7 +576,7 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
         age: 7,
         userId: brokeUser.id,
         ...eligible.healthyAndFed(),
-      },
+      }),
     });
     await eligible.giveEligibleRider(prisma, { horseId: brokeHorse.id, userId: brokeUser.id }, cleanup);
 

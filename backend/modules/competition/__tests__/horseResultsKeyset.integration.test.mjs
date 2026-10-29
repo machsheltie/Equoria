@@ -17,6 +17,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const RUN = randomBytes(5).toString('hex');
 const TIED = new Date('2026-03-07T05:00:00.000Z');
@@ -69,14 +70,14 @@ beforeAll(async () => {
   });
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-HRKeyset-${RUN}`,
       sex: 'Mare',
       dateOfBirth: new Date('2018-01-01'),
       age: 5,
       userId: user.id,
-    },
+    }),
   });
   await prisma.show.createMany({ data: Array.from({ length: TOTAL + 1 }, (_, i) => showData(i)) });
   shows = await prisma.show.findMany({

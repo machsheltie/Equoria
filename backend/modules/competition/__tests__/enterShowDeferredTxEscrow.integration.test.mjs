@@ -44,6 +44,7 @@ import { enterShowDeferredTx } from '../services/competitionRouteQueries.mjs';
 // eligible, so this suite still exercises ONLY the escrow money-flow.
 import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
 import { releaseShowEscrow } from '../../../__tests__/helpers/releaseShowEscrow.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-jnk6r-escrow';
 
@@ -100,7 +101,7 @@ async function makeUser(money, suffix) {
 
 async function makeHorse(ownerId) {
   const h = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
@@ -109,7 +110,7 @@ async function makeHorse(ownerId) {
       userId: ownerId,
       healthStatus: 'Excellent',
       lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-    },
+    }),
   });
   createdHorseIds.push(h.id);
   await giveEligibleRider(prisma, { horseId: h.id, userId: ownerId }, createdRiderIds);

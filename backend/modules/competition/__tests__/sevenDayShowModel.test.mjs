@@ -35,6 +35,7 @@ import { createEscrowedShowRow } from './helpers/escrowedShowRow.mjs';
 // (owner entry rules + C10); horses that enter get a game-age dateOfBirth and a
 // rider. Fixture-only; no assertion changed.
 import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -110,7 +111,7 @@ beforeAll(async () => {
   entrantToken = generateTestToken({ id: entrant.id, email: entrant.email, role: 'user' });
 
   entrantHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-nx8-EntrantHorse-${Date.now()}`,
       sex: 'Mare',
@@ -119,13 +120,13 @@ beforeAll(async () => {
       userId: entrant.id,
       healthStatus: 'Excellent',
       lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-    },
+    }),
   });
   entrantHorseId = entrantHorse.id;
   await giveEligibleRider(prisma, { horseId: entrantHorse.id, userId: entrant.id }, riderIds);
 
   const creatorHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-nx8-CreatorHorse-${Date.now()}`,
       sex: 'Stallion',
@@ -134,7 +135,7 @@ beforeAll(async () => {
       userId: creator.id,
       healthStatus: 'Excellent',
       lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-    },
+    }),
   });
   creatorHorseId = creatorHorse.id;
   await giveEligibleRider(prisma, { horseId: creatorHorse.id, userId: creator.id }, riderIds);
@@ -431,7 +432,7 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
     // Create 5 more horses for the entrant and enter them all.
     for (let i = 0; i < 5; i++) {
       const h = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `TestFixture-nx8-bulk-${i}-${Date.now()}`,
           sex: 'Mare',
@@ -440,7 +441,7 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
           userId: entrant.id,
           healthStatus: 'Excellent',
           lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-        },
+        }),
       });
       // Track for fail-loud cleanup in this describe's afterAll (Equoria-1ohys).
       bulkHorseIds.push(h.id);
