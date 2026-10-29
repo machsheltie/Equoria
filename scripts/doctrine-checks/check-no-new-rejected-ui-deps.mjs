@@ -73,8 +73,18 @@
  * a violation. One violation is counted per package per line, matching the
  * sibling no-radix-imports detector.
  *
- * Optional argv[2]: alternate baseline JSON path (sentinel-test hook);
- * production callers pass no argument.
+ * ── MANIFEST ENTRIES (Equoria-jl20x) ──────────────────────────────────────
+ * Counting imports alone left frontend/package.json unguarded: a rejected
+ * package whose last import was removed stayed declared (and installed). So a
+ * rejected package declared in any dependency section of frontend/package.json
+ * while frontend/src imports it nowhere FAILS — remove the declaration in the
+ * same commit as the last import. `@types/recharts` is always a failure:
+ * recharts 3.x ships its own types, so the stub is stale with or without
+ * recharts.
+ *
+ * Optional argv[2]: alternate baseline JSON path; optional argv[3]: alternate
+ * frontend package.json path (sentinel-test hooks). Production callers pass no
+ * argument.
  * Run: `node scripts/doctrine-checks/check-no-new-rejected-ui-deps.mjs`
  * Auto-runs via scripts/doctrine-checks/run-all.sh (file-name glob).
  */
@@ -90,16 +100,28 @@ import {
   readdirSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
 
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
-const SCAN_ROOT = path.join(REPO_ROOT, 'frontend', 'src');
-const BASELINE_PATH = process.argv[2]
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, '..', '..');
+const scanRoot = path.join(repoRoot, 'frontend', 'src');
+const baselinePath = process.argv[2]
   ? path.resolve(process.argv[2])
-  : path.join(SCRIPT_DIR, 'rejected-ui-deps-baseline.json');
+  : path.join(scriptDir, 'rejected-ui-deps-baseline.json');
+
+const manifestPath = process.argv[3]
+  ? path.resolve(process.argv[3])
+  : path.join(repoRoot, 'frontend', 'package.json');
+const manifestSections = [
+  'dependencies',
+  'devDependencies',
+  'peerDependencies',
+  'optionalDependencies',
+];
+/** Declaring this at all is a failure: recharts 3.x bundles its own types. */
+const alwaysStaleDeclarations = ['@types/recharts'];
 
 const LABEL = 'no-new-rejected-ui-deps';
-const SCAN_FILE_RE = /\.(mjs|js|jsx|ts|tsx)$/;
-const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '__mocks__']);
+const scanFileRe = /\.(mjs|js|jsx|ts|tsx)$/;
+const skipDirs = new Set(['node_modules', 'dist', 'build', '__mocks__']);
 const BACKSLASH = String.fromCharCode(92);
 
 /**
@@ -111,7 +133,7 @@ const BACKSLASH = String.fromCharCode(92);
  * dependency was added, not just "a banned import" (a gate that catches sonner
  * and silently misses chart.js is the exact defect Equoria-h1oi6 reports).
  */
-export const REJECTED_PACKAGES = ['sonner', 'recharts', 'chart.js', 'react-chartjs-2'];
+export const rejectedPackages = ['sonner', 'recharts', 'chart.js', 'react-chartjs-2'];
 
 function escapeForRegex(literal) {
   return literal.replace(/[.*+?^${}()|[\]\\]/g, `${BACKSLASH}$&`);
@@ -119,7 +141,7 @@ function escapeForRegex(literal) {
 
 // `(?:/[^'"]*)?` allows a subpath import (chart.js/auto, recharts/es6, …).
 // Anchoring on from/import/require + quote means a prose mention never matches.
-const PACKAGE_PATTERNS = REJECTED_PACKAGES.map((pkg) => ({
+const packagePatterns = rejectedPackages.map((pkg) => ({
   pkg,
   re: new RegExp(`(?:from|import|require)\\s*\\(?\\s*['"]${escapeForRegex(pkg)}(?:/[^'"]*)?['"]`),
 }));
@@ -131,7 +153,7 @@ const PACKAGE_PATTERNS = REJECTED_PACKAGES.map((pkg) => ({
 export function findRejectedImports(src) {
   const counts = {};
   for (const line of src.split('\n')) {
-    for (const { pkg, re } of PACKAGE_PATTERNS) {
+    for (const { pkg, re } of packagePatterns) {
       if (re.test(line)) counts[pkg] = (counts[pkg] ?? 0) + 1;
     }
   }
@@ -181,6 +203,21 @@ export function countToastCalls(src, fileName = 'file.tsx') {
   return count;
 }
 
+/**
+ * Pure detector: the rejected packages a manifest declares that nothing
+ * imports (plus any always-stale declaration). Exported for the sentinel.
+ */
+export function findUnusedRejectedDeclarations(manifest, importedPackages) {
+  const out = [];
+  for (const section of manifestSections) {
+    for (const pkg of Object.keys(manifest[section] ?? {})) {
+      const rejectedUnused = rejectedPackages.includes(pkg) && !importedPackages.has(pkg);
+      if (rejectedUnused || alwaysStaleDeclarations.includes(pkg)) out.push({ section, pkg });
+    }
+  }
+  return out;
+}
+
 function walk(dir, acc) {
   // Tolerate ONLY ENOENT (an optional root that vanished mid-scan), loudly;
   // any other fault is rethrown so a partially-read tree can never report a
@@ -189,9 +226,9 @@ function walk(dir, acc) {
   for (const e of ents) {
     const full = path.join(dir, e.name);
     if (e.isDirectory()) {
-      if (SKIP_DIRS.has(e.name)) continue;
+      if (skipDirs.has(e.name)) continue;
       walk(full, acc);
-    } else if (e.isFile() && SCAN_FILE_RE.test(e.name) && !isPlantArtifactBasename(e.name)) {
+    } else if (e.isFile() && scanFileRe.test(e.name) && !isPlantArtifactBasename(e.name)) {
       // Uppercase-marker plant artifacts belong to concurrent jest sentinels.
       // Lowercase `planted.*` IS scanned — this gate's own sentinel-positive
       // arm depends on it firing there.
@@ -201,15 +238,15 @@ function walk(dir, acc) {
 }
 
 function toRelKey(absPath) {
-  return path.relative(REPO_ROOT, absPath).split(BACKSLASH).join('/');
+  return path.relative(repoRoot, absPath).split(BACKSLASH).join('/');
 }
 
 function loadBaseline() {
-  if (!fs.existsSync(BASELINE_PATH)) {
-    console.error(`[${LABEL}] baseline not found at ${BASELINE_PATH}`);
+  if (!fs.existsSync(baselinePath)) {
+    console.error(`[${LABEL}] baseline not found at ${baselinePath}`);
     process.exit(2);
   }
-  return JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
+  return JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
 }
 
 function fail(lines) {
@@ -218,7 +255,7 @@ function fail(lines) {
   console.error('CLAUDE.md rejects sonner (imports and toast() calls), Recharts, Chart.js and');
   console.error('react-chartjs-2.');
   console.error('Existing usage is migration state, not approval: the recorded baseline in');
-  console.error(`  ${path.relative(REPO_ROOT, BASELINE_PATH).split(BACKSLASH).join('/')}`);
+  console.error(`  ${path.relative(repoRoot, baselinePath).split(BACKSLASH).join('/')}`);
   console.error('may only SHRINK, never grow.');
   console.error("  - Adding one? Do not. sonner feedback → InlineError / the surface's");
   console.error('    own changed state / CinematicMoment (Equoria-7i4cw).');
@@ -234,7 +271,7 @@ function main() {
   const baseline = loadBaseline();
 
   const files = [];
-  walk(SCAN_ROOT, files);
+  walk(scanRoot, files);
 
   const observedByFile = new Map();
   let observedTotal = 0;
@@ -263,7 +300,7 @@ function main() {
   }
 
   for (const [key, base] of Object.entries(baseline)) {
-    if (!fs.existsSync(path.join(REPO_ROOT, ...key.split('/')))) {
+    if (!fs.existsSync(path.join(repoRoot, ...key.split('/')))) {
       stale.push(key);
       continue;
     }
@@ -298,6 +335,21 @@ function main() {
     ]);
   }
 
+  const importedPackages = new Set();
+  for (const counts of observedByFile.values()) {
+    for (const pkg of Object.keys(counts)) importedPackages.add(pkg);
+  }
+  const unusedDeclarations = findUnusedRejectedDeclarations(
+    JSON.parse(fs.readFileSync(manifestPath, 'utf8')),
+    importedPackages
+  );
+  if (unusedDeclarations.length > 0) {
+    fail([
+      `[${LABEL}] FAIL — rejected packages still declared in ${path.relative(repoRoot, manifestPath).split(BACKSLASH).join('/')} with no import left (remove the declaration and refresh the lockfile):`,
+      ...unusedDeclarations.map((v) => `  ${v.section}.${v.pkg}`),
+    ]);
+  }
+
   const baselineTotal = Object.values(baseline).reduce(
     (s, counts) => s + Object.values(counts).reduce((a, n) => a + n, 0),
     0
@@ -306,7 +358,7 @@ function main() {
     `[${LABEL}] OK — scanned ${files.length} frontend/src files; ` +
       `${observedTotal} rejected-dependency imports and toast() call sites across ${observedByFile.size} files, ` +
       `exactly matching the baseline (total=${baselineTotal}; ` +
-      `${REJECTED_PACKAGES.join(', ')})`
+      `${rejectedPackages.join(', ')})`
   );
 }
 

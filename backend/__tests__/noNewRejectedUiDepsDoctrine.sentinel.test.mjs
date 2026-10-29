@@ -23,10 +23,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..');
-const CHECK = path.join(REPO_ROOT, 'scripts/doctrine-checks/check-no-new-rejected-ui-deps.mjs');
+const repoRoot = path.resolve(HERE, '..', '..');
+const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-new-rejected-ui-deps.mjs');
 const BASELINE = path.join(HERE, '..', '..', 'scripts/doctrine-checks/rejected-ui-deps-baseline.json');
-const PLANT_DIR = path.join(REPO_ROOT, 'frontend/src/_no_new_rejected_ui_deps_sentinel');
+const plantDir = path.join(repoRoot, 'frontend/src/_no_new_rejected_ui_deps_sentinel');
 const plantKey = 'frontend/src/_no_new_rejected_ui_deps_sentinel/planted.tsx';
 const plantFolder = path.join(HERE, '..', '..', 'frontend/src/_no_new_rejected_ui_deps_sentinel');
 
@@ -34,7 +34,7 @@ let scratchDir;
 
 afterEach(() => {
   try {
-    fs.rmSync(PLANT_DIR, { recursive: true, force: true });
+    fs.rmSync(plantDir, { recursive: true, force: true });
   } catch {
     // best-effort cleanup
   }
@@ -45,7 +45,7 @@ afterEach(() => {
 });
 
 function runCheck(args = []) {
-  return spawnSync('node', [CHECK, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
+  return spawnSync('node', [CHECK, ...args], { cwd: repoRoot, encoding: 'utf8' });
 }
 
 /** The recorded baseline plus an entry for the planted file, in a scratch file. */
@@ -96,8 +96,8 @@ describe('check-no-new-rejected-ui-deps.mjs (Equoria-h1oi6)', () => {
 
   for (const c of CASES) {
     it(`SENTINEL: fails when a NEW ${c.name} import is planted`, () => {
-      fs.mkdirSync(PLANT_DIR, { recursive: true });
-      const planted = path.join(PLANT_DIR, 'planted.tsx');
+      fs.mkdirSync(plantDir, { recursive: true });
+      const planted = path.join(plantDir, 'planted.tsx');
       fs.writeFileSync(
         planted,
         [
@@ -159,6 +159,41 @@ describe('check-no-new-rejected-ui-deps.mjs toast() call sites (Equoria-go70a)',
       'export const el = Toaster;',
     ]);
     const res = runCheck([baselineWithPlant({ [SONNER]: 1 })]);
+    expect(res.stderr).toBe('');
+    expect(res.status).toBe(0);
+  });
+});
+
+describe('check-no-new-rejected-ui-deps.mjs manifest entries (Equoria-jl20x)', () => {
+  const manifestFile = path.join(repoRoot, 'frontend/package.json');
+
+  /** The live frontend manifest with extra entries merged in, in a scratch file. */
+  function manifestWith(section, extra) {
+    scratchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jl20x-rejected-ui-PLANTED-'));
+    const file = path.join(scratchDir, 'package.json');
+    const real = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+    real[section] = { ...(real[section] ?? {}), ...extra };
+    fs.writeFileSync(file, JSON.stringify(real));
+    return file;
+  }
+
+  it('SENTINEL: fails when an unimported rejected package is re-declared', () => {
+    const chartJs = ['chart', '.js'].join('');
+    const res = runCheck([BASELINE, manifestWith('dependencies', { [chartJs]: '^4.5.1' })]);
+    expect(res.status).toBe(1);
+    expect(res.stderr).toMatch(/no import left/);
+    expect(res.stderr).toContain(`dependencies.${chartJs}`);
+  });
+
+  it('SENTINEL: fails when the stale @types/recharts stub is re-declared', () => {
+    const stub = ['@types/', 're', 'charts'].join('');
+    const res = runCheck([BASELINE, manifestWith('devDependencies', { [stub]: '^1.8.29' })]);
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(`devDependencies.${stub}`);
+  });
+
+  it('does not flag a rejected package that is still imported', () => {
+    const res = runCheck([BASELINE, manifestWith('dependencies', { [SONNER]: '^2.0.7' })]);
     expect(res.stderr).toBe('');
     expect(res.status).toBe(0);
   });
