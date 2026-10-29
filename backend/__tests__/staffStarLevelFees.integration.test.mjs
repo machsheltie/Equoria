@@ -11,7 +11,9 @@
  * price (it used to keep the price it was hired at / advertised; the ruling changed it).
  *
  * Real DB, real routes (supertest). Every row is owned by this suite's fixture users and
- * removed fail-loud; every pay pass is scoped to the suite's own user.
+ * removed fail-loud. A rider's weekly pay is taken by the player's Pay Rider press
+ * (owner rulings 2026-10-28 and q268, Equoria-hc96y; the old weekly pass was removed,
+ * Equoria-kw60x).
  */
 
 import { describe, it, expect, afterAll } from '@jest/globals';
@@ -26,13 +28,10 @@ import config from '../config/config.mjs';
 import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
-import { processWeeklyRiderSalaries } from '../modules/riders/index.mjs';
 import { staffLevelFee, staffLevels } from '../constants/staffLevels.mjs';
 
 const prefix = 'TestFixture-nawn5';
 const tag = () => randomBytes(4).toString('hex');
-// A Wednesday in a fixed 2032 pay week, so no other suite's pay rows can collide.
-const payDay = new Date('2032-04-07T15:00:00Z');
 
 const userIds = [];
 const horseIds = [];
@@ -218,8 +217,8 @@ describe('hiring charges the star level price', () => {
 
 describe("a rider's weekly payday charges the level price", () => {
   it('a rider hired at their level pays that level each week', async () => {
-    const { user } = await makeUser(1000);
-    await prisma.rider.create({
+    const { user, token } = await makeUser(1000);
+    const rider = await prisma.rider.create({
       data: {
         userId: user.id,
         firstName: prefix,
@@ -232,15 +231,16 @@ describe("a rider's weekly payday charges the level price", () => {
       },
     });
 
-    const result = await processWeeklyRiderSalaries(payDay, { userId: user.id });
+    const res = await send('post', `/api/v1/riders/${rider.id}/pay`, token);
 
-    expect(result.totalAmount).toBe(300);
+    expect(res.status).toBe(200);
+    expect(res.body.data.paid).toEqual({ riderId: rider.id, amount: 300 });
     expect(await moneyOf(user.id)).toBe(700);
   });
 
   it('q226: a rider hired before star levels pays their level price, not their old rate', async () => {
-    const { user } = await makeUser(1000);
-    await prisma.rider.create({
+    const { user, token } = await makeUser(1000);
+    const rider = await prisma.rider.create({
       data: {
         userId: user.id,
         firstName: prefix,
@@ -253,9 +253,10 @@ describe("a rider's weekly payday charges the level price", () => {
       },
     });
 
-    const result = await processWeeklyRiderSalaries(payDay, { userId: user.id });
+    const res = await send('post', `/api/v1/riders/${rider.id}/pay`, token);
 
-    expect(result.totalAmount).toBe(200);
+    expect(res.status).toBe(200);
+    expect(res.body.data.paid).toEqual({ riderId: rider.id, amount: 200 });
     expect(await moneyOf(user.id)).toBe(800);
   });
 });
