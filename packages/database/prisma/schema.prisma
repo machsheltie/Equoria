@@ -182,7 +182,8 @@ model Horse {
   imageUrl                String?               @default("/images/samplehorse.JPG")
   /// Traits and characteristics
   trait                   String?
-  temperament             String?
+  /// Rolled from the breed at birth (Equoria-576c0.5: NOT NULL)
+  temperament             String
   personality             String?
   /// Base stats
   /// Equoria-507mt: NOT NULL post-migration 20260530130000_507mt_horse_stats_nonnull.
@@ -247,8 +248,8 @@ model Horse {
   epigeneticModifiers     Json?                 @default("{\"hidden\": [], \"negative\": [], \"positive\": []}")
   /// Conformation scoring (1-100 scale per body region)
   conformationScores      Json?                 @default("{\"head\": 20, \"neck\": 20, \"shoulders\": 20, \"back\": 20, \"legs\": 20, \"hooves\": 20, \"topline\": 20, \"hindquarters\": 20, \"overallConformation\": 20}")
-  /// Gait quality scores (permanent, generated at birth)
-  gaitScores              Json?
+  /// Gait quality scores (permanent, generated at birth; Equoria-576c0.5: NOT NULL)
+  gaitScores              Json
   /// Horse XP System (Equoria-507mt: NOT NULL)
   horseXp                 Int                   @default(0)
   availableStatPoints     Int                   @default(0)
