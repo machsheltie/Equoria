@@ -253,3 +253,30 @@ describe('TrainingSessionModal — trainer fee on the train button (Equoria-yucp
     expect(screen.queryByRole('button', { name: /Train Horse/i })).not.toBeInTheDocument();
   });
 });
+
+/** Equoria-6m8zv: the status line shows the server's refusal, not "Ready". */
+describe("TrainingSessionModal — the server's verdict", () => {
+  it('shows why the horse cannot train when the server refuses it with no cooldown', async () => {
+    server.use(
+      http.get(`${base}/api/v1/training/status/:horseId/:discipline`, ({ params }) =>
+        HttpResponse.json({
+          success: true,
+          data: {
+            discipline: params.discipline,
+            eligible: false,
+            reason: 'Horse is injured and cannot train',
+            score: 12,
+            nextEligibleDate: null,
+          },
+        })
+      )
+    );
+
+    renderModal();
+
+    expect(
+      await screen.findByText(/Score 12 - Horse is injured and cannot train/i)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Score 12 - Ready/i)).not.toBeInTheDocument();
+  });
+});

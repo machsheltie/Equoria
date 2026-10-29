@@ -49,6 +49,9 @@ export interface DisciplineStatus {
   score?: number;
   nextEligibleDate?: string | null;
   lastTrainedAt?: string | null;
+  /** The server's verdict for this horse and discipline, and why not (Equoria-6m8zv). */
+  eligible?: boolean;
+  reason?: string | null;
 }
 
 export interface StatGain {

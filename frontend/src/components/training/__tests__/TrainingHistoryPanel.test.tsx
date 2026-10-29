@@ -157,3 +157,48 @@ describe('TrainingHistoryPanel — discipline names', () => {
     expect(screen.queryByText(/showJumping/)).not.toBeInTheDocument();
   });
 });
+
+/**
+ * Equoria-6m8zv (audit TRAIN-08): a horse the server refuses with no cooldown
+ * running (retired at 21, injured, no trainer) read "Ready to train" because the
+ * panel looked only at nextEligibleDate. It now shows the server's reason.
+ */
+describe("TrainingHistoryPanel — the server's verdict", () => {
+  it('shows why a refused horse cannot train, never "Ready to train"', async () => {
+    server.use(
+      http.get(`${base}/api/v1/training/status/:horseId`, () =>
+        HttpResponse.json({
+          success: true,
+          data: {
+            Dressage: {
+              eligible: false,
+              reason: 'Horse is too old to train',
+              score: 30,
+              nextEligibleDate: null,
+            },
+          },
+        })
+      )
+    );
+
+    renderPanel();
+
+    expect(await screen.findByText('Horse is too old to train')).toBeInTheDocument();
+    expect(screen.queryByText(/Ready to train/i)).not.toBeInTheDocument();
+  });
+
+  it('still says "Ready to train" when the server says the horse may train', async () => {
+    server.use(
+      http.get(`${base}/api/v1/training/status/:horseId`, () =>
+        HttpResponse.json({
+          success: true,
+          data: { Dressage: { eligible: true, reason: null, score: 30, nextEligibleDate: null } },
+        })
+      )
+    );
+
+    renderPanel();
+
+    expect(await screen.findByText(/Ready to train/i)).toBeInTheDocument();
+  });
+});

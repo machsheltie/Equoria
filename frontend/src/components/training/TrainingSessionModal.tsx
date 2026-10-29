@@ -110,9 +110,13 @@ const TrainingSessionModal = ({
   const statusSummary = useMemo(() => {
     if (!status) return 'Awaiting status...';
     const scoreText = status.score !== undefined ? `Score ${status.score}` : 'Score pending';
+    // The server's verdict, not just the cooldown (Equoria-6m8zv): a refused
+    // horse shows why instead of "Ready".
     const cooldownText = status.nextEligibleDate
       ? `Cooldown until ${formatDateTime(status.nextEligibleDate)}`
-      : 'Ready';
+      : status.eligible === false
+        ? status.reason || 'Cannot train right now'
+        : 'Ready';
     return `${scoreText} - ${cooldownText}`;
   }, [status]);
 

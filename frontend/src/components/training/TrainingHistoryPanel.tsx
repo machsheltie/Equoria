@@ -2,6 +2,7 @@ import { useTrainingOverview } from '@/hooks/api/useTraining';
 import { useHorse, useHorseTrainingHistory } from '@/hooks/api/useHorses';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { disciplineLabel } from '@/lib/utils/training-utils';
+import type { DisciplineStatus } from '@/lib/api/types';
 
 interface TrainingHistoryPanelProps {
   horseId?: number;
@@ -18,6 +19,17 @@ import { formatDateTime } from '@/lib/formatDate';
  * logged, the after-score alone when only it is known. Sessions logged before
  * scores were recorded carry neither, and read as an honest em dash.
  */
+/**
+ * A discipline's readiness line (Equoria-6m8zv): the cooldown while it runs,
+ * otherwise the server's verdict. A horse the server refuses (too young,
+ * retired, injured, no trainer) shows why, never "Ready to train".
+ */
+function readinessLabel(entry: DisciplineStatus): string {
+  if (entry.nextEligibleDate) return `Cooldown until ${formatDateTime(entry.nextEligibleDate)}`;
+  if (entry.eligible === false) return entry.reason || 'Cannot train right now';
+  return 'Ready to train';
+}
+
 function sessionScoreLabel(before?: number | null, after?: number | null): string {
   if (typeof after !== 'number') return '—';
   return typeof before === 'number' ? `${before} → ${after}` : `${after}`;
@@ -72,11 +84,7 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
                 Score: {horse?.disciplineScores?.[entry.discipline] ?? '—'}
               </span>
             </div>
-            <div className="text-xs text-role-secondary">
-              {entry.nextEligibleDate
-                ? `Cooldown until ${formatDateTime(entry.nextEligibleDate)}`
-                : 'Ready to train'}
-            </div>
+            <div className="text-xs text-role-secondary">{readinessLabel(entry)}</div>
           </div>
         ))}
 
