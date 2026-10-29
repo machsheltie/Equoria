@@ -1,17 +1,15 @@
 /**
  * Pure-export unit tests for:
  *  - groomBonusTraitService (validateBonusTraits)
- *  - legacyScoreCalculator (getLegacyScoreDefinitions)
- *  - legacyScoreTraitCalculator (getTraitScoringDefinitions)
+ *
+ * Equoria-58xq6: the legacy-score calculators (getLegacyScoreDefinitions,
+ * getTraitScoringDefinitions) were deleted with their last consumer, GET
+ * /horses/:id/legacy-score (owner ruling q242), and so were their tests here.
  */
 
 import { describe, it, expect } from '@jest/globals';
 
 import { validateBonusTraits } from '../modules/grooms/services/groomBonusTraitService.mjs';
-
-import { getLegacyScoreDefinitions } from '../modules/horses/services/legacyScoreCalculator.mjs';
-
-import { getTraitScoringDefinitions } from '../modules/traits/services/legacyScoreTraitCalculator.mjs';
 
 // Owner ruling 2026-10-28 q154 (Equoria-4fa7s): a show handler is the horse's
 // groom and any groom may handle in any class. Old contract: groomHandlerService's
@@ -80,103 +78,5 @@ describe('validateBonusTraits', () => {
   it('returns valid=true for bonus at boundary 0.3', () => {
     const result = validateBonusTraits({ speed: 0.3 });
     expect(result.valid).toBe(true);
-  });
-});
-
-// ─── getLegacyScoreDefinitions ───────────────────────────────────────────────
-
-describe('getLegacyScoreDefinitions', () => {
-  it('returns maxScores, grades, components', () => {
-    const defs = getLegacyScoreDefinitions();
-    expect(defs).toHaveProperty('maxScores');
-    expect(defs).toHaveProperty('grades');
-    expect(defs).toHaveProperty('components');
-  });
-
-  it('maxScores has all required keys', () => {
-    const { maxScores } = getLegacyScoreDefinitions();
-    expect(maxScores).toHaveProperty('baseStats');
-    expect(maxScores).toHaveProperty('achievements');
-    expect(maxScores).toHaveProperty('traitScore');
-    expect(maxScores).toHaveProperty('breedingValue');
-    expect(maxScores).toHaveProperty('total');
-  });
-
-  it('grades includes S, A, B, C, D, F', () => {
-    const { grades } = getLegacyScoreDefinitions();
-    for (const g of ['S', 'A', 'B', 'C', 'D', 'F']) {
-      expect(grades).toHaveProperty(g);
-    }
-  });
-
-  it('grade S has higher min than grade A', () => {
-    const { grades } = getLegacyScoreDefinitions();
-    expect(grades.S.min).toBeGreaterThan(grades.A.min);
-  });
-
-  it('grade F has min of 0', () => {
-    const { grades } = getLegacyScoreDefinitions();
-    expect(grades.F.min).toBe(0);
-  });
-
-  it('each grade has name and description', () => {
-    const { grades } = getLegacyScoreDefinitions();
-    for (const grade of Object.values(grades)) {
-      expect(typeof grade.name).toBe('string');
-      expect(typeof grade.description).toBe('string');
-    }
-  });
-});
-
-// ─── getTraitScoringDefinitions ──────────────────────────────────────────────
-
-describe('getTraitScoringDefinitions', () => {
-  it('returns maxScores, ageCutoff, rareTraits, negativeTraits, negativeTraitPenalties, scoringRules', () => {
-    const defs = getTraitScoringDefinitions();
-    expect(defs).toHaveProperty('maxScores');
-    expect(defs).toHaveProperty('ageCutoff');
-    expect(defs).toHaveProperty('rareTraits');
-    expect(defs).toHaveProperty('negativeTraits');
-    expect(defs).toHaveProperty('negativeTraitPenalties');
-    expect(defs).toHaveProperty('scoringRules');
-  });
-
-  it('maxScores.total equals sum of component maxScores', () => {
-    const { maxScores } = getTraitScoringDefinitions();
-    const computed = maxScores.traitCount + maxScores.diversity + maxScores.rareTraits + maxScores.groomCare;
-    expect(maxScores.total).toBe(computed);
-  });
-
-  it('ageCutoff has days and years fields', () => {
-    const { ageCutoff } = getTraitScoringDefinitions();
-    expect(typeof ageCutoff.days).toBe('number');
-    expect(typeof ageCutoff.years).toBe('number');
-    expect(ageCutoff.days).toBeGreaterThan(0);
-  });
-
-  it('rareTraits is a non-empty array', () => {
-    const { rareTraits } = getTraitScoringDefinitions();
-    expect(Array.isArray(rareTraits)).toBe(true);
-    expect(rareTraits.length).toBeGreaterThan(0);
-  });
-
-  it('negativeTraits is a non-empty array', () => {
-    const { negativeTraits } = getTraitScoringDefinitions();
-    expect(Array.isArray(negativeTraits)).toBe(true);
-    expect(negativeTraits.length).toBeGreaterThan(0);
-  });
-
-  it('negativeTraitPenalties entries are all negative numbers', () => {
-    const { negativeTraitPenalties } = getTraitScoringDefinitions();
-    for (const penalty of Object.values(negativeTraitPenalties)) {
-      expect(penalty).toBeLessThan(0);
-    }
-  });
-
-  it('scoringRules has traitCount, diversity, rareTraits, groomCare, negativeTraits', () => {
-    const { scoringRules } = getTraitScoringDefinitions();
-    for (const key of ['traitCount', 'diversity', 'rareTraits', 'groomCare', 'negativeTraits']) {
-      expect(scoringRules).toHaveProperty(key);
-    }
   });
 });

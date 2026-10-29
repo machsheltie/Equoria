@@ -9,7 +9,6 @@
  * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export { calculateTraitScore } from './services/legacyScoreTraitCalculator.mjs';
 export { logTraitAssignment } from './services/traitHistoryService.mjs';
 export { runNightlyTraitReveal } from './services/traitRevealEngine.mjs';
 export { getTraitRevelationAnalytics } from './services/traitRevelationAnalyticsService.mjs';

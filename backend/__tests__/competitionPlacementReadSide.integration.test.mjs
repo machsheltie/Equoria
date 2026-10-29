@@ -16,6 +16,10 @@
  * leaderboard case read the groupBy helpers of GET /leaderboards/competition, a
  * duplicate list removed with them.
  *
+ * Equoria-58xq6: the legacy-score case read calculateAchievementsScore, deleted
+ * with the legacy-score calculators after GET /horses/:id/legacy-score was
+ * removed (owner ruling q242).
+ *
  * Real DB, real routes (supertest, real JWT), scoped fixtures.
  */
 
@@ -27,7 +31,6 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
-import { calculateAchievementsScore } from '../modules/horses/services/legacyScoreCalculator.mjs';
 
 const PREFIX = 'TestFixture-f46tb';
 const ORIGIN = 'http://localhost:3000';
@@ -115,11 +118,5 @@ describe('placement readers agree (Equoria-f46tb)', () => {
     const row = res.body.data.find(h => h.id === horse.id);
     expect(row.firstPlaceWins).toBe(4);
     expect(row.hasChampionship).toBe(true);
-  });
-
-  it('the legacy score counts the stored placings', async () => {
-    const competitionResults = await prisma.competitionResult.findMany({ where: { horseId: horse.id } });
-    const { breakdown } = await calculateAchievementsScore({ competitionResults });
-    expect(breakdown).toMatchObject({ firstPlaces: 4, secondPlaces: 1, thirdPlaces: 1, totalCompetitions: 7 });
   });
 });
