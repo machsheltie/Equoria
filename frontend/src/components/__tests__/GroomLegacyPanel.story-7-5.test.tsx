@@ -145,8 +145,8 @@ describe('groomLegacy helpers', () => {
       expect(LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL).toBe('advanced');
     });
 
-    it('protégé experience bonus is 50', () => {
-      expect(LEGACY_CONSTANTS.PROTEGE_EXPERIENCE_BONUS).toBe(50);
+    it('has no protégé experience bonus (staff have no XP, owner 2026-10-21)', () => {
+      expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_EXPERIENCE_BONUS');
     });
 
     it('has no protégé level bonus (it went with the old level)', () => {
@@ -462,9 +462,10 @@ describe('AC5: Bonus effectiveness for legacy grooms', () => {
     expect(screen.getByTestId('legacy-bonuses-section')).toBeInTheDocument();
   });
 
-  it('shows experience bonus value', () => {
+  it('shows no starting-XP bonus (staff have no XP, owner 2026-10-21)', () => {
     render(<GroomLegacyPanel groom={activeGroom} mentorInfo={sampleMentorInfo} />);
-    expect(screen.getByTestId('bonus-experience')).toHaveTextContent('+50 bonus starting XP');
+    expect(screen.queryByTestId('bonus-experience')).not.toBeInTheDocument();
+    expect(screen.getByTestId('legacy-bonuses-section')).not.toHaveTextContent(/XP/);
   });
 
   it('shows no level bonus (it went with the old level)', () => {

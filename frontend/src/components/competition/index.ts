@@ -18,13 +18,6 @@ export type {
   Competition as CompetitionDetail,
 } from './CompetitionDetailModal';
 
-export { default as EntryConfirmationModal } from './EntryConfirmationModal';
-export type {
-  EntryConfirmationModalProps,
-  Competition as EntryCompetition,
-  SelectedHorse,
-} from './EntryConfirmationModal';
-
 export { default as CompetitionResultsList } from './CompetitionResultsList';
 export type {
   CompetitionResultsListProps,

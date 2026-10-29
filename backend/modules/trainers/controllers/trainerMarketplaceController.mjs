@@ -291,7 +291,7 @@ export async function hireTrainerFromMarketplace(req, res) {
       return res.status(400).json({
         success: false,
         code: staffHireRefusal.rosterCapReached,
-        message: `You have reached your trainer roster cap of ${rosterCap}. Retire a trainer or raise your level before hiring another.`,
+        message: `You have reached your trainer roster cap of ${rosterCap}. Dismiss a trainer or raise your level before hiring another.`,
         data: { currentCount: activeTrainerCount, maxAllowed: rosterCap },
       });
     }
@@ -341,7 +341,7 @@ export async function hireTrainerFromMarketplace(req, res) {
         const rosterCountInTx = await tx.trainer.count({ where: { userId, retired: false } });
         if (rosterCountInTx > rosterCap) {
           throw new RosterCapExceededError(
-            `You have reached your trainer roster cap of ${rosterCap}. Retire a trainer or raise your level before hiring another.`,
+            `You have reached your trainer roster cap of ${rosterCap}. Dismiss a trainer or raise your level before hiring another.`,
           );
         }
         // Equoria-bvddn.19: remove the hired offer from the persisted list

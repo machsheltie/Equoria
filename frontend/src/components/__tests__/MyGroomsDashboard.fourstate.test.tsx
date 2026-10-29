@@ -17,7 +17,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -138,14 +138,33 @@ describe('MyGroomsDashboard — silent-mutation feedback (Equoria-mljz9)', () =>
 
     await screen.findByTestId('groom-grid');
 
-    // The assignment row's Trash2 control (aria-label "Unassign Groom").
+    // The assignment row's Trash2 control (aria-label "Unassign Groom"). One click
+    // unassigns — there is no confirm dialog (owner ruling 2026-10-26, Equoria-wmjc0).
     await user.click(await screen.findByRole('button', { name: /unassign groom/i }));
-    // Confirm in the dialog (button text is exactly "Unassign").
-    await user.click(await screen.findByRole('button', { name: /^unassign$/i }));
 
     // Visible failure feedback surfaces via the real sonner Toaster …
     expect(await screen.findByText(/could not unassign the groom/i)).toBeInTheDocument();
     // … and the raw server body text is not leaked.
     expect(screen.queryByText(/delete boom leak/i)).not.toBeInTheDocument();
+  });
+
+  it('one click on Unassign Groom sends the delete — no confirm dialog (Equoria-wmjc0)', async () => {
+    const deleted: string[] = [];
+    server.use(
+      http.delete(`${base}/api/v1/groom-assignments/:id`, ({ params }) => {
+        deleted.push(String(params.id));
+        return HttpResponse.json({ success: true, data: {} });
+      })
+    );
+
+    const user = userEvent.setup();
+    renderDashboard();
+
+    await screen.findByTestId('groom-grid');
+    await user.click(await screen.findByRole('button', { name: /unassign groom/i }));
+
+    await waitFor(() => expect(deleted).toHaveLength(1));
+    expect(screen.queryByTestId('unassign-groom-confirm-dialog')).not.toBeInTheDocument();
+    expect(screen.queryByText(/are you sure/i)).not.toBeInTheDocument();
   });
 });

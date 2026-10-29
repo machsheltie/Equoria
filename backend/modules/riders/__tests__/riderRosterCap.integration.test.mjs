@@ -157,6 +157,10 @@ describe('POST /api/riders/marketplace/hire — roster cap (Equoria-oey96.8)', (
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
+    // Riders are dismissed back to the hiring pool, never "retired" by the player
+    // (Equoria-xlw03, Equoria-wmjc0).
+    expect(res.body.message).toMatch(/Dismiss a rider/);
+    expect(res.body.message).not.toMatch(/retire/i);
 
     const after = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
     expect(Number(after.money)).toBe(1000); // no debit

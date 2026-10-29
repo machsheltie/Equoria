@@ -280,7 +280,7 @@ export async function hireRiderFromMarketplace(req, res) {
       return res.status(400).json({
         success: false,
         code: staffHireRefusal.rosterCapReached,
-        message: `You have reached your rider roster cap of ${rosterCap}. Retire a rider or raise your stable level before hiring another.`,
+        message: `You have reached your rider roster cap of ${rosterCap}. Dismiss a rider or raise your stable level before hiring another.`,
         data: { currentCount: activeRiderCount, maxAllowed: rosterCap },
       });
     }
@@ -377,7 +377,7 @@ export async function hireRiderFromMarketplace(req, res) {
           const rosterCountInTx = await tx.rider.count({ where: { userId, retired: false } });
           if (rosterCountInTx > rosterCap) {
             throw new RosterCapExceededError(
-              `You have reached your rider roster cap of ${rosterCap}. Retire a rider or raise your stable level before hiring another.`,
+              `You have reached your rider roster cap of ${rosterCap}. Dismiss a rider or raise your stable level before hiring another.`,
             );
           }
           // Equoria-vp393: ledger inside the same tx — caller-supplied

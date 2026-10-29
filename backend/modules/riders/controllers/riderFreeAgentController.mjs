@@ -109,7 +109,7 @@ export async function hireFreeAgentRider(req, res) {
           const rosterCount = await tx.rider.count({ where: { userId, retired: false } });
           if (rosterCount > rosterCap) {
             throw new RosterCapExceededError(
-              `You have reached your rider roster cap of ${rosterCap}. Retire a rider or raise your stable level before hiring another.`,
+              `You have reached your rider roster cap of ${rosterCap}. Dismiss a rider or raise your stable level before hiring another.`,
             );
           }
           // The hidden retirement age was rolled when the rider was first hired and stays

@@ -130,4 +130,42 @@ describe('HorseMarketplacePage — real balance wiring (Equoria-ga4l)', () => {
     expect(screen.queryByText(/insufficient funds/i)).not.toBeInTheDocument();
     expect(buyButton).not.toBeDisabled();
   });
+
+  it('one click on the priced Buy button buys — no Confirm Purchase step (Equoria-wmjc0)', async () => {
+    const bought: string[] = [];
+    server.use(
+      makeProfileHandler(100_000),
+      makeMarketplaceHandler(),
+      http.post('*/api/v1/marketplace/buy/:horseId', ({ params }) => {
+        bought.push(String(params.horseId));
+        return HttpResponse.json({
+          success: true,
+          data: {
+            horseName: 'TestFixture-ga4l-listing',
+            salePrice: 50_000,
+            sellerUsername: 'TestFixture-ga4l-seller',
+            saleId: 1,
+            newBalance: 50_000,
+          },
+        });
+      })
+    );
+
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText(/TestFixture-ga4l-listing/i);
+    await user.click(
+      await screen.findByRole('button', { name: /^buy testfixture-ga4l-listing$/i })
+    );
+
+    // The price is on the button (owner ruling 2026-10-26: fee on the button, one click).
+    const buyButton = await screen.findByRole('button', { name: /buy now/i });
+    expect(buyButton).toHaveTextContent('50,000');
+    await user.click(buyButton);
+
+    await waitFor(() => expect(bought).toEqual(['4242']));
+    expect(screen.queryByText(/confirm purchase/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/remaining/i)).not.toBeInTheDocument();
+  });
 });

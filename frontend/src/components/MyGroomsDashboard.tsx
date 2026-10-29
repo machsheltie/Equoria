@@ -84,8 +84,6 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   const [expandedPersonalityId, setExpandedPersonalityId] = useState<number | null>(null);
   // Equoria-cbkw — which groom's metrics + assignment-history panel is open.
   const [expandedDetailId, setExpandedDetailId] = useState<number | null>(null);
-  // Equoria-o5hub.13 — assignment id awaiting unassign confirmation (replaces window.confirm).
-  const [pendingUnassignId, setPendingUnassignId] = useState<number | null>(null);
 
   // Fetch grooms. isError/refetch are destructured so the Manage tab renders a
   // real ERROR state (below) instead of collapsing a failed fetch into the
@@ -235,17 +233,10 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
     setIsAssignModalOpen(true);
   };
 
-  // Handle unassign button click — opens the in-app confirmation dialog.
+  // One click unassigns: no confirm dialog (owner ruling 2026-10-26, no confirm
+  // pages; Equoria-wmjc0).
   const handleUnassignClick = (assignmentId: number) => {
-    setPendingUnassignId(assignmentId);
-  };
-
-  // Fire the unassign mutation only on explicit dialog confirm.
-  const handleUnassignConfirm = () => {
-    if (pendingUnassignId !== null) {
-      unassignMutation.mutate(pendingUnassignId);
-    }
-    setPendingUnassignId(null);
+    unassignMutation.mutate(assignmentId);
   };
 
   // Handle assignment complete
@@ -576,6 +567,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                           variant="ghost"
                           size="icon"
                           onClick={() => handleUnassignClick(assignment.id)}
+                          disabled={unassignMutation.isPending}
                           className="text-[var(--role-danger-text)] hover:bg-[var(--role-danger-bg)] hover:no-underline rounded-full"
                           title="Unassign Groom"
                           aria-label="Unassign Groom"
@@ -658,32 +650,6 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
               data-testid="groom-assign-horse-picker-cancel"
             >
               Cancel
-            </Button>
-          </GameDialogFooter>
-        </GameDialogContent>
-      </GameDialog>
-
-      {/* Unassign confirmation — destructive action, never gold (DECISIONS.md §5).
-          Replaces window.confirm (Equoria-o5hub.13). */}
-      <GameDialog
-        open={pendingUnassignId !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingUnassignId(null);
-        }}
-      >
-        <GameDialogContent size="sm" data-testid="unassign-groom-confirm-dialog">
-          <GameDialogHeader>
-            <GameDialogTitle>Unassign Groom</GameDialogTitle>
-            <GameDialogDescription>
-              Are you sure you want to unassign this groom?
-            </GameDialogDescription>
-          </GameDialogHeader>
-          <GameDialogFooter>
-            <Button type="button" variant="secondary" onClick={() => setPendingUnassignId(null)}>
-              Cancel
-            </Button>
-            <Button type="button" variant="destructive" onClick={handleUnassignConfirm}>
-              Unassign
             </Button>
           </GameDialogFooter>
         </GameDialogContent>

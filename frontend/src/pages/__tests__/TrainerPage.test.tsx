@@ -185,3 +185,22 @@ describe('TrainerPage — a hired trainer (Equoria-r8a6h q82)', () => {
     expect(await screen.findByTestId('trainer-assigned')).toBeInTheDocument();
   });
 });
+
+describe('TrainerPage — star level only (owner ruling q229, Equoria-wmjc0)', () => {
+  it.each([
+    ['/trainers/offers/mk-1', 'Ada Vane'],
+    ['/trainers/10', 'Bram Holt'],
+  ])('%s describes no old novice/developing/expert skill step', async (url, name) => {
+    stubReads();
+    renderAt(url);
+
+    expect(await screen.findByRole('heading', { level: 1, name })).toBeInTheDocument();
+    const page = screen.getByTestId('trainer-page');
+    expect(page).not.toHaveTextContent(/specialties are not yet known|some specialties are known/i);
+    expect(page).not.toHaveTextContent(/every specialty is known/i);
+    expect(page).not.toHaveTextContent(/\bdeveloping\b/i);
+    expect(screen.getByTestId('trainer-fee-note')).toHaveTextContent(
+      'The fee is paid once each time this trainer trains one of your horses'
+    );
+  });
+});

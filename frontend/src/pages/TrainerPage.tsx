@@ -65,12 +65,6 @@ interface TrainerView {
   retired?: boolean;
 }
 
-const skillLevelNote: Record<string, string> = {
-  novice: 'Specialties are not yet known — they could be exceptional.',
-  developing: 'Some specialties are known.',
-  expert: 'Every specialty is known.',
-};
-
 const TrainerPage: React.FC = () => {
   const { trainerId, marketplaceId } = useParams();
   const [searchParams] = useSearchParams();
@@ -269,9 +263,9 @@ const TrainerPage: React.FC = () => {
                   </div>
                 )}
               </dl>
-              <p className="text-xs text-[var(--text-muted)]">
-                {skillLevelNote[trainer.skillLevel] ?? skillLevelNote.novice} The fee is paid once
-                each time this trainer trains one of your horses, once per horse each week.
+              <p className="text-xs text-[var(--text-muted)]" data-testid="trainer-fee-note">
+                The fee is paid once each time this trainer trains one of your horses, once per
+                horse each week.
               </p>
 
               {trainer.bio && (

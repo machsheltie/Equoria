@@ -158,6 +158,9 @@ describe('POST /api/trainers/marketplace/hire — roster cap (Equoria-oey96.8)',
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
+    // The player dismisses staff; "retire" is not a player action (Equoria-wmjc0).
+    expect(res.body.message).toMatch(/Dismiss a trainer/);
+    expect(res.body.message).not.toMatch(/retire/i);
 
     const after = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
     expect(Number(after.money)).toBe(2000); // no debit

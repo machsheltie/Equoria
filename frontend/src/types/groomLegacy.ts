@@ -56,7 +56,6 @@ export interface LegacyEligibilityStatus {
 /** Legacy system constants mirroring backend groomLegacyService.mjs */
 export const LEGACY_CONSTANTS = {
   MINIMUM_MENTOR_STAR_LEVEL: 'advanced',
-  PROTEGE_EXPERIENCE_BONUS: 50,
   PROTEGE_SKILL_BONUS_PERCENT: 10, // 10% bonus to starting skills
 } as const;
 
