@@ -19,7 +19,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseBreedSourceFile } from '../../../seed/syncBreedGeneticProfiles.mjs';
 import { generateGenotype } from '../services/genotypeGenerationService.mjs';
-import { calculatePhenotype, shadeRollFor } from '../services/phenotypeCalculationService.mjs';
+import { calculateBreedPhenotype, calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
 import { seededRng } from '../../../__tests__/helpers/seededRng.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -43,7 +43,7 @@ describe('American Saddlebred coat colors (Equoria-de7ts)', () => {
     const rng = seededRng(20261028);
     for (let i = 0; i < rolls; i++) {
       const genotype = generateGenotype(profile, rng);
-      const { colorName, shade } = calculatePhenotype(genotype, profile.shadeBias, shadeRollFor(profile, rng));
+      const { colorName, shade } = calculateBreedPhenotype(genotype, profile, rng);
       colorCounts.set(colorName, (colorCounts.get(colorName) ?? 0) + 1);
       const key = `${colorName}|${shade}`;
       shadeCounts.set(key, (shadeCounts.get(key) ?? 0) + 1);
@@ -96,11 +96,11 @@ describe('American Saddlebred coat colors (Equoria-de7ts)', () => {
 });
 
 describe('shade roll (Equoria-de7ts)', () => {
-  it('rolls shades only for a breed whose profile asks for it', () => {
-    const rng = () => 0.5;
-    expect(shadeRollFor({ shadeSelection: 'rolled' }, rng)).toBe(rng);
-    expect(shadeRollFor({ shadeBias: {} }, rng)).toBeNull();
-    expect(shadeRollFor(null, rng)).toBeNull();
+  it('rolls the shade of any breed by its weights (owner ruling q277)', () => {
+    const profile = { shadeBias: { Chestnut: { light: 0.5, golden: 0.5 } } };
+    const genotype = { E_Extension: 'e/e', A_Agouti: 'A/a' };
+    expect(calculateBreedPhenotype(genotype, profile, () => 0).shade).toBe('light');
+    expect(calculateBreedPhenotype(genotype, profile, () => 0.99).shade).toBe('golden');
   });
 
   it('picks the shade from the roll, by weight', () => {

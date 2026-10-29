@@ -59,7 +59,6 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "pangare": 0.05,
     "rabicano": 0.07
   },
-  "shadeSelection": "rolled",
   "shadeBias": {
     "Chestnut": {"light": 0.25, "medium": 0.25, "dark": 0.25, "golden": 0.25},
     "Bay": {"light": 0.167, "standard": 0.167, "dark": 0.167, "blood": 0.167, "copper": 0.167, "wild": 0.167},

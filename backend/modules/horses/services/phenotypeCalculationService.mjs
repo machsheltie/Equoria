@@ -8,9 +8,7 @@
  * Story: 31E-1b — Phenotype Calculation Engine
  */
 
-import { selectShade, shadeRollFor } from './coatShade.mjs';
-
-export { shadeRollFor };
+import { selectShade } from './coatShade.mjs';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -615,7 +613,7 @@ function applyPatterns(genotype, colorName, genotypeHash) {
  *
  * @param {Object} genotype - colorGenotype from genotypeGenerationService
  * @param {Object|null} shadeBias - breed's shadeBias map (from breedGeneticProfile.shadeBias)
- * @param {(() => number)|null} [shadeRng] - see shadeRollFor
+ * @param {(() => number)|null} [shadeRng] - rolls the shade by weight (new horses)
  * @returns {Object} phenotype
  */
 export function calculatePhenotype(genotype, shadeBias = null, shadeRng = null) {
@@ -682,17 +680,15 @@ export function calculatePhenotype(genotype, shadeBias = null, shadeRng = null) 
 }
 
 /**
- * calculatePhenotype for a new horse of a breed: the breed's shade weights, and a
- * rolled shade when the breed's profile asks for one (Equoria-de7ts).
+ * calculatePhenotype for a new horse of a breed: its shade is rolled by the breed's
+ * shade weights (owner ruling q277, 2026-10-29: every breed rolls shades by its
+ * stated odds; the genotype hash followed a breed's few common genotypes instead).
  *
  * @param {Object} genotype
  * @param {Object|null} breedGeneticProfile
+ * @param {() => number} [rng]
  * @returns {Object} phenotype
  */
-export function calculateBreedPhenotype(genotype, breedGeneticProfile) {
-  return calculatePhenotype(
-    genotype,
-    breedGeneticProfile?.shadeBias ?? null,
-    shadeRollFor(breedGeneticProfile),
-  );
+export function calculateBreedPhenotype(genotype, breedGeneticProfile, rng = Math.random) {
+  return calculatePhenotype(genotype, breedGeneticProfile?.shadeBias ?? null, rng);
 }

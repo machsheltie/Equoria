@@ -1,9 +1,9 @@
 /**
  * Coat shade selection (split out of phenotypeCalculationService.mjs, Equoria-de7ts).
  *
- * A breed's shadeBias maps each color to { shade: weight }. The shade is either
- * picked from the genotype hash (deterministic; the default) or, for a breed
- * whose profile says "shadeSelection": "rolled", rolled by the weights.
+ * A breed's shadeBias maps each color to { shade: weight }. A new horse's shade is
+ * rolled by those weights (owner ruling q277, 2026-10-29: every breed); without a
+ * roll the shade comes from the genotype hash (deterministic).
  */
 
 /**
@@ -58,18 +58,4 @@ export function selectShade(colorName, shadeBias, genotypeHash, shadeRng) {
       ? Math.min(shadeArray.length - 1, Math.floor(shadeRng() * shadeArray.length))
       : genotypeHash % shadeArray.length;
   return shadeArray[index];
-}
-
-/**
- * The shade roll for a new horse of this breed, or null to keep the genotype-hash
- * shade. Only a breed whose profile says "shadeSelection": "rolled" rolls its
- * shades (American Saddlebred, Equoria-de7ts); other breeds are unchanged until
- * the owner decides.
- *
- * @param {Object|null} breedGeneticProfile
- * @param {() => number} [rng]
- * @returns {(() => number)|null}
- */
-export function shadeRollFor(breedGeneticProfile, rng = Math.random) {
-  return breedGeneticProfile?.shadeSelection === 'rolled' ? rng : null;
 }

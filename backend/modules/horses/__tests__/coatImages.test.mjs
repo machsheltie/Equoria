@@ -15,7 +15,7 @@ import { coatImages } from '../data/coatImages.mjs';
 import { coatImageVariants, rollCoatImageUrl } from '../services/coatImageService.mjs';
 import { parseBreedSourceFile } from '../../../seed/syncBreedGeneticProfiles.mjs';
 import { generateGenotype } from '../services/genotypeGenerationService.mjs';
-import { calculatePhenotype, shadeRollFor } from '../services/phenotypeCalculationService.mjs';
+import { calculateBreedPhenotype } from '../services/phenotypeCalculationService.mjs';
 import { seededRng } from '../../../__tests__/helpers/seededRng.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -44,6 +44,22 @@ describe('coat-color portrait table (Equoria-de7ts)', () => {
       expect({ file, exists: existsSync(join(folderOnDisk, file)) }).toEqual({ file, exists: true });
     }
     expect([...named].sort()).toEqual(readdirSync(folderOnDisk).sort());
+    // q275: the game ships WebP copies only; the PNG/JPG originals stay out of the repo.
+    expect(readdirSync(folderOnDisk).filter(file => !file.endsWith('.webp'))).toEqual([]);
+  });
+
+  it('uses all five rose grey portraits, and gives Amber and Sable Champagne their own (q276)', () => {
+    const files = (colorName, shade = 'standard') =>
+      coatImageVariants(breed, { colorName, shade }).map(url => url.split('/').pop());
+    expect(files('Rose Gray')).toEqual([
+      'rosegrey1.webp',
+      'rosegrey2.webp',
+      'rosegrey3.webp',
+      'rosegrey4.webp',
+      'rosegrey5.webp',
+    ]);
+    expect(files('Amber Champagne')).toEqual(['amberchampagne1.webp', 'amberchampagne2.webp']);
+    expect(files('Sable Champagne')).toEqual(['sablechampagne1.webp', 'sablechampagne2.webp']);
   });
 
   it('gives every portrait at least two variants', () => {
@@ -63,17 +79,17 @@ describe('coat-color portrait table (Equoria-de7ts)', () => {
 
   it('counts dark chestnut and liver chestnut as variants of Chestnut — Dark', () => {
     expect(coatImageVariants(breed, { colorName: 'Chestnut', shade: 'dark' })).toEqual([
-      '/images/breeds/american_saddlebred/darkchestnut1.png',
-      '/images/breeds/american_saddlebred/darkchestnut2.png',
-      '/images/breeds/american_saddlebred/liverchestnut1.png',
-      '/images/breeds/american_saddlebred/liverchestnut2.png',
+      '/images/breeds/american_saddlebred/darkchestnut1.webp',
+      '/images/breeds/american_saddlebred/darkchestnut2.webp',
+      '/images/breeds/american_saddlebred/liverchestnut1.webp',
+      '/images/breeds/american_saddlebred/liverchestnut2.webp',
     ]);
   });
 
   it('rolls one of the variants, and null for a color or breed with no portrait', () => {
     const bay = { colorName: 'Bay', shade: 'blood' };
-    expect(rollCoatImageUrl(breed, bay, () => 0)).toBe('/images/breeds/american_saddlebred/bloodbay1.png');
-    expect(rollCoatImageUrl(breed, bay, () => 0.999)).toBe('/images/breeds/american_saddlebred/bloodbay2.png');
+    expect(rollCoatImageUrl(breed, bay, () => 0)).toBe('/images/breeds/american_saddlebred/bloodbay1.webp');
+    expect(rollCoatImageUrl(breed, bay, () => 0.999)).toBe('/images/breeds/american_saddlebred/bloodbay2.webp');
     expect(rollCoatImageUrl(breed, { colorName: 'Dominant White', shade: 'white' })).toBeNull();
     expect(rollCoatImageUrl(breed, { colorName: 'Bay', shade: 'no such shade' })).toBeNull();
     expect(rollCoatImageUrl('Arabian', bay)).toBeNull();
@@ -88,11 +104,7 @@ describe('coat-color portrait table (Equoria-de7ts)', () => {
       const { profile } = parseBreedSourceFile(readFileSync(file, 'utf8'), `${breed}.txt`);
       const rng = seededRng(6971);
       for (let i = 0; i < 100000; i++) {
-        const { colorName, shade } = calculatePhenotype(
-          generateGenotype(profile, rng),
-          profile.shadeBias,
-          shadeRollFor(profile, rng),
-        );
+        const { colorName, shade } = calculateBreedPhenotype(generateGenotype(profile, rng), profile, rng);
         rolled.add(`${colorName}|${shade}`);
       }
     });

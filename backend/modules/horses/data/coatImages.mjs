@@ -12,8 +12,11 @@
  *
  * Shape, per breed name:
  *   folder: the public URL folder the files live in (frontend/public/...).
- *   images: image name -> its files in that folder (the owner's own file names,
- *           spelling and extension kept as delivered, e.g. 'classsicchampagne').
+ *   images: image name -> its files in that folder. The files are ~1024px WebP
+ *           copies of the owner's originals (q275, 2026-10-29: the originals stay
+ *           out of the repo), named as she delivered them (e.g. the misspelled
+ *           'classsicchampagne'), except the second rosegrey2 original, whose
+ *           copy is rosegrey5 so all five rose grey portraits are used (q276).
  *   colors: colorName -> either
  *             - an image name, or a list of image names (any shade), or
  *             - { shade: image name | image names } (one entry per shade).
@@ -24,44 +27,50 @@
  * To give another breed portraits, add its entry here with the same shape.
  */
 
+/** name1.webp ... nameN.webp: the numbered variants of one portrait. */
+function numbered(name, count = 2) {
+  return Array.from({ length: count }, (_, i) => `${name}${i + 1}.webp`);
+}
+
 const saddlebredImages = {
-  standardbay: ['standardbay1.png', 'standardbay2.png'],
-  mahoganybay: ['mahoganybay1.png', 'mahoganybay2.png'],
-  goldenbay: ['goldenbay1.png', 'goldenbay2.png'],
-  bloodbay: ['bloodbay1.png', 'bloodbay2.png'],
-  copperbay: ['copperbay1.png', 'copperbay2.png'],
-  wildbay: ['wildbay1.png', 'wildbay2.png'],
-  redchestnut: ['redchestnut1.png', 'redchestnut2.png'],
-  darkchestnut: ['darkchestnut1.png', 'darkchestnut2.png'],
-  liverchestnut: ['liverchestnut1.png', 'liverchestnut2.png'],
-  lightchestnut: ['lightchestnut1.png', 'lightchestnut2.png'],
-  goldenchestnut: ['goldenchestnut1.png', 'goldenchestnut2.png'],
-  nonfadingblack: ['nonfadingblack1.png', 'nonfadingblack2.png'],
-  fadingblack: ['fadingblack1.png', 'fadingblack2.png'],
-  smokyblack: ['smokyblack1.jpg', 'smokyblack2.png'],
-  goldenbuckskin: ['goldenbuckskin1.png', 'goldenbuckskin2.png'],
-  classicbuckskin: ['classicbuckskin1.jpg', 'classicbuckskin2.png'],
-  buttermilkbuckskin: ['buttermilkbuckskin1.png', 'buttermilkbuckskin2.png'],
-  goldenpalomino: ['goldenpalomino1.png', 'goldenpalomino2.png'],
-  lightpalomino: ['lightpalomino1.png', 'lightpalomino2.png'],
-  darkpalomino: ['darkpalomino1.png', 'darkpalomino2.png'],
-  chocolatepalomino: ['chocolatepalomino1.png', 'chocolatepalomino2.png'],
-  cremello: ['cremello1.png', 'cremello2.png'],
-  perlino: ['perlino1.png', 'perlino2.png'],
-  smokycream: ['smokycream1.png', 'smokycream2.png'],
-  sealperlino: ['sealperlino1.png', 'sealperlino2.png'],
-  darksealbrown: ['darksealbrown1.png', 'darksealbrown2.png'],
-  lightsealbrown: ['lightsealbrown1.png', 'lightsealbrown2.png'],
-  sealskin: ['sealskin1.png', 'sealskin2.png'],
-  goldchampagne: ['goldchampagne1.png', 'goldchampagne2.png'],
-  classsicchampagne: ['classsicchampagne1.png', 'classsicchampagne2.png'],
-  sablechampagne: ['sablechampagne1.png', 'sablechampagne2.png'],
-  dapplegrey: ['dapplegrey1.png', 'dapplegrey2.png'],
-  lightdapplegrey: ['lightdapplegrey1.png', 'lightdapplegrey2.png'],
-  steelgrey: ['steelgrey1.png', 'steelgrey2.png'],
-  rosegrey: ['rosegrey1.png', 'rosegrey2.jpg', 'rosegrey2.png', 'rosegrey3.jpeg', 'rosegrey4.jpeg'],
-  whitegrey: ['whitegrey1.png', 'whitegrey2.png'],
-  fleabittengrey: ['fleabittengrey1.jpg', 'fleabittengrey2.jpg'],
+  standardbay: numbered('standardbay'),
+  mahoganybay: numbered('mahoganybay'),
+  goldenbay: numbered('goldenbay'),
+  bloodbay: numbered('bloodbay'),
+  copperbay: numbered('copperbay'),
+  wildbay: numbered('wildbay'),
+  redchestnut: numbered('redchestnut'),
+  darkchestnut: numbered('darkchestnut'),
+  liverchestnut: numbered('liverchestnut'),
+  lightchestnut: numbered('lightchestnut'),
+  goldenchestnut: numbered('goldenchestnut'),
+  nonfadingblack: numbered('nonfadingblack'),
+  fadingblack: numbered('fadingblack'),
+  smokyblack: numbered('smokyblack'),
+  goldenbuckskin: numbered('goldenbuckskin'),
+  classicbuckskin: numbered('classicbuckskin'),
+  buttermilkbuckskin: numbered('buttermilkbuckskin'),
+  goldenpalomino: numbered('goldenpalomino'),
+  lightpalomino: numbered('lightpalomino'),
+  darkpalomino: numbered('darkpalomino'),
+  chocolatepalomino: numbered('chocolatepalomino'),
+  cremello: numbered('cremello'),
+  perlino: numbered('perlino'),
+  smokycream: numbered('smokycream'),
+  sealperlino: numbered('sealperlino'),
+  darksealbrown: numbered('darksealbrown'),
+  lightsealbrown: numbered('lightsealbrown'),
+  sealskin: numbered('sealskin'),
+  goldchampagne: numbered('goldchampagne'),
+  classsicchampagne: numbered('classsicchampagne'),
+  amberchampagne: numbered('amberchampagne'),
+  sablechampagne: numbered('sablechampagne'),
+  dapplegrey: numbered('dapplegrey'),
+  lightdapplegrey: numbered('lightdapplegrey'),
+  steelgrey: numbered('steelgrey'),
+  rosegrey: numbered('rosegrey', 5),
+  whitegrey: numbered('whitegrey'),
+  fleabittengrey: numbered('fleabittengrey'),
 };
 
 const saddlebredColors = {
@@ -95,8 +104,8 @@ const saddlebredColors = {
   'Seal Brown': { dark: 'darksealbrown', light: 'lightsealbrown', sealskin: 'sealskin' },
   'Gold Champagne': 'goldchampagne',
   'Classic Champagne': 'classsicchampagne',
-  'Amber Champagne': 'sablechampagne',
-  // Seal Brown + Champagne is named Sable Champagne by the color engine.
+  'Amber Champagne': 'amberchampagne',
+  // Seal Brown + Champagne is Sable Champagne (owner ruling q276, 2026-10-29).
   'Sable Champagne': 'sablechampagne',
   Gray: 'dapplegrey',
   'Steel Dark Dapple Gray': 'dapplegrey',
