@@ -21,7 +21,6 @@
  *   horseGeneticsController.mjs
  *     - getTemperamentDefinitions
  *     - getGenetics
- *     - getColor
  *
  *   horseStudController.mjs
  *     - listHorseAtStud
@@ -50,7 +49,7 @@ export {
   getGaits,
 } from './horseConformationController.mjs';
 
-export { getTemperamentDefinitions, getGenetics, getColor } from './horseGeneticsController.mjs';
+export { getTemperamentDefinitions, getGenetics } from './horseGeneticsController.mjs';
 
 export { listHorseAtStud, unlistHorseAtStud } from './horseStudController.mjs';
 

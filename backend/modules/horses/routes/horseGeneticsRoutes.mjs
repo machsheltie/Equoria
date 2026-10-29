@@ -2,14 +2,13 @@
  * Horse Genetics / Phenotype Sub-Router (Equoria-y8u2j split)
  *
  * Extracted from backend/modules/horses/routes/horseRoutes.mjs as part of the
- * god-file split. Owns the 5 read-only phenotype / genetics endpoints under
+ * god-file split. Owns the 4 read-only phenotype / genetics endpoints under
  * /horses/:id/...
  *
  *   GET    /:id/conformation            — 8-region conformation scores + overall
  *   GET    /:id/conformation/analysis   — percentile rankings vs breed
  *   GET    /:id/gaits                   — gait quality scores (walk/trot/etc)
  *   GET    /:id/genetics                — full color genotype + phenotype
- *   GET    /:id/color                   — player-facing coat color + markings
  *
  * Mounting: this router is mounted at the SAME path as the parent
  * (`router.use(horseGeneticsRoutes)` in horseRoutes.mjs). All routes start
@@ -20,8 +19,12 @@
  * Security: every route requires authentication + horse ownership via
  * requireOwnership('horse'). Behaviour preserved verbatim from the original
  * inline definitions, including the `rejectPollutedRequest` guard on the
- * genetics + color endpoints (matches the original — conformation and gaits
- * did NOT have it inline, so they don't here either).
+ * genetics endpoint (matches the original — conformation and gaits did NOT
+ * have it inline, so they don't here either).
+ *
+ * GET /:id/color was removed with the duplicate lookups (owner ruling 2026-10-28,
+ * q151, Equoria-a7f1p): the horse page reads the coat and markings from the
+ * phenotype on GET /horses/:id.
  */
 
 import express from 'express';
@@ -32,7 +35,6 @@ import {
   getConformationAnalysis,
   getGaits,
   getGenetics,
-  getColor,
 } from '../controllers/horseController.mjs';
 import logger from '../../../utils/logger.mjs';
 import { validateHorseId, rejectPollutedRequest } from './_validators.mjs';
@@ -129,31 +131,6 @@ router.get(
       await getGenetics(req, res);
     } catch (error) {
       logger.error(`[horseGeneticsRoutes] Error in genetics endpoint: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-      });
-    }
-  },
-);
-
-/**
- * GET /horses/:id/color
- * Get player-facing coat color and markings summary for a specific horse.
- *
- * Security: Validates horse ownership before returning color data.
- */
-router.get(
-  '/:id/color',
-  queryRateLimiter,
-  rejectPollutedRequest,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      await getColor(req, res);
-    } catch (error) {
-      logger.error(`[horseGeneticsRoutes] Error in color endpoint: ${error.message}`);
       res.status(500).json({
         success: false,
         message: 'Internal server error',

@@ -61,7 +61,7 @@ test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
         age: 5,
       },
       // Every assertion runs against the Training Grounds dashboard, which
-      // reads the UNCACHED GET /horses/trainable/:userId. This spec never
+      // reads the UNCACHED GET /training/trainable/:userId. This spec never
       // renders the cached horse list.
       { requireHorseListVisibility: false }
     );

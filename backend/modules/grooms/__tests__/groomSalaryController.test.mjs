@@ -45,29 +45,6 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 30000);
 
-// ─── GET /api/groom-salaries/summary ─────────────────────────────────────────
-
-describe('GET /api/groom-salaries/summary', () => {
-  it('returns 200 with salary summary for a new user', async () => {
-    const res = await request(app)
-      .get('/api/v1/groom-salaries/summary')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toHaveProperty('currentCost');
-    expect(res.body.data).toHaveProperty('currentMoney');
-    expect(res.body.data).toHaveProperty('weeksAffordable');
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/groom-salaries/summary').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
 // ─── GET /api/groom-salaries/cost ────────────────────────────────────────────
 
 describe('GET /api/groom-salaries/cost', () => {
@@ -89,24 +66,21 @@ describe('GET /api/groom-salaries/cost', () => {
   });
 });
 
-// ─── GET /api/groom-salaries/status ──────────────────────────────────────────
+// ─── GET /api/groom-salaries/summary and /status (removed) ──────────────────
+// Old contract: /summary answered cost, money, weeks affordable and recent payments;
+// /status answered every game cron job, both to any signed-in player. Owner ruling
+// 2026-10-28 (q151, Equoria-a7f1p): duplicate lookups are removed. The Staff page
+// reads /cost and /pay-status; cron status is the Owner's GET /api/v1/admin/cron/status.
 
-describe('GET /api/groom-salaries/status', () => {
-  it('returns 200 with cron job status', async () => {
+describe('GET /api/groom-salaries/summary and /status', () => {
+  it.each(['/summary', '/status'])('%s no longer exists for a signed-in player', async path => {
     const res = await request(app)
-      .get('/api/v1/groom-salaries/status')
+      .get(`/api/v1/groom-salaries${path}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/groom-salaries/status').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(404);
+    expect(res.body.data).toBeUndefined();
   });
 });
 

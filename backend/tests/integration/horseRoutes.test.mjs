@@ -117,10 +117,14 @@ describe('Horse Routes Integration Tests', () => {
     });
   });
 
-  describe('GET /api/v1/horses/trainable/:userId', () => {
+  // Owner ruling 2026-10-28 (q151, Equoria-a7f1p): the duplicate GET
+  // /horses/trainable/:userId is retired. Old contract: these cases drove it.
+  // New ruling: the Training Grounds read GET /training/trainable/:userId (the
+  // same getTrainableHorses query), so the same guarantees are proven there.
+  describe('GET /api/v1/training/trainable/:userId', () => {
     test('should return all horses with trainableDisciplines based on age', async () => {
       const response = await request(app)
-        .get(`/api/v1/horses/trainable/${testUser.id}`)
+        .get(`/api/v1/training/trainable/${testUser.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
@@ -158,7 +162,7 @@ describe('Horse Routes Integration Tests', () => {
 
       try {
         const response = await request(app)
-          .get(`/api/v1/horses/trainable/${otherUser.id}`)
+          .get(`/api/v1/training/trainable/${otherUser.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${testToken}`)
           .expect(403);
@@ -173,7 +177,7 @@ describe('Horse Routes Integration Tests', () => {
     test('should return 400 for user ID that is too long', async () => {
       const longUserId = 'a'.repeat(51);
       const response = await request(app)
-        .get(`/api/v1/horses/trainable/${longUserId}`)
+        .get(`/api/v1/training/trainable/${longUserId}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(400);
@@ -184,7 +188,7 @@ describe('Horse Routes Integration Tests', () => {
 
     test('should require authentication', async () => {
       await request(app)
-        .get(`/api/v1/horses/trainable/${testUser.id}`)
+        .get(`/api/v1/training/trainable/${testUser.id}`)
         .set('Origin', 'http://localhost:3000')
         .expect(401);
     });

@@ -141,34 +141,9 @@ describe('Groom Salary System', () => {
       expect(response.body.data.maxHorsesPerGroom).toBe(20);
     });
 
-    it('should get salary summary', async () => {
-      const response = await request(app)
-        .get('/api/v1/groom-salaries/summary')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('currentCost');
-      expect(response.body.data).toHaveProperty('currentMoney');
-      expect(response.body.data).toHaveProperty('weeksAffordable');
-      expect(response.body.data).toHaveProperty('nextPaymentDate');
-
-      // 1000 coins against a weekly cost of 100 (one Rookie groom) = 10 weeks.
-      expect(response.body.data.weeksAffordable).toBe(10);
-    });
-
-    it('should get cron job status', async () => {
-      const response = await request(app)
-        .get('/api/v1/groom-salaries/status')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('totalJobs');
-      expect(response.body.data).toHaveProperty('jobs');
-    });
+    // GET /summary and GET /status were removed (owner ruling 2026-10-28, q151,
+    // Equoria-a7f1p); their absence is pinned in groomSalaryController.test.mjs and
+    // duplicateLookupsRetired.sentinel.test.mjs.
   });
 
   // Equoria-ypb7d.3 — BOTH CALLS BELOW ARE SCOPED TO `testUser`.
@@ -236,18 +211,6 @@ describe('Groom Salary System', () => {
   describe('Authentication', () => {
     it('should require authentication for GET /api/groom-salaries/cost', async () => {
       const response = await request(app).get('/api/v1/groom-salaries/cost').set('Origin', 'http://localhost:3000');
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should require authentication for GET /api/groom-salaries/summary', async () => {
-      const response = await request(app).get('/api/v1/groom-salaries/summary').set('Origin', 'http://localhost:3000');
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should require authentication for GET /api/groom-salaries/status', async () => {
-      const response = await request(app).get('/api/v1/groom-salaries/status').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });

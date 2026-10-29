@@ -4,8 +4,8 @@
  * The application query layer (backend/app/queries/) hosts the cross-domain
  * reads that used to live inside the horses and users module routers:
  *
- *   horseQueryRoutes  GET /trainable/:userId, GET /:id/overview,
- *                     GET /:id/training-history, GET /:id/breeding-data
+ *   horseQueryRoutes  GET /:id/overview, GET /:id/training-history,
+ *                     GET /:id/breeding-data
  *                                                             (mounted at /horses)
  *
  * The users half (userQueryRoutes: GET /dashboard/:userId) was retired by
@@ -68,12 +68,7 @@ const sigsOf = router =>
     .map(r => `${r.methods.sort().join(',')} ${r.path}`)
     .sort();
 
-const HORSE_QUERY_ROUTES = [
-  'GET /trainable/:userId',
-  'GET /:id/overview',
-  'GET /:id/training-history',
-  'GET /:id/breeding-data',
-].sort();
+const HORSE_QUERY_ROUTES = ['GET /:id/overview', 'GET /:id/training-history', 'GET /:id/breeding-data'].sort();
 
 // Owner ruling 2026-10-28 (q152, Equoria-a7f1p): no trait reports for players.
 // Old contract: GET /:id/trait-card (query router) and GET /trait-trends
@@ -83,7 +78,9 @@ const retiredTraitReportRoutes = ['GET /:id/trait-card', 'GET /trait-trends'];
 // Owner ruling 2026-10-28 (q151, Equoria-a7f1p): duplicate lookups removed.
 // Old contract: GET /:id/history (query router) was in the inventories above; the
 // Show Results tab reads GET /competition/results/horse/:horseId instead.
-const retiredDuplicateRoutes = ['GET /:id/history'];
+// GET /trainable/:userId (query router) likewise: the Training Grounds read
+// GET /training/trainable/:userId, the same getTrainableHorses query.
+const retiredDuplicateRoutes = ['GET /:id/history', 'GET /trainable/:userId'];
 
 // The full Equoria-y8u2j pre-split inventory (parent + sub-routers), now split
 // between the query router and the module router tree.
@@ -95,7 +92,6 @@ const PRE_SPLIT_HORSES_INVENTORY = [
   'PUT /:id',
   'DELETE /:id',
   'GET /temperament-definitions',
-  'GET /trainable/:userId',
   'POST /foals',
   'GET /:id/overview',
   'GET /:id/prize-summary',

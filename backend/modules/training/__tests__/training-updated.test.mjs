@@ -15,7 +15,8 @@
  * - Response consistency: Proper API response formatting and status codes
  *
  * 🎯 FUNCTIONALITY TESTED:
- * 1. GET /api/v1/horses/trainable/:userId - Trainable horse listing with UUID users
+ * 1. GET /api/v1/training/trainable/:userId - Trainable horse listing with UUID users
+ *    (the duplicate /horses/trainable/:userId was retired, owner ruling q151, Equoria-a7f1p)
  * 2. POST /api/v1/training/train - Training execution with business rule validation
  * 3. GET /api/v1/training/status/:horseId/:discipline - Specific training status
  * 4. GET /api/v1/training/status/:horseId - All discipline training status
@@ -156,7 +157,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
   describe('Age Requirement Tests', () => {
     it('should get trainable horses for authenticated user', async () => {
       const response = await request(app)
-        .get(`/api/v1/horses/trainable/${testUserId}`)
+        .get(`/api/v1/training/trainable/${testUserId}`)
         .set('Origin', 'http://localhost:3000') // Use consistent testUserId
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -173,7 +174,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       // this block, producing intermittent CI failures even though the
       // test passed in isolation.
       const trainableResponse = await request(app)
-        .get(`/api/v1/horses/trainable/${testUserId}`)
+        .get(`/api/v1/training/trainable/${testUserId}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -265,7 +266,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
     it('should require authentication to get trainable horses', async () => {
       // Training routes now require authentication after Security Phase 1
       const response = await request(app)
-        .get(`/api/v1/horses/trainable/${testUserId}`)
+        .get(`/api/v1/training/trainable/${testUserId}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 

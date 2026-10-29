@@ -4,7 +4,9 @@
  * Owner ruling 2026-10-28 (q151, "Remove the duplicates"): the behind-the-scenes
  * lookups that copy something a screen already reads from another route are
  * removed (the two groom statistics reads go under the 2026-10-27 ruling retiring
- * groom reputation). Old contract: each route below answered under /api/v1. New ruling:
+ * groom reputation). The 2026-10-29 route audit added four more duplicates and the
+ * catalogue of the retired enhanced interaction door. Old contract: each route below
+ * answered under /api/v1. New ruling:
  * no mounted router hosts them, and the route each screen actually reads stays.
  *
  * The walker follows the real authRouter from backend/app/routers.mjs the way
@@ -59,6 +61,19 @@ const retiredDuplicates = [
   // Owner ruling 2026-10-27: the groom reputation/performance system is retired.
   ['GET', '/groom-assignments/statistics'],
   ['GET', '/groom-handlers/statistics'],
+  // Route audit 2026-10-29 (q151): the Training Grounds read /training/trainable/:userId
+  // (same query); the horse page reads coat and markings from the phenotype on
+  // GET /horses/:id; the Staff page reads /groom-salaries/cost and /pay-status; cron
+  // status is the Owner's GET /api/v1/admin/cron/status.
+  ['GET', '/horses/trainable/0b6f1c2e-6a7d-4f7e-9a51-3f2d8c4b5a61'],
+  ['GET', '/horses/41/color'],
+  ['GET', '/groom-salaries/summary'],
+  ['GET', '/groom-salaries/status'],
+  // The catalogue of the retired enhanced interaction door: "groom horse" is the only
+  // way to groom (owner rulings 2026-10-20 and 2026-10-26, q87).
+  ['GET', '/grooms/enhanced/interactions/types'],
+  ['GET', '/grooms/enhanced/relationship-levels'],
+  ['GET', '/grooms/enhanced/special-events'],
 ];
 
 // The routes the screens read instead; they must stay mounted. They also prove
@@ -73,6 +88,11 @@ const keptSources = [
   ['GET', '/grooms/user/41'],
   ['GET', '/groom-assignments'],
   ['GET', '/groom-salaries/cost'],
+  ['GET', '/training/trainable/0b6f1c2e-6a7d-4f7e-9a51-3f2d8c4b5a61'],
+  ['GET', '/horses/41'],
+  ['GET', '/horses/41/genetics'],
+  ['GET', '/groom-salaries/pay-status'],
+  ['GET', '/grooms/enhanced/relationship/41/42'],
 ];
 
 describe('duplicate lookups retired (Equoria-a7f1p, q151)', () => {

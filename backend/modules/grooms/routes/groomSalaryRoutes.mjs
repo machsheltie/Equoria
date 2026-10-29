@@ -10,8 +10,6 @@ import { authenticateToken } from '../../../middleware/auth.mjs';
 import { mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import {
   getUserSalaryCost,
-  getCronStatus,
-  getSalarySummary,
   getGroomPayStatusHandler,
   payGroomHandler,
 } from '../controllers/groomSalaryController.mjs';
@@ -22,12 +20,6 @@ const router = express.Router();
 router.use(authenticateToken);
 
 /**
- * GET /api/groom-salaries/summary
- * Get comprehensive salary summary for user
- */
-router.get('/summary', getSalarySummary);
-
-/**
  * GET /api/groom-salaries/cost
  * Get current weekly salary cost for the authenticated user
  */
@@ -35,6 +27,9 @@ router.get('/cost', getUserSalaryCost);
 
 // GET /history and GET /groom/:groomId/salary were removed with the duplicate
 // lookups (owner ruling 2026-10-28, q151, Equoria-a7f1p): the Staff page reads GET /groom-salaries/cost.
+// GET /summary went the same way (cost + payments the Staff page reads from /cost and
+// /pay-status), and GET /status, which showed every game cron job to any player, is
+// the Owner's GET /api/v1/admin/cron/status.
 
 /**
  * GET /api/groom-salaries/pay-status
@@ -61,12 +56,6 @@ router.post(
   },
   payGroomHandler,
 );
-
-/**
- * GET /api/groom-salaries/status
- * Get cron job status information
- */
-router.get('/status', getCronStatus);
 
 // POST /process (the manual payday) moved to the Steward's Office, owner only behind
 // the emailed check-in (owner ruling 2026-10-28, q262, Equoria-opdt7):

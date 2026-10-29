@@ -42,7 +42,7 @@
  * SCOPE: use this only for a spec whose UI actually reads the cached horse list
  * (today that is `breeding.spec.ts`, via `BreedingPairSelection`). Specs that
  * read a horse through an UNCACHED route — `GET /horses/:id`,
- * `GET /horses/trainable/:userId` — do not need their own player and should
+ * `GET /training/trainable/:userId` — do not need their own player and should
  * stay on the shared global-setup account, whose accumulated setup state
  * (`E2E_TEST_HORSE_ID`, the vetted/fed starter horse, its groom assignment)
  * several other specs rely on.

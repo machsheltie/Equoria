@@ -5,7 +5,7 @@
  * - useGroomMarketplace: returns MarketplaceData with grooms[] from GET /api/groom-marketplace
  * - useUserGrooms: returns Groom[] from GET /api/grooms/user/:userId
  * - useGroomAssignments: returns GroomAssignment[] from GET /api/groom-assignments
- * - useGroomSalaries: returns SalarySummary from GET /api/groom-salaries/summary
+ * - useGroomSalaries: returns SalarySummary from GET /api/groom-salaries/cost
  * - useHireGroom: POST /api/groom-marketplace/hire succeeds and invalidates queries
  * - useAssignGroom: POST /api/groom-assignments succeeds and invalidates queries
  * - groomKeys: correct query key structure

@@ -44,16 +44,6 @@ export const validateHorseId = [
 ];
 
 /**
- * Validation middleware for user ID path parameter (:userId 1-50 chars).
- */
-export const validateUserId = [
-  param('userId')
-    .isLength({ min: 1, max: 50 })
-    .withMessage('User ID must be between 1 and 50 characters'),
-  handleValidationErrors,
-];
-
-/**
  * Validation middleware for horse creation (POST /horses).
  */
 export const validateHorseCreation = [

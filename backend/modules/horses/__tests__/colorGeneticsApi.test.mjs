@@ -1,9 +1,10 @@
 // Tests for color genetics API endpoints (Story 31E-4).
-// Validates GET /horses/:id/genetics and GET /horses/:id/color responses,
+// Validates GET /horses/:id/genetics responses (getColor and GET /:id/color went
+// with the duplicate lookups, owner ruling 2026-10-28, q151, Equoria-a7f1p),
 // legacy horse handling, partial phenotype, JSONB type guards, and null guard behavior.
 
 import { describe, test, expect } from '@jest/globals';
-import { getGenetics, getColor } from '../controllers/horseController.mjs';
+import { getGenetics } from '../controllers/horseController.mjs';
 
 function createMockRes() {
   const res = {
@@ -158,98 +159,6 @@ describe('getGenetics', () => {
 });
 
 // ---------------------------------------------------------------------------
-// getColor
-// ---------------------------------------------------------------------------
-
-describe('getColor', () => {
-  test('T3.3: returns all display fields for a horse with full phenotype', async () => {
-    const { req, res } = createMockReqRes();
-
-    await getColor(req, res);
-
-    expect(res.statusCode).toBe(200);
-    const response = res.body;
-    expect(response.success).toBe(true);
-    expect(response.message).toBe('Color data retrieved successfully');
-
-    const data = response.data;
-    expect(data.horseId).toBe(42);
-    expect(data.horseName).toBe('Shadowfax');
-    expect(data.colorName).toBe('Bay');
-    expect(data.shade).toBe('standard');
-    expect(data.faceMarking).toBe('star');
-    expect(data.legMarkings).toEqual(MOCK_PHENOTYPE.legMarkings);
-    expect(data.advancedMarkings).toEqual(MOCK_PHENOTYPE.advancedMarkings);
-    expect(data.modifiers).toEqual(MOCK_PHENOTYPE.modifiers);
-  });
-
-  test('T3.5: response does NOT include colorGenotype', async () => {
-    const { req, res } = createMockReqRes();
-
-    await getColor(req, res);
-
-    const data = res.body.data;
-    expect(data).not.toHaveProperty('colorGenotype');
-  });
-
-  test('T3.5: response shape has exactly the expected display keys', async () => {
-    const { req, res } = createMockReqRes();
-
-    await getColor(req, res);
-
-    const data = res.body.data;
-    expect(Object.keys(data)).toEqual([
-      'horseId',
-      'horseName',
-      'colorName',
-      'shade',
-      'faceMarking',
-      'legMarkings',
-      'advancedMarkings',
-      'modifiers',
-    ]);
-  });
-
-  test('T3.4: returns null for marking fields when phenotype has color but no markings', async () => {
-    const { req, res } = createMockReqRes({
-      phenotype: { colorName: 'Chestnut', shade: 'dark' },
-    });
-
-    await getColor(req, res);
-
-    expect(res.statusCode).toBe(200);
-    const data = res.body.data;
-    expect(data.colorName).toBe('Chestnut');
-    expect(data.shade).toBe('dark');
-    expect(data.faceMarking).toBeNull();
-    expect(data.legMarkings).toBeNull();
-    expect(data.advancedMarkings).toBeNull();
-    expect(data.modifiers).toBeNull();
-  });
-
-  test('returns 200 with null data for legacy horse without phenotype', async () => {
-    const { req, res } = createMockReqRes({ phenotype: null });
-
-    await getColor(req, res);
-
-    expect(res.statusCode).toBe(200);
-    const response = res.body;
-    expect(response.success).toBe(true);
-    expect(response.message).toBe('No color data available for this horse');
-    expect(response.data).toBeNull();
-  });
-
-  test('returns 200 with null data for undefined phenotype', async () => {
-    const { req, res } = createMockReqRes({ phenotype: undefined });
-
-    await getColor(req, res);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body.data).toBeNull();
-  });
-});
-
-// ---------------------------------------------------------------------------
 // D-3: explicit req.horse null guard
 // ---------------------------------------------------------------------------
 
@@ -259,16 +168,6 @@ describe('D-3: req.horse null guard', () => {
     const res = createMockRes();
 
     await getGenetics(req, res);
-
-    expect(res.statusCode).toBe(500);
-    expect(res.body.success).toBe(false);
-  });
-
-  test('T3.8: getColor returns 500 when req.horse is not set (middleware contract violation)', async () => {
-    const req = { horse: undefined, params: { id: '99' } };
-    const res = createMockRes();
-
-    await getColor(req, res);
 
     expect(res.statusCode).toBe(500);
     expect(res.body.success).toBe(false);
@@ -293,20 +192,6 @@ describe('D-2: JSONB non-object value guard', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.data).toBeNull();
   });
-
-  test('getColor: phenotype stored as JSON array → data: null', async () => {
-    const { req, res } = createMockReqRes({ phenotype: ['colorName', 'Bay'] });
-    await getColor(req, res);
-    expect(res.statusCode).toBe(200);
-    expect(res.body.data).toBeNull();
-  });
-
-  test('getColor: phenotype stored as string → data: null', async () => {
-    const { req, res } = createMockReqRes({ phenotype: 'Bay' });
-    await getColor(req, res);
-    expect(res.statusCode).toBe(200);
-    expect(res.body.data).toBeNull();
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -317,13 +202,6 @@ describe('Legacy null paths', () => {
   test('T3.7: getGenetics returns 200 null for horse with no colorGenotype', async () => {
     const { req, res } = createMockReqRes({ colorGenotype: null });
     await getGenetics(req, res);
-    expect(res.statusCode).toBe(200);
-    expect(res.body.data).toBeNull();
-  });
-
-  test('T3.9: getColor returns 200 null for horse with no phenotype', async () => {
-    const { req, res } = createMockReqRes({ phenotype: null });
-    await getColor(req, res);
     expect(res.statusCode).toBe(200);
     expect(res.body.data).toBeNull();
   });

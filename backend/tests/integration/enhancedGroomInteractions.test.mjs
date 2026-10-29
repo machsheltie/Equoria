@@ -264,40 +264,12 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     });
   });
 
-  describe('4. Information Endpoints', () => {
-    it('should get interaction types', async () => {
-      const response = await request(app)
-        .get('/api/v1/grooms/enhanced/interactions/types')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('interactionTypes');
-      expect(response.body.data).toHaveProperty('categories');
-
-      const { interactionTypes } = response.body.data;
-      expect(Array.isArray(interactionTypes)).toBe(true);
-      expect(interactionTypes.length).toBeGreaterThan(0);
-
-      // Each interaction type should have required properties
-      interactionTypes.forEach(type => {
-        expect(type).toHaveProperty('id');
-        expect(type).toHaveProperty('name');
-        expect(type).toHaveProperty('category');
-        expect(type).toHaveProperty('variations');
-        expect(Array.isArray(type.variations)).toBe(true);
-      });
-    });
-  });
-
   describe('5. Authentication and Authorization', () => {
     it('should require authentication for all endpoints', async () => {
       const endpoints = [
         `/api/v1/grooms/enhanced/interactions/${testGroom.id}/${testHorse.id}`,
         '/api/v1/grooms/enhanced/interact',
         `/api/v1/grooms/enhanced/relationship/${testGroom.id}/${testHorse.id}`,
-        '/api/v1/grooms/enhanced/interactions/types',
       ];
 
       for (const endpoint of endpoints) {

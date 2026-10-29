@@ -70,70 +70,11 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 30000);
 
-// ─── GET /api/grooms/enhanced/interactions/types ──────────────────────────────
-
-describe('GET /api/grooms/enhanced/interactions/types', () => {
-  it('returns 200 with interaction types', async () => {
-    const res = await request(app)
-      .get('/api/v1/grooms/enhanced/interactions/types')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/grooms/enhanced/interactions/types').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── GET /api/grooms/enhanced/relationship-levels ────────────────────────────
-
-describe('GET /api/grooms/enhanced/relationship-levels', () => {
-  it('returns 200 with relationship level definitions', async () => {
-    const res = await request(app)
-      .get('/api/v1/grooms/enhanced/relationship-levels')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/grooms/enhanced/relationship-levels').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── GET /api/grooms/enhanced/special-events ─────────────────────────────────
-
-describe('GET /api/grooms/enhanced/special-events', () => {
-  it('returns 200 with special event definitions', async () => {
-    const res = await request(app)
-      .get('/api/v1/grooms/enhanced/special-events')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/grooms/enhanced/special-events').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── GET /api/grooms/enhanced/interactions/:groomId/:horseId ─────────────────
+// GET /interactions/types, /relationship-levels and /special-events were removed
+// (Equoria-a7f1p): the catalogue of the retired enhanced interaction door. Old
+// contract: each answered 200 with its definitions. New ruling (owner, 2026-10-20
+// and 2026-10-26, q87): "groom horse" is the only way to groom; their absence is
+// pinned in duplicateLookupsRetired.sentinel.test.mjs.
 
 describe('GET /api/grooms/enhanced/interactions/:groomId/:horseId', () => {
   it('returns 200 with available interactions for owned groom and horse', async () => {

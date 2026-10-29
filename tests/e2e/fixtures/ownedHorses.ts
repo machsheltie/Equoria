@@ -66,7 +66,7 @@
  *    while completing the real onboarding wizard. State the reason at the call
  *    site. Uncached horse reads, which need no seeded player:
  *    `GET /horses/:id` (horse detail, equip) and
- *    `GET /horses/trainable/:userId` (the Training Grounds dashboard).
+ *    `GET /training/trainable/:userId` (the Training Grounds dashboard).
  *
  * NOT PERMITTED here and deliberately absent: production test-only routes,
  * `x-test-*` bypass headers, cache-disable env flags, Playwright route

@@ -140,7 +140,7 @@ test.describe('AC4: Training Session', () => {
         sex: 'stallion',
         age: 5,
       },
-      // The Training Grounds dashboard reads GET /horses/trainable/:userId,
+      // The Training Grounds dashboard reads GET /training/trainable/:userId,
       // which is NOT cached, so this horse never needs to be in the cached
       // horse list, and the shared global-setup account is enough here.
       { requireHorseListVisibility: false }

@@ -61,19 +61,11 @@ export const groomsApi = {
       ? (res as GroomAssignment[])
       : ((res as { assignments?: GroomAssignment[] } | null | undefined)?.assignments ?? []);
   },
-  // Equoria-1bv3i: this reads /cost, NOT /summary. `SalarySummary` is the
-  // shape of GET /groom-salaries/cost (see its docblock in groomStaffTypes.ts
-  // and calculateUserSalaryCost in groomSalaryReadService.mjs):
-  // { totalWeeklyCost, groomCount, maxHorsesPerGroom,
-  //   breakdown }. GET /groom-salaries/summary answers a DIFFERENT envelope —
-  // { currentCost, currentMoney, weeksAffordable, inGracePeriod,
-  //   gracePeriodDaysRemaining, recentPayments, nextPaymentDate } — with the
-  // cost nested under `currentCost` and no top-level `breakdown`. Reading
-  // /summary as a SalarySummary made MyGroomsDashboard's
-  // finalSalaryCosts.breakdown.reduce() throw on undefined, which the
-  // app-level ErrorBoundary turned into 'Something went wrong.' for the whole
-  // /grooms route. If a surface ever needs the affordability/grace-period
-  // fields, add a separate reader for /summary rather than widening this one.
+  // Equoria-1bv3i: `SalarySummary` is the shape of GET /groom-salaries/cost
+  // (see its docblock in groomStaffTypes.ts and calculateUserSalaryCost in
+  // groomSalaryReadService.mjs): { totalWeeklyCost, groomCount,
+  // maxHorsesPerGroom, breakdown }. (GET /groom-salaries/summary, a different
+  // envelope, was removed with the duplicate lookups, Equoria-a7f1p.)
   getSalaryCost: () => apiClient.get<SalarySummary>('/api/v1/groom-salaries/cost'),
   getMarketplace: () => apiClient.get<MarketplaceData>('/api/v1/groom-marketplace'),
   getMarketplaceStats: () => apiClient.get<MarketplaceStats>('/api/v1/groom-marketplace/stats'),

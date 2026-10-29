@@ -83,7 +83,6 @@
  * GET    /api/v1/grooms/care/ungroomed-today         horses not yet groomed today (default: none)
  * GET    /api/v1/grooms/care/:horseId                daily care status (default: no groom yet)
  * GET    /api/v1/groom-assignments                  active assignments
- * GET    /api/v1/groom-salaries/summary             salary summary
  * POST   /api/v1/groom-assignments                  create assignment
  * GET    /api/v1/groom-marketplace                  available grooms to hire
  * POST   /api/v1/groom-marketplace/hire             hire a groom

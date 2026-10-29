@@ -3,7 +3,8 @@
  * (Equoria-z594; Epic 31E retrospective action item #12).
  *
  * FR-33: GET /api/v1/horses/:id/genetics must return under 300ms (warm).
- * FR-34: GET /api/v1/horses/:id/color    must return under 200ms (warm).
+ * (FR-34, GET /api/v1/horses/:id/color, went with the route: owner ruling
+ * 2026-10-28, q151, Equoria-a7f1p.)
  *
  * Real DB, real middleware chain, real Prisma. NO mocks. Sister of
  * backend/tests/integration/colorGeneticsRoutes.test.mjs (Equoria-5j0z)
@@ -13,7 +14,7 @@
  *
  * Methodology:
  *   - Seed ONE fixture horse + user in `beforeAll`, amortizing setup
- *     across the two warm-path assertions.
+ *     across the warm-path assertion.
  *   - Warm the route once (discarded) so the test measures steady-state
  *     latency, not cold-cache one-off compile time.
  *   - Assert the second timed call against the FR threshold.
@@ -33,7 +34,6 @@ import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const GENETICS_BUDGET_MS = 300;
-const COLOR_BUDGET_MS = 200;
 
 // Full 17-locus genotype matching the CORE_LOCI set used by the prediction
 // service. Choosing realistic complexity so the JSONB roundtrip is exercised.
@@ -94,14 +94,10 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
     });
     createdHorseIds.push(perfHorse.id);
 
-    // Warm cache: one untimed call to each endpoint so JIT + Prisma client
+    // Warm cache: one untimed call to the endpoint so JIT + Prisma client
     // first-call overhead is excluded from the measurement.
     await request(app)
       .get(`/api/v1/horses/${perfHorse.id}/genetics`)
-      .set('Authorization', `Bearer ${perfToken}`)
-      .set('Origin', ORIGIN);
-    await request(app)
-      .get(`/api/v1/horses/${perfHorse.id}/color`)
       .set('Authorization', `Bearer ${perfToken}`)
       .set('Origin', ORIGIN);
   });
@@ -128,20 +124,5 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
       console.warn(`[z594] genetics warm latency = ${elapsed.toFixed(1)}ms (budget ${GENETICS_BUDGET_MS}ms)`);
     }
     expect(elapsed).toBeLessThan(GENETICS_BUDGET_MS);
-  });
-
-  test(`GET /horses/:id/color warm response < ${COLOR_BUDGET_MS}ms (FR-34)`, async () => {
-    const start = performance.now();
-    const res = await request(app)
-      .get(`/api/v1/horses/${perfHorse.id}/color`)
-      .set('Authorization', `Bearer ${perfToken}`)
-      .set('Origin', ORIGIN);
-    const elapsed = performance.now() - start;
-
-    expect(res.status).toBe(200);
-    if (elapsed >= COLOR_BUDGET_MS) {
-      console.warn(`[z594] color warm latency = ${elapsed.toFixed(1)}ms (budget ${COLOR_BUDGET_MS}ms)`);
-    }
-    expect(elapsed).toBeLessThan(COLOR_BUDGET_MS);
   });
 });

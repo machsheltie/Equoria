@@ -3,8 +3,9 @@
  *
  * Real DB. Real middleware. Real Prisma response shape. NO mocks.
  *
- * Covers GET /api/v1/horses/:id/genetics and GET /api/v1/horses/:id/color
- * end to end:
+ * Covers GET /api/v1/horses/:id/genetics end to end (GET /:id/color and its
+ * cases went with the duplicate lookups, owner ruling 2026-10-28, q151,
+ * Equoria-a7f1p; the horse page reads the phenotype on GET /horses/:id):
  *   - 200 with full payload (owner, real Prisma colorGenotype/phenotype)
  *   - 200 with data:null for legacy horses (genotype/phenotype IS NULL)
  *   - 401 (no auth token)
@@ -114,7 +115,7 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
     createdHorseIds.push(untestedHorse.id);
 
     // Legacy horse (no color data) — exercises the null-data response branch.
-    // eslint-disable-next-line equoria/no-raw-test-horse-create -- the /color route gates data:null on phenotype IS NULL and /genetics on colorGenotype IS NULL (horseController.mjs:1161,1303); this fixture MUST be born with BOTH null to exercise those legacy branches (assertions at lines ~145/201 expect data:null). A fixtureColor() spread would defeat the test. Scoped id-in afterEach cleanup contains the row.
+    // eslint-disable-next-line equoria/no-raw-test-horse-create -- /genetics gates data:null on colorGenotype IS NULL (horseGeneticsController.getGenetics); this fixture MUST be born with BOTH null to exercise that legacy branch (assertions at lines ~145/201 expect data:null). A fixtureColor() spread would defeat the test. Scoped id-in afterEach cleanup contains the row.
     legacyHorse = await prisma.horse.create({
       data: {
         name: `CGLegacyHorse_${ts}`,
@@ -221,52 +222,6 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
   });
 
   // ────────────────────────────────────────────────────────────────────────
-  // GET /:id/color
-  // ────────────────────────────────────────────────────────────────────────
-
-  describe('GET /api/v1/horses/:id/color', () => {
-    it('AC: 200 with full color payload for owner', async () => {
-      const res = await request(app)
-        .get(`/api/v1/horses/${horseWithColor.id}/color`)
-        .set('Authorization', `Bearer ${testToken}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data).toBeTruthy();
-      expect(res.body.data.colorName).toBe('Chestnut');
-      expect(res.body.data.shade).toBe('Standard');
-      expect(res.body.data.faceMarking).toBe('Star');
-      expect(res.body.data.modifiers.isSooty).toBe(true);
-      // Color endpoint must NOT leak genotype (player-safe shape).
-      expect(res.body.data.colorGenotype).toBeUndefined();
-    });
-
-    it('AC: 200 with data:null for legacy horse (no phenotype)', async () => {
-      const res = await request(app)
-        .get(`/api/v1/horses/${legacyHorse.id}/color`)
-        .set('Authorization', `Bearer ${testToken}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data).toBeNull();
-    });
-
-    it('AC: 401 with no auth token', async () => {
-      const res = await request(app).get(`/api/v1/horses/${horseWithColor.id}/color`);
-      expect(res.status).toBe(401);
-    });
-
-    it('AC: cross-user request returns 403/404 without leaking color data', async () => {
-      const res = await request(app)
-        .get(`/api/v1/horses/${horseWithColor.id}/color`)
-        .set('Authorization', `Bearer ${otherToken}`);
-
-      expect([403, 404]).toContain(res.status);
-      expect(res.body.data).toBeFalsy();
-    });
-  });
-
-  // ────────────────────────────────────────────────────────────────────────
   // Route-ordering sanity (the 31E-4 dev-notes fix)
   // ────────────────────────────────────────────────────────────────────────
 
@@ -283,17 +238,6 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
       expect(res.body.data).toHaveProperty('colorGenotype');
       expect(res.body.data).not.toHaveProperty('conformationScores');
       expect(res.body.data).not.toHaveProperty('gaitScores');
-    });
-
-    it('GET /:id/color returns the color shape, not the full horse object', async () => {
-      const res = await request(app)
-        .get(`/api/v1/horses/${horseWithColor.id}/color`)
-        .set('Authorization', `Bearer ${testToken}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.data).toHaveProperty('colorName');
-      expect(res.body.data).not.toHaveProperty('conformationScores');
-      expect(res.body.data).not.toHaveProperty('breedId');
     });
   });
 });
