@@ -22,6 +22,7 @@ import app from '../../../app.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { userListenerCount } from '../../../services/eventBus.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
 const ROUTE = '/api/v1/admin/sse/metrics';
 
@@ -45,6 +46,7 @@ describe('Admin SSE metrics endpoint (Equoria-fsuys)', () => {
   let streamUser;
   let streamToken;
   let adminToken;
+  let adminDevice;
   let nonAdminToken;
   const openReqs = new Set();
 
@@ -59,7 +61,10 @@ describe('Admin SSE metrics endpoint (Equoria-fsuys)', () => {
     const s = await createTestUser({ username: `sse_metrics_stream_${Date.now()}` });
     streamUser = s.user;
     streamToken = s.token;
-    const admin = await createTestUser({ username: `sse_metrics_admin_${Date.now()}` });
+    // Equoria-n256i (owner ruling q289): admin tools need the emailed staff check-in.
+    // The guard reads the account's role afresh, so the row must be an admin too.
+    const admin = await createTestUser({ username: `sse_metrics_admin_${Date.now()}`, role: 'admin' });
+    adminDevice = await checkedInDeviceCookie(admin.user.id);
     adminToken = generateTestToken({ id: admin.user.id, role: 'admin' });
     const nonAdmin = await createTestUser({ username: `sse_metrics_user_${Date.now()}` });
     nonAdminToken = generateTestToken({ id: nonAdmin.user.id, role: 'user' });
@@ -107,7 +112,10 @@ describe('Admin SSE metrics endpoint (Equoria-fsuys)', () => {
   });
 
   it('admin reads a numeric snapshot that rises while a stream is open and falls after disconnect', async () => {
-    const before = await request(app).get(ROUTE).set('Authorization', `Bearer ${adminToken}`);
+    const before = await request(app)
+      .get(ROUTE)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', adminDevice);
     expect(before.status).toBe(200);
     expect(before.body.success).toBe(true);
     expect(typeof before.body.data.total).toBe('number');
@@ -118,7 +126,10 @@ describe('Admin SSE metrics endpoint (Equoria-fsuys)', () => {
     const stream = await openStream(streamToken);
     await waitFor(() => userListenerCount(streamUser.id) >= 1);
 
-    const during = await request(app).get(ROUTE).set('Authorization', `Bearer ${adminToken}`);
+    const during = await request(app)
+      .get(ROUTE)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', adminDevice);
     expect(during.status).toBe(200);
     expect(during.body.data.total).toBe(baseTotal + 1);
     expect(during.body.data.userCount).toBeGreaterThanOrEqual(1);
@@ -128,7 +139,7 @@ describe('Admin SSE metrics endpoint (Equoria-fsuys)', () => {
     // Disconnect cleanup decrements the gauge — proves it is a live gauge,
     // not a stub, and that a leak (stuck count) would be observable.
     const fellBack = await waitFor(async () => {
-      const r = await request(app).get(ROUTE).set('Authorization', `Bearer ${adminToken}`);
+      const r = await request(app).get(ROUTE).set('Authorization', `Bearer ${adminToken}`).set('Cookie', adminDevice);
       return r.body?.data?.total === baseTotal;
     });
     expect(fellBack).toBe(true);

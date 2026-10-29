@@ -30,6 +30,7 @@ import {
   stopEmailCapture,
   uid,
 } from './helpers/staffFixtures.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
 const staffApi = '/api/v1/staff';
 const mePath = `${staffApi}/me`;
@@ -43,7 +44,13 @@ const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('stafflevels');
 const { makeHorse, makePost, removeTargets } = createTargetFactory('StaffLevels');
 
-const bearer = (req, user) => req.set('Origin', ORIGIN).set('Authorization', `Bearer ${user.token}`);
+// Equoria-n256i (owner ruling q289): every caller holds a checked-in browser, so the
+// admin gates below answer on role alone (admin tools need the staff check-in).
+const bearer = async (req, user) =>
+  req
+    .set('Origin', ORIGIN)
+    .set('Authorization', `Bearer ${user.token}`)
+    .set('Cookie', await checkedInDeviceCookie(user.id));
 
 beforeAll(() => {
   const scope = () => ({ in: createdUserIds });

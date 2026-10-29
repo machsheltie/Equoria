@@ -108,7 +108,8 @@ describe('staff_device cookie options follow the auth cookie in every profile (v
     expect(device.sameSite).toBe(profile.sameSite);
     expect(device.domain).toBe(auth.domain);
     expect(device.domain).toBe(profile.domain);
-    expect(device.path).toBe('/api/v1/staff');
+    // Equoria-n256i (owner ruling q289): the whole API, so admin routes see it too.
+    expect(device.path).toBe('/api/v1');
     expect(device.maxAge).toBe(THIRTY_DAYS_MS);
     expect(Object.isFrozen(device)).toBe(true);
   });
@@ -132,7 +133,7 @@ describe('staff_device Set-Cookie over real HTTP in the test profile (verificati
 
   afterEach(() => stopEmailCapture());
 
-  it('carries HttpOnly, the auth Secure / SameSite / Domain, the staff path and 30 days', async () => {
+  it('carries HttpOnly, the auth Secure / SameSite / Domain, the API path and 30 days', async () => {
     const mod = await makeUser('moderator');
     expect((await post(`${STAFF_API}/checkin/request`, mod)).status).toBe(202);
     const res = await post(`${STAFF_API}/checkin/verify`, mod, { code: latestCode(mod.email) });
@@ -152,7 +153,7 @@ describe('staff_device Set-Cookie over real HTTP in the test profile (verificati
     expect(Boolean(attrs.secure)).toBe(ACCESS_TOKEN_COOKIE_OPTIONS.secure);
     expect(attrs.samesite.toLowerCase()).toBe(ACCESS_TOKEN_COOKIE_OPTIONS.sameSite);
     expect(attrs.domain).toBe(ACCESS_TOKEN_COOKIE_OPTIONS.domain);
-    expect(attrs.path).toBe('/api/v1/staff');
+    expect(attrs.path).toBe('/api/v1');
     expect(attrs['max-age']).toBe(String(THIRTY_DAYS_MS / 1000));
     // The test profile itself: plain-HTTP cookie, lax, host-only.
     expect(ACCESS_TOKEN_COOKIE_OPTIONS).toMatchObject({ secure: false, sameSite: 'lax', domain: undefined });

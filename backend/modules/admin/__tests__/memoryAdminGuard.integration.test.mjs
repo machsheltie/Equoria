@@ -19,6 +19,7 @@ import app from '../../../app.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 describe('INTEGRATION: memory-management admin guard (21S-8)', () => {
   // Equoria-vivsi: per-user CSRF binding. On authRouter the chain is
   // authenticateToken → csrfProtection → (route-level) requireRole('admin')
@@ -48,9 +49,11 @@ describe('INTEGRATION: memory-management admin guard (21S-8)', () => {
       role: 'admin',
     });
     adminToken = admin.token;
+    // Equoria-n256i (owner ruling q289): admin tools need the emailed staff check-in.
+    const adminDevice = await checkedInDeviceCookie(admin.user.id);
 
     regularCsrf = await fetchCsrf(app, { extraCookies: [`accessToken=${regularToken}`] });
-    adminCsrf = await fetchCsrf(app, { extraCookies: [`accessToken=${adminToken}`] });
+    adminCsrf = await fetchCsrf(app, { extraCookies: [`accessToken=${adminToken}`, adminDevice] });
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {

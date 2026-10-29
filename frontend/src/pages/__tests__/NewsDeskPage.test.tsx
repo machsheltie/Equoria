@@ -10,6 +10,8 @@
  * - An Admin writes only their own letter; the draft is kept on a refusal.
  * - A seasonal event takes a month and up to four captioned tiles uploaded at
  *   the desk; when picture storage is not set up the desk says so.
+ * - Equoria-n256i (owner ruling q289): the desk needs the emailed staff
+ *   check-in; until this browser has it, the desk shows the check-in.
  */
 
 import React from 'react';
@@ -25,6 +27,16 @@ import NewsDeskPage from '../NewsDeskPage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const deskPath = `${base}/api/v1/admin/news`;
+const checkinPath = `${base}/api/v1/staff/checkin`;
+const checkinRequired = () =>
+  HttpResponse.json(
+    {
+      success: false,
+      code: 'staffCheckinRequired',
+      message: 'Check in with your emailed code on this browser first.',
+    },
+    { status: 403 }
+  );
 
 function desk(overrides: Partial<NewsDesk>): NewsDesk {
   return {
@@ -88,6 +100,81 @@ describe('NewsDeskPage', () => {
       expect(asked).toBe(false);
     }
   );
+
+  it('asks an Admin to check in with the emailed code first, then opens', async () => {
+    let trusted = false;
+    const codes: string[] = [];
+    server.use(
+      http.get(deskPath, () =>
+        trusted ? HttpResponse.json({ success: true, data: desk({}) }) : checkinRequired()
+      ),
+      http.post(`${checkinPath}/request`, () => HttpResponse.json({ sent: true }, { status: 202 })),
+      http.post(`${checkinPath}/verify`, async ({ request }) => {
+        codes.push(((await request.json()) as { code: string }).code);
+        trusted = true;
+        return HttpResponse.json({ trusted: true });
+      })
+    );
+    renderDesk('admin');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Send my code' }));
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    await userEvent.type(await screen.findByLabelText('Your code'), '123456');
+    await userEvent.click(screen.getByRole('button', { name: 'Check in' }));
+
+    expect(await screen.findByRole('radio', { name: /from admin wren/i })).toBeInTheDocument();
+    expect(codes).toEqual(['123456']);
+  });
+
+  it('returns to check-in when a post is refused because the check-in lapsed', async () => {
+    let trusted = true;
+    server.use(
+      http.get(deskPath, () =>
+        trusted ? HttpResponse.json({ success: true, data: desk({}) }) : checkinRequired()
+      ),
+      http.post(deskPath, () => {
+        trusted = false;
+        return checkinRequired();
+      })
+    );
+    renderDesk('admin');
+
+    await userEvent.click(await screen.findByRole('radio', { name: /from admin wren/i }));
+    await userEvent.type(screen.getByLabelText(/title/i), 'A title');
+    await userEvent.type(screen.getByLabelText(/words/i), 'Some words');
+    await userEvent.click(screen.getByRole('button', { name: 'Post to News' }));
+
+    expect(await screen.findByRole('button', { name: 'Send my code' })).toBeInTheDocument();
+  });
+
+  it('keeps the desk open when a background refresh fails (q263)', async () => {
+    let failing = false;
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    server.use(
+      http.get(deskPath, () =>
+        failing
+          ? HttpResponse.json({ success: false, message: 'down' }, { status: 503 })
+          : HttpResponse.json({ success: true, data: desk({}) })
+      )
+    );
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MockAuthProvider userOverrides={{ role: 'admin' }}>
+          <BrowserRouter>
+            <NewsDeskPage />
+          </BrowserRouter>
+        </MockAuthProvider>
+      </QueryClientProvider>
+    );
+    await userEvent.click(await screen.findByRole('radio', { name: /from admin wren/i }));
+    await userEvent.type(screen.getByLabelText(/title/i), 'Half written');
+
+    failing = true;
+    await queryClient.refetchQueries({ queryKey: ['news', 'desk'] });
+
+    expect(screen.queryByText("The News Desk didn't open")).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/title/i)).toHaveValue('Half written');
+  });
 
   it('lets an Admin write their own letter: type first, then the words', async () => {
     const sent: unknown[] = [];

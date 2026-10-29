@@ -11,7 +11,7 @@
  */
 
 import express from 'express';
-import { authenticateToken, requireRole } from '../../../middleware/auth.mjs';
+import { authenticateToken, requireRole, requireStaffCheckin } from '../../../middleware/auth.mjs';
 import { csrfProtection } from '../../../middleware/csrf.mjs';
 import { createShow, getShows, enterShow, getHostingStatus } from './showController.mjs';
 import { executeClosedShows } from './showExecutionService.mjs';
@@ -45,6 +45,7 @@ router.post(
   '/execute',
   authenticateToken,
   requireRole('admin'),
+  requireStaffCheckin('admin'),
   csrfProtection,
   executeClosedShows,
 );

@@ -41,6 +41,7 @@ import { generateTestToken } from '../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { getApiDocumentationService } from '../services/apiDocumentationService.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
+import { checkedInDeviceCookie } from '../tests/helpers/staffDeviceFixture.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const ADMIN_GENERATE = '/api/v1/admin/docs/generate';
@@ -50,6 +51,7 @@ const ADMIN_SCHEMAS = '/api/v1/admin/docs/schemas';
 describe('API-documentation mutation access control (Equoria-7osu4)', () => {
   let admin;
   let adminToken;
+  let adminDevice;
   let member;
   let memberToken;
   let docService;
@@ -94,6 +96,8 @@ describe('API-documentation mutation access control (Equoria-7osu4)', () => {
       },
     });
     adminToken = generateTestToken({ id: admin.id, role: 'admin' });
+    // Equoria-n256i (owner ruling q289): admin tools need the emailed staff check-in.
+    adminDevice = await checkedInDeviceCookie(admin.id);
     memberToken = generateTestToken({ id: member.id, role: 'user' });
 
     // Redirect the singleton's swaggerPath to a throwaway temp copy so the
@@ -178,7 +182,7 @@ describe('API-documentation mutation access control (Equoria-7osu4)', () => {
   // ─── Positive-path: relocated admin routes MUST work for an admin ───────────
 
   it('admin (real JWT + CSRF) POST /api/v1/admin/docs/endpoints registers (201)', async () => {
-    const csrf = await fetchCsrf(app, { origin: ORIGIN });
+    const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [adminDevice] });
     const res = await request(app)
       .post(ADMIN_ENDPOINTS)
       .set('Origin', ORIGIN)
@@ -201,7 +205,7 @@ describe('API-documentation mutation access control (Equoria-7osu4)', () => {
   });
 
   it('admin POST /api/v1/admin/docs/endpoints validates input (400)', async () => {
-    const csrf = await fetchCsrf(app, { origin: ORIGIN });
+    const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [adminDevice] });
     const res = await request(app)
       .post(ADMIN_ENDPOINTS)
       .set('Origin', ORIGIN)
@@ -217,7 +221,7 @@ describe('API-documentation mutation access control (Equoria-7osu4)', () => {
   });
 
   it('admin (real JWT + CSRF) POST /api/v1/admin/docs/schemas registers (201)', async () => {
-    const csrf = await fetchCsrf(app, { origin: ORIGIN });
+    const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [adminDevice] });
     const res = await request(app)
       .post(ADMIN_SCHEMAS)
       .set('Origin', ORIGIN)
@@ -235,7 +239,7 @@ describe('API-documentation mutation access control (Equoria-7osu4)', () => {
   });
 
   it('admin (real JWT + CSRF) POST /api/v1/admin/docs/generate succeeds (200)', async () => {
-    const csrf = await fetchCsrf(app, { origin: ORIGIN });
+    const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [adminDevice] });
     const res = await request(app)
       .post(ADMIN_GENERATE)
       .set('Origin', ORIGIN)

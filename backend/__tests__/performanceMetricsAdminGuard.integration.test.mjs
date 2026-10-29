@@ -37,6 +37,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import app from '../app.mjs';
 import { createTestUser, cleanupTestData } from '../tests/helpers/testAuth.mjs';
+import { checkedInDeviceCookie } from '../tests/helpers/staffDeviceFixture.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -46,6 +47,7 @@ const PUBLIC_HEALTH_ROUTES = ['/health', '/ready'];
 describe('INTEGRATION: performance metrics admin guard (Equoria-xfqy4)', () => {
   let regularToken;
   let adminToken;
+  let adminDevice; // Equoria-n256i (owner ruling q289): admin tools need the staff check-in
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -61,6 +63,7 @@ describe('INTEGRATION: performance metrics admin guard (Equoria-xfqy4)', () => {
       role: 'admin',
     });
     adminToken = admin.token;
+    adminDevice = await checkedInDeviceCookie(admin.user.id);
   }, 120000); // 120s — DB ops can be slow under full-suite --runInBand load
 
   afterAll(async () => {
@@ -96,7 +99,8 @@ describe('INTEGRATION: performance metrics admin guard (Equoria-xfqy4)', () => {
       const res = await request(app)
         .get(METRICS_ROUTE)
         .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${adminToken}`);
+        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', adminDevice);
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       // The detailed (admin-only) payload shape is intact behind the gate.

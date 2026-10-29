@@ -18,6 +18,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 import { generateVerificationToken, hashVerificationToken } from '../services/emailVerificationService.mjs';
 
 const origin = 'http://localhost:3000';
@@ -167,10 +168,13 @@ describe('email gate: no play until the email is confirmed', () => {
     expect(refused.body.code).toBe('emailNotVerified');
 
     const confirmed = await makeAccount('admin', true);
+    // Equoria-n256i (owner ruling q289): admin tools need the emailed staff check-in.
+    const device = await checkedInDeviceCookie(confirmed.user.id);
     const served = await request(app)
       .get('/api/v1/admin/cron/status')
       .set('Origin', origin)
-      .set('Authorization', `Bearer ${confirmed.token}`);
+      .set('Authorization', `Bearer ${confirmed.token}`)
+      .set('Cookie', device);
     expect(served.status).toBe(200);
   });
 

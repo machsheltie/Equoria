@@ -18,7 +18,7 @@
 
 import express from 'express';
 import { body, query, validationResult } from 'express-validator';
-import { authenticateToken, requireRole } from '../../../middleware/auth.mjs';
+import { authenticateToken, requireRole, requireStaffCheckin } from '../../../middleware/auth.mjs';
 import { MS_PER_HOUR, MS_PER_DAY, MS_PER_WEEK } from '../../../constants/time.mjs';
 import {
   getMemoryManager,
@@ -197,6 +197,7 @@ router.post(
   '/gc',
   authenticateToken,
   requireRole('admin'),
+  requireStaffCheckin('admin'),
   body('force').optional().isBoolean().withMessage('force must be boolean'),
   validateRequest,
   async (req, res) => {
@@ -264,6 +265,7 @@ router.post(
   '/cleanup',
   authenticateToken,
   requireRole('admin'),
+  requireStaffCheckin('admin'),
   body('resourceTypes').optional().isArray().withMessage('resourceTypes must be array'),
   validateRequest,
   async (req, res) => {

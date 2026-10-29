@@ -19,9 +19,9 @@ import logger from '../../../utils/logger.mjs';
 import { createNotFoundHandler } from '../../../middleware/notFoundHandler.mjs';
 import { hasCapability, isStaffRole } from '../capabilities.mjs';
 import {
-  STAFF_DEVICE_COOKIE,
   isTrustedDevice,
   loadStaffAccount,
+  staffDeviceCookie,
 } from '../services/staffCheckinService.mjs';
 
 // Same handler app.mjs mounts as its catch-all; staff paths are under /api so
@@ -73,7 +73,7 @@ function buildCapabilityGuard(capabilities) {
           message: 'Staff tools need a verified email address.',
         });
       }
-      const trusted = await isTrustedDevice(account, req.cookies?.[STAFF_DEVICE_COOKIE]);
+      const trusted = await isTrustedDevice(account, req.cookies?.[staffDeviceCookie]);
       if (!trusted) {
         return res.status(403).json({
           success: false,

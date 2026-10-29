@@ -54,6 +54,7 @@ import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 import { birthDateForAge } from '../../utils/horseAge.mjs';
+import { checkedInDeviceCookie } from '../../tests/helpers/staffDeviceFixture.mjs';
 
 const fixturePrefix = 'TestFixture-a7f1p-retired';
 const origin = 'http://localhost:3000';
@@ -61,6 +62,8 @@ const origin = 'http://localhost:3000';
 function tag() {
   return randomBytes(6).toString('hex');
 }
+
+const staffDevices = new Map();
 
 async function makePlayer(role, accountRole = 'user') {
   const suffix = tag();
@@ -76,7 +79,12 @@ async function makePlayer(role, accountRole = 'user') {
       role: accountRole,
     },
   });
-  return { user, token: generateTestToken({ id: user.id, email: user.email, role: accountRole }) };
+  const token = generateTestToken({ id: user.id, email: user.email, role: accountRole });
+  // Equoria-n256i (owner ruling q289): admin tools need the emailed staff check-in.
+  if (accountRole !== 'user') {
+    staffDevices.set(token, await checkedInDeviceCookie(user.id));
+  }
+  return { user, token };
 }
 
 async function makeHorse(ownerId, breedId) {
@@ -107,7 +115,8 @@ async function makeGroom(ownerId) {
 }
 
 async function send(method, path, token, body) {
-  const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+  const device = staffDevices.get(token);
+  const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`, ...(device ? [device] : [])] });
   const agent = request(app);
   const req = agent[method](path)
     .set('Authorization', `Bearer ${token}`)

@@ -27,6 +27,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf, attachCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { NOTIFICATION_RETENTION_COUNT } from '../../../utils/notificationService.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
 const ROUTE = '/api/v1/admin/notifications/backfill-prune';
 const ORIGIN = 'http://localhost:3000';
@@ -37,6 +38,7 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
   let underCapUser;
   let nonAdminUser;
   let adminToken;
+  let adminDevice;
   let nonAdminToken;
   const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
   const createdUserIds = [];
@@ -84,6 +86,8 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
     nonAdminUser = await makeUser({ tag: 'nonadmin' });
 
     adminToken = generateTestToken({ id: adminUser.id, role: 'admin' });
+    // Equoria-n256i (owner ruling q289): admin tools need the emailed staff check-in.
+    adminDevice = await checkedInDeviceCookie(adminUser.id);
     nonAdminToken = generateTestToken({ id: nonAdminUser.id, role: 'user' });
 
     await seedNotifications(overCapUser.id, OVER_CAP_TOTAL);
@@ -115,7 +119,7 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
   });
 
   it('admin call prunes over-cap user to exactly the cap and leaves under-cap user untouched', async () => {
-    const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${adminToken}`] });
+    const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${adminToken}`, adminDevice] });
     const res = await attachCsrf(
       request(app).post(ROUTE).set('Origin', ORIGIN).set('Authorization', `Bearer ${adminToken}`),
       csrf,

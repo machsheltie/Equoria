@@ -9,24 +9,38 @@ import logger from '../../../utils/logger.mjs';
 import { ACCESS_TOKEN_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 import { capabilitiesFor } from '../capabilities.mjs';
 import {
-  STAFF_DEVICE_COOKIE,
   StaffCheckinError,
-  TRUSTED_DEVICE_TTL_MS,
   isTrustedDevice,
   requestCheckinCode,
+  staffDeviceCookie,
+  trustedDeviceTtlMs,
   verifyCheckinCode,
 } from '../services/staffCheckinService.mjs';
 
-/**
- * staff_device cookie: secure/sameSite/domain from the same policy as the
- * auth cookies (cookieConfig.mjs), scoped to the staff API, 30 days.
- */
-export const STAFF_DEVICE_COOKIE_OPTIONS = Object.freeze({
+/** The attributes both device cookies share, from the auth cookie policy. */
+const deviceCookieAttributes = Object.freeze({
   httpOnly: true,
   secure: ACCESS_TOKEN_COOKIE_OPTIONS.secure,
   sameSite: ACCESS_TOKEN_COOKIE_OPTIONS.sameSite,
   domain: ACCESS_TOKEN_COOKIE_OPTIONS.domain,
-  maxAge: TRUSTED_DEVICE_TTL_MS,
+});
+
+/**
+ * staff_device cookie: secure/sameSite/domain from the same policy as the
+ * auth cookies (cookieConfig.mjs), 30 days. Scoped to the whole API since
+ * Equoria-n256i (owner ruling q289): the admin routes (/api/v1/admin and the
+ * per-route admin gates) ask for the same check-in, so the browser must send
+ * it to them too. It was scoped to /api/v1/staff before.
+ */
+export const STAFF_DEVICE_COOKIE_OPTIONS = Object.freeze({
+  ...deviceCookieAttributes,
+  maxAge: trustedDeviceTtlMs,
+  path: '/api/v1',
+});
+
+/** Where the cookie lived before Equoria-n256i; cleared on check-in so it cannot shadow the new one. */
+const legacyDeviceCookieOptions = Object.freeze({
+  ...deviceCookieAttributes,
   path: '/api/v1/staff',
 });
 
@@ -71,7 +85,10 @@ export async function requestCheckin(req, res, next) {
 export async function verifyCheckin(req, res, next) {
   try {
     const { rawToken } = await verifyCheckinCode(req.staffAccount, req.body?.code);
-    res.cookie(STAFF_DEVICE_COOKIE, rawToken, STAFF_DEVICE_COOKIE_OPTIONS);
+    res.cookie(staffDeviceCookie, rawToken, STAFF_DEVICE_COOKIE_OPTIONS);
+    // A browser checked in before the path widened still holds the old cookie;
+    // sent first on staff paths (longer path), a stale one would shadow this one.
+    res.clearCookie(staffDeviceCookie, legacyDeviceCookieOptions);
     return res.status(200).json({ trusted: true });
   } catch (error) {
     return handleError(res, next, error);
@@ -82,7 +99,7 @@ export async function verifyCheckin(req, res, next) {
 export async function getStaffMe(req, res, next) {
   try {
     const account = req.staffAccount;
-    const device = await isTrustedDevice(account, req.cookies?.[STAFF_DEVICE_COOKIE]);
+    const device = await isTrustedDevice(account, req.cookies?.[staffDeviceCookie]);
     return res.status(200).json({
       role: account.role,
       capabilities: [...capabilitiesFor(account.role)],

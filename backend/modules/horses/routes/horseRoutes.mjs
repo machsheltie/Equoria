@@ -23,7 +23,7 @@ import {
 } from '../services/horseRouteQueries.mjs';
 import { breedingStateFields } from '../services/breedingPairRules.mjs';
 import logger from '../../../utils/logger.mjs';
-import { satisfiesRole } from '../../staff/index.mjs';
+import { hasStaffCheckin, satisfiesRole } from '../../staff/index.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
 import { withAgeYears } from '../../../utils/horseAge.mjs';
 import { InvalidCursorError, clampLimit } from '../../../utils/paginationHelper.mjs';
@@ -75,7 +75,14 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
     // considered but would break those legitimate same-user callers without a
     // coordinated frontend change. Admins (role === 'admin') retain the
     // override so support tooling can query any user's horses.
-    const isAdmin = satisfiesRole(req.user.role, 'admin'); // the owner too (Equoria-4tleh)
+    //
+    // Equoria-n256i (owner ruling q289): the override is an admin tool, so it
+    // also needs the emailed staff check-in on this browser. Without it an
+    // admin is self-scoped like everyone else.
+    const isAdmin =
+      Boolean(queryUserId) &&
+      satisfiesRole(req.user.role, 'admin') && // the owner too (Equoria-4tleh)
+      (await hasStaffCheckin(req, 'admin'));
     const effectiveUserId = isAdmin
       ? queryUserId || req.user.id // admin: honour the override; fall back to self
       : req.user.id; // non-admin: always self — never trust client userId

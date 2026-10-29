@@ -27,6 +27,7 @@ import dynamicCompatibilityRoutes from '../routes/dynamicCompatibilityRoutes.mjs
 import { predictInteraction, scoreCompatibility } from '../services/dynamicCompatibilityScoring.mjs';
 import { analyzePair, rankFor } from './helpers/dynamicCompatibilityGrid.mjs';
 import { getPersonalityTraitDefinitions, calculatePersonalityModifiers } from '../services/groomPersonalityTraits.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const POLICY_MODULE = '../services/groomHorseCompatibilityTaskPolicy.mjs';
@@ -69,6 +70,7 @@ function routeAcceptedTaskTypes(routePath) {
 
 let user;
 let token;
+let adminDevice; // Equoria-n256i (owner ruling q289): admin tools need the staff check-in
 let breedId;
 let horse;
 let foreignUser;
@@ -110,7 +112,7 @@ function groomData(ownerId, name, personality) {
 }
 
 async function postWithCsrf(path, body) {
-  const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+  const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`, adminDevice] });
   return request(app)
     .post(`/api/v1/compatibility${path}`)
     .set('Origin', ORIGIN)
@@ -121,7 +123,11 @@ async function postWithCsrf(path, body) {
 }
 
 function getAuthed(path) {
-  return request(app).get(`/api/v1/compatibility${path}`).set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
+  return request(app)
+    .get(`/api/v1/compatibility${path}`)
+    .set('Origin', ORIGIN)
+    .set('Authorization', `Bearer ${token}`)
+    .set('Cookie', adminDevice);
 }
 
 beforeAll(async () => {
@@ -176,6 +182,7 @@ beforeAll(async () => {
   // Equoria-oey96.37 (owner ruling 2026-07-07): /compatibility is admin-only, so the
   // caller is an admin; ownership checks still apply to her own fixtures.
   token = generateTestToken({ id: user.id, email: user.email, role: 'admin' });
+  adminDevice = await checkedInDeviceCookie(user.id);
 
   for (const personality of ['calm', 'energetic', 'methodical', 'balanced']) {
     groomsByPersonality[personality] = await prisma.groom.create({

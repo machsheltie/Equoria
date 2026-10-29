@@ -71,6 +71,16 @@ Owner ruling 2026-10-09: email codes, not text messages; remember the device.
 - A verified browser is trusted for 30 days via a signed, httpOnly cookie bound
   to the account. It asks again on a new browser, after 30 days, after a
   password change, or after the account's staff access is revoked.
+- Owner ruling 2026-10-29 (q289, Equoria-n256i): every admin tool needs the
+  same check-in. Each admin gate is `requireRole('admin')` followed by
+  `requireStaffCheckin('admin')` (the `/api/v1/admin` router, `/performance`,
+  `/optimization`, `/memory`, `/compatibility`, and the per-route gates on
+  breed creation, forum pinning and show execution). The guard re-reads the
+  account, so lost staff access closes the tools at once. The admin override on
+  `GET /horses?userId=` also needs it. The device cookie is scoped to `/api/v1`
+  so admin routes receive it. The News Desk shows the same check-in.
+  `backend/__tests__/integration/security/adminRoutesCheckinRequired.integration.test.mjs`
+  walks the mounted app and fails if any `requireRole` route lacks the guard.
 - A code is bound to the account's security state (STAFF-CR-01). Only the
   newest code counts; requesting a new one retires the old. A code is void
   once the password changes or is reset, the verified email changes, or the

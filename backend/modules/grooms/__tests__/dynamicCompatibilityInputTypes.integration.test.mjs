@@ -17,12 +17,14 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const cleanup = createCleanupTracker();
 
 let user;
 let token;
+let adminDevice; // Equoria-n256i (owner ruling q289): admin tools need the staff check-in
 let csrf;
 let taskType;
 
@@ -46,9 +48,13 @@ beforeAll(async () => {
   // Equoria-oey96.37 (owner ruling 2026-07-07): /compatibility is admin-only, so the
   // caller is an admin; ownership checks still apply to her own fixtures.
   token = generateTestToken({ id: user.id, email: user.email, role: 'admin' });
-  csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+  adminDevice = await checkedInDeviceCookie(user.id);
+  csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`, adminDevice] });
   // A task type the validator accepts, taken from the config endpoint.
-  const config = await request(app).get('/api/v1/compatibility/config').set('Authorization', `Bearer ${token}`);
+  const config = await request(app)
+    .get('/api/v1/compatibility/config')
+    .set('Authorization', `Bearer ${token}`)
+    .set('Cookie', adminDevice);
   [taskType] = config.body.data.taskTypes;
 }, 60000);
 

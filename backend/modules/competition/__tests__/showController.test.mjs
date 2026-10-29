@@ -12,6 +12,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -29,17 +30,15 @@ async function dropShow(id) {
 
 const ORIGIN = 'http://localhost:3000';
 
-let user;
-let token;
+let user, token;
 let horse;
 let createdShowId;
 const cleanup = createCleanupTracker();
 
 // Fixtures for executeClosedShows tests
-let execUser;
-let execToken;
+let execUser, execToken;
 let execAdminUser; // Equoria-619ik: admin executor for the now admin-only /shows/execute
-let execAdminToken;
+let execAdminToken, execAdminDevice; // Equoria-n256i (q289): admin tools need the staff check-in
 let execHorse;
 let pastShowId; // show with closeDate in the past, with entries
 let pastShowNoEntriesId; // show with closeDate in the past, no entries
@@ -130,6 +129,7 @@ beforeAll(async () => {
     },
   });
   execAdminToken = generateTestToken({ id: execAdminUser.id, email: execAdminUser.email, role: 'admin' });
+  execAdminDevice = await checkedInDeviceCookie(execAdminUser.id);
 
   execHorse = await prisma.horse.create({
     data: {
@@ -765,7 +765,7 @@ describe('POST /api/v1/shows/execute — executeClosedShows', () => {
   });
 
   it('Equoria-619ik: returns 200 and executes past-due shows for an ADMIN (lines 278-382)', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${execAdminToken}`] });
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${execAdminToken}`, execAdminDevice] });
     const res = await request(app)
       .post('/api/v1/shows/execute')
       .set('Origin', ORIGIN)
@@ -826,7 +826,7 @@ describe('POST /api/v1/shows/execute — executeClosedShows', () => {
     // executed=0. Equoria-rsss0: scoping to our ids (rather than a global
     // scan) is what makes this `toBe(0)` deterministic under a parallel run —
     // a sibling suite's still-open shows can no longer inflate the count.
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${execAdminToken}`] });
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${execAdminToken}`, execAdminDevice] });
     const res = await request(app)
       .post('/api/v1/shows/execute')
       .set('Origin', ORIGIN)

@@ -19,7 +19,7 @@
 import express from 'express';
 
 // Authentication / CSRF middleware
-import { authenticateToken, requireRole } from '../middleware/auth.mjs';
+import { authenticateToken, requireRole, requireStaffCheckin } from '../middleware/auth.mjs';
 import { csrfProtection } from '../middleware/csrf.mjs';
 import { createNotFoundHandler } from '../middleware/notFoundHandler.mjs';
 import logger from '../utils/logger.mjs';
@@ -153,7 +153,8 @@ export function buildRouters() {
 
   // Admin router - Requires valid JWT token + admin role
   const adminRouter = express.Router();
-  adminRouter.use(authenticateToken, requireRole('admin'));
+  // Equoria-n256i (owner ruling q289): and the emailed staff check-in on this browser.
+  adminRouter.use(authenticateToken, requireRole('admin'), requireStaffCheckin('admin'));
   // Apply CSRF protection to all state-changing operations (POST/PUT/DELETE/PATCH)
   adminRouter.use(csrfProtection);
 
@@ -268,12 +269,27 @@ export function buildRouters() {
   // (the destructive POST /memory/gc + /memory/cleanup were already admin-only
   // per-route under Story 21S-8; this closes the read-side gap). URLs are
   // unchanged (/api/v1/optimization/*, /api/v1/memory/*) — admin-only, not moved.
-  authRouter.use('/optimization', requireRole('admin'), apiOptimizationRoutes);
-  authRouter.use('/memory', requireRole('admin'), memoryManagementRoutes);
+  authRouter.use(
+    '/optimization',
+    requireRole('admin'),
+    requireStaffCheckin('admin'),
+    apiOptimizationRoutes,
+  );
+  authRouter.use(
+    '/memory',
+    requireRole('admin'),
+    requireStaffCheckin('admin'),
+    memoryManagementRoutes,
+  );
   // Equoria-oey96.37 (owner ruling 2026-07-07): clusters no screen uses are
   // admin-gated. /compatibility has no frontend consumer; the routes and their
   // tables stay (q143 parks the compatibility tables), only players lose access.
-  authRouter.use('/compatibility', requireRole('admin'), dynamicCompatibilityRoutes);
+  authRouter.use(
+    '/compatibility',
+    requireRole('admin'),
+    requireStaffCheckin('admin'),
+    dynamicCompatibilityRoutes,
+  );
   authRouter.use('/personality-evolution', personalityEvolutionRoutes);
 
   // ADMIN ROUTES (Admin role required)

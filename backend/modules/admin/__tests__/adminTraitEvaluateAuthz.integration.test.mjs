@@ -35,6 +35,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
 const origin = 'http://localhost:3000';
 const route = '/api/v1/admin/traits/evaluate';
@@ -102,9 +103,12 @@ describe('Equoria-olt5x — POST /admin/traits/evaluate is closed to players', (
   });
 
   it('lets the admin past the role gate (the CSRF layer behind it answers a request without a pair)', async () => {
+    // Equoria-n256i (owner ruling q289): admin tools need the emailed staff check-in.
+    const device = await checkedInDeviceCookie(accounts.admin.user.id);
     const res = await request(app)
       .post(route)
       .set('Authorization', `Bearer ${accounts.admin.token}`)
+      .set('Cookie', device)
       .set('Origin', origin)
       .send({});
 

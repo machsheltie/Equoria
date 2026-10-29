@@ -2,7 +2,7 @@ import express from 'express';
 import { body, param } from 'express-validator';
 import * as breedController from '../controllers/breedController.mjs';
 import { handleValidationErrors } from '../../../middleware/validationErrorHandler.mjs';
-import { authenticateToken, requireRole } from '../../../middleware/auth.mjs';
+import { authenticateToken, requireRole, requireStaffCheckin } from '../../../middleware/auth.mjs';
 import { csrfProtection } from '../../../middleware/csrf.mjs';
 
 const router = express.Router();
@@ -83,6 +83,7 @@ router.post(
   '/',
   authenticateToken,
   requireRole('admin'),
+  requireStaffCheckin('admin'),
   csrfProtection,
   [
     body('name')

@@ -31,6 +31,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import config from '../../../config/config.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const UNIQUE = randomBytes(6).toString('hex');
@@ -131,7 +132,9 @@ describe('Breed routes authorization (Equoria-7p4xe)', () => {
   it('admin POST with valid CSRF SUCCEEDS (201) and persists exactly one row', async () => {
     const name = `TestFixture-breed-7p4xe-${UNIQUE}-admin`;
     const cookie = accessCookieFor(adminUser);
-    const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: cookie });
+    // Equoria-n256i (owner ruling q289): admin tools need the emailed staff check-in.
+    const device = await checkedInDeviceCookie(adminUser.id);
+    const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [cookie, device] });
 
     const res = await request(app)
       .post('/api/v1/breeds')

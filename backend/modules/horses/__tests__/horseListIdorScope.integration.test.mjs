@@ -28,6 +28,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
 import config from '../../../config/config.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-idor-scope';
 
@@ -37,6 +38,7 @@ let attackerToken;
 let victimUser;
 let victimToken;
 let adminToken;
+let adminDevice;
 
 let attackerHorse;
 let victimHorse;
@@ -72,7 +74,11 @@ beforeAll(async () => {
   // Create three users: attacker, victim, admin
   ({ user: attackerUser, token: attackerToken } = await makeUser('attacker'));
   ({ user: victimUser, token: victimToken } = await makeUser('victim'));
-  ({ token: adminToken } = await makeUser('admin', 'admin'));
+  const admin = await makeUser('admin', 'admin');
+  adminToken = admin.token;
+  // Equoria-n256i (owner ruling q289): the ?userId override is an admin tool, so it
+  // needs the emailed staff check-in on this browser.
+  adminDevice = await checkedInDeviceCookie(admin.user.id);
 
   // Create one horse per user (attacker + victim); admin has none
   attackerHorse = await createTestHorse(
@@ -175,6 +181,7 @@ describe('GET /api/v1/horses — IDOR scope enforcement (Equoria-tzyv8)', () => 
     const res = await request(app)
       .get(`/api/v1/horses?userId=${victimUser.id}`)
       .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', adminDevice)
       .set('Origin', 'http://localhost:3000');
 
     expect(res.status).toBe(200);

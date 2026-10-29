@@ -35,6 +35,7 @@ import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 // a leaked foal/groom/user (Horse.userId onDelete:Restrict, schema:282) stayed
 // hidden and could trip the canonical NULL-phenotype sentinel (Equoria-a429/lfj5).
 import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
+import { checkedInDeviceCookie } from '../../tests/helpers/staffDeviceFixture.mjs';
 
 // Import the real app — no mocks
 const app = (await import('../../app.mjs')).default;
@@ -45,6 +46,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
 
   let adminUser;
   let adminToken;
+  let adminDevice; // Equoria-n256i (owner ruling q289): admin tools need the staff check-in
   let testFoal;
   const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
@@ -87,6 +89,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
 
     // Generate a JWT token with admin role for the real user
     adminToken = generateTestToken({ id: adminUser.id, role: 'admin' });
+    adminDevice = await checkedInDeviceCookie(adminUser.id);
 
     // Equoria-plw0h: per-user CSRF binding. The adminRouter mounts
     // authenticateToken BEFORE csrfProtection (backend/app/routers.mjs), so
@@ -95,7 +98,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
     // identity — fetched AFTER the admin token exists, forwarding it as an
     // accessToken cookie so tryPopulateUserFromAccessCookie binds issuance
     // to adminUser.id. An anonymous (salt-bound) token correctly 403s.
-    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${adminToken}`] });
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${adminToken}`, adminDevice] });
 
     // Create a real foal (age 0) so the foals/development endpoint has data
     testFoal = await prisma.horse.create({
@@ -120,6 +123,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
         .get('/api/v1/admin/cron/status')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', adminDevice)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -155,6 +159,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
         .get('/api/v1/admin/foals/development')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', adminDevice)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -182,6 +187,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
         .get('/api/v1/admin/traits/definitions')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', adminDevice)
         .expect(200);
 
       expect(response.body.success).toBe(true);

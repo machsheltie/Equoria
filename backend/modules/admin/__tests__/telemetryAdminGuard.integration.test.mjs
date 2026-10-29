@@ -35,6 +35,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -62,6 +63,7 @@ const ALL_READ_ROUTES = [...MEMORY_READ_ROUTES, ...OPTIMIZATION_READ_ROUTES];
 describe('INTEGRATION: telemetry admin guard — read endpoints (Equoria-rvmse)', () => {
   let regularToken;
   let adminToken;
+  let adminDevice;
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -77,6 +79,8 @@ describe('INTEGRATION: telemetry admin guard — read endpoints (Equoria-rvmse)'
       role: 'admin',
     });
     adminToken = admin.token;
+    // Equoria-n256i (owner ruling q289): admin tools need the emailed staff check-in.
+    adminDevice = await checkedInDeviceCookie(admin.user.id);
   }, 120000); // 120s — DB ops can be slow under full-suite --runInBand load
 
   afterAll(async () => {
@@ -103,7 +107,11 @@ describe('INTEGRATION: telemetry admin guard — read endpoints (Equoria-rvmse)'
 
   describe('authenticated admin → 200 (gate passes, telemetry returned)', () => {
     it.each(ALL_READ_ROUTES)('GET %s returns 200 for an admin user', async route => {
-      const res = await request(app).get(route).set('Origin', ORIGIN).set('Authorization', `Bearer ${adminToken}`);
+      const res = await request(app)
+        .get(route)
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', adminDevice);
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
     });

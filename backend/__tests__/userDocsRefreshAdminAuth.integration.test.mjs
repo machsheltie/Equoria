@@ -38,6 +38,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
+import { checkedInDeviceCookie } from '../tests/helpers/staffDeviceFixture.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const ADMIN_REFRESH_ROUTE = '/api/v1/admin/docs/refresh';
@@ -45,6 +46,7 @@ const ADMIN_REFRESH_ROUTE = '/api/v1/admin/docs/refresh';
 describe('User-documentation refresh access control (Equoria-bs6fc)', () => {
   let admin;
   let adminToken;
+  let adminDevice; // Equoria-n256i (owner ruling q289): admin tools need the staff check-in
   const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
   const cleanup = createCleanupTracker();
 
@@ -66,6 +68,7 @@ describe('User-documentation refresh access control (Equoria-bs6fc)', () => {
       },
     });
     adminToken = generateTestToken({ id: admin.id, role: 'admin' });
+    adminDevice = await checkedInDeviceCookie(admin.id);
   }, 120000);
 
   afterAll(async () => {
@@ -102,7 +105,7 @@ describe('User-documentation refresh access control (Equoria-bs6fc)', () => {
     // Bearer-header auth → CSRF token is bound to the salt identifier (see
     // resolveSessionIdentifier in middleware/csrf.mjs), so fetchCsrf without an
     // access cookie yields a token that validates for this header-auth POST.
-    const csrf = await fetchCsrf(app, { origin: ORIGIN });
+    const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [adminDevice] });
     const res = await request(app)
       .post(ADMIN_REFRESH_ROUTE)
       .set('Origin', ORIGIN)

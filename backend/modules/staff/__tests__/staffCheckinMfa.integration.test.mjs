@@ -126,7 +126,12 @@ describe('Staff check-in and capability guard (Equoria-puj1e.1)', () => {
     expect(verified.status).toBe(200);
     const cookie = deviceCookieFrom(verified);
     expect(cookie).toMatch(/HttpOnly/i);
-    expect(cookie).toMatch(/Path=\/api\/v1\/staff(;|$)/);
+    // Equoria-n256i (owner ruling q289): scoped to the whole API so admin routes
+    // receive it too; the old /api/v1/staff cookie is cleared so it cannot shadow it.
+    expect(cookie).toMatch(/Path=\/api\/v1(;|$)/);
+    expect(verified.headers['set-cookie']).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^staff_device=;.*Path=\/api\/v1\/staff(;|$)/)]),
+    );
     expect(cookie).toMatch(/Max-Age=2592000/);
     const rawToken = cookie.split(';')[0].slice('staff_device='.length);
     expect(Buffer.from(rawToken, 'base64url')).toHaveLength(32);

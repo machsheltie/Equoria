@@ -6,7 +6,18 @@ import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { MS_PER_WEEK } from '../constants/time.mjs';
 import { isSessionOpen } from '../utils/sessionFamilies.mjs';
-import { cachedAccountStanding, satisfiesRole, standingRefusal } from '../modules/staff/index.mjs';
+import {
+  cachedAccountStanding,
+  requireStaffCheckin,
+  satisfiesRole,
+  standingRefusal,
+} from '../modules/staff/index.mjs';
+
+// Equoria-n256i (owner ruling 2026-10-29, q289): admin tools need the emailed
+// staff check-in. Every admin gate is `requireRole('admin'), requireStaffCheckin('admin')`;
+// backend/__tests__/integration/security/adminRoutesCheckinRequired.integration.test.mjs
+// walks the mounted app and fails on any requireRole-gated route without it.
+export { requireStaffCheckin };
 
 /**
  * In-memory TTL cache for User.passwordChangedAt — Equoria-2bbf.
@@ -408,7 +419,7 @@ export const authenticateToken = async (req, res, next) => {
  * Requires specific roles to access endpoints
  */
 export const requireRole = (...roles) => {
-  return async (req, res, next) => {
+  const gate = async (req, res, next) => {
     try {
       if (!req.user) {
         throw new AppError('Authentication required', 401);
@@ -476,6 +487,9 @@ export const requireRole = (...roles) => {
       });
     }
   };
+  // Read by the admin-route sentinel (Equoria-n256i) to find every role gate.
+  gate.requiredRoles = Object.freeze([...roles]);
+  return gate;
 };
 
 /**

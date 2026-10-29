@@ -21,6 +21,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -31,6 +32,7 @@ const readRoutes = ['/api/v1/compatibility/config', '/api/v1/compatibility/facto
 describe('INTEGRATION: /compatibility is admin-only (Equoria-oey96.37)', () => {
   let playerToken;
   let adminToken;
+  let adminDevice; // Equoria-n256i (owner ruling q289): admin tools need the staff check-in
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -46,6 +48,7 @@ describe('INTEGRATION: /compatibility is admin-only (Equoria-oey96.37)', () => {
       role: 'admin',
     });
     adminToken = admin.token;
+    adminDevice = await checkedInDeviceCookie(admin.user.id);
   }, 120000);
 
   afterAll(async () => {
@@ -68,7 +71,8 @@ describe('INTEGRATION: /compatibility is admin-only (Equoria-oey96.37)', () => {
     const res = await request(app)
       .get('/api/v1/compatibility/config')
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', adminDevice);
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
   });

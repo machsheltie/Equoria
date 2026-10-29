@@ -33,6 +33,7 @@ import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { snapshotEnv, restoreEnv } from '../../../tests/helpers/envSnapshot.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 import { listPublishedNews } from '../services/newsFeedService.mjs';
 
 const ORIGIN = 'http://localhost:3000';
@@ -52,12 +53,14 @@ async function makeActor(label, role) {
     email: `${PREFIX}-${label}@example.com`.toLowerCase(),
     ...(role ? { role } : {}),
   });
-  const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-  return { user, token, csrf };
+  // Equoria-n256i (owner ruling q289): staff hold the emailed check-in on this browser.
+  const cookies = [`accessToken=${token}`, ...(role ? [await checkedInDeviceCookie(user.id)] : [])];
+  const csrf = await fetchCsrf(app, { extraCookies: cookies });
+  return { user, token, csrf, cookies };
 }
 
 function get(actor, path) {
-  return request(app).get(path).set('Authorization', `Bearer ${actor.token}`);
+  return request(app).get(path).set('Authorization', `Bearer ${actor.token}`).set('Cookie', actor.cookies);
 }
 
 function mutate(method, actor, path) {

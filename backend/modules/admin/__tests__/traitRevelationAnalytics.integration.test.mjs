@@ -35,6 +35,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
 const ROUTE = '/api/v1/admin/traits/analytics';
 
@@ -94,10 +95,14 @@ async function plantTrait(horseId, traitName, dayKey) {
 
 describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
   let adminToken;
+  let adminDevice;
   let nonAdminToken;
 
   beforeAll(async () => {
     const adminUser = await makeUser('admin');
+    // Equoria-n256i (owner ruling q289): admin tools need the emailed staff check-in.
+    await prisma.user.update({ where: { id: adminUser.id }, data: { role: 'admin' } });
+    adminDevice = await checkedInDeviceCookie(adminUser.id);
     adminToken = generateTestToken({ id: adminUser.id, role: 'admin' });
 
     const plainUser = await makeUser('user');
@@ -163,7 +168,8 @@ describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
     const res = await request(app)
       .get(ROUTE)
       .query({ sourceType: suiteSource })
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -211,7 +217,8 @@ describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
         startDate: '2024-01-10T00:00:00.000Z',
         endDate: '2024-01-10T23:59:59.999Z',
       })
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(200);
     const { data } = res.body;
@@ -232,7 +239,8 @@ describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
         startDate: '2000-01-01T00:00:00.000Z',
         endDate: '2000-01-02T00:00:00.000Z',
       })
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(200);
     const { data } = res.body;
@@ -246,7 +254,8 @@ describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
     const res = await request(app)
       .get(ROUTE)
       .query({ startDate: 'not-a-date' })
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', adminDevice);
     expect(res.status).toBe(400);
   });
 });

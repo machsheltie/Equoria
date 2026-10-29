@@ -53,7 +53,7 @@ import performanceMetricsRouter from './utils/performanceMonitor.mjs';
 
 // Equoria-xfqy4 (SECURITY P1): authenticateToken + requireRole gate the
 // detailed performance-metrics mount admin-only (see mount below).
-import { authenticateToken, requireRole } from './middleware/auth.mjs';
+import { authenticateToken, requireRole, requireStaffCheckin } from './middleware/auth.mjs';
 
 // CSRF protection error handler
 import { csrfErrorHandler } from './middleware/csrf.mjs';
@@ -356,7 +356,14 @@ app.use('/api/v1/breeds', breedRoutes);
 // /ready (real DB ping) — those are intentionally unauthenticated and are NOT
 // touched here. URL is unchanged (/api/v1/performance/metrics) — admin-only,
 // not moved.
-app.use('/api/v1/performance', authenticateToken, requireRole('admin'), performanceMetricsRouter);
+// Equoria-n256i (owner ruling q289): admin tools need the emailed staff check-in too.
+app.use(
+  '/api/v1/performance',
+  authenticateToken,
+  requireRole('admin'),
+  requireStaffCheckin('admin'),
+  performanceMetricsRouter,
+);
 
 // Admin routes (requires auth + admin role)
 app.use('/api/v1/admin', adminRouter);

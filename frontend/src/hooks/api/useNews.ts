@@ -4,6 +4,7 @@
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { newsApi, type NewsPostEdit, type NewsPostInput } from '@/lib/api/news';
+import { isCheckinRequired } from '@/hooks/api/useStaff';
 
 export const newsKeys = {
   all: ['news'] as const,
@@ -31,30 +32,51 @@ function useInvalidateNews() {
   return () => queryClient.invalidateQueries({ queryKey: newsKeys.all });
 }
 
+/**
+ * A desk write refused because this browser's staff check-in has lapsed
+ * (Equoria-n256i): re-read the desk, whose own refusal returns the page to
+ * check-in.
+ */
+function useRecheckDeskOnLapse() {
+  const queryClient = useQueryClient();
+  return (error: unknown) => {
+    if (isCheckinRequired(error)) {
+      void queryClient.invalidateQueries({ queryKey: newsKeys.desk });
+    }
+  };
+}
+
 export function useCreateNewsPost() {
   const invalidate = useInvalidateNews();
+  const recheck = useRecheckDeskOnLapse();
   return useMutation({
     mutationFn: (input: NewsPostInput) => newsApi.create(input),
     onSuccess: invalidate,
+    onError: recheck,
   });
 }
 
 export function useUpdateNewsPost() {
   const invalidate = useInvalidateNews();
+  const recheck = useRecheckDeskOnLapse();
   return useMutation({
     mutationFn: ({ id, input }: { id: number; input: NewsPostEdit }) => newsApi.update(id, input),
     onSuccess: invalidate,
+    onError: recheck,
   });
 }
 
 export function useDeleteNewsPost() {
   const invalidate = useInvalidateNews();
+  const recheck = useRecheckDeskOnLapse();
   return useMutation({
     mutationFn: (id: number) => newsApi.remove(id),
     onSuccess: invalidate,
+    onError: recheck,
   });
 }
 
 export function useUploadNewsImage() {
-  return useMutation({ mutationFn: (file: File) => newsApi.uploadImage(file) });
+  const recheck = useRecheckDeskOnLapse();
+  return useMutation({ mutationFn: (file: File) => newsApi.uploadImage(file), onError: recheck });
 }

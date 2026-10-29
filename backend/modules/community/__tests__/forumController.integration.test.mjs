@@ -13,6 +13,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -320,7 +321,9 @@ describe('PATCH /api/v1/forum/threads/:id/pin', () => {
   });
 
   it('returns 200 when admin pins thread', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${adminToken}`] });
+    // Equoria-n256i (owner ruling q289): admin tools need the emailed staff check-in.
+    const device = await checkedInDeviceCookie(adminUser.id);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${adminToken}`, device] });
     const res = await request(app)
       .patch(`/api/v1/forum/threads/${thread.id}/pin`)
       .set('Origin', ORIGIN)

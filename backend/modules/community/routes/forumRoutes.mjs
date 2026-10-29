@@ -13,7 +13,7 @@
 import express from 'express';
 import { body, query, validationResult } from 'express-validator';
 import logger from '../../../utils/logger.mjs';
-import { requireRole } from '../../../middleware/auth.mjs';
+import { requireRole, requireStaffCheckin } from '../../../middleware/auth.mjs';
 import {
   getThreads,
   getThread,
@@ -91,6 +91,6 @@ router.post(
 router.post('/threads/:id/view', incrementView);
 
 // Admin-only pin toggle.
-router.patch('/threads/:id/pin', requireRole('admin'), pinThread);
+router.patch('/threads/:id/pin', requireRole('admin'), requireStaffCheckin('admin'), pinThread);
 
 export default router;

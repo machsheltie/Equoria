@@ -37,8 +37,8 @@ export const CHECKIN_CODE_TTL_MS = 10 * 60 * 1000;
 export const CHECKIN_MAX_ATTEMPTS = 5;
 export const CHECKIN_REQUEST_LIMIT = 3;
 export const CHECKIN_REQUEST_WINDOW_MS = 15 * 60 * 1000;
-export const TRUSTED_DEVICE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-export const STAFF_DEVICE_COOKIE = 'staff_device';
+export const trustedDeviceTtlMs = 30 * 24 * 60 * 60 * 1000;
+export const staffDeviceCookie = 'staff_device';
 
 // bcrypt cost for a 10-minute, 5-guess code: the attempt cap is the real
 // brute-force limit, so the hash only has to keep a leaked row from being
@@ -283,7 +283,7 @@ export async function verifyCheckinCode(account, code) {
     if (consumed.count !== 1) {
       throw new StaffCheckinError('codeInvalid');
     }
-    const deviceExpiresAt = new Date(now.getTime() + TRUSTED_DEVICE_TTL_MS);
+    const deviceExpiresAt = new Date(now.getTime() + trustedDeviceTtlMs);
     const device = await tx.staffTrustedDevice.create({
       data: { userId: fresh.id, tokenHash: hashDeviceToken(rawToken), expiresAt: deviceExpiresAt },
     });

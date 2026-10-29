@@ -38,6 +38,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // so the suite goes red at the source. horse -> groom -> user -> breed
 // (Horse.userId onDelete: Restrict, schema:282).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -48,6 +49,7 @@ birthDate2YearsOld.setFullYear(referenceDate.getFullYear() - 2); // 2023-06-01 (
 
 let user;
 let token;
+let adminDevice; // Equoria-n256i (owner ruling q289): admin tools need the staff check-in
 // 3 grooms: [calm/expert, energetic/novice, methodical/intermediate].
 let grooms = [];
 // 3 horses: [nervous (fearful), confident, developing].
@@ -108,6 +110,7 @@ beforeAll(async () => {
   // Equoria-oey96.37 (owner ruling 2026-07-07): /compatibility is admin-only, so the
   // caller is an admin; ownership checks still apply to her own fixtures.
   token = generateTestToken({ id: user.id, email: user.email, role: 'admin' });
+  adminDevice = await checkedInDeviceCookie(user.id);
 
   const groomData = [
     {
@@ -244,7 +247,7 @@ beforeAll(async () => {
   // Equoria-plw0h: forward the accessToken cookie so getCsrfToken's
   // tryPopulateUserFromAccessCookie binds issuance to user.id — the same
   // sessionIdentifier the Bearer-authed mutations below resolve to.
-  csrfPair = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+  csrfPair = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`, adminDevice] });
 }, 60000);
 
 afterAll(() => cleanup.run(), 60000);
@@ -256,7 +259,8 @@ describe('GET /api/compatibility/config', () => {
     const res = await request(app)
       .get('/api/v1/compatibility/config')
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -275,7 +279,8 @@ describe('GET /api/compatibility/config', () => {
     const res = await request(app)
       .get('/api/v1/compatibility/config')
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -297,7 +302,7 @@ describe('POST /api/compatibility/calculate', () => {
     // to. Forward the access cookie so getCsrfToken's
     // tryPopulateUserFromAccessCookie binds the token to user.id; otherwise
     // issuance falls back to the salt and validation 403s (csrf.mjs:95-108).
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`, adminDevice] });
     const res = await request(app)
       .post('/api/v1/compatibility/calculate')
       .set('Origin', ORIGIN)
@@ -316,7 +321,7 @@ describe('POST /api/compatibility/calculate', () => {
   });
 
   it('returns 400 when required fields are missing', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`, adminDevice] });
     const res = await request(app)
       .post('/api/v1/compatibility/calculate')
       .set('Origin', ORIGIN)
@@ -414,7 +419,8 @@ describe('GET /api/compatibility/factors/:groomId/:horseId', () => {
     const res = await request(app)
       .get(`/api/v1/compatibility/factors/${grooms[0].id}/${horses[0].id}`)
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -425,7 +431,8 @@ describe('GET /api/compatibility/factors/:groomId/:horseId', () => {
     const res = await request(app)
       .get(`/api/v1/compatibility/factors/999999999/${horses[0].id}`)
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(404);
   });
@@ -447,7 +454,8 @@ describe('GET /api/compatibility/factors/:groomId/:horseId', () => {
     const res = await request(app)
       .get(`/api/v1/compatibility/factors/${calmGroom.id}/${fearfulHorse.id}`)
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -467,7 +475,8 @@ describe('GET /api/compatibility/factors/:groomId/:horseId', () => {
     const res = await request(app)
       .get(`/api/v1/compatibility/factors/invalid/${horses[0].id}`)
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
@@ -481,7 +490,8 @@ describe('GET /api/compatibility/trends/:groomId/:horseId', () => {
     const res = await request(app)
       .get(`/api/v1/compatibility/trends/${grooms[0].id}/${horses[0].id}`)
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -492,7 +502,8 @@ describe('GET /api/compatibility/trends/:groomId/:horseId', () => {
     const res = await request(app)
       .get(`/api/v1/compatibility/trends/999999999/${horses[0].id}`)
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(404);
   });
@@ -514,7 +525,8 @@ describe('GET /api/compatibility/trends/:groomId/:horseId', () => {
     const res = await request(app)
       .get(`/api/v1/compatibility/trends/${groom.id}/${horse.id}`)
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -531,7 +543,8 @@ describe('GET /api/compatibility/trends/:groomId/:horseId ownership and pair sco
     const res = await request(app)
       .get(`/api/v1/compatibility/trends/${foreignGroom.id}/${horses[0].id}`)
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(404);
     expect(res.body.data).toBeUndefined();
@@ -541,7 +554,8 @@ describe('GET /api/compatibility/trends/:groomId/:horseId ownership and pair sco
     const res = await request(app)
       .get(`/api/v1/compatibility/trends/${grooms[0].id}/${foreignHorse.id}`)
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(404);
     expect(res.body.data).toBeUndefined();
@@ -568,7 +582,8 @@ describe('GET /api/compatibility/trends/:groomId/:horseId ownership and pair sco
     const res = await request(app)
       .get(`/api/v1/compatibility/trends/${pairGroom.id}/${pairHorse.id}`)
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', adminDevice);
 
     expect(res.status).toBe(200);
     expect(res.body.data.dataPoints).toBe(3);

@@ -6,6 +6,13 @@
  * Reached from the News page's "Write for the News" link, shown only to
  * admin-level accounts; anyone else gets the ordinary not-found page. The
  * server decides which post types this writer may use.
+ *
+ * Like every admin tool, the desk needs the emailed staff check-in on this
+ * browser (Equoria-n256i, owner ruling q289). When the server answers
+ * staffCheckinRequired (never checked in here, or the 30 days ran out), the
+ * desk shows the same check-in the Steward's Office uses, then opens. As in
+ * the office (q263), a failed background refresh keeps the desk on screen
+ * with the last good answer.
  */
 
 import { useState } from 'react';
@@ -15,6 +22,8 @@ import { Button } from '@/components/ui/button';
 import { ErrorState, InlineError, SectionLoading } from '@/components/ui/state';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDeleteNewsPost, useNewsDesk } from '@/hooks/api/useNews';
+import { isCheckinRequired } from '@/hooks/api/useStaff';
+import StaffCheckIn from '@/components/staff/StaffCheckIn';
 import { actionMessageFor } from '@/lib/http/actionMessage';
 import { userMessageFor } from '@/lib/http/userMessage';
 import type { NewsDeskPost, StaffNewsPostType } from '@/lib/api/news';
@@ -97,7 +106,9 @@ export default function NewsDeskPage() {
   let content: React.ReactNode;
   if (desk.isPending) {
     content = <SectionLoading label="Opening the News Desk…" />;
-  } else if (desk.isError) {
+  } else if (isCheckinRequired(desk.error)) {
+    content = <StaffCheckIn onCheckedIn={() => void desk.refetch()} />;
+  } else if (desk.data === undefined) {
     const { message, retryable } = userMessageFor(desk.error);
     content = (
       <ErrorState

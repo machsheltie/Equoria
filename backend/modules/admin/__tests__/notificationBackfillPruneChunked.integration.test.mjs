@@ -25,6 +25,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf, attachCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { notificationRetentionCount, pruneNotificationsForAllUsers } from '../../../utils/notificationService.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
 const ROUTE = '/api/v1/admin/notifications/backfill-prune';
 const ORIGIN = 'http://localhost:3000';
@@ -45,6 +46,7 @@ describe('Admin notification backfill-prune, chunked and resumable (Equoria-ctyi
   const createdUserIds = [];
   const cleanup = createCleanupTracker();
   let adminToken;
+  let adminDevice;
 
   const makeUser = async (label, extra = {}) => {
     const u = await prisma.user.create({
@@ -99,7 +101,7 @@ describe('Admin notification backfill-prune, chunked and resumable (Equoria-ctyi
   const postAsAdmin = async body => {
     const csrf = await fetchCsrf(app, {
       origin: ORIGIN,
-      extraCookies: [`accessToken=${adminToken}`],
+      extraCookies: [`accessToken=${adminToken}`, adminDevice],
     });
     return attachCsrf(
       request(app).post(ROUTE).set('Origin', ORIGIN).set('Authorization', `Bearer ${adminToken}`),
@@ -110,6 +112,8 @@ describe('Admin notification backfill-prune, chunked and resumable (Equoria-ctyi
   beforeAll(async () => {
     const admin = await makeUser('admin', { role: 'admin' });
     adminToken = generateTestToken({ id: admin.id, role: 'admin' });
+    // Equoria-n256i (owner ruling q289): admin tools need the emailed staff check-in.
+    adminDevice = await checkedInDeviceCookie(admin.id);
     for (const f of fixtures) {
       await makeUser(f.suffix, { id: fixtureId(f.suffix) });
     }
