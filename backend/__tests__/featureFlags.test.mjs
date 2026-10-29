@@ -74,12 +74,12 @@ describe('isFlagDefined', () => {
 });
 
 describe('getFlagsByType', () => {
-  it('returns an array of flag names for BOOLEAN type', () => {
-    const boolFlags = getFlagsByType('BOOLEAN');
+  it('returns an array of flag names for boolean type', () => {
+    const boolFlags = getFlagsByType('boolean');
     expect(Array.isArray(boolFlags)).toBe(true);
     expect(boolFlags.length).toBeGreaterThan(0);
     for (const name of boolFlags) {
-      expect(FLAG_DEFINITIONS[name].type).toBe('BOOLEAN');
+      expect(FLAG_DEFINITIONS[name].type).toBe('boolean');
     }
   });
 
@@ -87,8 +87,8 @@ describe('getFlagsByType', () => {
     expect(getFlagsByType('MADE_UP_TYPE')).toEqual([]);
   });
 
-  it('PERCENTAGE flags all have numeric defaultValues', () => {
-    const pctFlags = getFlagsByType('PERCENTAGE');
+  it('percentage flags all have numeric defaultValues', () => {
+    const pctFlags = getFlagsByType('percentage');
     for (const name of pctFlags) {
       expect(typeof FLAG_DEFINITIONS[name].defaultValue).toBe('number');
     }

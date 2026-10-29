@@ -135,7 +135,7 @@ describe('createRedisCircuitBreaker', () => {
     const health = result.getHealthStatus();
     expect(typeof health).toBe('object');
     expect(typeof health.status).toBe('string');
-    expect(health.circuitState).toBe('CLOSED');
+    expect(health.circuitState).toBe('closed');
   });
 
   it('returned object has getMetrics function', () => {
@@ -209,7 +209,7 @@ describe('getMetrics()', () => {
     expect(m.circuitOpenCount).toBe(0);
     expect(m.circuitCloseCount).toBe(0);
     expect(m.circuitHalfOpenCount).toBe(0);
-    expect(m.currentState).toBe('CLOSED');
+    expect(m.currentState).toBe('closed');
     expect(m.lastStateChange).toBeNull();
   });
 
@@ -238,7 +238,7 @@ describe('resetCircuit()', () => {
     expect(m.successCount).toBe(0);
     expect(m.failureCount).toBe(0);
     expect(m.timeoutCount).toBe(0);
-    expect(m.currentState).toBe('CLOSED');
+    expect(m.currentState).toBe('closed');
   });
 
   it('isCircuitOpen() returns false after resetCircuit()', () => {
@@ -292,17 +292,17 @@ describe('CircuitMetrics — event handlers cover incrementSuccess/Failure/Timeo
     const { cb, breaker } = makeBreaker();
     breaker.emit('open');
     const m = cb.getMetrics();
-    expect(m.currentState).toBe('OPEN');
+    expect(m.currentState).toBe('open');
     expect(m.circuitOpenCount).toBe(1);
     expect(m.lastStateChange).not.toBeNull();
     expect(cb.isCircuitOpen()).toBe(true);
   });
 
-  it('emitting "halfOpen" sets state to HALF_OPEN and increments circuitHalfOpenCount (lines 162-163, 91-92)', () => {
+  it('emitting "halfOpen" sets state to halfOpen and increments circuitHalfOpenCount (lines 162-163, 91-92)', () => {
     const { cb, breaker } = makeBreaker();
     breaker.emit('halfOpen');
     const m = cb.getMetrics();
-    expect(m.currentState).toBe('HALF_OPEN');
+    expect(m.currentState).toBe('halfOpen');
     expect(m.circuitHalfOpenCount).toBe(1);
     expect(cb.isCircuitOpen()).toBe(false);
   });
@@ -312,7 +312,7 @@ describe('CircuitMetrics — event handlers cover incrementSuccess/Failure/Timeo
     breaker.emit('open');
     breaker.emit('close');
     const m = cb.getMetrics();
-    expect(m.currentState).toBe('CLOSED');
+    expect(m.currentState).toBe('closed');
     expect(m.circuitCloseCount).toBe(1);
   });
 
@@ -323,7 +323,7 @@ describe('CircuitMetrics — event handlers cover incrementSuccess/Failure/Timeo
     breaker.emit('open');
     const h = cb.getHealthStatus();
     expect(h.status).toBe('degraded');
-    expect(h.circuitState).toBe('OPEN');
+    expect(h.circuitState).toBe('open');
     expect(h.metrics.totalRequests).toBe(2);
     expect(h.metrics.errorRate).toBe('50.00%');
     expect(h.circuitHistory.openCount).toBe(1);

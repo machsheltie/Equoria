@@ -158,7 +158,7 @@ export function emitDegradationAlert(keyPrefix) {
   logger.error(message, {
     keyPrefix,
     throttleWindowMs: ALERT_THROTTLE_MS,
-    alertType: 'redis_degradation_fail_closed',
+    alertType: 'redisDegradationFailClosed',
   });
 }
 
@@ -424,10 +424,10 @@ export function getRateLimitingHealth() {
     };
 
     // Determine overall rate limiting status
-    if (circuitHealth.circuitState === 'OPEN') {
+    if (circuitHealth.circuitState === 'open') {
       health.status = 'degraded'; // Using in-memory fallback
       health.message = 'Rate limiting degraded - using in-memory fallback (per-process)';
-    } else if (circuitHealth.circuitState === 'HALF_OPEN') {
+    } else if (circuitHealth.circuitState === 'halfOpen') {
       health.status = 'recovering'; // Testing Redis recovery
       health.message = 'Rate limiting recovering - testing Redis connection';
     } else {

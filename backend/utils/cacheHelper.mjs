@@ -136,7 +136,7 @@ export function maybeWarnCacheWithoutRedis(redisConnected) {
       'on others — a cache-coherency risk (not a security hole, so the node still ' +
       'boots). Fix REDIS_HOST/REDIS_URL availability, or unset CACHE_REQUIRE_REDIS ' +
       'to silence this warning and accept per-process caching.',
-    { gate: 'CACHE_REQUIRE_REDIS', alertType: 'cache_redis_degradation' },
+    { gate: 'CACHE_REQUIRE_REDIS', alertType: 'cacheRedisDegradation' },
   );
   return true;
 }

@@ -14,7 +14,7 @@ import { API_BASE_URL } from '@/lib/http/apiClient';
 /**
  * Feature flag types
  */
-export type FlagType = 'BOOLEAN' | 'PERCENTAGE' | 'STRING' | 'USER_LIST';
+export type FlagType = 'boolean' | 'percentage' | 'string' | 'userList';
 
 export interface FeatureFlag {
   name: string;

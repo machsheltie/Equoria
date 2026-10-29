@@ -13,7 +13,7 @@
  *
  * AC coverage:
  *   AC1 — no .skip in main file  (enforced by DS removing all .skip annotations)
- *   AC2 — full CLOSED→OPEN→HALF_OPEN→CLOSED cycle (AT-04)
+ *   AC2 — full CLOSED→OPEN→halfOpen→CLOSED cycle (AT-04)
  *   AC3 — no real setTimeout for synchronisation (every test here uses fake timers only)
  *   AC4 — deterministic: each AT must pass consistently
  *   AC5 — no regressions; suite remains green
@@ -26,7 +26,7 @@
  * resumes our test, the entire synchronous chain — including EventEmitter listeners and
  * metrics updates — has already executed. No extra flush is required.
  *
- * For resetTimeout-based transitions (OPEN → HALF_OPEN) we advance fake timers:
+ * For resetTimeout-based transitions (OPEN → halfOpen) we advance fake timers:
  *   jest.advanceTimersByTime(resetTimeout + 10)
  * This fires opossum's internal `setTimeout(() => _halfOpen, resetTimeout)` synchronously,
  * which calls `circuit.emit('halfOpen')` synchronously. A single `await Promise.resolve()`
@@ -192,15 +192,15 @@ describe('AT-01: CLOSED → OPEN transition', () => {
 
     const metrics = circuitBreaker.getMetrics();
     expect(metrics.failureCount).toBeGreaterThanOrEqual(3);
-    expect(metrics.currentState).toBe('OPEN');
+    expect(metrics.currentState).toBe('open');
     expect(circuitBreaker.isCircuitOpen()).toBe(true);
   });
 });
 
-// ── AT-02: HALF_OPEN state after resetTimeout ─────────────────────────────────
+// ── AT-02: halfOpen state after resetTimeout ─────────────────────────────────
 
-describe('AT-02: OPEN → HALF_OPEN transition via resetTimeout', () => {
-  it('enters HALF_OPEN state after resetTimeout elapses', async () => {
+describe('AT-02: OPEN → halfOpen transition via resetTimeout', () => {
+  it('enters halfOpen state after resetTimeout elapses', async () => {
     const resetTimeout = 5000;
 
     circuitBreaker = createRedisCircuitBreaker(mockRedisClient, {
@@ -214,14 +214,14 @@ describe('AT-02: OPEN → HALF_OPEN transition via resetTimeout', () => {
 
     // Open the circuit
     await openCircuit(circuitBreaker, 'get', 4);
-    expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
+    expect(circuitBreaker.getMetrics().currentState).toBe('open');
 
     // Advance past resetTimeout — fires opossum's internal _halfOpen timer synchronously
     jest.advanceTimersByTime(resetTimeout + 100);
     await flushMicrotasks();
 
     const metrics = circuitBreaker.getMetrics();
-    expect(metrics.currentState).toBe('HALF_OPEN');
+    expect(metrics.currentState).toBe('halfOpen');
     expect(metrics.circuitHalfOpenCount).toBeGreaterThanOrEqual(1);
   });
 });
@@ -247,9 +247,9 @@ describe('AT-03: Failure count is tracked accurately', () => {
   });
 });
 
-// ── AT-04: Full CLOSED→OPEN→HALF_OPEN→CLOSED cycle ───────────────────────────
+// ── AT-04: Full CLOSED→OPEN→halfOpen→CLOSED cycle ───────────────────────────
 
-describe('AT-04: Full state cycle CLOSED → OPEN → HALF_OPEN → CLOSED', () => {
+describe('AT-04: Full state cycle CLOSED → OPEN → halfOpen → CLOSED', () => {
   it('traverses the complete circuit state machine deterministically', async () => {
     const resetTimeout = 5000;
 
@@ -262,26 +262,26 @@ describe('AT-04: Full state cycle CLOSED → OPEN → HALF_OPEN → CLOSED', () 
     });
 
     // ① Start CLOSED
-    expect(circuitBreaker.getMetrics().currentState).toBe('CLOSED');
+    expect(circuitBreaker.getMetrics().currentState).toBe('closed');
 
     // ② Fail until OPEN
     mockRedisClient.get.setThrow(connRefusedError());
     await openCircuit(circuitBreaker, 'get', 4);
-    expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
+    expect(circuitBreaker.getMetrics().currentState).toBe('open');
 
-    // ③ Advance time → HALF_OPEN
+    // ③ Advance time → halfOpen
     jest.advanceTimersByTime(resetTimeout + 100);
     await flushMicrotasks();
-    expect(circuitBreaker.getMetrics().currentState).toBe('HALF_OPEN');
+    expect(circuitBreaker.getMetrics().currentState).toBe('halfOpen');
 
-    // ④ Succeed in HALF_OPEN → triggers CLOSED
+    // ④ Succeed in halfOpen → triggers CLOSED
     mockRedisClient.get.setReturn('recovered');
     for (let i = 0; i < 3; i++) {
       await fire(circuitBreaker.operations.get);
     }
 
     const finalMetrics = circuitBreaker.getMetrics();
-    expect(finalMetrics.currentState).toBe('CLOSED');
+    expect(finalMetrics.currentState).toBe('closed');
     expect(finalMetrics.circuitOpenCount).toBeGreaterThanOrEqual(1);
     expect(finalMetrics.circuitHalfOpenCount).toBeGreaterThanOrEqual(1);
     expect(finalMetrics.circuitCloseCount).toBeGreaterThanOrEqual(1);

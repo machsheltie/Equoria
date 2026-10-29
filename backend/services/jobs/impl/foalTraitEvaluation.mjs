@@ -413,7 +413,7 @@ export async function logTraitRevelation(
 export async function logAuditSummary(summary) {
   try {
     const auditSummary = {
-      type: 'DAILY_TRAIT_EVALUATION_SUMMARY',
+      type: 'dailyTraitEvaluationSummary',
       timestamp: summary.timestamp.toISOString(),
       statistics: {
         foalsProcessed: summary.foalsProcessed,

@@ -94,7 +94,7 @@ function emitReaperAlert(staleShows, releasedIds, quarantinedIds) {
     logger.error(
       `[ShowExecutionReaper] ALERT: reaper fired — ${staleShows.length} show(s) stranded in 'executing' > 2h (ids: ${staleShows.map(s => s.id).join(', ')})${quarantinedIds.length > 0 ? `; QUARANTINED after ${maxExecutionAttempts} failed attempts, needs Owner/Admin: ${quarantinedIds.join(', ')}` : ''}`,
       {
-        alertType: 'show_execution_reaper_fired',
+        alertType: 'showExecutionReaperFired',
         eventType: 'operational',
         staleShowsFound: staleShows.length,
         releasedCount: releasedIds.length,

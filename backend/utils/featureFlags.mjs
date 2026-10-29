@@ -7,10 +7,10 @@
  * FF_<SCOPE>_<FEATURE_NAME>
  *
  * Types:
- * - BOOLEAN: Simple on/off toggle
- * - PERCENTAGE: Gradual rollout (0-100)
- * - STRING: A/B variant selection
- * - USER_LIST: Comma-separated user IDs/emails
+ * - boolean: Simple on/off toggle
+ * - percentage: Gradual rollout (0-100)
+ * - string: A/B variant selection
+ * - userList: Comma-separated user IDs/emails
  *
  * @module utils/featureFlags
  */
@@ -24,17 +24,17 @@ export const FLAG_DEFINITIONS = {
   // Authentication Flags
   // ============================================
   FF_AUTH_PASSWORDLESS_LOGIN: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable passwordless login via magic link',
     defaultValue: false,
   },
   FF_AUTH_MFA_ENABLED: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable multi-factor authentication',
     defaultValue: false,
   },
   FF_AUTH_SOCIAL_LOGIN: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable social login (Google, Apple, etc.)',
     defaultValue: false,
   },
@@ -43,12 +43,12 @@ export const FLAG_DEFINITIONS = {
   // Breeding System Flags
   // ============================================
   FF_BREEDING_EPIGENETICS: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable advanced epigenetics system',
     defaultValue: true, // Already implemented
   },
   FF_BREEDING_NEW_UI: {
-    type: 'PERCENTAGE',
+    type: 'percentage',
     description: 'Percentage rollout for new breeding interface',
     defaultValue: 0,
   },
@@ -57,17 +57,17 @@ export const FLAG_DEFINITIONS = {
   // Competition System Flags
   // ============================================
   FF_COMPETITION_TEAM_EVENTS: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable team-based competition events',
     defaultValue: false,
   },
   FF_COMPETITION_LIVE_SCORING: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable real-time competition scoring',
     defaultValue: false,
   },
   FF_COMPETITION_SEASONAL: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable seasonal championships',
     defaultValue: false,
   },
@@ -76,12 +76,12 @@ export const FLAG_DEFINITIONS = {
   // Training System Flags
   // ============================================
   FF_TRAINING_NEW_ALGORITHM: {
-    type: 'PERCENTAGE',
+    type: 'percentage',
     description: 'Percentage rollout for new training stat algorithm',
     defaultValue: 0,
   },
   FF_TRAINING_MINI_GAMES: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable training mini-games',
     defaultValue: false,
   },
@@ -90,12 +90,12 @@ export const FLAG_DEFINITIONS = {
   // Groom System Flags
   // ============================================
   FF_GROOM_SPECIALIZATION: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable groom specialization system',
     defaultValue: true, // Already implemented
   },
   FF_GROOM_LEVELING: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable groom experience and leveling',
     defaultValue: true, // Already implemented
   },
@@ -104,17 +104,17 @@ export const FLAG_DEFINITIONS = {
   // UI/UX Flags
   // ============================================
   FF_UI_DARK_MODE: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable dark mode UI option',
     defaultValue: false,
   },
   FF_UI_ANIMATIONS: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable UI animations',
     defaultValue: true,
   },
   FF_UI_NEW_DASHBOARD: {
-    type: 'PERCENTAGE',
+    type: 'percentage',
     description: 'Percentage rollout for new dashboard design',
     defaultValue: 0,
   },
@@ -123,12 +123,12 @@ export const FLAG_DEFINITIONS = {
   // Marketplace Flags
   // ============================================
   FF_MARKETPLACE_ENABLED: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable horse marketplace',
     defaultValue: false,
   },
   FF_MARKETPLACE_AUCTIONS: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable auction functionality',
     defaultValue: false,
   },
@@ -137,7 +137,7 @@ export const FLAG_DEFINITIONS = {
   // Beta Flags
   // ============================================
   FF_BETA_FEATURES: {
-    type: 'USER_LIST',
+    type: 'userList',
     description: 'Comma-separated list of beta tester user IDs',
     defaultValue: '',
   },
@@ -146,12 +146,12 @@ export const FLAG_DEFINITIONS = {
   // Performance/Debug Flags
   // ============================================
   FF_DEBUG_LOGGING: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable verbose debug logging',
     defaultValue: false,
   },
   FF_PERFORMANCE_TRACING: {
-    type: 'BOOLEAN',
+    type: 'boolean',
     description: 'Enable performance tracing',
     defaultValue: false,
   },
@@ -160,12 +160,12 @@ export const FLAG_DEFINITIONS = {
   // A/B Test Flags
   // ============================================
   FF_AB_LANDING_PAGE: {
-    type: 'STRING',
+    type: 'string',
     description: 'Landing page variant (control, variant_a, variant_b)',
     defaultValue: 'control',
   },
   FF_AB_ONBOARDING_FLOW: {
-    type: 'STRING',
+    type: 'string',
     description: 'Onboarding flow variant',
     defaultValue: 'control',
   },
@@ -199,7 +199,7 @@ export function isFlagDefined(flagName) {
 
 /**
  * Get all flag names by type
- * @param {string} type - BOOLEAN, PERCENTAGE, STRING, or USER_LIST
+ * @param {string} type - boolean, percentage, string, or userList
  * @returns {string[]}
  */
 export function getFlagsByType(type) {

@@ -62,7 +62,7 @@ describe('isFeatureEnabled', () => {
     expect(result).toBe(false);
   });
 
-  it('is deterministic per userId for PERCENTAGE flags', async () => {
+  it('is deterministic per userId for percentage flags', async () => {
     // Set a percentage flag at 50%
     process.env.FF_PERFORMANCE_REDIS_CACHE = '50';
     const userId = 'user-abc-123';
@@ -156,10 +156,10 @@ describe('overrideFlag and clearOverrides', () => {
 });
 
 // ── featureFlagService — uncovered branches (Equoria-jkht) ────────────────────
-// USER_LIST type branches: userId match, email match, no match.
-// Default truthy string path: STRING-type flag with truthy default value.
+// userList type branches: userId match, email match, no match.
+// Default truthy string path: string-type flag with truthy default value.
 
-describe('featureFlagService — USER_LIST and default truthy branches (Equoria-jkht)', () => {
+describe('featureFlagService — userList and default truthy branches (Equoria-jkht)', () => {
   beforeEach(() => {
     resetEvaluationStats();
     clearOverrides();
@@ -171,26 +171,26 @@ describe('featureFlagService — USER_LIST and default truthy branches (Equoria-
     clearOverrides();
   });
 
-  it('USER_LIST: returns true when context.userId is in whitelist', async () => {
+  it('userList: returns true when context.userId is in whitelist', async () => {
     process.env.FF_BETA_FEATURES = 'user-123,user-456';
     const result = await isFeatureEnabled('FF_BETA_FEATURES', { userId: 'user-123' });
     expect(result).toBe(true);
   });
 
-  it('USER_LIST: returns true when context.email is in whitelist', async () => {
+  it('userList: returns true when context.email is in whitelist', async () => {
     process.env.FF_BETA_FEATURES = 'admin@test.com,tester@test.com';
     const result = await isFeatureEnabled('FF_BETA_FEATURES', { email: 'tester@test.com' });
     expect(result).toBe(true);
   });
 
-  it('USER_LIST: returns false when neither userId nor email matches whitelist', async () => {
+  it('userList: returns false when neither userId nor email matches whitelist', async () => {
     process.env.FF_BETA_FEATURES = 'user-999';
     const result = await isFeatureEnabled('FF_BETA_FEATURES', { userId: 'user-000', email: 'other@test.com' });
     expect(result).toBe(false);
   });
 
-  it('Default truthy path: STRING-type flag with truthy default returns true', async () => {
-    // FF_AB_LANDING_PAGE has type STRING and defaultValue 'control' (truthy string)
+  it('Default truthy path: string-type flag with truthy default returns true', async () => {
+    // FF_AB_LANDING_PAGE has type string and defaultValue 'control' (truthy string)
     // isFeatureEnabled falls through to Boolean(rawValue) → true
     delete process.env.FF_AB_LANDING_PAGE;
     const result = await isFeatureEnabled('FF_AB_LANDING_PAGE');
@@ -205,8 +205,8 @@ describe('featureFlagService — USER_LIST and default truthy branches (Equoria-
     expect(stats.FF_AUTH_PASSWORDLESS_LOGIN.enabledRate).toBe(0);
   });
 
-  it('PERCENTAGE path with real userId covers context.userId || "anonymous" left side (Equoria-rr7)', async () => {
-    // FF_BREEDING_NEW_UI is PERCENTAGE type — calling with real userId triggers line 114 left branch
+  it('percentage path with real userId covers context.userId || "anonymous" left side (Equoria-rr7)', async () => {
+    // FF_BREEDING_NEW_UI is percentage type — calling with real userId triggers line 114 left branch
     process.env.FF_BREEDING_NEW_UI = '100';
     const result = await isFeatureEnabled('FF_BREEDING_NEW_UI', { userId: 'user-real-id-rr7' });
     expect(typeof result).toBe('boolean');

@@ -60,7 +60,7 @@ class CircuitMetrics {
       circuitCloseCount: 0,
       circuitHalfOpenCount: 0,
       lastStateChange: null,
-      currentState: 'CLOSED', // CLOSED, OPEN, HALF_OPEN
+      currentState: 'closed', // closed, open, halfOpen
     };
   }
 
@@ -84,11 +84,11 @@ class CircuitMetrics {
     this.stats.currentState = state;
     this.stats.lastStateChange = new Date().toISOString();
 
-    if (state === 'OPEN') {
+    if (state === 'open') {
       this.stats.circuitOpenCount++;
-    } else if (state === 'CLOSED') {
+    } else if (state === 'closed') {
       this.stats.circuitCloseCount++;
-    } else if (state === 'HALF_OPEN') {
+    } else if (state === 'halfOpen') {
       this.stats.circuitHalfOpenCount++;
     }
   }
@@ -107,7 +107,7 @@ class CircuitMetrics {
       circuitCloseCount: 0,
       circuitHalfOpenCount: 0,
       lastStateChange: null,
-      currentState: 'CLOSED',
+      currentState: 'closed',
     };
   }
 }
@@ -149,7 +149,7 @@ export function createRedisCircuitBreaker(redisClient, options = {}) {
 
     // Event: Circuit opened (failure threshold exceeded)
     breaker.on('open', () => {
-      metrics.updateState('OPEN');
+      metrics.updateState('open');
       logger.warn(`[RedisCircuitBreaker] Circuit OPENED for operation: ${operation}`, {
         failureCount: metrics.stats.failureCount,
         successCount: metrics.stats.successCount,
@@ -159,7 +159,7 @@ export function createRedisCircuitBreaker(redisClient, options = {}) {
 
     // Event: Circuit half-open (testing recovery)
     breaker.on('halfOpen', () => {
-      metrics.updateState('HALF_OPEN');
+      metrics.updateState('halfOpen');
       logger.info(`[RedisCircuitBreaker] Circuit HALF-OPEN for operation: ${operation}`, {
         testRequests: config.halfOpenRequests,
       });
@@ -167,7 +167,7 @@ export function createRedisCircuitBreaker(redisClient, options = {}) {
 
     // Event: Circuit closed (recovery successful)
     breaker.on('close', () => {
-      metrics.updateState('CLOSED');
+      metrics.updateState('closed');
       logger.info(`[RedisCircuitBreaker] Circuit CLOSED for operation: ${operation}`, {
         successCount: metrics.stats.successCount,
       });
@@ -219,7 +219,7 @@ export function createRedisCircuitBreaker(redisClient, options = {}) {
       totalRequests > 0 ? ((stats.failureCount / totalRequests) * 100).toFixed(2) : 0;
 
     return {
-      status: stats.currentState === 'CLOSED' ? 'healthy' : 'degraded',
+      status: stats.currentState === 'closed' ? 'healthy' : 'degraded',
       circuitState: stats.currentState,
       metrics: {
         totalRequests,
@@ -270,7 +270,7 @@ export function createRedisCircuitBreaker(redisClient, options = {}) {
    * Returns true if any operation has an open circuit
    */
   function isCircuitOpen() {
-    return metrics.stats.currentState === 'OPEN';
+    return metrics.stats.currentState === 'open';
   }
 
   return {

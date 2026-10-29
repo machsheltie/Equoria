@@ -382,7 +382,7 @@ export class CronJobMonitor {
           .map(j => `${j.jobName}(${j.staleForHours}h)`)
           .join(', ')}`,
         {
-          alertType: 'cron_stale_heartbeat',
+          alertType: 'cronStaleHeartbeat',
           eventType: 'operational',
           count: toAlert.length,
           thresholdHours: Math.round(STALE_ALERT_THRESHOLD_MS / (60 * 60 * 1000)),

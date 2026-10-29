@@ -109,7 +109,7 @@ export async function isFeatureEnabled(flagName, context = {}) {
     }
 
     // Percentage rollout
-    if (typeof rawValue === 'number' && definition?.type === 'PERCENTAGE') {
+    if (typeof rawValue === 'number' && definition?.type === 'percentage') {
       const percentage = rawValue;
       const userId = context.userId || 'anonymous';
       const bucket = hashToPercentage(`${flagName}:${userId}`);
@@ -119,7 +119,7 @@ export async function isFeatureEnabled(flagName, context = {}) {
     }
 
     // User whitelist
-    if (definition?.type === 'USER_LIST' && typeof rawValue === 'string') {
+    if (definition?.type === 'userList' && typeof rawValue === 'string') {
       const whitelist = rawValue.split(',').map(s => s.trim());
       const enabled = whitelist.includes(context.userId) || whitelist.includes(context.email);
       trackEvaluation(flagName, enabled);
@@ -169,7 +169,7 @@ export async function getAllFlags(context = {}) {
   for (const flagName of Object.keys(FLAG_DEFINITIONS)) {
     const definition = FLAG_DEFINITIONS[flagName];
 
-    if (definition.type === 'STRING') {
+    if (definition.type === 'string') {
       flags[flagName] = await getFeatureVariant(flagName);
     } else {
       flags[flagName] = await isFeatureEnabled(flagName, context);

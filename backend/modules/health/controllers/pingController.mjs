@@ -56,7 +56,7 @@ export const createHealthCheckHandler =
       };
 
       // If Redis circuit is open, mark overall health as degraded but still return 200
-      if (cacheStats.circuitBreaker?.circuitState === 'OPEN') {
+      if (cacheStats.circuitBreaker?.circuitState === 'open') {
         health.status = 'degraded';
         health.services.redis.status = 'degraded';
       }
@@ -112,10 +112,10 @@ export const handleRedisHealthCheck = async (req, res) => {
     if (!cacheStats.redisAvailable) {
       status = 'unavailable';
       httpStatus = 503;
-    } else if (cacheStats.circuitBreaker?.circuitState === 'OPEN') {
+    } else if (cacheStats.circuitBreaker?.circuitState === 'open') {
       status = 'degraded';
       httpStatus = 503;
-    } else if (cacheStats.circuitBreaker?.circuitState === 'HALF_OPEN') {
+    } else if (cacheStats.circuitBreaker?.circuitState === 'halfOpen') {
       status = 'recovering';
       httpStatus = 200;
     }

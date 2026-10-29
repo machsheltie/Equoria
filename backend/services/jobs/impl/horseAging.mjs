@@ -76,7 +76,7 @@ export async function processHorseAging(service, options = {}) {
 export async function logAgingSummary(summary) {
   try {
     const auditSummary = {
-      type: 'DAILY_HORSE_AGING_SUMMARY',
+      type: 'dailyHorseAgingSummary',
       timestamp: summary.timestamp.toISOString(),
       statistics: {
         horsesProcessed: summary.totalProcessed,

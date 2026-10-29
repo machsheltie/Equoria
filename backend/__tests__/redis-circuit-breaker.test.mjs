@@ -5,7 +5,7 @@
  * Tests circuit state transitions, failure scenarios, fallback strategies, and metrics.
  *
  * Test Coverage:
- * - Circuit state transitions (CLOSED → OPEN → HALF_OPEN → CLOSED)
+ * - Circuit state transitions (CLOSED → OPEN → halfOpen → CLOSED)
  * - Redis failure scenarios (connection refused, timeout, intermittent failures)
  * - Fallback to in-memory cache when circuit is open
  * - Metrics accuracy and health monitoring
@@ -205,7 +205,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       circuitBreaker = createRedisCircuitBreaker(mockRedisClient);
 
       const metrics = circuitBreaker.getMetrics();
-      expect(metrics.currentState).toBe('CLOSED');
+      expect(metrics.currentState).toBe('closed');
       expect(circuitBreaker.isCircuitOpen()).toBe(false);
     });
 
@@ -224,11 +224,11 @@ describe('Redis Circuit Breaker Integration Tests', () => {
 
       const metrics = circuitBreaker.getMetrics();
       expect(metrics.failureCount).toBeGreaterThanOrEqual(10);
-      expect(metrics.currentState).toBe('OPEN');
+      expect(metrics.currentState).toBe('open');
       expect(circuitBreaker.isCircuitOpen()).toBe(true);
     });
 
-    it('should enter HALF_OPEN state after reset timeout', async () => {
+    it('should enter halfOpen state after reset timeout', async () => {
       const resetTimeout = 500;
       circuitBreaker = createRedisCircuitBreaker(mockRedisClient, {
         errorThresholdPercentage: 50,
@@ -238,18 +238,18 @@ describe('Redis Circuit Breaker Integration Tests', () => {
 
       mockRedisClient.get.setThrow(connRefusedError('Connection failed'));
       await openCircuit(circuitBreaker, 'get', 6); // exceed volumeThreshold=5
-      expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
+      expect(circuitBreaker.getMetrics().currentState).toBe('open');
 
       // Advance past resetTimeout — fires opossum's internal _halfOpen timer synchronously.
       jest.advanceTimersByTime(resetTimeout + 100);
       await flushMicrotasks();
 
       const metrics = circuitBreaker.getMetrics();
-      expect(metrics.currentState).toBe('HALF_OPEN');
+      expect(metrics.currentState).toBe('halfOpen');
       expect(metrics.circuitHalfOpenCount).toBeGreaterThanOrEqual(1);
     });
 
-    it('should close circuit after successful recovery in HALF_OPEN state', async () => {
+    it('should close circuit after successful recovery in halfOpen state', async () => {
       const resetTimeout = 500;
       circuitBreaker = createRedisCircuitBreaker(mockRedisClient, {
         errorThresholdPercentage: 50,
@@ -261,21 +261,21 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       // Force OPEN
       mockRedisClient.get.setThrow(connRefusedError('Connection failed'));
       await openCircuit(circuitBreaker, 'get', 6);
-      expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
+      expect(circuitBreaker.getMetrics().currentState).toBe('open');
 
-      // Advance to HALF_OPEN
+      // Advance to halfOpen
       jest.advanceTimersByTime(resetTimeout + 100);
       await flushMicrotasks();
-      expect(circuitBreaker.getMetrics().currentState).toBe('HALF_OPEN');
+      expect(circuitBreaker.getMetrics().currentState).toBe('halfOpen');
 
-      // Succeed in HALF_OPEN → CLOSED
+      // Succeed in halfOpen → CLOSED
       mockRedisClient.get.setReturn('recovered');
       for (let i = 0; i < 3; i++) {
         await fire(circuitBreaker.operations.get);
       }
 
       const metrics = circuitBreaker.getMetrics();
-      expect(metrics.currentState).toBe('CLOSED');
+      expect(metrics.currentState).toBe('closed');
       expect(metrics.circuitOpenCount).toBeGreaterThanOrEqual(1);
       expect(metrics.circuitHalfOpenCount).toBeGreaterThanOrEqual(1);
       expect(metrics.circuitCloseCount).toBeGreaterThanOrEqual(1);
@@ -407,7 +407,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       mockRedisClient.get.setThrow(connRefusedError('Connection failed'));
       await openCircuit(circuitBreaker, 'get', 6); // exceed volumeThreshold=5
 
-      expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
+      expect(circuitBreaker.getMetrics().currentState).toBe('open');
 
       // Track Redis call count before the next attempt.
       const callsBefore = mockRedisClient.get.mock.calls.length;
@@ -425,7 +425,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       // Open circuit.
       mockRedisClient.get.setThrow(connRefusedError('Connection failed'));
       await openCircuit(circuitBreaker, 'get', 6);
-      expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
+      expect(circuitBreaker.getMetrics().currentState).toBe('open');
 
       // Fire 3 more times — circuit stays OPEN, Redis is never called.
       const callsBefore = mockRedisClient.get.mock.calls.length;
@@ -552,7 +552,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       const healthStatus = circuitBreaker.getHealthStatus();
 
       expect(healthStatus.status).toBe('healthy'); // CLOSED state
-      expect(healthStatus.circuitState).toBe('CLOSED');
+      expect(healthStatus.circuitState).toBe('closed');
       expect(healthStatus.metrics).toBeDefined();
       expect(healthStatus.circuitHistory).toBeDefined();
       expect(healthStatus.configuration).toBeDefined();
@@ -571,7 +571,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
 
       const healthStatus = circuitBreaker.getHealthStatus();
       expect(healthStatus.status).toBe('degraded');
-      expect(healthStatus.circuitState).toBe('OPEN');
+      expect(healthStatus.circuitState).toBe('open');
       expect(healthStatus.metrics.failureCount).toBeGreaterThanOrEqual(3);
     });
   });
@@ -593,7 +593,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       mockRedisClient.get.setThrow(connRefusedError('Connection failed'));
       await openCircuit(circuitBreaker, 'get', 4); // open with 4 failures
       expect(circuitBreaker.getMetrics().failureCount).toBeGreaterThan(0);
-      expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
+      expect(circuitBreaker.getMetrics().currentState).toBe('open');
 
       // Manually reset circuit.
       circuitBreaker.resetCircuit();
@@ -601,7 +601,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
 
       // Circuit should be CLOSED and all metrics zeroed.
       const metrics = circuitBreaker.getMetrics();
-      expect(metrics.currentState).toBe('CLOSED');
+      expect(metrics.currentState).toBe('closed');
       expect(metrics.successCount).toBe(0);
       expect(metrics.failureCount).toBe(0);
     });
