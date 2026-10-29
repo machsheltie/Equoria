@@ -37,7 +37,7 @@ import type {
 } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
-import { STAFF_TIME_OPTIONS, staffErrorMessage } from './staffMessages';
+import { staffTimeOptions, staffErrorMessage } from './staffMessages';
 import StaffSection from './StaffSection';
 import CopyReportPanel from './CopyReportPanel';
 
@@ -134,7 +134,7 @@ function FailureRow({
   const rerun = useRerunPayroll();
   const vars = { staffType: member.staffType, staffId: member.id, failureId: failure.id };
   const busy = testRun.isPending || rerun.isPending;
-  const when = formatDateTime(failure.at, STAFF_TIME_OPTIONS);
+  const when = formatDateTime(failure.at, staffTimeOptions);
   const pass = passLabels[failure.source ?? ''] ?? 'A payroll pass';
 
   return (

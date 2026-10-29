@@ -18,11 +18,13 @@ import { DEFAULT_DATETIME_OPTIONS } from '@/lib/formatDate';
 import { GAME_TIME_ZONE } from '@/lib/gameTime';
 
 /** Game time is Eastern; the zone name keeps the time honest for any reader. */
-export const STAFF_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
+export const staffTimeOptions: Intl.DateTimeFormatOptions = {
   ...DEFAULT_DATETIME_OPTIONS,
   timeZone: GAME_TIME_ZONE,
   timeZoneName: 'short',
 };
+/** The older spelling, kept for the files that still import it (Equoria-pjvp8). */
+export const STAFF_TIME_OPTIONS = staffTimeOptions;
 
 /** A steward whose account is no longer on staff or was erased (Equoria-2yugk). */
 export const FORMER_STEWARD = 'a former steward';

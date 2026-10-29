@@ -14,7 +14,7 @@ import { isCheckinRequired, useServerHealth } from '@/hooks/api/useStaff';
 import type { ServerHealth } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
-import { STAFF_TIME_OPTIONS } from './staffMessages';
+import { staffTimeOptions } from './staffMessages';
 import StaffSection from './StaffSection';
 import CopyReportPanel from './CopyReportPanel';
 
@@ -46,7 +46,7 @@ function HealthFacts({ health }: { health: ServerHealth }) {
           ) : (
             memory.warnings.map((warning) => (
               <li key={`${warning.at}-${warning.what}`}>
-                {formatDateTime(warning.at, STAFF_TIME_OPTIONS)}: {warning.what}
+                {formatDateTime(warning.at, staffTimeOptions)}: {warning.what}
                 {warning.serious ? ' (serious)' : ''}
               </li>
             ))
@@ -57,7 +57,7 @@ function HealthFacts({ health }: { health: ServerHealth }) {
         <h3 className="text-[var(--text-primary)]">Speed</h3>
         <p className="mt-1 text-sm text-[var(--text-primary)]">
           {speed.requests.toLocaleString()} requests answered since{' '}
-          {formatDateTime(speed.since, STAFF_TIME_OPTIONS)}; {speed.overOneSecond.toLocaleString()}{' '}
+          {formatDateTime(speed.since, staffTimeOptions)}; {speed.overOneSecond.toLocaleString()}{' '}
           took over a second. {speed.cachedAnswersPercent}% were answered from the cache.
         </p>
         {speed.slowestRoutes.length === 0 ? (
