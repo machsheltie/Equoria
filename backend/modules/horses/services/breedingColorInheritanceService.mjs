@@ -96,7 +96,8 @@ export function buildDisallowedMap(breedProfile) {
   const map = {};
   for (const [locus, pairs] of Object.entries(disallowed)) {
     if (Array.isArray(pairs) && pairs.length > 0) {
-      map[locus] = new Set(pairs);
+      // Equoria-i5ah4: order-free keys, so 'W20/W4' matches a rule written 'W4/W20'.
+      map[locus] = new Set(pairs.map(allelePairKey));
     }
   }
   return map;
@@ -113,7 +114,7 @@ export function buildDisallowedMap(breedProfile) {
  */
 export function isDisallowedCombination(disallowedMap, locus, allelePair) {
   const set = disallowedMap?.[locus];
-  return set ? set.has(allelePair) : false;
+  return set ? set.has(allelePairKey(allelePair)) : false;
 }
 
 // ---------------------------------------------------------------------------
@@ -174,8 +175,9 @@ export function drawAllele(alleles, rng) {
 }
 
 /**
- * Assemble a canonical allele pair from two individual alleles.
- * Order: sireAllele/damAllele (no sorting — downstream phenotype handles both orders).
+ * Assemble a raw allele pair from two individual alleles, sireAllele/damAllele.
+ * inheritColorGenotype then writes it in canonical order (canonicalAllelePair),
+ * because phenotype reads only the dominant-first spelling for most loci.
  *
  * @param {string} sireAllele
  * @param {string} damAllele
@@ -183,6 +185,93 @@ export function drawAllele(alleles, rng) {
  */
 export function assembleAllelePair(sireAllele, damAllele) {
   return `${sireAllele}/${damAllele}`;
+}
+
+/**
+ * Per-locus allele order, most dominant first (Equoria-yp4sa). An allele not
+ * listed for its locus (a W, SW or EDXW variant, Mushroom M/Mu, Brindle br1,
+ * Pearl's cr) ranks ahead of every listed allele, so the wild-type always goes
+ * second. Phenotype reads the dominant-first spelling (Z/n, Ch/n, G/g, TO/to).
+ */
+const alleleDominanceOrder = {
+  E_Extension: ['E', 'e'],
+  A_Agouti: ['A', 'At', 'a'],
+  Cr_Cream: ['Cr', 'n'],
+  D_Dun: ['D', 'nd1', 'nd2'],
+  Z_Silver: ['Z', 'n'],
+  Ch_Champagne: ['Ch', 'n'],
+  G_Gray: ['G', 'g'],
+  Rn_Roan: ['Rn', 'rn'],
+  W_DominantWhite: ['w'],
+  TO_Tobiano: ['TO', 'to'],
+  O_FrameOvero: ['O', 'n'],
+  SB1_Sabino1: ['SB1', 'n'],
+  SW_SplashWhite: ['n'],
+  LP_LeopardComplex: ['LP', 'lp'],
+  PATN1_Pattern1: ['PATN1', 'patn1'],
+  EDXW: ['n'],
+  MFSD12_Mushroom: ['N'],
+  Prl_Pearl: ['prl', 'n'],
+  BR1_Brindle1: ['n'],
+};
+
+/** Wild-type order for a locus with no entry above. */
+const unknownLocusOrder = ['n', 'N'];
+
+function alleleRank(order, allele) {
+  return order.indexOf(allele);
+}
+
+/**
+ * The one spelling of an allele pair for its locus: dominant allele first
+ * (Equoria-yp4sa), so a foal's pair never depends on which parent gave which
+ * allele. Ties between two unlisted alleles sort by name (W4/W20, not W20/W4).
+ *
+ * @param {string} locus
+ * @param {string} pair - e.g. 'n/Z'
+ * @returns {string} e.g. 'Z/n'
+ */
+export function canonicalAllelePair(locus, pair) {
+  const [first, second] = splitAlleles(pair);
+  const order = alleleDominanceOrder[locus] ?? unknownLocusOrder;
+  const firstRank = alleleRank(order, first);
+  const secondRank = alleleRank(order, second);
+  let swap;
+  if (firstRank === secondRank) {
+    swap = first.localeCompare(second, 'en', { numeric: true }) > 0;
+  } else {
+    // -1 (unlisted) ranks ahead of any listed allele.
+    swap = firstRank !== -1 && (secondRank === -1 || secondRank < firstRank);
+  }
+  return swap ? `${second}/${first}` : `${first}/${second}`;
+}
+
+/**
+ * An order-free key for comparing pairs (Equoria-i5ah4): 'a/A' and 'A/a' match.
+ *
+ * @param {string} pair
+ * @returns {string}
+ */
+export function allelePairKey(pair) {
+  return splitAlleles(pair).slice().sort().join('/');
+}
+
+/**
+ * Whether the two parents can give this pair (one allele from each), so a
+ * breed-rule replacement never invents an allele neither parent has
+ * (Equoria-q39od).
+ *
+ * @param {string} pair
+ * @param {string[]} sireAlleles
+ * @param {string[]} damAlleles
+ * @returns {boolean}
+ */
+function parentsCanGive(pair, sireAlleles, damAlleles) {
+  const [x, y] = splitAlleles(pair);
+  return (
+    (sireAlleles.includes(x) && damAlleles.includes(y)) ||
+    (sireAlleles.includes(y) && damAlleles.includes(x))
+  );
 }
 
 /**
@@ -237,7 +326,8 @@ export function inheritLocus(locus, sireAllelePair, damAllelePair, rng, disallow
   const damAlleles = splitAlleles(damAllelePair);
 
   const isForbidden = pair =>
-    isLethalCombination(locus, pair) || (disallowedSet ? disallowedSet.has(pair) : false);
+    isLethalCombination(locus, pair) ||
+    (disallowedSet ? disallowedSet.has(pair) || disallowedSet.has(allelePairKey(pair)) : false);
 
   for (let attempt = 0; attempt < MAX_REROLL_ATTEMPTS; attempt++) {
     const sireAllele = drawAllele(sireAlleles, rng);
@@ -277,35 +367,56 @@ export function inheritLocus(locus, sireAllelePair, damAllelePair, rng, disallow
  * heterozygous fallback, and the case where the inherited value is disallowed but
  * happened to be in allowedAlleles (a self-inconsistent profile).
  *
+ * Equoria-i5ah4 / Equoria-q39od: pairs are compared order-free ('a/A' is the
+ * breed's 'A/a'), and a replacement is the first usable allowed pair the parents
+ * can give; only when they can give none does it fall back to the first usable
+ * allowed pair. Replacements are written in canonical order.
+ *
  * @param {Object} foalGenotype - the inherited genotype
  * @param {Object|null} foalBreedProfile - breed's breedGeneticProfile JSONB
  * @param {Object} disallowedMap - output of buildDisallowedMap() (per-locus Sets)
+ * @param {Object} parentPairs - locus → { sire: string[], dam: string[] } alleles
  * @returns {Object} genotype with breed restrictions applied
  */
-function enforceBreedRestrictions(foalGenotype, foalBreedProfile, disallowedMap = {}) {
+function enforceBreedRestrictions(
+  foalGenotype,
+  foalBreedProfile,
+  disallowedMap = {},
+  parentPairs = {},
+) {
   const allowedAlleles = foalBreedProfile?.allowedAlleles ?? null;
   const restricted = { ...foalGenotype };
 
-  // Pass 1 — allowedAlleles whitelist (unchanged behavior).
+  // The first allowed pair that is neither lethal nor disallowed, preferring one
+  // the parents can give (Equoria-q39od). Null when no allowed pair is usable.
+  const pickReplacement = (locus, allowed) => {
+    if (!Array.isArray(allowed)) {
+      return null;
+    }
+    const usable = allowed.filter(
+      candidate =>
+        !isLethalCombination(locus, candidate) &&
+        !isDisallowedCombination(disallowedMap, locus, candidate),
+    );
+    const parents = parentPairs[locus];
+    const fromParents = parents
+      ? usable.find(candidate => parentsCanGive(candidate, parents.sire, parents.dam))
+      : undefined;
+    const choice = fromParents ?? usable[0] ?? null;
+    return choice === null ? null : canonicalAllelePair(locus, choice);
+  };
+
+  // Pass 1 — allowedAlleles whitelist, compared order-free (Equoria-i5ah4).
   if (allowedAlleles) {
     for (const [locus, allowed] of Object.entries(allowedAlleles)) {
       if (!Array.isArray(allowed) || allowed.length === 0) {
         continue;
       }
-      if (restricted[locus] !== undefined && !allowed.includes(restricted[locus])) {
-        // Equoria-tr50: Try each allowed allele in order, picking the first non-lethal one.
-        // Equoria-26qjf.2: also skip allowed entries that are breed-disallowed, so the
-        // whitelist replacement never re-introduces a forbidden genotype.
-        let replacement = null;
-        for (const candidate of allowed) {
-          if (
-            !isLethalCombination(locus, candidate) &&
-            !isDisallowedCombination(disallowedMap, locus, candidate)
-          ) {
-            replacement = candidate;
-            break;
-          }
-        }
+      const allowedKeys = new Set(allowed.map(allelePairKey));
+      if (restricted[locus] !== undefined && !allowedKeys.has(allelePairKey(restricted[locus]))) {
+        // Equoria-tr50 / Equoria-26qjf.2: lethal and breed-disallowed entries are
+        // never used as the replacement.
+        const replacement = pickReplacement(locus, allowed);
         if (replacement === null) {
           logger.warn(
             `[breedingColorInheritanceService] enforceBreedRestrictions: every allowed allele for locus '${locus}' is lethal/disallowed — restriction skipped to preserve genotype`,
@@ -324,22 +435,10 @@ function enforceBreedRestrictions(foalGenotype, foalBreedProfile, disallowedMap 
   // is itself neither lethal nor disallowed.
   for (const [locus, set] of Object.entries(disallowedMap)) {
     const value = restricted[locus];
-    if (value === undefined || !set.has(value)) {
+    if (value === undefined || !set.has(allelePairKey(value))) {
       continue;
     }
-    const allowed = allowedAlleles?.[locus];
-    let replacement = null;
-    if (Array.isArray(allowed)) {
-      for (const candidate of allowed) {
-        if (
-          !isLethalCombination(locus, candidate) &&
-          !isDisallowedCombination(disallowedMap, locus, candidate)
-        ) {
-          replacement = candidate;
-          break;
-        }
-      }
-    }
+    let replacement = pickReplacement(locus, allowedAlleles?.[locus]);
     if (replacement === null) {
       // No usable allowed allele declared — fall back to the per-locus wild-type
       // (GENERIC_DEFAULTS), which is non-lethal and effectively never disallowed.
@@ -372,8 +471,8 @@ function enforceBreedRestrictions(foalGenotype, foalBreedProfile, disallowedMap 
  * Algorithm per locus:
  *   1. Draw one allele randomly from the sire's pair
  *   2. Draw one allele randomly from the dam's pair
- *   3. Assemble as 'sireAllele/damAllele'
- *   4. If lethal → reroll up to 100 times, then heterozygous fallback
+ *   3. Assemble the pair; if lethal → reroll up to 100 times, then heterozygous fallback
+ *   4. Write it in canonical dominant-first order (Equoria-yp4sa)
  *   5. After all loci: enforce foal breed's allowedAlleles restrictions
  *
  * Fallback: if either parent's colorGenotype is null/missing, delegates to
@@ -415,6 +514,7 @@ export function inheritColorGenotype(
   const disallowedMap = buildDisallowedMap(foalBreedProfile);
 
   const foalGenotype = {};
+  const parentPairs = {};
 
   for (const locus of allLoci) {
     // If a locus is missing from a parent, use the per-locus GENERIC_DEFAULTS wild-type value
@@ -423,15 +523,16 @@ export function inheritColorGenotype(
     const sireAllelePair = sireGenotype[locus] ?? locusDefault;
     const damAllelePair = damGenotype[locus] ?? locusDefault;
 
-    foalGenotype[locus] = inheritLocus(
+    parentPairs[locus] = { sire: splitAlleles(sireAllelePair), dam: splitAlleles(damAllelePair) };
+
+    // Equoria-yp4sa: one canonical spelling per locus, whichever parent gave
+    // which allele (an n/n sire x Z/Z dam foal is Z/n, which reads Silver).
+    foalGenotype[locus] = canonicalAllelePair(
       locus,
-      sireAllelePair,
-      damAllelePair,
-      rng,
-      disallowedMap[locus],
+      inheritLocus(locus, sireAllelePair, damAllelePair, rng, disallowedMap[locus]),
     );
   }
 
   // Enforce foal breed restrictions (allowedAlleles whitelist + disallowed blacklist)
-  return enforceBreedRestrictions(foalGenotype, foalBreedProfile, disallowedMap);
+  return enforceBreedRestrictions(foalGenotype, foalBreedProfile, disallowedMap, parentPairs);
 }
