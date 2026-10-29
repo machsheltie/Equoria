@@ -16,6 +16,7 @@ import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { withoutGitEnv } from '../../../scripts/preflight/changed-checks.mjs';
 
 export const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
@@ -129,14 +130,28 @@ export function strayPlants() {
   return found;
 }
 
-export function runCheck(args = []) {
-  const res = spawnSync('node', [CHECK, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
+/**
+ * The environment for every child this helper spawns: `baseEnv` with every GIT_* variable removed
+ * (Equoria-kcgnk). Inside `git push` the pre-push hook exports GIT_DIR, GIT_WORK_TREE and
+ * GIT_INDEX_FILE; inherited, they pointed the gate's `git ls-files` and the M1 arm's
+ * `git add -N` / `git reset` at the hook's git instead of this checkout.
+ */
+function childEnv(baseEnv) {
+  return withoutGitEnv(baseEnv);
+}
+
+export function runCheck(args = [], baseEnv = process.env) {
+  const res = spawnSync('node', [CHECK, ...args], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    env: childEnv(baseEnv),
+  });
   return { status: res.status, out: `${res.stdout}\n${res.stderr}` };
 }
 
 /** A git command in the repo (used by the rfv9j M1 arm to simulate a tracked reserved-name file). */
-export function gitInRepo(args) {
-  return spawnSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8' });
+export function gitInRepo(args, baseEnv = process.env) {
+  return spawnSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8', env: childEnv(baseEnv) });
 }
 
 /** Run the check with one extra allow-list entry, then restore the file byte-for-byte. */

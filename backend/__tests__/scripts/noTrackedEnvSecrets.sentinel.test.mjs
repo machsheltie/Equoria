@@ -31,6 +31,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { execSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -43,6 +44,7 @@ import {
   findConfigSecretLeaks,
   isAllowlistedDevCredential,
 } from '../../../scripts/doctrine-checks/check-no-tracked-env-secrets.mjs';
+import { withoutGitEnv } from '../../../scripts/preflight/changed-checks.mjs';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
@@ -197,11 +199,36 @@ describe('no-tracked-env-secrets gate — curated NON-env config scan (Equoria-9
   });
 });
 
-describe('no-tracked-env-secrets gate — REAL REPO is currently clean (Equoria-07so3)', () => {
-  const tracked = execSync('git ls-files', { cwd: REPO_ROOT, encoding: 'utf8' })
+// Equoria-kcgnk: every child runs without GIT_* variables. Inside `git push` the pre-push hook
+// exports GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE; inherited, they point git at the hook's
+// repository instead of this checkout.
+const childEnv = baseEnv => withoutGitEnv(baseEnv);
+// A hook-style environment, as `git push` hands it to the gate (Equoria-kcgnk). Jest gives a test
+// a copy of process.env, so tests pass it explicitly instead of setting process.env.
+const hookEnv = () => {
+  const elsewhere = path.join(os.tmpdir(), `equoria-kcgnk-not-the-repo-${process.pid}`);
+  return {
+    ...process.env,
+    GIT_DIR: path.join(elsewhere, '.git'),
+    GIT_WORK_TREE: elsewhere,
+    GIT_INDEX_FILE: path.join(elsewhere, 'index'),
+  };
+};
+
+function trackedFiles(baseEnv = process.env) {
+  return execSync('git ls-files', { cwd: REPO_ROOT, encoding: 'utf8', env: childEnv(baseEnv) })
     .split('\n')
     .map(s => s.trim())
     .filter(Boolean);
+}
+
+describe('no-tracked-env-secrets gate — REAL REPO is currently clean (Equoria-07so3)', () => {
+  const tracked = trackedFiles();
+
+  it('lists THIS checkout even when the environment carries hook-style GIT_* variables (Equoria-kcgnk)', () => {
+    expect(tracked).toContain('package.json');
+    expect(trackedFiles(hookEnv())).toEqual(tracked);
+  });
 
   it('no real env file is tracked', () => {
     expect(findTrackedEnvFiles(tracked)).toEqual([]);

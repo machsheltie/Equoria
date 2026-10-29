@@ -25,6 +25,7 @@
 
 import { describe, it, expect, beforeAll, afterEach, afterAll } from '@jest/globals';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import {
   CHECK,
@@ -81,6 +82,35 @@ describe('check-module-dependency-graph.mjs versus foreign sentinel plants (Equo
     try {
       expect(gitInRepo(['ls-files', '--', rel]).stdout.trim()).toBe(rel);
       const res = runCheck();
+      expect(res.status).toBe(1);
+      expect(res.out).toContain(`R2 tracked file carries a reserved scratch-plant name: ${rel}`);
+    } finally {
+      expect(gitInRepo(['reset', '-q', '--', rel]).status).toBe(0);
+    }
+    expect(gitInRepo(['ls-files', '--', rel]).stdout.trim()).toBe('');
+  });
+
+  // Equoria-kcgnk: inside `git push` the pre-push hook exports GIT_DIR, GIT_WORK_TREE and
+  // GIT_INDEX_FILE. The gate's own `git ls-files` and this suite's `git add -N` / `git reset`
+  // inherited them, so the verdict (and the intent-to-add entry) followed the hook's git instead of
+  // this checkout: F2, M1 and M2 all failed under a hook-style env, and M1 failed in the 2026-10-23
+  // gate with status 128. Jest gives a test a copy of process.env, so the hook environment is handed
+  // to the helpers explicitly, exactly as the gate process holds it.
+  it('hook env: with hook-style GIT_* variables the tracked-name arm still judges THIS checkout', () => {
+    const elsewhere = path.join(os.tmpdir(), `equoria-kcgnk-not-the-repo-${process.pid}`);
+    const hookEnv = {
+      ...process.env,
+      GIT_DIR: path.join(elsewhere, '.git'),
+      GIT_WORK_TREE: elsewhere,
+      GIT_INDEX_FILE: path.join(elsewhere, 'index'),
+    };
+    const plantSuffix = `${process.pid}x${Date.now()}`;
+    const plant = plantFile(`competition/_v8l96_sentinel_hookenv_${plantSuffix}.mjs`, 'export const y = 1;\n');
+    const rel = relPosix(plant);
+    expect(gitInRepo(['add', '-N', '--', rel], hookEnv).status).toBe(0);
+    try {
+      expect(gitInRepo(['ls-files', '--', rel], hookEnv).stdout.trim()).toBe(rel);
+      const res = runCheck([], hookEnv);
       expect(res.status).toBe(1);
       expect(res.out).toContain(`R2 tracked file carries a reserved scratch-plant name: ${rel}`);
     } finally {

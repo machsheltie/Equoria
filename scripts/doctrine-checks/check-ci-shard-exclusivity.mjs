@@ -255,9 +255,16 @@ export function validateShardExhaustiveness({ patterns, testFiles }) {
  * Enumerate the test files jest would actually run: git-tracked *.test.mjs /
  * *.test.js under backend/, minus jest's testPathIgnorePatterns. Returns
  * forward-slash repo-relative paths.
+ *
+ * git runs without any GIT_* variable (Equoria-kcgnk): inside `git push` the
+ * pre-push hook exports GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE, which would
+ * make `git ls-files` list another repository, or fail, instead of `cwd`.
  */
-export function enumerateJestTestFiles(jestConfig, { cwd = ROOT } = {}) {
-  const out = execSync('git ls-files backend', { cwd, encoding: 'utf8' });
+export function enumerateJestTestFiles(jestConfig, { cwd = ROOT, env = process.env } = {}) {
+  const gitEnv = Object.fromEntries(
+    Object.entries(env).filter(([name]) => !name.toUpperCase().startsWith('GIT_'))
+  );
+  const out = execSync('git ls-files backend', { cwd, encoding: 'utf8', env: gitEnv });
   const ignore = (jestConfig.testPathIgnorePatterns || []).map((p) => new RegExp(p));
   return (
     out

@@ -18,6 +18,7 @@
  */
 import { describe, it, expect } from '@jest/globals';
 import { readFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import jestConfig from '../jest.config.mjs';
@@ -57,6 +58,22 @@ describe('CI shard testPathPatterns are mutually exclusive (Equoria-2ixd1)', () 
     // Every backend/modules/<x>/__tests__/ suite matches BOTH planted patterns.
     expect(violations.length).toBeGreaterThan(0);
     expect(violations[0]).toMatch(/matches 2 shards/);
+  });
+
+  // Equoria-kcgnk: inside `git push` the pre-push hook exports GIT_DIR, GIT_WORK_TREE and
+  // GIT_INDEX_FILE. The enumeration's `git ls-files` must still list THIS checkout. Jest gives a
+  // test a copy of process.env, so the hook environment is passed explicitly.
+  it('enumerates THIS checkout even when the environment carries hook-style GIT_* variables', () => {
+    const elsewhere = path.join(os.tmpdir(), `equoria-kcgnk-not-the-repo-${process.pid}`);
+    const env = {
+      ...process.env,
+      GIT_DIR: path.join(elsewhere, '.git'),
+      GIT_WORK_TREE: elsewhere,
+      GIT_INDEX_FILE: path.join(elsewhere, 'index'),
+    };
+    const testFiles = enumerateJestTestFiles(jestConfig);
+    expect(testFiles.length).toBeGreaterThan(500);
+    expect(enumerateJestTestFiles(jestConfig, { env })).toEqual(testFiles);
   });
 
   it('every jest-visible backend test file matches at least one shard (exhaustive — Equoria-axvnd)', () => {

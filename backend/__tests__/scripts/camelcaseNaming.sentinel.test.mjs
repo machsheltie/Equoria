@@ -22,11 +22,27 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { withoutGitEnv } from '../../../scripts/preflight/changed-checks.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..', '..');
 const checkDir = path.join(repoRoot, 'scripts', 'doctrine-checks');
 const check = path.join(checkDir, 'check-camelcase-naming.mjs');
+// Equoria-kcgnk: every child runs without GIT_* variables. Inside `git push` the pre-push hook
+// exports GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE; inherited, they point git at the hook's
+// repository instead of this checkout.
+const childEnv = baseEnv => withoutGitEnv(baseEnv);
+// A hook-style environment, as `git push` hands it to the gate (Equoria-kcgnk). Jest gives a test
+// a copy of process.env, so tests pass it explicitly instead of setting process.env.
+const hookEnv = () => {
+  const elsewhere = path.join(os.tmpdir(), `equoria-kcgnk-not-the-repo-${process.pid}`);
+  return {
+    ...process.env,
+    GIT_DIR: path.join(elsewhere, '.git'),
+    GIT_WORK_TREE: elsewhere,
+    GIT_INDEX_FILE: path.join(elsewhere, 'index'),
+  };
+};
 const canonicalBaseline = path.join(checkDir, 'camelcase-naming-baseline.json');
 const us = '_';
 // The directory name must carry the reserved `_sentinel_plant` scratch token
@@ -48,8 +64,8 @@ afterEach(() => {
   scratchDir = undefined;
 });
 
-function runCheck(args = []) {
-  return spawnSync('node', [check, ...args], { cwd: repoRoot, encoding: 'utf8' });
+function runCheck(args = [], baseEnv = process.env) {
+  return spawnSync('node', [check, ...args], { cwd: repoRoot, encoding: 'utf8', env: childEnv(baseEnv) });
 }
 
 function plant(name, source) {
@@ -71,6 +87,16 @@ function readCanonical() {
 describe('check-camelcase-naming.mjs (Equoria-pjvp8)', () => {
   it('passes on the committed tree', () => {
     const res = runCheck();
+    expect(res.stderr).toBe('');
+    expect(res.status).toBe(0);
+    expect(res.stdout).toMatch(/camelcase-naming\] OK/);
+  });
+
+  // Equoria-kcgnk: the check drops git-ignored files with `git check-ignore`; with the pre-push
+  // hook's GIT_* variables inherited, git answered for another repository (or failed) instead of
+  // this checkout.
+  it('passes on the committed tree even when the environment carries hook-style GIT_* variables', () => {
+    const res = runCheck([], hookEnv());
     expect(res.stderr).toBe('');
     expect(res.status).toBe(0);
     expect(res.stdout).toMatch(/camelcase-naming\] OK/);
@@ -173,7 +199,7 @@ describe('check-camelcase-naming.mjs (Equoria-pjvp8)', () => {
     try {
       fs.mkdirSync(ignoredPlant, { recursive: true });
       fs.writeFileSync(planted, `export const ${upperName} = 1;\n`);
-      const ignored = spawnSync('git', ['check-ignore', '-q', planted], { cwd: repoRoot });
+      const ignored = spawnSync('git', ['check-ignore', '-q', planted], { cwd: repoRoot, env: childEnv(process.env) });
       expect(ignored.status).toBe(0);
       const res = runCheck();
       expect(res.stderr).toBe('');
