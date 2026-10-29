@@ -38,6 +38,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { hiddenTraitResponseGuard } from '../../../middleware/hiddenTraitResponseGuard.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // Two hidden names: one with a trait definition, one without (peopleTrusting
 // has no definition, so no reveal can ever select it — it stays hidden).
@@ -54,7 +55,7 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
 
   async function makeFoal(data = {}) {
     return prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `HiddenTraitFoal ${tag()}`,
         sex: 'filly',
@@ -64,7 +65,7 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
         bondScore: 50,
         epigeneticModifiers: { positive: [VISIBLE], negative: [], hidden: HIDDEN },
         ...data,
-      },
+      }),
     });
   }
 

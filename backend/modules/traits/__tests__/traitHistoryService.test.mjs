@@ -17,6 +17,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // delete error leaks fixtures into the canonical DB; the tracker re-throws so the
 // suite goes red at the source instead of tripping a downstream sentinel later.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 let user;
 let horse;
@@ -55,14 +56,14 @@ beforeAll(async () => {
   });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-TraitHistHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,
       userId: user.id,
-    },
+    }),
   });
 }, 30000);
 

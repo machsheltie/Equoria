@@ -20,6 +20,7 @@ import { createTestUser } from '../../../tests/helpers/testAuth.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const hiddenKeys = ['heart', 'competitive'];
 
@@ -37,7 +38,7 @@ describe('GET /traits/horse/:id shows dormant traits (q213)', () => {
     token = auth.token;
     breed = await prisma.breed.create({ data: { name: `DormantTraitBreed ${tag()}_${tag()}` } });
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `DormantTraitFoal ${tag()}`,
         sex: 'filly',
@@ -51,7 +52,7 @@ describe('GET /traits/horse/:id shows dormant traits (q213)', () => {
           hidden: hiddenKeys,
           dormant: ['fearful'],
         },
-      },
+      }),
     });
   });
 

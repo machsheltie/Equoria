@@ -37,6 +37,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // schema:282).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // ── No-fixture pure paths ─────────────────────────────────────────────────────
 
@@ -108,47 +109,47 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
     const daysAgo = days => gameCalendarDate(new Date(ts), -days);
 
     etsHorseNewborn = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-ETS-Newborn-${ts}`,
         sex: 'Filly',
         dateOfBirth: daysAgo(1),
         age: 0,
         userId: etsUser.id,
-      },
+      }),
     });
 
     etsHorseYoung = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-ETS-Young-${ts}`,
         sex: 'Colt',
         dateOfBirth: daysAgo(15),
         age: 0,
         userId: etsUser.id,
-      },
+      }),
     });
 
     etsHorseDeveloping = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-ETS-Developing-${ts}`,
         sex: 'Filly',
         dateOfBirth: daysAgo(45),
         age: 0,
         userId: etsUser.id,
-      },
+      }),
     });
 
     etsHorseMature = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-ETS-Mature-${ts}`,
         sex: 'Colt',
         dateOfBirth: daysAgo(200),
         age: 0,
         userId: etsUser.id,
-      },
+      }),
     });
 
     etsGroom1 = await prisma.groom.create({
@@ -172,14 +173,14 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
 
     // 1 day old → ageModifier=0.6 → finalThreshold=0.3 → sensitivity=0.7
     etsHorseNewFoal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-ETS-NewFoal-${ts}`,
         sex: 'Colt',
         dateOfBirth: daysAgo(1),
         age: 0,
         userId: etsUser.id,
-      },
+      }),
     });
 
     // 6 groomInteractions for etsHorseMature (all within last 30 days via default createdAt)

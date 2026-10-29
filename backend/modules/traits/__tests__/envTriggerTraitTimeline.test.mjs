@@ -23,6 +23,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 let user;
 let horse;
@@ -46,14 +47,14 @@ beforeAll(async () => {
   });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-EnvTriggerHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,
       userId: user.id,
-    },
+    }),
   });
 }, 30000);
 
@@ -164,16 +165,16 @@ describe('age-bracket branches (Equoria-jkht)', () => {
       },
     });
 
-    const makeHorse = (name, daysAgo) =>
+    const makeHorse = async (name, daysAgo) =>
       prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name,
           sex: 'Filly',
           dateOfBirth: gameCalendarDate(new Date(ts), -daysAgo),
           age: 0,
           userId: ageUser.id,
-        },
+        }),
       });
 
     [horse10d, horse60d, horse100d] = await Promise.all([
@@ -246,14 +247,14 @@ describe('poor-quality interactions (Equoria-jkht)', () => {
     });
 
     harshHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-ET-HshHorse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: harshUser.id,
-      },
+      }),
     });
 
     // 2 poor bathing interactions and 2 fair feeding interactions

@@ -19,6 +19,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const HIDDEN = ['legendaryBloodline'];
 
@@ -55,7 +56,7 @@ describe('first-view glow marker (Equoria-lylhb)', () => {
     strangerCsrf = await fetchCsrf(app, { extraCookies: [`accessToken=${strangerToken}`] });
     breed = await prisma.breed.create({ data: { name: `GlowBreed ${tag()}_${tag()}` } });
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `GlowFoal ${tag()}`,
         sex: 'filly',
@@ -63,7 +64,7 @@ describe('first-view glow marker (Equoria-lylhb)', () => {
         breed: { connect: { id: breed.id } },
         user: { connect: { id: owner.id } },
         epigeneticModifiers: { positive: ['resilient'], negative: [], hidden: HIDDEN },
-      },
+      }),
     });
   });
 

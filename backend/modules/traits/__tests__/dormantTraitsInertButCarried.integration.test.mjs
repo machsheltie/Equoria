@@ -19,6 +19,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { calculateTraitCompetitionImpact } from '../../../utils/traitCompetitionImpact.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const RUN = randomBytes(4).toString('hex');
 const dayMs = 24 * 60 * 60 * 1000;
@@ -84,7 +85,7 @@ describe('dormant traits have no effect (Equoria-nrto5)', () => {
 describe('dormant traits are still carried (Equoria-nrto5)', () => {
   it("a foal can inherit its dam's dormant trait, and is born with it hidden", async () => {
     const sire = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-dormant-Sire-${RUN}`,
         sex: 'Stallion',
@@ -93,10 +94,10 @@ describe('dormant traits are still carried (Equoria-nrto5)', () => {
         breedId,
         userId: user.id,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-      },
+      }),
     });
     const dam = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-dormant-Dam-${RUN}`,
         sex: 'Mare',
@@ -111,7 +112,7 @@ describe('dormant traits are still carried (Equoria-nrto5)', () => {
         pregnancySireId: sire.id,
         pregnancyFeedingsByTier: {},
         epigeneticModifiers: { positive: [], negative: [], hidden: [], dormant: ['brave'] },
-      },
+      }),
     });
 
     horseIds.push(sire.id, dam.id);

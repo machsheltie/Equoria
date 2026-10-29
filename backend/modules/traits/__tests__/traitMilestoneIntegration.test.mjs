@@ -19,6 +19,7 @@ import { getFoalCareSummary } from '../../../utils/foalTaskLogManager.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const PREFIX = 'TestFixture-TraitMilestone-';
 const USER_ID = `${PREFIX}user`;
@@ -45,7 +46,7 @@ beforeAll(async () => {
   });
 
   testFoal = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}Foal`,
       sex: 'Colt',
@@ -56,7 +57,7 @@ beforeAll(async () => {
       taskLog: null,
       lastGroomed: null,
       daysGroomedInARow: 0,
-    },
+    }),
   });
 });
 

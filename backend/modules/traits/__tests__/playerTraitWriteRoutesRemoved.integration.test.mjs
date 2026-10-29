@@ -46,6 +46,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -76,7 +77,7 @@ describe('Player trait-write routes are removed (Equoria-gu8jk)', () => {
     // and who carries hidden traits, so the old reveal routes would really
     // have moved them into the visible lists.
     foal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-gu8jk-foal-${suffix}`,
         userId: player.id,
@@ -86,7 +87,7 @@ describe('Player trait-write routes are removed (Equoria-gu8jk)', () => {
         bondScore: 95,
         temperament: 'nervous',
         epigeneticModifiers: { positive: [], negative: [], hidden: ['resilient', 'calm'] },
-      },
+      }),
     });
     horseIds.push(foal.id);
 

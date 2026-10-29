@@ -17,6 +17,7 @@ import { createTestUser } from '../../../tests/helpers/testAuth.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('trait rarity stays off player routes (q112)', () => {
   const tag = () => randomBytes(4).toString('hex');
@@ -33,7 +34,7 @@ describe('trait rarity stays off player routes (q112)', () => {
     ownerToken = a.token;
     breed = await prisma.breed.create({ data: { name: `LabelBreed ${tag()}_${tag()}` } });
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `LabelFoal ${tag()}`,
         sex: 'filly',
@@ -42,7 +43,7 @@ describe('trait rarity stays off player routes (q112)', () => {
         user: { connect: { id: owner.id } },
         // resilient has a stored rarity; peopleTrusting needs its authored label.
         epigeneticModifiers: { positive: ['resilient', 'peopleTrusting'], negative: [], hidden: [] },
-      },
+      }),
     });
   });
 
@@ -76,7 +77,7 @@ describe('trait rarity stays off player routes (q112)', () => {
 
     beforeAll(async () => {
       historyHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `HistoryFoal ${tag()}`,
           sex: 'colt',
@@ -84,7 +85,7 @@ describe('trait rarity stays off player routes (q112)', () => {
           breed: { connect: { id: breed.id } },
           user: { connect: { id: owner.id } },
           epigeneticModifiers: { positive: ['heart', 'brave'], negative: ['skittish'], hidden: [] },
-        },
+        }),
       });
       // heart is ruled Legendary (q134); skittish is ruled negative (q135).
       await prisma.traitHistoryLog.createMany({

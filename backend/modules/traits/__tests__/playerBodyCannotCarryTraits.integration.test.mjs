@@ -45,6 +45,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { isRosterTrait } from '../../../utils/epigeneticTraits.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -102,7 +103,7 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
     csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${token}`] });
 
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-gu8jk-body-${suffix}`,
         userId: player.id,
@@ -110,7 +111,7 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
         age: 5,
         dateOfBirth: new Date('2020-01-01'),
         temperament: 'Calm',
-      },
+      }),
     });
   }, 60000);
 

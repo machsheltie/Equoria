@@ -27,6 +27,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const PREFIX = `TestFixture-a7f1p-traitReports-${randomBytes(4).toString('hex')}`;
@@ -55,9 +56,9 @@ describe('trait report routes are removed (Equoria-a7f1p, q152)', () => {
       },
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
-    const make = name =>
+    const make = async name =>
       prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `${PREFIX}-${name}`,
           sex: 'Mare',
@@ -66,7 +67,7 @@ describe('trait report routes are removed (Equoria-a7f1p, q152)', () => {
           userId: user.id,
           healthStatus: 'Good',
           epigeneticModifiers: { positive: ['brave'], negative: [], hidden: ['heart'] },
-        },
+        }),
       });
     horse = await make('a');
     otherHorse = await make('b');

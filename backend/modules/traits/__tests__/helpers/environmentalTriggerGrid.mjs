@@ -20,6 +20,7 @@
 
 import { createHash } from 'node:crypto';
 import { gameCalendarDate } from '../../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -258,7 +259,7 @@ export async function buildTriggerFixtures(prisma, token, colour) {
   const horses = [];
   for (const [key, ageDays, bondScore, history] of FOALS) {
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...colour(),
         name: `TestFixture-EnvTrig-${key}-${token}`,
         sex: 'Filly',
@@ -268,7 +269,7 @@ export async function buildTriggerFixtures(prisma, token, colour) {
         age: 0,
         userId: user.id,
         bondScore,
-      },
+      }),
     });
     horses.push([key, horse.id]);
     labels.set(`horse:${horse.id}`, key);

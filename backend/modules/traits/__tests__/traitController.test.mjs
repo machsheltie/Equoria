@@ -23,6 +23,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // keeps the suite green while a leak trips downstream sentinels. The tracker
 // runs every registered scoped delete in FK order and throws loudly if any fail.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -50,14 +51,14 @@ beforeAll(async () => {
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-TraitHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date('2021-06-01'),
       age: 3,
       userId: user.id,
-    },
+    }),
   });
 }, 30000);
 

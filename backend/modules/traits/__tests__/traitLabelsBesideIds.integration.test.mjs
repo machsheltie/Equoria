@@ -24,6 +24,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { withPublicTraitModifiers } from '../../../utils/publicTraitView.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const fixturePrefix = 'TestFixture-no441-traits';
 const shown = { positive: ['eagerLearner', 'peopleTrusting'], negative: ['skittish'] };
@@ -69,7 +70,7 @@ describe('trait ids travel with their authored names', () => {
     });
     breed = await prisma.breed.create({ data: { name: `${fixturePrefix}-breed-${run}` } });
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${fixturePrefix}-${run}`,
         sex: 'Mare',
@@ -82,7 +83,7 @@ describe('trait ids travel with their authored names', () => {
         forSale: true,
         salePrice: 900,
         epigeneticModifiers: { ...shown, hidden: [stillHidden] },
-      },
+      }),
     });
   }, 60000);
 
