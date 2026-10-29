@@ -17,11 +17,9 @@ const MAX_MARK_VIEWED_SHOWS = 100;
 async function getResultsByUser(userId, options = {}) {
   const { limit = 50, offset = 0, discipline = null } = options;
 
-  const whereClause = {
-    horse: {
-      userId,
-    },
-  };
+  // Equoria-r9q06 (owner ruling q256): the results this player entered, whoever
+  // owns the horse now.
+  const whereClause = { entrantUserId: userId };
 
   if (discipline) {
     whereClause.discipline = discipline;

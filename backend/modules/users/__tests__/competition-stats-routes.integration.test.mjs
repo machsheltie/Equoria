@@ -109,6 +109,8 @@ describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () 
         runDate: new Date(Date.now() - 86400000),
         showName: shows[0].name,
         horseId: horse.id,
+        // Equoria-r9q06 (owner ruling q256): settlement records the entrant; here the owner entered.
+        entrantUserId: horse.userId,
         showId: shows[0].id,
         prizeWon: 500,
       },
@@ -123,6 +125,8 @@ describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () 
         runDate: new Date(Date.now() - 2 * 86400000),
         showName: shows[1].name,
         horseId: horse.id,
+        // Equoria-r9q06 (owner ruling q256): settlement records the entrant; here the owner entered.
+        entrantUserId: horse.userId,
         showId: shows[1].id,
         prizeWon: 100,
       },
@@ -137,6 +141,8 @@ describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () 
         runDate: new Date(Date.now() - 3 * 86400000),
         showName: shows[2].name,
         horseId: horse.id,
+        // Equoria-r9q06 (owner ruling q256): settlement records the entrant; here the owner entered.
+        entrantUserId: horse.userId,
         showId: shows[2].id,
         prizeWon: 0,
       },

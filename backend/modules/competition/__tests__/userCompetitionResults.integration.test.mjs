@@ -60,8 +60,21 @@ async function seedResult({
   prizeWon,
   horsePointsAwarded,
 }) {
+  // Equoria-r9q06 (owner ruling q256): settlement records the entrant; here the owner entered.
+  const { userId: entrantUserId } = await prisma.horse.findUnique({ where: { id: horseId }, select: { userId: true } });
   return prisma.competitionResult.create({
-    data: { horseId, showId, score, placement, discipline, runDate, showName, prizeWon, horsePointsAwarded },
+    data: {
+      horseId,
+      showId,
+      score,
+      placement,
+      discipline,
+      runDate,
+      showName,
+      prizeWon,
+      horsePointsAwarded,
+      entrantUserId,
+    },
   });
 }
 

@@ -174,6 +174,8 @@ describe('GET /api/v1/while-you-were-gone — six event-type aggregation (Equori
         showName: show.name,
         prizeWon: 500,
         horseId: compHorse.id,
+        // Equoria-r9q06 (owner ruling q256): settlement records the entrant; here the owner entered.
+        entrantUserId: compHorse.userId,
         showId: show.id,
         createdAt: hoursAgo(1),
       },

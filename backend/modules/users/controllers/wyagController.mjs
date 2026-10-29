@@ -52,7 +52,7 @@ export async function getWhileYouWereGone(req, res) {
     try {
       const competitionResults = await prisma.competitionResult.findMany({
         where: {
-          horse: { userId },
+          entrantUserId: userId, // Equoria-r9q06: what this player entered
           createdAt: { gte: since },
         },
         omit: { scoreInputs: true }, // Equoria-4q02c: staff only, never a player surface

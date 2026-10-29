@@ -21,10 +21,10 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 export async function getUserPrizeHistory(userId, { limit, offset }) {
   const [total, results] = await Promise.all([
     prisma.competitionResult.count({
-      where: { horse: { userId } },
+      where: { entrantUserId: userId }, // Equoria-r9q06: what this player entered
     }),
     prisma.competitionResult.findMany({
-      where: { horse: { userId } },
+      where: { entrantUserId: userId }, // Equoria-r9q06: what this player entered
       omit: { scoreInputs: true }, // Equoria-4q02c: staff only, never a player surface
       orderBy: { runDate: 'desc' },
       take: limit,

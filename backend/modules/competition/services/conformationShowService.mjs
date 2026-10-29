@@ -401,6 +401,7 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
         const entries = await tx.showEntry.findMany({
           where: { showId },
           select: {
+            userId: true,
             groomSnapshot: true,
             horse: { select: conformationScoringHorseSelect },
             groom: { select: handlerSelect },
@@ -442,20 +443,21 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
         // Score each entry against its REAL handler. className is score-irrelevant
         // (see SCORE_NEUTRAL_CONFORMATION_CLASS) and there is no per-entry class
         // column to read, so the score-neutral default satisfies class validation.
-        const scored = resolved.map(({ horse, groom }) => {
+        const scored = resolved.map(({ entry, horse, groom }) => {
           const { finalScore } = calculateConformationShowScore(
             horse,
             groom,
             SCORE_NEUTRAL_CONFORMATION_CLASS,
           );
-          return { horse, finalScore };
+          return { horse, finalScore, entrantUserId: entry.userId };
         });
 
         // Rank by score descending; ties keep entry creation order (already asc).
         scored.sort((a, b) => b.finalScore - a.finalScore);
-        const placed = scored.map(({ horse, finalScore }, i) => ({
+        const placed = scored.map(({ horse, finalScore, entrantUserId }, i) => ({
           horse,
           finalScore,
+          entrantUserId,
           placement: i + 1,
           reward: resolveReward(i + 1),
         }));
@@ -468,9 +470,11 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
         // (Equoria-cmw85.11); the [showId, horseId] unique still refuses a
         // duplicate, rolling the whole settlement back.
         await tx.competitionResult.createMany({
-          data: placed.map(({ horse, finalScore, placement, reward }) => ({
+          data: placed.map(({ horse, finalScore, placement, reward, entrantUserId }) => ({
             horseId: horse.id,
             showId,
+            // Equoria-r9q06 (owner ruling q256): the player who entered keeps the result.
+            entrantUserId,
             score: finalScore,
             placement,
             discipline: 'conformation',

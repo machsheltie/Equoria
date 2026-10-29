@@ -39,7 +39,9 @@ export function placementToNumber(placement) {
  */
 export async function computeUserCompetitionStats(userId) {
   const results = await prisma.competitionResult.findMany({
-    where: { horse: { userId } },
+    // Equoria-r9q06 (owner ruling q256): the results this player entered, so a
+    // sold horse's past wins stay with the seller and never reach the buyer.
+    where: { entrantUserId: userId },
     select: {
       id: true,
       score: true,

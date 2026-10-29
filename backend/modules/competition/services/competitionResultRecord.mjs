@@ -336,6 +336,8 @@ export function buildRiddenResultRow({ show, staged, prize, now }) {
     prizeWon: prize,
     horseId: staged.horseId,
     showId: show.id,
+    // Equoria-r9q06 (owner ruling q256): the player who entered keeps the result.
+    entrantUserId: staged.userId,
     // Staff-only audit record (Equoria-4q02c); absent on orderings staged before it.
     ...(isPlainObject(staged.scoreInputs) ? { scoreInputs: staged.scoreInputs } : {}),
   };

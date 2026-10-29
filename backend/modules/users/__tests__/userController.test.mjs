@@ -318,6 +318,8 @@ describe('GET /api/v1/users/:userId/competition-stats — with results', () => {
       const r = await prisma.competitionResult.create({
         data: {
           horseId: statsHorse.id,
+          // Equoria-r9q06 (owner ruling q256): settlement records the entrant; here the owner entered.
+          entrantUserId: statsHorse.userId,
           showId: resultShow.id,
           showName: resultShow.name,
           discipline: 'Dressage',

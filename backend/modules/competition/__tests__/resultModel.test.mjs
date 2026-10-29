@@ -90,6 +90,8 @@ describe('getResultsByUser', () => {
     await prisma.competitionResult.create({
       data: {
         horseId: horse.id,
+        // Equoria-r9q06 (owner ruling q256): settlement records the entrant; here the owner entered.
+        entrantUserId: horse.userId,
         showId: show.id,
         score: 85,
         placement: 1,
@@ -114,6 +116,8 @@ describe('getResultsByUser', () => {
     await prisma.competitionResult.create({
       data: {
         horseId: horse.id,
+        // Equoria-r9q06 (owner ruling q256): settlement records the entrant; here the owner entered.
+        entrantUserId: horse.userId,
         showId: showR.id,
         score: 85,
         placement: 1,
@@ -126,6 +130,8 @@ describe('getResultsByUser', () => {
     await prisma.competitionResult.create({
       data: {
         horseId: horse.id,
+        // Equoria-r9q06 (owner ruling q256): settlement records the entrant; here the owner entered.
+        entrantUserId: horse.userId,
         showId: showD.id,
         score: 70,
         placement: null,

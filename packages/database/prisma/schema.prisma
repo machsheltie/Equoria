@@ -94,6 +94,8 @@ model User {
   horsesBought            HorseSale[]              @relation("HorseSalesBought")
   showsCreated            Show[]                   @relation("ShowCreator")
   showEntries             ShowEntry[]              @relation("ShowEntries")
+  /// Equoria-r9q06: the results this player entered, whoever owns the horse now.
+  competitionResultsEntered CompetitionResult[]   @relation("CompetitionResultEntrant")
   staffMarketplaceStates  StaffMarketplaceState[]
   notifications             Notification[]
   monthlyTotals             PlayerMonthlyTotal[]
@@ -992,6 +994,13 @@ model CompetitionResult {
   /// Foreign keys
   horseId    Int
   showId     Int
+  /// The player who entered the horse in the show (Equoria-r9q06, owner ruling
+  /// q256, 2026-10-28): when a horse is sold, its past results stay in the
+  /// totals of the player who entered them, so player records read this column,
+  /// never the horse's current owner. Written at settlement from the entry;
+  /// existing rows were backfilled from their show entry, else the horse's
+  /// owner at migration time. NULL only after that player's account is erased.
+  entrantUserId String?
   /// Timestamps
   createdAt  DateTime @default(now())
   /// When the owning player opened this result (Equoria-oey96.28, owner ruling
@@ -1011,8 +1020,11 @@ model CompetitionResult {
   viewedAt   DateTime?
   horse      Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
   show       Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
+  entrant    User?    @relation("CompetitionResultEntrant", fields: [entrantUserId], references: [id], onDelete: SetNull)
 
   @@unique([showId, horseId])
+  /// Equoria-r9q06: a player's results, newest first (stats, prize history, My Results).
+  @@index([entrantUserId, runDate(sort: Desc)])
   @@index([horseId, score])
   /// Serves the check-results read on every Hub load: the unviewed-results
   /// lookup filters `horseId IN (<the player's horses>) AND "viewedAt" IS NULL`,
