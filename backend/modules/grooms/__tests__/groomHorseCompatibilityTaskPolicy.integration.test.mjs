@@ -28,6 +28,7 @@ import { predictInteraction, scoreCompatibility } from '../services/dynamicCompa
 import { analyzePair, rankFor } from './helpers/dynamicCompatibilityGrid.mjs';
 import { getPersonalityTraitDefinitions, calculatePersonalityModifiers } from '../services/groomPersonalityTraits.mjs';
 import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const POLICY_MODULE = '../services/groomHorseCompatibilityTaskPolicy.mjs';
@@ -186,12 +187,12 @@ beforeAll(async () => {
       data: groomData(user.id, `Policy ${personality} ${uid}`, personality),
     });
   }
-  horse = await prisma.horse.create({ data: horseData(user.id, `Policy Horse ${uid}`) });
+  horse = await prisma.horse.create({ data: await testHorseData(prisma, horseData(user.id, `Policy Horse ${uid}`)) });
   foreignGroom = await prisma.groom.create({
     data: groomData(foreignUser.id, `Foreign Policy Groom ${uid}`, 'calm'),
   });
   foreignHorse = await prisma.horse.create({
-    data: horseData(foreignUser.id, `Foreign Policy Horse ${uid}`),
+    data: await testHorseData(prisma, horseData(foreignUser.id, `Foreign Policy Horse ${uid}`)),
   });
 }, 60000);
 

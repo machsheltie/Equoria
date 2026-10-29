@@ -31,6 +31,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // turn the suite red so the leaked fixture is fixed at the source, not hidden
 // behind a silent no-op catch arm (which leaks rows into the canonical DB).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const TODAY = '2026-05-12';
 
@@ -164,14 +165,14 @@ beforeAll(async () => {
     },
   });
   groomNotFoundHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-GroomSysGNFHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,
       userId: groomNotFoundUser.id,
-    },
+    }),
   });
 }, 30000);
 
@@ -248,14 +249,14 @@ beforeAll(async () => {
   });
 
   foalForSuccessAssign = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-SuccessAssignFoal-${ts}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,
       userId: successUser.id,
-    },
+    }),
   });
 }, 30000);
 

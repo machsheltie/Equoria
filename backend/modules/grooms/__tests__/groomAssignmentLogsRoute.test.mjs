@@ -16,6 +16,7 @@ import app from '../../../app.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const UNIQUE = randomBytes(6).toString('hex');
 const PREFIX = `TestFixture-GroomAssLog-${UNIQUE}-`;
@@ -43,7 +44,7 @@ beforeAll(async () => {
     (await prisma.breed.create({ data: { name: 'Thoroughbred', description: 'Test breed' } }));
 
   testHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${PREFIX}Horse`,
       sex: 'Mare',
@@ -51,7 +52,7 @@ beforeAll(async () => {
       dateOfBirth: gameCalendarDate(new Date(), -365),
       breed: { connect: { id: breed.id } },
       user: { connect: { id: testUser.id } },
-    },
+    }),
   });
 
   testGroom = await prisma.groom.create({

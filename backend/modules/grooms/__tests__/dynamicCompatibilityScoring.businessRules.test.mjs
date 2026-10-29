@@ -33,6 +33,7 @@ import {
 } from '../services/dynamicCompatibilityScoring.mjs';
 import { analyzePair, rankFor } from './helpers/dynamicCompatibilityGrid.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Dynamic Compatibility Scoring', () => {
   let testUser;
@@ -107,36 +108,36 @@ describe('Dynamic Compatibility Scoring', () => {
         testHorses = await Promise.all([
           // Fearful horse
           tx.horse.create({
-            data: {
+            data: await testHorseData(tx, {
               ...fixtureColor(),
               name: `Test Horse Fearful ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'filly',
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 8,
-            },
+            }),
           }),
           // Confident social horse
           tx.horse.create({
-            data: {
+            data: await testHorseData(tx, {
               ...fixtureColor(),
               name: `Test Horse Confident ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'colt',
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 38,
-            },
+            }),
           }),
           // Moderate temperament horse
           tx.horse.create({
-            data: {
+            data: await testHorseData(tx, {
               ...fixtureColor(),
               name: `Test Horse Moderate ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'Colt',
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
               bondScore: 25,
-            },
+            }),
           }),
         ]);
       },

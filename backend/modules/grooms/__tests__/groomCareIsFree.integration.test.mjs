@@ -33,6 +33,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { getAvailableInteractions } from '../services/enhancedGroomInteractions.mjs';
 import { groomHorse } from '../services/groomCareService.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-tfo3c-free';
 const tag = () => randomBytes(6).toString('hex');
@@ -89,7 +90,7 @@ describe('Equoria-tfo3c — a real grooming session writes no price and takes no
       },
     });
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${FIXTURE_PREFIX}-horse-${suffix}`,
         sex: 'Filly',
@@ -98,7 +99,7 @@ describe('Equoria-tfo3c — a real grooming session writes no price and takes no
         userId: user.id,
         healthStatus: 'Excellent',
         bondScore: 40,
-      },
+      }),
     });
     groom = await prisma.groom.create({
       data: {

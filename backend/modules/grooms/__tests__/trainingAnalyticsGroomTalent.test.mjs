@@ -26,6 +26,7 @@ import { createSequentially } from '../../../tests/helpers/createSequentially.mj
 // turn the suite red so the leaked fixture is fixed at the source, not hidden
 // behind a silent no-op catch arm (which leaks rows into the canonical DB).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 let user;
 let horse;
@@ -53,14 +54,14 @@ beforeAll(async () => {
   });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-TrainTalentHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,
       userId: user.id,
-    },
+    }),
   });
 
   groom = await prisma.groom.create({

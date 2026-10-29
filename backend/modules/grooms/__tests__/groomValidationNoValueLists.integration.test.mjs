@@ -22,6 +22,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -72,14 +73,14 @@ describe('groom validation refusals carry no value lists (Equoria-bdpvw)', () =>
   // refusal must not list the foal's activity codes either.
   it('a bad foal activity is refused without listing the activity codes', async () => {
     const foal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `bdpvw-foal-${randomBytes(4).toString('hex')}`,
         sex: 'Filly',
         dateOfBirth: gameCalendarDate(new Date(), -3),
         age: 0,
         userId: user.id,
-      },
+      }),
     });
     const groom = await prisma.groom.create({
       data: {

@@ -29,6 +29,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // fail the suite (not be swallowed by a silent no-op catch arm) so a leaked
 // fixture surfaces at the source instead of tripping a canonical sentinel later.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const TAG = `5v6g-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}`;
@@ -81,7 +82,7 @@ describe('Equoria-5v6g: groom horse auto-updates GroomHorseSynergy', () => {
     const dob = new Date();
     dob.setFullYear(dob.getFullYear() - 1);
     foal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${TAG}-Foal`,
         sex: 'colt',
@@ -89,7 +90,7 @@ describe('Equoria-5v6g: groom horse auto-updates GroomHorseSynergy', () => {
         age: 21,
         bondScore: 50,
         userId: user.id,
-      },
+      }),
     });
 
     groom = await prisma.groom.create({
@@ -153,7 +154,7 @@ describe('Equoria-5v6g: groom horse auto-updates GroomHorseSynergy', () => {
     const dob = new Date();
     dob.setFullYear(dob.getFullYear() - 1);
     const freshFoal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${TAG}-FreshFoal`,
         sex: 'colt',
@@ -161,7 +162,7 @@ describe('Equoria-5v6g: groom horse auto-updates GroomHorseSynergy', () => {
         age: 21,
         bondScore: 50,
         userId: user.id,
-      },
+      }),
     });
     // Equoria-1ohys: register fail-loud scoped cleanup for this per-test foal
     // (drained in afterEach, before the suite user delete). FK order —

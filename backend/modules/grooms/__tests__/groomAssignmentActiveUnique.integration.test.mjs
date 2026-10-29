@@ -29,6 +29,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-kccmt-groom';
 
@@ -61,7 +62,7 @@ describe('groom assignment active-only unique index (Equoria-kccmt)', () => {
       },
     });
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${FIXTURE_PREFIX}-horse-${tag()}`,
         sex: 'Mare',
@@ -69,7 +70,7 @@ describe('groom assignment active-only unique index (Equoria-kccmt)', () => {
         age: 6,
         userId: owner.id,
         healthStatus: 'Excellent',
-      },
+      }),
     });
     groom = await prisma.groom.create({
       data: {

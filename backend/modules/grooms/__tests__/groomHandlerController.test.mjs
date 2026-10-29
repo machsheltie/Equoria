@@ -18,6 +18,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -47,14 +48,14 @@ beforeAll(async () => {
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-HandlerHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date('2020-01-01'),
       age: 5,
       userId: user.id,
-    },
+    }),
   });
 }, 30000);
 

@@ -5,6 +5,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // Owner ruling 2026-10-28 q154 (Equoria-4fa7s): a show handler is the horse's
 // groom and any groom may handle in any class. Old contract: the handler bonus
@@ -54,14 +55,14 @@ describe('groomHandlerService — DB fixture branch coverage (Equoria-rr7)', () 
     });
 
     ghsHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-GHS-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: ghsUser.id,
-      },
+      }),
     });
 
     await prisma.groomAssignment.create({

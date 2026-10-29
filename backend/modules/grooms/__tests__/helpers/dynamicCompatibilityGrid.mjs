@@ -26,6 +26,7 @@ import {
   loadCompatibilityInputs,
   rankGrooms,
 } from '../../services/dynamicCompatibilityScoring.mjs';
+import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 /**
  * Call helpers for tests (Equoria-q4uem.7 S6): load one input set, then project.
@@ -214,7 +215,7 @@ export async function buildCompatibilityFixtures(prisma, token, colour) {
   const horses = {};
   for (const [key, bondScore, owner] of HORSES) {
     horses[key] = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...colour(),
         name: `TestFixture-DynCompat-${key}-${token}`,
         sex: 'Filly',
@@ -222,7 +223,7 @@ export async function buildCompatibilityFixtures(prisma, token, colour) {
         age: 0,
         userId: owners[owner].id,
         bondScore,
-      },
+      }),
     });
     labels.set(`horse:${horses[key].id}`, key);
   }

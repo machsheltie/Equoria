@@ -26,6 +26,7 @@ import { createSequentially } from '../../../tests/helpers/createSequentially.mj
 // children-before-parents (GroomInteraction.foalId/groomId onDelete: Cascade;
 // Horse.userId / Groom.userId onDelete: Restrict — users last).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 let user;
 let horse;
@@ -49,14 +50,14 @@ beforeAll(async () => {
   });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-DynCompatHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,
       userId: user.id,
-    },
+    }),
   });
 
   groom = await prisma.groom.create({
@@ -230,36 +231,36 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
     });
 
     improvingHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-DC-Improving-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: trendUser.id,
-      },
+      }),
     });
 
     decliningHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-DC-Declining-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: trendUser.id,
-      },
+      }),
     });
 
     stableHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-DC-Stable-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: trendUser.id,
-      },
+      }),
     });
 
     // improving: quality=[fair,good,excellent], bondingChange=[0,2,4]
@@ -401,14 +402,14 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
     });
 
     branchHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-DC-BranchHorse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: branchUser.id,
-      },
+      }),
     });
 
     [highExpGroom, methodicalGroom] = await createSequentially([
@@ -676,7 +677,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
     });
 
     rr7Horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-RR7-Horse-${ts}`,
         sex: 'Filly',
@@ -684,11 +685,11 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
         age: 0,
         bondScore: 0,
         userId: rr7User.id,
-      },
+      }),
     });
 
     rr7HighBondHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-RR7-HighBond-${ts}`,
         sex: 'Filly',
@@ -696,18 +697,18 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
         age: 0,
         bondScore: 30,
         userId: rr7User.id,
-      },
+      }),
     });
 
     rr7NoGroomHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-RR7-NoGroomHorse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: rr7NoGroomUser.id,
-      },
+      }),
     });
   }, 60000);
 

@@ -59,6 +59,7 @@ import {
 } from '../services/groomRetirementScheduleService.mjs';
 import { hireFromMarketplace, refreshMarketplace } from '../controllers/groomMarketplaceController.mjs';
 import { listFreeAgentGrooms } from '../controllers/groomFreeAgentController.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-ypb7d-age';
 const tag = () => randomBytes(6).toString('hex');
@@ -333,7 +334,7 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
 
     user = await makeUser('retire');
     horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${FIXTURE_PREFIX}-retire-horse-${tag()}`,
         sex: 'Filly',
@@ -341,7 +342,7 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
         age: 1,
         userId: user.id,
         healthStatus: 'Excellent',
-      },
+      }),
     });
 
     // Equoria-ypb7d.3 fix round 1 (F3): a groom in the grooms-for-hire pool — a free

@@ -32,6 +32,7 @@ import {
 import { createAssignment } from '../services/groomAssignmentService.mjs';
 import { assignGroomToFoal } from '../../../utils/groomSystem.mjs';
 import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-95yrv-fee';
 const tag = () => randomBytes(6).toString('hex');
@@ -68,7 +69,7 @@ async function makeGroom(userId, label, extra = {}) {
 
 async function makeHorse(userId, label) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
       sex: 'Filly',
@@ -76,7 +77,7 @@ async function makeHorse(userId, label) {
       age: 3,
       userId,
       healthStatus: 'Excellent',
-    },
+    }),
   });
 }
 

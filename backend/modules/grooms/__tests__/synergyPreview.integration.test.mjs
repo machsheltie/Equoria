@@ -20,6 +20,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // fail the suite (not be swallowed by a silent no-op catch arm) so a leaked
 // fixture surfaces at the source instead of tripping a canonical sentinel later.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const TAG = `ictn-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}`;
@@ -58,7 +59,7 @@ describe('31D-4 (Equoria-ictn): GET /api/grooms/:groomId/horses/:horseId/synergy
     const dob = new Date();
     dob.setFullYear(dob.getFullYear() - 1);
     nervousHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${TAG}-Nervous`,
         sex: 'mare',
@@ -66,7 +67,7 @@ describe('31D-4 (Equoria-ictn): GET /api/grooms/:groomId/horses/:horseId/synergy
         age: 21,
         temperament: 'Nervous',
         userId: user.id,
-      },
+      }),
     });
 
     patientGroom = await prisma.groom.create({

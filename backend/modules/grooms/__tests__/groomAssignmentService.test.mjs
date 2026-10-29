@@ -31,6 +31,7 @@ import NotFoundError from '../../../errors/NotFoundError.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // ── Pure-path tests ───────────────────────────────────────────────────────────
 
@@ -123,36 +124,36 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
     });
 
     gasHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-GAS-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: gasUser.id,
-      },
+      }),
     });
 
     _gasHorse2 = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-GAS-Horse2-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),
         age: 0,
         userId: gasUser.id,
-      },
+      }),
     });
 
     gasHorse3 = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-GAS-Horse3-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: gasUser.id,
-      },
+      }),
     });
   }, 60000);
 
@@ -355,34 +356,34 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
       },
     });
     const lh1 = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-GAS-LH1-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: gasUser.id,
-      },
+      }),
     });
     const lh2 = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-GAS-LH2-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: gasUser.id,
-      },
+      }),
     });
     const lh3 = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-GAS-LH3-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: gasUser.id,
-      },
+      }),
     });
 
     // Equoria-95yrv: the cap is TEN horses for every groom, not two for a novice,
@@ -391,14 +392,14 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
     const filler = [lh1, lh2];
     for (let i = filler.length; i < 20; i++) {
       const extra = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `TestFixture-GAS-LH-fill-${i}-${ts}`,
           sex: 'Filly',
           dateOfBirth: new Date(),
           age: 0,
           userId: gasUser.id,
-        },
+        }),
       });
       filler.push(extra);
     }
@@ -436,14 +437,14 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
         },
       });
       const omHorse = await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           name: `TestFixture-GAS-OMHorse-${ts}`,
           sex: 'Filly',
           dateOfBirth: new Date(),
           age: 0,
           userId: gasUser.id,
-        },
+        }),
       });
       const newAssignment = await prisma.groomAssignment.create({
         data: { groomId: omGroom.id, foalId: omHorse.id, userId: gasUser.id, isActive: true },

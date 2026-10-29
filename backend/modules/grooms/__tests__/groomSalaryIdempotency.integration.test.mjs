@@ -51,6 +51,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { processWeeklySalaries, getPayWeekStart } from '../services/groomSalaryService.mjs';
 import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-icqqm';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -148,14 +149,14 @@ async function makeGroomAssignment(user, { skillLevel = 'novice', speciality = '
   createdGroomIds.push(groom.id);
 
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-Horse-${tag}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,
       userId: user.id,
-    },
+    }),
   });
   createdHorseIds.push(horse.id);
 

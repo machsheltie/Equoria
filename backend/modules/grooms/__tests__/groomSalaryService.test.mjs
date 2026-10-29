@@ -26,6 +26,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // ── calculateWeeklyFee — pure branches (owner ruling 2026-10-28, q228) ───────
 
@@ -113,14 +114,14 @@ describe('calculateUserSalaryCost — DB fixture (Equoria-jkht)', () => {
     });
 
     gssHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-GSS-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: gssUser.id,
-      },
+      }),
     });
 
     await prisma.groomAssignment.create({

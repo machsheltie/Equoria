@@ -23,6 +23,7 @@ import { processWeeklySalaries, getPayWeekStart } from '../services/groomSalaryS
 import { gameDateKey } from '../../../utils/gameTime.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // The economy's burn SystemAccount name (SYSTEM_ACCOUNT_BURN = 'burn').
 const burnAccountName = 'burn';
@@ -68,14 +69,14 @@ describe('groom_salary_payments weekKey (Equoria-h7518)', () => {
       },
     });
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${fixturePrefix}-Horse-${suffix}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: user.id,
-      },
+      }),
     });
     const assignment = await prisma.groomAssignment.create({
       data: { foalId: horse.id, groomId: groom.id, userId: user.id, isActive: true },

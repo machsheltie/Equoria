@@ -66,6 +66,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 // fails across the module realms --experimental-vm-modules creates, which is
 // load-order dependent (green alone, red in a shard).
 import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 /**
  * Equoria-m9lz1 fix round 1 — a scoped-delete guard.
@@ -192,14 +193,14 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     });
 
     grsHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-GRS-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: grsUser.id,
-      },
+      }),
     });
 
     grsGroomRetired = await prisma.groom.create({

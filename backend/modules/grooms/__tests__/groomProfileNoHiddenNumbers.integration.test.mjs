@@ -22,6 +22,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { getGroomProfile } from '../controllers/groomRosterController.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // A calm groom suits a reactive foal (utils/groomPersonalityTraitBonus.mjs).
 const calmGroom = 'Calm';
@@ -79,7 +80,7 @@ describe('GET /grooms/:id/profile sends no compatibility numbers or tables', () 
       },
     });
     foal = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${fixturePrefix}-foal-${suffix}`,
         sex: 'Filly',
@@ -88,7 +89,7 @@ describe('GET /grooms/:id/profile sends no compatibility numbers or tables', () 
         userId: user.id,
         temperament: reactiveFoal,
         bondScore: 80,
-      },
+      }),
     });
     await prisma.groomAssignment.create({
       data: { groomId: groom.id, foalId: foal.id, userId: user.id, isActive: true },

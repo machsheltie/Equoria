@@ -33,6 +33,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
   let __csrf__;
@@ -69,7 +70,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
 
     // Create test horse with temperament
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `GPT-TestHorse_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         userId: testUser.id,
@@ -79,7 +80,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         healthStatus: 'Good',
         sex: 'filly',
         breedId: testBreed.id,
-      },
+      }),
     });
 
     // Create test groom with personality
@@ -332,14 +333,15 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       it('should return 400 for horse without temperament', async () => {
         // Create horse without temperament
         const horseWithoutTemperament = await prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: 'NoTemperamentHorse',
             userId: testUser.id,
             dateOfBirth: new Date(),
             sex: 'colt',
             breedId: testBreed.id,
-          },
+            temperament: null, // a pre-ruling row with no temperament (Equoria-576c0.5: legacy NULL plant)
+          }),
         });
 
         const response = await request(app)

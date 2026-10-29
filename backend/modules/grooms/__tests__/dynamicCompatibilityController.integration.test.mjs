@@ -39,6 +39,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // (Horse.userId onDelete: Restrict, schema:282).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -165,7 +166,7 @@ beforeAll(async () => {
   for (const data of horseData) {
     horses.push(
       await prisma.horse.create({
-        data: {
+        data: await testHorseData(prisma, {
           ...fixtureColor(),
           userId: user.id,
           breedId,
@@ -186,7 +187,7 @@ beforeAll(async () => {
           flexibility: 50,
           obedience: 50,
           focus: 50,
-        },
+        }),
       }),
     );
   }
@@ -218,7 +219,7 @@ beforeAll(async () => {
     },
   });
   foreignHorse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       userId: foreignUser.id,
       breedId,
@@ -239,7 +240,7 @@ beforeAll(async () => {
       flexibility: 50,
       obedience: 50,
       focus: 50,
-    },
+    }),
   });
 
   // Equoria-plw0h: forward the accessToken cookie so getCsrfToken's

@@ -29,6 +29,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Groom Bonus Traits System', () => {
   let __csrf__;
@@ -91,7 +92,7 @@ describe('Groom Bonus Traits System', () => {
 
     // Create test horse (foal)
     testHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `GBT-TestHorse_${uid()}`,
         sex: 'colt',
@@ -100,7 +101,7 @@ describe('Groom Bonus Traits System', () => {
         userId: testUser.id,
         breedId: testBreed.id,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-      },
+      }),
     });
 
     // Create auth token

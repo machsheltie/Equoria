@@ -23,6 +23,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // fixtures leaked into the canonical DB while the suite stayed green. The
 // tracker runs every scoped delete in FK order and throws loudly if any fail.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 let user;
 let horse;
@@ -43,14 +44,14 @@ beforeAll(async () => {
   });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-GroomProgressHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,
       userId: user.id,
-    },
+    }),
   });
 
   groom = await prisma.groom.create({
@@ -146,14 +147,14 @@ describe('updateGroomSynergy — branch coverage (Equoria-jkht)', () => {
     });
 
     sgHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-GP-SG-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: sgUser.id,
-      },
+      }),
     });
   }, 30000);
 
@@ -225,14 +226,14 @@ describe('logGroomAssignment — branch coverage (Equoria-jkht)', () => {
     });
 
     laHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-GP-LA-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: laUser.id,
-      },
+      }),
     });
   }, 30000);
 
@@ -313,14 +314,14 @@ describe('calculateSynergyEffects via getGroomProfile — branch coverage (Equor
     });
 
     seHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-GP-SE-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: seUser.id,
-      },
+      }),
     });
 
     // Create synergy record with score=110 to trigger all 3 effect thresholds (>=25, >=50, >=100)
@@ -399,14 +400,14 @@ describe('logGroomAssignment — default-param + null-coalesce fallback branches
     });
 
     la2Horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-GP-LA2-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: la2User.id,
-      },
+      }),
     });
   }, 30000);
 

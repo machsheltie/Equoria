@@ -21,6 +21,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const tag = randomBytes(4).toString('hex');
@@ -55,14 +56,14 @@ beforeAll(async () => {
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-HandlerGroomHorse-${tag}`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),
       age: 6,
       userId: user.id,
-    },
+    }),
   });
 
   // A foal-care groom, not a show-handling specialist: still the horse's handler.

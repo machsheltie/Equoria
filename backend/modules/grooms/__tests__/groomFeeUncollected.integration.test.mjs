@@ -44,6 +44,7 @@ import { processWeeklySalaries, getPayWeekStart, calculateWeeklyFee } from '../s
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { recordUncollectedFees } from '../services/groomFeeArrearsService.mjs';
 import { GROOM_FEE_UNPAID_NOTIFICATION_TYPE, checkGroomMayWork } from '../services/groomEngagementService.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-2ti1j';
 const tag = () => randomBytes(6).toString('hex');
@@ -86,7 +87,7 @@ async function makeGroom(userId, label, extra = {}) {
   // The groom works one horse, as a real staffed groom would. (Since owner ruling
   // 2026-10-28, q228, the fee is the groom's star level price whatever the horses.)
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${tag()}`,
       sex: 'Filly',
@@ -94,7 +95,7 @@ async function makeGroom(userId, label, extra = {}) {
       age: 3,
       userId,
       healthStatus: 'Excellent',
-    },
+    }),
   });
   await prisma.groomAssignment.create({
     data: { groomId: groom.id, foalId: horse.id, userId, isActive: true },

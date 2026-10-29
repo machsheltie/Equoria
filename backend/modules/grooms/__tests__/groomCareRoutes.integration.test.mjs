@@ -29,6 +29,7 @@ import {
   raceBehindLock,
 } from '../../../__tests__/helpers/rowLockBarrier.mjs';
 import { gameCalendarDate, gameDayBounds } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const runTag = `care-${randomBytes(4).toString('hex')}`;
@@ -61,7 +62,7 @@ async function makeUser(label) {
 /** A horse born `ageDays` Eastern days ago (0 = born today, day 1 of life). */
 async function makeHorse(owner, label, { ageDays = 2100, bondScore = 0 } = {}) {
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${runTag}-${label}`,
       sex: 'Mare',
@@ -70,7 +71,7 @@ async function makeHorse(owner, label, { ageDays = 2100, bondScore = 0 } = {}) {
       bondScore,
       temperament: 'Calm',
       userId: owner.user.id,
-    },
+    }),
   });
   horseIds.push(horse.id);
   return horse;

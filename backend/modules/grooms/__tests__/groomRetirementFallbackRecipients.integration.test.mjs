@@ -37,6 +37,7 @@ import logger from '../../../utils/logger.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { processRetirement } from '../services/groomRetirementService.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const fixturePrefix = 'TestFixture-ic0vv';
 // The notification type the service writes (GROOM_RETIRED_NOTIFICATION_TYPE in the service),
@@ -64,7 +65,7 @@ async function makeUser(label) {
 
 async function makeHorse(ownerId, label) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${fixturePrefix}-${label}-${tag()}`,
       sex: 'Filly',
@@ -72,7 +73,7 @@ async function makeHorse(ownerId, label) {
       age: 1,
       userId: ownerId,
       healthStatus: 'Excellent',
-    },
+    }),
   });
 }
 

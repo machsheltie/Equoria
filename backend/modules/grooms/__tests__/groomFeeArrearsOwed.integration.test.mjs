@@ -65,6 +65,7 @@ import { checkGroomMayWork } from '../services/groomEngagementService.mjs';
 import { processRetirement } from '../services/groomRetirementService.mjs';
 import { ensureRetirementSchedule } from '../services/groomRetirementScheduleService.mjs';
 import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-bgdfb-owed';
 const tag = () => randomBytes(6).toString('hex');
@@ -110,7 +111,7 @@ async function makeStaffedGroom(userId, label) {
   });
   await prisma.groomEngagement.create({ data: { groomId: groom.id, userId } });
   const horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-${label}-horse-${tag()}`,
       sex: 'Filly',
@@ -118,7 +119,7 @@ async function makeStaffedGroom(userId, label) {
       age: 1,
       userId,
       healthStatus: 'Excellent',
-    },
+    }),
   });
   await prisma.groomAssignment.create({
     data: { groomId: groom.id, foalId: horse.id, userId, isActive: true },

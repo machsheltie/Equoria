@@ -30,6 +30,7 @@ import {
   processWeeklySalaries,
   countActiveAssignments,
 } from '../services/groomSalaryService.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const fixturePrefix = 'TestFixture-6p398_14-fee';
 const tag = () => randomBytes(6).toString('hex');
@@ -52,7 +53,7 @@ async function makeUser(label, money = 50000) {
 
 async function makeHorse(userId, label) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${fixturePrefix}-${label}-${tag()}`,
       sex: 'Filly',
@@ -60,7 +61,7 @@ async function makeHorse(userId, label) {
       age: 3,
       userId,
       healthStatus: 'Excellent',
-    },
+    }),
   });
 }
 

@@ -47,6 +47,8 @@ const { processWeeklySalaries } = await import('../services/groomSalaryService.m
 // Name of the burn system account (the economy module's SYSTEM_ACCOUNT_BURN value).
 const burnAccount = 'burn';
 const { fixtureColor } = await import('../../../tests/helpers/fixtureColor.mjs');
+// Imported after the client handle is installed: the helper's imports load the shared client.
+const { testHorseData } = await import('../../../__tests__/helpers/createTestHorse.mjs');
 
 const PREFIX = `TestFixture-cmw8537-${randomBytes(3).toString('hex')}`;
 const staffSize = 6;
@@ -92,14 +94,14 @@ beforeAll(async () => {
     });
     groomIds.push(groom.id);
     const horse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `${PREFIX}-Horse-${i}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: user.id,
-      },
+      }),
     });
     horseIds.push(horse.id);
     await prisma.groomAssignment.create({

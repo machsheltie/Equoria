@@ -48,6 +48,7 @@ import { jobNameToLockKey } from '../../../utils/cronLock.mjs';
 import { MAX_HORSES_PER_GROOM } from '../services/groomFeeBasisService.mjs';
 import { createAssignment } from '../services/groomAssignmentService.mjs';
 import { assignGroomToFoal } from '../services/groomFoalAssignmentService.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-95yrv-race';
 const tag = () => randomBytes(6).toString('hex');
@@ -136,7 +137,7 @@ async function waitForBlockedSessions(barrierPid, count, timeoutMs = 15000) {
 
 async function makeHorse(userId, label) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
       sex: 'Filly',
@@ -144,7 +145,7 @@ async function makeHorse(userId, label) {
       age: 3,
       userId,
       healthStatus: 'Excellent',
-    },
+    }),
   });
 }
 

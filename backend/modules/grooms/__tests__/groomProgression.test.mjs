@@ -14,6 +14,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { updateGroomSynergy, logGroomAssignment, getGroomProfile } from '../services/groomProgressionService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 describe('Groom Progression System', () => {
   let testUser;
@@ -106,14 +107,14 @@ describe('Groom Progression System', () => {
       });
 
       testHorse = await tx.horse.create({
-        data: {
+        data: await testHorseData(tx, {
           ...fixtureColor(),
           name: 'Test Foal',
           sex: 'Filly',
           dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
           userId: testUser.id,
           breedId: testBreed.id,
-        },
+        }),
       });
     });
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load

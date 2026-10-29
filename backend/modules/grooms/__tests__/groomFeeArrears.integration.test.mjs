@@ -56,6 +56,7 @@ import {
 } from '../services/groomEngagementService.mjs';
 import { groomHorse } from '../services/groomCareService.mjs';
 import { listFreeAgentGrooms, hireFreeAgent } from '../controllers/groomFreeAgentController.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-ypb7d-fee';
 const tag = () => randomBytes(6).toString('hex');
@@ -99,7 +100,7 @@ async function makeUser(label, money) {
 
 async function makeHorse(userId, label) {
   return prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
       sex: 'Filly',
@@ -107,7 +108,7 @@ async function makeHorse(userId, label) {
       age: 1,
       userId,
       healthStatus: 'Excellent',
-    },
+    }),
   });
 }
 

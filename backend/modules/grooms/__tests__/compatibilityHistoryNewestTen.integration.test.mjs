@@ -18,6 +18,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { loadCompatibilityInputs, scoreCompatibility } from '../services/dynamicCompatibilityScoring.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const SCOPE = 'TestFixture-ld219';
 const RUN = randomBytes(5).toString('hex');
@@ -58,14 +59,14 @@ beforeAll(async () => {
     },
   });
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `${SCOPE}-horse-${RUN}`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),
       age: 5,
       userId: user.id,
-    },
+    }),
   });
   groom = await prisma.groom.create({
     data: {

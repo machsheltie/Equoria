@@ -23,6 +23,7 @@ import { createBarrierClient, raceBehindLock } from '../../../__tests__/helpers/
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const rand = () => randomBytes(5).toString('hex');
 const cleanup = createCleanupTracker();
@@ -56,7 +57,7 @@ beforeEach(async () => {
   buyer = await makeUser('buyer');
   const breed = await prisma.breed.findFirst({ select: { id: true } });
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-9e5ff-${rand()}`,
       dateOfBirth: gameCalendarDate(new Date(), -(5 * 7 + 1)),
@@ -65,7 +66,7 @@ beforeEach(async () => {
       userId: seller.id,
       breedId: breed.id,
       healthStatus: 'Excellent',
-    },
+    }),
   });
   horseIds.push(horse.id);
   groom = await prisma.groom.create({

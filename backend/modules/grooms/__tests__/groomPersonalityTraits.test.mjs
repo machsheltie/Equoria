@@ -24,6 +24,7 @@ import { createSequentially } from '../../../tests/helpers/createSequentially.mj
 // fixtures leaked into the canonical DB while the suite stayed green. The
 // tracker runs every scoped delete in FK order and throws loudly if any fail.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 let user;
 let horse;
@@ -44,14 +45,14 @@ beforeAll(async () => {
   });
 
   horse = await prisma.horse.create({
-    data: {
+    data: await testHorseData(prisma, {
       ...fixtureColor(),
       name: `TestFixture-GroomPersonHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,
       userId: user.id,
-    },
+    }),
   });
 
   groom = await prisma.groom.create({
@@ -185,14 +186,14 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     });
 
     fearfulHorse = await prisma.horse.create({
-      data: {
+      data: await testHorseData(prisma, {
         ...fixtureColor(),
         name: `TestFixture-GPT-FearfulHorse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
         age: 0,
         userId: gptUser.id,
-      },
+      }),
     });
 
     // experience=51 → calculateExperienceLevel returns 'medium'
@@ -370,49 +371,49 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     ]);
 
     [gpHorseFearfulReactive, , gpHorseNeutral, gpHorseBrave] = await createSequentially([
-      () =>
+      async () =>
         prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: `TestFixture-GP-HorseFearfulReactive-${ts}`,
             sex: 'Filly',
             dateOfBirth: new Date(),
             age: 0,
             userId: gpUser.id,
-          },
+          }),
         }),
-      () =>
+      async () =>
         prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: `TestFixture-GP-HorseCompatible-${ts}`,
             sex: 'Colt',
             dateOfBirth: new Date(),
             age: 0,
             userId: gpUser.id,
-          },
+          }),
         }),
-      () =>
+      async () =>
         prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: `TestFixture-GP-HorseNeutral-${ts}`,
             sex: 'Filly',
             dateOfBirth: new Date(),
             age: 0,
             userId: gpUser.id,
-          },
+          }),
         }),
-      () =>
+      async () =>
         prisma.horse.create({
-          data: {
+          data: await testHorseData(prisma, {
             ...fixtureColor(),
             name: `TestFixture-GP-HorseBrave-${ts}`,
             sex: 'Filly',
             dateOfBirth: new Date(),
             age: 0,
             userId: gpUser.id,
-          },
+          }),
         }),
     ]);
   }, 60000);
