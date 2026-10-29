@@ -76,6 +76,7 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
   }
 
   beforeEach(async () => {
+    registerCleanup(cleanup, { userIds, horseIds });
     userIds.length = 0;
     horseIds.length = 0;
     breed = await sharedBreed();
@@ -88,7 +89,6 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
       studFee: FEE,
     });
     mare = await horse({ ownerId: mareOwner.user.id, sex: 'Mare' });
-    registerCleanup(cleanup, { userIds, horseIds });
   });
 
   afterEach(async () => {

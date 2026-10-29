@@ -69,16 +69,16 @@ describe('foal-outcome forecast routes are removed (Equoria-8grnh)', () => {
 
   beforeEach(async () => {
     const breed = await sharedBreed();
+    const ids = () => [ownStallion?.id, mare?.id, stud?.id].filter(Boolean);
+    const users = () => [mareOwner?.user.id, studOwner?.user.id].filter(Boolean);
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: ids() } } }), 'horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: users() } } }), 'users');
     mareOwner = await makePlayer(PREFIX, 'mareOwner', 1000);
     studOwner = await makePlayer(PREFIX, 'studOwner', 1000);
     const make = spec => makeHorse(PREFIX, { breedId: breed.id, ...spec });
     ownStallion = await make({ ownerId: mareOwner.user.id, sex: 'Stallion' });
     mare = await make({ ownerId: mareOwner.user.id, sex: 'Mare' });
     stud = await make({ ownerId: studOwner.user.id, sex: 'Stallion', studStatus: 'At Public Stud', studFee: 10 });
-    const ids = [ownStallion.id, mare.id, stud.id];
-    const users = [mareOwner.user.id, studOwner.user.id];
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: ids } } }), 'horses');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: users } } }), 'users');
   });
 
   afterEach(async () => {

@@ -128,6 +128,7 @@ describe('private stud approval races (Equoria-e7tgc.7)', () => {
   }
 
   beforeEach(async () => {
+    registerCleanup(cleanup, { userIds, horseIds });
     userIds.length = 0;
     horseIds.length = 0;
     breed = await sharedBreed();
@@ -142,7 +143,6 @@ describe('private stud approval races (Equoria-e7tgc.7)', () => {
       studFee: fee,
     });
     mare = await horse({ ownerId: mareOwner.user.id, sex: 'Mare' });
-    registerCleanup(cleanup, { userIds, horseIds });
     expect(stud.id).toBeLessThan(mare.id);
   });
 

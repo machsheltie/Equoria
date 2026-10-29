@@ -56,13 +56,13 @@ describe('own-pair breeding: free, recorded, sire-pinned, and blocked by a pendi
   }
 
   beforeEach(async () => {
+    registerCleanup(cleanup, { userIds, horseIds });
     userIds.length = 0;
     horseIds.length = 0;
     breed = await sharedBreed();
     owner = await player('owner', 5000);
     stallion = await horse({ ownerId: owner.user.id, sex: 'Stallion' });
     mare = await horse({ ownerId: owner.user.id, sex: 'Mare' });
-    registerCleanup(cleanup, { userIds, horseIds });
   });
 
   afterEach(async () => {

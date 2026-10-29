@@ -48,6 +48,7 @@ describe('private stud request audit trail (Equoria-e7tgc.7)', () => {
   let requestId;
 
   beforeEach(async () => {
+    registerCleanup(cleanup, { userIds, horseIds });
     userIds.length = 0;
     horseIds.length = 0;
     const breed = await sharedBreed();
@@ -63,7 +64,6 @@ describe('private stud request audit trail (Equoria-e7tgc.7)', () => {
     });
     const mare = await makeHorse(PREFIX, { ownerId: mareOwner.user.id, sex: 'Mare', breedId: breed.id });
     horseIds.push(stud.id, mare.id);
-    registerCleanup(cleanup, { userIds, horseIds });
 
     const res = await requestPrivateStud(mareOwner.token, stud.id, { damId: mare.id, expectedStudFee: FEE });
     expect(res.status).toBe(201);

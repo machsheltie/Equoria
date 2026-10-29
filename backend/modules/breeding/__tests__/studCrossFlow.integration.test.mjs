@@ -101,10 +101,10 @@ describe('stud cross-flow hardening (Equoria-e7tgc.8)', () => {
   }
 
   beforeEach(async () => {
+    registerCleanup(cleanup, { userIds, horseIds });
     userIds.length = 0;
     horseIds.length = 0;
     breed = await sharedBreed();
-    registerCleanup(cleanup, { userIds, horseIds });
   });
 
   afterEach(async () => {

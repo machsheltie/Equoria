@@ -67,6 +67,7 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
   }
 
   beforeEach(async () => {
+    registerCleanup(cleanup, { userIds, horseIds });
     userIds.length = 0;
     horseIds.length = 0;
     breed = await sharedBreed();
@@ -74,7 +75,6 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
     studOwner = await player('studOwner', 100);
     stud = await horse({ ownerId: studOwner.user.id, sex: 'Stallion' });
     mare = await horse({ ownerId: mareOwner.user.id, sex: 'Mare' });
-    registerCleanup(cleanup, { userIds, horseIds });
     const listed = await listAtStud(studOwner.token, stud.id, { studFee: FEE, mode: 'private' });
     expect(listed.status).toBe(200);
     expect(listed.body.data.studStatus).toBe('At Private Stud');

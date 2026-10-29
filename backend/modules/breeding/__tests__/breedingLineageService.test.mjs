@@ -22,6 +22,15 @@ let mare;
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: stallion + mare
+  // (independent, no lineage between them) BEFORE the owning user —
+  // Horse.userId is onDelete:Restrict (schema:282). .deleteMany so an
+  // already-gone row is a no-op, not P2025; a real scope/FK failure reds
+  // afterAll instead of being swallowed.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: stallion.id } }), 'stallion');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: mare.id } }), 'mare');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
+
   user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -55,15 +64,6 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-
-  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: stallion + mare
-  // (independent, no lineage between them) BEFORE the owning user —
-  // Horse.userId is onDelete:Restrict (schema:282). .deleteMany so an
-  // already-gone row is a no-op, not P2025; a real scope/FK failure reds
-  // afterAll instead of being swallowed.
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: stallion.id } }), 'stallion');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: mare.id } }), 'mare');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);

@@ -61,10 +61,10 @@ describe('mares and stallions breed only at ages 3-20 (Equoria-e7tgc.4)', () => 
   }
 
   beforeEach(async () => {
+    registerCleanup(cleanup, { userIds, horseIds });
     userIds.length = 0;
     horseIds.length = 0;
     breed = await sharedBreed();
-    registerCleanup(cleanup, { userIds, horseIds });
   });
 
   afterEach(async () => {

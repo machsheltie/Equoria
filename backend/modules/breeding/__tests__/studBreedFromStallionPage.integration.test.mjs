@@ -72,12 +72,12 @@ describe('breeding from the stallion page (Equoria-q4uem.9)', () => {
   }
 
   beforeEach(async () => {
+    registerCleanup(cleanup, { userIds, horseIds });
     userIds.length = 0;
     horseIds.length = 0;
     breed = await sharedBreed();
     mareOwner = await player('mareOwner', 5000);
     studOwner = await player('studOwner', 100);
-    registerCleanup(cleanup, { userIds, horseIds });
   });
 
   afterEach(async () => {

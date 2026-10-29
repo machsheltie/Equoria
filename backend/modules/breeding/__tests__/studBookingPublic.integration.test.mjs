@@ -65,6 +65,7 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
   }
 
   beforeEach(async () => {
+    registerCleanup(cleanup, { userIds, horseIds });
     userIds.length = 0;
     horseIds.length = 0;
     breed = await sharedBreed();
@@ -72,7 +73,6 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
     studOwner = await player('studOwner', 100);
     stud = await horse({ ownerId: studOwner.user.id, sex: 'Stallion', studStatus: 'At Public Stud', studFee: FEE });
     mare = await horse({ ownerId: mareOwner.user.id, sex: 'Mare' });
-    registerCleanup(cleanup, { userIds, horseIds });
   });
 
   afterEach(async () => {

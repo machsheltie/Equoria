@@ -82,12 +82,6 @@ describe('sire and dam must be the same breed; the foal is born that breed (Equo
   }
 
   beforeEach(async () => {
-    userIds.length = 0;
-    horseIds.length = 0;
-    breed = await sharedBreed();
-    otherBreedRow = await otherBreed();
-    mareOwner = await player('mareOwner', 5000);
-    studOwner = await player('studOwner', 100);
     // Foals the suite makes, found by their dam, go before the horses they reference.
     cleanup.add(async () => {
       const foals = await prisma.horse.findMany({
@@ -102,6 +96,12 @@ describe('sire and dam must be the same breed; the foal is born that breed (Equo
       await prisma.horse.deleteMany({ where: { id: { in: foalIds } } });
     }, 'foals');
     registerCleanup(cleanup, { userIds, horseIds });
+    userIds.length = 0;
+    horseIds.length = 0;
+    breed = await sharedBreed();
+    otherBreedRow = await otherBreed();
+    mareOwner = await player('mareOwner', 5000);
+    studOwner = await player('studOwner', 100);
   });
 
   afterEach(async () => {

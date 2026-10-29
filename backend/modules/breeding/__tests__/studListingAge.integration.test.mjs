@@ -66,12 +66,12 @@ describe('a stallion stands at stud only from age 3 (Equoria-e7tgc.2)', () => {
   }
 
   beforeEach(async () => {
+    registerCleanup(cleanup, { userIds, horseIds });
     userIds.length = 0;
     horseIds.length = 0;
     breed = await sharedBreed();
     owner = await makePlayer(PREFIX, 'owner', 1000);
     userIds.push(owner.user.id);
-    registerCleanup(cleanup, { userIds, horseIds });
   });
 
   afterEach(async () => {

@@ -52,11 +52,6 @@ describe('a breeding record is linked to the foal it produced (Equoria-wnlf0)', 
   }
 
   beforeEach(async () => {
-    userIds.length = 0;
-    horseIds.length = 0;
-    breed = await sharedBreed();
-    mareOwner = await player('mareOwner', 5000);
-    studOwner = await player('studOwner', 100);
     // Foals, found by their dam, go before the horses they reference (records SET NULL).
     cleanup.add(async () => {
       const foals = await prisma.horse.findMany({
@@ -71,6 +66,11 @@ describe('a breeding record is linked to the foal it produced (Equoria-wnlf0)', 
       await prisma.horse.deleteMany({ where: { id: { in: foalIds } } });
     }, 'foals');
     registerCleanup(cleanup, { userIds, horseIds });
+    userIds.length = 0;
+    horseIds.length = 0;
+    breed = await sharedBreed();
+    mareOwner = await player('mareOwner', 5000);
+    studOwner = await player('studOwner', 100);
   });
 
   afterEach(async () => {

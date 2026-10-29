@@ -31,6 +31,9 @@ let token;
 let breed;
 
 beforeAll(async () => {
+  cleanup.add(() => prisma.breedingRecord.deleteMany({ where: { damId: { in: horseIds } } }), 'breeding records');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
   owner = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -48,9 +51,6 @@ beforeAll(async () => {
     update: {},
     create: { name: 'Thoroughbred', description: 'Shared test breed' },
   });
-  cleanup.add(() => prisma.breedingRecord.deleteMany({ where: { damId: { in: horseIds } } }), 'breeding records');
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
 }, 60000);
 
 afterAll(() => cleanup.run(), 60000);

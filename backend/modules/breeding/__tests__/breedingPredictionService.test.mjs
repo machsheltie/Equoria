@@ -57,6 +57,14 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
     const ts = Date.now();
     const rand = () => Math.random().toString(36).slice(2, 8);
 
+    // Equoria-1ohys: scoped, fail-loud cleanup. The 4 fixture horses are
+    // independent (no sireId/damId), so a single id-IN deleteMany removes them
+    // before the owning user (Horse.userId onDelete:Restrict, schema:282).
+    // traitHistoryLog rows cascade on horse delete. A real scope/FK failure now
+    // reds afterAll instead of being swallowed.
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: bpsHorseIds } } }), 'bpsHorses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: bpsUser.id } }), 'bpsUser');
+
     bpsUser = await prisma.user.create({
       data: {
         emailVerified: true,
@@ -164,14 +172,6 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
         ageInDays: 100,
       },
     });
-
-    // Equoria-1ohys: scoped, fail-loud cleanup. The 4 fixture horses are
-    // independent (no sireId/damId), so a single id-IN deleteMany removes them
-    // before the owning user (Horse.userId onDelete:Restrict, schema:282).
-    // traitHistoryLog rows cascade on horse delete. A real scope/FK failure now
-    // reds afterAll instead of being swallowed.
-    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: bpsHorseIds } } }), 'bpsHorses');
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: bpsUser.id } }), 'bpsUser');
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);
