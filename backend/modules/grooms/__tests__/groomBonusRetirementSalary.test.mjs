@@ -1,19 +1,16 @@
 /**
- * groomBonusTraitService, groomRetirementService, groomSalaryService unit tests
+ * groomRetirementService, groomSalaryService unit tests
  * (Equoria-rr7 coverage sprint).
  *
  * Shared DB fixture: user + Filly foal + groom.
  * Fresh groom (careerWeeks=0, no assignments) exercises not-eligible paths.
+ *
+ * Equoria-czpa5: the groomBonusTraitService cases went with that service, which
+ * no production code reached.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import {
-  validateBonusTraits,
-  getBonusTraits,
-  checkBonusEligibility,
-  getUserGroomsWithBonusTraits,
-} from '../services/groomBonusTraitService.mjs';
 import { checkRetirementEligibility, getRetirementStatistics } from '../services/groomRetirementService.mjs';
 import {
   calculateWeeklyFee,
@@ -77,63 +74,6 @@ afterAll(async () => {
   cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   await cleanup.run();
 }, 30000);
-
-// ── groomBonusTraitService ────────────────────────────────────────────────────
-
-describe('validateBonusTraits', () => {
-  it('returns valid for empty object', () => {
-    const result = validateBonusTraits({});
-    expect(result.valid).toBe(true);
-    expect(result.errors).toHaveLength(0);
-  });
-
-  it('returns valid for 3 traits within bonus limits', () => {
-    const result = validateBonusTraits({ Calm: 0.1, Brave: 0.2, Curious: 0.25 });
-    expect(result.valid).toBe(true);
-  });
-
-  it('returns invalid for more than 3 traits', () => {
-    const result = validateBonusTraits({ A: 0.1, B: 0.1, C: 0.1, D: 0.1 });
-    expect(result.valid).toBe(false);
-    expect(result.errors.length).toBeGreaterThan(0);
-  });
-
-  it('returns invalid for bonus exceeding 0.3 (30%)', () => {
-    const result = validateBonusTraits({ Calm: 0.5 });
-    expect(result.valid).toBe(false);
-  });
-});
-
-describe('getBonusTraits', () => {
-  it('throws for non-existent groom', async () => {
-    await expect(getBonusTraits(999999999)).rejects.toThrow();
-  });
-
-  it('returns empty object for groom with no bonus traits set', async () => {
-    const result = await getBonusTraits(groom.id);
-    expect(typeof result).toBe('object');
-    expect(Object.keys(result)).toHaveLength(0);
-  });
-});
-
-describe('checkBonusEligibility', () => {
-  it('returns ineligible for newborn with no interactions (bond too low)', async () => {
-    const result = await checkBonusEligibility(horse.id, groom.id);
-    expect(typeof result.eligible).toBe('boolean');
-    expect(typeof result.averageBondScore).toBe('number');
-    expect(typeof result.coveragePercentage).toBe('number');
-    expect(typeof result.reason).toBe('string');
-  });
-});
-
-describe('getUserGroomsWithBonusTraits', () => {
-  it('returns array including our fixture groom', async () => {
-    const result = await getUserGroomsWithBonusTraits(user.id);
-    expect(Array.isArray(result)).toBe(true);
-    const ids = result.map(g => g.id);
-    expect(ids).toContain(groom.id);
-  });
-});
 
 // ── groomRetirementService ────────────────────────────────────────────────────
 

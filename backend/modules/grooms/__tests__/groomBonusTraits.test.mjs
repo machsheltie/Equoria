@@ -6,12 +6,13 @@
  * rare or high-value traits when working with foals during milestone evaluations.
  *
  * Features tested:
- * - Groom bonus trait assignment and validation
- * - API endpoints for bonus trait management
+ * - The closed bonus-trait API endpoint
  *
  * Equoria-xix5n: the probability-modifier cases called
  * utils/traitAssignmentLogic.mjs, which no production code reached; it was
  * deleted with the other dead trait modules and so were those cases.
+ * Equoria-czpa5: the service-level assignment/read cases went with
+ * groomBonusTraitService, which no production code reached.
  *
  * Testing approach: Real database operations with zero mocking to validate actual business logic
  */
@@ -160,59 +161,6 @@ describe('Groom Bonus Traits System', () => {
         /* already gone */
       }
     }
-  });
-
-  describe('Groom Bonus Trait Management', () => {
-    it('should assign bonus traits to a groom', async () => {
-      const bonusTraits = {
-        confident: 0.25,
-        athletic: 0.15,
-        intelligent: 0.2,
-      };
-
-      // groomBonusTraitService is implemented and co-located in modules/grooms/services.
-      const { assignBonusTraits } = await import('../services/groomBonusTraitService.mjs');
-
-      const result = await assignBonusTraits(testGroom.id, bonusTraits);
-
-      expect(result.success).toBe(true);
-      expect(result.bonusTraits).toEqual(bonusTraits);
-
-      // Verify in database
-      const updatedGroom = await prisma.groom.findUnique({
-        where: { id: testGroom.id },
-        select: { bonusTraitMap: true },
-      });
-
-      expect(updatedGroom.bonusTraitMap).toEqual(bonusTraits);
-    });
-
-    it('should validate bonus trait constraints', async () => {
-      const invalidBonusTraits = {
-        trait1: 0.35, // Exceeds 30% limit
-        trait2: 0.15,
-        trait3: 0.1,
-        trait4: 0.05, // Exceeds 3 trait limit
-      };
-
-      const { assignBonusTraits } = await import('../services/groomBonusTraitService.mjs');
-
-      await expect(assignBonusTraits(testGroom.id, invalidBonusTraits)).rejects.toThrow(
-        'Bonus trait constraints violated',
-      );
-    });
-
-    it('should get groom bonus traits', async () => {
-      const { getBonusTraits } = await import('../services/groomBonusTraitService.mjs');
-
-      const bonusTraits = await getBonusTraits(testGroom.id);
-
-      expect(bonusTraits).toEqual({
-        sensitive: 0.2,
-        noble: 0.1,
-        quick_learner: 0.15,
-      });
-    });
   });
 
   describe('API Endpoints', () => {

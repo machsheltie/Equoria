@@ -9,7 +9,6 @@
  * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export { checkBonusEligibility, getBonusTraits } from './services/groomBonusTraitService.mjs';
 export { processWeeklyCareerProgression } from './services/groomCareerProgressionService.mjs';
 export { updateGroomSynergy } from './services/groomProgressionService.mjs';
 export { processWeeklySalaries } from './services/groomSalaryService.mjs';

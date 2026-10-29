@@ -30,26 +30,10 @@ describe('GROOM_CONFIG structure', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Age thresholds
-// ---------------------------------------------------------------------------
-describe('GROOM_CONFIG age thresholds', () => {
-  it('FOAL_ENRICHMENT_MAX_AGE is 2', () => {
-    expect(GROOM_CONFIG.FOAL_ENRICHMENT_MAX_AGE).toBe(2);
-  });
-
-  it('FOAL_GROOMING_MIN_AGE is 1', () => {
-    expect(GROOM_CONFIG.FOAL_GROOMING_MIN_AGE).toBe(1);
-  });
-
-  it('FOAL_GROOMING_MAX_AGE is 3', () => {
-    expect(GROOM_CONFIG.FOAL_GROOMING_MAX_AGE).toBe(3);
-  });
-
-  it('GENERAL_GROOMING_MIN_AGE is 3', () => {
-    expect(GROOM_CONFIG.GENERAL_GROOMING_MIN_AGE).toBe(3);
-  });
-});
+// Equoria-czpa5: the age thresholds (FOAL_ENRICHMENT_MAX_AGE, FOAL_GROOMING_MIN/MAX_AGE,
+// GENERAL_GROOMING_MIN_AGE, MIN_AGE_FOR_GROOMING_TASKS), ELIGIBLE_GENERAL_GROOMING_TASKS and
+// FOAL_STREAK_BONUS_THRESHOLD had no reader after utils/groomBondingSystem.mjs was deleted
+// (Equoria-4twey); they were removed from GROOM_CONFIG with their assertions.
 
 // ---------------------------------------------------------------------------
 // No burnout. Old contract: BURNOUT_IMMUNITY_THRESHOLD_DAYS 7,
@@ -85,20 +69,12 @@ describe('GROOM_CONFIG task arrays', () => {
   it('ELIGIBLE_FOAL_GROOMING_TASKS includes hoofHandling', () => {
     expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS).toContain('hoofHandling');
   });
-
-  it('ELIGIBLE_GENERAL_GROOMING_TASKS includes brushing', () => {
-    expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('brushing');
-  });
 });
 
 // ---------------------------------------------------------------------------
 // Streak config
 // ---------------------------------------------------------------------------
 describe('GROOM_CONFIG streak config', () => {
-  it('FOAL_STREAK_BONUS_THRESHOLD is 7', () => {
-    expect(GROOM_CONFIG.FOAL_STREAK_BONUS_THRESHOLD).toBe(7);
-  });
-
   it('FOAL_STREAK_GRACE_DAYS is 2', () => {
     expect(GROOM_CONFIG.FOAL_STREAK_GRACE_DAYS).toBe(2);
   });
@@ -118,8 +94,8 @@ describe('named exports', () => {
 });
 
 // ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
-// Exact task lists/counts, category-separation/uniqueness invariants, and the
-// age-eligibility logic not covered above.
+// Exact task lists/counts and category-separation/uniqueness invariants. The
+// age-eligibility cases went with the age thresholds (Equoria-czpa5).
 describe('groomConfig — task category invariants & age eligibility (merged from legacy backend/tests, Equoria-wvuin)', () => {
   it('ELIGIBLE_FOAL_ENRICHMENT_TASKS is the exact expected list of 7', () => {
     expect(ELIGIBLE_FOAL_ENRICHMENT_TASKS).toEqual([
@@ -160,39 +136,5 @@ describe('groomConfig — task category invariants & age eligibility (merged fro
   // Owner ruling 2026-10-26 (q87) replaced the old +2: each daily groom adds +5.
   it('DAILY_BOND_GAIN is exactly 5', () => {
     expect(GROOM_CONFIG.DAILY_BOND_GAIN).toBe(5);
-  });
-
-  describe('age-based task eligibility logic', () => {
-    it('enrichment eligible for ages 0-2, not 3+', () => {
-      for (let age = 0; age <= 2; age++) {
-        expect(age <= GROOM_CONFIG.FOAL_ENRICHMENT_MAX_AGE).toBe(true);
-      }
-      expect(3 <= GROOM_CONFIG.FOAL_ENRICHMENT_MAX_AGE).toBe(false);
-    });
-
-    it('foal grooming eligible for ages 1-3, not 0 or 4+', () => {
-      expect(0 >= GROOM_CONFIG.FOAL_GROOMING_MIN_AGE).toBe(false);
-      for (let age = 1; age <= 3; age++) {
-        expect(age >= GROOM_CONFIG.FOAL_GROOMING_MIN_AGE && age <= GROOM_CONFIG.FOAL_GROOMING_MAX_AGE).toBe(true);
-      }
-      expect(4 <= GROOM_CONFIG.FOAL_GROOMING_MAX_AGE).toBe(false);
-    });
-
-    it('general grooming eligible for ages 3+, not 0-2', () => {
-      for (let age = 0; age < 3; age++) {
-        expect(age >= GROOM_CONFIG.GENERAL_GROOMING_MIN_AGE).toBe(false);
-      }
-      for (let age = 3; age <= 10; age++) {
-        expect(age >= GROOM_CONFIG.GENERAL_GROOMING_MIN_AGE).toBe(true);
-      }
-    });
-
-    it('ages 1-2 are eligible for BOTH enrichment and grooming (overlap)', () => {
-      for (let age = 1; age <= 2; age++) {
-        const canEnrichment = age <= GROOM_CONFIG.FOAL_ENRICHMENT_MAX_AGE;
-        const canGrooming = age >= GROOM_CONFIG.FOAL_GROOMING_MIN_AGE && age <= GROOM_CONFIG.FOAL_GROOMING_MAX_AGE;
-        expect(canEnrichment && canGrooming).toBe(true);
-      }
-    });
   });
 });
