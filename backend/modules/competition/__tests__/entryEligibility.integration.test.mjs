@@ -223,7 +223,8 @@ describe.each(PATHS)('%s applies the entry rules', (_label, enter) => {
       'gaitingRequired',
       'Gaited shows require a horse with gaiting ability',
     );
-    const unrecorded = await makeHorse({ breedId: gaitedBreed.id });
+    // A pre-ruling row with no gaits recorded at all (Equoria-576c0.5: a legacy NULL plant).
+    const unrecorded = await makeHorse({ breedId: gaitedBreed.id, gaitScores: null });
     await expectRefused(
       show.id,
       unrecorded.id,

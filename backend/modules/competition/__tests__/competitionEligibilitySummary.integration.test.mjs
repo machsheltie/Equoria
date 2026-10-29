@@ -138,7 +138,10 @@ describe('GET /competition/eligibility follows the entry rules (B9)', () => {
   // gaitScores.gaiting was eligible.
   it('Gaited needs gaiting (C12)', async () => {
     const { gaited: gaitedBreed } = await seededGaitedAndPlainBreeds();
-    const noGait = await makeHorse({ breedId: gaitedBreed.id });
+    const noGait = await makeHorse({
+      breedId: gaitedBreed.id,
+      gaitScores: { walk: 60, trot: 60, canter: 60, gallop: 60, gaiting: null },
+    });
     expect(await summary(noGait.id, 'Gaited')).toMatchObject({
       eligible: false,
       traitEligible: false,

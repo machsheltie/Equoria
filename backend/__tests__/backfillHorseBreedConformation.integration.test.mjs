@@ -63,7 +63,8 @@ async function plant(label, breedId, data = {}) {
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),
       gaitScores: ownGaits,
-      ...(breedId ? { breedId } : {}),
+      // Equoria-576c0.5: `null` plants a breedless horse (the fixture helper otherwise gives one a breed).
+      breedId,
       ...data,
     },
     horseIds,

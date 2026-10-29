@@ -24,7 +24,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { createTestHorse, cleanupTestHorses } from './createTestHorse.mjs';
+import { createTestHorse, cleanupTestHorses, testHorseData } from './createTestHorse.mjs';
 // Equoria-1ohys: fail-loud scoped cleanup for THIS suite's own teardown.
 // (The cleanupTestHorses calls inside the test BODIES below are assertion
 // subjects — they exercise the helper's contract and must stay as-is. Only
@@ -77,6 +77,9 @@ describe('createTestHorse helper (Equoria-dm1i)', () => {
         sex: 'Stallion',
         age: 1,
         dateOfBirth: new Date(),
+        // Equoria-576c0.5: every horse has a temperament and gaits; only the color is omitted.
+        temperament: 'Calm',
+        gaitScores: { walk: 50, trot: 50, canter: 50, gallop: 50, gaiting: null },
       },
     });
     const [row] = await prisma.$queryRaw`
@@ -179,4 +182,79 @@ describe('createTestHorse helper (Equoria-dm1i)', () => {
     const deletedAgain = await cleanupTestHorses(prisma, scopedCollector);
     expect(deletedAgain).toBe(0);
   }, 20000);
+});
+
+describe('every fixture horse has a breed, temperament and gaits (Equoria-576c0.5)', () => {
+  const base = () => ({
+    userId: suiteUser.id,
+    name: `TestFixture-576c0-${randHex()}`,
+    sex: 'Mare',
+    age: 4,
+    dateOfBirth: new Date(),
+  });
+  const stored = id =>
+    prisma.horse.findUnique({
+      where: { id },
+      select: { breedId: true, temperament: true, gaitScores: true, breed: { select: { name: true } } },
+    });
+  const expectRolled = row => {
+    expect(typeof row.temperament).toBe('string');
+    expect(row.temperament.length).toBeGreaterThan(0);
+    for (const gait of ['walk', 'trot', 'canter', 'gallop']) {
+      expect(Number.isFinite(row.gaitScores[gait])).toBe(true);
+    }
+  };
+
+  it('a fixture that names no breed gets the default breed (Thoroughbred) and both rolled from it', async () => {
+    const horse = await createTestHorse(prisma, base(), createdIds);
+    const row = await stored(horse.id);
+    expect(row.breed?.name).toBe('Thoroughbred');
+    expectRolled(row);
+  }, 15000);
+
+  it('relation-style data (user: { connect }) gets the default breed as a relation too', async () => {
+    const { userId, ...rest } = base();
+    const horse = await createTestHorse(prisma, { ...rest, user: { connect: { id: userId } } }, createdIds);
+    const row = await stored(horse.id);
+    expect(row.breed?.name).toBe('Thoroughbred');
+    expectRolled(row);
+  }, 15000);
+
+  it('breedId: null plants a breedless horse that still has both', async () => {
+    const horse = await createTestHorse(prisma, { ...base(), breedId: null }, createdIds);
+    const row = await stored(horse.id);
+    expect(row.breedId).toBeNull();
+    expectRolled(row);
+  }, 15000);
+
+  it('a test-made breed with no profile keeps its breed and still has both', async () => {
+    const bare = await prisma.breed.create({
+      data: { name: `TestFixture-576c0-bare-${randHex()}`, description: 'no profile' },
+    });
+    try {
+      const horse = await createTestHorse(prisma, { ...base(), breedId: bare.id }, createdIds);
+      const row = await stored(horse.id);
+      expect(row.breedId).toBe(bare.id);
+      expectRolled(row);
+      await cleanupTestHorses(prisma, createdIds);
+    } finally {
+      await prisma.breed.delete({ where: { id: bare.id } });
+    }
+  }, 15000);
+
+  it('fills the same values on every call, so no test flakes on a roll', async () => {
+    const first = await testHorseData(prisma, base());
+    const second = await testHorseData(prisma, base());
+    expect(second.temperament).toBe(first.temperament);
+    expect(second.gaitScores).toEqual(first.gaitScores);
+  }, 15000);
+
+  it('keeps caller-supplied values, including explicit nulls (legacy-row plants)', async () => {
+    const data = await testHorseData(prisma, { ...base(), temperament: null, gaitScores: null });
+    expect(data.temperament).toBeNull();
+    expect(data.gaitScores).toBeNull();
+    const given = await testHorseData(prisma, { ...base(), temperament: 'Willing' });
+    expect(given.temperament).toBe('Willing');
+    expect(Number.isFinite(given.gaitScores.walk)).toBe(true);
+  }, 15000);
 });
