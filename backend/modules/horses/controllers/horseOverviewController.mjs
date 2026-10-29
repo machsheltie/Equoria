@@ -13,6 +13,7 @@ import {
   readKeysetParams,
 } from '../../../utils/paginationHelper.mjs';
 import { staffLabels, staffPersonalityLabel } from '../../../utils/staffPublicView.mjs';
+import { computeHorsePrestige } from '../services/horsePrestige.mjs';
 
 /**
  * GET /api/horses/:horseId/competition-history
@@ -76,6 +77,7 @@ export async function getHorseCompetitionHistory(req, res, next) {
           totalPrizeMoney: 0,
           averagePlacement: 0,
           bestPlacement: 0,
+          prestige: 0,
         },
         competitions: [],
         pageInfo: { nextCursor: null, hasMore: false },
@@ -195,6 +197,8 @@ export async function getHorseCompetitionHistory(req, res, next) {
         totalPrizeMoney,
         averagePlacement: Math.round(averagePlacement * 100) / 100,
         bestPlacement,
+        // Equoria-jyf8c (owner ruling q255): placings plus big-field and repeat-win bonuses.
+        prestige: await computeHorsePrestige(horseId),
       },
       competitions,
       pageInfo,
