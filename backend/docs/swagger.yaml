@@ -56,8 +56,6 @@ tags:
     description: 'Horse trait discovery and management'
   - name: Admin
     description: 'Administrative operations'
-  - name: Labs
-    description: 'Experimental endpoints (non-SLO, subject to change)'
   - name: Health
     description: 'Health check endpoints'
 paths:
@@ -1989,10 +1987,10 @@ paths:
         '200': { description: 'Foaling process triggered' }
         '403': { description: 'Forbidden' }
 
-  # ── Labs (experimental) ───────────────────────────────────────────────────────
+  # ── Admin telemetry and compatibility (admin-gated) ──────────────────────────
   /optimization/metrics:
     get:
-      tags: [Labs]
+      tags: [Admin]
       summary: '[EXPERIMENTAL] Get API optimization metrics'
       description: 'Non-SLO endpoint. Response shape subject to change without notice.'
       security: [{ bearerAuth: [] }]
@@ -2001,7 +1999,7 @@ paths:
 
   /memory/status:
     get:
-      tags: [Labs]
+      tags: [Admin]
       summary: '[EXPERIMENTAL] Get memory management status'
       description: 'Non-SLO endpoint. Response shape subject to change without notice.'
       security: [{ bearerAuth: [] }]
@@ -2010,7 +2008,7 @@ paths:
 
   /compatibility:
     post:
-      tags: [Labs]
+      tags: [Admin]
       summary: '[EXPERIMENTAL] Calculate dynamic compatibility between horses'
       description: 'Non-SLO endpoint. Response shape subject to change without notice.'
       security: [{ bearerAuth: [] }]
