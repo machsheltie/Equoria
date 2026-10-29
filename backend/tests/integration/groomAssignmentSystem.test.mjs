@@ -14,8 +14,8 @@ import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mj
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
-import { gameCalendarDate } from '../../utils/gameTime.mjs';
 import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
+import { birthDateForAge } from '../../utils/horseAge.mjs';
 
 describe('Enhanced Groom Assignment System Integration Tests', () => {
   // Equoria-2gqir: per-user CSRF (Equoria-plw0h) — the CSRF token MUST be
@@ -75,7 +75,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         ...fixtureColor(),
         name: 'Assignment Test Horse 1',
         sex: 'Stallion',
-        dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
+        dateOfBirth: birthDateForAge(1), // 1 game year old
         userId: testUser.id,
         bondScore: 30,
       }),
@@ -86,7 +86,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         ...fixtureColor(),
         name: 'Assignment Test Horse 2',
         sex: 'Mare',
-        dateOfBirth: gameCalendarDate(new Date(), -730), // 2 years old
+        dateOfBirth: birthDateForAge(2), // 2 game years old
         userId: testUser.id,
         bondScore: 45,
       }),
@@ -288,7 +288,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
           ...fixtureColor(),
           name: 'Other User Horse',
           sex: 'Stallion',
-          dateOfBirth: gameCalendarDate(new Date(), -365),
+          dateOfBirth: birthDateForAge(1),
           userId: otherUser.id,
         }),
       });
@@ -403,7 +403,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
             // a future sweep is name-based, and the suffix avoids collisions.
             name: `TestFixture-jjzem-limit-${suffix}-${i + 1}`,
             sex: 'Stallion',
-            dateOfBirth: gameCalendarDate(new Date(), -365),
+            dateOfBirth: birthDateForAge(1),
             userId: testUser.id,
           }),
         });

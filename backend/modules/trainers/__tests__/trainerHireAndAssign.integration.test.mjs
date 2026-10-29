@@ -19,6 +19,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import config from '../../../config/config.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 const fixturePrefix = 'TestFixture-1poxi-hireassign';
 
@@ -46,7 +47,8 @@ async function makeUser({ level = 5 } = {}) {
   return { user, token };
 }
 
-async function seedHorse(userId, dateOfBirth = new Date('2020-01-01T00:00:00.000Z')) {
+// Default: an adult, well under the retirement age of 21 (game years, Eastern).
+async function seedHorse(userId, dateOfBirth = birthDateForAge(6)) {
   return createTestHorse(
     prisma,
     {

@@ -29,6 +29,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import config from '../../../config/config.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-oey96_24-rider';
 
@@ -75,7 +76,7 @@ async function seedHorse(userId) {
     {
       name: `${FIXTURE_PREFIX}-horse-${randomBytes(3).toString('hex')}`,
       sex: 'Mare',
-      dateOfBirth: new Date('2020-01-01T00:00:00.000Z'),
+      dateOfBirth: birthDateForAge(6), // an adult, well under the retirement age of 21
       userId,
     },
     createdHorseIds,

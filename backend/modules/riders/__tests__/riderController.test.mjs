@@ -28,6 +28,7 @@ import {
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 const SUITE_PREFIX = 'rctrl';
 
@@ -76,7 +77,7 @@ async function createHorse(userId) {
       ...fixtureColor(),
       name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
-      dateOfBirth: new Date('2020-01-01'),
+      dateOfBirth: birthDateForAge(6), // an adult, well under the retirement age of 21
       user: { connect: { id: userId } },
     }),
   });

@@ -56,6 +56,7 @@ import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 import { generateGaitScores } from '../../modules/horses/services/gaitService.mjs';
 import { getBreedProfile } from '../../modules/horses/data/breedProfileLoader.mjs';
 import { seededRng } from './seededRng.mjs';
+import { birthDateForAge } from '../../utils/horseAge.mjs';
 
 /** The default breed (Thoroughbred, as temperamentService's default) for a fixture that names none. */
 const defaultFixtureBreed = 'Thoroughbred';
@@ -167,8 +168,9 @@ function usesRelationInput(data) {
  * Complete `horse.create` data for a fixture horse (Equoria-576c0.5): a valid
  * colorGenotype + phenotype unless the caller supplied either, the default
  * breed when the caller named none (neither `breedId` nor `breed` set; pass
- * `breedId: null` to plant a breedless horse), and temperament + gaitScores
- * rolled from the breed unless supplied. Use it for a raw create that needs
+ * `breedId: null` to plant a breedless horse), a dateOfBirth matching `age`
+ * (default 5) in Eastern game years when none is given, and temperament +
+ * gaitScores rolled from the breed unless supplied. Use it for a raw create that needs
  * `include`/`select` or a transaction client:
  *
  *   await prisma.horse.create({ data: await testHorseData(prisma, { name, ... }) });
@@ -188,6 +190,12 @@ export async function testHorseData(prisma, data, breedGeneticProfile = null) {
   const withColor = callerSuppliedColor
     ? { ...data }
     : { ...fixtureColor(breedGeneticProfile), ...data };
+
+  // Equoria-0jztg: a fixture's birth date matches the age it intends (game years,
+  // Eastern calendar), so live-age gates such as retirement read that age.
+  if (withColor.dateOfBirth === undefined) {
+    withColor.dateOfBirth = birthDateForAge(typeof data.age === 'number' ? data.age : 5);
+  }
 
   // An undefined value names nothing (Prisma ignores it); an explicit null plants a breedless horse.
   const namesBreed = data.breedId !== undefined || data.breed !== undefined;

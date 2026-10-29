@@ -31,6 +31,7 @@ import { createTestHorse, cleanupTestHorses, testHorseData } from './createTestH
 // the suite's afterAll teardown and the sentinel-negative row's load-bearing
 // delete are migrated off silent no-op catch arms.)
 import { createCleanupTracker } from './failLoudCleanup.mjs';
+import { getHorseAgeYears } from '../../utils/horseAge.mjs';
 
 const randHex = (n = 4) => randomBytes(n).toString('hex');
 
@@ -240,6 +241,13 @@ describe('every fixture horse has a breed, temperament and gaits (Equoria-576c0.
     } finally {
       await prisma.breed.delete({ where: { id: bare.id } });
     }
+  }, 15000);
+
+  it('a fixture with no dateOfBirth is born at the age it names, in game years (Equoria-0jztg)', async () => {
+    const { dateOfBirth: _unused, ...rest } = base();
+    const horse = await createTestHorse(prisma, { ...rest, age: 7 }, createdIds);
+    const row = await prisma.horse.findUnique({ where: { id: horse.id }, select: { dateOfBirth: true, age: true } });
+    expect(getHorseAgeYears(row.dateOfBirth)).toBe(7);
   }, 15000);
 
   it('fills the same values on every call, so no test flakes on a roll', async () => {
