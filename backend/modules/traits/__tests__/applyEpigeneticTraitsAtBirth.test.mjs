@@ -382,7 +382,7 @@ describe('applyEpigeneticTraitsAtBirth — getHighestScoringDiscipline branches'
 });
 
 // ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
-// Deterministic negative-condition assertions, peopleTrusting/low_immunity
+// Deterministic negative-condition assertions, peopleTrusting/lowImmunity
 // presence, and disciplineScores-fallback specialization not covered above.
 describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legacy backend/tests, Equoria-wvuin)', () => {
   // DETERMINISTIC seed-sweep helper (Equoria-fefh2.43 item 5).

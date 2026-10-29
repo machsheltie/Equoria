@@ -2,8 +2,8 @@
  * Personality Modifier Engine
  * Core logic engine for applying groom personality-temperament compatibility effects
  *
- * This module implements the personality modifier engine that calculates trait_modifier_score
- * and bond_modifier based on groom-foal personality compatibility.
+ * This module implements the personality modifier engine that calculates traitModifierScore
+ * and bondModifier based on groom-foal personality compatibility.
  * Integrates with the milestone evaluation system to apply personality effects during
  * trait development calculations.
  */

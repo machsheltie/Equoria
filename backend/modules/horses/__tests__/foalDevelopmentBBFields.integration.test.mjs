@@ -26,7 +26,7 @@
  * foal enrichment is the groom's job, so none of those fields are returned.
  *
  * Equoria-fr2kg Q5. OLD CONTRACT: BB.1 also returned `ageStage` (newborn /
- * weanling / yearling / two_year_old), and reading development recorded
+ * weanling / yearling / twoYearOld), and reading development recorded
  * stage-* milestones. NEW RULING (owner, 2026-10-15): the named life stages
  * are removed, so neither is returned or recorded.
  *

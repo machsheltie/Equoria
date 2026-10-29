@@ -1,6 +1,6 @@
 /**
  * Foal Task Log Storage Test Suite
- * Tests for foal task_log JSON storage and last care date tracking
+ * Tests for foal taskLog JSON storage and last care date tracking
  *
  * 🎯 FEATURES TESTED:
  * - Task log JSON structure and storage in database

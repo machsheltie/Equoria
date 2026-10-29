@@ -19,7 +19,7 @@
  * - Ages 1-3: Both enrichment AND grooming tasks (overlap phase)
  * - Ages 3+: All tasks (enrichment + foal grooming + general grooming)
  * - Daily mutual exclusivity: One enrichment OR one grooming task per day
- * - Task logging: JSON format {task_name: count} for trait evaluation
+ * - Task logging: JSON format {taskName: count} for trait evaluation
  * - Streak tracking: 2-day grace period, +10% bonus for 7 consecutive days
  *
  * 🧪 TESTING APPROACH:

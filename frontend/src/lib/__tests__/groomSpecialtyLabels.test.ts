@@ -4,8 +4,9 @@
  * THE DEFECT THIS LOCKS OUT
  *   `GameNotifRow`'s groom-retired row interpolated `payload.speciality`
  *   directly, so the one new player-facing sentence this feature added read
- *   "Has hung up their headcollar after a long career in foal_care." A database
- *   enum, in prose, in the middle of an emotional moment.
+ *   "Has hung up their headcollar after a long career in" followed by the raw,
+ *   then snake_case, speciality value. A database enum, in prose, in the middle
+ *   of an emotional moment.
  *
  * The assertions below are deliberately about BOTH halves of the requirement:
  * that every specialty the backend can produce has an authored label (coverage),
@@ -64,7 +65,7 @@ describe('groomSpecialtyLabel — the fallback protects values it has never seen
 
   it('humanizes an unknown camelCase value too', () => {
     // The pre-existing `formatSpecialty` helpers were camelCase-only, which is
-    // exactly why they never caught `foal_care`; this handles both.
+    // exactly why they never caught the snake_case speciality; this handles both.
     expect(groomSpecialtyLabel('showPreparation')).toBe('show preparation');
   });
 

@@ -3,7 +3,7 @@
  *
  * Spec §8.4 (feed-system redesign 2026-04-29): a daily job finds mares whose
  * `inFoalSinceDate <= now - 7 days` and:
- *   1. Computes positive_chance / negative_chance via
+ *   1. Computes positiveChance / negativeChance via
  *      calculatePregnancyEpigeneticChances(mare.pregnancyFeedingsByTier).
  *   2. Calls createFoalFromPregnancy() — passes the bonus chances + the
  *      pregnancySireId snapshot — which inserts the foal Horse row.
@@ -299,7 +299,7 @@ describe('runFoalingJob (B5)', () => {
       userId: user.id,
       breedId,
       inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
-      pregnancyFeedingsByTier: { elite: 7 }, // positive_chance = 20%
+      pregnancyFeedingsByTier: { elite: 7 }, // positiveChance = 20%
     });
 
     const result = await runFoalingJob({ rng: () => 0 });

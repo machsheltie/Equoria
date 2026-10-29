@@ -1,6 +1,6 @@
 /**
  * Foal Task Log and Streak Data Test Suite
- * Tests for foal task_log storage and consecutive days streak tracking
+ * Tests for foal taskLog storage and consecutive days streak tracking
  *
  * 🎯 FEATURES TESTED:
  * - Task log JSON structure and storage in database

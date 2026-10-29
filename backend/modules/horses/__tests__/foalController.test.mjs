@@ -213,7 +213,7 @@ describe('retired player-run foal routes (Equoria-fr2kg)', () => {
 
 // ─── Named life stages (removed) ────────────────────────────────────────────
 // Equoria-fr2kg Q5. OLD CONTRACT: GET /foals/:id, /activities and /development
-// carried `ageStage` ('newborn' | 'weanling' | 'yearling' | 'two_year_old'),
+// carried `ageStage` ('newborn' | 'weanling' | 'yearling' | 'twoYearOld'),
 // and GET /foals/:id refused an age-3 horse as "already graduated". NEW RULING
 // (owner, 2026-10-15): remove the named life stages; they are not part of the
 // design, and there is no graduation. The age-3 refusal itself is unchanged.

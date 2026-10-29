@@ -2,7 +2,7 @@
  * Escrow-funded ridden shows built through the real controllers, for the
  * settlement suites (Equoria-wmwbr, fzmiy, cmw85.1, xal4m).
  *
- * createShow debits the creator the prize into SystemAccount[show_escrow] and
+ * createShow debits the creator the prize into SystemAccount[showEscrow] and
  * enterShow debits each entrant the fee into it, so a show built here holds
  * exactly the money a player-made show holds. Every row is recorded in an id
  * collector and removed by `cleanup()`, which fails loud.

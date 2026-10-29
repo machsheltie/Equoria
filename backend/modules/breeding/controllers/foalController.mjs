@@ -21,7 +21,7 @@
  * groom's job, and there is no graduation).
  *
  * No response carries a named life stage (newborn / weanling / yearling /
- * two_year_old): Equoria-fr2kg Q5, owner ruling 2026-10-15 — the named life
+ * twoYearOld): Equoria-fr2kg Q5, owner ruling 2026-10-15 — the named life
  * stages are not part of the design.
  */
 

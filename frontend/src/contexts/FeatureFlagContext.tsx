@@ -168,10 +168,10 @@ export function FeatureGate({ flag, children, fallback = null, invert = false }:
  *   <ABTestGate.Variant name="control">
  *     <LandingControl />
  *   </ABTestGate.Variant>
- *   <ABTestGate.Variant name="variant_a">
+ *   <ABTestGate.Variant name="variantA">
  *     <LandingA />
  *   </ABTestGate.Variant>
- *   <ABTestGate.Variant name="variant_b">
+ *   <ABTestGate.Variant name="variantB">
  *     <LandingB />
  *   </ABTestGate.Variant>
  * </ABTestGate>

@@ -9,7 +9,7 @@
  * validateActivityForFoalAge) and hasGraduated were removed.
  *
  * Equoria-fr2kg Q5 (owner ruling 2026-10-15): the named life stages (newborn,
- * weanling, yearling, two_year_old) are not part of the design and were
+ * weanling, yearling, twoYearOld) are not part of the design and were
  * removed, with computeAgeStage and its STAGE_* day boundaries. A horse is a
  * foal while its game age is under 3 (owner ruling 2026-10-19 #18: "under 3"
  * uses the horse's game age).

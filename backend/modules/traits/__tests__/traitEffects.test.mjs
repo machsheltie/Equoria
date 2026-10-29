@@ -170,7 +170,7 @@ describe('getCombinedTraitEffects', () => {
   });
 
   it('object effect overwrites prior non-object value for same key — the else branch', () => {
-    // eager_learner.baseStatBoost = 1 (number) → stored directly
+    // eagerLearner.baseStatBoost = 1 (number) → stored directly
     // disciplineAffinityRacing.baseStatBoost = { speed: 3, stamina: 2 } (object)
     // combinedEffects.baseStatBoost = 1 (truthy, not object) → outer else-if fires;
     // the inner object check is FALSE (number ≠ object) → else overwrites with spread

@@ -5,7 +5,7 @@
  *   Three reasons, in order of weight:
  *
  *   1. No transform can produce the right words. The requirement is the game
- *      speaking, not mechanical case conversion: `foal_care` de-snake-cased is
+ *      speaking, not mechanical case conversion: `foalCare` split into words is
  *      "foal care", which is *correct* but flat. "raising foals" is what a
  *      horsewoman would say, and no amount of regex gets there from the enum.
  *      A label map is the only shape that can hold authored prose.
@@ -13,13 +13,13 @@
  *   2. There is no "one shared helper" to extend. `formatSpecialty` exists
  *      TWICE — `components/MyGroomsDashboard.tsx:66` and
  *      `components/AssignGroomModal.tsx:193` — as two separate local copies,
- *      both camelCase-only (`replace(/([A-Z])/g, ' $1')`), so neither touches
- *      `foal_care` at all. Extending "the" helper would mean picking one of two
+ *      both camelCase-only (`replace(/([A-Z])/g, ' $1')`), so neither splits a
+ *      snake_case value at all. Extending "the" helper would mean picking one of two
  *      and leaving the other wrong.
  *
  *   3. One spelling per specialty. Until the camelCase conversion (owner
  *      ruling 2026-10-21, Equoria-pjvp8 phase 3e) `grooms.speciality` held both
- *      `foal_care` and `foalCare` depending on which path created the row; the
+ *      a snake_case spelling and `foalCare` depending on which path created the row; the
  *      data migration 20261022190000_groom_speciality_camelcase unified them,
  *      so the map keeps only the camelCase keys.
  *
@@ -64,8 +64,8 @@ const GROOM_SPECIALTY_LABELS: Readonly<Record<string, string>> = Object.freeze({
 /**
  * Last-resort formatter for a specialty this module has not been taught yet: it
  * must never hand a player a raw database enum. Splits snake_case AND camelCase
- * — the failure that produced this module was `foal_care` reaching a sentence
- * verbatim, and the existing camelCase-only helpers would not have caught it.
+ * — the failure that produced this module was a snake_case speciality reaching
+ * a sentence verbatim, and the existing camelCase-only helpers would not have caught it.
  */
 function humanizeUnknownSpecialty(raw: string): string {
   return raw

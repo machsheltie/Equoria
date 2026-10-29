@@ -6,7 +6,7 @@
  * awaited them with Promise.all. When one entry's transaction failed, the
  * rejection skipped the fee-escrow settlement that followed, and because the
  * show was already 'completed', nothing ever came back for it: the creator was
- * never paid the entry fees and SystemAccount[show_escrow] kept them for good.
+ * never paid the entry fees and SystemAccount[showEscrow] kept them for good.
  * The same rejection also ended the run, so later shows in the batch waited a
  * night.
  *

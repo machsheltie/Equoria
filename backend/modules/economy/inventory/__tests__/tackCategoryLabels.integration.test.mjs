@@ -4,7 +4,7 @@
  * Owner rulings 2026-10-28 q164/q165: the data a player receives carries names,
  * not stored codes. The tack shop catalogue, the player's inventory and a
  * horse's equippable list sent each item's category as its stored code
- * (saddle_pad); only the shop sent a group-heading map. The code stays (the
+ * (saddlePad); only the shop sent a group-heading map. The code stays (the
  * screens group and route by it) and every item now carries categoryLabel.
  *
  * Real app, real DB.

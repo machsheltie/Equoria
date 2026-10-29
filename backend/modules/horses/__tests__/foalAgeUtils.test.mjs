@@ -27,7 +27,7 @@ const daysAgo = days => new Date(NOW.getTime() - days * DAY_MS);
 //
 // Equoria-fr2kg Q5. OLD CONTRACT: computeAgeStage mapped a foal's age onto
 // named life stages (newborn 0–2 days, weanling 3–6, yearling 7–13,
-// two_year_old 14–20, null = "graduated" at 21), with the STAGE_* day
+// twoYearOld 14–20, null = "graduated" at 21), with the STAGE_* day
 // constants. NEW RULING (owner, 2026-10-15): remove the named life stages —
 // they are not part of the design — and there is no graduation. A horse is a
 // foal while its game age is under 3.
