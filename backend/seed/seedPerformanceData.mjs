@@ -27,6 +27,7 @@ import logger from '../utils/logger.mjs';
 // Equoria-94z3m: both symbols now resolve through the horses module barrel.
 import { generateStoreStats, generateTemperamentWithDefault } from '../modules/horses/index.mjs';
 import { birthDateForAge } from '../utils/horseAge.mjs';
+import { staffLevels } from '../constants/staffLevels.mjs';
 
 // Pre-load the breed-starter-stats JSON so we can filter the breed pool
 // down to ONLY breeds that have a profile. The DB may contain test-leftover
@@ -353,7 +354,8 @@ async function seedPerformanceGrooms() {
         userId: user.id,
         isActive: true,
         careerWeeks: Math.floor(Math.random() * 50),
-        level: Math.floor(Math.random() * 10) + 1,
+        // Equoria-2xxvd (owner ruling q229): grooms carry a star level, not the old 1-10 level.
+        starLevel: staffLevels[Math.floor(Math.random() * staffLevels.length)],
       });
     }
   }
