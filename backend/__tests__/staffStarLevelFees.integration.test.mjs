@@ -130,9 +130,7 @@ describe('hiring charges the star level price', () => {
       firstName: 'Offer',
       lastName: prefix,
       personality: 'calm',
-      skillLevel: 'developing',
       starLevel: 'advanced',
-      speciality: 'Show Jumping',
       // Not what the hire charges: the level sets the price.
       weeklyRate: 999,
       experience: 0,
@@ -209,10 +207,12 @@ describe('hiring charges the star level price', () => {
     const res = await send('post', '/api/v1/riders/marketplace/hire', token, { marketplaceId });
 
     expect(res.status).toBe(201);
-    expect(await moneyOf(user.id)).toBe(800);
+    // Owner ruling 2026-10-29 (q282) retired the riders' old skill word, so an old rider
+    // offer with no star level is a Rookie at the Rookie price. Old contract: a
+    // rookie-tier rider at 250 a week was placed as a Novice (200).
+    expect(await moneyOf(user.id)).toBe(900);
     const rider = await prisma.rider.findFirst({ where: { userId: user.id } });
-    // A rookie-tier rider at 250 a week sits in the upper half of the old 150-300 range.
-    expect(rider).toMatchObject({ starLevel: 'novice', weeklyRate: 200 });
+    expect(rider).toMatchObject({ starLevel: 'rookie', weeklyRate: 100 });
   });
 });
 

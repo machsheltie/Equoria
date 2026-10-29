@@ -19,7 +19,7 @@
  * words: they still feed those types' existing modifiers. New trainers and grooms draw
  * their old tier with the old odds and then a star level inside it (`drawStaffLevel`),
  * so the two never disagree. Riders have no old skill word any more (owner ruling
- * 2026-10-29, q282, migration 20261030210000_riders_retire_skill_level_and_speciality):
+ * 2026-10-29, q282, migration 20261030220000_riders_retire_skill_level_and_speciality):
  * the star level is a rider's only level, and a rider stored without one is a Rookie.
  *
  * This file is pure data and arithmetic: no database, no module imports.

@@ -1559,7 +1559,7 @@ model Rider {
   /// allowed words are a CHECK constraint in migration 20261028120000_staff_star_levels.
   /// It is a rider's only level: the old skill word and the visible speciality were
   /// dropped (owner rulings 2026-10-29, q282/q283; migration
-  /// 20261030210000_riders_retire_skill_level_and_speciality).
+  /// 20261030220000_riders_retire_skill_level_and_speciality).
   starLevel    String            @default("rookie")
   /// Weekly rate in game currency: always the star level's price (owner ruling
   /// 2026-10-28, q226; migration 20261028180000_staff_level_is_stars).
