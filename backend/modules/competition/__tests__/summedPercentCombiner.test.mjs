@@ -20,6 +20,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { careForHealth } from '../../../__tests__/helpers/healthFixture.mjs';
 import { scoreShowEntries } from '../services/competitionScoring.mjs';
+import { neutralTemperament } from '../../../__tests__/helpers/neutralTemperament.mjs';
 
 const flat = v => ({
   speed: v,
@@ -50,7 +51,13 @@ const goodHealth = careForHealth('Good');
 function score(base, { rng = () => 0, rider = null, discipline = 'Dressage' } = {}) {
   const [{ score: s }] = scoreShowEntries({
     show: { id: 0, discipline },
-    entries: [{ horseId: 1, horse: { name: 'TestFixture-b5', ...goodHealth, ...flat(base) } }],
+    // Every horse has a temperament (Equoria-576c0.5); a 0% one isolates the term under test.
+    entries: [
+      {
+        horseId: 1,
+        horse: { name: 'TestFixture-b5', temperament: neutralTemperament(discipline), ...goodHealth, ...flat(base) },
+      },
+    ],
     assignmentByHorseId: new Map(rider ? [[1, { rider }]] : []),
     rng,
   });
@@ -85,7 +92,7 @@ describe('luck is +1..+10% in whole percents (C1)', () => {
       show: { id: 0, discipline: 'Dressage' },
       entries: [1, 2, 3].map(horseId => ({
         horseId,
-        horse: { name: `h${horseId}`, ...flat(60) },
+        horse: { name: `h${horseId}`, temperament: neutralTemperament('Dressage'), ...flat(60) },
       })),
       assignmentByHorseId: new Map(),
       rng,

@@ -22,6 +22,7 @@ import { describe, it, expect } from '@jest/globals';
 import { careForHealth } from '../../../__tests__/helpers/healthFixture.mjs';
 import { scoreShowEntries, weightedDisciplineBase } from '../services/competitionScoring.mjs';
 import { DISCIPLINE_STATS } from '../rules/disciplineRules.mjs';
+import { neutralTemperament } from '../../../__tests__/helpers/neutralTemperament.mjs';
 
 const LUCK_1 = () => 0;
 const STATS = [
@@ -50,7 +51,8 @@ const horse = (overrides = {}) => ({
 function scoreOf(discipline, h) {
   const [{ score }] = scoreShowEntries({
     show: { discipline },
-    entries: [{ horseId: 1, horse: h }],
+    // Every horse has a temperament (Equoria-576c0.5); a 0% one isolates the term under test.
+    entries: [{ horseId: 1, horse: { temperament: neutralTemperament(discipline), ...h } }],
     assignmentByHorseId: new Map(),
     rng: LUCK_1,
   });

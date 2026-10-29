@@ -16,6 +16,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { careForHealth } from '../../../__tests__/helpers/healthFixture.mjs';
 import { breedBirthDisciplineScores } from '../../horses/index.mjs';
 import { scoreShowEntries } from '../services/competitionScoring.mjs';
+import { neutralTemperament } from '../../../__tests__/helpers/neutralTemperament.mjs';
 
 const flat = v => ({
   speed: v,
@@ -56,7 +57,8 @@ describe('the discipline trait at a show (Equoria-n7ph5)', () => {
   const scoreIn = (horse, showDiscipline) =>
     scoreShowEntries({
       show: { id: 0, discipline: showDiscipline },
-      entries: [{ horseId: 1, horse }],
+      // Every horse has a temperament (Equoria-576c0.5); a 0% one isolates the term under test.
+      entries: [{ horseId: 1, horse: { ...horse, temperament: neutralTemperament(showDiscipline) } }],
       assignmentByHorseId: new Map(),
       rng: () => 0.999999, // luck +10%
     })[0];
@@ -69,7 +71,6 @@ describe('the discipline trait at a show (Equoria-n7ph5)', () => {
     const horse = {
       id: 1,
       name: 'TestFixture-n7ph5-show',
-      temperament: null,
       disciplineScores: birthScores,
       ...careForHealth('Good'),
       ...flat(100),

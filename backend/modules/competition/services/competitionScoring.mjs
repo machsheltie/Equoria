@@ -172,9 +172,6 @@ export function scoreShowEntries({
       `[competitionScoring] show ${show.id ?? 'unknown'}: discipline "${show.discipline}" is not a competition discipline; scored on the flat 5-stat average`,
     );
   }
-  // Horses scored with a 0 temperament term because theirs is missing or not
-  // one of the 11 (O5 interim); logged once for the show below.
-  const unrecognizedTemperamentHorseIds = [];
   const scored = entries.map(entry => {
     const h = entry.horse;
     // Equoria-507mt: stat columns are NOT NULL at the schema layer
@@ -214,18 +211,21 @@ export function scoreShowEntries({
     // so the horse's flags no longer adjust the rider percents (the old
     // applyRiderCompatibility, Equoria-grys6, was deleted with the flag store,
     // Equoria-efs4j).
-    // Temperament (R1, B6): +5 / 0 / -5 from the owner's matrix. A null or
-    // unknown-name temperament contributes 0, as every horse did before B6,
-    // and is logged once per show (O5 interim, approved 2026-10-17). A legacy discipline has
-    // no matrix row and was already logged above, so it contributes 0 quietly.
+    // Temperament (R1, B6): +5 / 0 / -5 from the owner's matrix. Every horse has
+    // one of the 12 (Equoria-576c0.5: the column is NOT NULL and every creation
+    // path rolls it from the breed), so one that is not in the matrix is corrupt
+    // data and fails loudly rather than being scored as 0. (Old contract, O5
+    // interim: a null or unknown temperament scored 0 and was logged.) A legacy
+    // discipline has no matrix row and was already logged above, so it contributes 0.
     let temperamentTerm = 0;
     if (weighted) {
       const percent = temperamentPercent(show.discipline, h.temperament);
       if (percent === null) {
-        unrecognizedTemperamentHorseIds.push(h.id ?? entry.horseId);
-      } else {
-        temperamentTerm = percent;
+        throw new Error(
+          `[competitionScoring] show ${show.id ?? 'unknown'}: horse ${h.id ?? entry.horseId} has an unrecognized temperament ${JSON.stringify(h.temperament)}`,
+        );
       }
+      temperamentTerm = percent;
     }
 
     // Health is a percent term (decision C).
@@ -251,11 +251,6 @@ export function scoreShowEntries({
       breakdown,
     };
   });
-  if (unrecognizedTemperamentHorseIds.length > 0) {
-    logger.error(
-      `[competitionScoring] show ${show.id ?? 'unknown'}: ${unrecognizedTemperamentHorseIds.length} horse(s) with no recognized temperament scored with a 0 temperament term: ${unrecognizedTemperamentHorseIds.join(', ')}`,
-    );
-  }
   return scored;
 }
 

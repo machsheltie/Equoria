@@ -5,9 +5,10 @@
  * -5, from the Matrix sheet) summed once with luck and the rider percent:
  * final = round(base x (1 + (luck + rider + temperament) / 100)).
  *
- * Interim behaviour approved for O5 (controller, 2026-10-17): a null or
- * unknown-name temperament contributes 0 (what every horse got before B6) and
- * is logged; the horse is still scored.
+ * Old contract (O5 interim, 2026-10-17): a null or unknown-name temperament
+ * contributed 0 and was logged. New rule (Equoria-576c0.5): temperament is NOT
+ * NULL and always one of the 12, so a name outside the matrix is corrupt data
+ * and scoring fails loudly instead of guessing 0.
  *
  * Dressage, all ten stats equal so the base is that value (B4a); luck pinned to
  * the lowest roll, +1% (rng 0). Pure function over real horse-shaped rows.
@@ -91,9 +92,8 @@ describe('temperament is one percent term in the summed modifiers (R1, C2)', () 
     expect(score(90, 'Lazy', { discipline: 'Racing' })).toBe(86);
   });
 
-  it('a null or unknown temperament contributes 0 and the horse is still scored (O5 interim)', () => {
-    expect(score(100, null)).toBe(101);
-    expect(score(100, 'Grumpy')).toBe(101);
+  it('a temperament outside the matrix is corrupt data: scoring fails loudly, never scores it 0', () => {
+    expect(() => score(100, 'Grumpy')).toThrow(/unrecognized temperament "Grumpy"/);
   });
 
   it('a legacy discipline outside the 24 has no matrix row, so temperament contributes 0', () => {

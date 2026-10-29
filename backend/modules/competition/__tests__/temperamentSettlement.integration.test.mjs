@@ -2,15 +2,14 @@
  * temperamentSettlement.integration.test.mjs (Equoria-576c0 B6)
  *
  * The nightly executor loads each horse's temperament and scores it as a
- * +5 / 0 / -5 percent term (owner ruling R1, summed once per C2). A horse
- * whose temperament is null settles with a 0 term (the approved O5 interim
- * behaviour: exactly what every horse got before B6) while the valid horses
- * in the same run get their matrix term.
+ * +5 / 0 / -5 percent term (owner ruling R1, summed once per C2). Old contract
+ * (O5 interim): a horse with a null temperament settled with a 0 term. New rule
+ * (Equoria-576c0.5): temperament is NOT NULL, so the 0 term is a Neutral one.
  *
  * One Dressage show, three horses with base 100 (all ten stats 100):
- *   Calm (Positive)    100 x (1 + 0.01 + 0.05) = 106
- *   null temperament   100 x (1 + 0.01)        = 101
- *   Nervous (Negative) 100 x (1 + 0.01 - 0.05) = 96
+ *   Calm (Positive)     100 x (1 + 0.01 + 0.05) = 106
+ *   Spirited (Neutral)  100 x (1 + 0.01)        = 101
+ *   Nervous (Negative)  100 x (1 + 0.01 - 0.05) = 96
  * Luck is pinned to +1% through the executor's scoreRng option (rng 0); no
  * stat-gain roll succeeds (statGainRng 0.999). Real DB, TestFixture- fixtures,
  * id-scoped fail-loud cleanup, executor scoped by body.showIds.
@@ -42,7 +41,7 @@ const STATS_100 = {
 };
 
 describe('nightly settlement scores temperament as a percent term (B6)', () => {
-  it('Calm +5%, Nervous -5%, and a null temperament settles with 0 in the same run', async () => {
+  it('Calm +5%, Spirited 0 and Nervous -5% in the same run', async () => {
     cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: show.id } }), 'competitionResult');
     cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show.id } }), 'showEntry');
     cleanup.add(() => prisma.show.deleteMany({ where: { id: show.id } }), 'show');
@@ -80,7 +79,7 @@ describe('nightly settlement scores temperament as a percent term (B6)', () => {
         horseIds,
       );
     const calm = await makeHorse('Calm');
-    const unrecorded = await makeHorse(null);
+    const neutral = await makeHorse('Spirited');
     const nervous = await makeHorse('Nervous');
 
     const pastClose = new Date(Date.now() - 60 * 60 * 1000);
@@ -101,7 +100,7 @@ describe('nightly settlement scores temperament as a percent term (B6)', () => {
     });
 
     await prisma.showEntry.createMany({
-      data: [calm, unrecorded, nervous].map(h => ({
+      data: [calm, neutral, nervous].map(h => ({
         showId: show.id,
         horseId: h.id,
         userId: owner.id,
@@ -124,8 +123,8 @@ describe('nightly settlement scores temperament as a percent term (B6)', () => {
     expect(results).toHaveLength(3);
     expect(Number(byHorse.get(calm.id).score)).toBe(106);
     expect(byHorse.get(calm.id).placement).toBe(1);
-    expect(Number(byHorse.get(unrecorded.id).score)).toBe(101);
-    expect(byHorse.get(unrecorded.id).placement).toBe(2);
+    expect(Number(byHorse.get(neutral.id).score)).toBe(101);
+    expect(byHorse.get(neutral.id).placement).toBe(2);
     expect(Number(byHorse.get(nervous.id).score)).toBe(96);
     expect(byHorse.get(nervous.id).placement).toBe(3);
   }, 60000);
