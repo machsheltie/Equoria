@@ -37,7 +37,8 @@ import {
 } from '../../../services/apiDocumentationService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { birthDateForAge, liveHorseAgeYears } from '../../../utils/horseAge.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
+import { listFoalsInDevelopment } from '../services/foalDevelopmentService.mjs';
 import { traitRosterIds, getTraitMetadata } from '../../../utils/epigeneticTraits.mjs';
 
 /**
@@ -166,33 +167,7 @@ export async function evaluateTraits(req, res) {
 export async function getFoalDevelopment(req, res) {
   try {
     logger.info('[adminController] GET /api/admin/foals/development');
-    // The stored age only lags a birthday (until the nightly job), so it narrows
-    // the read; the live age decides membership and the answer (Equoria-6pbka).
-    const now = new Date();
-    const rows = await prisma.horse.findMany({
-      where: { age: { in: [0, 1] } },
-      select: {
-        id: true,
-        name: true,
-        age: true,
-        dateOfBirth: true,
-        bondScore: true,
-        epigeneticModifiers: true,
-        breed: { select: { name: true } },
-        foalDevelopment: {
-          select: {
-            currentDay: true,
-            bondingLevel: true,
-          },
-        },
-      },
-    });
-    const foals = rows
-      .map(({ dateOfBirth, ...foal }) => ({
-        ...foal,
-        age: liveHorseAgeYears({ age: foal.age, dateOfBirth }, now),
-      }))
-      .filter(foal => foal.age <= 1);
+    const foals = await listFoalsInDevelopment();
     res.json({ success: true, data: { foals, count: foals.length } });
   } catch (error) {
     logger.error(`[adminController] GET /api/admin/foals/development error: ${error.message}`);
