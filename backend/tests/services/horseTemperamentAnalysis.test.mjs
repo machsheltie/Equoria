@@ -204,7 +204,7 @@ describe('Horse Temperament Analysis', () => {
       // the flag path and read 'nervous'. The flag store is gone (owner ruling
       // 2026-10-29, q300, Equoria-efs4j): with fewer than 5 interactions a horse uses
       // basic stats, as every real (flagless) horse always did; bond 12 / 40 = 0.3.
-      expect(temperament.dataSource).toBe('basic_stats');
+      expect(temperament.reliabilityScore).toBe(0.3);
       expect(temperament.primaryTemperament).toBe('developing');
       expect(temperament.confidenceLevel).toBeLessThan(0.5);
     });
@@ -248,7 +248,7 @@ describe('Horse Temperament Analysis', () => {
       // Old contract: brave/confident/social flags took the flag path ('confident',
       // social 0.8). Without the flag store (Equoria-efs4j) two interactions (< 5)
       // mean basic stats: bond 35 / 40 = 0.875, social and adaptability neutral 0.5.
-      expect(temperament.dataSource).toBe('basic_stats');
+      expect(temperament.reliabilityScore).toBe(0.3);
       expect(temperament.primaryTemperament).toBe('developing');
       expect(temperament.confidenceLevel).toBeGreaterThan(0.6);
       expect(temperament.socialTendency).toBe(0.5);
