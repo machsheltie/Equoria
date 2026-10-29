@@ -27,8 +27,8 @@ describe('the horse age policy (Equoria-2nacc)', () => {
   it('competition entry accepts 3 and 20 and refuses 2 and 21', () => {
     expect(ageRefusal(birthDateForAge(3))).toBeNull();
     expect(ageRefusal(birthDateForAge(20))).toBeNull();
-    expect(ageRefusal(birthDateForAge(2))).toMatch(/YOUNG/);
-    expect(ageRefusal(birthDateForAge(21))).toMatch(/OLD/);
+    expect(ageRefusal(birthDateForAge(2))).toBe('ageTooYoung');
+    expect(ageRefusal(birthDateForAge(21))).toBe('ageTooOld');
   });
 
   it('checkAgeRequirements accepts 3 and 20 and refuses 2 and 21 (was 3-21)', () => {
