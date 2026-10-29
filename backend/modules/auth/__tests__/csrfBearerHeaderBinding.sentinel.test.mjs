@@ -168,6 +168,6 @@ describe('CSRF — Bearer-header session binding (Equoria-lax36)', () => {
       .send({ notifications: { email: false } });
 
     expect(res.status).toBe(403);
-    expect(res.body?.code).toBe('INVALID_CSRF_TOKEN');
+    expect(res.body?.code).toBe('invalidCsrfToken');
   }, 120000);
 });

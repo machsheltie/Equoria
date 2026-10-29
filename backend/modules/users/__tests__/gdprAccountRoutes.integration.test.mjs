@@ -289,7 +289,7 @@ describe('INTEGRATION: GDPR account export/delete (Equoria-s3rf)', () => {
         .post('/api/v1/auth/login')
         .set('Origin', ORIGIN)
         .send({ email: `testfixture_gdprdel_${ts}@test.com`, password: PASSWORD });
-      expect(login.body?.code).not.toBe('INVALID_CSRF_TOKEN');
+      expect(login.body?.code).not.toBe('invalidCsrfToken');
       expect(login.status).toBe(401);
     }, 120000);
   });

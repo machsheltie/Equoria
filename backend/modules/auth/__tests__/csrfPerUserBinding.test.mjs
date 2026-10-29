@@ -117,6 +117,6 @@ describe('CSRF — per-user session binding (Equoria-plw0h)', () => {
       .set('X-CSRF-Token', userA.csrfToken)
       .send({ notifications: { email: false } });
     expect(res.status).toBe(403);
-    expect(res.body?.code).toBe('INVALID_CSRF_TOKEN');
+    expect(res.body?.code).toBe('invalidCsrfToken');
   }, 30_000);
 });

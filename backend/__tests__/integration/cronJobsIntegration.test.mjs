@@ -138,7 +138,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
 
       // Distinguish the rejecting middleware: a CSRF-binding regression must
       // surface as a CSRF defect, not fold into the generic status assertion.
-      expect(response.body?.code).not.toBe('INVALID_CSRF_TOKEN');
+      expect(response.body?.code).not.toBe('invalidCsrfToken');
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.message).toContain('completed successfully');
@@ -204,7 +204,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken);
 
-      expect(startResponse.body?.code).not.toBe('INVALID_CSRF_TOKEN');
+      expect(startResponse.body?.code).not.toBe('invalidCsrfToken');
       expect(startResponse.status).toBe(200);
       expect(startResponse.body.success).toBe(true);
       expect(startResponse.body.message).toContain('started successfully');
@@ -216,7 +216,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken);
 
-      expect(stopResponse.body?.code).not.toBe('INVALID_CSRF_TOKEN');
+      expect(stopResponse.body?.code).not.toBe('invalidCsrfToken');
       expect(stopResponse.status).toBe(200);
       expect(stopResponse.body.success).toBe(true);
       expect(stopResponse.body.message).toContain('stopped successfully');

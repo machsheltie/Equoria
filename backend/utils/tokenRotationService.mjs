@@ -164,7 +164,7 @@ export async function validateRefreshToken(token) {
       });
       return {
         isValid: false,
-        error: userTokenCount === 0 ? 'SESSION_UPGRADE_REQUIRED' : 'Token not found in database',
+        error: userTokenCount === 0 ? 'sessionUpgradeRequired' : 'Token not found in database',
         decoded: null,
       };
     }
@@ -221,12 +221,12 @@ export async function detectTokenReuse(token) {
     // a destructive migration), propagate that as a non-reuse signal so the
     // audit log isn't poisoned with false reuse alerts.
     const validation = await validateRefreshToken(token);
-    if (validation.error === 'SESSION_UPGRADE_REQUIRED') {
+    if (validation.error === 'sessionUpgradeRequired') {
       return {
         isReuse: false,
         familyId: null,
         shouldInvalidateFamily: false,
-        reason: 'SESSION_UPGRADE_REQUIRED',
+        reason: 'sessionUpgradeRequired',
       };
     }
 
@@ -345,7 +345,7 @@ export async function rotateRefreshToken(oldToken) {
     // "Invalid refresh token" — that would tell a client whose token is FINE to
     // re-login over a momentary busy server. The catch re-throws the 503 past
     // the {success:false} fold. NB the wrap is INSIDE the function's own
-    // try/catch, but only the retryable case re-throws; CONCURRENT_ROTATION and
+    // try/catch, but only the retryable case re-throws; concurrentRotation and
     // genuine faults keep their existing {success:false} handling intact.
     const result = await withRetryableTxMapping(
       prisma.$transaction(async tx => {
@@ -355,7 +355,7 @@ export async function rotateRefreshToken(oldToken) {
         });
         if (upd.count === 0) {
           const concurrentError = new Error('Token already rotated by a concurrent request');
-          concurrentError.code = 'CONCURRENT_ROTATION';
+          concurrentError.code = 'concurrentRotation';
           throw concurrentError;
         }
 
@@ -426,7 +426,7 @@ export async function rotateRefreshToken(oldToken) {
     // new access token for the same family and no refresh token of its own.
     // Without a live successor it returns a clean 401-equivalent, without
     // poisoning the audit log or invalidating the family.
-    if (error?.code === 'CONCURRENT_ROTATION') {
+    if (error?.code === 'concurrentRotation') {
       const concurrent = await accessForConcurrentRotation(oldToken, validation?.decoded);
       if (concurrent) {
         logger.info('[TokenRotation] Concurrent rotation — the loser keeps its session', {

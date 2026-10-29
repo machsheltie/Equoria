@@ -122,7 +122,7 @@ export async function getCsrfToken(): Promise<string> {
         // cache. Without this, after a full page reload (which wipes the
         // in-memory authSessionState cache), this re-fetch is served the STALE
         // cached response bound to the pre-login (anonymous) session
-        // identifier, so the next mutation 403s (INVALID_CSRF_TOKEN). Mirrors
+        // identifier, so the next mutation 403s (invalidCsrfToken). Mirrors
         // fetchWithAuth's cache:'no-store' ("auth state changes must never be
         // served from browser HTTP cache").
         cache: 'no-store',
@@ -214,7 +214,9 @@ export async function fetchWithAuth<T>(
         .clone()
         .json()
         .catch(() => ({}));
-      if (body?.code === 'INVALID_CSRF_TOKEN') {
+      // The legacy spelling covers the minutes a deploy serves the new client
+      // against the old server (Equoria-pjvp8 phase 6 removes it).
+      if (body?.code === 'invalidCsrfToken' || body?.code === 'INVALID_CSRF_TOKEN') {
         authSessionState.invalidate();
         return fetchWithAuth<T>(endpoint, options, retryCount + 1, envelope);
       }

@@ -87,7 +87,7 @@ async function accountDeleteRoute(actor, body) {
  * message free of existence/ownership wording.
  */
 function expectDeletionClosed(res) {
-  expect(res.body?.code).not.toBe('INVALID_CSRF_TOKEN');
+  expect(res.body?.code).not.toBe('invalidCsrfToken');
   expect(res.status).toBe(403);
   expect(res.body.success).toBe(false);
   expect(res.body.message).toMatch(/cannot be deleted/i);

@@ -232,7 +232,7 @@ export async function verifyEmailToken(token, metadata = {}) {
       return {
         success: false,
         error: 'Invalid or expired verification token',
-        code: 'INVALID_TOKEN',
+        code: 'invalidToken',
       };
     }
 
@@ -251,7 +251,7 @@ export async function verifyEmailToken(token, metadata = {}) {
       return {
         success: false,
         error: 'Invalid or expired verification token',
-        code: 'INVALID_TOKEN',
+        code: 'invalidToken',
       };
     }
 
@@ -271,7 +271,7 @@ export async function verifyEmailToken(token, metadata = {}) {
       return {
         success: false,
         error: 'Invalid or expired verification token',
-        code: 'INVALID_TOKEN',
+        code: 'invalidToken',
       };
     }
 
@@ -280,7 +280,7 @@ export async function verifyEmailToken(token, metadata = {}) {
       return {
         success: false,
         error: 'Verification token has expired',
-        code: 'TOKEN_EXPIRED',
+        code: 'tokenExpired',
       };
     }
 
@@ -288,8 +288,8 @@ export async function verifyEmailToken(token, metadata = {}) {
     // Equoria-2ksil: /verify-email is a user-facing mutation, so a transient
     // P2028 interactive-transaction timeout under contention should surface as
     // a retryable 503 (RetryableTransactionError, extends AppError) rather than
-    // being mis-mapped to TOKEN_ALREADY_USED (400) or the generic
-    // VERIFICATION_ERROR (500) by the catch below. The catch re-throws that
+    // being mis-mapped to tokenAlreadyUsed (400) or the generic
+    // verificationError (500) by the catch below. The catch re-throws that
     // 503 past the {success:false} folding so the controller's
     // `AppError.isAppError -> next(error)` carries 503 to the client.
     const result = await withRetryableTxMapping(
@@ -344,7 +344,7 @@ export async function verifyEmailToken(token, metadata = {}) {
     return {
       success: true,
       user: result,
-      code: 'EMAIL_VERIFIED',
+      code: 'emailVerified',
     };
   } catch (error) {
     logger.error('[EmailVerification] Error verifying email token:', maskEmailsInError(error));
@@ -360,21 +360,21 @@ export async function verifyEmailToken(token, metadata = {}) {
       throw error;
     }
 
-    // If it's an AppError (like TOKEN_ALREADY_USED), return its message.
+    // If it's an AppError (like tokenAlreadyUsed), return its message.
     // Symbol-marker check survives module-cache duplication; see
     // errors/AppError.mjs.
     if (AppError.isAppError(error)) {
       return {
         success: false,
         error: error.message,
-        code: 'TOKEN_ALREADY_USED',
+        code: 'tokenAlreadyUsed',
       };
     }
 
     return {
       success: false,
       error: 'Email verification failed due to an unexpected error',
-      code: 'VERIFICATION_ERROR',
+      code: 'verificationError',
     };
   }
 }

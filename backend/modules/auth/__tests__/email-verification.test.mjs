@@ -194,7 +194,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(result.user).toBeDefined();
       expect(result.user.emailVerified).toBe(true);
       expect(result.user.emailVerifiedAt).toBeDefined();
-      expect(result.code).toBe('EMAIL_VERIFIED');
+      expect(result.code).toBe('emailVerified');
     });
 
     it('shouldMarkUserEmailAsVerified', async () => {
@@ -228,7 +228,7 @@ describe('Email Verification Service - Unit Tests', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Invalid or expired verification token');
-      expect(result.code).toBe('INVALID_TOKEN');
+      expect(result.code).toBe('invalidToken');
     });
 
     it('shouldRejectAlreadyUsedToken', async () => {
@@ -246,7 +246,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(['Verification token has already been used', 'Invalid or expired verification token']).toContain(
         result.error,
       );
-      expect(['TOKEN_ALREADY_USED', 'INVALID_TOKEN']).toContain(result.code);
+      expect(['tokenAlreadyUsed', 'invalidToken']).toContain(result.code);
     });
 
     it('shouldRejectExpiredToken', async () => {
@@ -262,7 +262,7 @@ describe('Email Verification Service - Unit Tests', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Verification token has expired');
-      expect(result.code).toBe('TOKEN_EXPIRED');
+      expect(result.code).toBe('tokenExpired');
     });
 
     it('shouldUseAtomicTransactionForVerification', async () => {

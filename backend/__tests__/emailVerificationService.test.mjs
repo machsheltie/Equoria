@@ -6,8 +6,8 @@
  *   hashVerificationToken     — deterministic SHA-256
  *
  * Safe DB (no fixtures needed — "not found" / cleanup paths):
- *   verifyEmailToken           — unknown token → INVALID_TOKEN (timing-safe 100ms delay)
- *   verifyEmailToken(null)     — outer catch → VERIFICATION_ERROR (lines 222-241)
+ *   verifyEmailToken           — unknown token → invalidToken (timing-safe 100ms delay)
+ *   verifyEmailToken(null)     — outer catch → verificationError (lines 222-241)
  *   getTokenInfo               — unknown token → null
  *   checkVerificationStatus    — unknown userId → {verified:false, error:'User not found'}
  *   cleanupExpiredTokens       — safe delete of already-expired rows, returns count shape
@@ -71,11 +71,11 @@ describe('hashVerificationToken()', () => {
 // ── verifyEmailToken — invalid/unknown token path ─────────────────────────────
 
 describe('verifyEmailToken() — unknown token', () => {
-  it('returns success=false with INVALID_TOKEN code for an unknown token', async () => {
+  it('returns success=false with invalidToken code for an unknown token', async () => {
     const fakeToken = generateVerificationToken(); // valid format, unknown to DB
     const result = await verifyEmailToken(fakeToken);
     expect(result.success).toBe(false);
-    expect(result.code).toBe('INVALID_TOKEN');
+    expect(result.code).toBe('invalidToken');
     expect(typeof result.error).toBe('string');
   }, 10000); // allow up to 10s for the 100ms timing-safe delay
 });
@@ -135,11 +135,11 @@ describe('createVerificationToken() — safe DB paths (lines 63-133)', () => {
 
 // ── verifyEmailToken — outer catch path (lines 222-241) ──────────────────────
 
-describe('verifyEmailToken() — outer catch → VERIFICATION_ERROR', () => {
-  it('returns VERIFICATION_ERROR when token is null (hashVerificationToken throws, caught at line 222)', async () => {
+describe('verifyEmailToken() — outer catch → verificationError', () => {
+  it('returns verificationError when token is null (hashVerificationToken throws, caught at line 222)', async () => {
     const result = await verifyEmailToken(null);
     expect(result.success).toBe(false);
-    expect(result.code).toBe('VERIFICATION_ERROR');
+    expect(result.code).toBe('verificationError');
     expect(typeof result.error).toBe('string');
   });
 });

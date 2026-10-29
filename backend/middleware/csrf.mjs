@@ -293,7 +293,7 @@ export const getCsrfToken = (req, res) => {
     return res.json({
       success: true,
       csrfToken: token,
-      code: 'CSRF_TOKEN_CREATED',
+      code: 'csrfTokenCreated',
     });
   } catch (error) {
     logger.error('[CSRF] Token generation failed:', error);
@@ -334,7 +334,7 @@ export const csrfErrorHandler = (err, req, res, next) => {
     return res.status(403).json({
       success: false,
       message: 'Invalid CSRF token. Please refresh the page and try again.',
-      code: 'INVALID_CSRF_TOKEN',
+      code: 'invalidCsrfToken',
     });
   }
 

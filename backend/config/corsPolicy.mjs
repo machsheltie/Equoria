@@ -60,7 +60,7 @@ export const enforceNoOriginPolicy = (req, res, next) => {
   return res.status(403).json({
     success: false,
     message: 'Origin header required',
-    code: 'NO_ORIGIN_BLOCKED',
+    code: 'noOriginBlocked',
   });
 };
 

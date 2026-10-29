@@ -8,8 +8,8 @@
  *
  * Safe DB (no fixtures needed — "not found" paths / cleanup with empty result):
  *   cleanupExpiredTokens — returns count shape, 0 if nothing to clean
- *   validateRefreshToken — type-check fail + SESSION_UPGRADE_REQUIRED paths
- *   detectTokenReuse    — catch path (null), token-not-found, SESSION_UPGRADE_REQUIRED
+ *   validateRefreshToken — type-check fail + sessionUpgradeRequired paths
+ *   detectTokenReuse    — catch path (null), token-not-found, sessionUpgradeRequired
  *   invalidateTokenFamily — nonexistent family (updateMany returns 0)
  */
 
@@ -29,7 +29,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 // Synthetic UUID — never created in the real DB; all refreshToken.count queries
-// for this userId will return 0, triggering SESSION_UPGRADE_REQUIRED paths.
+// for this userId will return 0, triggering sessionUpgradeRequired paths.
 const GHOST_USER_ID = '00000000-0000-0000-0000-000000000099';
 
 function signRefreshToken(payload) {
@@ -139,11 +139,11 @@ describe('validateRefreshToken() — DB paths', () => {
     expect(result.decoded).toBeNull();
   });
 
-  it('returns SESSION_UPGRADE_REQUIRED when refresh JWT is not in DB (user has 0 tokens, lines 258-279)', async () => {
+  it('returns sessionUpgradeRequired when refresh JWT is not in DB (user has 0 tokens, lines 258-279)', async () => {
     const token = signRefreshToken({ userId: GHOST_USER_ID, type: 'refresh' });
     const result = await validateRefreshToken(token);
     expect(result.isValid).toBe(false);
-    expect(result.error).toBe('SESSION_UPGRADE_REQUIRED');
+    expect(result.error).toBe('sessionUpgradeRequired');
     expect(result.decoded).toBeNull();
   });
 });
@@ -168,18 +168,18 @@ describe('detectTokenReuse()', () => {
     expect(result.shouldInvalidateFamily).toBe(false);
   });
 
-  it('returns isReuse=false, reason="SESSION_UPGRADE_REQUIRED" for valid refresh JWT with no DB tokens (lines 334-341)', async () => {
-    // GHOST_USER_ID has 0 tokens → validateRefreshToken returns SESSION_UPGRADE_REQUIRED
+  it('returns isReuse=false, reason="sessionUpgradeRequired" for valid refresh JWT with no DB tokens (lines 334-341)', async () => {
+    // GHOST_USER_ID has 0 tokens → validateRefreshToken returns sessionUpgradeRequired
     const token = signRefreshToken({ userId: GHOST_USER_ID, type: 'refresh' });
     const result = await detectTokenReuse(token);
     expect(result.isReuse).toBe(false);
-    expect(result.reason).toBe('SESSION_UPGRADE_REQUIRED');
+    expect(result.reason).toBe('sessionUpgradeRequired');
     expect(result.shouldInvalidateFamily).toBe(false);
     expect(result.familyId).toBeNull();
   });
 
   it('returns isReuse=true, reason="Token not found" for access-type JWT signed with refresh secret (not SESSION_UPGRADE path)', async () => {
-    // validateRefreshToken returns "Invalid token type" — not SESSION_UPGRADE_REQUIRED
+    // validateRefreshToken returns "Invalid token type" — not sessionUpgradeRequired
     // so detectTokenReuse continues, hashes the token, DB returns null → "Token not found"
     const token = signRefreshToken({ userId: GHOST_USER_ID, type: 'access' });
     const result = await detectTokenReuse(token);
@@ -337,7 +337,7 @@ describe('validateRefreshToken() — DB record status checks (lines 282-305) (Eq
 //   3:   first rotation (token1 → isActive=false, isInvalidated=false)
 //   4:   second rotation attempt → reuse detection fires (isReuse=true, familyId present)
 //   5:   malformed token → isReuse=true, familyId=null (no-family branch)
-//   6:   SESSION_UPGRADE_REQUIRED token → !validation.isValid branch (line 433-439)
+//   6:   sessionUpgradeRequired token → !validation.isValid branch (line 433-439)
 
 describe('rotateRefreshToken + validateRefreshToken happy-path + detectTokenReuse first-use (Equoria-jkht)', () => {
   let rtUser;
@@ -422,6 +422,6 @@ describe('rotateRefreshToken + validateRefreshToken happy-path + detectTokenReus
     const result = await rotateRefreshToken(token);
     expect(result.success).toBe(false);
     expect(result.familyInvalidated).toBe(false);
-    expect(result.error).toBe('SESSION_UPGRADE_REQUIRED');
+    expect(result.error).toBe('sessionUpgradeRequired');
   });
 });

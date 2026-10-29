@@ -137,7 +137,7 @@ interface RawAuthResponse {
  * CSRF token cached during the request itself is bound to the ANONYMOUS
  * identifier and is stale the moment the new auth cookie applies. Seed the
  * freshly-bound token so the FIRST authenticated mutation sends a matching
- * token instead of 403-ing (INVALID_CSRF_TOKEN) and relying on the apiClient's
+ * token instead of 403-ing (invalidCsrfToken) and relying on the apiClient's
  * one-shot retry to recover. Both paths must finalize the session identically.
  */
 function finalizeAuthenticatedSession(raw: RawAuthResponse): AuthenticatedSessionResult {
@@ -238,7 +238,7 @@ export const authApi = {
     // cached during the register POST itself is bound to the ANONYMOUS
     // identifier; the very next mutation (e.g. advance-onboarding during the
     // onboarding wizard) would send that stale token and 403
-    // (INVALID_CSRF_TOKEN). Seed the freshly-bound token returned in the
+    // (invalidCsrfToken). Seed the freshly-bound token returned in the
     // register response so the first post-registration mutation succeeds
     // without depending on the apiClient's 403 retry.
     if (result?.csrfToken) {

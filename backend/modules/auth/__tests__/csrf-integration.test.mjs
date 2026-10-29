@@ -12,7 +12,7 @@
  *      when both the cookie and the `X-CSRF-Token` header are presented
  *      AND the HMAC validates.
  *   3. Missing cookie, missing header, or mismatched token → 403
- *      with code INVALID_CSRF_TOKEN.
+ *      with code invalidCsrfToken.
  *
  * The authenticated mutation we drive is `PUT /api/v1/auth/profile`, which
  * moved to `authRouter` in Workstream 2. If that route ever drifts back
@@ -151,13 +151,13 @@ describe('CSRF protection — real browser flow', () => {
         .send({ notifications: { email: true } });
 
       expect(res.status).toBe(200);
-      expect(res.body.code).not.toBe('INVALID_CSRF_TOKEN');
+      expect(res.body.code).not.toBe('invalidCsrfToken');
 
       const refreshed = await prisma.user.findUnique({ where: { id: testUser.id } });
       expect(refreshed.settings?.notifications?.email).toBe(true);
     });
 
-    it('fails with 403 INVALID_CSRF_TOKEN when the header is missing', async () => {
+    it('fails with 403 invalidCsrfToken when the header is missing', async () => {
       const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: accessCookie });
 
       const res = await request(app)
@@ -168,10 +168,10 @@ describe('CSRF protection — real browser flow', () => {
         .send({ firstName: 'ShouldNotApply' });
 
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('INVALID_CSRF_TOKEN');
+      expect(res.body.code).toBe('invalidCsrfToken');
     });
 
-    it('fails with 403 INVALID_CSRF_TOKEN when the csrf cookie is missing', async () => {
+    it('fails with 403 invalidCsrfToken when the csrf cookie is missing', async () => {
       const csrf = await fetchCsrf(app, { origin: ORIGIN });
 
       const res = await request(app)
@@ -183,10 +183,10 @@ describe('CSRF protection — real browser flow', () => {
         .send({ firstName: 'ShouldNotApply' });
 
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('INVALID_CSRF_TOKEN');
+      expect(res.body.code).toBe('invalidCsrfToken');
     });
 
-    it('fails with 403 INVALID_CSRF_TOKEN when header and cookie do not match', async () => {
+    it('fails with 403 invalidCsrfToken when header and cookie do not match', async () => {
       const csrfA = await fetchCsrf(app, { origin: ORIGIN, extraCookies: accessCookie });
       const csrfB = await fetchCsrf(app, { origin: ORIGIN });
 
@@ -199,7 +199,7 @@ describe('CSRF protection — real browser flow', () => {
         .send({ firstName: 'ShouldNotApply' });
 
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('INVALID_CSRF_TOKEN');
+      expect(res.body.code).toBe('invalidCsrfToken');
     });
   });
 
@@ -238,7 +238,7 @@ describe('CSRF protection — real browser flow', () => {
         .send({ notifications: { email: true } });
 
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('NO_ORIGIN_BLOCKED');
+      expect(res.body.code).toBe('noOriginBlocked');
     });
 
     it('allows non-browser (CLI / server-to-server) no-Origin mutations through the gate', async () => {
@@ -246,7 +246,7 @@ describe('CSRF protection — real browser flow', () => {
       // no-origin gate must NOT fire — CLI tools and service-to-service
       // callers without Origin are not CSRF threats. The request still
       // has to pass CSRF and validation; it should NOT 403 with
-      // NO_ORIGIN_BLOCKED.
+      // noOriginBlocked.
       const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: accessCookie });
 
       const res = await request(app)
@@ -256,7 +256,7 @@ describe('CSRF protection — real browser flow', () => {
         .set('X-CSRF-Token', csrf.csrfToken)
         .send({ firstName: 'NoOrigin' });
 
-      expect(res.body.code).not.toBe('NO_ORIGIN_BLOCKED');
+      expect(res.body.code).not.toBe('noOriginBlocked');
       expect(res.status).not.toBe(403);
     });
 
@@ -274,7 +274,7 @@ describe('CSRF protection — real browser flow', () => {
       });
 
       expect(res.status).not.toBe(403);
-      expect(res.body.code).not.toBe('INVALID_CSRF_TOKEN');
+      expect(res.body.code).not.toBe('invalidCsrfToken');
     });
   });
 });

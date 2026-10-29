@@ -26,7 +26,7 @@
 import AppError from '../errors/AppError.mjs';
 
 /** Machine-readable code carried on the rejection so clients can route to the flow. */
-export const EMAIL_CHANGE_REQUIRES_CONFIRMATION = 'EMAIL_CHANGE_REQUIRES_CONFIRMATION';
+export const EMAIL_CHANGE_REQUIRES_CONFIRMATION = 'emailChangeRequiresConfirmation';
 
 export const EMAIL_CHANGE_REQUIRES_CONFIRMATION_MESSAGE =
   'Changing your email address changes how you recover this account, so it cannot be done from an ordinary profile update. ' +

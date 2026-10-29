@@ -16,7 +16,7 @@
  *
  * For each, we prove:
  *   A) without a CSRF cookie+header, the authenticated call returns 403
- *      INVALID_CSRF_TOKEN (i.e. it actually hits csrfProtection).
+ *      invalidCsrfToken (i.e. it actually hits csrfProtection).
  *
  * If any of these routes accidentally gets remounted on `publicRouter`, or
  * its handler stops traversing authRouter, the authenticated call will
@@ -50,7 +50,7 @@ describe('authenticated auth routes — CSRF enforcement canary', () => {
   const cleanup = createCleanupTracker();
 
   // Hoisted to beforeAll: this suite ONLY verifies the CSRF middleware rejects
-  // unauthorized requests with INVALID_CSRF_TOKEN. The user identity is not
+  // unauthorized requests with invalidCsrfToken. The user identity is not
   // mutated by any test (all asserts are pre-mutation 403s). Re-creating a
   // user before each of 7 routes (= 7 register+bcrypt+DB+refreshToken ops)
   // was the root cause of CI Shard 2 worker SIGTERM (Equoria-jq9l): teardown
@@ -124,15 +124,15 @@ describe('authenticated auth routes — CSRF enforcement canary', () => {
   ];
 
   describe.each(authenticatedMutations)('$method $path', ({ method, path, body }) => {
-    it('rejects the authenticated call without CSRF with 403 INVALID_CSRF_TOKEN', async () => {
+    it('rejects the authenticated call without CSRF with 403 invalidCsrfToken', async () => {
       const res = await request(app)[method](path).set('Origin', ORIGIN).set('Cookie', accessCookie).send(body);
 
       // If this endpoint is correctly behind authRouter's csrfProtection,
-      // the rejection is specifically INVALID_CSRF_TOKEN, not NOT_FOUND,
+      // the rejection is specifically invalidCsrfToken, not NOT_FOUND,
       // not METHOD_NOT_ALLOWED, not a generic 500, not a success. A
       // regression that remounts this route on publicRouter fails here.
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('INVALID_CSRF_TOKEN');
+      expect(res.body.code).toBe('invalidCsrfToken');
     });
   });
 });
