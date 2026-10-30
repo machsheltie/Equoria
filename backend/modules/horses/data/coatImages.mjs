@@ -54,6 +54,7 @@ const saddlebredImages = {
   lightpalomino: numbered('lightpalomino'),
   darkpalomino: numbered('darkpalomino'),
   chocolatepalomino: numbered('chocolatepalomino'),
+  classicpalomino: numbered('classicpalomino'),
   cremello: numbered('cremello'),
   perlino: numbered('perlino'),
   smokycream: numbered('smokycream'),
@@ -128,6 +129,8 @@ const saddlebredColors = {
   'Classic Cream Champagne': 'classiccreamchampagne',
   'Gold Cream Champagne': 'goldcreamchampagne',
   'Ivory Champagne': 'ivorychampagne',
+  // Owner added these portraits 2026-10-30 (q320).
+  'Classic Palomino': 'classicpalomino',
 };
 
 export const coatImages = Object.freeze({

@@ -30,6 +30,12 @@ const entry = coatImages[breed];
 // Equoria-7woyj: Smoky Seal Brown is now Seal Buckskin (q310).
 const noPortraitYet = ['Sable Cream Champagne', 'Seal Buckskin'];
 
+// q320 (owner 2026-10-30): Classic Palomino has portraits, but the Saddlebred's
+// Palomino shades (pale, golden, copper, chocolate) never roll the standard shade,
+// so a new Saddlebred is never Classic Palomino; only an existing one (an unshaded
+// Palomino renamed by Equoria-7woyj) shows these. Breed shade odds are the owner's.
+const portraitsNoNewHorseRolls = ['classicpalomino1.webp', 'classicpalomino2.webp'];
+
 describe('coat-color portrait table (Equoria-de7ts)', () => {
   it('names only files that exist, and uses every file the owner delivered', () => {
     const folderOnDisk = join(publicDir, ...entry.folder.split('/').filter(Boolean));
@@ -65,6 +71,16 @@ describe('coat-color portrait table (Equoria-de7ts)', () => {
     ]);
     expect(files('Gold Cream Champagne', 'pale')).toEqual(['goldcreamchampagne1.webp', 'goldcreamchampagne2.webp']);
     expect(files('Ivory Champagne', 'standard')).toEqual(['ivorychampagne1.webp', 'ivorychampagne2.webp']);
+  });
+
+  it('gives Classic Palomino its own two portraits, whatever the shade (q320)', () => {
+    const files = shade =>
+      coatImageVariants(breed, { colorName: 'Classic Palomino', shade }).map(url => url.split('/').pop());
+    expect(files('standard')).toEqual(['classicpalomino1.webp', 'classicpalomino2.webp']);
+    expect(files('pale')).toEqual(['classicpalomino1.webp', 'classicpalomino2.webp']);
+    expect(rollCoatImageUrl(breed, { colorName: 'Classic Palomino', shade: 'standard' }, () => 0.999)).toBe(
+      '/images/breeds/american_saddlebred/classicpalomino2.webp',
+    );
   });
 
   it('gives every portrait at least two variants', () => {
@@ -140,7 +156,9 @@ describe('coat-color portrait table (Equoria-de7ts)', () => {
           reached.add(url.split('/').pop());
         }
       }
-      expect([...reached].sort()).toEqual(Object.values(entry.images).flat().sort());
+      const offered = Object.values(entry.images).flat();
+      expect([...reached].sort()).toEqual(offered.filter(file => !portraitsNoNewHorseRolls.includes(file)).sort());
+      expect(offered).toEqual(expect.arrayContaining(portraitsNoNewHorseRolls));
     });
   });
 });
