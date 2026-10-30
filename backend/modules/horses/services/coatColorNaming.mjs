@@ -2,7 +2,7 @@
  * Coat color names from a color genotype (Equoria-7woyj).
  *
  * Owner list 2026-10-29 with rulings q309-q316 (docs/features/coat-color-names.md
- * maps every name). Split out of phenotypeCalculationService.mjs, which still owns
+ * maps every name), plus two names added by q317 (2026-10-30). Split out of phenotypeCalculationService.mjs, which still owns
  * the pattern overlays (gray, appaloosa, brindle) and the shade roll.
  *
  * How a name is chosen:
@@ -181,6 +181,9 @@ function mushroomName(s) {
     if (cream === 1 && pearl === 0) {
       return base === 'chestnut' ? 'Mushroom Palomino' : 'Mushroom Buckskin';
     }
+    if (cream === 1 && base === 'chestnut') {
+      return 'Mushroom Palomino Pearl'; // q317 (owner 2026-10-30)
+    }
     if (cream === 2 && pearl >= 1) {
       return base === 'chestnut' ? 'Mushroom Cremello Pearl' : 'Mushroom Perlino Pearl';
     }
@@ -205,7 +208,11 @@ function wildBayName(s) {
     if (cream === 0) {
       return pearl === 2 ? 'Wild Amber Champagne Pearl' : 'Wild Amber Champagne';
     }
-    return cream === 1 && pearl >= 1 ? 'Wild Amber Cream Champagne Pearl' : null;
+    if (cream !== 1) {
+      return null;
+    }
+    // q317 (owner 2026-10-30): Wild Amber Cream Champagne joins the pearl name.
+    return pearl >= 1 ? 'Wild Amber Cream Champagne Pearl' : 'Wild Amber Cream Champagne';
   }
   if (cream === 0) {
     return pearl === 2 ? 'Wild Bay Pearl' : 'Wild Bay';

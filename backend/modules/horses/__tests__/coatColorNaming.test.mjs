@@ -12,6 +12,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { calculatePhenotype, greyColorNames } from '../services/phenotypeCalculationService.mjs';
 import { familyShadeNames, spottedDominantWhiteAlleles } from '../services/coatColorNaming.mjs';
+import { coatColorNames } from '../services/coatColorNames.mjs';
 import { canonicalAllelePair } from '../services/allelePairRules.mjs';
 import { inheritColorGenotype } from '../services/breedingColorInheritanceService.mjs';
 import { generateGenotype } from '../services/genotypeGenerationService.mjs';
@@ -112,6 +113,7 @@ const ownerNames = [
   ['Mushroom Cremello Pearl', 'chestnut m cr2 prl1'],
   ['Mushroom Gold Champagne', 'chestnut m ch'],
   ['Mushroom Palomino', 'chestnut m cr1'],
+  ['Mushroom Palomino Pearl', 'chestnut m cr1 prl1'], // q317
   ['Mushroom Perlino Pearl', 'bay m cr2 prl1'],
   ['Mushroom Red Dun', 'chestnut m dun'],
   ['Mushroom Red Roan', 'chestnut m rn'],
@@ -162,6 +164,7 @@ const ownerNames = [
   ['Smoky Grulla', 'black cr1 dun'],
   ['Wild Amber Champagne', 'wild ch'],
   ['Wild Amber Champagne Pearl', 'wild ch prl2'],
+  ['Wild Amber Cream Champagne', 'wild ch cr1'], // q317
   ['Wild Amber Cream Champagne Pearl', 'wild ch cr1 prl1'],
   ['Wild Bay', 'wild'],
   ['Wild Bay Pearl', 'wild prl2'],
@@ -308,6 +311,18 @@ describe("owner's coat color names (Equoria-7woyj)", () => {
     expect(calculatePhenotype(genes('wild rn')).colorName).toBe('Bay Roan');
     expect(calculatePhenotype(genes('bay sdp1')).colorName).toBe('Standard Bay'); // one snowdrop copy hides
     expect(calculatePhenotype(genes('wild m')).colorName).toBe('Mushroom Bay');
+  });
+
+  it('q317: Mushroom Palomino Pearl and Wild Amber Cream Champagne are coat colors (owner 2026-10-30)', () => {
+    expect(calculatePhenotype(genes('chestnut m cr1 prl2')).colorName).toBe('Mushroom Palomino Pearl');
+    expect(calculatePhenotype(genes('wild ch cr1 prl1')).colorName).toBe('Wild Amber Cream Champagne Pearl');
+    // Neighbours the owner did not name keep their game names.
+    expect(calculatePhenotype(genes('bay m cr1 prl1')).colorName).toBe('Buckskin Pearl');
+    expect(calculatePhenotype(genes('wild ch cr2')).colorName).toBe('Ivory Champagne');
+    // Wild cream pearl and yellow dun are existing names (Wild Buckskin Pearl, Dunskin).
+    expect(calculatePhenotype(genes('wild cr1 prl1')).colorName).toBe('Wild Buckskin Pearl');
+    expect(calculatePhenotype(genes('bay cr1 dun')).colorName).toBe('Dunskin');
+    expect(coatColorNames).toEqual(expect.arrayContaining(['Mushroom Palomino Pearl', 'Wild Amber Cream Champagne']));
   });
 
   it('roan still hides under grey and appaloosa', () => {

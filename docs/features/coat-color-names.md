@@ -2,7 +2,7 @@
 
 **Status:** Active runbook
 **Owner:** Project owner
-**Last verified:** 2026-10-29
+**Last verified:** 2026-10-30
 **Load only when:** renaming coat colors or adding new coat colors (Equoria-7woyj), or answering the owner's coat-color naming questions
 **Do not load for:** markings, white patterns (tobiano, overo, sabino, splash), portraits of other breeds, or breed odds unrelated to color names
 **Live sources:** `backend/modules/horses/services/phenotypeCalculationService.mjs` (`calculatePhenotype`, `grayColorNames`, `appaloosaPatternNames`, `appaloosaMinimalNames`), `backend/modules/horses/services/coatShade.mjs`, `backend/modules/horses/services/genotypeGenerationService.mjs` (`CORE_LOCI`, `GENERIC_STARTER_WEIGHTS`), `backend/modules/horses/services/markingGenerationService.mjs` (sooty, flaxen, pangare flags), `backend/modules/horses/data/coatImages.mjs`, `backend/data/breeds/*.txt` (`allowedAlleles`, `alleleWeights`, `shadeBias`), `frontend/src/lib/coatColor.ts` (`colorWithShade`)
@@ -13,6 +13,26 @@ lines, 206 distinct names; Equoria-igbrz). This page maps every color name the
 game can produce or show today against that list. It is a review only: no game
 behavior was changed. The owner's answers to the flagged items decide the
 rename and new-color work in Equoria-7woyj.
+
+## Owner answers 2026-10-30 (q317-q320, Equoria-mxu1y)
+
+This page is a 2026-10-29 snapshot; the tables below are not updated. The
+names the game produces now are pinned by
+`backend/modules/horses/__tests__/coatColorNaming.test.mjs`, so the page's
+retire condition is met.
+
+- q317: "wild cream pearl" is Wild Buckskin Pearl and "yellow dun" is
+  Dunskin (both already named). **Mushroom Palomino Pearl** (chestnut,
+  mushroom, one cream, pearl) and **Wild Amber Cream Champagne** (wild bay,
+  champagne, one cream, no pearl) are now named. No breed carries mushroom
+  or wild bay yet.
+- q318: Dominant White Sabino and Compound Dominant White stay.
+- q319: strawberry roan stays folded into Red Roan.
+- q320: Classic Palomino American Saddlebreds have their own two portraits
+  (`classicpalomino1/2.webp`). The Saddlebred's Palomino shades never roll
+  the standard shade, so only existing Classic Palomino Saddlebreds show
+  them; `backend/scripts/assign-classic-palomino-portraits.mjs` gives those
+  without a picture one.
 
 ## How the inventory was built
 
