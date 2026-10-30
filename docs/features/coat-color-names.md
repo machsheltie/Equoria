@@ -29,10 +29,15 @@ retire condition is met.
 - q318: Dominant White Sabino and Compound Dominant White stay.
 - q319: strawberry roan stays folded into Red Roan.
 - q320: Classic Palomino American Saddlebreds have their own two portraits
-  (`classicpalomino1/2.webp`). The Saddlebred's Palomino shades never roll
-  the standard shade, so only existing Classic Palomino Saddlebreds show
+  (`classicpalomino1/2.webp`). Until q321 the Saddlebred's Palomino shades
+  never rolled the standard shade, so only existing Classic Palomino Saddlebreds show
   them; `backend/scripts/assign-classic-palomino-portraits.mjs` gives those
   without a picture one.
+- q321: the Saddlebred's Palomino shades are light, golden, classic, dark and
+  chocolate, each 0.2, so new Saddlebreds roll Classic Palomino too. Old
+  shades map pale -> Light Palomino and copper -> Dark Palomino;
+  `backend/scripts/rename-saddlebred-palomino-shades.mjs` renames existing
+  Saddlebreds and gives them their color's portrait.
 
 ## How the inventory was built
 

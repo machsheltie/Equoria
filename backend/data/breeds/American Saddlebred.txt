@@ -64,7 +64,7 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Bay": {"light": 0.167, "standard": 0.167, "dark": 0.167, "blood": 0.167, "copper": 0.167, "wild": 0.167},
     "Seal Brown": {"dark": 0.333, "light": 0.333, "sealskin": 0.333},
     "Black": {"standard": 0.5, "faded": 0.5},
-    "Palomino": {"pale": 0.25, "golden": 0.25, "copper": 0.25, "chocolate": 0.25},
+    "Palomino": {"light": 0.2, "golden": 0.2, "classic": 0.2, "dark": 0.2, "chocolate": 0.2},
     "Buckskin": {"cream": 0.333, "golden": 0.333, "burnished": 0.333},
     "Smoky Black": {"faded": 0.5, "rich chocolate": 0.5},
     "Cremello": {"ice": 0.5, "peachy": 0.5},

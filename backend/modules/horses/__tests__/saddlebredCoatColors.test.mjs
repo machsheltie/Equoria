@@ -7,6 +7,7 @@
  *   - About 7% of Saddlebreds are seal-based (the At agouti allele), giving
  *     Seal Brown in Dark, Light and Sealskin, and Seal Perlino (At + Cr/Cr).
  *   - New shades: Bay Blood/Copper/Wild, Chestnut Golden, Palomino Chocolate.
+ *     q321 (2026-10-30): Palomino is Light, Golden, Classic, Dark, Chocolate.
  *   - Every shade of a color is equally likely (q270; q296 2026-10-29 extends it
  *     to Buckskin, the Champagnes and the Cream Champagnes).
  *
@@ -79,7 +80,14 @@ describe('American Saddlebred coat colors (Equoria-de7ts)', () => {
   const newShades = {
     Bay: [['Standard Bay'], ['Mahogany Bay'], ['Golden Bay'], ['Blood Bay'], ['Copper Bay'], ['Wild Bay']],
     Chestnut: [['Red Chestnut'], ['Dark Chestnut', 'Liver Chestnut'], ['Light Yellow Chestnut'], ['Golden Chestnut']],
-    Palomino: [['Light Palomino'], ['Golden Palomino'], ['Dark Palomino'], ['Chocolate Palomino']],
+    // q321 (owner 2026-10-30): five Palomino shades; Classic Palomino now rolls.
+    Palomino: [
+      ['Light Palomino'],
+      ['Golden Palomino'],
+      ['Classic Palomino'],
+      ['Dark Palomino'],
+      ['Chocolate Palomino'],
+    ],
     'Seal Brown': [['Dark Seal Brown'], ['Light Seal Brown'], ['Sealskin']],
   };
 
@@ -106,6 +114,30 @@ describe('American Saddlebred shade weights (Equoria-de7ts, owner ruling q296)',
 
   it.each(Object.entries(profile.shadeBias))('gives every %s shade the same weight', (colorName, weights) => {
     expect(new Set(Object.values(weights)).size).toBe(1);
+  });
+
+  it('rolls the five Palomino shades, each a 0.2 share (owner ruling q321)', () => {
+    expect(profile.shadeBias.Palomino).toEqual({ light: 0.2, golden: 0.2, classic: 0.2, dark: 0.2, chocolate: 0.2 });
+    const rng = seededRng(20261030);
+    const genotype = { E_Extension: 'e/e', A_Agouti: 'A/a', Cr_Cream: 'Cr/n' };
+    const counts = new Map();
+    const total = 50000;
+    for (let i = 0; i < total; i++) {
+      const { colorName, shade } = calculateBreedPhenotype(genotype, profile, rng);
+      expect(shade).toBe('standard');
+      counts.set(colorName, (counts.get(colorName) ?? 0) + 1);
+    }
+    expect([...counts.keys()].sort()).toEqual([
+      'Chocolate Palomino',
+      'Classic Palomino',
+      'Dark Palomino',
+      'Golden Palomino',
+      'Light Palomino',
+    ]);
+    for (const count of counts.values()) {
+      expect(count / total).toBeGreaterThan(0.19);
+      expect(count / total).toBeLessThan(0.21);
+    }
   });
 
   it('rolls every Buckskin shade about equally often', () => {

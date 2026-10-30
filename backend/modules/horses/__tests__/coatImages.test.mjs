@@ -30,12 +30,6 @@ const entry = coatImages[breed];
 // Equoria-7woyj: Smoky Seal Brown is now Seal Buckskin (q310).
 const noPortraitYet = ['Sable Cream Champagne', 'Seal Buckskin'];
 
-// q320 (owner 2026-10-30): Classic Palomino has portraits, but the Saddlebred's
-// Palomino shades (pale, golden, copper, chocolate) never roll the standard shade,
-// so a new Saddlebred is never Classic Palomino; only an existing one (an unshaded
-// Palomino renamed by Equoria-7woyj) shows these. Breed shade odds are the owner's.
-const portraitsNoNewHorseRolls = ['classicpalomino1.webp', 'classicpalomino2.webp'];
-
 describe('coat-color portrait table (Equoria-de7ts)', () => {
   it('names only files that exist, and uses every file the owner delivered', () => {
     const folderOnDisk = join(publicDir, ...entry.folder.split('/').filter(Boolean));
@@ -156,9 +150,9 @@ describe('coat-color portrait table (Equoria-de7ts)', () => {
           reached.add(url.split('/').pop());
         }
       }
-      const offered = Object.values(entry.images).flat();
-      expect([...reached].sort()).toEqual(offered.filter(file => !portraitsNoNewHorseRolls.includes(file)).sort());
-      expect(offered).toEqual(expect.arrayContaining(portraitsNoNewHorseRolls));
+      // q321 (owner 2026-10-30): the classic shade makes Classic Palomino rollable,
+      // so every portrait is reached again (q320 had excused the two Classic Palomino files).
+      expect([...reached].sort()).toEqual(Object.values(entry.images).flat().sort());
     });
   });
 });

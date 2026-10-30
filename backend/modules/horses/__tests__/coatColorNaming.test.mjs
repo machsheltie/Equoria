@@ -225,6 +225,10 @@ const familyShades = [
   ['chestnut cr1', 'Palomino', 'pale', 'Light Palomino'],
   ['chestnut cr1', 'Palomino', 'copper', 'Dark Palomino'],
   ['chestnut cr1', 'Palomino', 'chocolate', 'Chocolate Palomino'],
+  // q321 (owner 2026-10-30): the Saddlebred's light/classic/dark shades.
+  ['chestnut cr1', 'Palomino', 'light', 'Light Palomino'],
+  ['chestnut cr1', 'Palomino', 'classic', 'Classic Palomino'],
+  ['chestnut cr1', 'Palomino', 'dark', 'Dark Palomino'],
   ['chestnut cr1', 'Palomino', 'isabella', 'Isabella Palomino'],
   ['bay cr1', 'Buckskin', 'standard', 'Classic Buckskin'],
   ['bay cr1', 'Buckskin', 'burnished', 'Classic Buckskin'],

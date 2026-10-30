@@ -481,10 +481,15 @@ export const familyShadeNames = Object.freeze({
     golden: 'Golden Chestnut',
   }),
   Black: Object.freeze({ standard: 'Nonfading Black', faded: 'Fading Black' }),
+  // q321 (owner 2026-10-30): the Saddlebred's shades are light, golden, classic,
+  // dark, chocolate. Other breeds still roll pale and copper (same two names).
   Palomino: Object.freeze({
     standard: 'Classic Palomino',
+    classic: 'Classic Palomino',
     golden: 'Golden Palomino',
+    light: 'Light Palomino',
     pale: 'Light Palomino',
+    dark: 'Dark Palomino',
     copper: 'Dark Palomino',
     chocolate: 'Chocolate Palomino',
     isabella: 'Isabella Palomino',
