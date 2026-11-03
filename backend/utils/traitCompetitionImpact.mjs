@@ -4,7 +4,6 @@
  */
 
 import logger from './logger.mjs';
-import { normalizeTraitKey } from './epigeneticTraitKeyMap.mjs';
 
 /**
  * Trait impact definitions for different competition disciplines
@@ -99,11 +98,7 @@ export function calculateTraitCompetitionImpact(horse, discipline, baseScore) {
 
     // Get horse traits
     const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
-    // Normalize legacy snake-case keys so stored traits resolve in the
-    // canonical-camelCase effects map until the DB backfill runs (§C).
-    const allVisibleTraits = [...(traits.positive || []), ...(traits.negative || [])].map(
-      normalizeTraitKey,
-    );
+    const allVisibleTraits = [...(traits.positive || []), ...(traits.negative || [])];
 
     if (allVisibleTraits.length === 0) {
       logger.debug(`[traitCompetitionImpact] No visible traits found for horse ${horse.id}`);

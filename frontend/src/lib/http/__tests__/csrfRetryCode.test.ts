@@ -4,8 +4,7 @@
  *
  * The backend's CSRF middleware answers a stale token with 403
  * { code: 'invalidCsrfToken' }. The transport must drop its cached token,
- * fetch a fresh one and replay the mutation once. (apiClient also accepts the
- * old server's spelling during a deploy; that branch goes in phase 6.)
+ * fetch a fresh one and replay the mutation once.
  *
  * Real transport; the network boundary is MSW (src/test/msw/server.ts).
  */

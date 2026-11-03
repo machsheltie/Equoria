@@ -5,7 +5,7 @@
  */
 
 import logger from './logger.mjs';
-import { normalizeTraitKey, disciplineAffinityKey } from './epigeneticTraitKeyMap.mjs';
+import { disciplineAffinityKey } from './epigeneticTraitKeyMap.mjs';
 import { DISCIPLINES } from '../constants/schema.mjs';
 import { getStatsForDiscipline } from './statMap.mjs';
 
@@ -171,10 +171,7 @@ export function getTraitEffects(traitName) {
     return null;
   }
 
-  // Normalize legacy snake-case keys to canonical camelCase so stored data and
-  // older callers still resolve until the DB backfill runs (§C, 9o3n7.6).
-  const canonical = normalizeTraitKey(traitName);
-  const effects = traitEffects[canonical];
+  const effects = traitEffects[traitName];
   if (!effects) {
     logger.warn(`[traitEffects.getTraitEffects] No effects defined for trait: ${traitName}`);
     return null;

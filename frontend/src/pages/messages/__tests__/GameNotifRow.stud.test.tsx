@@ -68,13 +68,6 @@ describe('GameNotifRow — breeding at stud', () => {
     expect(el).not.toHaveTextContent(/rejected|stallionUnavailable|RAW server words/);
   });
 
-  // Equoria-pjvp8.4: the old server's spelling, for the minutes a deploy serves
-  // this client against the old server. Phase 6 removes it.
-  it("still reads the old server's REJECTED as the owner's no during a deploy", () => {
-    const el = row('studRequestDeclined', { ...base, declineReason: 'REJECTED' });
-    expect(el).toHaveTextContent('The request for Wren to Thunder Orchard was declined.');
-  });
-
   it('an unknown notification never shows its stored type', () => {
     const el = row('somethingNewInternal', {});
     expect(el).not.toHaveTextContent('somethingNewInternal');

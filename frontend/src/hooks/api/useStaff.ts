@@ -43,18 +43,13 @@ export const staffKeys = {
 /** The code a capability-guarded route refuses with when this browser is not checked in. */
 export const checkinRequiredCode = 'staffCheckinRequired';
 
-// The old server's spelling covers the minutes a deploy serves this client
-// against the old server (Equoria-pjvp8 phase 6 removes it).
-const legacyCheckinRequiredCode = 'STAFF_CHECKIN_REQUIRED';
-
 /** The refusal a capability-guarded route gives when this browser is not checked in. */
 export function isCheckinRequired(error: unknown): boolean {
   return (
     typeof error === 'object' &&
     error !== null &&
     (error as ApiError).statusCode === 403 &&
-    ((error as ApiError).code === checkinRequiredCode ||
-      (error as ApiError).code === legacyCheckinRequiredCode)
+    (error as ApiError).code === checkinRequiredCode
   );
 }
 

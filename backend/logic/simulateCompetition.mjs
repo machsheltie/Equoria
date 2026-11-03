@@ -25,7 +25,7 @@ import { getHealthModifier } from '../utils/healthBonus.mjs';
 import { applyRiderModifiers } from '../utils/riderBonus.mjs';
 import { calculateTraitCompetitionImpact } from '../utils/traitCompetitionImpact.mjs';
 import { resolveTackBonus } from '../modules/economy/index.mjs';
-import { disciplineAffinityKey, normalizeTraitKey } from '../utils/epigeneticTraitKeyMap.mjs';
+import { disciplineAffinityKey } from '../utils/epigeneticTraitKeyMap.mjs';
 import logger from '../utils/logger.mjs';
 
 /**
@@ -70,16 +70,12 @@ function simulateCompetition(horses, show) {
       const legacyTraitBonus = horse.trait === show.discipline ? 5 : 0;
 
       // 2.5. TASK 9: Add discipline affinity trait bonus (+5 if horse has matching
-      // disciplineAffinity<Discipline> trait). Canonical camelCase key (§C/§F);
-      // stored positive traits are normalized so legacy snake-case rows still match
-      // until the DB backfill runs.
+      // disciplineAffinity<Discipline> trait). Canonical camelCase key (§C/§F).
       let disciplineAffinityBonus = 0;
       const affinityTrait = disciplineAffinityKey(show.discipline);
-      const positiveTraitsNormalized = (horse.epigeneticModifiers?.positive || []).map(
-        normalizeTraitKey,
-      );
+      const positiveTraits = horse.epigeneticModifiers?.positive || [];
 
-      if (positiveTraitsNormalized.includes(affinityTrait)) {
+      if (positiveTraits.includes(affinityTrait)) {
         disciplineAffinityBonus = 5;
         logger.info(
           `[simulateCompetition] Horse ${horse.name}: Discipline affinity bonus applied for ${affinityTrait} (+5 points)`,

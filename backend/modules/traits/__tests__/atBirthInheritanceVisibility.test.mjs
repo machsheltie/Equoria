@@ -77,26 +77,6 @@ describe('§A Stage-0 inheritance — parent traits can be inherited', () => {
       expect(all).not.toContain('eagerLearner');
     }
   });
-
-  it('normalizes legacy snake-case parent traits before inheriting', () => {
-    // legacy snake 'eager_learner' must be inheritable as canonical 'eagerLearner'
-    let found = false;
-    for (let seed = 1; seed <= 50 && !found; seed++) {
-      const r = applyEpigeneticTraitsAtBirth({
-        mare: goodMare,
-        lineage: [],
-        feedQuality: 90,
-        damTraits: ['eager_learner'],
-        seed,
-      });
-      if (unionTraits(r).includes('eagerLearner')) {
-        found = true;
-      }
-      // It must NEVER appear under the snake key.
-      expect(unionTraits(r)).not.toContain('eager_learner');
-    }
-    expect(found).toBe(true);
-  });
 });
 
 // Owner ruling 2026-10-26 (q98, Equoria-2d55z) replaced the §D rarity rolls

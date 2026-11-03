@@ -233,9 +233,7 @@ export async function fetchWithAuth<T>(
         .clone()
         .json()
         .catch(() => ({}));
-      // The legacy spelling covers the minutes a deploy serves the new client
-      // against the old server (Equoria-pjvp8 phase 6 removes it).
-      if (body?.code === 'invalidCsrfToken' || body?.code === 'INVALID_CSRF_TOKEN') {
+      if (body?.code === 'invalidCsrfToken') {
         authSessionState.invalidate();
         return fetchWithAuth<T>(endpoint, options, retryCount + 1, envelope);
       }

@@ -5,8 +5,7 @@
  *
  * GET /api/v1/users/community/activity sends type competitionWin for a show
  * win (forumPost and clubCreated for the rest). A win must read as a
- * Competition, not fall back to an Achievement. (The page also reads the old
- * server's COMPETITION_WIN during a deploy; phase 6 removes that.)
+ * Competition, not fall back to an Achievement.
  *
  * Real page, real hooks and apiClient; only the HTTP boundary is MSW.
  */

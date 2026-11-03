@@ -45,15 +45,4 @@ describe('staffErrorMessage', () => {
   it('still names a lapsed check-in first', () => {
     expect(staffErrorMessage(refusal(403, 'staffCheckinRequired'), role403)).toBe(checkinLapsed);
   });
-
-  // Equoria-pjvp8.4: the old server's spellings, for the minutes a deploy
-  // serves this client against the old server. Phase 6 removes them.
-  it('still reads the old server’s spellings during a deploy', () => {
-    expect(staffErrorMessage(refusal(403, 'STAFF_CHECKIN_REQUIRED'))).toBe(
-      'Your check-in on this browser has lapsed. Reload the office to check in again.'
-    );
-    expect(staffErrorMessage(refusal(403, 'STAFF_EMAIL_UNVERIFIED'))).toBe(
-      'Verify your email to keep using the office.'
-    );
-  });
 });

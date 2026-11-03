@@ -52,7 +52,6 @@
 
 import logger from './logger.mjs';
 import { getTraitDefinition, isRosterTrait } from './epigeneticTraits.mjs';
-import { normalizeTraitKey } from './epigeneticTraitKeyMap.mjs';
 
 /**
  * Small deterministic LCG so seeded runs are reproducible. Mirrors the
@@ -143,8 +142,7 @@ export function applyEpigeneticTraitsAtBirth({
   logger.debug(`[applyEpigeneticTraitsAtBirth] Feed quality: ${currentFeedQuality}`);
 
   // ── Stage 0 — INHERITANCE (§A) ─────────────────────────────────────────────
-  // Normalize incoming parent traits to canonical keys so legacy snake-case
-  // rows still inherit correctly and keep only roster traits (q117). Each
+  // Keep only roster traits from the incoming parent traits (q117). Each
   // distinct trait then rolls the flat rate (q138) once for every parent that
   // carries it (q145): sire's roll first, then dam's. A negative trait's roll
   // still takes the mare-health multiplier (Equoria-pw7cm, q146).
@@ -152,7 +150,6 @@ export function applyEpigeneticTraitsAtBirth({
     new Set(
       (Array.isArray(traits) ? traits : [])
         .filter(t => typeof t === 'string' && t.length > 0)
-        .map(normalizeTraitKey)
         .filter(isRosterTrait),
     );
   const sireCarried = rosterTraitsOf(sireTraits);
@@ -208,9 +205,9 @@ export function applyEpigeneticTraitsAtBirth({
   // ── Dedupe + visibility (q98) ───────────────────────────────────────────────
   // Hidden unless a parent had the trait active and revealed.
   const activeOnParent = new Set(
-    (Array.isArray(parentActiveTraits) ? parentActiveTraits : [])
-      .filter(t => typeof t === 'string' && t.length > 0)
-      .map(normalizeTraitKey),
+    (Array.isArray(parentActiveTraits) ? parentActiveTraits : []).filter(
+      t => typeof t === 'string' && t.length > 0,
+    ),
   );
   const result = { positive: [], negative: [], hidden: [] };
   const seen = new Set();

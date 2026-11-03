@@ -472,9 +472,7 @@ function studSentence(notif: GameNotification): string {
     case 'studRequestApproved':
       return `Accepted. ${dam} is in foal to ${sire}, due in 7 days.`;
     case 'studRequestDeclined':
-      // The old server's REJECTED covers the minutes a deploy serves this
-      // client against the old server (Equoria-pjvp8 phase 6 removes it).
-      return p.declineReason === 'rejected' || p.declineReason === 'REJECTED'
+      return p.declineReason === 'rejected'
         ? `The request for ${dam} to ${sire} was declined.`
         : `The request for ${dam} to ${sire} could not go ahead.`;
     default:
