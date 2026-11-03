@@ -79,8 +79,8 @@
   /* ── Semantic Status (game states) ─────────────────────────────────── */
   --status-success: #22c55e; /* training complete, healthy, eligible  */
   --status-warning: #f59e0b; /* cooldown active, needs attention      */
-  --status-danger: #ef4444; /* injured, ineligible, error            */
-  --status-error: #ef4444; /* alias for --status-danger             */
+  --status-danger: #f87171; /* injured, ineligible, error — 6.55:1 on --bg-night-sky (was #ef4444, 4.82:1; small text fell to 3.6:1 on panels, Equoria-oey96.78) */
+  --status-error: #f87171; /* alias for --status-danger             */
   --status-info: #3b82f6; /* informational, neutral actions        */
   --status-rare: #a78bfa; /* rare traits, special discoveries      */
   --status-legendary: #f5e6a3; /* ultra-rare, legendary events          */
@@ -92,7 +92,7 @@
   --health-very-good: #84cc16; /* Very Good  — yellow-green */
   --health-good: #eab308; /* Good       — yellow       */
   --health-fair: #f97316; /* Fair       — orange       */
-  --health-bad: #ef4444; /* Bad        — red          */
+  --health-bad: #f87171; /* Bad        — red (also the overdue care-date text; was #ef4444, Equoria-oey96.78) */
   --glow-text-danger: 0 0 8px rgba(239, 68, 68, 0.75); /* overdue date: the Bad pill's red   */
   --glow-text-ready: 0 0 8px rgba(34, 197, 94, 0.75); /* can-do-now date: Excellent green   */
 

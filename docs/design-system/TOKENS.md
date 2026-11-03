@@ -32,7 +32,7 @@ existing spec token. Defined in the `SEMANTIC ROLE TOKENS` section of
 | `--role-warning-text`   | `var(--status-warning)`          | `#f59e0b`                             |
 | `--role-warning-bg`     | `var(--badge-warning-bg)`        | `rgba(245, 158, 11, 0.15)`            |
 | `--role-warning-border` | literal                          | `rgba(245, 158, 11, 0.3)`             |
-| `--role-danger-text`    | `var(--status-danger)`           | `#ef4444`                             |
+| `--role-danger-text`    | `var(--status-danger)`           | `#f87171`                             |
 | `--role-danger-bg`      | `var(--badge-danger-bg)`         | `rgba(239, 68, 68, 0.15)`             |
 | `--role-danger-border`  | literal                          | `rgba(239, 68, 68, 0.3)`              |
 | `--role-info-text`      | `var(--status-info)`             | `#3b82f6`                             |
@@ -61,7 +61,7 @@ in page and component code.
 | `.text-role-disabled`  | `var(--text-disabled)`  | `rgba(100,116,139,0.4)` | `--text-muted` at 40% — disabled controls                                          |
 | `.text-role-inverse`   | `var(--bg-deep-space)`  | `#0a0e1a`               | Dark text on gold/bright backgrounds                                               |
 | `.text-role-link`      | `var(--link-gold)`      | `#c8a84e`               | Inline text links; current `index.css` mapping to `--gold-light` is migration debt |
-| `.text-role-danger`    | `var(--status-danger)`  | `#ef4444`               | Error messages, destructive labels                                                 |
+| `.text-role-danger`    | `var(--status-danger)`  | `#f87171`               | Error messages, destructive labels (6.55:1; was `#ef4444`)                         |
 
 **Token added:** `--text-disabled: rgba(100, 116, 139, 0.4)` in `tokens.css`
 (slate-500 `#64748b` at 40% opacity — computed as rgba rather than using
@@ -117,3 +117,4 @@ tint on the conformation card's night-sky ground.
 | 2026-08-19 | Corrected authority, inline-link token, muted-text guidance, and stale decision references |
 | 2026-10-29 | Conformation rating ladder tokens (Equoria-oxbda)                                          |
 | 2026-11-03 | Text muted/secondary lifted to pass 4.5:1 on real backdrops (Equoria-oey96.77, q344)       |
+| 2026-11-03 | Danger red lifted to `#f87171` for small warning text (Equoria-oey96.78, q344)             |
