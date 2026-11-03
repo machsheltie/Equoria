@@ -33,7 +33,7 @@
 
 // Path-string fragments that mark a route as test-cleanup infrastructure.
 // Matched against every string literal in the scanned route trees (Equoria-mwjst).
-export const FORBIDDEN_CLEANUP_PATH_PATTERNS = [
+export const forbiddenCleanupPathPatterns = [
   /\/test\/cleanup/i,
   /\/cleanup-tests?\b/i,
   /\/__cleanup/i,
@@ -49,7 +49,7 @@ export const FORBIDDEN_CLEANUP_PATH_PATTERNS = [
 // (rewound lastFedDate → same-day re-feeding, Codex scan 2026-10-02 Finding 1)
 // and POST /foals/:foalId/advance-day (owner-triggered development day).
 // Scanned by check-no-cleanup-routes.mjs over the same literals and scope.
-export const FORBIDDEN_STATE_REWIND_PATH_PATTERNS = [
+export const forbiddenStateRewindPathPatterns = [
   /\/reset-last-[a-z]/i,
   /\/advance-day\b/i,
   /\/(?:skip|reset|clear)-cooldowns?\b/i,
@@ -74,7 +74,7 @@ export function makeDbMockTargetRegex() {
   return /['"`]([^'"`]*prisma[^'"`]*)['"`]/gi;
 }
 
-export const DB_MOCK_EXEMPTION_MARKER = 'doctrine-allow: prisma-mock';
+export const dbMockExemptionMarker = 'doctrine-allow: prisma-mock';
 
 // -----------------------------------------------------------------------------
 // 3. Frontend mock-data scan (check-no-frontend-mocks.mjs)
@@ -86,7 +86,7 @@ export const DB_MOCK_EXEMPTION_MARKER = 'doctrine-allow: prisma-mock';
 // Node check carries. Each entry is the human-readable token name; the matching
 // RegExp is produced by makeFrontendMockRegexes() so the literal list stays
 // auditable and cross-language-comparable.
-export const FRONTEND_MOCK_TOKENS = [
+export const frontendMockTokens = [
   'MOCK_',
   'mockApi',
   'allMockHorses',
@@ -109,7 +109,7 @@ export function makeFrontendMockRegexes() {
   ];
 }
 
-export const FRONTEND_MOCK_EXEMPTION_MARKER = 'doctrine-allow: frontend-mock-storybook';
+export const frontendMockExemptionMarker = 'doctrine-allow: frontend-mock-storybook';
 
 // -----------------------------------------------------------------------------
 // Shared directory-walk MECHANISM (Equoria-ml7jj)
@@ -309,7 +309,7 @@ const plantDirToken = (...parts) => ['', ...parts].join('_');
 // source never contains these tokens in its basename (they are sentinel-scratch
 // inventions), so the exclusion cannot hide a genuine CommonJS / db-index
 // violation in a committed file.
-const RESERVED_SCRATCH_PLANT_TOKENS = [
+const reservedScratchPlantTokens = [
   '__doctrine_jest_plant', // doctrineScanPatterns.sentinel.test.mjs
   '_v8l96_sentinel', // moduleBarrelBoundaryEslint.sentinel.test.mjs
   '_q7lqz_vanished_scan_scratch', // doctrineScanVanishedFile.sentinel.test.mjs (dir name)
@@ -344,7 +344,7 @@ const RESERVED_SCRATCH_PLANT_TOKENS = [
 export function isReservedScratchPlantPathSegment(name, ownTokens = []) {
   if (ownTokens.some((tok) => name.includes(tok))) return false; // the caller's own plant: visible
   if (isPlantArtifactBasename(name)) return true;
-  return RESERVED_SCRATCH_PLANT_TOKENS.some((tok) => name.includes(tok));
+  return reservedScratchPlantTokens.some((tok) => name.includes(tok));
 }
 
 export function readScannedFileSyncTolerant(filePath, checkLabel) {
@@ -395,7 +395,7 @@ export function readdirSyncTolerant(dir, options, checkLabel) {
 // exported ONLY so the cross-language equality sentinel can assert the bash
 // regex and this list stay in lockstep should a future Node consumer need it.
 // Superset includes x-test-bypass-ownership (added in Equoria-4iudq).
-export const BYPASS_HEADER_TOKENS = [
+export const bypassHeaderTokens = [
   'x-test-bypass-rate-limit',
   'x-test-skip-csrf',
   'bypass-auth',

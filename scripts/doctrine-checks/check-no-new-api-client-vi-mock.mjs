@@ -44,10 +44,10 @@ import {
 } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
-const SCAN_ROOT = path.join(REPO_ROOT, 'frontend', 'src');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
+const scanRoot = path.join(repoRoot, 'frontend', 'src');
 
-if (!fs.existsSync(SCAN_ROOT)) {
+if (!fs.existsSync(scanRoot)) {
   process.exit(0);
 }
 
@@ -55,7 +55,7 @@ if (!fs.existsSync(SCAN_ROOT)) {
 // Equoria-efaz). Paths are repo-relative with forward slashes. This list
 // must only ever SHRINK — never append a new path here. Every entry MUST
 // exist on disk; stale entries fail the check (see staleEntries below).
-const CANONICAL_BASELINE = [
+const canonicalBaseline = [
   // Equoria-f12xy (M2): EnrichmentActivityPanel + MilestoneEvaluationDisplay +
   // BreedingPredictionsPanel + BreedingPairSelection.story-6-1 migrated off
   // vi.mock-of-api-client to MSW at the fetch boundary — removed from baseline
@@ -84,7 +84,7 @@ const CANONICAL_BASELINE = [
 // canonical inline list.
 function loadBaselinePaths() {
   const overridePath = process.argv[2];
-  if (!overridePath) return CANONICAL_BASELINE;
+  if (!overridePath) return canonicalBaseline;
   const parsed = JSON.parse(fs.readFileSync(path.resolve(overridePath), 'utf8'));
   if (!Array.isArray(parsed) || parsed.some((p) => typeof p !== 'string')) {
     console.error(
@@ -101,7 +101,7 @@ const BASELINE = new Set(loadBaselinePaths());
 // entry (deleted/renamed file) is unusable grandfathered headroom that a
 // future violation could silently hide under — the baseline may only shrink.
 const staleEntries = [...BASELINE].filter(
-  (rel) => !fs.existsSync(path.join(REPO_ROOT, ...rel.split('/')))
+  (rel) => !fs.existsSync(path.join(repoRoot, ...rel.split('/')))
 );
 if (staleEntries.length > 0) {
   console.error(
@@ -121,7 +121,7 @@ if (staleEntries.length > 0) {
 // Matches: vi.mock('@/lib/api-client'), vi.mock("../../lib/api-client"),
 // vi.mock(`../lib/api-client`, ...). Any module specifier whose path ends
 // in api-client (optionally with an extension) is the api-client module.
-const API_CLIENT_VI_MOCK = /vi\.mock\(\s*(['"`])[^'"`]*api-client(\.[a-z]+)?\1/;
+const apiClientViMock = /vi\.mock\(\s*(['"`])[^'"`]*api-client(\.[a-z]+)?\1/;
 
 function walk(dir) {
   const out = [];
@@ -159,17 +159,17 @@ function walk(dir) {
 
 const violations = [];
 
-for (const file of walk(SCAN_ROOT)) {
-  const rel = path.relative(REPO_ROOT, file).split(path.sep).join('/');
+for (const file of walk(scanRoot)) {
+  const rel = path.relative(repoRoot, file).split(path.sep).join('/');
   // Equoria-q7lqz: files enumerated by walk() can vanish before this read
   // (concurrent jest sentinel plant+delete). The tolerant reader returns
   // null ONLY on ENOENT (with a one-line notice) and rethrows anything else.
   const content = readScannedFileSyncTolerant(file, 'api-client-vi-mock');
   if (content === null) continue;
-  if (!API_CLIENT_VI_MOCK.test(content)) continue;
+  if (!apiClientViMock.test(content)) continue;
   if (BASELINE.has(rel)) continue;
   const lines = content.split(/\r?\n/);
-  const lineNo = lines.findIndex((l) => API_CLIENT_VI_MOCK.test(l)) + 1;
+  const lineNo = lines.findIndex((l) => apiClientViMock.test(l)) + 1;
   violations.push({ file: rel, line: lineNo });
 }
 

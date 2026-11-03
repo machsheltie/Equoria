@@ -29,11 +29,11 @@ import { staticRoutes, dynamicEntityRoutes, viewports } from './routeManifest';
 
 // ESM scope — no __dirname (repo is "type": "module")
 const here = path.dirname(fileURLToPath(import.meta.url));
-const RUN_DATE = process.env.BASELINE_DATE ?? new Date().toISOString().slice(0, 10);
-const OUT_DIR = path.resolve(here, '__screenshots__', RUN_DATE);
+const runDate = process.env.BASELINE_DATE ?? new Date().toISOString().slice(0, 10);
+const outDir = path.resolve(here, '__screenshots__', runDate);
 
 test.beforeAll(() => {
-  mkdirSync(OUT_DIR, { recursive: true });
+  mkdirSync(outDir, { recursive: true });
 });
 
 /**
@@ -131,7 +131,7 @@ for (const viewport of viewports) {
           await cleanPage.goto(route.path);
           await settle(cleanPage);
           await cleanPage.screenshot({
-            path: path.join(OUT_DIR, `${route.family}--${route.slug}--${viewport.name}.png`),
+            path: path.join(outDir, `${route.family}--${route.slug}--${viewport.name}.png`),
             fullPage: true,
           });
           await ctx.close();
@@ -149,7 +149,7 @@ for (const viewport of viewports) {
         ).not.toMatch(/\/login/);
         await assertNotStuckLoading(page, route.slug);
         await page.screenshot({
-          path: path.join(OUT_DIR, `${route.family}--${route.slug}--${viewport.name}.png`),
+          path: path.join(outDir, `${route.family}--${route.slug}--${viewport.name}.png`),
           fullPage: true,
         });
       });
@@ -183,7 +183,7 @@ for (const viewport of viewports) {
         await settle(page);
         await assertNotStuckLoading(page, dyn.slug);
         await page.screenshot({
-          path: path.join(OUT_DIR, `${dyn.family}--${dyn.slug}--${viewport.name}.png`),
+          path: path.join(outDir, `${dyn.family}--${dyn.slug}--${viewport.name}.png`),
           fullPage: true,
         });
       }
@@ -316,7 +316,7 @@ for (const viewport of viewports) {
       await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(200);
       await page.screenshot({
-        path: path.join(OUT_DIR, `workflow--competition-browser--loading--${viewport.name}.png`),
+        path: path.join(outDir, `workflow--competition-browser--loading--${viewport.name}.png`),
         fullPage: true,
       });
     });
@@ -339,7 +339,7 @@ for (const viewport of viewports) {
         .locator('[data-testid="empty-state"]')
         .waitFor({ state: 'visible', timeout: 8000 });
       await page.screenshot({
-        path: path.join(OUT_DIR, `workflow--competition-browser--empty--${viewport.name}.png`),
+        path: path.join(outDir, `workflow--competition-browser--empty--${viewport.name}.png`),
         fullPage: true,
       });
     });
@@ -366,7 +366,7 @@ for (const viewport of viewports) {
         .locator('[data-testid="error-state"]')
         .waitFor({ state: 'visible', timeout: 8000 });
       await page.screenshot({
-        path: path.join(OUT_DIR, `workflow--competition-browser--error--${viewport.name}.png`),
+        path: path.join(outDir, `workflow--competition-browser--error--${viewport.name}.png`),
         fullPage: true,
       });
     });
@@ -382,7 +382,7 @@ for (const viewport of viewports) {
     //    string. We PASS THROUGH the real API and rewrite the response body so
     //    the roster is otherwise real (only the name is stretched).
     test('slice 2 — long-content (stable horse card overflow)', async ({ page }) => {
-      const LONG_NAME =
+      const longName =
         'Sir Reginald Bartholomew Wellington the Third of the Everlasting Meadowlands XI';
       // 78 chars — deliberately > any real name to exercise truncation/overflow.
 
@@ -398,7 +398,7 @@ for (const viewport of viewports) {
         }
         const b = body as { data?: Array<{ name?: string }> };
         if (Array.isArray(b?.data) && b.data.length > 0) {
-          b.data[0].name = LONG_NAME;
+          b.data[0].name = longName;
         }
         await route.fulfill({
           response,
@@ -419,7 +419,7 @@ for (const viewport of viewports) {
         .first()
         .waitFor({ state: 'visible', timeout: 12000 });
       await page.screenshot({
-        path: path.join(OUT_DIR, `stable-entity--stable--long-content--${viewport.name}.png`),
+        path: path.join(outDir, `stable-entity--stable--long-content--${viewport.name}.png`),
         fullPage: true,
       });
     });
@@ -542,7 +542,7 @@ for (const viewport of viewports) {
         .filter({ hasText: /invalid email or password/i })
         .waitFor({ state: 'visible', timeout: 8000 });
       await cleanPage.screenshot({
-        path: path.join(OUT_DIR, `auth--login--error--${viewport.name}.png`),
+        path: path.join(outDir, `auth--login--error--${viewport.name}.png`),
         fullPage: true,
       });
       await ctx.close();
@@ -566,7 +566,7 @@ for (const viewport of viewports) {
         .locator('[data-testid="empty-state-first-use"]')
         .waitFor({ state: 'visible', timeout: 8000 });
       await page.screenshot({
-        path: path.join(OUT_DIR, `hub--dashboard--empty--${viewport.name}.png`),
+        path: path.join(outDir, `hub--dashboard--empty--${viewport.name}.png`),
         fullPage: true,
       });
     });
@@ -595,7 +595,7 @@ for (const viewport of viewports) {
         .filter({ hasText: /unable to load horses/i })
         .waitFor({ state: 'visible', timeout: 8000 });
       await page.screenshot({
-        path: path.join(OUT_DIR, `hub--dashboard--error--${viewport.name}.png`),
+        path: path.join(outDir, `hub--dashboard--error--${viewport.name}.png`),
         fullPage: true,
       });
     });
@@ -618,7 +618,7 @@ for (const viewport of viewports) {
         .locator('[data-testid="empty-inventory"]')
         .waitFor({ state: 'visible', timeout: 8000 });
       await page.screenshot({
-        path: path.join(OUT_DIR, `marketplace-economy--inventory--empty--${viewport.name}.png`),
+        path: path.join(outDir, `marketplace-economy--inventory--empty--${viewport.name}.png`),
         fullPage: true,
       });
     });
@@ -645,7 +645,7 @@ for (const viewport of viewports) {
         .locator('[data-testid="inventory-error"]')
         .waitFor({ state: 'visible', timeout: 8000 });
       await page.screenshot({
-        path: path.join(OUT_DIR, `marketplace-economy--inventory--error--${viewport.name}.png`),
+        path: path.join(outDir, `marketplace-economy--inventory--error--${viewport.name}.png`),
         fullPage: true,
       });
     });
@@ -668,7 +668,7 @@ for (const viewport of viewports) {
         .locator('[data-testid="empty-messages"]')
         .waitFor({ state: 'visible', timeout: 8000 });
       await page.screenshot({
-        path: path.join(OUT_DIR, `community-messaging--messages--empty--${viewport.name}.png`),
+        path: path.join(outDir, `community-messaging--messages--empty--${viewport.name}.png`),
         fullPage: true,
       });
     });
@@ -698,10 +698,7 @@ for (const viewport of viewports) {
         .waitFor({ state: 'visible', timeout: 8000 });
       await page.waitForTimeout(250); // dialog enter transition settle
       await page.screenshot({
-        path: path.join(
-          OUT_DIR,
-          `community-messaging--messages--dialog-open--${viewport.name}.png`
-        ),
+        path: path.join(outDir, `community-messaging--messages--dialog-open--${viewport.name}.png`),
         fullPage: true,
       });
     });

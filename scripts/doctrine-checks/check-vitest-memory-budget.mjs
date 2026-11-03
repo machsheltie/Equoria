@@ -61,7 +61,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-const MAX_WORKERS_CAP = 2;
+const maxWorkersCap = 2;
 
 /**
  * Mock-hygiene flags required on every node-pool block (Equoria-370t0) —
@@ -74,7 +74,7 @@ const MAX_WORKERS_CAP = 2;
  * mockReturnValue/*Once state is wiped — verified against the full
  * frontend suite before this requirement shipped.
  */
-const HYGIENE_FLAGS = ['clearMocks', 'mockReset', 'restoreMocks', 'unstubEnvs', 'unstubGlobals'];
+const hygieneFlags = ['clearMocks', 'mockReset', 'restoreMocks', 'unstubEnvs', 'unstubGlobals'];
 
 /**
  * Strip // line comments and /* block comments while respecting '\'' / '"'
@@ -213,7 +213,7 @@ function validateBlock(fileLabel, label, block, failures) {
     const value = match[1].trim();
     if (!/^[12]$/.test(value)) {
       failures.push(
-        `${fileLabel} (${label}): maxWorkers must be a literal integer <= ${MAX_WORKERS_CAP} (got ${JSON.stringify(value)}) — percentages and computed expressions are unauditable and re-parallelize`
+        `${fileLabel} (${label}): maxWorkers must be a literal integer <= ${maxWorkersCap} (got ${JSON.stringify(value)}) — percentages and computed expressions are unauditable and re-parallelize`
       );
     }
   }
@@ -224,7 +224,7 @@ function validateBlock(fileLabel, label, block, failures) {
         `${fileLabel} (${label}): node-pool block missing execArgv --max-old-space-size= heap ceiling — each fork inherits V8's ~4GB default on a 16GB machine`
       );
     }
-    for (const flag of HYGIENE_FLAGS) {
+    for (const flag of hygieneFlags) {
       const flagMatch = new RegExp(`\\b${flag}\\s*:\\s*([^,\\n}]+)`).exec(block);
       const value = flagMatch ? flagMatch[1].trim() : null;
       if (value !== 'true') {

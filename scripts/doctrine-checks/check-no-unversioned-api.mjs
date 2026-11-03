@@ -32,19 +32,19 @@ import {
   readdirSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
 
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
-const SCAN_ROOT = path.join(REPO_ROOT, 'frontend', 'src');
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, '..', '..');
+const scanRoot = path.join(repoRoot, 'frontend', 'src');
 
-const SCAN_FILE_RE = /\.(ts|tsx)$/;
-const SKIP_NAME_RE = /\.(test|spec)\.(ts|tsx)$/;
+const scanFileRe = /\.(ts|tsx)$/;
+const skipNameRe = /\.(test|spec)\.(ts|tsx)$/;
 // Equoria-9ysza: `test` joins the skip set. This check enforces "no unversioned
 // /api in frontend SOURCE" (production code) — it already skips *.test/*.spec
 // files + __tests__/__mocks__ dirs. frontend/src/test/ is test-support infra
 // (the MSW mock handlers), NOT source; a stale unversioned mock there is a
 // test-hygiene matter, not a production-code regression, so it is out of scope
 // for this gate (tracked separately).
-const SKIP_DIRS = new Set([
+const skipDirs = new Set([
   'node_modules',
   '.next',
   'dist',
@@ -59,7 +59,7 @@ const SKIP_DIRS = new Set([
 // literals — the leading class includes `}` so a base-URL interpolation is
 // caught too (Equoria-9ysza / qv8n8: the original ['"`] class missed the common
 // `${base}/api/...` form). Captures the violating path for the error message.
-const VIOLATION_RE = /['"`}](\/api\/(?!v1\/)(?!internal\/)[^'"`]+)['"`]/g;
+const violationRe = /['"`}](\/api\/(?!v1\/)(?!internal\/)[^'"`]+)['"`]/g;
 
 const BACKSLASH = String.fromCharCode(92);
 
@@ -71,16 +71,16 @@ function walk(dir, acc) {
   for (const e of ents) {
     const full = path.join(dir, e.name);
     if (e.isDirectory()) {
-      if (SKIP_DIRS.has(e.name)) continue;
+      if (skipDirs.has(e.name)) continue;
       walk(full, acc);
-    } else if (e.isFile() && SCAN_FILE_RE.test(e.name) && !SKIP_NAME_RE.test(e.name)) {
+    } else if (e.isFile() && scanFileRe.test(e.name) && !skipNameRe.test(e.name)) {
       acc.push(full);
     }
   }
 }
 
 function toRelKey(absPath) {
-  return path.relative(REPO_ROOT, absPath).split(BACKSLASH).join('/');
+  return path.relative(repoRoot, absPath).split(BACKSLASH).join('/');
 }
 
 export function findViolations(filePath, src) {
@@ -90,8 +90,8 @@ export function findViolations(filePath, src) {
     if (lines[i].includes('// 4bs3s-allow')) continue;
     if (lines[i].includes('// eslint-disable-line')) continue;
     let m;
-    VIOLATION_RE.lastIndex = 0;
-    while ((m = VIOLATION_RE.exec(lines[i])) !== null) {
+    violationRe.lastIndex = 0;
+    while ((m = violationRe.exec(lines[i])) !== null) {
       violations.push({
         file: toRelKey(filePath),
         line: i + 1,
@@ -104,7 +104,7 @@ export function findViolations(filePath, src) {
 
 function main() {
   const files = [];
-  walk(SCAN_ROOT, files);
+  walk(scanRoot, files);
 
   const allViolations = [];
   for (const f of files) {

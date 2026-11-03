@@ -35,15 +35,15 @@ import {
   readdirSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
 
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
-const TEST_GLOBS_DIRS = ['backend'];
-const TEST_FILE_RE = /\.(test|spec)\.(m?js|tsx?|jsx?)$/;
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, '..', '..');
+const testGlobsDirs = ['backend'];
+const testFileRe = /\.(test|spec)\.(m?js|tsx?|jsx?)$/;
 
 // Patterns inside console.log arguments that indicate a graceful-skip.
 // Each pattern is a regex; matching ANY of them in a console.log call
 // flags the file as a violation.
-const VIOLATION_PATTERNS = [
+const violationPatterns = [
   /not\s+available\s*[—-]+\s*skipping/i,
   /not\s+readable\s*[—-]+\s*skipping/i,
   /Did\s+not\s+encounter\s+[\w\s]+\s+in\s+\d+\s+iterations/i,
@@ -69,7 +69,7 @@ function walk(dir, acc) {
         continue;
       }
       walk(full, acc);
-    } else if (e.isFile() && TEST_FILE_RE.test(e.name)) {
+    } else if (e.isFile() && testFileRe.test(e.name)) {
       acc.push(full);
     }
   }
@@ -85,7 +85,7 @@ function findViolations(src, filePath) {
       0,
       800
     );
-    for (const pat of VIOLATION_PATTERNS) {
+    for (const pat of violationPatterns) {
       if (pat.test(joined)) {
         hits.push({ file: filePath, line: i + 1, snippet: lines[i].trim().slice(0, 120) });
         break;
@@ -96,12 +96,12 @@ function findViolations(src, filePath) {
 }
 
 function toRelKey(absPath) {
-  return path.relative(REPO_ROOT, absPath).split(BACKSLASH).join('/');
+  return path.relative(repoRoot, absPath).split(BACKSLASH).join('/');
 }
 
 function main() {
   const files = [];
-  for (const d of TEST_GLOBS_DIRS) walk(path.join(REPO_ROOT, d), files);
+  for (const d of testGlobsDirs) walk(path.join(repoRoot, d), files);
 
   const allHits = [];
   for (const f of files) {

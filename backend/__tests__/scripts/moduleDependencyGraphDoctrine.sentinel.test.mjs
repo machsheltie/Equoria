@@ -747,7 +747,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(isReservedScratchPlantPathSegment(own, [PLANT_TOKEN])).toBe(false); // my gate names its own token
     expect(isReservedScratchPlantPathSegment('_v8l96_sentinel_cross_deep.mjs', [PLANT_TOKEN])).toBe(true);
     expect(isReservedScratchPlantPathSegment('horseService.mjs', [PLANT_TOKEN])).toBe(false);
-    expect(fs.readFileSync(CHECK, 'utf8')).toMatch(/OWN_PLANT_TOKENS = \[\s*'_ws4graphplant_'/);
+    expect(fs.readFileSync(CHECK, 'utf8')).toMatch(/ownPlantTokens = \[\s*'_ws4graphplant_'/);
     // End to end: an own plant IS still seen by the gate (the R2 arm above would be vacuous otherwise).
     const plant = plantFile(
       `economy/${PLANT_TOKEN}seen_${RUN_ID}.mjs`,

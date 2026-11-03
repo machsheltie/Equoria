@@ -23,16 +23,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
 
-const SCRIPT = path.join(REPO_ROOT, 'scripts', 'check-beta-readiness.sh');
-const WORKFLOW = path.join(REPO_ROOT, '.github', 'workflows', 'test.yml');
-const LIBRARY = path.join(REPO_ROOT, 'scripts', 'lib', 'beta-readiness-scans.sh');
+const SCRIPT = path.join(repoRoot, 'scripts', 'check-beta-readiness.sh');
+const WORKFLOW = path.join(repoRoot, '.github', 'workflows', 'test.yml');
+const LIBRARY = path.join(repoRoot, 'scripts', 'lib', 'beta-readiness-scans.sh');
 
 // The four canonical scans. Each is keyed by a unique content marker that must
 // appear verbatim inside its regex in the SHARED LIBRARY (and nowhere inline in
 // the consumers). The library variable name is asserted present too.
-export const CANONICAL_SCANS = [
+export const canonicalScans = [
   { name: 'HTTP cleanup-route', marker: 'test/cleanup', libVar: 'EQUORIA_SCAN_RE_HTTP_CLEANUP' },
   {
     name: 'integration-test DB-mock',
@@ -43,7 +43,7 @@ export const CANONICAL_SCANS = [
   { name: 'bypass-header', marker: 'x-test-skip-csrf', libVar: 'EQUORIA_SCAN_RE_BYPASS_HEADER' },
 ];
 
-const LIBRARY_REL = 'lib/beta-readiness-scans.sh';
+const libraryRel = 'lib/beta-readiness-scans.sh';
 
 /**
  * Detect an INLINE scan regex copy: a `grep -rn "<...marker...>"` or
@@ -71,7 +71,7 @@ export function checkSingleSource(scriptText, workflowText, libraryText) {
 
   // 1. The library must define every canonical scan regex variable, and that
   //    definition must contain the scan's marker.
-  for (const { name, marker, libVar } of CANONICAL_SCANS) {
+  for (const { name, marker, libVar } of canonicalScans) {
     const assign = new RegExp(`${libVar}=['"]([^'"]*)['"]`);
     const m = assign.exec(libraryText);
     if (!m) {
@@ -88,28 +88,28 @@ export function checkSingleSource(scriptText, workflowText, libraryText) {
     ['scripts/check-beta-readiness.sh', scriptText],
     ['.github/workflows/test.yml', workflowText],
   ]) {
-    if (!text.includes(LIBRARY_REL)) {
-      failures.push(`${label} does not source the shared library (${LIBRARY_REL}).`);
+    if (!text.includes(libraryRel)) {
+      failures.push(`${label} does not source the shared library (${libraryRel}).`);
     }
   }
 
   // 3. Neither consumer may contain an INLINE copy of any scan regex — that
   //    would reintroduce the drift hazard the library removed.
-  for (const { name, marker } of CANONICAL_SCANS) {
+  for (const { name, marker } of canonicalScans) {
     const scriptInline = findInlineGrepRegex(scriptText, marker);
     const workflowInline = findInlineGrepRegex(workflowText, marker);
     if (scriptInline) {
       failures.push(
         `INLINE COPY — scripts/check-beta-readiness.sh reintroduced an inline ${name} scan regex:\n` +
           `  ${scriptInline}\n` +
-          `  Use the shared library function instead (see ${LIBRARY_REL}, ADR-010 / Equoria-iffbt).`
+          `  Use the shared library function instead (see ${libraryRel}, ADR-010 / Equoria-iffbt).`
       );
     }
     if (workflowInline) {
       failures.push(
         `INLINE COPY — .github/workflows/test.yml reintroduced an inline ${name} scan regex:\n` +
           `  ${workflowInline}\n` +
-          `  Use the shared library function instead (see ${LIBRARY_REL}, ADR-010 / Equoria-iffbt).`
+          `  Use the shared library function instead (see ${libraryRel}, ADR-010 / Equoria-iffbt).`
       );
     }
   }

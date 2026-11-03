@@ -16,7 +16,7 @@ import { randomBytes } from 'crypto';
 import { confirmEmailViaApi } from './helpers/emailConfirmation';
 
 const BACKEND = 'http://localhost:3001';
-const SUITE_PREFIX = 'seslife_e2e';
+const suitePrefix = 'seslife_e2e';
 
 test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
   let userEmail: string;
@@ -24,14 +24,14 @@ test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
 
   test.beforeAll(async ({ request }) => {
     const suffix = randomBytes(6).toString('hex');
-    userEmail = `${SUITE_PREFIX}-${suffix}@example.com`;
+    userEmail = `${suitePrefix}-${suffix}@example.com`;
     userPassword = 'SesLifeE2e1!Aa';
 
     const reg = await request.post(`${BACKEND}/api/v1/auth/register`, {
       data: {
         email: userEmail,
         password: userPassword,
-        username: `${SUITE_PREFIX}${suffix}`,
+        username: `${suitePrefix}${suffix}`,
         firstName: 'Ses',
         lastName: 'LifeE2e',
         // Equoria-iqzn / Equoria-9tlha: COPPA age gate requires a valid adult DOB.

@@ -45,8 +45,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  STAFF_MOUNT,
-  ROUTE_CALL_METHODS,
+  staffMount,
+  routeCallMethods,
   isStringLiteral,
   samePath,
   load,
@@ -58,8 +58,8 @@ import {
 } from './staff-routes-ast.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
-const BACKEND_DIR = path.join(REPO_ROOT, 'backend');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
+const backendDir = path.join(repoRoot, 'backend');
 
 /**
  * Route-method / use() calls whose first argument names a path under any of
@@ -70,7 +70,7 @@ function pathCallsUnder({ nodes }, prefixes) {
   return nodes.filter((n) => {
     if (n.type !== 'CallExpression' || n.callee.type !== 'MemberExpression') return false;
     const m = n.callee.computed ? staticPath(n.callee.property) : n.callee.property.name;
-    if (!ROUTE_CALL_METHODS.has(m)) return false;
+    if (!routeCallMethods.has(m)) return false;
     const [first] = n.arguments;
     if (opaquePath(first)) return true;
     const value = staticPath(first)?.toLowerCase();
@@ -85,19 +85,19 @@ const coversStaff = (p) => {
   // A pattern path (wildcard, parameter, optional, group) may match the staff
   // mount; it cannot be judged, so it counts as covering.
   if (/[*:()?+[\]]/.test(v)) return true;
-  return v === '' || STAFF_MOUNT === v || STAFF_MOUNT.startsWith(`${v}/`);
+  return v === '' || staffMount === v || staffMount.startsWith(`${v}/`);
 };
 const isUnderStaff = (p) => {
   const v = p.toLowerCase().replace(/\/+$/, '');
-  return v === STAFF_MOUNT || v.startsWith(`${STAFF_MOUNT}/`);
+  return v === staffMount || v.startsWith(`${staffMount}/`);
 };
 const nodeBefore = (a, b) =>
   a.loc.start.line < b.loc.start.line ||
   (a.loc.start.line === b.loc.start.line && a.loc.start.column < b.loc.start.column);
 
-const MIDDLEWARE_DIRS = ['middleware', 'config', 'services', 'utils'];
-const MIDDLEWARE_PACKAGES = new Set(['cors', 'helmet', 'cookie-parser']);
-const EXPRESS_MIDDLEWARE = new Set(['json', 'urlencoded', 'raw', 'text']);
+const middlewareDirs = ['middleware', 'config', 'services', 'utils'];
+const middlewarePackages = new Set(['cors', 'helmet', 'cookie-parser']);
+const expressMiddleware = new Set(['json', 'urlencoded', 'raw', 'text']);
 const ROUTERISH = /route|router/i;
 
 /**
@@ -127,11 +127,11 @@ function isMiddlewareName(idx, file, backendRoot, name, depth = 0) {
     if (stmt.type !== 'ImportDeclaration') continue;
     if (!stmt.specifiers.some((sp) => sp.local.name === name)) continue;
     const src = String(stmt.source.value);
-    if (MIDDLEWARE_PACKAGES.has(src)) return true;
+    if (middlewarePackages.has(src)) return true;
     if (!src.startsWith('.')) return false;
     const target = path.resolve(path.dirname(file), src);
     const rel = path.relative(backendRoot, target);
-    return MIDDLEWARE_DIRS.includes(rel.split(path.sep)[0]) && !mayExportRouter(target);
+    return middlewareDirs.includes(rel.split(path.sep)[0]) && !mayExportRouter(target);
   }
   const decl = idx.ast.body
     .filter((st) => st.type === 'VariableDeclaration' && st.kind === 'const')
@@ -150,7 +150,7 @@ function isMiddlewareArg(idx, file, backendRoot, arg, depth = 0) {
     c.type === 'MemberExpression' &&
     !c.computed &&
     c.object.type === 'Identifier' &&
-    EXPRESS_MIDDLEWARE.has(c.property.name) &&
+    expressMiddleware.has(c.property.name) &&
     idx.ast.body.some(
       (st) =>
         st.type === 'ImportDeclaration' &&
@@ -187,7 +187,7 @@ function checkPublicRouter(idx, fail, at) {
       member.type === 'MemberExpression' &&
       member.object === ref &&
       !member.computed &&
-      ROUTE_CALL_METHODS.has(member.property.name) &&
+      routeCallMethods.has(member.property.name) &&
       call.callee === member &&
       idx.parents.get(call)?.type === 'ExpressionStatement' &&
       p !== null &&
@@ -196,7 +196,7 @@ function checkPublicRouter(idx, fail, at) {
     if (!ok) {
       fail(
         at(ref),
-        `${name} is mounted at '/' ahead of the staff Router, so each registration needs a static path that does not cover ${STAFF_MOUNT}`
+        `${name} is mounted at '/' ahead of the staff Router, so each registration needs a static path that does not cover ${staffMount}`
       );
     }
   }
@@ -241,7 +241,7 @@ function checkCoveringBeforeMount(idx, file, backendRoot, mountCall, publicLocal
       );
       continue;
     }
-    if (!ROUTE_CALL_METHODS.has(method)) continue; // app.set(...), app.disable(...)
+    if (!routeCallMethods.has(method)) continue; // app.set(...), app.disable(...)
     const [first] = call.arguments;
     if (opaquePath(first)) {
       fail(
@@ -268,7 +268,7 @@ function checkCoveringBeforeMount(idx, file, backendRoot, mountCall, publicLocal
     if (!ok) {
       fail(
         call.loc.start.line,
-        `${appName}.${method}(${p === null ? '' : `'${p}', `}...) covers ${STAFF_MOUNT} and comes before the staff mount; only middleware may (routers and handlers go after it)`
+        `${appName}.${method}(${p === null ? '' : `'${p}', `}...) covers ${staffMount} and comes before the staff mount; only middleware may (routers and handlers go after it)`
       );
     }
   }
@@ -448,7 +448,7 @@ export function checkRoutersFile(file, backendRoot) {
 
   checkPublicRouter(idx, fail, at);
 
-  for (const call of pathCallsUnder(idx, ['/staff', STAFF_MOUNT])) {
+  for (const call of pathCallsUnder(idx, ['/staff', staffMount])) {
     fail(
       at(call),
       `routes under /staff may only live in modules/staff/routes/ (this file mounts nothing there; array, regex and dynamic paths are refused)`
@@ -504,24 +504,24 @@ export function checkAppFile(file, backendRoot) {
       (args) =>
         args.length === 2 &&
         isStringLiteral(args[0]) &&
-        args[0].value === STAFF_MOUNT &&
+        args[0].value === staffMount &&
         args[1] === refs[0]
     );
   if (!mountedOnce) {
     for (const r of refs)
       fail(
         r.loc.start.line,
-        `${local.name} may only appear once, in app.use('${STAFF_MOUNT}', ${local.name})`
+        `${local.name} may only appear once, in app.use('${staffMount}', ${local.name})`
       );
     if (refs.length === 0)
-      fail(local.loc.start.line, `${local.name} is never mounted at ${STAFF_MOUNT}`);
+      fail(local.loc.start.line, `${local.name} is never mounted at ${staffMount}`);
   }
   const mountCall = mountedOnce ? idx.parents.get(refs[0]) : null;
-  for (const call of pathCallsUnder(idx, [STAFF_MOUNT])) {
+  for (const call of pathCallsUnder(idx, [staffMount])) {
     if (call !== mountCall)
       fail(
         call.loc.start.line,
-        `only app.use('${STAFF_MOUNT}', staffRouter) may name ${STAFF_MOUNT}`
+        `only app.use('${staffMount}', staffRouter) may name ${staffMount}`
       );
   }
   if (mountCall) {
@@ -552,7 +552,7 @@ export function checkAppFile(file, backendRoot) {
 }
 
 /** Check routers.mjs and app.mjs under backendRoot. Returns [{file, line, reason}]. */
-export function scanStaffMount(backendRoot = BACKEND_DIR) {
+export function scanStaffMount(backendRoot = backendDir) {
   const routers = path.join(backendRoot, 'app', 'routers.mjs');
   const app = path.join(backendRoot, 'app.mjs');
   const failures = [];
@@ -578,7 +578,7 @@ function main() {
   if (failures.length > 0) {
     console.error('\nStaff Router mount violations:');
     for (const f of failures) {
-      console.error(`  ${path.relative(REPO_ROOT, f.file)}:${f.line}  ${f.reason}`);
+      console.error(`  ${path.relative(repoRoot, f.file)}:${f.line}  ${f.reason}`);
     }
     console.error(
       '\nSee the pinned shape at the top of scripts/doctrine-checks/check-staff-routes-mount.mjs.'

@@ -54,14 +54,14 @@ import { fileURLToPath } from 'node:url';
 // point), so the exemption contract can be asserted directly instead of by
 // mutating a tracked source file to see what the scan says about it.
 import {
-  OWNER_FILES,
-  DRAW_TRIGGER_FILES,
-  SCHEDULE_MODULE_FILE,
-  IDENT_RX,
-  DRAW_TRIGGER_IMPORT_RX,
-  DRAW_TRIGGER_DISCARDED_CALL_RX,
-  RE_EXPORT_LIST_RX,
-  RE_EXPORT_STAR_RX,
+  ownerFiles,
+  drawTriggerFiles,
+  scheduleModuleFile,
+  identRx,
+  drawTriggerImportRx,
+  drawTriggerDiscardedCallRx,
+  reExportListRx,
+  reExportStarRx,
   scanRetirementScheduleLeaks,
 } from '../../scripts/doctrine-checks/check-no-retirement-schedule-leak.mjs';
 
@@ -224,20 +224,20 @@ describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
   // leaves them committed-adjacent), so this suite does not do it.
   describe('the DRAW_TRIGGER exemption is narrow', () => {
     it('covers exactly the two hire controllers, and no owner file twice', () => {
-      expect([...DRAW_TRIGGER_FILES].sort()).toEqual([
+      expect([...drawTriggerFiles].sort()).toEqual([
         'backend/modules/grooms/controllers/groomMarketplaceController.mjs',
         'backend/modules/grooms/controllers/groomRosterController.mjs',
       ]);
       // The two tiers are disjoint: an owner file is exempt outright and must
       // not also be listed as a draw trigger, or a widening of one list would
       // silently widen the other.
-      for (const f of DRAW_TRIGGER_FILES) {
-        expect(OWNER_FILES.has(f)).toBe(false);
+      for (const f of drawTriggerFiles) {
+        expect(ownerFiles.has(f)).toBe(false);
       }
     });
 
     it('allows the value-DISCARDING call and the by-path import, and nothing else', () => {
-      const allowed = line => DRAW_TRIGGER_IMPORT_RX.test(line) || DRAW_TRIGGER_DISCARDED_CALL_RX.test(line);
+      const allowed = line => drawTriggerImportRx.test(line) || drawTriggerDiscardedCallRx.test(line);
 
       // What the real hire controllers contain today.
       expect(
@@ -262,7 +262,7 @@ describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
         "import { ensureRetirementSchedule } from '../index.mjs';",
       ];
       for (const line of captures) {
-        expect(IDENT_RX.test(line)).toBe(true); // the check notices the line at all
+        expect(identRx.test(line)).toBe(true); // the check notices the line at all
         expect(allowed(line)).toBe(false); // and the exemption does not cover it
       }
     });
@@ -305,13 +305,13 @@ describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
       // carve-out is the schedule module, which declares these functions.
       // Asserted on the imported contract rather than by rewriting the tracked
       // owner file on disk (that is finding 4's hazard, not a test technique).
-      expect(OWNER_FILES.has(SCHEDULE_MODULE_FILE)).toBe(true);
-      const otherOwners = [...OWNER_FILES].filter(f => f !== SCHEDULE_MODULE_FILE);
+      expect(ownerFiles.has(scheduleModuleFile)).toBe(true);
+      const otherOwners = [...ownerFiles].filter(f => f !== scheduleModuleFile);
       expect(otherOwners).toEqual(['backend/modules/grooms/services/groomRetirementService.mjs']);
 
       const removedLine = 'export { drawRetirementAge, ensureRetirementSchedule };';
-      expect(RE_EXPORT_LIST_RX.test(removedLine)).toBe(true);
-      expect(RE_EXPORT_STAR_RX.test("export * from './services/groomRetirementScheduleService.mjs';")).toBe(true);
+      expect(reExportListRx.test(removedLine)).toBe(true);
+      expect(reExportStarRx.test("export * from './services/groomRetirementScheduleService.mjs';")).toBe(true);
 
       // And it does not fire on the schedule module's own DECLARATIONS, which is
       // why that one file is carved out rather than the regex being narrowed.
@@ -320,8 +320,8 @@ describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
         'export async function readRetirementAge(client, groomId) {',
         'export async function ensureRetirementSchedule(client, groomId) {',
       ]) {
-        expect(RE_EXPORT_LIST_RX.test(declaration)).toBe(false);
-        expect(RE_EXPORT_STAR_RX.test(declaration)).toBe(false);
+        expect(reExportListRx.test(declaration)).toBe(false);
+        expect(reExportStarRx.test(declaration)).toBe(false);
       }
     });
   });

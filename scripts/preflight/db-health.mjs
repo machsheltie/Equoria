@@ -58,10 +58,10 @@ if (!url) {
   process.exit(2);
 }
 
-const BUDGET_MS = 5000;
+const budgetMs = 5000;
 
 const healthCheck = (async () => {
-  const client = new Client({ connectionString: url, connectionTimeoutMillis: BUDGET_MS });
+  const client = new Client({ connectionString: url, connectionTimeoutMillis: budgetMs });
   await client.connect();
 
   const issues = [];
@@ -135,13 +135,13 @@ const healthCheck = (async () => {
 
 // NOTE: capture the timer handle so we can clearTimeout() it after the race
 // settles. Without this, the unreferenced setTimeout keeps Node's event loop
-// alive for the FULL BUDGET_MS even when healthCheck resolves in ~150ms — the
+// alive for the FULL budgetMs even when healthCheck resolves in ~150ms — the
 // process then lingers ~5s on the healthy path, taxing every push. (Equoria-l052p)
 let timeoutHandle;
 const timeout = new Promise((_resolve, reject) => {
   timeoutHandle = setTimeout(
-    () => reject(new Error(`db-health timed out after ${BUDGET_MS}ms`)),
-    BUDGET_MS
+    () => reject(new Error(`db-health timed out after ${budgetMs}ms`)),
+    budgetMs
   );
 });
 

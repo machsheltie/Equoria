@@ -58,24 +58,24 @@ import {
   readScannedFileSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
 
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, '..', '..');
 
 // argv[2] optionally overrides the baseline path so the sentinel can prove
 // detection FIRES against a planted baseline without editing the canonical one.
 // Production callers pass no argument.
-const BASELINE_PATH = process.argv[2]
+const baselinePath = process.argv[2]
   ? path.resolve(process.argv[2])
-  : path.join(SCRIPT_DIR, 'file-size-baseline.json');
+  : path.join(scriptDir, 'file-size-baseline.json');
 
 const BACKSLASH = String.fromCharCode(92);
 
 // User-approved thresholds (2026-06-22).
-export const SOURCE_THRESHOLD = 600;
-export const TEST_THRESHOLD = 800;
+export const sourceThreshold = 600;
+export const testThreshold = 800;
 
 // Directories never scanned, anywhere in the tree.
-const SKIP_DIRS = new Set([
+const skipDirs = new Set([
   'node_modules',
   '.git',
   'dist',
@@ -87,13 +87,13 @@ const SKIP_DIRS = new Set([
 ]);
 
 // Source-file extensions per scan root.
-const BACKEND_SRC_RE = /\.mjs$/;
-const FRONTEND_SRC_RE = /\.(ts|tsx)$/;
+const backendSrcRe = /\.mjs$/;
+const frontendSrcRe = /\.(ts|tsx)$/;
 
 // Scan roots (repo-relative) and their per-root file matcher.
-const SCAN_ROOTS = [
-  { dir: 'backend', match: (name) => BACKEND_SRC_RE.test(name) },
-  { dir: path.join('frontend', 'src'), match: (name) => FRONTEND_SRC_RE.test(name) },
+const scanRoots = [
+  { dir: 'backend', match: (name) => backendSrcRe.test(name) },
+  { dir: path.join('frontend', 'src'), match: (name) => frontendSrcRe.test(name) },
 ];
 
 /**
@@ -111,7 +111,7 @@ export function isTestFile(relPath) {
 
 /** The threshold (in lines) that applies to a given repo-relative path. */
 export function thresholdFor(relPath) {
-  return isTestFile(relPath) ? TEST_THRESHOLD : SOURCE_THRESHOLD;
+  return isTestFile(relPath) ? testThreshold : sourceThreshold;
 }
 
 /**
@@ -154,7 +154,7 @@ function walk(dir, match, acc) {
   for (const e of ents) {
     const full = path.join(dir, e.name);
     if (e.isDirectory()) {
-      if (SKIP_DIRS.has(e.name)) continue;
+      if (skipDirs.has(e.name)) continue;
       walk(full, match, acc);
     } else if (
       e.isFile() &&
@@ -170,7 +170,7 @@ function walk(dir, match, acc) {
 }
 
 function toRelKey(absPath) {
-  return path.relative(REPO_ROOT, absPath).split(BACKSLASH).join('/');
+  return path.relative(repoRoot, absPath).split(BACKSLASH).join('/');
 }
 
 /**
@@ -180,8 +180,8 @@ function toRelKey(absPath) {
  */
 export function scanOverThreshold() {
   const overThreshold = {};
-  for (const { dir, match } of SCAN_ROOTS) {
-    const absRoot = path.join(REPO_ROOT, dir);
+  for (const { dir, match } of scanRoots) {
+    const absRoot = path.join(repoRoot, dir);
     if (!fs.existsSync(absRoot)) continue;
     const files = [];
     walk(absRoot, match, files);
@@ -197,13 +197,13 @@ export function scanOverThreshold() {
 }
 
 function loadBaseline() {
-  if (!fs.existsSync(BASELINE_PATH)) {
-    console.error(`[file-size-thresholds] baseline not found at ${BASELINE_PATH}`);
+  if (!fs.existsSync(baselinePath)) {
+    console.error(`[file-size-thresholds] baseline not found at ${baselinePath}`);
     process.exit(2);
   }
   let parsed;
   try {
-    parsed = JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
+    parsed = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
   } catch (err) {
     console.error(`[file-size-thresholds] baseline is not valid JSON: ${err.message}`);
     process.exit(2);
@@ -224,7 +224,7 @@ function loadBaseline() {
 function assertNoStaleBaselineEntries(baseline, observed) {
   const stale = [];
   for (const key of Object.keys(baseline)) {
-    const onDisk = fs.existsSync(path.join(REPO_ROOT, ...key.split('/')));
+    const onDisk = fs.existsSync(path.join(repoRoot, ...key.split('/')));
     if (!onDisk) {
       stale.push({ key, reason: 'file no longer exists on disk' });
     } else if (!(key in observed)) {
@@ -240,7 +240,7 @@ function assertNoStaleBaselineEntries(baseline, observed) {
     }
     console.error('');
     console.error('Remove the stale path(s) from');
-    console.error(`  ${BASELINE_PATH}`);
+    console.error(`  ${baselinePath}`);
     console.error('(Equoria-urqic.7 — a shrunk/deleted file must be pruned from the allow-list).');
     process.exit(1);
   }
@@ -292,10 +292,10 @@ function main() {
       'Fix (preferred): split the file into owned modules so it falls below threshold.'
     );
     console.error(
-      `  Source files must be <= ${SOURCE_THRESHOLD} lines; test files <= ${TEST_THRESHOLD} lines.`
+      `  Source files must be <= ${sourceThreshold} lines; test files <= ${testThreshold} lines.`
     );
     console.error('If the file is a genuinely-cohesive exception, add it to the allow-list');
-    console.error(`  ${BASELINE_PATH}`);
+    console.error(`  ${baselinePath}`);
     console.error('at its CURRENT line count — but the allow-list may only SHRINK over time.');
     console.error('See Equoria-urqic.7 + .claude/rules/CONTRIBUTING.md "File-size thresholds".');
     process.exit(1);
@@ -305,7 +305,7 @@ function main() {
   const baselineCount = Object.keys(baseline).length;
   console.log(
     `[file-size-thresholds] OK — ${overCount} over-threshold file(s), all <= their baselined count ` +
-      `(${baselineCount} allow-listed; src cap ${SOURCE_THRESHOLD}, test cap ${TEST_THRESHOLD})`
+      `(${baselineCount} allow-listed; src cap ${sourceThreshold}, test cap ${testThreshold})`
   );
 }
 

@@ -118,7 +118,7 @@ export type SeededPlayerSession = AuthedSession & {
  * would not be scoped to the host the browser uses. If `use.baseURL` ever
  * becomes configurable, this constant must follow it in the same change.
  */
-const E2E_BASE_URL = 'http://localhost:3000';
+const e2eBaseUrl = 'http://localhost:3000';
 
 function storageStateDirectory(): string {
   const dir = path.join(os.tmpdir(), 'equoria-e2e-seeded-players');
@@ -135,7 +135,7 @@ function storageStateDirectory(): string {
  */
 export async function createSeededPlayerSession(browser: Browser): Promise<SeededPlayerSession> {
   // No storageState: this context starts anonymous and becomes the new player.
-  const context = await browser.newContext({ baseURL: E2E_BASE_URL });
+  const context = await browser.newContext({ baseURL: e2eBaseUrl });
   const request = context.request;
 
   const stamp = `${Date.now()}_${randomUUID().slice(0, 8)}`;

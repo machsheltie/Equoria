@@ -33,17 +33,17 @@ import {
   unwrapData,
 } from './support/prodParity';
 
-const HORSE_NAME_PREFIX = 'StatsCardTest Horse';
-const SHOW_NAME_PREFIX = 'StatsCardTest Show';
+const horseNamePrefix = 'StatsCardTest Horse';
+const showNamePrefix = 'StatsCardTest Show';
 
 test.afterAll(async () => {
   try {
     // FK order: results cascade-delete with the horse (onDelete: Cascade).
     await prisma.horse.deleteMany({
-      where: { name: { startsWith: HORSE_NAME_PREFIX } },
+      where: { name: { startsWith: horseNamePrefix } },
     });
     await prisma.show.deleteMany({
-      where: { name: { startsWith: SHOW_NAME_PREFIX } },
+      where: { name: { startsWith: showNamePrefix } },
     });
   } finally {
     await prisma.$disconnect();
@@ -57,7 +57,7 @@ test('profile Game-Statistics cards render real non-zero values with no bypass h
   const suffix = `${Date.now()}_stats`;
 
   // Step 1: Register fresh player + onboarding → 1 starter horse.
-  await registerAndCompleteOnboarding(page, suffix, `${HORSE_NAME_PREFIX} ${suffix}`);
+  await registerAndCompleteOnboarding(page, suffix, `${horseNamePrefix} ${suffix}`);
 
   // Step 2: Resolve the user id + starter horse id.
   const profileJson = await expectOk(
@@ -70,7 +70,7 @@ test('profile Game-Statistics cards render real non-zero values with no bypass h
 
   const horsesJson = await expectOk(await page.request.get('/api/v1/horses'), 'GET /api/horses');
   const horses = unwrapData<Array<{ id: number; name: string }>>(horsesJson);
-  const starterHorse = horses.find((h) => h.name.startsWith(HORSE_NAME_PREFIX));
+  const starterHorse = horses.find((h) => h.name.startsWith(horseNamePrefix));
   expect(starterHorse, 'Starter horse must be findable by name prefix').toBeTruthy();
   const starterHorseId = Number(starterHorse!.id);
 
@@ -80,7 +80,7 @@ test('profile Game-Statistics cards render real non-zero values with no bypass h
   // test, mirroring the backend integration sentinel.
   const show = await prisma.show.create({
     data: {
-      name: `${SHOW_NAME_PREFIX} ${suffix}`,
+      name: `${showNamePrefix} ${suffix}`,
       discipline: 'Racing',
       levelMin: 1,
       levelMax: 20,

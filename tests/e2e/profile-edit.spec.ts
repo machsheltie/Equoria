@@ -43,7 +43,7 @@ import { confirmEmailViaApi } from './helpers/emailConfirmation';
 
 const BACKEND = 'http://localhost:3001';
 const FRONTEND = 'http://localhost:3000';
-const SUITE_PREFIX = 'profedit_e2e';
+const suitePrefix = 'profedit_e2e';
 
 type Player = {
   email: string;
@@ -53,7 +53,7 @@ type Player = {
 
 async function registerPlayer(
   request: import('@playwright/test').APIRequestContext,
-  prefix = SUITE_PREFIX
+  prefix = suitePrefix
 ): Promise<Player> {
   const suffix = randomBytes(6).toString('hex');
   const player: Player = {

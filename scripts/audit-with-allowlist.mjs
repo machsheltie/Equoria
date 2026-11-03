@@ -52,16 +52,16 @@ import { execSync } from 'node:child_process';
 import { argv, exit, cwd } from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-const SEVERITY_RANK = { info: 0, low: 1, moderate: 2, high: 3, critical: 4 };
+const severityRank = { info: 0, low: 1, moderate: 2, high: 3, critical: 4 };
 
 function parseArgs() {
   const args = argv.slice(2);
   const workingDir = args[0] || '.';
   const severity = args[1] || 'high';
   const allowlistPath = args[2] || resolve(cwd(), 'scripts', 'audit-allowlist.json');
-  if (!(severity in SEVERITY_RANK)) {
+  if (!(severity in severityRank)) {
     console.error(
-      `FAIL: unknown severity "${severity}". Allowed: ${Object.keys(SEVERITY_RANK).join(', ')}.`
+      `FAIL: unknown severity "${severity}". Allowed: ${Object.keys(severityRank).join(', ')}.`
     );
     exit(2);
   }
@@ -169,7 +169,7 @@ function resolveGhsas(vulns, pkgName, thresholdRank, seen = new Set()) {
   const via = vulns[pkgName]?.via || [];
   const atThreshold = via.filter(
     (v) =>
-      typeof v === 'object' && v && (SEVERITY_RANK[v.severity] ?? thresholdRank) >= thresholdRank
+      typeof v === 'object' && v && (severityRank[v.severity] ?? thresholdRank) >= thresholdRank
   );
   const out = new Set(extractGhsasFromVia(atThreshold));
   for (const dep of via) {
@@ -180,11 +180,11 @@ function resolveGhsas(vulns, pkgName, thresholdRank, seen = new Set()) {
 }
 
 export function findBlockers(audit, threshold, active) {
-  const thresholdRank = SEVERITY_RANK[threshold];
+  const thresholdRank = severityRank[threshold];
   const blockers = [];
   const vulns = audit?.vulnerabilities || {};
   for (const [pkgName, info] of Object.entries(vulns)) {
-    const sevRank = SEVERITY_RANK[info.severity] ?? 0;
+    const sevRank = severityRank[info.severity] ?? 0;
     if (sevRank < thresholdRank) continue;
     const ghsas = resolveGhsas(vulns, pkgName, thresholdRank);
     if (ghsas.length === 0) {

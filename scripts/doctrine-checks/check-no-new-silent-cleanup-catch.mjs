@@ -66,19 +66,18 @@ import {
   readScannedFileSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
 
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, '..', '..');
 // Equoria-fefh2.11: argv[2] optionally overrides the baseline path so the
 // doctrineBaselineStale sentinel can prove stale-entry detection FIRES
 // against a planted baseline. Production callers pass no argument.
-const BASELINE_PATH = process.argv[2]
+const baselinePath = process.argv[2]
   ? path.resolve(process.argv[2])
-  : path.join(SCRIPT_DIR, 'silent-cleanup-catch-baseline.json');
+  : path.join(scriptDir, 'silent-cleanup-catch-baseline.json');
 
-const TEST_GLOBS_DIRS = ['backend'];
-const TEST_FILE_RE = /\.(test|spec)\.(m?js|tsx?|jsx?)$/;
-const SILENT_CATCH_RE =
-  /\.catch\(\s*\(?\s*\w*\s*\)?\s*=>\s*(\{\s*\}|undefined|null|void\s+0)\s*\)/g;
+const testGlobsDirs = ['backend'];
+const testFileRe = /\.(test|spec)\.(m?js|tsx?|jsx?)$/;
+const silentCatchRe = /\.catch\(\s*\(?\s*\w*\s*\)?\s*=>\s*(\{\s*\}|undefined|null|void\s+0)\s*\)/g;
 
 const BACKSLASH = String.fromCharCode(92);
 
@@ -110,7 +109,7 @@ function walk(dir, acc) {
       walk(full, acc);
     } else if (
       e.isFile() &&
-      TEST_FILE_RE.test(e.name) &&
+      testFileRe.test(e.name) &&
       // Equoria-q7lqz: sentinel plant artifacts (basename contains the
       // UPPERCASE DO_NOT_COMMIT / PLANTED markers) are planted+deleted by
       // concurrent jest sentinels — exclude them at the walker level.
@@ -160,7 +159,7 @@ function walk(dir, acc) {
  * worst leaves a regex body in place as code — that can only keep a match
  * that was already there, never weaken real detection.
  */
-const COMMENT_SENTINEL = '~'; // non-whitespace, not part of the catch pattern
+const commentSentinel = '~'; // non-whitespace, not part of the catch pattern
 function stripComments(src) {
   let out = '';
   let i = 0;
@@ -194,7 +193,7 @@ function stripComments(src) {
         inLine = false;
         out += ch; // keep the newline — the comment ends here
       } else {
-        out += COMMENT_SENTINEL; // blank comment char to non-whitespace
+        out += commentSentinel; // blank comment char to non-whitespace
       }
       i += 1;
       continue;
@@ -203,13 +202,13 @@ function stripComments(src) {
     if (inBlock) {
       if (ch === '*' && next === '/') {
         inBlock = false;
-        out += COMMENT_SENTINEL + COMMENT_SENTINEL; // blank the closing */
+        out += commentSentinel + commentSentinel; // blank the closing */
         i += 2;
       } else {
         // Blank EVERY block-comment char (including newlines) to the
         // non-whitespace sentinel so a multi-line comment body can never
         // reduce to whitespace and create/keep a match it shouldn't.
-        out += COMMENT_SENTINEL;
+        out += commentSentinel;
         i += 1;
       }
       continue;
@@ -299,21 +298,21 @@ function countSilentCatches(filePath) {
   // Equoria-fv6dp: count against comment-stripped source so explanatory
   // comments that mention the literal pattern are not false-counted.
   const code = stripComments(src);
-  const matches = code.match(SILENT_CATCH_RE);
+  const matches = code.match(silentCatchRe);
   return matches ? matches.length : 0;
 }
 
 function loadBaseline() {
-  if (!fs.existsSync(BASELINE_PATH)) {
-    console.error(`[silent-cleanup-catch] baseline not found at ${BASELINE_PATH}`);
+  if (!fs.existsSync(baselinePath)) {
+    console.error(`[silent-cleanup-catch] baseline not found at ${baselinePath}`);
     console.error('[silent-cleanup-catch] run the bootstrap step in the bd notes to regenerate.');
     process.exit(2);
   }
-  return JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
+  return JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
 }
 
 function toRelKey(absPath) {
-  return path.relative(REPO_ROOT, absPath).split(BACKSLASH).join('/');
+  return path.relative(repoRoot, absPath).split(BACKSLASH).join('/');
 }
 
 // Equoria-fefh2.11 ratchet: every baseline key must exist on disk. A stale
@@ -321,7 +320,7 @@ function toRelKey(absPath) {
 // future regression could silently hide under — the baseline may only shrink.
 function assertNoStaleBaselineEntries(baseline) {
   const stale = Object.keys(baseline).filter(
-    (key) => !fs.existsSync(path.join(REPO_ROOT, ...key.split('/')))
+    (key) => !fs.existsSync(path.join(repoRoot, ...key.split('/')))
   );
   if (stale.length > 0) {
     console.error(
@@ -332,7 +331,7 @@ function assertNoStaleBaselineEntries(baseline) {
     }
     console.error('');
     console.error('The baseline may only SHRINK: remove the stale path(s) from');
-    console.error(`  ${BASELINE_PATH}`);
+    console.error(`  ${baselinePath}`);
     console.error('and update the counts/governance header (Equoria-fefh2.11 / Equoria-1ohys).');
     process.exit(1);
   }
@@ -342,7 +341,7 @@ function main() {
   const baseline = loadBaseline();
   assertNoStaleBaselineEntries(baseline);
   const files = [];
-  for (const d of TEST_GLOBS_DIRS) walk(path.join(REPO_ROOT, d), files);
+  for (const d of testGlobsDirs) walk(path.join(repoRoot, d), files);
 
   const violations = [];
   let observedTotal = 0;

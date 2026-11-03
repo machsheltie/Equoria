@@ -56,7 +56,7 @@ async function getPrisma(): Promise<Record<string, unknown>> {
   return client;
 }
 
-export const FIXTURE_NAME_PREFIX = 'WrmFixture-';
+export const fixtureNamePrefix = 'WrmFixture-';
 
 export type CoatGenotypeScenario =
   | 'frame-overo' // Oo × Oo → 25% OO lethal-white
@@ -129,8 +129,8 @@ export async function seedCoatGenotypeHorses(opts: SeedOptions): Promise<SeededP
 
   const [sireGenotype, damGenotype] = genotypesForScenario(scenario);
 
-  const sireName = `${FIXTURE_NAME_PREFIX}${scenario}-sire`;
-  const damName = `${FIXTURE_NAME_PREFIX}${scenario}-dam`;
+  const sireName = `${fixtureNamePrefix}${scenario}-sire`;
+  const damName = `${fixtureNamePrefix}${scenario}-dam`;
 
   // 5 years in the past — well above the 3-year breeding minimum.
   const dob = new Date();
@@ -170,7 +170,7 @@ export async function seedCoatGenotypeHorses(opts: SeedOptions): Promise<SeededP
 }
 
 /**
- * Remove the fixture horses (names starting with FIXTURE_NAME_PREFIX) owned by
+ * Remove the fixture horses (names starting with fixtureNamePrefix) owned by
  * one player. Scoped to that owner so a concurrent worker's fixtures are never
  * deleted from under it (CLAUDE.md Rule 2 — never touches real user horses).
  */
@@ -180,7 +180,7 @@ export async function cleanupCoatGenotypeHorses(userId: string): Promise<number>
   }
   const prisma = await getPrisma();
   const result = await prisma.horse.deleteMany({
-    where: { userId, name: { startsWith: FIXTURE_NAME_PREFIX } },
+    where: { userId, name: { startsWith: fixtureNamePrefix } },
   });
   return result.count;
 }

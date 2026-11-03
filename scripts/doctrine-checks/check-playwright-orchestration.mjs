@@ -15,10 +15,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
-const WORKFLOWS_DIR = path.join(REPO_ROOT, '.github', 'workflows');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
+const workflowsDir = path.join(repoRoot, '.github', 'workflows');
 
-if (!fs.existsSync(WORKFLOWS_DIR)) {
+if (!fs.existsSync(workflowsDir)) {
   process.exit(0);
 }
 
@@ -26,12 +26,12 @@ if (!fs.existsSync(WORKFLOWS_DIR)) {
 // Either a webServer-config-driven Playwright config exists in the repo
 // (sufficient for backend+frontend startup), or the job has explicit start
 // steps.
-const REQUIRED_MARKERS = [
+const requiredMarkers = [
   { name: 'db migrate', re: /prisma\s+(?:migrate\s+deploy|db\s+push)/ },
   { name: 'dependency install', re: /\bnpm\s+(?:ci|install)\b/ },
 ];
 
-const PLAYWRIGHT_RUN_RE = /\bnpx\s+playwright\s+test\b/;
+const playwrightRunRe = /\bnpx\s+playwright\s+test\b/;
 
 // We accept either an explicit webServer config OR explicit start steps.
 function repoHasWebServerConfig() {
@@ -41,7 +41,7 @@ function repoHasWebServerConfig() {
     'playwright.beta-readiness.config.ts',
   ];
   for (const c of candidates) {
-    const full = path.join(REPO_ROOT, c);
+    const full = path.join(repoRoot, c);
     if (fs.existsSync(full)) {
       const txt = fs.readFileSync(full, 'utf-8');
       if (/webServer\s*:/.test(txt)) return true;
@@ -54,9 +54,9 @@ const webServerConfig = repoHasWebServerConfig();
 
 function listWorkflowFiles() {
   return fs
-    .readdirSync(WORKFLOWS_DIR)
+    .readdirSync(workflowsDir)
     .filter((f) => f.endsWith('.yml') || f.endsWith('.yaml'))
-    .map((f) => path.join(WORKFLOWS_DIR, f));
+    .map((f) => path.join(workflowsDir, f));
 }
 
 // Locate job boundaries by indentation: top-level `jobs:` then 2-space indent.
@@ -109,7 +109,7 @@ for (const file of listWorkflowFiles()) {
   for (const job of jobs) {
     let pwLine = -1;
     for (let i = job.start; i <= job.end; i++) {
-      if (PLAYWRIGHT_RUN_RE.test(lines[i]) && !/^\s*#/.test(lines[i])) {
+      if (playwrightRunRe.test(lines[i]) && !/^\s*#/.test(lines[i])) {
         pwLine = i;
         break;
       }
@@ -118,7 +118,7 @@ for (const file of listWorkflowFiles()) {
 
     const jobText = lines.slice(job.start, pwLine + 1).join('\n');
     const missing = [];
-    for (const m of REQUIRED_MARKERS) {
+    for (const m of requiredMarkers) {
       if (!m.re.test(jobText)) missing.push(m.name);
     }
 
@@ -132,7 +132,7 @@ for (const file of listWorkflowFiles()) {
 
     if (missing.length > 0) {
       failures.push({
-        file: path.relative(REPO_ROOT, file),
+        file: path.relative(repoRoot, file),
         job: job.name,
         line: pwLine + 1,
         missing,

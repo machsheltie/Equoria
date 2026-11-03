@@ -45,8 +45,8 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 
-const ELIGIBILITY_RE = /\/api\/v1\/competition\/conformation\/eligibility\/\d+/;
-const ENTER_URL = '/api/v1/competition/conformation/enter';
+const eligibilityRe = /\/api\/v1\/competition\/conformation\/eligibility\/\d+/;
+const enterUrl = '/api/v1/competition/conformation/enter';
 
 interface EligibilityEnvelope {
   horseId: number;
@@ -131,7 +131,7 @@ test.describe('Conformation Show Entry (real mutation)', () => {
     // Arm the real eligibility GET wait BEFORE opening the modal — the modal's
     // useConformationEligibility(horse.id) fires the request on mount.
     const eligibilityResponse = page.waitForResponse(
-      (resp) => ELIGIBILITY_RE.test(resp.url()) && resp.request().method() === 'GET',
+      (resp) => eligibilityRe.test(resp.url()) && resp.request().method() === 'GET',
       { timeout: 20000 }
     );
 
@@ -189,7 +189,7 @@ test.describe('Conformation Show Entry (real mutation)', () => {
 
     // Arm the real entry POST wait BEFORE clicking Confirm Entry.
     const enterResponse = page.waitForResponse(
-      (resp) => resp.url().includes(ENTER_URL) && resp.request().method() === 'POST',
+      (resp) => resp.url().includes(enterUrl) && resp.request().method() === 'POST',
       { timeout: 20000 }
     );
 
@@ -226,7 +226,7 @@ test.describe('Conformation Show Entry (real mutation)', () => {
     await expect(submit).toBeEnabled();
 
     const dupResponse = page.waitForResponse(
-      (resp) => resp.url().includes(ENTER_URL) && resp.request().method() === 'POST',
+      (resp) => resp.url().includes(enterUrl) && resp.request().method() === 'POST',
       { timeout: 20000 }
     );
     await submit.click();

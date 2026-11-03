@@ -32,7 +32,7 @@ const EXPECTED = {
     'node_modules/jest/bin/jest.js --runInBand',
   diagnostic: 'node scripts/diagnose-full-suite.mjs',
 };
-const EXPECTED_ROOT = {
+const expectedRoot = {
   'test:backend:full': 'npm --prefix backend run test:backend:full',
   'test:backend:ci': 'npm --prefix backend run test:backend:ci',
   'test:backend:targeted': 'npm --prefix backend run test:backend:targeted --',
@@ -57,7 +57,7 @@ export function validateBackendTestProfiles({
       failures.push(`${scriptName} drifted from the canonical command`);
     }
   }
-  for (const [scriptName, expected] of Object.entries(EXPECTED_ROOT)) {
+  for (const [scriptName, expected] of Object.entries(expectedRoot)) {
     if (rootPackage.scripts?.[scriptName] !== expected) {
       failures.push(`root ${scriptName} drifted from the backend profile`);
     }

@@ -28,32 +28,32 @@ import { fileURLToPath } from 'node:url';
 import { readScannedFileSyncTolerant } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
-const BACKEND_ROOT = path.join(REPO_ROOT, 'backend');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
+const backendRoot = path.join(repoRoot, 'backend');
 
-if (!fs.existsSync(BACKEND_ROOT)) {
+if (!fs.existsSync(backendRoot)) {
   process.exit(0);
 }
 
-const EXEMPTION_MARKER = '// doctrine-allow: prisma-in-routes';
+const exemptionMarker = '// doctrine-allow: prisma-in-routes';
 
 // Match an import (static OR dynamic) whose source ends in prismaClient.mjs
 // or db/index.mjs. The deleted `db/index.mjs` shim is also banned globally
 // by another rule, but covering both here makes this gate self-contained.
-const IMPORT_RX =
+const importRx =
   /(^|\s)(import\s+[^;]+from\s+['"][^'"]*?(?:prismaClient\.mjs|db\/index\.mjs)['"])|(\bimport\s*\(\s*['"][^'"]*?(?:prismaClient\.mjs|db\/index\.mjs)['"]\s*\))/;
 
 // Match a `prisma.<identifier>` token at any line position. Catches both
 // real call expressions (`await prisma.horse.findMany(...)`) and the
 // `prisma.X.Y` member-access form that legitimately appears nowhere in
 // routes anymore.
-const PRISMA_CALL_RX = /\bprisma\.[A-Za-z_$]/;
+const prismaCallRx = /\bprisma\.[A-Za-z_$]/;
 
 function walkRoutesFiles() {
   const results = [];
 
   // Walk modules/<x>/routes/*.mjs
-  const modulesRoot = path.join(BACKEND_ROOT, 'modules');
+  const modulesRoot = path.join(backendRoot, 'modules');
   if (fs.existsSync(modulesRoot)) {
     for (const moduleEntry of fs.readdirSync(modulesRoot, { withFileTypes: true })) {
       if (!moduleEntry.isDirectory()) continue;
@@ -64,7 +64,7 @@ function walkRoutesFiles() {
   }
 
   // Walk backend/routes/*.mjs (shims + legacy entries)
-  const topRoutes = path.join(BACKEND_ROOT, 'routes');
+  const topRoutes = path.join(backendRoot, 'routes');
   if (fs.existsSync(topRoutes)) {
     walkDir(topRoutes, results);
   }
@@ -72,7 +72,7 @@ function walkRoutesFiles() {
   // Equoria-q4uem.4 (WS4 S3): the application query layer's routers
   // (backend/app/queries/*Routes.mjs) are route files too and stay under this
   // gate. The sibling *Query.mjs files are read models and may use Prisma.
-  const appQueries = path.join(BACKEND_ROOT, 'app', 'queries');
+  const appQueries = path.join(backendRoot, 'app', 'queries');
   if (fs.existsSync(appQueries)) {
     for (const entry of fs.readdirSync(appQueries, { withFileTypes: true })) {
       if (entry.isFile() && entry.name.endsWith('Routes.mjs')) {
@@ -107,13 +107,13 @@ for (const file of walkRoutesFiles()) {
     // Skip exempted lines AND single-line comments / block-comment lines
     // — comments describing past migrations or test-only contexts should
     // not trip the gate.
-    if (line.includes(EXEMPTION_MARKER)) continue;
+    if (line.includes(exemptionMarker)) continue;
     const trimmed = line.trim();
     if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
 
-    if (IMPORT_RX.test(line) || PRISMA_CALL_RX.test(line)) {
+    if (importRx.test(line) || prismaCallRx.test(line)) {
       violations.push({
-        file: path.relative(REPO_ROOT, file),
+        file: path.relative(repoRoot, file),
         line: i + 1,
         snippet: line.trim().slice(0, 120),
       });

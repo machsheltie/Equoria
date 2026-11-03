@@ -33,8 +33,8 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DRY_RUN = process.argv.includes('--dry-run');
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const dryRun = process.argv.includes('--dry-run');
 
 const STAGES = [
   {
@@ -75,10 +75,10 @@ const STAGES = [
 function run(stage, index) {
   const label = `[build:production] ${index + 1}/${STAGES.length} ${stage.name}`;
   console.log(`\n${label}\n  cwd: ${stage.cwd}\n  cmd: ${stage.cmd}`);
-  if (DRY_RUN) return;
+  if (dryRun) return;
 
   const result = spawnSync(stage.cmd, {
-    cwd: path.join(REPO_ROOT, stage.cwd),
+    cwd: path.join(repoRoot, stage.cwd),
     stdio: 'inherit',
     shell: true,
     env: process.env,
@@ -97,7 +97,7 @@ function run(stage, index) {
 function main() {
   STAGES.forEach(run);
   console.log(
-    DRY_RUN
+    dryRun
       ? '\n[build:production] dry run complete (nothing executed).'
       : '\n[build:production] complete: dependencies installed, Prisma generated, frontend built and verified.'
   );

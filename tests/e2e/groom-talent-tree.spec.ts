@@ -48,9 +48,9 @@ async function getPrisma(): Promise<any> {
 }
 
 // Backend TALENT_TREES.energetic tier1 talents: playtimePro / enthusiasmBoost.
-const SEED_PERSONALITY = 'energetic';
-const SEED_STAR_LEVEL = 'expert'; // the top level; still opens no tier (q244)
-const TIER1_TALENT_ID = 'playtimePro';
+const seedPersonality = 'energetic';
+const seedStarLevel = 'expert'; // the top level; still opens no tier (q244)
+const tier1TalentId = 'playtimePro';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let prisma: any;
@@ -96,8 +96,8 @@ test.describe
       data: {
         name: `TestFixture-TalentGroom-${crypto.randomBytes(4).toString('hex')}`,
         speciality: 'foalCare',
-        personality: SEED_PERSONALITY,
-        starLevel: SEED_STAR_LEVEL,
+        personality: seedPersonality,
+        starLevel: seedStarLevel,
         skillLevel: 'master',
         userId: user.id,
         isActive: true,
@@ -107,9 +107,9 @@ test.describe
     groomId = groom.id;
     // Preconditions must hold or the tree test is meaningless.
     expect(groom.personality, 'seeded groom personality must have a talent tree').toBe(
-      SEED_PERSONALITY
+      seedPersonality
     );
-    expect(groom.starLevel, 'seeded groom must be at the top level').toBe(SEED_STAR_LEVEL);
+    expect(groom.starLevel, 'seeded groom must be at the top level').toBe(seedStarLevel);
   });
 
   test.afterAll(async () => {
@@ -137,9 +137,7 @@ test.describe
         'Not open yet'
       );
     }
-    await expect(tree.locator(`[data-testid="talent-select-btn-${TIER1_TALENT_ID}"]`)).toHaveCount(
-      0
-    );
+    await expect(tree.locator(`[data-testid="talent-select-btn-${tier1TalentId}"]`)).toHaveCount(0);
     await expect(tree.getByText(/Level \d/)).toHaveCount(0);
   });
 
@@ -153,7 +151,7 @@ test.describe
     expect(csrfToken, 'CSRF token must be present').toBeTruthy();
 
     const res = await page.request.post(`/api/v1/grooms/${groomId}/talents/select`, {
-      data: { tier: 'tier1', talentId: TIER1_TALENT_ID },
+      data: { tier: 'tier1', talentId: tier1TalentId },
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
     });
     expect(res.status(), 'a tier-1 choice must be refused with 400').toBe(400);

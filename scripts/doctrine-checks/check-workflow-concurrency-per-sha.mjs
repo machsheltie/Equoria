@@ -31,11 +31,11 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const WORKFLOWS_DIR = '.github/workflows';
-const ALLOW_MARKER = 'doctrine-allow: workflow-cancel-shortrun';
+const workflowsDir = '.github/workflows';
+const allowMarker = 'doctrine-allow: workflow-cancel-shortrun';
 
 // Acceptable group identifiers — at least one must appear in the group line.
-const PER_RUN_TOKENS = [
+const perRunTokens = [
   'github.sha',
   'github.run_id',
   'github.run_number',
@@ -81,11 +81,11 @@ function checkWorkflow(path) {
     if (cancel !== 'true' || group === null) {
       continue;
     }
-    if (cancelLine && cancelLine.includes(ALLOW_MARKER)) {
+    if (cancelLine && cancelLine.includes(allowMarker)) {
       continue;
     }
 
-    const hasPerRunToken = PER_RUN_TOKENS.some((tok) => group.includes(tok));
+    const hasPerRunToken = perRunTokens.some((tok) => group.includes(tok));
     if (!hasPerRunToken) {
       violations.push({
         path,
@@ -102,11 +102,11 @@ function main() {
   let allViolations = [];
   let _filesChecked = 0;
 
-  for (const entry of readdirSync(WORKFLOWS_DIR)) {
+  for (const entry of readdirSync(workflowsDir)) {
     if (!entry.endsWith('.yml') && !entry.endsWith('.yaml')) {
       continue;
     }
-    const path = join(WORKFLOWS_DIR, entry);
+    const path = join(workflowsDir, entry);
     _filesChecked += 1;
     allViolations = allViolations.concat(checkWorkflow(path));
   }
@@ -130,7 +130,7 @@ function main() {
   console.error('long-running test failures.');
   console.error('');
   console.error(`If short-run cancellation is intentional, add the same-line marker:`);
-  console.error(`    # ${ALLOW_MARKER}`);
+  console.error(`    # ${allowMarker}`);
   console.error('on the cancel-in-progress: true line.');
 
   process.exit(1);

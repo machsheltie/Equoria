@@ -30,8 +30,8 @@ const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..', '..', '..');
 const prismaClientPath = path.join(projectRoot, 'packages', 'database', 'prismaClient.mjs');
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const BACKDATE_DAYS = 2;
+const dayMs = 24 * 60 * 60 * 1000;
+const backdateDays = 2;
 
 type HorseDelegate = {
   updateMany: (_args: {
@@ -58,7 +58,7 @@ async function getHorseDelegate(): Promise<HorseDelegate> {
  */
 export async function markHorseFedTwoDaysAgo(horseId: number): Promise<Date> {
   const horse = await getHorseDelegate();
-  const lastFedDate = new Date(Date.now() - BACKDATE_DAYS * DAY_MS);
+  const lastFedDate = new Date(Date.now() - backdateDays * dayMs);
   const { count } = await horse.updateMany({ where: { id: horseId }, data: { lastFedDate } });
   if (count !== 1) {
     throw new Error(

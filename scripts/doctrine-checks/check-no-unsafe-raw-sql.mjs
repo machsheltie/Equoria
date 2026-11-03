@@ -50,24 +50,24 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
-const SCRIPT_DIR = path.dirname(__filename);
-const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
-const BACKEND_ROOT = path.join(REPO_ROOT, 'backend');
+const scriptDir = path.dirname(__filename);
+const repoRoot = path.resolve(scriptDir, '..', '..');
+const backendRoot = path.join(repoRoot, 'backend');
 // Equoria-pc042: argv[2] optionally overrides the allowlist path so the
 // stale-entry sentinel can prove detection FIRES against a planted (stale)
 // allowlist WITHOUT editing the canonical one. Production callers pass no
 // argument.
-const ALLOWLIST_PATH = process.argv[2]
+const allowlistPath = process.argv[2]
   ? path.resolve(process.argv[2])
-  : path.join(SCRIPT_DIR, 'unsafe-raw-sql-allowlist.json');
+  : path.join(scriptDir, 'unsafe-raw-sql-allowlist.json');
 
 // App-code roots that this gate scans. Domain logic lives here; this is the
 // surface where request input can reach a query builder.
-const SCAN_SUBDIRS = ['modules', 'services', 'controllers', 'middleware', 'models', 'utils'];
+const scanSubdirs = ['modules', 'services', 'controllers', 'middleware', 'models', 'utils'];
 
 // The unsafe member-call tokens. `\$` is a literal dollar; the trailing `\(`
 // requires an actual call expression (not a bare mention in prose).
-const UNSAFE_CALL_RX = /\.\$(?:executeRawUnsafe|queryRawUnsafe)\s*\(/;
+const unsafeCallRx = /\.\$(?:executeRawUnsafe|queryRawUnsafe)\s*\(/;
 
 // ENOENT-only tolerant read: a file walked into the list can vanish before we
 // read it (concurrent jest sentinel plant+delete). Skip loudly on ENOENT;
@@ -78,7 +78,7 @@ function readFileTolerant(file) {
   } catch (err) {
     if (err && err.code === 'ENOENT') {
       process.stderr.write(
-        `[no-unsafe-raw-sql] notice: ${path.relative(REPO_ROOT, file)} vanished mid-scan (ENOENT) — skipped\n`
+        `[no-unsafe-raw-sql] notice: ${path.relative(repoRoot, file)} vanished mid-scan (ENOENT) — skipped\n`
       );
       return null;
     }
@@ -107,10 +107,10 @@ function walkDir(dir, results) {
 }
 
 function loadAllowlist() {
-  if (!fs.existsSync(ALLOWLIST_PATH)) {
+  if (!fs.existsSync(allowlistPath)) {
     return [];
   }
-  const parsed = JSON.parse(fs.readFileSync(ALLOWLIST_PATH, 'utf8'));
+  const parsed = JSON.parse(fs.readFileSync(allowlistPath, 'utf8'));
   const entries = parsed && parsed.allowlist ? Object.keys(parsed.allowlist) : [];
   // Normalize to POSIX-relative paths for cross-platform comparison.
   return entries.map((p) => p.replace(/\\/g, '/'));
@@ -154,7 +154,7 @@ function findUnsafeCalls(source) {
       inBlockComment = true;
     }
     const code = stripLineComment(line);
-    if (UNSAFE_CALL_RX.test(code)) {
+    if (unsafeCallRx.test(code)) {
       hits.push({ line: i + 1, snippet: code.trim().slice(0, 120) });
     }
   }
@@ -171,7 +171,7 @@ function findStaleAllowlistEntries(allowlistEntries) {
   const missing = [];
   const noCallsite = [];
   for (const rel of allowlistEntries) {
-    const abs = path.join(REPO_ROOT, ...rel.split('/'));
+    const abs = path.join(repoRoot, ...rel.split('/'));
     if (!fs.existsSync(abs)) {
       missing.push(rel);
       continue;
@@ -185,7 +185,7 @@ function findStaleAllowlistEntries(allowlistEntries) {
 }
 
 function main() {
-  if (!fs.existsSync(BACKEND_ROOT)) {
+  if (!fs.existsSync(backendRoot)) {
     process.stdout.write('[no-unsafe-raw-sql] OK — no backend/ directory present\n');
     return 0;
   }
@@ -200,7 +200,7 @@ function main() {
   if (missing.length > 0 || noCallsite.length > 0) {
     process.stderr.write(
       `[no-unsafe-raw-sql] FAIL — stale allowlist entries in ` +
-        `${path.relative(REPO_ROOT, ALLOWLIST_PATH).replace(/\\/g, '/')} (Equoria-pc042):\n`
+        `${path.relative(repoRoot, allowlistPath).replace(/\\/g, '/')} (Equoria-pc042):\n`
     );
     for (const rel of missing) {
       process.stderr.write(`  ${rel}  (file no longer exists on disk)\n`);
@@ -218,8 +218,8 @@ function main() {
   }
 
   const files = [];
-  for (const sub of SCAN_SUBDIRS) {
-    walkDir(path.join(BACKEND_ROOT, sub), files);
+  for (const sub of scanSubdirs) {
+    walkDir(path.join(backendRoot, sub), files);
   }
 
   const violations = [];
@@ -227,7 +227,7 @@ function main() {
   for (const file of files) {
     const source = readFileTolerant(file);
     if (source === null) continue;
-    const rel = path.relative(REPO_ROOT, file).replace(/\\/g, '/');
+    const rel = path.relative(repoRoot, file).replace(/\\/g, '/');
     if (allowlist.has(rel)) continue;
 
     for (const { line, snippet } of findUnsafeCalls(source)) {

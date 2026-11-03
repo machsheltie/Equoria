@@ -49,8 +49,8 @@ import { request as playwrightRequest } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
-const DEFAULT_RENEW_INTERVAL_MS = 10 * 60 * 1000;
-const MIN_RENEW_INTERVAL_MS = 1_000;
+const defaultRenewIntervalMs = 10 * 60 * 1000;
+const minRenewIntervalMs = 1_000;
 
 /**
  * Renewal cadence. E2E_SESSION_RENEW_MS exists so the renewal path can be
@@ -62,18 +62,18 @@ const MIN_RENEW_INTERVAL_MS = 1_000;
 function resolveRenewIntervalMs(): number {
   const raw = process.env.E2E_SESSION_RENEW_MS;
   if (raw === undefined || raw === '') {
-    return DEFAULT_RENEW_INTERVAL_MS;
+    return defaultRenewIntervalMs;
   }
   const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed < MIN_RENEW_INTERVAL_MS) {
+  if (!Number.isFinite(parsed) || parsed < minRenewIntervalMs) {
     throw new Error(
-      `E2E_SESSION_RENEW_MS must be a finite number of milliseconds >= ${MIN_RENEW_INTERVAL_MS}; got "${raw}".`
+      `E2E_SESSION_RENEW_MS must be a finite number of milliseconds >= ${minRenewIntervalMs}; got "${raw}".`
     );
   }
   return parsed;
 }
 
-export const RENEW_INTERVAL_MS = resolveRenewIntervalMs();
+export const renewIntervalMs = resolveRenewIntervalMs();
 
 type KeepAliveOptions = {
   baseURL: string;
@@ -202,7 +202,7 @@ async function renewAndRecord(
       lastSuccessAt: Date.now(),
       consecutiveFailures: 0,
       lastError: null,
-      intervalMs: RENEW_INTERVAL_MS,
+      intervalMs: renewIntervalMs,
     };
     writeStatus(options.storageStatePath, next);
     console.log('[session-keep-alive] storageState renewed.');
@@ -212,7 +212,7 @@ async function renewAndRecord(
       ...previous,
       consecutiveFailures: previous.consecutiveFailures + 1,
       lastError: (err as Error).message,
-      intervalMs: RENEW_INTERVAL_MS,
+      intervalMs: renewIntervalMs,
     };
     try {
       writeStatus(options.storageStatePath, next);
@@ -274,12 +274,12 @@ export async function startSessionKeepAlive(options: KeepAliveOptions): Promise<
     lastSuccessAt: Date.now(),
     consecutiveFailures: 0,
     lastError: null,
-    intervalMs: RENEW_INTERVAL_MS,
+    intervalMs: renewIntervalMs,
   };
   writeStatus(options.storageStatePath, status);
   console.log(
     `[session-keep-alive] startup renewal OK; renewing every ${Math.round(
-      RENEW_INTERVAL_MS / 1000
+      renewIntervalMs / 1000
     )}s.`
   );
 
@@ -287,7 +287,7 @@ export async function startSessionKeepAlive(options: KeepAliveOptions): Promise<
     void renewAndRecord(options, status).then((next) => {
       status = next;
     });
-  }, RENEW_INTERVAL_MS);
+  }, renewIntervalMs);
   timer.unref();
   return () => clearInterval(timer);
 }

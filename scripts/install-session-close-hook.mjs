@@ -22,26 +22,26 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { argv, exit, cwd } from 'node:process';
 import { resolve } from 'node:path';
 
-const SETTINGS_PATH = resolve(cwd(), '.claude', 'settings.json');
-const HOOK_COMMAND = 'bash "$CLAUDE_PROJECT_DIR"/scripts/session-close.sh';
-const HOOK_ENTRY = {
-  hooks: [{ type: 'command', command: HOOK_COMMAND }],
+const settingsPath = resolve(cwd(), '.claude', 'settings.json');
+const hookCommand = 'bash "$CLAUDE_PROJECT_DIR"/scripts/session-close.sh';
+const hookEntry = {
+  hooks: [{ type: 'command', command: hookCommand }],
 };
-const COMMENT_KEY = '_SessionEnd_comment';
-const COMMENT_VALUE =
+const commentKey = '_SessionEnd_comment';
+const commentValue =
   'Equoria-urtx (B6): runs scripts/session-close.sh on every session end. Surfaces uncommitted code, doctrine-gate failures, and bd-sync drift as terminal output. Add `--warn` to the command above to exit 0 unconditionally during the doctrine-baseline cleanup window (Equoria-5nqe).';
 
 function loadSettings() {
-  if (!existsSync(SETTINGS_PATH)) {
+  if (!existsSync(settingsPath)) {
     console.error(
-      `FAIL: ${SETTINGS_PATH} does not exist; run Claude Code at least once to initialize.`
+      `FAIL: ${settingsPath} does not exist; run Claude Code at least once to initialize.`
     );
     exit(2);
   }
   try {
-    return JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
+    return JSON.parse(readFileSync(settingsPath, 'utf8'));
   } catch (e) {
-    console.error(`FAIL: ${SETTINGS_PATH} is not valid JSON: ${e.message}`);
+    console.error(`FAIL: ${settingsPath} is not valid JSON: ${e.message}`);
     exit(2);
   }
 }
@@ -51,7 +51,7 @@ function hasHook(settings) {
   if (!Array.isArray(sessionEnd)) return false;
   for (const block of sessionEnd) {
     for (const h of block.hooks || []) {
-      if (h.type === 'command' && h.command === HOOK_COMMAND) return true;
+      if (h.type === 'command' && h.command === hookCommand) return true;
     }
   }
   return false;
@@ -60,8 +60,8 @@ function hasHook(settings) {
 function install(settings) {
   if (!settings.hooks || typeof settings.hooks !== 'object') settings.hooks = {};
   if (!Array.isArray(settings.hooks.SessionEnd)) settings.hooks.SessionEnd = [];
-  settings.hooks.SessionEnd.push(HOOK_ENTRY);
-  if (!settings.hooks[COMMENT_KEY]) settings.hooks[COMMENT_KEY] = COMMENT_VALUE;
+  settings.hooks.SessionEnd.push(hookEntry);
+  if (!settings.hooks[commentKey]) settings.hooks[commentKey] = commentValue;
   return settings;
 }
 
@@ -70,18 +70,18 @@ function uninstall(settings) {
   if (!Array.isArray(sessionEnd)) return settings;
   for (const block of sessionEnd) {
     block.hooks = (block.hooks || []).filter(
-      (h) => !(h.type === 'command' && h.command === HOOK_COMMAND)
+      (h) => !(h.type === 'command' && h.command === hookCommand)
     );
   }
   // Drop empty blocks.
   settings.hooks.SessionEnd = sessionEnd.filter((b) => (b.hooks || []).length > 0);
   if (settings.hooks.SessionEnd.length === 0) delete settings.hooks.SessionEnd;
-  if (settings.hooks[COMMENT_KEY] === COMMENT_VALUE) delete settings.hooks[COMMENT_KEY];
+  if (settings.hooks[commentKey] === commentValue) delete settings.hooks[commentKey];
   return settings;
 }
 
 function save(settings) {
-  writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n', 'utf8');
+  writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n', 'utf8');
 }
 
 function main() {
@@ -104,7 +104,7 @@ function main() {
       exit(0);
     }
     save(uninstall(settings));
-    console.log(`OK: removed session-close.sh hook from ${SETTINGS_PATH}.`);
+    console.log(`OK: removed session-close.sh hook from ${settingsPath}.`);
     exit(0);
   }
 
@@ -114,7 +114,7 @@ function main() {
     exit(0);
   }
   save(install(settings));
-  console.log(`OK: added session-close.sh hook to ${SETTINGS_PATH}.`);
+  console.log(`OK: added session-close.sh hook to ${settingsPath}.`);
   console.log('It will run on every Claude Code session end. Disable with `--uninstall`.');
   exit(0);
 }

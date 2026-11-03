@@ -38,8 +38,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
-const BACKEND = path.join(REPO_ROOT, 'backend');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
+const BACKEND = path.join(repoRoot, 'backend');
 
 // Locate the CLI entry files by direct filesystem probe at backend/ then the
 // repo root (hoisted installs). require.resolve cannot be used here: both
@@ -50,7 +50,7 @@ const BACKEND = path.join(REPO_ROOT, 'backend');
 // that cannot run is a red gate, not a green one. CI's doctrine-gate workflow
 // installs backend deps for exactly this reason.
 function resolveCli(relPath, label) {
-  for (const base of [BACKEND, REPO_ROOT]) {
+  for (const base of [BACKEND, repoRoot]) {
     const candidate = path.join(base, 'node_modules', ...relPath.split('/'));
     if (existsSync(candidate)) {
       return candidate;
@@ -63,7 +63,7 @@ function resolveCli(relPath, label) {
   process.exit(1);
 }
 
-const FRONTEND = path.join(REPO_ROOT, 'frontend');
+const FRONTEND = path.join(repoRoot, 'frontend');
 
 function run(label, file, args, cwd = BACKEND) {
   try {
@@ -86,7 +86,7 @@ const prettierCli = resolveCli('prettier/bin/prettier.cjs', 'Prettier');
 // (falling back to the repo root, then backend's copy, keeps the gate alive
 // in hoisted layouts).
 function resolveFrontendCli(relPath, label) {
-  for (const base of [FRONTEND, REPO_ROOT, BACKEND]) {
+  for (const base of [FRONTEND, repoRoot, BACKEND]) {
     const candidate = path.join(base, 'node_modules', ...relPath.split('/'));
     if (existsSync(candidate)) {
       return candidate;

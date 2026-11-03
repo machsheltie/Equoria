@@ -41,7 +41,7 @@
  *     produce is reported too. Drift has two directions; a one-directional
  *     check is how an undeclared runtime index survives for months.
  *  4. There is no tolerated class left. The hardcoded
- *     RUNTIME_CREATED_INDEX_ALLOWLIST is EMPTY as of Equoria-9xa92, which
+ *     runtimeCreatedIndexAllowlist is EMPTY as of Equoria-9xa92, which
  *     deleted the runtime index-creation path in
  *     databaseOptimizationService.mjs; Equoria-bebob's migration dropped the
  *     one index that path used to leave behind. Every extra index now fails,
@@ -63,9 +63,9 @@ import path from 'node:path';
 import pg from 'pg';
 
 import {
-  CATALOG_SECTIONS,
-  REFERENCE_DB_PREFIX,
-  REPO_ROOT,
+  catalogSections,
+  referenceDbPrefix,
+  repoRoot,
   adminUrlFrom,
   assertReferenceDbName,
   deployMigrations,
@@ -73,7 +73,7 @@ import {
   formatFindings,
   newReferenceDbName,
   readCatalog,
-  RUNTIME_CREATED_INDEX_ALLOWLIST,
+  runtimeCreatedIndexAllowlist,
   serviceCreateIndexNames,
   siblingUrlFrom,
   toleratedExtraIndexNames,
@@ -120,7 +120,7 @@ async function withAdmin(fn) {
 async function catalogAfterPlantedDdl(statements) {
   const url = siblingUrlFrom(liveUrl(), referenceDb);
   // Belt and braces: never run planted DDL anywhere but the reference database.
-  expect(new URL(url).pathname.slice(1).startsWith(REFERENCE_DB_PREFIX)).toBe(true);
+  expect(new URL(url).pathname.slice(1).startsWith(referenceDbPrefix)).toBe(true);
   return withClient(url, async client => {
     await client.query('BEGIN');
     try {
@@ -155,7 +155,7 @@ describe('live-schema drift sentinel (Equoria-axyem.2)', () => {
   }, 60_000);
 
   test('the reference catalog is a real, non-trivial catalog read from a live database', () => {
-    for (const section of Object.keys(CATALOG_SECTIONS)) {
+    for (const section of Object.keys(catalogSections)) {
       expect(Object.keys(pristine[section]).length).toBeGreaterThan(0);
     }
     // The floor the deleted script covered is present in the reference side.
@@ -248,7 +248,7 @@ describe('live-schema drift sentinel (Equoria-axyem.2)', () => {
     // literals ('IF', 'idx_horses_') -- a tolerance that could widen by someone
     // editing a COMMENT, with nothing in the diff to show it.
     expect([...tolerated]).toEqual([]);
-    expect(RUNTIME_CREATED_INDEX_ALLOWLIST).toHaveLength(0);
+    expect(runtimeCreatedIndexAllowlist).toHaveLength(0);
 
     const drifted = await catalogAfterPlantedDdl([
       // The name that used to be tolerated is now drift like any other, and so
@@ -273,7 +273,7 @@ describe('live-schema drift sentinel (Equoria-axyem.2)', () => {
   test('an entry on the allow-list would still be REQUIRED to carry a reason', () => {
     // The list is empty today. This keeps the shape contract on it, so a future
     // entry cannot be a bare string with no justification a reviewer can read.
-    for (const entry of RUNTIME_CREATED_INDEX_ALLOWLIST) {
+    for (const entry of runtimeCreatedIndexAllowlist) {
       expect(typeof entry.index).toBe('string');
       expect(typeof entry.reason).toBe('string');
       expect(entry.reason.length).toBeGreaterThan(0);
@@ -284,7 +284,7 @@ describe('live-schema drift sentinel (Equoria-axyem.2)', () => {
     // 2026-10-21: databaseOptimizationService.mjs itself was deleted as dead code
     // (owner-approved). Its absence is the strongest form of "no runtime
     // index-creation path"; recreating the file fails here before anything else.
-    expect(existsSync(path.join(REPO_ROOT, 'backend', 'services', 'databaseOptimizationService.mjs'))).toBe(false);
+    expect(existsSync(path.join(repoRoot, 'backend', 'services', 'databaseOptimizationService.mjs'))).toBe(false);
     // This cross-check used to prove every allow-listed name was one
     // databaseOptimizationService.mjs really creates, so an entry could not
     // outlive the DDL that justified it. Equoria-9xa92 removed that DDL, so it

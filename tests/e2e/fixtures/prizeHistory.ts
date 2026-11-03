@@ -30,8 +30,8 @@ const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..', '..', '..');
 const prismaClientPath = path.join(projectRoot, 'packages', 'database', 'prismaClient.mjs');
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const SHOW_NAME_PREFIX = 'E2E-PrizeHistory-';
+const dayMs = 24 * 60 * 60 * 1000;
+const showNamePrefix = 'E2E-PrizeHistory-';
 
 type PrismaSubset = {
   show: {
@@ -61,8 +61,8 @@ export type SeededPrizeResult = { showId: number; resultId: number; showName: st
  */
 export async function seedPrizeResult(horseId: number): Promise<SeededPrizeResult> {
   const prisma = await getPrisma();
-  const runDate = new Date(Date.now() - DAY_MS);
-  const showName = `${SHOW_NAME_PREFIX}${randomUUID()}`;
+  const runDate = new Date(Date.now() - dayMs);
+  const showName = `${showNamePrefix}${randomUUID()}`;
   // One nested write, so Prisma commits the show and its result together: a
   // failed result can never leave an orphaned completed show behind.
   const show = await prisma.show.create({

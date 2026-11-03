@@ -128,6 +128,6 @@ describe('check-module-dependency-graph.mjs versus foreign sentinel plants (Equo
     expect(src).toContain("spawnSync('git', ['ls-files', '--'");
     // Only the allow-list JSON (a tracked config file, never a plant) is read directly.
     expect(src.match(/fs\.readFileSync\(/g) ?? []).toEqual(['fs.readFileSync(']);
-    expect(src).toMatch(/fs\.readFileSync\(ALLOWLIST_PATH/);
+    expect(src).toMatch(/fs\.readFileSync\(allowlistPath/);
   });
 });

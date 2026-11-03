@@ -27,13 +27,13 @@ import { runScan, main } from '../../utils/agent-skills/auditor.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const PROJECT_ROOT = join(__dirname, '..', '..');
-const AUDITOR = join(PROJECT_ROOT, 'utils', 'agent-skills', 'auditor.mjs');
-const MISSING_DIR = './this-directory-truly-does-not-exist-lq5li';
+const projectRoot = join(__dirname, '..', '..');
+const AUDITOR = join(projectRoot, 'utils', 'agent-skills', 'auditor.mjs');
+const missingDir = './this-directory-truly-does-not-exist-lq5li';
 
 function runAuditorCli(arg) {
   return spawnSync(process.execPath, [AUDITOR, arg], {
-    cwd: PROJECT_ROOT,
+    cwd: projectRoot,
     encoding: 'utf8',
     timeout: 30_000,
   });
@@ -41,7 +41,7 @@ function runAuditorCli(arg) {
 
 describe('auditor — fail-loud on scan failure (Equoria-lq5li)', () => {
   test('CLI exits nonzero (not silent-clean) when the scan target does not exist', () => {
-    const result = runAuditorCli(MISSING_DIR);
+    const result = runAuditorCli(missingDir);
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain('AUDITOR SCAN FAILED');
@@ -62,13 +62,13 @@ describe('auditor — fail-loud on scan failure (Equoria-lq5li)', () => {
   });
 
   test('runScan() throws on a missing root rather than returning empty results', () => {
-    expect(() => runScan(MISSING_DIR)).toThrow(/does not exist/i);
+    expect(() => runScan(missingDir)).toThrow(/does not exist/i);
   });
 
   test('main() sets a nonzero exit code on scan failure', () => {
     const prevExitCode = process.exitCode;
     try {
-      const rc = main(['node', 'auditor.mjs', MISSING_DIR]);
+      const rc = main(['node', 'auditor.mjs', missingDir]);
       expect(rc).not.toBe(0);
       expect(process.exitCode).not.toBe(0);
     } finally {

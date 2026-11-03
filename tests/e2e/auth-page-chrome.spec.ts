@@ -184,7 +184,7 @@ test.describe('NavPanel active item — gold border indicator', () => {
 // Same pattern as E2E-001–006 for LoginPage. No auth required.
 // ────────────────────────────────────────────────────────────────────────────
 
-const AUTH_PAGES = [
+const authPages = [
   { name: 'Register', path: '/register' },
   { name: 'ForgotPassword', path: '/forgot-password' },
   { name: 'ResetPassword', path: '/reset-password' },
@@ -192,7 +192,7 @@ const AUTH_PAGES = [
 ] as const;
 
 let eid = 11;
-for (const { name, path } of AUTH_PAGES) {
+for (const { name, path } of authPages) {
   const e375Attached = eid++;
   const e375Panel = eid++;
   const e1440Attached = eid++;

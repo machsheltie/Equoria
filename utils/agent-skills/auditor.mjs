@@ -43,14 +43,14 @@ import path from 'node:path';
 import {
   walkFiles,
   readScannedFileSyncTolerant,
-  BYPASS_HEADER_TOKENS,
+  bypassHeaderTokens,
 } from '../../scripts/lib/doctrine-scan-patterns.mjs';
 
-const CHECK_LABEL = 'auditor';
-const MAX_LINES_SHOWN = 10;
+const checkLabel = 'auditor';
+const maxLinesShown = 10;
 
 // Directories never scanned. Mirrors .gitignore expectations + repo conventions.
-const IGNORED_DIRS = new Set([
+const ignoredDirs = new Set([
   'node_modules',
   '.git',
   'dist',
@@ -65,20 +65,20 @@ const IGNORED_DIRS = new Set([
   'out',
 ]);
 
-const INCLUDE_EXTS = new Set(['.js', '.mjs', '.ts', '.tsx']);
+const includeExts = new Set(['.js', '.mjs', '.ts', '.tsx']);
 
-const SKIP_FILE_PATTERNS = [/\.log$/, /\.lock$/, /\.json$/];
+const skipFilePatterns = [/\.log$/, /\.lock$/, /\.json$/];
 
 // ── Scan categories ────────────────────────────────────────────────────
 //
 // Each category is a label + a matcher(line) => boolean. Matchers are pure and
 // deterministic — given the same line they always return the same result on
-// every platform. BYPASS_HEADER_TOKENS is imported from the single-source
+// every platform. bypassHeaderTokens is imported from the single-source
 // doctrine library so the auditor's bypass-flag set cannot drift from the
 // doctrine gate's.
 
-const BYPASS_FLAG_RE = new RegExp(
-  BYPASS_HEADER_TOKENS.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
+const bypassFlagRe = new RegExp(
+  bypassHeaderTokens.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
   'i'
 );
 
@@ -112,21 +112,21 @@ const CATEGORIES = [
   },
   {
     label: 'Test-bypass / E2E-bypass flags',
-    test: (line) => BYPASS_FLAG_RE.test(line),
+    test: (line) => bypassFlagRe.test(line),
   },
 ];
 
 // ── Walk predicates ────────────────────────────────────────────────────
 
 function skipDir(name) {
-  return IGNORED_DIRS.has(name);
+  return ignoredDirs.has(name);
 }
 
 function includeFile(name) {
-  if (SKIP_FILE_PATTERNS.some((rx) => rx.test(name))) {
+  if (skipFilePatterns.some((rx) => rx.test(name))) {
     return false;
   }
-  return INCLUDE_EXTS.has(path.extname(name));
+  return includeExts.has(path.extname(name));
 }
 
 // ── Scanner ────────────────────────────────────────────────────────────
@@ -157,7 +157,7 @@ function runScan(searchDir) {
   const results = new Map(CATEGORIES.map((c) => [c.label, []]));
 
   for (const filePath of files) {
-    const contents = readScannedFileSyncTolerant(filePath, CHECK_LABEL);
+    const contents = readScannedFileSyncTolerant(filePath, checkLabel);
     if (contents === null) {
       // File vanished between enumeration and read (ENOENT). Tolerated loudly
       // by readScannedFileSyncTolerant; skip it. Any OTHER read error would
@@ -202,12 +202,12 @@ function report(searchDir, results) {
       continue;
     }
     out.push(`Found ${hits.length} instances of ${label}:`);
-    for (const hit of hits.slice(0, MAX_LINES_SHOWN)) {
+    for (const hit of hits.slice(0, maxLinesShown)) {
       const display = hit.length > 120 ? `${hit.substring(0, 117)}...` : hit;
       out.push(`  ${display}`);
     }
-    if (hits.length > MAX_LINES_SHOWN) {
-      out.push(`  ...and ${hits.length - MAX_LINES_SHOWN} more.`);
+    if (hits.length > maxLinesShown) {
+      out.push(`  ...and ${hits.length - maxLinesShown} more.`);
     }
   }
 

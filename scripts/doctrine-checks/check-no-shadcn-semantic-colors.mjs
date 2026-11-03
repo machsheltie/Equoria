@@ -48,16 +48,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = process.argv[2]
   ? path.resolve(process.argv[2])
-  : path.resolve(SCRIPT_DIR, '..', '..');
+  : path.resolve(scriptDir, '..', '..');
 
 const BACKSLASH = String.fromCharCode(92);
 
 // The shadcn semantic color names (base set; -foreground siblings are
 // matched via the optional suffix in each regex).
-const SHADCN_NAMES =
+const shadcnNames =
   'background|foreground|card|popover|primary|secondary|muted|accent|destructive|border|input|ring';
 
 /**
@@ -67,14 +67,14 @@ const SHADCN_NAMES =
  *           --btn-primary-bg: …;  (name must start immediately after `--`
  *           and be followed by `:` — longer Celestial names never match).
  */
-const VAR_DEFINITION_RE = new RegExp(`(?<![-\\w])--(?:${SHADCN_NAMES})(?:-foreground)?\\s*:`);
+const varDefinitionRe = new RegExp(`(?<![-\\w])--(?:${shadcnNames})(?:-foreground)?\\s*:`);
 
 /**
  * Rule 2 — CONSUMPTION of the shadcn vars: var(--primary), hsl(var(--border)).
  *   Silent: var(--text-primary), var(--border-default) — the name inside
  *   var() must be exactly a shadcn name (plus optional -foreground).
  */
-const VAR_CONSUMPTION_RE = new RegExp(`var\\(\\s*--(?:${SHADCN_NAMES})(?:-foreground)?\\s*\\)`);
+const varConsumptionRe = new RegExp(`var\\(\\s*--(?:${shadcnNames})(?:-foreground)?\\s*\\)`);
 
 /**
  * Rule 3 — bare Tailwind UTILITIES consuming the shadcn theme colors:
@@ -88,8 +88,8 @@ const VAR_CONSUMPTION_RE = new RegExp(`var\\(\\s*--(?:${SHADCN_NAMES})(?:-foregr
  *   - lookahead (?![\w)\]-]) rejects `text-primary)` inside var() fallbacks
  *     and any longer hyphenated name.
  */
-const UTILITY_RE = new RegExp(
-  `(?<![-\\w([])(?:[a-z][a-z-]*:|\\[[^\\]]*\\]:)*(?:bg|text|border|divide|outline|fill|stroke|from|via|to|ring-offset|ring)-(?:${SHADCN_NAMES})(?:-foreground)?(?![\\w)\\]-])`
+const utilityRe = new RegExp(
+  `(?<![-\\w([])(?:[a-z][a-z-]*:|\\[[^\\]]*\\]:)*(?:bg|text|border|divide|outline|fill|stroke|from|via|to|ring-offset|ring)-(?:${shadcnNames})(?:-foreground)?(?![\\w)\\]-])`
 );
 
 /**
@@ -98,19 +98,19 @@ const UTILITY_RE = new RegExp(
  * when re-added with inline triplets rather than var() references — which
  * rule 2 would otherwise catch).
  */
-const CONFIG_KEY_RE = new RegExp(
-  `(?:^|[{,])\\s*(?:'|")?(?:${SHADCN_NAMES})(?:-foreground)?(?:'|")?\\s*:\\s*(?:\\{\\s*)?(?:'|")?\\s*(?:DEFAULT\\s*:\\s*)?(?:'|")?(?:hsl|rgb)`
+const configKeyRe = new RegExp(
+  `(?:^|[{,])\\s*(?:'|")?(?:${shadcnNames})(?:-foreground)?(?:'|")?\\s*:\\s*(?:\\{\\s*)?(?:'|")?\\s*(?:DEFAULT\\s*:\\s*)?(?:'|")?(?:hsl|rgb)`
 );
 
 const RULES = [
-  { id: 'shadcn-var-definition', re: VAR_DEFINITION_RE, configOnly: false },
-  { id: 'shadcn-var-consumption', re: VAR_CONSUMPTION_RE, configOnly: false },
-  { id: 'shadcn-utility', re: UTILITY_RE, configOnly: false },
-  { id: 'shadcn-config-color-key', re: CONFIG_KEY_RE, configOnly: true },
+  { id: 'shadcn-var-definition', re: varDefinitionRe, configOnly: false },
+  { id: 'shadcn-var-consumption', re: varConsumptionRe, configOnly: false },
+  { id: 'shadcn-utility', re: utilityRe, configOnly: false },
+  { id: 'shadcn-config-color-key', re: configKeyRe, configOnly: true },
 ];
 
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'coverage', '.next', '.turbo']);
-const FILE_RE = /\.(ts|tsx|css)$/;
+const skipDirs = new Set(['node_modules', '.git', 'dist', 'build', 'coverage', '.next', '.turbo']);
+const fileRe = /\.(ts|tsx|css)$/;
 
 function walk(dir, acc) {
   let ents;
@@ -128,9 +128,9 @@ function walk(dir, acc) {
   for (const e of ents) {
     const full = path.join(dir, e.name);
     if (e.isDirectory()) {
-      if (SKIP_DIRS.has(e.name)) continue;
+      if (skipDirs.has(e.name)) continue;
       walk(full, acc);
-    } else if (e.isFile() && FILE_RE.test(e.name)) {
+    } else if (e.isFile() && fileRe.test(e.name)) {
       acc.push(full);
     }
   }

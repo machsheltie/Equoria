@@ -52,15 +52,15 @@
  */
 import { test, expect, type Response as PWResponse } from '@playwright/test';
 
-const MARKETPLACE_GET = '/api/v1/groom-marketplace';
-const HIRE_POST = '/api/v1/groom-marketplace/hire';
-const REFRESH_POST = '/api/v1/groom-marketplace/refresh';
+const marketplaceGet = '/api/v1/groom-marketplace';
+const hirePost = '/api/v1/groom-marketplace/hire';
+const refreshPost = '/api/v1/groom-marketplace/refresh';
 // The authoritative account balance the Hire tab renders comes from the same
 // profile endpoint AuthContext feeds into GroomList's `user.money`. Reading it
 // here (rather than scraping a DOM coin span) makes the affordability gate and
 // the debit assertion robust to the many other "<n> coins" Currency spans on
 // the Hire tab (refresh cost, groom salaries, per-card hire costs).
-const PROFILE_GET = '/api/v1/auth/profile';
+const profileGet = '/api/v1/auth/profile';
 
 type MarketplaceGroom = {
   marketplaceId: string;
@@ -80,8 +80,8 @@ type MarketplaceData = {
  * Uses the page's own request context so it carries the real session cookies.
  */
 async function fetchMarketplace(page: import('@playwright/test').Page): Promise<MarketplaceData> {
-  const res = await page.request.get(MARKETPLACE_GET);
-  expect(res.ok(), `GET ${MARKETPLACE_GET} must succeed (status ${res.status()})`).toBe(true);
+  const res = await page.request.get(marketplaceGet);
+  expect(res.ok(), `GET ${marketplaceGet} must succeed (status ${res.status()})`).toBe(true);
   const json = await res.json();
   const data = json?.data ?? json;
   expect(Array.isArray(data?.grooms), 'marketplace response must contain a grooms array').toBe(
@@ -102,8 +102,8 @@ async function fetchMarketplace(page: import('@playwright/test').Page): Promise<
  * cost) instead of the ~10,000-coin fresh-user balance.
  */
 async function fetchBalance(page: import('@playwright/test').Page): Promise<number> {
-  const res = await page.request.get(PROFILE_GET);
-  expect(res.ok(), `GET ${PROFILE_GET} must succeed (status ${res.status()})`).toBe(true);
+  const res = await page.request.get(profileGet);
+  expect(res.ok(), `GET ${profileGet} must succeed (status ${res.status()})`).toBe(true);
   const json = await res.json();
   const user = json?.data?.user ?? json?.user ?? json?.data ?? json;
   const money = user?.money;
@@ -141,7 +141,7 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
   }) => {
     // ── Land on the Hire tab (real auth via storageState) ──────────────────
     const initialMarketplaceResp = page.waitForResponse(
-      (r) => r.url().includes(MARKETPLACE_GET) && r.request().method() === 'GET',
+      (r) => r.url().includes(marketplaceGet) && r.request().method() === 'GET',
       { timeout: 20_000 }
     );
 
@@ -214,7 +214,7 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
 
     // ── Assert the REAL hire POST fires and returns the debit, no dialog ──
     const hireResp: Promise<PWResponse> = page.waitForResponse(
-      (r) => r.url().includes(HIRE_POST) && r.request().method() === 'POST',
+      (r) => r.url().includes(hirePost) && r.request().method() === 'POST',
       { timeout: 20_000 }
     );
 
@@ -225,7 +225,7 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
     await expect(page.getByRole('dialog')).toBeHidden({ timeout: 2_000 });
 
     const resp = await hireResp;
-    expect(resp.status(), `POST ${HIRE_POST} must return 201`).toBe(201);
+    expect(resp.status(), `POST ${hirePost} must return 201`).toBe(201);
     const body = await resp.json();
     const hireData = body?.data ?? body;
 
@@ -273,8 +273,8 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
     // is an EQUIVALENT real-backend/DB persistence check — not a weaker one;
     // only the Manage-tab DOM assertion is deferred to Equoria-j2a51 (which
     // will add the `groom-card-<id>` UI assertion once the render bug is fixed).
-    const profileRes = await page.request.get(PROFILE_GET);
-    expect(profileRes.ok(), `GET ${PROFILE_GET} must succeed`).toBe(true);
+    const profileRes = await page.request.get(profileGet);
+    expect(profileRes.ok(), `GET ${profileGet} must succeed`).toBe(true);
     const profileJson = await profileRes.json();
     const userId = (
       profileJson?.data?.user ??
@@ -316,7 +316,7 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
     page,
   }) => {
     const marketplaceResp = page.waitForResponse(
-      (r) => r.url().includes(MARKETPLACE_GET) && r.request().method() === 'GET',
+      (r) => r.url().includes(marketplaceGet) && r.request().method() === 'GET',
       { timeout: 20_000 }
     );
 
@@ -339,7 +339,7 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
     // the real mutation fired with the value the live state dictates.
     const refreshPosts: Array<{ force: unknown }> = [];
     page.on('request', (req) => {
-      if (req.url().includes(REFRESH_POST) && req.method() === 'POST') {
+      if (req.url().includes(refreshPost) && req.method() === 'POST') {
         let force: unknown;
         try {
           force = JSON.parse(req.postData() ?? '{}').force;
@@ -358,14 +358,14 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
     //    run, not only when the live state happens to already be paid.
     if (market.canRefreshFree) {
       const freeResp = page.waitForResponse(
-        (r) => r.url().includes(REFRESH_POST) && r.request().method() === 'POST',
+        (r) => r.url().includes(refreshPost) && r.request().method() === 'POST',
         { timeout: 20_000 }
       );
       await refreshBtn.click();
       // No dialog on the free branch.
       await expect(anyDialog).toBeHidden({ timeout: 2_000 });
       const resp = await freeResp;
-      expect(resp.status(), `free POST ${REFRESH_POST} must return 200`).toBe(200);
+      expect(resp.status(), `free POST ${refreshPost} must return 200`).toBe(200);
       expect(refreshPosts.length, 'exactly one free refresh POST (force:false)').toBe(1);
       expect(refreshPosts[0].force, 'free refresh must send force:false').toBe(false);
       // Wait for the marketplace query to refetch → the window is now PAID.
@@ -382,13 +382,13 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
     });
     const before = refreshPosts.length;
     const paidResp = page.waitForResponse(
-      (r) => r.url().includes(REFRESH_POST) && r.request().method() === 'POST',
+      (r) => r.url().includes(refreshPost) && r.request().method() === 'POST',
       { timeout: 20_000 }
     );
     await refreshBtn.click();
     await expect(anyDialog).toBeHidden({ timeout: 2_000 });
     const presp = await paidResp;
-    expect(presp.status(), `paid POST ${REFRESH_POST} must return 200`).toBe(200);
+    expect(presp.status(), `paid POST ${refreshPost} must return 200`).toBe(200);
     expect(refreshPosts.length, 'exactly one paid refresh POST fired').toBe(before + 1);
     expect(refreshPosts[before].force, 'paid refresh must send force:true').toBe(true);
     const pbody = await presp.json();

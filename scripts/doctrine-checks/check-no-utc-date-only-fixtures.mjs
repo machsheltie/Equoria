@@ -37,18 +37,18 @@ import { fileURLToPath } from 'node:url';
 import { walkFiles, readScannedFileSyncTolerant } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
-const ROOTS = ['backend', 'tests'].map((dir) => path.join(REPO_ROOT, dir));
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
+const ROOTS = ['backend', 'tests'].map((dir) => path.join(repoRoot, dir));
 
 const MARKER = 'doctrine-allow: utc-date-only-fixture';
 const FIELDS = '(?:dateOfBirth|lastBredDate|lastVettedDate)';
 // new Date( <not a string literal> ... + or - ... )
-const INSTANT_ARITH = String.raw`new Date\(\s*(?!['"\x60])[^;'"\x60]*?[-+][^;'"\x60]*\)`;
-const DIRECT = new RegExp(String.raw`\b${FIELDS}\s*[:=]\s*${INSTANT_ARITH}`);
+const instantArith = String.raw`new Date\(\s*(?!['"\x60])[^;'"\x60]*?[-+][^;'"\x60]*\)`;
+const DIRECT = new RegExp(String.raw`\b${FIELDS}\s*[:=]\s*${instantArith}`);
 const DEFINITION = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(.*)$/;
-const ARROW_PREFIX = String.raw`^(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*`;
-const INSTANT_VALUE = new RegExp(`^${INSTANT_ARITH}`);
-const INSTANT_FN = new RegExp(`${ARROW_PREFIX}${INSTANT_ARITH}`);
+const arrowPrefix = String.raw`^(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*`;
+const instantValue = new RegExp(`^${instantArith}`);
+const instantFn = new RegExp(`${arrowPrefix}${instantArith}`);
 const VIA = new RegExp(String.raw`\b${FIELDS}\s*:\s*([A-Za-z_$][\w$]*)\s*(\()?`, 'g');
 
 const skipDir = (name) => name === 'node_modules' || name === '.git' || name === 'coverage';
@@ -66,7 +66,7 @@ function definitions(lines) {
     const m = DEFINITION.exec(line);
     if (!m) return;
     const rhs = m[2];
-    const kind = INSTANT_VALUE.test(rhs) ? 'value' : INSTANT_FN.test(rhs) ? 'fn' : null;
+    const kind = instantValue.test(rhs) ? 'value' : instantFn.test(rhs) ? 'fn' : null;
     if (!defs.has(m[1])) defs.set(m[1], []);
     defs.get(m[1]).push({ line: i, kind });
   });
@@ -100,7 +100,7 @@ for (const file of walkFiles(ROOTS, { skipDir, includeFile })) {
         if ((kind === 'value' && !m[2]) || (kind === 'fn' && m[2])) flagged = true;
       }
     }
-    if (flagged) failures.push(`${path.relative(REPO_ROOT, file)}:${i + 1}  ${line.trim()}`);
+    if (flagged) failures.push(`${path.relative(repoRoot, file)}:${i + 1}  ${line.trim()}`);
   }
 }
 

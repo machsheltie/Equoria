@@ -34,16 +34,16 @@ import {
   readdirSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
 
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
-const SCAN_ROOT = path.join(REPO_ROOT, 'tests', 'e2e');
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, '..', '..');
+const scanRoot = path.join(repoRoot, 'tests', 'e2e');
 
-const SCAN_FILE_RE = /\.ts$/;
-const SKIP_DIRS = new Set(['node_modules', '__screenshots__']);
+const scanFileRe = /\.ts$/;
+const skipDirs = new Set(['node_modules', '__screenshots__']);
 
 // Same detector as check-no-unversioned-api.mjs: a quote/backtick/`}` then
 // `/api/` where the next segment is NOT `v1/` and NOT `internal/`.
-const VIOLATION_RE = /['"`}](\/api\/(?!v1\/)(?!internal\/)[^'"`]+)['"`]/g;
+const violationRe = /['"`}](\/api\/(?!v1\/)(?!internal\/)[^'"`]+)['"`]/g;
 
 const BACKSLASH = String.fromCharCode(92);
 
@@ -54,16 +54,16 @@ function walk(dir, acc) {
   for (const e of ents) {
     const full = path.join(dir, e.name);
     if (e.isDirectory()) {
-      if (SKIP_DIRS.has(e.name)) continue;
+      if (skipDirs.has(e.name)) continue;
       walk(full, acc);
-    } else if (e.isFile() && SCAN_FILE_RE.test(e.name)) {
+    } else if (e.isFile() && scanFileRe.test(e.name)) {
       acc.push(full);
     }
   }
 }
 
 function toRelKey(absPath) {
-  return path.relative(REPO_ROOT, absPath).split(BACKSLASH).join('/');
+  return path.relative(repoRoot, absPath).split(BACKSLASH).join('/');
 }
 
 export function findViolations(filePath, src) {
@@ -73,8 +73,8 @@ export function findViolations(filePath, src) {
     if (lines[i].includes('// sqrpa-allow')) continue;
     if (lines[i].includes('// eslint-disable-line')) continue;
     let m;
-    VIOLATION_RE.lastIndex = 0;
-    while ((m = VIOLATION_RE.exec(lines[i])) !== null) {
+    violationRe.lastIndex = 0;
+    while ((m = violationRe.exec(lines[i])) !== null) {
       violations.push({
         file: toRelKey(filePath),
         line: i + 1,
@@ -87,7 +87,7 @@ export function findViolations(filePath, src) {
 
 function main() {
   const files = [];
-  walk(SCAN_ROOT, files);
+  walk(scanRoot, files);
 
   const allViolations = [];
   for (const f of files) {

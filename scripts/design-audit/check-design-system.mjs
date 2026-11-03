@@ -26,16 +26,16 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
-const FRONTEND_SRC = path.join(repoRoot, 'frontend', 'src');
-const BASELINE_PATH = path.join(here, 'baseline.json');
-const EXCEPTIONS_PATH = path.join(repoRoot, 'docs', 'design-system', 'EXCEPTIONS.md');
+const frontendSrc = path.join(repoRoot, 'frontend', 'src');
+const baselinePath = path.join(here, 'baseline.json');
+const exceptionsPath = path.join(repoRoot, 'docs', 'design-system', 'EXCEPTIONS.md');
 
 // ── Rules ────────────────────────────────────────────────────────────────────
 // Each rule: id, description, dirs (relative to frontend/src), filePattern,
 // match regex (per line), and optional lineExclude to skip legitimate forms.
 
 const PAGES = ['pages'];
-const PAGES_AND_COMPONENTS = ['pages', 'components'];
+const pagesAndComponents = ['pages', 'components'];
 
 const RULES = [
   {
@@ -48,7 +48,7 @@ const RULES = [
   {
     id: 'text-opacity',
     description: 'text-white/NN opacity text (use text-role-* roles, D-12)',
-    dirs: PAGES_AND_COMPONENTS,
+    dirs: pagesAndComponents,
     match: /\btext-(?:white|black)\/\d{1,3}\b/,
   },
   {
@@ -72,31 +72,31 @@ const RULES = [
   {
     id: 'fixed-overlay',
     description: 'Page-local fixed inset-0 overlay (GameDialog owns overlays, D-14)',
-    dirs: PAGES_AND_COMPONENTS,
+    dirs: pagesAndComponents,
     match: /fixed inset-0/,
   },
   {
     id: 'window-confirm',
     description: 'Browser confirmation dialog (use GameDialog, D-14)',
-    dirs: PAGES_AND_COMPONENTS,
+    dirs: pagesAndComponents,
     match: /window\.confirm\s*\(/,
   },
   {
     id: 'deprecated-imports',
     description: 'Deprecated primitives (BaseModal/CelestialTabs/CurrencyDisplay/celestial-input)',
-    dirs: PAGES_AND_COMPONENTS,
+    dirs: pagesAndComponents,
     match: /\b(?:BaseModal|CelestialTabs|CurrencyDisplay)\b|celestial-input/,
   },
   {
     id: 'usd-game-currency',
     description: 'Game currency formatted as USD (use Currency component, D-23)',
-    dirs: PAGES_AND_COMPONENTS,
+    dirs: pagesAndComponents,
     match: /currency:\s*['"]USD['"]/,
   },
 ];
 
 // PageHero allowlist (handoff §16.4): genuine image-backed location pages only.
-const PAGEHERO_ALLOWLIST = [
+const pageheroAllowlist = [
   'pages/VeterinarianPage.tsx',
   'pages/FarrierPage.tsx',
   'pages/FeedShopPage.tsx',
@@ -126,8 +126,8 @@ function* walk(dir) {
 
 /** Parse the exception registry table. Returns [{rule, fileGlob, expiry}]. */
 function parseExceptions() {
-  if (!existsSync(EXCEPTIONS_PATH)) return [];
-  const lines = readFileSync(EXCEPTIONS_PATH, 'utf8').split('\n');
+  if (!existsSync(exceptionsPath)) return [];
+  const lines = readFileSync(exceptionsPath, 'utf8').split('\n');
   const rows = [];
   for (const line of lines) {
     const m = line.match(
@@ -161,10 +161,10 @@ const findings = []; // {rule, file, line, text, excepted}
 
 for (const rule of RULES) {
   for (const dir of rule.dirs) {
-    const root = path.join(FRONTEND_SRC, dir);
+    const root = path.join(frontendSrc, dir);
     if (!existsSync(root)) continue;
     for (const file of walk(root)) {
-      const rel = path.relative(FRONTEND_SRC, file).replace(/\\/g, '/');
+      const rel = path.relative(frontendSrc, file).replace(/\\/g, '/');
       const lines = readFileSync(file, 'utf8').split('\n');
       lines.forEach((text, i) => {
         if (!rule.match.test(text)) return;
@@ -195,14 +195,14 @@ for (const rule of RULES) {
 
 // PageHero allowlist rule
 {
-  const root = path.join(FRONTEND_SRC, 'pages');
+  const root = path.join(frontendSrc, 'pages');
   for (const file of walk(root)) {
-    const rel = path.relative(FRONTEND_SRC, file).replace(/\\/g, '/');
+    const rel = path.relative(frontendSrc, file).replace(/\\/g, '/');
     const src = readFileSync(file, 'utf8');
     if (
       /\bPageHero\b/.test(src) &&
       /import .*PageHero/.test(src) &&
-      !PAGEHERO_ALLOWLIST.includes(rel)
+      !pageheroAllowlist.includes(rel)
     ) {
       findings.push({
         rule: 'pagehero-allowlist',
@@ -237,17 +237,17 @@ if (expired.length) {
 }
 
 if (args.has('--write-baseline')) {
-  writeFileSync(BASELINE_PATH, `${JSON.stringify(counts, null, 2)}\n`);
-  console.log(`\n[design-audit] baseline written to ${path.relative(repoRoot, BASELINE_PATH)}`);
+  writeFileSync(baselinePath, `${JSON.stringify(counts, null, 2)}\n`);
+  console.log(`\n[design-audit] baseline written to ${path.relative(repoRoot, baselinePath)}`);
   process.exit(0);
 }
 
-if (!existsSync(BASELINE_PATH)) {
+if (!existsSync(baselinePath)) {
   console.error('\n[design-audit] no baseline.json — run with --write-baseline first');
   process.exit(2);
 }
 
-const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
+const baseline = JSON.parse(readFileSync(baselinePath, 'utf8'));
 let failed = false;
 for (const [rule, n] of Object.entries(counts)) {
   const cap = baseline[rule] ?? 0;

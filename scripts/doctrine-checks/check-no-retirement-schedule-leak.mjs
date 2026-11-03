@@ -30,9 +30,9 @@
 // hidden number straight to a response WITHOUT the token `retirementSchedule:`
 // appearing anywhere. Pattern 1 passed that silently.
 //
-//   Exemption tiers for pattern 2 (pattern 1 uses OWNER_FILES only):
-//     - OWNER_FILES: unrestricted. These two files ARE the age's home.
-//     - DRAW_TRIGGER_FILES (the two hire controllers): allowed to IMPORT
+//   Exemption tiers for pattern 2 (pattern 1 uses ownerFiles only):
+//     - ownerFiles: unrestricted. These two files ARE the age's home.
+//     - drawTriggerFiles (the two hire controllers): allowed to IMPORT
 //       `ensureRetirementSchedule` from the schedule module by path and to CALL
 //       it as a value-DISCARDING statement (`await ensureRetirementSchedule(
 //       …);`), which is all a hire needs — it draws the age so the groom has one
@@ -100,11 +100,11 @@ import {
 } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
 
 // The only two files allowed to include/select the relation (verified against
 // current source, Equoria-sg79g / Task 19-21).
-export const OWNER_FILES = new Set([
+export const ownerFiles = new Set([
   'backend/modules/grooms/services/groomRetirementScheduleService.mjs',
   'backend/modules/grooms/services/groomRetirementService.mjs',
 ]);
@@ -114,15 +114,15 @@ export const OWNER_FILES = new Set([
 // Verified against current source 2026-09-09: each contains exactly one import
 // of `ensureRetirementSchedule` from the schedule module and exactly one
 // value-discarding `await ensureRetirementSchedule(<tx>, groom.id);` statement.
-export const DRAW_TRIGGER_FILES = new Set([
+export const drawTriggerFiles = new Set([
   'backend/modules/grooms/controllers/groomRosterController.mjs',
   'backend/modules/grooms/controllers/groomMarketplaceController.mjs',
 ]);
 
-export const KEY_RX = /\b['"]?retirementSchedule['"]?\s*:/;
+export const keyRx = /\b['"]?retirementSchedule['"]?\s*:/;
 
 // Pattern 2: any mention of a schedule-module function name.
-export const IDENT_RX = /\b(ensureRetirementSchedule|drawRetirementAge|readRetirementAge)\b/;
+export const identRx = /\b(ensureRetirementSchedule|drawRetirementAge|readRetirementAge)\b/;
 
 // The two forms a DRAW_TRIGGER_FILE may use. Anything else that mentions a
 // schedule identifier in those files is still a violation — in particular an
@@ -130,9 +130,9 @@ export const IDENT_RX = /\b(ensureRetirementSchedule|drawRetirementAge|readRetir
 //   (a) the by-path named import of ensureRetirementSchedule alone;
 //   (b) a statement whose entire content is `await ensureRetirementSchedule(...)`
 //       — the value is discarded, so no age can escape through it.
-export const DRAW_TRIGGER_IMPORT_RX =
+export const drawTriggerImportRx =
   /^\s*import\s*\{\s*ensureRetirementSchedule\s*\}\s*from\s*['"][^'"]*groomRetirementScheduleService\.mjs['"]\s*;?\s*$/;
-export const DRAW_TRIGGER_DISCARDED_CALL_RX =
+export const drawTriggerDiscardedCallRx =
   /^\s*await\s+ensureRetirementSchedule\s*\([^;]*\)\s*;\s*$/;
 
 // PATTERN 3 — RE-PUBLICATION from a file that is itself exempt from pattern 2.
@@ -149,11 +149,11 @@ export const DRAW_TRIGGER_DISCARDED_CALL_RX =
 //
 // The schedule module itself is not subject to this: `export function
 // drawRetirementAge()` and its own default export are how the API exists at all.
-export const SCHEDULE_MODULE_FILE =
+export const scheduleModuleFile =
   'backend/modules/grooms/services/groomRetirementScheduleService.mjs';
-export const RE_EXPORT_LIST_RX =
+export const reExportListRx =
   /^\s*export\s*\{[^}]*\b(?:ensureRetirementSchedule|drawRetirementAge|readRetirementAge)\b/;
-export const RE_EXPORT_STAR_RX =
+export const reExportStarRx =
   /^\s*export\s+\*\s+(?:as\s+\w+\s+)?from\s*['"][^'"]*groomRetirementScheduleService\.mjs['"]/;
 
 function walkDir(dir, results) {
@@ -195,13 +195,13 @@ export function scanRetirementScheduleLeaks(repoRoot) {
 
   for (const file of files) {
     const rel = path.relative(repoRoot, file).replace(/\\/g, '/');
-    const isOwner = OWNER_FILES.has(rel);
-    const isDrawTrigger = DRAW_TRIGGER_FILES.has(rel);
+    const isOwner = ownerFiles.has(rel);
+    const isDrawTrigger = drawTriggerFiles.has(rel);
     // Files exempt from pattern 2 are still forbidden to RE-PUBLISH the API
     // (pattern 3) — except the schedule module, which owns the declarations.
     // So an owner file is no longer skipped outright: patterns 1 and 2 do not
     // apply to it, pattern 3 does.
-    const checkReExport = rel !== SCHEDULE_MODULE_FILE;
+    const checkReExport = rel !== scheduleModuleFile;
     if (isOwner && !checkReExport) continue;
 
     const source = readScannedFileSyncTolerant(file, 'no-retirement-schedule-leak');
@@ -213,7 +213,7 @@ export function scanRetirementScheduleLeaks(repoRoot) {
     for (let i = 0; i < lines.length; i++) {
       const code = lines[i].replace(/\/\/.*$/, ''); // strip trailing line comment
 
-      if (checkReExport && (RE_EXPORT_LIST_RX.test(code) || RE_EXPORT_STAR_RX.test(code))) {
+      if (checkReExport && (reExportListRx.test(code) || reExportStarRx.test(code))) {
         violations.push({
           kind: 're-export',
           file: rel,
@@ -226,7 +226,7 @@ export function scanRetirementScheduleLeaks(repoRoot) {
       }
       if (isOwner) continue; // patterns 1 and 2 do not apply inside an owner file
 
-      if (KEY_RX.test(code)) {
+      if (keyRx.test(code)) {
         violations.push({
           kind: 'include-key',
           file: rel,
@@ -234,10 +234,10 @@ export function scanRetirementScheduleLeaks(repoRoot) {
           snippet: lines[i].trim().slice(0, 120),
         });
       }
-      if (IDENT_RX.test(code)) {
+      if (identRx.test(code)) {
         const allowedHere =
           isDrawTrigger &&
-          (DRAW_TRIGGER_IMPORT_RX.test(code) || DRAW_TRIGGER_DISCARDED_CALL_RX.test(code));
+          (drawTriggerImportRx.test(code) || drawTriggerDiscardedCallRx.test(code));
         if (!allowedHere) {
           violations.push({
             kind: 'schedule-api',
@@ -260,7 +260,7 @@ export function scanRetirementScheduleLeaks(repoRoot) {
 // without writing to a tracked source file to find out. run-all.sh invokes this
 // as `node <script>`, so the guard is satisfied there.
 function main() {
-  const violations = scanRetirementScheduleLeaks(REPO_ROOT);
+  const violations = scanRetirementScheduleLeaks(repoRoot);
 
   if (violations.length === 0) {
     process.stdout.write(

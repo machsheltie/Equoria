@@ -17,8 +17,8 @@ import { dirname } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const PROJECT_ROOT = join(__dirname, '..', '..');
-const SCRIPT = join(PROJECT_ROOT, 'scripts', 'check-beta-readiness.sh');
+const projectRoot = join(__dirname, '..', '..');
+const SCRIPT = join(projectRoot, 'scripts', 'check-beta-readiness.sh');
 
 function makeFakeGit(showTopLevel) {
   const dir = mkdtempSync(join(tmpdir(), 'fake-git-'));
@@ -38,7 +38,7 @@ test('check-beta-readiness.sh exits 2 when run from a Claude Code worktree', () 
   const { dir, bin } = makeFakeGit('/home/user/project/.claude/worktrees/agent-abc1234');
 
   const result = spawnSync('bash', [SCRIPT], {
-    cwd: PROJECT_ROOT,
+    cwd: projectRoot,
     env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}` },
     encoding: 'utf8',
     timeout: 10_000,
@@ -55,7 +55,7 @@ test('check-beta-readiness.sh does not reject main project checkout', () => {
   const { dir, bin } = makeFakeGit('/home/user/equoria');
 
   const result = spawnSync('bash', [SCRIPT], {
-    cwd: PROJECT_ROOT,
+    cwd: projectRoot,
     env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}` },
     encoding: 'utf8',
     timeout: 10_000,

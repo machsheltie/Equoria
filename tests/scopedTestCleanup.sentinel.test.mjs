@@ -18,12 +18,12 @@ import { describe, it, expect } from '@jest/globals';
 import prisma from '../packages/database/prismaClient.mjs';
 import {
   cleanupProgressionFixtures,
-  PROGRESSION_TEST_USER_IDS,
+  progressionTestUserIds,
 } from './helpers/scopedTestCleanup.mjs';
 
 describe('🛡️ SENTINEL: cleanupProgressionFixtures is scoped (no canonical-DB wipe)', () => {
   it('deletes fixture users but spares a non-fixture survivor', async () => {
-    const fixtureId = PROGRESSION_TEST_USER_IDS[0]; // 'test-user-1'
+    const fixtureId = progressionTestUserIds[0]; // 'test-user-1'
     const survivorId = `SENTINEL-survivor-${Date.now()}`;
     const survivorEmail = `${survivorId}@sentinel.example`;
 

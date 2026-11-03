@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { skipGuidedTourAfterWizard } from '../../helpers/guidedTour';
 
-const BANNED_HEADERS = [
+const bannedHeaders = [
   'x-test-skip-csrf', // doctrine-allow: bypass-header-literal
   'x-test-bypass-auth', // doctrine-allow: bypass-header-literal
   'x-test-bypass-rate-limit', // doctrine-allow: bypass-header-literal
@@ -21,7 +21,7 @@ export function installProductionParityNetworkGuard(page: Page) {
 
   page.on('request', (request) => {
     const headers = request.headers();
-    for (const header of BANNED_HEADERS) {
+    for (const header of bannedHeaders) {
       if (headers[header]) {
         violations.push(`${request.method()} ${request.url()} used ${header}`);
       }

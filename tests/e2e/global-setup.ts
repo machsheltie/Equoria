@@ -296,20 +296,20 @@ async function globalSetup(config: FullConfig) {
       // (2) Find-or-create the OPEN conformation show (unique by name).
       //     Show.name is @unique, so upsert keys cleanly on it.
       const conformationShowName = `E2E-Conformation-${e2eUserId}`;
-      const EARLY_RUN_DATE = new Date('2020-01-01'); // THE FIX — page-1 asc sort.
+      const earlyRunDate = new Date('2020-01-01'); // THE FIX — page-1 asc sort.
       // Equoria-mwjst (owner ruling 2026-10-12): conformation entry refuses a show
       // with no closing date, so every run gives the seeded show a fresh week.
-      const OPEN_DATE = new Date();
-      const CLOSE_DATE = new Date(OPEN_DATE.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const openDate = new Date();
+      const closeDate = new Date(openDate.getTime() + 7 * 24 * 60 * 60 * 1000);
       const conformationShow = await prisma.show.upsert({
         where: { name: conformationShowName },
         update: {
           showType: 'conformation',
           status: 'open',
           discipline: 'Dressage',
-          runDate: EARLY_RUN_DATE,
-          openDate: OPEN_DATE,
-          closeDate: CLOSE_DATE,
+          runDate: earlyRunDate,
+          openDate: openDate,
+          closeDate: closeDate,
           entryFee: 0,
           prize: 0,
           levelMin: 1,
@@ -324,9 +324,9 @@ async function globalSetup(config: FullConfig) {
           discipline: 'Dressage',
           showType: 'conformation',
           status: 'open',
-          runDate: EARLY_RUN_DATE,
-          openDate: OPEN_DATE,
-          closeDate: CLOSE_DATE,
+          runDate: earlyRunDate,
+          openDate: openDate,
+          closeDate: closeDate,
           entryFee: 0,
           prize: 0,
           levelMin: 1,

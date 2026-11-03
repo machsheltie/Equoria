@@ -25,16 +25,16 @@ import { fileURLToPath } from 'node:url';
 import {
   makeDbMockCallRegex,
   makeDbMockTargetRegex,
-  DB_MOCK_EXEMPTION_MARKER as MARKER,
+  dbMockExemptionMarker as MARKER,
   walkFiles,
   readScannedFileSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
-const BACKEND_ROOT = path.join(REPO_ROOT, 'backend');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
+const backendRoot = path.join(repoRoot, 'backend');
 
-if (!fs.existsSync(BACKEND_ROOT)) {
+if (!fs.existsSync(backendRoot)) {
   process.exit(0);
 }
 
@@ -42,8 +42,8 @@ if (!fs.existsSync(BACKEND_ROOT)) {
 // like join(__dirname, '../../packages/database/prismaClient.mjs'), so we
 // match the mock invocation and then scan the same line for any string
 // literal containing "prisma".
-const MOCK_CALL_RE = makeDbMockCallRegex();
-const STRING_LITERAL_RE = makeDbMockTargetRegex();
+const mockCallRe = makeDbMockCallRegex();
+const stringLiteralRe = makeDbMockTargetRegex();
 
 function isCommentLine(line) {
   const t = line.trimStart();
@@ -62,7 +62,7 @@ const includeFile = (name) => /\.(test|spec)\.(mjs|js|ts)$/.test(name);
 
 const failures = [];
 
-for (const file of walkFiles([BACKEND_ROOT], { skipDir, includeFile })) {
+for (const file of walkFiles([backendRoot], { skipDir, includeFile })) {
   // Equoria-q7lqz/7avnu: a walked test file can vanish before this read
   // (concurrent jest sentinel plant+delete). Tolerant reader returns null ONLY
   // on ENOENT (with a one-line notice) and rethrows anything else.
@@ -73,12 +73,12 @@ for (const file of walkFiles([BACKEND_ROOT], { skipDir, includeFile })) {
     const line = lines[i];
     if (isCommentLine(line)) continue;
     if (line.includes(MARKER)) continue;
-    if (!MOCK_CALL_RE.test(line)) continue;
-    STRING_LITERAL_RE.lastIndex = 0;
+    if (!mockCallRe.test(line)) continue;
+    stringLiteralRe.lastIndex = 0;
     let s;
-    while ((s = STRING_LITERAL_RE.exec(line)) !== null) {
+    while ((s = stringLiteralRe.exec(line)) !== null) {
       failures.push({
-        file: path.relative(REPO_ROOT, file),
+        file: path.relative(repoRoot, file),
         line: i + 1,
         target: s[1],
       });

@@ -33,7 +33,7 @@
  *   can never fire outside `NODE_ENV === 'test'` (see
  *   backend/modules/marketplace/services/marketplaceRaceBarrier.mjs). Rather
  *   than exempting the whole importing file (which would hide an unrelated
- *   __TESTING_ONLY_ import added to that same file later), PERMITTED_TEST_ONLY_IMPORTS
+ *   __TESTING_ONLY_ import added to that same file later), permittedTestOnlyImports
  *   below maps one importing file to the exact binding(s) it may import, each
  *   with a one-line reason. A match is only skipped when EVERY
  *   `__TESTING_ONLY_*` identifier inside the matched import/export is on that
@@ -63,11 +63,11 @@ import {
 } from '../lib/doctrine-scan-patterns.mjs';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
-const REPO_ROOT = resolve(__dirname, '..', '..');
+const repoRoot = resolve(__dirname, '..', '..');
 
-const PRODUCTION_PATHS = [join(REPO_ROOT, 'backend'), join(REPO_ROOT, 'frontend', 'src')];
+const productionPaths = [join(repoRoot, 'backend'), join(repoRoot, 'frontend', 'src')];
 
-const SKIP_DIRS = new Set([
+const skipDirs = new Set([
   'node_modules',
   '__tests__',
   'tests',
@@ -76,17 +76,17 @@ const SKIP_DIRS = new Set([
   'dist',
   'build',
 ]);
-const SOURCE_EXTS = new Set(['.mjs', '.js', '.ts', '.tsx']);
+const sourceExts = new Set(['.mjs', '.js', '.ts', '.tsx']);
 
 // Matches a single-line or multi-line import/export specifier block containing
 // the __TESTING_ONLY_ prefix. The [^{}] character class prevents the regex
 // from spanning across multiple import statements.
-const IMPORT_EXPORT_PATTERN = /\b(?:import|export)\s*\{[^{}]*__TESTING_ONLY_[^{}]*\}/gs;
+const importExportPattern = /\b(?:import|export)\s*\{[^{}]*__TESTING_ONLY_[^{}]*\}/gs;
 
 // Pulls every individual `__TESTING_ONLY_*` identifier out of one matched
 // import/export block, so an allow-list entry can be checked per binding
 // rather than per whole file.
-const TEST_ONLY_BINDING_PATTERN = /__TESTING_ONLY_[A-Za-z0-9_]*/g;
+const testOnlyBindingPattern = /__TESTING_ONLY_[A-Za-z0-9_]*/g;
 
 // Explicit allow-list: importing file (repo-relative, forward slashes) ->
 // the exact __TESTING_ONLY_ bindings that file may import, each with why
@@ -94,7 +94,7 @@ const TEST_ONLY_BINDING_PATTERN = /__TESTING_ONLY_[A-Za-z0-9_]*/g;
 // exclusion — it is checked per binding below, so an unlisted
 // __TESTING_ONLY_ import added to one of these files (or the listed binding
 // imported anywhere else) still fails the check.
-const PERMITTED_TEST_ONLY_IMPORTS = new Map([
+const permittedTestOnlyImports = new Map([
   [
     'backend/modules/marketplace/controllers/marketplaceController.mjs',
     {
@@ -141,7 +141,7 @@ const PERMITTED_TEST_ONLY_IMPORTS = new Map([
 // files below may declare a seam. A THIRD seam requires an owner ruling recorded
 // in the tracker BEFORE it is written — see .claude/rules/INTERLEAVING_TEST_SEAMS.md
 // for the six-clause safety contract every seam must satisfy.
-const KNOWN_INTERLEAVING_SEAM_MODULES = new Set([
+const knownInterleavingSeamModules = new Set([
   'backend/modules/marketplace/services/marketplaceRaceBarrier.mjs',
   'backend/modules/grooms/services/groomHireRaceBarrier.mjs',
 ]);
@@ -157,13 +157,13 @@ const KNOWN_INTERLEAVING_SEAM_MODULES = new Set([
 // match — `__TESTING_ONLY_JsonScanner` / `__TESTING_ONLY_assertNoPollutingKeys`
 // are internal-function exports for unit tests, not arming functions, and carry
 // no `set` after the prefix.
-const SEAM_ARMING_EXPORT_PATTERNS = [
+const seamArmingExportPatterns = [
   /export\s+(?:async\s+)?(?:function|const|let|var)\s+__TESTING_ONLY_set[A-Za-z0-9_]*/g,
   /export\s*\{[^{}]*__TESTING_ONLY_set[A-Za-z0-9_]*[^{}]*\}/gs,
 ];
 
 function declaresArmingExport(content) {
-  return SEAM_ARMING_EXPORT_PATTERNS.some((pattern) => {
+  return seamArmingExportPatterns.some((pattern) => {
     pattern.lastIndex = 0;
     return pattern.test(content);
   });
@@ -175,18 +175,18 @@ function* walkFiles(dir) {
   // …) rethrows so the check crashes instead of silently under-scanning.
   const entries = readdirSyncTolerant(dir, { withFileTypes: true }, 'no-test-only-imports');
   for (const entry of entries) {
-    if (SKIP_DIRS.has(entry.name)) continue;
+    if (skipDirs.has(entry.name)) continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
       yield* walkFiles(full);
-    } else if (entry.isFile() && SOURCE_EXTS.has(extname(entry.name))) {
+    } else if (entry.isFile() && sourceExts.has(extname(entry.name))) {
       yield full;
     }
   }
 }
 
 function isExcluded(absPath) {
-  const rel = relative(REPO_ROOT, absPath).replace(/\\/g, '/');
+  const rel = relative(repoRoot, absPath).replace(/\\/g, '/');
   // The defining module that exports test-only symbols
   if (rel === 'backend/middleware/requestBodySecurity.mjs') return true;
   // ESLint config files that reference the name as config data (not imports)
@@ -205,7 +205,7 @@ const seamModulesFound = new Set();
 
 let scannedCount = 0;
 
-for (const productionPath of PRODUCTION_PATHS) {
+for (const productionPath of productionPaths) {
   let exists = true;
   try {
     statSync(productionPath);
@@ -222,18 +222,18 @@ for (const productionPath of PRODUCTION_PATHS) {
     if (content === null) continue; // vanished mid-scan (ENOENT) — skip, noticed
 
     scannedCount++;
-    const rel = relative(REPO_ROOT, absPath).replace(/\\/g, '/');
+    const rel = relative(repoRoot, absPath).replace(/\\/g, '/');
     // Seam cap (Equoria-dqzpi): record any production module that declares an
     // arming export, so a third interleaving seam cannot arrive by precedent.
     if (declaresArmingExport(content)) {
       seamModulesFound.add(rel);
     }
 
-    const permitted = PERMITTED_TEST_ONLY_IMPORTS.get(rel);
-    IMPORT_EXPORT_PATTERN.lastIndex = 0;
+    const permitted = permittedTestOnlyImports.get(rel);
+    importExportPattern.lastIndex = 0;
     let match;
-    while ((match = IMPORT_EXPORT_PATTERN.exec(content)) !== null) {
-      const bindingsInMatch = match[0].match(TEST_ONLY_BINDING_PATTERN) ?? [];
+    while ((match = importExportPattern.exec(content)) !== null) {
+      const bindingsInMatch = match[0].match(testOnlyBindingPattern) ?? [];
       const unpermitted = bindingsInMatch.filter(
         (binding) => !(permitted && permitted.bindings.has(binding))
       );
@@ -258,9 +258,9 @@ if (scannedCount === 0) {
 // before the import violations so a new seam is named plainly rather than buried
 // under the import failures it also causes.
 const unruledSeams = [...seamModulesFound].filter(
-  (file) => !KNOWN_INTERLEAVING_SEAM_MODULES.has(file)
+  (file) => !knownInterleavingSeamModules.has(file)
 );
-const missingSeams = [...KNOWN_INTERLEAVING_SEAM_MODULES].filter(
+const missingSeams = [...knownInterleavingSeamModules].filter(
   (file) => !seamModulesFound.has(file)
 );
 
@@ -288,7 +288,7 @@ if (unruledSeams.length > 0 || missingSeams.length > 0) {
       process.stdout.write(`  ${file}\n`);
     }
     process.stdout.write(
-      'If a seam was deliberately removed or renamed, update KNOWN_INTERLEAVING_SEAM_MODULES\n' +
+      'If a seam was deliberately removed or renamed, update knownInterleavingSeamModules\n' +
         'in this script and .claude/rules/INTERLEAVING_TEST_SEAMS.md in the same change.\n'
     );
   }
@@ -309,7 +309,7 @@ if (violations.length > 0) {
       "Production code must use the module's public API. If you need access from production,\n" +
       'refactor the module to expose a proper public API — do not consume the test-only binding.\n' +
       'A genuinely runtime-gated seam (see marketplaceRaceBarrier.mjs) may instead be added to\n' +
-      'PERMITTED_TEST_ONLY_IMPORTS in this script, with a one-line reason production cannot\n' +
+      'permittedTestOnlyImports in this script, with a one-line reason production cannot\n' +
       'reach the gated behavior.\n'
   );
   process.exit(1);

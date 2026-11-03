@@ -19,8 +19,8 @@ import {
 
 // Unique seed per run to prevent collisions across parallel test suites
 const seed = Date.now();
-const BASE_EMAIL = `integration-user-${seed}@test.local`;
-const BASE_USERNAME = `intuser${seed}`;
+const baseEmail = `integration-user-${seed}@test.local`;
+const baseUsername = `intuser${seed}`;
 
 let createdUserId = null;
 
@@ -40,8 +40,8 @@ describe('User Integration Tests', () => {
     test('creates a user and returns id, username, email, level, xp, money', async () => {
       const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
       const userData = {
-        username: BASE_USERNAME,
-        email: BASE_EMAIL,
+        username: baseUsername,
+        email: baseEmail,
         password: hashedPassword,
         firstName: 'Integration',
         lastName: 'Test',
@@ -50,8 +50,8 @@ describe('User Integration Tests', () => {
       const result = await createUser(userData);
 
       expect(result).toMatchObject({
-        username: BASE_USERNAME,
-        email: BASE_EMAIL,
+        username: baseUsername,
+        email: baseEmail,
         level: 1,
         xp: 0,
         money: 1000,
@@ -78,7 +78,7 @@ describe('User Integration Tests', () => {
       // Use same username, different email
       await expect(
         createUser({
-          username: BASE_USERNAME,
+          username: baseUsername,
           email: `dup-${seed}@test.local`,
           password: hashedPassword,
           firstName: 'Dup',
@@ -95,8 +95,8 @@ describe('User Integration Tests', () => {
 
       expect(user).not.toBeNull();
       expect(user.id).toBe(createdUserId);
-      expect(user.username).toBe(BASE_USERNAME);
-      expect(user.email).toBe(BASE_EMAIL);
+      expect(user.username).toBe(baseUsername);
+      expect(user.email).toBe(baseEmail);
     });
 
     test('returns null for a non-existent UUID', async () => {

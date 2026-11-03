@@ -37,14 +37,14 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-const WORKERS_CAP = 2;
+const workersCap = 2;
 // Explicit per-file exception channel. Requires an issue id AND a reason —
 // a bare marker with no rationale does not count.
-const ALLOW_MARKER =
+const allowMarker =
   /\/\/\s*doctrine-allow:\s*playwright-workers-exception\s+Equoria-[A-Za-z0-9.-]+\s+\S/;
 
 export function validatePlaywrightConfigSource(label, source, failures = []) {
-  if (ALLOW_MARKER.test(source)) {
+  if (allowMarker.test(source)) {
     return failures; // documented, user-sanctioned exception
   }
   // The workers expression is single-line in house style; capture to EOL and
@@ -53,14 +53,14 @@ export function validatePlaywrightConfigSource(label, source, failures = []) {
   const match = source.match(/(?:^|[\s{])workers\s*:\s*([^\n]+)/);
   if (!match) {
     failures.push(
-      `${label}: no 'workers:' setting — Playwright defaults to 50% of logical cores, which re-bricks the laptop. Pin local workers <= ${WORKERS_CAP}.`
+      `${label}: no 'workers:' setting — Playwright defaults to 50% of logical cores, which re-bricks the laptop. Pin local workers <= ${workersCap}.`
     );
     return failures;
   }
   const expr = match[1].replace(/,\s*$/, '').trim();
   if (/\bundefined\b/.test(expr)) {
     failures.push(
-      `${label}: workers expression (${expr}) contains 'undefined' — that branch falls through to Playwright's per-CPU default. Replace it with an integer <= ${WORKERS_CAP}.`
+      `${label}: workers expression (${expr}) contains 'undefined' — that branch falls through to Playwright's per-CPU default. Replace it with an integer <= ${workersCap}.`
     );
   }
   if (/['"]\d+%['"]/.test(expr)) {
@@ -70,9 +70,9 @@ export function validatePlaywrightConfigSource(label, source, failures = []) {
   }
   for (const literal of expr.matchAll(/\b(\d+)\b/g)) {
     const value = Number(literal[1]);
-    if (value < 1 || value > WORKERS_CAP) {
+    if (value < 1 || value > workersCap) {
       failures.push(
-        `${label}: workers expression (${expr}) contains ${value}, above the laptop cap of ${WORKERS_CAP}`
+        `${label}: workers expression (${expr}) contains ${value}, above the laptop cap of ${workersCap}`
       );
     }
   }

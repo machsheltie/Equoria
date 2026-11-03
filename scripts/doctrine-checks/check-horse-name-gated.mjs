@@ -80,9 +80,9 @@ import { fileURLToPath } from 'node:url';
 
 import { walkFiles, readScannedFileSyncTolerant } from '../lib/doctrine-scan-patterns.mjs';
 
-const CHECK_ID = 'horse-name-gated';
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
+const checkId = 'horse-name-gated';
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, '..', '..');
 
 // One fixed path, deliberately not overridable. An earlier revision accepted an
 // alternate allow-list path as argv[2] so a reviewer could re-run the check
@@ -94,27 +94,27 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
 // test needed the override, so it is gone rather than gated. Verifying the list
 // by temporarily emptying this file in a scratch worktree costs the same and
 // leaves no permanent door.
-const ALLOWLIST_PATH = path.join(SCRIPT_DIR, 'horse-name-gate-allowlist.json');
+const allowlistPath = path.join(scriptDir, 'horse-name-gate-allowlist.json');
 
 // Request-reachable backend app code only. `seed/` and `scripts/` are excluded
 // deliberately (see "what it cannot see" above), as are test trees.
-const SCAN_ROOTS = [
-  path.join(REPO_ROOT, 'backend', 'modules'),
-  path.join(REPO_ROOT, 'backend', 'routes'),
+const scanRoots = [
+  path.join(repoRoot, 'backend', 'modules'),
+  path.join(repoRoot, 'backend', 'routes'),
   // Equoria-q4uem.4 (WS4 S3): request-reachable application queries/routers.
-  path.join(REPO_ROOT, 'backend', 'app'),
-  path.join(REPO_ROOT, 'backend', 'services'),
-  path.join(REPO_ROOT, 'backend', 'controllers'),
-  path.join(REPO_ROOT, 'backend', 'middleware'),
-  path.join(REPO_ROOT, 'backend', 'utils'),
+  path.join(repoRoot, 'backend', 'app'),
+  path.join(repoRoot, 'backend', 'services'),
+  path.join(repoRoot, 'backend', 'controllers'),
+  path.join(repoRoot, 'backend', 'middleware'),
+  path.join(repoRoot, 'backend', 'utils'),
 ];
 
-const EXEMPTION_MARKER = '// doctrine-allow: horse-name-ungated';
-const POLICY_MODULE_BASENAME = 'horseNamePolicy.mjs';
-const POLICY_REEXPORT_BASENAME = '_validators.mjs';
+const exemptionMarker = '// doctrine-allow: horse-name-ungated';
+const policyModuleBasename = 'horseNamePolicy.mjs';
+const policyReexportBasename = '_validators.mjs';
 // Cross-module consumers reach the rule through the horses barrel (Equoria-q4uem.4,
 // WS4 S5: the module-root `horses/horseNamePolicy.mjs` publishing file is gone).
-const POLICY_BARREL_SUFFIX = 'horses/index.mjs';
+const policyBarrelSuffix = 'horses/index.mjs';
 // EXACT identifiers that embody the rule on each indirect path (S5 review M5). The
 // import braces are parsed with comments stripped and the ORIGINAL exported name of
 // each specifier (`x as y` -> `x`) must be one of these; a substring, a comment or an
@@ -122,11 +122,8 @@ const POLICY_BARREL_SUFFIX = 'horses/index.mjs';
 //   horses/index.mjs re-exports the two names onboarding needs;
 //   routes/_validators.mjs re-exports three policy functions and defines the
 //   express-validator chain horseNameBodyRule on top of the rule.
-const BARREL_POLICY_SYMBOLS = new Set([
-  'firstHorseNameRejectionMessage',
-  'horseNameRejectionReason',
-]);
-const VALIDATORS_POLICY_SYMBOLS = new Set([
+const barrelPolicySymbols = new Set(['firstHorseNameRejectionMessage', 'horseNameRejectionReason']);
+const validatorsPolicySymbols = new Set([
   'firstHorseNameRejectionMessage',
   'horseNameRejectionReason',
   'horseNameRejectionMessage',
@@ -140,10 +137,10 @@ const skipDir = (name, full) =>
 
 const includeFile = (name) => /\.mjs$/.test(name) && !/\.(test|spec)\.mjs$/.test(name);
 
-const HORSE_WRITE_RE =
+const horseWriteRe =
   /\b(?:prisma|tx|client|db)\s*\.\s*horse\s*\.\s*(create|createMany|update|updateMany|upsert)\s*\(/g;
-const CREATE_HORSE_RE = /\bcreateHorse\s*\(/g;
-const RAW_HORSE_NAME_UPDATE_RE = /UPDATE\s+"?horses"?[\s\S]{0,200}?\bSET\b[\s\S]{0,200}?\bname\b/gi;
+const createHorseRe = /\bcreateHorse\s*\(/g;
+const rawHorseNameUpdateRe = /UPDATE\s+"?horses"?[\s\S]{0,200}?\bSET\b[\s\S]{0,200}?\bname\b/gi;
 // A `name` KEY, in any of the three forms this codebase actually writes:
 //   name: value        (longhand)
 //   'name': value      (quoted)
@@ -153,9 +150,9 @@ const RAW_HORSE_NAME_UPDATE_RE = /UPDATE\s+"?horses"?[\s\S]{0,200}?\bSET\b[\s\S]
 // `data: { name }` write walked straight past it — the shorthand is the idiom
 // `renameHorseService` itself uses. A guard that misses the codebase's own idiom
 // is the inert-guard failure this project has shipped before.
-const NAME_KEY_SEGMENT_RE = /^\s*['"]?name['"]?\s*(?::|$)/;
+const nameKeySegmentRe = /^\s*['"]?name['"]?\s*(?::|$)/;
 // Keys whose value IS the write payload. `select` / `include` / `where` are not.
-const WRITE_PAYLOAD_KEY_RE = /\b(data|create|update)\s*:\s*[[{]/g;
+const writePayloadKeyRe = /\b(data|create|update)\s*:\s*[[{]/g;
 
 /**
  * Extract the balanced-parenthesis argument text starting at the '(' that
@@ -207,9 +204,9 @@ function balancedBracket(source, openIndex) {
  */
 function writePayloadRegions(args) {
   const regions = [];
-  WRITE_PAYLOAD_KEY_RE.lastIndex = 0;
+  writePayloadKeyRe.lastIndex = 0;
   let m;
-  while ((m = WRITE_PAYLOAD_KEY_RE.exec(args)) !== null) {
+  while ((m = writePayloadKeyRe.exec(args)) !== null) {
     const openIndex = m.index + m[0].length - 1;
     regions.push({ text: balancedBracket(args, openIndex), isArray: args[openIndex] === '[' });
   }
@@ -263,7 +260,7 @@ function payloadWritesName({ text, isArray }) {
     // column) is not mistaken for a write of `horses.name`.
     stripNested(body)
       .split(',')
-      .some((segment) => NAME_KEY_SEGMENT_RE.test(segment))
+      .some((segment) => nameKeySegmentRe.test(segment))
   );
 }
 
@@ -295,9 +292,9 @@ function lineTextAt(source, index) {
 function findWriteSignals(source) {
   const signals = [];
 
-  HORSE_WRITE_RE.lastIndex = 0;
+  horseWriteRe.lastIndex = 0;
   let m;
-  while ((m = HORSE_WRITE_RE.exec(source)) !== null) {
+  while ((m = horseWriteRe.exec(source)) !== null) {
     const openIndex = source.indexOf('(', m.index + m[0].length - 1);
     const args = balancedArgs(source, openIndex);
     const regions = writePayloadRegions(args);
@@ -311,20 +308,20 @@ function findWriteSignals(source) {
     }
   }
 
-  CREATE_HORSE_RE.lastIndex = 0;
-  while ((m = CREATE_HORSE_RE.exec(source)) !== null) {
+  createHorseRe.lastIndex = 0;
+  while ((m = createHorseRe.exec(source)) !== null) {
     // Skip the definition/export site itself; only CALLERS write a horse.
     const before = source.slice(Math.max(0, m.index - 40), m.index);
     if (/\b(?:function|export function|async function|const|let)\s*$/.test(before)) continue;
     signals.push({ kind: 'createHorse() call', index: m.index });
   }
 
-  RAW_HORSE_NAME_UPDATE_RE.lastIndex = 0;
-  while ((m = RAW_HORSE_NAME_UPDATE_RE.exec(source)) !== null) {
+  rawHorseNameUpdateRe.lastIndex = 0;
+  while ((m = rawHorseNameUpdateRe.exec(source)) !== null) {
     signals.push({ kind: 'raw SQL UPDATE horses SET ... name', index: m.index });
   }
 
-  return signals.filter((s) => !lineTextAt(source, s.index).includes(EXEMPTION_MARKER));
+  return signals.filter((s) => !lineTextAt(source, s.index).includes(exemptionMarker));
 }
 
 /**
@@ -413,18 +410,18 @@ function importsPolicy(source) {
     if (spans.some(([a, b]) => keywordAt >= a && keywordAt < b)) continue;
     const clause = m[1];
     const spec = m[2];
-    if (spec.endsWith(POLICY_MODULE_BASENAME)) return true;
+    if (spec.endsWith(policyModuleBasename)) return true;
     const names = importedNames(clause);
     // `routes/_validators.mjs` re-exports the policy and defines the body rule, so
     // importing one of those EXACT names through it counts.
     if (
-      spec.endsWith(POLICY_REEXPORT_BASENAME) &&
-      names.some((nm) => VALIDATORS_POLICY_SYMBOLS.has(nm))
+      spec.endsWith(policyReexportBasename) &&
+      names.some((nm) => validatorsPolicySymbols.has(nm))
     )
       return true;
     // So does importing one of the EXACT policy names from the horses barrel (the
     // only cross-module path the boundary rule allows).
-    if (spec.endsWith(POLICY_BARREL_SUFFIX) && names.some((nm) => BARREL_POLICY_SYMBOLS.has(nm)))
+    if (spec.endsWith(policyBarrelSuffix) && names.some((nm) => barrelPolicySymbols.has(nm)))
       return true;
   }
   return false;
@@ -443,8 +440,8 @@ function importsPolicy(source) {
 // 'legacy' and 'TODO', which is the whole failure mode. `issue` must name a real
 // tracker id in this repository's convention, so the divergence is traceable to a
 // decision instead of to a shrug.
-const MIN_REASON_LENGTH = 40;
-const ISSUE_REF_RE = /^Equoria-[A-Za-z0-9._-]+$/;
+const minReasonLength = 40;
+const issueRefRe = /^Equoria-[A-Za-z0-9._-]+$/;
 
 function findAllowlistContractViolations(byPath) {
   const problems = [];
@@ -458,12 +455,12 @@ function findAllowlistContractViolations(byPath) {
     const missing = [];
     if (reason.length === 0) {
       missing.push('a `reason`');
-    } else if (reason.length < MIN_REASON_LENGTH) {
-      missing.push(`a real \`reason\` (has ${reason.length} chars, needs >= ${MIN_REASON_LENGTH})`);
+    } else if (reason.length < minReasonLength) {
+      missing.push(`a real \`reason\` (has ${reason.length} chars, needs >= ${minReasonLength})`);
     }
     if (issue.length === 0) {
       missing.push('an `issue`');
-    } else if (!ISSUE_REF_RE.test(issue)) {
+    } else if (!issueRefRe.test(issue)) {
       missing.push(`a valid \`issue\` reference (got ${JSON.stringify(entry.issue)})`);
     }
     if (missing.length > 0) {
@@ -474,10 +471,10 @@ function findAllowlistContractViolations(byPath) {
 }
 
 function loadAllowlist() {
-  if (!fs.existsSync(ALLOWLIST_PATH)) {
+  if (!fs.existsSync(allowlistPath)) {
     return { entries: [], byPath: {} };
   }
-  const parsed = JSON.parse(fs.readFileSync(ALLOWLIST_PATH, 'utf8'));
+  const parsed = JSON.parse(fs.readFileSync(allowlistPath, 'utf8'));
   const byPath = parsed && parsed.allowlist ? parsed.allowlist : {};
   return { entries: Object.keys(byPath), byPath };
 }
@@ -489,14 +486,14 @@ const contractViolations = findAllowlistContractViolations(allowlistByPath);
 const violations = [];
 const flaggedRelPaths = new Set();
 
-for (const file of walkFiles(SCAN_ROOTS, { skipDir, includeFile })) {
-  const source = readScannedFileSyncTolerant(file, CHECK_ID);
+for (const file of walkFiles(scanRoots, { skipDir, includeFile })) {
+  const source = readScannedFileSyncTolerant(file, checkId);
   if (source === null) continue;
 
   const signals = findWriteSignals(source);
   if (signals.length === 0) continue;
 
-  const rel = path.relative(REPO_ROOT, file).split(path.sep).join('/');
+  const rel = path.relative(repoRoot, file).split(path.sep).join('/');
   flaggedRelPaths.add(rel);
 
   if (allowlist.has(rel) || importsPolicy(source)) continue;
@@ -511,7 +508,7 @@ for (const file of walkFiles(SCAN_ROOTS, { skipDir, includeFile })) {
 // signal. Otherwise the list has stopped shrinking and started rotting.
 const staleEntries = [];
 for (const rel of allowlistEntries) {
-  const abs = path.join(REPO_ROOT, rel);
+  const abs = path.join(repoRoot, rel);
   if (!fs.existsSync(abs)) {
     staleEntries.push({ rel, why: 'file no longer exists' });
     continue;
@@ -522,7 +519,7 @@ for (const rel of allowlistEntries) {
 }
 
 if (violations.length > 0 || staleEntries.length > 0 || contractViolations.length > 0) {
-  console.error(`[${CHECK_ID}] DOCTRINE VIOLATION\n`);
+  console.error(`[${checkId}] DOCTRINE VIOLATION\n`);
 
   if (contractViolations.length > 0) {
     // Reported as loudly as an ungated write, and first, because a malformed
@@ -553,7 +550,7 @@ if (violations.length > 0 || staleEntries.length > 0 || contractViolations.lengt
         '\n  (horseNameRejectionReason for a supplied name; unnamedHorseName for a newborn foal),' +
         '\n  or import the shared rule via routes/_validators.mjs on a request path.' +
         '\nIf the divergence is deliberate and owner-approved, add the file to' +
-        `\n  ${path.relative(REPO_ROOT, ALLOWLIST_PATH).split(path.sep).join('/')}` +
+        `\n  ${path.relative(repoRoot, allowlistPath).split(path.sep).join('/')}` +
         '\n  with a reason and an issue id. That list may only SHRINK.'
     );
   }
@@ -567,7 +564,7 @@ if (violations.length > 0 || staleEntries.length > 0 || contractViolations.lengt
 }
 
 console.log(
-  `[${CHECK_ID}] OK — ${flaggedRelPaths.size} horse-name writer(s) in request-reachable code, ` +
+  `[${checkId}] OK — ${flaggedRelPaths.size} horse-name writer(s) in request-reachable code, ` +
     `all gated by the shared policy or allow-listed (${allowlist.size} allow-listed).`
 );
 process.exit(0);

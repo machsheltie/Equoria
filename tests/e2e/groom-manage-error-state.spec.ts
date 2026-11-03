@@ -22,7 +22,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-const GROOMS_USER_PATH = /^\/api\/v1\/grooms\/user\//;
+const groomsUserPath = /^\/api\/v1\/grooms\/user\//;
 
 test.describe('Grooms Manage tab — error state (Equoria-mljz9)', () => {
   test.beforeEach(() => {
@@ -40,7 +40,7 @@ test.describe('Grooms Manage tab — error state (Equoria-mljz9)', () => {
     await page.clock.install();
     const firstReadOk = page.waitForResponse(
       (resp) =>
-        GROOMS_USER_PATH.test(new URL(resp.url()).pathname) &&
+        groomsUserPath.test(new URL(resp.url()).pathname) &&
         resp.request().method() === 'GET' &&
         resp.status() === 200,
       { timeout: 30_000 }
@@ -72,7 +72,7 @@ test.describe('Grooms Manage tab — error state (Equoria-mljz9)', () => {
       // player with none) — either way the error state is gone.
       const retryOk = page.waitForResponse(
         (resp) =>
-          GROOMS_USER_PATH.test(new URL(resp.url()).pathname) &&
+          groomsUserPath.test(new URL(resp.url()).pathname) &&
           resp.request().method() === 'GET' &&
           resp.status() === 200,
         { timeout: 30_000 }

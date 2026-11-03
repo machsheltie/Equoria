@@ -22,7 +22,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-const TRAINERS_USER_PATH = /^\/api\/v1\/trainers\/user\//;
+const trainersUserPath = /^\/api\/v1\/trainers\/user\//;
 
 test.describe('Trainers Manage tab — error state (Equoria-u96fm)', () => {
   test.beforeEach(() => {
@@ -40,7 +40,7 @@ test.describe('Trainers Manage tab — error state (Equoria-u96fm)', () => {
     await page.clock.install();
     const firstReadOk = page.waitForResponse(
       (resp) =>
-        TRAINERS_USER_PATH.test(new URL(resp.url()).pathname) &&
+        trainersUserPath.test(new URL(resp.url()).pathname) &&
         resp.request().method() === 'GET' &&
         resp.status() === 200,
       { timeout: 30_000 }
@@ -74,7 +74,7 @@ test.describe('Trainers Manage tab — error state (Equoria-u96fm)', () => {
       // player with none) — either way the error state is gone.
       const retryOk = page.waitForResponse(
         (resp) =>
-          TRAINERS_USER_PATH.test(new URL(resp.url()).pathname) &&
+          trainersUserPath.test(new URL(resp.url()).pathname) &&
           resp.request().method() === 'GET' &&
           resp.status() === 200,
         { timeout: 30_000 }

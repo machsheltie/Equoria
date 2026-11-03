@@ -22,7 +22,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-const RIDERS_USER_PATH = /^\/api\/v1\/riders\/user\//;
+const ridersUserPath = /^\/api\/v1\/riders\/user\//;
 
 test.describe('Riders Manage tab — error state (Equoria-5urmo)', () => {
   test.beforeEach(() => {
@@ -40,7 +40,7 @@ test.describe('Riders Manage tab — error state (Equoria-5urmo)', () => {
     await page.clock.install();
     const firstReadOk = page.waitForResponse(
       (resp) =>
-        RIDERS_USER_PATH.test(new URL(resp.url()).pathname) &&
+        ridersUserPath.test(new URL(resp.url()).pathname) &&
         resp.request().method() === 'GET' &&
         resp.status() === 200,
       { timeout: 30_000 }
@@ -72,7 +72,7 @@ test.describe('Riders Manage tab — error state (Equoria-5urmo)', () => {
       // player with none) — either way the error state is gone.
       const retryOk = page.waitForResponse(
         (resp) =>
-          RIDERS_USER_PATH.test(new URL(resp.url()).pathname) &&
+          ridersUserPath.test(new URL(resp.url()).pathname) &&
           resp.request().method() === 'GET' &&
           resp.status() === 200,
         { timeout: 30_000 }

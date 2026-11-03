@@ -34,23 +34,23 @@ import {
   readdirSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
 
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
-const SCAN_ROOT = path.join(REPO_ROOT, 'frontend', 'src');
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, '..', '..');
+const scanRoot = path.join(repoRoot, 'frontend', 'src');
 
-const SCAN_FILE_RE = /\.(mjs|js|jsx|ts|tsx)$/;
-const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '__mocks__']);
+const scanFileRe = /\.(mjs|js|jsx|ts|tsx)$/;
+const skipDirs = new Set(['node_modules', 'dist', 'build', '__mocks__']);
 
 // Match a `@radix-ui` package specifier inside a module-source string of an
 // `import`/`export ... from` statement OR a dynamic `import('...')`/`require`.
 // The `@radix-ui` must be the START of the quoted specifier so a doc comment
 // like `// retire @radix-ui` (no surrounding quote) does not match.
-const VIOLATION_RE = /(?:from|import|require)\s*\(?\s*['"]@radix-ui(?:\/[^'"]*)?['"]/g;
+const violationRe = /(?:from|import|require)\s*\(?\s*['"]@radix-ui(?:\/[^'"]*)?['"]/g;
 
 const BACKSLASH = String.fromCharCode(92);
 
 function toRelKey(absPath) {
-  return path.relative(REPO_ROOT, absPath).split(BACKSLASH).join('/');
+  return path.relative(repoRoot, absPath).split(BACKSLASH).join('/');
 }
 
 /**
@@ -61,8 +61,8 @@ export function findRadixImports(src) {
   const violations = [];
   const lines = src.split('\n');
   for (let i = 0; i < lines.length; i++) {
-    VIOLATION_RE.lastIndex = 0;
-    if (VIOLATION_RE.test(lines[i])) {
+    violationRe.lastIndex = 0;
+    if (violationRe.test(lines[i])) {
       violations.push({ line: i + 1 });
     }
   }
@@ -77,9 +77,9 @@ function walk(dir, acc) {
   for (const e of ents) {
     const full = path.join(dir, e.name);
     if (e.isDirectory()) {
-      if (SKIP_DIRS.has(e.name)) continue;
+      if (skipDirs.has(e.name)) continue;
       walk(full, acc);
-    } else if (e.isFile() && SCAN_FILE_RE.test(e.name)) {
+    } else if (e.isFile() && scanFileRe.test(e.name)) {
       acc.push(full);
     }
   }
@@ -87,7 +87,7 @@ function walk(dir, acc) {
 
 function main() {
   const files = [];
-  walk(SCAN_ROOT, files);
+  walk(scanRoot, files);
 
   const allViolations = [];
   for (const f of files) {

@@ -28,9 +28,9 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import {
-  BYPASS_HEADER_TOKENS,
-  FRONTEND_MOCK_TOKENS,
-  FORBIDDEN_STATE_REWIND_PATH_PATTERNS,
+  bypassHeaderTokens,
+  frontendMockTokens,
+  forbiddenStateRewindPathPatterns,
 } from '../../../scripts/lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -262,13 +262,13 @@ describe('doctrine-scan-patterns shared module — cross-language equality (Equo
     const bashTokens = extractBashAlternation('EQUORIA_SCAN_RE_BYPASS_HEADER');
     // Token-for-token identical set (order-insensitive) so the two
     // representations are a single source of truth guarded by equality.
-    expect([...bashTokens].sort()).toEqual([...BYPASS_HEADER_TOKENS].sort());
+    expect([...bashTokens].sort()).toEqual([...bypassHeaderTokens].sort());
   });
 
   test('bypass union is a strict superset: includes x-test-bypass-ownership', () => {
-    expect(BYPASS_HEADER_TOKENS).toContain('x-test-bypass-ownership');
+    expect(bypassHeaderTokens).toContain('x-test-bypass-ownership');
     // bypass-auth (broad) covers the narrower x-test-bypass-auth — kept.
-    expect(BYPASS_HEADER_TOKENS).toContain('bypass-auth');
+    expect(bypassHeaderTokens).toContain('bypass-auth');
   });
 
   test('frontend-mock token superset includes the bash-library tokens + the Node extras', () => {
@@ -276,11 +276,11 @@ describe('doctrine-scan-patterns shared module — cross-language equality (Equo
     // The bash library's coarse ERE contains these literal substrings.
     for (const t of ['mockApi', 'MOCK_', 'allMockHorses', 'mockSummary']) {
       expect(bashRe).toContain(t);
-      expect(FRONTEND_MOCK_TOKENS).toContain(t);
+      expect(frontendMockTokens).toContain(t);
     }
     // The Node check is the strict superset: it ALSO forbids these.
-    expect(FRONTEND_MOCK_TOKENS).toContain('seededFakePlayers');
-    expect(FRONTEND_MOCK_TOKENS).toContain('fakeMetrics');
+    expect(frontendMockTokens).toContain('seededFakePlayers');
+    expect(frontendMockTokens).toContain('fakeMetrics');
   });
 });
 
@@ -297,7 +297,7 @@ describe('doctrine checks fire on planted violations after the shared-module ref
   // finally block, exactly as the 75odq/ej9k1 sentinels (which already plant
   // non-marker `planted.test.mjs` / `plantedService.mjs`) do.
   test('check-no-bypass-headers.sh catches EVERY canonical bypass token', () => {
-    for (const tok of BYPASS_HEADER_TOKENS) {
+    for (const tok of bypassHeaderTokens) {
       // Use a token guaranteed to match: bypass-auth is a substring of
       // x-test-bypass-auth, so plant the literal token itself.
       expectFiresThenClean(
@@ -389,7 +389,7 @@ describe('doctrine checks fire on planted violations after the shared-module ref
 //
 // POST /horses/:id/reset-last-fed shipped on the production horse router and
 // let any owner rewind the daily feed authority. check-no-cleanup-routes.mjs now
-// also scans FORBIDDEN_STATE_REWIND_PATH_PATTERNS. These cases plant the ORIGINAL
+// also scans forbiddenStateRewindPathPatterns. These cases plant the ORIGINAL
 // registration shape (multi-line router.post under a real module routes dir) and
 // prove the real check fires on it, then stops naming it once removed.
 const REWIND_ROUTE = "router.post(\n  '/:id/reset-last-fed',\n  (req, res) => res.end(),\n);\n";
@@ -450,7 +450,7 @@ describe('check-no-cleanup-routes.mjs forbids server-clock rewind routes (Equori
   });
 
   test('each rewind pattern matches its shape and spares the legitimate look-alike routes', () => {
-    const matches = p => FORBIDDEN_STATE_REWIND_PATH_PATTERNS.some(re => re.test(p));
+    const matches = p => forbiddenStateRewindPathPatterns.some(re => re.test(p));
     for (const forbidden of [
       '/:id/reset-last-fed',
       '/:id/reset-last-trained',

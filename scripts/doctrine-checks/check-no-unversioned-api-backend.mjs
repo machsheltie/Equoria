@@ -34,17 +34,17 @@ import {
   readdirSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
 
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
-const SCAN_ROOTS = [
-  path.join(REPO_ROOT, 'backend', 'scripts'),
-  path.join(REPO_ROOT, 'backend', 'tests', 'load'),
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, '..', '..');
+const scanRoots = [
+  path.join(repoRoot, 'backend', 'scripts'),
+  path.join(repoRoot, 'backend', 'tests', 'load'),
 ];
 
-const SCAN_FILE_RE = /\.(mjs|js)$/;
+const scanFileRe = /\.(mjs|js)$/;
 // NOTE: unlike the frontend sibling, *.test.js is NOT skipped — the k6 load
 // harnesses are named *.test.js and are precisely what this check must scan.
-const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '__mocks__']);
+const skipDirs = new Set(['node_modules', 'dist', 'build', '__mocks__']);
 
 // Match a /api/<something> where <something> is NOT a version segment (v1,
 // v2, …), inside a string OR a template literal. The leading delimiter class
@@ -52,12 +52,12 @@ const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '__mocks__']);
 // is caught too (Equoria-qv8n8): the original class was only ['"`], so the most
 // common k6/script form (path following `${VAR}`) slipped through. The trailing
 // [^'"`] capture still stops at the closing quote/backtick. Captures the path.
-const VIOLATION_RE = /['"`}](\/api\/(?!v\d)[^'"`]+)['"`]/g;
+const violationRe = /['"`}](\/api\/(?!v\d)[^'"`]+)['"`]/g;
 
 const BACKSLASH = String.fromCharCode(92);
 
 function toRelKey(absPath) {
-  return path.relative(REPO_ROOT, absPath).split(BACKSLASH).join('/');
+  return path.relative(repoRoot, absPath).split(BACKSLASH).join('/');
 }
 
 /**
@@ -71,8 +71,8 @@ export function findUnversionedApiLiterals(src) {
     if (lines[i].includes('// 4bs3s-allow')) continue;
     if (lines[i].includes('// eslint-disable-line')) continue;
     let m;
-    VIOLATION_RE.lastIndex = 0;
-    while ((m = VIOLATION_RE.exec(lines[i])) !== null) {
+    violationRe.lastIndex = 0;
+    while ((m = violationRe.exec(lines[i])) !== null) {
       violations.push({ line: i + 1, path: m[1] });
     }
   }
@@ -87,9 +87,9 @@ function walk(dir, acc) {
   for (const e of ents) {
     const full = path.join(dir, e.name);
     if (e.isDirectory()) {
-      if (SKIP_DIRS.has(e.name)) continue;
+      if (skipDirs.has(e.name)) continue;
       walk(full, acc);
-    } else if (e.isFile() && SCAN_FILE_RE.test(e.name)) {
+    } else if (e.isFile() && scanFileRe.test(e.name)) {
       acc.push(full);
     }
   }
@@ -97,7 +97,7 @@ function walk(dir, acc) {
 
 function main() {
   const files = [];
-  for (const root of SCAN_ROOTS) {
+  for (const root of scanRoots) {
     walk(root, files);
   }
 

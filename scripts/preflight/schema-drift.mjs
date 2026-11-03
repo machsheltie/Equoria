@@ -41,10 +41,10 @@
  * collations and domains; ownership, grants and RLS policies; column ORDINAL
  * POSITION (a reordered table compares equal); and every schema other than
  * `public`. Each of those is a real drift class this check would sit through.
- * Adding one means adding a section to CATALOG_SECTIONS — the diff and the
+ * Adding one means adding a section to catalogSections — the diff and the
  * reporting need no change.
  *
- * THERE IS NO LONGER A TOLERATED CLASS. RUNTIME_CREATED_INDEX_ALLOWLIST below
+ * THERE IS NO LONGER A TOLERATED CLASS. runtimeCreatedIndexAllowlist below
  * is EMPTY as of Equoria-9xa92: the runtime index-creation path in
  * databaseOptimizationService.mjs is deleted, so nothing creates an index
  * outside migration history any more and no name needs excusing. The mechanism
@@ -78,19 +78,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-export const REPO_ROOT = path.resolve(HERE, '..', '..');
-const DB_PACKAGE = path.join(REPO_ROOT, 'packages', 'database');
-const SCHEMA_PATH = path.join(DB_PACKAGE, 'prisma', 'schema.prisma');
-const PRISMA_CLI = path.join(DB_PACKAGE, 'node_modules', 'prisma', 'build', 'index.js');
-const OPTIMIZATION_SERVICE = path.join(
-  REPO_ROOT,
+export const repoRoot = path.resolve(HERE, '..', '..');
+const dbPackage = path.join(repoRoot, 'packages', 'database');
+const schemaPath = path.join(dbPackage, 'prisma', 'schema.prisma');
+const prismaCli = path.join(dbPackage, 'node_modules', 'prisma', 'build', 'index.js');
+const optimizationService = path.join(
+  repoRoot,
   'backend',
   'services',
   'databaseOptimizationService.mjs'
 );
 
 /** Reference databases are created and dropped by this check. Nothing else is. */
-export const REFERENCE_DB_PREFIX = 'equoria_schema_ref_';
+export const referenceDbPrefix = 'equoria_schema_ref_';
 
 /**
  * The four catalog sections, each read from the LIVE connection it is handed.
@@ -101,7 +101,7 @@ export const REFERENCE_DB_PREFIX = 'equoria_schema_ref_';
  * Prisma's own and its presence is already proven by `migrate deploy`; every
  * application table is in scope.
  */
-export const CATALOG_SECTIONS = Object.freeze({
+export const catalogSections = Object.freeze({
   tables: `
     SELECT table_name AS key, table_type AS definition
       FROM information_schema.tables
@@ -145,7 +145,7 @@ export const CATALOG_SECTIONS = Object.freeze({
  */
 export async function readCatalog(query) {
   const catalog = {};
-  for (const [section, sql] of Object.entries(CATALOG_SECTIONS)) {
+  for (const [section, sql] of Object.entries(catalogSections)) {
     const rows = await query(sql);
     const bucket = {};
     for (const row of rows) {
@@ -181,7 +181,7 @@ export async function readCatalog(query) {
  * exceptions. Do not add an entry to make a red run green; the index either
  * belongs in `schema.prisma` and a migration, or it should not exist.
  */
-export const RUNTIME_CREATED_INDEX_ALLOWLIST = Object.freeze([]);
+export const runtimeCreatedIndexAllowlist = Object.freeze([]);
 
 /**
  * The allow-listed names as a set, for `diffCatalog`.
@@ -189,7 +189,7 @@ export const RUNTIME_CREATED_INDEX_ALLOWLIST = Object.freeze([]);
  * @returns {Set<string>}
  */
 export function toleratedExtraIndexNames() {
-  return new Set(RUNTIME_CREATED_INDEX_ALLOWLIST.map((entry) => entry.index));
+  return new Set(runtimeCreatedIndexAllowlist.map((entry) => entry.index));
 }
 
 /**
@@ -216,7 +216,7 @@ export function toleratedExtraIndexNames() {
  * @param {string} [servicePath]
  * @returns {Set<string>}
  */
-export function serviceCreateIndexNames(servicePath = OPTIMIZATION_SERVICE) {
+export function serviceCreateIndexNames(servicePath = optimizationService) {
   let source;
   try {
     source = readFileSync(servicePath, 'utf8');
@@ -245,7 +245,7 @@ export function diffCatalog(expected, actual, options = {}) {
   const tolerated = options.toleratedExtraIndexes ?? new Set();
   const findings = [];
 
-  for (const section of Object.keys(CATALOG_SECTIONS)) {
+  for (const section of Object.keys(catalogSections)) {
     const want = expected[section] ?? {};
     const have = actual[section] ?? {};
 
@@ -305,7 +305,7 @@ export function formatFindings(findings) {
 
 /** Hard guard — this check creates and drops reference databases and nothing else. */
 export function assertReferenceDbName(name) {
-  if (!name.startsWith(REFERENCE_DB_PREFIX)) {
+  if (!name.startsWith(referenceDbPrefix)) {
     throw new Error(`Refusing to CREATE/DROP non-reference database "${name}"`);
   }
 }
@@ -327,7 +327,7 @@ export function siblingUrlFrom(databaseUrl, dbName) {
 }
 
 export function newReferenceDbName() {
-  return `${REFERENCE_DB_PREFIX}${randomBytes(6).toString('hex')}`;
+  return `${referenceDbPrefix}${randomBytes(6).toString('hex')}`;
 }
 
 /**
@@ -339,10 +339,10 @@ export function newReferenceDbName() {
 export function deployMigrations(databaseUrl) {
   return execFileSync(
     process.execPath,
-    [PRISMA_CLI, 'migrate', 'deploy', `--schema=${SCHEMA_PATH}`],
+    [prismaCli, 'migrate', 'deploy', `--schema=${schemaPath}`],
     {
       env: { ...process.env, DATABASE_URL: databaseUrl },
-      cwd: DB_PACKAGE,
+      cwd: dbPackage,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
       // execFileSync blocks the event loop, so a Jest hook timeout cannot fire
@@ -362,7 +362,7 @@ async function main() {
     process.exit(2);
   }
 
-  const dbRequire = createRequire(path.join(DB_PACKAGE, 'package.json'));
+  const dbRequire = createRequire(path.join(dbPackage, 'package.json'));
   const { PrismaClient } = dbRequire('@prisma/client');
 
   const connect = (url) => new PrismaClient({ datasources: { db: { url } } });

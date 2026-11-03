@@ -20,16 +20,16 @@ import { fileURLToPath } from 'node:url';
 import { readScannedFileSyncTolerant } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
-const MW_DIR = path.join(REPO_ROOT, 'backend', 'middleware');
-const BACKEND_ROOT = path.join(REPO_ROOT, 'backend');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
+const mwDir = path.join(repoRoot, 'backend', 'middleware');
+const backendRoot = path.join(repoRoot, 'backend');
 
-if (!fs.existsSync(MW_DIR)) process.exit(0);
+if (!fs.existsSync(mwDir)) process.exit(0);
 
 const securityMiddleware = fs
-  .readdirSync(MW_DIR)
+  .readdirSync(mwDir)
   .filter((f) => /(?:Security|security)\.mjs$/.test(f))
-  .map((f) => ({ basename: f.replace(/\.mjs$/, ''), full: path.join(MW_DIR, f) }));
+  .map((f) => ({ basename: f.replace(/\.mjs$/, ''), full: path.join(mwDir, f) }));
 
 if (securityMiddleware.length === 0) process.exit(0);
 
@@ -49,7 +49,7 @@ function walkTests(dir) {
   return out;
 }
 
-const testFiles = walkTests(BACKEND_ROOT);
+const testFiles = walkTests(backendRoot);
 const failures = [];
 
 for (const mw of securityMiddleware) {

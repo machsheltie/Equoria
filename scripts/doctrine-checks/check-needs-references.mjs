@@ -16,10 +16,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
-const WORKFLOWS_DIR = path.join(REPO_ROOT, '.github', 'workflows');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
+const workflowsDir = path.join(repoRoot, '.github', 'workflows');
 
-if (!fs.existsSync(WORKFLOWS_DIR)) {
+if (!fs.existsSync(workflowsDir)) {
   process.exit(0);
 }
 
@@ -27,9 +27,9 @@ const failures = [];
 
 function listWorkflowFiles() {
   return fs
-    .readdirSync(WORKFLOWS_DIR)
+    .readdirSync(workflowsDir)
     .filter((f) => f.endsWith('.yml') || f.endsWith('.yaml'))
-    .map((f) => path.join(WORKFLOWS_DIR, f));
+    .map((f) => path.join(workflowsDir, f));
 }
 
 // Lightweight YAML parsing: we only need top-level job ids and `needs:` lines.
@@ -125,7 +125,7 @@ for (const file of listWorkflowFiles()) {
   for (const { job, ref, line } of needsRefs) {
     if (!jobIds.has(ref)) {
       failures.push(
-        `${path.relative(REPO_ROOT, file)}:${line}: job "${job}" has needs: "${ref}" but no job by that id is defined`
+        `${path.relative(repoRoot, file)}:${line}: job "${job}" has needs: "${ref}" but no job by that id is defined`
       );
     }
   }

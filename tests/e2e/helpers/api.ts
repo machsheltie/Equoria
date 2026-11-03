@@ -12,7 +12,7 @@ import { assertSharedSessionHealthy } from './sessionKeepAlive';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const STORAGE_STATE_PATH = path.resolve(__dirname, '..', '..', '..', 'storageState.json');
+const storageStatePath = path.resolve(__dirname, '..', '..', '..', 'storageState.json');
 
 export type AuthedSession = {
   context: BrowserContext;
@@ -63,9 +63,9 @@ export async function createAuthedSession(browser: Browser): Promise<AuthedSessi
   // session: a stale storageState would otherwise surface as a generic 401 or,
   // worse, as a logged-out page. global-teardown.ts applies the same check to
   // the whole run for the specs that only use the plain page fixture.
-  assertSharedSessionHealthy(STORAGE_STATE_PATH);
+  assertSharedSessionHealthy(storageStatePath);
 
-  const context = await browser.newContext({ storageState: STORAGE_STATE_PATH });
+  const context = await browser.newContext({ storageState: storageStatePath });
   const request = context.request;
 
   // Equoria-oye1a: the storageState accessToken cookie has a 15-minute maxAge

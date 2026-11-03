@@ -28,7 +28,7 @@ import { confirmEmailViaApi } from './helpers/emailConfirmation';
 
 const BACKEND = 'http://localhost:3001';
 const FRONTEND = 'http://localhost:3000';
-const SUITE_PREFIX = 'setpref_e2e';
+const suitePrefix = 'setpref_e2e';
 
 test.describe('Settings preferences persistence (21S-5)', () => {
   // Fresh session — no storageState from global-setup user
@@ -42,9 +42,9 @@ test.describe('Settings preferences persistence (21S-5)', () => {
     test.setTimeout(120000);
 
     const suffix = randomBytes(6).toString('hex');
-    userEmail = `${SUITE_PREFIX}-${suffix}@example.com`;
+    userEmail = `${suitePrefix}-${suffix}@example.com`;
     userPassword = 'SetPrefE2e1!Aa';
-    username = `${SUITE_PREFIX}${suffix}`;
+    username = `${suitePrefix}${suffix}`;
 
     const reg = await request.post(`${BACKEND}/api/v1/auth/register`, {
       data: {

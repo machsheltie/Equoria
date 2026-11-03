@@ -72,20 +72,20 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-const HYGIENE_FLAGS = ['clearMocks', 'resetMocks', 'restoreMocks', 'resetModules'];
-const MAX_WORKERS_CAP = 2;
+const hygieneFlags = ['clearMocks', 'resetMocks', 'restoreMocks', 'resetModules'];
+const maxWorkersCap = 2;
 
 function validateWorkerCap(label, value, failures) {
   if (value === undefined) return;
-  if (!Number.isInteger(value) || value < 1 || value > MAX_WORKERS_CAP) {
+  if (!Number.isInteger(value) || value < 1 || value > maxWorkersCap) {
     failures.push(
-      `${label}: maxWorkers must be an integer <= ${MAX_WORKERS_CAP} (got ${JSON.stringify(value)}) — percentage allocations re-brick the laptop`
+      `${label}: maxWorkers must be an integer <= ${maxWorkersCap} (got ${JSON.stringify(value)}) — percentage allocations re-brick the laptop`
     );
   }
 }
 
 function validateHygieneBlock(label, block, failures) {
-  for (const flag of HYGIENE_FLAGS) {
+  for (const flag of hygieneFlags) {
     if (block[flag] !== true) {
       failures.push(`${label}: ${flag} must be true (got ${JSON.stringify(block[flag])})`);
     }
@@ -135,7 +135,7 @@ export function validateJestConfig(name, config, failures = []) {
 // The exact canonical command is pinned by check-backend-test-profiles.mjs. This cap closes the smuggling path where
 // a package.json script raises jest's heap via the runner's own flag, which
 // the literal --max-old-space-size scan cannot see.
-const SHARDED_HEAP_ARG_CAP_MB = 1536;
+const shardedHeapArgCapMb = 1536;
 
 export function validateJestScripts(pkgLabel, scripts, failures = []) {
   for (const [scriptName, command] of Object.entries(scripts ?? {})) {
@@ -145,9 +145,9 @@ export function validateJestScripts(pkgLabel, scripts, failures = []) {
     if (/scripts[/\\]\S+\.mjs/.test(command)) {
       for (const heapMatch of command.matchAll(/--heap=(\d+)/g)) {
         const heapMb = Number(heapMatch[1]);
-        if (heapMb > SHARDED_HEAP_ARG_CAP_MB) {
+        if (heapMb > shardedHeapArgCapMb) {
           failures.push(
-            `${scriptLabel}: passes --heap=${heapMb} to a scripts/*.mjs jest runner, above the ${SHARDED_HEAP_ARG_CAP_MB}MB sequential-envelope cap (Equoria-tdbx9) — one fresh --runInBand process at a time at <=${SHARDED_HEAP_ARG_CAP_MB}MB is the user-reconciled canonical shape (commit 34ceadc); use diagnose-full-suite.mjs for larger diagnostic headroom`
+            `${scriptLabel}: passes --heap=${heapMb} to a scripts/*.mjs jest runner, above the ${shardedHeapArgCapMb}MB sequential-envelope cap (Equoria-tdbx9) — one fresh --runInBand process at a time at <=${shardedHeapArgCapMb}MB is the user-reconciled canonical shape (commit 34ceadc); use diagnose-full-suite.mjs for larger diagnostic headroom`
           );
         }
       }
@@ -168,38 +168,38 @@ export function validateJestScripts(pkgLabel, scripts, failures = []) {
   return failures;
 }
 
-const SPAWNER_HEAP_CAP_MB = 1536;
+const spawnerHeapCapMb = 1536;
 // Explicit per-file exception channel (Equoria-5mtzl). Requires an issue id
 // AND a reason — a bare marker with no rationale does not count.
-const SPAWNER_ALLOW_MARKER =
+const spawnerAllowMarker =
   /\/\/\s*doctrine-allow:\s*jest-heap-exception\s+Equoria-[A-Za-z0-9.-]+\s+\S/;
 // A file is a jest SPAWNER when it touches child_process AND references the
 // jest binary path (slash-joined or path.join('jest', 'bin', 'jest.js')
 // style). Requiring both keys out reap-orphan-jest.mjs (kills jest workers,
 // never launches them) and the doctrine checks that merely name jest.js in
 // canonical-command strings.
-const JEST_BINARY_RE = /jest[/\\'",\s)]*bin[/\\'",\s)]*jest\.js/;
+const jestBinaryRe = /jest[/\\'",\s)]*bin[/\\'",\s)]*jest\.js/;
 
 export function validateJestSpawnerScript(label, source, failures = []) {
-  if (!source.includes('child_process') || !JEST_BINARY_RE.test(source)) {
+  if (!source.includes('child_process') || !jestBinaryRe.test(source)) {
     return failures; // not a jest spawner — out of scope
   }
-  if (SPAWNER_ALLOW_MARKER.test(source)) {
+  if (spawnerAllowMarker.test(source)) {
     return failures; // documented, user-sanctioned exception (Equoria-5mtzl)
   }
   if (!source.includes('--max-old-space-size=')) {
     failures.push(
-      `${label}: spawns jest with no --max-old-space-size= heap ceiling — every jest spawn needs the ${SPAWNER_HEAP_CAP_MB}MB budget cap (or a '// doctrine-allow: jest-heap-exception Equoria-<id> <reason>' marker for a user-sanctioned diagnostic exception)`
+      `${label}: spawns jest with no --max-old-space-size= heap ceiling — every jest spawn needs the ${spawnerHeapCapMb}MB budget cap (or a '// doctrine-allow: jest-heap-exception Equoria-<id> <reason>' marker for a user-sanctioned diagnostic exception)`
     );
     return failures;
   }
   const reported = new Set();
   for (const match of source.matchAll(/--max-old-space-size=(\d+)/g)) {
     const heapMb = Number(match[1]);
-    if (heapMb > SPAWNER_HEAP_CAP_MB && !reported.has(heapMb)) {
+    if (heapMb > spawnerHeapCapMb && !reported.has(heapMb)) {
       reported.add(heapMb);
       failures.push(
-        `${label}: spawns jest with --max-old-space-size=${heapMb}, above the ${SPAWNER_HEAP_CAP_MB}MB budget — lower it or carry '// doctrine-allow: jest-heap-exception Equoria-<id> <reason>' for a user-sanctioned diagnostic exception`
+        `${label}: spawns jest with --max-old-space-size=${heapMb}, above the ${spawnerHeapCapMb}MB budget — lower it or carry '// doctrine-allow: jest-heap-exception Equoria-<id> <reason>' for a user-sanctioned diagnostic exception`
       );
     }
   }
@@ -223,15 +223,15 @@ export function validateJestSpawnerScript(label, source, failures = []) {
     const candidates = [...candidateSource.matchAll(/(['"]?)(\d{3,})\1/g)].map((m) => Number(m[2]));
     if (candidates.length === 0) {
       failures.push(
-        `${label}: dynamic heap template --max-old-space-size=\${${expr}} has no resolvable numeric default — the doctrine scan cannot bound it (Equoria-5iggk); declare a literal default <= ${SPAWNER_HEAP_CAP_MB} or carry '// doctrine-allow: jest-heap-exception Equoria-<id> <reason>' for a user-sanctioned exception`
+        `${label}: dynamic heap template --max-old-space-size=\${${expr}} has no resolvable numeric default — the doctrine scan cannot bound it (Equoria-5iggk); declare a literal default <= ${spawnerHeapCapMb} or carry '// doctrine-allow: jest-heap-exception Equoria-<id> <reason>' for a user-sanctioned exception`
       );
       continue;
     }
     for (const heapMb of new Set(candidates)) {
-      if (heapMb > SPAWNER_HEAP_CAP_MB && !reported.has(heapMb)) {
+      if (heapMb > spawnerHeapCapMb && !reported.has(heapMb)) {
         reported.add(heapMb);
         failures.push(
-          `${label}: dynamic heap template --max-old-space-size=\${${expr}} resolves a default of ${heapMb}MB, above the ${SPAWNER_HEAP_CAP_MB}MB budget (Equoria-5iggk) — lower the default or carry '// doctrine-allow: jest-heap-exception Equoria-<id> <reason>' for a user-sanctioned exception`
+          `${label}: dynamic heap template --max-old-space-size=\${${expr}} resolves a default of ${heapMb}MB, above the ${spawnerHeapCapMb}MB budget (Equoria-5iggk) — lower the default or carry '// doctrine-allow: jest-heap-exception Equoria-<id> <reason>' for a user-sanctioned exception`
         );
       }
     }

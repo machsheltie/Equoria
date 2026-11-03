@@ -54,18 +54,18 @@ import { fileURLToPath } from 'node:url';
 import { walkFiles, readScannedFileSyncTolerant } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
-const BACKEND_ROOT = path.join(REPO_ROOT, 'backend');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
+const backendRoot = path.join(repoRoot, 'backend');
 
-const EXEMPTION_MARKER = 'doctrine-allow: placeholder-test';
+const exemptionMarker = 'doctrine-allow: placeholder-test';
 
 // Whitespace-tolerant literal: expect ( true ) . toBe ( true )
-const PLACEHOLDER_ASSERT_RE = /expect\s*\(\s*true\s*\)\s*\.\s*toBe\s*\(\s*true\s*\)/;
+const placeholderAssertRe = /expect\s*\(\s*true\s*\)\s*\.\s*toBe\s*\(\s*true\s*\)/;
 
 // A jest test opener on a line: it(/test(/it.each(/test.only( etc.
 // (describe( is NOT an opener — a vacuous expect directly under describe is
 // not an it-body and jest would reject it anyway.)
-const TEST_OPENER_RE = /\b(?:it|test)\s*(?:\.\s*\w+\s*)?\(/;
+const testOpenerRe = /\b(?:it|test)\s*(?:\.\s*\w+\s*)?\(/;
 
 // Per-check scope predicates (Equoria-ml7jj mechanism share):
 //   - skip node_modules/.git/dist/coverage directories
@@ -85,7 +85,7 @@ function isCommentOrBlank(line) {
 
 /**
  * Find placeholder-only violations in one file's source.
- * A hit = a PLACEHOLDER_ASSERT_RE line whose nearest preceding
+ * A hit = a placeholderAssertRe line whose nearest preceding
  * non-comment/non-blank line is the it/test opener (or the opener is on the
  * same line), and which carries no exemption marker on the same/previous line.
  */
@@ -94,12 +94,12 @@ function findViolations(src, relPath) {
   const hits = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (!PLACEHOLDER_ASSERT_RE.test(line)) continue;
-    if (line.includes(EXEMPTION_MARKER)) continue;
-    if (i > 0 && lines[i - 1].includes(EXEMPTION_MARKER)) continue;
+    if (!placeholderAssertRe.test(line)) continue;
+    if (line.includes(exemptionMarker)) continue;
+    if (i > 0 && lines[i - 1].includes(exemptionMarker)) continue;
 
     // One-liner form: opener and vacuous assert on the same line.
-    if (TEST_OPENER_RE.test(line)) {
+    if (testOpenerRe.test(line)) {
       hits.push({ file: relPath, line: i + 1, snippet: line.trim().slice(0, 120) });
       continue;
     }
@@ -108,7 +108,7 @@ function findViolations(src, relPath) {
     // is the test opener, the body is placeholder-only.
     let j = i - 1;
     while (j >= 0 && isCommentOrBlank(lines[j])) j--;
-    if (j >= 0 && TEST_OPENER_RE.test(lines[j])) {
+    if (j >= 0 && testOpenerRe.test(lines[j])) {
       hits.push({ file: relPath, line: i + 1, snippet: lines[i].trim().slice(0, 120) });
     }
   }
@@ -116,15 +116,15 @@ function findViolations(src, relPath) {
 }
 
 function toRelKey(absPath) {
-  return path.relative(REPO_ROOT, absPath).split(path.sep).join('/');
+  return path.relative(repoRoot, absPath).split(path.sep).join('/');
 }
 
 function main() {
-  if (!fs.existsSync(BACKEND_ROOT)) {
+  if (!fs.existsSync(backendRoot)) {
     process.exit(0);
   }
 
-  const files = walkFiles([BACKEND_ROOT], { skipDir, includeFile });
+  const files = walkFiles([backendRoot], { skipDir, includeFile });
   const allHits = [];
   let scanned = 0;
 

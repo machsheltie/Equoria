@@ -22,12 +22,12 @@ import { resolve, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { argv, exit, cwd, env, platform } from 'node:process';
 
-const EVIDENCE_DIR_DEFAULT = 'scripts/evidence';
-const DEFAULT_TIMEOUT_SECONDS = 60;
+const evidenceDirDefault = 'scripts/evidence';
+const defaultTimeoutSeconds = 60;
 
 function readArgs() {
   const args = argv.slice(2);
-  const dir = args[0] || EVIDENCE_DIR_DEFAULT;
+  const dir = args[0] || evidenceDirDefault;
   return { dir };
 }
 
@@ -106,7 +106,7 @@ function extractMarkers(text) {
 function extractDirectives(text) {
   // Optional "Runner directives" section. Parses `runIn: skip|manual`
   // and `timeout: <seconds>` lines.
-  const out = { runIn: 'auto', timeout: DEFAULT_TIMEOUT_SECONDS };
+  const out = { runIn: 'auto', timeout: defaultTimeoutSeconds };
   const runMatch = text.match(/runIn\s*:\s*(skip|manual|auto)/i);
   if (runMatch) out.runIn = runMatch[1].toLowerCase();
   const tMatch = text.match(/timeout\s*:\s*(\d+)/i);
@@ -138,7 +138,7 @@ function parseEvidenceFile(path) {
 
   const directives = sections.has('runner directives')
     ? extractDirectives(sections.get('runner directives'))
-    : { runIn: 'auto', timeout: DEFAULT_TIMEOUT_SECONDS };
+    : { runIn: 'auto', timeout: defaultTimeoutSeconds };
 
   return { command: cmdRes.command, markers, directives };
 }

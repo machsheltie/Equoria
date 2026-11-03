@@ -47,9 +47,9 @@ import { readTestCredentials } from './helpers/credentials';
 
 // WCAG tags scanned. 2.1 AA is the project's documented target (gold tokens
 // are WCAG-AA-documented per the issue description).
-const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+const wcagTags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
-const FAIL_IMPACTS = new Set(['critical', 'serious']);
+const failImpacts = new Set(['critical', 'serious']);
 
 type AxeViolation = {
   id: string;
@@ -65,7 +65,7 @@ type AxeViolation = {
  * are reported but not failed (see threshold doc above).
  */
 async function assertNoCriticalA11yViolations(page: Page, surfaceName: string) {
-  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  const results = await new AxeBuilder({ page }).withTags(wcagTags).analyze();
 
   const violations = results.violations as AxeViolation[];
 
@@ -95,7 +95,7 @@ async function assertNoCriticalA11yViolations(page: Page, surfaceName: string) {
     );
   }
 
-  const blocking = violations.filter((v) => FAIL_IMPACTS.has((v.impact ?? '') as string));
+  const blocking = violations.filter((v) => failImpacts.has((v.impact ?? '') as string));
 
   const blockingSummary = blocking
     .map(

@@ -53,27 +53,27 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, '..', '..');
 
 // Canonical owner of the production start command (Railway IaC).
-const RAILWAY_IAC_PATH = path.join(REPO_ROOT, '.railway', 'railway.ts');
+const railwayIacPath = path.join(repoRoot, '.railway', 'railway.ts');
 // Deprecated Config-as-Code file. Scanned only while it still exists, so the
 // guard covers whichever file Railway reads during the migration window.
-const LEGACY_TOML_PATH = path.join(REPO_ROOT, 'railway.toml');
+const legacyTomlPath = path.join(repoRoot, 'railway.toml');
 
 // argv[2] optionally overrides the scanned file(s) so the sentinel can point
 // the check at a planted fail-open / clean fixture. Production callers pass
 // none and get the canonical IaC file plus the legacy TOML if present.
 function resolveTargets() {
   if (process.argv[2]) return [path.resolve(process.argv[2])];
-  const targets = [RAILWAY_IAC_PATH];
-  if (fs.existsSync(LEGACY_TOML_PATH)) targets.push(LEGACY_TOML_PATH);
+  const targets = [railwayIacPath];
+  if (fs.existsSync(legacyTomlPath)) targets.push(legacyTomlPath);
   return targets;
 }
 
 // The migrate command whose failure MUST abort the deploy.
-const MIGRATE_RE = /migrate\s+deploy/gi;
+const migrateRe = /migrate\s+deploy/gi;
 
 /**
  * Return the first shell control operator at or after `fromIdx` in `cmd`, as
@@ -97,7 +97,7 @@ export function firstShellOperatorAfter(cmd, fromIdx) {
 // Operators that, when they terminate the migrate command, let the deploy
 // proceed to server start despite a non-zero migrate exit (FAIL-OPEN). `&&`
 // is the only fail-fast terminator.
-const FAIL_OPEN_OPERATORS = new Set(['||', ';', '|', '&']);
+const failOpenOperators = new Set(['||', ';', '|', '&']);
 
 /**
  * Inspect a single startCommand string value. Returns an array of violation
@@ -107,12 +107,12 @@ const FAIL_OPEN_OPERATORS = new Set(['||', ';', '|', '&']);
  */
 export function detectStartCommandFailOpen(startCommand) {
   const violations = [];
-  MIGRATE_RE.lastIndex = 0;
+  migrateRe.lastIndex = 0;
   let m;
-  while ((m = MIGRATE_RE.exec(startCommand)) !== null) {
+  while ((m = migrateRe.exec(startCommand)) !== null) {
     const afterMigrate = m.index + m[0].length;
     const found = firstShellOperatorAfter(startCommand, afterMigrate);
-    if (found && FAIL_OPEN_OPERATORS.has(found.op)) {
+    if (found && failOpenOperators.has(found.op)) {
       violations.push({ operator: found.op, operatorIndex: found.idx });
     }
   }
@@ -202,7 +202,7 @@ function main() {
     );
     for (const v of violations) {
       console.error(
-        `  ${path.relative(REPO_ROOT, v.file)}:${v.line}  ` +
+        `  ${path.relative(repoRoot, v.file)}:${v.line}  ` +
           `\`prisma migrate deploy\` is terminated by \`${v.operator}\` — a failed migration does NOT abort the deploy.`
       );
     }
@@ -220,7 +220,7 @@ function main() {
   }
 
   const migrateCount = startCommands.filter((s) => /migrate\s+deploy/i.test(s.value)).length;
-  const scanned = targets.map((t) => path.relative(REPO_ROOT, t)).join(', ');
+  const scanned = targets.map((t) => path.relative(repoRoot, t)).join(', ');
   console.log(
     `[railway-migrate-failfast] OK — ${startCommands.length} start command(s) scanned in ${scanned}, ` +
       `${migrateCount} run \`migrate deploy\`, all fail-fast (abort deploy on migrate failure).`

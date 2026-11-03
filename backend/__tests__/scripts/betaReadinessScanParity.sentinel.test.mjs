@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   checkSingleSource,
-  CANONICAL_SCANS,
+  canonicalScans,
 } from '../../../scripts/doctrine-checks/check-beta-readiness-scan-parity.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -47,9 +47,9 @@ describe('beta-readiness scan single-source invariant (Equoria-iffbt)', () => {
     expect(failures).toEqual([]);
   });
 
-  test('CANONICAL_SCANS still lists all four scans', () => {
-    expect(CANONICAL_SCANS).toHaveLength(4);
-    for (const scan of CANONICAL_SCANS) {
+  test('canonicalScans still lists all four scans', () => {
+    expect(canonicalScans).toHaveLength(4);
+    for (const scan of canonicalScans) {
       expect(scan.libVar).toMatch(/^EQUORIA_SCAN_RE_/);
     }
   });

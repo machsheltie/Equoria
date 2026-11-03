@@ -22,18 +22,18 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-const WORKFLOWS_DIR = '.github/workflows';
+const workflowsDir = '.github/workflows';
 // Equoria-iz9gp: argv[2] optionally overrides the allowlist path so the
 // gates-allowlist stale-entry sentinel can prove detection FIRES against a
 // planted (stale) allowlist WITHOUT editing the canonical one. Production
 // callers pass no argument.
-const ALLOWLIST_FILE = process.argv[2]
+const allowlistFile = process.argv[2]
   ? resolve(process.argv[2])
   : 'scripts/doctrine-checks/gates-allowlist.txt';
 
 const allowlist = new Set();
-if (existsSync(ALLOWLIST_FILE)) {
-  for (const line of readFileSync(ALLOWLIST_FILE, 'utf8').split('\n')) {
+if (existsSync(allowlistFile)) {
+  for (const line of readFileSync(allowlistFile, 'utf8').split('\n')) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
     allowlist.add(trimmed);
@@ -48,9 +48,9 @@ const violations = [];
 // validate that each allowlist entry still names a real gate job.
 const knownGateJobs = new Set();
 
-for (const file of readdirSync(WORKFLOWS_DIR)) {
+for (const file of readdirSync(workflowsDir)) {
   if (!file.endsWith('.yml') && !file.endsWith('.yaml')) continue;
-  const path = join(WORKFLOWS_DIR, file);
+  const path = join(workflowsDir, file);
   const lines = readFileSync(path, 'utf8').split('\n');
 
   let currentJob = null;
@@ -91,7 +91,7 @@ if (staleEntries.length > 0) {
   }
   console.error('');
   console.error('The allowlist may only SHRINK: remove the stale job key(s) from');
-  console.error(`  ${ALLOWLIST_FILE}`);
+  console.error(`  ${allowlistFile}`);
   console.error('A deleted/renamed gate must not leave a lingering exemption (Equoria-iz9gp).');
   process.exit(1);
 }
@@ -101,7 +101,7 @@ if (violations.length > 0) {
   console.log('*-gate jobs that do not run on PRs (forbidden — gates must validate PRs):');
   for (const v of violations) console.log('  ' + v);
   console.log();
-  console.log(`To exempt a job, add its key to ${ALLOWLIST_FILE} with a justification comment.`);
+  console.log(`To exempt a job, add its key to ${allowlistFile} with a justification comment.`);
   process.exit(1);
 }
 

@@ -58,7 +58,7 @@ import { fetchCsrf } from '../backend/tests/helpers/csrfHelper.mjs';
 import { checkedInDeviceCookie } from '../backend/tests/helpers/staffDeviceFixture.mjs';
 import { invalidateCachePattern } from '../backend/utils/cacheHelper.mjs';
 
-const NAME_PREFIX = 'TestFixture-Breed-';
+const namePrefix = 'TestFixture-Breed-';
 const ORIGIN = 'http://localhost:3000';
 const adminTag = randomBytes(6).toString('hex');
 
@@ -128,13 +128,13 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
     // Scoped cleanup — only the TestFixture-Breed- rows this suite created.
     // NEVER deleteMany({}) (CLAUDE.md §2 / Equoria-lkady). Real breeds (Arabian,
     // Thoroughbred, …) do not match the prefix and are untouched.
-    await prisma.breed.deleteMany({ where: { name: { startsWith: NAME_PREFIX } } });
+    await prisma.breed.deleteMany({ where: { name: { startsWith: namePrefix } } });
     await invalidateCachePattern('breeds:*');
   });
 
   describe('POST /api/v1/breeds', () => {
     it('creates a new breed → 201 with { success, data, message }', async () => {
-      const name = `${NAME_PREFIX}${tag}`;
+      const name = `${namePrefix}${tag}`;
       const res = await adminCreateBreed({ name, description: 'Elegant and spirited' });
 
       expect(res.statusCode).toBe(201);
@@ -163,7 +163,7 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
     });
 
     it('rejects a duplicate breed name (case-insensitive) and does not persist a second row', async () => {
-      const name = `${NAME_PREFIX}dup-${tag}`;
+      const name = `${namePrefix}dup-${tag}`;
       const first = await adminCreateBreed({ name });
       expect(first.statusCode).toBe(201);
 
@@ -188,7 +188,7 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
 
   describe('GET /api/v1/breeds', () => {
     it('returns the breed list including a freshly created fixture (coexists with real data)', async () => {
-      const name = `${NAME_PREFIX}list-${tag}`;
+      const name = `${namePrefix}list-${tag}`;
       const created = await adminCreateBreed({ name });
       expect(created.statusCode).toBe(201);
       // createBreed does not invalidate the list cache — clear it so GET is fresh.
@@ -210,7 +210,7 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
     // odd off the wire, so the list now sends no breedGeneticProfile at all.
     // Old contract: { ratingProfiles } was kept on every row.
     it('sends no breedGeneticProfile on the list (no ratings, colour, stat or temperament keys)', async () => {
-      const name = `${NAME_PREFIX}trim-${tag}`;
+      const name = `${namePrefix}trim-${tag}`;
       // createBreed (POST) does not accept breedGeneticProfile, so seed the
       // profile directly. Scoped by the TestFixture-Breed- name prefix → the
       // afterEach scoped deleteMany cleans it up; real breeds are untouched.
@@ -260,7 +260,7 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
     // is public and sends no breed odds or ranges either. Old contract: the full
     // breedGeneticProfile was served here.
     it('sends no breedGeneticProfile on the detail endpoint either', async () => {
-      const name = `${NAME_PREFIX}detailfull-${tag}`;
+      const name = `${namePrefix}detailfull-${tag}`;
       const created = await prisma.breed.create({
         data: {
           name,
@@ -284,7 +284,7 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
 
   describe('GET /api/v1/breeds/:id', () => {
     it('returns a single breed by id → 200', async () => {
-      const name = `${NAME_PREFIX}byid-${tag}`;
+      const name = `${namePrefix}byid-${tag}`;
       const created = await adminCreateBreed({ name });
       const id = created.body.data.id;
 

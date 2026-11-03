@@ -8,8 +8,8 @@ import * as espree from 'espree';
 export const parse = (src) =>
   espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', loc: true });
 
-export const STAFF_MOUNT = '/api/v1/staff';
-export const ROUTE_CALL_METHODS = new Set([
+export const staffMount = '/api/v1/staff';
+export const routeCallMethods = new Set([
   'get',
   'post',
   'put',

@@ -33,7 +33,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 /**
  * A "real" env file is one git is meant to ignore — basename `.env`,
@@ -59,7 +59,7 @@ export function isEnvIshFile(filePath) {
 
 // Obvious placeholder / template tokens (case-insensitive, after stripping
 // surrounding quotes/whitespace). Empty is a placeholder too.
-const PLACEHOLDER_RE =
+const placeholderRe =
   /^(?:__[a-z0-9_]*__|replace[_-]?with[_a-z0-9-]*|your[-_][a-z0-9_-]*|[a-z0-9_-]*_(?:here|goes_here|placeholder)|change[-_]?me|change[_-]?this|placeholder|example|sample|dummy|xxx+|todo|password|passwd|pass|pwd|secret|<[^>]+>|\$\{[^}]+\}|\$[a-z_][a-z0-9_]*)$/i;
 
 /** True if `value` is a placeholder / template token, not a real secret. */
@@ -69,7 +69,7 @@ export function isPlaceholderValue(value) {
     .replace(/^["']|["']$/g, '')
     .trim();
   if (val === '') return true;
-  return PLACEHOLDER_RE.test(val);
+  return placeholderRe.test(val);
 }
 
 // Values that match a secret-bearing KEY but are clearly config, not secrets:
@@ -79,8 +79,8 @@ function isObviousNonSecretValue(val) {
   return /^(?:true|false|none|null|\d+(?:\.\d+)?(?:[smhdwy])?|https?:\/\/\S+)$/i.test(val);
 }
 
-const DB_URL_RE = /postgres(?:ql)?:\/\/[^:@\s/]+:([^@\s/]+)@/i;
-const SECRET_KV_RE =
+const dbUrlRe = /postgres(?:ql)?:\/\/[^:@\s/]+:([^@\s/]+)@/i;
+const secretKvRe =
   /^([A-Z0-9_]*(?:PASSWORD|SECRET|TOKEN|API_KEY|PRIVATE_KEY)[A-Z0-9_]*)\s*=\s*(.+)$/;
 
 /**
@@ -95,14 +95,14 @@ export function findSecretLeaks(filePath, content) {
     if (line === '' || line.startsWith('#')) return;
 
     // 1) Postgres connection string with an embedded password.
-    const url = line.match(DB_URL_RE);
+    const url = line.match(dbUrlRe);
     if (url && !isPlaceholderValue(url[1])) {
       leaks.push({ file: filePath, line: idx + 1, kind: 'db-url-password' });
       return; // one leak per line is enough signal
     }
 
     // 2) KEY=value where KEY names a secret and value is a real secret.
-    const kv = line.match(SECRET_KV_RE);
+    const kv = line.match(secretKvRe);
     if (kv) {
       const key = kv[1];
       const val = kv[2]
@@ -136,18 +136,18 @@ export function findTrackedEnvFiles(trackedFilePaths) {
 // none of these file types are tracked today — the gate prevents the
 // regression, mirroring the upload/SSRF build-ahead guards.)
 
-const CURATED_CONFIG_BASENAME_RE =
+const curatedConfigBasenameRe =
   /^(?:docker-compose(?:\.[A-Za-z0-9_-]+)*\.ya?ml|compose(?:\.[A-Za-z0-9_-]+)*\.ya?ml|\.?mcp\.json)$/i;
 
 /** True for the curated set of non-env config files that may embed secrets. */
 export function isCuratedConfigFile(filePath) {
   const base = String(filePath).split(/[\\/]/).pop();
-  return CURATED_CONFIG_BASENAME_RE.test(base);
+  return curatedConfigBasenameRe.test(base);
 }
 
 // Credentials that are legitimately committed in compose/mcp config: a
 // well-known dev/test password against a local/dev/docker-service host.
-const SAFE_DEV_HOSTS = new Set([
+const safeDevHosts = new Set([
   'localhost',
   '127.0.0.1',
   '::1',
@@ -162,7 +162,7 @@ const SAFE_DEV_HOSTS = new Set([
   'redis',
   'host.docker.internal',
 ]);
-const SAFE_DEV_DB_PASSWORDS = new Set([
+const safeDevDbPasswords = new Set([
   'postgres',
   'password',
   'test',
@@ -177,23 +177,23 @@ const SAFE_DEV_DB_PASSWORDS = new Set([
 
 // Fuller DB-URL matcher capturing user:password@host so the host can gate the
 // allowlist (a dev password is only "safe" against a local/dev host).
-const DB_URL_FULL_RE =
+const dbUrlFullRe =
   /(?:postgres(?:ql)?|mysql|mariadb|mongodb):\/\/([^:@\s/]+):([^@\s/]+)@([^:/\s"']+)/i;
 
 /** True if the line carries a known dev/test DB credential against a local host. */
 export function isAllowlistedDevCredential(line) {
-  const m = String(line).match(DB_URL_FULL_RE);
+  const m = String(line).match(dbUrlFullRe);
   if (!m) return false;
   const pass = m[2].toLowerCase();
   const host = m[3].toLowerCase();
-  const safeHost = SAFE_DEV_HOSTS.has(host) || host.endsWith('.local');
-  return safeHost && SAFE_DEV_DB_PASSWORDS.has(pass);
+  const safeHost = safeDevHosts.has(host) || host.endsWith('.local');
+  return safeHost && safeDevDbPasswords.has(pass);
 }
 
 // Secret-bearing KV across env/yaml/json separators (`=` and `:`), tolerating a
 // quoted key (JSON: "dbPassword": "..."). Case-insensitive so JSON lowercase
 // keys are caught.
-const CONFIG_SECRET_KV_RE =
+const configSecretKvRe =
   /["']?([A-Za-z0-9_]*(?:PASSWORD|SECRET|TOKEN|API[_-]?KEY|PRIVATE[_-]?KEY|ACCESS[_-]?KEY)[A-Za-z0-9_]*)["']?\s*[:=]\s*(.+)$/i;
 
 /**
@@ -210,14 +210,14 @@ export function findConfigSecretLeaks(filePath, content) {
     if (isAllowlistedDevCredential(line)) return;
 
     // 1) Embedded DB connection string with a non-placeholder password.
-    const url = line.match(DB_URL_RE);
+    const url = line.match(dbUrlRe);
     if (url && !isPlaceholderValue(url[1])) {
       leaks.push({ file: filePath, line: idx + 1, kind: 'config-db-url-password' });
       return;
     }
 
     // 2) secret-bearing KEY: value / KEY=value with a real value.
-    const kv = line.match(CONFIG_SECRET_KV_RE);
+    const kv = line.match(configSecretKvRe);
     if (kv) {
       const key = kv[1];
       const val = kv[2]
@@ -229,7 +229,7 @@ export function findConfigSecretLeaks(filePath, content) {
       if (
         !isPlaceholderValue(val) &&
         !isObviousNonSecretValue(val) &&
-        !SAFE_DEV_DB_PASSWORDS.has(val.toLowerCase())
+        !safeDevDbPasswords.has(val.toLowerCase())
       ) {
         leaks.push({ file: filePath, line: idx + 1, kind: `config-secret:${key}` });
       }
@@ -239,7 +239,7 @@ export function findConfigSecretLeaks(filePath, content) {
 }
 
 function main() {
-  const tracked = execSync('git ls-files', { cwd: REPO_ROOT, encoding: 'utf8' })
+  const tracked = execSync('git ls-files', { cwd: repoRoot, encoding: 'utf8' })
     .split('\n')
     .map((s) => s.trim())
     .filter(Boolean);
@@ -248,7 +248,7 @@ function main() {
 
   const leaks = [];
   for (const f of tracked.filter(isEnvIshFile)) {
-    const abs = path.join(REPO_ROOT, f);
+    const abs = path.join(repoRoot, f);
     if (!existsSync(abs)) continue; // tolerant: a file can vanish (concurrent plant/delete)
     leaks.push(...findSecretLeaks(f, readFileSync(abs, 'utf8')));
   }
@@ -256,7 +256,7 @@ function main() {
   // Curated NON-env config files (Equoria-9ccyt): compose / .mcp.json.
   const curatedConfigFiles = tracked.filter(isCuratedConfigFile);
   for (const f of curatedConfigFiles) {
-    const abs = path.join(REPO_ROOT, f);
+    const abs = path.join(repoRoot, f);
     if (!existsSync(abs)) continue;
     leaks.push(...findConfigSecretLeaks(f, readFileSync(abs, 'utf8')));
   }

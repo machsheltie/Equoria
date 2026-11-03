@@ -120,8 +120,8 @@ const createHorseServicePath = path.join(
  * is never retried — that is the cold-key invariant failing, and waiting would
  * turn a real defect into a slow pass.
  */
-const LIST_READ_ATTEMPTS = 3;
-const LIST_READ_RETRY_DELAY_MS = 500;
+const listReadAttempts = 3;
+const listReadRetryDelayMs = 500;
 
 export type SeededHorse = { id: number; name: string; sex: string };
 
@@ -207,7 +207,7 @@ async function assertVisibleInHorseList(session: AuthedSession, names: string[])
   let lastStatus = 0;
   let lastBody = '';
 
-  for (let attempt = 1; attempt <= LIST_READ_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= listReadAttempts; attempt++) {
     // No query parameters: the route keys its cache on
     // (userId, breedId ?? 'all', limit=200, offset=0), so this resolves to the
     // same entry `horsesApi.list()` reads from the browser.
@@ -216,8 +216,8 @@ async function assertVisibleInHorseList(session: AuthedSession, names: string[])
 
     if (!response.ok()) {
       lastBody = await response.text();
-      if (attempt < LIST_READ_ATTEMPTS) {
-        await new Promise((resolve) => setTimeout(resolve, LIST_READ_RETRY_DELAY_MS));
+      if (attempt < listReadAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, listReadRetryDelayMs));
         continue;
       }
       break;
@@ -246,7 +246,7 @@ async function assertVisibleInHorseList(session: AuthedSession, names: string[])
 
   throw new Error(
     `GET /api/v1/horses never answered 200 while verifying the seeded horses ` +
-      `(${LIST_READ_ATTEMPTS} attempts, last status ${lastStatus}): ${lastBody}`
+      `(${listReadAttempts} attempts, last status ${lastStatus}): ${lastBody}`
   );
 }
 

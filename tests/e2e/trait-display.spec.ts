@@ -28,8 +28,8 @@ import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readTestCredentials } from './helpers/credentials';
 
-const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
-const FAIL_IMPACTS = new Set(['critical', 'serious']);
+const wcagTags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+const failImpacts = new Set(['critical', 'serious']);
 
 interface AxeViolationNode {
   target: string[];
@@ -69,7 +69,7 @@ async function openGeneticsTab(page: Page, horseId: number) {
 
 /** Run axe on the current page and fail on critical/serious WCAG violations. */
 async function assertNoCriticalA11yViolations(page: Page, surfaceName: string) {
-  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  const results = await new AxeBuilder({ page }).withTags(wcagTags).analyze();
   const violations = results.violations as AxeViolation[];
 
   await test.info().attach(`axe-${surfaceName}.json`, {
@@ -77,7 +77,7 @@ async function assertNoCriticalA11yViolations(page: Page, surfaceName: string) {
     contentType: 'application/json',
   });
 
-  const blocking = violations.filter((v) => FAIL_IMPACTS.has((v.impact ?? '') as string));
+  const blocking = violations.filter((v) => failImpacts.has((v.impact ?? '') as string));
   const summary = blocking
     .map(
       (v) =>

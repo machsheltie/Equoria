@@ -63,18 +63,18 @@ import {
   readScannedFileSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
 
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, '..', '..');
 // Equoria-fefh2.11: argv[2] optionally overrides the baseline path so the
 // doctrineBaselineStale sentinel can prove stale-entry detection FIRES
 // against a planted baseline. Production callers pass no argument.
-const BASELINE_PATH = process.argv[2]
+const baselinePath = process.argv[2]
   ? path.resolve(process.argv[2])
-  : path.join(SCRIPT_DIR, 'rethrow-after-log-baseline.json');
+  : path.join(scriptDir, 'rethrow-after-log-baseline.json');
 
-const SCAN_DIRS = ['backend'];
-const FILE_RE = /\.mjs$/;
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'coverage', '__tests__']);
+const scanDirs = ['backend'];
+const fileRe = /\.mjs$/;
+const skipDirs = new Set(['node_modules', '.git', 'dist', 'coverage', '__tests__']);
 
 // Matches: catch (...) { ...logger.error/warn/info(...); throw ...; }
 // The [^{}]*? body forbids nested braces, so this only matches
@@ -102,11 +102,11 @@ function walk(dir, acc) {
   for (const e of ents) {
     const full = path.join(dir, e.name);
     if (e.isDirectory()) {
-      if (SKIP_DIRS.has(e.name)) continue;
+      if (skipDirs.has(e.name)) continue;
       walk(full, acc);
     } else if (
       e.isFile() &&
-      FILE_RE.test(e.name) &&
+      fileRe.test(e.name) &&
       !e.name.endsWith('.test.mjs') &&
       !e.name.endsWith('.spec.mjs') &&
       // Equoria-q7lqz: sentinel plant artifacts (basename contains the
@@ -156,7 +156,7 @@ function walk(dir, acc) {
  * which at worst leaves a regex body in place as code — that can only keep a
  * match that was already there, never weaken real detection.
  */
-const COMMENT_SENTINEL = '~'; // non-whitespace, not part of the rethrow pattern
+const commentSentinel = '~'; // non-whitespace, not part of the rethrow pattern
 function stripComments(src) {
   let out = '';
   let i = 0;
@@ -190,7 +190,7 @@ function stripComments(src) {
         inLine = false;
         out += ch; // keep the newline — the comment ends here
       } else {
-        out += COMMENT_SENTINEL; // blank comment char to non-whitespace
+        out += commentSentinel; // blank comment char to non-whitespace
       }
       i += 1;
       continue;
@@ -199,13 +199,13 @@ function stripComments(src) {
     if (inBlock) {
       if (ch === '*' && next === '/') {
         inBlock = false;
-        out += COMMENT_SENTINEL + COMMENT_SENTINEL; // blank the closing */
+        out += commentSentinel + commentSentinel; // blank the closing */
         i += 2;
       } else {
         // Blank EVERY block-comment char (including newlines) to the
         // non-whitespace sentinel so a multi-line comment body can never
         // reduce to whitespace and create/keep a match it shouldn't.
-        out += COMMENT_SENTINEL;
+        out += commentSentinel;
         i += 1;
       }
       continue;
@@ -300,15 +300,15 @@ function countMatches(filePath) {
 }
 
 function loadBaseline() {
-  if (!fs.existsSync(BASELINE_PATH)) {
-    console.error(`[rethrow-after-log] baseline not found at ${BASELINE_PATH}`);
+  if (!fs.existsSync(baselinePath)) {
+    console.error(`[rethrow-after-log] baseline not found at ${baselinePath}`);
     process.exit(2);
   }
-  return JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
+  return JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
 }
 
 function toRelKey(absPath) {
-  return path.relative(REPO_ROOT, absPath).split(BACKSLASH).join('/');
+  return path.relative(repoRoot, absPath).split(BACKSLASH).join('/');
 }
 
 // Equoria-fefh2.11 ratchet: every baseline key must exist on disk. A stale
@@ -316,7 +316,7 @@ function toRelKey(absPath) {
 // future regression could silently hide under — the baseline may only shrink.
 function assertNoStaleBaselineEntries(baseline) {
   const stale = Object.keys(baseline).filter(
-    (key) => !fs.existsSync(path.join(REPO_ROOT, ...key.split('/')))
+    (key) => !fs.existsSync(path.join(repoRoot, ...key.split('/')))
   );
   if (stale.length > 0) {
     console.error(
@@ -327,7 +327,7 @@ function assertNoStaleBaselineEntries(baseline) {
     }
     console.error('');
     console.error('The baseline may only SHRINK: remove the stale path(s) from');
-    console.error(`  ${BASELINE_PATH}`);
+    console.error(`  ${baselinePath}`);
     console.error('and update the counts/governance header (Equoria-fefh2.11 / Equoria-wkdwx).');
     process.exit(1);
   }
@@ -337,7 +337,7 @@ function main() {
   const baseline = loadBaseline();
   assertNoStaleBaselineEntries(baseline);
   const files = [];
-  for (const d of SCAN_DIRS) walk(path.join(REPO_ROOT, d), files);
+  for (const d of scanDirs) walk(path.join(repoRoot, d), files);
 
   const violations = [];
   let observedTotal = 0;

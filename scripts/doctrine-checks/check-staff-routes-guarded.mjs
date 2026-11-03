@@ -50,34 +50,34 @@ import * as espree from 'espree';
 import { load, staticPath } from './staff-routes-ast.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
-const BACKEND_DIR = path.join(REPO_ROOT, 'backend');
-const STAFF_ROUTES_REL = path.join('modules', 'staff', 'routes');
-const STAFF_ROUTES_DIR = path.join(BACKEND_DIR, STAFF_ROUTES_REL);
-const ALLOWED_IMPORTERS_REL = [path.join('app', 'routers.mjs')];
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
+const backendDir = path.join(repoRoot, 'backend');
+const staffRoutesRel = path.join('modules', 'staff', 'routes');
+const staffRoutesDir = path.join(backendDir, staffRoutesRel);
+const allowedImportersRel = [path.join('app', 'routers.mjs')];
 
-const GUARD_NAMES = new Set([
+const guardNames = new Set([
   'requireStaffCapability',
   'requireAnyStaffCapability',
   'requireStaffRole',
 ]);
-const ROUTE_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete']);
-const SOURCE_FILE_RE = /\.(?:js|mjs|cjs)$/;
-const SKIP_DIRS = new Set(['node_modules', '__tests__', 'tests', 'test', 'coverage']);
-const TEST_FILE_RE = /\.(?:test|spec)\.[cm]?js$/;
+const routeMethods = new Set(['get', 'post', 'put', 'patch', 'delete']);
+const sourceFileRe = /\.(?:js|mjs|cjs)$/;
+const skipDirs = new Set(['node_modules', '__tests__', 'tests', 'test', 'coverage']);
+const testFileRe = /\.(?:test|spec)\.[cm]?js$/;
 // requireStaffRole is enough for exactly these registrations.
-const ROLE_ONLY_ALLOWED = new Set(['POST /checkin/request', 'POST /checkin/verify', 'GET /me']);
+const roleOnlyAllowed = new Set(['POST /checkin/request', 'POST /checkin/verify', 'GET /me']);
 
 // Extra rules on the capabilities a guard names: each is
 // (capabilities: string[], routeKey: string) => reason | null.
-const FRESH_PROOF_CAPABILITIES = ['time-back', 'jobs.hold'];
-const CAPABILITY_RULES = [
+const freshProofCapabilities = ['time-back', 'jobs.hold'];
+const capabilityRules = [
   // STAFF-CR-06: these capabilities need a purpose-bound, one-time fresh
   // check-in proof that the 30-day device cookie cannot stand in for. Refused
   // outright until requireFreshStaffProof exists; then relax this to "must be
   // preceded by requireFreshStaffProof".
   (capabilities) => {
-    const hit = capabilities.find((c) => FRESH_PROOF_CAPABILITIES.includes(c));
+    const hit = capabilities.find((c) => freshProofCapabilities.includes(c));
     return hit
       ? `capability '${hit}' needs a fresh-proof guard (requireFreshStaffProof), which does not exist yet; ` +
           'a trusted 30-day device alone must not authorize it (see docs/features/admin-time-back.md, "Blocking dependency")'
@@ -90,9 +90,9 @@ const samePath = (a, b) => path.relative(a, b) === '';
 const parse = (src) =>
   espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', loc: true });
 
-/** Apply CAPABILITY_RULES to a recognized guard; returns the first reason or null. */
+/** Apply capabilityRules to a recognized guard; returns the first reason or null. */
 function capabilityRuleViolation(guard, routeKey) {
-  for (const rule of CAPABILITY_RULES) {
+  for (const rule of capabilityRules) {
     const reason = rule(guard.capabilities, routeKey);
     if (reason) return reason;
   }
@@ -174,7 +174,7 @@ function admitImport(node, file, moduleDir, b) {
     if (samePath(resolved, path.join(moduleDir, 'middleware', 'requireStaffCapability.mjs'))) {
       for (const s of node.specifiers) {
         const name = named(s);
-        if (!GUARD_NAMES.has(name))
+        if (!guardNames.has(name))
           return 'only the named guards may be imported from the middleware';
         staged.push(() => b.guards.set(s.local.name, name));
       }
@@ -216,7 +216,7 @@ function registrationViolation(expr, b) {
     callee.object.name === b.routerId
       ? callee.property.name
       : null;
-  if (!b.routerId || !(ROUTE_METHODS.has(method) || method === 'use')) {
+  if (!b.routerId || !(routeMethods.has(method) || method === 'use')) {
     return 'only <router>.<get|post|put|patch|delete|use>(...) registrations on the declared Router are allowed';
   }
   const args = expr.arguments;
@@ -238,7 +238,7 @@ function registrationViolation(expr, b) {
   if (!isStringLiteral(first)) return `${routeKey}: the path must be a string literal`;
   const guard = args.length >= 3 ? recognizeGuard(args[1], b.guards) : null;
   // STAFF-RR-09: the exempt check-in paths take the role guard and nothing else.
-  const roleOnly = ROLE_ONLY_ALLOWED.has(routeKey);
+  const roleOnly = roleOnlyAllowed.has(routeKey);
   if (roleOnly && guard?.kind !== 'role') {
     return `${routeKey} must start with requireStaffRole (a staff member who is not checked in has no capabilities)`;
   }
@@ -316,7 +316,7 @@ export function scanSource(src, file, { moduleDir = path.resolve(path.dirname(fi
 }
 
 /** Scan every file under routesDir against the grammar. Returns [{file, line, reason}]. */
-export function scanStaffRoutes(routesDir = STAFF_ROUTES_DIR) {
+export function scanStaffRoutes(routesDir = staffRoutesDir) {
   if (!fs.existsSync(routesDir)) {
     return [{ file: routesDir, line: 0, reason: 'staff routes directory not found' }];
   }
@@ -326,7 +326,7 @@ export function scanStaffRoutes(routesDir = STAFF_ROUTES_DIR) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) walkDir(full);
-      else if (SOURCE_FILE_RE.test(entry.name)) {
+      else if (sourceFileRe.test(entry.name)) {
         failures.push(...scanSource(fs.readFileSync(full, 'utf8'), full, { moduleDir }));
       } else {
         failures.push({
@@ -357,9 +357,9 @@ function walk(node, visit) {
  * import, require, createRequire, new URL, ...) that resolves into that
  * directory counts. Tests and node_modules are skipped.
  */
-export function scanRouteImporters(backendRoot = BACKEND_DIR) {
-  const routesDir = path.join(backendRoot, STAFF_ROUTES_REL);
-  const allowed = ALLOWED_IMPORTERS_REL.map((rel) => path.join(backendRoot, rel));
+export function scanRouteImporters(backendRoot = backendDir) {
+  const routesDir = path.join(backendRoot, staffRoutesRel);
+  const allowed = allowedImportersRel.map((rel) => path.join(backendRoot, rel));
   const intoRoutes = (target) => {
     const rel = path.relative(routesDir, target);
     return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
@@ -403,8 +403,8 @@ export function scanRouteImporters(backendRoot = BACKEND_DIR) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (!SKIP_DIRS.has(entry.name) && !entry.name.startsWith('.')) walkDir(full);
-      } else if (SOURCE_FILE_RE.test(entry.name) && !TEST_FILE_RE.test(entry.name)) {
+        if (!skipDirs.has(entry.name) && !entry.name.startsWith('.')) walkDir(full);
+      } else if (sourceFileRe.test(entry.name) && !testFileRe.test(entry.name)) {
         checkFile(full);
       }
     }
@@ -413,7 +413,7 @@ export function scanRouteImporters(backendRoot = BACKEND_DIR) {
   return failures;
 }
 
-const CAPABILITY_GUARD_NAMES = new Set(['requireStaffCapability', 'requireAnyStaffCapability']);
+const capabilityGuardNames = new Set(['requireStaffCapability', 'requireAnyStaffCapability']);
 // STAFF-RR-13: the capability names and their route paths, in any text.
 const freshProofTextRe = /time-back|jobs[./]hold/;
 const capabilityMapRel = path.join('modules', 'staff', 'capabilities.mjs');
@@ -423,8 +423,8 @@ function backendSourceFiles(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (!SKIP_DIRS.has(entry.name) && !entry.name.startsWith('.')) backendSourceFiles(full, out);
-    } else if (SOURCE_FILE_RE.test(entry.name) && !TEST_FILE_RE.test(entry.name)) {
+      if (!skipDirs.has(entry.name) && !entry.name.startsWith('.')) backendSourceFiles(full, out);
+    } else if (sourceFileRe.test(entry.name) && !testFileRe.test(entry.name)) {
       out.push(full);
     }
   }
@@ -437,7 +437,7 @@ function backendSourceFiles(dir, out = []) {
  * plus every guard call or guard reference the scan cannot read.
  * Returns [{file, line, reason}].
  */
-export function scanFreshProofCapabilityUse(backendRoot = BACKEND_DIR) {
+export function scanFreshProofCapabilityUse(backendRoot = backendDir) {
   const failures = [];
   const capabilityMap = path.join(backendRoot, capabilityMapRel);
   for (const file of backendSourceFiles(backendRoot)) {
@@ -456,11 +456,11 @@ export function scanFreshProofCapabilityUse(backendRoot = BACKEND_DIR) {
       });
       continue;
     }
-    const locals = new Set(CAPABILITY_GUARD_NAMES);
+    const locals = new Set(capabilityGuardNames);
     for (const n of parsed.nodes) {
       if (
         n.type === 'ImportSpecifier' &&
-        CAPABILITY_GUARD_NAMES.has(n.imported.name ?? n.imported.value)
+        capabilityGuardNames.has(n.imported.name ?? n.imported.value)
       ) {
         locals.add(n.local.name);
       }
@@ -468,7 +468,7 @@ export function scanFreshProofCapabilityUse(backendRoot = BACKEND_DIR) {
     const isGuardRef = (c) =>
       (c?.type === 'Identifier' && locals.has(c.name)) ||
       (c?.type === 'MemberExpression' &&
-        CAPABILITY_GUARD_NAMES.has(c.computed ? staticPath(c.property) : c.property.name));
+        capabilityGuardNames.has(c.computed ? staticPath(c.property) : c.property.name));
     const unfollowable = (n, why) =>
       failures.push({
         file,
@@ -489,11 +489,11 @@ export function scanFreshProofCapabilityUse(backendRoot = BACKEND_DIR) {
             (p.key === n || parsed.parents.get(p).type === 'ObjectPattern')
           ) &&
           !/^(Import\w*Specifier|FunctionDeclaration)$/.test(p.type) &&
-          !(p.type === 'ExportSpecifier' && CAPABILITY_GUARD_NAMES.has(p.exported.name))) ||
+          !(p.type === 'ExportSpecifier' && capabilityGuardNames.has(p.exported.name))) ||
         (n.type === 'MemberExpression' && isGuardRef(n)) ||
         (n.type === 'Property' &&
           (p.type === 'ObjectPattern'
-            ? CAPABILITY_GUARD_NAMES.has(n.computed ? staticPath(n.key) : n.key.name)
+            ? capabilityGuardNames.has(n.computed ? staticPath(n.key) : n.key.name)
             : n.shorthand && locals.has(n.key.name)));
       if (read && !(p.type === 'CallExpression' && p.callee === n)) {
         unfollowable(n, 'a capability guard taken by reference');
@@ -507,7 +507,7 @@ export function scanFreshProofCapabilityUse(backendRoot = BACKEND_DIR) {
         unfollowable(n, 'a capability that is not a string literal');
         continue;
       }
-      const hit = named.find((cap) => FRESH_PROOF_CAPABILITIES.includes(cap));
+      const hit = named.find((cap) => freshProofCapabilities.includes(cap));
       if (hit) {
         failures.push({
           file,
@@ -561,7 +561,7 @@ function main() {
   if (failures.length > 0) {
     console.error('\nStaff routes doctrine violations:');
     for (const f of failures) {
-      console.error(`  ${path.relative(REPO_ROOT, f.file)}:${f.line}  ${f.reason}`);
+      console.error(`  ${path.relative(repoRoot, f.file)}:${f.line}  ${f.reason}`);
     }
     console.error(
       '\nStaff route files must match the allow-list grammar at the top of ' +

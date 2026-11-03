@@ -8,8 +8,8 @@
 //
 // Scans backend/routes/, backend/modules/ and backend/app/ for any STRING
 // LITERAL (single, double or template quoted) that matches
-// FORBIDDEN_CLEANUP_PATH_PATTERNS ("/test/cleanup", "/cleanup-tests",
-// "/__cleanup", ...) or FORBIDDEN_STATE_REWIND_PATH_PATTERNS ("/reset-last-*",
+// forbiddenCleanupPathPatterns ("/test/cleanup", "/cleanup-tests",
+// "/__cleanup", ...) or forbiddenStateRewindPathPatterns ("/reset-last-*",
 // "/advance-day", "/skip-cooldown", ...). Skips files in __tests__/ and tests/
 // directories.
 //
@@ -29,21 +29,21 @@ import { fileURLToPath } from 'node:url';
 // stays here; the forbidden path patterns live in the shared
 // module so they cannot drift between Node doctrine checks.
 import {
-  FORBIDDEN_CLEANUP_PATH_PATTERNS,
-  FORBIDDEN_STATE_REWIND_PATH_PATTERNS,
+  forbiddenCleanupPathPatterns,
+  forbiddenStateRewindPathPatterns,
   walkFiles,
   readScannedFileSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
 
-const SCAN_ROOTS = [
-  path.join(REPO_ROOT, 'backend', 'routes'),
-  path.join(REPO_ROOT, 'backend', 'modules'),
+const scanRoots = [
+  path.join(repoRoot, 'backend', 'routes'),
+  path.join(repoRoot, 'backend', 'modules'),
   // Equoria-q4uem.4 (WS4 S3): the application query layer (backend/app/queries)
   // defines routes too and stays under this gate.
-  path.join(REPO_ROOT, 'backend', 'app'),
+  path.join(repoRoot, 'backend', 'app'),
 ];
 
 // Strip comments, keeping strings verbatim and every newline (so line numbers
@@ -81,9 +81,9 @@ function* stringLiterals(source) {
   }
 }
 
-const FORBIDDEN_PATH_PATTERNS = [
-  ...FORBIDDEN_CLEANUP_PATH_PATTERNS.map((re) => ({ re, kind: 'test-cleanup' })),
-  ...FORBIDDEN_STATE_REWIND_PATH_PATTERNS.map((re) => ({ re, kind: 'clock-rewind' })),
+const forbiddenPathPatterns = [
+  ...forbiddenCleanupPathPatterns.map((re) => ({ re, kind: 'test-cleanup' })),
+  ...forbiddenStateRewindPathPatterns.map((re) => ({ re, kind: 'clock-rewind' })),
 ];
 
 // Per-check scope predicates (Equoria-ml7jj). These reproduce this check's
@@ -101,20 +101,20 @@ const includeFile = (name) =>
 
 const failures = [];
 
-for (const file of walkFiles(SCAN_ROOTS, { skipDir, includeFile })) {
+for (const file of walkFiles(scanRoots, { skipDir, includeFile })) {
   // Equoria-q7lqz/7avnu: a walked file can vanish before this read (concurrent
   // jest sentinel plant+delete). Tolerant reader returns null ONLY on ENOENT
   // (with a one-line notice) and rethrows anything else — never a silent catch.
   const content = readScannedFileSyncTolerant(file, 'no-cleanup-routes');
   if (content === null) continue;
   for (const literal of stringLiterals(content)) {
-    for (const { re, kind } of FORBIDDEN_PATH_PATTERNS) {
+    for (const { re, kind } of forbiddenPathPatterns) {
       if (re.test(literal.text)) {
         // Compute line number.
         const upto = content.slice(0, literal.index);
         const lineNum = upto.split(/\r?\n/).length;
         failures.push({
-          file: path.relative(REPO_ROOT, file),
+          file: path.relative(repoRoot, file),
           line: lineNum,
           route: literal.text,
           kind,

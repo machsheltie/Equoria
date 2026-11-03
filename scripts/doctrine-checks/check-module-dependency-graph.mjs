@@ -95,18 +95,18 @@ import {
 } from '../lib/doctrine-scan-patterns.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..');
-const BACKEND = path.join(REPO_ROOT, 'backend');
-const MODULES_DIR = path.join(BACKEND, 'modules');
-const ALLOWLIST_PATH = path.join(HERE, 'module-dependency-graph-allowlist.json');
-const ALLOWLIST_NAME = path.basename(ALLOWLIST_PATH);
+const repoRoot = path.resolve(HERE, '..', '..');
+const BACKEND = path.join(repoRoot, 'backend');
+const modulesDir = path.join(BACKEND, 'modules');
+const allowlistPath = path.join(HERE, 'module-dependency-graph-allowlist.json');
+const allowlistName = path.basename(allowlistPath);
 const TAG = '[module-dependency-graph]';
 const LABEL = 'module-dependency-graph'; // notice label for the shared ENOENT-tolerant readers
 // Equoria-rfv9j: under the two-lane sharded gate, sibling scripts-dir sentinels plant and delete
 // files under backend/modules while this gate reads the tree. The walk skips the reserved scratch
 // names of OTHER suites (shared list, precedent Equoria-27lqy) but never this gate's OWN sentinel
 // plants, and a listed entry that vanishes before its read is a WARN, not a crash.
-const OWN_PLANT_TOKENS = ['_ws4graphplant_'];
+const ownPlantTokens = ['_ws4graphplant_'];
 const vanished = []; // entries removed between the directory walk and the read (WARN; not counted)
 const skippedForeign = []; // other suites' transient plants skipped by reserved name (WARN; not scanned)
 /** stat that tolerates ONLY a vanished path (returns null); every other error is rethrown. */
@@ -128,7 +128,7 @@ function trackedReservedPlantNames(paths) {
   if (paths.length === 0) return [];
   const relPaths = paths.map(rel);
   const res = spawnSync('git', ['ls-files', '--', ...relPaths], {
-    cwd: REPO_ROOT,
+    cwd: repoRoot,
     encoding: 'utf8',
   });
   if (res.error || res.status !== 0) {
@@ -147,34 +147,34 @@ function trackedReservedPlantNames(paths) {
     .sort();
 }
 
-const R2_MARKER_RE = /eslint-disable-next-line no-restricted-imports -- Equoria-hk739/;
-const ROUTE_PATH_RE = /\/routes\/|Routes\.mjs$/;
-const CONTROLLER_PATH_RE = /\/controllers\/|Controller\.mjs$/;
-const MIN_MODULES = 10;
-const MIN_FILES = 50;
-const MAX_CHAIN_DEPTH = 6;
+const r2MarkerRe = /eslint-disable-next-line no-restricted-imports -- Equoria-hk739/;
+const routePathRe = /\/routes\/|Routes\.mjs$/;
+const controllerPathRe = /\/controllers\/|Controller\.mjs$/;
+const minModules = 10;
+const minFiles = 50;
+const maxChainDepth = 6;
 // Allow-list entry contract (same bar as horse-name-gate-allowlist.json).
-const MIN_REASON_LENGTH = 40;
-const ISSUE_REF_RE = /^Equoria-[A-Za-z0-9._-]+$/;
+const minReasonLength = 40;
+const issueRefRe = /^Equoria-[A-Za-z0-9._-]+$/;
 
-const rel = (p) => path.relative(REPO_ROOT, p).split(path.sep).join('/');
+const rel = (p) => path.relative(repoRoot, p).split(path.sep).join('/');
 const isTestPath = (p) => /[\\/]__tests__[\\/]/.test(p) || /\.(test|spec)\.(mjs|js|cjs)$/.test(p);
-const SOURCE_EXT_RE = /\.(mjs|js|cjs)$/;
+const sourceExtRe = /\.(mjs|js|cjs)$/;
 const isRepoFile = (abs) => !rel(abs).startsWith('..') && !/[\\/]node_modules[\\/]/.test(abs);
 const httpKind = (r) =>
-  ROUTE_PATH_RE.test(r) ? 'route' : CONTROLLER_PATH_RE.test(r) ? 'controller' : null;
+  routePathRe.test(r) ? 'route' : controllerPathRe.test(r) ? 'controller' : null;
 
 function walk(dir, out = []) {
   for (const ent of readdirSyncTolerant(dir, { withFileTypes: true }, LABEL)) {
     const full = path.join(dir, ent.name);
-    if (isReservedScratchPlantPathSegment(ent.name, OWN_PLANT_TOKENS)) {
+    if (isReservedScratchPlantPathSegment(ent.name, ownPlantTokens)) {
       skippedForeign.push(full); // another suite's transient plant (Equoria-rfv9j): not this tree
       continue;
     }
     if (ent.isDirectory()) {
       if (ent.name === '__tests__' || ent.name === 'node_modules') continue;
       walk(full, out);
-    } else if (SOURCE_EXT_RE.test(ent.name) && !isTestPath(full)) {
+    } else if (sourceExtRe.test(ent.name) && !isTestPath(full)) {
       out.push(full);
     }
   }
@@ -189,7 +189,7 @@ function moduleOf(absPath) {
 // Statement boundary: line start, or after `;` / `}` on the same line (minor 6).
 const B = '(?:^|[\\n;}])[ \\t]*';
 // Statement-shaped text the scanners read; a string/template span containing it fails closed.
-const SPAN_SCAN_RE = new RegExp(
+const spanScanRe = new RegExp(
   `${B}(?:import|export)\\s[^;'"\`]*?from\\s*['"]|${B}import\\s*['"]|\\bimport\\s*\\(|\\b(?:createRequire|require)\\s*\\(`
 );
 
@@ -199,8 +199,8 @@ const SPAN_SCAN_RE = new RegExp(
 // verbatim and never mistaken for comment starts. Returns the code, the [start, end) spans
 // of string/template literals (so callers can ignore statements inside a string) and the
 // lexer fail-safe issues (unterminated template/block comment, statement text in a span).
-const REGEX_AFTER_CHAR = /[(,=:[!&|?{};+\-*%<>~^]/;
-const REGEX_AFTER_WORD = new Set([
+const regexAfterChar = /[(,=:[!&|?{};+\-*%<>~^]/;
+const regexAfterWord = new Set([
   'return',
   'typeof',
   'case',
@@ -217,7 +217,7 @@ const REGEX_AFTER_WORD = new Set([
   'await',
 ]);
 // `)` closing one of these headers is followed by a statement, so a `/` there starts a regex.
-const REGEX_HEADER_WORDS = new Set(['if', 'while', 'for', 'with']);
+const regexHeaderWords = new Set(['if', 'while', 'for', 'with']);
 
 function stripComments(src) {
   let out = '';
@@ -237,7 +237,7 @@ function stripComments(src) {
   };
   const checkSpan = (start, kind) => {
     const inner = out.slice(start + 1, out.length - 1);
-    const m = SPAN_SCAN_RE.exec(`\n${inner}`);
+    const m = spanScanRe.exec(`\n${inner}`);
     if (m) {
       issues.push({
         line: lineAt(start),
@@ -338,8 +338,8 @@ function stripComments(src) {
       flushWord();
       const regexContext =
         prevSig === '' ||
-        REGEX_AFTER_CHAR.test(prevSig) ||
-        REGEX_AFTER_WORD.has(prevWord) ||
+        regexAfterChar.test(prevSig) ||
+        regexAfterWord.has(prevWord) ||
         (prevSig === ')' && afterHeaderParen);
       if (regexContext) {
         out += c;
@@ -376,7 +376,7 @@ function stripComments(src) {
     } else {
       flushWord();
       if (c === '(') {
-        parenStack.push(REGEX_HEADER_WORDS.has(prevWord));
+        parenStack.push(regexHeaderWords.has(prevWord));
         afterHeaderParen = false;
       } else if (c === ')') {
         afterHeaderParen = parenStack.length ? parenStack.pop() === true : false;
@@ -418,12 +418,12 @@ function backslashViolation(where, spec) {
 }
 
 // static import/export-from and side-effect import (on comment-stripped code)
-const STATIC_RE = new RegExp(
+const staticRe = new RegExp(
   `${B}(?:import|export)\\s[^;'"\`]*?from\\s*(['"])([^'"\\n]*)\\1|${B}import\\s*(['"])([^'"\\n]*)\\3`,
   'g'
 );
-const DYNAMIC_RE = /\bimport\s*\(/g;
-const COMMONJS_RE = /\b(createRequire|require)\s*\(/g;
+const dynamicRe = /\bimport\s*\(/g;
+const commonjsRe = /\b(createRequire|require)\s*\(/g;
 
 function resolveSpec(fromFile, spec) {
   if (!spec.startsWith('.')) return null; // bare package import
@@ -463,15 +463,15 @@ function importSites(file) {
   const sites = [];
   const nonliteral = [];
   const commonjs = [];
-  STATIC_RE.lastIndex = 0;
+  staticRe.lastIndex = 0;
   let m;
-  while ((m = STATIC_RE.exec(code))) {
+  while ((m = staticRe.exec(code))) {
     if (inSpans(spans, keywordIndex(m))) continue; // an "import" inside a string span
     const spec = m[2] ?? m[4];
     sites.push({ spec, target: resolveSpec(file, spec), line: matchLine(code, m), dynamic: false });
   }
-  DYNAMIC_RE.lastIndex = 0;
-  while ((m = DYNAMIC_RE.exec(code))) {
+  dynamicRe.lastIndex = 0;
+  while ((m = dynamicRe.exec(code))) {
     if (inSpans(spans, m.index)) continue; // `import(` inside a string
     const line = lineOf(code, m.index);
     let j = m.index + m[0].length;
@@ -499,8 +499,8 @@ function importSites(file) {
     }
     sites.push({ spec: literal, target: resolveSpec(file, literal), line, dynamic: true });
   }
-  COMMONJS_RE.lastIndex = 0;
-  while ((m = COMMONJS_RE.exec(code))) {
+  commonjsRe.lastIndex = 0;
+  while ((m = commonjsRe.exec(code))) {
     if (inSpans(spans, m.index)) continue;
     const end = code.indexOf('\n', m.index);
     const line = lineOf(code, m.index);
@@ -533,7 +533,7 @@ const directCache = new Map();
 function directImports(file) {
   if (directCache.has(file)) return directCache.get(file);
   let out = [];
-  if (statTolerant(file)?.isFile() && SOURCE_EXT_RE.test(file)) {
+  if (statTolerant(file)?.isFile() && sourceExtRe.test(file)) {
     out = importSites(file)
       .sites.map((s) => s.target)
       .filter((t) => t && isRepoFile(t));
@@ -582,14 +582,14 @@ function closureHttpHit(start) {
 // ── --closure <file> ───────────────────────────────────────────────────────────────────
 function closureOf(startFile) {
   const seen = new Set();
-  const stack = [path.resolve(REPO_ROOT, startFile)];
+  const stack = [path.resolve(repoRoot, startFile)];
   while (stack.length) {
     const f = stack.pop();
-    if (seen.has(f) || !fs.existsSync(f) || !SOURCE_EXT_RE.test(f) || !isRepoFile(f)) continue;
+    if (seen.has(f) || !fs.existsSync(f) || !sourceExtRe.test(f) || !isRepoFile(f)) continue;
     seen.add(f);
     for (const t of directImports(f)) stack.push(t);
   }
-  seen.delete(path.resolve(REPO_ROOT, startFile));
+  seen.delete(path.resolve(repoRoot, startFile));
   return [...seen].map(rel).sort();
 }
 
@@ -599,7 +599,7 @@ if (argv[0] === '--closure') {
     console.error(`${TAG} usage: --closure <repo-relative file>`);
     process.exit(2);
   }
-  const start = path.resolve(REPO_ROOT, argv[1]);
+  const start = path.resolve(repoRoot, argv[1]);
   if (!fs.existsSync(start)) {
     console.error(`${TAG} --closure: no such file ${argv[1]}`);
     process.exit(2);
@@ -611,17 +611,17 @@ if (argv[0] === '--closure') {
 }
 
 // ── the gate ──────────────────────────────────────────────────────────────────────────
-if (!fs.existsSync(MODULES_DIR)) {
-  console.error(`${TAG} FAIL — ${rel(MODULES_DIR)} not found`);
+if (!fs.existsSync(modulesDir)) {
+  console.error(`${TAG} FAIL — ${rel(modulesDir)} not found`);
   process.exit(2);
 }
-if (!fs.existsSync(ALLOWLIST_PATH)) {
+if (!fs.existsSync(allowlistPath)) {
   console.error(
-    `${TAG} FAIL — ${rel(ALLOWLIST_PATH)} missing; the pinned exception lists are part of this gate`
+    `${TAG} FAIL — ${rel(allowlistPath)} missing; the pinned exception lists are part of this gate`
   );
   process.exit(2);
 }
-const allowlist = JSON.parse(fs.readFileSync(ALLOWLIST_PATH, 'utf8'));
+const allowlist = JSON.parse(fs.readFileSync(allowlistPath, 'utf8'));
 const deepImportsListed =
   allowlist.deepImports && typeof allowlist.deepImports === 'object' ? allowlist.deepImports : {};
 const testBlockListed =
@@ -631,24 +631,24 @@ const testBlockListed =
 
 // Another suite's reserved-name plant directory is never a module, barrel or not (rfv9j round, M2);
 // walk() reports it once as a skipped foreign plant.
-const moduleDirs = readdirSyncTolerant(MODULES_DIR, { withFileTypes: true }, LABEL)
+const moduleDirs = readdirSyncTolerant(modulesDir, { withFileTypes: true }, LABEL)
   .filter(
     (d) =>
       d.isDirectory() &&
       d.name !== '__tests__' &&
       d.name !== 'node_modules' &&
-      !isReservedScratchPlantPathSegment(d.name, OWN_PLANT_TOKENS)
+      !isReservedScratchPlantPathSegment(d.name, ownPlantTokens)
   )
   .map((d) => d.name)
   .sort();
 // A module is a directory with a barrel; a barrel-less directory under modules/ is anomalous
 // (stray plant directories have appeared before) and is reported, not counted.
 const modules = moduleDirs.filter((name) =>
-  fs.existsSync(path.join(MODULES_DIR, name, 'index.mjs'))
+  fs.existsSync(path.join(modulesDir, name, 'index.mjs'))
 );
 const barrelless = moduleDirs.filter((name) => !modules.includes(name));
-const files = walk(MODULES_DIR);
-if (modules.length < MIN_MODULES || files.length < MIN_FILES) {
+const files = walk(modulesDir);
+if (modules.length < minModules || files.length < minFiles) {
   console.error(
     `${TAG} FAIL — parse sanity: ${modules.length} module(s), ${files.length} production file(s); refusing a vacuous pass`
   );
@@ -670,12 +670,12 @@ for (const [section, entries] of [
     const reason = entry && typeof entry.reason === 'string' ? entry.reason.trim() : '';
     const issue = entry && typeof entry.issue === 'string' ? entry.issue.trim() : '';
     const missing = [];
-    if (reason.length < MIN_REASON_LENGTH)
-      missing.push(`a real \`reason\` (>= ${MIN_REASON_LENGTH} chars)`);
-    if (!ISSUE_REF_RE.test(issue)) missing.push('a valid `issue` (Equoria-…)');
+    if (reason.length < minReasonLength)
+      missing.push(`a real \`reason\` (>= ${minReasonLength} chars)`);
+    if (!issueRefRe.test(issue)) missing.push('a valid `issue` (Equoria-…)');
     if (missing.length)
       violations.push(
-        `allowlist-contract ${ALLOWLIST_NAME} ${section} "${key}" — missing ${missing.join(' and ')}`
+        `allowlist-contract ${allowlistName} ${section} "${key}" — missing ${missing.join(' and ')}`
       );
   }
 }
@@ -705,7 +705,7 @@ for (const file of files) {
     );
   }
   rawLines.forEach((l, i) => {
-    if (R2_MARKER_RE.test(l)) {
+    if (r2MarkerRe.test(l)) {
       markerLines += 1;
       markerSites.push(`${rel(file)}:${i + 1}`);
     }
@@ -854,21 +854,21 @@ for (const comp of sccs()) {
 }
 
 // ── R3 / R4 on barrels ────────────────────────────────────────────────────────────────
-const RE_EXPORT_RE = new RegExp(
+const reExportRe = new RegExp(
   `${B}export\\s*(\\*|\\{([^}]*)\\})\\s*(?:as\\s+[\\w$]+\\s*)?from\\s*(['"])([^'"\\n]*)\\3`,
   'g'
 );
-const IMPORT_BINDING_RE = new RegExp(
+const importBindingRe = new RegExp(
   `${B}import\\s+([^;'"\`]*?)\\s*from\\s*(['"])([^'"\\n]*)\\2`,
   'g'
 );
-const LOCAL_EXPORT_RE = new RegExp(`${B}export\\s*\\{([^}]*)\\}(?!\\s*from)`, 'g');
+const localExportRe = new RegExp(`${B}export\\s*\\{([^}]*)\\}(?!\\s*from)`, 'g');
 // `export default binding[.member]` and `export const X = binding[.member]`, semicolon optional.
-const DEFAULT_EXPORT_RE = new RegExp(
+const defaultExportRe = new RegExp(
   `${B}export\\s+default\\s+([A-Za-z_$][\\w$]*)(?:\\s*\\.\\s*[\\w$]+)*\\s*(?:;|\\n|$)`,
   'g'
 );
-const CONST_ALIAS_RE = new RegExp(
+const constAliasRe = new RegExp(
   `${B}export\\s+(?:const|let|var)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*([A-Za-z_$][\\w$]*)(?:\\s*\\.\\s*[\\w$]+)*\\s*(?:;|\\n|$)`,
   'g'
 );
@@ -876,9 +876,9 @@ const CONST_ALIAS_RE = new RegExp(
 /** `export { a as b, c } from 'spec'` and `export * from 'spec'` statements of a stripped source. */
 function reExportStatements(code) {
   const out = [];
-  RE_EXPORT_RE.lastIndex = 0;
+  reExportRe.lastIndex = 0;
   let m;
-  while ((m = RE_EXPORT_RE.exec(code))) {
+  while ((m = reExportRe.exec(code))) {
     out.push({
       names: m[1] === '*' ? '*' : parseNameClause(m[2]),
       spec: m[4],
@@ -908,9 +908,9 @@ function importClauseBindings(clause) {
 /** `import … from X` bindings of a stripped source: [{ local, orig, spec }]. */
 function importBindingStatements(code) {
   const out = [];
-  IMPORT_BINDING_RE.lastIndex = 0;
+  importBindingRe.lastIndex = 0;
   let m;
-  while ((m = IMPORT_BINDING_RE.exec(code))) {
+  while ((m = importBindingRe.exec(code))) {
     for (const b of importClauseBindings(m[1])) out.push({ ...b, spec: m[3] });
   }
   return out;
@@ -922,15 +922,15 @@ function importBindingStatements(code) {
  */
 function localExportStatements(code) {
   const out = [];
-  LOCAL_EXPORT_RE.lastIndex = 0;
+  localExportRe.lastIndex = 0;
   let m;
-  while ((m = LOCAL_EXPORT_RE.exec(code))) {
+  while ((m = localExportRe.exec(code))) {
     for (const nm of parseNameClause(m[1])) out.push({ exported: nm.local, local: nm.orig });
   }
-  DEFAULT_EXPORT_RE.lastIndex = 0;
-  while ((m = DEFAULT_EXPORT_RE.exec(code))) out.push({ exported: 'default', local: m[1] });
-  CONST_ALIAS_RE.lastIndex = 0;
-  while ((m = CONST_ALIAS_RE.exec(code))) out.push({ exported: m[1], local: m[2] });
+  defaultExportRe.lastIndex = 0;
+  while ((m = defaultExportRe.exec(code))) out.push({ exported: 'default', local: m[1] });
+  constAliasRe.lastIndex = 0;
+  while ((m = constAliasRe.exec(code))) out.push({ exported: m[1], local: m[2] });
   return out;
 }
 
@@ -945,7 +945,7 @@ function classifyTarget(absTarget, wanted, depth = 0, visited = new Set()) {
   const direct = httpKind(r);
   if (direct) return { kind: direct, chain: [r] };
   const targetStat = statTolerant(absTarget);
-  if (depth >= MAX_CHAIN_DEPTH || visited.has(absTarget) || !targetStat || targetStat.isDirectory())
+  if (depth >= maxChainDepth || visited.has(absTarget) || !targetStat || targetStat.isDirectory())
     return null;
   visited.add(absTarget);
   const rawTarget = readScannedFileSyncTolerant(absTarget, LABEL);
@@ -1014,25 +1014,25 @@ function closureViolation(where, what, target, hit) {
     return;
   }
   const originRel = inner[originIdx];
-  const line = barrelLineImporting(path.join(REPO_ROOT, originRel), hit.path[originIdx + 2]);
+  const line = barrelLineImporting(path.join(repoRoot, originRel), hit.path[originIdx + 2]);
   r4Cascade.push(`${base} — via origin ${originRel}:${line ?? '?'}`);
 }
-const STAR_EXPORT_RE = new RegExp(`${B}export\\s*\\*`, 'g');
-const BARREL_STMT_RE = new RegExp(
+const starExportRe = new RegExp(`${B}export\\s*\\*`, 'g');
+const barrelStmtRe = new RegExp(
   `${B}export\\s*\\{([^}]*)\\}\\s*from\\s*(['"])([^'"\\n]*)\\2|${B}import\\s([^;'"\`]*?)from\\s*(['"])([^'"\\n]*)\\5|${B}import\\s*(['"])([^'"\\n]*)\\7`,
   'g'
 );
 for (const mod of modules) {
-  const barrel = path.join(MODULES_DIR, mod, 'index.mjs');
+  const barrel = path.join(modulesDir, mod, 'index.mjs');
   const raw = readScannedFileSyncTolerant(barrel, LABEL);
   if (raw === null) {
     vanished.push(barrel); // Equoria-rfv9j: a transient module directory lost its barrel mid-run
     continue;
   }
   const { code, spans } = stripComments(raw);
-  STAR_EXPORT_RE.lastIndex = 0;
+  starExportRe.lastIndex = 0;
   let m;
-  while ((m = STAR_EXPORT_RE.exec(code))) {
+  while ((m = starExportRe.exec(code))) {
     if (inSpans(spans, keywordIndex(m))) continue;
     starExports += 1;
     violations.push(
@@ -1040,8 +1040,8 @@ for (const mod of modules) {
     );
   }
   const handledLines = new Set();
-  BARREL_STMT_RE.lastIndex = 0;
-  while ((m = BARREL_STMT_RE.exec(code))) {
+  barrelStmtRe.lastIndex = 0;
+  while ((m = barrelStmtRe.exec(code))) {
     if (inSpans(spans, keywordIndex(m))) continue;
     const isReExport = m[1] !== undefined;
     const spec = m[3] ?? m[6] ?? m[8];
@@ -1053,7 +1053,7 @@ for (const mod of modules) {
       violations.push(bs);
       continue;
     }
-    const target = resolveSpec(barrel, spec) || path.join(MODULES_DIR, mod, spec);
+    const target = resolveSpec(barrel, spec) || path.join(modulesDir, mod, spec);
     let names = [];
     let wanted = ['*'];
     if (isReExport) {

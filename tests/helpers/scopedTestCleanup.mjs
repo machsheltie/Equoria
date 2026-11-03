@@ -14,7 +14,7 @@
  */
 
 /** Fixed string PKs created by tests/progression.integration.test.mjs. */
-export const PROGRESSION_TEST_USER_IDS = ['test-user-1', 'test-user-2', 'test-user-3'];
+export const progressionTestUserIds = ['test-user-1', 'test-user-2', 'test-user-3'];
 
 /**
  * Delete ONLY the progression suite's fixture users and their xpEvents.
@@ -23,7 +23,7 @@ export const PROGRESSION_TEST_USER_IDS = ['test-user-1', 'test-user-2', 'test-us
  * @param {import('@prisma/client').PrismaClient} prisma
  * @param {string[]} [userIds] - fixture user ids to scope to.
  */
-export async function cleanupProgressionFixtures(prisma, userIds = PROGRESSION_TEST_USER_IDS) {
+export async function cleanupProgressionFixtures(prisma, userIds = progressionTestUserIds) {
   await prisma.xpEvent.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
 }

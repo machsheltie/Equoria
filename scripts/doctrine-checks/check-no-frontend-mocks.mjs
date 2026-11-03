@@ -22,20 +22,20 @@ import { fileURLToPath } from 'node:url';
 // library's frontend-mock regex (it adds seededFakePlayers / fakeMetrics).
 import {
   makeFrontendMockRegexes,
-  FRONTEND_MOCK_EXEMPTION_MARKER as MARKER,
+  frontendMockExemptionMarker as MARKER,
   walkFiles,
   readScannedFileSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
-const SCAN_ROOT = path.join(REPO_ROOT, 'frontend', 'src');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
+const scanRoot = path.join(repoRoot, 'frontend', 'src');
 
-if (!fs.existsSync(SCAN_ROOT)) {
+if (!fs.existsSync(scanRoot)) {
   process.exit(0);
 }
 
-const FORBIDDEN_TOKENS = makeFrontendMockRegexes();
+const forbiddenTokens = makeFrontendMockRegexes();
 
 // Per-check scope predicates (Equoria-ml7jj). These reproduce this check's
 // ORIGINAL local walk skip/include rules verbatim; the shared walkFiles helper
@@ -53,7 +53,7 @@ const includeFile = (name) =>
 
 const failures = [];
 
-for (const file of walkFiles([SCAN_ROOT], { skipDir, includeFile })) {
+for (const file of walkFiles([scanRoot], { skipDir, includeFile })) {
   // Equoria-q7lqz/7avnu: a walked file can vanish before this read (concurrent
   // jest sentinel plant+delete). Tolerant reader returns null ONLY on ENOENT
   // (with a one-line notice) and rethrows anything else — never a silent catch.
@@ -63,11 +63,11 @@ for (const file of walkFiles([SCAN_ROOT], { skipDir, includeFile })) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line.includes(MARKER)) continue;
-    for (const re of FORBIDDEN_TOKENS) {
+    for (const re of forbiddenTokens) {
       const m = re.exec(line);
       if (m) {
         failures.push({
-          file: path.relative(REPO_ROOT, file),
+          file: path.relative(repoRoot, file),
           line: i + 1,
           token: m[0],
           text: line.trim().slice(0, 120),

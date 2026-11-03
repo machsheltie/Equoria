@@ -61,10 +61,10 @@ if (!url) {
   process.exit(2);
 }
 
-const QUERY_BUDGET_MS = 5000;
+const queryBudgetMs = 5000;
 const client = new Client({
   connectionString: url,
-  connectionTimeoutMillis: QUERY_BUDGET_MS,
+  connectionTimeoutMillis: queryBudgetMs,
 });
 
 const probe = (async () => {
@@ -75,16 +75,16 @@ const probe = (async () => {
 
 // NOTE: capture the timer handle so we can clearTimeout() it after the race
 // settles. Without this, the unreferenced setTimeout keeps Node's event loop
-// alive for the FULL QUERY_BUDGET_MS even when the probe resolves in ~150ms —
+// alive for the FULL queryBudgetMs even when the probe resolves in ~150ms —
 // every push then idles ~5s here on the happy path. (Equoria-l052p)
 let timeoutHandle;
 const timeout = new Promise((_resolve, reject) => {
   timeoutHandle = setTimeout(
     () =>
       reject(
-        new Error('probe exceeded ' + QUERY_BUDGET_MS + 'ms (Postgres reachable but unresponsive?)')
+        new Error('probe exceeded ' + queryBudgetMs + 'ms (Postgres reachable but unresponsive?)')
       ),
-    QUERY_BUDGET_MS
+    queryBudgetMs
   );
 });
 
