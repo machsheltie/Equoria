@@ -34,6 +34,12 @@ describe('getStatScore', () => {
     expect(() => getStatScore(makeHorse(), 'Underwater Polo')).toThrow('Unknown discipline: Underwater Polo');
   });
 
+  it('throws when a stat value is a non-numeric string', () => {
+    // Moved from modules/horses/__tests__/pregnancyBonusService.test.mjs (Equoria-k1vly, owner q336).
+    const badHorse = makeHorse({ speed: 'fast', stamina: 60, focus: 40 });
+    expect(() => getStatScore(badHorse, 'Racing')).toThrow();
+  });
+
   it('calculates weighted score for Racing (speed/stamina/focus all 100)', () => {
     // Racing uses speed (primary), stamina (secondary), focus (tertiary)
     const horse = makeHorse({ speed: 100, stamina: 100, focus: 100 });

@@ -234,6 +234,14 @@ describe('horseStarterStats — clampStatsToTotalCap', () => {
     expect(Object.values(out).reduce((s, v) => s + v, 0)).toBe(statKeys.length);
   });
 
+  it('does not mutate the input when it clamps (total over cap)', () => {
+    // Moved from backend/__tests__/horseStarterStats.test.mjs (Equoria-k1vly, owner q336).
+    const input = buildStats(Array(12).fill(20)); // total = 240
+    const original = { ...input };
+    clampStatsToTotalCap(input, 200);
+    expect(input).toEqual(original);
+  });
+
   it('handles cap exactly equal to total (no scaling needed)', () => {
     const input = buildStats(Array(12).fill(10)); // total = 120
     const out = clampStatsToTotalCap(input, 120);
