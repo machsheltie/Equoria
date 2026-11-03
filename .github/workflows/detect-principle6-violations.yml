@@ -76,9 +76,11 @@ jobs:
           fi
 
           if [ "$VIOLATION_COUNT" -gt 0 ]; then
-            echo "VIOLATIONS=$VIOLATIONS" >> "$GITHUB_OUTPUT"
-            echo "VIOLATION_COUNT=$VIOLATION_COUNT" >> "$GITHUB_OUTPUT"
-            echo "FOUND_VIOLATIONS=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "VIOLATIONS=$VIOLATIONS"
+              echo "VIOLATION_COUNT=$VIOLATION_COUNT"
+              echo "FOUND_VIOLATIONS=true"
+            } >> "$GITHUB_OUTPUT"
           else
             echo "FOUND_VIOLATIONS=false" >> "$GITHUB_OUTPUT"
           fi
