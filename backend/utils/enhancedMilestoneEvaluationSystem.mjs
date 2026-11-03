@@ -44,29 +44,39 @@ export const traitThresholds = {
   DENY: -3,
 };
 
-// Milestone-specific trait pools
+// Milestone-specific trait pools. Owner ruling 2026-11-03 (q335): "Keep it,
+// current traits only." Every name here is on the roster
+// (utils/epigeneticTraits.mjs); 'trusting' became the roster's peopleTrusting
+// and every other off-roster name was dropped, not mapped to a guess. A pool
+// left with no roster trait of one polarity is empty, and that outcome names
+// no trait.
 export const milestoneTraitPools = {
   [milestoneTypes.IMPRINTING]: {
-    positive: ['bonded', 'trusting', 'calm'],
-    negative: ['fearful', 'reactive', 'withdrawn'],
+    positive: ['peopleTrusting'],
+    negative: ['fearful'],
   },
   [milestoneTypes.SOCIALIZATION]: {
-    positive: ['social', 'confident', 'curious'],
-    negative: ['antisocial', 'nervous', 'shy'],
+    positive: ['confident', 'curious'],
+    negative: [],
   },
   [milestoneTypes.curiosityPlay]: {
-    positive: ['playful', 'intelligent', 'bold'],
-    negative: ['lazy', 'dull', 'timid'],
+    positive: ['playful'],
+    negative: [],
   },
   [milestoneTypes.trustHandling]: {
-    positive: ['trusting', 'calm', 'cooperative'],
-    negative: ['hesitant', 'reactive', 'wary'],
+    positive: ['peopleTrusting'],
+    negative: [],
   },
   [milestoneTypes.confidenceReactivity]: {
     positive: ['confident', 'brave', 'resilient'],
-    negative: ['anxious', 'fearful', 'fragile'],
+    negative: ['fearful', 'fragile'],
   },
 };
+
+/** A random entry of `pool`, or null when the pool is empty. */
+function pickFrom(pool) {
+  return pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
+}
 
 /**
  * Evaluate enhanced milestone for a horse
@@ -381,7 +391,7 @@ export function determineTraitOutcome(finalScore, milestoneType) {
 
   if (finalScore >= traitThresholds.CONFIRM) {
     // Confirm positive trait
-    const trait = traitPool.positive[Math.floor(Math.random() * traitPool.positive.length)];
+    const trait = pickFrom(traitPool.positive);
     return {
       trait,
       type: 'positive',
@@ -389,16 +399,18 @@ export function determineTraitOutcome(finalScore, milestoneType) {
     };
   } else if (finalScore <= traitThresholds.DENY) {
     // Confirm negative trait
-    const trait = traitPool.negative[Math.floor(Math.random() * traitPool.negative.length)];
+    const trait = pickFrom(traitPool.negative);
     return {
       trait,
       type: 'negative',
-      reasoning: `Score ${finalScore} <= ${traitThresholds.DENY}: Negative trait confirmed`,
+      reasoning: trait
+        ? `Score ${finalScore} <= ${traitThresholds.DENY}: Negative trait confirmed`
+        : `Score ${finalScore} <= ${traitThresholds.DENY}: no current-roster negative trait for this milestone`,
     };
   } else {
     // Randomized within candidate pool
     const allTraits = [...traitPool.positive, ...traitPool.negative];
-    const trait = allTraits[Math.floor(Math.random() * allTraits.length)];
+    const trait = pickFrom(allTraits);
     const type = traitPool.positive.includes(trait) ? 'positive' : 'negative';
     return {
       trait,

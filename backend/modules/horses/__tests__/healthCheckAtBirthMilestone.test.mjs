@@ -57,12 +57,14 @@ describe('traitThresholds', () => {
 });
 
 describe('milestoneTraitPools', () => {
-  it('each milestone has positive and negative trait arrays', () => {
+  // Owner ruling 2026-11-03 (q335): current-roster traits only. Three milestones
+  // have no roster trait of negative polarity, so their negative pool is empty
+  // (milestoneTraitPoolsRosterOnly.test.mjs pins the roster-only rule).
+  it('each milestone has positive and negative trait arrays, with at least one positive trait', () => {
     for (const pool of Object.values(milestoneTraitPools)) {
       expect(Array.isArray(pool.positive)).toBe(true);
       expect(Array.isArray(pool.negative)).toBe(true);
       expect(pool.positive.length).toBeGreaterThan(0);
-      expect(pool.negative.length).toBeGreaterThan(0);
     }
   });
 });
