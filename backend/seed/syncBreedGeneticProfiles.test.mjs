@@ -14,11 +14,14 @@ import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../__tests__/helpers/failLoudCleanup.mjs';
+import { createTestHorse, cleanupTestHorses } from '../__tests__/helpers/createTestHorse.mjs';
 import {
   defaultBreedProfilesJson,
   findSourceJsonDrift,
   loadBreedSourceProfiles,
   parseBreedSourceFile,
+  removeRetiredBreeds,
+  retiredBreedNames,
   syncBreedGeneticProfiles,
 } from './syncBreedGeneticProfiles.mjs';
 
@@ -54,8 +57,12 @@ describe('syncBreedGeneticProfiles (Equoria-hxhqk)', () => {
 
   afterAll(() => cleanup.run(), 60000);
 
-  it('loads all 312 breed files and they agree with breedProfiles.json', async () => {
-    expect(sources.size).toBe(312);
+  // Old contract: 312 breed files. Owner ruling q337 (2026-11-03): keep
+  // 'Tennessee Walking Horse' and remove the duplicate 'Tennessee Walking'.
+  it('loads all 311 breed files and they agree with breedProfiles.json', async () => {
+    expect(sources.size).toBe(311);
+    expect(sources.has('Tennessee Walking')).toBe(false);
+    expect(sources.has('Tennessee Walking Horse')).toBe(true);
     const json = JSON.parse(readFileSync(defaultBreedProfilesJson, 'utf8'));
     expect(findSourceJsonDrift(sources, json)).toEqual([]);
     // Full profile, not just the JSON subset: color genetics come along.
@@ -199,11 +206,59 @@ describe('syncBreedGeneticProfiles (Equoria-hxhqk)', () => {
   it('loads each file breed with its defaultTrait', async () => {
     const { loadBreedSourceRows } = await import('./syncBreedGeneticProfiles.mjs');
     const rowsBySource = await loadBreedSourceRows();
-    expect(rowsBySource.size).toBe(312);
+    expect(rowsBySource.size).toBe(311);
     expect(rowsBySource.get('Tennessee Walking Horse').defaultTrait).toBe('Gaited');
     expect(rowsBySource.get('Taishū horse').defaultTrait).toBe('Endurance');
     expect(rowsBySource.get('Pony Of The Americas').defaultTrait).toBe('Gymkhana');
     expect(rowsBySource.get('Abaga').profile).toEqual(profileA);
+  });
+
+  // Equoria-rd1ed, owner ruling q337 (2026-11-03): remove the duplicate
+  // 'Tennessee Walking' breed row; never delete a row a horse still uses.
+  describe('removeRetiredBreeds', () => {
+    const horseIds = [];
+    const unusedName = `TestFixture-BreedSync-${tag}-retired-unused`;
+    const usedName = `TestFixture-BreedSync-${tag}-retired-used`;
+    const retiredNames = [unusedName, usedName];
+
+    beforeAll(async () => {
+      await prisma.breed.create({ data: { name: unusedName } });
+      const used = await prisma.breed.create({ data: { name: usedName } });
+      await createTestHorse(
+        prisma,
+        { name: `TestFixture-BreedSync-${tag}-horse`, sex: 'Mare', dateOfBirth: new Date(), breedId: used.id },
+        horseIds,
+      );
+    });
+
+    afterAll(() => cleanupTestHorses(prisma, horseIds), 30000);
+
+    it('names exactly the duplicate Tennessee Walking', () => {
+      expect(retiredBreedNames).toEqual(['Tennessee Walking']);
+    });
+
+    it('dry run lists, apply deletes only rows no horse uses, second apply deletes 0', async () => {
+      const dry = await removeRetiredBreeds(prisma, { profiles: sources, retiredNames });
+      expect(dry.removed).toEqual([unusedName]);
+      expect(dry.inUse).toEqual([{ name: usedName, horses: 1 }]);
+      expect(await prisma.breed.findUnique({ where: { name: unusedName } })).not.toBeNull();
+
+      const first = await removeRetiredBreeds(prisma, { profiles: sources, retiredNames, apply: true });
+      expect(first.removed).toEqual([unusedName]);
+      expect(first.inUse).toEqual([{ name: usedName, horses: 1 }]);
+      expect(await prisma.breed.findUnique({ where: { name: unusedName } })).toBeNull();
+      expect(await prisma.breed.findUnique({ where: { name: usedName } })).not.toBeNull();
+
+      const second = await removeRetiredBreeds(prisma, { profiles: sources, retiredNames, apply: true });
+      expect(second.removed).toEqual([]);
+    });
+
+    it('refuses a retired name that still has a breed file', async () => {
+      await expect(
+        removeRetiredBreeds(prisma, { profiles: sources, retiredNames: ['Abaga'], apply: true }),
+      ).rejects.toThrow(/still have a .txt file: Abaga/);
+      expect(await prisma.breed.findUnique({ where: { name: 'Abaga' } })).not.toBeNull();
+    });
   });
 
   it('refuses an empty profile map', async () => {

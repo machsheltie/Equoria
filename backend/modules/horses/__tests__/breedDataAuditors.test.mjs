@@ -53,7 +53,9 @@ describe('breed-data auditors (Equoria-26qjf.4 AC3 — data guard)', () => {
     const [, ok, fail, total] = m.map(Number);
     expect(fail).toBe(0);
     expect(ok).toBe(total);
-    expect(total).toBeGreaterThanOrEqual(312);
+    // Old contract: 312 breeds. Owner ruling q337 (2026-11-03): keep 'Tennessee
+    // Walking Horse' and remove the duplicate 'Tennessee Walking' -> 311.
+    expect(total).toBeGreaterThanOrEqual(311);
   });
 
   test('_audit_color_rules.mjs: 0 hard errors', () => {

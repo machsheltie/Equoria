@@ -33,9 +33,11 @@ const nonGaited = 'Thoroughbred';
 const GAITED = 'American Saddlebred';
 
 describe('breedProfiles.json agrees with the seed files (owner ruling 2026-10-21)', () => {
-  it('covers exactly the same 312 breeds', () => {
+  // Old contract: 312 breeds. Owner ruling q337 (2026-11-03): keep 'Tennessee
+  // Walking Horse' and remove the duplicate 'Tennessee Walking' -> 311.
+  it('covers exactly the same 311 breeds', () => {
     expect(Object.keys(jsonProfiles).sort()).toEqual(Object.keys(seedProfiles).sort());
-    expect(Object.keys(jsonProfiles)).toHaveLength(312);
+    expect(Object.keys(jsonProfiles)).toHaveLength(311);
   });
 
   it.each(Object.keys(seedProfiles))('%s: same conformation, gaits, gaited status and temperament odds', name => {

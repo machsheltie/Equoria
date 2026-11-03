@@ -377,7 +377,7 @@ describe('no breed can roll a new gene yet (q313/q315; breed odds deferred to Eq
 
   it('no breed file allows or weights a new allele or locus', async () => {
     const profiles = await loadBreedSourceProfiles();
-    expect(profiles.size).toBeGreaterThanOrEqual(312);
+    expect(profiles.size).toBeGreaterThanOrEqual(311); // q337 2026-11-03: was 312, duplicate Tennessee Walking removed
     for (const [name, profile] of profiles) {
       for (const section of ['allowedAlleles', 'alleleWeights']) {
         const loci = profile[section] ?? {};
@@ -396,7 +396,7 @@ describe('no breed can roll a new gene yet (q313/q315; breed odds deferred to Eq
 
   it('a generated horse of any breed never carries a new allele', async () => {
     const profiles = await loadBreedSourceProfiles();
-    expect(profiles.size).toBeGreaterThanOrEqual(312);
+    expect(profiles.size).toBeGreaterThanOrEqual(311); // q337 2026-11-03: was 312, duplicate Tennessee Walking removed
     for (const profile of profiles.values()) {
       for (const roll of [0, 0.5, 0.999]) {
         const genotype = generateGenotype(profile, () => roll);

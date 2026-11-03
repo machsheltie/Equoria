@@ -139,10 +139,12 @@ describe('breed source files — conformation completeness sentinel (Equoria-9cp
     }
   });
 
-  it('finds the full 312-breed roster of source .txt files', () => {
+  // Old contract: 312 breeds. Owner ruling q337 (2026-11-03): keep 'Tennessee
+  // Walking Horse' and remove the duplicate 'Tennessee Walking' -> 311.
+  it('finds the full 311-breed roster of source .txt files', () => {
     // Locks the count so a wholesale deletion / move of source files is caught
     // (the 8-region check would otherwise vacuously pass over an empty set).
-    expect(parsed.length).toBe(312);
+    expect(parsed.length).toBe(311);
   });
 
   it('every breed .txt has all 8 conformation regions with finite mean (0-100) + finite stdDev', () => {

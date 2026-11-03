@@ -20,6 +20,13 @@
  * accents and case are folded is NOT inserted; it is reported as a near
  * duplicate for a person to resolve.
  *
+ * --remove-retired (Equoria-rd1ed, owner ruling q337 2026-11-03: "keep
+ * 'Tennessee Walking Horse' and remove the duplicate 'Tennessee Walking'"):
+ * deletes the DB rows for the breed names in retiredBreedNames. A retired name
+ * that still has a .txt file is refused (the files must go first), and a row
+ * that any horse still points at is never deleted; it is reported instead.
+ * The delete is one guarded statement, so a second run deletes 0.
+ *
  * Source of the profile: backend/data/breeds/*.txt — the files
  * populateBreedsFromSql.mjs loads into the DB locally. They carry the FULL
  * profile (color genetics + ratingProfiles + temperamentWeights). The
@@ -43,6 +50,9 @@
  *   Also insert file breeds that have no DB row (dry run, then apply):
  *     node backend/seed/syncBreedGeneticProfiles.mjs --insert-missing --dry-run
  *     node backend/seed/syncBreedGeneticProfiles.mjs --insert-missing --apply
+ *   Remove the retired duplicate breed rows (dry run, then apply):
+ *     node backend/seed/syncBreedGeneticProfiles.mjs --remove-retired --dry-run
+ *     node backend/seed/syncBreedGeneticProfiles.mjs --remove-retired --apply
  *   (--dry-run is the default and is accepted to make the intent explicit;
  *   it wins if both --dry-run and --apply are given.)
  *
@@ -296,6 +306,64 @@ export async function syncBreedGeneticProfiles(
   };
 }
 
+/**
+ * Breed names the owner has retired. Their seed files and JSON entries are
+ * already gone; --remove-retired deletes any DB row still carrying the name.
+ * q337 (2026-11-03): 'Tennessee Walking' duplicated 'Tennessee Walking Horse'.
+ */
+export const retiredBreedNames = Object.freeze(['Tennessee Walking']);
+
+/**
+ * Delete the DB rows of retired breed names that no horse references.
+ *
+ * @param {object} db - a Prisma client (or interactive transaction client)
+ * @param {object} opts
+ * @param {Map<string, object>} opts.profiles - the current source breeds; a
+ *   retired name still among them is refused
+ * @param {boolean} [opts.apply=false] - false = report only, delete nothing
+ * @param {readonly string[]} [opts.retiredNames=retiredBreedNames]
+ * @returns {Promise<{
+ *   apply: boolean,
+ *   removed: string[],                              // deleted (apply) or would delete (dry run)
+ *   inUse: Array<{ name: string, horses: number }>, // kept: horses still point at it
+ * }>}
+ */
+export async function removeRetiredBreeds(
+  db,
+  { profiles, apply = false, retiredNames = retiredBreedNames },
+) {
+  if (!(profiles instanceof Map) || profiles.size === 0) {
+    throw new Error('removeRetiredBreeds requires a non-empty Map of breed profiles');
+  }
+  const stillInFiles = retiredNames.filter(n => profiles.has(n));
+  if (stillInFiles.length > 0) {
+    throw new Error(
+      `removeRetiredBreeds: retired breed(s) still have a .txt file: ${stillInFiles.join(', ')}`,
+    );
+  }
+  const names = [...retiredNames];
+  const rows = await db.$queryRawUnsafe(
+    `SELECT b.name, (SELECT count(*)::int FROM horses h WHERE h."breedId" = b.id) AS horses
+       FROM breeds b WHERE b.name = ANY($1::text[]) ORDER BY b.name`,
+    names,
+  );
+  const inUse = rows.filter(r => r.horses > 0).map(r => ({ name: r.name, horses: r.horses }));
+  let removed;
+  if (apply) {
+    const deleted = await db.$queryRawUnsafe(
+      `DELETE FROM breeds b
+        WHERE b.name = ANY($1::text[])
+          AND NOT EXISTS (SELECT 1 FROM horses h WHERE h."breedId" = b.id)
+        RETURNING b.name`,
+      names,
+    );
+    removed = deleted.map(r => r.name);
+  } else {
+    removed = rows.filter(r => r.horses === 0).map(r => r.name);
+  }
+  return { apply, removed: removed.sort(), inUse };
+}
+
 function describeTarget() {
   const url = process.env.DATABASE_URL ?? '';
   const match = url.match(/@([^/?]+)\/([^?]*)/);
@@ -305,6 +373,7 @@ function describeTarget() {
 async function main() {
   const apply = process.argv.includes('--apply') && !process.argv.includes('--dry-run');
   const insertMissing = process.argv.includes('--insert-missing');
+  const removeRetired = process.argv.includes('--remove-retired');
   const rows = await loadBreedSourceRows();
   const profiles = new Map([...rows].map(([name, row]) => [name, row.profile]));
   const defaultTraits = new Map([...rows].map(([name, row]) => [name, row.defaultTrait]));
@@ -327,6 +396,15 @@ async function main() {
       `breedGeneticProfile sync — target ${describeTarget()} — ${apply ? 'APPLY' : 'DRY RUN (no writes)'}`,
     );
     console.log(`  source breeds (.txt, agree with breedProfiles.json): ${profiles.size}`);
+    if (removeRetired) {
+      const gone = await removeRetiredBreeds(prisma, { profiles, apply });
+      console.log(
+        `  retired breed rows ${apply ? 'deleted' : 'would delete'}: ${gone.removed.length}`,
+      );
+      gone.removed.forEach(n => console.log(`    x ${n}`));
+      console.log(`  retired breed rows kept, horses still use them: ${gone.inUse.length}`);
+      gone.inUse.forEach(u => console.log(`    ! ${u.name} (${u.horses} horses)`));
+    }
     const r = await syncBreedGeneticProfiles(prisma, {
       profiles,
       apply,

@@ -50,9 +50,11 @@ const skipFiles = new Set([
 ]);
 
 // Lower bound landed by Equoria-26qjf.3. Asserted as `>=` (not `==`) so the
-// roster can grow without breaking the gate; only contraction below 312
+// roster can grow without breaking the gate; only contraction below 311
 // (i.e. a real regression) trips this assertion.
-const expectedMinBreeds = 312;
+// Old contract: 312. Owner ruling q337 (2026-11-03): keep 'Tennessee Walking
+// Horse' and remove the duplicate 'Tennessee Walking' -> 311.
+const expectedMinBreeds = 311;
 
 /**
  * Strip .txt and unescape SQL-doubled apostrophes from a breed filename so

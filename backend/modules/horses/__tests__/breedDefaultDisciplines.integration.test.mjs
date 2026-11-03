@@ -23,6 +23,7 @@ import { dirname, resolve } from 'node:path';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { DISCIPLINES } from '../../../constants/schema.mjs';
 import { breedDefaultDiscipline } from '../services/birthDiscipline.mjs';
+import { retiredBreedNames } from '../../../seed/syncBreedGeneticProfiles.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const backend = resolve(here, '../../..');
@@ -48,8 +49,10 @@ const seed = readdirSync(breedsDir)
   });
 
 describe('breed default disciplines (q232)', () => {
-  it('every one of the 312 seed breeds names a real discipline, never the placeholder', () => {
-    expect(seed).toHaveLength(312);
+  // Old contract: 312 breeds. Owner ruling q337 (2026-11-03): keep 'Tennessee
+  // Walking Horse' and remove the duplicate 'Tennessee Walking' -> 311.
+  it('every one of the 311 seed breeds names a real discipline, never the placeholder', () => {
+    expect(seed).toHaveLength(311);
     const bad = seed.filter(row => !row.name || !disciplines.has(row.discipline));
     expect(bad).toEqual([]);
   });
@@ -63,11 +66,13 @@ describe('breed default disciplines (q232)', () => {
     expect(wrong.map(row => row.name)).toEqual([]);
   });
 
-  it('the migration writes exactly the seed values', () => {
-    const pairs = [...migration.matchAll(/\('((?:[^']|'')*)', '((?:[^']|'')*)'\)/g)].map(m => [
-      m[1].replace(/''/g, "'"),
-      m[2].replace(/''/g, "'"),
-    ]);
+  // q337 (2026-11-03): the migration predates the removal of the duplicate
+  // 'Tennessee Walking'; its UPDATE row for that name matches nothing once the
+  // breed is gone, so every other row must still equal the seed.
+  it('the migration writes exactly the seed values, apart from retired breeds', () => {
+    const pairs = [...migration.matchAll(/\('((?:[^']|'')*)', '((?:[^']|'')*)'\)/g)]
+      .map(m => [m[1].replace(/''/g, "'"), m[2].replace(/''/g, "'")])
+      .filter(([name]) => !retiredBreedNames.includes(name));
     const expected = seed.map(row => [row.name, row.discipline]);
     expect(pairs.sort()).toEqual(expected.sort());
   });

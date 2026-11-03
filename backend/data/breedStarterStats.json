@@ -13699,56 +13699,6 @@
       "std": 3
     }
   },
-  "Tennessee Walking": {
-    "speed": {
-      "mean": 15,
-      "std": 3
-    },
-    "stamina": {
-      "mean": 17,
-      "std": 3
-    },
-    "agility": {
-      "mean": 18,
-      "std": 3
-    },
-    "balance": {
-      "mean": 19,
-      "std": 3
-    },
-    "precision": {
-      "mean": 14,
-      "std": 3
-    },
-    "intelligence": {
-      "mean": 17,
-      "std": 3
-    },
-    "boldness": {
-      "mean": 16,
-      "std": 3
-    },
-    "flexibility": {
-      "mean": 17,
-      "std": 3
-    },
-    "obedience": {
-      "mean": 18,
-      "std": 3
-    },
-    "focus": {
-      "mean": 16,
-      "std": 3
-    },
-    "endurance": {
-      "mean": 17,
-      "std": 3
-    },
-    "strength": {
-      "mean": 16,
-      "std": 3
-    }
-  },
   "Tersk horse": {
     "speed": {
       "mean": 15,
