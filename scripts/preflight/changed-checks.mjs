@@ -459,6 +459,7 @@ function runStep(label, argv, cwd, log) {
 }
 
 const relTo = (pkg, files) => files.map((f) => f.slice(pkg.length + 1));
+const lintBatchSize = 100;
 
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
@@ -587,13 +588,21 @@ async function main() {
       ok = false;
       continue;
     }
-    ok =
-      runStep(
-        `${label} on ${files.length} file(s)`,
-        [process.execPath, cli, ...args(relTo(pkg, files))],
-        path.join(repoRoot, pkg),
-        log
-      ) && ok;
+    // Batches keep the command line under Windows' 32,767-character limit; one
+    // spawn with 726 paths failed with ENAMETOOLONG (2026-11-03, camelCase phase 4).
+    const rel = relTo(pkg, files);
+    for (let i = 0; i < rel.length; i += lintBatchSize) {
+      const batch = rel.slice(i, i + lintBatchSize);
+      const part =
+        rel.length > lintBatchSize ? ` (files ${i + 1}-${i + batch.length} of ${rel.length})` : '';
+      ok =
+        runStep(
+          `${label} on ${batch.length} file(s)${part}`,
+          [process.execPath, cli, ...args(batch)],
+          path.join(repoRoot, pkg),
+          log
+        ) && ok;
+    }
   }
 
   // 2. Backend tests: serial, the targeted profile, real test database.
