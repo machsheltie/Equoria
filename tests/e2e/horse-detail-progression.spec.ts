@@ -59,9 +59,14 @@ test.describe('Horse Detail — Progression Tab (Equoria-prfgh)', () => {
     // ProgressionTab container — lazy content may take a moment.
     await expect(page.locator('[data-testid="progression-tab"]')).toBeVisible({ timeout: 15000 });
 
-    // The score progression section proves the tab rendered its real content
-    // before the absence checks below run.
-    await expect(page.locator('[data-testid="score-progression-section"]')).toBeVisible({
+    // The Discipline Scores section proves the tab rendered its real content
+    // before the absence checks below run. Owner request 2026-10-28
+    // (Equoria-a0fim) and ruling q217: the tab is the Points bar and the
+    // Discipline Scores. Old contract: a score-progression section, removed
+    // with the Horse Points history chart and Training History.
+    await expect(
+      page.locator('[data-testid="discipline-scores"] [data-testid^="discipline-score-"]').first()
+    ).toBeVisible({
       timeout: 15000,
     });
 

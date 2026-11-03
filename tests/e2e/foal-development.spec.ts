@@ -1,4 +1,4 @@
-import { test as base, expect } from '@playwright/test';
+import { test as base, expect, type Page } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
 import { seedOwnedHorses } from './fixtures/ownedHorses';
 import { foalMareNow } from './fixtures/foaling';
@@ -31,6 +31,20 @@ import { foalMareNow } from './fixtures/foaling';
  * job, and there is no graduation). We prove the page offers none of them
  * and the backend no longer serves their routes.
  */
+/**
+ * The horse page's care slot: Groom Horse (a groom is assigned) or Assign Groom
+ * (none yet), in the Quick Actions bar. Owner ruling 2026-10-28 (Equoria-7dje4):
+ * the "Tonight's Care" block (data-testid="horse-care") in the middle of the page
+ * is gone and Groom Horse lives in Quick Actions. Old contract: these tests
+ * waited for that Care area.
+ */
+function careSlot(page: Page) {
+  return page
+    .getByTestId('horse-action-bar')
+    .getByTestId('action-groom-horse')
+    .or(page.getByTestId('horse-action-bar').getByTestId('action-assign-groom'));
+}
+
 const test = base.extend<{ browserConsole: void }>({
   browserConsole: [
     async ({ page }, use, testInfo) => {
@@ -194,7 +208,7 @@ test.describe('Foal Development Lifecycle (one horse page: /foals/:id lands on /
     await session?.context.close();
   });
 
-  test('an old foal link lands on the horse page, with the Care area and no lifecycle buttons', async ({
+  test('an old foal link lands on the horse page, with the care slot and no lifecycle buttons', async ({
     page,
   }) => {
     await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
@@ -203,10 +217,10 @@ test.describe('Foal Development Lifecycle (one horse page: /foals/:id lands on /
     // The foal's name on her one horse page.
     await expect(page.getByRole('heading', { name: foalName })).toBeVisible({ timeout: 20000 });
 
-    // Tonight's Care area (owner ruling q67). There is NO Advance Day
-    // (Equoria-mwjst, owner ruling 2026-10-05: foals wait out their full
-    // development week) and NO Reveal Traits (Equoria-gu8jk).
-    await expect(page.getByTestId('horse-care')).toBeVisible({ timeout: 15000 });
+    // The care slot in Quick Actions (owner rulings q67, 2026-10-28). There is
+    // NO Advance Day (Equoria-mwjst, owner ruling 2026-10-05: foals wait out
+    // their full development week) and NO Reveal Traits (Equoria-gu8jk).
+    await expect(careSlot(page)).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('button', { name: /Advance Day/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /Reveal Traits/i })).toHaveCount(0);
   });
@@ -220,7 +234,7 @@ test.describe('Foal Development Lifecycle (one horse page: /foals/:id lands on /
     page,
   }) => {
     await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('horse-care')).toBeVisible({ timeout: 20000 });
+    await expect(careSlot(page)).toBeVisible({ timeout: 20000 });
     await expect(page.getByRole('button', { name: /Reveal Traits/i })).toHaveCount(0);
 
     const res = await csrfMutate(session, 'POST', `/api/v1/foals/${foalId}/reveal-traits`, {});
@@ -235,7 +249,7 @@ test.describe('Foal Development Lifecycle (one horse page: /foals/:id lands on /
     page,
   }) => {
     await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('horse-care')).toBeVisible({ timeout: 20000 });
+    await expect(careSlot(page)).toBeVisible({ timeout: 20000 });
     await expect(page.getByRole('button', { name: /Advance Day/i })).toHaveCount(0);
 
     const readDevelopment = async () => {
@@ -267,7 +281,7 @@ test.describe('Foal Development Lifecycle (one horse page: /foals/:id lands on /
     page,
   }) => {
     await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('horse-care')).toBeVisible({ timeout: 20000 });
+    await expect(careSlot(page)).toBeVisible({ timeout: 20000 });
     await expect(page.getByRole('button', { name: /Enrich/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /Graduat/i })).toHaveCount(0);
     await expect(page.getByText(/Available activities/i)).toHaveCount(0);

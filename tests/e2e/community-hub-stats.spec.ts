@@ -137,7 +137,10 @@ async function expectNoPendingStats(page: Page): Promise<void> {
   await expect(cards.first()).toBeVisible({ timeout: 15000 });
   await expect(cards.locator('[role="status"]')).toHaveCount(0, { timeout: 20000 });
   await expect(page.getByTestId('community-stats-error')).toHaveCount(0);
-  for (const label of ['Active threads', 'Unread', 'Conversations', 'Inductees', 'Total wins']) {
+  // Owner rulings 2026-10-28 (Equoria-vb1n0): the Hall of Fame card counts this
+  // week's Nominees beside its Inductees. Old contract: it showed the retired
+  // horses' "Total wins", which the hub no longer renders.
+  for (const label of ['Active threads', 'Unread', 'Conversations', 'Inductees', 'Nominees']) {
     await expect(statValue(page.locator('body'), label)).toHaveText(/^\d+$/);
   }
 }

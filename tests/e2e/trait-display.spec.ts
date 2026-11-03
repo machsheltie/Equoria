@@ -124,21 +124,36 @@ test.describe('Trait Display — Genetics tab (Equoria-2xa8l)', () => {
       throw new Error('E2E_TEST_HORSE_ID missing in process.env');
     }
 
-    // The indicator's state is decided by the REAL discovery-status counts, so
-    // read them from the response the page itself makes.
-    const discoveryRes = page.waitForResponse(
+    // Owner rulings q174 / q213 (2026-10-28, Equoria-i366a, Equoria-nrto5):
+    // Trait Discovery shows one chip per carried trait, read from the horse's
+    // own trait list (GET /api/v1/traits/horse/:id): a dark blue "Hidden" chip
+    // per hidden trait (count only, no name), a gold chip per revealed trait,
+    // a greyed "Inactive" chip per dormant one. Old contract: the indicator
+    // read GET /traits/discovery-status/:id and showed placeholders, a progress
+    // bar and an "All Traits Discovered!" banner, all removed by that ruling.
+    // The counts are read from the response the page itself makes.
+    const traitsRes = page.waitForResponse(
       (resp) =>
-        resp.url().includes(`/api/v1/traits/discovery-status/${testHorseId}`) &&
+        new URL(resp.url()).pathname === `/api/v1/traits/horse/${testHorseId}` &&
         resp.request().method() === 'GET' &&
         resp.status() === 200,
       { timeout: 30000 }
     );
     await openGeneticsTab(page, testHorseId);
-    const discoveryJson = (await (await discoveryRes).json()) as {
-      data?: { traitCounts?: { visible?: number; hidden?: number } };
+    const traitsJson = (await (await traitsRes).json()) as {
+      data?: {
+        traits?: {
+          positive?: unknown[];
+          negative?: unknown[];
+          dormant?: unknown[];
+          hiddenCount?: number;
+        };
+      };
     };
-    const visible = discoveryJson.data?.traitCounts?.visible ?? 0;
-    const hidden = discoveryJson.data?.traitCounts?.hidden ?? 0;
+    const buckets = traitsJson.data?.traits ?? {};
+    const revealed = (buckets.positive?.length ?? 0) + (buckets.negative?.length ?? 0);
+    const dormant = buckets.dormant?.length ?? 0;
+    const hidden = buckets.hiddenCount ?? 0;
 
     const discoverySection = page.locator('[data-testid="hidden-traits-section"]');
     await expect(discoverySection).toBeVisible({ timeout: 10000 });
@@ -148,25 +163,20 @@ test.describe('Trait Display — Genetics tab (Equoria-2xa8l)', () => {
     // never reveal traits — grooms will — so there is no discover control in
     // any state.
     await expect(page.locator('[data-testid="discover-traits-button"]')).toHaveCount(0);
+    await expect(discoverySection.getByText(/All Traits Discovered/i)).toHaveCount(0);
 
-    // HiddenTraitIndicator renders exactly one of three REAL states.
-    // Equoria-kjlub (2026-10-22). OLD CONTRACT: a horse with no hidden traits
-    // always showed "All Traits Discovered!", including a horse with no traits
-    // at all (a vacuous 0-of-0). NEW: a zero-trait horse reads "No traits
-    // discovered yet"; the all-discovered state needs at least one trait.
-    const hiddenPlaceholder = page.getByLabel('Hidden trait - not yet discovered').first();
-    const allDiscovered = discoverySection.getByText(/All Traits Discovered/i);
+    // Exactly one chip per carried trait, in its real state. This player is not
+    // the game owner, so a hidden trait is never named (Equoria-w4bvy).
     const noneYet = discoverySection.getByText('No traits discovered yet', { exact: true });
-    if (hidden > 0) {
-      await expect(hiddenPlaceholder).toBeVisible({ timeout: 8000 });
-      await expect(allDiscovered).toHaveCount(0);
-    } else if (visible > 0) {
-      await expect(allDiscovered).toBeVisible({ timeout: 8000 });
-      await expect(noneYet).toHaveCount(0);
-    } else {
+    if (revealed + dormant + hidden === 0) {
       await expect(noneYet).toBeVisible({ timeout: 8000 });
-      await expect(allDiscovered).toHaveCount(0);
+    } else {
+      await expect(noneYet).toHaveCount(0);
+      await expect(discoverySection.getByTestId('trait-chip-hidden')).toHaveCount(hidden);
+      await expect(discoverySection.getByTestId('trait-card')).toHaveCount(revealed);
+      await expect(discoverySection.getByTestId('trait-chip-inactive')).toHaveCount(dormant);
     }
+    await expect(discoverySection.getByTestId('trait-chip-hidden-named')).toHaveCount(0);
   });
 
   test('TraitDetailModal opens from a discovered trait card and closes', async ({ page }) => {
