@@ -134,12 +134,16 @@ describe('riderMarketplace — generateRiderMarketplace', () => {
     expect(marketplace).toHaveLength(RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE);
   });
 
-  it('index 0 is always the starter rider (rookie/methodical/Dressage)', () => {
+  // Owner rulings 2026-10-29 (q282/q283): the rider skill word and the visible
+  // speciality are retired; star level is the only level. Old contract:
+  // skillLevel 'rookie', speciality 'Dressage'.
+  it('index 0 is always the starter rider (Rookie, methodical, no speciality)', () => {
     const marketplace = generateRiderMarketplace();
     const starter = marketplace[0];
-    expect(starter.skillLevel).toBe('rookie');
+    expect(starter.starLevel).toBe('rookie');
+    expect(starter).not.toHaveProperty('skillLevel');
     expect(starter.personality).toBe('methodical');
-    expect(starter.speciality).toBe('Dressage');
+    expect(starter).not.toHaveProperty('speciality');
     expect(starter.experience).toBe(0);
     // Equoria-xlw03 (owner rulings 2026-10-28): the old affinity hint is gone.
     expect(starter).not.toHaveProperty('knownAffinities');
@@ -183,7 +187,8 @@ describe('riderMarketplace — RIDER_MARKETPLACE_CONFIG export', () => {
     expect(RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBe(6);
     expect(RIDER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBe(50);
     // Equoria-nawn5: weekly rates are now the star level's price (constants/staffLevels.mjs).
-    expect(RIDER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION.rookie).toBe(45);
+    // Owner ruling 2026-10-29 (q282): no skill-word odds. Old contract: SKILL_DISTRIBUTION.rookie 45.
+    expect(RIDER_MARKETPLACE_CONFIG).not.toHaveProperty('SKILL_DISTRIBUTION');
   });
 });
 
