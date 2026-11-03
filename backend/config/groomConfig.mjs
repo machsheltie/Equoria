@@ -30,8 +30,7 @@
  */
 export const maxGroomsPerUser = 10;
 
-// camelCase spellings for new consumers (Equoria-pjvp8 ratchet); groomConfig
-// below carries the same values.
+// groomConfig below carries the same values.
 export const bondScoreMax = 100;
 // Owner ruling 2026-10-26 (q87): each daily groom adds +5, about 100 by day 21.
 export const dailyBondGain = 5;

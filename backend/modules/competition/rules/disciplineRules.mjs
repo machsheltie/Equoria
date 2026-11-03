@@ -47,7 +47,6 @@ export const disciplineStats = Object.freeze({
 
 /** The 24 competition disciplines, in bible order. */
 export const competitionDisciplines = Object.freeze(Object.keys(disciplineStats));
-/** The same list under its older name; new code reads competitionDisciplines (Equoria-pjvp8). */
 
 /**
  * @param {string} discipline
