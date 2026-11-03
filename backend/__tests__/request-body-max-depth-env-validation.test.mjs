@@ -213,7 +213,7 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
   // the ceiling won't require a test edit beyond the import.
   it('ceiling: env=str(MAX_ALLOWED_OVERRIDE) accepts; env=str(MAX_ALLOWED_OVERRIDE+1) falls back to default', async () => {
     jest.resetModules();
-    const { MAX_ALLOWED_OVERRIDE } = await import(MIDDLEWARE_PATH);
+    const { maxAllowedOverride: MAX_ALLOWED_OVERRIDE } = await import(MIDDLEWARE_PATH);
     expect(typeof MAX_ALLOWED_OVERRIDE).toBe('number');
     expect(MAX_ALLOWED_OVERRIDE).toBeGreaterThan(0);
 
