@@ -19,7 +19,7 @@
  * Known dangerous URI schemes — checked after lower-casing and percent-decoding.
  * This is an explicit deny-list; the primary gate is the allowlist (must start with "/").
  */
-const DANGEROUS_SCHEMES = [
+const dangerousSchemes = [
   'javascript:',
   'data:',
   'vbscript:',
@@ -101,7 +101,7 @@ export function isSafeRedirectPath(path: unknown): path is string {
   // Since the real security gate is the leading-"/" check above, anchoring
   // the scheme check to the start is both correct and has zero false positives.
   const lower = decoded.toLowerCase();
-  if (DANGEROUS_SCHEMES.some((s) => lower.startsWith(s))) return false;
+  if (dangerousSchemes.some((s) => lower.startsWith(s))) return false;
 
   return true;
 }

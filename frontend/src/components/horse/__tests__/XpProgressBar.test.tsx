@@ -21,12 +21,12 @@ import { MemoryRouter } from '@/test/utils';
 import { RewardToastProvider } from '@/components/feedback';
 import XpProgressBar from '../XpProgressBar';
 
-const HORSE_ID = 77;
+const horseId = 77;
 
 function stubXp(data: Record<string, number | string>) {
   server.use(
     http.get('*/api/v1/horses/:horseId/xp', () =>
-      HttpResponse.json({ success: true, data: { horseId: HORSE_ID, horseName: 'Comet', ...data } })
+      HttpResponse.json({ success: true, data: { horseId: horseId, horseName: 'Comet', ...data } })
     )
   );
 }
@@ -38,7 +38,7 @@ function renderBar() {
     <MemoryRouter>
       <QueryClientProvider client={queryClient}>
         <RewardToastProvider>
-          <XpProgressBar horseId={HORSE_ID} />
+          <XpProgressBar horseId={horseId} />
         </RewardToastProvider>
       </QueryClientProvider>
     </MemoryRouter>

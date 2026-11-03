@@ -27,8 +27,8 @@ import { Toaster } from '@/components/ui/sonner';
 import MyGroomsDashboard from '../MyGroomsDashboard';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const USER_ID = 1;
-const GROOMS_PATH = `${base}/api/v1/grooms/user/${USER_ID}`;
+const userId = 1;
+const groomsPath = `${base}/api/v1/grooms/user/${userId}`;
 
 // One hired groom (mirrors the default v1 grooms/user mirror), used by the
 // success + retry-recovery paths so a groom card + its assignment render.
@@ -57,7 +57,7 @@ function renderDashboard() {
       <BrowserRouter>
         {/* Real sonner sink so mutation-error toasts render into the DOM. */}
         <Toaster />
-        <MyGroomsDashboard userId={USER_ID} onBrowseMarketplace={() => {}} />
+        <MyGroomsDashboard userId={userId} onBrowseMarketplace={() => {}} />
       </BrowserRouter>
     </QueryClientProvider>
   );
@@ -67,7 +67,7 @@ describe('MyGroomsDashboard — four-state doctrine (Equoria-mljz9)', () => {
   it('a failed grooms fetch renders an error with retry — never the false "No Grooms Hired" empty', async () => {
     // The 500 body carries a server message; it must NEVER reach the UI (§3).
     server.use(
-      http.get(GROOMS_PATH, () =>
+      http.get(groomsPath, () =>
         HttpResponse.json({ success: false, message: 'Internal boom leak' }, { status: 500 })
       )
     );
@@ -83,7 +83,7 @@ describe('MyGroomsDashboard — four-state doctrine (Equoria-mljz9)', () => {
   });
 
   it('a successful empty grooms fetch renders the honest empty state (no error)', async () => {
-    server.use(http.get(GROOMS_PATH, () => HttpResponse.json({ success: true, data: [] })));
+    server.use(http.get(groomsPath, () => HttpResponse.json({ success: true, data: [] })));
 
     renderDashboard();
 
@@ -104,7 +104,7 @@ describe('MyGroomsDashboard — four-state doctrine (Equoria-mljz9)', () => {
   it('the error-state retry refetches — first load fails, retry recovers to the grid', async () => {
     let calls = 0;
     server.use(
-      http.get(GROOMS_PATH, () => {
+      http.get(groomsPath, () => {
         calls += 1;
         if (calls === 1) {
           return HttpResponse.json({ success: false, message: 'boom' }, { status: 500 });

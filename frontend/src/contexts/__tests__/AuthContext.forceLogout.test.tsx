@@ -24,7 +24,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const FORCE_LOGOUT_KEY = 'equoria:forceLogoutAt';
+const forceLogoutKey = 'equoria:forceLogoutAt';
 const PLAYER = { id: 'user-1', username: 'rider', email: 'rider@example.com', role: 'user' };
 
 let sessionAlive = true;
@@ -102,7 +102,7 @@ describe('cross-tab logout signal (Equoria-bvddn.30)', () => {
 
     // The server revoked every session when the password changed.
     sessionAlive = false;
-    otherTabWrites(FORCE_LOGOUT_KEY, String(Date.now()));
+    otherTabWrites(forceLogoutKey, String(Date.now()));
 
     await screen.findByTestId('login-page');
     const state = JSON.parse(screen.getByTestId('login-page').textContent || 'null');
@@ -115,7 +115,7 @@ describe('cross-tab logout signal (Equoria-bvddn.30)', () => {
     const client = createAppQueryClient();
     await signedInOnStable(client);
 
-    otherTabWrites(FORCE_LOGOUT_KEY, null);
+    otherTabWrites(forceLogoutKey, null);
     otherTabWrites('equoria:theme', 'celestial');
 
     expect(screen.getByTestId('stable-page')).toBeInTheDocument();

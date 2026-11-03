@@ -30,7 +30,7 @@ import { actionMessageFor } from '@/lib/http/actionMessage';
 import { useBreeds, useBuyStoreHorse } from '@/hooks/api/useHorseTrader';
 import { useProfile } from '@/hooks/useAuth';
 
-const STORE_PRICE = 1000;
+const storePrice = 1000;
 
 // The wording the Horse Trader has always shown for a refused purchase (owner copy).
 const insufficientFundsCopy = 'Insufficient funds for store purchase.';
@@ -53,7 +53,7 @@ const HorseTraderPage: React.FC = () => {
   // insufficient-funds warning (Equoria-si3m2).
   const userBalance = profileData?.user?.money;
   const balanceKnown = typeof userBalance === 'number';
-  const canAfford = balanceKnown && userBalance >= STORE_PRICE;
+  const canAfford = balanceKnown && userBalance >= storePrice;
 
   // Breed combobox state
   const [search, setSearch] = useState('');
@@ -296,7 +296,7 @@ const HorseTraderPage: React.FC = () => {
             data-testid="price-balance-row"
           >
             <span className="text-sm text-[var(--text-secondary)] inline-flex items-center gap-1.5">
-              Cost: <Currency amount={STORE_PRICE} className="font-bold text-[var(--gold-400)]" />
+              Cost: <Currency amount={storePrice} className="font-bold text-[var(--gold-400)]" />
             </span>
             <span
               className={`text-sm font-medium inline-flex items-center gap-1.5 ${

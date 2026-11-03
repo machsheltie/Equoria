@@ -40,7 +40,7 @@ const getRankColor = (rank: number): string => {
 /**
  * Icon sizes mapped to badge size variants.
  */
-const ICON_SIZES: Record<string, number> = {
+const iconSizes: Record<string, number> = {
   small: 12,
   medium: 16,
   large: 20,
@@ -52,7 +52,7 @@ const ICON_SIZES: Record<string, number> = {
  */
 const RankBadge = ({ rank, size = 'medium', className = '' }: RankBadgeProps) => {
   const backgroundColor = getRankColor(rank);
-  const iconSize = ICON_SIZES[size];
+  const iconSize = iconSizes[size];
 
   return (
     <span

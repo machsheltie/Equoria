@@ -56,7 +56,7 @@ export interface LeaderboardCategorySelectorProps {
 /**
  * Human-readable labels for each leaderboard category.
  */
-const CATEGORY_LABELS: Record<LeaderboardCategory, string> = {
+const categoryLabels: Record<LeaderboardCategory, string> = {
   'player-xp': 'Player XP',
   'player-earnings': 'Player Earnings',
   'player-wins': 'Player Wins',
@@ -86,7 +86,7 @@ const CATEGORIES: LeaderboardCategory[] = [
 /**
  * Human-readable labels for each time period.
  */
-const PERIOD_LABELS: Record<TimePeriod, string> = {
+const periodLabels: Record<TimePeriod, string> = {
   overall: 'Overall',
   monthly: 'Monthly',
 };
@@ -136,7 +136,7 @@ const LeaderboardCategorySelector = ({
               disabled={isLoading}
               data-testid={`category-${category}`}
             >
-              {CATEGORY_LABELS[category]}
+              {categoryLabels[category]}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -189,7 +189,7 @@ const LeaderboardCategorySelector = ({
               data-testid={`period-${period}`}
               aria-pressed={isActive}
             >
-              {PERIOD_LABELS[period]}
+              {periodLabels[period]}
             </button>
           );
         })}

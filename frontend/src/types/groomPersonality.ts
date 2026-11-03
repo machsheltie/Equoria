@@ -30,7 +30,7 @@ export interface PersonalityInfo {
   badgeClass: string;
 }
 
-export const PERSONALITY_DATA: Record<GroomPersonality, PersonalityInfo> = {
+export const personalityData: Record<GroomPersonality, PersonalityInfo> = {
   gentle: {
     label: 'Gentle',
     icon: '🌿',
@@ -118,7 +118,7 @@ export const PERSONALITY_DATA: Record<GroomPersonality, PersonalityInfo> = {
 /** Return personality info for a given personality string; falls back to patient. */
 export function getPersonalityInfo(personality: string): PersonalityInfo {
   const key = personality.toLowerCase() as GroomPersonality;
-  return PERSONALITY_DATA[key] ?? PERSONALITY_DATA.patient;
+  return personalityData[key] ?? personalityData.patient;
 }
 
 /** Return a human-readable compatibility label. */

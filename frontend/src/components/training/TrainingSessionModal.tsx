@@ -97,11 +97,11 @@ const TrainingSessionModal = ({
 
   // Owner ruling 2026-10-23: a weekly session adds a flat +5 to the trained
   // discipline, whatever the horse's traits or trainer.
-  const TRAINING_GAIN = 5;
+  const trainingGain = 5;
 
   // Calculate expected new score
   const currentScore = status?.score ?? 0;
-  const expectedNewScore = currentScore + TRAINING_GAIN;
+  const expectedNewScore = currentScore + trainingGain;
 
   useEffect(() => {
     setErrorMessage(null);
@@ -206,7 +206,7 @@ const TrainingSessionModal = ({
             <span className="font-semibold">Expected New Score:</span>{' '}
             <span data-testid="expected-score-value">{expectedNewScore}</span>
             <span className="text-[var(--gold-400)] ml-2">
-              (Current: {currentScore} + {TRAINING_GAIN})
+              (Current: {currentScore} + {trainingGain})
             </span>
           </div>
 

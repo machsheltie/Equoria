@@ -30,15 +30,15 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // HERE = frontend/src/pages/__tests__ ; repo root is four levels up.
-const REPO_ROOT = path.resolve(HERE, '..', '..', '..', '..');
-const FRONTEND_ROOT = path.resolve(HERE, '..', '..', '..');
+const repoRoot = path.resolve(HERE, '..', '..', '..', '..');
+const frontendRoot = path.resolve(HERE, '..', '..', '..');
 
-const PLANT_REL = 'frontend/src/pages/_pagesMaxLines_sentinel_plant.tsx';
-const PLANT_ABS = path.join(REPO_ROOT, PLANT_REL);
+const plantRel = 'frontend/src/pages/_pagesMaxLines_sentinel_plant.tsx';
+const plantAbs = path.join(repoRoot, plantRel);
 
 afterEach(() => {
   try {
-    fs.rmSync(PLANT_ABS, { force: true });
+    fs.rmSync(plantAbs, { force: true });
   } catch {
     // best-effort cleanup
   }
@@ -62,9 +62,9 @@ function runLint(targetRelToRepoRoot: string): ReturnType<typeof spawnSync> {
   // Use the frontend's eslint binary but run with cwd = repo root so the root
   // flat eslint.config.js is the one that loads (it owns the pages max-lines
   // rule). shell:false works identically on Windows + POSIX.
-  const eslintJs = path.join(FRONTEND_ROOT, 'node_modules', 'eslint', 'bin', 'eslint.js');
+  const eslintJs = path.join(frontendRoot, 'node_modules', 'eslint', 'bin', 'eslint.js');
   return spawnSync(process.execPath, [eslintJs, '--no-warn-ignored', targetRelToRepoRoot], {
-    cwd: REPO_ROOT,
+    cwd: repoRoot,
     encoding: 'utf8',
     shell: false,
     timeout: 90_000,
@@ -74,9 +74,9 @@ function runLint(targetRelToRepoRoot: string): ReturnType<typeof spawnSync> {
 describe('ESLint max-lines doctrine — frontend pages layer (Equoria-gixjh)', () => {
   it('SENTINEL: the rule fires when a > 600-effective-line page is planted', () => {
     // 603 effective non-blank non-comment lines — just past the 600 cap.
-    fs.writeFileSync(PLANT_ABS, buildSource(603));
+    fs.writeFileSync(plantAbs, buildSource(603));
 
-    const res = runLint(PLANT_REL);
+    const res = runLint(plantRel);
 
     // ESLint exits non-zero when an `error`-severity rule fires.
     expect(res.status).not.toBe(0);
@@ -87,9 +87,9 @@ describe('ESLint max-lines doctrine — frontend pages layer (Equoria-gixjh)', (
   });
 
   it('NEGATIVE CONTROL: a fresh 100-line page at the guarded path does NOT trip max-lines', () => {
-    fs.writeFileSync(PLANT_ABS, buildSource(100));
+    fs.writeFileSync(plantAbs, buildSource(100));
 
-    const res = runLint(PLANT_REL);
+    const res = runLint(plantRel);
 
     // Other unrelated rules may fire on the synthetic source; the contract here
     // is narrower — max-lines must NOT be among them under the cap.

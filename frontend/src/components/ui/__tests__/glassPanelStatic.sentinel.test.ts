@@ -18,7 +18,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
 
-const CSS_PATH = resolve(__dirname, '../../../index.css');
+const cssPath = resolve(__dirname, '../../../index.css');
 
 /** Collapse whitespace, strip comments, return normalised string for pattern matching. */
 function normalise(css: string): string {
@@ -55,7 +55,7 @@ function extractRuleBody(css: string, selectorFragment: string): string | null {
 }
 
 describe('D-05 sentinel — glass-panel static/interactive CSS contract', () => {
-  const raw = readFileSync(CSS_PATH, 'utf-8');
+  const raw = readFileSync(cssPath, 'utf-8');
   const css = normalise(raw);
 
   it('(a) .glass-panel:hover must NOT contain transform — global lift removed', () => {

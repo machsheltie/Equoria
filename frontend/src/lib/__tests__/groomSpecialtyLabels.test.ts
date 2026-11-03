@@ -24,13 +24,13 @@ import { groomSpecialtyLabel } from '../groomSpecialtyLabels';
  * literal rather than imported because the frontend does not import backend
  * modules; if that list grows, this test fails and points at the label map.
  */
-const BACKEND_SPECIALTY_VALUES = ['foalCare', 'general', 'training', 'medical'];
+const backendSpecialtyValues = ['foalCare', 'general', 'training', 'medical'];
 
 /** Legacy strings that appear in older fixtures and could still reach a payload. */
-const LEGACY_SPECIALTY_VALUES = ['generalGrooming', 'specializedDisciplines'];
+const legacySpecialtyValues = ['generalGrooming', 'specializedDisciplines'];
 
 describe('groomSpecialtyLabel — every backend specialty has an authored label', () => {
-  it.each([...BACKEND_SPECIALTY_VALUES, ...LEGACY_SPECIALTY_VALUES])(
+  it.each([...backendSpecialtyValues, ...legacySpecialtyValues])(
     'labels %s without leaking the raw value',
     (raw) => {
       const label = groomSpecialtyLabel(raw);
@@ -50,7 +50,7 @@ describe('groomSpecialtyLabel — every backend specialty has an authored label'
   });
 
   it('reads correctly inside the sentence it was written for', () => {
-    for (const raw of BACKEND_SPECIALTY_VALUES) {
+    for (const raw of backendSpecialtyValues) {
       const sentence = `Has hung up their headcollar after a long career in ${groomSpecialtyLabel(raw)}.`;
       expect(sentence).not.toMatch(/_/);
       expect(sentence).toMatch(/^Has hung up their headcollar after a long career in \S.*\.$/);

@@ -33,11 +33,11 @@ export interface Activity {
 /**
  * Time constants in milliseconds
  */
-const MINUTE_MS = 60 * 1000;
-const HOUR_MS = 60 * MINUTE_MS;
-const DAY_MS = 24 * HOUR_MS;
-const WEEK_MS = 7 * DAY_MS;
-const MONTH_MS = 30 * DAY_MS;
+const minuteMs = 60 * 1000;
+const hourMs = 60 * minuteMs;
+const dayMs = 24 * hourMs;
+const weekMs = 7 * dayMs;
+const monthMs = 30 * dayMs;
 
 /**
  * Format a timestamp as a human-readable relative time string.
@@ -79,48 +79,48 @@ export function formatRelativeTime(timestamp: Date | string | number): string {
   }
 
   // Less than 1 minute
-  if (diff < MINUTE_MS) {
+  if (diff < minuteMs) {
     return 'Just now';
   }
 
   // Less than 1 hour
-  if (diff < HOUR_MS) {
-    const minutes = Math.floor(diff / MINUTE_MS);
+  if (diff < hourMs) {
+    const minutes = Math.floor(diff / minuteMs);
     return minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`;
   }
 
   // Less than 24 hours
-  if (diff < DAY_MS) {
-    const hours = Math.floor(diff / HOUR_MS);
+  if (diff < dayMs) {
+    const hours = Math.floor(diff / hourMs);
     return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
   }
 
   // Yesterday (24-48 hours)
-  if (diff < 2 * DAY_MS) {
+  if (diff < 2 * dayMs) {
     return 'Yesterday';
   }
 
   // Less than 1 week
-  if (diff < WEEK_MS) {
-    const days = Math.floor(diff / DAY_MS);
+  if (diff < weekMs) {
+    const days = Math.floor(diff / dayMs);
     return `${days} days ago`;
   }
 
   // Less than 4 weeks
-  if (diff < 4 * WEEK_MS) {
-    const weeks = Math.floor(diff / WEEK_MS);
+  if (diff < 4 * weekMs) {
+    const weeks = Math.floor(diff / weekMs);
     return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
   }
 
   // Months
-  const months = Math.floor(diff / MONTH_MS);
+  const months = Math.floor(diff / monthMs);
   return months === 1 ? '1 month ago' : `${months} months ago`;
 }
 
 /**
  * Icon name mapping for each activity type
  */
-const ACTIVITY_ICONS: Record<ActivityType, string> = {
+const activityIcons: Record<ActivityType, string> = {
   [ActivityType.BREEDING]: 'heart',
   [ActivityType.TRAINING]: 'dumbbell',
   [ActivityType.COMPETITION]: 'trophy',
@@ -137,13 +137,13 @@ const ACTIVITY_ICONS: Record<ActivityType, string> = {
  * @returns Icon name string (for lucide-react)
  */
 export function getActivityIcon(type: ActivityType): string {
-  return ACTIVITY_ICONS[type] || 'activity';
+  return activityIcons[type] || 'activity';
 }
 
 /**
  * Label mapping for each activity type
  */
-const ACTIVITY_LABELS: Record<ActivityType, string> = {
+const activityLabels: Record<ActivityType, string> = {
   [ActivityType.BREEDING]: 'Breeding',
   [ActivityType.TRAINING]: 'Training',
   [ActivityType.COMPETITION]: 'Competition',
@@ -160,7 +160,7 @@ const ACTIVITY_LABELS: Record<ActivityType, string> = {
  * @returns Human-readable label
  */
 export function getActivityLabel(type: ActivityType): string {
-  return ACTIVITY_LABELS[type] || 'Activity';
+  return activityLabels[type] || 'Activity';
 }
 
 /**
@@ -278,7 +278,7 @@ export function isRecentActivity(activity: Activity, thresholdHours: number = 24
 
   const now = Date.now();
   const diff = now - timestamp;
-  const thresholdMs = thresholdHours * HOUR_MS;
+  const thresholdMs = thresholdHours * hourMs;
 
   return diff <= thresholdMs;
 }

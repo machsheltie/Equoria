@@ -27,7 +27,7 @@ export interface RiderPersonalityInfo {
   badgeClass: string;
 }
 
-export const RIDER_PERSONALITY_DATA: Record<RiderPersonality, RiderPersonalityInfo> = {
+export const riderPersonalityData: Record<RiderPersonality, RiderPersonalityInfo> = {
   daring: {
     label: 'Daring',
     icon: '🔥',
@@ -111,5 +111,5 @@ export const RIDER_PERSONALITY_DATA: Record<RiderPersonality, RiderPersonalityIn
 /** Return personality info for a given personality string; falls back to methodical. */
 export function getRiderPersonalityInfo(personality: string): RiderPersonalityInfo {
   const key = personality.toLowerCase() as RiderPersonality;
-  return RIDER_PERSONALITY_DATA[key] ?? RIDER_PERSONALITY_DATA.methodical;
+  return riderPersonalityData[key] ?? riderPersonalityData.methodical;
 }

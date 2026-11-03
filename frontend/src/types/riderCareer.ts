@@ -48,7 +48,7 @@ export interface RiderCareerMilestone {
 }
 
 /** Career constants for riders */
-export const RIDER_CAREER_CONSTANTS = {
+export const riderCareerConstants = {
   LEVEL_CAP: 10,
   LEGACY_CONTRACT_PRESTIGE_THRESHOLD: 80,
   LEGACY_CONTRACT_WINS_THRESHOLD: 50,
@@ -72,11 +72,11 @@ export const RIDER_CAREER_CONSTANTS = {
  * about when a rider retires (that is hidden, Equoria-or2ua).
  */
 export function isRiderLegacyContractEligible(totalWins: number, prestige: number): boolean {
-  const { LEGACY_CONTRACT_PRESTIGE_THRESHOLD, LEGACY_CONTRACT_WINS_THRESHOLD } =
-    RIDER_CAREER_CONSTANTS;
-  return (
-    prestige >= LEGACY_CONTRACT_PRESTIGE_THRESHOLD || totalWins >= LEGACY_CONTRACT_WINS_THRESHOLD
-  );
+  const {
+    LEGACY_CONTRACT_PRESTIGE_THRESHOLD: legacyContractPrestigeThreshold,
+    LEGACY_CONTRACT_WINS_THRESHOLD: legacyContractWinsThreshold,
+  } = riderCareerConstants;
+  return prestige >= legacyContractPrestigeThreshold || totalWins >= legacyContractWinsThreshold;
 }
 
 /**

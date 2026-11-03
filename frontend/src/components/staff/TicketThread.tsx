@@ -20,25 +20,20 @@ import {
 import type { StaffTicketWithReplies, TicketStatus } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
-import {
-  FORMER_STEWARD,
-  STAFF_TIME_OPTIONS,
-  STATUS_LABELS,
-  staffErrorMessage,
-} from './staffMessages';
+import { formerSteward, staffTimeOptions, statusLabels, staffErrorMessage } from './staffMessages';
 import RefreshFailedNotice from './RefreshFailedNotice';
 
-const STATUS_OPTIONS = (Object.keys(STATUS_LABELS) as TicketStatus[]).map((value) => ({
+const statusOptions = (Object.keys(statusLabels) as TicketStatus[]).map((value) => ({
   value,
-  label: STATUS_LABELS[value],
+  label: statusLabels[value],
 }));
 
-const REPLY_MESSAGES = {
+const replyMessages = {
   400: 'Write a reply first (2,000 characters at most).',
   404: 'That ticket is no longer there.',
 };
 
-const STATUS_MESSAGES = {
+const statusMessages = {
   404: 'That ticket is no longer there.',
   409: 'The ticket changed while you were working. Reload it and try again.',
 };
@@ -78,7 +73,7 @@ function ReplyForm({ ticketId }: { ticketId: number }) {
         >
           Send reply
         </Button>
-        {reply.isError && <InlineError message={staffErrorMessage(reply.error, REPLY_MESSAGES)} />}
+        {reply.isError && <InlineError message={staffErrorMessage(reply.error, replyMessages)} />}
       </div>
     </form>
   );
@@ -100,7 +95,7 @@ function StatusControl({ ticket }: { ticket: StaffTicketWithReplies }) {
               {...field}
               value={status}
               onChange={(event) => setStatus(event.target.value as TicketStatus)}
-              options={STATUS_OPTIONS}
+              options={statusOptions}
             />
           )}
         </FormField>
@@ -113,7 +108,7 @@ function StatusControl({ ticket }: { ticket: StaffTicketWithReplies }) {
           Update status
         </Button>
       </div>
-      {update.isError && <InlineError message={staffErrorMessage(update.error, STATUS_MESSAGES)} />}
+      {update.isError && <InlineError message={staffErrorMessage(update.error, statusMessages)} />}
     </div>
   );
 }
@@ -187,9 +182,9 @@ export function TicketThread({ ticketId, canResolve, onCheckinRequired }: Ticket
           {replies.map((reply) => (
             <li key={reply.id}>
               <p className="text-sm text-role-secondary">
-                {reply.author?.username ?? FORMER_STEWARD},{' '}
+                {reply.author?.username ?? formerSteward},{' '}
                 <time dateTime={reply.createdAt}>
-                  {formatDateTime(reply.createdAt, STAFF_TIME_OPTIONS)}
+                  {formatDateTime(reply.createdAt, staffTimeOptions)}
                 </time>
               </p>
               <p className="whitespace-pre-wrap text-[var(--text-primary)]">{reply.body}</p>

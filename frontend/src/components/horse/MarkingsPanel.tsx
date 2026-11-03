@@ -33,20 +33,20 @@ function capitalize(word?: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
-const LEG_LABELS: Record<keyof NonNullable<HorseMarkings['legMarkings']>, string> = {
+const legLabels: Record<keyof NonNullable<HorseMarkings['legMarkings']>, string> = {
   frontLeft: 'FL',
   frontRight: 'FR',
   hindLeft: 'HL',
   hindRight: 'HR',
 };
 
-const ADVANCED_LABELS: Record<keyof NonNullable<HorseMarkings['advancedMarkings']>, string> = {
+const advancedLabels: Record<keyof NonNullable<HorseMarkings['advancedMarkings']>, string> = {
   bloodyShoulderPresent: 'Bloody Shoulder',
   snowflakePresent: 'Snowflake',
   frostPresent: 'Frost',
 };
 
-const MODIFIER_LABELS: Record<keyof NonNullable<HorseMarkings['modifiers']>, string> = {
+const modifierLabels: Record<keyof NonNullable<HorseMarkings['modifiers']>, string> = {
   isSooty: 'Sooty',
   isFlaxen: 'Flaxen',
   hasPangare: 'Pangare',
@@ -104,8 +104,8 @@ const MarkingsPanel: React.FC<MarkingsPanelProps> = ({ markings, inline = false 
         <div data-testid="markings-legs">
           <span className="text-[var(--text-secondary)]">Legs: </span>
           <span className="font-medium text-[var(--text-primary)]">
-            {(Object.keys(LEG_LABELS) as Array<keyof typeof LEG_LABELS>)
-              .map((leg) => `${LEG_LABELS[leg]}: ${capitalize(legMarkings[leg])}`)
+            {(Object.keys(legLabels) as Array<keyof typeof legLabels>)
+              .map((leg) => `${legLabels[leg]}: ${capitalize(legMarkings[leg])}`)
               .join(', ')}
           </span>
         </div>
@@ -119,7 +119,7 @@ const MarkingsPanel: React.FC<MarkingsPanelProps> = ({ markings, inline = false 
               data-testid={`markings-advanced-${key}`}
               className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-900/30 border border-amber-500/40 text-amber-300"
             >
-              {ADVANCED_LABELS[key]}
+              {advancedLabels[key]}
             </span>
           ))}
         </div>
@@ -133,7 +133,7 @@ const MarkingsPanel: React.FC<MarkingsPanelProps> = ({ markings, inline = false 
               data-testid={`markings-modifier-${key}`}
               className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-800/50 border border-slate-500/40 text-slate-300"
             >
-              {MODIFIER_LABELS[key]}
+              {modifierLabels[key]}
             </span>
           ))}
         </div>

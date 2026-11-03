@@ -5,7 +5,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import DisciplineSelector from '../DisciplineSelector';
 
 // All 24 disciplines from backend (Owner ruling 2026-10-21: Pleasure Driving is the 24th discipline. Old contract: 23.)
-const ALL_DISCIPLINES = [
+const allDisciplines = [
   'Barrel Racing',
   'Combined Driving',
   'Cross Country',
@@ -78,7 +78,7 @@ describe('DisciplineSelector', () => {
         .map((b) => b.textContent ?? '')
         .join('\n');
 
-      ALL_DISCIPLINES.forEach((discipline) => {
+      allDisciplines.forEach((discipline) => {
         expect(buttonNames).toContain(discipline);
       });
     });
@@ -91,12 +91,12 @@ describe('DisciplineSelector', () => {
       // Count discipline buttons by collecting unique discipline names from button accessible names
       const allButtons = screen.getAllByRole('button');
       const disciplineMatches = allButtons.filter((btn) =>
-        ALL_DISCIPLINES.some((d) => btn.textContent?.includes(d))
+        allDisciplines.some((d) => btn.textContent?.includes(d))
       );
       // Account for possible duplicates (recommended + main list); assert covers all 24 disciplines
       const renderedDisciplines = new Set<string>();
       disciplineMatches.forEach((btn) => {
-        ALL_DISCIPLINES.forEach((d) => {
+        allDisciplines.forEach((d) => {
           if (btn.textContent?.includes(d)) renderedDisciplines.add(d);
         });
       });
@@ -173,7 +173,7 @@ describe('DisciplineSelector', () => {
 
       const renderedDisciplines = new Set<string>();
       screen.getAllByRole('button').forEach((btn) => {
-        ALL_DISCIPLINES.forEach((d) => {
+        allDisciplines.forEach((d) => {
           if (btn.textContent?.includes(d)) renderedDisciplines.add(d);
         });
       });

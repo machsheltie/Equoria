@@ -11,7 +11,7 @@
  */
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { BASE_FIELD_CLASSES } from './fieldStyles';
+import { baseFieldClasses } from './fieldStyles';
 
 export interface SelectOption {
   value: string;
@@ -25,7 +25,7 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 }
 
 // SVG chevron data-URI for the custom dropdown arrow (gold, 12×12)
-const CHEVRON_BG =
+const chevronBg =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23c8a84e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\") no-repeat right 0.75rem center";
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
@@ -33,7 +33,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     <select
       ref={ref}
       className={cn(
-        BASE_FIELD_CLASSES.join(' '),
+        baseFieldClasses.join(' '),
         'appearance-none',
         'pr-8',
         '[&>option]:bg-[var(--bg-midnight)]',
@@ -43,7 +43,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       style={{
         // The chevron is injected here to keep it from conflicting with
         // bg-[var(--glass-bg)] in Tailwind class merging.
-        backgroundImage: CHEVRON_BG,
+        backgroundImage: chevronBg,
         ...style,
       }}
       {...props}

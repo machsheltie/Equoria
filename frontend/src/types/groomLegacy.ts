@@ -59,8 +59,8 @@ export interface LegacyEligibilityStatus {
 }
 
 /** Legacy system constants mirroring backend groomLegacyService.mjs */
-export const LEGACY_CONSTANTS = {
-  MINIMUM_MENTOR_STAR_LEVEL: 'advanced',
+export const legacyConstants = {
+  minimumMentorStarLevel: 'advanced',
 } as const;
 
 /**
@@ -77,7 +77,7 @@ export function checkLegacyEligibility(
   if (!groom.retired) {
     reasons.push('Must be retired to mentor a protégé');
   }
-  if (!staffLevelAtLeast(staffCareerStarLevel, LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL)) {
+  if (!staffLevelAtLeast(staffCareerStarLevel, legacyConstants.minimumMentorStarLevel)) {
     reasons.push('Mentoring is not open yet');
   }
   if (hasExistingProtégé) {

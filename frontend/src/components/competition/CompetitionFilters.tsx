@@ -55,7 +55,7 @@ export interface CompetitionFiltersProps {
 }
 
 // Constants
-const DATE_RANGE_OPTIONS: readonly { value: DateRangeFilter; label: string }[] = [
+const dateRangeOptions: readonly { value: DateRangeFilter; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'closing', label: 'Closing <24h' },
   { value: 'today', label: 'Today' },
@@ -65,7 +65,7 @@ const DATE_RANGE_OPTIONS: readonly { value: DateRangeFilter; label: string }[] =
 
 // Entry fees are in coins, the game's currency (Equoria-oey96.12). The visible
 // label stays short for the narrow control; `title` and the aria-label say coins.
-const ENTRY_FEE_OPTIONS: readonly {
+const entryFeeOptions: readonly {
   value: EntryFeeFilter;
   label: string;
   coins: string;
@@ -189,7 +189,7 @@ const CompetitionFilters = ({
             Date Range
           </label>
           <div className="flex gap-1" role="group" aria-label="Date range filters">
-            {DATE_RANGE_OPTIONS.map((option) => (
+            {dateRangeOptions.map((option) => (
               <FilterButton
                 key={option.value}
                 isActive={dateRangeFilter === option.value}
@@ -209,7 +209,7 @@ const CompetitionFilters = ({
             Entry Fee
           </label>
           <div className="flex gap-1" role="group" aria-label="Entry fee filters">
-            {ENTRY_FEE_OPTIONS.map((option) => (
+            {entryFeeOptions.map((option) => (
               <FilterButton
                 key={option.value}
                 isActive={entryFeeFilter === option.value}

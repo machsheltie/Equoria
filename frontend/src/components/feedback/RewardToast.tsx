@@ -38,7 +38,7 @@ export interface RewardToastProps {
 
 // ── Icon + colour map ──────────────────────────────────────────────────────────
 
-const TYPE_CONFIG: Record<
+const typeConfig: Record<
   RewardType,
   { Icon: React.ElementType; accentColor: string; bgColor: string }
 > = {
@@ -78,7 +78,7 @@ export function RewardToast({
   duration = 4000,
   onDismiss,
 }: RewardToastProps) {
-  const { Icon, accentColor, bgColor } = TYPE_CONFIG[type];
+  const { Icon, accentColor, bgColor } = typeConfig[type];
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {

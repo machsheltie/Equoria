@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { getBetaScope, isBetaLive, BETA_SCOPE } from '../betaRouteScope';
+import { getBetaScope, isBetaLive, betaScope } from '../betaRouteScope';
 
 describe('betaRouteScope', () => {
   describe('getBetaScope', () => {
@@ -65,15 +65,15 @@ describe('betaRouteScope', () => {
     });
   });
 
-  describe('BETA_SCOPE map', () => {
+  describe('betaScope map', () => {
     it('classifies every configured route as beta-live', () => {
-      const liveRoutes = Object.entries(BETA_SCOPE)
+      const liveRoutes = Object.entries(betaScope)
         .filter(([, scope]) => scope === 'beta-live')
         .map(([route]) => route);
-      expect(liveRoutes).toHaveLength(Object.keys(BETA_SCOPE).length);
-      expect(BETA_SCOPE['/community']).toBe('beta-live');
-      expect(BETA_SCOPE['/crafting']).toBe('beta-live');
-      expect(BETA_SCOPE['/my-stable']).toBe('beta-live');
+      expect(liveRoutes).toHaveLength(Object.keys(betaScope).length);
+      expect(betaScope['/community']).toBe('beta-live');
+      expect(betaScope['/crafting']).toBe('beta-live');
+      expect(betaScope['/my-stable']).toBe('beta-live');
     });
   });
 });

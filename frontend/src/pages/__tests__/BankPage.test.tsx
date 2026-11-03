@@ -28,9 +28,9 @@ import { server } from '@/test/msw/server';
 import BankPage from '../BankPage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const TRANSACTIONS_PATH = `${base}/api/v1/users/transactions`;
-const CLAIM_STATUS_PATH = `${base}/api/v1/bank/claim-status`;
-const USER_ID = 42;
+const transactionsPath = `${base}/api/v1/users/transactions`;
+const claimStatusPath = `${base}/api/v1/bank/claim-status`;
+const userId = 42;
 
 /** Real backend wire shape for a transaction row (see bank.ts TransactionHistoryItem). */
 const sampleTransactions = [
@@ -71,7 +71,7 @@ function transactionsEnvelope(rows: typeof sampleTransactions | []) {
  */
 function stubClaimStatus() {
   server.use(
-    http.get(CLAIM_STATUS_PATH, () =>
+    http.get(claimStatusPath, () =>
       HttpResponse.json({
         success: true,
         data: { canClaim: true, nextClaimDate: null, rewardAmount: 5000 },
@@ -96,7 +96,7 @@ describe('BankPage — transaction history four-state (Equoria-4hra5)', () => {
   const renderPage = () =>
     render(
       <QueryClientProvider client={queryClient}>
-        <MockAuthProvider userOverrides={{ id: USER_ID, username: 'BankTester', money: 15000 }}>
+        <MockAuthProvider userOverrides={{ id: userId, username: 'BankTester', money: 15000 }}>
           <MemoryRouter initialEntries={['/bank']}>
             <BankPage />
           </MemoryRouter>
@@ -107,7 +107,7 @@ describe('BankPage — transaction history four-state (Equoria-4hra5)', () => {
   // LOADING — the fetch is pending.
   it('renders the loading state while the transaction fetch is pending', async () => {
     server.use(
-      http.get(TRANSACTIONS_PATH, async () => {
+      http.get(transactionsPath, async () => {
         await delay(150);
         return HttpResponse.json(transactionsEnvelope([]));
       })
@@ -126,7 +126,7 @@ describe('BankPage — transaction history four-state (Equoria-4hra5)', () => {
   // error+retry, NEVER the false "No transactions yet" empty state.
   it('renders an error state with retry (not a false empty) when the fetch fails', async () => {
     server.use(
-      http.get(TRANSACTIONS_PATH, () =>
+      http.get(transactionsPath, () =>
         HttpResponse.json({ status: 'error', message: 'internal boom detail' }, { status: 500 })
       )
     );
@@ -147,7 +147,7 @@ describe('BankPage — transaction history four-state (Equoria-4hra5)', () => {
 
   // EMPTY — reachable ONLY through a successful, genuinely-empty fetch.
   it('renders the honest empty state on a successful but empty fetch', async () => {
-    server.use(http.get(TRANSACTIONS_PATH, () => HttpResponse.json(transactionsEnvelope([]))));
+    server.use(http.get(transactionsPath, () => HttpResponse.json(transactionsEnvelope([]))));
 
     renderPage();
 
@@ -159,7 +159,7 @@ describe('BankPage — transaction history four-state (Equoria-4hra5)', () => {
   // SUCCESS — real rows render.
   it('renders transaction rows on a successful fetch with data', async () => {
     server.use(
-      http.get(TRANSACTIONS_PATH, () => HttpResponse.json(transactionsEnvelope(sampleTransactions)))
+      http.get(transactionsPath, () => HttpResponse.json(transactionsEnvelope(sampleTransactions)))
     );
 
     renderPage();
@@ -176,7 +176,7 @@ describe('BankPage — transaction history four-state (Equoria-4hra5)', () => {
   it('retry re-fetches and renders rows (refetch is wired to the error retry)', async () => {
     let calls = 0;
     server.use(
-      http.get(TRANSACTIONS_PATH, () => {
+      http.get(transactionsPath, () => {
         calls += 1;
         if (calls === 1) {
           return HttpResponse.json({ status: 'error', message: 'boom' }, { status: 500 });

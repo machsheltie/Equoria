@@ -21,22 +21,22 @@
  * that passes its own `timeZone` option keeps it.
  */
 
-import { GAME_TIME_ZONE } from './gameTime';
+import { gameTimeZone } from './gameTime';
 
 /** The honest fallback rendered when a date is absent or unparseable. */
-export const DATE_UNAVAILABLE = 'Date unavailable';
+export const dateUnavailable = 'Date unavailable';
 
 export type DateInput = string | number | Date | null | undefined;
 
 /** Default date-only format: "Jan 5, 2026" (the dominant pre-consolidation shape). */
-export const DEFAULT_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
+export const defaultDateOptions: Intl.DateTimeFormatOptions = {
   year: 'numeric',
   month: 'short',
   day: 'numeric',
 };
 
 /** Default date+time format: "Jan 5, 2026, 3:04 PM". */
-export const DEFAULT_DATETIME_OPTIONS: Intl.DateTimeFormatOptions = {
+export const defaultDatetimeOptions: Intl.DateTimeFormatOptions = {
   month: 'short',
   day: 'numeric',
   year: 'numeric',
@@ -47,14 +47,14 @@ export const DEFAULT_DATETIME_OPTIONS: Intl.DateTimeFormatOptions = {
 };
 
 /** Default time-only format: "3:04 PM". */
-export const DEFAULT_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
+export const defaultTimeOptions: Intl.DateTimeFormatOptions = {
   hour: 'numeric',
   minute: '2-digit',
   hour12: true,
   timeZoneName: 'short',
 };
 
-const CALENDAR_DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+const calendarDateOnly = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Options with the game-clock time zone applied: Eastern for instants, UTC for
@@ -64,8 +64,7 @@ function onGameClock(
   value: DateInput,
   options: Intl.DateTimeFormatOptions
 ): Intl.DateTimeFormatOptions {
-  const timeZone =
-    typeof value === 'string' && CALENDAR_DATE_ONLY.test(value) ? 'UTC' : GAME_TIME_ZONE;
+  const timeZone = typeof value === 'string' && calendarDateOnly.test(value) ? 'UTC' : gameTimeZone;
   return { timeZone, ...options };
 }
 
@@ -90,8 +89,8 @@ export function toValidDate(value: DateInput): Date | null {
  */
 export function formatDate(
   value: DateInput,
-  options: Intl.DateTimeFormatOptions = DEFAULT_DATE_OPTIONS,
-  fallback: string = DATE_UNAVAILABLE,
+  options: Intl.DateTimeFormatOptions = defaultDateOptions,
+  fallback: string = dateUnavailable,
   locale: string = 'en-US'
 ): string {
   const date = toValidDate(value);
@@ -104,8 +103,8 @@ export function formatDate(
  */
 export function formatDateTime(
   value: DateInput,
-  options: Intl.DateTimeFormatOptions = DEFAULT_DATETIME_OPTIONS,
-  fallback: string = DATE_UNAVAILABLE,
+  options: Intl.DateTimeFormatOptions = defaultDatetimeOptions,
+  fallback: string = dateUnavailable,
   locale: string = 'en-US'
 ): string {
   const date = toValidDate(value);
@@ -118,8 +117,8 @@ export function formatDateTime(
  */
 export function formatTime(
   value: DateInput,
-  options: Intl.DateTimeFormatOptions = DEFAULT_TIME_OPTIONS,
-  fallback: string = DATE_UNAVAILABLE,
+  options: Intl.DateTimeFormatOptions = defaultTimeOptions,
+  fallback: string = dateUnavailable,
   locale: string = 'en-US'
 ): string {
   const date = toValidDate(value);

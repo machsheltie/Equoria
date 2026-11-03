@@ -46,11 +46,11 @@ import CompetitionResultsPage from '../CompetitionResultsPage';
 import CompetitionResultsModal from '@/components/competition/CompetitionResultsModal';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const STATS_PATH = `${base}/api/v1/users/123/competition-stats`;
+const statsPath = `${base}/api/v1/users/123/competition-stats`;
 // Equoria-oey96.5: page now fetches user results via useUserCompetitionResults
 // (real hook -> real apiClient). MSW stub for the same endpoint keeps this suite
 // green without introducing vi.mock of the hook itself.
-const USER_RESULTS_PATH = `${base}/api/v1/competition/user-results`;
+const userResultsPath = `${base}/api/v1/competition/user-results`;
 
 // Mock the results list component to isolate page testing (legitimate child stub).
 vi.mock('@/components/competition/CompetitionResultsList', () => ({
@@ -112,7 +112,7 @@ const mockUserStats = {
  * real controller's bare-object response (no envelope).
  */
 function stubStats(stats: Record<string, unknown>) {
-  server.use(http.get(STATS_PATH, () => HttpResponse.json(stats)));
+  server.use(http.get(statsPath, () => HttpResponse.json(stats)));
 }
 
 /**
@@ -121,7 +121,7 @@ function stubStats(stats: Record<string, unknown>) {
  */
 function stubUserResults(results: unknown[] = []) {
   server.use(
-    http.get(USER_RESULTS_PATH, () =>
+    http.get(userResultsPath, () =>
       HttpResponse.json({ success: true, results, count: results.length })
     )
   );
@@ -258,7 +258,7 @@ describe('CompetitionResultsPage', () => {
       // userId from useAuth and fetches /users/123/competition-stats.
       let requestedPath: string | null = null;
       server.use(
-        http.get(STATS_PATH, ({ request }) => {
+        http.get(statsPath, ({ request }) => {
           requestedPath = new URL(request.url).pathname;
           return HttpResponse.json(mockUserStats);
         })
@@ -274,7 +274,7 @@ describe('CompetitionResultsPage', () => {
     it('loading state shows skeleton cards', async () => {
       // Delay the boundary so the loading state is observable.
       server.use(
-        http.get(STATS_PATH, async () => {
+        http.get(statsPath, async () => {
           await delay(100);
           return HttpResponse.json(mockUserStats);
         })
@@ -288,7 +288,7 @@ describe('CompetitionResultsPage', () => {
 
     it('error state shows error message with retry', async () => {
       server.use(
-        http.get(STATS_PATH, () =>
+        http.get(statsPath, () =>
           HttpResponse.json({ status: 'error', message: 'Failed to load stats' }, { status: 500 })
         )
       );
@@ -305,7 +305,7 @@ describe('CompetitionResultsPage', () => {
 
       // Clicking retry re-issues the boundary request; stub a success so the
       // error clears and the stats render.
-      server.use(http.get(STATS_PATH, () => HttpResponse.json(mockUserStats)));
+      server.use(http.get(statsPath, () => HttpResponse.json(mockUserStats)));
       const retryButton = screen.getByRole('button', { name: /retry/i });
       await userEvent.click(retryButton);
 
@@ -543,7 +543,7 @@ describe('CompetitionResultsPage', () => {
   // Mark-viewed write (Equoria-oey96.28)
   // =========================================
   describe('marking results as viewed', () => {
-    const VIEWED_PATH = `${base}/api/v1/competition/results/viewed`;
+    const viewedPath = `${base}/api/v1/competition/results/viewed`;
 
     function summary(competitionId: number) {
       return {
@@ -570,7 +570,7 @@ describe('CompetitionResultsPage', () => {
     function captureViewedPosts(): Array<{ showIds: number[] }> {
       const posted: Array<{ showIds: number[] }> = [];
       server.use(
-        http.post(VIEWED_PATH, async ({ request }) => {
+        http.post(viewedPath, async ({ request }) => {
           const body = (await request.json()) as { showIds: number[] };
           posted.push(body);
           return HttpResponse.json({ success: true, markedCount: body.showIds.length });
@@ -610,7 +610,7 @@ describe('CompetitionResultsPage', () => {
     it('still renders the results when the mark-viewed write fails', async () => {
       stubUserResults([summary(21)]);
       server.use(
-        http.post(VIEWED_PATH, () =>
+        http.post(viewedPath, () =>
           HttpResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })
         )
       );

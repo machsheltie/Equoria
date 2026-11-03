@@ -42,8 +42,8 @@ import { server } from '@/test/msw/server';
 import MainNavigation from '../MainNavigation';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const UNREAD_COUNT_PATH = `${base}/api/v1/messages/unread-count`;
-const GAME_NOTIFS_PATH = `${base}/api/v1/users/me/game-notifications`;
+const unreadCountPath = `${base}/api/v1/messages/unread-count`;
+const gameNotifsPath = `${base}/api/v1/users/me/game-notifications`;
 
 /**
  * Stub the DM unread-count boundary with the REAL backend envelope
@@ -51,7 +51,7 @@ const GAME_NOTIFS_PATH = `${base}/api/v1/users/me/game-notifications`;
  */
 function stubDmUnread(count: number) {
   server.use(
-    http.get(UNREAD_COUNT_PATH, () => HttpResponse.json({ success: true, data: { count } }))
+    http.get(unreadCountPath, () => HttpResponse.json({ success: true, data: { count } }))
   );
 }
 
@@ -62,7 +62,7 @@ function stubDmUnread(count: number) {
  */
 function stubGameNotifs(unreadCount: number) {
   server.use(
-    http.get(GAME_NOTIFS_PATH, () =>
+    http.get(gameNotifsPath, () =>
       HttpResponse.json({ success: true, data: { notifications: [], unreadCount } })
     )
   );
@@ -276,10 +276,10 @@ describe('MainNavigation Component', () => {
         // Guards the `?? 0` fallback at MainNavigation.tsx:43-44. When both
         // reads fail (retry:false), `data` is undefined and totalUnread is 0.
         server.use(
-          http.get(UNREAD_COUNT_PATH, () =>
+          http.get(unreadCountPath, () =>
             HttpResponse.json({ success: false, message: 'fail' }, { status: 500 })
           ),
-          http.get(GAME_NOTIFS_PATH, () =>
+          http.get(gameNotifsPath, () =>
             HttpResponse.json({ success: false, message: 'fail' }, { status: 500 })
           )
         );

@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import * as pregnancy from '../pregnancyChances';
-import { GESTATION_DAYS, getPregnancyProgress } from '../pregnancyChances';
+import { gestationDays, getPregnancyProgress } from '../pregnancyChances';
 
 describe('pregnancyChances module', () => {
   it('ships no trait-chance formula or weights to the browser', () => {
@@ -20,7 +20,7 @@ describe('pregnancyChances module', () => {
   });
 
   it('gestation lasts 7 days', () => {
-    expect(GESTATION_DAYS).toBe(7);
+    expect(gestationDays).toBe(7);
   });
 });
 

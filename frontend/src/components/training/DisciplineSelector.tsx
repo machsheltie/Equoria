@@ -30,7 +30,7 @@ import { Lock } from 'lucide-react';
 
 // ── Discipline stat map (mirrors backend/utils/statMap.mjs) ───────────────────
 
-export const DISCIPLINE_STAT_MAP: Record<string, [string, string, string]> = {
+export const disciplineStatMap: Record<string, [string, string, string]> = {
   'Western Pleasure': ['obedience', 'focus', 'precision'],
   Reining: ['precision', 'agility', 'focus'],
   Cutting: ['agility', 'intelligence', 'strength'],
@@ -57,7 +57,7 @@ export const DISCIPLINE_STAT_MAP: Record<string, [string, string, string]> = {
   'Pleasure Driving': ['obedience', 'balance', 'focus'],
 };
 
-export const ALL_DISCIPLINES = Object.keys(DISCIPLINE_STAT_MAP).sort();
+export const allDisciplines = Object.keys(disciplineStatMap).sort();
 
 // ── Stat display label ────────────────────────────────────────────────────────
 
@@ -100,7 +100,7 @@ function DisciplineOption({
   ineligibleReason?: string;
   onSelect: () => void;
 }) {
-  const stats = DISCIPLINE_STAT_MAP[discipline];
+  const stats = disciplineStatMap[discipline];
 
   return (
     <button
@@ -158,7 +158,7 @@ interface DisciplineSelectorProps {
 const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
   selectedDiscipline,
   onDisciplineChange,
-  disciplines = ALL_DISCIPLINES,
+  disciplines = allDisciplines,
   description,
   ineligibleDisciplines,
 }) => {

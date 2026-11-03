@@ -43,7 +43,7 @@ export interface LeaderboardTableProps {
 /**
  * Number of skeleton rows displayed during loading.
  */
-const SKELETON_ROW_COUNT = 10;
+const skeletonRowCount = 10;
 
 /**
  * Animated skeleton row placeholder shown during loading.
@@ -111,7 +111,7 @@ const LeaderboardTable = ({
         {/* Loading Skeleton Rows */}
         {isLoading && (
           <div>
-            {Array.from({ length: SKELETON_ROW_COUNT }, (_, i) => (
+            {Array.from({ length: skeletonRowCount }, (_, i) => (
               <SkeletonRow key={`skeleton-${i}`} />
             ))}
           </div>

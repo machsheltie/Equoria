@@ -62,18 +62,18 @@ Tabs.displayName = 'Tabs';
 
 // ─── Edge-fade affordance ────────────────────────────────────────────────────
 
-const FADE_PX = 24;
+const fadePx = 24;
 
 /** Build the CSS mask for the overflowing edge(s). `null` = no mask. */
 function edgeFadeMask(left: boolean, right: boolean): string | null {
   if (left && right) {
-    return `linear-gradient(to right, transparent, black ${FADE_PX}px, black calc(100% - ${FADE_PX}px), transparent)`;
+    return `linear-gradient(to right, transparent, black ${fadePx}px, black calc(100% - ${fadePx}px), transparent)`;
   }
   if (right) {
-    return `linear-gradient(to right, black, black calc(100% - ${FADE_PX}px), transparent)`;
+    return `linear-gradient(to right, black, black calc(100% - ${fadePx}px), transparent)`;
   }
   if (left) {
-    return `linear-gradient(to right, transparent, black ${FADE_PX}px, black)`;
+    return `linear-gradient(to right, transparent, black ${fadePx}px, black)`;
   }
   return null;
 }

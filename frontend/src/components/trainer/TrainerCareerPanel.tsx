@@ -28,13 +28,13 @@ export interface TrainerCareerData {
   totalHorses: number;
 }
 
-const MANDATORY_RETIREMENT_WEEKS = 80;
-const RETIREMENT_WARNING_WEEKS = 72; // 8 weeks notice
+const mandatoryRetirementWeeks = 80;
+const retirementWarningWeeks = 72; // 8 weeks notice
 
 function calculateRetirementStatus(careerWeeks: number, starLevel: string) {
-  const mandatoryRetirement = careerWeeks >= MANDATORY_RETIREMENT_WEEKS;
-  const isApproachingRetirement = careerWeeks >= RETIREMENT_WARNING_WEEKS && !mandatoryRetirement;
-  const weeksRemaining = mandatoryRetirement ? 0 : MANDATORY_RETIREMENT_WEEKS - careerWeeks;
+  const mandatoryRetirement = careerWeeks >= mandatoryRetirementWeeks;
+  const isApproachingRetirement = careerWeeks >= retirementWarningWeeks && !mandatoryRetirement;
+  const weeksRemaining = mandatoryRetirement ? 0 : mandatoryRetirementWeeks - careerWeeks;
   // The old "level 7 or above" in stars (owner ruling 2026-10-28, q229: two old
   // levels per star), i.e. Advanced or Expert.
   const legacyEligible = staffLevelStars(starLevel) * 2 >= 7;

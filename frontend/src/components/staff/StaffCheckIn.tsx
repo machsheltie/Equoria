@@ -20,12 +20,12 @@ export interface StaffCheckInProps {
   onCheckedIn: () => void;
 }
 
-const REQUEST_MESSAGES = {
+const requestMessages = {
   409: 'Verify your email address first, then check in.',
   429: 'Too many codes requested. Wait a few minutes and try again.',
 };
 
-const VERIFY_MESSAGES = {
+const verifyMessages = {
   400: "That code didn't work. Check it, or send a new one.",
   429: 'Too many tries. Wait a few minutes and try again.',
 };
@@ -43,7 +43,7 @@ export function StaffCheckIn({ onCheckedIn }: StaffCheckInProps) {
   };
 
   const requestError = requestCode.isError ? (
-    <InlineError message={staffErrorMessage(requestCode.error, REQUEST_MESSAGES)} />
+    <InlineError message={staffErrorMessage(requestCode.error, requestMessages)} />
   ) : null;
 
   const submit = (event: React.FormEvent) => {
@@ -85,7 +85,7 @@ export function StaffCheckIn({ onCheckedIn }: StaffCheckInProps) {
             aria-invalid={verify.isError || undefined}
           />
           {verify.isError && (
-            <InlineError message={staffErrorMessage(verify.error, VERIFY_MESSAGES)} />
+            <InlineError message={staffErrorMessage(verify.error, verifyMessages)} />
           )}
           <div className="flex flex-wrap items-center gap-3">
             <Button type="submit" pending={verify.isPending} disabled={code.trim() === ''}>

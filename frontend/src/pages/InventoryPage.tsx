@@ -43,7 +43,7 @@ import type { InventoryItem, FeedItem } from '@/lib/api-client';
 
 type InventoryCategory = 'all' | 'saddle' | 'bridle' | 'feed' | 'consumables' | 'special';
 
-const FEED_IMAGES: Record<FeedItem['id'], string> = {
+const feedImages: Record<FeedItem['id'], string> = {
   basic: '/images/feed/basicfeed.png',
   performance: '/images/feed/performancefeed.png',
   performancePlus: '/images/feed/performanceplusfeed.png',
@@ -51,7 +51,7 @@ const FEED_IMAGES: Record<FeedItem['id'], string> = {
   elite: '/images/feed/elitefeed.png',
 };
 
-const TACK_IMAGES: Record<string, string> = {
+const tackImages: Record<string, string> = {
   'dressage-saddle': '/images/tack/dressage-saddle.png',
   'dressage-bridle': '/images/tack/dressage-bridle.png',
   'all-purpose-saddle': '/images/tack/allpurposesaddle.png',
@@ -60,18 +60,18 @@ const TACK_IMAGES: Record<string, string> = {
 
 function getItemImage(item: InventoryItem): string | null {
   if (item.category === 'feed') {
-    return FEED_IMAGES[item.itemId as FeedItem['id']] ?? null;
+    return feedImages[item.itemId as FeedItem['id']] ?? null;
   }
-  return TACK_IMAGES[item.itemId] ?? null;
+  return tackImages[item.itemId] ?? null;
 }
 
-const EQUIPPED_STAR = (
+const equippedStar = (
   <Star className="w-3.5 h-3.5 text-[var(--gold-primary)] fill-[var(--gold-primary)]" />
 );
 
 // ── Category config ──────────────────────────────────────────────────────────
 
-const CATEGORY_TABS: { value: InventoryCategory; label: string; icon: React.ReactNode }[] = [
+const categoryTabs: { value: InventoryCategory; label: string; icon: React.ReactNode }[] = [
   { value: 'all', label: 'All Items', icon: <Package className="w-4 h-4" /> },
   { value: 'saddle', label: 'Saddles', icon: <Shield className="w-4 h-4" /> },
   { value: 'bridle', label: 'Bridles', icon: <Shield className="w-4 h-4" /> },
@@ -174,7 +174,7 @@ const InventoryCard: React.FC<InventoryCardProps> = ({
     <ItemCard
       data-testid={`inventory-item-${item.id}`}
       media={media}
-      titlePrefix={isEquipped ? EQUIPPED_STAR : undefined}
+      titlePrefix={isEquipped ? equippedStar : undefined}
       title={item.name}
       subtitle={subtitle}
       description={description}
@@ -250,7 +250,7 @@ const InventoryPage: React.FC = () => {
     const filtered =
       category === 'all' ? items : items.filter((item) => item.category === category);
     if (filtered.length === 0) {
-      const label = CATEGORY_TABS.find((t) => t.value === category)?.label ?? '';
+      const label = categoryTabs.find((t) => t.value === category)?.label ?? '';
       return (
         <div data-testid="empty-inventory">
           <EmptyState
@@ -303,7 +303,7 @@ const InventoryPage: React.FC = () => {
     );
   };
 
-  const tabs = CATEGORY_TABS.map((cat) => ({
+  const tabs = categoryTabs.map((cat) => ({
     value: cat.value,
     label: cat.label,
     icon: cat.icon,

@@ -23,7 +23,7 @@ export interface SoundSectionProps {
   saveError?: string;
 }
 
-const PREVIEW_SOUNDS = [
+const previewSounds = [
   { variant: 'click', label: 'Click' },
   { variant: 'success', label: 'Success' },
   { variant: 'cooldown', label: 'Cooldown' },
@@ -63,7 +63,7 @@ export const SoundSection: React.FC<SoundSectionProps> = ({
       <div className="border-t border-[var(--glass-border)] pt-4">
         <p className="text-xs text-role-muted mb-3">Preview sounds</p>
         <div className="flex flex-wrap gap-2">
-          {PREVIEW_SOUNDS.map(({ variant, label }) => (
+          {previewSounds.map(({ variant, label }) => (
             <Button
               key={variant}
               type="button"

@@ -14,17 +14,17 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const PAGES_DIR = path.resolve(__dirname, '..');
+const pagesDir = path.resolve(__dirname, '..');
 
-const HARDCODED_COUNT_RE = /\b\d{2,4}\s+breeds\b/i;
+const hardcodedCountRe = /\b\d{2,4}\s+breeds\b/i;
 
 describe('Horse Trader copy — no hardcoded breed count (Equoria-5c5j)', () => {
   it.each([['MarketplaceHubPage.tsx'], ['HorseTraderPage.tsx']])(
     '%s does not contain a hardcoded "<number> breeds" string',
     (filename) => {
-      const filePath = path.join(PAGES_DIR, filename);
+      const filePath = path.join(pagesDir, filename);
       const source = fs.readFileSync(filePath, 'utf8');
-      const match = source.match(HARDCODED_COUNT_RE);
+      const match = source.match(hardcodedCountRe);
       expect(
         match,
         `Found hardcoded breed-count in ${filename}: "${match?.[0]}". ` +

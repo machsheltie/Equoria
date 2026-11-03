@@ -13,14 +13,14 @@
  *
  * 4 date range options for filtering competitions by timing
  */
-export const DATE_RANGE_OPTIONS = [
+export const dateRangeOptions = [
   { value: 'all', label: 'All Dates' },
   { value: 'upcoming', label: 'Upcoming (Next 7 Days)' },
   { value: 'this-week', label: 'This Week' },
   { value: 'this-month', label: 'This Month' },
 ] as const;
 
-export type DateRangeValue = (typeof DATE_RANGE_OPTIONS)[number]['value'];
+export type DateRangeValue = (typeof dateRangeOptions)[number]['value'];
 
 /**
  * Entry Fee Filter Options
@@ -32,7 +32,7 @@ export type DateRangeValue = (typeof DATE_RANGE_OPTIONS)[number]['value'];
  * - Medium: $101-$500
  * - High: $501+
  */
-export const ENTRY_FEE_OPTIONS = [
+export const entryFeeOptions = [
   { value: 'all', label: 'All Entry Fees' },
   { value: 'free', label: 'Free' },
   { value: 'low', label: 'Low ($1-$100)' },
@@ -40,12 +40,12 @@ export const ENTRY_FEE_OPTIONS = [
   { value: 'high', label: 'High ($501+)' },
 ] as const;
 
-export type EntryFeeValue = (typeof ENTRY_FEE_OPTIONS)[number]['value'];
+export type EntryFeeValue = (typeof entryFeeOptions)[number]['value'];
 
 /**
  * Fee range boundaries for backend filtering logic
  */
-export const FEE_RANGES = {
+export const feeRanges = {
   free: { min: 0, max: 0 },
   low: { min: 1, max: 100 },
   medium: { min: 101, max: 500 },
@@ -56,21 +56,21 @@ export const FEE_RANGES = {
  * Validate if a value is a valid date range filter
  */
 export function isValidDateRange(value: string): value is DateRangeValue {
-  return DATE_RANGE_OPTIONS.some((option) => option.value === value);
+  return dateRangeOptions.some((option) => option.value === value);
 }
 
 /**
  * Validate if a value is a valid entry fee filter
  */
 export function isValidEntryFee(value: string): value is EntryFeeValue {
-  return ENTRY_FEE_OPTIONS.some((option) => option.value === value);
+  return entryFeeOptions.some((option) => option.value === value);
 }
 
 /**
  * Get fee range boundaries for a given fee filter
  */
 export function getFeeRange(fee: Exclude<EntryFeeValue, 'all'>): { min: number; max: number } {
-  return FEE_RANGES[fee];
+  return feeRanges[fee];
 }
 
 /**
@@ -125,18 +125,18 @@ export function getDateRange(range: DateRangeValue): { startDate: Date; endDate:
 /**
  * Filter options count verification (for testing)
  */
-export const DATE_RANGE_OPTIONS_COUNT = 4;
-export const ENTRY_FEE_OPTIONS_COUNT = 5;
+export const dateRangeOptionsCount = 4;
+export const entryFeeOptionsCount = 5;
 
 // Verify fixture integrity
-if (DATE_RANGE_OPTIONS.length !== DATE_RANGE_OPTIONS_COUNT) {
+if (dateRangeOptions.length !== dateRangeOptionsCount) {
   throw new Error(
-    `Date range options fixture integrity error: Expected ${DATE_RANGE_OPTIONS_COUNT} options, got ${DATE_RANGE_OPTIONS.length}`
+    `Date range options fixture integrity error: Expected ${dateRangeOptionsCount} options, got ${dateRangeOptions.length}`
   );
 }
 
-if (ENTRY_FEE_OPTIONS.length !== ENTRY_FEE_OPTIONS_COUNT) {
+if (entryFeeOptions.length !== entryFeeOptionsCount) {
   throw new Error(
-    `Entry fee options fixture integrity error: Expected ${ENTRY_FEE_OPTIONS_COUNT} options, got ${ENTRY_FEE_OPTIONS.length}`
+    `Entry fee options fixture integrity error: Expected ${entryFeeOptionsCount} options, got ${entryFeeOptions.length}`
   );
 }

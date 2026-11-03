@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { purgeOrphanedUrtSeenKeys, URT_SEEN_KEY } from '../traitEventSeen';
+import { purgeOrphanedUrtSeenKeys, urtSeenKey } from '../traitEventSeen';
 
 /**
  * Minimal Storage implementation (exposes .length / .key() as required by
@@ -68,12 +68,12 @@ describe('purgeOrphanedUrtSeenKeys', () => {
     const store = makeFakeStorage({
       'urt-seen-146323': '1',
       'urt-seen-99': '1',
-      [URT_SEEN_KEY]: seenIdsValue, // must NOT be removed
+      [urtSeenKey]: seenIdsValue, // must NOT be removed
     });
 
     purgeOrphanedUrtSeenKeys(store);
 
-    expect(store.getItem(URT_SEEN_KEY)).toBe(seenIdsValue);
+    expect(store.getItem(urtSeenKey)).toBe(seenIdsValue);
     const rawData = (store as unknown as { _data: Record<string, string> })._data;
     expect('urt-seen-146323' in rawData).toBe(false);
     expect('urt-seen-99' in rawData).toBe(false);
@@ -95,13 +95,13 @@ describe('purgeOrphanedUrtSeenKeys', () => {
   it('is idempotent — safe to call multiple times', () => {
     const store = makeFakeStorage({
       'urt-seen-1': '1',
-      [URT_SEEN_KEY]: '[1]',
+      [urtSeenKey]: '[1]',
     });
 
     purgeOrphanedUrtSeenKeys(store);
     purgeOrphanedUrtSeenKeys(store); // second call must not throw
 
-    expect(store.getItem(URT_SEEN_KEY)).toBe('[1]');
+    expect(store.getItem(urtSeenKey)).toBe('[1]');
     const rawData = (store as unknown as { _data: Record<string, string> })._data;
     expect('urt-seen-1' in rawData).toBe(false);
   });
@@ -114,10 +114,10 @@ describe('purgeOrphanedUrtSeenKeys', () => {
   it('does not match urt-seen-ids via the regex (sanity check)', () => {
     // Verify our regex contract in isolation — if this fails the safety
     // assumption of the whole cleanup is broken.
-    const OLD_PATTERN = /^urt-seen-\d+$/;
-    expect(OLD_PATTERN.test('urt-seen-ids')).toBe(false);
-    expect(OLD_PATTERN.test('urt-seen-146323')).toBe(true);
-    expect(OLD_PATTERN.test('urt-seen-0')).toBe(true);
-    expect(OLD_PATTERN.test('urt-seen-')).toBe(false); // no digits
+    const oldPattern = /^urt-seen-\d+$/;
+    expect(oldPattern.test('urt-seen-ids')).toBe(false);
+    expect(oldPattern.test('urt-seen-146323')).toBe(true);
+    expect(oldPattern.test('urt-seen-0')).toBe(true);
+    expect(oldPattern.test('urt-seen-')).toBe(false); // no digits
   });
 });

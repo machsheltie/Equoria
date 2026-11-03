@@ -28,7 +28,7 @@ import RegisterPage from '../RegisterPage';
 // real API contract is broken; MSW intercepts the actual HTTP request the real
 // api-client makes. Per-test responses are registered with server.use() (reset
 // after each test by the global afterEach in src/test/setup.ts).
-const REGISTER_URL = 'http://localhost:3000/api/v1/auth/register';
+const registerUrl = 'http://localhost:3000/api/v1/auth/register';
 
 // Captures the body the real api-client POSTs + counts real calls, replacing
 // the old vi.fn() call assertions.
@@ -43,7 +43,7 @@ beforeEach(() => {
 /** One-shot register handler returning a successful user envelope. */
 function mockRegisterSuccess() {
   server.use(
-    http.post(REGISTER_URL, async ({ request }) => {
+    http.post(registerUrl, async ({ request }) => {
       registerCallCount += 1;
       lastRegisterBody = await request.json();
       return HttpResponse.json(
@@ -69,7 +69,7 @@ function mockRegisterSuccess() {
 /** Register handler that never resolves (in-flight / loading state). */
 function mockRegisterPending() {
   server.use(
-    http.post(REGISTER_URL, async () => {
+    http.post(registerUrl, async () => {
       registerCallCount += 1;
       await delay('infinite');
       return HttpResponse.json({ status: 'success', data: { user: { id: 1 } } }, { status: 201 });
@@ -80,7 +80,7 @@ function mockRegisterPending() {
 /** Register handler returning the given error status + message. */
 function mockRegisterError(status: number, message: string) {
   server.use(
-    http.post(REGISTER_URL, () => {
+    http.post(registerUrl, () => {
       registerCallCount += 1;
       return HttpResponse.json({ status: 'error', message }, { status });
     })
@@ -990,7 +990,7 @@ describe('RegisterPage', () => {
       // The real api-client surfaces a non-empty error message which the
       // component renders. Assert the error paragraph appears with content —
       // the exact transport wording is environment-dependent.
-      server.use(http.post(REGISTER_URL, () => HttpResponse.error()));
+      server.use(http.post(registerUrl, () => HttpResponse.error()));
 
       render(
         <TestWrapper>

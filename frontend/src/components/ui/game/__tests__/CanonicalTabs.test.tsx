@@ -22,7 +22,7 @@ import { CanonicalTabs, Tabs, TabsList, TabsTrigger, TabsContent } from '../Cano
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-const SAMPLE_TABS = [
+const sampleTabs = [
   { value: 'alpha', label: 'Alpha', content: <p>alpha-body</p> },
   { value: 'beta', label: 'Beta', content: <p>beta-body</p> },
   { value: 'gamma', label: 'Gamma', content: <p>gamma-body</p> },
@@ -45,21 +45,21 @@ function renderComposable(defaultValue = 'alpha') {
 
 describe('CanonicalTabs — underline variant (default)', () => {
   it('TabsList has overflow-x-auto and flex-nowrap for horizontal scrolling', () => {
-    render(<CanonicalTabs tabs={SAMPLE_TABS} />);
+    render(<CanonicalTabs tabs={sampleTabs} />);
     const list = screen.getByRole('tablist');
     expect(list.className).toContain('overflow-x-auto');
     expect(list.className).toContain('flex-nowrap');
   });
 
   it('active trigger has gold-400 token class (GoldTabsTrigger base)', () => {
-    render(<CanonicalTabs tabs={SAMPLE_TABS} defaultValue="alpha" />);
+    render(<CanonicalTabs tabs={sampleTabs} defaultValue="alpha" />);
     const trigger = screen.getByRole('tab', { name: /alpha/i });
     // GoldTabsTrigger applies data-[state=active]:text-[var(--gold-400)]
     expect(trigger.className).toContain('data-[state=active]:text-[var(--gold-400)]');
   });
 
   it('TabsList has bottom border from GoldTabsList base', () => {
-    render(<CanonicalTabs tabs={SAMPLE_TABS} />);
+    render(<CanonicalTabs tabs={sampleTabs} />);
     const list = screen.getByRole('tablist');
     expect(list.className).toContain('border-b');
   });
@@ -67,19 +67,19 @@ describe('CanonicalTabs — underline variant (default)', () => {
 
 describe('CanonicalTabs — segmented variant', () => {
   it('TabsList has glass-surface-subtle-bg token container', () => {
-    render(<CanonicalTabs variant="segmented" tabs={SAMPLE_TABS} />);
+    render(<CanonicalTabs variant="segmented" tabs={sampleTabs} />);
     const list = screen.getByRole('tablist');
     expect(list.className).toContain('bg-[var(--glass-surface-subtle-bg)]');
   });
 
   it('active segmented trigger has btn-gold-bg token', () => {
-    render(<CanonicalTabs variant="segmented" tabs={SAMPLE_TABS} defaultValue="alpha" />);
+    render(<CanonicalTabs variant="segmented" tabs={sampleTabs} defaultValue="alpha" />);
     const trigger = screen.getByRole('tab', { name: /alpha/i });
     expect(trigger.className).toContain('data-[state=active]:bg-[var(--btn-gold-bg)]');
   });
 
   it('inactive segmented trigger uses the --text-secondary token', () => {
-    render(<CanonicalTabs variant="segmented" tabs={SAMPLE_TABS} defaultValue="alpha" />);
+    render(<CanonicalTabs variant="segmented" tabs={sampleTabs} defaultValue="alpha" />);
     const inactiveTrigger = screen.getByRole('tab', { name: /beta/i });
     expect(inactiveTrigger.className).toContain('text-[var(--text-secondary)]');
   });
@@ -89,7 +89,7 @@ describe('CanonicalTabs — segmented variant', () => {
 
 describe('CanonicalTabs — array API', () => {
   it('renders all tab triggers from tabs prop', () => {
-    render(<CanonicalTabs tabs={SAMPLE_TABS} />);
+    render(<CanonicalTabs tabs={sampleTabs} />);
     expect(screen.getByRole('tab', { name: /alpha/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /beta/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /gamma/i })).toBeInTheDocument();
@@ -110,7 +110,7 @@ describe('CanonicalTabs — array API', () => {
 
   it('clicking a tab shows its content and hides others', async () => {
     const user = userEvent.setup();
-    render(<CanonicalTabs tabs={SAMPLE_TABS} defaultValue="alpha" />);
+    render(<CanonicalTabs tabs={sampleTabs} defaultValue="alpha" />);
     expect(screen.getByText('alpha-body')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: /beta/i }));
@@ -124,7 +124,7 @@ describe('CanonicalTabs — array API', () => {
 describe('CanonicalTabs — controlled mode', () => {
   it('renders the tab specified by value prop', () => {
     const seen: string[] = [];
-    render(<CanonicalTabs tabs={SAMPLE_TABS} value="beta" onValueChange={(v) => seen.push(v)} />);
+    render(<CanonicalTabs tabs={sampleTabs} value="beta" onValueChange={(v) => seen.push(v)} />);
     expect(screen.getByText('beta-body')).toBeInTheDocument();
     expect(screen.queryByText('alpha-body')).not.toBeInTheDocument();
   });
@@ -132,7 +132,7 @@ describe('CanonicalTabs — controlled mode', () => {
   it('calls onValueChange when trigger is clicked', async () => {
     const user = userEvent.setup();
     const onValueChange = vi.fn();
-    render(<CanonicalTabs tabs={SAMPLE_TABS} value="alpha" onValueChange={onValueChange} />);
+    render(<CanonicalTabs tabs={sampleTabs} value="alpha" onValueChange={onValueChange} />);
     await user.click(screen.getByRole('tab', { name: /beta/i }));
     expect(onValueChange).toHaveBeenCalledWith('beta');
   });
@@ -140,7 +140,7 @@ describe('CanonicalTabs — controlled mode', () => {
   it('does not change internal state in controlled mode', async () => {
     const user = userEvent.setup();
     // Controlled: value stays "alpha" because parent doesn't update
-    render(<CanonicalTabs tabs={SAMPLE_TABS} value="alpha" onValueChange={() => {}} />);
+    render(<CanonicalTabs tabs={sampleTabs} value="alpha" onValueChange={() => {}} />);
     await user.click(screen.getByRole('tab', { name: /beta/i }));
     // Still shows alpha content because value prop hasn't changed
     expect(screen.getByText('alpha-body')).toBeInTheDocument();
@@ -152,7 +152,7 @@ describe('CanonicalTabs — controlled mode', () => {
       return (
         <div>
           <button onClick={() => setTab('gamma')}>Switch to gamma</button>
-          <CanonicalTabs tabs={SAMPLE_TABS} value={tab} onValueChange={setTab} />
+          <CanonicalTabs tabs={sampleTabs} value={tab} onValueChange={setTab} />
         </div>
       );
     };
@@ -169,18 +169,18 @@ describe('CanonicalTabs — controlled mode', () => {
 
 describe('CanonicalTabs — uncontrolled mode', () => {
   it('defaults to first tab when no defaultValue', () => {
-    render(<CanonicalTabs tabs={SAMPLE_TABS} />);
+    render(<CanonicalTabs tabs={sampleTabs} />);
     expect(screen.getByText('alpha-body')).toBeInTheDocument();
   });
 
   it('defaults to the specified defaultValue', () => {
-    render(<CanonicalTabs tabs={SAMPLE_TABS} defaultValue="gamma" />);
+    render(<CanonicalTabs tabs={sampleTabs} defaultValue="gamma" />);
     expect(screen.getByText('gamma-body')).toBeInTheDocument();
   });
 
   it('maintains internal state across clicks', async () => {
     const user = userEvent.setup();
-    render(<CanonicalTabs tabs={SAMPLE_TABS} defaultValue="alpha" />);
+    render(<CanonicalTabs tabs={sampleTabs} defaultValue="alpha" />);
     await user.click(screen.getByRole('tab', { name: /beta/i }));
     expect(screen.getByText('beta-body')).toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: /gamma/i }));

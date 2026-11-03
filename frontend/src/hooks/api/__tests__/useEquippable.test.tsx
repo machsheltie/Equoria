@@ -15,7 +15,7 @@ import { useEquippable } from '../useEquippable';
 import type { EquippableResponse } from '@/lib/api-client';
 import React from 'react';
 
-const MOCK_EQUIPPABLE: EquippableResponse = {
+const mockEquippable: EquippableResponse = {
   tack: [],
   feed: [
     { feedType: 'basic', name: 'Basic Feed', quantity: 50, isCurrentlyEquippedToThisHorse: true },
@@ -41,7 +41,7 @@ describe('useEquippable — query fires', () => {
     server.use(
       http.get('/api/v1/horses/99/equippable', () => {
         hitEndpoint = true;
-        return HttpResponse.json(MOCK_EQUIPPABLE);
+        return HttpResponse.json(mockEquippable);
       })
     );
 
@@ -50,11 +50,11 @@ describe('useEquippable — query fires', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(hitEndpoint).toBe(true);
-    expect(result.current.data).toEqual(MOCK_EQUIPPABLE);
+    expect(result.current.data).toEqual(mockEquippable);
   });
 
   it('exposes tack and feed arrays', async () => {
-    server.use(http.get('/api/v1/horses/99/equippable', () => HttpResponse.json(MOCK_EQUIPPABLE)));
+    server.use(http.get('/api/v1/horses/99/equippable', () => HttpResponse.json(mockEquippable)));
 
     const { result } = renderHook(() => useEquippable(99), { wrapper: wrapper() });
 
@@ -67,7 +67,7 @@ describe('useEquippable — query fires', () => {
   });
 
   it('uses [equippable, horseId] query key', async () => {
-    server.use(http.get('/api/v1/horses/77/equippable', () => HttpResponse.json(MOCK_EQUIPPABLE)));
+    server.use(http.get('/api/v1/horses/77/equippable', () => HttpResponse.json(mockEquippable)));
 
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const { result } = renderHook(() => useEquippable(77), {
@@ -77,6 +77,6 @@ describe('useEquippable — query fires', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     const cached = qc.getQueryData(['equippable', 77]);
-    expect(cached).toEqual(MOCK_EQUIPPABLE);
+    expect(cached).toEqual(mockEquippable);
   });
 });

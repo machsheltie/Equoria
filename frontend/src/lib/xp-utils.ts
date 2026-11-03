@@ -13,7 +13,7 @@
 /**
  * XP required per level (constant 100 XP per level)
  */
-export const XP_PER_LEVEL = 100;
+export const xpPerLevel = 100;
 
 /**
  * Calculate the player's current level based on total XP
@@ -25,7 +25,7 @@ export function calculateLevel(totalXP: number): number {
   if (totalXP === undefined || totalXP === null || totalXP < 0) {
     return 1;
   }
-  return Math.floor(totalXP / XP_PER_LEVEL) + 1;
+  return Math.floor(totalXP / xpPerLevel) + 1;
 }
 
 /**
@@ -36,9 +36,9 @@ export function calculateLevel(totalXP: number): number {
  */
 export function getXPForNextLevel(currentLevel: number): number {
   if (currentLevel === undefined || currentLevel === null) {
-    return XP_PER_LEVEL;
+    return xpPerLevel;
   }
-  return currentLevel * XP_PER_LEVEL;
+  return currentLevel * xpPerLevel;
 }
 
 /**
@@ -51,7 +51,7 @@ export function getXPProgress(totalXP: number): number {
   if (totalXP === undefined || totalXP === null || totalXP < 0) {
     return 0;
   }
-  return totalXP % XP_PER_LEVEL;
+  return totalXP % xpPerLevel;
 }
 
 /**
@@ -64,7 +64,7 @@ export function getXPProgressPercent(totalXP: number): number {
   if (totalXP === undefined || totalXP === null || totalXP < 0) {
     return 0;
   }
-  return totalXP % XP_PER_LEVEL;
+  return totalXP % xpPerLevel;
 }
 
 /**
@@ -75,10 +75,10 @@ export function getXPProgressPercent(totalXP: number): number {
  */
 export function getXPNeededForNextLevel(totalXP: number): number {
   if (totalXP === undefined || totalXP === null || totalXP < 0) {
-    return XP_PER_LEVEL;
+    return xpPerLevel;
   }
   const progress = getXPProgress(totalXP);
-  return XP_PER_LEVEL - progress;
+  return xpPerLevel - progress;
 }
 
 /**
@@ -89,5 +89,5 @@ export function getXPNeededForNextLevel(totalXP: number): number {
  */
 export function formatXPDisplay(totalXP: number): string {
   const progress = getXPProgress(totalXP);
-  return `${progress} / ${XP_PER_LEVEL} XP`;
+  return `${progress} / ${xpPerLevel} XP`;
 }

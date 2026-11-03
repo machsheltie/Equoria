@@ -10,8 +10,8 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-  HORSE_NAME_MAX_LENGTH,
-  UNNAMED_HORSE_NAME,
+  horseNameMaxLength,
+  unnamedHorseName,
   horseNameRejection,
   horseNameRejectionCopy,
   isUnnamed,
@@ -19,7 +19,7 @@ import {
 
 describe('horse name policy (client mirror)', () => {
   it('caps at 40 characters, the limit the owner set', () => {
-    expect(HORSE_NAME_MAX_LENGTH).toBe(40);
+    expect(horseNameMaxLength).toBe(40);
   });
 
   it('accepts a name of exactly 40 characters', () => {
@@ -53,12 +53,12 @@ describe('horse name policy (client mirror)', () => {
   });
 
   it('recognises the birth name so a surface can invite a player to name her', () => {
-    expect(UNNAMED_HORSE_NAME).toBe('unnamed');
+    expect(unnamedHorseName).toBe('unnamed');
     expect(isUnnamed('unnamed')).toBe(true);
     expect(isUnnamed('Moonflower')).toBe(false);
     expect(isUnnamed(null)).toBe(false);
     // And the birth name is itself acceptable — the game never mints a name it
     // would refuse to accept back.
-    expect(horseNameRejection(UNNAMED_HORSE_NAME)).toBeNull();
+    expect(horseNameRejection(unnamedHorseName)).toBeNull();
   });
 });

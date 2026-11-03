@@ -17,12 +17,12 @@
 import { cn, getBreedName } from '@/lib/utils';
 import { getHorseImage } from '@/lib/breed-images';
 import { careChipStatus, trainingCooldownChip } from '@/lib/utils/care-status-utils';
-import { getPregnancyProgress, GESTATION_DAYS } from '@/lib/utils/pregnancyChances';
+import { getPregnancyProgress, gestationDays } from '@/lib/utils/pregnancyChances';
 import { CareChip } from '@/components/common/CareChip';
 import { GoldBorderFrame } from '@/components/ui/GoldBorderFrame';
 import type { HorseCardData, HorseSummary } from '@/lib/api-client';
 
-const STAT_KEYS: { label: string; key: keyof HorseSummary['stats'] }[] = [
+const statKeys: { label: string; key: keyof HorseSummary['stats'] }[] = [
   { label: 'PRC', key: 'precision' },
   { label: 'STR', key: 'strength' },
   { label: 'SPD', key: 'speed' },
@@ -74,8 +74,8 @@ export function HorseCard({
   const pregnancy = getPregnancyProgress(horse.inFoalSinceDate);
   const pregnancyTooltip = pregnancy
     ? pregnancy.isOverdue
-      ? `In foal — foaling imminent (Day ${GESTATION_DAYS}+ of ${GESTATION_DAYS})`
-      : `In foal — Day ${pregnancy.gestationDay} of ${GESTATION_DAYS}, ${pregnancy.daysRemaining} ${pregnancy.daysRemaining === 1 ? 'day' : 'days'} remaining`
+      ? `In foal — foaling imminent (Day ${gestationDays}+ of ${gestationDays})`
+      : `In foal — Day ${pregnancy.gestationDay} of ${gestationDays}, ${pregnancy.daysRemaining} ${pregnancy.daysRemaining === 1 ? 'day' : 'days'} remaining`
     : '';
 
   // Equoria-55bo.6 — championship frame. Spec 11.3.13 reserves the ornate
@@ -204,7 +204,7 @@ export function HorseCard({
       {/* Stats — compact 4×3 grid */}
       {!hideStats && (
         <div className="grid grid-cols-4 gap-x-3 gap-y-1 px-3 pt-3" data-horse-card-stats>
-          {STAT_KEYS.map(({ label, key }) => (
+          {statKeys.map(({ label, key }) => (
             <div key={label} className="flex items-center justify-between min-w-0">
               <span className="text-2xs text-[var(--text-secondary)] uppercase tracking-wider font-medium">
                 {label}

@@ -21,7 +21,7 @@ interface NarrativeChipProps {
   className?: string;
 }
 
-const VARIANT_STYLES: Record<ChipVariant, string> = {
+const variantStyles: Record<ChipVariant, string> = {
   ready: [
     'bg-[var(--alpha-gold-ember-15)] border border-[var(--gold-primary)]',
     'text-[var(--gold-light)]',
@@ -52,7 +52,7 @@ export function NarrativeChip({ text, variant = 'neutral', className }: Narrativ
         'inline-flex items-center px-2.5 py-0.5 rounded-full',
         'text-xs font-medium font-[var(--font-body)]',
         'whitespace-nowrap',
-        VARIANT_STYLES[variant],
+        variantStyles[variant],
         className
       )}
     >
@@ -178,7 +178,7 @@ export interface LatestChapter {
   stale: boolean;
 }
 
-const STALE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+const staleAfterMs = 7 * 24 * 60 * 60 * 1000;
 
 function chapterTs(value?: string | null): number | null {
   if (!value) return null;
@@ -247,7 +247,7 @@ export function deriveLatestChapter(
     return { text: 'Just arrived at the stable', variant: 'neutral', stale: false };
   }
 
-  const stale = now - latest.at > STALE_AFTER_MS;
+  const stale = now - latest.at > staleAfterMs;
   // A fresh competition win/placement is an "active" highlight; a fresh
   // care event keeps the existing cooldown styling.
   const freshVariant: ChipVariant = latest.isCompetition ? 'active' : 'cooldown';

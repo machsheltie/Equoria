@@ -31,7 +31,7 @@ const DefaultLoading: React.FC = () => (
   </div>
 );
 
-const SESSION_END_MESSAGES: Record<SessionEndReason, string> = {
+const sessionEndMessages: Record<SessionEndReason, string> = {
   expired: 'Your session has expired. Please log in again.',
   'signed-out-elsewhere': 'You were signed out in another tab. Please log in again.',
 };
@@ -58,7 +58,7 @@ function useSessionEndRedirect() {
           replace: true,
           state: {
             from: safeRedirectTarget(pathname + search + hash, '/'),
-            message: SESSION_END_MESSAGES[reason],
+            message: sessionEndMessages[reason],
           },
         });
       }),

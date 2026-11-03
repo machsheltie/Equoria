@@ -10,17 +10,17 @@
  */
 
 /** localStorage key the retired consolidated seen-set used. */
-export const URT_SEEN_KEY = 'urt-seen-ids';
+export const urtSeenKey = 'urt-seen-ids';
 
 /**
  * Regex matching ONLY the OLD per-event-id key format: `urt-seen-<digits>`.
  *
  * Critically, this does NOT match the current consolidated key `urt-seen-ids`
  * because `ids` is not a digit-only string (`\d+` requires [0-9]+).
- * Verified: `OLD_URT_SEEN_PATTERN.test('urt-seen-ids')` → false.
+ * Verified: `oldUrtSeenPattern.test('urt-seen-ids')` → false.
  * (Equoria-o7c0x C)
  */
-const OLD_URT_SEEN_PATTERN = /^urt-seen-\d+$/;
+const oldUrtSeenPattern = /^urt-seen-\d+$/;
 
 /**
  * One-time idempotent cleanup: removes orphaned per-id localStorage keys left
@@ -48,7 +48,7 @@ export function purgeOrphanedUrtSeenKeys(storage?: Storage): void {
 
     for (let i = 0; i < store.length; i++) {
       const key = store.key(i);
-      if (key !== null && OLD_URT_SEEN_PATTERN.test(key)) {
+      if (key !== null && oldUrtSeenPattern.test(key)) {
         toDelete.push(key);
       }
     }

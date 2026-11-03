@@ -38,8 +38,8 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // The MockAuthProvider injects this user; userId '123' drives the
 // /users/123/prize-history boundary request the page issues.
-const USER_ID = 123;
-const PRIZE_HISTORY_PATH = `${base}/api/v1/users/${USER_ID}/prize-history`;
+const userId = 123;
+const prizeHistoryPath = `${base}/api/v1/users/${userId}/prize-history`;
 
 /**
  * Canonical prize-history rows — the REAL backend wire shape (Equoria-i3l23).
@@ -121,7 +121,7 @@ function prizeHistoryEnvelope(rows = mockRows) {
 
 function stubPrizeHistory(rows = mockRows) {
   server.use(
-    http.get(PRIZE_HISTORY_PATH, ({ request }) => {
+    http.get(prizeHistoryPath, ({ request }) => {
       const url = new URL(request.url);
       const dateRange = url.searchParams.get('dateRange');
       const horseId = url.searchParams.get('horseId');
@@ -168,7 +168,7 @@ describe('PrizeHistoryPage', () => {
   const renderPage = (route = '/prizes') =>
     render(
       <QueryClientProvider client={queryClient}>
-        <MockAuthProvider userOverrides={{ id: USER_ID, username: 'TestUser' }}>
+        <MockAuthProvider userOverrides={{ id: userId, username: 'TestUser' }}>
           <MemoryRouter initialEntries={[route]}>
             <Routes>
               <Route path="/prizes" element={<PrizeHistoryPage />} />
@@ -220,7 +220,7 @@ describe('PrizeHistoryPage', () => {
     it('loading state shows skeleton cards', async () => {
       // Delay the boundary so the loading state is observable.
       server.use(
-        http.get(PRIZE_HISTORY_PATH, async () => {
+        http.get(prizeHistoryPath, async () => {
           await delay(100);
           return HttpResponse.json(prizeHistoryEnvelope());
         })
@@ -239,7 +239,7 @@ describe('PrizeHistoryPage', () => {
       // FRONTEND_ASYNC_STATE_DOCTRINE §3 and the ErrorState JSDoc. Only
       // caller-provided, user-safe copy may reach the UI. (Equoria-x6l44)
       server.use(
-        http.get(PRIZE_HISTORY_PATH, () =>
+        http.get(prizeHistoryPath, () =>
           HttpResponse.json(
             { status: 'error', message: 'Failed to load prize history' },
             { status: 500 }
@@ -330,7 +330,7 @@ describe('PrizeHistoryPage', () => {
       // the date-range change drives a real re-query carrying the param.
       const seenDateRanges: Array<string | null> = [];
       server.use(
-        http.get(PRIZE_HISTORY_PATH, ({ request }) => {
+        http.get(prizeHistoryPath, ({ request }) => {
           const url = new URL(request.url);
           seenDateRanges.push(url.searchParams.get('dateRange'));
           return HttpResponse.json(prizeHistoryEnvelope());
@@ -353,7 +353,7 @@ describe('PrizeHistoryPage', () => {
       // Record the params the very first boundary request carries.
       let firstRequestUrl: URL | null = null;
       server.use(
-        http.get(PRIZE_HISTORY_PATH, ({ request }) => {
+        http.get(prizeHistoryPath, ({ request }) => {
           if (!firstRequestUrl) firstRequestUrl = new URL(request.url);
           return HttpResponse.json(prizeHistoryEnvelope());
         })
@@ -395,7 +395,7 @@ describe('PrizeHistoryPage', () => {
     it('issues the prize-history request for the authenticated user id', async () => {
       let requestedPath: string | null = null;
       server.use(
-        http.get(PRIZE_HISTORY_PATH, ({ request }) => {
+        http.get(prizeHistoryPath, ({ request }) => {
           requestedPath = new URL(request.url).pathname;
           return HttpResponse.json(prizeHistoryEnvelope());
         })
@@ -403,13 +403,13 @@ describe('PrizeHistoryPage', () => {
 
       renderPage();
 
-      await waitFor(() => expect(requestedPath).toBe(`/api/v1/users/${USER_ID}/prize-history`));
+      await waitFor(() => expect(requestedPath).toBe(`/api/v1/users/${userId}/prize-history`));
     });
 
     it('carries URL filters through to the prize-history boundary request', async () => {
       let requestUrl: URL | null = null;
       server.use(
-        http.get(PRIZE_HISTORY_PATH, ({ request }) => {
+        http.get(prizeHistoryPath, ({ request }) => {
           requestUrl = new URL(request.url);
           return HttpResponse.json(prizeHistoryEnvelope());
         })
@@ -447,7 +447,7 @@ describe('PrizeHistoryPage', () => {
       // First load fails; the retry button re-runs the query, which succeeds.
       let calls = 0;
       server.use(
-        http.get(PRIZE_HISTORY_PATH, () => {
+        http.get(prizeHistoryPath, () => {
           calls += 1;
           if (calls === 1) {
             return HttpResponse.json(
@@ -553,7 +553,7 @@ describe('PrizeHistoryPage', () => {
   describe('Four-state doctrine (Equoria-x6l44)', () => {
     it('a failed fetch never renders the false "No transactions yet" empty', async () => {
       server.use(
-        http.get(PRIZE_HISTORY_PATH, () =>
+        http.get(prizeHistoryPath, () =>
           HttpResponse.json({ status: 'error', message: 'boom' }, { status: 500 })
         )
       );
@@ -572,7 +572,7 @@ describe('PrizeHistoryPage', () => {
 
     it('a failed fetch does not render fabricated zero stat cards', async () => {
       server.use(
-        http.get(PRIZE_HISTORY_PATH, () =>
+        http.get(prizeHistoryPath, () =>
           HttpResponse.json({ status: 'error', message: 'boom' }, { status: 500 })
         )
       );

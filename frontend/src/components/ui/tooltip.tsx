@@ -31,7 +31,7 @@ import * as React from 'react';
 type Side = 'top' | 'right' | 'bottom' | 'left';
 type Align = 'start' | 'center' | 'end';
 
-const DEFAULT_DELAY_DURATION = 700;
+const defaultDelayDuration = 700;
 
 /* -------------------------------------------------------------------------- */
 /* Provider context                                                           */
@@ -42,7 +42,7 @@ interface TooltipProviderContextValue {
 }
 
 const TooltipProviderContext = React.createContext<TooltipProviderContextValue>({
-  delayDuration: DEFAULT_DELAY_DURATION,
+  delayDuration: defaultDelayDuration,
 });
 
 export interface TooltipProviderProps {
@@ -57,7 +57,7 @@ export interface TooltipProviderProps {
 
 const TooltipProvider = ({
   children,
-  delayDuration = DEFAULT_DELAY_DURATION,
+  delayDuration = defaultDelayDuration,
 }: TooltipProviderProps) => {
   const value = React.useMemo(() => ({ delayDuration }), [delayDuration]);
   return (

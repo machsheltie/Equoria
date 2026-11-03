@@ -31,7 +31,7 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/msw/server';
 import LoginPage from '../LoginPage';
 
-const LOGIN_URL = 'http://localhost:3000/api/v1/auth/login';
+const loginUrl = 'http://localhost:3000/api/v1/auth/login';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router', async () => {
@@ -46,7 +46,7 @@ vi.mock('react-router', async () => {
 /** Register a one-shot login handler returning the given status + message. */
 function mockLoginError(status: number, message?: string) {
   server.use(
-    http.post(LOGIN_URL, () =>
+    http.post(loginUrl, () =>
       message
         ? HttpResponse.json({ status: 'error', message }, { status })
         : new HttpResponse(null, { status })
@@ -133,7 +133,7 @@ describe('LoginPage — credential error copy', () => {
     // surface maps to its own network copy (Finding 7). We assert the alert
     // is shown with non-empty content — the user-facing contract — rather
     // than pinning environment-dependent transport wording.
-    server.use(http.post(LOGIN_URL, () => HttpResponse.error()));
+    server.use(http.post(loginUrl, () => HttpResponse.error()));
     renderLogin();
 
     await submitCredentials(user);
@@ -157,7 +157,7 @@ describe('LoginPage — credential error copy', () => {
     // only reached when error.message is falsy, which the real api-client
     // never produces; asserting it would verify an unreachable branch.)
     server.use(
-      http.post(LOGIN_URL, () =>
+      http.post(loginUrl, () =>
         HttpResponse.json({ status: 'error', message: '' }, { status: 500 })
       )
     );

@@ -19,7 +19,7 @@ import RoleChangeDialog, { type RoleChange } from './RoleChangeDialog';
 import { staffErrorMessage } from './staffMessages';
 import StaffSection from './StaffSection';
 
-const ROLE_WORDS: Record<AccountRole, string> = {
+const roleWords: Record<AccountRole, string> = {
   user: 'a player',
   moderator: 'a moderator',
   admin: 'the admin',
@@ -34,7 +34,7 @@ const staffTitles: Record<StaffMember['role'], string> = {
   owner: 'Owner',
 };
 
-const LOOKUP_MESSAGES = {
+const lookupMessages = {
   400: 'Enter a username.',
   404: 'No player goes by that name.',
 };
@@ -192,14 +192,14 @@ export function StaffRoles({ onCheckinRequired, canAppointAdmin = false }: Staff
           </Button>
         </div>
         {lookup.isError && (
-          <InlineError message={staffErrorMessage(lookup.error, LOOKUP_MESSAGES)} />
+          <InlineError message={staffErrorMessage(lookup.error, lookupMessages)} />
         )}
       </form>
 
       {found && (
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <p className="text-[var(--text-primary)]">
-            {found.username} is {ROLE_WORDS[found.role] ?? 'without a listed role'}.
+            {found.username} is {roleWords[found.role] ?? 'without a listed role'}.
           </p>
           <RoleControl member={found} onChange={setChange} canAppointAdmin={canAppointAdmin} />
         </div>

@@ -31,9 +31,9 @@
  */
 
 /** The name a foal is born with, until her player names her (Equoria-4fnro). */
-export const UNNAMED_HORSE_NAME = 'unnamed';
+export const unnamedHorseName = 'unnamed';
 
-export const HORSE_NAME_MAX_LENGTH = 40;
+export const horseNameMaxLength = 40;
 
 export type HorseNameRejection = 'empty' | 'length' | 'characters';
 
@@ -44,7 +44,7 @@ export type HorseNameRejection = 'empty' | 'length' | 'characters';
  */
 export function horseNameRejection(name: string): HorseNameRejection | null {
   if (name.trim().length === 0) return 'empty';
-  if (name.length > HORSE_NAME_MAX_LENGTH) return 'length';
+  if (name.length > horseNameMaxLength) return 'length';
   if (name.includes('<') || name.includes('\0')) return 'characters';
   return null;
 }
@@ -59,7 +59,7 @@ export function horseNameRejectionCopy(rejection: HorseNameRejection, name: stri
     case 'empty':
       return 'She needs a name — even a short one.';
     case 'length':
-      return `That is ${name.length} characters; a horse name can be up to ${HORSE_NAME_MAX_LENGTH}. Trim ${name.length - HORSE_NAME_MAX_LENGTH} and she is ready.`;
+      return `That is ${name.length} characters; a horse name can be up to ${horseNameMaxLength}. Trim ${name.length - horseNameMaxLength} and she is ready.`;
     case 'characters':
       return 'A horse name cannot contain the "<" character. Try it without that one.';
     default:
@@ -69,5 +69,5 @@ export function horseNameRejectionCopy(rejection: HorseNameRejection, name: stri
 
 /** True when this horse has not been named yet, so the surface can invite one. */
 export function isUnnamed(name: string | null | undefined): boolean {
-  return name === UNNAMED_HORSE_NAME;
+  return name === unnamedHorseName;
 }

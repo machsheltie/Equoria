@@ -17,11 +17,11 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
 
-const TOKENS_PATH = resolve(__dirname, '../../../styles/tokens.css');
-const INDEX_CSS_PATH = resolve(__dirname, '../../../index.css');
+const tokensPath = resolve(__dirname, '../../../styles/tokens.css');
+const indexCssPath = resolve(__dirname, '../../../index.css');
 
-const tokensRaw = readFileSync(TOKENS_PATH, 'utf-8');
-const indexRaw = readFileSync(INDEX_CSS_PATH, 'utf-8');
+const tokensRaw = readFileSync(tokensPath, 'utf-8');
+const indexRaw = readFileSync(indexCssPath, 'utf-8');
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -84,7 +84,7 @@ describe('(b) --radius-button resolves to var(--radius-md) — DECISIONS.md §3'
 
 // ── (c) .text-role-* utility classes ─────────────────────────────────────────
 
-const TEXT_ROLE_CLASSES = [
+const textRoleClasses = [
   '.text-role-primary',
   '.text-role-secondary',
   '.text-role-muted',
@@ -95,7 +95,7 @@ const TEXT_ROLE_CLASSES = [
 ] as const;
 
 describe('(c) .text-role-* utility classes — all 7 defined in index.css', () => {
-  for (const cls of TEXT_ROLE_CLASSES) {
+  for (const cls of textRoleClasses) {
     it(`${cls} is defined`, () => {
       expect(hasClass(indexStripped, cls)).toBe(true);
     });

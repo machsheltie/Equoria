@@ -34,7 +34,7 @@ interface OnboardingStep {
 }
 
 /** The 10-step onboarding tour flow */
-const ONBOARDING_STEPS: OnboardingStep[] = [
+const onboardingSteps: OnboardingStep[] = [
   {
     step: 1,
     message: 'Welcome! Start by claiming your weekly coins from the Bank.',
@@ -99,7 +99,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
 ];
 
 /** Location name map for user-friendly navigation labels */
-const ROUTE_LABELS: Record<string, string> = {
+const routeLabels: Record<string, string> = {
   '/bank': 'Bank',
   '/world': 'World Hub',
   '/farrier': 'Farrier',
@@ -114,7 +114,7 @@ const ROUTE_LABELS: Record<string, string> = {
 };
 
 /** The last card (Equoria-hlo5x): shown after card 9, its Finish! completes the tour. */
-const finalStep = ONBOARDING_STEPS.length;
+const finalStep = onboardingSteps.length;
 
 const OnboardingSpotlight: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -139,7 +139,7 @@ const OnboardingSpotlight: React.FC = () => {
 
   const serverStep = isActive ? user!.onboardingStep! : 0;
   const stepIndex = finalCardOpen && serverStep === finalStep - 1 ? finalStep - 1 : serverStep - 1;
-  const activeStep = ONBOARDING_STEPS[stepIndex] ?? null;
+  const activeStep = onboardingSteps[stepIndex] ?? null;
 
   // Keyboard: Escape skips tutorial
   const handleKeyDown = useCallback(
@@ -201,7 +201,7 @@ const OnboardingSpotlight: React.FC = () => {
 
   const isOnCorrectRoute = location.pathname === activeStep.route;
   const isPending = isAdvancing || isSkipping;
-  const locationLabel = ROUTE_LABELS[activeStep.route] ?? activeStep.route;
+  const locationLabel = routeLabels[activeStep.route] ?? activeStep.route;
   const isFinalCard = activeStep.step === finalStep;
   const onNext = () => {
     if (activeStep.step === finalStep - 1) {
@@ -221,7 +221,7 @@ const OnboardingSpotlight: React.FC = () => {
           rounded-xl px-5 py-4 shadow-2xl"
       >
         <p className="text-xs text-[var(--text-muted)] mb-1 font-medium tracking-wide uppercase">
-          Step {activeStep.step} of {ONBOARDING_STEPS.length}
+          Step {activeStep.step} of {onboardingSteps.length}
         </p>
         <p className="text-[var(--cream)] text-sm mb-4 leading-relaxed">{activeStep.message}</p>
         <div className="flex items-center gap-3">
@@ -247,13 +247,13 @@ const OnboardingSpotlight: React.FC = () => {
   }
 
   // ── SPOTLIGHT RING + TOOLTIP CARD (correct route, element found) ───────────
-  const RING_PAD = 6;
+  const ringPad = 6;
   const ringStyle: React.CSSProperties = {
     position: 'fixed',
-    top: targetRect.top - RING_PAD,
-    left: targetRect.left - RING_PAD,
-    width: targetRect.width + RING_PAD * 2,
-    height: targetRect.height + RING_PAD * 2,
+    top: targetRect.top - ringPad,
+    left: targetRect.left - ringPad,
+    width: targetRect.width + ringPad * 2,
+    height: targetRect.height + ringPad * 2,
     borderRadius: 'var(--radius-md)',
     pointerEvents: 'none',
     animation: 'onboarding-ring-pulse 1.8s ease-in-out infinite',
@@ -266,8 +266,8 @@ const OnboardingSpotlight: React.FC = () => {
     position: 'fixed',
     left: Math.max(8, Math.min(targetRect.left, window.innerWidth - 336)),
     ...(tooltipBelow
-      ? { top: targetRect.bottom + RING_PAD + 8 }
-      : { top: targetRect.top - RING_PAD - 8 - 120 }),
+      ? { top: targetRect.bottom + ringPad + 8 }
+      : { top: targetRect.top - ringPad - 8 - 120 }),
     width: 320,
     zIndex: 'var(--z-modal)' as unknown as number,
   };
@@ -283,10 +283,10 @@ const OnboardingSpotlight: React.FC = () => {
         className="bg-[var(--celestial-navy-900)] border border-[var(--celestial-primary)]
           rounded-xl px-4 py-3 shadow-2xl"
         role="dialog"
-        aria-label={`Onboarding step ${activeStep.step} of ${ONBOARDING_STEPS.length}`}
+        aria-label={`Onboarding step ${activeStep.step} of ${onboardingSteps.length}`}
       >
         <p className="text-xs text-[var(--text-muted)] mb-1 font-medium tracking-wide uppercase">
-          Step {activeStep.step} / {ONBOARDING_STEPS.length}
+          Step {activeStep.step} / {onboardingSteps.length}
         </p>
         <p className="text-[var(--cream)] text-sm mb-3 leading-relaxed">{activeStep.message}</p>
         <div className="flex items-center gap-3">

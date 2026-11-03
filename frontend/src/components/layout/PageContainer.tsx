@@ -50,7 +50,7 @@ import { cn } from '@/lib/utils';
 export type PageContainerVariant = 'narrow' | 'content' | 'wide' | 'full';
 
 /** Maps each variant to the Tailwind classes approved in DECISIONS.md §1. */
-const VARIANT_CLASSES: Record<PageContainerVariant, string> = {
+const variantClasses: Record<PageContainerVariant, string> = {
   narrow: 'max-w-2xl mx-auto',
   content: 'max-w-4xl mx-auto',
   wide: 'max-w-6xl mx-auto',
@@ -102,7 +102,7 @@ export function PageContainer({
   return (
     <Tag
       data-testid={dataTestId}
-      className={cn(VARIANT_CLASSES[variant], padded && 'py-6 md:py-8', className)}
+      className={cn(variantClasses[variant], padded && 'py-6 md:py-8', className)}
       {...rest}
     >
       {children}

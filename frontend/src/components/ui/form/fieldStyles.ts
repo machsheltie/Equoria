@@ -6,13 +6,13 @@
  *   placeholder: --text-muted, focus: --gold-primary ring, invalid: --role-danger-border,
  *   disabled: opacity-40 cursor-not-allowed.
  *
- * Every form control imports BASE_FIELD_CLASSES and composes via cn().
+ * Every form control imports baseFieldClasses and composes via cn().
  * Do NOT duplicate these values in individual control files.
  */
 import { cn } from '@/lib/utils';
 
 /** Core visual recipe — shared by Input, Textarea, Select, NumberInput */
-export const BASE_FIELD_CLASSES = [
+export const baseFieldClasses = [
   // Layout & shape
   'w-full',
   'rounded-[var(--radius-md)]',
@@ -42,5 +42,5 @@ export const BASE_FIELD_CLASSES = [
 
 /** Convenience helper — merges base classes with any extras */
 export function fieldCn(...extras: Parameters<typeof cn>) {
-  return cn(BASE_FIELD_CLASSES.join(' '), ...extras);
+  return cn(baseFieldClasses.join(' '), ...extras);
 }

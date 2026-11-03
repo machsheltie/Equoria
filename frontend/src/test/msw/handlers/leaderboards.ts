@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw';
 import {
   getLeaderboardEntries,
   getUserRankSummary,
-  VALID_CATEGORIES,
+  validCategories,
 } from '../../fixtures/leaderboards';
 import { boardNames } from '@/lib/api/leaderboards';
 import type { LeaderboardCategory } from '@/components/leaderboard/LeaderboardCategorySelector';
@@ -81,7 +81,7 @@ export const leaderboardHandlers = [
     const limit = parseInt(url.searchParams.get('limit') || '50', 10);
 
     // Validate category
-    if (!VALID_CATEGORIES.includes(category as LeaderboardCategory)) {
+    if (!validCategories.includes(category as LeaderboardCategory)) {
       return HttpResponse.json(
         { status: 'error', message: 'Invalid leaderboard category' },
         { status: 404 }

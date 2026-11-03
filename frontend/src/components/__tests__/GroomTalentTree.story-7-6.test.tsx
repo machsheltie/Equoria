@@ -20,8 +20,8 @@ import {
   getTalentTiersWithState,
   formatTalentEffect,
   countAllocatedTalents,
-  TALENT_REQUIREMENTS,
-  TALENT_TREES,
+  talentRequirements,
+  talentTrees,
   GroomTalentData,
 } from '../../types/groomTalent';
 
@@ -57,53 +57,53 @@ const withAllSelected: GroomTalentData = {
 // Helper function unit tests
 // ============================================================
 
-describe('TALENT_REQUIREMENTS constants', () => {
+describe('talentRequirements constants', () => {
   it('tier1 requires Novice (old level 3)', () => {
-    expect(TALENT_REQUIREMENTS.tier1.minStarLevel).toBe('novice');
+    expect(talentRequirements.tier1.minStarLevel).toBe('novice');
   });
 
   it('tier2 requires Intermediate (old level 5)', () => {
-    expect(TALENT_REQUIREMENTS.tier2.minStarLevel).toBe('intermediate');
+    expect(talentRequirements.tier2.minStarLevel).toBe('intermediate');
   });
 
   it('tier3 requires Advanced (old level 8)', () => {
-    expect(TALENT_REQUIREMENTS.tier3.minStarLevel).toBe('advanced');
+    expect(talentRequirements.tier3.minStarLevel).toBe('advanced');
   });
 
   it('tier2 prerequisite is tier1', () => {
-    expect(TALENT_REQUIREMENTS.tier2.prerequisite).toBe('tier1');
+    expect(talentRequirements.tier2.prerequisite).toBe('tier1');
   });
 
   it('tier3 prerequisite is tier2', () => {
-    expect(TALENT_REQUIREMENTS.tier3.prerequisite).toBe('tier2');
+    expect(talentRequirements.tier3.prerequisite).toBe('tier2');
   });
 });
 
-describe('TALENT_TREES data', () => {
+describe('talentTrees data', () => {
   it('calm personality has 3 tiers', () => {
-    expect(TALENT_TREES.calm.tier1).toBeDefined();
-    expect(TALENT_TREES.calm.tier2).toBeDefined();
-    expect(TALENT_TREES.calm.tier3).toBeDefined();
+    expect(talentTrees.calm.tier1).toBeDefined();
+    expect(talentTrees.calm.tier2).toBeDefined();
+    expect(talentTrees.calm.tier3).toBeDefined();
   });
 
   it('calm tier1 has 2 talents', () => {
-    expect(TALENT_TREES.calm.tier1).toHaveLength(2);
+    expect(talentTrees.calm.tier1).toHaveLength(2);
   });
 
   it('calm tier2 has 1 talent', () => {
-    expect(TALENT_TREES.calm.tier2).toHaveLength(1);
+    expect(talentTrees.calm.tier2).toHaveLength(1);
   });
 
   it('calm tier3 has 1 talent', () => {
-    expect(TALENT_TREES.calm.tier3).toHaveLength(1);
+    expect(talentTrees.calm.tier3).toHaveLength(1);
   });
 
   it('energetic personality exists', () => {
-    expect(TALENT_TREES.energetic).toBeDefined();
+    expect(talentTrees.energetic).toBeDefined();
   });
 
   it('methodical personality exists', () => {
-    expect(TALENT_TREES.methodical).toBeDefined();
+    expect(talentTrees.methodical).toBeDefined();
   });
 });
 

@@ -66,7 +66,7 @@ const CATALOG: FeedItem[] = [
   },
 ];
 
-const PURCHASE_RESULT: FeedPurchaseResult = {
+const purchaseResult: FeedPurchaseResult = {
   remainingMoney: 4900,
   inventoryItem: {
     id: 'inv-1',
@@ -124,7 +124,7 @@ describe('FeedShopPage — smoke', () => {
       http.get('/api/v1/feed-shop/catalog', () => HttpResponse.json(CATALOG)),
       http.post('/api/v1/feed-shop/purchase', async ({ request }) => {
         postedBody = await request.json();
-        return HttpResponse.json(PURCHASE_RESULT);
+        return HttpResponse.json(purchaseResult);
       })
     );
 

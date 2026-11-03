@@ -87,12 +87,12 @@ export interface PrizeTransactionHistoryProps {
 /**
  * Default page size for pagination
  */
-const DEFAULT_PAGE_SIZE = 20;
+const defaultPageSize = 20;
 
 /**
  * Default filters
  */
-const DEFAULT_FILTERS: TransactionFilters = {
+const defaultFilters: TransactionFilters = {
   dateRange: 'all',
   horseId: 'all',
   discipline: 'all',
@@ -101,7 +101,7 @@ const DEFAULT_FILTERS: TransactionFilters = {
 /**
  * Default sort configuration
  */
-const DEFAULT_SORT: SortConfig = {
+const defaultSort: SortConfig = {
   field: 'date',
   direction: 'desc',
 };
@@ -460,7 +460,7 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
   filters: controlledFilters,
   sortConfig: controlledSortConfig,
   currentPage: controlledCurrentPage,
-  pageSize = DEFAULT_PAGE_SIZE,
+  pageSize = defaultPageSize,
   onFilterChange,
   onSortChange,
   onPageChange,
@@ -470,8 +470,8 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
   className = '',
 }) => {
   // Internal state for uncontrolled mode
-  const [internalFilters, setInternalFilters] = useState<TransactionFilters>(DEFAULT_FILTERS);
-  const [internalSortConfig, setInternalSortConfig] = useState<SortConfig>(DEFAULT_SORT);
+  const [internalFilters, setInternalFilters] = useState<TransactionFilters>(defaultFilters);
+  const [internalSortConfig, setInternalSortConfig] = useState<SortConfig>(defaultSort);
   const [internalCurrentPage, setInternalCurrentPage] = useState(1);
 
   // Determine if controlled or uncontrolled

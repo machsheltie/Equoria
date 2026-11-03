@@ -90,7 +90,7 @@ describe('CelestialThemeProvider', () => {
   });
 
   it('shows welcome toast once when no prior theme is stored', () => {
-    // No THEME_KEY, no WELCOME_SHOWN_KEY in localStorage
+    // No THEME_KEY, no welcomeShownKey in localStorage
     render(
       <MemoryRouter initialEntries={['/']}>
         <CelestialThemeProvider />
@@ -164,8 +164,8 @@ describe('CelestialThemeProvider', () => {
     expect(document.body.classList.contains('celestial')).toBe(true);
   });
 
-  // Gap 3 — WELCOME_SHOWN_KEY write failing silently (TEA:TA audit 2026-04-10)
-  it('does not crash and fires toast when localStorage.setItem throws for WELCOME_SHOWN_KEY', async () => {
+  // Gap 3 — welcomeShownKey write failing silently (TEA:TA audit 2026-04-10)
+  it('does not crash and fires toast when localStorage.setItem throws for welcomeShownKey', async () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError');
     });

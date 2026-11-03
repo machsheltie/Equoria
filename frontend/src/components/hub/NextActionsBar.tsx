@@ -67,7 +67,7 @@ const ICONS: Record<NextAction['type'], React.ReactNode> = {
   feed: <Wheat className="w-5 h-5" />,
 };
 
-const ACTION_LINKS: Record<NextAction['type'], string> = {
+const actionLinks: Record<NextAction['type'], string> = {
   train: '/training',
   compete: '/competitions',
   // Breeding starts from a stallion's page (owner ruling q89); the stable lists them.
@@ -92,12 +92,12 @@ function ActionCard({ action, isTopPriority }: ActionCardProps) {
   const narrative = NARRATIVES[action.type]?.(action) ?? action.type;
   const icon = ICONS[action.type];
   const href = !action.horseId
-    ? ACTION_LINKS[action.type]
+    ? actionLinks[action.type]
     : action.type === 'feed'
       ? `/horses/${action.horseId}`
       : action.type === 'groom-foal'
         ? `/horses/${action.horseId}#care`
-        : `${ACTION_LINKS[action.type]}?horseId=${action.horseId}`;
+        : `${actionLinks[action.type]}?horseId=${action.horseId}`;
 
   return (
     <Link

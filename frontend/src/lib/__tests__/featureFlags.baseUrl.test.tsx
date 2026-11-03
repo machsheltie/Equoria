@@ -23,11 +23,11 @@ import React from 'react';
 // vi.mock factories are hoisted above the module's own top-level consts, so
 // the distinct origin must be declared via vi.hoisted to be visible inside
 // the factory (a plain top-level const throws a TDZ ReferenceError here).
-const { DISTINCT_ORIGIN } = vi.hoisted(() => ({
+const { DISTINCT_ORIGIN: distinctOrigin } = vi.hoisted(() => ({
   DISTINCT_ORIGIN: 'https://split-deploy-test-origin.example',
 }));
 
-vi.mock('@/lib/http/apiClient', () => ({ API_BASE_URL: DISTINCT_ORIGIN }));
+vi.mock('@/lib/http/apiClient', () => ({ apiBaseUrl: distinctOrigin }));
 
 import { useFeatureFlags } from '../featureFlags';
 
@@ -56,7 +56,7 @@ describe('fetchFeatureFlags — uses the shared API_BASE_URL (Equoria-bvddn.41)'
     });
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      `${DISTINCT_ORIGIN}/api/internal/feature-flags`,
+      `${distinctOrigin}/api/internal/feature-flags`,
       expect.objectContaining({ credentials: 'include' })
     );
   });

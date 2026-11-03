@@ -22,7 +22,7 @@ import {
   compatibilityLabel,
   compatibilityColorClass,
   magnitudeColorClass,
-  PERSONALITY_DATA,
+  personalityData,
 } from '../../types/groomPersonality';
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -109,24 +109,24 @@ describe('groomPersonality helpers', () => {
     });
   });
 
-  describe('PERSONALITY_DATA completeness', () => {
+  describe('personalityData completeness', () => {
     it('all four personalities have traitInfluences', () => {
-      for (const personality of Object.keys(PERSONALITY_DATA)) {
-        const info = PERSONALITY_DATA[personality as keyof typeof PERSONALITY_DATA];
+      for (const personality of Object.keys(personalityData)) {
+        const info = personalityData[personality as keyof typeof personalityData];
         expect(info.traitInfluences.length).toBeGreaterThan(0);
       }
     });
 
     it('all personalities have compatibilityRatings', () => {
-      for (const personality of Object.keys(PERSONALITY_DATA)) {
-        const info = PERSONALITY_DATA[personality as keyof typeof PERSONALITY_DATA];
+      for (const personality of Object.keys(personalityData)) {
+        const info = personalityData[personality as keyof typeof personalityData];
         expect(info.compatibilityRatings.length).toBeGreaterThan(0);
       }
     });
 
     it('all personalities have a development note', () => {
-      for (const personality of Object.keys(PERSONALITY_DATA)) {
-        const info = PERSONALITY_DATA[personality as keyof typeof PERSONALITY_DATA];
+      for (const personality of Object.keys(personalityData)) {
+        const info = personalityData[personality as keyof typeof personalityData];
         expect(info.developmentNote.length).toBeGreaterThan(10);
       }
     });

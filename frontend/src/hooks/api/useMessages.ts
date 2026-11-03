@@ -14,15 +14,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { messagesApi, SendMessageRequest } from '@/lib/api-client';
 
-const INBOX_STALE_TIME = 30_000;
-const UNREAD_STALE_TIME = 30_000;
-const MESSAGE_STALE_TIME = 60_000;
+const inboxStaleTime = 30_000;
+const unreadStaleTime = 30_000;
+const messageStaleTime = 60_000;
 
 export function useInbox() {
   return useQuery({
     queryKey: ['messages', 'inbox'],
     queryFn: () => messagesApi.getInbox(),
-    staleTime: INBOX_STALE_TIME,
+    staleTime: inboxStaleTime,
   });
 }
 
@@ -30,7 +30,7 @@ export function useSentMessages() {
   return useQuery({
     queryKey: ['messages', 'sent'],
     queryFn: () => messagesApi.getSent(),
-    staleTime: INBOX_STALE_TIME,
+    staleTime: inboxStaleTime,
   });
 }
 
@@ -38,7 +38,7 @@ export function useUnreadCount() {
   return useQuery({
     queryKey: ['messages', 'unread-count'],
     queryFn: () => messagesApi.getUnreadCount(),
-    staleTime: UNREAD_STALE_TIME,
+    staleTime: unreadStaleTime,
     // Owner ruling 2026-10-23 (Equoria-m00gp, option a): the community hub shows
     // an honest error with Try again when this cannot load. The default
     // networkMode 'online' pauses an offline query (no data, no error) instead.
@@ -55,7 +55,7 @@ export function useConversationsCount() {
   return useQuery({
     queryKey: ['messages', 'conversations-count'],
     queryFn: () => messagesApi.getConversationsCount(),
-    staleTime: UNREAD_STALE_TIME,
+    staleTime: unreadStaleTime,
     // Owner ruling 2026-10-23 (Equoria-m00gp, option a): the community hub shows
     // an honest error with Try again when this cannot load. The default
     // networkMode 'online' pauses an offline query (no data, no error) instead.
@@ -80,7 +80,7 @@ export function useMessage(id: number | null) {
       return result;
     },
     enabled: id !== null,
-    staleTime: MESSAGE_STALE_TIME,
+    staleTime: messageStaleTime,
   });
 }
 

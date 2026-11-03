@@ -18,7 +18,7 @@ import StewardsOfficePage from '../StewardsOfficePage';
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const STAFF = `${base}/api/v1/staff`;
 
-const MODERATOR_CAPS = [
+const moderatorCaps = [
   'warn',
   'freeze',
   'ban.account',
@@ -28,7 +28,7 @@ const MODERATOR_CAPS = [
   'ticket.file',
   'log.view.own',
 ];
-const ADMIN_CAPS = [
+const adminCaps = [
   'warn',
   'freeze',
   'ban.account',
@@ -41,8 +41,8 @@ const ADMIN_CAPS = [
   'roles.manage',
 ];
 
-const moderatorMe = { role: 'moderator', capabilities: MODERATOR_CAPS, trusted: true };
-const adminMe = { role: 'admin', capabilities: ADMIN_CAPS, trusted: true };
+const moderatorMe = { role: 'moderator', capabilities: moderatorCaps, trusted: true };
+const adminMe = { role: 'admin', capabilities: adminCaps, trusted: true };
 
 const logEntry = {
   id: 7,

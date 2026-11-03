@@ -25,7 +25,7 @@ import ConformationEntryModal from '../ConformationEntryModal';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-const PAID_SHOW = {
+const paidShow = {
   id: 101,
   name: 'Moonlit Conformation Classic',
   discipline: 'Conformation',
@@ -35,7 +35,7 @@ const PAID_SHOW = {
   status: 'open',
   showType: 'conformation',
 };
-const FREE_SHOW = { ...PAID_SHOW, id: 102, name: 'Lantern Yard Halter Show', entryFee: 0 };
+const freeShow = { ...paidShow, id: 102, name: 'Lantern Yard Halter Show', entryFee: 0 };
 
 /** The dialog's eligibility read for the entered horse, as the backend shapes it. */
 function stubEligibleHorse(horseId: number) {
@@ -72,18 +72,18 @@ describe('conformation pages show the entry fee (Equoria-wgfbf)', () => {
   it('each open conformation show in the list shows its entry fee from the server', async () => {
     server.use(
       http.get(`${base}/api/v1/competition`, () =>
-        HttpResponse.json({ success: true, data: [PAID_SHOW, FREE_SHOW] })
+        HttpResponse.json({ success: true, data: [paidShow, freeShow] })
       )
     );
 
     renderWithProviders(<ConformationShowsPanel />);
 
-    const paidRow = await screen.findByTestId(`conformation-show-row-${PAID_SHOW.id}`);
-    expect(within(paidRow).getByTestId(`conformation-show-fee-${PAID_SHOW.id}`)).toHaveTextContent(
+    const paidRow = await screen.findByTestId(`conformation-show-row-${paidShow.id}`);
+    expect(within(paidRow).getByTestId(`conformation-show-fee-${paidShow.id}`)).toHaveTextContent(
       /Entry:\s*250/
     );
-    const freeRow = screen.getByTestId(`conformation-show-row-${FREE_SHOW.id}`);
-    expect(within(freeRow).getByTestId(`conformation-show-fee-${FREE_SHOW.id}`)).toHaveTextContent(
+    const freeRow = screen.getByTestId(`conformation-show-row-${freeShow.id}`);
+    expect(within(freeRow).getByTestId(`conformation-show-fee-${freeShow.id}`)).toHaveTextContent(
       /Entry:\s*Free/
     );
   });
@@ -94,7 +94,7 @@ describe('conformation pages show the entry fee (Equoria-wgfbf)', () => {
       <ConformationEntryModal
         isOpen={true}
         onClose={() => {}}
-        show={{ id: PAID_SHOW.id, name: PAID_SHOW.name, entryFee: PAID_SHOW.entryFee }}
+        show={{ id: paidShow.id, name: paidShow.name, entryFee: paidShow.entryFee }}
         horse={{ id: 7, name: 'Starlight', sex: 'Mare' }}
       />
     );
@@ -110,7 +110,7 @@ describe('conformation pages show the entry fee (Equoria-wgfbf)', () => {
       <ConformationEntryModal
         isOpen={true}
         onClose={() => {}}
-        show={{ id: FREE_SHOW.id, name: FREE_SHOW.name, entryFee: FREE_SHOW.entryFee }}
+        show={{ id: freeShow.id, name: freeShow.name, entryFee: freeShow.entryFee }}
         horse={{ id: 7, name: 'Starlight', sex: 'Mare' }}
       />
     );

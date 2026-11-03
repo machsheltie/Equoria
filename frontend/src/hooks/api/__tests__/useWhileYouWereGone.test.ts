@@ -20,11 +20,11 @@ function createWrapper() {
     React.createElement(QueryClientProvider, { client: queryClient }, children);
 }
 
-const FIVE_HOURS_AGO = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
+const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
 
 describe('useWhileYouWereGone', () => {
   it('does not fetch when enabled is false', () => {
-    const { result } = renderHook(() => useWhileYouWereGone(FIVE_HOURS_AGO, false), {
+    const { result } = renderHook(() => useWhileYouWereGone(fiveHoursAgo, false), {
       wrapper: createWrapper(),
     });
     // Should not be loading since query is disabled
@@ -41,7 +41,7 @@ describe('useWhileYouWereGone', () => {
   });
 
   it('fetches data when enabled is true and since is provided', async () => {
-    const { result } = renderHook(() => useWhileYouWereGone(FIVE_HOURS_AGO, true), {
+    const { result } = renderHook(() => useWhileYouWereGone(fiveHoursAgo, true), {
       wrapper: createWrapper(),
     });
 
@@ -53,7 +53,7 @@ describe('useWhileYouWereGone', () => {
   });
 
   it('returns items with correct shape', async () => {
-    const { result } = renderHook(() => useWhileYouWereGone(FIVE_HOURS_AGO, true), {
+    const { result } = renderHook(() => useWhileYouWereGone(fiveHoursAgo, true), {
       wrapper: createWrapper(),
     });
 
@@ -69,7 +69,7 @@ describe('useWhileYouWereGone', () => {
   });
 
   it('returns hasMore flag', async () => {
-    const { result } = renderHook(() => useWhileYouWereGone(FIVE_HOURS_AGO, true), {
+    const { result } = renderHook(() => useWhileYouWereGone(fiveHoursAgo, true), {
       wrapper: createWrapper(),
     });
 

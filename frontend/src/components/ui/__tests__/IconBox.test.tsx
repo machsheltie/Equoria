@@ -19,7 +19,7 @@ import '@testing-library/jest-dom';
 import { Star } from 'lucide-react';
 import { IconBox } from '../IconBox';
 
-const VARIANT_CLASSES: Record<string, string[]> = {
+const variantClasses: Record<string, string[]> = {
   neutral: ['bg-[var(--glass-surface-subtle-bg)]', 'text-[var(--text-secondary)]'],
   accent: ['bg-[var(--btn-gold-bg)]', 'text-[var(--gold-light)]'],
   success: ['bg-[var(--badge-success-bg)]', 'text-[var(--status-success)]'],
@@ -29,10 +29,10 @@ const VARIANT_CLASSES: Record<string, string[]> = {
 };
 
 describe('IconBox — variants', () => {
-  for (const [variant, classes] of Object.entries(VARIANT_CLASSES)) {
+  for (const [variant, classes] of Object.entries(variantClasses)) {
     it(`${variant} variant applies its token classes`, () => {
       render(
-        <IconBox variant={variant as keyof typeof VARIANT_CLASSES}>
+        <IconBox variant={variant as keyof typeof variantClasses}>
           <Star />
         </IconBox>
       );

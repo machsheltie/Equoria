@@ -10,7 +10,7 @@ import { ShoppingCart } from 'lucide-react';
 import { Surface } from '@/components/ui/Surface';
 import type { Horse } from './HorseDetailPageTypes';
 
-const TACK_DISPLAY_CATEGORIES = [
+const tackDisplayCategories = [
   { key: 'saddle', label: 'Saddle' },
   { key: 'bridle', label: 'Bridle' },
   { key: 'halter', label: 'Halter' },
@@ -24,7 +24,7 @@ const TACK_DISPLAY_CATEGORIES = [
 const TackTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   const tack = horse.tack;
 
-  const equippedItems = TACK_DISPLAY_CATEGORIES.filter(
+  const equippedItems = tackDisplayCategories.filter(
     ({ key }) => tack && typeof tack[key] === 'string'
   );
 

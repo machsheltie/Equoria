@@ -54,7 +54,7 @@ export type Discipline = (typeof DISCIPLINES)[number];
  * Discipline categories for optional grouping
  * Can be used to organize disciplines in select dropdowns
  */
-export const DISCIPLINE_CATEGORIES = {
+export const disciplineCategories = {
   JUMPING: ['Show Jumping', 'Cross-Country', 'Hunter', 'Eventing', 'Puissance'],
   RACING: ['Flat Racing', 'Steeplechase', 'Harness Racing'],
   DRESSAGE: ['Dressage', 'Freestyle Dressage'],
@@ -75,7 +75,7 @@ export function isValidDiscipline(value: string): value is Discipline {
  * Get category for a discipline
  */
 export function getDisciplineCategory(discipline: Discipline): string {
-  for (const [category, disciplines] of Object.entries(DISCIPLINE_CATEGORIES)) {
+  for (const [category, disciplines] of Object.entries(disciplineCategories)) {
     if (disciplines.includes(discipline as never)) {
       return category;
     }
@@ -86,11 +86,11 @@ export function getDisciplineCategory(discipline: Discipline): string {
 /**
  * Total count verification (for testing)
  */
-export const DISCIPLINES_COUNT = 24;
+export const disciplinesCount = 24;
 
 // Verify fixture integrity
-if (DISCIPLINES.length !== DISCIPLINES_COUNT) {
+if (DISCIPLINES.length !== disciplinesCount) {
   throw new Error(
-    `Disciplines fixture integrity error: Expected ${DISCIPLINES_COUNT} disciplines, got ${DISCIPLINES.length}`
+    `Disciplines fixture integrity error: Expected ${disciplinesCount} disciplines, got ${DISCIPLINES.length}`
   );
 }

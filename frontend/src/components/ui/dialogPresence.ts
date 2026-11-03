@@ -119,7 +119,7 @@ export function lockBodyScroll(): () => void {
 /* -------------------------------------------------------------------------- */
 
 /** Hard cap so a stuck/never-firing animation can never pin the dialog open. */
-const EXIT_ANIMATION_FALLBACK_MS = 1000;
+const exitAnimationFallbackMs = 1000;
 
 /** True when the node has at least one running CSS animation we should await. */
 function hasRunningAnimation(node: HTMLElement | null): boolean {
@@ -205,7 +205,7 @@ export function usePresence(open: boolean): PresenceState {
 
     // Absolute backstop: even if animationend never fires (interrupted layout,
     // detached node, exotic env), force-unmount after the cap.
-    const fallback = setTimeout(unmount, EXIT_ANIMATION_FALLBACK_MS);
+    const fallback = setTimeout(unmount, exitAnimationFallbackMs);
 
     return () => {
       cancelled = true;
@@ -229,7 +229,7 @@ export function usePresence(open: boolean): PresenceState {
 /* Focusable-element discovery for the focus trap.                            */
 /* -------------------------------------------------------------------------- */
 
-const FOCUSABLE_SELECTOR = [
+const focusableSelector = [
   'a[href]',
   'button:not([disabled])',
   'textarea:not([disabled])',
@@ -243,7 +243,7 @@ export function getFocusable(container: HTMLElement): HTMLElement[] {
   // a geometry-based visibility filter (offsetParent / getClientRects) because
   // jsdom does not lay elements out, so such a filter would wrongly return [] in
   // tests. Skip only elements explicitly hidden via attribute.
-  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+  return Array.from(container.querySelectorAll<HTMLElement>(focusableSelector)).filter(
     (el) => !el.hasAttribute('hidden') && el.getAttribute('aria-hidden') !== 'true'
   );
 }

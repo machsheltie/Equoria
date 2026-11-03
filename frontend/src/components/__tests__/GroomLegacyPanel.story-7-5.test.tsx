@@ -27,7 +27,7 @@ import GroomLegacyPanel from '../groom/GroomLegacyPanel';
 import * as groomLegacyModule from '../../types/groomLegacy';
 import {
   checkLegacyEligibility,
-  LEGACY_CONSTANTS,
+  legacyConstants,
   type GroomLegacyData,
   type LegacyPerk,
   type MentorInfo,
@@ -98,23 +98,23 @@ describe('groomLegacy helpers', () => {
     });
   });
 
-  describe('LEGACY_CONSTANTS', () => {
+  describe('legacyConstants', () => {
     it('minimum mentor level is Advanced (the old level 7)', () => {
-      expect(LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL).toBe('advanced');
+      expect(legacyConstants.minimumMentorStarLevel).toBe('advanced');
     });
 
     it('has no protégé experience bonus (staff have no XP, owner 2026-10-21)', () => {
-      expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_EXPERIENCE_BONUS');
+      expect(legacyConstants).not.toHaveProperty('protegeExperienceBonus');
     });
 
     it('has no protégé level bonus (it went with the old level)', () => {
-      expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_LEVEL_BONUS');
+      expect(legacyConstants).not.toHaveProperty('protegeLevelBonus');
     });
 
     // Equoria-h82zc: old contract was a 10% protégé skill bonus; the game never
     // applied it, so the promise was dropped (rulings 10-21, q244).
     it('has no protégé skill bonus (the game never applied one)', () => {
-      expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_SKILL_BONUS_PERCENT');
+      expect(legacyConstants).not.toHaveProperty('protegeSkillBonusPercent');
     });
   });
 

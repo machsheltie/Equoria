@@ -14,32 +14,30 @@ import { userMessageFor } from '@/lib/http/userMessage';
 import { isCheckinRequired, statusOf } from '@/hooks/api/useStaff';
 import type { TicketStatus } from '@/lib/api/staff';
 import type { ApiError } from '@/lib/http/types';
-import { DEFAULT_DATETIME_OPTIONS } from '@/lib/formatDate';
-import { GAME_TIME_ZONE } from '@/lib/gameTime';
+import { defaultDatetimeOptions } from '@/lib/formatDate';
+import { gameTimeZone } from '@/lib/gameTime';
 
 /** Game time is Eastern; the zone name keeps the time honest for any reader. */
 export const staffTimeOptions: Intl.DateTimeFormatOptions = {
-  ...DEFAULT_DATETIME_OPTIONS,
-  timeZone: GAME_TIME_ZONE,
+  ...defaultDatetimeOptions,
+  timeZone: gameTimeZone,
   timeZoneName: 'short',
 };
-/** The older spelling, kept for the files that still import it (Equoria-pjvp8). */
-export const STAFF_TIME_OPTIONS = staffTimeOptions;
 
 /** A steward whose account is no longer on staff or was erased (Equoria-2yugk). */
-export const FORMER_STEWARD = 'a former steward';
+export const formerSteward = 'a former steward';
 
-export const STATUS_LABELS: Record<TicketStatus, string> = {
+export const statusLabels: Record<TicketStatus, string> = {
   open: 'Open',
   inProgress: 'In progress',
   resolved: 'Resolved',
   declined: 'Declined',
 };
 
-export const CHECKIN_LAPSED =
+export const checkinLapsed =
   'Your check-in on this browser has lapsed. Reload the office to check in again.';
 
-export const EMAIL_UNVERIFIED = 'Verify your email to keep using the office.';
+export const emailUnverified = 'Verify your email to keep using the office.';
 
 /** The 403 a capability guard gives a staff account whose email is not verified. */
 function isEmailUnverified(error: unknown): boolean {
@@ -57,12 +55,12 @@ export function staffErrorMessage(
   byStatus: Partial<Record<number, string>> = {}
 ): string {
   if (isCheckinRequired(error)) {
-    return CHECKIN_LAPSED;
+    return checkinLapsed;
   }
   // Before the per-status maps: a control's own 403 copy (a role that can't
   // change) must not explain a refusal about the moderator's own email.
   if (isEmailUnverified(error)) {
-    return EMAIL_UNVERIFIED;
+    return emailUnverified;
   }
   const status = statusOf(error);
   if (status !== undefined && byStatus[status]) {

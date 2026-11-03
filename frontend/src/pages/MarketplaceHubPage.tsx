@@ -24,7 +24,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useBreeds } from '@/hooks/api/useHorseTrader';
 
-const HORSE_MARKETPLACE_CARD: LocationCardProps = {
+const horseMarketplaceCard: LocationCardProps = {
   id: 'horse-marketplace',
   name: 'Horse Marketplace',
   // Owner ruling q249 (Equoria-m5ml8): horses for sale or at stud.
@@ -56,7 +56,7 @@ const MarketplaceHubPage: React.FC = () => {
       'linear-gradient(160deg, rgba(30,60,20,0.85) 0%, rgba(18,40,10,0.95) 60%, rgba(5,13,26,0.98) 100%)',
   };
 
-  const marketplaceLocations: LocationCardProps[] = [horseTraderCard, HORSE_MARKETPLACE_CARD];
+  const marketplaceLocations: LocationCardProps[] = [horseTraderCard, horseMarketplaceCard];
 
   return (
     <PageContainer variant="wide" data-testid="marketplace-hub-page">

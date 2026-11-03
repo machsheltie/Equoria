@@ -17,7 +17,7 @@ import { createContext, useContext, ReactNode, useMemo, useCallback, useEffect }
 import { useQueryClient } from '@tanstack/react-query';
 import { useProfile, useLogout, useVerificationStatus, User, UserRole } from '../hooks/useAuth';
 import type { ApiError } from '../lib/api-client';
-import { endSession, FORCE_LOGOUT_STORAGE_KEY } from '../lib/sessionEnd';
+import { endSession, forceLogoutStorageKey } from '../lib/sessionEnd';
 
 /**
  * Local-dev auth bypass — isolated + statically tree-shaken from production
@@ -35,7 +35,7 @@ import { endSession, FORCE_LOGOUT_STORAGE_KEY } from '../lib/sessionEnd';
  *     replaced with the literal `false`. The leading conjunct below therefore
  *     becomes `false === true` → `false`, the whole `&&` short-circuits to the
  *     literal `false`, and Vite's dead-code elimination *removes the entire
- *     `if (DEV_BYPASS)` branch from the production bundle*. Even if a production
+ *     `if (devBypass)` branch from the production bundle*. Even if a production
  *     `.env` accidentally carries `VITE_DEV_BYPASS_AUTH=true`, the second
  *     conjunct is never evaluated — the bypass cannot reactivate.
  *   - The leading `import.meta.env.DEV === true` conjunct MUST stay first and
@@ -52,10 +52,10 @@ import { endSession, FORCE_LOGOUT_STORAGE_KEY } from '../lib/sessionEnd';
  * tree-shakes; routing the call-site value through a function would defeat the
  * static elimination, so the inline form is intentionally retained here.
  */
-const DEV_BYPASS = import.meta.env.DEV === true && import.meta.env.VITE_DEV_BYPASS_AUTH === 'true';
+const devBypass = import.meta.env.DEV === true && import.meta.env.VITE_DEV_BYPASS_AUTH === 'true';
 
 /**
- * Pure, side-effect-free mirror of the {@link DEV_BYPASS} gate predicate,
+ * Pure, side-effect-free mirror of the {@link devBypass} gate predicate,
  * exported for sentinel testing (Equoria-c3n0u). Given an environment object,
  * returns true ONLY when the build is in development mode AND the opt-in flag
  * is the string `'true'`.
@@ -72,7 +72,7 @@ export function isDevBypassActive(
   return env.DEV === true && env.VITE_DEV_BYPASS_AUTH === 'true';
 }
 
-const DEV_USER: User = {
+const devUser: User = {
   id: 'dev-user-00000000-0000-0000-0000-000000000001',
   username: 'DevUser',
   email: 'dev@equoria.local',
@@ -171,7 +171,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // removeItem half (newValue === null) is ignored.
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
-      if (event.key !== FORCE_LOGOUT_STORAGE_KEY || event.newValue === null) return;
+      if (event.key !== forceLogoutStorageKey || event.newValue === null) return;
       endSession(queryClient, 'signed-out-elsewhere');
     };
     window.addEventListener('storage', onStorage);
@@ -229,9 +229,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const contextValue = useMemo<AuthContextValue>(() => {
     // Dev bypass: return a mock user so login can be skipped during local review.
     // Role is 'user' (not 'admin') for defense-in-depth (Equoria-o7c0x L6).
-    if (DEV_BYPASS) {
+    if (devBypass) {
       return {
-        user: DEV_USER,
+        user: devUser,
         isLoading: false,
         isAuthenticated: true,
         isEmailVerified: true,

@@ -40,7 +40,7 @@ const confirmLabels = {
   user: 'Revoke role',
 } as const;
 
-const ROLE_MESSAGES = {
+const roleMessages = {
   400: 'Write a reason first.',
   403: "This account's role can't be changed here, or only the owner can do it.",
   404: 'That player no longer exists.',
@@ -142,7 +142,7 @@ export function RoleChangeDialog({ change, onClose, onChanged }: RoleChangeDialo
               {confirmLabels[toRole]}
             </Button>
             {setRole.isError && (
-              <InlineError message={staffErrorMessage(setRole.error, ROLE_MESSAGES)} />
+              <InlineError message={staffErrorMessage(setRole.error, roleMessages)} />
             )}
           </div>
         </GameDialogFooter>

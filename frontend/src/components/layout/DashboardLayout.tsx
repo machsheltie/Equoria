@@ -26,13 +26,13 @@ import { cn } from '@/lib/utils';
 import type { SceneKey } from '@/hooks/useResponsiveBackground';
 
 /** Routes that show the aside panel on desktop */
-const ASIDE_ROUTES = ['/', '/stable'];
+const asideRoutes = ['/', '/stable'];
 
 /**
  * Routes with dedicated artwork that must not be overridden by the scene
  * system. These were established before Epic 22 and ship with real images.
  */
-const STATIC_BG: Record<string, string> = {
+const staticBg: Record<string, string> = {
   '/stable': '/images/bg-stable.webp',
   '/farrier': '/assets/art/farrier.webp',
   '/vet': '/images/equinehospital.webp',
@@ -42,7 +42,7 @@ const STATIC_BG: Record<string, string> = {
 
 /**
  * Derive the PageBackground scene from the current route pathname.
- * Only called for routes not covered by STATIC_BG or horse-detail.
+ * Only called for routes not covered by staticBg or horse-detail.
  *
  * The `useResponsiveBackground` hook consults `SCENES_WITH_ART` and
  * transparently falls back to the generic /images/bg-{ratio}.webp pair
@@ -73,7 +73,7 @@ function getSceneForPath(pathname: string): SceneKey {
 
 const DashboardLayout: React.FC = () => {
   const location = useLocation();
-  const showAside = ASIDE_ROUTES.includes(location.pathname);
+  const showAside = asideRoutes.includes(location.pathname);
 
   // Story 22-8 — viewport-driven nav shell
   const isDesktop = useMediaQuery('(min-width: 1024px)');
@@ -95,7 +95,7 @@ const DashboardLayout: React.FC = () => {
   // Horse detail: fixed single image regardless of viewport ratio.
   // Everything else: scene-based responsive background.
   const staticSrc =
-    STATIC_BG[location.pathname] ??
+    staticBg[location.pathname] ??
     (location.pathname.startsWith('/horses/') ? '/images/bg-horse-detail.webp' : undefined);
   const scene = staticSrc ? undefined : getSceneForPath(location.pathname);
   const bgStyle = usePageBackground({ scene, src: staticSrc });

@@ -16,7 +16,7 @@ import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
-import { useEventStream, SSE_EVENT_NAMES } from '../useEventStream';
+import { useEventStream, sseEventNames } from '../useEventStream';
 
 interface MockSource {
   url: string;
@@ -106,7 +106,7 @@ describe('useEventStream', () => {
   // backend SSE producer emits. Before the fix, the competition + marketplace
   // events were registered under the wrong name ('competitionResult') or not
   // at all, so they were silently dropped on the SSE fast-path and only
-  // arrived via the 5s poll. This is the SSE_EVENT_NAMES contract with the
+  // arrived via the 5s poll. This is the sseEventNames contract with the
   // backend createNotification(...) type strings.
   it.each([
     'statGain',
@@ -154,9 +154,9 @@ describe('useEventStream', () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: ['game-notifications'] });
   });
 
-  it('exports SSE_EVENT_NAMES matching exactly the backend producer event types', () => {
+  it('exports sseEventNames matching exactly the backend producer event types', () => {
     // Lockstep contract with the backend createNotification(...) type strings.
-    expect([...SSE_EVENT_NAMES]).toEqual([
+    expect([...sseEventNames]).toEqual([
       'statGain',
       'foalBorn',
       'competitionPlacement',

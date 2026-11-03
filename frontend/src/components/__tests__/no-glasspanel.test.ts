@@ -17,17 +17,17 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const SRC_ROOT = path.resolve(__dirname, '..', '..');
+const srcRoot = path.resolve(__dirname, '..', '..');
 
-const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.next']);
+const skipDirs = new Set(['node_modules', 'dist', 'build', '.next']);
 // We only scan frontend/src/**, so __tests__ for this rule are scanned too —
 // excluding this file itself so it doesn't self-match.
-const THIS_FILE = path.basename(__filename);
+const thisFile = path.basename(__filename);
 
 function walk(dir: string): string[] {
   const out: string[] = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (SKIP_DIRS.has(entry.name)) continue;
+    if (skipDirs.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       out.push(...walk(full));
@@ -38,11 +38,11 @@ function walk(dir: string): string[] {
   return out;
 }
 
-const ALL_SRC_FILES = walk(SRC_ROOT);
+const allSrcFiles = walk(srcRoot);
 
 describe('GlassPanel retired — no live references (Equoria-ds68)', () => {
   it('no GlassPanel.{ts,tsx,js,jsx} file exists under frontend/src', () => {
-    const offenders = ALL_SRC_FILES.filter((f) => /\bGlassPanel\.(tsx?|jsx?)$/.test(f));
+    const offenders = allSrcFiles.filter((f) => /\bGlassPanel\.(tsx?|jsx?)$/.test(f));
     expect(offenders, `Found GlassPanel source file(s): ${offenders.join(', ')}`).toEqual([]);
   });
 
@@ -50,11 +50,11 @@ describe('GlassPanel retired — no live references (Equoria-ds68)', () => {
     // Match: `import ... GlassPanel ...` or `from '...GlassPanel'`
     const importRe = /(?:^|\s)import\s[^;]*\bGlassPanel\b|from\s+['"][^'"]*GlassPanel['"]/m;
     const offenders: string[] = [];
-    for (const file of ALL_SRC_FILES) {
-      if (path.basename(file) === THIS_FILE) continue; // ignore this sentinel
+    for (const file of allSrcFiles) {
+      if (path.basename(file) === thisFile) continue; // ignore this sentinel
       const content = fs.readFileSync(file, 'utf8');
       if (importRe.test(content)) {
-        offenders.push(path.relative(SRC_ROOT, file));
+        offenders.push(path.relative(srcRoot, file));
       }
     }
     expect(

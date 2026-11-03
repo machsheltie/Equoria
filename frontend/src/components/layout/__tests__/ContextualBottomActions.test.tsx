@@ -74,9 +74,9 @@ function getContentWrapper(): HTMLElement {
   return main!.parentElement as HTMLElement;
 }
 
-const DEFAULT_PADDING = 'pb-[calc(var(--bottom-nav-height)+var(--safe-area-bottom)+1rem)]';
-const RESERVED_PADDING = 'pb-[var(--content-bottom-reserve)]';
-const RESERVED_PADDING_DESKTOP = 'md:pb-[var(--content-bottom-reserve-desktop)]';
+const defaultPadding = 'pb-[calc(var(--bottom-nav-height)+var(--safe-area-bottom)+1rem)]';
+const reservedPadding = 'pb-[var(--content-bottom-reserve)]';
+const reservedPaddingDesktop = 'md:pb-[var(--content-bottom-reserve-desktop)]';
 
 describe('DashboardLayout contextual bottom-action slot (Equoria-o5hub.5)', () => {
   it('renders registered actions inside the layout slot, not in the page flow', () => {
@@ -111,9 +111,9 @@ describe('DashboardLayout contextual bottom-action slot (Equoria-o5hub.5)', () =
     renderLayout(true);
 
     const wrapper = getContentWrapper();
-    expect(wrapper.className).toContain(RESERVED_PADDING);
-    expect(wrapper.className).toContain(RESERVED_PADDING_DESKTOP);
-    expect(wrapper.className).not.toContain(DEFAULT_PADDING);
+    expect(wrapper.className).toContain(reservedPadding);
+    expect(wrapper.className).toContain(reservedPaddingDesktop);
+    expect(wrapper.className).not.toContain(defaultPadding);
   });
 
   it('unregistering removes the slot and reverts the content padding', () => {
@@ -128,22 +128,22 @@ describe('DashboardLayout contextual bottom-action slot (Equoria-o5hub.5)', () =
     expect(screen.queryByTestId('ctx-action-primary')).not.toBeInTheDocument();
 
     const wrapper = getContentWrapper();
-    expect(wrapper.className).toContain(DEFAULT_PADDING);
+    expect(wrapper.className).toContain(defaultPadding);
     expect(wrapper.className).toContain('md:pb-0');
-    expect(wrapper.className).not.toContain(RESERVED_PADDING);
+    expect(wrapper.className).not.toContain(reservedPadding);
   });
 
   it('re-registering after unregistering brings the slot back (round trip)', () => {
     renderLayout(false);
 
     expect(screen.queryByTestId('contextual-bottom-actions')).not.toBeInTheDocument();
-    expect(getContentWrapper().className).toContain(DEFAULT_PADDING);
+    expect(getContentWrapper().className).toContain(defaultPadding);
 
     fireEvent.click(screen.getByTestId('toggle-actions'));
 
     const slot = screen.getByTestId('contextual-bottom-actions');
     expect(within(slot).getByTestId('ctx-action-primary')).toBeInTheDocument();
-    expect(getContentWrapper().className).toContain(RESERVED_PADDING);
+    expect(getContentWrapper().className).toContain(reservedPadding);
   });
 
   it('sentinel-negative: with nothing registered there is no slot and the default padding applies', () => {
@@ -151,7 +151,7 @@ describe('DashboardLayout contextual bottom-action slot (Equoria-o5hub.5)', () =
 
     expect(screen.queryByTestId('contextual-bottom-actions')).not.toBeInTheDocument();
     const wrapper = getContentWrapper();
-    expect(wrapper.className).toContain(DEFAULT_PADDING);
+    expect(wrapper.className).toContain(defaultPadding);
     expect(wrapper.className).toContain('md:pb-0');
   });
 

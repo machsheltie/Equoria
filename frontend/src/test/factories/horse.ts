@@ -44,7 +44,7 @@ export interface MockHorse {
   disciplineScores: Record<string, number>;
 }
 
-const DEFAULT_STATS: MockHorseStats = {
+const defaultStats: MockHorseStats = {
   speed: 75,
   stamina: 80,
   agility: 70,
@@ -75,7 +75,7 @@ export function createMockHorse(overrides: Partial<MockHorse> = {}): MockHorse {
     health: 95,
     xp: 1500,
     imageUrl: 'https://example.com/horses/test-horse.jpg',
-    stats: { ...DEFAULT_STATS, ...(statOverrides ?? {}) },
+    stats: { ...defaultStats, ...(statOverrides ?? {}) },
     disciplineScores: { Dressage: 70 },
     ...rest,
   };

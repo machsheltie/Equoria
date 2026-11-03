@@ -8,7 +8,7 @@
 import * as React from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { BASE_FIELD_CLASSES } from './fieldStyles';
+import { baseFieldClasses } from './fieldStyles';
 
 export interface NumberInputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
@@ -76,7 +76,7 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
         onChange={(e) => onChange?.(e.target.value)}
         onBlur={handleBlur}
         className={cn(
-          BASE_FIELD_CLASSES.join(' '),
+          baseFieldClasses.join(' '),
           // Hide browser spinners — we have our own
           showSteppers &&
             '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',

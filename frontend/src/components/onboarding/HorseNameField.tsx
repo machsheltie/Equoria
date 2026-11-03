@@ -18,7 +18,7 @@ import React from 'react';
 import { Input } from '@/components/ui/form';
 import { InlineError } from '@/components/ui/state/InlineError';
 import {
-  HORSE_NAME_MAX_LENGTH,
+  horseNameMaxLength,
   horseNameRejection,
   horseNameRejectionCopy,
 } from '@/lib/horseNamePolicy';
@@ -37,7 +37,7 @@ export function HorseNameField({ name, onChange, breedName, gender }: HorseNameF
   // field is not a mistake, and the step's Continue button already says the step
   // is unfinished.
   const rejection = name.length > 0 ? horseNameRejection(name) : null;
-  const charactersLeft = HORSE_NAME_MAX_LENGTH - name.length;
+  const charactersLeft = horseNameMaxLength - name.length;
 
   return (
     <div>
@@ -56,7 +56,7 @@ export function HorseNameField({ name, onChange, breedName, gender }: HorseNameF
         /* The game's real limit. The field has always stopped here; what changed
            is that the server now agrees instead of quietly shortening a longer
            name. */
-        maxLength={HORSE_NAME_MAX_LENGTH}
+        maxLength={horseNameMaxLength}
         aria-describedby="horse-name-counter"
         aria-invalid={rejection !== null}
         data-testid="horse-name-input"
@@ -67,7 +67,7 @@ export function HorseNameField({ name, onChange, breedName, gender }: HorseNameF
         className="mt-1.5 text-xs text-[var(--text-muted)] font-[var(--font-body)] tabular-nums"
         data-testid="horse-name-counter"
       >
-        {charactersLeft} of {HORSE_NAME_MAX_LENGTH} characters left
+        {charactersLeft} of {horseNameMaxLength} characters left
       </p>
 
       {rejection !== null && (

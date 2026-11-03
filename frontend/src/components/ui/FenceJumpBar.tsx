@@ -22,7 +22,7 @@ interface FenceJumpBarProps {
   className?: string;
 }
 
-const FENCE_THRESHOLDS = [25, 50, 75, 100] as const;
+const fenceThresholds = [25, 50, 75, 100] as const;
 
 export default function FenceJumpBar({
   value,
@@ -36,7 +36,7 @@ export default function FenceJumpBar({
   // Trigger jump animation when value crosses a fence threshold
   useEffect(() => {
     const prev = prevValueRef.current;
-    const crossed = FENCE_THRESHOLDS.some((t) => prev < t && value >= t);
+    const crossed = fenceThresholds.some((t) => prev < t && value >= t);
     if (crossed) {
       setIsJumping(true);
       const timer = setTimeout(() => setIsJumping(false), 380);
@@ -73,7 +73,7 @@ export default function FenceJumpBar({
 
         {/* Fence markers and horse — positioned over the track, not clipped */}
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-          {FENCE_THRESHOLDS.map((threshold) => (
+          {fenceThresholds.map((threshold) => (
             <div
               key={threshold}
               className="absolute top-1/2 w-[2px] rounded-sm"

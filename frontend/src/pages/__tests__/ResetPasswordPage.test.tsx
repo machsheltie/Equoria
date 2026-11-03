@@ -35,7 +35,7 @@ import ResetPasswordPage from '../ResetPasswordPage';
 // src/test/setup.ts). The DEFAULT (registered in beforeEach below) is a
 // never-resolving handler, so validation tests that should NOT submit fail
 // loudly if they accidentally hit the network.
-const RESET_URL = 'http://localhost:3000/api/v1/auth/reset-password';
+const resetUrl = 'http://localhost:3000/api/v1/auth/reset-password';
 
 // Captures the body the real api-client POSTs ({ token, newPassword }) +
 // counts real calls, replacing the old vi.fn() mock.calls assertions.
@@ -45,7 +45,7 @@ let resetCallCount = 0;
 /** One-shot reset-password handler returning a success envelope. */
 function mockResetSuccess() {
   server.use(
-    http.post(RESET_URL, async ({ request }) => {
+    http.post(resetUrl, async ({ request }) => {
       resetCallCount += 1;
       lastResetBody = (await request.json()) as { token?: string; newPassword?: string };
       return HttpResponse.json({ status: 'success', message: 'Password reset successful' });
@@ -56,7 +56,7 @@ function mockResetSuccess() {
 /** Reset-password handler returning the given error status + message. */
 function mockResetError(status: number, message: string) {
   server.use(
-    http.post(RESET_URL, () => {
+    http.post(resetUrl, () => {
       resetCallCount += 1;
       return HttpResponse.json({ status: 'error', message }, { status });
     })
@@ -104,7 +104,7 @@ describe('ResetPasswordPage', () => {
     // (and fail) if it accidentally hits the network. Tests needing a response
     // override via mockResetSuccess() / mockResetError().
     server.use(
-      http.post(RESET_URL, async () => {
+      http.post(resetUrl, async () => {
         resetCallCount += 1;
         await delay('infinite');
         return HttpResponse.json({ status: 'success', message: 'Password reset successful' });
@@ -650,7 +650,7 @@ describe('ResetPasswordPage', () => {
       // real api-client error.message is never falsy, so that branch is
       // unreachable through the network boundary.)
       server.use(
-        http.post(RESET_URL, () => {
+        http.post(resetUrl, () => {
           resetCallCount += 1;
           return HttpResponse.json({ status: 'error', message: '' }, { status: 500 });
         })

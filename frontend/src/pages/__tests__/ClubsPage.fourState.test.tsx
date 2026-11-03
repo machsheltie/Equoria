@@ -23,7 +23,7 @@ import ClubsPage from '../ClubsPage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const CLUBS = `${base}/api/v1/clubs`;
-const MY_CLUBS = `${base}/api/v1/clubs/mine`;
+const myClubs = `${base}/api/v1/clubs/mine`;
 
 const sampleClub = {
   id: 101,
@@ -48,7 +48,7 @@ function stubClubsBy(handler: (type: string | null) => Response) {
       const type = new URL(request.url).searchParams.get('type');
       return handler(type);
     }),
-    http.get(MY_CLUBS, () => HttpResponse.json({ memberships: [] }))
+    http.get(myClubs, () => HttpResponse.json({ memberships: [] }))
   );
 }
 
@@ -143,7 +143,7 @@ describe('ClubsPage — discipline grid four-state (Equoria-l22ki)', () => {
   it('retry re-fetches and renders cards (refetch is wired to the error retry)', async () => {
     let disciplineCalls = 0;
     server.use(
-      http.get(MY_CLUBS, () => HttpResponse.json({ memberships: [] })),
+      http.get(myClubs, () => HttpResponse.json({ memberships: [] })),
       http.get(CLUBS, ({ request }) => {
         const type = new URL(request.url).searchParams.get('type');
         if (type === 'discipline') {

@@ -12,7 +12,7 @@
  * - celebration: cinematic moment events (trait-discovery, foal-birth, cup-win)
  */
 
-const SOUND_ENABLED_KEY = 'equoria:soundEnabled';
+const soundEnabledKey = 'equoria:soundEnabled';
 
 /**
  * Check the OS-level prefers-reduced-motion setting.
@@ -30,7 +30,7 @@ function prefersReducedMotion(): boolean {
 export function getSoundEnabled(): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    const stored = localStorage.getItem(SOUND_ENABLED_KEY);
+    const stored = localStorage.getItem(soundEnabledKey);
     return stored === 'true';
   } catch {
     return false;
@@ -43,7 +43,7 @@ export function getSoundEnabled(): boolean {
 export function setSoundEnabled(enabled: boolean): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(SOUND_ENABLED_KEY, String(enabled));
+    localStorage.setItem(soundEnabledKey, String(enabled));
   } catch {
     // localStorage may be unavailable; silently skip
   }

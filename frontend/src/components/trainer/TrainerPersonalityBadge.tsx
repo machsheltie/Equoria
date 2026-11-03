@@ -10,7 +10,7 @@
 import React from 'react';
 
 // Trainer personality definitions — 5 types
-export const TRAINER_PERSONALITIES: Record<
+export const trainerPersonalities: Record<
   string,
   { icon: string; label: string; badgeClass: string; description: string }
 > = {
@@ -47,7 +47,7 @@ export const TRAINER_PERSONALITIES: Record<
 };
 
 export const getTrainerPersonalityInfo = (personality: string) =>
-  TRAINER_PERSONALITIES[personality] ?? {
+  trainerPersonalities[personality] ?? {
     icon: '❓',
     // Equoria-no441: an unlisted personality reads as words, never the stored value.
     label: 'Hard to Read',

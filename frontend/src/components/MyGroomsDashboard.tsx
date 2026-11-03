@@ -46,7 +46,7 @@ import type { Groom, GroomAssignment, SalarySummary } from '@/lib/api-client';
 // The roster arithmetic — who is caring for what, what that costs this week (each
 // groom's star level price, q228), and the card order. Pure functions, no composition change.
 import {
-  DEFAULT_MAX_HORSES_PER_GROOM,
+  defaultMaxHorsesPerGroom,
   activeAssignmentsFor,
   ageLabel,
   feeForGroom as feeForGroomIn,
@@ -130,12 +130,12 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
     salaryCostsFromAPI || {
       totalWeeklyCost: 0,
       groomCount: 0,
-      maxHorsesPerGroom: DEFAULT_MAX_HORSES_PER_GROOM,
+      maxHorsesPerGroom: defaultMaxHorsesPerGroom,
       breakdown: [],
     };
 
   const feeForGroom = (groomId: number): number | null => feeForGroomIn(finalSalaryCosts, groomId);
-  const maxHorses = finalSalaryCosts.maxHorsesPerGroom || DEFAULT_MAX_HORSES_PER_GROOM;
+  const maxHorses = finalSalaryCosts.maxHorsesPerGroom || defaultMaxHorsesPerGroom;
   const horsesInCare = finalSalaryCosts.breakdown.reduce(
     (total, entry) => total + entry.assignedHorses,
     0

@@ -28,7 +28,7 @@ import LoginPage from '../LoginPage';
 // api-client makes, so the request shape + response handling are genuinely
 // exercised. Per-test responses are registered with server.use() (reset after
 // each test by the global afterEach in src/test/setup.ts).
-const LOGIN_URL = 'http://localhost:3000/api/v1/auth/login';
+const loginUrl = 'http://localhost:3000/api/v1/auth/login';
 
 // Captures the request body the real api-client POSTs, so "calls API with
 // correct data" can assert against it without mocking the api-client itself.
@@ -45,7 +45,7 @@ beforeEach(() => {
 /** Register a one-shot login handler returning a successful session envelope. */
 function mockLoginSuccess() {
   server.use(
-    http.post(LOGIN_URL, async ({ request }) => {
+    http.post(loginUrl, async ({ request }) => {
       loginCallCount += 1;
       lastLoginBody = await request.json();
       return HttpResponse.json({
@@ -59,7 +59,7 @@ function mockLoginSuccess() {
 /** Register a login handler that never resolves (in-flight / loading state). */
 function mockLoginPending() {
   server.use(
-    http.post(LOGIN_URL, async () => {
+    http.post(loginUrl, async () => {
       loginCallCount += 1;
       await delay('infinite');
       return HttpResponse.json({ status: 'success', data: { user: { id: 1 } } });

@@ -1,33 +1,33 @@
 /**
- * Equoria-7aeso — sentinel for HorseEquipPage TACK_IMAGES asset rendering
+ * Equoria-7aeso — sentinel for HorseEquipPage tackImages asset rendering
  * (recovers the intent of the deleted Equoria-r3sj vi.mock-based test
  * removed in afd435473 / Equoria-ruycn).
  *
  * The original test was a vi.mock-of-hooks unit test that asserted:
  *   - `all-purpose-saddle` → <img src="/images/tack/allpurposesaddle.png">
  *   - `dressage-saddle`    → <img src="/images/tack/dressage-saddle.png">
- *   - tack NOT in TACK_IMAGES (e.g. `all-purpose-bridle`) → Wrench fallback
+ *   - tack NOT in tackImages (e.g. `all-purpose-bridle`) → Wrench fallback
  *
  * Per CLAUDE.md §3 ("Why mocks aren't part of Equoria's toolkit"), the
  * vi.mock approach is not the right tool. The render-time integration
  * surface is covered by the MSW-based HorseEquipPage.test.tsx in the
  * same directory. What that suite does NOT cover — and what the deleted
  * test was uniquely guarding — is the bundle-time concern: do the
- * TACK_IMAGES dictionary's `src` paths resolve to real assets on disk,
- * and does the conditional render block actually read TACK_IMAGES?
+ * tackImages dictionary's `src` paths resolve to real assets on disk,
+ * and does the conditional render block actually read tackImages?
  *
  * This is a SOURCE-SCAN + ON-DISK sentinel (canonical repo pattern; see
  * HorseDetailPage.ultraRareReveal.sentinel.test.ts and the JSONB-guard
  * sentinels). It asserts:
  *
- *   1. TACK_IMAGES dict exists in HorseEquipPage.tsx and contains entries.
- *   2. Every TACK_IMAGES path resolves to a real file under
+ *   1. tackImages dict exists in HorseEquipPage.tsx and contains entries.
+ *   2. Every tackImages path resolves to a real file under
  *      frontend/public/images/tack/ — guards against drift where a
  *      contributor renames an asset on disk but forgets the dict (or
  *      vice-versa), which the bundle would silently accept and the
  *      production page would silently 404 on the <img>.
- *   3. The conditional render block reads `TACK_IMAGES[item.itemId]` and
- *      branches to <img src={TACK_IMAGES[item.itemId]} alt={item.name} />
+ *   3. The conditional render block reads `tackImages[item.itemId]` and
+ *      branches to <img src={tackImages[item.itemId]} alt={item.name} />
  *      on hit, falling through to a Wrench-icon block on miss. Guards
  *      against a refactor that drops the dict lookup or the alt-text
  *      (a11y regression).
@@ -45,19 +45,19 @@ import { dirname, resolve } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const PAGE_PATH = resolve(__dirname, '..', 'horses', 'HorseEquipPage.tsx');
+const pagePath = resolve(__dirname, '..', 'horses', 'HorseEquipPage.tsx');
 // public/ is at frontend/public/ — five levels up from this test file.
-const PUBLIC_DIR = resolve(__dirname, '..', '..', '..', 'public');
+const publicDir = resolve(__dirname, '..', '..', '..', 'public');
 
 function readSource(): string {
-  return readFileSync(PAGE_PATH, 'utf8');
+  return readFileSync(pagePath, 'utf8');
 }
 
 /**
- * Parse the TACK_IMAGES Record literal from the page source.
+ * Parse the tackImages Record literal from the page source.
  *
  * Format guarded:
- *   const TACK_IMAGES: Record<string, string> = {
+ *   const tackImages: Record<string, string> = {
  *     'dressage-saddle': '/images/tack/dressage-saddle.png',
  *     ...
  *   };
@@ -67,11 +67,11 @@ function readSource(): string {
  */
 function parseTackImages(source: string): Map<string, string> {
   const dictMatch = source.match(
-    /const\s+TACK_IMAGES\s*:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\n\}\s*;/
+    /const\s+tackImages\s*:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\n\}\s*;/
   );
   if (!dictMatch) {
     throw new Error(
-      'TACK_IMAGES Record<string, string> literal not found in HorseEquipPage.tsx — refactor or rename has broken this sentinel'
+      'tackImages Record<string, string> literal not found in HorseEquipPage.tsx — refactor or rename has broken this sentinel'
     );
   }
   const body = dictMatch[1];
@@ -84,14 +84,14 @@ function parseTackImages(source: string): Map<string, string> {
   return entries;
 }
 
-describe('Equoria-7aeso — HorseEquipPage TACK_IMAGES asset-render sentinel', () => {
-  it('TACK_IMAGES dict parses and is non-empty', () => {
+describe('Equoria-7aeso — HorseEquipPage tackImages asset-render sentinel', () => {
+  it('tackImages dict parses and is non-empty', () => {
     const source = readSource();
     const entries = parseTackImages(source);
     expect(entries.size).toBeGreaterThan(0);
   });
 
-  it('every TACK_IMAGES src path resolves to a real on-disk asset under frontend/public/', () => {
+  it('every tackImages src path resolves to a real on-disk asset under frontend/public/', () => {
     const source = readSource();
     const entries = parseTackImages(source);
 
@@ -104,30 +104,30 @@ describe('Equoria-7aeso — HorseEquipPage TACK_IMAGES asset-render sentinel', (
       // pass through.
       expect(
         srcPath.startsWith('/images/tack/'),
-        `TACK_IMAGES['${itemId}'] = '${srcPath}' must live under /images/tack/`
+        `tackImages['${itemId}'] = '${srcPath}' must live under /images/tack/`
       ).toBe(true);
 
       // /images/tack/foo.png → frontend/public/images/tack/foo.png
-      const onDiskPath = resolve(PUBLIC_DIR, srcPath.replace(/^\//, ''));
+      const onDiskPath = resolve(publicDir, srcPath.replace(/^\//, ''));
       expect(
         existsSync(onDiskPath),
-        `TACK_IMAGES['${itemId}'] = '${srcPath}' is not on disk at ${onDiskPath} — the <img> would 404 in production`
+        `tackImages['${itemId}'] = '${srcPath}' is not on disk at ${onDiskPath} — the <img> would 404 in production`
       ).toBe(true);
     }
   });
 
-  it('conditional render reads TACK_IMAGES[item.itemId] and falls through to a Wrench fallback (AC #1, #2)', () => {
+  it('conditional render reads tackImages[item.itemId] and falls through to a Wrench fallback (AC #1, #2)', () => {
     const source = readSource();
 
     // The hit-branch <img> must read the dict by item.itemId AND set alt
     // to item.name (a11y — alt-text is the recovered AC from the deleted
     // suite). Order of attributes is not pinned; we assert presence.
     const imgMatch = source.match(
-      /TACK_IMAGES\[\s*item\.itemId\s*\][\s\S]*?<img[\s\S]*?src=\{\s*TACK_IMAGES\[\s*item\.itemId\s*\]\s*\}[\s\S]*?alt=\{\s*item\.name\s*\}/
+      /tackImages\[\s*item\.itemId\s*\][\s\S]*?<img[\s\S]*?src=\{\s*tackImages\[\s*item\.itemId\s*\]\s*\}[\s\S]*?alt=\{\s*item\.name\s*\}/
     );
     expect(
       imgMatch,
-      'Conditional render must use TACK_IMAGES[item.itemId] for <img src> AND item.name for <img alt> — a11y regression guard'
+      'Conditional render must use tackImages[item.itemId] for <img src> AND item.name for <img alt> — a11y regression guard'
     ).not.toBeNull();
 
     // The miss-branch must render the lucide-react Wrench icon. The

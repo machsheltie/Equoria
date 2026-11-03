@@ -18,14 +18,14 @@ export interface GaitsTabProps {
   horseId: number;
 }
 
-const SCORE_COLOR = (score: number) => {
+const scoreColor = (score: number) => {
   if (score >= 85) return 'text-emerald-400';
   if (score >= 70) return 'text-[var(--gold-primary)]';
   if (score >= 50) return 'text-amber-300';
   return 'text-rose-300';
 };
 
-const SCORE_BAR_COLOR = (score: number) => {
+const scoreBarColor = (score: number) => {
   if (score >= 85) return 'bg-emerald-500';
   if (score >= 70) return 'bg-amber-500';
   if (score >= 50) return 'bg-amber-700';
@@ -45,14 +45,14 @@ const GaitRow = ({ label, score, testId }: GaitRowProps) => (
   >
     <div className="flex items-baseline justify-between mb-2">
       <p className="text-sm font-medium text-[var(--text-secondary)]">{label}</p>
-      <p className={`text-lg font-semibold ${SCORE_COLOR(score)}`} data-testid={`${testId}-score`}>
+      <p className={`text-lg font-semibold ${scoreColor(score)}`} data-testid={`${testId}-score`}>
         {score}
         <span className="text-xs text-[var(--text-secondary)]"> / 100</span>
       </p>
     </div>
     <div className="h-2 w-full overflow-hidden rounded-full bg-[rgba(0,0,0,0.3)]">
       <div
-        className={`h-full ${SCORE_BAR_COLOR(score)}`}
+        className={`h-full ${scoreBarColor(score)}`}
         style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
       />
     </div>

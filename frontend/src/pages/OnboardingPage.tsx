@@ -228,12 +228,12 @@ const ReadyStep: React.FC<ReadyStepProps> = ({ horseName, breedName, gender }) =
 
 // ── OnboardingPage ─────────────────────────────────────────────────────────────
 
-const STORAGE_KEY_STEP = 'equoria-onboarding-step';
-const STORAGE_KEY_HORSE = 'equoria-onboarding-horse';
+const storageKeyStep = 'equoria-onboarding-step';
+const storageKeyHorse = 'equoria-onboarding-horse';
 
 function loadSavedStep(): number {
   try {
-    const saved = sessionStorage.getItem(STORAGE_KEY_STEP);
+    const saved = sessionStorage.getItem(storageKeyStep);
     return saved ? Math.min(Number(saved), 2) : 0;
   } catch {
     return 0;
@@ -242,7 +242,7 @@ function loadSavedStep(): number {
 
 function loadSavedHorse(): Partial<BreedSelectionValue> {
   try {
-    const saved = sessionStorage.getItem(STORAGE_KEY_HORSE);
+    const saved = sessionStorage.getItem(storageKeyHorse);
     return saved ? JSON.parse(saved) : {};
   } catch {
     return {};
@@ -265,7 +265,7 @@ const OnboardingPage: React.FC = () => {
   function advanceStep(nextStep: number) {
     setCurrentStep(nextStep);
     try {
-      sessionStorage.setItem(STORAGE_KEY_STEP, String(nextStep));
+      sessionStorage.setItem(storageKeyStep, String(nextStep));
     } catch {
       /* noop */
     }
@@ -274,7 +274,7 @@ const OnboardingPage: React.FC = () => {
   function updateHorse(value: Partial<BreedSelectionValue>) {
     setHorseSelection(value);
     try {
-      sessionStorage.setItem(STORAGE_KEY_HORSE, JSON.stringify(value));
+      sessionStorage.setItem(storageKeyHorse, JSON.stringify(value));
     } catch {
       /* noop */
     }
@@ -282,8 +282,8 @@ const OnboardingPage: React.FC = () => {
 
   function clearOnboardingStorage() {
     try {
-      sessionStorage.removeItem(STORAGE_KEY_STEP);
-      sessionStorage.removeItem(STORAGE_KEY_HORSE);
+      sessionStorage.removeItem(storageKeyStep);
+      sessionStorage.removeItem(storageKeyHorse);
     } catch {
       /* noop */
     }

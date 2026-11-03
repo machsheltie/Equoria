@@ -13,9 +13,9 @@
  * - generateLeaderboardEntry(rank, category, discipline?) - single entry
  *
  * Constants:
- * - VALID_CATEGORIES - all accepted leaderboard category values
- * - CURRENT_USER_RANK - rank assigned to the "current user" in every category
- * - CURRENT_USER_ID - user ID of the current/logged-in user in fixtures
+ * - validCategories - all accepted leaderboard category values
+ * - currentUserRank - rank assigned to the "current user" in every category
+ * - currentUserId - user ID of the current/logged-in user in fixtures
  */
 
 import type { LeaderboardEntryData } from '@/components/leaderboard/LeaderboardEntry';
@@ -27,7 +27,7 @@ import type { CategoryRanking, BestRanking } from '@/components/leaderboard/User
 // ---------------------------------------------------------------------------
 
 /** All valid leaderboard categories accepted by the API. */
-export const VALID_CATEGORIES: LeaderboardCategory[] = [
+export const validCategories: LeaderboardCategory[] = [
   'player-xp',
   'player-earnings',
   'player-wins',
@@ -48,13 +48,13 @@ export const playerCategories: ReadonlySet<LeaderboardCategory> = new Set([
 ]);
 
 /** The rank at which the "current user" always appears in generated data. */
-export const CURRENT_USER_RANK = 42;
+export const currentUserRank = 42;
 
 /** The user ID used for the current/logged-in user in fixture data. */
-export const CURRENT_USER_ID = 'user-123';
+export const currentUserId = 'user-123';
 
 /** The user name used for the current/logged-in user in fixture data. */
-export const CURRENT_USER_NAME = 'John Doe';
+export const currentUserName = 'John Doe';
 
 // ---------------------------------------------------------------------------
 // Entry generation helpers
@@ -161,7 +161,7 @@ export function generateSecondaryStats(
 /**
  * Generate a single leaderboard entry for a given rank and category.
  *
- * The entry at rank CURRENT_USER_RANK (42) is always flagged as
+ * The entry at rank currentUserRank (42) is always flagged as
  * isCurrentUser and uses the fixture user's identity.
  *
  * @param rank - Position on the leaderboard (1-based)
@@ -174,7 +174,7 @@ export function generateLeaderboardEntry(
   category: LeaderboardCategory,
   discipline?: string
 ): LeaderboardEntryData {
-  const isCurrentUser = rank === CURRENT_USER_RANK;
+  const isCurrentUser = rank === currentUserRank;
 
   const isPlayerBoard = playerCategories.has(category);
   const horseName = isPlayerBoard
@@ -189,8 +189,8 @@ export function generateLeaderboardEntry(
     rank,
     horseId: isPlayerBoard ? undefined : 100 + rank,
     horseName,
-    ownerId: isCurrentUser ? CURRENT_USER_ID : `user-${rank}`,
-    ownerName: isCurrentUser ? CURRENT_USER_NAME : `Owner ${rank}`,
+    ownerId: isCurrentUser ? currentUserId : `user-${rank}`,
+    ownerName: isCurrentUser ? currentUserName : `Owner ${rank}`,
     primaryStat: calculatePrimaryStatForCategory(rank, category),
     secondaryStats: generateSecondaryStats(rank, category),
     isCurrentUser,
@@ -247,9 +247,9 @@ const userRankSummaries: Record<
   string,
   { userId: string; userName: string; rankings: CategoryRanking[]; bestRankings: BestRanking[] }
 > = {
-  [CURRENT_USER_ID]: {
-    userId: CURRENT_USER_ID,
-    userName: CURRENT_USER_NAME,
+  [currentUserId]: {
+    userId: currentUserId,
+    userName: currentUserName,
     rankings: [
       {
         category: 'level',

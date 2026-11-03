@@ -18,42 +18,37 @@ import { isCheckinRequired, useFileTicket, useStaffTickets } from '@/hooks/api/u
 import type { StaffTicket, TicketTargetType } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
-import {
-  FORMER_STEWARD,
-  STAFF_TIME_OPTIONS,
-  STATUS_LABELS,
-  staffErrorMessage,
-} from './staffMessages';
+import { formerSteward, staffTimeOptions, statusLabels, staffErrorMessage } from './staffMessages';
 import RefreshFailedNotice from './RefreshFailedNotice';
 import StaffSection from './StaffSection';
 import TicketThread from './TicketThread';
 
-const TARGET_LABELS: Record<TicketTargetType, string> = {
+const targetLabels: Record<TicketTargetType, string> = {
   user: 'Player',
   post: 'Post',
   horse: 'Horse',
   show: 'Show',
 };
 
-const TARGET_OPTIONS = (Object.keys(TARGET_LABELS) as TicketTargetType[]).map((value) => ({
+const targetOptions = (Object.keys(targetLabels) as TicketTargetType[]).map((value) => ({
   value,
-  label: TARGET_LABELS[value],
+  label: targetLabels[value],
 }));
 
 type PlayerLookup = 'name' | 'id';
 
-const LOOKUP_OPTIONS = [
+const lookupOptions = [
   { value: 'name', label: 'By username' },
   { value: 'id', label: 'By ID' },
 ];
 
-const FILE_MESSAGES = {
+const fileMessages = {
   400: 'Fill in every field. The note can be up to 2,000 characters.',
 };
 
 // The refusals that belong at the subject field, not at the button, keyed by
 // the backend's own code; a revoked steward's 404 has no such code.
-const SUBJECT_MESSAGES = new Map<unknown, string>([
+const subjectMessages = new Map<unknown, string>([
   ['noPlayer', 'No player by that name or ID.'],
   ['notAPlayer', 'Tickets can only be about players, not stewards or yourself.'],
   ['noTarget', 'Nothing by that ID.'],
@@ -65,7 +60,7 @@ const SUBJECT_MESSAGES = new Map<unknown, string>([
 ]);
 
 const subjectRefusal = (error: unknown) =>
-  SUBJECT_MESSAGES.get((error as { code?: unknown } | null)?.code);
+  subjectMessages.get((error as { code?: unknown } | null)?.code);
 
 function FileTicketForm() {
   const [targetType, setTargetType] = useState<TicketTargetType>('user');
@@ -136,7 +131,7 @@ function FileTicketForm() {
                 setUsername('');
                 setTargetId('');
               }}
-              options={TARGET_OPTIONS}
+              options={targetOptions}
             />
           )}
         </FormField>
@@ -151,7 +146,7 @@ function FileTicketForm() {
                   clearSettledError();
                   setLookup(event.target.value as PlayerLookup);
                 }}
-                options={LOOKUP_OPTIONS}
+                options={lookupOptions}
               />
             )}
           </FormField>
@@ -201,7 +196,7 @@ function FileTicketForm() {
           File ticket
         </Button>
         {file.isError && !subjectError && (
-          <InlineError message={staffErrorMessage(file.error, FILE_MESSAGES)} />
+          <InlineError message={staffErrorMessage(file.error, fileMessages)} />
         )}
       </div>
     </form>
@@ -213,7 +208,7 @@ function subjectOf(ticket: StaffTicket): string {
   if (ticket.targetType === 'user') {
     return ticket.targetUsername ? `Player ${ticket.targetUsername}` : 'a former player';
   }
-  return `${TARGET_LABELS[ticket.targetType] ?? 'Record'} ${ticket.targetId}`;
+  return `${targetLabels[ticket.targetType] ?? 'Record'} ${ticket.targetId}`;
 }
 
 function TicketRow({
@@ -235,9 +230,9 @@ function TicketRow({
           </span>
           <span className="text-sm font-normal text-role-secondary">
             {subjectOf(ticket)}
-            {` · filed by ${ticket.filedBy?.username ?? FORMER_STEWARD}`} ·{' '}
-            {formatDateTime(ticket.createdAt, STAFF_TIME_OPTIONS)} ·{' '}
-            {STATUS_LABELS[ticket.status] ?? 'Status not listed'}
+            {` · filed by ${ticket.filedBy?.username ?? formerSteward}`} ·{' '}
+            {formatDateTime(ticket.createdAt, staffTimeOptions)} ·{' '}
+            {statusLabels[ticket.status] ?? 'Status not listed'}
           </span>
         </GameCollapsibleTrigger>
         <CollapsibleContent className="mt-3">

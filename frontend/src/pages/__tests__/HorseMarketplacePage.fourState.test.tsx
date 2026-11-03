@@ -25,7 +25,7 @@ import HorseMarketplacePage from '../HorseMarketplacePage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const MARKETPLACE = `${base}/api/v1/marketplace/search`;
-const MY_LISTINGS = `${base}/api/v1/marketplace/my-listings`;
+const myListings = `${base}/api/v1/marketplace/my-listings`;
 const HISTORY = `${base}/api/v1/marketplace/history`;
 const PROFILE = `${base}/api/v1/auth/profile`;
 
@@ -194,7 +194,7 @@ describe('HorseMarketplacePage — My Listings + History tabs four-state (Equori
 
   it('My Listings: renders error+retry (not a false empty) on a failed fetch', async () => {
     server.use(
-      http.get(MY_LISTINGS, () =>
+      http.get(myListings, () =>
         HttpResponse.json({ status: 'error', message: 'mine boom' }, { status: 500 })
       )
     );
@@ -211,7 +211,7 @@ describe('HorseMarketplacePage — My Listings + History tabs four-state (Equori
   });
 
   it('My Listings: renders the honest empty state on a successful empty fetch', async () => {
-    server.use(http.get(MY_LISTINGS, () => HttpResponse.json({ success: true, data: [] })));
+    server.use(http.get(myListings, () => HttpResponse.json({ success: true, data: [] })));
 
     const user = userEvent.setup();
     renderPage();
@@ -224,7 +224,7 @@ describe('HorseMarketplacePage — My Listings + History tabs four-state (Equori
 
   it('My Listings: renders rows on a successful fetch with data', async () => {
     server.use(
-      http.get(MY_LISTINGS, () => HttpResponse.json({ success: true, data: [sampleMyListing] }))
+      http.get(myListings, () => HttpResponse.json({ success: true, data: [sampleMyListing] }))
     );
 
     const user = userEvent.setup();

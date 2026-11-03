@@ -31,7 +31,7 @@ import ForgotPasswordPage from '../ForgotPasswordPage';
 // src/test/setup.ts). The DEFAULT (registered in beforeEach below) is a
 // never-resolving handler, so validation tests that should NOT hit the network
 // fail loudly if they accidentally do.
-const FORGOT_URL = 'http://localhost:3000/api/v1/auth/forgot-password';
+const forgotUrl = 'http://localhost:3000/api/v1/auth/forgot-password';
 
 // Captures the email the real api-client POSTs, replacing the old
 // vi.fn() mock.calls[0][0] assertions.
@@ -41,7 +41,7 @@ let forgotCallCount = 0;
 /** One-shot forgot-password handler returning a success envelope. */
 function mockForgotSuccess() {
   server.use(
-    http.post(FORGOT_URL, async ({ request }) => {
+    http.post(forgotUrl, async ({ request }) => {
       forgotCallCount += 1;
       const body = (await request.json()) as { email?: string };
       lastForgotEmail = body.email;
@@ -53,7 +53,7 @@ function mockForgotSuccess() {
 /** Forgot-password handler returning the given error status + message. */
 function mockForgotError(status: number, message: string) {
   server.use(
-    http.post(FORGOT_URL, () => {
+    http.post(forgotUrl, () => {
       forgotCallCount += 1;
       return HttpResponse.json({ status: 'error', message }, { status });
     })
@@ -87,7 +87,7 @@ describe('ForgotPasswordPage', () => {
     // old never-resolving vi.fn() default. Tests that need a response override
     // this via mockForgotSuccess() / mockForgotError().
     server.use(
-      http.post(FORGOT_URL, async () => {
+      http.post(forgotUrl, async () => {
         forgotCallCount += 1;
         await delay('infinite');
         return HttpResponse.json({ status: 'success', message: 'Email sent' });
@@ -504,7 +504,7 @@ describe('ForgotPasswordPage', () => {
       // real api-client error.message is never falsy, so that fallback branch
       // is unreachable through the network boundary.)
       server.use(
-        http.post(FORGOT_URL, () => {
+        http.post(forgotUrl, () => {
           forgotCallCount += 1;
           return HttpResponse.json({ status: 'error', message: '' }, { status: 500 });
         })

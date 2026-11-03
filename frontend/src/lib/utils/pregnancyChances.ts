@@ -11,12 +11,12 @@
 import { gameDayIndex } from '@/lib/gameTime';
 
 /** Length of an Equoria gestation, in days. */
-export const GESTATION_DAYS = 7;
+export const gestationDays = 7;
 
 export interface PregnancyProgress {
   /** Whole Eastern game days elapsed since inFoalSinceDate (>= 0). */
   elapsedDays: number;
-  /** 1-based gestation day, capped at GESTATION_DAYS. */
+  /** 1-based gestation day, capped at gestationDays. */
   gestationDay: number;
   /** Days remaining until foaling (>= 0). 0 once overdue. */
   daysRemaining: number;
@@ -43,9 +43,9 @@ export function getPregnancyProgress(
   if (Number.isNaN(startMs)) return null;
 
   const elapsedDays = Math.max(0, gameDayIndex(now) - gameDayIndex(startMs));
-  const gestationDay = Math.min(elapsedDays + 1, GESTATION_DAYS);
-  const daysRemaining = Math.max(0, GESTATION_DAYS - elapsedDays);
-  const isOverdue = elapsedDays >= GESTATION_DAYS;
+  const gestationDay = Math.min(elapsedDays + 1, gestationDays);
+  const daysRemaining = Math.max(0, gestationDays - elapsedDays);
+  const isOverdue = elapsedDays >= gestationDays;
 
   return { elapsedDays, gestationDay, daysRemaining, isOverdue };
 }

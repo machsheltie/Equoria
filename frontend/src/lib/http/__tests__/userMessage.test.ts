@@ -131,7 +131,7 @@ describe('userMessageFor — defensive over non-ApiError input', () => {
 // reach through MSW without inventing failures the backend cannot produce.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const RAW_SERVER_STRINGS = [
+const rawServerStrings = [
   'Current password is incorrect',
   'Invalid TOTP token',
   'That email address is already in use',
@@ -143,7 +143,7 @@ const RAW_SERVER_STRINGS = [
 /** No mapper may ever return a server string verbatim, at any status. */
 function expectNoRawLeak(copy: string | null) {
   expect(copy).not.toBeNull();
-  for (const raw of RAW_SERVER_STRINGS) {
+  for (const raw of rawServerStrings) {
     expect(copy as string).not.toContain(raw);
   }
 }

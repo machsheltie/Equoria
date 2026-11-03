@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import type { ApiError } from '@/lib/http/types';
-import { CHECKIN_LAPSED, EMAIL_UNVERIFIED, staffErrorMessage } from '../staffMessages';
+import { checkinLapsed, emailUnverified, staffErrorMessage } from '../staffMessages';
 
 const refusal = (statusCode: number, code?: string): ApiError => ({
   message: 'raw server text',
@@ -18,24 +18,22 @@ const refusal = (statusCode: number, code?: string): ApiError => ({
   code,
 });
 
-const ROLE_403 = { 403: "This account's role can't be changed here." };
+const role403 = { 403: "This account's role can't be changed here." };
 
 describe('staffErrorMessage', () => {
   it('names an unverified email before the control’s own 403 copy', () => {
-    const message = staffErrorMessage(refusal(403, 'staffEmailUnverified'), ROLE_403);
+    const message = staffErrorMessage(refusal(403, 'staffEmailUnverified'), role403);
 
-    expect(message).toBe(EMAIL_UNVERIFIED);
+    expect(message).toBe(emailUnverified);
     expect(message).toBe('Verify your email to keep using the office.');
   });
 
   it('names an unverified email with no per-status map at all', () => {
-    expect(staffErrorMessage(refusal(403, 'staffEmailUnverified'))).toBe(EMAIL_UNVERIFIED);
+    expect(staffErrorMessage(refusal(403, 'staffEmailUnverified'))).toBe(emailUnverified);
   });
 
   it('keeps the control’s 403 copy for any other 403', () => {
-    expect(staffErrorMessage(refusal(403, 'staffCapabilityRequired'), ROLE_403)).toBe(
-      ROLE_403[403]
-    );
+    expect(staffErrorMessage(refusal(403, 'staffCapabilityRequired'), role403)).toBe(role403[403]);
   });
 
   it('leaves the 409 check-in refusal to the control’s own map', () => {
@@ -45,7 +43,7 @@ describe('staffErrorMessage', () => {
   });
 
   it('still names a lapsed check-in first', () => {
-    expect(staffErrorMessage(refusal(403, 'staffCheckinRequired'), ROLE_403)).toBe(CHECKIN_LAPSED);
+    expect(staffErrorMessage(refusal(403, 'staffCheckinRequired'), role403)).toBe(checkinLapsed);
   });
 
   // Equoria-pjvp8.4: the old server's spellings, for the minutes a deploy

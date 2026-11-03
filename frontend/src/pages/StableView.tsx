@@ -69,7 +69,7 @@ function SkeletonHorseCard() {
 }
 
 /* ─── Main StableView ─────────────────────────────────────────────────── */
-const HORSES_PER_PAGE = 12;
+const horsesPerPage = 12;
 
 const StableView = () => {
   const navigate = useNavigate();
@@ -187,9 +187,9 @@ const StableView = () => {
     }
 
     // Pagination — clamp page to valid range when tab filter changes result count
-    const totalPages = Math.ceil(filtered.length / HORSES_PER_PAGE);
+    const totalPages = Math.ceil(filtered.length / horsesPerPage);
     const safePage = currentPage > totalPages ? 1 : currentPage;
-    const paginated = filtered.slice((safePage - 1) * HORSES_PER_PAGE, safePage * HORSES_PER_PAGE);
+    const paginated = filtered.slice((safePage - 1) * horsesPerPage, safePage * horsesPerPage);
 
     return (
       <div className="p-4 space-y-4">

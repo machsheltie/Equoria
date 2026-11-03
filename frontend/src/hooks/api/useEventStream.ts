@@ -21,9 +21,9 @@ import { useQueryClient } from '@tanstack/react-query';
 
 // Mirror api-client's base-URL convention: empty for same-origin deploy
 // (Railway), an absolute origin only for split frontend/backend.
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+const apiBaseUrl = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
-const STREAM_URL = `${API_BASE_URL}/api/v1/events/stream`;
+const streamUrl = `${apiBaseUrl}/api/v1/events/stream`;
 
 /**
  * The EXACT event-name strings the backend SSE producer emits on the named
@@ -48,7 +48,7 @@ const STREAM_URL = `${API_BASE_URL}/api/v1/events/stream`;
  * the 5s polling fallback). This list is the single source of truth and
  * must stay in lockstep with the backend producers above.
  */
-export const SSE_EVENT_NAMES = [
+export const sseEventNames = [
   'statGain',
   'foalBorn',
   'competitionPlacement',
@@ -72,7 +72,7 @@ export const SSE_EVENT_NAMES = [
 ] as const;
 
 /**
- * Equoria-bvddn.34: the subset of SSE_EVENT_NAMES that change the player's
+ * Equoria-bvddn.34: the subset of sseEventNames that change the player's
  * balance server-side, so the nav/wallet UI (reads ['profile'] —
  * useAuth.ts) must refetch alongside the notification list. Determined by
  * reading each producer, not by guessing from the event name:
@@ -95,7 +95,7 @@ export const SSE_EVENT_NAMES = [
  * forumReply, clubLeadershipTransferred, groomRetired, riderRetiring, groomReleased —
  * none of their producers touch User.money.
  */
-const MONEY_EVENT_NAMES = new Set<(typeof SSE_EVENT_NAMES)[number]>([
+const moneyEventNames = new Set<(typeof sseEventNames)[number]>([
   'horsePurchased',
   'horseSold',
   'competitionPlacement',
@@ -117,7 +117,7 @@ export function useEventStream(): void {
       return;
     }
 
-    const source = new EventSource(STREAM_URL, { withCredentials: true });
+    const source = new EventSource(streamUrl, { withCredentials: true });
 
     const invalidate = () => {
       // Refetch the authoritative notification read + the messages unread
@@ -138,13 +138,13 @@ export function useEventStream(): void {
     // Server frames are named events (e.g. `event: statGain`). A named
     // EventSource event does NOT fire the generic `message` handler, so we
     // must register a listener for every concrete event type the backend
-    // emits (SSE_EVENT_NAMES — kept in lockstep with the producers). The
+    // emits (sseEventNames — kept in lockstep with the producers). The
     // `message`/onmessage handler is a robust catch-all for any future
     // unnamed/default frame, so a new backend event type degrades to a
     // refetch rather than being silently dropped.
-    for (const name of SSE_EVENT_NAMES) {
+    for (const name of sseEventNames) {
       source.addEventListener(name, invalidate);
-      if (MONEY_EVENT_NAMES.has(name)) {
+      if (moneyEventNames.has(name)) {
         source.addEventListener(name, invalidateBalance);
       }
     }
@@ -158,9 +158,9 @@ export function useEventStream(): void {
     };
 
     return () => {
-      for (const name of SSE_EVENT_NAMES) {
+      for (const name of sseEventNames) {
         source.removeEventListener(name, invalidate);
-        if (MONEY_EVENT_NAMES.has(name)) {
+        if (moneyEventNames.has(name)) {
           source.removeEventListener(name, invalidateBalance);
         }
       }

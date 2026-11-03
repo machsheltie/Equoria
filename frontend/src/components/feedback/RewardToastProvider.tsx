@@ -39,7 +39,7 @@ export interface RewardNotification {
    * personal milestone. `false` for routine gains — those are dropped.
    */
   meaningful: boolean;
-  /** Optional auto-dismiss override (ms) — default 3000 (DEFAULT_VISIBLE_MS, Spec 11.3.10) */
+  /** Optional auto-dismiss override (ms) — default 3000 (defaultVisibleMs, Spec 11.3.10) */
   duration?: number;
 }
 
@@ -51,14 +51,14 @@ interface RewardToastContextValue {
 const RewardToastContext = createContext<RewardToastContextValue | null>(null);
 
 /** Gap between one toast dismissing and the next appearing (Spec 11.3.10). */
-const INTER_TOAST_GAP_MS = 500;
+const interToastGapMs = 500;
 
 /**
  * Auto-dismiss duration. Spec 11.3.10 states "visible (3 seconds)", so the
  * trigger layer passes 3000ms by default (the RewardToast component's own
  * default is 4000ms and is left unchanged for any other direct callers).
  */
-const DEFAULT_VISIBLE_MS = 3000;
+const defaultVisibleMs = 3000;
 
 export function RewardToastProvider({ children }: { children: React.ReactNode }) {
   const [current, setCurrent] = useState<RewardNotification | null>(null);
@@ -74,7 +74,7 @@ export function RewardToastProvider({ children }: { children: React.ReactNode })
     setCurrent(null);
     if (gapTimerRef.current) clearTimeout(gapTimerRef.current);
     if (queueRef.current.length > 0) {
-      gapTimerRef.current = setTimeout(showNext, INTER_TOAST_GAP_MS);
+      gapTimerRef.current = setTimeout(showNext, interToastGapMs);
     }
   }, [showNext]);
 
@@ -102,7 +102,7 @@ export function RewardToastProvider({ children }: { children: React.ReactNode })
           type={current.type}
           title={current.title}
           message={current.message}
-          duration={current.duration ?? DEFAULT_VISIBLE_MS}
+          duration={current.duration ?? defaultVisibleMs}
           onDismiss={handleDismiss}
         />
       )}
@@ -126,7 +126,7 @@ let warnedNoProvider = false;
  * error in a critical path: no progress data is lost (the bar/level/trait UI
  * still renders from real data), only the celebratory toast is skipped.
  */
-const NOOP_REWARD_TOAST: RewardToastContextValue = { notify: () => {} };
+const noopRewardToast: RewardToastContextValue = { notify: () => {} };
 
 export function useRewardToast(): RewardToastContextValue {
   const ctx = useContext(RewardToastContext);
@@ -138,7 +138,7 @@ export function useRewardToast(): RewardToastContextValue {
           'Mount <RewardToastProvider> (App.tsx does this globally).'
       );
     }
-    return NOOP_REWARD_TOAST;
+    return noopRewardToast;
   }
   return ctx;
 }

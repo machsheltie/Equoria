@@ -13,18 +13,18 @@
 import { Link, useLocation } from 'react-router';
 
 /** Override href for segments that don't have their own route */
-const ROUTE_HREF_OVERRIDE: Record<string, string> = {
+const routeHrefOverride: Record<string, string> = {
   horses: '/stable',
 };
 
 /** Full-path label overrides — checked before segment lookup to resolve ambiguous segments */
-const PATH_LABEL_OVERRIDES: Record<string, string> = {
+const pathLabelOverrides: Record<string, string> = {
   '/marketplace/horses': 'Horse Marketplace',
   '/marketplace/horse-trader': 'Horse Trader',
 };
 
 /** Map route segments to display names */
-const ROUTE_LABELS: Record<string, string> = {
+const routeLabels: Record<string, string> = {
   // D-27 (DECISIONS.md §10): /stable → "Stable"; /hall-of-fame → "Hall of Fame" (Equoria-vb1n0)
   stable: 'Stable',
   training: 'Training',
@@ -76,9 +76,8 @@ export function Breadcrumb() {
 
   for (const segment of segments) {
     path += `/${segment}`;
-    const label =
-      PATH_LABEL_OVERRIDES[path] || ROUTE_LABELS[segment] || decodeURIComponent(segment);
-    const href = ROUTE_HREF_OVERRIDE[segment] || path;
+    const label = pathLabelOverrides[path] || routeLabels[segment] || decodeURIComponent(segment);
+    const href = routeHrefOverride[segment] || path;
     crumbs.push({ label, href });
   }
 

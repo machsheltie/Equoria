@@ -12,10 +12,10 @@
  *   core property: the opt-in flag is inert in production.
  *
  * Layer 2 (structural): we read the AuthContext source and assert the inline
- *   `DEV_BYPASS` call-site keeps `import.meta.env.DEV === true` as the LEADING
+ *   `devBypass` call-site keeps `import.meta.env.DEV === true` as the LEADING
  *   conjunct. That literal is what Vite statically replaces with `false` in a
  *   production build, short-circuiting the `&&` to the literal `false` so the
- *   `if (DEV_BYPASS)` branch is removed by dead-code elimination. If someone
+ *   `if (devBypass)` branch is removed by dead-code elimination. If someone
  *   drops/reorders that guard (e.g. keys the bypass off only the env flag),
  *   the production bundle could ship an active bypass — and this layer fails.
  *
@@ -25,7 +25,7 @@
  *     (`{ DEV: false, VITE_DEV_BYPASS_AUTH: 'true' }`) then returns `true`,
  *     and `expect(...).toBe(false)` trips. With the guard present it returns
  *     `false`, so the suite is green only while production is unbypassable.
- *   - Layer 2 FAILS if the source `DEV_BYPASS` assignment is rewritten to omit
+ *   - Layer 2 FAILS if the source `devBypass` assignment is rewritten to omit
  *     `import.meta.env.DEV === true`: the leading-conjunct regex then finds no
  *     match and `expect(source).toMatch(...)` trips.
  *   (Real DB N/A — this is a frontend build-time guard; no backend / Prisma
@@ -38,7 +38,7 @@ import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { isDevBypassActive } from '../AuthContext';
 
-const SOURCE_PATH = resolve(__dirname, '../AuthContext.tsx');
+const sourcePath = resolve(__dirname, '../AuthContext.tsx');
 
 describe('AuthContext dev-bypass production-safety sentinel (Equoria-c3n0u)', () => {
   describe('Layer 1 — behavioral: isDevBypassActive() gate predicate', () => {
@@ -67,24 +67,24 @@ describe('AuthContext dev-bypass production-safety sentinel (Equoria-c3n0u)', ()
   });
 
   describe('Layer 2 — structural: the call-site keeps the static tree-shake guard', () => {
-    const source = readFileSync(SOURCE_PATH, 'utf-8');
+    const source = readFileSync(sourcePath, 'utf-8');
 
-    it('defines DEV_BYPASS with `import.meta.env.DEV === true` as the leading conjunct', () => {
+    it('defines devBypass with `import.meta.env.DEV === true` as the leading conjunct', () => {
       // This exact literal is what Vite replaces with `false` in production,
       // collapsing the `&&` to a literal `false` and eliminating the branch.
       // The regex requires DEV === true to be the FIRST conjunct AND the flag
       // check to follow via `&&` — i.e. the production guard cannot be dropped
       // or moved after the flag check without failing here.
       expect(source).toMatch(
-        /const\s+DEV_BYPASS\s*=\s*import\.meta\.env\.DEV\s*===\s*true\s*&&\s*import\.meta\.env\.VITE_DEV_BYPASS_AUTH\s*===\s*'true'\s*;/
+        /const\s+devBypass\s*=\s*import\.meta\.env\.DEV\s*===\s*true\s*&&\s*import\.meta\.env\.VITE_DEV_BYPASS_AUTH\s*===\s*'true'\s*;/
       );
     });
 
-    it('gates the mock-user branch behind the DEV_BYPASS constant', () => {
+    it('gates the mock-user branch behind the devBypass constant', () => {
       // The branch that returns the mock authenticated user must be guarded by
-      // the DEV_BYPASS constant (not by the raw env flag directly), so the
+      // the devBypass constant (not by the raw env flag directly), so the
       // single statically-eliminated constant governs reachability.
-      expect(source).toMatch(/if\s*\(\s*DEV_BYPASS\s*\)\s*\{/);
+      expect(source).toMatch(/if\s*\(\s*devBypass\s*\)\s*\{/);
     });
 
     it('does not gate the bypass on the env flag alone anywhere in the source', () => {

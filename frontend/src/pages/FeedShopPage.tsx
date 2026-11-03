@@ -42,7 +42,7 @@ import { userMessageFor } from '@/lib/http/userMessage';
 import { actionMessageFor, buyFeedRefused } from '@/lib/http/actionMessage';
 import { useFeedCatalog, usePurchaseFeed, FeedItem } from '@/hooks/api/useFeedShop';
 
-const FEED_IMAGES: Record<FeedItem['id'], string> = {
+const feedImages: Record<FeedItem['id'], string> = {
   basic: '/images/feed/basicfeed.png',
   performance: '/images/feed/performancefeed.png',
   performancePlus: '/images/feed/performanceplusfeed.png',
@@ -197,7 +197,7 @@ const FeedShopPage: React.FC = () => {
                     data-testid={`feed-tier-${tier.id}`}
                     media={
                       <img
-                        src={FEED_IMAGES[tier.id]}
+                        src={feedImages[tier.id]}
                         alt={`${tier.name} feed bag`}
                         loading="lazy"
                         className="w-20 h-20 object-contain"

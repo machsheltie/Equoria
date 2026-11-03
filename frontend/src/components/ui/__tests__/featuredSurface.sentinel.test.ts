@@ -23,7 +23,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
 
-const CSS_PATH = resolve(__dirname, '../../../index.css');
+const cssPath = resolve(__dirname, '../../../index.css');
 
 /** Strip comments and collapse whitespace so selectors match predictably. */
 function normalise(css: string): string {
@@ -72,7 +72,7 @@ function ruleBody(css: string, selector: string): string | null {
   return null;
 }
 
-const raw = readFileSync(CSS_PATH, 'utf-8');
+const raw = readFileSync(cssPath, 'utf-8');
 const css = normalise(raw);
 
 describe('Featured surface — resting glow contract (index.css)', () => {

@@ -15,7 +15,7 @@ import { useFeedHorse } from '../useFeedHorse';
 import type { FeedHorseResponse } from '@/lib/api-client';
 import React from 'react';
 
-const MOCK_FEED_RESPONSE: FeedHorseResponse = {
+const mockFeedResponse: FeedHorseResponse = {
   horse: { id: 42, name: 'Comet', lastFedDate: '2026-05-07', equippedFeedType: 'basic' },
   feed: { tier: 'basic', name: 'Basic Feed' },
   remainingUnits: 99,
@@ -34,7 +34,7 @@ describe('useFeedHorse — mutation fires', () => {
     server.use(
       http.post('/api/v1/horses/42/feed', () => {
         hitEndpoint = true;
-        return HttpResponse.json(MOCK_FEED_RESPONSE);
+        return HttpResponse.json(mockFeedResponse);
       })
     );
 
@@ -51,7 +51,7 @@ describe('useFeedHorse — mutation fires', () => {
   });
 
   it('invalidates inventory, horses, and equippable query keys on success', async () => {
-    server.use(http.post('/api/v1/horses/42/feed', () => HttpResponse.json(MOCK_FEED_RESPONSE)));
+    server.use(http.post('/api/v1/horses/42/feed', () => HttpResponse.json(mockFeedResponse)));
 
     const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
     const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');

@@ -27,7 +27,7 @@ import { getHorseImage, getHorseImageStyle } from '@/lib/breed-images';
 import { useRenameHorse } from '../../hooks/api/useHorses';
 import { InlineError } from '@/components/ui/state/InlineError';
 import {
-  HORSE_NAME_MAX_LENGTH,
+  horseNameMaxLength,
   horseNameRejection,
   horseNameRejectionCopy,
   isUnnamed,
@@ -81,7 +81,7 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
 
   const horseIsUnnamed = isUnnamed(horse.name);
   // The player's own count, so she is never surprised by the cap.
-  const nameCharactersLeft = HORSE_NAME_MAX_LENGTH - editName.length;
+  const nameCharactersLeft = horseNameMaxLength - editName.length;
 
   const handleStartEdit = () => {
     setRenameError(null);
@@ -125,7 +125,7 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
           // raw server string is never rendered.
           setRenameError(
             err?.statusCode === 400
-              ? `That name was not accepted. A horse name can be up to ${HORSE_NAME_MAX_LENGTH} characters and cannot contain "<".`
+              ? `That name was not accepted. A horse name can be up to ${horseNameMaxLength} characters and cannot contain "<".`
               : userMessageFor(err).message
           );
         },
@@ -199,7 +199,7 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
           /* The real limit, so the field stops where the game stops
              (Equoria-zalyb: 40 characters). It used to stop at 50 while the
              server accepted 100 — two numbers, neither of them the rule. */
-          maxLength={HORSE_NAME_MAX_LENGTH}
+          maxLength={horseNameMaxLength}
           aria-label="Horse name"
           aria-describedby="horse-rename-counter"
           aria-invalid={renameError !== null}
@@ -225,7 +225,7 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
         className="mt-1 text-xs fantasy-body text-[var(--text-secondary)] tabular-nums"
         data-testid="horse-rename-counter"
       >
-        {nameCharactersLeft} of {HORSE_NAME_MAX_LENGTH} characters left
+        {nameCharactersLeft} of {horseNameMaxLength} characters left
       </p>
       {renameError && <InlineError message={renameError} className="mt-1" />}
     </form>

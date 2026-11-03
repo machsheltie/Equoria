@@ -2,7 +2,7 @@
  * Settings constants + shared Toggle (extracted from SettingsPage — Equoria-qk3vi)
  *
  * The reusable Toggle switch, the sidebar `sections` config, the
- * DEFAULT_PREFERENCES baseline, and the display key union.
+ * defaultPreferences baseline, and the display key union.
  * Extracted verbatim so the page container and its section components share
  * one source of truth. Uses JSX (section icons + Toggle) so this is .tsx.
  */
@@ -64,7 +64,7 @@ export const sections: SettingsSection[] = [
  * Defaults applied when the account has never saved a preference. Kept in
  * sync with the server's ALLOWED_PREFERENCE_KEYS (Story 21S-5).
  */
-export const DEFAULT_PREFERENCES: UserPreferences = {
+export const defaultPreferences: UserPreferences = {
   emailCompetition: true,
   emailBreeding: false,
   emailSystem: true,

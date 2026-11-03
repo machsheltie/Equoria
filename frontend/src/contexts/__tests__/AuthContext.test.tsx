@@ -28,12 +28,12 @@ import { server } from '../../test/msw/server';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-const AUTH_USER = { id: 'user-uuid-0001', username: 'testuser', email: 'test@example.com' };
+const authUser = { id: 'user-uuid-0001', username: 'testuser', email: 'test@example.com' };
 
 /** Stub an authenticated session (profile + verification). */
 function stubAuthenticated(verified = true) {
   server.use(
-    http.get(`${base}/api/v1/auth/profile`, () => HttpResponse.json({ data: { user: AUTH_USER } })),
+    http.get(`${base}/api/v1/auth/profile`, () => HttpResponse.json({ data: { user: authUser } })),
     http.get(`${base}/api/v1/auth/verification-status`, () =>
       HttpResponse.json({
         data: {
@@ -132,7 +132,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
       server.use(
         http.get(`${base}/api/v1/auth/profile`, () => {
           profileCalls += 1;
-          return HttpResponse.json({ data: { user: AUTH_USER } });
+          return HttpResponse.json({ data: { user: authUser } });
         }),
         http.get(`${base}/api/v1/auth/verification-status`, () =>
           HttpResponse.json({
@@ -194,7 +194,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
       expect(screen.getByTestId('authenticated')).toHaveTextContent('not-authenticated');
 
       // Resolve the profile request
-      resolveProfile!(HttpResponse.json({ data: { user: AUTH_USER } }));
+      resolveProfile!(HttpResponse.json({ data: { user: authUser } }));
 
       await waitFor(() => {
         expect(screen.getByTestId('loading')).toHaveTextContent('not-loading');
@@ -463,7 +463,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
       server.use(
         http.get(`${base}/api/v1/auth/profile`, () => {
           profileCalls += 1;
-          return HttpResponse.json({ data: { user: AUTH_USER } });
+          return HttpResponse.json({ data: { user: authUser } });
         }),
         http.get(`${base}/api/v1/auth/verification-status`, () =>
           HttpResponse.json({

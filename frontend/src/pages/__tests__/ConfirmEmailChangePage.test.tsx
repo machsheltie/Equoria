@@ -20,9 +20,9 @@ import { MemoryRouter, MockAuthProvider } from '@/test/utils';
 import ConfirmEmailChangePage from '../ConfirmEmailChangePage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const CONFIRM_PATH = `${base}/api/v1/auth/email-change/confirm`;
+const confirmPath = `${base}/api/v1/auth/email-change/confirm`;
 
-const NEW_ADDRESS = 'new-rider@example.com';
+const newAddress = 'new-rider@example.com';
 
 let confirmCalls = 0;
 let confirmTokens: (string | null)[] = [];
@@ -34,7 +34,7 @@ beforeEach(() => {
 
 function stubConfirmAccepted(pause = 0) {
   server.use(
-    http.get(CONFIRM_PATH, async ({ request }) => {
+    http.get(confirmPath, async ({ request }) => {
       confirmCalls += 1;
       confirmTokens.push(new URL(request.url).searchParams.get('token'));
       if (pause) await delay(pause);
@@ -42,7 +42,7 @@ function stubConfirmAccepted(pause = 0) {
         success: true,
         message: 'Your email address has been changed and verified.',
         data: {
-          email: NEW_ADDRESS,
+          email: newAddress,
           emailVerified: true,
           emailVerifiedAt: '2026-09-07T10:00:00.000Z',
         },
@@ -53,7 +53,7 @@ function stubConfirmAccepted(pause = 0) {
 
 function stubConfirmRejected(status: number, message: string) {
   server.use(
-    http.get(CONFIRM_PATH, ({ request }) => {
+    http.get(confirmPath, ({ request }) => {
       confirmCalls += 1;
       confirmTokens.push(new URL(request.url).searchParams.get('token'));
       return HttpResponse.json({ success: false, message }, { status });
@@ -83,7 +83,7 @@ describe('ConfirmEmailChangePage', () => {
     stubConfirmAccepted();
     renderPage('/confirm-email-change?token=ec1Abcdef');
 
-    expect(await screen.findByText(NEW_ADDRESS)).toBeInTheDocument();
+    expect(await screen.findByText(newAddress)).toBeInTheDocument();
     // One-time token: a second consumption would answer 400 and tell the player
     // her own successful change had failed.
     await waitFor(() => expect(confirmCalls).toBe(1));
@@ -96,9 +96,9 @@ describe('ConfirmEmailChangePage', () => {
 
     // Loading is not success and not empty — no address may be shown yet.
     expect(await screen.findByRole('status')).toBeInTheDocument();
-    expect(screen.queryByText(NEW_ADDRESS)).not.toBeInTheDocument();
+    expect(screen.queryByText(newAddress)).not.toBeInTheDocument();
 
-    expect(await screen.findByText(NEW_ADDRESS)).toBeInTheDocument();
+    expect(await screen.findByText(newAddress)).toBeInTheDocument();
   });
 
   it('never spends a request when the link carries no token', async () => {
@@ -121,7 +121,7 @@ describe('ConfirmEmailChangePage', () => {
     expect(alert).toHaveTextContent(/fresh one from your settings/i);
     // FRONTEND_ASYNC_STATE_DOCTRINE §4 — never the raw server string.
     expect(alert).not.toHaveTextContent(/This email change link is invalid/);
-    expect(screen.queryByText(NEW_ADDRESS)).not.toBeInTheDocument();
+    expect(screen.queryByText(newAddress)).not.toBeInTheDocument();
   });
 
   it('says plainly when the address now belongs to someone else', async () => {
@@ -135,7 +135,7 @@ describe('ConfirmEmailChangePage', () => {
   it('sends a signed-out player to sign in, and says every device was signed out', async () => {
     stubConfirmAccepted();
     renderPage('/confirm-email-change?token=ec1_one', false);
-    await screen.findByText(NEW_ADDRESS);
+    await screen.findByText(newAddress);
     expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/login');
     expect(screen.getByText(/every device has been signed out/i)).toBeInTheDocument();
   });
@@ -147,7 +147,7 @@ describe('ConfirmEmailChangePage', () => {
   it('sends a signed-in player to sign in too, because the change ended every session', async () => {
     stubConfirmAccepted();
     renderPage('/confirm-email-change?token=ec1_two', true);
-    await screen.findByText(NEW_ADDRESS);
+    await screen.findByText(newAddress);
     expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/login');
     expect(screen.queryByRole('link', { name: /stable/i })).not.toBeInTheDocument();
     expect(screen.getByText(/every device has been signed out/i)).toBeInTheDocument();

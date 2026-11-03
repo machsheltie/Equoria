@@ -18,7 +18,7 @@ export const tabsConfig: { id: ClubsTab; label: string; icon: React.ReactNode }[
   { id: 'my-club', label: 'My Club', icon: <Crown className="w-4 h-4" /> },
 ];
 
-export const DISCIPLINE_ICONS: Record<string, string> = {
+export const disciplineIcons: Record<string, string> = {
   Dressage: '🎭',
   'Show Jumping': '🚧',
   'Cross Country': '🌲',
@@ -26,7 +26,7 @@ export const DISCIPLINE_ICONS: Record<string, string> = {
   Endurance: '⚡',
 };
 
-export const BREED_ICONS: Record<string, string> = {
+export const breedIcons: Record<string, string> = {
   Thoroughbred: '🏇',
   Arabian: '🌙',
   Warmblood: '🔵',
@@ -38,6 +38,6 @@ export const BREED_ICONS: Record<string, string> = {
 };
 
 export function clubIcon(club: Club): string {
-  if (club.type === 'discipline') return DISCIPLINE_ICONS[club.category] ?? '🏇';
-  return BREED_ICONS[club.category] ?? '🐴';
+  if (club.type === 'discipline') return disciplineIcons[club.category] ?? '🏇';
+  return breedIcons[club.category] ?? '🐴';
 }

@@ -68,7 +68,7 @@ export interface GroomTalentData {
  * Talent tier requirements mirroring backend groomTalentService.mjs: the star levels
  * equivalent to the old levels 3, 5 and 8 (owner ruling 2026-10-28, q229).
  */
-export const TALENT_REQUIREMENTS = {
+export const talentRequirements = {
   tier1: { minStarLevel: 'novice', label: 'Tier 1 — Apprentice', prerequisite: null },
   tier2: {
     minStarLevel: 'intermediate',
@@ -83,9 +83,9 @@ export const TALENT_REQUIREMENTS = {
 
 /**
  * All talent trees by personality type.
- * Mirrors TALENT_TREES in backend groomTalentService.mjs.
+ * Mirrors talentTrees in backend groomTalentService.mjs.
  */
-export const TALENT_TREES: Record<string, TalentTier> = {
+export const talentTrees: Record<string, TalentTier> = {
   calm: {
     tier1: [
       {
@@ -205,13 +205,13 @@ export function getTalentTiersWithState(
   starLevel: string,
   selections: TalentSelections | null
 ): TalentTierWithState[] {
-  const tree = TALENT_TREES[personality];
+  const tree = talentTrees[personality];
   if (!tree) return [];
 
   const tiers: Array<'tier1' | 'tier2' | 'tier3'> = ['tier1', 'tier2', 'tier3'];
 
   return tiers.map((tierKey) => {
-    const req = TALENT_REQUIREMENTS[tierKey];
+    const req = talentRequirements[tierKey];
     const isUnlocked = staffLevelAtLeast(starLevel, req.minStarLevel);
     const prerequisite = req.prerequisite;
     const prerequisiteMet = prerequisite === null || !!(selections && selections[prerequisite]);

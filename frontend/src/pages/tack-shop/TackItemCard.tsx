@@ -16,7 +16,7 @@ import { ItemCard } from '@/components/ui/ItemCard';
 import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
 import type { TackItem } from '@/hooks/api/useTackShop';
-import { CATEGORY_ICONS, TIER_COLORS } from './constants';
+import { categoryIcons, tierColors } from './constants';
 
 interface TackItemCardProps {
   item: TackItem;
@@ -25,14 +25,14 @@ interface TackItemCardProps {
 }
 
 export const TackItemCard: React.FC<TackItemCardProps> = ({ item, onPurchase, isPurchasing }) => {
-  const tierStyle = TIER_COLORS[item.tier] ?? TIER_COLORS.basic;
+  const tierStyle = tierColors[item.tier] ?? tierColors.basic;
 
   const media = item.image ? (
     <img src={item.image} alt={item.name} className="w-20 h-20 object-contain" />
   ) : (
     <div className="w-20 h-20 rounded-[var(--radius-md)] bg-[var(--glass-surface-subtle-bg)] flex items-center justify-center">
       <span className="text-3xl" aria-hidden="true">
-        {item.icon ?? CATEGORY_ICONS[item.category] ?? '🏷️'}
+        {item.icon ?? categoryIcons[item.category] ?? '🏷️'}
       </span>
     </div>
   );

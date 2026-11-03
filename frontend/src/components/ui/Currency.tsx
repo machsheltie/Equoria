@@ -6,7 +6,7 @@
  * stability (the now-deleted `src/lib/currency-utils.ts` originated this
  * choice; this file is the sole owner of the constant today). Locale-awareness
  * (per-user locale setting) is noted in DECISIONS.md §9 as the future
- * mechanism — when an i18n layer is added, replace the `CURRENCY_LOCALE`
+ * mechanism — when an i18n layer is added, replace the `currencyLocale`
  * constant below.
  *
  * Variants:
@@ -28,16 +28,16 @@ import { cn } from '@/lib/utils';
 // Locale constant — 'en-US' pinned for environment stability (DECISIONS.md §9).
 // Replace with a runtime locale resolver when Equoria adds an i18n layer.
 // ---------------------------------------------------------------------------
-const CURRENCY_LOCALE = 'en-US';
+const currencyLocale = 'en-US';
 
 // ---------------------------------------------------------------------------
 // Intl formatter instances — created once at module level for perf.
 // ---------------------------------------------------------------------------
-const standardFormatter = new Intl.NumberFormat(CURRENCY_LOCALE, {
+const standardFormatter = new Intl.NumberFormat(currencyLocale, {
   maximumFractionDigits: 0,
 });
 
-const compactFormatter = new Intl.NumberFormat(CURRENCY_LOCALE, {
+const compactFormatter = new Intl.NumberFormat(currencyLocale, {
   notation: 'compact',
   maximumFractionDigits: 1,
 });

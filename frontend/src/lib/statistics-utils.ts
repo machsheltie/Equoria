@@ -28,7 +28,7 @@ export enum TrendDirection {
 /**
  * Threshold for considering a trend significant
  */
-const TREND_THRESHOLD = 0.1;
+const trendThreshold = 0.1;
 
 /**
  * Format a statistic value with thousands separators
@@ -105,10 +105,10 @@ export function calculateTrend(current: number, previous: number): number {
  * @returns TrendDirection enum value
  */
 export function getTrendDirection(trendValue: number): TrendDirection {
-  if (trendValue >= TREND_THRESHOLD) {
+  if (trendValue >= trendThreshold) {
     return TrendDirection.UP;
   }
-  if (trendValue <= -TREND_THRESHOLD) {
+  if (trendValue <= -trendThreshold) {
     return TrendDirection.DOWN;
   }
   return TrendDirection.NEUTRAL;

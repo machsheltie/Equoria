@@ -12,7 +12,7 @@
  *    1:1  → iPad split-view, foldables
  *    9:16 → phones (portrait)
  *
- * When `scene` is in SCENES_WITH_ART, paths resolve to:
+ * When `scene` is in scenesWithArt, paths resolve to:
  *   /images/backgrounds/{scene}/bg-{ratio}.webp
  * Otherwise (no scene, scene='default', or scene art not yet delivered),
  * ALWAYS falls back to the generic set that is guaranteed to exist:
@@ -59,14 +59,14 @@ export type SceneKey =
  *   /images/bg-16.9.webp, bg-21.9.webp, bg-3.2.webp, bg-4.3.webp,
  *   bg-1.1.webp, bg-9.16.webp
  */
-const SCENES_WITH_ART = new Set<SceneKey>([
+const scenesWithArt = new Set<SceneKey>([
   // Add scene keys here as art assets are committed:
   'auth',
   // 'hub',
 ]);
 
 /** Ratio descriptor — numeric value + file suffix */
-const RATIO_OPTIONS = [
+const ratioOptions = [
   { ratio: 21 / 9, suffix: '21.9' },
   { ratio: 16 / 9, suffix: '16.9' },
   { ratio: 3 / 2, suffix: '3.2' },
@@ -80,13 +80,13 @@ function selectSuffix(): string {
   // D-2: guard against innerHeight === 0 (abnormal browser state) to prevent Infinity ratio
   const viewportRatio = window.innerWidth / (window.innerHeight || 1);
 
-  let best = RATIO_OPTIONS[0];
+  let best = ratioOptions[0];
   let bestDiff = Math.abs(viewportRatio - best.ratio);
 
-  for (let i = 1; i < RATIO_OPTIONS.length; i++) {
-    const diff = Math.abs(viewportRatio - RATIO_OPTIONS[i].ratio);
+  for (let i = 1; i < ratioOptions.length; i++) {
+    const diff = Math.abs(viewportRatio - ratioOptions[i].ratio);
     if (diff < bestDiff) {
-      best = RATIO_OPTIONS[i];
+      best = ratioOptions[i];
       bestDiff = diff;
     }
   }
@@ -98,7 +98,7 @@ function selectSuffix(): string {
  * Returns the WebP URL for the background image that best matches the
  * current viewport aspect ratio. Re-evaluates on window resize.
  *
- * @param scene  Optional scene key. When a scene is in SCENES_WITH_ART,
+ * @param scene  Optional scene key. When a scene is in scenesWithArt,
  *               resolves to `/images/backgrounds/{scene}/bg-{ratio}.webp`.
  *               Otherwise (scene missing, 'default', or not yet delivered)
  *               falls back to `/images/bg-{ratio}.webp` — the generic set
@@ -108,7 +108,7 @@ function selectSuffix(): string {
 export function useResponsiveBackground(scene?: SceneKey): string {
   const [bg, setBg] = useState(() => {
     const suffix = selectSuffix();
-    const useScene = scene && scene !== 'default' && SCENES_WITH_ART.has(scene);
+    const useScene = scene && scene !== 'default' && scenesWithArt.has(scene);
     return useScene
       ? `/images/backgrounds/${scene}/bg-${suffix}.webp`
       : `/images/bg-${suffix}.webp`;
@@ -118,7 +118,7 @@ export function useResponsiveBackground(scene?: SceneKey): string {
     // buildPath defined inside the effect so the resize debounce always closes
     // over the scene value that was current when this effect ran — preventing
     // in-flight debounces from firing with a previous scene's path.
-    const useScene = scene && scene !== 'default' && SCENES_WITH_ART.has(scene);
+    const useScene = scene && scene !== 'default' && scenesWithArt.has(scene);
     const buildPath = (suffix: string) =>
       useScene ? `/images/backgrounds/${scene}/bg-${suffix}.webp` : `/images/bg-${suffix}.webp`;
 

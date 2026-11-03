@@ -22,9 +22,9 @@
  */
 
 import React from 'react';
-import { getPregnancyProgress, GESTATION_DAYS } from '@/lib/utils/pregnancyChances';
+import { getPregnancyProgress, gestationDays } from '@/lib/utils/pregnancyChances';
 
-const TIER_LABELS: Record<string, string> = {
+const tierLabels: Record<string, string> = {
   basic: 'Basic',
   performance: 'Performance',
   performancePlus: 'Performance Plus',
@@ -33,7 +33,7 @@ const TIER_LABELS: Record<string, string> = {
 };
 
 // Stable display order — drives the rendered list independent of object-key insertion order.
-const TIER_ORDER: Array<keyof typeof TIER_LABELS> = [
+const tierOrder: Array<keyof typeof tierLabels> = [
   'elite',
   'highPerformance',
   'performancePlus',
@@ -74,7 +74,7 @@ export const PregnancyFeedingPanel: React.FC<PregnancyFeedingPanelProps> = ({
     >
       <div className="flex items-baseline justify-between flex-wrap gap-2">
         <h3 className="font-bold text-[rgb(220,235,255)]">
-          In foal — Day {gestationDay} of {GESTATION_DAYS}
+          In foal — Day {gestationDay} of {gestationDays}
         </h3>
         <span
           className={`text-xs ${
@@ -100,11 +100,13 @@ export const PregnancyFeedingPanel: React.FC<PregnancyFeedingPanelProps> = ({
       <div>
         <p className="text-xs text-[rgb(160,175,200)] mb-1">Feedings so far:</p>
         <ul className="space-y-1 text-sm text-[rgb(220,235,255)]">
-          {TIER_ORDER.filter((tier) => (feedings?.[tier] ?? 0) > 0).map((tier) => (
-            <li key={tier} data-testid={`pregnancy-counter-${tier}`}>
-              {feedings[tier]}× {TIER_LABELS[tier]}
-            </li>
-          ))}
+          {tierOrder
+            .filter((tier) => (feedings?.[tier] ?? 0) > 0)
+            .map((tier) => (
+              <li key={tier} data-testid={`pregnancy-counter-${tier}`}>
+                {feedings[tier]}× {tierLabels[tier]}
+              </li>
+            ))}
           {Object.values(feedings ?? {}).every((n) => !n) && (
             <li className="text-[rgb(160,175,200)] italic">No feedings recorded yet.</li>
           )}

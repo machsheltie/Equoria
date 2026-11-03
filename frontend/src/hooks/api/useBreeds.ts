@@ -40,10 +40,10 @@ interface BreedsServerResponse {
 // breed has no hand-authored lore below. Per Equoria-x83v4 AC2, we do NOT
 // invent 300 breed-specific blurbs — authoring real per-breed lore is a
 // product/content decision.
-const DEFAULT_LORE =
+const defaultLore =
   'A versatile horse with balanced traits, ready to excel in any discipline you choose.';
 
-const BREED_LORE: Record<string, string> = {
+const breedLore: Record<string, string> = {
   thoroughbred:
     'Born to race, bred for glory. The Thoroughbred is the pinnacle of speed and fire, carrying centuries of champion bloodlines.',
   arabian:
@@ -66,10 +66,10 @@ const BREED_LORE: Record<string, string> = {
 
 function lookupLore(name: string): string | null {
   const key = name.toLowerCase();
-  if (BREED_LORE[key]) return BREED_LORE[key];
+  if (breedLore[key]) return breedLore[key];
   // Partial match — e.g. "American Quarter Horse" → quarter horse
-  const partialKey = Object.keys(BREED_LORE).find((k) => key.includes(k) || k.includes(key));
-  return partialKey ? BREED_LORE[partialKey] : null;
+  const partialKey = Object.keys(breedLore).find((k) => key.includes(k) || k.includes(key));
+  return partialKey ? breedLore[partialKey] : null;
 }
 
 // ── Query ──────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ async function fetchBreeds(): Promise<Breed[]> {
     id: b.id,
     name: b.name,
     description: b.description ?? null,
-    loreBlurb: lookupLore(b.name) ?? DEFAULT_LORE,
+    loreBlurb: lookupLore(b.name) ?? defaultLore,
   }));
 }
 

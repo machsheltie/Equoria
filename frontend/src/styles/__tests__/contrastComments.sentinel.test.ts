@@ -28,8 +28,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 
-const TOKENS_PATH = join(__dirname, '../tokens.css');
-const tokensCss = readFileSync(TOKENS_PATH, 'utf8');
+const tokensPath = join(__dirname, '../tokens.css');
+const tokensCss = readFileSync(tokensPath, 'utf8');
 
 // ── WCAG 2.x contrast implementation ─────────────────────────────────────────
 

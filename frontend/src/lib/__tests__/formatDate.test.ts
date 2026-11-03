@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-  DATE_UNAVAILABLE,
+  dateUnavailable,
   toValidDate,
   formatDate,
   formatDateTime,
@@ -40,7 +40,7 @@ describe('formatDate', () => {
   it('SENTINEL: returns the fallback (never "Invalid Date") for absent/invalid input', () => {
     for (const bad of [null, undefined, '', 'garbage', '2026-99-99']) {
       const out = formatDate(bad);
-      expect(out).toBe(DATE_UNAVAILABLE);
+      expect(out).toBe(dateUnavailable);
       expect(out).not.toContain('Invalid Date');
     }
   });
@@ -60,14 +60,14 @@ describe('formatDateTime', () => {
   it('SENTINEL: returns the fallback (never "Invalid Date") for absent/invalid input', () => {
     for (const bad of [null, undefined, '', 'nope']) {
       const out = formatDateTime(bad);
-      expect(out).toBe(DATE_UNAVAILABLE);
+      expect(out).toBe(dateUnavailable);
       expect(out).not.toContain('Invalid Date');
     }
   });
 
   it('includes a time component for a valid date', () => {
     const out = formatDateTime('2026-01-05T12:00:00.000Z');
-    expect(out).not.toBe(DATE_UNAVAILABLE);
+    expect(out).not.toBe(dateUnavailable);
     // hour12 default → an AM/PM marker is present.
     expect(out).toMatch(/AM|PM/);
   });
@@ -77,14 +77,14 @@ describe('formatTime', () => {
   it('SENTINEL: returns the fallback (never "Invalid Date") for absent/invalid input', () => {
     for (const bad of [null, undefined, '', 'nope']) {
       const out = formatTime(bad);
-      expect(out).toBe(DATE_UNAVAILABLE);
+      expect(out).toBe(dateUnavailable);
       expect(out).not.toContain('Invalid Date');
     }
   });
 
   it('formats a valid date as a time-only string with an AM/PM marker', () => {
     const out = formatTime('2026-01-05T15:04:00.000Z');
-    expect(out).not.toBe(DATE_UNAVAILABLE);
+    expect(out).not.toBe(dateUnavailable);
     expect(out).toMatch(/AM|PM/);
     // time-only: no month/day/year tokens leak in
     expect(out).not.toMatch(/Jan|2026/);

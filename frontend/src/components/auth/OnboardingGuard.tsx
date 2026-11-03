@@ -22,26 +22,26 @@ import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
 
 /** Never redirected away from: the wizard itself (Equoria-bvddn.38). */
-const EXEMPT_PATHS = new Set(['/onboarding']);
+const exemptPaths = new Set(['/onboarding']);
 
 /**
  * Emailed-link routes are exempt only when they carry a token, so the link is
  * always consumed. Token-less /verify-email is where registration lands a new
  * player, and that visit still continues into the wizard.
  */
-const TOKEN_PATHS = new Set(['/verify-email', '/reset-password', '/confirm-email-change']);
+const tokenPaths = new Set(['/verify-email', '/reset-password', '/confirm-email-change']);
 
 const OnboardingGuard: React.FC<{ children?: ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
   const carriesToken =
-    TOKEN_PATHS.has(location.pathname) && new URLSearchParams(location.search).has('token');
+    tokenPaths.has(location.pathname) && new URLSearchParams(location.search).has('token');
 
   const mustOnboard =
     !isLoading &&
     !!user &&
-    !EXEMPT_PATHS.has(location.pathname) &&
+    !exemptPaths.has(location.pathname) &&
     !carriesToken &&
     // Equoria-voasj: the email comes first; EmailVerificationGuard holds an
     // unconfirmed player on /verify-email, so the wizard waits.

@@ -46,8 +46,8 @@ interface StarNode {
 
 // ── Geometry ───────────────────────────────────────────────────────────────────
 
-const VIEW_WIDTH = 360;
-const RIM_LABEL_OFFSET = 12;
+const viewWidth = 360;
+const rimLabelOffset = 12;
 
 /** Fixed star dust behind the figure — atmosphere, not data. */
 const DUST: ReadonlyArray<readonly [number, number, number]> = [
@@ -113,9 +113,9 @@ export function buildConstellation(
 ): { nodes: StarNode[]; cx: number; cy: number; rMax: number; rMin: number } {
   const keys = Object.keys(stats);
   const n = keys.length;
-  const cx = VIEW_WIDTH / 2;
+  const cx = viewWidth / 2;
   const cy = height / 2;
-  const rMax = Math.max(24, Math.min(VIEW_WIDTH / 2 - 72, height / 2 - 40));
+  const rMax = Math.max(24, Math.min(viewWidth / 2 - 72, height / 2 - 40));
   const rMin = rMax * 0.16;
 
   const ratio = (v: number) => (maxValue > 0 ? Math.min(1, Math.max(0, v / maxValue)) : 0);
@@ -199,7 +199,7 @@ export function ScoreBreakdownRadar({
           <svg
             width="100%"
             height={height}
-            viewBox={`0 0 ${VIEW_WIDTH} ${height}`}
+            viewBox={`0 0 ${viewWidth} ${height}`}
             preserveAspectRatio="xMidYMid meet"
             overflow="visible"
             aria-hidden="true"
@@ -220,7 +220,7 @@ export function ScoreBreakdownRadar({
             {DUST.map(([fx, fy, r], i) => (
               <circle
                 key={`dust-${i}`}
-                cx={fix(fx * VIEW_WIDTH)}
+                cx={fix(fx * viewWidth)}
                 cy={fix(fy * height)}
                 r={r}
                 fill="var(--alpha-text-secondary-30)"
@@ -288,8 +288,8 @@ export function ScoreBreakdownRadar({
               const reach = 3.5 + 4.5 * ((node.radius - 0) / rMax);
               const cos = Math.cos(node.angle);
               const sin = Math.sin(node.angle);
-              const rimX = cx + (rMax + RIM_LABEL_OFFSET) * cos;
-              const rimY = cy + (rMax + RIM_LABEL_OFFSET) * sin;
+              const rimX = cx + (rMax + rimLabelOffset) * cos;
+              const rimY = cy + (rMax + rimLabelOffset) * sin;
               const anchor = cos > 0.25 ? 'start' : cos < -0.25 ? 'end' : 'middle';
               const [nameY, valueY] =
                 sin < -0.25

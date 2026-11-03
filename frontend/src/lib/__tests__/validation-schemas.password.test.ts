@@ -27,12 +27,12 @@ import { describe, it, expect } from 'vitest';
 import { passwordSchema, calculatePasswordStrength } from '../validation-schemas';
 
 // The exact special-character class the schema enforces.
-const SCHEMA_SPECIAL_CHARS = ['@', '$', '!', '%', '*', '?', '&'] as const;
+const schemaSpecialChars = ['@', '$', '!', '%', '*', '?', '&'] as const;
 
 describe('passwordSchema (Equoria-8d5c)', () => {
   it('special-char set equals the documented schema set @$!%*?&', () => {
     // Each schema special char makes an otherwise-conformant password pass.
-    for (const ch of SCHEMA_SPECIAL_CHARS) {
+    for (const ch of schemaSpecialChars) {
       const pw = `Abcdefghij1${ch}`;
       expect(passwordSchema.safeParse(pw).success).toBe(true);
     }

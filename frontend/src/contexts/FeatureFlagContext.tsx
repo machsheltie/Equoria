@@ -8,7 +8,7 @@
  */
 
 import React, { createContext, useContext, useMemo, type ReactNode } from 'react';
-import { useFeatureFlags, LOCAL_FLAGS } from '../lib/featureFlags';
+import { useFeatureFlags, localFlags } from '../lib/featureFlags';
 
 /**
  * Feature flags context value type
@@ -61,7 +61,7 @@ interface FeatureFlagProviderProps {
  * }
  */
 export function FeatureFlagProvider({ children, overrides }: FeatureFlagProviderProps) {
-  const { data: flags = LOCAL_FLAGS, isLoading, isError, refetch } = useFeatureFlags();
+  const { data: flags = localFlags, isLoading, isError, refetch } = useFeatureFlags();
 
   // Merge flags with overrides
   const mergedFlags = useMemo(() => {

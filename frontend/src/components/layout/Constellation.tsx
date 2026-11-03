@@ -7,7 +7,7 @@ interface Point {
 }
 
 // Simplified horse constellation points (normalized 0-100)
-const HORSE_POINTS: Point[] = [
+const horsePoints: Point[] = [
   { x: 70, y: 20 }, // Nose
   { x: 60, y: 15 }, // Forehead
   { x: 55, y: 10 }, // Ear tip
@@ -68,8 +68,8 @@ export const Constellation: React.FC<ConstellationProps> = ({ className, opacity
 
         {/* Connecting Lines */}
         {CONNECTIONS.map(([startIdx, endIdx], i) => {
-          const start = HORSE_POINTS[startIdx];
-          const end = HORSE_POINTS[endIdx];
+          const start = horsePoints[startIdx];
+          const end = horsePoints[endIdx];
           return (
             <line
               key={`line-${i}`}
@@ -87,7 +87,7 @@ export const Constellation: React.FC<ConstellationProps> = ({ className, opacity
         })}
 
         {/* Stars */}
-        {HORSE_POINTS.map((point, i) => (
+        {horsePoints.map((point, i) => (
           <g key={`star-${i}`}>
             <circle
               cx={point.x}

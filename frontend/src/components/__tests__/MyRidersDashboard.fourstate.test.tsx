@@ -28,10 +28,10 @@ import { Toaster } from '@/components/ui/sonner';
 import MyRidersDashboard from '../MyRidersDashboard';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const USER_ID = 'user-5urmo';
+const userId = 'user-5urmo';
 // `:userId` wildcard — matches whatever userId the dashboard forwards.
-const RIDERS_PATH = `${base}/api/v1/riders/user/:userId`;
-const ASSIGNMENTS_PATH = `${base}/api/v1/riders/assignments`;
+const ridersPath = `${base}/api/v1/riders/user/:userId`;
+const assignmentsPath = `${base}/api/v1/riders/assignments`;
 
 // One hired rider, used by the success + retry-recovery paths so a rider card
 // renders (it has no old skill word: owner ruling 2026-10-29, q282);
@@ -80,7 +80,7 @@ function renderDashboard() {
       <BrowserRouter>
         {/* Real sonner sink so mutation-error toasts render into the DOM. */}
         <Toaster />
-        <MyRidersDashboard userId={USER_ID} onBrowseMarketplace={() => {}} />
+        <MyRidersDashboard userId={userId} onBrowseMarketplace={() => {}} />
       </BrowserRouter>
     </QueryClientProvider>
   );
@@ -90,10 +90,10 @@ describe('MyRidersDashboard — four-state doctrine (Equoria-5urmo)', () => {
   it('a failed riders fetch renders an error with retry — never the false "No Riders Hired" empty', async () => {
     // The 500 body carries a server message; it must NEVER reach the UI (§3).
     server.use(
-      http.get(RIDERS_PATH, () =>
+      http.get(ridersPath, () =>
         HttpResponse.json({ success: false, message: 'Internal boom leak' }, { status: 500 })
       ),
-      http.get(ASSIGNMENTS_PATH, () => HttpResponse.json([]))
+      http.get(assignmentsPath, () => HttpResponse.json([]))
     );
 
     renderDashboard();
@@ -108,8 +108,8 @@ describe('MyRidersDashboard — four-state doctrine (Equoria-5urmo)', () => {
 
   it('a successful empty riders fetch renders the honest empty state (no error)', async () => {
     server.use(
-      http.get(RIDERS_PATH, () => HttpResponse.json([])),
-      http.get(ASSIGNMENTS_PATH, () => HttpResponse.json([]))
+      http.get(ridersPath, () => HttpResponse.json([])),
+      http.get(assignmentsPath, () => HttpResponse.json([]))
     );
 
     renderDashboard();
@@ -121,8 +121,8 @@ describe('MyRidersDashboard — four-state doctrine (Equoria-5urmo)', () => {
 
   it('a successful riders fetch with rows renders the grid — never the empty or error state', async () => {
     server.use(
-      http.get(RIDERS_PATH, () => HttpResponse.json(oneRider)),
-      http.get(ASSIGNMENTS_PATH, () => HttpResponse.json([]))
+      http.get(ridersPath, () => HttpResponse.json(oneRider)),
+      http.get(assignmentsPath, () => HttpResponse.json([]))
     );
 
     renderDashboard();
@@ -135,14 +135,14 @@ describe('MyRidersDashboard — four-state doctrine (Equoria-5urmo)', () => {
   it('the error-state retry refetches — first load fails, retry recovers to the grid', async () => {
     let calls = 0;
     server.use(
-      http.get(RIDERS_PATH, () => {
+      http.get(ridersPath, () => {
         calls += 1;
         if (calls === 1) {
           return HttpResponse.json({ success: false, message: 'boom' }, { status: 500 });
         }
         return HttpResponse.json(oneRider);
       }),
-      http.get(ASSIGNMENTS_PATH, () => HttpResponse.json([]))
+      http.get(assignmentsPath, () => HttpResponse.json([]))
     );
 
     const user = userEvent.setup();
@@ -159,8 +159,8 @@ describe('MyRidersDashboard — four-state doctrine (Equoria-5urmo)', () => {
 describe('MyRidersDashboard — silent-mutation feedback (Equoria-5urmo)', () => {
   it('a failed unassign surfaces a visible error toast (no raw server leak)', async () => {
     server.use(
-      http.get(RIDERS_PATH, () => HttpResponse.json(oneRider)),
-      http.get(ASSIGNMENTS_PATH, () => HttpResponse.json(oneAssignment)),
+      http.get(ridersPath, () => HttpResponse.json(oneRider)),
+      http.get(assignmentsPath, () => HttpResponse.json(oneAssignment)),
       http.delete(`${base}/api/v1/riders/assignments/:id`, () =>
         HttpResponse.json({ success: false, message: 'delete boom leak' }, { status: 500 })
       )
@@ -184,8 +184,8 @@ describe('MyRidersDashboard — silent-mutation feedback (Equoria-5urmo)', () =>
 
   it('a failed assign surfaces a visible error toast (no raw server leak)', async () => {
     server.use(
-      http.get(RIDERS_PATH, () => HttpResponse.json(oneRider)),
-      http.get(ASSIGNMENTS_PATH, () => HttpResponse.json([])),
+      http.get(ridersPath, () => HttpResponse.json(oneRider)),
+      http.get(assignmentsPath, () => HttpResponse.json([])),
       http.post(`${base}/api/v1/riders/assignments`, () =>
         HttpResponse.json({ success: false, message: 'assign boom leak' }, { status: 500 })
       )

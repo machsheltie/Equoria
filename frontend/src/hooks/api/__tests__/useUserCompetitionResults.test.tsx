@@ -29,7 +29,7 @@ import {
 import { server } from '../../../test/msw/server';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const RESULTS_PATH = `${base}/api/v1/competition/user-results`;
+const resultsPath = `${base}/api/v1/competition/user-results`;
 
 const mockResults = [
   {
@@ -68,7 +68,7 @@ describe('useUserCompetitionResults (Equoria-oey96.5)', () => {
   it('fetches results when userId is provided', async () => {
     let called = 0;
     server.use(
-      http.get(RESULTS_PATH, () => {
+      http.get(resultsPath, () => {
         called += 1;
         return HttpResponse.json({
           success: true,
@@ -90,7 +90,7 @@ describe('useUserCompetitionResults (Equoria-oey96.5)', () => {
 
   it('returns loading state before the fetch resolves', async () => {
     server.use(
-      http.get(RESULTS_PATH, async () => {
+      http.get(resultsPath, async () => {
         await delay('infinite');
         return HttpResponse.json({ success: true, results: [], count: 0 });
       })
@@ -108,7 +108,7 @@ describe('useUserCompetitionResults (Equoria-oey96.5)', () => {
   it('stays disabled when userId is null (no network call)', async () => {
     let called = 0;
     server.use(
-      http.get(RESULTS_PATH, () => {
+      http.get(resultsPath, () => {
         called += 1;
         return HttpResponse.json({ success: true, results: [], count: 0 });
       })
@@ -127,7 +127,7 @@ describe('useUserCompetitionResults (Equoria-oey96.5)', () => {
 
   it('resolves to empty array when the server returns zero results', async () => {
     server.use(
-      http.get(RESULTS_PATH, () => HttpResponse.json({ success: true, results: [], count: 0 }))
+      http.get(resultsPath, () => HttpResponse.json({ success: true, results: [], count: 0 }))
     );
 
     const { result } = renderHook(() => useUserCompetitionResults('user-1'), {
@@ -140,7 +140,7 @@ describe('useUserCompetitionResults (Equoria-oey96.5)', () => {
 
   it('surfaces server errors via isError', async () => {
     server.use(
-      http.get(RESULTS_PATH, () =>
+      http.get(resultsPath, () =>
         HttpResponse.json({ success: false, message: 'Boom' }, { status: 500 })
       )
     );

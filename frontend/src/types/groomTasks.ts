@@ -29,12 +29,12 @@ export interface TaskInfo {
 }
 
 /** Age thresholds matching backend groomConfig.mjs constants */
-export const TASK_AGE_THRESHOLDS = {
-  FOAL_ENRICHMENT_MIN: 0,
-  FOAL_ENRICHMENT_MAX: 2,
-  FOAL_GROOMING_MIN: 1,
-  FOAL_GROOMING_MAX: 3,
-  GENERAL_GROOMING_MIN: 3,
+export const taskAgeThresholds = {
+  foalEnrichmentMin: 0,
+  foalEnrichmentMax: 2,
+  foalGroomingMin: 1,
+  foalGroomingMax: 3,
+  generalGroomingMin: 3,
 } as const;
 
 /** All task definitions with durations and effects */
@@ -44,8 +44,8 @@ export const taskData: TaskInfo[] = [
     id: 'desensitization',
     name: 'Desensitization',
     category: 'enrichment',
-    minAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MIN,
-    maxAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MAX,
+    minAge: taskAgeThresholds.foalEnrichmentMin,
+    maxAge: taskAgeThresholds.foalEnrichmentMax,
     recommendedDurationMinutes: 30,
     effects: [
       { label: 'Reduces fear response', type: 'positive' },
@@ -58,8 +58,8 @@ export const taskData: TaskInfo[] = [
     id: 'trustBuilding',
     name: 'Trust Building',
     category: 'enrichment',
-    minAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MIN,
-    maxAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MAX,
+    minAge: taskAgeThresholds.foalEnrichmentMin,
+    maxAge: taskAgeThresholds.foalEnrichmentMax,
     recommendedDurationMinutes: 45,
     effects: [
       { label: 'Increases bond score', type: 'positive' },
@@ -71,8 +71,8 @@ export const taskData: TaskInfo[] = [
     id: 'showgroundExposure',
     name: 'Showground Exposure',
     category: 'enrichment',
-    minAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MIN,
-    maxAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MAX,
+    minAge: taskAgeThresholds.foalEnrichmentMin,
+    maxAge: taskAgeThresholds.foalEnrichmentMax,
     recommendedDurationMinutes: 60,
     effects: [
       { label: 'Builds confidence in crowds', type: 'positive' },
@@ -84,8 +84,8 @@ export const taskData: TaskInfo[] = [
     id: 'earlyTouch',
     name: 'Early Touch',
     category: 'enrichment',
-    minAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MIN,
-    maxAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MAX,
+    minAge: taskAgeThresholds.foalEnrichmentMin,
+    maxAge: taskAgeThresholds.foalEnrichmentMax,
     recommendedDurationMinutes: 20,
     effects: [
       { label: 'Improves handling tolerance', type: 'positive' },
@@ -97,8 +97,8 @@ export const taskData: TaskInfo[] = [
     id: 'gentleTouch',
     name: 'Gentle Touch',
     category: 'enrichment',
-    minAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MIN,
-    maxAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MAX,
+    minAge: taskAgeThresholds.foalEnrichmentMin,
+    maxAge: taskAgeThresholds.foalEnrichmentMax,
     recommendedDurationMinutes: 25,
     effects: [{ label: 'Develops calm demeanor', type: 'positive' }],
     description: 'Soft grooming and stroking to promote relaxation and socialization.',
@@ -107,8 +107,8 @@ export const taskData: TaskInfo[] = [
     id: 'feedingAssistance',
     name: 'Feeding Assistance',
     category: 'enrichment',
-    minAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MIN,
-    maxAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MAX,
+    minAge: taskAgeThresholds.foalEnrichmentMin,
+    maxAge: taskAgeThresholds.foalEnrichmentMax,
     recommendedDurationMinutes: 15,
     effects: [
       { label: 'Strengthens human-horse bond', type: 'positive' },
@@ -120,8 +120,8 @@ export const taskData: TaskInfo[] = [
     id: 'environmentExploration',
     name: 'Environment Exploration',
     category: 'enrichment',
-    minAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MIN,
-    maxAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MAX,
+    minAge: taskAgeThresholds.foalEnrichmentMin,
+    maxAge: taskAgeThresholds.foalEnrichmentMax,
     recommendedDurationMinutes: 40,
     effects: [
       { label: 'Develops curiosity trait', type: 'positive' },
@@ -135,8 +135,8 @@ export const taskData: TaskInfo[] = [
     id: 'hoofHandling',
     name: 'Hoof Handling',
     category: 'foalGrooming',
-    minAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MIN,
-    maxAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MAX,
+    minAge: taskAgeThresholds.foalGroomingMin,
+    maxAge: taskAgeThresholds.foalGroomingMax,
     recommendedDurationMinutes: 20,
     effects: [
       { label: 'Prepares for farrier work', type: 'positive' },
@@ -148,8 +148,8 @@ export const taskData: TaskInfo[] = [
     id: 'tyingPractice',
     name: 'Tying Practice',
     category: 'foalGrooming',
-    minAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MIN,
-    maxAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MAX,
+    minAge: taskAgeThresholds.foalGroomingMin,
+    maxAge: taskAgeThresholds.foalGroomingMax,
     recommendedDurationMinutes: 30,
     effects: [
       { label: 'Develops patience', type: 'positive' },
@@ -161,8 +161,8 @@ export const taskData: TaskInfo[] = [
     id: 'spongeBath',
     name: 'Sponge Bath',
     category: 'foalGrooming',
-    minAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MIN,
-    maxAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MAX,
+    minAge: taskAgeThresholds.foalGroomingMin,
+    maxAge: taskAgeThresholds.foalGroomingMax,
     recommendedDurationMinutes: 25,
     effects: [{ label: 'Acclimates to water', type: 'positive' }],
     description: 'Introduce water and bathing to normalize grooming routines.',
@@ -171,8 +171,8 @@ export const taskData: TaskInfo[] = [
     id: 'coatCheck',
     name: 'Coat Check',
     category: 'foalGrooming',
-    minAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MIN,
-    maxAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MAX,
+    minAge: taskAgeThresholds.foalGroomingMin,
+    maxAge: taskAgeThresholds.foalGroomingMax,
     recommendedDurationMinutes: 15,
     effects: [
       { label: 'Monitors coat health', type: 'neutral' },
@@ -184,8 +184,8 @@ export const taskData: TaskInfo[] = [
     id: 'maneTailGrooming',
     name: 'Mane & Tail Grooming',
     category: 'foalGrooming',
-    minAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MIN,
-    maxAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MAX,
+    minAge: taskAgeThresholds.foalGroomingMin,
+    maxAge: taskAgeThresholds.foalGroomingMax,
     recommendedDurationMinutes: 20,
     effects: [
       { label: 'Improves presentation', type: 'positive' },
@@ -199,7 +199,7 @@ export const taskData: TaskInfo[] = [
     id: 'brushing',
     name: 'Brushing',
     category: 'generalGrooming',
-    minAge: TASK_AGE_THRESHOLDS.GENERAL_GROOMING_MIN,
+    minAge: taskAgeThresholds.generalGroomingMin,
     recommendedDurationMinutes: 20,
     effects: [
       { label: 'Prevents coat problems', type: 'positive' },
@@ -211,7 +211,7 @@ export const taskData: TaskInfo[] = [
     id: 'handWalking',
     name: 'Hand-Walking',
     category: 'generalGrooming',
-    minAge: TASK_AGE_THRESHOLDS.GENERAL_GROOMING_MIN,
+    minAge: taskAgeThresholds.generalGroomingMin,
     recommendedDurationMinutes: 30,
     effects: [{ label: 'Maintains light exercise', type: 'positive' }],
     description: 'Light exercise and mental stimulation outside the stall.',
@@ -220,7 +220,7 @@ export const taskData: TaskInfo[] = [
     id: 'stallCare',
     name: 'Stall Care',
     category: 'generalGrooming',
-    minAge: TASK_AGE_THRESHOLDS.GENERAL_GROOMING_MIN,
+    minAge: taskAgeThresholds.generalGroomingMin,
     recommendedDurationMinutes: 45,
     effects: [{ label: 'Improves living conditions', type: 'positive' }],
     description: 'Clean and maintain the stall for optimal health and comfort.',
@@ -229,7 +229,7 @@ export const taskData: TaskInfo[] = [
     id: 'bathing',
     name: 'Bathing',
     category: 'generalGrooming',
-    minAge: TASK_AGE_THRESHOLDS.GENERAL_GROOMING_MIN,
+    minAge: taskAgeThresholds.generalGroomingMin,
     recommendedDurationMinutes: 40,
     effects: [
       { label: 'Removes dirt and sweat', type: 'positive' },
@@ -241,7 +241,7 @@ export const taskData: TaskInfo[] = [
     id: 'maneTailTrim',
     name: 'Mane & Tail Trim',
     category: 'generalGrooming',
-    minAge: TASK_AGE_THRESHOLDS.GENERAL_GROOMING_MIN,
+    minAge: taskAgeThresholds.generalGroomingMin,
     recommendedDurationMinutes: 30,
     effects: [
       { label: 'Maintains show presentation', type: 'positive' },
@@ -252,7 +252,7 @@ export const taskData: TaskInfo[] = [
 ];
 
 /** Category display metadata */
-export const TASK_CATEGORY_INFO: Record<
+export const taskCategoryInfo: Record<
   TaskCategory,
   { label: string; icon: string; colorClass: string; badgeClass: string; description: string }
 > = {

@@ -13,10 +13,10 @@ import { describe, it, expect } from 'vitest';
 import {
   getLeaderboardEntries,
   getUserRankSummary,
-  VALID_CATEGORIES,
-  CURRENT_USER_RANK,
-  CURRENT_USER_ID,
-  CURRENT_USER_NAME,
+  validCategories,
+  currentUserRank,
+  currentUserId,
+  currentUserName,
 } from '../leaderboards';
 
 // ---------------------------------------------------------------------------
@@ -88,11 +88,11 @@ describe('Leaderboard Fixtures', () => {
 
   // Test 6: getUserRankSummary returns data for valid userId
   it('should return user rank summary for a valid user ID', () => {
-    const summary = getUserRankSummary(CURRENT_USER_ID);
+    const summary = getUserRankSummary(currentUserId);
 
     expect(summary).toBeDefined();
-    expect(summary!.userId).toBe(CURRENT_USER_ID);
-    expect(summary!.userName).toBe(CURRENT_USER_NAME);
+    expect(summary!.userId).toBe(currentUserId);
+    expect(summary!.userName).toBe(currentUserName);
     expect(summary!.rankings.length).toBe(6);
     expect(summary!.bestRankings.length).toBeGreaterThan(0);
 
@@ -116,7 +116,7 @@ describe('Leaderboard Fixtures', () => {
   // Test 8: The current user entry is always at rank 42 in generated leaderboards
   it('should place the current user at rank 42 in every category', () => {
     const categoriesToCheck: Array<{
-      category: (typeof VALID_CATEGORIES)[number];
+      category: (typeof validCategories)[number];
       discipline?: string;
     }> = [
       { category: 'player-xp' },
@@ -131,9 +131,9 @@ describe('Leaderboard Fixtures', () => {
       const userEntry = entries.find((e) => e.isCurrentUser);
 
       expect(userEntry).toBeDefined();
-      expect(userEntry!.rank).toBe(CURRENT_USER_RANK);
-      expect(userEntry!.ownerId).toBe(CURRENT_USER_ID);
-      expect(userEntry!.ownerName).toBe(CURRENT_USER_NAME);
+      expect(userEntry!.rank).toBe(currentUserRank);
+      expect(userEntry!.ownerId).toBe(currentUserId);
+      expect(userEntry!.ownerName).toBe(currentUserName);
     });
   });
 });
@@ -223,13 +223,13 @@ describe('Leaderboard MSW Handlers', () => {
 
   // Test 14: GET /api/v1/leaderboards/user-summary/:userId returns data (Equoria-0fw18: versioned)
   it('should return user rank summary for a valid user ID', async () => {
-    const response = await fetch(`${base}/api/v1/leaderboards/user-summary/${CURRENT_USER_ID}`);
+    const response = await fetch(`${base}/api/v1/leaderboards/user-summary/${currentUserId}`);
 
     expect(response.status).toBe(200);
 
     const json = await response.json();
     expect(json.success).toBe(true);
-    expect(json.data).toHaveProperty('userId', CURRENT_USER_ID);
+    expect(json.data).toHaveProperty('userId', currentUserId);
     expect(json.data).toHaveProperty('userName');
     expect(json.data).toHaveProperty('rankings');
     expect(json.data).toHaveProperty('bestRankings');

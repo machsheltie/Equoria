@@ -28,12 +28,12 @@ import { server } from '../../test/msw/server';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-const AUTH_USER = { id: 1, username: 'testuser', email: 'test@example.com' };
+const authUser = { id: 1, username: 'testuser', email: 'test@example.com' };
 
 /** Authenticated session (profile + verification). */
 function stubAuthenticated(verified = true) {
   server.use(
-    http.get(`${base}/api/v1/auth/profile`, () => HttpResponse.json({ data: { user: AUTH_USER } })),
+    http.get(`${base}/api/v1/auth/profile`, () => HttpResponse.json({ data: { user: authUser } })),
     http.get(`${base}/api/v1/auth/verification-status`, () =>
       HttpResponse.json({
         data: {
@@ -398,7 +398,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
       server.use(
         http.get(`${base}/api/v1/auth/profile`, () => {
           profileCalls += 1;
-          return HttpResponse.json({ data: { user: AUTH_USER } });
+          return HttpResponse.json({ data: { user: authUser } });
         }),
         http.get(`${base}/api/v1/auth/verification-status`, () =>
           HttpResponse.json({

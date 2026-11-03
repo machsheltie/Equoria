@@ -21,8 +21,8 @@
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
 import { horsesApi, type HorseGeneticsResponse } from '@/lib/api-client';
 
-const COAT_GENETICS_STALE_MS = 10 * 60 * 1000; // 10 minutes
-const COAT_GENETICS_GC_MS = 30 * 60 * 1000; // 30 minutes
+const coatGeneticsStaleMs = 10 * 60 * 1000; // 10 minutes
+const coatGeneticsGcMs = 30 * 60 * 1000; // 30 minutes
 
 /**
  * Fetch the full color genotype + phenotype for a horse.
@@ -42,8 +42,8 @@ export function useHorseCoatGenetics(
       return horsesApi.getGenetics(horseId);
     },
     enabled: Boolean(horseId),
-    staleTime: COAT_GENETICS_STALE_MS,
-    gcTime: COAT_GENETICS_GC_MS,
+    staleTime: coatGeneticsStaleMs,
+    gcTime: coatGeneticsGcMs,
     refetchOnWindowFocus: false,
   });
 }

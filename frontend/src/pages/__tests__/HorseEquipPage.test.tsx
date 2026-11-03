@@ -28,14 +28,14 @@ const CATALOG: FeedItem[] = [
   },
 ];
 
-const EQUIPPABLE_WITH_EQUIPPED_FEED: EquippableResponse = {
+const equippableWithEquippedFeed: EquippableResponse = {
   tack: [],
   feed: [
     { feedType: 'basic', name: 'Basic Feed', quantity: 42, isCurrentlyEquippedToThisHorse: true },
   ],
 };
 
-const EQUIPPABLE_EMPTY: EquippableResponse = {
+const equippableEmpty: EquippableResponse = {
   tack: [],
   feed: [],
 };
@@ -65,7 +65,7 @@ describe('HorseEquipPage — loading state', () => {
     server.use(
       http.get('/api/v1/horses/5/equippable', async () => {
         await new Promise(() => {}); // never resolves
-        return HttpResponse.json(EQUIPPABLE_EMPTY);
+        return HttpResponse.json(equippableEmpty);
       }),
       http.get('/api/v1/feed-shop/catalog', () => HttpResponse.json(CATALOG))
     );
@@ -87,20 +87,20 @@ describe('HorseEquipPage — loading state', () => {
 
 describe('HorseEquipPage — tack and feed sections', () => {
   it('renders tack and feed sections after load', async () => {
-    renderAt(5, EQUIPPABLE_EMPTY);
+    renderAt(5, equippableEmpty);
 
     await waitFor(() => expect(screen.getByTestId('tack-section')).toBeInTheDocument());
     expect(screen.getByTestId('feed-section')).toBeInTheDocument();
   });
 
   it('shows tack empty-state when no tack available', async () => {
-    renderAt(5, EQUIPPABLE_EMPTY);
+    renderAt(5, equippableEmpty);
 
     await waitFor(() => expect(screen.getByTestId('tack-empty-state')).toBeInTheDocument());
   });
 
   it('shows no-feed empty-state when feed array is empty', async () => {
-    renderAt(5, EQUIPPABLE_EMPTY);
+    renderAt(5, equippableEmpty);
 
     await waitFor(() => expect(screen.getByTestId('no-feed-empty-state')).toBeInTheDocument());
   });
@@ -108,7 +108,7 @@ describe('HorseEquipPage — tack and feed sections', () => {
 
 describe('HorseEquipPage — equipped feed card', () => {
   it('renders equipped-feed-card with unequip-feed-button when a feed tier is equipped', async () => {
-    renderAt(5, EQUIPPABLE_WITH_EQUIPPED_FEED);
+    renderAt(5, equippableWithEquippedFeed);
 
     await waitFor(() => expect(screen.getByTestId('equipped-feed-card')).toBeInTheDocument());
     expect(screen.getByTestId('unequip-feed-button')).toBeInTheDocument();

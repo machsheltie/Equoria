@@ -166,18 +166,18 @@ const retiredGroomHorseNames = (payload: Record<string, unknown>): string[] => {
  * Capped at three spoken names: past that the sentence stops being something a
  * player reads and starts being a list, and the roster is where a list belongs.
  */
-const MAX_SPOKEN_HORSE_NAMES = 3;
+const maxSpokenHorseNames = 3;
 const speakHorseNames = (names: string[], unnamed = 0): string => {
   // `unnamed` horses were left unattended but arrived without a usable name
   // (Equoria-d6ru2); they are spoken as a count so names and count always agree.
   const total = names.length + unnamed;
-  if (total <= MAX_SPOKEN_HORSE_NAMES) {
+  if (total <= maxSpokenHorseNames) {
     const parts =
       unnamed > 0 ? [...names, `${unnamed} other ${unnamed === 1 ? 'horse' : 'horses'}`] : names;
     if (parts.length <= 1) return parts[0] ?? '';
     return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
   }
-  const spokenNames = names.slice(0, MAX_SPOKEN_HORSE_NAMES);
+  const spokenNames = names.slice(0, maxSpokenHorseNames);
   const rest = total - spokenNames.length;
   return `${spokenNames.join(', ')} and ${rest} more`;
 };
@@ -274,7 +274,7 @@ const GroomRetiredRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
  * The note text never travels in a bell. These are the only rows that link
  * anywhere, because the ticket itself lives in the office, not in the bell.
  */
-const TICKET_STATUS_WORDS: Record<string, string> = {
+const ticketStatusWords: Record<string, string> = {
   open: 'open',
   inProgress: 'in progress',
   resolved: 'resolved',
@@ -326,8 +326,8 @@ const StaffTicketUpdateRow: React.FC<{ notif: GameNotification }> = ({ notif }) 
   let sentence: string;
   if (status === null) {
     sentence = `${label} has a reply.`;
-  } else if (TICKET_STATUS_WORDS[status]) {
-    sentence = `${label} is now ${TICKET_STATUS_WORDS[status]}.`;
+  } else if (ticketStatusWords[status]) {
+    sentence = `${label} is now ${ticketStatusWords[status]}.`;
   } else {
     sentence = `${label} has been updated.`;
   }

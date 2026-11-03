@@ -9,7 +9,7 @@
 import type { CSSProperties } from 'react';
 
 /** Map of breed names (lowercase) to placeholder image paths */
-const BREED_PLACEHOLDERS: Record<string, string> = {
+const breedPlaceholders: Record<string, string> = {
   // Images that exist in /public/images/breeds/
   thoroughbred: '/images/breeds/thoroughbred.png',
   arabian: '/images/breeds/arabian.png',
@@ -39,7 +39,7 @@ const BREED_PLACEHOLDERS: Record<string, string> = {
   // shire: '/images/breeds/shire.png',
 };
 
-const GENERIC_PLACEHOLDER = '/placeholder.svg';
+const genericPlaceholder = '/placeholder.svg';
 
 /**
  * Breed body-type categories (Equoria-x83v4). There is NO category column on
@@ -58,7 +58,7 @@ export type BreedCategory = 'draft' | 'pony' | 'gaited' | 'sport' | 'light';
  * (Equoria-x83v4 AC3). These are vector silhouettes, not fabricated
  * breed-specific photography.
  */
-const CATEGORY_PLACEHOLDERS: Record<Exclude<BreedCategory, 'light'>, string> = {
+const categoryPlaceholders: Record<Exclude<BreedCategory, 'light'>, string> = {
   draft: '/images/breeds/category-draft.svg',
   pony: '/images/breeds/category-pony.svg',
   gaited: '/images/breeds/category-gaited.svg',
@@ -68,7 +68,7 @@ const CATEGORY_PLACEHOLDERS: Record<Exclude<BreedCategory, 'light'>, string> = {
 // Name-substring heuristics, evaluated in priority order. Lowercased, trimmed
 // name is tested against each group. First match wins. Anything unmatched is
 // 'light' (the generic riding-horse silhouette).
-const CATEGORY_NAME_HINTS: ReadonlyArray<[Exclude<BreedCategory, 'light'>, readonly string[]]> = [
+const categoryNameHints: ReadonlyArray<[Exclude<BreedCategory, 'light'>, readonly string[]]> = [
   // Draft / heavy horses
   [
     'draft',
@@ -179,7 +179,7 @@ const CATEGORY_NAME_HINTS: ReadonlyArray<[Exclude<BreedCategory, 'light'>, reado
 export function resolveBreedCategory(breedName: string | null | undefined): BreedCategory {
   const key = (breedName ?? '').toLowerCase().trim();
   if (!key) return 'light';
-  for (const [category, hints] of CATEGORY_NAME_HINTS) {
+  for (const [category, hints] of categoryNameHints) {
     if (hints.some((hint) => key.includes(hint))) return category;
   }
   return 'light';
@@ -189,19 +189,19 @@ export function resolveBreedCategory(breedName: string | null | undefined): Bree
  * The category-specific placeholder image path for a breed (Equoria-x83v4).
  * 'light' breeds get the original generic silhouette; the four body-type
  * categories get their distinct silhouette. Used as the fallback when no
- * breed-specific portrait exists in BREED_PLACEHOLDERS.
+ * breed-specific portrait exists in breedPlaceholders.
  */
 export function getBreedCategoryPlaceholder(breedName: string | null | undefined): string {
   const category = resolveBreedCategory(breedName);
-  if (category === 'light') return GENERIC_PLACEHOLDER;
-  return CATEGORY_PLACEHOLDERS[category];
+  if (category === 'light') return genericPlaceholder;
+  return categoryPlaceholders[category];
 }
 
 /**
  * URLs that are Prisma schema defaults or otherwise known to be non-existent.
  * Treated as "no real image set" so breed-specific lookup runs instead.
  */
-const PLACEHOLDER_DEFAULTS = new Set(['/images/samplehorse.JPG', '/images/samplehorse.jpg']);
+const placeholderDefaults = new Set(['/images/samplehorse.JPG', '/images/samplehorse.jpg']);
 
 /**
  * Resolve the display image URL for a horse.
@@ -218,17 +218,15 @@ export function getHorseImage(
   imageUrl: string | null | undefined,
   breed: string | { id?: number; name?: string; description?: string } | null | undefined
 ): string {
-  if (imageUrl && !PLACEHOLDER_DEFAULTS.has(imageUrl)) return imageUrl;
+  if (imageUrl && !placeholderDefaults.has(imageUrl)) return imageUrl;
 
   const breedName = typeof breed === 'string' ? breed : (breed?.name ?? '');
 
   const key = breedName.toLowerCase().trim();
-  if (BREED_PLACEHOLDERS[key]) return BREED_PLACEHOLDERS[key];
+  if (breedPlaceholders[key]) return breedPlaceholders[key];
   // Partial match — e.g. "American Quarter Horse" matches "quarter horse"
-  const partialKey = Object.keys(BREED_PLACEHOLDERS).find(
-    (k) => key.includes(k) || k.includes(key)
-  );
-  if (partialKey) return BREED_PLACEHOLDERS[partialKey];
+  const partialKey = Object.keys(breedPlaceholders).find((k) => key.includes(k) || k.includes(key));
+  if (partialKey) return breedPlaceholders[partialKey];
   // No breed-specific portrait — fall back to a category-distinct silhouette
   // (draft / pony / gaited / sport) rather than one identical generic
   // placeholder for all ~300 portrait-less breeds (Equoria-x83v4 AC3).

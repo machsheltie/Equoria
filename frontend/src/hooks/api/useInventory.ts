@@ -18,13 +18,13 @@ import { inventoryApi, EquippableResponse } from '@/lib/api-client';
 import { horseQueryKeys } from '@/hooks/api/useHorses';
 
 /** Stale for 60 s — items change only when user equips/unequips */
-const STALE_TIME = 60_000;
+const staleTime = 60_000;
 
 export function useInventory() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['inventory'],
     queryFn: () => inventoryApi.getInventory(),
-    staleTime: STALE_TIME,
+    staleTime: staleTime,
   });
 
   return {

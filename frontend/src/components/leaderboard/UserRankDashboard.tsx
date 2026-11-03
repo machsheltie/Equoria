@@ -62,7 +62,7 @@ export interface UserRankDashboardProps {
 /**
  * Number of skeleton cards to display during loading state.
  */
-const SKELETON_CARD_COUNT = 6;
+const skeletonCardCount = 6;
 
 /**
  * Loading skeleton for the entire dashboard.
@@ -75,7 +75,7 @@ const DashboardSkeleton = () => (
     aria-busy="true"
     aria-label="Loading your rankings"
   >
-    {Array.from({ length: SKELETON_CARD_COUNT }, (_, i) => (
+    {Array.from({ length: skeletonCardCount }, (_, i) => (
       <RankSummaryCardSkeleton key={`skeleton-${i}`} quiet />
     ))}
   </div>

@@ -116,7 +116,7 @@ function IllustrationRing({ children }: { children: React.ReactNode }) {
   );
 }
 
-const LEGACY_VARIANTS: Record<LegacyEmptyVariant, LegacyVariantConfig> = {
+const legacyVariants: Record<LegacyEmptyVariant, LegacyVariantConfig> = {
   'no-horses': {
     Icon: Footprints,
     title: 'No Horses Yet',
@@ -159,7 +159,7 @@ const LEGACY_VARIANTS: Record<LegacyEmptyVariant, LegacyVariantConfig> = {
   },
 };
 
-const LEGACY_VARIANT_KEYS = new Set<string>([
+const legacyVariantKeys = new Set<string>([
   'no-horses',
   'no-competitions',
   'no-messages',
@@ -169,7 +169,7 @@ const LEGACY_VARIANT_KEYS = new Set<string>([
 // ── D-17 semantic variant defaults ────────────────────────────────────────────
 
 /** Semantic variants tune icon emphasis + whether actions are encouraged. */
-const SEMANTIC_DEFAULTS: Record<
+const semanticDefaults: Record<
   SemanticEmptyVariant,
   { title: string; description: string; iconEmphasis: 'strong' | 'subtle' }
 > = {
@@ -214,14 +214,14 @@ export function EmptyState({
   action,
   className = '',
 }: EmptyStateProps) {
-  // Discriminant: treat as legacy if the key is in the LEGACY_VARIANT_KEYS set,
+  // Discriminant: treat as legacy if the key is in the legacyVariantKeys set,
   // OR if it is 'no-results' AND neither `description` nor `primaryAction` are present.
   const isLegacy =
-    LEGACY_VARIANT_KEYS.has(variant) ||
+    legacyVariantKeys.has(variant) ||
     (variant === 'no-results' && !description && !primaryAction && !secondaryAction);
 
   if (isLegacy) {
-    const config = LEGACY_VARIANTS[variant as LegacyEmptyVariant];
+    const config = legacyVariants[variant as LegacyEmptyVariant];
     const resolvedAction = primaryAction ?? action;
 
     return (
@@ -260,7 +260,7 @@ export function EmptyState({
 
   // ── D-17 semantic path ─────────────────────────────────────────────────────
   const semanticVariant = variant as SemanticEmptyVariant;
-  const defaults = SEMANTIC_DEFAULTS[semanticVariant];
+  const defaults = semanticDefaults[semanticVariant];
   const iconEmphasisStrong = defaults.iconEmphasis === 'strong';
 
   return (

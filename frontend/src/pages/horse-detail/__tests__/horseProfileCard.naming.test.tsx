@@ -21,7 +21,7 @@ import { MemoryRouter } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect } from 'vitest';
 import HorseProfileCard from '../HorseProfileCard';
-import { UNNAMED_HORSE_NAME } from '@/lib/horseNamePolicy';
+import { unnamedHorseName } from '@/lib/horseNamePolicy';
 
 const baseHorse = {
   id: 1,
@@ -48,7 +48,7 @@ function Harness({ name }: { name: string }) {
           isEditing={isEditing}
           editName={editName}
           onStartEdit={() => {
-            setEditName(name === UNNAMED_HORSE_NAME ? '' : name);
+            setEditName(name === unnamedHorseName ? '' : name);
             setIsEditing(true);
           }}
           onCancelEdit={() => setIsEditing(false)}
@@ -62,7 +62,7 @@ function Harness({ name }: { name: string }) {
 
 describe('HorseProfileCard — naming (Equoria-4fnro)', () => {
   it('offers to NAME an unnamed horse, and to EDIT one who already has a name', () => {
-    const { unmount } = render(<Harness name={UNNAMED_HORSE_NAME} />);
+    const { unmount } = render(<Harness name={unnamedHorseName} />);
     expect(screen.getByLabelText('Name this horse')).toBeInTheDocument();
     // The word reads as a blank waiting to be filled, in the same h1.
     expect(screen.getByTestId('horse-unnamed-title')).toHaveTextContent('unnamed');
@@ -74,7 +74,7 @@ describe('HorseProfileCard — naming (Equoria-4fnro)', () => {
   });
 
   it('opens an EMPTY field for an unnamed horse — her first act is writing, not deleting', () => {
-    render(<Harness name={UNNAMED_HORSE_NAME} />);
+    render(<Harness name={unnamedHorseName} />);
     fireEvent.click(screen.getByLabelText('Name this horse'));
     expect(screen.getByLabelText('Horse name')).toHaveValue('');
     expect(screen.getByLabelText('Horse name')).toHaveAttribute('maxLength', '40');

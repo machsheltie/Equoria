@@ -21,8 +21,8 @@ import { useEffect, useLayoutEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
-const THEME_KEY = 'equoria-theme';
-const WELCOME_SHOWN_KEY = 'equoria-theme-welcome-shown';
+const themeKey = 'equoria-theme';
+const welcomeShownKey = 'equoria-theme-welcome-shown';
 
 /**
  * Read a localStorage value safely — returns null on access error
@@ -42,7 +42,7 @@ function safeLocalStorageGet(key: string): string | null {
  * useLayoutEffect (DOM class) and useEffect (side effects).
  */
 function deriveTheme(themeParam: string | null): 'celestial' | 'default' {
-  const stored = safeLocalStorageGet(THEME_KEY);
+  const stored = safeLocalStorageGet(themeKey);
   if (themeParam === 'celestial') return 'celestial';
   if (themeParam === 'default') return 'default';
   if (stored === 'default') return 'default';
@@ -69,7 +69,7 @@ export function CelestialThemeProvider() {
   useEffect(() => {
     if (themeParam === 'celestial') {
       try {
-        localStorage.setItem(THEME_KEY, 'celestial');
+        localStorage.setItem(themeKey, 'celestial');
       } catch {
         /* quota / private browsing */
       }
@@ -78,7 +78,7 @@ export function CelestialThemeProvider() {
       setSearchParams(next, { replace: true });
     } else if (themeParam === 'default') {
       try {
-        localStorage.setItem(THEME_KEY, 'default');
+        localStorage.setItem(themeKey, 'default');
       } catch {
         /* quota / private browsing */
       }
@@ -86,17 +86,17 @@ export function CelestialThemeProvider() {
       next.delete('theme');
       setSearchParams(next, { replace: true });
     } else {
-      const stored = safeLocalStorageGet(THEME_KEY);
+      const stored = safeLocalStorageGet(themeKey);
 
       // First-time visitor with no stored preference — show welcome toast once.
       // Order: toast first, then mark as shown. If toast() throws (unlikely),
       // the "shown" flag isn't prematurely set and the toast retries next visit.
       if (stored === null) {
-        const alreadyShown = safeLocalStorageGet(WELCOME_SHOWN_KEY);
+        const alreadyShown = safeLocalStorageGet(welcomeShownKey);
         if (!alreadyShown) {
           toast('Equoria has a new look! Use ?theme=default in the URL to revert.');
           try {
-            localStorage.setItem(WELCOME_SHOWN_KEY, 'true');
+            localStorage.setItem(welcomeShownKey, 'true');
           } catch {
             // Storage write failure is non-fatal — toast may re-appear on next visit
           }

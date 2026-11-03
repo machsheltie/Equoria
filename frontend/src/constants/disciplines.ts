@@ -6,7 +6,7 @@
  * training selectors, etc.) so that additions only require one change.
  */
 
-export const DISCIPLINE_VALUES = [
+export const disciplineValues = [
   'Racing',
   'Show Jumping',
   'Dressage',
@@ -33,4 +33,4 @@ export const DISCIPLINE_VALUES = [
   'Pleasure Driving',
 ] as const;
 
-export type Discipline = (typeof DISCIPLINE_VALUES)[number];
+export type Discipline = (typeof disciplineValues)[number];

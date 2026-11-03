@@ -6,7 +6,7 @@
  */
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { BASE_FIELD_CLASSES } from './fieldStyles';
+import { baseFieldClasses } from './fieldStyles';
 
 export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
@@ -14,7 +14,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, ...props }, ref) => (
     <textarea
       ref={ref}
-      className={cn(BASE_FIELD_CLASSES.join(' '), 'min-h-[80px]', 'resize-y', className)}
+      className={cn(baseFieldClasses.join(' '), 'min-h-[80px]', 'resize-y', className)}
       {...props}
     />
   )

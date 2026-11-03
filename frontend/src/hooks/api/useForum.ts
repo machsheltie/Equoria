@@ -13,15 +13,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { forumApi, ForumSection, CreateThreadRequest } from '@/lib/api-client';
 
 /** Threads stay fresh for 60 s — active board, but no need to hammer the API */
-const THREADS_STALE_TIME = 60_000;
+const threadsStaleTime = 60_000;
 /** Thread detail stays fresh for 30 s so new replies appear quickly */
-const THREAD_STALE_TIME = 30_000;
+const threadStaleTime = 30_000;
 
 export function useThreads(section?: ForumSection, page = 1) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['forum', 'threads', section, page],
     queryFn: () => forumApi.getThreads(section, page),
-    staleTime: THREADS_STALE_TIME,
+    staleTime: threadsStaleTime,
     // Owner ruling 2026-10-23 (Equoria-m00gp, option a): the community hub shows
     // an honest error with Try again when this cannot load. The default
     // networkMode 'online' pauses an offline query (no data, no error) instead.
@@ -44,7 +44,7 @@ export function useThread(id: number | null) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['forum', 'thread', id],
     queryFn: () => forumApi.getThread(id!),
-    staleTime: THREAD_STALE_TIME,
+    staleTime: threadStaleTime,
     enabled: id != null,
   });
 

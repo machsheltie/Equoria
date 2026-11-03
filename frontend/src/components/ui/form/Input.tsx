@@ -8,7 +8,7 @@
  */
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { BASE_FIELD_CLASSES } from './fieldStyles';
+import { baseFieldClasses } from './fieldStyles';
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
@@ -18,7 +18,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       type={type}
       ref={ref}
       className={cn(
-        BASE_FIELD_CLASSES.join(' '),
+        baseFieldClasses.join(' '),
         // File input needs less padding
         type === 'file' && 'file:border-0 file:bg-transparent file:text-sm file:font-medium',
         className

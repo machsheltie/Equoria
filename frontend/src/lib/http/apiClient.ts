@@ -24,7 +24,7 @@ import { refreshAcrossTabs } from './crossTabRefresh.js';
 
 // Nullish coalescing: empty string = relative URLs (correct for monolithic deploy).
 // Set VITE_API_URL only for split-deploy scenarios.
-export const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
+export const apiBaseUrl = import.meta.env.VITE_API_URL ?? '';
 
 // Single promise acts as deduplication lock — no separate boolean flag needed.
 // All concurrent 401 callers await the same promise until it settles.
@@ -48,7 +48,7 @@ export async function refreshAccessToken(): Promise<boolean> {
   // that arrive between now and the first await see it immediately.
   refreshPromise = refreshAcrossTabs(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh-token`, {
+      const response = await fetch(`${apiBaseUrl}/api/v1/auth/refresh-token`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -99,12 +99,12 @@ export function sleep(ms: number): Promise<void> {
  * nothing about protected requests, whose 401 → refresh → retry behavior is the
  * reason the generic branch exists.
  */
-const PRE_SESSION_AUTH_ENDPOINTS = ['/api/v1/auth/login'];
+const preSessionAuthEndpoints = ['/api/v1/auth/login'];
 
 /** True when a 401 from `endpoint` means "these credentials are wrong". */
 export function isPreSessionAuthEndpoint(endpoint: string): boolean {
   const [pathOnly] = endpoint.split(/[?#]/);
-  return PRE_SESSION_AUTH_ENDPOINTS.some(
+  return preSessionAuthEndpoints.some(
     (candidate) => pathOnly === candidate || pathOnly.endsWith(candidate)
   );
 }
@@ -115,7 +115,7 @@ export async function getCsrfToken(): Promise<string> {
 
   authSessionState.csrfFetching = (async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/auth/csrf-token`, {
+      const res = await fetch(`${apiBaseUrl}/api/v1/auth/csrf-token`, {
         credentials: 'include',
         // Equoria-ckcbx: never serve the CSRF token from the browser HTTP
         // cache. Without this, after a full page reload (which wipes the
@@ -150,7 +150,7 @@ export async function fetchWithAuth<T>(
   /** Return the whole JSON envelope instead of its `data` (paged reads need `pagination`). */
   envelope = false
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${apiBaseUrl}${endpoint}`;
 
   // Story 21S-2 (finalized on master): CSRF test-skip-header branch removed from
   // production frontend code. The client always acquires a real CSRF token for

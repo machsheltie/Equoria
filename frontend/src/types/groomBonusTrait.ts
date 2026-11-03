@@ -39,11 +39,11 @@ export interface BonusEligibility {
 }
 
 /** Bonus trait system constraints (mirrors backend groomBonusTraitService.mjs) */
-export const BONUS_TRAIT_CONSTANTS = {
-  MAX_BONUS_TRAITS: 3,
-  MAX_TRAIT_BONUS_DECIMAL: 0.3, // 30%
-  MIN_BOND_SCORE: 60,
-  MIN_COVERAGE_PERCENTAGE: 0.75, // 75%
+export const bonusTraitConstants = {
+  maxBonusTraits: 3,
+  maxTraitBonusDecimal: 0.3, // 30%
+  minBondScore: 60,
+  minCoveragePercentage: 0.75, // 75%
 } as const;
 
 /**
@@ -87,21 +87,21 @@ export function formatBonusPercent(decimal: number): string {
  * Check whether a bond score meets the minimum requirement.
  */
 export function meetsBondRequirement(bondScore: number): boolean {
-  return bondScore >= BONUS_TRAIT_CONSTANTS.MIN_BOND_SCORE;
+  return bondScore >= bonusTraitConstants.minBondScore;
 }
 
 /**
  * Check whether a coverage percentage meets the minimum requirement.
  */
 export function meetsCoverageRequirement(coverageDecimal: number): boolean {
-  return coverageDecimal >= BONUS_TRAIT_CONSTANTS.MIN_COVERAGE_PERCENTAGE;
+  return coverageDecimal >= bonusTraitConstants.minCoveragePercentage;
 }
 
 /**
  * Get how many empty bonus trait slots remain.
  */
 export function getRemainingSlots(bonusTraitMap: BonusTraitMap | null): number {
-  return BONUS_TRAIT_CONSTANTS.MAX_BONUS_TRAITS - countBonusTraits(bonusTraitMap);
+  return bonusTraitConstants.maxBonusTraits - countBonusTraits(bonusTraitMap);
 }
 
 /**

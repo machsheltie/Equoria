@@ -4,7 +4,7 @@
  * Story 21R-2 Task 15 (seventh-pass correction)
  *
  * Reads docs/beta-route-truth-table.md and asserts that every route classified
- * as `beta-live` in the markdown table is present in BETA_SCOPE as 'beta-live'.
+ * as `beta-live` in the markdown table is present in betaScope as 'beta-live'.
  *
  * Purpose: Makes it impossible for the truth table and the runtime scope to
  * silently diverge. If a route is upgraded to beta-live in the truth table
@@ -14,7 +14,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { BETA_SCOPE } from '../betaRouteScope';
+import { betaScope } from '../betaRouteScope';
 
 // Vitest runs from the frontend/ directory; docs/ is one level up at the project root
 const TABLE_PATH = resolve(process.cwd(), '../docs/beta-route-truth-table.md');
@@ -46,7 +46,7 @@ function parseBetaLiveRoutesFromTruthTable(): string[] {
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
 describe('betaRouteScopeSync — truth table drift guard', () => {
-  it('every beta-live route in docs/beta-route-truth-table.md is beta-live in BETA_SCOPE', () => {
+  it('every beta-live route in docs/beta-route-truth-table.md is beta-live in betaScope', () => {
     const truthTableLiveRoutes = parseBetaLiveRoutesFromTruthTable();
 
     // Sanity: parser should find at least the known minimum set
@@ -55,7 +55,7 @@ describe('betaRouteScopeSync — truth table drift guard', () => {
     const mismatches: string[] = [];
 
     for (const route of truthTableLiveRoutes) {
-      const runtimeScope = BETA_SCOPE[route];
+      const runtimeScope = betaScope[route];
       if (runtimeScope !== 'beta-live') {
         mismatches.push(
           `  ${route}: truth table says 'beta-live', runtime says '${runtimeScope ?? 'undefined'}'`
@@ -73,7 +73,7 @@ describe('betaRouteScopeSync — truth table drift guard', () => {
   it('known minimum set (/login /register /onboarding / /stable) are all beta-live', () => {
     const minimumSet = ['/login', '/register', '/onboarding', '/', '/stable'];
     for (const route of minimumSet) {
-      expect(BETA_SCOPE[route]).toBe('beta-live');
+      expect(betaScope[route]).toBe('beta-live');
     }
   });
 });

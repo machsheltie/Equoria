@@ -48,7 +48,7 @@ function historyHandler(history: unknown[]) {
   );
 }
 
-const MY_LISTING = {
+const myListing = {
   id: 9001,
   horseId: 9001,
   name: 'TestFixture-Stardust',
@@ -59,7 +59,7 @@ const MY_LISTING = {
   imageUrl: null,
 };
 
-const HISTORY_ENTRY = {
+const historyEntry = {
   id: 7001,
   horseName: 'TestFixture-Nimbus',
   type: 'sold' as const,
@@ -95,7 +95,7 @@ describe('HorseMarketplacePage — My Listings / Sale History tabs (Equoria-o5hu
   });
 
   it("My Listings tab renders the seller's active listings with a Delist action", async () => {
-    server.use(myListingsHandler([MY_LISTING]));
+    server.use(myListingsHandler([myListing]));
     const user = userEvent.setup();
     renderPage();
 
@@ -116,7 +116,7 @@ describe('HorseMarketplacePage — My Listings / Sale History tabs (Equoria-o5hu
   });
 
   it('Sale History tab renders completed transactions', async () => {
-    server.use(historyHandler([HISTORY_ENTRY]));
+    server.use(historyHandler([historyEntry]));
     const user = userEvent.setup();
     renderPage();
 

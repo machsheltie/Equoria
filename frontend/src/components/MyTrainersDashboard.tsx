@@ -49,7 +49,7 @@ import { disciplineLabel } from '@/lib/utils/training-utils';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const SKILL_LEVEL_VISIBILITY: Record<string, string> = {
+const skillLevelVisibility: Record<string, string> = {
   novice: 'Unknown potential',
   developing: 'Partial reveal',
   expert: 'Full reveal',
@@ -289,7 +289,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ userId }) => 
                       </span>
                       <span className="text-role-disabled text-xs">·</span>
                       <span className="text-xs text-role-muted">
-                        {SKILL_LEVEL_VISIBILITY[trainer.skillLevel]}
+                        {skillLevelVisibility[trainer.skillLevel]}
                       </span>
                     </div>
                   </div>

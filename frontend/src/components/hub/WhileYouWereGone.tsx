@@ -28,7 +28,7 @@ import { InlineError } from '@/components/ui/state';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { useWhileYouWereGone, type WYAGItem } from '@/hooks/api/useWhileYouWereGone';
 
-const ABSENCE_THRESHOLD_MS = 4 * 60 * 60 * 1000; // 4 hours
+const absenceThresholdMs = 4 * 60 * 60 * 1000; // 4 hours
 // The last-visit time is per ACCOUNT: a second player on the same browser must
 // not inherit the first one's absence window (Equoria-bvddn.39).
 const lastVisitKeyPrefix = 'equoria-last-visit';
@@ -56,10 +56,10 @@ function setLastVisit(userId: string | number) {
 
 function isLongAbsence(lastVisit: string | null): boolean {
   if (!lastVisit) return false;
-  return Date.now() - new Date(lastVisit).getTime() > ABSENCE_THRESHOLD_MS;
+  return Date.now() - new Date(lastVisit).getTime() > absenceThresholdMs;
 }
 
-const TYPE_ICONS: Record<WYAGItem['type'], React.ReactNode> = {
+const typeIcons: Record<WYAGItem['type'], React.ReactNode> = {
   'competition-result': <Trophy className="w-4 h-4 text-[var(--gold-primary)]" />,
   'foal-milestone': <Star className="w-4 h-4 text-[var(--status-info)]" />,
   message: <MessageCircle className="w-4 h-4 text-[var(--text-primary)]" />,
@@ -73,7 +73,7 @@ function WYAGRow({ item, onClose }: { item: WYAGItem; onClose: () => void }) {
   const content = (
     <div className="flex items-start gap-3 py-3 border-b border-[var(--alpha-gold-primary-10)] last:border-0">
       <span className="mt-0.5 flex-shrink-0 w-8 h-8 rounded-full bg-[rgba(10,22,40,0.5)] flex items-center justify-center">
-        {TYPE_ICONS[item.type]}
+        {typeIcons[item.type]}
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-[var(--text-primary)] leading-snug">{item.title}</p>
@@ -161,8 +161,8 @@ export function WhileYouWereGone() {
   if (!visible) return null;
 
   const allItems = data?.items ?? [];
-  const WYAG_MAX_ITEMS = 8;
-  const items = allItems.slice(0, WYAG_MAX_ITEMS);
+  const wyagMaxItems = 8;
+  const items = allItems.slice(0, wyagMaxItems);
   // No "+ more activity" line beyond the shown items (owner ruling 2026-10-23,
   // Equoria-oey96.53): the overlay shows its items and nothing promising more.
 

@@ -137,7 +137,7 @@ export const lastNameSchema = z
  * Real calendar years (NOT game-years) — COPPA is a real-world legal
  * threshold, mirrored from backend/utils/humanAge.mjs.
  */
-const COPPA_MIN_AGE_YEARS = 13;
+const coppaMinAgeYears = 13;
 
 function isAtLeastCoppaAge(value: string): boolean {
   const dob = new Date(value);
@@ -150,7 +150,7 @@ function isAtLeastCoppaAge(value: string): boolean {
   if (monthDelta < 0 || (monthDelta === 0 && dayDelta < 0)) {
     age -= 1;
   }
-  return age >= COPPA_MIN_AGE_YEARS;
+  return age >= coppaMinAgeYears;
 }
 
 export const dateOfBirthSchema = z
@@ -160,7 +160,7 @@ export const dateOfBirthSchema = z
     message: 'Date of birth must be a valid date',
   })
   .refine((v) => isAtLeastCoppaAge(v), {
-    message: `You must be ${COPPA_MIN_AGE_YEARS} or older to create an account`,
+    message: `You must be ${coppaMinAgeYears} or older to create an account`,
   });
 
 /**

@@ -246,7 +246,7 @@ function GettingStartedCard() {
 }
 
 /* ─── Day-One Getting Started (first hub visit after wizard completion) ── */
-const STARTER_ACTIONS = [
+const starterActions = [
   {
     icon: <Dumbbell className="w-5 h-5" />,
     title: 'Train Your Horse',
@@ -292,7 +292,7 @@ function DayOneGettingStarted({ onDismiss }: DayOneGettingStartedProps) {
         </Button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {STARTER_ACTIONS.map((action) => (
+        {starterActions.map((action) => (
           /* Surface(interactive) — clickable repeated item (hover affordance
              allowed only here, D-05); page-local backdrop-blur removed. */
           <Surface

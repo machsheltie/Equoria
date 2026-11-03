@@ -28,7 +28,7 @@ export interface CinematicMomentProps {
   onDismiss: () => void;
 }
 
-const VARIANT_CONFIG: Record<
+const variantConfig: Record<
   CinematicVariant,
   { icon: string; accentColor: string; ariaLabel: string }
 > = {
@@ -49,7 +49,7 @@ const VARIANT_CONFIG: Record<
   },
 };
 
-const AUTO_DISMISS_MS = 3000;
+const autoDismissMs = 3000;
 
 export default function CinematicMoment({
   variant,
@@ -57,11 +57,11 @@ export default function CinematicMoment({
   subtitle,
   onDismiss,
 }: CinematicMomentProps) {
-  const config = VARIANT_CONFIG[variant];
+  const config = variantConfig[variant];
 
   // Auto-dismiss after 3 seconds
   useEffect(() => {
-    const timer = setTimeout(onDismiss, AUTO_DISMISS_MS);
+    const timer = setTimeout(onDismiss, autoDismissMs);
     return () => clearTimeout(timer);
   }, [onDismiss]);
 

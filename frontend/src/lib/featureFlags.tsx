@@ -9,7 +9,7 @@
 
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/lib/http/apiClient';
+import { apiBaseUrl } from '@/lib/http/apiClient';
 
 /**
  * Feature flag types
@@ -31,7 +31,7 @@ export interface FeatureFlagsResponse {
  * Local feature flag definitions for client-only flags
  * These don't require backend calls
  */
-export const LOCAL_FLAGS: Record<string, boolean | string> = {
+export const localFlags: Record<string, boolean | string> = {
   // UI-only flags that don't need backend verification
   FF_UI_ANIMATIONS: true,
   FF_UI_REDUCED_MOTION: false,
@@ -49,7 +49,7 @@ async function fetchFeatureFlags(): Promise<Record<string, boolean | string>> {
     // Every other network call goes through apiClient.ts, whose API_BASE_URL
     // is this same VITE_API_URL (empty string on Railway's monolithic
     // deploy, so this is a no-op there).
-    const response = await fetch(`${API_BASE_URL}/api/internal/feature-flags`, {
+    const response = await fetch(`${apiBaseUrl}/api/internal/feature-flags`, {
       credentials: 'include',
     });
 
@@ -74,7 +74,7 @@ async function fetchFeatureFlags(): Promise<Record<string, boolean | string>> {
     if (import.meta.env.DEV) {
       console.warn('[FeatureFlags] Failed to fetch, using local defaults');
     }
-    return LOCAL_FLAGS;
+    return localFlags;
   }
 }
 
@@ -97,7 +97,7 @@ export function useFeatureFlags() {
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnWindowFocus: false,
     retry: 1,
-    initialData: LOCAL_FLAGS,
+    initialData: localFlags,
   });
 }
 
@@ -202,8 +202,8 @@ export function withFeatureFlag<P extends object>(
  */
 export async function checkFeatureFlag(flagName: string): Promise<boolean> {
   // Check local flags first
-  if (flagName in LOCAL_FLAGS) {
-    const value = LOCAL_FLAGS[flagName];
+  if (flagName in localFlags) {
+    const value = localFlags[flagName];
     return typeof value === 'boolean' ? value : false;
   }
 
@@ -231,13 +231,13 @@ export async function checkFeatureFlag(flagName: string): Promise<boolean> {
 export function createFlagChecker() {
   let cachedFlags: Record<string, boolean | string> | null = null;
   let lastFetch = 0;
-  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  const cacheTtl = 5 * 60 * 1000; // 5 minutes
 
   return async (flagName: string): Promise<boolean> => {
     const now = Date.now();
 
     // Refresh cache if expired
-    if (!cachedFlags || now - lastFetch > CACHE_TTL) {
+    if (!cachedFlags || now - lastFetch > cacheTtl) {
       cachedFlags = await fetchFeatureFlags();
       lastFetch = now;
     }

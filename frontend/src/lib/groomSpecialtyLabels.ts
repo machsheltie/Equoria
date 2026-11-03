@@ -47,7 +47,7 @@
  * Keys are only the values that actually occur; an invented `labelShaped` key is
  * dead weight that reads as coverage without being any.
  */
-const GROOM_SPECIALTY_LABELS: Readonly<Record<string, string>> = Object.freeze({
+const groomSpecialtyLabels: Readonly<Record<string, string>> = Object.freeze({
   // GROOM_SPECIALTIES.FOAL_CARE.
   foalCare: 'raising foals',
   // GROOM_SPECIALTIES.GENERAL.
@@ -92,8 +92,8 @@ export function groomSpecialtyLabel(
     return fallback;
   }
   const key = specialty.trim();
-  return GROOM_SPECIALTY_LABELS[key] ?? humanizeUnknownSpecialty(key);
+  return groomSpecialtyLabels[key] ?? humanizeUnknownSpecialty(key);
 }
 
 /** Exported for the test that proves every backend specialty value is covered. */
-export const KNOWN_GROOM_SPECIALTY_LABELS = GROOM_SPECIALTY_LABELS;
+export const knownGroomSpecialtyLabels = groomSpecialtyLabels;

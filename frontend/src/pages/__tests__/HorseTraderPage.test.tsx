@@ -26,7 +26,7 @@ import HorseTraderPage from '../HorseTraderPage';
 import { userMessageFor } from '@/lib/http/userMessage';
 import React from 'react';
 
-const BREEDS_FIXTURE = [
+const breedsFixture = [
   { id: 1, name: 'Thoroughbred', description: 'A fast breed' },
   { id: 2, name: 'Arabian', description: 'An endurance breed' },
   { id: 3, name: 'Warmblood', description: 'A dressage breed' },
@@ -51,7 +51,7 @@ function makeProfileHandler(money: number) {
   );
 }
 
-function makeBreedsHandler(breeds = BREEDS_FIXTURE) {
+function makeBreedsHandler(breeds = breedsFixture) {
   return http.get('*/api/v1/breeds', () =>
     HttpResponse.json({ success: true, data: breeds, count: breeds.length })
   );

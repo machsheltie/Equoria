@@ -19,7 +19,7 @@
  */
 export const passwordPolicy = { minLength: 12, maxLength: 128 } as const;
 
-export const VALIDATION_RULES = {
+export const validationRules = {
   email: {
     minLength: 1,
     maxLength: 255,
@@ -64,25 +64,25 @@ export const VALIDATION_RULES = {
 // Error Messages - Validation
 // =============================================================================
 
-export const VALIDATION_ERRORS = {
+export const validationErrors = {
   // Email
   email: {
     required: 'Email is required',
     invalid: 'Please enter a valid email address',
-    tooLong: `Email must be at most ${VALIDATION_RULES.email.maxLength} characters`,
+    tooLong: `Email must be at most ${validationRules.email.maxLength} characters`,
   },
   // Username
   username: {
     required: 'Username is required',
-    tooShort: `Username must be at least ${VALIDATION_RULES.username.minLength} characters`,
-    tooLong: `Username must be at most ${VALIDATION_RULES.username.maxLength} characters`,
+    tooShort: `Username must be at least ${validationRules.username.minLength} characters`,
+    tooLong: `Username must be at most ${validationRules.username.maxLength} characters`,
     invalidFormat: 'Username can only contain letters, numbers, and underscores',
   },
   // Password
   password: {
     required: 'Password is required',
-    tooShort: `Password must be at least ${VALIDATION_RULES.password.minLength} characters`,
-    tooLong: `Password must be at most ${VALIDATION_RULES.password.maxLength} characters`,
+    tooShort: `Password must be at least ${validationRules.password.minLength} characters`,
+    tooLong: `Password must be at most ${validationRules.password.maxLength} characters`,
     missingLowercase: 'Password must contain at least one lowercase letter',
     missingUppercase: 'Password must contain at least one uppercase letter',
     missingNumber: 'Password must contain at least one number',
@@ -95,22 +95,22 @@ export const VALIDATION_ERRORS = {
   // First Name
   firstName: {
     required: 'First name is required',
-    tooLong: `First name must be at most ${VALIDATION_RULES.firstName.maxLength} characters`,
+    tooLong: `First name must be at most ${validationRules.firstName.maxLength} characters`,
   },
   // Last Name
   lastName: {
     required: 'Last name is required',
-    tooLong: `Last name must be at most ${VALIDATION_RULES.lastName.maxLength} characters`,
+    tooLong: `Last name must be at most ${validationRules.lastName.maxLength} characters`,
   },
   // Display Name
   displayName: {
     required: 'Display name is required',
-    tooShort: `Display name must be at least ${VALIDATION_RULES.displayName.minLength} characters`,
-    tooLong: `Display name must be at most ${VALIDATION_RULES.displayName.maxLength} characters`,
+    tooShort: `Display name must be at least ${validationRules.displayName.minLength} characters`,
+    tooLong: `Display name must be at most ${validationRules.displayName.maxLength} characters`,
   },
   // Bio
   bio: {
-    tooLong: `Bio must be at most ${VALIDATION_RULES.bio.maxLength} characters`,
+    tooLong: `Bio must be at most ${validationRules.bio.maxLength} characters`,
   },
 } as const;
 
@@ -118,7 +118,7 @@ export const VALIDATION_ERRORS = {
 // Error Messages - API
 // =============================================================================
 
-export const API_ERRORS = {
+export const apiErrors = {
   // Authentication
   auth: {
     invalidCredentials: 'Invalid email or password',
@@ -152,7 +152,7 @@ export const API_ERRORS = {
 // Success Messages
 // =============================================================================
 
-export const SUCCESS_MESSAGES = {
+export const successMessages = {
   auth: {
     registered: 'Registration successful! Please check your email to verify your account.',
     loggedIn: 'Welcome back!',
@@ -170,7 +170,7 @@ export const SUCCESS_MESSAGES = {
 // Password Strength
 // =============================================================================
 
-export const PASSWORD_STRENGTH = {
+export const passwordStrength = {
   levels: ['weak', 'weak', 'fair', 'good', 'strong'] as const,
   colors: {
     weak: '#ef4444', // red-500
@@ -194,7 +194,7 @@ export const PASSWORD_STRENGTH = {
 // UI Text
 // =============================================================================
 
-export const UI_TEXT = {
+export const uiText = {
   profile: {
     title: 'My Profile',
     subtitle: 'Manage your profile information',
@@ -261,7 +261,7 @@ export const UI_TEXT = {
 // API Endpoints
 // =============================================================================
 
-export const API_ENDPOINTS = {
+export const apiEndpoints = {
   auth: {
     login: '/api/v1/auth/login',
     register: '/api/v1/auth/register',
@@ -279,7 +279,7 @@ export const API_ENDPOINTS = {
 // Type Exports
 // =============================================================================
 
-export type PasswordStrengthLevel = (typeof PASSWORD_STRENGTH.levels)[number];
+export type PasswordStrengthLevel = (typeof passwordStrength.levels)[number];
 
 // =============================================================================
 // Zod Validation Schemas

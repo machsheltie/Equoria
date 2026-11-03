@@ -2,7 +2,7 @@
  *  Game stat bars use game/StatBar.tsx (Story 22-6). */
 import * as React from 'react';
 
-const DEFAULT_MAX = 100;
+const defaultMax = 100;
 
 function isNumber(value: unknown): value is number {
   return typeof value === 'number';
@@ -27,7 +27,7 @@ export interface ProgressProps extends React.ComponentPropsWithoutRef<'div'> {
 
 const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
   ({ className, value: valueProp = null, max: maxProp, ...props }, ref) => {
-    const max = isValidMax(maxProp) ? maxProp : DEFAULT_MAX;
+    const max = isValidMax(maxProp) ? maxProp : defaultMax;
     const value = isValidValue(valueProp, max) ? valueProp : null;
     const state = getProgressState(value, max);
     return (

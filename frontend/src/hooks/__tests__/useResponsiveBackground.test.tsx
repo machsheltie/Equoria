@@ -3,8 +3,8 @@
  *
  * Covers:
  *  - auth scene: returns /images/backgrounds/auth/bg-{ratio}.webp
- *  - non-SCENES_WITH_ART scene: returns generic /images/bg-{ratio}.webp fallback
- *  - 'default' scene: always uses generic fallback (excluded from SCENES_WITH_ART by design)
+ *  - non-scenesWithArt scene: returns generic /images/bg-{ratio}.webp fallback
+ *  - 'default' scene: always uses generic fallback (excluded from scenesWithArt by design)
  *  - aspect-ratio variant selection matches viewport dimensions
  */
 
@@ -17,7 +17,7 @@ describe('useResponsiveBackground', () => {
     vi.restoreAllMocks();
   });
 
-  describe('auth scene (in SCENES_WITH_ART)', () => {
+  describe('auth scene (in scenesWithArt)', () => {
     it('returns /images/backgrounds/auth/ path when scene=auth', () => {
       const { result } = renderHook(() => useResponsiveBackground('auth'));
       expect(result.current).toMatch(/^\/images\/backgrounds\/auth\/bg-[\d.]+\.webp$/);
@@ -45,8 +45,8 @@ describe('useResponsiveBackground', () => {
     });
   });
 
-  describe('non-SCENES_WITH_ART scenes fall back to generic images', () => {
-    it('returns generic /images/bg-*.webp when scene=hub (not yet in SCENES_WITH_ART)', () => {
+  describe('non-scenesWithArt scenes fall back to generic images', () => {
+    it('returns generic /images/bg-*.webp when scene=hub (not yet in scenesWithArt)', () => {
       const { result } = renderHook(() => useResponsiveBackground('hub'));
       expect(result.current).toMatch(/^\/images\/bg-[\d.]+\.webp$/);
       expect(result.current).not.toContain('/backgrounds/');

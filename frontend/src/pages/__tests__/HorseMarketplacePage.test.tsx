@@ -20,7 +20,7 @@ import { server } from '@/test/msw/server';
 import HorseMarketplacePage from '../HorseMarketplacePage';
 import React from 'react';
 
-const LISTING_FIXTURE = {
+const listingFixture = {
   id: 4242,
   name: 'TestFixture-ga4l-listing',
   breed: 'Thoroughbred',
@@ -67,7 +67,7 @@ function makeMarketplaceHandler() {
     HttpResponse.json({
       success: true,
       data: {
-        horses: [LISTING_FIXTURE],
+        horses: [listingFixture],
         pagination: { page: 1, totalPages: 1, total: 1 },
       },
     })

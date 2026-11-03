@@ -4,11 +4,11 @@
  * use it wherever the UI decides what "today" is, whatever the player's own zone.
  */
 
-export const GAME_TIME_ZONE = 'America/New_York';
+export const gameTimeZone = 'America/New_York';
 
 // en-CA formats a date as YYYY-MM-DD.
 const dateKeyFormatter = new Intl.DateTimeFormat('en-CA', {
-  timeZone: GAME_TIME_ZONE,
+  timeZone: gameTimeZone,
   year: 'numeric',
   month: '2-digit',
   day: '2-digit',

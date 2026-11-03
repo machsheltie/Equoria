@@ -30,7 +30,7 @@ import { useCraftingMaterials, useCraftingRecipes, useCraftItem } from '@/hooks/
 import type { CraftingRecipe, CraftingMaterials } from '@/lib/api-client';
 
 // ── Tier labels ───────────────────────────────────────────────────────────────
-const TIER_LABELS: Record<number, string> = {
+const tierLabels: Record<number, string> = {
   0: 'No Workshop',
   1: 'Tier I Workshop',
   2: 'Tier II Workshop',
@@ -39,7 +39,7 @@ const TIER_LABELS: Record<number, string> = {
 
 // Semantic role tokens per workshop tier (DECISIONS.md §7):
 // 0 → neutral, 1 → warning (amber), 2 → info (blue), 3 → rare (violet).
-const TIER_BADGE_COLORS: Record<number, string> = {
+const tierBadgeColors: Record<number, string> = {
   0: 'bg-[var(--role-neutral-bg)] text-[var(--role-neutral-text)]',
   1: 'bg-[var(--role-warning-bg)] text-[var(--role-warning-text)]',
   2: 'bg-[var(--role-info-bg)] text-[var(--role-info-text)]',
@@ -47,7 +47,7 @@ const TIER_BADGE_COLORS: Record<number, string> = {
 };
 
 // ── Material display ──────────────────────────────────────────────────────────
-const MATERIAL_META: Record<string, { label: string; icon: string }> = {
+const materialMeta: Record<string, { label: string; icon: string }> = {
   leather: { label: 'Leather', icon: '🟤' },
   cloth: { label: 'Cloth', icon: '🧵' },
   dye: { label: 'Dye', icon: '🎨' },
@@ -57,7 +57,7 @@ const MATERIAL_META: Record<string, { label: string; icon: string }> = {
 
 // ── MaterialChip ──────────────────────────────────────────────────────────────
 function MaterialChip({ mat, qty }: { mat: string; qty: number }) {
-  const meta = MATERIAL_META[mat] ?? { label: mat, icon: '📦' };
+  const meta = materialMeta[mat] ?? { label: mat, icon: '📦' };
   return (
     <Surface variant="subtle" className="flex items-center gap-1.5 px-3 py-2">
       <span className="text-lg" aria-hidden="true">
@@ -74,7 +74,7 @@ function MaterialChip({ mat, qty }: { mat: string; qty: number }) {
 // ── MaterialRequirement ────────────────────────────────────────────────────────
 function MaterialRequirement({ mat, need, have }: { mat: string; need: number; have: number }) {
   if (need === 0) return null;
-  const meta = MATERIAL_META[mat] ?? { label: mat, icon: '📦' };
+  const meta = materialMeta[mat] ?? { label: mat, icon: '📦' };
   const sufficient = have >= need;
   return (
     <span
@@ -278,9 +278,9 @@ const CraftingPage: React.FC = () => {
               <div>
                 <p className="text-xs text-[var(--text-muted)] mb-1">Your Workshop</p>
                 <span
-                  className={`text-sm font-semibold px-2.5 py-1 rounded-[var(--radius-sm)] ${TIER_BADGE_COLORS[workshopTier] ?? TIER_BADGE_COLORS[0]}`}
+                  className={`text-sm font-semibold px-2.5 py-1 rounded-[var(--radius-sm)] ${tierBadgeColors[workshopTier] ?? tierBadgeColors[0]}`}
                 >
-                  {TIER_LABELS[workshopTier] ?? `Tier ${workshopTier}`}
+                  {tierLabels[workshopTier] ?? `Tier ${workshopTier}`}
                 </span>
               </div>
               <Wrench className="w-8 h-8 text-[var(--gold-400)]" aria-hidden="true" />
@@ -293,7 +293,7 @@ const CraftingPage: React.FC = () => {
                 Material Stockpile
               </h2>
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                {Object.entries(MATERIAL_META).map(([mat]) => (
+                {Object.entries(materialMeta).map(([mat]) => (
                   <MaterialChip
                     key={mat}
                     mat={mat}
@@ -321,7 +321,7 @@ const CraftingPage: React.FC = () => {
                   <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">
                     {tier === 0
                       ? 'Basic Recipes (No Workshop Needed)'
-                      : `${TIER_LABELS[tier] ?? `Tier ${tier}`} Recipes`}
+                      : `${tierLabels[tier] ?? `Tier ${tier}`} Recipes`}
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {byTier[tier].map((recipe) => (

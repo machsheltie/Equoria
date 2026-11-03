@@ -260,7 +260,7 @@ export function useChangePassword() {
 }
 
 /** Query key for the recovery-address read, shared by its consumers. */
-export const EMAIL_CHANGE_STATUS_KEY = ['emailChangeStatus'] as const;
+export const emailChangeStatusKey = ['emailChangeStatus'] as const;
 
 /**
  * Hook to read the signed-in account's recovery-address state
@@ -277,7 +277,7 @@ export const EMAIL_CHANGE_STATUS_KEY = ['emailChangeStatus'] as const;
  */
 export function useEmailChangeStatus(enabled = true) {
   return useQuery<EmailChangeStatus, ApiError>({
-    queryKey: EMAIL_CHANGE_STATUS_KEY,
+    queryKey: emailChangeStatusKey,
     queryFn: authApi.getEmailChangeStatus,
     retry: false,
     staleTime: 0,
@@ -298,7 +298,7 @@ export function useRequestEmailChange() {
   return useMutation<EmailChangeRequestResult, ApiError, EmailChangeRequestCredentials>({
     mutationFn: authApi.requestEmailChange,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: EMAIL_CHANGE_STATUS_KEY });
+      queryClient.invalidateQueries({ queryKey: emailChangeStatusKey });
     },
   });
 }
@@ -369,7 +369,7 @@ export function useConfirmEmailChange(token: string | null | undefined) {
     if (!confirmedEmail) return;
     queryClient.invalidateQueries({ queryKey: ['profile'] });
     queryClient.invalidateQueries({ queryKey: ['verificationStatus'] });
-    queryClient.invalidateQueries({ queryKey: EMAIL_CHANGE_STATUS_KEY });
+    queryClient.invalidateQueries({ queryKey: emailChangeStatusKey });
   }, [confirmedEmail, queryClient]);
 
   return query;

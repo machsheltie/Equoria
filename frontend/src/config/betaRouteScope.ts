@@ -5,7 +5,7 @@
  * docs/beta-route-truth-table.md without parsing markdown at runtime.
  *
  * Usage:
- *   import { isBetaMode, getBetaScope, BETA_SCOPE } from '@/config/betaRouteScope';
+ *   import { isBetaMode, getBetaScope, betaScope } from '@/config/betaRouteScope';
  *
  * Story 21R-2: Remove production frontend mocks from beta-facing code
  */
@@ -26,7 +26,7 @@ export type BetaScope = 'beta-live';
  * Static map of all known routes to their beta scope status.
  * Source of truth: docs/beta-route-truth-table.md (21R-1 output).
  */
-export const BETA_SCOPE: Record<string, BetaScope> = {
+export const betaScope: Record<string, BetaScope> = {
   // beta-live routes
   '/login': 'beta-live',
   '/register': 'beta-live',
@@ -94,12 +94,12 @@ export function getBetaScope(path: string): BetaScope {
   const normalized = path === '/' ? '/' : path.replace(/\/$/, '');
 
   // 1. Fast path: exact string match
-  if (Object.prototype.hasOwnProperty.call(BETA_SCOPE, normalized)) {
-    return BETA_SCOPE[normalized];
+  if (Object.prototype.hasOwnProperty.call(betaScope, normalized)) {
+    return betaScope[normalized];
   }
 
   // 2. Pattern match: iterate over keys that contain ':' (parameterized patterns)
-  for (const [pattern, scope] of Object.entries(BETA_SCOPE)) {
+  for (const [pattern, scope] of Object.entries(betaScope)) {
     if (pattern.includes(':') && matchPath(pattern, normalized)) {
       return scope;
     }

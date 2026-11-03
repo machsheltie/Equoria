@@ -49,7 +49,7 @@ import { useThreads, useCreateThread } from '@/hooks/api/useForum';
 import { forumSections } from '@/lib/api-client';
 import type { ForumThread, ForumSection } from '@/lib/api-client';
 
-const THREADS_PER_PAGE = 20;
+const threadsPerPage = 20;
 
 const sectionConfig: Record<ForumSection, { label: string; emoji: string; description: string }> = {
   general: {
@@ -101,7 +101,7 @@ const MessageBoardPage: React.FC = () => {
   const createThread = useCreateThread();
   const queryClient = useQueryClient();
 
-  const totalPages = Math.max(1, Math.ceil(total / THREADS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(total / threadsPerPage));
   const pinnedThreads = threads.filter((t) => t.isPinned);
   const regularThreads = threads.filter((t) => !t.isPinned);
 

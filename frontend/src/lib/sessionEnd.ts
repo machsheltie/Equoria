@@ -15,7 +15,7 @@ import type { QueryClient } from '@tanstack/react-query';
  * this key after a password change; the browser delivers a `storage` event to
  * every OTHER tab of this origin, and AuthProvider ends the session there.
  */
-export const FORCE_LOGOUT_STORAGE_KEY = 'equoria:forceLogoutAt';
+export const forceLogoutStorageKey = 'equoria:forceLogoutAt';
 
 export type SessionEndReason = 'expired' | 'signed-out-elsewhere';
 

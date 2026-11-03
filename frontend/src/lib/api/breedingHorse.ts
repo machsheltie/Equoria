@@ -46,7 +46,7 @@ export type BreedingHorse = Pick<
   breedName: string;
 };
 
-const CANONICAL_HORSE_SEX: ReadonlyMap<string, HorseSex> = new Map<string, HorseSex>([
+const canonicalHorseSex: ReadonlyMap<string, HorseSex> = new Map<string, HorseSex>([
   ['stallion', 'Stallion'],
   ['mare', 'Mare'],
   ['colt', 'Colt'],
@@ -61,7 +61,7 @@ const CANONICAL_HORSE_SEX: ReadonlyMap<string, HorseSex> = new Map<string, Horse
  */
 export function parseHorseSex(sex: string | null | undefined): HorseSex | null {
   if (!sex) return null;
-  return CANONICAL_HORSE_SEX.get(sex.toLowerCase()) ?? null;
+  return canonicalHorseSex.get(sex.toLowerCase()) ?? null;
 }
 
 /** Normalize one list horse; null when its sex is missing or unrecognised. */

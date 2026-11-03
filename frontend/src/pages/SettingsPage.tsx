@@ -41,7 +41,7 @@ import { useUpdatePreferences } from '@/hooks/api/useUpdatePreferences';
 import { useUpdateProfile, useChangePassword, useLogout } from '@/hooks/useAuth';
 import { useSound } from '@/hooks/useSound';
 import type { UserPreferences } from '@/lib/api-client';
-import { sections, DEFAULT_PREFERENCES, type DisplayKey } from './settings/constants';
+import { sections, defaultPreferences, type DisplayKey } from './settings/constants';
 import { AccountSection } from './settings/AccountSection';
 import {
   actionMessageFor,
@@ -194,7 +194,7 @@ const SettingsPage: React.FC = () => {
 
   // -------- Preferences (display + sound) --------
   const merged: UserPreferences = {
-    ...DEFAULT_PREFERENCES,
+    ...defaultPreferences,
     ...(user?.preferences ?? {}),
   };
 

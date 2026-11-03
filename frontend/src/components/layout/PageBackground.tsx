@@ -34,7 +34,7 @@ interface UsePageBackgroundOptions {
  * layer when a scene falls back to generic or has no art yet. Matches
  * AC4 literally: #0a0e1a → #111827.
  */
-const LOADING_GRADIENT = 'linear-gradient(180deg, #0a0e1a 0%, #111827 100%)';
+const loadingGradient = 'linear-gradient(180deg, #0a0e1a 0%, #111827 100%)';
 
 /** Readability veil layered OVER the image — AC5. */
 const VEIL = 'linear-gradient(rgba(5,10,20,0.45), rgba(5,10,20,0.45))';
@@ -48,7 +48,7 @@ const VEIL = 'linear-gradient(rgba(5,10,20,0.45), rgba(5,10,20,0.45))';
  * navy gradient floor instead of the art.
  */
 function buildBackgroundImage(webpPath: string): string {
-  return `${VEIL}, url('${webpPath}'), ${LOADING_GRADIENT}`;
+  return `${VEIL}, url('${webpPath}'), ${loadingGradient}`;
 }
 
 /**
@@ -72,7 +72,7 @@ export function usePageBackground(options?: UsePageBackgroundOptions): CSSProper
   return {
     // Gradient floor — always painted first, visible while image loads or
     // when the hook returned no path (missing art + missing generic set).
-    background: LOADING_GRADIENT,
+    background: loadingGradient,
     backgroundImage: webpPath ? buildBackgroundImage(webpPath) : undefined,
     backgroundSize: 'cover',
     backgroundPosition: 'center center',
@@ -118,7 +118,7 @@ export function PageBackground({ scene, src, marker = false }: PageBackgroundPro
     inset: 0,
     zIndex: 'var(--z-below)' as unknown as number,
     pointerEvents: 'none',
-    background: LOADING_GRADIENT,
+    background: loadingGradient,
     backgroundImage: webpPath ? buildBackgroundImage(webpPath) : undefined,
     backgroundSize: 'cover',
     backgroundPosition: 'center center',

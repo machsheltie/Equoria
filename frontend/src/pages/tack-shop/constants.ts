@@ -6,10 +6,10 @@
  * page composition and its sub-components share one source of truth.
  */
 
-import { DISCIPLINE_VALUES } from '@/constants/disciplines';
+import { disciplineValues } from '@/constants/disciplines';
 
 /** Fallback display names if backend doesn't provide them */
-export const DEFAULT_CATEGORY_NAMES: Record<string, string> = {
+export const defaultCategoryNames: Record<string, string> = {
   saddle: 'Saddles',
   bridle: 'Bridles',
   halter: 'Halters',
@@ -21,7 +21,7 @@ export const DEFAULT_CATEGORY_NAMES: Record<string, string> = {
 };
 
 /** Fallback emoji icons per category */
-export const CATEGORY_ICONS: Record<string, string> = {
+export const categoryIcons: Record<string, string> = {
   saddle: '🪣',
   bridle: '🔗',
   halter: '🐴',
@@ -33,13 +33,13 @@ export const CATEGORY_ICONS: Record<string, string> = {
 };
 
 /** 'All' plus every competition discipline. */
-export const DISCIPLINE_OPTIONS = ['All', ...DISCIPLINE_VALUES];
+export const disciplineOptions = ['All', ...disciplineValues];
 
 /**
  * Tack tier badge styling — semantic role tokens (DECISIONS.md §7):
  * basic → neutral, quality → info, premium → accent (gold).
  */
-export const TIER_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+export const tierColors: Record<string, { bg: string; text: string; label: string }> = {
   basic: {
     bg: 'bg-[var(--role-neutral-bg)]',
     text: 'text-[var(--role-neutral-text)]',

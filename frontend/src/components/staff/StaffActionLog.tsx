@@ -25,11 +25,11 @@ import {
 import type { StaffLogActor, StaffLogEntry } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
-import { FORMER_STEWARD, STAFF_TIME_OPTIONS, staffErrorMessage } from './staffMessages';
+import { formerSteward, staffTimeOptions, staffErrorMessage } from './staffMessages';
 import RefreshFailedNotice from './RefreshFailedNotice';
 import StaffSection from './StaffSection';
 
-const STATUS_WORDS: Record<string, string> = {
+const statusWords: Record<string, string> = {
   open: 'open',
   inProgress: 'in progress',
   resolved: 'resolved',
@@ -46,7 +46,7 @@ type IsFormer = (id: string) => boolean;
  * Only capabilities that write log entries today are offered; a later staff
  * tool adds its own line here when it starts writing.
  */
-const ACTION_OPTIONS = [
+const actionOptions = [
   { value: '', label: 'any action' },
   { value: 'roles.manage', label: 'making or revoking moderators' },
   { value: 'ticket.file', label: 'filing tickets' },
@@ -71,9 +71,9 @@ const shortRef = (id: string) => `#${id.slice(0, 8)}`;
  */
 const actorLabel = (actor: StaffLogActor, isFormer: IsFormer) => {
   if (!isFormer(actor.id)) {
-    return actor.username ?? `${FORMER_STEWARD} (${shortRef(actor.id)})`;
+    return actor.username ?? `${formerSteward} (${shortRef(actor.id)})`;
   }
-  const ref = `${FORMER_STEWARD} (${shortRef(actor.id)})`;
+  const ref = `${formerSteward} (${shortRef(actor.id)})`;
   return actor.username ? `${ref} (${actor.username})` : ref;
 };
 
@@ -90,7 +90,7 @@ function actorText(
   // steward, with a short reference so two of them can be told apart. The
   // actor opens the sentence, so the wording is capitalized here.
   if (isFormer(entry.actorId)) {
-    const former = FORMER_STEWARD.charAt(0).toUpperCase() + FORMER_STEWARD.slice(1);
+    const former = formerSteward.charAt(0).toUpperCase() + formerSteward.slice(1);
     return `${former} (${shortRef(entry.actorId)})`;
   }
   const role = actorTitles[entry.actorRole] ?? 'Moderator';
@@ -150,7 +150,7 @@ function describeEntry(
     case 'staff.checkin':
       return `${actor} checked in to the office`;
     case 'ticket.resolve': {
-      const word = STATUS_WORDS[String(after.status)];
+      const word = statusWords[String(after.status)];
       return word ? `${actor} marked ${target} ${word}` : `${actor} updated ${target}`;
     }
     case 'warn':
@@ -271,7 +271,7 @@ export function StaffActionLog({
                 )}
                 <p className="mt-1 text-sm text-role-secondary">
                   <time dateTime={entry.createdAt}>
-                    {formatDateTime(entry.createdAt, STAFF_TIME_OPTIONS)}
+                    {formatDateTime(entry.createdAt, staffTimeOptions)}
                   </time>
                 </p>
               </li>
@@ -322,7 +322,7 @@ export function StaffActionLog({
             value={capability}
             onChange={(event) => setCapability(event.target.value)}
             className="w-auto"
-            options={ACTION_OPTIONS}
+            options={actionOptions}
           />
           {actors.isError && (
             <span className="flex flex-wrap items-center gap-2">

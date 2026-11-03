@@ -27,9 +27,9 @@ import { Toaster } from '@/components/ui/sonner';
 import MyTrainersDashboard from '../MyTrainersDashboard';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const USER_ID = 'test-user-1';
-const TRAINERS_PATH = `${base}/api/v1/trainers/user/${USER_ID}`;
-const ASSIGNMENTS_PATH = `${base}/api/v1/trainers/assignments`;
+const userId = 'test-user-1';
+const trainersPath = `${base}/api/v1/trainers/user/${userId}`;
+const assignmentsPath = `${base}/api/v1/trainers/assignments`;
 
 // One hired trainer, used by the success + retry-recovery paths so a trainer
 // card renders (and, with an assignment, an unassign control).
@@ -71,7 +71,7 @@ function renderDashboard() {
       <BrowserRouter>
         {/* Real sonner sink so mutation-error toasts render into the DOM. */}
         <Toaster />
-        <MyTrainersDashboard userId={USER_ID} />
+        <MyTrainersDashboard userId={userId} />
       </BrowserRouter>
     </QueryClientProvider>
   );
@@ -81,10 +81,10 @@ describe('MyTrainersDashboard — four-state doctrine (Equoria-u96fm)', () => {
   it('a failed trainers fetch renders an error with retry — never the false "No Trainers Hired" empty', async () => {
     // The 500 body carries a server message; it must NEVER reach the UI (§3).
     server.use(
-      http.get(TRAINERS_PATH, () =>
+      http.get(trainersPath, () =>
         HttpResponse.json({ success: false, message: 'Internal boom leak' }, { status: 500 })
       ),
-      http.get(ASSIGNMENTS_PATH, () => HttpResponse.json({ success: true, data: [] }))
+      http.get(assignmentsPath, () => HttpResponse.json({ success: true, data: [] }))
     );
 
     renderDashboard();
@@ -99,8 +99,8 @@ describe('MyTrainersDashboard — four-state doctrine (Equoria-u96fm)', () => {
 
   it('a successful empty trainers fetch renders the honest empty state (no error)', async () => {
     server.use(
-      http.get(TRAINERS_PATH, () => HttpResponse.json({ success: true, data: [] })),
-      http.get(ASSIGNMENTS_PATH, () => HttpResponse.json({ success: true, data: [] }))
+      http.get(trainersPath, () => HttpResponse.json({ success: true, data: [] })),
+      http.get(assignmentsPath, () => HttpResponse.json({ success: true, data: [] }))
     );
 
     renderDashboard();
@@ -112,8 +112,8 @@ describe('MyTrainersDashboard — four-state doctrine (Equoria-u96fm)', () => {
 
   it('a successful trainers fetch with rows renders the grid — never the empty or error state', async () => {
     server.use(
-      http.get(TRAINERS_PATH, () => HttpResponse.json({ success: true, data: oneTrainer })),
-      http.get(ASSIGNMENTS_PATH, () => HttpResponse.json({ success: true, data: [] }))
+      http.get(trainersPath, () => HttpResponse.json({ success: true, data: oneTrainer })),
+      http.get(assignmentsPath, () => HttpResponse.json({ success: true, data: [] }))
     );
 
     renderDashboard();
@@ -126,14 +126,14 @@ describe('MyTrainersDashboard — four-state doctrine (Equoria-u96fm)', () => {
   it('the error-state retry refetches — first load fails, retry recovers to the grid', async () => {
     let calls = 0;
     server.use(
-      http.get(TRAINERS_PATH, () => {
+      http.get(trainersPath, () => {
         calls += 1;
         if (calls === 1) {
           return HttpResponse.json({ success: false, message: 'boom' }, { status: 500 });
         }
         return HttpResponse.json({ success: true, data: oneTrainer });
       }),
-      http.get(ASSIGNMENTS_PATH, () => HttpResponse.json({ success: true, data: [] }))
+      http.get(assignmentsPath, () => HttpResponse.json({ success: true, data: [] }))
     );
 
     const user = userEvent.setup();
@@ -152,8 +152,8 @@ describe('MyTrainersDashboard — four-state doctrine (Equoria-u96fm)', () => {
     // "0 assigned" counts / "N without assignments" warnings (§4). The combined
     // error avoids that fabrication.
     server.use(
-      http.get(TRAINERS_PATH, () => HttpResponse.json({ success: true, data: oneTrainer })),
-      http.get(ASSIGNMENTS_PATH, () =>
+      http.get(trainersPath, () => HttpResponse.json({ success: true, data: oneTrainer })),
+      http.get(assignmentsPath, () =>
         HttpResponse.json({ success: false, message: 'assignments boom leak' }, { status: 500 })
       )
     );
@@ -169,8 +169,8 @@ describe('MyTrainersDashboard — four-state doctrine (Equoria-u96fm)', () => {
 describe('MyTrainersDashboard — silent-mutation feedback (Equoria-u96fm)', () => {
   it('a failed unassign surfaces a visible error toast (no raw server leak)', async () => {
     server.use(
-      http.get(TRAINERS_PATH, () => HttpResponse.json({ success: true, data: oneTrainer })),
-      http.get(ASSIGNMENTS_PATH, () =>
+      http.get(trainersPath, () => HttpResponse.json({ success: true, data: oneTrainer })),
+      http.get(assignmentsPath, () =>
         HttpResponse.json({ success: true, data: oneActiveAssignment })
       ),
       http.delete(`${base}/api/v1/trainers/assignments/:id`, () =>
@@ -196,8 +196,8 @@ describe('MyTrainersDashboard — silent-mutation feedback (Equoria-u96fm)', () 
 
   it('a failed assign surfaces a visible error toast (no raw server leak)', async () => {
     server.use(
-      http.get(TRAINERS_PATH, () => HttpResponse.json({ success: true, data: oneTrainer })),
-      http.get(ASSIGNMENTS_PATH, () => HttpResponse.json({ success: true, data: [] })),
+      http.get(trainersPath, () => HttpResponse.json({ success: true, data: oneTrainer })),
+      http.get(assignmentsPath, () => HttpResponse.json({ success: true, data: [] })),
       // Deterministic horse list for the picker modal.
       http.get(`${base}/api/v1/horses`, () =>
         HttpResponse.json({
@@ -205,7 +205,7 @@ describe('MyTrainersDashboard — silent-mutation feedback (Equoria-u96fm)', () 
           data: [{ id: 1, name: 'Test Horse', breed: 'Thoroughbred', age: 5 }],
         })
       ),
-      http.post(ASSIGNMENTS_PATH, () =>
+      http.post(assignmentsPath, () =>
         HttpResponse.json({ success: false, message: 'assign boom leak' }, { status: 500 })
       )
     );

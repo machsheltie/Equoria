@@ -41,7 +41,7 @@ import { useFeedCatalog } from '@/hooks/api/useFeedShop';
 import { FeedItem } from '@/lib/api-client';
 import { tackCategoryLabel } from '@/lib/tackLabels';
 
-const FEED_IMAGES: Record<FeedItem['id'], string> = {
+const feedImages: Record<FeedItem['id'], string> = {
   basic: '/images/feed/basicfeed.png',
   performance: '/images/feed/performancefeed.png',
   performancePlus: '/images/feed/performanceplusfeed.png',
@@ -49,14 +49,14 @@ const FEED_IMAGES: Record<FeedItem['id'], string> = {
   elite: '/images/feed/elitefeed.png',
 };
 
-const TACK_IMAGES: Record<string, string> = {
+const tackImages: Record<string, string> = {
   'dressage-saddle': '/images/tack/dressage-saddle.png',
   'dressage-bridle': '/images/tack/dressage-bridle.png',
   'all-purpose-saddle': '/images/tack/allpurposesaddle.png',
   'saddleseat-saddle': '/images/tack/saddleseatsaddle.png',
 };
 
-const EQUIPPED_STAR = (
+const equippedStar = (
   <Star className="w-3.5 h-3.5 text-[var(--gold-primary)] fill-[var(--gold-primary)]" />
 );
 
@@ -191,9 +191,9 @@ const HorseEquipPage: React.FC = () => {
                     key={item.id}
                     data-testid={`tack-item-${item.id}`}
                     media={
-                      TACK_IMAGES[item.itemId] ? (
+                      tackImages[item.itemId] ? (
                         <img
-                          src={TACK_IMAGES[item.itemId]}
+                          src={tackImages[item.itemId]}
                           alt={item.name}
                           loading="lazy"
                           className="w-20 h-20 object-contain"
@@ -204,7 +204,7 @@ const HorseEquipPage: React.FC = () => {
                         </div>
                       )
                     }
-                    titlePrefix={isEquipped ? EQUIPPED_STAR : undefined}
+                    titlePrefix={isEquipped ? equippedStar : undefined}
                     title={item.name}
                     subtitle={<span>{tackCategoryLabel(item.category)}</span>}
                     description={description}
@@ -294,13 +294,13 @@ const HorseEquipPage: React.FC = () => {
                     data-testid={isEquipped ? 'equipped-feed-card' : `feed-item-${f.feedType}`}
                     media={
                       <img
-                        src={FEED_IMAGES[tierId]}
+                        src={feedImages[tierId]}
                         alt={`${f.name} feed bag`}
                         loading="lazy"
                         className="w-20 h-20 object-contain"
                       />
                     }
-                    titlePrefix={isEquipped ? EQUIPPED_STAR : undefined}
+                    titlePrefix={isEquipped ? equippedStar : undefined}
                     title={f.name}
                     subtitle={`${f.quantity} units in stock`}
                     description={description}

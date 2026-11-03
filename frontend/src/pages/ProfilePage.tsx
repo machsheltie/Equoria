@@ -42,7 +42,7 @@ import ActivityFeed from '../components/ActivityFeed';
 import { StatisticType } from '../lib/statistics-utils';
 import { ActivityType, type Activity } from '../lib/activity-utils';
 import { profileSchema, type ProfileFormData } from '../lib/validation-schemas';
-import { VALIDATION_RULES, UI_TEXT } from '../lib/constants';
+import { validationRules, uiText } from '../lib/constants';
 import { useProfile, useUpdateProfile } from '../hooks/useAuth';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { actionMessageFor, saveProfileRefused } from '@/lib/http/actionMessage';
@@ -143,7 +143,7 @@ const ProfilePage: React.FC = () => {
     resetSave();
   };
 
-  const bioCharactersRemaining = VALIDATION_RULES.bio.maxLength - (formData.bio?.length || 0);
+  const bioCharactersRemaining = validationRules.bio.maxLength - (formData.bio?.length || 0);
   const activities: Activity[] = activityItems.map((activity) => {
     const type = Object.values(ActivityType).includes(activity.type as ActivityType)
       ? (activity.type as ActivityType)
@@ -185,7 +185,7 @@ const ProfilePage: React.FC = () => {
     <div className="min-h-screen">
       <PageContainer variant="narrow" padded={false} className="pb-8">
         <PageHeader
-          title={UI_TEXT.profile.title}
+          title={uiText.profile.title}
           subtitle="View and edit your profile information"
           icon={<User className="w-5 h-5 text-[var(--gold-400)]" aria-hidden="true" />}
           className="mb-6"
@@ -207,7 +207,7 @@ const ProfilePage: React.FC = () => {
                   <User className="w-8 h-8 text-role-inverse" />
                 </div>
               </div>
-              <p className="text-xs text-role-secondary">{UI_TEXT.profile.subtitle}</p>
+              <p className="text-xs text-role-secondary">{uiText.profile.subtitle}</p>
             </div>
 
             {/* Success and error feedback handled via toast notifications (AC-5, AC-6) */}
@@ -337,7 +337,7 @@ const ProfilePage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Display Name */}
               <FormField
-                label={UI_TEXT.profile.displayNameLabel}
+                label={uiText.profile.displayNameLabel}
                 htmlFor="username"
                 error={validationErrors.username}
               >
@@ -348,7 +348,7 @@ const ProfilePage: React.FC = () => {
                       {...fieldProps}
                       name="username"
                       type="text"
-                      placeholder={UI_TEXT.profile.displayNamePlaceholder}
+                      placeholder={uiText.profile.displayNamePlaceholder}
                       value={formData.username}
                       onChange={handleChange}
                       autoComplete="username"
@@ -385,7 +385,7 @@ const ProfilePage: React.FC = () => {
               {/* Bio */}
               <div className="space-y-1">
                 <FormField
-                  label={UI_TEXT.profile.bioLabel}
+                  label={uiText.profile.bioLabel}
                   htmlFor="bio"
                   error={validationErrors.bio}
                 >
@@ -395,10 +395,10 @@ const ProfilePage: React.FC = () => {
                       <Textarea
                         {...fieldProps}
                         name="bio"
-                        placeholder={UI_TEXT.profile.bioPlaceholder}
+                        placeholder={uiText.profile.bioPlaceholder}
                         value={formData.bio || ''}
                         onChange={handleChange}
-                        maxLength={VALIDATION_RULES.bio.maxLength}
+                        maxLength={validationRules.bio.maxLength}
                         rows={4}
                         className="pl-10 min-h-[100px]"
                       />
@@ -406,7 +406,7 @@ const ProfilePage: React.FC = () => {
                   )}
                 </FormField>
                 <p className="text-xs text-role-secondary text-right">
-                  {UI_TEXT.profile.charactersRemaining(bioCharactersRemaining)}
+                  {uiText.profile.charactersRemaining(bioCharactersRemaining)}
                 </p>
               </div>
 
@@ -420,7 +420,7 @@ const ProfilePage: React.FC = () => {
                   disabled={isPending}
                 >
                   <X className="w-4 h-4" />
-                  {UI_TEXT.profile.cancelButton}
+                  {uiText.profile.cancelButton}
                 </Button>
                 <Button
                   type="submit"
@@ -429,7 +429,7 @@ const ProfilePage: React.FC = () => {
                   disabled={Object.keys(validationErrors).length > 0}
                 >
                   <Save className="w-4 h-4" />
-                  {UI_TEXT.profile.saveButton}
+                  {uiText.profile.saveButton}
                 </Button>
               </div>
               {isSaveError && (

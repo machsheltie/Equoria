@@ -71,14 +71,14 @@ interface ItemCardProps {
  * interaction affordance comes from the canonical .glass-panel-interactive
  * class (hover lift/glow + focus-visible ring), matching Surface(interactive).
  */
-const CARD_BASE = [
+const cardBase = [
   'flex flex-col',
   'bg-[var(--glass-bg)] border border-[var(--glass-border)]',
   'rounded-[var(--radius-md)] overflow-hidden',
   'transition-all duration-200',
 ];
 
-const CARD_INTERACTIVE = ['glass-panel-interactive', 'text-left'];
+const cardInteractive = ['glass-panel-interactive', 'text-left'];
 
 export function ItemCard({
   media,
@@ -154,7 +154,7 @@ export function ItemCard({
         onKeyDown={handleKey}
         aria-label={ariaLabel ?? title}
         data-testid={dataTestId}
-        className={cn(CARD_BASE, CARD_INTERACTIVE, stateClasses, className)}
+        className={cn(cardBase, cardInteractive, stateClasses, className)}
       >
         {infoArea}
         {actionArea}
@@ -170,7 +170,7 @@ export function ItemCard({
         onClick={onClick}
         aria-label={ariaLabel ?? title}
         data-testid={dataTestId}
-        className={cn(CARD_BASE, CARD_INTERACTIVE, stateClasses, className)}
+        className={cn(cardBase, cardInteractive, stateClasses, className)}
       >
         {infoArea}
       </button>
@@ -182,7 +182,7 @@ export function ItemCard({
     <div
       data-testid={dataTestId}
       aria-label={ariaLabel}
-      className={cn(CARD_BASE, stateClasses, className)}
+      className={cn(cardBase, stateClasses, className)}
     >
       {infoArea}
       {actionArea}

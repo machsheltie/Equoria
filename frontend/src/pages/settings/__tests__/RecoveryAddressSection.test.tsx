@@ -24,15 +24,15 @@ import { RecoveryAddressSection } from '../RecoveryAddressSection';
 import { AccountSection } from '../AccountSection';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const STATUS_URL = `${base}/api/v1/auth/email-change/status`;
-const REQUEST_URL = `${base}/api/v1/auth/email-change/request`;
-const PROFILE_PUT_URL = `${base}/api/v1/auth/profile`;
+const statusUrl = `${base}/api/v1/auth/email-change/status`;
+const requestUrl = `${base}/api/v1/auth/email-change/request`;
+const profilePutUrl = `${base}/api/v1/auth/profile`;
 
 const CONFIRMED = 'rider@example.com';
 const REPLACEMENT = 'new-rider@example.com';
 /** How the backend reports a staged address on a later read (never in full). */
-const REPLACEMENT_MASKED = 'n***@example.com';
-const RESEND_AT = '2026-09-07T12:05:00.000Z';
+const replacementMasked = 'n***@example.com';
+const resendAt = '2026-09-07T12:05:00.000Z';
 
 let requestBodies: Record<string, unknown>[] = [];
 let requestCalls = 0;
@@ -46,7 +46,7 @@ beforeEach(() => {
   profilePuts = 0;
   // Any PUT to the profile endpoint from this surface is the old defect.
   server.use(
-    http.put(PROFILE_PUT_URL, () => {
+    http.put(profilePutUrl, () => {
       profilePuts += 1;
       return HttpResponse.json({ success: false, message: 'forbidden' }, { status: 403 });
     })
@@ -61,7 +61,7 @@ function stubStatus(
   }> = {}
 ) {
   server.use(
-    http.get(STATUS_URL, () => {
+    http.get(statusUrl, () => {
       statusCalls += 1;
       return HttpResponse.json({
         success: true,
@@ -84,7 +84,7 @@ function stubStatus(
  */
 function stubStatusPendingAfterFirstRead() {
   server.use(
-    http.get(STATUS_URL, () => {
+    http.get(statusUrl, () => {
       statusCalls += 1;
       return HttpResponse.json({
         success: true,
@@ -95,9 +95,9 @@ function stubStatusPendingAfterFirstRead() {
             statusCalls === 1
               ? null
               : {
-                  maskedEmail: REPLACEMENT_MASKED,
+                  maskedEmail: replacementMasked,
                   expiresAt: '2026-09-08T12:00:00.000Z',
-                  resendAvailableAt: RESEND_AT,
+                  resendAvailableAt: resendAt,
                 },
         },
       });
@@ -107,7 +107,7 @@ function stubStatusPendingAfterFirstRead() {
 
 function stubStatusFails() {
   server.use(
-    http.get(STATUS_URL, () => {
+    http.get(statusUrl, () => {
       statusCalls += 1;
       return HttpResponse.json({ success: false, message: 'boom' }, { status: 500 });
     })
@@ -116,7 +116,7 @@ function stubStatusFails() {
 
 function stubRequestAccepted(expiresAt = '2026-09-08T12:00:00.000Z') {
   server.use(
-    http.post(REQUEST_URL, async ({ request }) => {
+    http.post(requestUrl, async ({ request }) => {
       requestCalls += 1;
       requestBodies.push((await request.json()) as Record<string, unknown>);
       return HttpResponse.json({
@@ -135,7 +135,7 @@ function stubRequestAccepted(expiresAt = '2026-09-08T12:00:00.000Z') {
 
 function stubRequestRejected(status: number, message: string, extra: object = {}) {
   server.use(
-    http.post(REQUEST_URL, async ({ request }) => {
+    http.post(requestUrl, async ({ request }) => {
       requestCalls += 1;
       requestBodies.push((await request.json()) as Record<string, unknown>);
       return HttpResponse.json({ success: false, message, ...extra }, { status });
@@ -274,7 +274,7 @@ describe('RecoveryAddressSection — the way back in', () => {
     const expected = new Intl.DateTimeFormat(undefined, {
       dateStyle: 'medium',
       timeStyle: 'short',
-    }).format(new Date(RESEND_AT));
+    }).format(new Date(resendAt));
     expect(waiting).toHaveTextContent(expected);
     expect(waiting).toHaveTextContent(/changing your password cancels this move/i);
   });
@@ -325,16 +325,16 @@ describe('RecoveryAddressSection — the way back in', () => {
   it('opens in the waiting state when a change was already staged before this visit', async () => {
     stubStatus({
       pending: {
-        maskedEmail: REPLACEMENT_MASKED,
+        maskedEmail: replacementMasked,
         expiresAt: '2026-09-08T12:00:00.000Z',
-        resendAvailableAt: RESEND_AT,
+        resendAvailableAt: resendAt,
       },
     });
     renderSection();
 
     const waiting = await screen.findByTestId('recovery-address-waiting');
     // The server read is masked, and the surface must not try to expand it.
-    expect(waiting).toHaveTextContent(REPLACEMENT_MASKED);
+    expect(waiting).toHaveTextContent(replacementMasked);
     expect(waiting).not.toHaveTextContent(REPLACEMENT);
     expect(requestCalls).toBe(0);
   });
@@ -342,9 +342,9 @@ describe('RecoveryAddressSection — the way back in', () => {
   it('warns that a password change cancels the pending move, before it can surprise her', async () => {
     stubStatus({
       pending: {
-        maskedEmail: REPLACEMENT_MASKED,
+        maskedEmail: replacementMasked,
         expiresAt: '2026-09-08T12:00:00.000Z',
-        resendAvailableAt: RESEND_AT,
+        resendAvailableAt: resendAt,
       },
     });
     renderSection();
@@ -359,9 +359,9 @@ describe('RecoveryAddressSection — the way back in', () => {
   it('states the resend window up front from server truth, not a hardcoded five minutes', async () => {
     stubStatus({
       pending: {
-        maskedEmail: REPLACEMENT_MASKED,
+        maskedEmail: replacementMasked,
         expiresAt: '2026-09-08T12:00:00.000Z',
-        resendAvailableAt: RESEND_AT,
+        resendAvailableAt: resendAt,
       },
     });
     renderSection();
@@ -372,7 +372,7 @@ describe('RecoveryAddressSection — the way back in', () => {
     const expected = new Intl.DateTimeFormat(undefined, {
       dateStyle: 'medium',
       timeStyle: 'short',
-    }).format(new Date(RESEND_AT));
+    }).format(new Date(resendAt));
     expect(waiting).toHaveTextContent(expected);
   });
 
@@ -423,7 +423,7 @@ describe('RecoveryAddressSection — the way back in', () => {
     stubStatus();
     let resolveRequest: (() => void) | null = null;
     server.use(
-      http.post(REQUEST_URL, async ({ request }) => {
+      http.post(requestUrl, async ({ request }) => {
         requestCalls += 1;
         requestBodies.push((await request.json()) as Record<string, unknown>);
         await new Promise<void>((resolve) => {
@@ -460,7 +460,7 @@ describe('RecoveryAddressSection — the way back in', () => {
   it('says so honestly when the heads-up to the current address could not be sent', async () => {
     stubStatus();
     server.use(
-      http.post(REQUEST_URL, () => {
+      http.post(requestUrl, () => {
         requestCalls += 1;
         return HttpResponse.json({
           success: true,

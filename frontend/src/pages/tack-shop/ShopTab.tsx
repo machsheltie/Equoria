@@ -22,7 +22,7 @@ import { SectionLoading, ErrorState } from '@/components/ui/state';
 import { useTackInventory, usePurchaseTackItem } from '@/hooks/api/useTackShop';
 import type { TackItem } from '@/hooks/api/useTackShop';
 import { TackItemCard } from './TackItemCard';
-import { DEFAULT_CATEGORY_NAMES, DISCIPLINE_OPTIONS } from './constants';
+import { defaultCategoryNames, disciplineOptions } from './constants';
 
 export const ShopTab: React.FC = () => {
   const { data, isLoading, isError, error, refetch } = useTackInventory();
@@ -75,7 +75,7 @@ export const ShopTab: React.FC = () => {
     return { regular, seasonal };
   }, [data?.categories]);
 
-  const categoryNames = data?.categoryDisplayNames ?? DEFAULT_CATEGORY_NAMES;
+  const categoryNames = data?.categoryDisplayNames ?? defaultCategoryNames;
 
   if (isLoading) {
     return (
@@ -108,7 +108,7 @@ export const ShopTab: React.FC = () => {
           aria-label="Filter by discipline"
           className="w-auto"
         >
-          {DISCIPLINE_OPTIONS.map((d) => (
+          {disciplineOptions.map((d) => (
             <option key={d} value={d}>
               {d === 'All' ? 'All Disciplines' : d}
             </option>

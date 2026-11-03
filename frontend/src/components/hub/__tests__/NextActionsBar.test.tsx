@@ -28,7 +28,7 @@ import { nextActionsKeys, type NextAction } from '@/hooks/api/useNextActions';
 import { userMessageFor } from '@/lib/http/userMessage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const NEXT_ACTIONS_PATH = `${base}/api/v1/next-actions`;
+const nextActionsPath = `${base}/api/v1/next-actions`;
 
 const mockActions: NextAction[] = [
   { type: 'train', priority: 1, horseId: 1, horseName: 'Thunder' },
@@ -43,7 +43,7 @@ const mockActions: NextAction[] = [
  */
 function stubNextActions(actions: NextAction[]) {
   server.use(
-    http.get(NEXT_ACTIONS_PATH, () => HttpResponse.json({ success: true, data: { actions } }))
+    http.get(nextActionsPath, () => HttpResponse.json({ success: true, data: { actions } }))
   );
 }
 
@@ -64,7 +64,7 @@ describe('NextActionsBar', () => {
   it('renders loading skeletons while the boundary request is in flight', async () => {
     // Delay the network response so the loading state is observable.
     server.use(
-      http.get(NEXT_ACTIONS_PATH, async () => {
+      http.get(nextActionsPath, async () => {
         await delay(100);
         return HttpResponse.json({ success: true, data: { actions: mockActions } });
       })
@@ -108,7 +108,7 @@ describe('NextActionsBar', () => {
   it('shows a visible error with a working retry when the boundary errors, never the resting line', async () => {
     const SENTINEL = 'Failed to fetch next actions: connect ECONNRESET 10.0.0.7';
     server.use(
-      http.get(NEXT_ACTIONS_PATH, () =>
+      http.get(nextActionsPath, () =>
         HttpResponse.json({ success: false, message: SENTINEL }, { status: 500 })
       )
     );
