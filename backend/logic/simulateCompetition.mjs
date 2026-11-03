@@ -7,16 +7,17 @@
  * 2026-11-03 (q332), with the section for a mechanic the owner removed from
  * the game (ruling 2026-10-26) cut out: the old step 8 (its horse-field read and
  * modifiers), its result field and the traitEffects import only it used are
- * gone, and the trait-impact step now reads the score after health. Nothing
- * else was changed.
+ * gone, and the trait-impact step now reads the score after health. Step 6a
+ * (rider flag-compatibility) is cut too: it read the retired epigeneticFlags
+ * store (Equoria-efs4j). Nothing else was changed.
  *
  * Nothing imports this file and nothing may. Live show scoring is
  * modules/competition/services/competitionScoring.mjs (scoreShowEntries), run
  * by the nightly show executor, and the competition bible
  * (docs/features/13_Competitions_shows_Event_Scoring_DEEP.md) is the only rule
- * source. Its old tests were not restored. Two of its imports no longer exist
- * (resolveTackBonus from modules/economy, applyRiderCompatibility from
- * modules/competition), so the module cannot load as it stands.
+ * source. Its old tests were not restored. One of its imports no longer exists
+ * (resolveTackBonus from modules/economy), so the module cannot load as it
+ * stands.
  */
 
 import { getStatScore } from '../utils/getStatScore.mjs';
@@ -25,7 +26,6 @@ import { applyRiderModifiers } from '../utils/riderBonus.mjs';
 import { calculateTraitCompetitionImpact } from '../utils/traitCompetitionImpact.mjs';
 import { resolveTackBonus } from '../modules/economy/index.mjs';
 import { disciplineAffinityKey, normalizeTraitKey } from '../utils/epigeneticTraitKeyMap.mjs';
-import { applyRiderCompatibility } from '../modules/competition/index.mjs';
 import logger from '../utils/logger.mjs';
 
 /**
@@ -108,36 +108,9 @@ function simulateCompetition(horses, show) {
         baseScore + legacyTraitBonus + disciplineAffinityBonus + trainingScore + tackBonus;
 
       // 6. Apply rider modifiers (bonus and penalty as percentages)
-      let riderBonusPercent = (horse.rider && horse.rider.bonusPercent) || 0;
-      let riderPenaltyPercent = (horse.rider && horse.rider.penaltyPercent) || 0;
+      const riderBonusPercent = (horse.rider && horse.rider.bonusPercent) || 0;
+      const riderPenaltyPercent = (horse.rider && horse.rider.penaltyPercent) || 0;
 
-      // 6a. Behavioral-flag rider compatibility (Equoria-yzqhj.6, pqdte).
-      // ONLY when a rider is present, the horse's behavioral epigenetic flags
-      // modulate HOW WELL that rider performs with THIS horse: positive-valence
-      // flags raise the rider's effective bonus / lower its penalty; negative
-      // flags do the reverse. This is DISTINCT from the .1 base-score flag
-      // modifier (applyFlagInfluencesToCompetition, which touches the base
-      // score in competitionScore.mjs) — here we touch ONLY the rider percents.
-      // The cap clamping is delegated to the shared `applyRiderCompatibility`
-      // helper in modules/competition/services/competitionScoring.mjs so the
-      // cap constants (BONUS_CAP / PENALTY_CAP from riderBonus.mjs) live in a
-      // single place and cannot drift between the two competition engines
-      // (was: local RIDER_BONUS_CAP / RIDER_PENALTY_CAP mirrors that had to
-      // be hand-synced — see pqdte for the sentinel test).
-      if (horse.rider) {
-        const compatResult = applyRiderCompatibility({
-          bonusPercent: riderBonusPercent,
-          penaltyPercent: riderPenaltyPercent,
-          epigeneticFlags: horse.epigeneticFlags,
-        });
-        if (compatResult.compatFactor !== undefined) {
-          riderBonusPercent = compatResult.bonusPercent;
-          riderPenaltyPercent = compatResult.penaltyPercent;
-          logger.info(
-            `[simulateCompetition] Horse ${horse.name}: Rider flag-compatibility factor ${compatResult.compatFactor.toFixed(3)} applied (bonus -> ${(riderBonusPercent * 100).toFixed(2)}%, penalty -> ${(riderPenaltyPercent * 100).toFixed(2)}%)`,
-          );
-        }
-      }
       const scoreAfterRider = applyRiderModifiers(subtotal, riderBonusPercent, riderPenaltyPercent);
 
       // 7. Apply health modifier (percentage adjustment)
