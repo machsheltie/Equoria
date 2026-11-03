@@ -27,8 +27,21 @@ export const studKeys = {
   allRequests: ['stud-requests'] as const,
 };
 
+/**
+ * A horse read that answered 404: on another player's stallion, the owner-only
+ * read. Breeding to him does not make him hers, so it is not read again. A
+ * re-read would put that read back to pending (it holds no data), the horse page
+ * would show its loading skeleton, and the Breed button would remount without
+ * its "in foal" line (Equoria-xmk0).
+ */
+function isNotHersRead(query: { state: { status: string; error: unknown } }): boolean {
+  return (
+    query.state.status === 'error' && (query.state.error as ApiError | null)?.statusCode === 404
+  );
+}
+
 function refreshAfterBreeding(qc: QueryClient) {
-  qc.invalidateQueries({ queryKey: ['horses'] });
+  qc.invalidateQueries({ queryKey: ['horses'], predicate: (query) => !isNotHersRead(query) });
   qc.invalidateQueries({ queryKey: studKeys.allRequests });
   qc.invalidateQueries({ queryKey: ['profile'] });
 }
