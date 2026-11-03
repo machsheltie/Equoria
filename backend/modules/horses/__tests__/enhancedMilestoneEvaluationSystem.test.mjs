@@ -17,10 +17,10 @@ import {
   calculateCareGapsPenalty,
   determineTraitOutcome,
   evaluateEnhancedMilestone,
-  MILESTONE_TYPES,
-  MILESTONE_TRAIT_POOLS,
-  TRAIT_THRESHOLDS,
-  DEVELOPMENTAL_WINDOWS,
+  milestoneTypes,
+  milestoneTraitPools,
+  traitThresholds,
+  developmentalWindows,
 } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
@@ -125,11 +125,11 @@ describe('calculateCareGapsPenalty()', () => {
 // ─── determineTraitOutcome ────────────────────────────────────────────────────
 
 describe('determineTraitOutcome()', () => {
-  const milestoneType = MILESTONE_TYPES.IMPRINTING;
-  const pool = MILESTONE_TRAIT_POOLS[milestoneType];
+  const milestoneType = milestoneTypes.IMPRINTING;
+  const pool = milestoneTraitPools[milestoneType];
 
   it('returns a positive trait when finalScore >= CONFIRM threshold (3)', () => {
-    const result = determineTraitOutcome(TRAIT_THRESHOLDS.CONFIRM, milestoneType);
+    const result = determineTraitOutcome(traitThresholds.CONFIRM, milestoneType);
     expect(result.type).toBe('positive');
     expect(pool.positive).toContain(result.trait);
     expect(result.reasoning).toMatch(/Positive trait confirmed/);
@@ -142,7 +142,7 @@ describe('determineTraitOutcome()', () => {
   });
 
   it('returns a negative trait when finalScore <= DENY threshold (-3)', () => {
-    const result = determineTraitOutcome(TRAIT_THRESHOLDS.DENY, milestoneType);
+    const result = determineTraitOutcome(traitThresholds.DENY, milestoneType);
     expect(result.type).toBe('negative');
     expect(pool.negative).toContain(result.trait);
     expect(result.reasoning).toMatch(/Negative trait confirmed/);
@@ -163,7 +163,7 @@ describe('determineTraitOutcome()', () => {
   });
 
   it('works for all milestone types without throwing', () => {
-    Object.values(MILESTONE_TYPES).forEach(type => {
+    Object.values(milestoneTypes).forEach(type => {
       expect(() => determineTraitOutcome(5, type)).not.toThrow();
       expect(() => determineTraitOutcome(-5, type)).not.toThrow();
       expect(() => determineTraitOutcome(0, type)).not.toThrow();
@@ -179,13 +179,13 @@ describe('evaluateEnhancedMilestone() — safe throw paths', () => {
   });
 
   it('rejects with "Horse with ID -1 not found" for a valid type but missing horse (lines 97-99)', async () => {
-    await expect(evaluateEnhancedMilestone(-1, MILESTONE_TYPES.IMPRINTING)).rejects.toThrow(
+    await expect(evaluateEnhancedMilestone(-1, milestoneTypes.IMPRINTING)).rejects.toThrow(
       'Horse with ID -1 not found',
     );
   });
 
   it('rejects for all milestone types when horse does not exist', async () => {
-    for (const type of Object.values(MILESTONE_TYPES)) {
+    for (const type of Object.values(milestoneTypes)) {
       let thrown = false;
       try {
         await evaluateEnhancedMilestone(-1, type);
@@ -284,25 +284,25 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
   afterAll(() => cleanup.run(), 30000);
 
   it('returns { success:false, reason:/too old/ } for a horse of game age 3 (21 days) or older', async () => {
-    const result = await evaluateEnhancedMilestone(tooOldHorse.id, MILESTONE_TYPES.IMPRINTING);
+    const result = await evaluateEnhancedMilestone(tooOldHorse.id, milestoneTypes.IMPRINTING);
     expect(result.success).toBe(false);
     expect(result.reason).toMatch(/too old/i);
     expect(result.ageInDays).toBeGreaterThanOrEqual(21);
   });
 
   it('returns { success:false, reason:/age window/ } when horse is outside milestone window (lines 117-124)', async () => {
-    const result = await evaluateEnhancedMilestone(wrongWindowHorse.id, MILESTONE_TYPES.IMPRINTING);
+    const result = await evaluateEnhancedMilestone(wrongWindowHorse.id, milestoneTypes.IMPRINTING);
     expect(result.success).toBe(false);
     expect(result.reason).toMatch(/age window|appropriate age/i);
-    expect(result.ageInDays).toBeGreaterThan(DEVELOPMENTAL_WINDOWS[MILESTONE_TYPES.IMPRINTING].end);
+    expect(result.ageInDays).toBeGreaterThan(developmentalWindows[milestoneTypes.IMPRINTING].end);
   });
 
   it('returns { success:true, milestoneLog } for a fresh horse in IMPRINTING window (lines 127-233)', async () => {
-    const result = await evaluateEnhancedMilestone(freshHorse.id, MILESTONE_TYPES.IMPRINTING);
+    const result = await evaluateEnhancedMilestone(freshHorse.id, milestoneTypes.IMPRINTING);
     expect(result.success).toBe(true);
     expect(result.milestoneLog).toBeDefined();
     expect(result.milestoneLog.horseId).toBe(freshHorse.id);
-    expect(result.milestoneLog.milestoneType).toBe(MILESTONE_TYPES.IMPRINTING);
+    expect(result.milestoneLog.milestoneType).toBe(milestoneTypes.IMPRINTING);
     expect(typeof result.finalScore).toBe('number');
     expect(result.traitOutcome).toBeDefined();
   });
@@ -314,7 +314,7 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
     });
     expect(stored.bondScore).toBe(0);
 
-    const result = await evaluateEnhancedMilestone(unbondedHorse.id, MILESTONE_TYPES.IMPRINTING);
+    const result = await evaluateEnhancedMilestone(unbondedHorse.id, milestoneTypes.IMPRINTING);
     expect(result.success).toBe(true);
     // calculateBondModifier(history, 0) === -2. The defective `horse.bondScore || 50`
     // reader evaluated this horse as bond 50 and produced 0.
@@ -323,7 +323,7 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
 
   it('returns { success:false, reason:/already evaluated/ } on second call (lines 134-140)', async () => {
     // First call was in the previous test — this is the second call for the same horse+type
-    const result = await evaluateEnhancedMilestone(freshHorse.id, MILESTONE_TYPES.IMPRINTING);
+    const result = await evaluateEnhancedMilestone(freshHorse.id, milestoneTypes.IMPRINTING);
     expect(result.success).toBe(false);
     expect(result.reason).toMatch(/already evaluated|already/i);
     expect(result.existingEvaluation).toBeDefined();
@@ -419,7 +419,7 @@ describe('evaluateEnhancedMilestone() — personality effects + interaction bran
   afterAll(() => cleanup.run(), 30000);
 
   it('applies personality effects (lines 168-180) and computes averageQuality from interactions (line 297)', async () => {
-    const result = await evaluateEnhancedMilestone(personalityHorse.id, MILESTONE_TYPES.IMPRINTING);
+    const result = await evaluateEnhancedMilestone(personalityHorse.id, milestoneTypes.IMPRINTING);
     expect(result.success).toBe(true);
     expect(result.milestoneLog).toBeDefined();
     // personalityCompatibility should be set (non-null) since groom has personality and horse has temperament

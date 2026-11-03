@@ -24,7 +24,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
-import cronJobService, { STALE_ALERT_THRESHOLD_MS } from '../services/cronJobs.mjs';
+import cronJobService, { staleAlertThresholdMs } from '../services/cronJobs.mjs';
 import { snapshotCronSingleton, restoreCronSingleton } from './helpers/cronSingletonIsolation.mjs';
 
 describe('Equoria-304a: CronJobService.evaluateStaleAlerts', () => {
@@ -131,7 +131,7 @@ describe('Equoria-304a: CronJobService.evaluateStaleAlerts', () => {
     expect(fired[0].staleForHours).toBeNull(); // Infinity sentinel maps to null
   });
 
-  it('STALE_ALERT_THRESHOLD_MS is exactly 25 hours', () => {
-    expect(STALE_ALERT_THRESHOLD_MS).toBe(25 * 60 * 60 * 1000);
+  it('staleAlertThresholdMs is exactly 25 hours', () => {
+    expect(staleAlertThresholdMs).toBe(25 * 60 * 60 * 1000);
   });
 });

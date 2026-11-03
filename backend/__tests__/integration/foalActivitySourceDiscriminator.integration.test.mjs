@@ -33,7 +33,7 @@ import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 // the canonical NULL-phenotype sentinel (Equoria-a429/lfj5).
 import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 import {
-  FOAL_ACTIVITY_SOURCE,
+  foalActivitySource,
   groomInteractionSource,
   deriveTaskCountsFromActivities,
   deriveTotalActivityCount,
@@ -95,7 +95,7 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
           outcome: 'good',
           bondingChange: 2,
           description: 'groom-stream event',
-          source: FOAL_ACTIVITY_SOURCE.GROOM_INTERACTION,
+          source: foalActivitySource.groomInteraction,
         },
       });
     }
@@ -108,7 +108,7 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
         outcome: 'good',
         bondingChange: 1,
         description: 'enrichment-stream collision event',
-        source: FOAL_ACTIVITY_SOURCE.ENRICHMENT_ACTIVITY,
+        source: foalActivitySource.enrichmentActivity,
       },
     });
 

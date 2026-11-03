@@ -1,7 +1,7 @@
 import prisma from '../../../packages/database/prismaClient.mjs';
 import logger from '../../utils/logger.mjs';
 import { withAdvisoryLock } from '../../utils/cronLock.mjs';
-import { CRON_JOB_REGISTRY } from './index.mjs';
+import { cronJobRegistry } from './index.mjs';
 
 /**
  * Equoria-urqic.3.5 — CronJobMonitor: the run-observability collaborator.
@@ -67,11 +67,11 @@ export function toIsoStringSafe(value) {
 
 /**
  * Equoria-304a: Threshold for firing a stale-heartbeat operational alert.
- * Daily jobs run every 24h with a 6h tolerance (JOB_STALENESS_MS = 30h), but we
+ * Daily jobs run every 24h with a 6h tolerance (jobStalenessMs = 30h), but we
  * want a noisier alert at 25h since by then a daily job is provably skipped
  * (24h + 1h grace). Alert debounces — one alert per stale streak.
  */
-export const STALE_ALERT_THRESHOLD_MS = 25 * 60 * 60 * 1000;
+export const staleAlertThresholdMs = 25 * 60 * 60 * 1000;
 
 /**
  * Equoria-0elk / fx4e7: per-job stale-after thresholds (ms) for the heartbeat
@@ -80,11 +80,11 @@ export const STALE_ALERT_THRESHOLD_MS = 25 * 60 * 60 * 1000;
  * declaring its staleness budget. If `now - lastFinishedAt > stalenessMs`, the
  * job is flagged STALE in /api/admin/cron/health responses.
  */
-export const JOB_STALENESS_MS = Object.freeze(
-  Object.fromEntries(CRON_JOB_REGISTRY.map(job => [job.jobName, job.staleAfterMs])),
+export const jobStalenessMs = Object.freeze(
+  Object.fromEntries(cronJobRegistry.map(job => [job.jobName, job.staleAfterMs])),
 );
 
-const DEFAULT_STALENESS_MS = 30 * 60 * 60 * 1000;
+const defaultStalenessMs = 30 * 60 * 60 * 1000;
 
 export class CronJobMonitor {
   constructor() {
@@ -352,7 +352,7 @@ export class CronJobMonitor {
       // for daily jobs).
       const finishedAtMs = block.lastFinishedAt ? new Date(block.lastFinishedAt).getTime() : null;
       const staleForMs = finishedAtMs === null ? Infinity : nowMs - finishedAtMs;
-      if (staleForMs <= STALE_ALERT_THRESHOLD_MS) {
+      if (staleForMs <= staleAlertThresholdMs) {
         continue;
       }
 
@@ -385,7 +385,7 @@ export class CronJobMonitor {
           alertType: 'cronStaleHeartbeat',
           eventType: 'operational',
           count: toAlert.length,
-          thresholdHours: Math.round(STALE_ALERT_THRESHOLD_MS / (60 * 60 * 1000)),
+          thresholdHours: Math.round(staleAlertThresholdMs / (60 * 60 * 1000)),
           jobs: toAlert,
         },
       );
@@ -418,7 +418,7 @@ export class CronJobMonitor {
     for (const jobName of new Set([...jobNames, ...this.externalJobs.keys()])) {
       const hb = this.heartbeats.get(jobName) ?? null;
       const stalenessMs =
-        JOB_STALENESS_MS[jobName] ?? this.externalJobs.get(jobName) ?? DEFAULT_STALENESS_MS;
+        jobStalenessMs[jobName] ?? this.externalJobs.get(jobName) ?? defaultStalenessMs;
       const lastFinishedAt = hb?.finishedAt ?? null;
       const lastStartedAt = hb?.startedAt ?? null;
       const status = hb?.status ?? 'never-run';

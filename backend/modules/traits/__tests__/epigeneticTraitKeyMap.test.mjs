@@ -11,7 +11,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  LEGACY_TRAIT_KEY_MAP,
+  legacyTraitKeyMap,
   disciplineAffinityKey,
   normalizeTraitKey,
   normalizeEpigeneticModifiers,
@@ -20,7 +20,7 @@ import {
 import { DISCIPLINES } from '../../../constants/schema.mjs';
 import { getAllTraitEffects } from '../../../utils/traitEffects.mjs';
 
-describe('LEGACY_TRAIT_KEY_MAP — every documented snake key maps to canonical camelCase', () => {
+describe('legacyTraitKeyMap — every documented snake key maps to canonical camelCase', () => {
   const expected = {
     trainability_boost: 'trainabilityBoost',
     eager_learner: 'eagerLearner',
@@ -30,7 +30,7 @@ describe('LEGACY_TRAIT_KEY_MAP — every documented snake key maps to canonical 
     legacy_talent: 'legacyTalent',
   };
   it('contains exactly the documented mappings', () => {
-    expect({ ...LEGACY_TRAIT_KEY_MAP }).toEqual(expected);
+    expect({ ...legacyTraitKeyMap }).toEqual(expected);
   });
   it.each(Object.entries(expected))('normalizeTraitKey(%s) === %s', (legacy, canonical) => {
     expect(normalizeTraitKey(legacy)).toBe(canonical);
@@ -162,14 +162,14 @@ describe('SENTINEL-POSITIVE: canonical keys resolve in traitEffects (proves the 
   // eagerLearner is still a trait, so it alone keeps an entry and the other
   // five (no longer traits) resolve to nothing.
   it('the remapped canonical key still on the roster (eagerLearner) is a traitEffects entry; the rest are gone', () => {
-    const canonical = Object.values(LEGACY_TRAIT_KEY_MAP);
+    const canonical = Object.values(legacyTraitKeyMap);
     expect(canonical).toContain('eagerLearner');
     for (const key of canonical) {
       expect(Object.prototype.hasOwnProperty.call(effects, key)).toBe(key === 'eagerLearner');
     }
   });
   it('NO legacy snake key survives as a traitEffects entry (the rename is complete)', () => {
-    for (const legacy of Object.keys(LEGACY_TRAIT_KEY_MAP)) {
+    for (const legacy of Object.keys(legacyTraitKeyMap)) {
       expect(Object.prototype.hasOwnProperty.call(effects, legacy)).toBe(false);
     }
   });

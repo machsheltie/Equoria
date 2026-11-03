@@ -54,7 +54,7 @@ const probePath = path.resolve(__dirname, '../../../tests/helpers/csrf-productio
 
 describe('CSRF cookie-name contract', () => {
   it('resolves to `_csrf` in the current (non-production) test env', async () => {
-    const { CSRF_COOKIE_NAME } = await import('../../../middleware/csrf.mjs');
+    const { csrfCookieName: CSRF_COOKIE_NAME } = await import('../../../middleware/csrf.mjs');
     expect(CSRF_COOKIE_NAME).toBe('_csrf');
   });
 

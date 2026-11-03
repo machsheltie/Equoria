@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  PAGINATION_DEFAULTS,
+  paginationDefaults,
   parsePaginationParams,
   buildPaginationMetadata,
   buildPaginatedResponse,
@@ -16,14 +16,14 @@ import {
 const makeReq = (query = {}) => ({ method: 'GET', query });
 
 // ---------------------------------------------------------------------------
-// PAGINATION_DEFAULTS
+// paginationDefaults
 // ---------------------------------------------------------------------------
-describe('PAGINATION_DEFAULTS', () => {
+describe('paginationDefaults', () => {
   it('exports expected default values', () => {
-    expect(PAGINATION_DEFAULTS.defaultPage).toBe(1);
-    expect(PAGINATION_DEFAULTS.defaultLimit).toBe(20);
-    expect(PAGINATION_DEFAULTS.maxLimit).toBe(100);
-    expect(PAGINATION_DEFAULTS.minLimit).toBe(1);
+    expect(paginationDefaults.defaultPage).toBe(1);
+    expect(paginationDefaults.defaultLimit).toBe(20);
+    expect(paginationDefaults.maxLimit).toBe(100);
+    expect(paginationDefaults.minLimit).toBe(1);
   });
 });
 

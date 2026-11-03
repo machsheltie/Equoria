@@ -20,23 +20,23 @@ import fs from 'fs';
 import path from 'path';
 import { createSmtpTransport } from './smtpTransport.mjs';
 import { createGmailApiTransport, readGmailConfig } from './gmailApiTransport.mjs';
-import { SUPPORT_EMAIL, generateEmailTemplate, generatePlainTextEmail } from './emailTemplates.mjs';
+import { supportEmail, generateEmailTemplate, generatePlainTextEmail } from './emailTemplates.mjs';
 import { maskEmailAddress, tokenLinkForLog } from './emailIdentityPolicy.mjs';
 
 // Email configuration
-const EMAIL_CONFIG = {
-  FROM_EMAIL: process.env.EMAIL_FROM || 'noreply@equoria.com',
-  FROM_NAME: process.env.EMAIL_FROM_NAME || 'Equoria',
-  VERIFICATION_URL_BASE: process.env.VERIFICATION_URL_BASE || 'http://localhost:3000/verify-email',
-  PASSWORD_RESET_URL_BASE:
+const emailConfig = {
+  fromEmail: process.env.EMAIL_FROM || 'noreply@equoria.com',
+  fromName: process.env.EMAIL_FROM_NAME || 'Equoria',
+  verificationUrlBase: process.env.VERIFICATION_URL_BASE || 'http://localhost:3000/verify-email',
+  passwordResetUrlBase:
     process.env.PASSWORD_RESET_URL_BASE || 'http://localhost:3000/reset-password',
   // Equoria-6p398.5 (Finding 5): confirmation link for a STAGED recovery-address
   // change. Deliberately a different landing page from VERIFICATION_URL_BASE —
   // the two token purposes are not interchangeable.
-  EMAIL_CHANGE_URL_BASE:
+  emailChangeUrlBase:
     process.env.EMAIL_CHANGE_URL_BASE || 'http://localhost:3000/confirm-email-change',
   // Single source of truth lives with the templates that render it.
-  SUPPORT_EMAIL,
+  supportEmail,
 };
 
 // Cached transporter (lazy-initialized so import-time doesn't fail).
@@ -57,7 +57,7 @@ function getTransporter() {
   if (gmail) {
     cachedTransporter = createGmailApiTransport({
       ...gmail,
-      sender: gmail.sender || EMAIL_CONFIG.FROM_EMAIL,
+      sender: gmail.sender || emailConfig.fromEmail,
     });
     return cachedTransporter;
   }
@@ -102,7 +102,7 @@ async function sendViaProvider({ to, subject, html, text }) {
     // because the production branches gate on getTransporter() first.
     throw new Error('[EmailService] sendViaProvider called without a configured transporter');
   }
-  const from = `"${EMAIL_CONFIG.FROM_NAME}" <${EMAIL_CONFIG.FROM_EMAIL}>`;
+  const from = `"${emailConfig.fromName}" <${emailConfig.fromEmail}>`;
   const info = await transporter.sendMail({ from, to, subject, html, text });
   return info;
 }
@@ -142,7 +142,7 @@ function captureEmailPreview(kind, payload) {
  * @returns {Promise<Object>} Send result
  */
 export async function sendVerificationEmail(email, token, user = {}) {
-  const verificationUrl = `${EMAIL_CONFIG.VERIFICATION_URL_BASE}?token=${token}`;
+  const verificationUrl = `${emailConfig.verificationUrlBase}?token=${token}`;
   const userName = user.firstName || user.username || 'there';
 
   const subject = 'Verify Your Email Address - Equoria';
@@ -294,7 +294,7 @@ export async function sendWelcomeEmail(email, user = {}) {
 }
 
 export async function sendPasswordResetEmail(email, token, user = {}) {
-  const resetUrl = `${EMAIL_CONFIG.PASSWORD_RESET_URL_BASE}?token=${token}`;
+  const resetUrl = `${emailConfig.passwordResetUrlBase}?token=${token}`;
   const userName = user.firstName || user.username || 'there';
 
   const subject = 'Reset Your Equoria Password';
@@ -366,7 +366,7 @@ export async function sendPasswordResetEmail(email, token, user = {}) {
  * @returns {Promise<Object>} Send result
  */
 export async function sendEmailChangeConfirmationEmail(email, token, user = {}) {
-  const confirmUrl = `${EMAIL_CONFIG.EMAIL_CHANGE_URL_BASE}?token=${token}`;
+  const confirmUrl = `${emailConfig.emailChangeUrlBase}?token=${token}`;
   const userName = user.firstName || user.username || 'there';
 
   const subject = 'Confirm your new Equoria email address';
@@ -461,7 +461,7 @@ If this was not you, do nothing and change your password.`;
 export async function sendEmailChangeNoticeEmail(email, details = {}) {
   const { pendingEmail, user = {} } = details;
   const userName = user.firstName || user.username || 'there';
-  const supportEmail = EMAIL_CONFIG.SUPPORT_EMAIL;
+  const supportEmail = emailConfig.supportEmail;
 
   const subject = 'A change to your Equoria email address was requested';
   const heading = 'Someone asked to change your email address';

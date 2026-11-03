@@ -4,7 +4,7 @@
  */
 
 import logger from './logger.mjs';
-import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../config/groomConfig.mjs';
+import { eligibleFoalEnrichmentTasks, foalGroomingTasks } from '../config/groomConfig.mjs';
 // Equoria-95yrv fix round 1 (F1): the foal-assignment door moved to its own module
 // when it became transactional — see that file's header. Re-exported here so every
 // importer (the handlers, foalController, the suites) is unchanged.
@@ -13,7 +13,7 @@ export { assignGroomToFoal } from '../modules/grooms/services/groomFoalAssignmen
 /**
  * Groom specialties and their bonding modifiers
  */
-export const GROOM_SPECIALTIES = {
+export const groomSpecialties = {
   foalCare: {
     name: 'Foal Care Specialist',
     description: 'Specialized in caring for young horses',
@@ -43,7 +43,7 @@ export const GROOM_SPECIALTIES = {
 /**
  * Skill level modifiers for bonding and cost
  */
-export const SKILL_LEVELS = {
+export const skillLevels = {
   novice: {
     name: 'Novice',
     bondingModifier: 0.8,
@@ -77,7 +77,7 @@ export const SKILL_LEVELS = {
 /**
  * Personality traits and their effects
  */
-export const PERSONALITY_TRAITS = {
+export const personalityTraits = {
   gentle: {
     name: 'Gentle',
     bondingModifier: 1.2,
@@ -103,7 +103,7 @@ export const PERSONALITY_TRAITS = {
 /**
  * Default groom profiles for automatic assignment
  */
-export const DEFAULT_GROOMS = [
+export const defaultGrooms = [
   {
     name: 'Sarah Johnson',
     speciality: 'foalCare',
@@ -189,7 +189,7 @@ export function hasAlreadyCompletedFoalTaskToday(foal, today) {
 
     // Check if any task in today's log is a foal-specific task
     return todayLog.some(
-      task => ELIGIBLE_FOAL_ENRICHMENT_TASKS.includes(task) || FOAL_GROOMING_TASKS.includes(task),
+      task => eligibleFoalEnrichmentTasks.includes(task) || foalGroomingTasks.includes(task),
     );
   } catch (error) {
     logger.error(`[groomSystem.hasAlreadyCompletedFoalTaskToday] Error: ${error.message}`);

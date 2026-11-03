@@ -31,7 +31,7 @@ import { maskEmailsInText } from '../utils/emailIdentityPolicy.mjs';
  * Adding a new key here is a deliberate ops decision; if a new field
  * type joins the list, audit existing log call sites for back-fill.
  */
-const REDACTED_KEYS = new Set([
+const redactedKeys = new Set([
   'password',
   'newpassword',
   'oldpassword',
@@ -54,14 +54,14 @@ const REDACTED_KEYS = new Set([
   'dob',
 ]);
 
-const REDACTED_MARKER = '[REDACTED]';
+const redactedMarker = '[REDACTED]';
 
 /**
  * Normalise a key for credential-class matching.
  *
  * Lowercases and strips non-alphanumeric separators so the same semantic
  * field is recognised regardless of the casing convention the client used.
- * REDACTED_KEYS entries are stored in alphanumeric-only lowercase form
+ * redactedKeys entries are stored in alphanumeric-only lowercase form
  * (e.g., `accesstoken`, `creditcard`), so:
  *
  *   accessToken     -> accesstoken    -> match
@@ -86,7 +86,7 @@ function normaliseKey(key) {
  *
  *   - Objects: each own enumerable key is normalised (lowercased, with
  *     `_` and `-` and other non-alphanumerics stripped) and checked
- *     against REDACTED_KEYS. Sensitive values become '[REDACTED]'.
+ *     against redactedKeys. Sensitive values become '[REDACTED]'.
  *     Non-sensitive values recurse.
  *   - Arrays: each element recurses. Array indexes are not key names
  *     and are never redacted.
@@ -122,8 +122,8 @@ function redactCredentialFields(value) {
 
   const out = {};
   for (const key of Object.keys(value)) {
-    if (REDACTED_KEYS.has(normaliseKey(key))) {
-      out[key] = REDACTED_MARKER;
+    if (redactedKeys.has(normaliseKey(key))) {
+      out[key] = redactedMarker;
     } else {
       out[key] = redactCredentialFields(value[key]);
     }
@@ -180,7 +180,7 @@ export const requestLogger = (req, res, next) => {
  * Logs failed requests with additional error context. Body / query /
  * params are passed through `redactCredentialFields` so passwords,
  * tokens, secrets, and similar credential-class fields are masked
- * before reaching any log transport. See REDACTED_KEYS above for the
+ * before reaching any log transport. See redactedKeys above for the
  * exact list and the rationale for exact-match semantics.
  *
  * 21R-OBS-2 (Equoria-2ns5): pre-redaction, plaintext passwords landed

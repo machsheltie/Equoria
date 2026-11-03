@@ -47,7 +47,7 @@
  * the staged ordering stay as they were for the Owner/Admin, who see the show
  * at GET /api/v1/staff/shows/quarantined.
  *
- * Time constants (correlated set): STALE_CLAIM_THRESHOLD_MS below (2h — a
+ * Time constants (correlated set): staleClaimThresholdMs below (2h — a
  * generous upper bound on a healthy executor pass, which takes seconds);
  * the job runs every 30 minutes (showExecutionReaperJob.mjs), so a stranded
  * show is recovered at most ~2.5h after its claim; the job's heartbeat
@@ -59,7 +59,7 @@ import logger from '../../../utils/logger.mjs';
 import { executeClosedShows, recordShowFailure } from '../../../modules/competition/index.mjs';
 
 /** A claim older than this is considered stranded by a crashed executor. */
-export const STALE_CLAIM_THRESHOLD_MS = 2 * 60 * 60 * 1000;
+export const staleClaimThresholdMs = 2 * 60 * 60 * 1000;
 
 /** Owner ruling 2026-10-23 (Equoria-c7mx0.1): the 3rd failed attempt quarantines the show. */
 export const maxExecutionAttempts = 3;
@@ -142,7 +142,7 @@ function recordStranding(show) {
  */
 export async function reapStaleExecutingShows({ showIds } = {}) {
   const now = new Date();
-  const cutoff = new Date(now.getTime() - STALE_CLAIM_THRESHOLD_MS);
+  const cutoff = new Date(now.getTime() - staleClaimThresholdMs);
 
   const where = { status: 'executing', OR: staleClaimPredicate(cutoff) };
   const scopedIds = Array.isArray(showIds) ? showIds.filter(id => Number.isInteger(id)) : null;

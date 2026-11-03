@@ -3,7 +3,7 @@
  *
  * The 1510-line cronJobs.mjs was split: each scheduled job's metadata + wiring
  * now lives in a per-job descriptor module under backend/services/jobs/, and
- * CronJobService.start() iterates the ordered CRON_JOB_REGISTRY instead of ten
+ * CronJobService.start() iterates the ordered cronJobRegistry instead of ten
  * inline cron.schedule(...) blocks.
  *
  * This test locks the structural contract the split depends on:
@@ -23,7 +23,7 @@
  */
 
 import { describe, it, expect, afterEach } from '@jest/globals';
-import { CRON_JOB_REGISTRY } from '../services/jobs/index.mjs';
+import { cronJobRegistry } from '../services/jobs/index.mjs';
 import cronJobService from '../services/cronJobs.mjs';
 
 // The canonical job order + schedules + staleness budgets that existed as inline
@@ -90,12 +90,12 @@ afterEach(() => {
 
 describe('cron job registry structure (Equoria-fx4e7)', () => {
   it('exports every descriptor in the original registration order', () => {
-    expect(CRON_JOB_REGISTRY).toHaveLength(EXPECTED_JOBS.length);
-    expect(CRON_JOB_REGISTRY.map(j => j.jobName)).toEqual(EXPECTED_JOBS.map(j => j.jobName));
+    expect(cronJobRegistry).toHaveLength(EXPECTED_JOBS.length);
+    expect(cronJobRegistry.map(j => j.jobName)).toEqual(EXPECTED_JOBS.map(j => j.jobName));
   });
 
   it('every descriptor exports a schedule string + applyLock + staleAfterMs + a run thunk', () => {
-    for (const job of CRON_JOB_REGISTRY) {
+    for (const job of cronJobRegistry) {
       expect(typeof job.jobName).toBe('string');
       expect(job.jobName.length).toBeGreaterThan(0);
       // schedule must be a non-empty cron string
@@ -113,7 +113,7 @@ describe('cron job registry structure (Equoria-fx4e7)', () => {
 
   it('each descriptor schedule + staleness is byte-identical to the pre-split literals', () => {
     for (const expected of EXPECTED_JOBS) {
-      const actual = CRON_JOB_REGISTRY.find(j => j.jobName === expected.jobName);
+      const actual = cronJobRegistry.find(j => j.jobName === expected.jobName);
       expect(actual).toBeDefined();
       expect(actual.schedule).toBe(expected.schedule);
       expect(actual.staleAfterMs).toBe(expected.staleAfterMs);
@@ -143,7 +143,7 @@ describe('cron job registry structure (Equoria-fx4e7)', () => {
       hallOfFameRounds: 'runHallOfFameRounds',
     };
 
-    for (const job of CRON_JOB_REGISTRY) {
+    for (const job of cronJobRegistry) {
       const called = [];
       const stub = {};
       // Build a stub that records which method the run thunk calls.

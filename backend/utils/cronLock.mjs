@@ -88,8 +88,8 @@ import logger from './logger.mjs';
 // Long-running cron transaction budget. dailyHorseAging can touch every horse;
 // auditLogRetention does a scoped DELETE that scales with corpus age. Set a
 // generous ceiling so the lock isn't dropped mid-work. Prisma units: ms.
-const DEFAULT_LOCK_TX_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
-const DEFAULT_LOCK_TX_MAX_WAIT_MS = 5 * 1000; // 5 seconds to start the txn
+const defaultLockTxTimeoutMs = 60 * 60 * 1000; // 60 minutes
+const defaultLockTxMaxWaitMs = 5 * 1000; // 5 seconds to start the txn
 
 /**
  * Derive a deterministic, signed-bigint advisory-lock key from a job name.
@@ -107,9 +107,9 @@ export function jobNameToLockKey(jobName) {
   }
   const hash = createHash('sha256').update(jobName, 'utf8').digest();
   const unsigned = hash.readBigUInt64BE(0);
-  const TWO_POW_63 = 1n << 63n;
-  const TWO_POW_64 = 1n << 64n;
-  const signed = unsigned >= TWO_POW_63 ? unsigned - TWO_POW_64 : unsigned;
+  const twoPow63 = 1n << 63n;
+  const twoPow64 = 1n << 64n;
+  const signed = unsigned >= twoPow63 ? unsigned - twoPow64 : unsigned;
   return signed;
 }
 
@@ -134,8 +134,8 @@ export function jobNameToLockKey(jobName) {
  */
 export async function withAdvisoryLock(jobName, handler, opts = {}) {
   const key = jobNameToLockKey(jobName);
-  const timeout = opts.timeoutMs ?? DEFAULT_LOCK_TX_TIMEOUT_MS;
-  const maxWait = opts.maxWaitMs ?? DEFAULT_LOCK_TX_MAX_WAIT_MS;
+  const timeout = opts.timeoutMs ?? defaultLockTxTimeoutMs;
+  const maxWait = opts.maxWaitMs ?? defaultLockTxMaxWaitMs;
 
   let outcome = { acquired: false, result: null };
   // Lock-release / outcome contract:

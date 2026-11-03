@@ -9,9 +9,9 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   calculatePregnancyEpigeneticChances,
-  PREGNANCY_BONUS_PCT,
-  GESTATION_DAYS,
-  NEG_PER_MISSED_DAY,
+  pregnancyBonusPct,
+  gestationDays,
+  negPerMissedDay,
 } from '../../../utils/pregnancyBonus.mjs';
 
 describe('calculatePregnancyEpigeneticChances', () => {
@@ -166,7 +166,7 @@ describe('calculatePregnancyEpigeneticChances', () => {
     expect(r.negativeChance).toBe(35);
   });
 
-  it('sentinel: extra feedings beyond GESTATION_DAYS do NOT produce negativeChance', () => {
+  it('sentinel: extra feedings beyond gestationDays do NOT produce negativeChance', () => {
     const r = calculatePregnancyEpigeneticChances({ elite: 10 });
     expect(r.negativeChance).toBe(0); // not negative, not undefined
   });
@@ -175,13 +175,13 @@ describe('calculatePregnancyEpigeneticChances', () => {
     // elite is a valid tier, so no continue; but rawCount=null → Number(null)=0 (falsy) → || 0 used
     const r = calculatePregnancyEpigeneticChances({ elite: null });
     expect(r.positiveChance).toBe(0);
-    expect(r.negativeChance).toBe(GESTATION_DAYS * NEG_PER_MISSED_DAY);
+    expect(r.negativeChance).toBe(gestationDays * negPerMissedDay);
   });
 
   it('non-numeric string rawCount for valid tier: Number("abc")=NaN (falsy) → || 0 false branch', () => {
     const r = calculatePregnancyEpigeneticChances({ performance: 'abc' });
     expect(r.positiveChance).toBe(0);
-    expect(r.negativeChance).toBe(GESTATION_DAYS * NEG_PER_MISSED_DAY);
+    expect(r.negativeChance).toBe(gestationDays * negPerMissedDay);
   });
 
   it('zero rawCount for valid tier: Number(0)=0 (falsy) → || 0 false branch', () => {
@@ -193,8 +193,8 @@ describe('calculatePregnancyEpigeneticChances', () => {
 });
 
 describe('exported constants', () => {
-  it('PREGNANCY_BONUS_PCT defines exactly the 5 tier weights from spec §8.2', () => {
-    expect(PREGNANCY_BONUS_PCT).toEqual({
+  it('pregnancyBonusPct defines exactly the 5 tier weights from spec §8.2', () => {
+    expect(pregnancyBonusPct).toEqual({
       basic: 0,
       performance: 5,
       performancePlus: 10,
@@ -203,11 +203,11 @@ describe('exported constants', () => {
     });
   });
 
-  it('GESTATION_DAYS is 7', () => {
-    expect(GESTATION_DAYS).toBe(7);
+  it('gestationDays is 7', () => {
+    expect(gestationDays).toBe(7);
   });
 
-  it('NEG_PER_MISSED_DAY is 5', () => {
-    expect(NEG_PER_MISSED_DAY).toBe(5);
+  it('negPerMissedDay is 5', () => {
+    expect(negPerMissedDay).toBe(5);
   });
 });

@@ -4,7 +4,7 @@
  *
  * 🎯 FEATURES TESTED:
  * - Daily task exclusivity enforcement for foals
- * - Integration between ELIGIBLE_FOAL_ENRICHMENT_TASKS and FOAL_GROOMING_TASKS
+ * - Integration between eligibleFoalEnrichmentTasks and foalGroomingTasks
  * - Real task category validation with actual configuration
  * - Edge cases and business rule enforcement
  *
@@ -25,7 +25,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../../config/groomConfig.mjs';
+import { eligibleFoalEnrichmentTasks, foalGroomingTasks } from '../../config/groomConfig.mjs';
 import { hasAlreadyCompletedFoalTaskToday } from '../../utils/groomSystem.mjs';
 
 describe('Foal Task Exclusivity Integration', () => {
@@ -34,7 +34,7 @@ describe('Foal Task Exclusivity Integration', () => {
   describe('Configuration Integration', () => {
     it('should have correct task categories defined', () => {
       // Verify enrichment tasks (updated to match actual config)
-      expect(ELIGIBLE_FOAL_ENRICHMENT_TASKS).toEqual([
+      expect(eligibleFoalEnrichmentTasks).toEqual([
         'desensitization',
         'trustBuilding',
         'showgroundExposure',
@@ -45,7 +45,7 @@ describe('Foal Task Exclusivity Integration', () => {
       ]);
 
       // Verify grooming tasks (updated to match actual config)
-      expect(FOAL_GROOMING_TASKS).toEqual([
+      expect(foalGroomingTasks).toEqual([
         'hoofHandling',
         'tyingPractice',
         'spongeBath',
@@ -55,8 +55,8 @@ describe('Foal Task Exclusivity Integration', () => {
     });
 
     it('should have no overlap between task categories', () => {
-      const enrichmentSet = new Set(ELIGIBLE_FOAL_ENRICHMENT_TASKS);
-      const groomingSet = new Set(FOAL_GROOMING_TASKS);
+      const enrichmentSet = new Set(eligibleFoalEnrichmentTasks);
+      const groomingSet = new Set(foalGroomingTasks);
 
       const intersection = [...enrichmentSet].filter(task => groomingSet.has(task));
       expect(intersection).toHaveLength(0);
@@ -65,7 +65,7 @@ describe('Foal Task Exclusivity Integration', () => {
 
   describe('Daily Exclusivity Enforcement', () => {
     it('should detect all enrichment tasks correctly', () => {
-      ELIGIBLE_FOAL_ENRICHMENT_TASKS.forEach(task => {
+      eligibleFoalEnrichmentTasks.forEach(task => {
         const foal = {
           id: 1,
           name: 'Test Foal',
@@ -80,7 +80,7 @@ describe('Foal Task Exclusivity Integration', () => {
     });
 
     it('should detect all grooming tasks correctly', () => {
-      FOAL_GROOMING_TASKS.forEach(task => {
+      foalGroomingTasks.forEach(task => {
         const foal = {
           id: 1,
           name: 'Test Foal',

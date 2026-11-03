@@ -5,7 +5,7 @@
 // Equoria-1fqs (per-user retention cap): the Notification table previously
 // grew unbounded — the read path only applied `take: 100`, so old rows
 // accumulated forever per user. Each insert now triggers a non-blocking
-// prune step that keeps only the newest NOTIFICATION_RETENTION_COUNT rows
+// prune step that keeps only the newest notificationRetentionCount rows
 // for that user. Failures on the prune are logged but never propagated;
 // notification creation must not be coupled to retention bookkeeping.
 import prisma from '../../packages/database/prismaClient.mjs';
@@ -20,11 +20,10 @@ import { publishUserEvent } from '../services/eventBus.mjs';
 // table size stays bounded at exactly what the UI can ever surface.
 export const notificationRetentionCount = 100;
 // Older spelling, still imported by existing callers.
-export const NOTIFICATION_RETENTION_COUNT = notificationRetentionCount;
 
 /**
  * Prune a user's Notification rows down to the newest
- * NOTIFICATION_RETENTION_COUNT entries by deleting any oldest extras.
+ * notificationRetentionCount entries by deleting any oldest extras.
  *
  * Uses a two-step approach (findMany ids past offset, then deleteMany by
  * id) so the deletion target is bounded by the read snapshot — a race with
@@ -36,7 +35,7 @@ export const NOTIFICATION_RETENTION_COUNT = notificationRetentionCount;
  *
  * Returns the count of deleted rows. Never throws — failures are logged.
  */
-export async function pruneOldNotifications(userId, retentionCount = NOTIFICATION_RETENTION_COUNT) {
+export async function pruneOldNotifications(userId, retentionCount = notificationRetentionCount) {
   try {
     const stale = await prisma.notification.findMany({
       where: { userId },

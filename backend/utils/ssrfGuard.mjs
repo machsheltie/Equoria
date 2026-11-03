@@ -54,14 +54,14 @@ const resolve4 = dns.promises.resolve4;
 const resolve6 = dns.promises.resolve6;
 
 /** Only these URL schemes may ever reach an outbound fetch. */
-const ALLOWED_PROTOCOLS = Object.freeze(['http:', 'https:']);
+const allowedProtocols = Object.freeze(['http:', 'https:']);
 
 /**
  * Hostnames that are never legitimate outbound targets even before DNS.
  * (DNS resolution covers the IP forms; this is defense-in-depth for the
  * literal names and the cloud metadata service.)
  */
-const BLOCKED_HOSTNAMES = Object.freeze(
+const blockedHostnames = Object.freeze(
   new Set([
     'localhost',
     'localhost.localdomain',
@@ -78,7 +78,7 @@ const BLOCKED_HOSTNAMES = Object.freeze(
  * 169.254.169.254 is link-local so the link-local /16 check below also
  * covers it, but it is called out explicitly so the intent is auditable.
  */
-const CLOUD_METADATA_IPV4 = '169.254.169.254';
+const cloudMetadataIpv4 = '169.254.169.254';
 
 /**
  * Parse an IPv4 dotted-quad into its 32-bit unsigned integer, or null if
@@ -205,7 +205,7 @@ function isBlockedIpLiteral(address, family) {
   if (typeof address !== 'string' || address.length === 0) {
     return true; // fail closed
   }
-  if (address === CLOUD_METADATA_IPV4) {
+  if (address === cloudMetadataIpv4) {
     return true; // explicit, auditable
   }
   if (family === 4 || net.isIPv4(address)) {
@@ -240,7 +240,7 @@ export function validateOutboundUrl(rawUrl) {
     return { ok: false, reason: 'Malformed URL' };
   }
 
-  if (!ALLOWED_PROTOCOLS.includes(url.protocol)) {
+  if (!allowedProtocols.includes(url.protocol)) {
     return { ok: false, reason: `Disallowed protocol: ${url.protocol}` };
   }
 
@@ -253,7 +253,7 @@ export function validateOutboundUrl(rawUrl) {
   if (hostname.length === 0) {
     return { ok: false, reason: 'Missing hostname' };
   }
-  if (BLOCKED_HOSTNAMES.has(hostname)) {
+  if (blockedHostnames.has(hostname)) {
     return { ok: false, reason: `Blocked hostname: ${hostname}` };
   }
 

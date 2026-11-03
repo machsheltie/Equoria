@@ -34,7 +34,7 @@ import logger from './logger.mjs';
 /**
  * Discovery conditions that trigger trait revelation
  */
-const DISCOVERY_CONDITIONS = {
+const discoveryConditions = {
   // Bonding-based discoveries
   HIGH_BOND: {
     name: 'High Bond',
@@ -75,7 +75,7 @@ const DISCOVERY_CONDITIONS = {
 async function checkDiscoveryConditions(horse) {
   const metConditions = [];
 
-  for (const [conditionName, condition] of Object.entries(DISCOVERY_CONDITIONS)) {
+  for (const [conditionName, condition] of Object.entries(discoveryConditions)) {
     try {
       let isMet = false;
 
@@ -104,4 +104,4 @@ async function checkDiscoveryConditions(horse) {
   return metConditions;
 }
 
-export { DISCOVERY_CONDITIONS, checkDiscoveryConditions };
+export { discoveryConditions, checkDiscoveryConditions };

@@ -5,7 +5,7 @@ import { createRedisCircuitBreaker } from '../utils/redisCircuitBreaker.mjs';
 // redisCircuitBreaker.mjs exports it as a named export
 import * as circuitBreakerModule from '../utils/redisCircuitBreaker.mjs';
 
-const DEFAULT_CIRCUIT_OPTIONS = circuitBreakerModule.DEFAULT_CIRCUIT_OPTIONS;
+const DEFAULT_CIRCUIT_OPTIONS = circuitBreakerModule.defaultCircuitOptions;
 
 // ─── DEFAULT_CIRCUIT_OPTIONS ──────────────────────────────────────────────────
 

@@ -63,7 +63,7 @@ import AppError from '../errors/AppError.mjs';
 import logger from './logger.mjs';
 
 /** Default maximum upload size: 5 MB (SECURITY.md §7). */
-export const DEFAULT_MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+export const defaultMaxUploadBytes = 5 * 1024 * 1024;
 
 /**
  * The canonical allow-list. Each entry is a single logical image type:
@@ -74,7 +74,7 @@ export const DEFAULT_MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
  *
  * SECURITY.md §7 allow-list: JPEG, PNG, GIF, WebP. Nothing else passes.
  */
-const ALLOWED_TYPES = Object.freeze([
+const allowedTypes = Object.freeze([
   Object.freeze({
     type: 'image/jpeg',
     mimes: Object.freeze(['image/jpeg', 'image/jpg', 'image/pjpeg']),
@@ -195,7 +195,7 @@ export function sanitizeFilename(rawName) {
 
 /**
  * Detect the true file type by inspecting the leading magic bytes.
- * Returns the matching ALLOWED_TYPES entry, or null if the bytes do not
+ * Returns the matching allowedTypes entry, or null if the bytes do not
  * match any allow-listed image signature. Magic bytes are the
  * AUTHORITATIVE type — never trust the extension or declared MIME.
  *
@@ -206,7 +206,7 @@ function detectType(buffer) {
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
     return null;
   }
-  for (const entry of ALLOWED_TYPES) {
+  for (const entry of allowedTypes) {
     let matched;
     try {
       matched = entry.sniff(buffer) === true;
@@ -263,7 +263,7 @@ export function assertSafeUpload(input) {
     const maxBytes =
       typeof input.maxBytes === 'number' && Number.isFinite(input.maxBytes) && input.maxBytes > 0
         ? input.maxBytes
-        : DEFAULT_MAX_UPLOAD_BYTES;
+        : defaultMaxUploadBytes;
 
     // 1. Buffer must exist and be non-empty. Empty / missing / non-Buffer
     //    → reject (fail closed; an empty upload cannot be proven safe).

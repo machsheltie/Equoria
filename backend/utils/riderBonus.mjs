@@ -49,15 +49,15 @@ import { staffCareerLevel, staffLevels } from '../constants/staffLevels.mjs';
 // Single source of truth for rider cap constants (Equoria-pqdte). Previously
 // these were locally re-declared in simulateCompetition.mjs and
 // showExecutionService.mjs#executeClosedShows (with a comment admitting drift —
-// `// mirrors riderBonus.mjs BONUS_CAP`). applyRiderModifiers below validates against
+// `// mirrors riderBonus.mjs bonusCap`). applyRiderModifiers below validates against
 // them, so a change here propagates to every scoring path automatically.
-export const BONUS_CAP = 0.1; // 10%
-export const PENALTY_CAP = 0.08; // 8%
+export const bonusCap = 0.1; // 10%
+export const penaltyCap = 0.08; // 8%
 
 // Discipline → personality → magnitude affinity. Mirrors
 // frontend/src/types/riderPersonality.ts RIDER_PERSONALITY_DATA.
 // Magnitudes: 'high' (+2%), 'medium' (+1%), 'low' (0%).
-const RIDER_DISCIPLINE_AFFINITY = Object.freeze({
+const riderDisciplineAffinity = Object.freeze({
   daring: Object.freeze({
     Racing: 'high',
     'Show Jumping': 'high',
@@ -93,7 +93,7 @@ const RIDER_DISCIPLINE_AFFINITY = Object.freeze({
   }),
 });
 
-const AFFINITY_BONUS = Object.freeze({ high: 0.02, medium: 0.01 });
+const affinityBonus = Object.freeze({ high: 0.02, medium: 0.01 });
 
 /** Bonus per star level step above the lowest (owner ruling 2026-10-29, q302). */
 const starLevelStepBonus = 0.01;
@@ -123,11 +123,11 @@ function applyRiderModifiers(score, bonusPercent = 0, penaltyPercent = 0) {
     throw new Error('Score must be a non-negative number');
   }
 
-  if (typeof bonusPercent !== 'number' || bonusPercent < 0 || bonusPercent > BONUS_CAP) {
+  if (typeof bonusPercent !== 'number' || bonusPercent < 0 || bonusPercent > bonusCap) {
     throw new Error('Bonus percent must be between 0 and 0.10 (10%)');
   }
 
-  if (typeof penaltyPercent !== 'number' || penaltyPercent < 0 || penaltyPercent > PENALTY_CAP) {
+  if (typeof penaltyPercent !== 'number' || penaltyPercent < 0 || penaltyPercent > penaltyCap) {
     throw new Error('Penalty percent must be between 0 and 0.08 (8%)');
   }
 
@@ -167,22 +167,22 @@ function computeRiderModifiers({ rider, discipline } = {}) {
 
   // ── discipline-personality affinity ─────────────────────────────────────
   const personality = typeof rider.personality === 'string' ? rider.personality.toLowerCase() : '';
-  const personalityMap = RIDER_DISCIPLINE_AFFINITY[personality];
+  const personalityMap = riderDisciplineAffinity[personality];
   if (personalityMap && typeof discipline === 'string') {
     const magnitude = personalityMap[discipline];
-    if (magnitude && AFFINITY_BONUS[magnitude]) {
-      bonus += AFFINITY_BONUS[magnitude];
+    if (magnitude && affinityBonus[magnitude]) {
+      bonus += affinityBonus[magnitude];
     }
   }
 
   // ── retired riders incur full penalty ──────────────────────────────────
   if (rider.retired === true) {
-    penalty = PENALTY_CAP;
+    penalty = penaltyCap;
   }
 
   // ── clamp to validated ranges so applyRiderModifiers cannot throw ─────
-  bonus = Math.max(0, Math.min(BONUS_CAP, bonus));
-  penalty = Math.max(0, Math.min(PENALTY_CAP, penalty));
+  bonus = Math.max(0, Math.min(bonusCap, bonus));
+  penalty = Math.max(0, Math.min(penaltyCap, penalty));
 
   return { bonusPercent: bonus, penaltyPercent: penalty };
 }

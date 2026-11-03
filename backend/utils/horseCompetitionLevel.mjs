@@ -20,7 +20,7 @@
  */
 
 // The pinned XP-per-level constant. floor(horseXp / 100) + 1.
-export const HORSE_XP_PER_LEVEL = 100;
+export const horseXpPerLevel = 100;
 
 /**
  * Compute a horse's XP-bracket level from its cumulative horseXp.
@@ -33,7 +33,7 @@ export const HORSE_XP_PER_LEVEL = 100;
  */
 export function getHorseXpLevel(horseXp) {
   const xp = Number.isFinite(horseXp) && horseXp > 0 ? horseXp : 0;
-  return Math.floor(xp / HORSE_XP_PER_LEVEL) + 1;
+  return Math.floor(xp / horseXpPerLevel) + 1;
 }
 
 /**

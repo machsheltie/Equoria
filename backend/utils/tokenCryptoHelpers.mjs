@@ -18,11 +18,11 @@ import crypto from 'crypto';
 import logger from './logger.mjs';
 
 // Token configuration
-export const TOKEN_CONFIG = {
-  ACCESS_TOKEN_EXPIRY: '15m', // 15 minutes
-  REFRESH_TOKEN_EXPIRY: '7d', // 7 days
-  FAMILY_ID_LENGTH: 32, // 32 character family ID
-  CLEANUP_THRESHOLD_DAYS: 30, // Cleanup tokens older than 30 days
+export const tokenConfig = {
+  accessTokenExpiry: '15m', // 15 minutes
+  refreshTokenExpiry: '7d', // 7 days
+  familyIdLength: 32, // 32 character family ID
+  cleanupThresholdDays: 30, // Cleanup tokens older than 30 days
 };
 
 /**
@@ -77,7 +77,7 @@ export function buildSignedTokenPair(userId, familyId, role) {
   };
   const refreshToken = jwt.sign(refreshPayload, process.env.JWT_REFRESH_SECRET, {
     algorithm: 'HS256',
-    expiresIn: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
+    expiresIn: tokenConfig.refreshTokenExpiry,
   });
   return { accessToken, refreshToken };
 }
@@ -101,7 +101,7 @@ export function buildSignedAccessToken(userId, familyId, role) {
   };
   return jwt.sign(accessPayload, process.env.JWT_SECRET, {
     algorithm: 'HS256',
-    expiresIn: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY,
+    expiresIn: tokenConfig.accessTokenExpiry,
   });
 }
 
@@ -121,9 +121,9 @@ export async function persistRefreshTokenWithRetry({
   initialPair,
   role,
 }) {
-  const MAX_ATTEMPTS = 3;
+  const maxAttempts = 3;
   let pair = initialPair;
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       await prismaClient.refreshToken.create({
         data: {
@@ -137,7 +137,7 @@ export async function persistRefreshTokenWithRetry({
       });
       return pair;
     } catch (err) {
-      if (err?.code === 'P2002' && attempt < MAX_ATTEMPTS) {
+      if (err?.code === 'P2002' && attempt < maxAttempts) {
         logger.warn('[TokenRotation] tokenHash collision (P2002), regenerating JWT pair', {
           attempt,
           userId,

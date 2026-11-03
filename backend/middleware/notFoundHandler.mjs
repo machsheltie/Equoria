@@ -14,7 +14,7 @@
  * `Unexpected token '<', "<!doctype "... is not valid JSON`.)
  */
 
-const BACKEND_PATH_PREFIXES = ['/api', '/health', '/api-docs'];
+const backendPathPrefixes = ['/api', '/health', '/api-docs'];
 
 /** Path portion of the request's original URL, without query or fragment. */
 function requestPathname(req) {
@@ -23,7 +23,7 @@ function requestPathname(req) {
 
 /** True when the request targets the backend and must never receive SPA html. */
 function isBackendPath(pathname) {
-  return BACKEND_PATH_PREFIXES.some(prefix => pathname.startsWith(prefix));
+  return backendPathPrefixes.some(prefix => pathname.startsWith(prefix));
 }
 
 /**

@@ -6,7 +6,7 @@
  */
 
 import logger from '../../../utils/logger.mjs';
-import { ACCESS_TOKEN_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
+import { accessTokenCookieOptions } from '../../../utils/cookieConfig.mjs';
 import { capabilitiesFor } from '../capabilities.mjs';
 import {
   StaffCheckinError,
@@ -20,9 +20,9 @@ import {
 /** The attributes both device cookies share, from the auth cookie policy. */
 const deviceCookieAttributes = Object.freeze({
   httpOnly: true,
-  secure: ACCESS_TOKEN_COOKIE_OPTIONS.secure,
-  sameSite: ACCESS_TOKEN_COOKIE_OPTIONS.sameSite,
-  domain: ACCESS_TOKEN_COOKIE_OPTIONS.domain,
+  secure: accessTokenCookieOptions.secure,
+  sameSite: accessTokenCookieOptions.sameSite,
+  domain: accessTokenCookieOptions.domain,
 });
 
 /**

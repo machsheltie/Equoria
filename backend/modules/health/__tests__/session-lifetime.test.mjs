@@ -21,7 +21,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { ACCESS_TOKEN_TTL_MS, REFRESH_TOKEN_TTL_MS, getNow, _setNowFn } from '../../../utils/cookieConfig.mjs';
+import { accessTokenTtlMs, refreshTokenTtlMs, getNow, _setNowFn } from '../../../utils/cookieConfig.mjs';
 
 const SUITE_PREFIX = 'seslife21r';
 
@@ -95,12 +95,12 @@ async function loginFresh() {
 // ─── (a) Clock injection ──────────────────────────────────────────────────────
 
 describe('cookieConfig clock injection exports (21R-AUTH-6 contract)', () => {
-  it('exports ACCESS_TOKEN_TTL_MS matching the 15-minute cookie maxAge', () => {
-    expect(ACCESS_TOKEN_TTL_MS).toBe(15 * 60 * 1000);
+  it('exports accessTokenTtlMs matching the 15-minute cookie maxAge', () => {
+    expect(accessTokenTtlMs).toBe(15 * 60 * 1000);
   });
 
-  it('exports REFRESH_TOKEN_TTL_MS matching the 7-day cookie maxAge', () => {
-    expect(REFRESH_TOKEN_TTL_MS).toBe(7 * 24 * 60 * 60 * 1000);
+  it('exports refreshTokenTtlMs matching the 7-day cookie maxAge', () => {
+    expect(refreshTokenTtlMs).toBe(7 * 24 * 60 * 60 * 1000);
   });
 
   it('getNow() defaults to real wall-clock time', () => {
@@ -112,7 +112,7 @@ describe('cookieConfig clock injection exports (21R-AUTH-6 contract)', () => {
   });
 
   it('_setNowFn allows test clock override and reset', () => {
-    const FUTURE = Date.now() + REFRESH_TOKEN_TTL_MS + 1000;
+    const FUTURE = Date.now() + refreshTokenTtlMs + 1000;
     _setNowFn(() => FUTURE);
     expect(getNow()).toBe(FUTURE);
     _setNowFn(null); // reset to Date.now

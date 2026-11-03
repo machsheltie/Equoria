@@ -80,7 +80,7 @@ export class RetryableTransactionError extends AppError {
 }
 
 /** Postgres SQLSTATEs for a conflict it resolved by aborting one transaction. */
-const CONFLICT_SQLSTATES = new Set(['40P01', '40001']);
+const conflictSqlstates = new Set(['40P01', '40001']);
 
 /**
  * Classify a thrown error as a TRANSIENT, RETRYABLE Prisma interactive-
@@ -106,7 +106,7 @@ export function isRetryableTxError(err) {
   if (err.code === 'P2028' || err.code === 'P2034') {
     return true;
   }
-  if (CONFLICT_SQLSTATES.has(err.meta?.code)) {
+  if (conflictSqlstates.has(err.meta?.code)) {
     return true;
   }
   const message = typeof err.message === 'string' ? err.message : '';

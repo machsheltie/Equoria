@@ -161,9 +161,9 @@ describe('Beta-readiness env sentinel (Equoria-aih8)', () => {
       expect(appSrc).toMatch(/'beta-readiness':\s*1000/);
     });
 
-    it('rateLimiting.mjs MUTATION_RATE_LIMIT_MAX_BY_ENV has beta:600 / production:600 and NO beta-readiness key', () => {
+    it('rateLimiting.mjs mutationRateLimitMaxByEnv has beta:600 / production:600 and NO beta-readiness key', () => {
       const block = rlSrc.slice(
-        rlSrc.indexOf('const MUTATION_RATE_LIMIT_MAX_BY_ENV'),
+        rlSrc.indexOf('const mutationRateLimitMaxByEnv'),
         rlSrc.indexOf('export const mutationRateLimiter'),
       );
       expect(block).toMatch(/beta:\s*600/);

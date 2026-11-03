@@ -14,16 +14,12 @@
 import { URLSearchParams } from 'node:url';
 import nodemailer from 'nodemailer';
 
-const DEFAULT_OAUTH_URL = 'https://oauth2.googleapis.com/token';
-const DEFAULT_API_URL = 'https://gmail.googleapis.com';
-const DEFAULT_TIMEOUT_MS = 15000;
-const TOKEN_EXPIRY_MARGIN_MS = 60 * 1000;
+const defaultOauthUrl = 'https://oauth2.googleapis.com/token';
+const defaultApiUrl = 'https://gmail.googleapis.com';
+const defaultTimeoutMs = 15000;
+const tokenExpiryMarginMs = 60 * 1000;
 
-export const GMAIL_REQUIRED_VARS = [
-  'GMAIL_CLIENT_ID',
-  'GMAIL_CLIENT_SECRET',
-  'GMAIL_REFRESH_TOKEN',
-];
+export const gmailRequiredVars = ['GMAIL_CLIENT_ID', 'GMAIL_CLIENT_SECRET', 'GMAIL_REFRESH_TOKEN'];
 
 /**
  * Read the Gmail API settings from the environment.
@@ -35,8 +31,8 @@ export const GMAIL_REQUIRED_VARS = [
 export function readGmailConfig(env = process.env) {
   // Whitespace-only values count as missing.
   const value = name => (typeof env[name] === 'string' ? env[name].trim() : '');
-  const missing = GMAIL_REQUIRED_VARS.filter(name => !value(name));
-  if (missing.length === GMAIL_REQUIRED_VARS.length) {
+  const missing = gmailRequiredVars.filter(name => !value(name));
+  if (missing.length === gmailRequiredVars.length) {
     return null;
   }
   if (missing.length > 0) {
@@ -113,9 +109,9 @@ export function createGmailApiTransport({
   clientSecret,
   refreshToken,
   sender,
-  oauthUrl = DEFAULT_OAUTH_URL,
-  apiUrl = DEFAULT_API_URL,
-  timeoutMs = DEFAULT_TIMEOUT_MS,
+  oauthUrl = defaultOauthUrl,
+  apiUrl = defaultApiUrl,
+  timeoutMs = defaultTimeoutMs,
 }) {
   let accessToken = null;
   let accessTokenExpiresAt = 0;
@@ -157,7 +153,7 @@ export function createGmailApiTransport({
     const lifetimeMs = Number(body.expires_in) * 1000;
     accessToken = body.access_token;
     accessTokenExpiresAt =
-      Date.now() + (Number.isFinite(lifetimeMs) ? lifetimeMs : 0) - TOKEN_EXPIRY_MARGIN_MS;
+      Date.now() + (Number.isFinite(lifetimeMs) ? lifetimeMs : 0) - tokenExpiryMarginMs;
     return accessToken;
   }
 

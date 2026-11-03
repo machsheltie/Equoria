@@ -15,7 +15,7 @@
  *
  * Fix: tag every instance with a registry symbol (`Symbol.for(...)`).
  * The global symbol registry shares the symbol across module-cache
- * duplicates, so `instance[APP_ERROR_MARKER] === true` works regardless
+ * duplicates, so `instance[appErrorMarker] === true` works regardless
  * of which copy of this module created the instance. Use the static
  * `AppError.isAppError(value)` helper for new check sites; existing
  * `instanceof AppError` call sites continue to work for the common case.
@@ -26,7 +26,7 @@
 // Symbol.for(...) — shared via the global registry, survives module
 // duplication. Exported so test code can manually tag instances if
 // asserting on the marker directly.
-export const APP_ERROR_MARKER = Symbol.for('Equoria.AppError');
+export const appErrorMarker = Symbol.for('Equoria.AppError');
 
 class AppError extends Error {
   constructor(message, statusCode = 500, isOperational = true) {
@@ -38,7 +38,7 @@ class AppError extends Error {
 
     // Tag the instance with the registry symbol so isAppError() works
     // even if a different copy of this module created the instance.
-    this[APP_ERROR_MARKER] = true;
+    this[appErrorMarker] = true;
 
     // Capture stack trace
     Error.captureStackTrace(this, this.constructor);
@@ -46,13 +46,13 @@ class AppError extends Error {
 
   /**
    * Cross-module-cache-safe replacement for `error instanceof AppError`.
-   * Returns true for any value tagged with APP_ERROR_MARKER, regardless
+   * Returns true for any value tagged with appErrorMarker, regardless
    * of which AppError class reference produced it. Use this in security
    * boundaries where module-mock tests can otherwise silently corrupt
    * the instanceof check.
    */
   static isAppError(value) {
-    return value !== null && typeof value === 'object' && value[APP_ERROR_MARKER] === true;
+    return value !== null && typeof value === 'object' && value[appErrorMarker] === true;
   }
 }
 

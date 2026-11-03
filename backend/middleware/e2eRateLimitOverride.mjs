@@ -41,7 +41,7 @@
  * development — restricting to the exact set the override is meant for avoids
  * widening the surface beyond need.
  */
-export const E2E_OVERRIDABLE_ENVS = new Set(['beta', 'test', 'beta-readiness']);
+export const e2eOverridableEnvs = new Set(['beta', 'test', 'beta-readiness']);
 
 /**
  * Pure decision: resolve the effective rate-limit `max`, honoring the EXPLICIT
@@ -49,7 +49,7 @@ export const E2E_OVERRIDABLE_ENVS = new Set(['beta', 'test', 'beta-readiness']);
  *
  * Returns `configuredMax` UNCHANGED in every normal case (every real deploy that
  * never sets the override env var). Returns the parsed override ONLY when ALL of:
- *   - `nodeEnv` is a non-production env in E2E_OVERRIDABLE_ENVS
+ *   - `nodeEnv` is a non-production env in e2eOverridableEnvs
  *     (`beta` | `test` | `beta-readiness`) — NEVER `production`, and
  *   - `envValue` is a valid positive integer.
  *
@@ -71,7 +71,7 @@ export function resolveE2eRateLimitMax({ nodeEnv, envValue, configuredMax }) {
     return configuredMax;
   }
   // Only the explicitly-allowed non-prod envs may honor the override.
-  if (!E2E_OVERRIDABLE_ENVS.has(nodeEnv)) {
+  if (!e2eOverridableEnvs.has(nodeEnv)) {
     return configuredMax;
   }
   // Unset / empty ⇒ normal behavior (the case for every real deploy).

@@ -41,9 +41,9 @@
  */
 
 import { describe, expect, it } from '@jest/globals';
-import { DEFAULT_MAX_DEPTH, verifyJsonBody, rejectPollutedRequestBody } from '../middleware/requestBodySecurity.mjs';
+import { defaultMaxDepth, verifyJsonBody, rejectPollutedRequestBody } from '../middleware/requestBodySecurity.mjs';
 
-const MAX_DEPTH = DEFAULT_MAX_DEPTH; // env var unset in this suite → resolves to default
+const MAX_DEPTH = defaultMaxDepth; // env var unset in this suite → resolves to default
 
 // Build a JSON array buffer of N nested arrays with `null` as the
 // innermost leaf. For N=3 the source is `[[[null]]]`. The scanner's
@@ -144,7 +144,7 @@ function runRejectPolluted(body) {
 
 describe('Depth-cap boundary (21R-SEC-3-REVIEW-2)', () => {
   // Sanity: env-resolved MAX_DEPTH is the doctrine default.
-  it('test setup: MAX_DEPTH resolves to DEFAULT_MAX_DEPTH (32)', () => {
+  it('test setup: MAX_DEPTH resolves to defaultMaxDepth (32)', () => {
     expect(MAX_DEPTH).toBe(32);
   });
 

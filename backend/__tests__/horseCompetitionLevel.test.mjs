@@ -11,11 +11,11 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { HORSE_XP_PER_LEVEL, getHorseXpLevel, isHorseWithinLevelBracket } from '../utils/horseCompetitionLevel.mjs';
+import { horseXpPerLevel, getHorseXpLevel, isHorseWithinLevelBracket } from '../utils/horseCompetitionLevel.mjs';
 
 describe('getHorseXpLevel — pinned mapping floor(horseXp/100)+1 (Equoria-g8qg0)', () => {
   it('the XP-per-level constant is 100', () => {
-    expect(HORSE_XP_PER_LEVEL).toBe(100);
+    expect(horseXpPerLevel).toBe(100);
   });
 
   it.each([

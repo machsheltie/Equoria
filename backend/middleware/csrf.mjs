@@ -18,50 +18,43 @@
 
 import jwt from 'jsonwebtoken';
 import { doubleCsrf } from 'csrf-csrf';
-import {
-  COOKIE_OPTIONS,
-  CLEAR_COOKIE_OPTIONS,
-  applyHostPrefixGuard,
-} from '../utils/cookieConfig.mjs';
+import { cookieOptions, clearCookieOptions, applyHostPrefixGuard } from '../utils/cookieConfig.mjs';
 import config from '../config/config.mjs';
 import logger from '../utils/logger.mjs';
 
-const CSRF_COOKIE_NAME = config.env === 'production' ? '__Host-csrf' : '_csrf';
+const csrfCookieName = config.env === 'production' ? '__Host-csrf' : '_csrf';
 
 // Equoria-smy2g: The production CSRF cookie is named `__Host-csrf`. The
 // RFC 6265bis `__Host-` prefix FORBIDS a Domain attribute — browsers silently
 // reject any `__Host-` cookie carrying Domain. If an operator sets
 // COOKIE_DOMAIN (to share access/refresh cookies across subdomains), the raw
-// COOKIE_OPTIONS.csrfToken.domain would leak onto the `__Host-csrf` Set-Cookie,
+// cookieOptions.csrfToken.domain would leak onto the `__Host-csrf` Set-Cookie,
 // the browser would drop it, and EVERY mutation would 403 on a missing CSRF
 // cookie. Guarding by the actual cookie name (not a separate `isProduction`
 // inference) eliminates drift between "is it __Host-" and "did we strip
 // domain". For the non-production `_csrf` name the guard is a no-op, so a
 // Domain attribute remains legal there.
-const CSRF_COOKIE_OPTIONS = applyHostPrefixGuard(CSRF_COOKIE_NAME, COOKIE_OPTIONS.csrfToken);
+const csrfCookieOptions = applyHostPrefixGuard(csrfCookieName, cookieOptions.csrfToken);
 
 // Equoria-q7rxy: the CLEAR (delete) path must mirror the Set path. A cookie is
 // only deleted when the clearCookie attributes match the original cookie's
 // attributes; a `__Host-` cookie was set with NO Domain and Path=/, so its
 // deletion must also omit Domain and use Path=/. The raw
-// CLEAR_COOKIE_OPTIONS.csrfToken still carries COOKIE_DOMAIN, which — if set —
+// clearCookieOptions.csrfToken still carries COOKIE_DOMAIN, which — if set —
 // would leak onto a `res.clearCookie('__Host-csrf', ...)`, causing the browser
 // to NOT match the delete to the host-locked cookie and leaving a stale CSRF
 // cookie alive past logout / password change. Routing through the SAME
 // applyHostPrefixGuard keyed on the actual cookie name strips Domain (and
 // re-asserts secure/Path=/) for `__Host-csrf` and is a no-op for the
 // non-production `_csrf` name (where a Domain attribute is legal). Auth handlers
-// that clear the CSRF cookie MUST use CLEAR_CSRF_COOKIE_OPTIONS, not the raw
-// CLEAR_COOKIE_OPTIONS.csrfToken.
-const CLEAR_CSRF_COOKIE_OPTIONS = applyHostPrefixGuard(
-  CSRF_COOKIE_NAME,
-  CLEAR_COOKIE_OPTIONS.csrfToken,
-);
+// that clear the CSRF cookie MUST use clearCsrfCookieOptions, not the raw
+// clearCookieOptions.csrfToken.
+const clearCsrfCookieOptions = applyHostPrefixGuard(csrfCookieName, clearCookieOptions.csrfToken);
 
 // Fallback HMAC salt — only used for pre-login requests that have neither a
 // `req.user` (auth middleware hasn't matched anything yet) nor a refreshToken
 // cookie. For authenticated sessions, see `resolveSessionIdentifier` below.
-const CSRF_SESSION_SALT = 'equoria-csrf-v1';
+const csrfSessionSalt = 'equoria-csrf-v1';
 
 /**
  * Equoria-plw0h: per-user CSRF session binding.
@@ -81,7 +74,7 @@ const CSRF_SESSION_SALT = 'equoria-csrf-v1';
  *      the header-auth case is deliberately excluded.
  *   2. `req.cookies.refreshToken` — secondary, covers any path that didn't
  *      populate req.user but does have the per-session refresh cookie.
- *   3. `CSRF_SESSION_SALT` — last-resort fallback for true unauthenticated
+ *   3. `csrfSessionSalt` — last-resort fallback for true unauthenticated
  *      requests.
  *
  * The csrf-csrf library's existing HMAC-mismatch 403 path enforces the
@@ -142,7 +135,7 @@ const resolveSessionIdentifier = req => {
   ) {
     return req.cookies.refreshToken;
   }
-  return CSRF_SESSION_SALT;
+  return csrfSessionSalt;
 };
 
 // Equoria-uy73 (2026-04-23): no fallback secret. If JWT_SECRET is missing at
@@ -164,8 +157,8 @@ const requireJwtSecret = () => {
 const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
   getSecret: () => requireJwtSecret(),
   getSessionIdentifier: req => resolveSessionIdentifier(req),
-  cookieName: CSRF_COOKIE_NAME,
-  cookieOptions: CSRF_COOKIE_OPTIONS,
+  cookieName: csrfCookieName,
+  cookieOptions: csrfCookieOptions,
   size: 64,
   ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
   getCsrfTokenFromRequest: req => req.headers['x-csrf-token'],
@@ -176,7 +169,7 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
   },
 });
 
-export { CSRF_COOKIE_NAME, CSRF_COOKIE_OPTIONS, CLEAR_CSRF_COOKIE_OPTIONS };
+export { csrfCookieName, csrfCookieOptions, clearCsrfCookieOptions };
 
 /**
  * Issue a CSRF token + matching cookie on the current response.

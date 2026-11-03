@@ -10,7 +10,7 @@ import { normalizeTraitKey } from './epigeneticTraitKeyMap.mjs';
  * Trait impact definitions for different competition disciplines
  * Each trait has discipline-specific modifiers and general effects
  */
-const TRAIT_COMPETITION_EFFECTS = {
+const traitCompetitionEffects = {
   // Positive traits
   resilient: {
     name: 'Resilient',
@@ -223,7 +223,7 @@ function calculateDiminishingReturns(traitCount) {
  * @returns {Object|null} Trait effects or null if not found
  */
 export function getTraitCompetitionEffect(traitName) {
-  return TRAIT_COMPETITION_EFFECTS[traitName] || null;
+  return traitCompetitionEffects[traitName] || null;
 }
 
 /**
@@ -231,7 +231,7 @@ export function getTraitCompetitionEffect(traitName) {
  * @returns {Object} All trait competition effects
  */
 export function getAllTraitCompetitionEffects() {
-  return TRAIT_COMPETITION_EFFECTS;
+  return traitCompetitionEffects;
 }
 
 /**
@@ -241,6 +241,6 @@ export function getAllTraitCompetitionEffects() {
  * @returns {boolean} Whether trait has specific effects for this discipline
  */
 export function hasSpecializedEffect(traitName, discipline) {
-  const traitEffect = TRAIT_COMPETITION_EFFECTS[traitName];
+  const traitEffect = traitCompetitionEffects[traitName];
   return !!(traitEffect && traitEffect.disciplines && traitEffect.disciplines[discipline]);
 }

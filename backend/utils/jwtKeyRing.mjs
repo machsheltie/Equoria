@@ -37,16 +37,16 @@ import jwt from 'jsonwebtoken';
  * Env-var names per token kind. The "current" var is the one the rest of the
  * codebase already used; "previous" is the new, optional overlap-window var.
  */
-const KEY_ENV = Object.freeze({
+const keyEnv = Object.freeze({
   access: { current: 'JWT_SECRET', previous: 'JWT_SECRET_PREVIOUS' },
   refresh: { current: 'JWT_REFRESH_SECRET', previous: 'JWT_REFRESH_SECRET_PREVIOUS' },
 });
 
 function envNames(kind) {
-  const names = KEY_ENV[kind];
+  const names = keyEnv[kind];
   if (!names) {
     throw new Error(
-      `[jwtKeyRing] Unknown token kind "${kind}". Expected one of: ${Object.keys(KEY_ENV).join(', ')}.`,
+      `[jwtKeyRing] Unknown token kind "${kind}". Expected one of: ${Object.keys(keyEnv).join(', ')}.`,
     );
   }
   return names;

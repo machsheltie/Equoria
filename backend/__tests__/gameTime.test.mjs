@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  GAME_TIME_ZONE,
+  gameTimeZone,
   calendarDateDayIndex,
   gameCalendarDate,
   gameDateKey,
@@ -22,7 +22,7 @@ import {
 
 describe('game clock time zone', () => {
   it('is US Eastern with daylight saving', () => {
-    expect(GAME_TIME_ZONE).toBe('America/New_York');
+    expect(gameTimeZone).toBe('America/New_York');
   });
 });
 

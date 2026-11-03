@@ -6,38 +6,38 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  DEPLOYABLE_ENVS,
+  deployableEnvs,
   isDeployableEnvironment,
   getSecretValidationError,
   isCommittedTestSecret,
 } from '../utils/runtimeSecretPolicy.mjs';
 
 // ---------------------------------------------------------------------------
-// DEPLOYABLE_ENVS constant
+// deployableEnvs constant
 // ---------------------------------------------------------------------------
-describe('DEPLOYABLE_ENVS', () => {
+describe('deployableEnvs', () => {
   it('is a Set', () => {
-    expect(DEPLOYABLE_ENVS instanceof Set).toBe(true);
+    expect(deployableEnvs instanceof Set).toBe(true);
   });
 
   it('contains production', () => {
-    expect(DEPLOYABLE_ENVS.has('production')).toBe(true);
+    expect(deployableEnvs.has('production')).toBe(true);
   });
 
   it('contains beta', () => {
-    expect(DEPLOYABLE_ENVS.has('beta')).toBe(true);
+    expect(deployableEnvs.has('beta')).toBe(true);
   });
 
   it('does not contain beta-readiness (local E2E harness, not a real deployment)', () => {
-    expect(DEPLOYABLE_ENVS.has('beta-readiness')).toBe(false);
+    expect(deployableEnvs.has('beta-readiness')).toBe(false);
   });
 
   it('does not contain development', () => {
-    expect(DEPLOYABLE_ENVS.has('development')).toBe(false);
+    expect(deployableEnvs.has('development')).toBe(false);
   });
 
   it('does not contain test', () => {
-    expect(DEPLOYABLE_ENVS.has('test')).toBe(false);
+    expect(deployableEnvs.has('test')).toBe(false);
   });
 });
 

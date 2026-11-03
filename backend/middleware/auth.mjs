@@ -37,7 +37,7 @@ export { requireStaffCheckin };
  *   so the next request reads the fresh DB value immediately).
  * - On TTL expiry (~30s) for resilience against missed evictions.
  */
-const PASSWORD_CHANGED_AT_CACHE_TTL_MS = 30_000;
+const passwordChangedAtCacheTtlMs = 30_000;
 const passwordChangedAtCache = new Map();
 
 const getCachedAccountGate = userId => {
@@ -59,7 +59,7 @@ const setCachedAccountGate = (userId, value, emailVerified) => {
   passwordChangedAtCache.set(userId, {
     value,
     emailVerified,
-    expiresAt: Date.now() + PASSWORD_CHANGED_AT_CACHE_TTL_MS,
+    expiresAt: Date.now() + passwordChangedAtCacheTtlMs,
   });
 };
 
@@ -244,7 +244,7 @@ export const authenticateToken = async (req, res, next) => {
     // 2. Algorithm confusion attacks (HS256 vs RS256)
     // 3. Algorithm upgrade attacks (attacker using HS384/HS512 to bypass validation)
     // CRITICAL: Must match the algorithm used in generateToken() and tokenRotationService.mjs
-    const SAFE_JWT_ALGORITHMS = ['HS256'];
+    const safeJwtAlgorithms = ['HS256'];
 
     let decoded;
     try {
@@ -252,7 +252,7 @@ export const authenticateToken = async (req, res, next) => {
       // then optional JWT_SECRET_PREVIOUS during a rotation overlap window).
       // Signing still uses the CURRENT secret only — see jwtKeyRing.mjs.
       decoded = verifyWithKeyRing(token, 'access', {
-        algorithms: SAFE_JWT_ALGORITHMS,
+        algorithms: safeJwtAlgorithms,
         ignoreExpiration: false,
         ignoreNotBefore: false,
       });
@@ -276,11 +276,11 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     // CWE-613 MITIGATION: Enforce absolute 7-day maximum session age
-    const MAX_SESSION_AGE_MS = msPerWeek; // 7 days
-    const SESSION_CLOCK_SKEW_MS = 10000; // 10 seconds tolerance for clock drift
+    const maxSessionAgeMs = msPerWeek; // 7 days
+    const sessionClockSkewMs = 10000; // 10 seconds tolerance for clock drift
     const tokenAge = decoded.iat ? Date.now() - decoded.iat * 1000 : 0;
 
-    if (tokenAge - SESSION_CLOCK_SKEW_MS > MAX_SESSION_AGE_MS) {
+    if (tokenAge - sessionClockSkewMs > maxSessionAgeMs) {
       logger.warn(`[auth:${requestId}] Session too old`);
       return respondUnauthorized('Session expired. Please login again.');
     }

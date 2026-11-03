@@ -30,13 +30,13 @@ import { breedAllowsDiscipline } from './gaitedBreed.mjs';
 import { maxActiveAgeYears, minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
 
 // The ridden entry window is the horse age policy's active window (Equoria-2nacc).
-export const MIN_ENTRY_AGE_YEARS = minActiveAgeYears;
-export const MAX_ENTRY_AGE_YEARS = maxActiveAgeYears;
+export const minEntryAgeYears = minActiveAgeYears;
+export const maxEntryAgeYears = maxActiveAgeYears;
 /** At most this many discipline types active at once (owner entry rules; B10). */
-export const MAX_ACTIVE_DISCIPLINE_TYPES = 3;
+export const maxActiveDisciplineTypes = 3;
 
 /** Stable refusal codes with their HTTP status and player-facing message. */
-export const ENTRY_REFUSALS = Object.freeze({
+export const entryRefusals = Object.freeze({
   ageTooYoung: Object.freeze({
     status: 400,
     message: 'Horse must be at least 3 years old to compete',
@@ -103,14 +103,14 @@ export const ENTRY_REFUSALS = Object.freeze({
 /**
  * The player-facing message for a refusal. disciplineTypeLimit names the
  * horse's active types when they are known.
- * @param {keyof ENTRY_REFUSALS} code
+ * @param {keyof entryRefusals} code
  * @param {{ activeTypes?: string[] }} [context]
  */
 export function entryRefusalMessage(code, { activeTypes } = {}) {
   if (code === 'disciplineTypeLimit' && activeTypes?.length) {
     return `This horse already has shows in ${activeTypes.length} discipline types (${activeTypes.join(', ')}). A new type can be entered once every show of one of them has run.`;
   }
-  return ENTRY_REFUSALS[code].message;
+  return entryRefusals[code].message;
 }
 
 /**
@@ -207,7 +207,7 @@ function hasGaiting(gaitScores) {
 }
 
 /** The horse fields the entry rules read. */
-export const ENTRY_RULE_HORSE_SELECT = Object.freeze({
+export const entryRuleHorseSelect = Object.freeze({
   dateOfBirth: true,
   healthStatus: true,
   gaitScores: true,
@@ -221,7 +221,7 @@ export const ENTRY_RULE_HORSE_SELECT = Object.freeze({
 });
 
 /** The rider fields C10 reads from the active assignment. */
-const ASSIGNMENT_SELECT = Object.freeze({
+const assignmentSelect = Object.freeze({
   horseId: true,
   rider: { select: { retired: true, userId: true, feeUnpaidSince: true } },
 });
@@ -242,7 +242,7 @@ export async function loadActiveAssignments(db, horseIds) {
   const rows = await db.riderAssignment.findMany({
     where: { horseId: { in: horseIds }, isActive: true },
     orderBy: [{ startDate: 'desc' }, { id: 'desc' }],
-    select: ASSIGNMENT_SELECT,
+    select: assignmentSelect,
   });
   const byHorse = new Map();
   for (const row of rows) {
@@ -256,10 +256,10 @@ export async function loadActiveAssignments(db, horseIds) {
 /** Age rule (3-20 game years from dateOfBirth): a refusal code or null. */
 export function ageRefusal(dateOfBirth, now = new Date()) {
   const ageYears = getHorseAgeYears(dateOfBirth, now);
-  if (ageYears < MIN_ENTRY_AGE_YEARS) {
+  if (ageYears < minEntryAgeYears) {
     return 'ageTooYoung';
   }
-  if (ageYears > MAX_ENTRY_AGE_YEARS) {
+  if (ageYears > maxEntryAgeYears) {
     return 'ageTooOld';
   }
   return null;
@@ -307,7 +307,7 @@ export function disciplineTypeRefusal(show, activeTypes = []) {
   if (activeTypes.includes(disciplineTypeOf(show))) {
     return null;
   }
-  return activeTypes.length >= MAX_ACTIVE_DISCIPLINE_TYPES ? 'disciplineTypeLimit' : null;
+  return activeTypes.length >= maxActiveDisciplineTypes ? 'disciplineTypeLimit' : null;
 }
 
 /**
@@ -336,7 +336,7 @@ export function gaitingRefusal(discipline, gaitScores, breed) {
  *   a show-less check (the eligibility summary) just `{ discipline }`.
  * @param {{ dateOfBirth?: Date|string|null, healthStatus?: string|null,
  *   gaitScores?: object|null, age?: number|null, lastFedDate?: Date|string|null,
- *   lastVettedDate?: Date|string|null }} input.horse - ENTRY_RULE_HORSE_SELECT fields
+ *   lastVettedDate?: Date|string|null }} input.horse - entryRuleHorseSelect fields
  * @param {{ rider?: { retired?: boolean, userId?: string|null } }|null|undefined}
  *   input.assignment - the horse's active assignment (loadActiveAssignments)
  * @param {boolean} [input.alreadyEntered]
@@ -344,7 +344,7 @@ export function gaitingRefusal(discipline, gaitScores, breed) {
  *   (loadActiveDisciplineTypes)
  * @param {string} input.userId - the horse's owner
  * @param {Date} [input.now]
- * @returns {keyof ENTRY_REFUSALS | null}
+ * @returns {keyof entryRefusals | null}
  */
 export function evaluateEntryRules({
   show,

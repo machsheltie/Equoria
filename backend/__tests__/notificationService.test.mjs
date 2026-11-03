@@ -3,7 +3,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import {
   createNotification,
   pruneOldNotifications,
-  NOTIFICATION_RETENTION_COUNT,
+  notificationRetentionCount,
 } from '../utils/notificationService.mjs';
 import { createTestUser, cleanupTestData } from '../tests/helpers/testAuth.mjs';
 
@@ -60,7 +60,7 @@ describe('notificationService', () => {
     it('pruneOldNotifications retains the newest N rows and deletes the rest', async () => {
       // Seed N+10 rows with synthetic createdAt timestamps so ordering is
       // deterministic regardless of insert speed.
-      const total = NOTIFICATION_RETENTION_COUNT + 10;
+      const total = notificationRetentionCount + 10;
       const baseTime = Date.now();
       const rows = Array.from({ length: total }, (_, idx) => ({
         userId: capUser.id,
@@ -78,7 +78,7 @@ describe('notificationService', () => {
         orderBy: { createdAt: 'asc' },
         select: { payload: true },
       });
-      expect(remaining).toHaveLength(NOTIFICATION_RETENTION_COUNT);
+      expect(remaining).toHaveLength(notificationRetentionCount);
       // The OLDEST surviving row is the one at index 10 (we deleted 0..9).
       expect(remaining[0].payload).toMatchObject({ idx: 10 });
       // The NEWEST surviving row is the one at index N+9.
@@ -93,8 +93,8 @@ describe('notificationService', () => {
       // Seed createdAt is in the PAST so the helper-created row below
       // is genuinely the newest by createdAt — otherwise the prune would
       // evict our sentinel.
-      const baseTime = Date.now() - (NOTIFICATION_RETENTION_COUNT + 60) * 1000;
-      const seedRows = Array.from({ length: NOTIFICATION_RETENTION_COUNT }, (_, idx) => ({
+      const baseTime = Date.now() - (notificationRetentionCount + 60) * 1000;
+      const seedRows = Array.from({ length: notificationRetentionCount }, (_, idx) => ({
         userId: capUser.id,
         type: 'statGain',
         payload: { idx, seeded: true },
@@ -108,12 +108,12 @@ describe('notificationService', () => {
 
       // Wait for the prune microtask to settle. The prune is async so we
       // poll briefly rather than sleeping a fixed duration.
-      let count = NOTIFICATION_RETENTION_COUNT + 1;
-      for (let attempt = 0; attempt < 20 && count > NOTIFICATION_RETENTION_COUNT; attempt += 1) {
+      let count = notificationRetentionCount + 1;
+      for (let attempt = 0; attempt < 20 && count > notificationRetentionCount; attempt += 1) {
         await new Promise(r => setTimeout(r, 100));
         count = await prisma.notification.count({ where: { userId: capUser.id } });
       }
-      expect(count).toBe(NOTIFICATION_RETENTION_COUNT);
+      expect(count).toBe(notificationRetentionCount);
 
       const newest = await prisma.notification.findFirst({
         where: { userId: capUser.id },

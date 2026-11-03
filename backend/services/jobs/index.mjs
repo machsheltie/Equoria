@@ -82,7 +82,7 @@ import hallOfFameRoundsJob from './hallOfFameRoundsJob.mjs';
  * temporaryFlagExpiry (daily 00:20) was removed with the temporary flags it swept
  * (Equoria-kqdde; owner ruling 2026-10-22 on Equoria-q4uem.17).
  */
-export const CRON_JOB_REGISTRY = Object.freeze([
+export const cronJobRegistry = Object.freeze([
   dailyTraitJob,
   dailyAgingJob,
   dailyMilestoneJob,
@@ -101,4 +101,4 @@ export const CRON_JOB_REGISTRY = Object.freeze([
   hallOfFameRoundsJob,
 ]);
 
-export default CRON_JOB_REGISTRY;
+export default cronJobRegistry;

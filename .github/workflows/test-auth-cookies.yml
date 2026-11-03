@@ -158,7 +158,7 @@ jobs:
           echo "=== Verifying Backend Cookie Security ==="
 
           # Cookie options live in backend/utils/cookieConfig.mjs, not the
-          # auth controller — the controller imports COOKIE_OPTIONS from there.
+          # auth controller — the controller imports cookieOptions from there.
           COOKIE_CONFIG=backend/utils/cookieConfig.mjs
 
           # Check for httpOnly flag
@@ -181,21 +181,21 @@ jobs:
           # wirings, in chronological order of the cookie-security refactors:
           #   1. original literal   `secure: process.env.NODE_ENV === 'production'`
           #   2. isProduction alias  `secure: isProduction`  (config.env === 'production')
-          #   3. IS_SECURE_COOKIE constant — Equoria-46f0s decoupled `secure` from
-          #      NODE_ENV: `const IS_SECURE_COOKIE = resolveCookieSecure({...})`,
+          #   3. isSecureCookie constant — Equoria-46f0s decoupled `secure` from
+          #      NODE_ENV: `const isSecureCookie = resolveCookieSecure({...})`,
           #      production-secure by default with an explicit COOKIE_SECURE override.
           # (3) was added because the 46f0s refactor moved every `secure:` to the
           # constant, which the old two-pattern grep no longer matched — a
           # false-negative that turned this audit red on master without any real
           # security regression (Equoria-fefh2 recovery).
-          if grep -qE "secure: (process\.env\.NODE_ENV === 'production'|isProduction|IS_SECURE_COOKIE)" "$COOKIE_CONFIG"; then
+          if grep -qE "secure: (process\.env\.NODE_ENV === 'production'|isProduction|isSecureCookie)" "$COOKIE_CONFIG"; then
             # Keep the gate's teeth (EDGE_CASE_FIX_DISCIPLINE §2 — no weakening):
-            # if `secure` is wired to the IS_SECURE_COOKIE constant, that constant
+            # if `secure` is wired to the isSecureCookie constant, that constant
             # MUST be derived from the production-defaulting resolveCookieSecure().
-            # A naked `const IS_SECURE_COOKIE = false` must still FAIL this audit.
-            if grep -q "secure: IS_SECURE_COOKIE" "$COOKIE_CONFIG" \
-               && ! grep -qE "IS_SECURE_COOKIE = resolveCookieSecure\(" "$COOKIE_CONFIG"; then
-              echo "❌ ERROR: secure wired to IS_SECURE_COOKIE but it is not derived from resolveCookieSecure() — secure-by-default is not guaranteed"
+            # A naked `const isSecureCookie = false` must still FAIL this audit.
+            if grep -q "secure: isSecureCookie" "$COOKIE_CONFIG" \
+               && ! grep -qE "isSecureCookie = resolveCookieSecure\(" "$COOKIE_CONFIG"; then
+              echo "❌ ERROR: secure wired to isSecureCookie but it is not derived from resolveCookieSecure() — secure-by-default is not guaranteed"
               exit 1
             fi
             echo "✅ Secure flag configured for production"

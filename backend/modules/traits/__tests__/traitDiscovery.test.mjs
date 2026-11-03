@@ -1,7 +1,7 @@
 /**
  * traitDiscovery — branch-coverage tests (Equoria-jkht)
  *
- * Covers DISCOVERY_CONDITIONS and checkDiscoveryConditions (the read side used
+ * Covers discoveryConditions and checkDiscoveryConditions (the read side used
  * by GET /traits/discovery-status).
  * No mocks.
  *
@@ -30,7 +30,7 @@ import { describe, it, expect } from '@jest/globals';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as traitDiscovery from '../../../utils/traitDiscovery.mjs';
-import { checkDiscoveryConditions, DISCOVERY_CONDITIONS } from '../../../utils/traitDiscovery.mjs';
+import { checkDiscoveryConditions, discoveryConditions } from '../../../utils/traitDiscovery.mjs';
 
 // ── Retired exports (Equoria-ecp0i, Equoria-0w96q, Equoria-tpofm) ───────────────────────────
 
@@ -51,11 +51,11 @@ describe('retired trait discovery exports', () => {
   });
 });
 
-// ── DISCOVERY_CONDITIONS — condition closures (synchronous) ──────────────────
+// ── discoveryConditions — condition closures (synchronous) ──────────────────
 
-describe('DISCOVERY_CONDITIONS — structure and synchronous condition branches', () => {
+describe('discoveryConditions — structure and synchronous condition branches', () => {
   it('has expected keys', () => {
-    const keys = Object.keys(DISCOVERY_CONDITIONS);
+    const keys = Object.keys(discoveryConditions);
     expect(keys).toContain('HIGH_BOND');
     expect(keys).toContain('EXCELLENT_BOND');
     expect(keys).toContain('PERFECT_CARE');
@@ -66,7 +66,7 @@ describe('DISCOVERY_CONDITIONS — structure and synchronous condition branches'
   });
 
   it('each synchronous entry has name, condition fn, description, priority', () => {
-    for (const [, cond] of Object.entries(DISCOVERY_CONDITIONS)) {
+    for (const [, cond] of Object.entries(discoveryConditions)) {
       expect(typeof cond.name).toBe('string');
       expect(typeof cond.condition).toBe('function');
       expect(typeof cond.description).toBe('string');
@@ -79,32 +79,32 @@ describe('DISCOVERY_CONDITIONS — structure and synchronous condition branches'
 
   // HIGH_BOND: (bondScore || 0) >= 80
   it('HIGH_BOND returns false when bondScore < 80', () => {
-    expect(DISCOVERY_CONDITIONS.HIGH_BOND.condition({ bondScore: 50 })).toBe(false);
+    expect(discoveryConditions.HIGH_BOND.condition({ bondScore: 50 })).toBe(false);
   });
   it('HIGH_BOND returns true when bondScore >= 80', () => {
-    expect(DISCOVERY_CONDITIONS.HIGH_BOND.condition({ bondScore: 80 })).toBe(true);
+    expect(discoveryConditions.HIGH_BOND.condition({ bondScore: 80 })).toBe(true);
   });
   it('HIGH_BOND uses default 0 when bondScore missing', () => {
-    expect(DISCOVERY_CONDITIONS.HIGH_BOND.condition({})).toBe(false);
+    expect(discoveryConditions.HIGH_BOND.condition({})).toBe(false);
   });
 
   // EXCELLENT_BOND: (bondScore || 0) >= 95
   it('EXCELLENT_BOND returns false for bondScore 80', () => {
-    expect(DISCOVERY_CONDITIONS.EXCELLENT_BOND.condition({ bondScore: 80 })).toBe(false);
+    expect(discoveryConditions.EXCELLENT_BOND.condition({ bondScore: 80 })).toBe(false);
   });
   it('EXCELLENT_BOND returns true for bondScore 95', () => {
-    expect(DISCOVERY_CONDITIONS.EXCELLENT_BOND.condition({ bondScore: 95 })).toBe(true);
+    expect(discoveryConditions.EXCELLENT_BOND.condition({ bondScore: 95 })).toBe(true);
   });
 
   // PERFECT_CARE: bondScore >= 80
   it('PERFECT_CARE returns true when the bond criterion is met', () => {
-    expect(DISCOVERY_CONDITIONS.PERFECT_CARE.condition({ bondScore: 85 })).toBe(true);
+    expect(discoveryConditions.PERFECT_CARE.condition({ bondScore: 85 })).toBe(true);
   });
   it('PERFECT_CARE returns true for a fully bonded horse', () => {
-    expect(DISCOVERY_CONDITIONS.PERFECT_CARE.condition({ bondScore: 100 })).toBe(true);
+    expect(discoveryConditions.PERFECT_CARE.condition({ bondScore: 100 })).toBe(true);
   });
   it('PERFECT_CARE returns false below 80 bond', () => {
-    expect(DISCOVERY_CONDITIONS.PERFECT_CARE.condition({ bondScore: 79 })).toBe(false);
+    expect(discoveryConditions.PERFECT_CARE.condition({ bondScore: 79 })).toBe(false);
   });
 });
 

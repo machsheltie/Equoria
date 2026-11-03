@@ -55,13 +55,13 @@ import { createStarterHorseForNewUser } from '../services/onboardingService.mjs'
 // Register sends the first verification link through signupVerificationEmail.
 import { sendFirstVerificationEmail } from '../services/signupVerificationEmail.mjs';
 import { maskEmailsInError } from '../../../utils/emailIdentityPolicy.mjs';
-import { COOKIE_OPTIONS, CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
+import { cookieOptions, clearCookieOptions } from '../../../utils/cookieConfig.mjs';
 import {
   issueCsrfToken,
-  CSRF_COOKIE_NAME,
-  CLEAR_CSRF_COOKIE_OPTIONS,
+  csrfCookieName,
+  clearCsrfCookieOptions,
 } from '../../../middleware/csrf.mjs';
-import { meetsCoppaMinimumAge, COPPA_MIN_AGE_YEARS } from '../../../utils/humanAge.mjs';
+import { meetsCoppaMinimumAge, coppaMinAgeYears } from '../../../utils/humanAge.mjs';
 // Equoria-vhv3i: shared constants moved to ../constants/authConstants.mjs so
 // settingsValidation.mjs (and the crafting-backfill script) can import the
 // canonical lists without dragging the controller's prisma/bcrypt/jwt graph.
@@ -146,7 +146,7 @@ export const register = async (req, res, next) => {
     // A07). The message is intentionally non-leaky: it does not echo the
     // submitted DOB or the computed age.
     if (!meetsCoppaMinimumAge(dateOfBirth)) {
-      throw new ValidationError(`You must be ${COPPA_MIN_AGE_YEARS} or older to create an account`);
+      throw new ValidationError(`You must be ${coppaMinAgeYears} or older to create an account`);
     }
 
     // Check if user already exists (fast-path check; P2002 catch below handles the
@@ -257,8 +257,8 @@ export const register = async (req, res, next) => {
 
     // Set httpOnly cookies for security (prevents XSS attacks)
     // Using centralized cookie configuration for consistency
-    res.cookie('accessToken', tokenPair.accessToken, COOKIE_OPTIONS.accessToken);
-    res.cookie('refreshToken', tokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
+    res.cookie('accessToken', tokenPair.accessToken, cookieOptions.accessToken);
+    res.cookie('refreshToken', tokenPair.refreshToken, cookieOptions.refreshToken);
 
     // 21R-AUTH-3: seed CSRF cookie + return token in body so the very
     // first mutation after register skips the /csrf-token round-trip.
@@ -354,8 +354,8 @@ export const login = async (req, res, next) => {
 
     // Set httpOnly cookies for security (prevents XSS attacks)
     // Using centralized cookie configuration for consistency
-    res.cookie('accessToken', tokenPair.accessToken, COOKIE_OPTIONS.accessToken);
-    res.cookie('refreshToken', tokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
+    res.cookie('accessToken', tokenPair.accessToken, cookieOptions.accessToken);
+    res.cookie('refreshToken', tokenPair.refreshToken, cookieOptions.refreshToken);
 
     // 21R-AUTH-3: seed CSRF cookie + return token in body so the very
     // first mutation after login skips the /csrf-token round-trip.
@@ -444,9 +444,9 @@ export const refreshToken = async (req, res, next) => {
     // Using centralized cookie configuration for consistency. Equoria-wj4bc:
     // the loser of a two-tab race gets an access token only; the winner's
     // response carries the rotated refresh token into the shared cookie jar.
-    res.cookie('accessToken', newTokenPair.accessToken, COOKIE_OPTIONS.accessToken);
+    res.cookie('accessToken', newTokenPair.accessToken, cookieOptions.accessToken);
     if (newTokenPair.refreshToken) {
-      res.cookie('refreshToken', newTokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
+      res.cookie('refreshToken', newTokenPair.refreshToken, cookieOptions.refreshToken);
     }
 
     // 21R-AUTH-3: rotate the CSRF cookie alongside the access/refresh
@@ -497,11 +497,11 @@ export const logout = async (req, res, next) => {
 
     // Clear httpOnly cookies
     // Using centralized clear cookie options for consistency
-    res.clearCookie('accessToken', CLEAR_COOKIE_OPTIONS.accessToken);
-    res.clearCookie('refreshToken', CLEAR_COOKIE_OPTIONS.refreshToken);
+    res.clearCookie('accessToken', clearCookieOptions.accessToken);
+    res.clearCookie('refreshToken', clearCookieOptions.refreshToken);
     // Equoria-uxh1l: also clear the CSRF cookie on session end. Uses the guarded
     // clear options so a `__Host-csrf` cookie is deleted with no Domain / Path=/.
-    res.clearCookie(CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS);
+    res.clearCookie(csrfCookieName, clearCsrfCookieOptions);
 
     res.status(200).json({
       success: true,

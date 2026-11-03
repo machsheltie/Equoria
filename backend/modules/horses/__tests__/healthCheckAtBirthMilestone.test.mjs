@@ -16,32 +16,32 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  MILESTONE_TYPES,
-  DEVELOPMENTAL_WINDOWS,
-  TRAIT_THRESHOLDS,
-  MILESTONE_TRAIT_POOLS,
+  milestoneTypes,
+  developmentalWindows,
+  traitThresholds,
+  milestoneTraitPools,
 } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
 
 // ── enhancedMilestoneEvaluationSystem constants ───────────────────────────────
 
-describe('MILESTONE_TYPES', () => {
+describe('milestoneTypes', () => {
   it('contains all five developmental milestone keys', () => {
-    expect(MILESTONE_TYPES.IMPRINTING).toBe('imprinting');
-    expect(MILESTONE_TYPES.SOCIALIZATION).toBe('socialization');
-    expect(MILESTONE_TYPES.CURIOSITY_PLAY).toBe('curiosityPlay');
-    expect(MILESTONE_TYPES.TRUST_HANDLING).toBe('trustHandling');
-    expect(MILESTONE_TYPES.CONFIDENCE_REACTIVITY).toBe('confidenceReactivity');
+    expect(milestoneTypes.IMPRINTING).toBe('imprinting');
+    expect(milestoneTypes.SOCIALIZATION).toBe('socialization');
+    expect(milestoneTypes.curiosityPlay).toBe('curiosityPlay');
+    expect(milestoneTypes.trustHandling).toBe('trustHandling');
+    expect(milestoneTypes.confidenceReactivity).toBe('confidenceReactivity');
   });
 });
 
-describe('DEVELOPMENTAL_WINDOWS', () => {
+describe('developmentalWindows', () => {
   it('imprinting window starts at day 0 and ends at day 1', () => {
-    expect(DEVELOPMENTAL_WINDOWS[MILESTONE_TYPES.IMPRINTING].start).toBe(0);
-    expect(DEVELOPMENTAL_WINDOWS[MILESTONE_TYPES.IMPRINTING].end).toBe(1);
+    expect(developmentalWindows[milestoneTypes.IMPRINTING].start).toBe(0);
+    expect(developmentalWindows[milestoneTypes.IMPRINTING].end).toBe(1);
   });
 
   it('all windows have start and end values', () => {
-    for (const window of Object.values(DEVELOPMENTAL_WINDOWS)) {
+    for (const window of Object.values(developmentalWindows)) {
       expect(typeof window.start).toBe('number');
       expect(typeof window.end).toBe('number');
       expect(window.end).toBeGreaterThan(window.start);
@@ -49,16 +49,16 @@ describe('DEVELOPMENTAL_WINDOWS', () => {
   });
 });
 
-describe('TRAIT_THRESHOLDS', () => {
+describe('traitThresholds', () => {
   it('CONFIRM is 3 and DENY is -3', () => {
-    expect(TRAIT_THRESHOLDS.CONFIRM).toBe(3);
-    expect(TRAIT_THRESHOLDS.DENY).toBe(-3);
+    expect(traitThresholds.CONFIRM).toBe(3);
+    expect(traitThresholds.DENY).toBe(-3);
   });
 });
 
-describe('MILESTONE_TRAIT_POOLS', () => {
+describe('milestoneTraitPools', () => {
   it('each milestone has positive and negative trait arrays', () => {
-    for (const pool of Object.values(MILESTONE_TRAIT_POOLS)) {
+    for (const pool of Object.values(milestoneTraitPools)) {
       expect(Array.isArray(pool.positive)).toBe(true);
       expect(Array.isArray(pool.negative)).toBe(true);
       expect(pool.positive.length).toBeGreaterThan(0);

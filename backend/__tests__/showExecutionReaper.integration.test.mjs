@@ -38,7 +38,7 @@ import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // rider. Fixture-only; no assertion changed.
 import { competitionDateOfBirth, giveEligibleRider } from '../__tests__/helpers/eligibleCompetitor.mjs';
 import { createShow, enterShow } from '../modules/competition/shows/showController.mjs';
-import { reapStaleExecutingShows, STALE_CLAIM_THRESHOLD_MS } from '../services/jobs/impl/showExecutionReaper.mjs';
+import { reapStaleExecutingShows, staleClaimThresholdMs } from '../services/jobs/impl/showExecutionReaper.mjs';
 import { releaseShowEscrow } from './helpers/releaseShowEscrow.mjs';
 import { testHorseData } from './helpers/createTestHorse.mjs';
 
@@ -272,7 +272,7 @@ describe('[Equoria-c7mx0] show-execution reaper', () => {
       [entrantHorses[0].id]: 300,
       [entrantHorses[1].id]: 200,
     };
-    await plantCrash(showId, new Date(Date.now() - STALE_CLAIM_THRESHOLD_MS - 60 * 60 * 1000), staged);
+    await plantCrash(showId, new Date(Date.now() - staleClaimThresholdMs - 60 * 60 * 1000), staged);
 
     // Prove the stranded state is the koodu-clean one: no results, escrow intact.
     const stranded = await prisma.show.findUnique({ where: { id: showId } });
@@ -344,7 +344,7 @@ describe('[Equoria-c7mx0] show-execution reaper', () => {
     // Rows claimed before the claimedAt migration have claimedAt NULL; their
     // staleness signal is updatedAt (bumped by the claim write itself). Age
     // it via raw SQL — the Prisma client would re-bump @updatedAt.
-    const staleTs = new Date(Date.now() - STALE_CLAIM_THRESHOLD_MS - 60 * 60 * 1000);
+    const staleTs = new Date(Date.now() - staleClaimThresholdMs - 60 * 60 * 1000);
     await prisma.$executeRaw`UPDATE "shows" SET "updatedAt" = ${staleTs} WHERE "id" = ${showId}`;
 
     const summary = await reapStaleExecutingShows({ showIds: [showId] });
@@ -387,7 +387,7 @@ describe('[Equoria-c7mx0] show-execution reaper', () => {
         riderId: null,
       },
     ];
-    await plantCrash(showId, new Date(Date.now() - STALE_CLAIM_THRESHOLD_MS - 60 * 60 * 1000), bogus);
+    await plantCrash(showId, new Date(Date.now() - staleClaimThresholdMs - 60 * 60 * 1000), bogus);
 
     const summary = await reapStaleExecutingShows({ showIds: [showId] });
     expect(summary.recoveredCount).toBe(1);
@@ -456,7 +456,7 @@ describe('[Equoria-c7mx0] show-execution reaper', () => {
     const captureTransport = new winston.transports.Stream({ stream: captureStream });
 
     const showId = await buildFundedShow();
-    await plantCrash(showId, new Date(Date.now() - STALE_CLAIM_THRESHOLD_MS - 60_000));
+    await plantCrash(showId, new Date(Date.now() - staleClaimThresholdMs - 60_000));
 
     logger.add(captureTransport);
     try {

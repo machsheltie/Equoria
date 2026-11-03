@@ -59,23 +59,23 @@ describe('cookieConfig wiring — COOKIE_SECURE overrides the exported cookie op
   it('COOKIE_SECURE=true makes every exported cookie option secure:true (despite NODE_ENV=test)', async () => {
     const mod = await loadCookieConfigWith({ secure: 'true' });
 
-    expect(mod.ACCESS_TOKEN_COOKIE_OPTIONS.secure).toBe(true);
-    expect(mod.REFRESH_TOKEN_COOKIE_OPTIONS.secure).toBe(true);
-    expect(mod.CSRF_TOKEN_COOKIE_OPTIONS.secure).toBe(true);
+    expect(mod.accessTokenCookieOptions.secure).toBe(true);
+    expect(mod.refreshTokenCookieOptions.secure).toBe(true);
+    expect(mod.csrfTokenCookieOptions.secure).toBe(true);
     // Clear options must mirror the set options so logout actually deletes the
     // Secure cookie (browsers match deletion on the Secure/SameSite attrs).
-    expect(mod.CLEAR_COOKIE_OPTIONS.accessToken.secure).toBe(true);
-    expect(mod.CLEAR_COOKIE_OPTIONS.refreshToken.secure).toBe(true);
-    expect(mod.CLEAR_COOKIE_OPTIONS.csrfToken.secure).toBe(true);
+    expect(mod.clearCookieOptions.accessToken.secure).toBe(true);
+    expect(mod.clearCookieOptions.refreshToken.secure).toBe(true);
+    expect(mod.clearCookieOptions.csrfToken.secure).toBe(true);
     expect(mod.getCookieConfigSummary().secureCookies).toBe(true);
   });
 
   it('default (COOKIE_SECURE unset) keeps secure:false under NODE_ENV=test — dev/test default unbroken', async () => {
     const mod = await loadCookieConfigWith({ secure: undefined });
 
-    expect(mod.ACCESS_TOKEN_COOKIE_OPTIONS.secure).toBe(false);
-    expect(mod.REFRESH_TOKEN_COOKIE_OPTIONS.secure).toBe(false);
-    expect(mod.CSRF_TOKEN_COOKIE_OPTIONS.secure).toBe(false);
+    expect(mod.accessTokenCookieOptions.secure).toBe(false);
+    expect(mod.refreshTokenCookieOptions.secure).toBe(false);
+    expect(mod.csrfTokenCookieOptions.secure).toBe(false);
     expect(mod.getCookieConfigSummary().secureCookies).toBe(false);
   });
 });
@@ -84,17 +84,17 @@ describe('cookieConfig wiring — COOKIE_SAMESITE overrides the exported cookie 
   it('COOKIE_SAMESITE=strict makes every exported cookie option sameSite:strict (despite NODE_ENV=test)', async () => {
     const mod = await loadCookieConfigWith({ sameSite: 'strict' });
 
-    expect(mod.ACCESS_TOKEN_COOKIE_OPTIONS.sameSite).toBe('strict');
-    expect(mod.REFRESH_TOKEN_COOKIE_OPTIONS.sameSite).toBe('strict');
-    expect(mod.CSRF_TOKEN_COOKIE_OPTIONS.sameSite).toBe('strict');
-    expect(mod.CLEAR_COOKIE_OPTIONS.accessToken.sameSite).toBe('strict');
+    expect(mod.accessTokenCookieOptions.sameSite).toBe('strict');
+    expect(mod.refreshTokenCookieOptions.sameSite).toBe('strict');
+    expect(mod.csrfTokenCookieOptions.sameSite).toBe('strict');
+    expect(mod.clearCookieOptions.accessToken.sameSite).toBe('strict');
     expect(mod.getCookieConfigSummary().sameSite).toBe('strict');
   });
 
   it('default (COOKIE_SAMESITE unset) keeps sameSite:lax under NODE_ENV=test — dev/test default unbroken', async () => {
     const mod = await loadCookieConfigWith({ sameSite: undefined });
 
-    expect(mod.ACCESS_TOKEN_COOKIE_OPTIONS.sameSite).toBe('lax');
+    expect(mod.accessTokenCookieOptions.sameSite).toBe('lax');
     expect(mod.getCookieConfigSummary().sameSite).toBe('lax');
   });
 });

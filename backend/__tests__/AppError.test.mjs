@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import AppError, { APP_ERROR_MARKER } from '../errors/AppError.mjs';
+import AppError, { appErrorMarker } from '../errors/AppError.mjs';
 import AuthorizationError from '../errors/AuthorizationError.mjs';
 import NotFoundError from '../errors/NotFoundError.mjs';
 import ValidationError from '../errors/ValidationError.mjs';
@@ -44,9 +44,9 @@ describe('AppError', () => {
     expect(new AppError('test', 500, false).isOperational).toBe(false);
   });
 
-  it('tags instance with APP_ERROR_MARKER', () => {
+  it('tags instance with appErrorMarker', () => {
     const err = new AppError('test');
-    expect(err[APP_ERROR_MARKER]).toBe(true);
+    expect(err[appErrorMarker]).toBe(true);
   });
 
   it('static isAppError returns true for AppError instances', () => {
@@ -96,7 +96,7 @@ describe('AuthorizationError', () => {
     expect(new AuthorizationError('Forbidden').message).toBe('Forbidden');
   });
 
-  it('is tagged with APP_ERROR_MARKER', () => {
+  it('is tagged with appErrorMarker', () => {
     expect(AppError.isAppError(new AuthorizationError())).toBe(true);
   });
 });

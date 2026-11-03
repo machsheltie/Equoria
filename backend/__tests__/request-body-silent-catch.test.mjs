@@ -33,7 +33,7 @@
  *     must all be wrapped to 400 — JavaScript permits any value to be
  *     thrown and the catch block must handle all of them safely
  *   - the requestBodySecurityErrorHandler matches our throws by the
- *     ERROR_MESSAGE_PREFIX constant; the catch block uses the same
+ *     errorMessagePrefix constant; the catch block uses the same
  *     constant. This pair of assertions pins the coupling so a unilateral
  *     prefix rename on either side breaks tests instead of breaking the
  *     fail-closed contract silently.
@@ -47,8 +47,8 @@ import app from '../app.mjs';
 import {
   __TESTING_ONLY_JsonScanner,
   requestBodySecurityErrorHandler,
-  ERROR_MESSAGE_PREFIX,
-  UNEXPECTED_SCANNER_LOG_PREFIX,
+  errorMessagePrefix,
+  unexpectedScannerLogPrefix,
   RequestBodySecurityError,
 } from '../middleware/requestBodySecurity.mjs';
 import { AppError } from '../errors/index.mjs';
@@ -113,7 +113,7 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
   // equality) so a future envelope addition (e.g., requestId, traceId)
   // doesn't break every silent-catch test simultaneously. The required
   // keys are pinned; extra keys are permitted.
-  const SCANNER_FAILURE_MESSAGE = `${ERROR_MESSAGE_PREFIX} scanner failure`;
+  const SCANNER_FAILURE_MESSAGE = `${errorMessagePrefix} scanner failure`;
   const expectFailClosed400 = response => {
     expect(response.status).toBe(400);
     expect(response.body).toMatchObject({
@@ -125,16 +125,16 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
   // Helper: assert OUR middleware emitted the forensic log exactly once with
   // the wrap-context payload. The integration request chain has other
   // logger.warn sources (CSRF rejections, rate limiter, etc.), so we filter
-  // spy calls by the EXACT shared constant `UNEXPECTED_SCANNER_LOG_PREFIX`
+  // spy calls by the EXACT shared constant `unexpectedScannerLogPrefix`
   // imported from the middleware. Sharing the constant means a typo or
   // rename on either end cannot drift silently — the import would fail or
   // the string-equality would catch it immediately.
-  const ourScannerLogCalls = () => loggerWarnSpy.mock.calls.filter(([msg]) => msg === UNEXPECTED_SCANNER_LOG_PREFIX);
+  const ourScannerLogCalls = () => loggerWarnSpy.mock.calls.filter(([msg]) => msg === unexpectedScannerLogPrefix);
   const expectForensicLog = expectedErrorClass => {
     const calls = ourScannerLogCalls();
     expect(calls).toHaveLength(1);
     const [logMessage, logContext] = calls[0];
-    expect(logMessage).toBe(UNEXPECTED_SCANNER_LOG_PREFIX);
+    expect(logMessage).toBe(unexpectedScannerLogPrefix);
     expect(logContext).toMatchObject({
       unexpected: true,
       errorClass: expectedErrorClass,
@@ -468,10 +468,10 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       // normal operation. Filter to specifically OUR log message so any
       // unrelated logger.error calls in the request chain don't confuse
       // the assertion.
-      // Filter by the shared UNEXPECTED_SCANNER_LOG_PREFIX constant — same
+      // Filter by the shared unexpectedScannerLogPrefix constant — same
       // hygiene as ourScannerLogCalls() above. AppError-propagation must
       // produce zero matches.
-      const unexpectedScannerLogs = loggerWarnSpy.mock.calls.filter(([msg]) => msg === UNEXPECTED_SCANNER_LOG_PREFIX);
+      const unexpectedScannerLogs = loggerWarnSpy.mock.calls.filter(([msg]) => msg === unexpectedScannerLogPrefix);
       expect(unexpectedScannerLogs).toHaveLength(0);
     });
   });
@@ -523,7 +523,7 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       expect(res.status.mock.calls[0]?.[0]).toBe(400);
       expect(res.json.mock.calls[0]?.[0]).toEqual({
         success: false,
-        message: `${ERROR_MESSAGE_PREFIX} scanner failure`,
+        message: `${errorMessagePrefix} scanner failure`,
       });
       expect(next.mock.calls.length).toBe(0);
     });
@@ -533,7 +533,7 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       // 21R-SEC-6. After the refactor it must be forwarded — proving
       // dispatch is type-based, not string-based.
       const { req, res, next } = makeHandlerHarness();
-      const err = new AppError(`${ERROR_MESSAGE_PREFIX} scanner failure`, 400);
+      const err = new AppError(`${errorMessagePrefix} scanner failure`, 400);
 
       requestBodySecurityErrorHandler(err, req, res, next);
 
@@ -579,19 +579,19 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       expect(res.status.mock.calls.length).toBe(0);
     });
 
-    it('ERROR_MESSAGE_PREFIX is non-empty and ends with a colon (catches accidental rename)', () => {
+    it('errorMessagePrefix is non-empty and ends with a colon (catches accidental rename)', () => {
       // Guards against a future "cleanup" PR that drops the colon or empties
       // the constant. The shape "Invalid request body:" specifically matters
       // because the depth-cap, duplicate-key, and prototype-pollution throws
       // throughout the file all rely on this prefix to be matched.
-      expect(typeof ERROR_MESSAGE_PREFIX).toBe('string');
-      expect(ERROR_MESSAGE_PREFIX.length).toBeGreaterThan(0);
-      expect(ERROR_MESSAGE_PREFIX.endsWith(':')).toBe(true);
+      expect(typeof errorMessagePrefix).toBe('string');
+      expect(errorMessagePrefix.length).toBeGreaterThan(0);
+      expect(errorMessagePrefix.endsWith(':')).toBe(true);
     });
 
     // ──────────────────────────────────────────────────────────────────────
     // Legacy-throw coupling sentinel (closes the gap surfaced in the second
-    // ultra-think review). The catch block uses ${ERROR_MESSAGE_PREFIX} but
+    // ultra-think review). The catch block uses ${errorMessagePrefix} but
     // the OTHER throws in this module still use the literal 'Invalid request
     // body:' string. If a future PR renames the constant, the new code path
     // stays consistent (constant updated, catch updates, handler updates) —
@@ -612,7 +612,7 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
     // source sites.
     // 21R-SEC-6 (Equoria-tpbu): replaced the legacy "constant-rename
     // sentinel" rows below. The old tests pinned that an AppError with
-    // message `${ERROR_MESSAGE_PREFIX} ...` triggered the handler — that
+    // message `${errorMessagePrefix} ...` triggered the handler — that
     // contract was the brittle string-prefix coupling SEC-6 removed.
     // The new tests verify each in-source throw site is a
     // RequestBodySecurityError with the canonical message body, and
@@ -633,7 +633,7 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       expect(res.status.mock.calls[0]?.[0]).toBe(400);
       expect(res.json.mock.calls[0]?.[0]).toEqual({
         success: false,
-        message: `${ERROR_MESSAGE_PREFIX} ${messageBody}`,
+        message: `${errorMessagePrefix} ${messageBody}`,
       });
       expect(next.mock.calls.length).toBe(0);
       // Sanity: the constructor wraps the body in the prefix. If a
@@ -641,7 +641,7 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       // already fires; this expect documents the contract explicitly.
       // it.each interpolates `label` into the test title via %s, so
       // the variable IS used despite no underscore prefix.
-      expect(err.message).toBe(`${ERROR_MESSAGE_PREFIX} ${messageBody}`);
+      expect(err.message).toBe(`${errorMessagePrefix} ${messageBody}`);
       expect(label).toBeTruthy();
     });
 
@@ -650,7 +650,7 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
     // request-body security pipeline MUST be a RequestBodySecurityError
     // (the sentinel class), NOT a plain `new AppError(...)`. If someone
     // adds a new throw via the legacy AppError pattern with an
-    // ERROR_MESSAGE_PREFIX-shaped message, the dispatch will silently
+    // errorMessagePrefix-shaped message, the dispatch will silently
     // forward it instead of returning 400 — exactly the desync hazard
     // SEC-6 closed. This static-source check catches that regression.
     //
@@ -681,14 +681,14 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       expect(sentinelThrows.length).toBeGreaterThanOrEqual(EXPECTED_SENTINEL_THROWS);
 
       // Negative counterpart: any throw that uses `new AppError(...)`
-      // with a message that starts with ERROR_MESSAGE_PREFIX is a SEC-6
+      // with a message that starts with errorMessagePrefix is a SEC-6
       // regression — the prefix-shaped throw should be a sentinel
       // instance instead.
       const legacyAppErrorThrows = [...source.matchAll(/throw\s+new\s+AppError\s*\(\s*['"`]([^'"`]*)['"`]/gs)].map(
         m => m[1],
       );
-      const evaluated = legacyAppErrorThrows.map(s => s.replace(/\$\{ERROR_MESSAGE_PREFIX\}/g, ERROR_MESSAGE_PREFIX));
-      const offending = evaluated.filter(m => m.startsWith(ERROR_MESSAGE_PREFIX));
+      const evaluated = legacyAppErrorThrows.map(s => s.replace(/\$\{errorMessagePrefix\}/g, errorMessagePrefix));
+      const offending = evaluated.filter(m => m.startsWith(errorMessagePrefix));
       expect(offending).toEqual([]);
     });
   });
@@ -1044,16 +1044,16 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
     // single sentinel pins the EXACT canonical messages so a future
     // message-text drift breaks the test, not silently passes it.
     it.each([
-      ['64-deep array', () => '['.repeat(64) + ']'.repeat(64), `${ERROR_MESSAGE_PREFIX} nesting too deep`],
+      ['64-deep array', () => '['.repeat(64) + ']'.repeat(64), `${errorMessagePrefix} nesting too deep`],
       [
         '__proto__ rejection',
         () => '{"__proto__":{"isAdmin":true}}',
-        `${ERROR_MESSAGE_PREFIX} forbidden key "__proto__"`,
+        `${errorMessagePrefix} forbidden key "__proto__"`,
       ],
       [
         'constructor.prototype rejection',
         () => '{"constructor":{"prototype":{"x":1}}}',
-        `${ERROR_MESSAGE_PREFIX} forbidden key path "constructor.prototype"`,
+        `${errorMessagePrefix} forbidden key path "constructor.prototype"`,
       ],
     ])('exact-message pin: %s', async (_label, buildPayload, expectedMessage) => {
       const response = await request(app)

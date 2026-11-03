@@ -10,11 +10,11 @@
  * Formula:
  *   - Each tier has a per-feeding bonus weight (basic 0%, performance 5%,
  *     performancePlus 10%, highPerformance 15%, elite 20%).
- *   - positiveChance = weightedSum / max(GESTATION_DAYS, totalFeedings)
- *     The divisor floor at GESTATION_DAYS prevents under-fed gestations from
+ *   - positiveChance = weightedSum / max(gestationDays, totalFeedings)
+ *     The divisor floor at gestationDays prevents under-fed gestations from
  *     inflating the bonus. The max(...) cap also bounds the bonus when a
  *     mare is fed beyond the 7-day window (8th-day edge per §8.6).
- *   - negativeChance = unfedDays * NEG_PER_MISSED_DAY
+ *   - negativeChance = unfedDays * negPerMissedDay
  *     Each missed day adds 5% chance of a negative epigenetic trait.
  *
  * At foaling: two independent rolls (positive + negative) — both can succeed,
@@ -26,7 +26,7 @@
  * Per-feeding bonus weight (in percentage points) by tier.
  * Unknown tier keys are ignored.
  */
-export const PREGNANCY_BONUS_PCT = Object.freeze({
+export const pregnancyBonusPct = Object.freeze({
   basic: 0,
   performance: 5,
   performancePlus: 10,
@@ -37,18 +37,18 @@ export const PREGNANCY_BONUS_PCT = Object.freeze({
 /**
  * Percentage points added to negativeChance per missed day.
  */
-export const NEG_PER_MISSED_DAY = 5;
+export const negPerMissedDay = 5;
 
 /**
  * Length of an Equoria gestation, in days. Doubles as the divisor floor.
  */
-export const GESTATION_DAYS = 7;
+export const gestationDays = 7;
 
 /**
  * Calculate the pregnancy epigenetic-trait probability adjustments at foaling.
  *
  * @param {Object<string, number>} [feedingsByTier] - Map of tier key → number of feedings.
- *   Keys MUST match `PREGNANCY_BONUS_PCT`. Unknown keys are silently ignored.
+ *   Keys MUST match `pregnancyBonusPct`. Unknown keys are silently ignored.
  *   Missing/null/undefined input is treated as zero feedings.
  * @returns {{ positiveChance: number, negativeChance: number }}
  *   Both fields are percentages (0-100).
@@ -60,19 +60,19 @@ export function calculatePregnancyEpigeneticChances(feedingsByTier) {
   let weightedSum = 0;
 
   for (const [tier, rawCount] of Object.entries(counters)) {
-    if (PREGNANCY_BONUS_PCT[tier] === null || PREGNANCY_BONUS_PCT[tier] === undefined) {
+    if (pregnancyBonusPct[tier] === null || pregnancyBonusPct[tier] === undefined) {
       continue; // unknown tier key — ignore silently
     }
     const count = Number(rawCount) || 0;
     totalFeedings += count;
-    weightedSum += count * PREGNANCY_BONUS_PCT[tier];
+    weightedSum += count * pregnancyBonusPct[tier];
   }
 
-  const divisor = Math.max(GESTATION_DAYS, totalFeedings);
+  const divisor = Math.max(gestationDays, totalFeedings);
   const positiveChance = weightedSum / divisor;
 
-  const unfedDays = Math.max(0, GESTATION_DAYS - totalFeedings);
-  const negativeChance = unfedDays * NEG_PER_MISSED_DAY;
+  const unfedDays = Math.max(0, gestationDays - totalFeedings);
+  const negativeChance = unfedDays * negPerMissedDay;
 
   return { positiveChance, negativeChance };
 }

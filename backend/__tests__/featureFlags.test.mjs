@@ -6,22 +6,22 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  FLAG_DEFINITIONS,
-  FLAG_DEFAULTS,
+  flagDefinitions,
+  flagDefaults,
   getFlagDefinition,
   isFlagDefined,
   getFlagsByType,
   getFlagsByCategory,
 } from '../utils/featureFlags.mjs';
 
-describe('FLAG_DEFINITIONS', () => {
+describe('flagDefinitions', () => {
   it('is a non-empty object', () => {
-    expect(typeof FLAG_DEFINITIONS).toBe('object');
-    expect(Object.keys(FLAG_DEFINITIONS).length).toBeGreaterThan(0);
+    expect(typeof flagDefinitions).toBe('object');
+    expect(Object.keys(flagDefinitions).length).toBeGreaterThan(0);
   });
 
   it('every entry has type, description, and defaultValue', () => {
-    for (const [, def] of Object.entries(FLAG_DEFINITIONS)) {
+    for (const [, def] of Object.entries(flagDefinitions)) {
       expect(def).toHaveProperty('type');
       expect(def).toHaveProperty('description');
       expect(def).toHaveProperty('defaultValue');
@@ -29,29 +29,29 @@ describe('FLAG_DEFINITIONS', () => {
   });
 
   it('every key starts with FF_', () => {
-    for (const key of Object.keys(FLAG_DEFINITIONS)) {
+    for (const key of Object.keys(flagDefinitions)) {
       expect(key.startsWith('FF_')).toBe(true);
     }
   });
 });
 
-describe('FLAG_DEFAULTS', () => {
-  it('has the same keys as FLAG_DEFINITIONS', () => {
-    const defKeys = Object.keys(FLAG_DEFINITIONS).sort();
-    const defaultKeys = Object.keys(FLAG_DEFAULTS).sort();
+describe('flagDefaults', () => {
+  it('has the same keys as flagDefinitions', () => {
+    const defKeys = Object.keys(flagDefinitions).sort();
+    const defaultKeys = Object.keys(flagDefaults).sort();
     expect(defaultKeys).toEqual(defKeys);
   });
 
   it('values match the defaultValue of each definition', () => {
-    for (const [key, value] of Object.entries(FLAG_DEFAULTS)) {
-      expect(value).toBe(FLAG_DEFINITIONS[key].defaultValue);
+    for (const [key, value] of Object.entries(flagDefaults)) {
+      expect(value).toBe(flagDefinitions[key].defaultValue);
     }
   });
 });
 
 describe('getFlagDefinition', () => {
   it('returns the definition for a known flag', () => {
-    const firstKey = Object.keys(FLAG_DEFINITIONS)[0];
+    const firstKey = Object.keys(flagDefinitions)[0];
     const def = getFlagDefinition(firstKey);
     expect(def).toBeDefined();
     expect(def).toHaveProperty('type');
@@ -64,7 +64,7 @@ describe('getFlagDefinition', () => {
 
 describe('isFlagDefined', () => {
   it('returns true for a defined flag', () => {
-    const firstKey = Object.keys(FLAG_DEFINITIONS)[0];
+    const firstKey = Object.keys(flagDefinitions)[0];
     expect(isFlagDefined(firstKey)).toBe(true);
   });
 
@@ -79,7 +79,7 @@ describe('getFlagsByType', () => {
     expect(Array.isArray(boolFlags)).toBe(true);
     expect(boolFlags.length).toBeGreaterThan(0);
     for (const name of boolFlags) {
-      expect(FLAG_DEFINITIONS[name].type).toBe('boolean');
+      expect(flagDefinitions[name].type).toBe('boolean');
     }
   });
 
@@ -90,7 +90,7 @@ describe('getFlagsByType', () => {
   it('percentage flags all have numeric defaultValues', () => {
     const pctFlags = getFlagsByType('percentage');
     for (const name of pctFlags) {
-      expect(typeof FLAG_DEFINITIONS[name].defaultValue).toBe('number');
+      expect(typeof flagDefinitions[name].defaultValue).toBe('number');
     }
   });
 });

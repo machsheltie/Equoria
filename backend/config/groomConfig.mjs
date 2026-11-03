@@ -29,9 +29,8 @@
  * The direct hire it once shared with was retired by Equoria-bvddn.7.
  */
 export const maxGroomsPerUser = 10;
-export const MAX_GROOMS_PER_USER = maxGroomsPerUser;
 
-// camelCase spellings for new consumers (Equoria-pjvp8 ratchet); GROOM_CONFIG
+// camelCase spellings for new consumers (Equoria-pjvp8 ratchet); groomConfig
 // below carries the same values.
 export const bondScoreMax = 100;
 // Owner ruling 2026-10-26 (q87): each daily groom adds +5, about 100 by day 21.
@@ -39,7 +38,7 @@ export const dailyBondGain = 5;
 // Days a care streak (Horse.daysGroomedInARow) survives without grooming.
 export const careStreakGraceDays = 2;
 
-export const GROOM_CONFIG = {
+export const groomConfig = {
   // Bonding mechanics
   BOND_SCORE_START: 0,
   BOND_SCORE_MAX: bondScoreMax,
@@ -72,7 +71,7 @@ export const GROOM_CONFIG = {
 };
 
 // Named exports for foal task categories
-export const { ELIGIBLE_FOAL_ENRICHMENT_TASKS } = GROOM_CONFIG;
-export const FOAL_GROOMING_TASKS = GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS;
+export const { ELIGIBLE_FOAL_ENRICHMENT_TASKS: eligibleFoalEnrichmentTasks } = groomConfig;
+export const foalGroomingTasks = groomConfig.ELIGIBLE_FOAL_GROOMING_TASKS;
 
-export default GROOM_CONFIG;
+export default groomConfig;

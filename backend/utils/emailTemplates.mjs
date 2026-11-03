@@ -13,7 +13,7 @@
  */
 
 /** Support address rendered into every message footer. */
-export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@equoria.com';
+export const supportEmail = process.env.SUPPORT_EMAIL || 'support@equoria.com';
 
 /**
  * Generate HTML Email Template
@@ -140,7 +140,7 @@ export function generateEmailTemplate(subject, heading, bodyHtml, ctaText, ctaUr
 
     <div class="email-footer">
       <p>This email was sent by Equoria. If you have questions, contact us at
-        <a href="mailto:${SUPPORT_EMAIL}" style="color: #4A90E2;">${SUPPORT_EMAIL}</a>
+        <a href="mailto:${supportEmail}" style="color: #4A90E2;">${supportEmail}</a>
       </p>
       <p>&copy; ${new Date().getFullYear()} Equoria. All rights reserved.</p>
     </div>
@@ -179,7 +179,7 @@ Security Notice: This link will expire in 24 hours. If you didn't request this e
 
 ---
 This email was sent by Equoria.
-If you have questions, contact us at ${SUPPORT_EMAIL}
+If you have questions, contact us at ${supportEmail}
 
 © ${new Date().getFullYear()} Equoria. All rights reserved.
   `.trim();

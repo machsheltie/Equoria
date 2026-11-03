@@ -55,8 +55,8 @@ import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import emailService from '../../../utils/emailService.mjs';
-import { CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
-import { CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS } from '../../../middleware/csrf.mjs';
+import { clearCookieOptions } from '../../../utils/cookieConfig.mjs';
+import { csrfCookieName, clearCsrfCookieOptions } from '../../../middleware/csrf.mjs';
 import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 import { revokePendingEmailChanges } from '../services/emailChangeService.mjs';
 import { retireStaffCheckinCodesTx, revokeStaffTrustedDevicesTx } from '../../staff/index.mjs';
@@ -269,10 +269,10 @@ export const changePassword = async (req, res, next) => {
     });
 
     // Clear cookies for current session
-    res.clearCookie('accessToken', CLEAR_COOKIE_OPTIONS.accessToken);
-    res.clearCookie('refreshToken', CLEAR_COOKIE_OPTIONS.refreshToken);
+    res.clearCookie('accessToken', clearCookieOptions.accessToken);
+    res.clearCookie('refreshToken', clearCookieOptions.refreshToken);
     // Equoria-uxh1l: also clear the CSRF cookie on session invalidation.
-    res.clearCookie(CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS);
+    res.clearCookie(csrfCookieName, clearCsrfCookieOptions);
 
     res.status(200).json({
       success: true,
@@ -544,10 +544,10 @@ export const resetPassword = async (req, res, next) => {
     // authenticated request reads the fresh DB value immediately.
     evictPasswordChangedAtCache(resetToken.userId);
 
-    res.clearCookie('accessToken', CLEAR_COOKIE_OPTIONS.accessToken);
-    res.clearCookie('refreshToken', CLEAR_COOKIE_OPTIONS.refreshToken);
+    res.clearCookie('accessToken', clearCookieOptions.accessToken);
+    res.clearCookie('refreshToken', clearCookieOptions.refreshToken);
     // Equoria-uxh1l: also clear the CSRF cookie on session invalidation.
-    res.clearCookie(CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS);
+    res.clearCookie(csrfCookieName, clearCsrfCookieOptions);
 
     logger.info('[passwordController.resetPassword] Password reset successfully', {
       userId: resetToken.userId,

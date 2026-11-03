@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import cronJobService from '../../../services/cronJobs.mjs';
-import { CRON_JOB_REGISTRY } from '../../../services/jobs/index.mjs';
+import { cronJobRegistry } from '../../../services/jobs/index.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import {
   CHECKIN_CODE_RETENTION_MS,
@@ -125,7 +125,7 @@ describe('Staff check-in retention (STAFF-CR-18)', () => {
   });
 
   it('runs nightly at 03:50 through the cron registry and purges stale rows', async () => {
-    const job = CRON_JOB_REGISTRY.find(j => j.jobName === 'staffCheckinRetention');
+    const job = cronJobRegistry.find(j => j.jobName === 'staffCheckinRetention');
     expect(job).toMatchObject({ schedule: '50 3 * * *', applyLock: true });
 
     const mod = await makeUser('moderator');

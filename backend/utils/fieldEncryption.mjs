@@ -27,9 +27,9 @@ import crypto from 'crypto';
 import { isDeployableEnvironment } from './runtimeSecretPolicy.mjs';
 
 const ALGORITHM = 'aes-256-gcm';
-const IV_BYTES = 12; // GCM standard nonce length
-const KEY_BYTES = 32; // AES-256
-const ENVELOPE_PREFIX = 'v1';
+const ivBytes = 12; // GCM standard nonce length
+const keyBytes = 32; // AES-256
+const envelopePrefix = 'v1';
 
 /**
  * Resolve the 32-byte key from FIELD_ENCRYPTION_KEY.
@@ -56,7 +56,7 @@ function resolveKey() {
   let key;
   if (/^[0-9a-fA-F]{64}$/.test(trimmed)) {
     key = Buffer.from(trimmed, 'hex');
-  } else if (Buffer.byteLength(trimmed, 'utf8') === KEY_BYTES) {
+  } else if (Buffer.byteLength(trimmed, 'utf8') === keyBytes) {
     key = Buffer.from(trimmed, 'utf8');
   } else {
     throw new Error(
@@ -65,7 +65,7 @@ function resolveKey() {
     );
   }
 
-  if (key.length !== KEY_BYTES) {
+  if (key.length !== keyBytes) {
     throw new Error('FIELD_ENCRYPTION_KEY must resolve to exactly 32 bytes for AES-256-GCM.');
   }
   return key;
@@ -78,7 +78,7 @@ function resolveKey() {
 export function isEncrypted(value) {
   return (
     typeof value === 'string' &&
-    value.startsWith(`${ENVELOPE_PREFIX}:`) &&
+    value.startsWith(`${envelopePrefix}:`) &&
     value.split(':').length === 4
   );
 }
@@ -102,13 +102,13 @@ export function encryptField(plaintext) {
   }
 
   const key = resolveKey();
-  const iv = crypto.randomBytes(IV_BYTES);
+  const iv = crypto.randomBytes(ivBytes);
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
   const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
   const authTag = cipher.getAuthTag();
 
   return [
-    ENVELOPE_PREFIX,
+    envelopePrefix,
     iv.toString('hex'),
     authTag.toString('hex'),
     encrypted.toString('hex'),

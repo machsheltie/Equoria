@@ -26,8 +26,8 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   RequestBodySecurityError,
-  REQUEST_BODY_SECURITY_ERROR_MARKER,
-  ERROR_MESSAGE_PREFIX,
+  requestBodySecurityErrorMarker,
+  errorMessagePrefix,
   rejectPollutedRequestBody,
   rejectPollutedRequestQuery,
   requestBodySecurityErrorHandler,
@@ -76,14 +76,14 @@ describe('RequestBodySecurityError sentinel class', () => {
     expect(err.isOperational).toBe(true);
   });
 
-  it('wraps message body in canonical ERROR_MESSAGE_PREFIX', () => {
+  it('wraps message body in canonical errorMessagePrefix', () => {
     const err = new RequestBodySecurityError('scanner failure');
-    expect(err.message).toBe(`${ERROR_MESSAGE_PREFIX} scanner failure`);
+    expect(err.message).toBe(`${errorMessagePrefix} scanner failure`);
   });
 
   it('tags instance with the registry symbol marker', () => {
     const err = new RequestBodySecurityError('x');
-    expect(err[REQUEST_BODY_SECURITY_ERROR_MARKER]).toBe(true);
+    expect(err[requestBodySecurityErrorMarker]).toBe(true);
   });
 
   it('isRequestBodySecurityError returns true for sentinel instances', () => {
@@ -92,7 +92,7 @@ describe('RequestBodySecurityError sentinel class', () => {
 
   it('isRequestBodySecurityError returns false for plain AppError with prefix message', () => {
     // Negative sentinel: dispatch must be type-based, not string-based.
-    const fake = new AppError(`${ERROR_MESSAGE_PREFIX} x`, 400);
+    const fake = new AppError(`${errorMessagePrefix} x`, 400);
     expect(RequestBodySecurityError.isRequestBodySecurityError(fake)).toBe(false);
   });
 
@@ -278,14 +278,14 @@ describe('requestBodySecurityErrorHandler envelope', () => {
     expect(res.status.mock.calls[0]?.[0]).toBe(400);
     expect(res.json.mock.calls[0]?.[0]).toEqual({
       success: false,
-      message: `${ERROR_MESSAGE_PREFIX} forbidden key "__proto__"`,
+      message: `${errorMessagePrefix} forbidden key "__proto__"`,
     });
     expect(next.mock.calls.length).toBe(0);
   });
 
   it('forwards plain AppError (NOT a sentinel instance)', () => {
     const { req, res, next } = harness();
-    const err = new AppError(`${ERROR_MESSAGE_PREFIX} x`, 400);
+    const err = new AppError(`${errorMessagePrefix} x`, 400);
     requestBodySecurityErrorHandler(err, req, res, next);
     expect(res.status.mock.calls.length).toBe(0);
     expect(next.mock.calls[0]?.[0]).toBe(err);

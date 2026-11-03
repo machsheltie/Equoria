@@ -33,7 +33,7 @@ import {
   InsufficientFundsError,
   SYSTEM_ACCOUNT_BURN,
 } from '../../economy/index.mjs';
-import { MAX_GROOMS_PER_USER } from '../../../config/groomConfig.mjs';
+import { maxGroomsPerUser } from '../../../config/groomConfig.mjs';
 import { CapExceededError } from '../groomErrors.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
@@ -190,7 +190,7 @@ export async function hireFreeAgent(req, res) {
     // here or they count against the cap forever. Matches the rider/trainer
     // idiom (riderMarketplaceController.mjs, trainerMarketplaceController.mjs).
     const existingGroomCount = await prisma.groom.count({ where: { userId, retired: false } });
-    if (existingGroomCount >= MAX_GROOMS_PER_USER) {
+    if (existingGroomCount >= maxGroomsPerUser) {
       return res.status(400).json({
         success: false,
         // Equoria-266h7: the hiring page tells a full roster from a short balance by code.
@@ -203,8 +203,8 @@ export async function hireFreeAgent(req, res) {
         // the limit and stops. The two older messages are left alone: rewording a
         // string a player already reads is a copy change belonging to whoever owns
         // that surface (Equoria-ypb7d.5).
-        message: `You already have the maximum of ${MAX_GROOMS_PER_USER} grooms on your staff.`,
-        data: { currentCount: existingGroomCount, maxAllowed: MAX_GROOMS_PER_USER },
+        message: `You already have the maximum of ${maxGroomsPerUser} grooms on your staff.`,
+        data: { currentCount: existingGroomCount, maxAllowed: maxGroomsPerUser },
       });
     }
 
@@ -252,9 +252,9 @@ export async function hireFreeAgent(req, res) {
 
           // Equoria-bvddn.12: exclude retired grooms — see the fast-path count above.
           const rosterCount = await tx.groom.count({ where: { userId, retired: false } });
-          if (rosterCount > MAX_GROOMS_PER_USER) {
+          if (rosterCount > maxGroomsPerUser) {
             throw new CapExceededError(
-              `You have reached the maximum limit of ${MAX_GROOMS_PER_USER} grooms. Please release a groom before hiring a new one.`,
+              `You have reached the maximum limit of ${maxGroomsPerUser} grooms. Please release a groom before hiring a new one.`,
             );
           }
 
@@ -305,7 +305,7 @@ export async function hireFreeAgent(req, res) {
           success: false,
           code: staffHireRefusal.rosterCapReached,
           message: txErr.message,
-          data: { currentCount: MAX_GROOMS_PER_USER, maxAllowed: MAX_GROOMS_PER_USER },
+          data: { currentCount: maxGroomsPerUser, maxAllowed: maxGroomsPerUser },
         });
       }
       if (txErr instanceof InsufficientFundsError) {

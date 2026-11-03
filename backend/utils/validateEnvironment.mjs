@@ -4,7 +4,7 @@ import { getSecretValidationError } from './runtimeSecretPolicy.mjs';
 /**
  * Required environment variables with validation rules
  */
-const REQUIRED_ENV_VARS = [
+const requiredEnvVars = [
   { name: 'DATABASE_URL', minLength: 20 },
   { name: 'JWT_SECRET', minLength: 32 },
   { name: 'JWT_REFRESH_SECRET', minLength: 32 },
@@ -25,7 +25,7 @@ export function checkEnvironment(env = process.env) {
   const errors = [];
   const warnings = [];
 
-  for (const { name, minLength, values, type } of REQUIRED_ENV_VARS) {
+  for (const { name, minLength, values, type } of requiredEnvVars) {
     const value = env[name];
 
     if (!value) {

@@ -10,23 +10,23 @@
  */
 
 import {
-  ENTRY_REFUSALS,
-  ENTRY_RULE_HORSE_SELECT,
+  entryRefusals,
+  entryRuleHorseSelect,
   entryRefusalMessage,
   evaluateEntryRules,
   loadActiveAssignments,
   loadActiveDisciplineTypes,
 } from '../../../utils/competitionEntryRules.mjs';
 
-export { ENTRY_REFUSALS } from '../../../utils/competitionEntryRules.mjs';
+export { entryRefusals } from '../../../utils/competitionEntryRules.mjs';
 
 /** Thrown inside the entry transaction; rolls the entry back. */
 export class EntryRefusalError extends Error {
-  constructor(code, message = ENTRY_REFUSALS[code].message, errors = null) {
+  constructor(code, message = entryRefusals[code].message, errors = null) {
     super(message);
     this.name = 'EntryRefusalError';
     this.code = code;
-    this.status = ENTRY_REFUSALS[code].status;
+    this.status = entryRefusals[code].status;
     // The individual reasons, when the refusal has several (conformation rules).
     this.errors = errors;
   }
@@ -80,7 +80,7 @@ export async function checkEntryEligibility(
   });
   const ridden = show.showType !== 'conformation';
   const horse = ridden
-    ? await tx.horse.findUnique({ where: { id: horseId }, select: ENTRY_RULE_HORSE_SELECT })
+    ? await tx.horse.findUnique({ where: { id: horseId }, select: entryRuleHorseSelect })
     : null;
   const assignment = ridden ? (await loadActiveAssignments(tx, [horseId])).get(horseId) : null;
   const activeTypes = (await loadActiveDisciplineTypes(tx, [horseId])).get(horseId);

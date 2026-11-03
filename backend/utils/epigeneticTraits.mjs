@@ -37,7 +37,7 @@ const rosterTrait = (label, type, rarity, known = {}) =>
     category: 'epigenetic',
   });
 
-const TRAIT_DEFINITIONS = Object.freeze({
+const traitDefinitions = Object.freeze({
   brave: rosterTrait('Brave', 'positive', 'common'),
   confident: rosterTrait('Confident', 'positive', 'common', {
     conflicts: ['fearful'],
@@ -75,7 +75,7 @@ const TRAIT_DEFINITIONS = Object.freeze({
 });
 
 /** The twenty stored trait ids, in the owner's order. */
-export const traitRosterIds = Object.freeze(Object.keys(TRAIT_DEFINITIONS));
+export const traitRosterIds = Object.freeze(Object.keys(traitDefinitions));
 
 /**
  * True when `trait` is on the roster.
@@ -83,9 +83,7 @@ export const traitRosterIds = Object.freeze(Object.keys(TRAIT_DEFINITIONS));
  * @returns {boolean}
  */
 export function isRosterTrait(trait) {
-  return (
-    typeof trait === 'string' && Object.prototype.hasOwnProperty.call(TRAIT_DEFINITIONS, trait)
-  );
+  return typeof trait === 'string' && Object.prototype.hasOwnProperty.call(traitDefinitions, trait);
 }
 
 /**
@@ -124,7 +122,7 @@ export function playerTraitDefinition(trait) {
   if (!isRosterTrait(trait)) {
     return null;
   }
-  const { label, type, description, category, conflicts } = TRAIT_DEFINITIONS[trait];
+  const { label, type, description, category, conflicts } = traitDefinitions[trait];
   return { label, type, description, category, conflicts: [...conflicts] };
 }
 
@@ -151,7 +149,7 @@ function traitsConflict(trait1, trait2) {
  * @returns {Object|null} Trait definition or null if not found
  */
 export function getTraitDefinition(trait) {
-  return isRosterTrait(trait) ? TRAIT_DEFINITIONS[trait] : null;
+  return isRosterTrait(trait) ? traitDefinitions[trait] : null;
 }
 
 /**
@@ -160,13 +158,13 @@ export function getTraitDefinition(trait) {
  * @returns {string[]} Array of trait names
  */
 export function getTraitsByType(type = 'all') {
-  const traits = Object.keys(TRAIT_DEFINITIONS);
+  const traits = Object.keys(traitDefinitions);
 
   if (type === 'all') {
     return traits;
   }
 
-  return traits.filter(trait => TRAIT_DEFINITIONS[trait].type === type);
+  return traits.filter(trait => traitDefinitions[trait].type === type);
 }
 
 /** The owner's rarities (q98), commonest first. */
@@ -195,13 +193,13 @@ export function getTraitsAtOrAboveRarity(rarity) {
  * @returns {string[]} Array of trait names
  */
 export function getTraitsByCategory(category = 'all') {
-  const traits = Object.keys(TRAIT_DEFINITIONS);
+  const traits = Object.keys(traitDefinitions);
 
   if (category === 'all') {
     return traits;
   }
 
-  return traits.filter(trait => TRAIT_DEFINITIONS[trait].category === category);
+  return traits.filter(trait => traitDefinitions[trait].category === category);
 }
 
 /**

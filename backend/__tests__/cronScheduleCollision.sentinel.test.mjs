@@ -14,8 +14,8 @@
  * exempted.
  */
 import { describe, it, expect } from '@jest/globals';
-import { CRON_JOB_REGISTRY } from '../services/jobs/index.mjs';
-import { CRON_JOB_SERVICE_REGISTRY } from '../services/cron-job-service-jobs/index.mjs';
+import { cronJobRegistry } from '../services/jobs/index.mjs';
+import { cronJobServiceRegistry } from '../services/cron-job-service-jobs/index.mjs';
 
 function expandField(field, min, max) {
   const values = new Set();
@@ -80,12 +80,12 @@ export function findCollisions(jobs) {
   return collisions;
 }
 
-const ALL_JOBS = [...CRON_JOB_REGISTRY, ...CRON_JOB_SERVICE_REGISTRY];
+const ALL_JOBS = [...cronJobRegistry, ...cronJobServiceRegistry];
 
 describe('cron schedule collision sentinel (Equoria-bvddn.15)', () => {
   it('covers both registries and every job name is unique', () => {
-    expect(CRON_JOB_REGISTRY.length).toBeGreaterThan(0);
-    expect(CRON_JOB_SERVICE_REGISTRY.length).toBeGreaterThan(0);
+    expect(cronJobRegistry.length).toBeGreaterThan(0);
+    expect(cronJobServiceRegistry.length).toBeGreaterThan(0);
     const names = ALL_JOBS.map(j => j.jobName);
     expect(new Set(names).size).toBe(names.length);
   });

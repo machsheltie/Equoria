@@ -22,7 +22,7 @@ import logger from './logger.mjs';
 import { maskEmailAddress } from './emailIdentityPolicy.mjs';
 import { withRetryableTxMapping, RetryableTransactionError } from './retryableTransaction.mjs';
 import {
-  TOKEN_CONFIG,
+  tokenConfig,
   hashRefreshToken,
   generateTokenFamily,
   buildSignedTokenPair,
@@ -518,7 +518,7 @@ export async function invalidateTokenFamily(familyId) {
  */
 export async function cleanupExpiredTokens(options = {}) {
   try {
-    const { olderThanDays = TOKEN_CONFIG.CLEANUP_THRESHOLD_DAYS } = options;
+    const { olderThanDays = tokenConfig.cleanupThresholdDays } = options;
 
     const cutoffDate = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
 

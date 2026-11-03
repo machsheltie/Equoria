@@ -24,7 +24,7 @@ import {
   InsufficientFundsError,
   SYSTEM_ACCOUNT_BURN,
 } from '../../economy/index.mjs';
-import { MAX_GROOMS_PER_USER } from '../../../config/groomConfig.mjs';
+import { maxGroomsPerUser } from '../../../config/groomConfig.mjs';
 import { CapExceededError } from '../groomErrors.mjs';
 // Equoria-bvddn.19: remove the hired offer INSIDE the hire transaction via a
 // compare-and-swap on the persisted offer list, instead of a post-commit
@@ -307,7 +307,7 @@ export async function hireFromMarketplace(req, res) {
 
     // Equoria-hduc5: fast-path roster-cap reject (mirrors hireGroom). Previously
     // hireFromMarketplace enforced NO cap at all — a user could exceed
-    // MAX_GROOMS_PER_USER via the marketplace path entirely (sequentially AND
+    // maxGroomsPerUser via the marketplace path entirely (sequentially AND
     // concurrently). This read is TOCTOU on its own, so it is NOT the
     // authoritative guard (the in-tx post-lock re-count below is); it only
     // avoids opening a tx for an already-full user.
@@ -316,12 +316,12 @@ export async function hireFromMarketplace(req, res) {
     // here or they count against the cap forever. Matches the rider/trainer
     // idiom (riderMarketplaceController.mjs, trainerMarketplaceController.mjs).
     const existingGroomCount = await prisma.groom.count({ where: { userId, retired: false } });
-    if (existingGroomCount >= MAX_GROOMS_PER_USER) {
+    if (existingGroomCount >= maxGroomsPerUser) {
       return res.status(400).json({
         success: false,
         code: staffHireRefusal.rosterCapReached,
-        message: `You have reached the maximum limit of ${MAX_GROOMS_PER_USER} grooms. Please release a groom before hiring a new one.`,
-        data: { currentCount: existingGroomCount, maxAllowed: MAX_GROOMS_PER_USER },
+        message: `You have reached the maximum limit of ${maxGroomsPerUser} grooms. Please release a groom before hiring a new one.`,
+        data: { currentCount: existingGroomCount, maxAllowed: maxGroomsPerUser },
       });
     }
 
@@ -391,9 +391,9 @@ export async function hireFromMarketplace(req, res) {
           // debit roll back together (no over-cap groom, no charge).
           // Equoria-bvddn.12: exclude retired grooms — see the fast-path count above.
           const rosterCount = await tx.groom.count({ where: { userId, retired: false } });
-          if (rosterCount > MAX_GROOMS_PER_USER) {
+          if (rosterCount > maxGroomsPerUser) {
             throw new CapExceededError(
-              `You have reached the maximum limit of ${MAX_GROOMS_PER_USER} grooms. Please release a groom before hiring a new one.`,
+              `You have reached the maximum limit of ${maxGroomsPerUser} grooms. Please release a groom before hiring a new one.`,
             );
           }
 
@@ -443,13 +443,13 @@ export async function hireFromMarketplace(req, res) {
     } catch (txErr) {
       // Equoria-hduc5: the post-lock re-count rejected an over-cap racing hire.
       // The groom.create + debit rolled back atomically (user left at exactly
-      // MAX_GROOMS_PER_USER, not charged). Same cap-400 envelope as the fast-path.
+      // maxGroomsPerUser, not charged). Same cap-400 envelope as the fast-path.
       if (txErr instanceof CapExceededError) {
         return res.status(400).json({
           success: false,
           code: staffHireRefusal.rosterCapReached,
           message: txErr.message,
-          data: { currentCount: MAX_GROOMS_PER_USER, maxAllowed: MAX_GROOMS_PER_USER },
+          data: { currentCount: maxGroomsPerUser, maxAllowed: maxGroomsPerUser },
         });
       }
       if (txErr instanceof InsufficientFundsError) {

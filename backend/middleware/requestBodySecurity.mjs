@@ -1,9 +1,9 @@
 import { AppError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
 
-const FORBIDDEN_KEY = '__proto__';
-const FORBIDDEN_CONSTRUCTOR_KEY = 'constructor';
-const FORBIDDEN_PROTOTYPE_KEY = 'prototype';
+const forbiddenKey = '__proto__';
+const forbiddenConstructorKey = 'constructor';
+const forbiddenPrototypeKey = 'prototype';
 
 // 21R-SEC-6 (Equoria-tpbu): sentinel error class for the request-body
 // security pipeline.
@@ -25,19 +25,17 @@ const FORBIDDEN_PROTOTYPE_KEY = 'prototype';
 //
 // Subclass of AppError so the rest of the error-handling pipeline (status
 // code, isOperational, stack capture) continues to work unchanged.
-export const REQUEST_BODY_SECURITY_ERROR_MARKER = Symbol.for('Equoria.RequestBodySecurityError');
+export const requestBodySecurityErrorMarker = Symbol.for('Equoria.RequestBodySecurityError');
 
 export class RequestBodySecurityError extends AppError {
   constructor(messageBody) {
-    super(`${ERROR_MESSAGE_PREFIX} ${messageBody}`, 400);
-    this[REQUEST_BODY_SECURITY_ERROR_MARKER] = true;
+    super(`${errorMessagePrefix} ${messageBody}`, 400);
+    this[requestBodySecurityErrorMarker] = true;
   }
 
   static isRequestBodySecurityError(value) {
     return (
-      value !== null &&
-      typeof value === 'object' &&
-      value[REQUEST_BODY_SECURITY_ERROR_MARKER] === true
+      value !== null && typeof value === 'object' && value[requestBodySecurityErrorMarker] === true
     );
   }
 }
@@ -97,7 +95,7 @@ export class RequestBodySecurityError extends AppError {
 // accident. Scanning for control bytes IS the security logic of this
 // sanitiser; removing them from the character class would disable the
 // defence the regex exists to provide.
-const LOG_INJECTION_STRIP =
+const logInjectionStrip =
   // eslint-disable-next-line no-control-regex
   /[\x00-\x1F\x7F\x80-\x9F\u200E\u200F\u202A-\u202E\u2028\u2029\u2066-\u2069\uFEFF]/g;
 
@@ -114,7 +112,7 @@ export function sanitizeForLog(value, maxLength) {
     // a truncated-into-orphaned-surrogate string.
     return '…';
   }
-  const stripped = value.replace(LOG_INJECTION_STRIP, '?');
+  const stripped = value.replace(logInjectionStrip, '?');
   if (stripped.length <= maxLength) {
     return stripped;
   }
@@ -139,15 +137,15 @@ export function sanitizeForLog(value, maxLength) {
 // now derive their prefix from this constant. A future rename of the
 // constant therefore breaks every call site at lint/grep time, not at
 // runtime when an operator notices 500s instead of 400s.
-export const ERROR_MESSAGE_PREFIX = 'Invalid request body:';
+export const errorMessagePrefix = 'Invalid request body:';
 
 // Single source of truth for the message prefix used when the unexpected-
 // scanner-error path fires inside `verifyJsonBody`. Production code logs
 // this message; the silent-catch test filters spy calls by this prefix.
 // Sharing the constant prevents the two ends from drifting silently —
-// same hygiene as ERROR_MESSAGE_PREFIX above (21R-SEC-3-FOLLOW-1
+// same hygiene as errorMessagePrefix above (21R-SEC-3-FOLLOW-1
 // iteration-3 review hardening).
-export const UNEXPECTED_SCANNER_LOG_PREFIX =
+export const unexpectedScannerLogPrefix =
   '[RequestBodySecurity] Unexpected scanner error — failing closed';
 
 // Maximum allowed JSON nesting depth. Exceeding this throws AppError(400).
@@ -187,8 +185,8 @@ export const UNEXPECTED_SCANNER_LOG_PREFIX =
 //     recursing into its children.
 //   - A primitive leaf is reached at depth=N when nested under N
 //     containers; the depth check fires there.
-//   - The check is `depth > MAX_DEPTH`, so depth=MAX_DEPTH passes and
-//     depth=MAX_DEPTH+1 fails — both functions reject the same payloads.
+//   - The check is `depth > maxDepth`, so depth=maxDepth passes and
+//     depth=maxDepth+1 fails — both functions reject the same payloads.
 // For empty-leaf inputs (e.g. `[[[]]]`): assertNoPollutingKeys exits
 // one level early (forEach over empty array has nothing to recurse into).
 // JsonScanner.scanArray now also checks depth before the early `]`
@@ -201,13 +199,13 @@ export const UNEXPECTED_SCANNER_LOG_PREFIX =
 //
 // Exported so test code can pin the boundary by reference rather than
 // hardcoding the value (21R-SEC-3-REVIEW-1 iteration-3, Blind Hunter F7).
-export const DEFAULT_MAX_DEPTH = 32;
+export const defaultMaxDepth = 32;
 
 // Hard ceiling for any operator override. 21R-SEC-3-REVIEW-1
 // review-feedback-2 (P1): without an upper bound, a numeric string that
 // passes /^[1-9]\d*$/ but parses to an integer-valued float beyond
 // Number.MAX_SAFE_INTEGER (e.g. '999999999999999999999999' → ~1e24)
-// would set MAX_DEPTH to that float, and `if (depth > 1e24)` is
+// would set maxDepth to that float, and `if (depth > 1e24)` is
 // effectively never true — the same class of bypass REVIEW-1 was filed
 // to fix.
 //
@@ -221,10 +219,10 @@ export const DEFAULT_MAX_DEPTH = 32;
 // `64`) gets a much smaller amplification window.
 //
 // Exported so test code can pin the ceiling boundary by reference.
-export const MAX_ALLOWED_OVERRIDE = 256;
+export const maxAllowedOverride = 256;
 
 // 21R-SEC-3-REVIEW-1 (Equoria-h50v): the original parse path was
-//   const MAX_DEPTH = Number.parseInt(process.env.REQUEST_BODY_MAX_DEPTH ?? '32', 10)
+//   const maxDepth = Number.parseInt(process.env.REQUEST_BODY_MAX_DEPTH ?? '32', 10)
 // which silently produced NaN for any non-numeric env value. Every
 // `if (depth > NaN)` evaluates false, so a single bad env var (`invalid`,
 // empty string, `'-5'`, `'NaN'`, `'Infinity'`) silently disabled the
@@ -232,25 +230,25 @@ export const MAX_ALLOWED_OVERRIDE = 256;
 // like `'32abc'` were also accepted by parseInt's leading-digit lenience.
 //
 // This validator:
-//   1. Returns DEFAULT_MAX_DEPTH if env var is unset (normal path, silent).
-//   2. Falls back to DEFAULT_MAX_DEPTH (with logger.error) if the env value
+//   1. Returns defaultMaxDepth if env var is unset (normal path, silent).
+//   2. Falls back to defaultMaxDepth (with logger.error) if the env value
 //      is not a strict positive-integer string (matches /^[1-9]\d*$/).
-//   3. Falls back to DEFAULT_MAX_DEPTH (with logger.error) if the parsed
-//      value exceeds MAX_ALLOWED_OVERRIDE — closes the float-overflow
+//   3. Falls back to defaultMaxDepth (with logger.error) if the parsed
+//      value exceeds maxAllowedOverride — closes the float-overflow
 //      bypass surfaced by REVIEW-1 review-feedback-2.
-// The result is always a finite positive integer in [1, MAX_ALLOWED_OVERRIDE].
+// The result is always a finite positive integer in [1, maxAllowedOverride].
 function resolveMaxDepth() {
   const raw = process.env.REQUEST_BODY_MAX_DEPTH;
   if (raw === undefined) {
-    return DEFAULT_MAX_DEPTH;
+    return defaultMaxDepth;
   }
   if (typeof raw !== 'string' || !/^[1-9]\d*$/.test(raw)) {
     logger.error(
       '[RequestBodySecurity] REQUEST_BODY_MAX_DEPTH is not a positive integer; ' +
-        `falling back to default ${DEFAULT_MAX_DEPTH}`,
-      { provided: raw, fallback: DEFAULT_MAX_DEPTH },
+        `falling back to default ${defaultMaxDepth}`,
+      { provided: raw, fallback: defaultMaxDepth },
     );
-    return DEFAULT_MAX_DEPTH;
+    return defaultMaxDepth;
   }
   const parsed = Number.parseInt(raw, 10);
   // The regex above guarantees parsed is a positive integer for inputs
@@ -262,23 +260,23 @@ function resolveMaxDepth() {
   if (!Number.isInteger(parsed) || parsed < 1) {
     logger.error(
       '[RequestBodySecurity] REQUEST_BODY_MAX_DEPTH parsed to non-positive integer; ' +
-        `falling back to default ${DEFAULT_MAX_DEPTH}`,
-      { provided: raw, parsed, fallback: DEFAULT_MAX_DEPTH },
+        `falling back to default ${defaultMaxDepth}`,
+      { provided: raw, parsed, fallback: defaultMaxDepth },
     );
-    return DEFAULT_MAX_DEPTH;
+    return defaultMaxDepth;
   }
-  if (parsed > MAX_ALLOWED_OVERRIDE) {
+  if (parsed > maxAllowedOverride) {
     logger.error(
-      '[RequestBodySecurity] REQUEST_BODY_MAX_DEPTH exceeds MAX_ALLOWED_OVERRIDE; ' +
-        `falling back to default ${DEFAULT_MAX_DEPTH}`,
-      { provided: raw, parsed, ceiling: MAX_ALLOWED_OVERRIDE, fallback: DEFAULT_MAX_DEPTH },
+      '[RequestBodySecurity] REQUEST_BODY_MAX_DEPTH exceeds maxAllowedOverride; ' +
+        `falling back to default ${defaultMaxDepth}`,
+      { provided: raw, parsed, ceiling: maxAllowedOverride, fallback: defaultMaxDepth },
     );
-    return DEFAULT_MAX_DEPTH;
+    return defaultMaxDepth;
   }
   return parsed;
 }
 
-const MAX_DEPTH = resolveMaxDepth();
+const maxDepth = resolveMaxDepth();
 
 class JsonScanner {
   constructor(source) {
@@ -293,7 +291,7 @@ class JsonScanner {
   }
 
   scanValue(depth) {
-    if (depth > MAX_DEPTH) {
+    if (depth > maxDepth) {
       throw new RequestBodySecurityError('nesting too deep');
     }
 
@@ -378,7 +376,7 @@ class JsonScanner {
   }
 
   scanArray(depth) {
-    if (depth > MAX_DEPTH) {
+    if (depth > maxDepth) {
       throw new RequestBodySecurityError('nesting too deep');
     }
     this.index += 1;
@@ -505,7 +503,7 @@ class JsonScanner {
 }
 
 function assertNoPollutingKeys(value, path = 'body', depth = 0) {
-  if (depth > MAX_DEPTH) {
+  if (depth > maxDepth) {
     throw new RequestBodySecurityError('nesting too deep');
   }
 
@@ -521,15 +519,15 @@ function assertNoPollutingKeys(value, path = 'body', depth = 0) {
   }
 
   for (const [key, child] of Object.entries(value)) {
-    if (key === FORBIDDEN_KEY) {
+    if (key === forbiddenKey) {
       throw new RequestBodySecurityError(`forbidden key "${sanitizeForLog(key, 64)}"`);
     }
 
     if (
-      key === FORBIDDEN_CONSTRUCTOR_KEY &&
+      key === forbiddenConstructorKey &&
       child &&
       typeof child === 'object' &&
-      Object.prototype.hasOwnProperty.call(child, FORBIDDEN_PROTOTYPE_KEY)
+      Object.prototype.hasOwnProperty.call(child, forbiddenPrototypeKey)
     ) {
       throw new RequestBodySecurityError('forbidden key path "constructor.prototype"');
     }
@@ -587,13 +585,13 @@ export function verifyJsonBody(req, _res, buffer) {
     // bytes in `error.message` could otherwise inject CRLF/ANSI escapes
     // into log files (log poisoning). Stack truncation also caps log-pipe
     // pressure from sustained malformed-payload bursts.
-    logger.warn(UNEXPECTED_SCANNER_LOG_PREFIX, {
+    logger.warn(unexpectedScannerLogPrefix, {
       unexpected: true,
       errorClass: error?.constructor?.name,
       message: sanitizeForLog(error?.message, 256),
       stack: sanitizeForLog(error?.stack, 2048),
     });
-    // Message MUST start with ERROR_MESSAGE_PREFIX so requestBodySecurityErrorHandler
+    // Message MUST start with errorMessagePrefix so requestBodySecurityErrorHandler
     // recognizes it and returns 400 with our envelope. Without the prefix the
     // message falls through to the global error handler and surfaces as 500,
     // which would leak that something unusual happened upstream. The shared
@@ -613,7 +611,7 @@ export function rejectPollutedRequestBody(req, _res, next) {
       next(error);
       return;
     }
-    logger.warn(UNEXPECTED_SCANNER_LOG_PREFIX, {
+    logger.warn(unexpectedScannerLogPrefix, {
       unexpected: true,
       errorClass: error?.constructor?.name,
       message: sanitizeForLog(error?.message, 256),
@@ -654,13 +652,9 @@ export function rejectPollutedRequestBody(req, _res, next) {
 //
 // Stage 2 reuses the existing `assertNoPollutingKeys` walker so the
 // detection rules (forbidden keys, depth cap, error prefix) match the
-// body-side guard. The error message prefix matches ERROR_MESSAGE_PREFIX
+// body-side guard. The error message prefix matches errorMessagePrefix
 // so requestBodySecurityErrorHandler returns 400 with the same envelope.
-const FORBIDDEN_QUERY_KEYS = new Set([
-  FORBIDDEN_KEY,
-  FORBIDDEN_CONSTRUCTOR_KEY,
-  FORBIDDEN_PROTOTYPE_KEY,
-]);
+const forbiddenQueryKeys = new Set([forbiddenKey, forbiddenConstructorKey, forbiddenPrototypeKey]);
 
 function scanRawQueryForForbiddenKey(rawQuery) {
   if (!rawQuery) {
@@ -687,7 +681,7 @@ function scanRawQueryForForbiddenKey(rawQuery) {
     // without brackets has just one segment.
     const segments = decoded.split(/\[|\]/).filter(s => s.length > 0);
     for (const seg of segments) {
-      if (FORBIDDEN_QUERY_KEYS.has(seg)) {
+      if (forbiddenQueryKeys.has(seg)) {
         return seg;
       }
     }
@@ -719,7 +713,7 @@ export function rejectPollutedRequestQuery(req, _res, next) {
       next(error);
       return;
     }
-    logger.warn(UNEXPECTED_SCANNER_LOG_PREFIX, {
+    logger.warn(unexpectedScannerLogPrefix, {
       unexpected: true,
       errorClass: error?.constructor?.name,
       message: sanitizeForLog(error?.message, 256),
@@ -814,7 +808,7 @@ export function verifyUrlEncodedBody(req, _res, buffer) {
     if (AppError.isAppError(error)) {
       throw error;
     }
-    logger.warn(UNEXPECTED_SCANNER_LOG_PREFIX, {
+    logger.warn(unexpectedScannerLogPrefix, {
       unexpected: true,
       errorClass: error?.constructor?.name,
       message: sanitizeForLog(error?.message, 256),

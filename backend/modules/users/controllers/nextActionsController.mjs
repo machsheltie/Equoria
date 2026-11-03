@@ -56,7 +56,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
-  ENTRY_RULE_HORSE_SELECT,
+  entryRuleHorseSelect,
   evaluateEntryRules,
   loadActiveAssignments,
   loadActiveDisciplineTypes,
@@ -146,7 +146,7 @@ export async function getNextActions(req, res) {
         hungerSince: true,
         lastVettedDate: true,
         // The entry rules (Equoria-576c0 B9): dateOfBirth, healthStatus, gaitScores.
-        ...ENTRY_RULE_HORSE_SELECT,
+        ...entryRuleHorseSelect,
       },
     });
 

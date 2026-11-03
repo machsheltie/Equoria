@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import logger from '../utils/logger.mjs';
-import { GAME_TIME_ZONE } from '../utils/gameTime.mjs';
+import { gameTimeZone } from '../utils/gameTime.mjs';
 // Equoria-urqic.3: heavy job-logic clusters extracted out of this orchestrator
 // into focused, individually-testable impl modules. The class keeps thin
 // delegator methods (the names integration tests call on the singleton) that
@@ -17,7 +17,7 @@ import * as groomCareerProgressionImpl from './jobs/impl/groomCareerProgression.
 // Equoria-fx4e7: per-job descriptors (schedule + lock policy + staleness budget
 // + run thunk) live in backend/services/jobs/. start() iterates this registry
 // instead of carrying ten inline cron.schedule(...) blocks.
-import { CRON_JOB_REGISTRY } from './jobs/index.mjs';
+import { cronJobRegistry } from './jobs/index.mjs';
 import { runEmailOutbox } from '../modules/staff/index.mjs';
 import { postDailyNewsEntries } from '../modules/news/index.mjs';
 import { runNightlyTraitReveal } from '../modules/traits/index.mjs';
@@ -26,11 +26,11 @@ import { runHallOfFameRounds } from '../modules/community/index.mjs';
 // CronRunLog persistence, the /api/admin/cron/health surface, and the
 // stale-alert debounce) is now a dedicated collaborator that this scheduler
 // COMPOSES. CronJobService owns scheduling/lifecycle; CronJobMonitor owns
-// observing each run. STALE_ALERT_THRESHOLD_MS is re-exported below because a
+// observing each run. staleAlertThresholdMs is re-exported below because a
 // test imports it from this module's public surface.
-import CronJobMonitor, { STALE_ALERT_THRESHOLD_MS } from './jobs/cronJobMonitor.mjs';
+import CronJobMonitor, { staleAlertThresholdMs } from './jobs/cronJobMonitor.mjs';
 
-export { STALE_ALERT_THRESHOLD_MS };
+export { staleAlertThresholdMs };
 
 class CronJobService {
   constructor() {
@@ -131,9 +131,9 @@ class CronJobService {
    * pg_try_advisory_xact_lock; the loser records status:'skipped-locked'.
    * Equoria-fx4e7: the per-job descriptors (schedule + applyLock + staleAfterMs
    * + run thunk) live in backend/services/jobs/. We iterate the ordered
-   * CRON_JOB_REGISTRY and build each cron.schedule identically to the previous
+   * cronJobRegistry and build each cron.schedule identically to the previous
    * inline blocks (same schedule string, same { scheduled: false } options, now on the
-   * owner's Eastern game clock, GAME_TIME_ZONE, same runWithHeartbeat wrapping). Map insertion order is
+   * owner's Eastern game clock, gameTimeZone, same runWithHeartbeat wrapping). Map insertion order is
    * preserved, so getStatus()/getHealth() iteration order is unchanged.
    */
   start() {
@@ -144,7 +144,7 @@ class CronJobService {
 
     logger.info('[CronJobService] Starting cron job service');
 
-    for (const { jobName, schedule, applyLock, run } of CRON_JOB_REGISTRY) {
+    for (const { jobName, schedule, applyLock, run } of cronJobRegistry) {
       const job = cron.schedule(
         schedule,
         async () => {
@@ -152,7 +152,7 @@ class CronJobService {
         },
         {
           scheduled: false,
-          timezone: GAME_TIME_ZONE,
+          timezone: gameTimeZone,
         },
       );
       this.jobs.set(jobName, job);

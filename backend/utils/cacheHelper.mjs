@@ -34,7 +34,7 @@ let isRedisAvailable = false;
 
 // In-memory fallback cache
 const localCache = new Map();
-const LOCAL_CACHE_MAX_ITEMS = 1000;
+const localCacheMaxItems = 1000;
 
 // ─── CACHE_REQUIRE_REDIS observability gate (Equoria-1tu03) ───────────────────
 //
@@ -51,7 +51,7 @@ const LOCAL_CACHE_MAX_ITEMS = 1000;
 // Deployable environments where the silent fallback matters. Kept as a literal
 // set (mirrors DEPLOYABLE_ENVS_FOR_REDIS in rateLimiting.mjs) to avoid a
 // cross-module import.
-const CACHE_DEPLOYABLE_ENVS = new Set(['production', 'beta']);
+const cacheDeployableEnvs = new Set(['production', 'beta']);
 
 // One-time latch so the operator warning is emitted at most once per process —
 // the cache init path can run on every getCachedQuery call (lazy singleton), and
@@ -99,7 +99,7 @@ export function shouldWarnCacheWithoutRedis({
 }) {
   return (
     requireRedis === true &&
-    CACHE_DEPLOYABLE_ENVS.has(nodeEnv) &&
+    cacheDeployableEnvs.has(nodeEnv) &&
     redisIntentionallyDisabled === false &&
     redisConnected === false
   );
@@ -336,7 +336,7 @@ export async function getCachedQuery(cacheKey, queryFn, ttl = 60) {
 
     // 2. Save to local cache (as backup or primary if Redis down)
     // Enforce size limit
-    if (localCache.size >= LOCAL_CACHE_MAX_ITEMS) {
+    if (localCache.size >= localCacheMaxItems) {
       // Simple eviction: delete first item (FIFO-ish since Maps preserve insertion order)
       const firstKey = localCache.keys().next().value;
       localCache.delete(firstKey);

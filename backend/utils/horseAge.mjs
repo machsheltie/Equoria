@@ -48,7 +48,7 @@
 
 import { calendarDateDayIndex, gameCalendarDate, gameDayIndex } from './gameTime.mjs';
 
-const DAYS_PER_GAME_YEAR = 7;
+const daysPerGameYear = 7;
 
 /**
  * Compute a horse's age in real-world days since dateOfBirth.
@@ -95,7 +95,7 @@ export function getHorseAgeDays(dateOfBirth, now = new Date()) {
  */
 export function getHorseAgeYears(dateOfBirth, now = new Date()) {
   const days = getHorseAgeDays(dateOfBirth, now);
-  return Math.floor(days / DAYS_PER_GAME_YEAR);
+  return Math.floor(days / daysPerGameYear);
 }
 
 /**
@@ -109,7 +109,7 @@ export function getHorseAgeYears(dateOfBirth, now = new Date()) {
  * @returns {Date}
  */
 export function birthDateForAge(ageYears, now = new Date()) {
-  return gameCalendarDate(now, -Math.round(ageYears * DAYS_PER_GAME_YEAR));
+  return gameCalendarDate(now, -Math.round(ageYears * daysPerGameYear));
 }
 
 /**
@@ -131,7 +131,7 @@ export function gameYearsFromDays(ageInDays) {
   if (typeof ageInDays !== 'number' || !Number.isFinite(ageInDays) || ageInDays < 0) {
     return 0;
   }
-  return Math.floor(ageInDays / DAYS_PER_GAME_YEAR);
+  return Math.floor(ageInDays / daysPerGameYear);
 }
 
 /**

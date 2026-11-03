@@ -29,7 +29,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { applyHostPrefixGuard } from '../utils/cookieConfig.mjs';
-import { CSRF_COOKIE_NAME, CSRF_COOKIE_OPTIONS } from '../middleware/csrf.mjs';
+import { csrfCookieName, csrfCookieOptions } from '../middleware/csrf.mjs';
 
 describe('applyHostPrefixGuard — __Host- prefix domain conflict (Equoria-smy2g)', () => {
   // ----- SENTINEL-POSITIVE: the conflict is actually resolved -----
@@ -105,27 +105,27 @@ describe('applyHostPrefixGuard — __Host- prefix domain conflict (Equoria-smy2g
   });
 });
 
-describe('csrf.mjs live wiring — CSRF_COOKIE_OPTIONS is host-locked when name is __Host- (Equoria-smy2g)', () => {
+describe('csrf.mjs live wiring — csrfCookieOptions is host-locked when name is __Host- (Equoria-smy2g)', () => {
   it('in the current (non-production) test env the cookie name is _csrf', () => {
     // Sanity: confirms which branch the live wiring is exercising here.
-    expect(CSRF_COOKIE_NAME).toBe('_csrf');
+    expect(csrfCookieName).toBe('_csrf');
   });
 
-  it('the wired CSRF_COOKIE_OPTIONS never carries a domain when the cookie name is __Host- prefixed', () => {
+  it('the wired csrfCookieOptions never carries a domain when the cookie name is __Host- prefixed', () => {
     // Re-derive the guard against a __Host- name using the live base options.
     // This proves the wiring (csrf.mjs passes COOKIE_OPTIONS.csrfToken through
     // applyHostPrefixGuard) yields a domain-free result for the production name
     // regardless of what COOKIE_DOMAIN is set to at import time.
-    const asHostCookie = applyHostPrefixGuard('__Host-csrf', CSRF_COOKIE_OPTIONS);
+    const asHostCookie = applyHostPrefixGuard('__Host-csrf', csrfCookieOptions);
     expect(asHostCookie.domain).toBeUndefined();
     expect(asHostCookie.secure).toBe(true);
     expect(asHostCookie.path).toBe('/');
   });
 
-  it('the live CSRF_COOKIE_OPTIONS used by the csrf-csrf library has no leaked domain in this env', () => {
+  it('the live csrfCookieOptions used by the csrf-csrf library has no leaked domain in this env', () => {
     // In the test env COOKIE_DOMAIN is unset, so domain is undefined either
     // way — assert it is not a truthy domain string regardless of branch.
-    expect(CSRF_COOKIE_OPTIONS.domain ?? undefined).toBeUndefined();
-    expect(CSRF_COOKIE_OPTIONS.path).toBe('/');
+    expect(csrfCookieOptions.domain ?? undefined).toBeUndefined();
+    expect(csrfCookieOptions.path).toBe('/');
   });
 });

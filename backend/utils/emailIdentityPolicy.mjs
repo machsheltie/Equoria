@@ -26,9 +26,9 @@
 import AppError from '../errors/AppError.mjs';
 
 /** Machine-readable code carried on the rejection so clients can route to the flow. */
-export const EMAIL_CHANGE_REQUIRES_CONFIRMATION = 'emailChangeRequiresConfirmation';
+export const emailChangeRequiresConfirmation = 'emailChangeRequiresConfirmation';
 
-export const EMAIL_CHANGE_REQUIRES_CONFIRMATION_MESSAGE =
+export const emailChangeRequiresConfirmationMessage =
   'Changing your email address changes how you recover this account, so it cannot be done from an ordinary profile update. ' +
   'Start the change at POST /api/v1/auth/email-change/request (current password required) and confirm the link sent to the new address.';
 
@@ -90,7 +90,7 @@ export function maskEmailAddress(raw) {
 // either side of one `@`. Deliberately broad (any case, any characters a
 // driver might echo), because a missed address leaks and an over-match only
 // masks a little extra text.
-const EMAIL_IN_TEXT = /[^\s@<>()[\]{}"'`,;:\\]+@[^\s@<>()[\]{}"'`,;:\\]+/g;
+const emailInText = /[^\s@<>()[\]{}"'`,;:\\]+@[^\s@<>()[\]{}"'`,;:\\]+/g;
 
 // The same token with its `@` percent-encoded, as it appears in a logged URL
 // query string (`?email=jasmine%40example.com`). `&`, `=`, `?` and `/` also
@@ -112,7 +112,7 @@ export function maskEmailsInText(text) {
     return text;
   }
   return String(text)
-    .replace(EMAIL_IN_TEXT, match => maskEmailAddress(match) ?? '***')
+    .replace(emailInText, match => maskEmailAddress(match) ?? '***')
     .replace(encodedEmailInText, match => maskEmailAddress(match.replace(/%40/i, '@')) ?? '***');
 }
 
@@ -174,7 +174,7 @@ export function assertNoDirectEmailWrite({ requestedEmail, currentEmail }) {
     return { changed: false, supplied: true, normalized: requested };
   }
 
-  const error = new AppError(EMAIL_CHANGE_REQUIRES_CONFIRMATION_MESSAGE, 403);
-  error.code = EMAIL_CHANGE_REQUIRES_CONFIRMATION;
+  const error = new AppError(emailChangeRequiresConfirmationMessage, 403);
+  error.code = emailChangeRequiresConfirmation;
   throw error;
 }

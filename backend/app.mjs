@@ -66,8 +66,8 @@ import {
 } from './middleware/requestBodySecurity.mjs';
 
 // Redis rate limiting (createRateLimiter for the global API limiter).
-// MUTATION_RATE_LIMIT_MAX_BY_ENV is imported only for the boot-log below.
-import { createRateLimiter, MUTATION_RATE_LIMIT_MAX_BY_ENV } from './middleware/rateLimiting.mjs';
+// mutationRateLimitMaxByEnv is imported only for the boot-log below.
+import { createRateLimiter, mutationRateLimitMaxByEnv } from './middleware/rateLimiting.mjs';
 // resolveE2eRateLimitMax / applyE2eRateLimitOverride (Equoria-jz9v2): honor an
 // EXPLICIT E2E-only ceiling override in non-prod envs without touching
 // RATE_LIMIT_MAX_BY_ENV. createRateLimiter applies the override to EVERY limiter
@@ -197,7 +197,7 @@ const RATE_LIMIT_MAX_BY_ENV = {
 //    stallion/mare/create/feed/breed mutations trip the 30/min prod cap and
 //    cascade fixture failures (Equoria-st9u). 120 = 2 mut/sec, abuse-safe.
 //    `beta-readiness` is deliberately ABSENT from
-//    MUTATION_RATE_LIMIT_MAX_BY_ENV so it inherits production 30/min — the
+//    mutationRateLimitMaxByEnv so it inherits production 30/min — the
 //    readiness gate MUST exercise the real mutation cap.
 //  - Global (15min) vs mutation (1min) windows differ, so their numeric
 //    caps are not comparable: 3000/15min ≈ 3.3 req/s aggregate vs
@@ -242,9 +242,7 @@ logger.info('[rateLimit] effective ceilings at boot', {
   effectiveMax: {
     'rl:global': applyE2eRateLimitOverride(RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 10000),
     'rl:auth': applyE2eRateLimitOverride(200), // authRateLimiter base (rateLimiting.mjs)
-    'rl:mutation': applyE2eRateLimitOverride(
-      MUTATION_RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 30,
-    ),
+    'rl:mutation': applyE2eRateLimitOverride(mutationRateLimitMaxByEnv[process.env.NODE_ENV] ?? 30),
     'rl:query': applyE2eRateLimitOverride(100), // queryRateLimiter base
   },
 });

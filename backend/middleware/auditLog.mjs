@@ -16,7 +16,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
  * enforced globally by construction via `globalAuditTrail` — NOT opt-in
  * per-route. Read (GET/HEAD/OPTIONS) traffic is intentionally NOT persisted:
  * the audit trail scopes to state-changing verbs (POST/PUT/PATCH/DELETE) on
- * the sensitive prefixes enumerated in SENSITIVE_AUDIT_PREFIXES. Audit writes
+ * the sensitive prefixes enumerated in sensitiveAuditPrefixes. Audit writes
  * are best-effort/fail-soft: a write failure logs and is swallowed — it must
  * never break, delay-block, or 500 the underlying request.
  */
@@ -182,11 +182,11 @@ export function sanitizeLogData(data, depth = 0, ancestors = new Set()) {
  * versioned (`/api/v1/...`) mounts are covered because authRouter is mounted
  * at BOTH in app.mjs.
  */
-const AUDITED_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const auditedMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 // Each entry: [pathTest, action]. pathTest runs against the request path with
 // any leading `/api` and `/api/v1` stripped (normalized form).
-const SENSITIVE_AUDIT_PREFIXES = [
+const sensitiveAuditPrefixes = [
   { match: p => p.startsWith('auth'), action: 'authentication' },
   // GDPR self-service account ops (Equoria-s3rf): data export + erasure are
   // among the highest-sensitivity operations a user can perform.
@@ -225,11 +225,11 @@ function normalizeAuditPath(path) {
  * Classify a request into an audit action, or null if it must not be audited.
  */
 export function classifyAuditAction(method, path) {
-  if (!AUDITED_METHODS.has(method)) {
+  if (!auditedMethods.has(method)) {
     return null;
   }
   const normalized = normalizeAuditPath(path);
-  for (const { match, action } of SENSITIVE_AUDIT_PREFIXES) {
+  for (const { match, action } of sensitiveAuditPrefixes) {
     if (match(normalized)) {
       return action;
     }

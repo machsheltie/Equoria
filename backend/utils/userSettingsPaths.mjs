@@ -48,10 +48,10 @@ import { Prisma } from '../../packages/database/prismaClient.mjs';
  * The pattern is a fail-closed guard against a caller ever routing raw input
  * here — the key is still BOUND as a parameter, never spliced into SQL text.
  */
-const SETTINGS_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
+const settingsKeyPattern = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
 
 function assertKey(key) {
-  if (!SETTINGS_KEY_PATTERN.test(key)) {
+  if (!settingsKeyPattern.test(key)) {
     throw new Error(`updateUserSettingsPaths: unsafe settings key "${key}"`);
   }
 }

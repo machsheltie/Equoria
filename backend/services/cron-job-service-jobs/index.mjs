@@ -42,11 +42,11 @@ import tokenCleanupJob from './tokenCleanupJob.mjs';
 import foalingJob from './foalingJob.mjs';
 import riderTrainerRetirementJob from './riderTrainerRetirementJob.mjs';
 
-export const CRON_JOB_SERVICE_REGISTRY = Object.freeze([
+export const cronJobServiceRegistry = Object.freeze([
   weeklySalariesJob,
   tokenCleanupJob,
   foalingJob,
   riderTrainerRetirementJob,
 ]);
 
-export default CRON_JOB_SERVICE_REGISTRY;
+export default cronJobServiceRegistry;

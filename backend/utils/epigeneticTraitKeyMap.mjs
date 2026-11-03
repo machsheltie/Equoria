@@ -11,7 +11,7 @@
  *      rows whose `epigeneticModifiers` arrays still carry snake_case keys
  *      until the forward-only DB backfill (see
  *      packages/database/scripts/backfillEpigeneticTraitCasing.mjs) runs.
- *   2. Backfill: the migration/script imports `LEGACY_TRAIT_KEY_MAP` +
+ *   2. Backfill: the migration/script imports `legacyTraitKeyMap` +
  *      `normalizeTraitKey` so the DB rewrite and the runtime read use the
  *      EXACT same mapping (no drift between "what we store" and "what we
  *      tolerate").
@@ -32,7 +32,7 @@
  * it as-is (it has no effect either way); dropping stored ghosts is out of
  * scope for the casing migration and tracked separately if ever needed.
  */
-export const LEGACY_TRAIT_KEY_MAP = Object.freeze({
+export const legacyTraitKeyMap = Object.freeze({
   trainability_boost: 'trainabilityBoost',
   eager_learner: 'eagerLearner',
   low_immunity: 'lowImmunity',
@@ -70,14 +70,14 @@ export function disciplineAffinityKey(discipline) {
  * Legacy snake-case affinity prefix → used by normalizeTraitKey to convert a
  * stored `discipline_affinity_show_jumping` into `disciplineAffinityShowJumping`.
  */
-const LEGACY_AFFINITY_PREFIX = 'discipline_affinity_';
+const legacyAffinityPrefix = 'discipline_affinity_';
 
 /**
  * Normalize ANY trait key to canonical camelCase. Idempotent: a key already in
  * canonical form is returned unchanged.
  *
  * Handles:
- *   - the fixed legacy map (LEGACY_TRAIT_KEY_MAP)
+ *   - the fixed legacy map (legacyTraitKeyMap)
  *   - legacy snake-case discipline-affinity keys
  *     (discipline_affinity_show_jumping → disciplineAffinityShowJumping)
  *   - everything else passes through untouched (already-canonical keys, and
@@ -90,12 +90,12 @@ export function normalizeTraitKey(key) {
   if (typeof key !== 'string' || key.length === 0) {
     return key;
   }
-  if (Object.prototype.hasOwnProperty.call(LEGACY_TRAIT_KEY_MAP, key)) {
-    return LEGACY_TRAIT_KEY_MAP[key];
+  if (Object.prototype.hasOwnProperty.call(legacyTraitKeyMap, key)) {
+    return legacyTraitKeyMap[key];
   }
-  if (key.startsWith(LEGACY_AFFINITY_PREFIX)) {
+  if (key.startsWith(legacyAffinityPrefix)) {
     // discipline_affinity_show_jumping → "Show Jumping"-style words → PascalCase
-    const tail = key.slice(LEGACY_AFFINITY_PREFIX.length); // "show_jumping"
+    const tail = key.slice(legacyAffinityPrefix.length); // "show_jumping"
     const pascal = tail
       .split('_')
       .map(word => (word.length === 0 ? '' : word.charAt(0).toUpperCase() + word.slice(1)))
@@ -153,7 +153,7 @@ export function normalizeStoredEpigeneticModifiers(modifiers) {
 }
 
 export default {
-  LEGACY_TRAIT_KEY_MAP,
+  legacyTraitKeyMap,
   disciplineAffinityKey,
   normalizeTraitKey,
   normalizeEpigeneticModifiers,

@@ -15,7 +15,7 @@
 
 import cron from 'node-cron';
 import logger from '../utils/logger.mjs';
-import { GAME_TIME_ZONE } from '../utils/gameTime.mjs';
+import { gameTimeZone } from '../utils/gameTime.mjs';
 import { processWeeklySalaries } from '../modules/grooms/index.mjs';
 import { runFoalingJob } from '../modules/horses/index.mjs';
 import { processRiderTrainerRetirement } from '../modules/trainers/index.mjs';
@@ -27,7 +27,7 @@ import legacyCronJobs from './cronJobs.mjs';
 // Equoria-1j167: per-job descriptors (jobName/schedule/lockKey/run) + the
 // runTokenCleanup work function (re-exported below as triggerTokenCleanup uses
 // it). The registry preserves the original runningJobs.set(...) order.
-import CRON_JOB_SERVICE_REGISTRY from './cron-job-service-jobs/index.mjs';
+import cronJobServiceRegistry from './cron-job-service-jobs/index.mjs';
 import { runTokenCleanup } from './cron-job-service-jobs/tokenCleanupJob.mjs';
 
 // Track running jobs
@@ -44,7 +44,7 @@ export function initializeCronJobs() {
     // its work function under the descriptor's advisory lock, on the
     // descriptor's schedule on the Eastern game clock. `scheduled: false` then explicit .start()
     // matches the pre-split create-then-start sequence exactly.
-    for (const descriptor of CRON_JOB_SERVICE_REGISTRY) {
+    for (const descriptor of cronJobServiceRegistry) {
       const { jobName, schedule, lockKey, staleAfterMs, run } = descriptor;
       // Equoria-cmw85.9: observed like the primary registry's jobs — heartbeat,
       // CronRunLog row, and a line in /api/admin/cron/health. The advisory lock
@@ -58,7 +58,7 @@ export function initializeCronJobs() {
         },
         {
           scheduled: false,
-          timezone: GAME_TIME_ZONE,
+          timezone: gameTimeZone,
         },
       );
       runningJobs.set(jobName, job);

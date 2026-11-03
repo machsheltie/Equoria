@@ -8,9 +8,9 @@ import { describe, it, expect } from '@jest/globals';
 
 // pregnancyBonus
 import {
-  PREGNANCY_BONUS_PCT,
-  NEG_PER_MISSED_DAY,
-  GESTATION_DAYS,
+  pregnancyBonusPct,
+  negPerMissedDay,
+  gestationDays,
   calculatePregnancyEpigeneticChances,
 } from '../../../utils/pregnancyBonus.mjs';
 
@@ -32,30 +32,30 @@ import { getStatScore } from '../../../utils/getStatScore.mjs';
 // ---------------------------------------------------------------------------
 // pregnancyBonus — constants
 // ---------------------------------------------------------------------------
-describe('PREGNANCY_BONUS_PCT', () => {
+describe('pregnancyBonusPct', () => {
   it('basic tier has 0 bonus', () => {
-    expect(PREGNANCY_BONUS_PCT.basic).toBe(0);
+    expect(pregnancyBonusPct.basic).toBe(0);
   });
 
   it('elite tier has 20 bonus points', () => {
-    expect(PREGNANCY_BONUS_PCT.elite).toBe(20);
+    expect(pregnancyBonusPct.elite).toBe(20);
   });
 
   it('tiers are ordered by value', () => {
-    expect(PREGNANCY_BONUS_PCT.basic).toBeLessThan(PREGNANCY_BONUS_PCT.performance);
-    expect(PREGNANCY_BONUS_PCT.performance).toBeLessThan(PREGNANCY_BONUS_PCT.performancePlus);
-    expect(PREGNANCY_BONUS_PCT.performancePlus).toBeLessThan(PREGNANCY_BONUS_PCT.highPerformance);
-    expect(PREGNANCY_BONUS_PCT.highPerformance).toBeLessThan(PREGNANCY_BONUS_PCT.elite);
+    expect(pregnancyBonusPct.basic).toBeLessThan(pregnancyBonusPct.performance);
+    expect(pregnancyBonusPct.performance).toBeLessThan(pregnancyBonusPct.performancePlus);
+    expect(pregnancyBonusPct.performancePlus).toBeLessThan(pregnancyBonusPct.highPerformance);
+    expect(pregnancyBonusPct.highPerformance).toBeLessThan(pregnancyBonusPct.elite);
   });
 });
 
-describe('NEG_PER_MISSED_DAY and GESTATION_DAYS', () => {
-  it('NEG_PER_MISSED_DAY is 5', () => {
-    expect(NEG_PER_MISSED_DAY).toBe(5);
+describe('negPerMissedDay and gestationDays', () => {
+  it('negPerMissedDay is 5', () => {
+    expect(negPerMissedDay).toBe(5);
   });
 
-  it('GESTATION_DAYS is 7', () => {
-    expect(GESTATION_DAYS).toBe(7);
+  it('gestationDays is 7', () => {
+    expect(gestationDays).toBe(7);
   });
 });
 
@@ -114,7 +114,7 @@ describe('calculatePregnancyEpigeneticChances', () => {
     expect(result.negativeChance).toBe(0);
   });
 
-  it('more feedings than GESTATION_DAYS caps divisor at totalFeedings', () => {
+  it('more feedings than gestationDays caps divisor at totalFeedings', () => {
     // 10 elite feedings → divisor = max(7, 10) = 10, positiveChance = (10*20)/10 = 20
     const result = calculatePregnancyEpigeneticChances({ elite: 10 });
     expect(result.positiveChance).toBe(20);

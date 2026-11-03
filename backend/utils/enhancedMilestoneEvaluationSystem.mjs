@@ -21,48 +21,48 @@ import { getHorseAgeDays, getHorseAgeYears } from './horseAge.mjs';
 import { minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
 
 // Milestone types and their developmental windows
-export const MILESTONE_TYPES = {
+export const milestoneTypes = {
   IMPRINTING: 'imprinting',
   SOCIALIZATION: 'socialization',
-  CURIOSITY_PLAY: 'curiosityPlay',
-  TRUST_HANDLING: 'trustHandling',
-  CONFIDENCE_REACTIVITY: 'confidenceReactivity',
+  curiosityPlay: 'curiosityPlay',
+  trustHandling: 'trustHandling',
+  confidenceReactivity: 'confidenceReactivity',
 };
 
 // Developmental windows in days
-export const DEVELOPMENTAL_WINDOWS = {
-  [MILESTONE_TYPES.IMPRINTING]: { start: 0, end: 1 },
-  [MILESTONE_TYPES.SOCIALIZATION]: { start: 1, end: 7 },
-  [MILESTONE_TYPES.CURIOSITY_PLAY]: { start: 8, end: 14 },
-  [MILESTONE_TYPES.TRUST_HANDLING]: { start: 15, end: 21 },
-  [MILESTONE_TYPES.CONFIDENCE_REACTIVITY]: { start: 22, end: 28 },
+export const developmentalWindows = {
+  [milestoneTypes.IMPRINTING]: { start: 0, end: 1 },
+  [milestoneTypes.SOCIALIZATION]: { start: 1, end: 7 },
+  [milestoneTypes.curiosityPlay]: { start: 8, end: 14 },
+  [milestoneTypes.trustHandling]: { start: 15, end: 21 },
+  [milestoneTypes.confidenceReactivity]: { start: 22, end: 28 },
 };
 
 // Trait thresholds for confirmation
-export const TRAIT_THRESHOLDS = {
+export const traitThresholds = {
   CONFIRM: 3,
   DENY: -3,
 };
 
 // Milestone-specific trait pools
-export const MILESTONE_TRAIT_POOLS = {
-  [MILESTONE_TYPES.IMPRINTING]: {
+export const milestoneTraitPools = {
+  [milestoneTypes.IMPRINTING]: {
     positive: ['bonded', 'trusting', 'calm'],
     negative: ['fearful', 'reactive', 'withdrawn'],
   },
-  [MILESTONE_TYPES.SOCIALIZATION]: {
+  [milestoneTypes.SOCIALIZATION]: {
     positive: ['social', 'confident', 'curious'],
     negative: ['antisocial', 'nervous', 'shy'],
   },
-  [MILESTONE_TYPES.CURIOSITY_PLAY]: {
+  [milestoneTypes.curiosityPlay]: {
     positive: ['playful', 'intelligent', 'bold'],
     negative: ['lazy', 'dull', 'timid'],
   },
-  [MILESTONE_TYPES.TRUST_HANDLING]: {
+  [milestoneTypes.trustHandling]: {
     positive: ['trusting', 'calm', 'cooperative'],
     negative: ['hesitant', 'reactive', 'wary'],
   },
-  [MILESTONE_TYPES.CONFIDENCE_REACTIVITY]: {
+  [milestoneTypes.confidenceReactivity]: {
     positive: ['confident', 'brave', 'resilient'],
     negative: ['anxious', 'fearful', 'fragile'],
   },
@@ -81,7 +81,7 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
   );
 
   // Validate milestone type
-  if (!Object.values(MILESTONE_TYPES).includes(milestoneType)) {
+  if (!Object.values(milestoneTypes).includes(milestoneType)) {
     throw new Error(`Invalid milestone type: ${milestoneType}`);
   }
 
@@ -114,7 +114,7 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
   }
 
   // Get developmental window for this milestone
-  const window = DEVELOPMENTAL_WINDOWS[milestoneType];
+  const window = developmentalWindows[milestoneType];
   if (ageInDays < window.start || ageInDays > window.end) {
     return {
       success: false,
@@ -377,23 +377,23 @@ export function calculateCareGapsPenalty(groomCareHistory, _window) {
  */
 // Exported for unit-testing pure branch coverage (Equoria-jkht)
 export function determineTraitOutcome(finalScore, milestoneType) {
-  const traitPool = MILESTONE_TRAIT_POOLS[milestoneType];
+  const traitPool = milestoneTraitPools[milestoneType];
 
-  if (finalScore >= TRAIT_THRESHOLDS.CONFIRM) {
+  if (finalScore >= traitThresholds.CONFIRM) {
     // Confirm positive trait
     const trait = traitPool.positive[Math.floor(Math.random() * traitPool.positive.length)];
     return {
       trait,
       type: 'positive',
-      reasoning: `Score ${finalScore} >= ${TRAIT_THRESHOLDS.CONFIRM}: Positive trait confirmed`,
+      reasoning: `Score ${finalScore} >= ${traitThresholds.CONFIRM}: Positive trait confirmed`,
     };
-  } else if (finalScore <= TRAIT_THRESHOLDS.DENY) {
+  } else if (finalScore <= traitThresholds.DENY) {
     // Confirm negative trait
     const trait = traitPool.negative[Math.floor(Math.random() * traitPool.negative.length)];
     return {
       trait,
       type: 'negative',
-      reasoning: `Score ${finalScore} <= ${TRAIT_THRESHOLDS.DENY}: Negative trait confirmed`,
+      reasoning: `Score ${finalScore} <= ${traitThresholds.DENY}: Negative trait confirmed`,
     };
   } else {
     // Randomized within candidate pool

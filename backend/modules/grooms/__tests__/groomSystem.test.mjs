@@ -17,13 +17,13 @@ import { randomBytes } from 'node:crypto';
 import {
   hasAlreadyCompletedFoalTaskToday,
   assignGroomToFoal,
-  GROOM_SPECIALTIES,
-  SKILL_LEVELS,
-  PERSONALITY_TRAITS,
+  groomSpecialties,
+  skillLevels,
+  personalityTraits,
 } from '../../../utils/groomSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
-import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../../../config/groomConfig.mjs';
+import { eligibleFoalEnrichmentTasks, foalGroomingTasks } from '../../../config/groomConfig.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -93,20 +93,20 @@ describe('hasAlreadyCompletedFoalTaskToday()', () => {
 
   // ── some() — enrichment task present ────────────────────────────────────
 
-  it('returns true when todayLog contains an ELIGIBLE_FOAL_ENRICHMENT_TASKS entry', () => {
-    const foal = { dailyTaskRecord: { [TODAY]: [ELIGIBLE_FOAL_ENRICHMENT_TASKS[0]] } };
+  it('returns true when todayLog contains an eligibleFoalEnrichmentTasks entry', () => {
+    const foal = { dailyTaskRecord: { [TODAY]: [eligibleFoalEnrichmentTasks[0]] } };
     expect(hasAlreadyCompletedFoalTaskToday(foal, TODAY)).toBe(true);
   });
 
   it('returns true when todayLog mixes non-foal and enrichment tasks', () => {
-    const foal = { dailyTaskRecord: { [TODAY]: ['brushing', ELIGIBLE_FOAL_ENRICHMENT_TASKS[1]] } };
+    const foal = { dailyTaskRecord: { [TODAY]: ['brushing', eligibleFoalEnrichmentTasks[1]] } };
     expect(hasAlreadyCompletedFoalTaskToday(foal, TODAY)).toBe(true);
   });
 
   // ── some() — grooming task present ──────────────────────────────────────
 
-  it('returns true when todayLog contains a FOAL_GROOMING_TASKS entry', () => {
-    const foal = { dailyTaskRecord: { [TODAY]: [FOAL_GROOMING_TASKS[0]] } };
+  it('returns true when todayLog contains a foalGroomingTasks entry', () => {
+    const foal = { dailyTaskRecord: { [TODAY]: [foalGroomingTasks[0]] } };
     expect(hasAlreadyCompletedFoalTaskToday(foal, TODAY)).toBe(true);
   });
 
@@ -275,9 +275,9 @@ describe('assignGroomToFoal() — success path (lines 219 false-branch, 228-282)
 // System-constant structural completeness. Pure (no DB).
 describe('groomSystem — constants (merged from legacy backend/tests, Equoria-wvuin)', () => {
   describe('system constants completeness', () => {
-    it('GROOM_SPECIALTIES has foalCare/general/training/medical with required fields', () => {
-      ['foalCare', 'general', 'training', 'medical'].forEach(k => expect(GROOM_SPECIALTIES).toHaveProperty(k));
-      Object.values(GROOM_SPECIALTIES).forEach(specialty => {
+    it('groomSpecialties has foalCare/general/training/medical with required fields', () => {
+      ['foalCare', 'general', 'training', 'medical'].forEach(k => expect(groomSpecialties).toHaveProperty(k));
+      Object.values(groomSpecialties).forEach(specialty => {
         expect(specialty).toHaveProperty('name');
         expect(specialty).toHaveProperty('description');
         expect(specialty).toHaveProperty('bondingModifier');
@@ -285,9 +285,9 @@ describe('groomSystem — constants (merged from legacy backend/tests, Equoria-w
       });
     });
 
-    it('SKILL_LEVELS has novice/intermediate/expert/master with required fields', () => {
-      ['novice', 'intermediate', 'expert', 'master'].forEach(k => expect(SKILL_LEVELS).toHaveProperty(k));
-      Object.values(SKILL_LEVELS).forEach(level => {
+    it('skillLevels has novice/intermediate/expert/master with required fields', () => {
+      ['novice', 'intermediate', 'expert', 'master'].forEach(k => expect(skillLevels).toHaveProperty(k));
+      Object.values(skillLevels).forEach(level => {
         expect(level).toHaveProperty('name');
         expect(level).toHaveProperty('bondingModifier');
         expect(level).toHaveProperty('costModifier');
@@ -296,9 +296,9 @@ describe('groomSystem — constants (merged from legacy backend/tests, Equoria-w
       });
     });
 
-    it('PERSONALITY_TRAITS has gentle/energetic/patient/strict with required fields', () => {
-      ['gentle', 'energetic', 'patient', 'strict'].forEach(k => expect(PERSONALITY_TRAITS).toHaveProperty(k));
-      Object.values(PERSONALITY_TRAITS).forEach(trait => {
+    it('personalityTraits has gentle/energetic/patient/strict with required fields', () => {
+      ['gentle', 'energetic', 'patient', 'strict'].forEach(k => expect(personalityTraits).toHaveProperty(k));
+      Object.values(personalityTraits).forEach(trait => {
         expect(trait).toHaveProperty('name');
         expect(trait).toHaveProperty('bondingModifier');
         expect(trait).toHaveProperty('description');

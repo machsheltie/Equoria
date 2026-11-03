@@ -10,7 +10,7 @@
  * default signature?" to scope their writes (CLAUDE.md Rule 2 — never recolor a
  * genotype a user/tester has already customized). The two copies were
  * behaviorally identical under the current GENERIC_DEFAULTS (17 loci, no Prl/BR1),
- * so the recolor copy's SIGNATURE_OPTIONAL_LOCI carve-out was a no-op in practice.
+ * so the recolor copy's signatureOptionalLoci carve-out was a no-op in practice.
  * This shared helper KEEPS that carve-out because it is the strict superset: it
  * preserves the seed script's exact present-day behavior while correctly treating
  * a legacy row that is MISSING Prl_Pearl / BR1_Brindle1 as default (wild-type
@@ -25,7 +25,7 @@ import { GENERIC_DEFAULTS } from '../modules/horses/index.mjs';
  * no expression). Only consulted when the locus is present in GENERIC_DEFAULTS
  * AND absent from the candidate genotype.
  */
-export const SIGNATURE_OPTIONAL_LOCI = new Set(['Prl_Pearl', 'BR1_Brindle1']);
+export const signatureOptionalLoci = new Set(['Prl_Pearl', 'BR1_Brindle1']);
 
 /**
  * Returns true iff `genotype` is the "minted-before-color-system" default
@@ -47,7 +47,7 @@ export function isDefaultSignature(genotype) {
   }
   for (const [locus, defaultPair] of Object.entries(GENERIC_DEFAULTS)) {
     const value = genotype[locus];
-    if (value === undefined && SIGNATURE_OPTIONAL_LOCI.has(locus)) {
+    if (value === undefined && signatureOptionalLoci.has(locus)) {
       continue;
     }
     if (value !== defaultPair) {

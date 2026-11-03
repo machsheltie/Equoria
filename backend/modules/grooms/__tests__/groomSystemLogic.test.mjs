@@ -1,24 +1,24 @@
 /**
  * UNIT TEST: groom system constants (no database).
  *
- * Validates GROOM_SPECIALTIES, SKILL_LEVELS, PERSONALITY_TRAITS and DEFAULT_GROOMS.
+ * Validates groomSpecialties, skillLevels, personalityTraits and defaultGrooms.
  * The interaction-effects calculator that used to live beside them was removed
  * (Equoria-c39bq): "groom horse" (groomCareService) is the only grooming door.
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { GROOM_SPECIALTIES, SKILL_LEVELS, PERSONALITY_TRAITS, DEFAULT_GROOMS } from '../../../utils/groomSystem.mjs';
+import { groomSpecialties, skillLevels, personalityTraits, defaultGrooms } from '../../../utils/groomSystem.mjs';
 
 describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () => {
   describe('System Constants', () => {
     it('should have all required groom specialties', () => {
-      expect(GROOM_SPECIALTIES).toHaveProperty('foalCare');
-      expect(GROOM_SPECIALTIES).toHaveProperty('general');
-      expect(GROOM_SPECIALTIES).toHaveProperty('training');
-      expect(GROOM_SPECIALTIES).toHaveProperty('medical');
+      expect(groomSpecialties).toHaveProperty('foalCare');
+      expect(groomSpecialties).toHaveProperty('general');
+      expect(groomSpecialties).toHaveProperty('training');
+      expect(groomSpecialties).toHaveProperty('medical');
 
       // Check foalCare specialty details
-      const { foalCare } = GROOM_SPECIALTIES;
+      const { foalCare } = groomSpecialties;
       expect(foalCare.name).toBe('Foal Care Specialist');
       expect(foalCare.bondingModifier).toBe(1.5);
       expect(foalCare.preferredActivities).toContain('dailyCare');
@@ -26,7 +26,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       expect(foalCare.preferredActivities).toContain('grooming');
 
       // Check all specialties have required properties
-      Object.values(GROOM_SPECIALTIES).forEach(specialty => {
+      Object.values(groomSpecialties).forEach(specialty => {
         expect(specialty).toHaveProperty('name');
         expect(specialty).toHaveProperty('description');
         expect(specialty).toHaveProperty('bondingModifier');
@@ -36,31 +36,31 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
     });
 
     it('should have all required skill levels', () => {
-      expect(SKILL_LEVELS).toHaveProperty('novice');
-      expect(SKILL_LEVELS).toHaveProperty('intermediate');
-      expect(SKILL_LEVELS).toHaveProperty('expert');
-      expect(SKILL_LEVELS).toHaveProperty('master');
+      expect(skillLevels).toHaveProperty('novice');
+      expect(skillLevels).toHaveProperty('intermediate');
+      expect(skillLevels).toHaveProperty('expert');
+      expect(skillLevels).toHaveProperty('master');
 
       // Check skill level progression
-      expect(SKILL_LEVELS.novice.bondingModifier).toBe(0.8);
-      expect(SKILL_LEVELS.intermediate.bondingModifier).toBe(1.0);
-      expect(SKILL_LEVELS.expert.bondingModifier).toBe(1.3);
-      expect(SKILL_LEVELS.master.bondingModifier).toBe(1.6);
+      expect(skillLevels.novice.bondingModifier).toBe(0.8);
+      expect(skillLevels.intermediate.bondingModifier).toBe(1.0);
+      expect(skillLevels.expert.bondingModifier).toBe(1.3);
+      expect(skillLevels.master.bondingModifier).toBe(1.6);
 
       // Check cost progression
-      expect(SKILL_LEVELS.novice.costModifier).toBe(0.7);
-      expect(SKILL_LEVELS.intermediate.costModifier).toBe(1.0);
-      expect(SKILL_LEVELS.expert.costModifier).toBe(1.5);
-      expect(SKILL_LEVELS.master.costModifier).toBe(2.0);
+      expect(skillLevels.novice.costModifier).toBe(0.7);
+      expect(skillLevels.intermediate.costModifier).toBe(1.0);
+      expect(skillLevels.expert.costModifier).toBe(1.5);
+      expect(skillLevels.master.costModifier).toBe(2.0);
 
       // Check error chance decreases with skill
-      expect(SKILL_LEVELS.novice.errorChance).toBe(0.15);
-      expect(SKILL_LEVELS.intermediate.errorChance).toBe(0.08);
-      expect(SKILL_LEVELS.expert.errorChance).toBe(0.03);
-      expect(SKILL_LEVELS.master.errorChance).toBe(0.01);
+      expect(skillLevels.novice.errorChance).toBe(0.15);
+      expect(skillLevels.intermediate.errorChance).toBe(0.08);
+      expect(skillLevels.expert.errorChance).toBe(0.03);
+      expect(skillLevels.master.errorChance).toBe(0.01);
 
       // Check all skill levels have required properties
-      Object.values(SKILL_LEVELS).forEach(level => {
+      Object.values(skillLevels).forEach(level => {
         expect(level).toHaveProperty('name');
         expect(level).toHaveProperty('bondingModifier');
         expect(level).toHaveProperty('costModifier');
@@ -70,19 +70,19 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
     });
 
     it('should have all required personality traits', () => {
-      expect(PERSONALITY_TRAITS).toHaveProperty('gentle');
-      expect(PERSONALITY_TRAITS).toHaveProperty('energetic');
-      expect(PERSONALITY_TRAITS).toHaveProperty('patient');
-      expect(PERSONALITY_TRAITS).toHaveProperty('strict');
+      expect(personalityTraits).toHaveProperty('gentle');
+      expect(personalityTraits).toHaveProperty('energetic');
+      expect(personalityTraits).toHaveProperty('patient');
+      expect(personalityTraits).toHaveProperty('strict');
 
       // Check gentle personality
-      const { gentle } = PERSONALITY_TRAITS;
+      const { gentle } = personalityTraits;
       expect(gentle.name).toBe('Gentle');
       expect(gentle.bondingModifier).toBe(1.2);
       expect(gentle.description).toBe('Calm and patient approach');
 
       // Check all personalities have required properties
-      Object.values(PERSONALITY_TRAITS).forEach(trait => {
+      Object.values(personalityTraits).forEach(trait => {
         expect(trait).toHaveProperty('name');
         expect(trait).toHaveProperty('bondingModifier');
         expect(trait).toHaveProperty('description');
@@ -90,11 +90,11 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
     });
 
     it('should have valid default groom profiles', () => {
-      expect(Array.isArray(DEFAULT_GROOMS)).toBe(true);
-      expect(DEFAULT_GROOMS.length).toBe(3);
+      expect(Array.isArray(defaultGrooms)).toBe(true);
+      expect(defaultGrooms.length).toBe(3);
 
       // Check Sarah Johnson (foal care specialist)
-      const [sarah] = DEFAULT_GROOMS;
+      const [sarah] = defaultGrooms;
       expect(sarah.name).toBe('Sarah Johnson');
       expect(sarah.speciality).toBe('foalCare');
       expect(sarah.skillLevel).toBe('intermediate');
@@ -103,7 +103,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       expect(sarah.experience).toBe(5);
 
       // Check all default grooms have required properties
-      DEFAULT_GROOMS.forEach(groom => {
+      defaultGrooms.forEach(groom => {
         expect(groom).toHaveProperty('name');
         expect(groom).toHaveProperty('speciality');
         expect(groom).toHaveProperty('experience');
@@ -114,13 +114,13 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
         expect(groom).toHaveProperty('availability');
 
         // Validate speciality
-        expect(Object.keys(GROOM_SPECIALTIES)).toContain(groom.speciality);
+        expect(Object.keys(groomSpecialties)).toContain(groom.speciality);
 
         // Validate skill level
-        expect(Object.keys(SKILL_LEVELS)).toContain(groom.skillLevel);
+        expect(Object.keys(skillLevels)).toContain(groom.skillLevel);
 
         // Validate personality
-        expect(Object.keys(PERSONALITY_TRAITS)).toContain(groom.personality);
+        expect(Object.keys(personalityTraits)).toContain(groom.personality);
 
         // Validate numeric values
         expect(groom.experience).toBeGreaterThan(0);

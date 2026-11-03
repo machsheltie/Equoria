@@ -35,11 +35,11 @@ import logger from './logger.mjs';
  * The FoalActivity table holds TWO streams that are DISJOINT BY DESIGN
  * (Equoria-2emg / 8yhe3 — unifying them was explicitly rejected as
  * data-corrupting):
- *   - GROOM_INTERACTION: groomCareService.groomHorse ("groom horse"; it replaced
+ *   - groomInteraction: groomCareService.groomHorse ("groom horse"; it replaced
  *     the retired groomController.recordInteraction). This is the ONLY
  *     stream that drives the Horse.taskLog count cache (trait/milestone/streak
  *     evaluators read those counts on a hot path).
- *   - ENRICHMENT_ACTIVITY: rows written by the removed player-run
+ *   - enrichmentActivity: rows written by the removed player-run
  *     foalModel.completeActivity (Equoria-fr2kg; owner ruling 2026-10-14/15).
  *     Nothing writes this stream any more, but its existing rows remain, so
  *     the exclusion below still matters. It never touched taskLog.
@@ -56,9 +56,9 @@ import logger from './logger.mjs';
 /** Stored source of the groom path; camelCase since migration 20261028190000 (Equoria-pjvp8.4). */
 export const groomInteractionSource = 'groomInteraction';
 
-export const FOAL_ACTIVITY_SOURCE = Object.freeze({
-  GROOM_INTERACTION: groomInteractionSource,
-  ENRICHMENT_ACTIVITY: 'enrichmentActivity',
+export const foalActivitySource = Object.freeze({
+  groomInteraction: groomInteractionSource,
+  enrichmentActivity: 'enrichmentActivity',
 });
 
 /**
@@ -91,7 +91,7 @@ export async function deriveTaskCountsFromActivities(foalId) {
       // pre-8yhe3 row, which can only be groom-origin (the sole canonical
       // taskLog-feeding writer before this column). Enrichment-source rows are
       // excluded so a namespace collision cannot corrupt the count.
-      OR: [{ source: FOAL_ACTIVITY_SOURCE.GROOM_INTERACTION }, { source: null }],
+      OR: [{ source: foalActivitySource.groomInteraction }, { source: null }],
     },
     _count: { _all: true },
   });
@@ -125,7 +125,7 @@ export async function deriveTotalActivityCount(foalId) {
   return prisma.foalActivity.count({
     where: {
       foalId: parsedFoalId,
-      OR: [{ source: FOAL_ACTIVITY_SOURCE.GROOM_INTERACTION }, { source: null }],
+      OR: [{ source: foalActivitySource.groomInteraction }, { source: null }],
     },
   });
 }
@@ -193,7 +193,7 @@ export async function reconcileTaskLogFromActivities(foalId) {
 }
 
 export default {
-  FOAL_ACTIVITY_SOURCE,
+  foalActivitySource,
   deriveTaskCountsFromActivities,
   deriveTotalActivityCount,
   reconcileTaskLogFromActivities,

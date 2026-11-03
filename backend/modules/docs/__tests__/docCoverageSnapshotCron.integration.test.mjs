@@ -28,8 +28,8 @@ import {
   purgeExpiredDocCoverageSnapshots,
   computeCutoff,
   getRetentionDays,
-  DEFAULT_RETENTION_DAYS,
-  MIN_RETENTION_DAYS,
+  defaultRetentionDays,
+  minRetentionDays,
 } from '../../../services/docCoverageSnapshotRetentionService.mjs';
 
 // Track every snapshot id this suite touches so cleanup stays id-scoped.
@@ -69,9 +69,9 @@ afterAll(async () => {
 });
 
 describe('getRetentionDays (Equoria-qr114)', () => {
-  it('defaults to DEFAULT_RETENTION_DAYS when env unset', () => {
+  it('defaults to defaultRetentionDays when env unset', () => {
     delete process.env.DOC_COVERAGE_SNAPSHOT_RETENTION_DAYS;
-    expect(getRetentionDays()).toBe(DEFAULT_RETENTION_DAYS);
+    expect(getRetentionDays()).toBe(defaultRetentionDays);
   });
 
   it('honours a valid override', () => {
@@ -79,16 +79,16 @@ describe('getRetentionDays (Equoria-qr114)', () => {
     expect(getRetentionDays()).toBe(30);
   });
 
-  it('clamps to MIN_RETENTION_DAYS when env is below the floor', () => {
+  it('clamps to minRetentionDays when env is below the floor', () => {
     process.env.DOC_COVERAGE_SNAPSHOT_RETENTION_DAYS = '1';
-    expect(getRetentionDays()).toBe(MIN_RETENTION_DAYS);
+    expect(getRetentionDays()).toBe(minRetentionDays);
   });
 
   it('falls back to default on a non-numeric / non-positive env', () => {
     process.env.DOC_COVERAGE_SNAPSHOT_RETENTION_DAYS = 'not-a-number';
-    expect(getRetentionDays()).toBe(DEFAULT_RETENTION_DAYS);
+    expect(getRetentionDays()).toBe(defaultRetentionDays);
     process.env.DOC_COVERAGE_SNAPSHOT_RETENTION_DAYS = '0';
-    expect(getRetentionDays()).toBe(DEFAULT_RETENTION_DAYS);
+    expect(getRetentionDays()).toBe(defaultRetentionDays);
   });
 });
 
@@ -110,7 +110,7 @@ describe('CronJobService.recordDocCoverageSnapshot — real DB (Equoria-qr114)',
     expect(typeof result.coveragePct).toBe('number');
     expect(typeof result.qualityScore).toBe('number');
     expect(typeof result.deletedCount).toBe('number');
-    expect(result.retentionDays).toBeGreaterThanOrEqual(MIN_RETENTION_DAYS);
+    expect(result.retentionDays).toBeGreaterThanOrEqual(minRetentionDays);
 
     const fetched = await prisma.docCoverageSnapshot.findUnique({
       where: { id: result.snapshotId },
@@ -141,7 +141,7 @@ describe('CronJobService.recordDocCoverageSnapshot — real DB (Equoria-qr114)',
     createdSnapshotIds.push(result.snapshotId);
 
     // The clamped window is 7 days (floor), so the 30-day-old row is purged.
-    expect(result.retentionDays).toBe(MIN_RETENTION_DAYS);
+    expect(result.retentionDays).toBe(minRetentionDays);
     expect(result.deletedCount).toBeGreaterThanOrEqual(1);
 
     const oldStillThere = await prisma.docCoverageSnapshot.findUnique({
@@ -198,7 +198,7 @@ describe('purgeExpiredDocCoverageSnapshots — real DB (Equoria-qr114)', () => {
     });
 
     const result = await purgeExpiredDocCoverageSnapshots({ retentionDays: 1, now });
-    expect(result.retentionDays).toBe(MIN_RETENTION_DAYS);
+    expect(result.retentionDays).toBe(minRetentionDays);
 
     expect(await prisma.docCoverageSnapshot.findUnique({ where: { id: fiveDays.id } })).not.toBeNull();
   });

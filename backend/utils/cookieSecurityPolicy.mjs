@@ -46,7 +46,7 @@
  * @module utils/cookieSecurityPolicy
  */
 
-const VALID_SAMESITE = new Set(['strict', 'lax', 'none']);
+const validSamesite = new Set(['strict', 'lax', 'none']);
 
 /**
  * Resolve the cookie `secure` attribute.
@@ -83,7 +83,7 @@ export function resolveCookieSecure({ nodeEnv, cookieSecureEnv } = {}) {
 export function resolveCookieSameSite({ nodeEnv, cookieSamesiteEnv } = {}) {
   if (typeof cookieSamesiteEnv === 'string') {
     const normalized = cookieSamesiteEnv.trim().toLowerCase();
-    if (VALID_SAMESITE.has(normalized)) {
+    if (validSamesite.has(normalized)) {
       return normalized;
     }
     // Invalid value — fall through to the NODE_ENV-derived default rather than

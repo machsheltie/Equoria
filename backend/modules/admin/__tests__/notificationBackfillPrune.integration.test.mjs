@@ -25,7 +25,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf, attachCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-import { NOTIFICATION_RETENTION_COUNT } from '../../../utils/notificationService.mjs';
+import { notificationRetentionCount } from '../../../utils/notificationService.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
@@ -46,9 +46,9 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
 
   // Counts chosen so the over-cap user has a clear excess and the under-cap
   // user is comfortably below the 100 cap.
-  const OVER_CAP_TOTAL = NOTIFICATION_RETENTION_COUNT + 25; // 125
+  const OVER_CAP_TOTAL = notificationRetentionCount + 25; // 125
   const UNDER_CAP_TOTAL = 7;
-  const NON_ADMIN_TOTAL = NOTIFICATION_RETENTION_COUNT + 15; // 115
+  const NON_ADMIN_TOTAL = notificationRetentionCount + 15; // 115
 
   const makeUser = async overrides => {
     const pw = await bcrypt.hash('AdminPassword123!', 1);
@@ -133,7 +133,7 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
 
     // (a) over-cap user reduced to exactly the cap.
     const overCount = await prisma.notification.count({ where: { userId: overCapUser.id } });
-    expect(overCount).toBe(NOTIFICATION_RETENTION_COUNT);
+    expect(overCount).toBe(notificationRetentionCount);
 
     // The surviving rows are the NEWEST ones (oldest deleted).
     const survivors = await prisma.notification.findMany({
@@ -141,10 +141,10 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
       orderBy: { createdAt: 'asc' },
       select: { payload: true },
     });
-    expect(survivors).toHaveLength(NOTIFICATION_RETENTION_COUNT);
+    expect(survivors).toHaveLength(notificationRetentionCount);
     // We seeded OVER_CAP_TOTAL rows idx 0..(OVER_CAP_TOTAL-1); deleting the
     // oldest 25 leaves idx 25..124 as the survivors.
-    expect(survivors[0].payload).toMatchObject({ idx: OVER_CAP_TOTAL - NOTIFICATION_RETENTION_COUNT });
+    expect(survivors[0].payload).toMatchObject({ idx: OVER_CAP_TOTAL - notificationRetentionCount });
     expect(survivors[survivors.length - 1].payload).toMatchObject({ idx: OVER_CAP_TOTAL - 1 });
 
     // (b) under-cap user untouched.

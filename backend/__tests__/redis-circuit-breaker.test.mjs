@@ -17,7 +17,7 @@
  * setImmediate/nextTick/performance are NOT faked so Node.js async plumbing works.
  *
  * ── Error types ───────────────────────────────────────────────────────────────
- * DEFAULT_CIRCUIT_OPTIONS.errorFilter behaviour in test env:
+ * defaultCircuitOptions.errorFilter behaviour in test env:
  *   - ECONNREFUSED errors → returns false (not filtered) → counted as failure → can trip circuit
  *   - Plain errors (no code) → returns true (filtered) → treated as success → do NOT count
  *
@@ -30,7 +30,7 @@
 // suite never asserted on logger calls. Real logger fires; output is suppressed
 // at the transport layer via NODE_ENV=test rather than module replacement.
 import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
-import { createRedisCircuitBreaker, DEFAULT_CIRCUIT_OPTIONS } from '../utils/redisCircuitBreaker.mjs';
+import { createRedisCircuitBreaker, defaultCircuitOptions } from '../utils/redisCircuitBreaker.mjs';
 
 // ── Module-scope helpers ───────────────────────────────────────────────────────
 
@@ -115,7 +115,7 @@ async function openCircuit(circuitBreaker, operation = 'get', count = 12) {
 /**
  * Create an ECONNREFUSED error that is counted as a real failure in test env.
  *
- * DEFAULT_CIRCUIT_OPTIONS.errorFilter in test env:
+ * defaultCircuitOptions.errorFilter in test env:
  *   ECONNREFUSED → err.code !== 'ECONNREFUSED' = false → NOT filtered → counted as failure
  *   plain error  → err.code !== 'ECONNREFUSED' = true  → filtered    → treated as success
  *
@@ -309,7 +309,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
     });
 
     it('should handle Redis operation timeout (> 3s)', async () => {
-      // DEFAULT_CIRCUIT_OPTIONS.timeout = 3000 ms.
+      // defaultCircuitOptions.timeout = 3000 ms.
       // With fake timers: start the operation, advance time past the timeout,
       // then await the rejection so metrics settle.
       let timeoutHandle;
@@ -623,7 +623,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       try {
         process.env.NODE_ENV = 'test';
 
-        const errorFilter = DEFAULT_CIRCUIT_OPTIONS.errorFilter;
+        const errorFilter = defaultCircuitOptions.errorFilter;
         const testError = new Error('Connection refused');
         testError.code = 'ECONNREFUSED';
 
@@ -641,7 +641,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       try {
         process.env.NODE_ENV = 'test';
 
-        const errorFilter = DEFAULT_CIRCUIT_OPTIONS.errorFilter;
+        const errorFilter = defaultCircuitOptions.errorFilter;
         const testError = new Error('Some other error'); // no .code property
 
         expect(errorFilter(testError)).toBe(true); // filtered → treated as success
@@ -656,7 +656,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       try {
         process.env.NODE_ENV = 'production';
 
-        const errorFilter = DEFAULT_CIRCUIT_OPTIONS.errorFilter;
+        const errorFilter = defaultCircuitOptions.errorFilter;
         const testError = new Error('Connection refused');
         testError.code = 'ECONNREFUSED';
 

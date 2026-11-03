@@ -15,8 +15,8 @@ describe('pregnancyChances module', () => {
   it('ships no trait-chance formula or weights to the browser', () => {
     const exported = Object.keys(pregnancy);
     expect(exported).not.toContain('calculatePregnancyEpigeneticChances');
-    expect(exported).not.toContain('PREGNANCY_BONUS_PCT');
-    expect(exported).not.toContain('NEG_PER_MISSED_DAY');
+    expect(exported).not.toContain('pregnancyBonusPct');
+    expect(exported).not.toContain('negPerMissedDay');
   });
 
   it('gestation lasts 7 days', () => {

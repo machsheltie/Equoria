@@ -23,12 +23,12 @@ import logger from './logger.mjs';
 /**
  * Required environment variables for test environment
  */
-const REQUIRED_ENV_VARS = ['NODE_ENV', 'DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'PORT'];
+const requiredEnvVars = ['NODE_ENV', 'DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'PORT'];
 
 /**
  * Optional but recommended environment variables
  */
-const OPTIONAL_ENV_VARS = [
+const optionalEnvVars = [
   'LOG_LEVEL',
   'ALLOWED_ORIGINS',
   'SESSION_SECRET',
@@ -58,7 +58,7 @@ export function validateRequiredEnvVars(throwOnMissing = true) {
   const warnings = [];
 
   // Check required variables
-  for (const varName of REQUIRED_ENV_VARS) {
+  for (const varName of requiredEnvVars) {
     const value = process.env[varName];
     if (!value || value.trim() === '') {
       missing.push(varName);
@@ -84,7 +84,7 @@ export function validateRequiredEnvVars(throwOnMissing = true) {
 
   // Check optional variables and log info about missing ones
   const missingOptional = [];
-  for (const varName of OPTIONAL_ENV_VARS) {
+  for (const varName of optionalEnvVars) {
     const value = process.env[varName];
     if (!value || value.trim() === '') {
       missingOptional.push(varName);
@@ -102,7 +102,7 @@ export function validateRequiredEnvVars(throwOnMissing = true) {
   // Log results
   if (result.success) {
     logger.info(
-      `[envValidator] ✅ All ${REQUIRED_ENV_VARS.length} required environment variables are present`,
+      `[envValidator] ✅ All ${requiredEnvVars.length} required environment variables are present`,
     );
   } else {
     logger.error(`[envValidator] ❌ Missing required environment variables: ${missing.join(', ')}`);
@@ -187,10 +187,10 @@ export function getEnvironmentSummary() {
     databaseConfigured: !!process.env.DATABASE_URL,
     jwtConfigured: !!process.env.JWT_SECRET,
     logLevel: process.env.LOG_LEVEL || 'undefined',
-    requiredVarsCount: REQUIRED_ENV_VARS.length,
-    optionalVarsCount: OPTIONAL_ENV_VARS.length,
-    presentRequiredVars: REQUIRED_ENV_VARS.filter(varName => process.env[varName]).length,
-    presentOptionalVars: OPTIONAL_ENV_VARS.filter(varName => process.env[varName]).length,
+    requiredVarsCount: requiredEnvVars.length,
+    optionalVarsCount: optionalEnvVars.length,
+    presentRequiredVars: requiredEnvVars.filter(varName => process.env[varName]).length,
+    presentOptionalVars: optionalEnvVars.filter(varName => process.env[varName]).length,
   };
 }
 
@@ -198,6 +198,6 @@ export default {
   validateRequiredEnvVars,
   validateTestEnvironment,
   getEnvironmentSummary,
-  REQUIRED_ENV_VARS,
-  OPTIONAL_ENV_VARS,
+  requiredEnvVars,
+  optionalEnvVars,
 };

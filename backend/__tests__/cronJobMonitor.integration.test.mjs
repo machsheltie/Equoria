@@ -26,7 +26,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { CronJobMonitor, STALE_ALERT_THRESHOLD_MS } from '../services/jobs/cronJobMonitor.mjs';
+import { CronJobMonitor, staleAlertThresholdMs } from '../services/jobs/cronJobMonitor.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 
 const TAG = `urqic35-${randomBytes(4).toString('hex')}`;
@@ -178,8 +178,8 @@ describe('Equoria-urqic.3.5: CronJobMonitor (isolated collaborator)', () => {
       expect(health.anyStale).toBe(true);
     });
 
-    it('STALE_ALERT_THRESHOLD_MS is exactly 25 hours', () => {
-      expect(STALE_ALERT_THRESHOLD_MS).toBe(25 * 60 * 60 * 1000);
+    it('staleAlertThresholdMs is exactly 25 hours', () => {
+      expect(staleAlertThresholdMs).toBe(25 * 60 * 60 * 1000);
     });
   });
 

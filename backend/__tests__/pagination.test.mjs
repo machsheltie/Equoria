@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { parsePaginationParams, buildPaginationMetadata, PAGINATION_DEFAULTS } from '../utils/paginationHelper.mjs';
+import { parsePaginationParams, buildPaginationMetadata, paginationDefaults } from '../utils/paginationHelper.mjs';
 
 /**
  * Build a minimal mock Express request with the given query params.
@@ -24,8 +24,8 @@ function makeReq(query = {}) {
 describe('Pagination — parsePaginationParams', () => {
   it('applies defaults when no query params are provided', () => {
     const { page, limit, skip } = parsePaginationParams(makeReq());
-    expect(page).toBe(PAGINATION_DEFAULTS.defaultPage);
-    expect(limit).toBe(PAGINATION_DEFAULTS.defaultLimit);
+    expect(page).toBe(paginationDefaults.defaultPage);
+    expect(limit).toBe(paginationDefaults.defaultLimit);
     expect(skip).toBe(0);
   });
 
@@ -38,23 +38,23 @@ describe('Pagination — parsePaginationParams', () => {
 
   it('caps limit at maxLimit', () => {
     const { limit } = parsePaginationParams(makeReq({ limit: '9999' }));
-    expect(limit).toBe(PAGINATION_DEFAULTS.maxLimit);
+    expect(limit).toBe(paginationDefaults.maxLimit);
   });
 
   it('falls back to defaultLimit when limit is invalid (zero)', () => {
     const { limit } = parsePaginationParams(makeReq({ limit: '0' }));
-    expect(limit).toBe(PAGINATION_DEFAULTS.defaultLimit);
+    expect(limit).toBe(paginationDefaults.defaultLimit);
   });
 
   it('falls back to defaultPage when page is negative', () => {
     const { page } = parsePaginationParams(makeReq({ page: '-5' }));
-    expect(page).toBe(PAGINATION_DEFAULTS.defaultPage);
+    expect(page).toBe(paginationDefaults.defaultPage);
   });
 
   it('falls back to defaults when values are non-numeric strings', () => {
     const { page, limit } = parsePaginationParams(makeReq({ page: 'abc', limit: 'xyz' }));
-    expect(page).toBe(PAGINATION_DEFAULTS.defaultPage);
-    expect(limit).toBe(PAGINATION_DEFAULTS.defaultLimit);
+    expect(page).toBe(paginationDefaults.defaultPage);
+    expect(limit).toBe(paginationDefaults.defaultLimit);
   });
 
   it('respects custom defaultLimit and maxLimit options', () => {

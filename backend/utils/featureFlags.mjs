@@ -19,7 +19,7 @@
  * Feature flag definitions with metadata
  * @type {Object.<string, {type: string, description: string, defaultValue: any}>}
  */
-export const FLAG_DEFINITIONS = {
+export const flagDefinitions = {
   // ============================================
   // Authentication Flags
   // ============================================
@@ -170,8 +170,8 @@ export const FLAG_DEFINITIONS = {
  * Default values for all flags (derived from definitions)
  * @type {Object.<string, any>}
  */
-export const FLAG_DEFAULTS = Object.fromEntries(
-  Object.entries(FLAG_DEFINITIONS).map(([key, def]) => [key, def.defaultValue]),
+export const flagDefaults = Object.fromEntries(
+  Object.entries(flagDefinitions).map(([key, def]) => [key, def.defaultValue]),
 );
 
 /**
@@ -180,7 +180,7 @@ export const FLAG_DEFAULTS = Object.fromEntries(
  * @returns {Object|undefined}
  */
 export function getFlagDefinition(flagName) {
-  return FLAG_DEFINITIONS[flagName];
+  return flagDefinitions[flagName];
 }
 
 /**
@@ -189,7 +189,7 @@ export function getFlagDefinition(flagName) {
  * @returns {boolean}
  */
 export function isFlagDefined(flagName) {
-  return flagName in FLAG_DEFINITIONS;
+  return flagName in flagDefinitions;
 }
 
 /**
@@ -198,7 +198,7 @@ export function isFlagDefined(flagName) {
  * @returns {string[]}
  */
 export function getFlagsByType(type) {
-  return Object.entries(FLAG_DEFINITIONS)
+  return Object.entries(flagDefinitions)
     .filter(([, def]) => def.type === type)
     .map(([name]) => name);
 }
@@ -210,12 +210,12 @@ export function getFlagsByType(type) {
  */
 export function getFlagsByCategory(category) {
   const prefix = `FF_${category}_`;
-  return Object.keys(FLAG_DEFINITIONS).filter(name => name.startsWith(prefix));
+  return Object.keys(flagDefinitions).filter(name => name.startsWith(prefix));
 }
 
 export default {
-  FLAG_DEFINITIONS,
-  FLAG_DEFAULTS,
+  flagDefinitions,
+  flagDefaults,
   getFlagDefinition,
   isFlagDefined,
   getFlagsByType,

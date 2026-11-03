@@ -14,13 +14,13 @@
  * Built on Intl (full ICU ships with Node >= 22); no dependency.
  */
 
-export const GAME_TIME_ZONE = 'America/New_York';
+export const gameTimeZone = 'America/New_York';
 
-const MS_PER_DAY = 86_400_000;
+const msPerDay = 86_400_000;
 const WEEKDAYS = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
 const partsFormatter = new Intl.DateTimeFormat('en-US', {
-  timeZone: GAME_TIME_ZONE,
+  timeZone: gameTimeZone,
   year: 'numeric',
   month: 'numeric',
   day: 'numeric',
@@ -61,7 +61,7 @@ export function gameDateParts(date) {
  */
 export function gameDayIndex(date) {
   const { year, month, day } = gameDateParts(date);
-  return Date.UTC(year, month - 1, day) / MS_PER_DAY;
+  return Date.UTC(year, month - 1, day) / msPerDay;
 }
 
 /**
@@ -70,7 +70,7 @@ export function gameDayIndex(date) {
  * @returns {string}
  */
 export function gameDateKey(date) {
-  return new Date(gameDayIndex(date) * MS_PER_DAY).toISOString().slice(0, 10);
+  return new Date(gameDayIndex(date) * msPerDay).toISOString().slice(0, 10);
 }
 
 /*
@@ -90,7 +90,7 @@ export function gameDateKey(date) {
  */
 export function calendarDateDayIndex(value) {
   const d = new Date(value);
-  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / MS_PER_DAY;
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / msPerDay;
 }
 
 /**
@@ -102,7 +102,7 @@ export function calendarDateDayIndex(value) {
  * @returns {Date}
  */
 export function gameCalendarDate(instant = new Date(), offsetDays = 0) {
-  return new Date((gameDayIndex(instant) + offsetDays) * MS_PER_DAY);
+  return new Date((gameDayIndex(instant) + offsetDays) * msPerDay);
 }
 
 /** Eastern offset from UTC at an instant, in ms (e.g. -4h during EDT). */
@@ -121,7 +121,7 @@ function easternOffsetMs(instantMs) {
  * @returns {Date}
  */
 export function startOfGameDayIndex(index) {
-  const wallMidnightAsUtc = index * MS_PER_DAY;
+  const wallMidnightAsUtc = index * msPerDay;
   const guess = wallMidnightAsUtc - easternOffsetMs(wallMidnightAsUtc);
   return new Date(wallMidnightAsUtc - easternOffsetMs(guess));
 }

@@ -29,7 +29,7 @@
  * unknown-age request through the age check.
  */
 
-const COPPA_MIN_AGE_YEARS = 13;
+const coppaMinAgeYears = 13;
 
 /**
  * Compute a person's age in full real-world calendar years.
@@ -82,7 +82,7 @@ export function meetsCoppaMinimumAge(dateOfBirth, now = new Date()) {
   if (age === null) {
     return false;
   }
-  return age >= COPPA_MIN_AGE_YEARS;
+  return age >= coppaMinAgeYears;
 }
 
-export { COPPA_MIN_AGE_YEARS };
+export { coppaMinAgeYears };

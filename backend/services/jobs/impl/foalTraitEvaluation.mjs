@@ -44,7 +44,7 @@ import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { logTraitAssignment } from '../../../modules/traits/index.mjs';
 
-const FINAL_DEVELOPMENT_DAY = 6;
+const finalDevelopmentDay = 6;
 
 /**
  * Main daily trait evaluation function.
@@ -135,7 +135,7 @@ export async function evaluateFoalTraits(service, foal) {
 
   // Skip foals that have completed development: day 6 already evaluated
   // (Equoria-mwjst: finalDayEvaluatedAt), or a day past the last one.
-  if (foal.foalDevelopment?.finalDayEvaluatedAt || currentDay > FINAL_DEVELOPMENT_DAY) {
+  if (foal.foalDevelopment?.finalDayEvaluatedAt || currentDay > finalDevelopmentDay) {
     logger.info(
       `[CronJobService.evaluateFoalTraits] Foal ${foal.id} has completed development (day ${currentDay})`,
     );
@@ -170,7 +170,7 @@ export async function evaluateFoalTraits(service, foal) {
     return { traitsRevealed: 0, reason: 'alreadyEvaluated', currentDay };
   }
 
-  const nextDay = Math.min(currentDay + 1, FINAL_DEVELOPMENT_DAY);
+  const nextDay = Math.min(currentDay + 1, finalDevelopmentDay);
   return { traitsRevealed: 0, reason: 'noNewTraits', currentDay: nextDay };
 }
 
@@ -190,7 +190,7 @@ async function claimDevelopmentDay(tx, foalId, day) {
     skipDuplicates: true,
   });
   const claim =
-    day >= FINAL_DEVELOPMENT_DAY
+    day >= finalDevelopmentDay
       ? await tx.foalDevelopment.updateMany({
           where: { foalId, currentDay: day, finalDayEvaluatedAt: null },
           data: { finalDayEvaluatedAt: new Date() },
@@ -219,7 +219,7 @@ async function claimDevelopmentDay(tx, foalId, day) {
  * @returns {Promise<number>} the new currentDay
  */
 export async function advanceFoalDevelopmentDay(foalId, currentDay) {
-  if (currentDay >= FINAL_DEVELOPMENT_DAY) {
+  if (currentDay >= finalDevelopmentDay) {
     return currentDay;
   }
   const nextDay = currentDay + 1;

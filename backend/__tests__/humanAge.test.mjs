@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { getHumanAgeYears, meetsCoppaMinimumAge, COPPA_MIN_AGE_YEARS } from '../utils/humanAge.mjs';
+import { getHumanAgeYears, meetsCoppaMinimumAge, coppaMinAgeYears } from '../utils/humanAge.mjs';
 
 const NOW = new Date(Date.UTC(2026, 4, 18)); // 2026-05-18
 
@@ -36,8 +36,8 @@ describe('getHumanAgeYears', () => {
 });
 
 describe('meetsCoppaMinimumAge', () => {
-  it('COPPA_MIN_AGE_YEARS is 13', () => {
-    expect(COPPA_MIN_AGE_YEARS).toBe(13);
+  it('coppaMinAgeYears is 13', () => {
+    expect(coppaMinAgeYears).toBe(13);
   });
 
   it('PASSES for exactly 13 and older (sentinel-positive)', () => {

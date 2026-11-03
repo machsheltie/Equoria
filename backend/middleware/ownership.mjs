@@ -26,7 +26,7 @@ import logger from '../utils/logger.mjs';
  * Maps resource types to their corresponding Prisma model names
  * and their owner field names
  */
-const RESOURCE_CONFIG = {
+const resourceConfig = {
   horse: { model: 'horse', ownerField: 'userId' },
   foal: { model: 'horse', ownerField: 'userId' },
   groom: { model: 'groom', ownerField: 'userId' },
@@ -45,7 +45,7 @@ const RESOURCE_CONFIG = {
  * @throws {AppError} If resource type is invalid
  */
 function getResourceConfig(resourceType) {
-  const config = RESOURCE_CONFIG[resourceType.toLowerCase()];
+  const config = resourceConfig[resourceType.toLowerCase()];
   if (!config) {
     logger.error(`[ownership] Invalid resource type: ${resourceType}`);
     throw new AppError(`Invalid resource type: ${resourceType}`, 500);
@@ -111,8 +111,8 @@ export const requireOwnership = (resourceType, options = {}) => {
       // Extract resource ID from params or body.
       // Upper bound: PostgreSQL int4 max (2,147,483,647) — values above this
       // cause a Prisma runtime error rather than a graceful null result.
-      const INT4_MAX = 2_147_483_647;
-      if (!isNumericId || isNaN(resourceId) || resourceId < 0 || resourceId > INT4_MAX) {
+      const int4Max = 2_147_483_647;
+      if (!isNumericId || isNaN(resourceId) || resourceId < 0 || resourceId > int4Max) {
         logger.warn(`[ownership] Invalid ${resourceType} ID: ${rawId}`);
         throw new AppError(`Invalid ${resourceType} ID`, 400);
       }

@@ -27,11 +27,11 @@ import logger from '../utils/logger.mjs';
 export const originNotAllowedCode = 'originNotAllowed';
 export const originNotAllowedMessage = 'This origin is not allowed to use the Equoria API.';
 
-const NO_ORIGIN_ENFORCED_PREFIXES = ['/api/'];
-const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const noOriginEnforcedPrefixes = ['/api/'];
+const stateChangingMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 const requiresOriginCheck = req => {
-  if (!STATE_CHANGING_METHODS.has(req.method)) {
+  if (!stateChangingMethods.has(req.method)) {
     return false;
   }
   // Sec-Fetch-Mode is injected by browsers for all fetches/navigations; CLI
@@ -40,7 +40,7 @@ const requiresOriginCheck = req => {
   if (!req.get('Sec-Fetch-Mode')) {
     return false;
   }
-  return NO_ORIGIN_ENFORCED_PREFIXES.some(
+  return noOriginEnforcedPrefixes.some(
     prefix => req.path === prefix.replace(/\/$/, '') || req.path.startsWith(prefix),
   );
 };
@@ -70,7 +70,7 @@ export const enforceNoOriginPolicy = (req, res, next) => {
 // decision 2026-07-07). NODE_ENV=beta keeps them: it is the Playwright
 // production-parity profile, run in CI with a localhost frontend and no
 // ALLOWED_ORIGINS (test.yml e2e-tests, update-visual-baselines.yml).
-const LOCAL_DEV_ORIGINS = [
+const localDevOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://127.0.0.1:3000',
@@ -124,7 +124,7 @@ export const createCorsOptionsDelegate =
       return callback(null, { ...baseOptions, origin: true });
     }
 
-    const allowedOrigins = nodeEnv === 'production' ? [] : [...LOCAL_DEV_ORIGINS];
+    const allowedOrigins = nodeEnv === 'production' ? [] : [...localDevOrigins];
     if (configuredOrigins && configuredOrigins.length > 0) {
       allowedOrigins.push(...configuredOrigins);
     }

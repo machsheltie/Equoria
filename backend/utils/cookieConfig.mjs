@@ -27,14 +27,14 @@ import { resolveCookieSecure, resolveCookieSameSite } from './cookieSecurityPoli
  * Token TTL constants — single source of truth for cookie maxAge AND the
  * getNow() injection used by tests to fast-forward the clock without waiting.
  */
-export const ACCESS_TOKEN_TTL_MS = 15 * msPerMinute; // 15 minutes
-export const REFRESH_TOKEN_TTL_MS = msPerWeek; // 7 days
-export const CSRF_TOKEN_TTL_MS = msPerDay; // 24 hours
+export const accessTokenTtlMs = 15 * msPerMinute; // 15 minutes
+export const refreshTokenTtlMs = msPerWeek; // 7 days
+export const csrfTokenTtlMs = msPerDay; // 24 hours
 
 /**
  * Mockable clock — defaults to Date.now in production/test.
  * Tests that need to simulate token expiry without waiting real time can call
- * _setNowFn(() => Date.now() + REFRESH_TOKEN_TTL_MS + 1) to advance the clock.
+ * _setNowFn(() => Date.now() + refreshTokenTtlMs + 1) to advance the clock.
  * Reset with _setNowFn(null) or _setNowFn(() => Date.now()) after each test.
  */
 let _nowFn = () => Date.now();
@@ -67,7 +67,7 @@ const isProduction = config.env === 'production';
  * Playwright-over-HTTP profile keep `secure:false` / `sameSite:'lax'` unless
  * the operator opts in. See cookieSecurityPolicy.mjs for the full rationale.
  */
-const IS_SECURE_COOKIE = resolveCookieSecure({
+const isSecureCookie = resolveCookieSecure({
   nodeEnv: config.env,
   cookieSecureEnv: process.env.COOKIE_SECURE,
 });
@@ -77,7 +77,7 @@ const IS_SECURE_COOKIE = resolveCookieSecure({
  * - Explicit COOKIE_SAMESITE=strict|lax|none overrides.
  * - Default: 'strict' in production, 'lax' elsewhere (dev cross-port sharing).
  */
-const SAME_SITE_POLICY = resolveCookieSameSite({
+const sameSitePolicy = resolveCookieSameSite({
   nodeEnv: config.env,
   cookieSamesiteEnv: process.env.COOKIE_SAMESITE,
 });
@@ -91,7 +91,7 @@ const SAME_SITE_POLICY = resolveCookieSameSite({
  * // For app.equoria.com and api.equoria.com to share cookies:
  * COOKIE_DOMAIN='.equoria.com'
  */
-const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
+const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
 
 /**
  * Access Token Cookie Options
@@ -102,13 +102,13 @@ const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
  *
  * @type {Object}
  */
-export const ACCESS_TOKEN_COOKIE_OPTIONS = {
+export const accessTokenCookieOptions = {
   httpOnly: true, // Cannot be accessed by JavaScript (XSS protection)
-  secure: IS_SECURE_COOKIE, // HTTPS-only — COOKIE_SECURE override, defaults to production (MitM protection)
-  sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
-  maxAge: ACCESS_TOKEN_TTL_MS,
+  secure: isSecureCookie, // HTTPS-only — COOKIE_SECURE override, defaults to production (MitM protection)
+  sameSite: sameSitePolicy, // CSRF protection (strictest policy)
+  maxAge: accessTokenTtlMs,
   path: '/', // Available to all routes
-  domain: COOKIE_DOMAIN, // Subdomain sharing (if configured)
+  domain: cookieDomain, // Subdomain sharing (if configured)
 };
 
 /**
@@ -120,13 +120,13 @@ export const ACCESS_TOKEN_COOKIE_OPTIONS = {
  *
  * @type {Object}
  */
-export const REFRESH_TOKEN_COOKIE_OPTIONS = {
+export const refreshTokenCookieOptions = {
   httpOnly: true, // Cannot be accessed by JavaScript (XSS protection)
-  secure: IS_SECURE_COOKIE, // HTTPS-only — COOKIE_SECURE override, defaults to production (MitM protection)
-  sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
-  maxAge: REFRESH_TOKEN_TTL_MS,
+  secure: isSecureCookie, // HTTPS-only — COOKIE_SECURE override, defaults to production (MitM protection)
+  sameSite: sameSitePolicy, // CSRF protection (strictest policy)
+  maxAge: refreshTokenTtlMs,
   path: '/', // Must cover both /auth/refresh-token and /api/v1/auth/refresh-token mount points (21R-AUTH-1)
-  domain: COOKIE_DOMAIN, // Subdomain sharing (if configured)
+  domain: cookieDomain, // Subdomain sharing (if configured)
 };
 
 /**
@@ -196,13 +196,13 @@ export function applyHostPrefixGuard(cookieName, options) {
  *
  * @type {Object}
  */
-export const CSRF_TOKEN_COOKIE_OPTIONS = {
+export const csrfTokenCookieOptions = {
   httpOnly: false, // Client must read this to send X-CSRF-Token header
-  secure: IS_SECURE_COOKIE, // HTTPS-only — COOKIE_SECURE override, defaults to production (MitM protection)
-  sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
-  maxAge: CSRF_TOKEN_TTL_MS, // 24 hours (21R-AUTH-2: decoupled from access token's 15-min lifetime)
+  secure: isSecureCookie, // HTTPS-only — COOKIE_SECURE override, defaults to production (MitM protection)
+  sameSite: sameSitePolicy, // CSRF protection (strictest policy)
+  maxAge: csrfTokenTtlMs, // 24 hours (21R-AUTH-2: decoupled from access token's 15-min lifetime)
   path: '/', // Available to all routes
-  domain: COOKIE_DOMAIN, // Subdomain sharing (if configured) — stripped for __Host- cookies via applyHostPrefixGuard
+  domain: cookieDomain, // Subdomain sharing (if configured) — stripped for __Host- cookies via applyHostPrefixGuard
 };
 
 /**
@@ -210,15 +210,15 @@ export const CSRF_TOKEN_COOKIE_OPTIONS = {
  * Import this for consistent cookie configuration
  *
  * @example
- * import { COOKIE_OPTIONS } from './utils/cookieConfig.mjs';
+ * import { cookieOptions } from './utils/cookieConfig.mjs';
  *
- * res.cookie('accessToken', token, COOKIE_OPTIONS.accessToken);
- * res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS.refreshToken);
+ * res.cookie('accessToken', token, cookieOptions.accessToken);
+ * res.cookie('refreshToken', refreshToken, cookieOptions.refreshToken);
  */
-export const COOKIE_OPTIONS = {
-  accessToken: ACCESS_TOKEN_COOKIE_OPTIONS,
-  refreshToken: REFRESH_TOKEN_COOKIE_OPTIONS,
-  csrfToken: CSRF_TOKEN_COOKIE_OPTIONS,
+export const cookieOptions = {
+  accessToken: accessTokenCookieOptions,
+  refreshToken: refreshTokenCookieOptions,
+  csrfToken: csrfTokenCookieOptions,
 };
 
 /**
@@ -229,23 +229,23 @@ export const COOKIE_OPTIONS = {
  * to properly delete the cookie
  *
  * @example
- * res.clearCookie('accessToken', CLEAR_COOKIE_OPTIONS.accessToken);
- * res.clearCookie('refreshToken', CLEAR_COOKIE_OPTIONS.refreshToken);
+ * res.clearCookie('accessToken', clearCookieOptions.accessToken);
+ * res.clearCookie('refreshToken', clearCookieOptions.refreshToken);
  */
-export const CLEAR_COOKIE_OPTIONS = {
+export const clearCookieOptions = {
   accessToken: {
     httpOnly: true,
-    secure: IS_SECURE_COOKIE,
-    sameSite: SAME_SITE_POLICY,
+    secure: isSecureCookie,
+    sameSite: sameSitePolicy,
     path: '/',
-    domain: COOKIE_DOMAIN,
+    domain: cookieDomain,
   },
   refreshToken: {
     httpOnly: true,
-    secure: IS_SECURE_COOKIE,
-    sameSite: SAME_SITE_POLICY,
+    secure: isSecureCookie,
+    sameSite: sameSitePolicy,
     path: '/',
-    domain: COOKIE_DOMAIN,
+    domain: cookieDomain,
   },
   // Equoria-q7rxy: the production CSRF cookie is `__Host-csrf`, which forbids a
   // Domain attribute. To DELETE a `__Host-` cookie the clear options must ALSO
@@ -260,10 +260,10 @@ export const CLEAR_COOKIE_OPTIONS = {
   // survives onto the non-prefixed `_csrf` cookie used in non-production envs.
   csrfToken: {
     httpOnly: false,
-    secure: IS_SECURE_COOKIE,
-    sameSite: SAME_SITE_POLICY,
+    secure: isSecureCookie,
+    sameSite: sameSitePolicy,
     path: '/',
-    domain: COOKIE_DOMAIN,
+    domain: cookieDomain,
   },
 };
 
@@ -279,31 +279,31 @@ export function getCookieConfigSummary() {
     isProduction,
     // Resolved security-critical attributes (reflect COOKIE_SECURE /
     // COOKIE_SAMESITE overrides, not the raw isProduction default).
-    secureCookies: IS_SECURE_COOKIE,
-    sameSite: SAME_SITE_POLICY,
-    domain: COOKIE_DOMAIN || 'same-domain',
+    secureCookies: isSecureCookie,
+    sameSite: sameSitePolicy,
+    domain: cookieDomain || 'same-domain',
     accessToken: {
       maxAge: '15 minutes',
       path: '/',
       httpOnly: true,
-      secure: IS_SECURE_COOKIE,
-      sameSite: SAME_SITE_POLICY,
+      secure: isSecureCookie,
+      sameSite: sameSitePolicy,
     },
     refreshToken: {
       maxAge: '7 days',
       path: '/',
       httpOnly: true,
-      secure: IS_SECURE_COOKIE,
-      sameSite: SAME_SITE_POLICY,
+      secure: isSecureCookie,
+      sameSite: sameSitePolicy,
     },
     csrfToken: {
       maxAge: '24 hours',
       path: '/',
       httpOnly: false,
-      secure: IS_SECURE_COOKIE,
-      sameSite: SAME_SITE_POLICY,
+      secure: isSecureCookie,
+      sameSite: sameSitePolicy,
     },
   };
 }
 
-export default COOKIE_OPTIONS;
+export default cookieOptions;

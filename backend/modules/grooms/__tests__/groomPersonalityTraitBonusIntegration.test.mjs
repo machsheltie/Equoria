@@ -20,8 +20,8 @@ import jwt from 'jsonwebtoken';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
-  GROOM_PERSONALITY_TYPES,
-  FOAL_TEMPERAMENT_TYPES,
+  groomPersonalityTypes,
+  foalTemperamentTypes,
   calculatePersonalityCompatibility,
   getCompatibleGroomsForTemperament,
 } from '../../../utils/groomPersonalityTraitBonus.mjs';
@@ -75,7 +75,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         name: `GPT-TestHorse_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         userId: testUser.id,
         dateOfBirth: gameCalendarDate(new Date()), // 0 days old (newborn for imprinting)
-        temperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
+        temperament: foalTemperamentTypes.SPIRITED,
         bondScore: 65,
         healthStatus: 'Good',
         sex: 'filly',
@@ -90,7 +90,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         speciality: 'foalCare',
         experience: 5,
         skillLevel: 'intermediate',
-        personality: GROOM_PERSONALITY_TYPES.CALM,
+        personality: groomPersonalityTypes.CALM,
         sessionRate: 20.0,
         userId: testUser.id,
         isActive: true,
@@ -140,8 +140,8 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     it('should correctly identify compatible personality-temperament pairs', () => {
       // Test CALM groom with SPIRITED foal (should be compatible)
       const compatibility = calculatePersonalityCompatibility(
-        GROOM_PERSONALITY_TYPES.CALM,
-        FOAL_TEMPERAMENT_TYPES.SPIRITED,
+        groomPersonalityTypes.CALM,
+        foalTemperamentTypes.SPIRITED,
         65,
       );
 
@@ -155,8 +155,8 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       // Test RESERVED groom with DRIVEN foal (should be incompatible).
       // Owner ruling 2026-10-21: the Playful temperament is now Driven (old: PLAYFUL foal).
       const compatibility = calculatePersonalityCompatibility(
-        GROOM_PERSONALITY_TYPES.RESERVED,
-        FOAL_TEMPERAMENT_TYPES.DRIVEN,
+        groomPersonalityTypes.RESERVED,
+        foalTemperamentTypes.DRIVEN,
         40,
       );
 
@@ -169,8 +169,8 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     it('should handle regular matches without high bond', () => {
       // Test ENERGETIC groom with LAZY foal (compatible but low bond)
       const compatibility = calculatePersonalityCompatibility(
-        GROOM_PERSONALITY_TYPES.ENERGETIC,
-        FOAL_TEMPERAMENT_TYPES.LAZY,
+        groomPersonalityTypes.ENERGETIC,
+        foalTemperamentTypes.LAZY,
         45, // Below 60 threshold
       );
 
@@ -184,8 +184,8 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
   describe('Personality Modifier Engine', () => {
     it('should apply personality effects to milestone evaluation', () => {
       const effects = applyPersonalityEffectsToMilestone({
-        groomPersonality: GROOM_PERSONALITY_TYPES.CALM,
-        foalTemperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
+        groomPersonality: groomPersonalityTypes.CALM,
+        foalTemperament: foalTemperamentTypes.SPIRITED,
         bondScore: 70,
         baseMilestoneScore: 1,
         baseBondingRate: 5,
@@ -200,7 +200,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     it('should handle missing personality or temperament gracefully', () => {
       const effects = applyPersonalityEffectsToMilestone({
         groomPersonality: null,
-        foalTemperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
+        foalTemperament: foalTemperamentTypes.SPIRITED,
         bondScore: 70,
         baseMilestoneScore: 1,
         baseBondingRate: 5,
@@ -250,12 +250,12 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
 
   describe('Compatible Grooms Utility', () => {
     it('should return all compatible grooms for a temperament', () => {
-      const compatibleGrooms = getCompatibleGroomsForTemperament(FOAL_TEMPERAMENT_TYPES.SPIRITED);
+      const compatibleGrooms = getCompatibleGroomsForTemperament(foalTemperamentTypes.SPIRITED);
 
       expect(compatibleGrooms).toHaveLength(3); // CALM, SOFT_SPOKEN, RESERVED
-      expect(compatibleGrooms.some(g => g.personality === GROOM_PERSONALITY_TYPES.CALM)).toBe(true);
-      expect(compatibleGrooms.some(g => g.personality === GROOM_PERSONALITY_TYPES.SOFT_SPOKEN)).toBe(true);
-      expect(compatibleGrooms.some(g => g.personality === GROOM_PERSONALITY_TYPES.RESERVED)).toBe(true);
+      expect(compatibleGrooms.some(g => g.personality === groomPersonalityTypes.CALM)).toBe(true);
+      expect(compatibleGrooms.some(g => g.personality === groomPersonalityTypes.SOFT_SPOKEN)).toBe(true);
+      expect(compatibleGrooms.some(g => g.personality === groomPersonalityTypes.RESERVED)).toBe(true);
     });
 
     it('should return empty array for unknown temperament', () => {
@@ -276,7 +276,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         expect(response.body.success).toBe(true);
         expect(response.body.groom).toBeDefined();
         expect(response.body.groom.id).toBe(testGroom.id);
-        expect(response.body.groom.personality).toBe(GROOM_PERSONALITY_TYPES.CALM);
+        expect(response.body.groom.personality).toBe(groomPersonalityTypes.CALM);
         expect(response.body.groom.personalityCompatibility).toBeDefined();
       });
 
@@ -313,7 +313,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
 
         expect(response.body.success).toBe(true);
         expect(response.body.horse).toBeDefined();
-        expect(response.body.horse.temperament).toBe(FOAL_TEMPERAMENT_TYPES.SPIRITED);
+        expect(response.body.horse.temperament).toBe(foalTemperamentTypes.SPIRITED);
         expect(response.body.groomCompatibility).toBeDefined();
         expect(response.body.generalCompatibility).toBeDefined();
         expect(response.body.totalGrooms).toBeGreaterThanOrEqual(1);

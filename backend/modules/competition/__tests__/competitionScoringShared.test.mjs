@@ -3,15 +3,15 @@
  * must live in ONE place and be consumed by BOTH competition engines so a
  * change to a single constant cannot drift between paths.
  *
- * Pre-pqdte state: BONUS_CAP / PENALTY_CAP were locally re-declared inside
+ * Pre-pqdte state: bonusCap / penaltyCap were locally re-declared inside
  * both simulateCompetition.mjs and showExecutionService.mjs#executeClosedShows.
- * Any change to riderBonus.mjs' BONUS_CAP did NOT propagate; the local
+ * Any change to riderBonus.mjs' bonusCap did NOT propagate; the local
  * mirrors had to be hand-updated, and the original drift was already noted
  * in the showController:489 comment ("mirrors simulateCompetition.mjs
  * exactly").
  *
  * After pqdte:
- *   - BONUS_CAP and PENALTY_CAP are exported from riderBonus.mjs (single
+ *   - bonusCap and penaltyCap are exported from riderBonus.mjs (single
  *     source of truth).
  *   - modules/competition/services/competitionScoring.mjs#applyRiderCompatibility
  *     is the single helper that applies the rider flag-compat bias and
@@ -37,20 +37,20 @@ import { describe, it, expect } from '@jest/globals';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
-import { BONUS_CAP, PENALTY_CAP, applyRiderModifiers } from '../../../utils/riderBonus.mjs';
+import { bonusCap, penaltyCap, applyRiderModifiers } from '../../../utils/riderBonus.mjs';
 import * as competitionScoring from '../services/competitionScoring.mjs';
 import * as competitionModule from '../index.mjs';
 
 const ROOT = resolve(process.cwd());
 
 describe('competitionScoring shared helper (Equoria-pqdte)', () => {
-  it('exports BONUS_CAP and PENALTY_CAP from riderBonus.mjs', () => {
-    expect(typeof BONUS_CAP).toBe('number');
-    expect(typeof PENALTY_CAP).toBe('number');
+  it('exports bonusCap and penaltyCap from riderBonus.mjs', () => {
+    expect(typeof bonusCap).toBe('number');
+    expect(typeof penaltyCap).toBe('number');
     // pre-pqdte hardcoded values — locks the canonical caps so a silent
     // change to riderBonus.mjs has to update this test deliberately.
-    expect(BONUS_CAP).toBe(0.1);
-    expect(PENALTY_CAP).toBe(0.08);
+    expect(bonusCap).toBe(0.1);
+    expect(penaltyCap).toBe(0.08);
   });
 
   it('the rider flag-compat helper is gone with the flag store (Equoria-efs4j)', () => {
@@ -111,10 +111,10 @@ describe('competitionScoring shared helper (Equoria-pqdte)', () => {
   });
 
   it('SENTINEL: applyRiderModifiers still accepts inputs up to the (post-helper) caps', () => {
-    // Defense-in-depth: if a future commit lowered BONUS_CAP in riderBonus.mjs
+    // Defense-in-depth: if a future commit lowered bonusCap in riderBonus.mjs
     // but forgot to lower the same constant in the shared helper, the
     // applyRiderModifiers call inside scoring would throw on a value above
     // the new cap. This catches that drift at the call boundary.
-    expect(() => applyRiderModifiers(100, BONUS_CAP, PENALTY_CAP)).not.toThrow();
+    expect(() => applyRiderModifiers(100, bonusCap, penaltyCap)).not.toThrow();
   });
 });

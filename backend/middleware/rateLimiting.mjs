@@ -40,12 +40,12 @@ let isRedisAvailable = false;
 
 /**
  * Alert throttle map: keyPrefix → last-alert-timestamp (ms).
- * At most one degradation alert per keyPrefix per ALERT_THROTTLE_MS window.
+ * At most one degradation alert per keyPrefix per alertThrottleMs window.
  * Exported for white-box testing.
  */
 export const _alertTimestamps = new Map();
 
-const ALERT_THROTTLE_MS = 60 * 1000; // 60 seconds between alerts per keyPrefix
+const alertThrottleMs = 60 * 1000; // 60 seconds between alerts per keyPrefix
 
 /**
  * Is Redis intentionally disabled? True in test/jest, the beta-readiness gate
@@ -84,7 +84,7 @@ export function shouldFailClosed({ failClosed, redisExpected, redisConnected }) 
  * DEPLOYABLE_ENVS in runtimeSecretPolicy.mjs — kept as a literal set here to
  * avoid a cross-module import cycle (rateLimiting is imported very early).
  */
-const DEPLOYABLE_ENVS_FOR_REDIS = new Set(['production', 'beta']);
+const deployableEnvsForRedis = new Set(['production', 'beta']);
 
 /**
  * Pure helper: is Redis MANDATORY for this process (operator opt-in)?
@@ -131,7 +131,7 @@ export function shouldFailStartupWithoutRedis({
 }) {
   return (
     requireRedis === true &&
-    DEPLOYABLE_ENVS_FOR_REDIS.has(nodeEnv) &&
+    deployableEnvsForRedis.has(nodeEnv) &&
     intentionallyDisabled === false &&
     redisConnected === false
   );
@@ -139,7 +139,7 @@ export function shouldFailStartupWithoutRedis({
 
 /**
  * Emit a throttled degradation alert when Redis is expected but not connected.
- * At most once per ALERT_THROTTLE_MS per keyPrefix to avoid log-spam.
+ * At most once per alertThrottleMs per keyPrefix to avoid log-spam.
  * Logs at error level.
  * Exported for white-box testing of the throttle-window gating.
  *
@@ -148,7 +148,7 @@ export function shouldFailStartupWithoutRedis({
 export function emitDegradationAlert(keyPrefix) {
   const now = Date.now();
   const last = _alertTimestamps.get(keyPrefix);
-  if (last !== undefined && now - last < ALERT_THROTTLE_MS) {
+  if (last !== undefined && now - last < alertThrottleMs) {
     // Within the throttle window — skip to avoid log-spam
     return;
   }
@@ -157,7 +157,7 @@ export function emitDegradationAlert(keyPrefix) {
   const message = `[RateLimit:${keyPrefix}] DEGRADATION: Redis expected but not connected — fail-closed limiter is rejecting requests with 503`;
   logger.error(message, {
     keyPrefix,
-    throttleWindowMs: ALERT_THROTTLE_MS,
+    throttleWindowMs: alertThrottleMs,
     alertType: 'redisDegradationFailClosed',
   });
 }
@@ -198,7 +198,7 @@ export function emitDegradationAlert(keyPrefix) {
 // fall back to in-memory just like the old fire-and-forget behaviour, but
 // when Redis IS reachable (the common case in beta/prod/E2E) we wait the
 // few hundred ms it takes to connect and limiters bind to RedisStore.
-const REDIS_BOOT_TIMEOUT_MS = parseInt(process.env.REDIS_BOOT_TIMEOUT_MS || '5000', 10);
+const redisBootTimeoutMs = parseInt(process.env.REDIS_BOOT_TIMEOUT_MS || '5000', 10);
 let redisBootTimeoutHandle;
 await Promise.race([
   initializeRedis().catch(error => {
@@ -211,11 +211,11 @@ await Promise.race([
       // in-memory; a later background connect no longer changes them.
       if (!isRedisAvailable) {
         logger.warn(
-          `[Redis] Boot-time connect did not complete within ${REDIS_BOOT_TIMEOUT_MS}ms — limiters will use in-memory fallback`,
+          `[Redis] Boot-time connect did not complete within ${redisBootTimeoutMs}ms — limiters will use in-memory fallback`,
         );
       }
       resolve();
-    }, REDIS_BOOT_TIMEOUT_MS);
+    }, redisBootTimeoutMs);
   }),
   // Equoria-k09r9: clear the fallback timer once the race settles; pending, it pins this module.
 ]).finally(() => clearTimeout(redisBootTimeoutHandle));
@@ -632,7 +632,7 @@ export function createRateLimiter(options = {}) {
     const redisConnected = _redisConnectedFn();
 
     if (shouldFailClosed({ failClosed: true, redisExpected, redisConnected })) {
-      // Emit throttled alert — at most once per ALERT_THROTTLE_MS.
+      // Emit throttled alert — at most once per alertThrottleMs.
       // Wrapped try/catch: alert is best-effort telemetry. A synchronous
       // throw from logger/Map ops must never propagate and downgrade the
       // clean 503 into an unhandled Express 500. The 503 fires unconditionally.
@@ -748,7 +748,7 @@ export const profileRateLimiter = createRateLimiter({
  */
 // Exported (Equoria-jz9v2) so the app.mjs boot-log can report the effective
 // mutation ceiling. Values UNCHANGED, still pinned by betaReadinessEnvSentinel.
-export const MUTATION_RATE_LIMIT_MAX_BY_ENV = {
+export const mutationRateLimitMaxByEnv = {
   // Tests already short-circuit via TEST_RATE_LIMIT_* env knobs when
   // useEnvOverride:true is set — no test entry needed here.
   beta: 600, // owner 2026-10-27: never below production
@@ -757,7 +757,7 @@ export const MUTATION_RATE_LIMIT_MAX_BY_ENV = {
 };
 export const mutationRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
-  max: MUTATION_RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 600,
+  max: mutationRateLimitMaxByEnv[process.env.NODE_ENV] ?? 600,
   message: 'Too many actions. Please wait a moment.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:mutation',

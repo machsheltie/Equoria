@@ -29,8 +29,8 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import {
   evaluateEnhancedMilestone,
-  DEVELOPMENTAL_WINDOWS,
-  MILESTONE_TYPES,
+  developmentalWindows,
+  milestoneTypes,
 } from './enhancedMilestoneEvaluationSystem.mjs';
 import { getHorseAgeDays } from './horseAge.mjs';
 import { writeBirthdayTx } from '../modules/horses/index.mjs';
@@ -52,7 +52,7 @@ import { writeBirthdayTx } from '../modules/horses/index.mjs';
  * The mismatch produced 1111-year displays for users.
  */
 
-const DAYS_PER_GAME_YEAR = 7;
+const daysPerGameYear = 7;
 
 /**
  * Calculate age in REAL-TIME days from date of birth.
@@ -91,11 +91,11 @@ export function calculateAgeFromBirth(dateOfBirth, currentDate = new Date()) {
  */
 export function calculateAgeInGameYears(dateOfBirth, currentDate = new Date()) {
   const ageInDays = calculateAgeFromBirth(dateOfBirth, currentDate);
-  return Math.floor(ageInDays / DAYS_PER_GAME_YEAR);
+  return Math.floor(ageInDays / daysPerGameYear);
 }
 
 /** Lower bound, in days, of the game-year bucket a horse is stored in. */
-const previousAgeInDays = storedAge => storedAge * DAYS_PER_GAME_YEAR;
+const previousAgeInDays = storedAge => storedAge * daysPerGameYear;
 
 /** True when the age moved from `previousDays` to `newDays` across `threshold` days. */
 const crossesThreshold = (previousDays, newDays, threshold) =>
@@ -141,7 +141,7 @@ export async function updateHorseAge(horseId, knownHorse = null) {
   // the days value was written directly to Horse.age, producing 1111-year
   // displays since the rest of the codebase reads Horse.age as game-years.
   const ageInDays = calculateAgeFromBirth(horse.dateOfBirth);
-  const calculatedAge = Math.floor(ageInDays / DAYS_PER_GAME_YEAR); // game-years
+  const calculatedAge = Math.floor(ageInDays / daysPerGameYear); // game-years
   const storedAge = horse.age || 0;
 
   // Check if age needs updating
@@ -175,7 +175,7 @@ export async function updateHorseAge(horseId, knownHorse = null) {
   // Check for milestones if this was a birthday. We pass the previous and
   // current day-equivalents so milestone day-threshold logic (7, 14, 21,
   // 147 days) keeps working at fine granularity. The previous day-equivalent
-  // is `storedAge * DAYS_PER_GAME_YEAR` (lower bound of the previous game-year
+  // is `storedAge * daysPerGameYear` (lower bound of the previous game-year
   // bucket); the current day-equivalent is `ageInDays`.
   let milestoneResult = { milestonesTriggered: [] };
   if (hadBirthday) {
@@ -216,7 +216,7 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
     // PrismaClientValidationError that the surrounding try/catch swallowed
     // into a log line. The equivalent developmental windows (8-14 real-time
     // days = age 2, 15-21 real-time days = age 3 — see
-    // enhancedMilestoneEvaluationSystem.DEVELOPMENTAL_WINDOWS
+    // enhancedMilestoneEvaluationSystem.developmentalWindows
     // CURIOSITY_PLAY/TRUST_HANDLING) are evaluated for real by the daily
     // `dailyMilestoneJob` cron (backend/services/jobs/dailyMilestoneJob.mjs ->
     // processFoalMilestones -> processFoalMilestoneEvaluations below in this
@@ -241,7 +241,7 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
         event: 'horse_retirement',
         horseId,
         name: retiree?.name ?? 'unknown',
-        age: retiree?.age ?? Math.floor(newAge / DAYS_PER_GAME_YEAR),
+        age: retiree?.age ?? Math.floor(newAge / daysPerGameYear),
         ageInDays: newAge,
       });
 
@@ -326,7 +326,7 @@ export async function processHorseBirthdays(options = {}) {
     try {
       // Compare game-years (the unit persisted to Horse.age) — Equoria-son6
       const ageInDays = calculateAgeFromBirth(horse.dateOfBirth);
-      const calculatedAge = Math.floor(ageInDays / DAYS_PER_GAME_YEAR);
+      const calculatedAge = Math.floor(ageInDays / daysPerGameYear);
       const storedAge = horse.age || 0;
 
       if (calculatedAge !== storedAge) {
@@ -412,7 +412,7 @@ export async function processHorseBirthdays(options = {}) {
 /**
  * Equoria-3yxz: Daily cron pass that fires MilestoneTraitLog writes for
  * every foal that has just entered (and not yet been evaluated for) a
- * developmental window from enhancedMilestoneEvaluationSystem.DEVELOPMENTAL_WINDOWS.
+ * developmental window from enhancedMilestoneEvaluationSystem.developmentalWindows.
  *
  * Without this, the system relies on the manual POST /api/v1/milestones/evaluate-milestone
  * endpoint — meaning a foal's developmental milestones never trigger organically
@@ -459,8 +459,8 @@ export async function processFoalMilestoneEvaluations(options = {}) {
     // A millisecond delta from the date-only dob ran a day ahead from 20:00 ET.
     const ageInDays = getHorseAgeDays(foal.dateOfBirth);
 
-    for (const milestoneType of Object.values(MILESTONE_TYPES)) {
-      const window = DEVELOPMENTAL_WINDOWS[milestoneType];
+    for (const milestoneType of Object.values(milestoneTypes)) {
+      const window = developmentalWindows[milestoneType];
       if (!window || ageInDays < window.start || ageInDays > window.end) {
         continue;
       }

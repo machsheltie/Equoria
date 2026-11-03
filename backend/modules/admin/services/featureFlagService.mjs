@@ -10,7 +10,7 @@
  * @module services/featureFlagService
  */
 
-import { FLAG_DEFINITIONS, FLAG_DEFAULTS } from '../../../utils/featureFlags.mjs';
+import { flagDefinitions, flagDefaults } from '../../../utils/featureFlags.mjs';
 import logger from '../../../utils/logger.mjs';
 
 /**
@@ -64,7 +64,7 @@ function getRawFlagValue(flagName) {
   }
 
   // Fall back to defaults
-  return FLAG_DEFAULTS[flagName] ?? null;
+  return flagDefaults[flagName] ?? null;
 }
 
 /**
@@ -91,7 +91,7 @@ function getRawFlagValue(flagName) {
  */
 export async function isFeatureEnabled(flagName, context = {}) {
   try {
-    const definition = FLAG_DEFINITIONS[flagName];
+    const definition = flagDefinitions[flagName];
     const rawValue = getRawFlagValue(flagName);
 
     // Track evaluation
@@ -166,8 +166,8 @@ export async function getFeatureVariant(flagName, defaultValue = '') {
 export async function getAllFlags(context = {}) {
   const flags = {};
 
-  for (const flagName of Object.keys(FLAG_DEFINITIONS)) {
-    const definition = FLAG_DEFINITIONS[flagName];
+  for (const flagName of Object.keys(flagDefinitions)) {
+    const definition = flagDefinitions[flagName];
 
     if (definition.type === 'string') {
       flags[flagName] = await getFeatureVariant(flagName);

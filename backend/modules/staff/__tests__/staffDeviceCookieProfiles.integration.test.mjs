@@ -18,7 +18,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, jest } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { ACCESS_TOKEN_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
+import { accessTokenCookieOptions } from '../../../utils/cookieConfig.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import {
   STAFF_API,
@@ -81,7 +81,7 @@ async function loadUnder(env) {
     });
     return {
       device: staff.STAFF_DEVICE_COOKIE_OPTIONS,
-      auth: cookies.ACCESS_TOKEN_COOKIE_OPTIONS,
+      auth: cookies.accessTokenCookieOptions,
       env: cookies.getCookieConfigSummary().environment,
     };
   } finally {
@@ -150,12 +150,12 @@ describe('staff_device Set-Cookie over real HTTP in the test profile (verificati
     );
 
     expect(attrs.httponly).toBe(true);
-    expect(Boolean(attrs.secure)).toBe(ACCESS_TOKEN_COOKIE_OPTIONS.secure);
-    expect(attrs.samesite.toLowerCase()).toBe(ACCESS_TOKEN_COOKIE_OPTIONS.sameSite);
-    expect(attrs.domain).toBe(ACCESS_TOKEN_COOKIE_OPTIONS.domain);
+    expect(Boolean(attrs.secure)).toBe(accessTokenCookieOptions.secure);
+    expect(attrs.samesite.toLowerCase()).toBe(accessTokenCookieOptions.sameSite);
+    expect(attrs.domain).toBe(accessTokenCookieOptions.domain);
     expect(attrs.path).toBe('/api/v1');
     expect(attrs['max-age']).toBe(String(THIRTY_DAYS_MS / 1000));
     // The test profile itself: plain-HTTP cookie, lax, host-only.
-    expect(ACCESS_TOKEN_COOKIE_OPTIONS).toMatchObject({ secure: false, sameSite: 'lax', domain: undefined });
+    expect(accessTokenCookieOptions).toMatchObject({ secure: false, sameSite: 'lax', domain: undefined });
   }, 60_000);
 });

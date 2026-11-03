@@ -6,9 +6,9 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  GROOM_PERSONALITY_TYPES,
-  FOAL_TEMPERAMENT_TYPES,
-  PERSONALITY_TEMPERAMENT_COMPATIBILITY,
+  groomPersonalityTypes,
+  foalTemperamentTypes,
+  personalityTemperamentCompatibility,
   calculatePersonalityCompatibility,
   getCompatibleGroomsForTemperament,
   validatePersonalityTemperament,
@@ -18,28 +18,28 @@ import { horseTemperamentValues } from '../../../constants/schema.mjs';
 // ---------------------------------------------------------------------------
 // Exported constants
 // ---------------------------------------------------------------------------
-describe('GROOM_PERSONALITY_TYPES', () => {
+describe('groomPersonalityTypes', () => {
   it('contains at least 5 personality types', () => {
-    expect(Object.keys(GROOM_PERSONALITY_TYPES).length).toBeGreaterThanOrEqual(5);
+    expect(Object.keys(groomPersonalityTypes).length).toBeGreaterThanOrEqual(5);
   });
 
   it('has CALM, ENERGETIC, ASSERTIVE', () => {
-    expect(GROOM_PERSONALITY_TYPES.CALM).toBe('Calm');
-    expect(GROOM_PERSONALITY_TYPES.ENERGETIC).toBe('Energetic');
-    expect(GROOM_PERSONALITY_TYPES.ASSERTIVE).toBe('Assertive');
+    expect(groomPersonalityTypes.CALM).toBe('Calm');
+    expect(groomPersonalityTypes.ENERGETIC).toBe('Energetic');
+    expect(groomPersonalityTypes.ASSERTIVE).toBe('Assertive');
   });
 });
 
-describe('FOAL_TEMPERAMENT_TYPES', () => {
+describe('foalTemperamentTypes', () => {
   it('contains at least 7 temperament types', () => {
-    expect(Object.keys(FOAL_TEMPERAMENT_TYPES).length).toBeGreaterThanOrEqual(7);
+    expect(Object.keys(foalTemperamentTypes).length).toBeGreaterThanOrEqual(7);
   });
 
   it('includes SPIRITED, STEADY, REACTIVE, STUBBORN', () => {
-    expect(FOAL_TEMPERAMENT_TYPES.SPIRITED).toBe('Spirited');
-    expect(FOAL_TEMPERAMENT_TYPES.STEADY).toBe('Steady');
-    expect(FOAL_TEMPERAMENT_TYPES.REACTIVE).toBe('Reactive');
-    expect(FOAL_TEMPERAMENT_TYPES.STUBBORN).toBe('Stubborn');
+    expect(foalTemperamentTypes.SPIRITED).toBe('Spirited');
+    expect(foalTemperamentTypes.STEADY).toBe('Steady');
+    expect(foalTemperamentTypes.REACTIVE).toBe('Reactive');
+    expect(foalTemperamentTypes.STUBBORN).toBe('Stubborn');
   });
 });
 
@@ -47,8 +47,8 @@ describe('FOAL_TEMPERAMENT_TYPES', () => {
 // the Playful foal's matches (Energetic, Playful grooms); Willing suits the
 // Soft-Spoken and Affectionate grooms.
 describe('foal temperaments follow the 12 (owner ruling 2026-10-21)', () => {
-  it("FOAL_TEMPERAMENT_TYPES is exactly the game's 12 temperaments", () => {
-    expect(Object.values(FOAL_TEMPERAMENT_TYPES).sort()).toEqual([...horseTemperamentValues].sort());
+  it("foalTemperamentTypes is exactly the game's 12 temperaments", () => {
+    expect(Object.values(foalTemperamentTypes).sort()).toEqual([...horseTemperamentValues].sort());
   });
 
   it('Driven and Willing foals have their ideal grooms', () => {
@@ -61,15 +61,15 @@ describe('foal temperaments follow the 12 (owner ruling 2026-10-21)', () => {
   });
 });
 
-describe('PERSONALITY_TEMPERAMENT_COMPATIBILITY', () => {
+describe('personalityTemperamentCompatibility', () => {
   it('has an entry for every personality type', () => {
-    for (const personality of Object.values(GROOM_PERSONALITY_TYPES)) {
-      expect(PERSONALITY_TEMPERAMENT_COMPATIBILITY[personality]).toBeDefined();
+    for (const personality of Object.values(groomPersonalityTypes)) {
+      expect(personalityTemperamentCompatibility[personality]).toBeDefined();
     }
   });
 
   it('each entry has idealMatches, traitDevBonus, bondModifier, description', () => {
-    for (const config of Object.values(PERSONALITY_TEMPERAMENT_COMPATIBILITY)) {
+    for (const config of Object.values(personalityTemperamentCompatibility)) {
       expect(config).toHaveProperty('idealMatches');
       expect(config).toHaveProperty('traitDevBonus');
       expect(config).toHaveProperty('bondModifier');

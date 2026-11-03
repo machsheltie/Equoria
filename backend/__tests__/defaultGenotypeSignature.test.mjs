@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { isDefaultSignature, SIGNATURE_OPTIONAL_LOCI } from '../utils/defaultGenotypeSignature.mjs';
+import { isDefaultSignature, signatureOptionalLoci } from '../utils/defaultGenotypeSignature.mjs';
 import { GENERIC_DEFAULTS } from '../modules/horses/index.mjs';
 
 // The 17-locus all-Bay signature a legacy "First Horse" carries (pre-color-system
@@ -60,7 +60,7 @@ describe('isDefaultSignature (Equoria-kfgep — shared helper)', () => {
 
   it('SENTINEL: a missing REQUIRED (non-optional) locus disqualifies', () => {
     const missingRequired = { ...LEGACY_ALL_BAY };
-    delete missingRequired.A_Agouti; // A_Agouti is not in SIGNATURE_OPTIONAL_LOCI
+    delete missingRequired.A_Agouti; // A_Agouti is not in signatureOptionalLoci
     expect(isDefaultSignature(missingRequired)).toBe(false);
   });
 
@@ -71,7 +71,7 @@ describe('isDefaultSignature (Equoria-kfgep — shared helper)', () => {
     // Equoria-26qjf.1 added Prl_Pearl/BR1_Brindle1 to GENERIC_DEFAULTS with
     // wild-type 'n/n' defaults. A row that includes them at their default value
     // (post-.1 row) is still default; a legacy row missing the keys entirely
-    // (predates .1) is tolerated as default by SIGNATURE_OPTIONAL_LOCI carve-out.
+    // (predates .1) is tolerated as default by signatureOptionalLoci carve-out.
     const withOptionalAtDefault = {
       ...LEGACY_ALL_BAY,
       Prl_Pearl: 'n/n',
@@ -87,7 +87,7 @@ describe('isDefaultSignature (Equoria-kfgep — shared helper)', () => {
 
   it('SENTINEL: a non-default value on an optional locus disqualifies (Equoria-26qjf.1 landed Prl/BR1 into GENERIC_DEFAULTS)', () => {
     // Equoria-26qjf.1 added Prl_Pearl and BR1_Brindle1 to GENERIC_DEFAULTS with
-    // wild-type 'n/n' defaults. The SIGNATURE_OPTIONAL_LOCI carve-out tolerates
+    // wild-type 'n/n' defaults. The signatureOptionalLoci carve-out tolerates
     // a MISSING optional locus (legacy rows predate the loci), but a PRESENT
     // non-default value goes through the normal loop and disqualifies — exactly
     // the Equoria-3x7j3 follow-up scenario, now resolved by .1 landing. A real
@@ -107,8 +107,8 @@ describe('isDefaultSignature (Equoria-kfgep — shared helper)', () => {
   });
 
   it('exposes the optional-loci carve-out set for documentation/consumers', () => {
-    expect(SIGNATURE_OPTIONAL_LOCI.has('Prl_Pearl')).toBe(true);
-    expect(SIGNATURE_OPTIONAL_LOCI.has('BR1_Brindle1')).toBe(true);
-    expect(SIGNATURE_OPTIONAL_LOCI.has('E_Extension')).toBe(false);
+    expect(signatureOptionalLoci.has('Prl_Pearl')).toBe(true);
+    expect(signatureOptionalLoci.has('BR1_Brindle1')).toBe(true);
+    expect(signatureOptionalLoci.has('E_Extension')).toBe(false);
   });
 });

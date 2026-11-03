@@ -26,7 +26,7 @@ import logger from './logger.mjs';
 /**
  * Default pagination configuration
  */
-export const PAGINATION_DEFAULTS = {
+export const paginationDefaults = {
   defaultPage: 1,
   defaultLimit: 20,
   maxLimit: 100,
@@ -51,10 +51,10 @@ export const PAGINATION_DEFAULTS = {
  */
 export function parsePaginationParams(req, options = {}) {
   const {
-    defaultPage = PAGINATION_DEFAULTS.defaultPage,
-    defaultLimit = PAGINATION_DEFAULTS.defaultLimit,
-    maxLimit = PAGINATION_DEFAULTS.maxLimit,
-    minLimit = PAGINATION_DEFAULTS.minLimit,
+    defaultPage = paginationDefaults.defaultPage,
+    defaultLimit = paginationDefaults.defaultLimit,
+    maxLimit = paginationDefaults.maxLimit,
+    minLimit = paginationDefaults.minLimit,
   } = options;
 
   // Parse page parameter
@@ -393,7 +393,7 @@ export async function findKeysetPage(
 
 // Default export
 export default {
-  PAGINATION_DEFAULTS,
+  paginationDefaults,
   parsePaginationParams,
   buildPaginationMetadata,
   buildPaginatedResponse,

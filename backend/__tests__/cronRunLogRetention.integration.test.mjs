@@ -15,8 +15,8 @@ import {
   purgeExpiredCronRunLogs,
   computeCutoff,
   getRetentionDays,
-  DEFAULT_RETENTION_DAYS,
-  MIN_RETENTION_DAYS,
+  defaultRetentionDays,
+  minRetentionDays,
 } from '../services/cronRunLogRetentionService.mjs';
 
 // Unique sentinel so fixture rows never collide with real cron history and
@@ -36,9 +36,9 @@ afterAll(async () => {
 describe('getRetentionDays', () => {
   afterAll(() => delete process.env.CRON_RUN_LOG_RETENTION_DAYS);
 
-  it('defaults to DEFAULT_RETENTION_DAYS when env unset', () => {
+  it('defaults to defaultRetentionDays when env unset', () => {
     delete process.env.CRON_RUN_LOG_RETENTION_DAYS;
-    expect(getRetentionDays()).toBe(DEFAULT_RETENTION_DAYS);
+    expect(getRetentionDays()).toBe(defaultRetentionDays);
   });
 
   it('honours a valid CRON_RUN_LOG_RETENTION_DAYS override', () => {
@@ -46,16 +46,16 @@ describe('getRetentionDays', () => {
     expect(getRetentionDays()).toBe(30);
   });
 
-  it('clamps to MIN_RETENTION_DAYS when env is below the floor', () => {
+  it('clamps to minRetentionDays when env is below the floor', () => {
     process.env.CRON_RUN_LOG_RETENTION_DAYS = '1';
-    expect(getRetentionDays()).toBe(MIN_RETENTION_DAYS);
+    expect(getRetentionDays()).toBe(minRetentionDays);
   });
 
   it('falls back to default on a non-numeric / non-positive env', () => {
     process.env.CRON_RUN_LOG_RETENTION_DAYS = 'not-a-number';
-    expect(getRetentionDays()).toBe(DEFAULT_RETENTION_DAYS);
+    expect(getRetentionDays()).toBe(defaultRetentionDays);
     process.env.CRON_RUN_LOG_RETENTION_DAYS = '0';
-    expect(getRetentionDays()).toBe(DEFAULT_RETENTION_DAYS);
+    expect(getRetentionDays()).toBe(defaultRetentionDays);
   });
 });
 
@@ -134,7 +134,7 @@ describe('purgeExpiredCronRunLogs — real DB', () => {
     });
 
     const result = await purgeExpiredCronRunLogs({ retentionDays: 1, now });
-    expect(result.retentionDays).toBe(MIN_RETENTION_DAYS);
+    expect(result.retentionDays).toBe(minRetentionDays);
 
     const survivor = await prisma.cronRunLog.findFirst({
       where: { jobName: `${SENTINEL}-fivedays` },

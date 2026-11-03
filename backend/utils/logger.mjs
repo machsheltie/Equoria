@@ -14,7 +14,7 @@ const enumerateErrorFormat = winston.format(info => {
 // Defect #3: Error.message / Error.stack / Error.name are non-enumerable, so
 // `JSON.stringify({err: new Error('m')})` returns `{"err":{}}` — useless
 // metadata. Pre-process: walk the metadata tree, swap any Error instance
-// for `{name, message, stack: stack.slice(0, ERROR_STACK_CAP)}`. Stack is
+// for `{name, message, stack: stack.slice(0, errorStackCap)}`. Stack is
 // capped to bound log-line size even when an attacker forges a 100KB stack.
 //
 // Defect #4: when callers do `logger.error(msg, errorInstance)`, Winston's
@@ -25,11 +25,11 @@ const enumerateErrorFormat = winston.format(info => {
 // meta object IF the message already contains the same stack string
 // (i.e. the enumerateErrorFormat hoist already happened).
 //
-// Defect #2: oversized metadata. Cap the JSON suffix at SUFFIX_BYTE_CAP;
+// Defect #2: oversized metadata. Cap the JSON suffix at suffixByteCap;
 // on overage, slice + append `[truncated-N-bytes]` marker.
 
-const ERROR_STACK_CAP = 1024;
-const SUFFIX_BYTE_CAP = 4096;
+const errorStackCap = 1024;
+const suffixByteCap = 4096;
 
 function preprocessMetaValue(value, depth = 0, seen = new WeakSet()) {
   // Hard recursion-depth guard mirrors the request-body scanner's contract
@@ -46,7 +46,7 @@ function preprocessMetaValue(value, depth = 0, seen = new WeakSet()) {
     return {
       name: value.name,
       message: value.message,
-      stack: typeof value.stack === 'string' ? value.stack.slice(0, ERROR_STACK_CAP) : undefined,
+      stack: typeof value.stack === 'string' ? value.stack.slice(0, errorStackCap) : undefined,
     };
   }
   if (typeof value !== 'object') {
@@ -100,14 +100,14 @@ function buildMetaSuffix(meta, message) {
       err?.message ?? '',
     ).slice(0, 200)}]`;
   }
-  if (json.length <= SUFFIX_BYTE_CAP) {
+  if (json.length <= suffixByteCap) {
     return ` ${json}`;
   }
   // Defect #2 truncation: cut to cap, append explicit marker reporting
   // dropped byte count. Operators must SEE that data was lost — silent
   // truncation would mask forensic gaps.
-  const dropped = json.length - SUFFIX_BYTE_CAP;
-  return ` ${json.slice(0, SUFFIX_BYTE_CAP)}[truncated-${dropped}-bytes]`;
+  const dropped = json.length - suffixByteCap;
+  return ` ${json.slice(0, suffixByteCap)}[truncated-${dropped}-bytes]`;
 }
 
 const logger = winston.createLogger({
@@ -140,7 +140,7 @@ const logger = winston.createLogger({
     winston.format.printf(({ timestamp, level, message, ...meta }) => {
       // 21R-OBS-3 (Equoria-aweq): full robustness pipeline:
       //   - circular / BigInt safety   (catch JSON.stringify throws)
-      //   - oversized-meta truncation  (cap at SUFFIX_BYTE_CAP)
+      //   - oversized-meta truncation  (cap at suffixByteCap)
       //   - Error-as-value extraction  (preprocessMetaValue swap)
       //   - bare-Error stack de-dup    (strip duplicate top-level stack)
       // See helper docs above for per-defect rationale.

@@ -33,7 +33,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import {
-  LEGACY_TRAIT_KEY_MAP,
+  legacyTraitKeyMap,
   normalizeStoredEpigeneticModifiers,
 } from '../../../backend/utils/epigeneticTraitKeyMap.mjs';
 
@@ -54,7 +54,7 @@ function needsBackfill(modifiers) {
 }
 
 export async function backfillEpigeneticTraitCasing({ apply = false, prismaClient = prisma } = {}) {
-  const knownLegacyKeys = Object.keys(LEGACY_TRAIT_KEY_MAP);
+  const knownLegacyKeys = Object.keys(legacyTraitKeyMap);
 
   console.log(
     `[backfillEpigeneticTraitCasing] mode=${apply ? 'APPLY' : 'DRY-RUN'} known legacy keys: ${knownLegacyKeys.join(', ')} (+ legacy discipline_affinity_* prefix)`

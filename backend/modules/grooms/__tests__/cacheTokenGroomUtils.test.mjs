@@ -10,7 +10,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { cacheStats, generateCacheKey, getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
 import { hashRefreshToken, generateTokenFamily } from '../../../utils/tokenRotationService.mjs';
-import { GROOM_SPECIALTIES, SKILL_LEVELS, PERSONALITY_TRAITS } from '../../../utils/groomSystem.mjs';
+import { groomSpecialties, skillLevels, personalityTraits } from '../../../utils/groomSystem.mjs';
 
 // ── cacheHelper ───────────────────────────────────────────────────────────────
 
@@ -119,28 +119,28 @@ describe('generateTokenFamily', () => {
 
 // ── groomSystem ───────────────────────────────────────────────────────────────
 
-describe('GROOM_SPECIALTIES', () => {
+describe('groomSpecialties', () => {
   it('contains foalCare specialty with bondingModifier', () => {
-    expect(GROOM_SPECIALTIES.foalCare).toBeDefined();
-    expect(typeof GROOM_SPECIALTIES.foalCare.bondingModifier).toBe('number');
+    expect(groomSpecialties.foalCare).toBeDefined();
+    expect(typeof groomSpecialties.foalCare.bondingModifier).toBe('number');
   });
 
   it('contains general specialty', () => {
-    expect(GROOM_SPECIALTIES.general).toBeDefined();
+    expect(groomSpecialties.general).toBeDefined();
   });
 });
 
-describe('SKILL_LEVELS', () => {
+describe('skillLevels', () => {
   it('has novice, intermediate, expert, master levels', () => {
-    expect(SKILL_LEVELS.novice).toBeDefined();
-    expect(SKILL_LEVELS.master).toBeDefined();
-    expect(SKILL_LEVELS.master.bondingModifier).toBeGreaterThan(SKILL_LEVELS.novice.bondingModifier);
+    expect(skillLevels.novice).toBeDefined();
+    expect(skillLevels.master).toBeDefined();
+    expect(skillLevels.master.bondingModifier).toBeGreaterThan(skillLevels.novice.bondingModifier);
   });
 });
 
-describe('PERSONALITY_TRAITS', () => {
+describe('personalityTraits', () => {
   it('is a non-empty object', () => {
-    expect(typeof PERSONALITY_TRAITS).toBe('object');
-    expect(Object.keys(PERSONALITY_TRAITS).length).toBeGreaterThan(0);
+    expect(typeof personalityTraits).toBe('object');
+    expect(Object.keys(personalityTraits).length).toBeGreaterThan(0);
   });
 });

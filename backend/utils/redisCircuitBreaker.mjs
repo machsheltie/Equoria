@@ -21,7 +21,7 @@ import logger from './logger.mjs';
  * Circuit Breaker Configuration
  * Based on production requirements and industry best practices
  */
-const DEFAULT_CIRCUIT_OPTIONS = {
+const defaultCircuitOptions = {
   // Failure threshold: open circuit after 50% error rate over 10 requests
   errorThresholdPercentage: 50,
   resetTimeout: 30000, // 30 seconds - time to wait before attempting recovery
@@ -121,14 +121,14 @@ class CircuitMetrics {
  * @returns {Object} Wrapped Redis client with circuit breaker and metrics
  */
 export function createRedisCircuitBreaker(redisClient, options = {}) {
-  const config = { ...DEFAULT_CIRCUIT_OPTIONS, ...options };
+  const config = { ...defaultCircuitOptions, ...options };
   const metrics = new CircuitMetrics();
 
   // Create wrapped Redis operations with circuit breaker
   const operations = {};
 
   // Common Redis operations to protect
-  const REDIS_OPERATIONS = [
+  const redisOperations = [
     'get',
     'set',
     'setex',
@@ -140,7 +140,7 @@ export function createRedisCircuitBreaker(redisClient, options = {}) {
     'exists',
   ];
 
-  REDIS_OPERATIONS.forEach(operation => {
+  redisOperations.forEach(operation => {
     // Create circuit breaker for each operation
     const breaker = new CircuitBreaker(async (...args) => {
       // Execute the actual Redis operation
@@ -293,4 +293,4 @@ export function createRedisCircuitBreaker(redisClient, options = {}) {
 /**
  * Export default circuit breaker configuration
  */
-export { DEFAULT_CIRCUIT_OPTIONS };
+export { defaultCircuitOptions };
