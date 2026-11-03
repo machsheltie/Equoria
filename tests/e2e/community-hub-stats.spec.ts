@@ -207,6 +207,14 @@ test.describe('Community hub stats (Equoria-m00gp)', () => {
       // Into Clubs (same document), time passes, the network drops, and back.
       await page.getByTestId('community-card-clubs').click();
       await expect(page).toHaveURL(/\/clubs$/);
+      // Equoria-mfk3n: the URL changes before React commits the lazy Clubs
+      // page, and until it does the hub stays mounted. When the Clubs chunk was
+      // slow, goBack landed while the hub was still mounted: it never remounted,
+      // refetched nothing and kept its cached numbers (the flake). Wait until
+      // Clubs is really on screen and the hub is gone, so the hub's reads are
+      // unobserved and their gcTime timers are running when the clock jumps.
+      await expect(page.getByTestId('club-tabs')).toBeVisible({ timeout: 20000 });
+      await expect(page.getByTestId('community-card-clubs')).toHaveCount(0);
       await page.clock.fastForward('06:00');
       await outsider.context.setOffline(true);
       await page.goBack();
