@@ -56,7 +56,6 @@ import showRoutes from '../modules/competition/shows/showRoutes.mjs';
 import foalRoutes from '../modules/breeding/routes/foalRoutes.mjs';
 import studBookingRoutes from '../modules/breeding/routes/studBookingRoutes.mjs';
 import traitRoutes from '../modules/traits/routes/traitRoutes.mjs';
-import epigeneticFlagRoutes from '../modules/traits/routes/epigeneticFlagRoutes.mjs';
 import groomRoutes from '../modules/grooms/routes/groomRoutes.mjs';
 import groomCareRoutes from '../modules/grooms/routes/groomCareRoutes.mjs';
 import groomMarketplaceRoutes from '../modules/grooms/routes/groomMarketplaceRoutes.mjs';
@@ -255,7 +254,9 @@ export function buildRouters() {
   authRouter.use('/groom-marketplace', groomMarketplaceRoutes);
 
   // Advanced game features
-  authRouter.use('/flags', epigeneticFlagRoutes);
+  // Equoria-a7f1p: /flags (the old 9-flag roster's definitions, a care-pattern
+  // report and a health stub) was removed: the 20-trait roster replaced the flags
+  // (owner rulings 2026-10-21, 2026-10-27) and q152 removed trait reports.
   authRouter.use('/leaderboards', leaderboardRoutes);
 
   // Equoria-a7f1p: GET /horses/:id/environmental-analysis, the last advanced

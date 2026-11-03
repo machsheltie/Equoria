@@ -21,8 +21,9 @@
  * (utils/flagTriggerRules.mjs) were deleted and joined the dead list below.
  *
  * This sentinel asserts the dead generation stays deleted (it would FAIL if
- * any of the three dead files were re-added) and the live generation's three
- * modules still exist + import cleanly. Sentinel-positive per
+ * any of the dead files were re-added). Equoria-a7f1p (2026-11-03) retired the
+ * last "live" generation with the /flags routes, so it is on the dead list too
+ * and no flag module is expected to exist. Sentinel-positive per
  * OPTIMAL_FIX_DISCIPLINE §2: it fires on the real regression (dead engine
  * resurrected), not merely passes on a clean tree.
  */
@@ -125,9 +126,14 @@ describe('Epigenetic flag engine — single source of truth (Equoria-yzqhj.3)', 
     // with the owner's trait-effects ruling, as one calculation in the bond write.
     'utils/epigeneticFlagInfluence.mjs',
     'utils/bondingModifiers.mjs',
+    // Equoria-a7f1p (2026-11-03): the last flag generation went with the /flags
+    // routes it served. The 20-trait roster replaced the 9 flags (owner rulings
+    // 2026-10-21, 2026-10-27) and q152 (2026-10-28) removed trait reports.
+    'config/epigeneticFlagDefinitions.mjs',
+    'utils/carePatternAnalysis.mjs',
+    'modules/traits/controllers/epigeneticFlagController.mjs',
+    'modules/traits/routes/epigeneticFlagRoutes.mjs',
   ];
-
-  const liveFiles = ['config/epigeneticFlagDefinitions.mjs', 'utils/carePatternAnalysis.mjs'];
 
   test.each(deadFiles)('dead services/ flag file %s must NOT exist', rel => {
     expect(existsSync(resolve(backendRoot, rel))).toBe(false);
@@ -153,18 +159,6 @@ describe('Epigenetic flag engine — single source of truth (Equoria-yzqhj.3)', 
     } finally {
       rmSync(tmpRoot, { recursive: true, force: true });
     }
-  });
-
-  test.each(liveFiles)('live flag module %s must exist', rel => {
-    expect(existsSync(resolve(backendRoot, rel))).toBe(true);
-  });
-
-  test('live flag generation imports cleanly and exposes its public API', async () => {
-    const defs = await import('../../../config/epigeneticFlagDefinitions.mjs');
-    const care = await import('../../../utils/carePatternAnalysis.mjs');
-
-    expect(typeof defs.getAllFlagDefinitions).toBe('function');
-    expect(typeof care.analyzeCarePatterns).toBe('function');
   });
 });
 

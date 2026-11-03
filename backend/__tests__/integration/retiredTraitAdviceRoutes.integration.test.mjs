@@ -36,6 +36,10 @@
  * - Flags are not a separate system; they fold into the one trait system
  *   (2026-10-21):
  *     GET  /flags/analytics
+ *     GET  /flags/definitions, GET /flags/horses/:id/care-patterns and
+ *     GET  /flags/health (kept as neighbours until Equoria-a7f1p 2026-11-03: the
+ *          definitions were the superseded 9-flag roster, care-patterns a trait
+ *          report q152 removed, health a stub for that system)
  * - The old epigeneticFlags store is dropped; its readers go with it
  *   (2026-10-29, q300, Equoria-efs4j). Both routes showed only that store:
  *     GET  /horses/:id/trait-interactions
@@ -212,6 +216,7 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
     // Equoria-efs4j (q300): kept below until the flag store was dropped.
     ['get', id => `/api/v1/horses/${id}/trait-interactions`],
     ['get', id => `/api/v1/flags/horses/${id}/flags`],
+    ['get', id => `/api/v1/flags/horses/${id}/care-patterns`],
     [
       'post',
       () => '/api/v1/ultra-rare-traits/effects/calculate',
@@ -237,6 +242,8 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
     ['GET /trait-discovery/conditions', () => send('get', '/api/v1/trait-discovery/conditions', owner.token)],
     ['GET /ultra-rare-traits/definitions', () => send('get', '/api/v1/ultra-rare-traits/definitions', owner.token)],
     ['GET /flags/analytics', () => send('get', '/api/v1/flags/analytics', owner.token)],
+    ['GET /flags/definitions', () => send('get', '/api/v1/flags/definitions', owner.token)],
+    ['GET /flags/health', () => send('get', '/api/v1/flags/health', owner.token)],
   ];
 
   it.each(cases)('%s answers the JSON route-not-found 404', async (_label, call) => {
@@ -251,8 +258,6 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
     // GET /epigenetic-traits/history/:horseId was kept here until owner ruling
     // 2026-10-28 (q152) removed the trait reports; removedTraitReportRoutes pins it.
     ['GET /traits/discovery-status/:horseId', id => `/api/v1/traits/discovery-status/${id}`],
-    ['GET /flags/horses/:id/care-patterns', id => `/api/v1/flags/horses/${id}/care-patterns`],
-    ['GET /flags/definitions', () => '/api/v1/flags/definitions'],
   ];
 
   it.each(kept)('%s still answers 200 for the owner', async (_label, path) => {
