@@ -41,7 +41,7 @@ const THREADS = `${base}/api/v1/forum/threads`;
 const CLUBS = `${base}/api/v1/clubs`;
 const UNREAD = `${base}/api/v1/messages/unread-count`;
 const CONVERSATIONS = `${base}/api/v1/messages/conversations-count`;
-const OPEN_ELECTIONS = `${base}/api/v1/clubs/elections/open-count`;
+const openElectionsUrl = `${base}/api/v1/clubs/elections/open-count`;
 const ACTIVITY = `${base}/api/v1/users/community/activity`;
 const HALL = `${base}/api/v1/hall-of-fame`;
 
@@ -114,7 +114,7 @@ function stubHappy({
     http.get(CONVERSATIONS, () =>
       HttpResponse.json({ success: true, data: { count: conversations } })
     ),
-    http.get(OPEN_ELECTIONS, () =>
+    http.get(openElectionsUrl, () =>
       HttpResponse.json({ success: true, data: { count: openElections } })
     ),
     http.get(ACTIVITY, () => HttpResponse.json({ success: true, data: [] })),
@@ -230,7 +230,7 @@ describe('CommunityPage — hub stats four-state (Equoria-r4cyk)', () => {
   it('renders NO "Elections open" badge when the election query fails (error, not fake)', async () => {
     stubHappy();
     server.use(
-      http.get(OPEN_ELECTIONS, () =>
+      http.get(openElectionsUrl, () =>
         HttpResponse.json({ success: false, message: 'boom detail' }, { status: 500 })
       )
     );

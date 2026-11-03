@@ -11,7 +11,7 @@ const files = readdirSync(DIR).filter(
   (f) => f.endsWith('.txt') && !f.startsWith('_') && f !== 'generichorse.txt'
 );
 
-const CANON_GAITS = new Set([
+const canonGaits = new Set([
   'Rack',
   'Slow Gait',
   'Tölt',
@@ -132,7 +132,7 @@ for (const f of files.sort()) {
   const rp = j.ratingProfiles || {};
   if (rp.isGaitedBreed === true) {
     const reg = rp.gaitedGaitRegistry || [];
-    for (const g of reg) if (!CANON_GAITS.has(g)) E.push(`non-canonical gait name "${g}"`);
+    for (const g of reg) if (!canonGaits.has(g)) E.push(`non-canonical gait name "${g}"`);
   }
 
   // ---- HARD: each shade sub-distribution must sum to ~1.0 ----

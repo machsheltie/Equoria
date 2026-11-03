@@ -85,7 +85,7 @@ export async function getTrainerMarketplace(req, res) {
 
     const nextFreeRefresh = new Date(lastRefresh);
     nextFreeRefresh.setHours(
-      nextFreeRefresh.getHours() + trainerMarketplaceConfig.REFRESH_INTERVAL_HOURS,
+      nextFreeRefresh.getHours() + trainerMarketplaceConfig.refreshIntervalHours,
     );
     const refreshCost = getTrainerRefreshCost(lastRefresh);
 
@@ -193,7 +193,7 @@ export async function refreshTrainerMarketplace(req, res) {
 
     const nextFreeRefresh = new Date(updated.lastRefresh);
     nextFreeRefresh.setHours(
-      nextFreeRefresh.getHours() + trainerMarketplaceConfig.REFRESH_INTERVAL_HOURS,
+      nextFreeRefresh.getHours() + trainerMarketplaceConfig.refreshIntervalHours,
     );
 
     res.status(200).json({

@@ -48,7 +48,7 @@ const lines = readFileSync(WORKFLOW, 'utf8').split(/\r?\n/);
 // indented. Step-level `if:` lives deeper (six spaces or more) and under
 // `steps:`, so we stop collecting once `    steps:` is seen.
 const jobKey = /^ {2}([a-z0-9_-]+):\s*$/;
-const JOB_IF = /^ {4}if:\s*(.*?)\s*$/;
+const jobIfLine = /^ {4}if:\s*(.*?)\s*$/;
 
 const jobIf = new Map(); // job key -> if expression string (job-level only)
 const jobOrder = [];
@@ -75,7 +75,7 @@ let sentinelEnd = lines.length;
       continue;
     }
     if (inSteps) continue;
-    const im = line.match(JOB_IF);
+    const im = line.match(jobIfLine);
     if (im && !jobIf.has(current)) jobIf.set(current, im[1]);
   }
 }

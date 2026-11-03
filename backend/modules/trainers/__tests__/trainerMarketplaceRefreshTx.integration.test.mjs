@@ -73,7 +73,7 @@ async function createUser(money) {
 
 /**
  * Seed a marketplace whose lastRefresh is NOW (so getTrainerRefreshCost
- * returns the PREMIUM_REFRESH_COST — i.e. a paid refresh is required to
+ * returns the premiumRefreshCost — i.e. a paid refresh is required to
  * force a refresh inside the 24h window).
  */
 async function seedRecentMarketplace(userId) {
@@ -124,7 +124,7 @@ describe('refreshTrainerMarketplace — $transaction wrap (Equoria-t65fh)', () =
     const startingMoney = 10_000;
     const user = await createUser(startingMoney);
     const seeded = await seedRecentMarketplace(user.id);
-    const refreshCost = trainerMarketplaceConfig.PREMIUM_REFRESH_COST;
+    const refreshCost = trainerMarketplaceConfig.premiumRefreshCost;
 
     const before = await prisma.user.findUnique({
       where: { id: user.id },
@@ -154,7 +154,7 @@ describe('refreshTrainerMarketplace — $transaction wrap (Equoria-t65fh)', () =
   });
 
   it('insufficient funds: NO money debited AND NO offer-list mutation (rollback parity)', async () => {
-    const refreshCost = trainerMarketplaceConfig.PREMIUM_REFRESH_COST;
+    const refreshCost = trainerMarketplaceConfig.premiumRefreshCost;
     // User has refreshCost - 1 — fails the pre-check at 400.
     const startingMoney = refreshCost - 1;
     const user = await createUser(startingMoney);
@@ -189,7 +189,7 @@ describe('refreshTrainerMarketplace — $transaction wrap (Equoria-t65fh)', () =
     await refreshTrainerMarketplace(h.req, h.res);
 
     expect(h.res.statusValue).toBe(400);
-    expect(h.res.jsonValue.data.cost).toBe(trainerMarketplaceConfig.PREMIUM_REFRESH_COST);
+    expect(h.res.jsonValue.data.cost).toBe(trainerMarketplaceConfig.premiumRefreshCost);
 
     const after = await prisma.user.findUnique({
       where: { id: user.id },

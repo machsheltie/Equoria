@@ -226,6 +226,42 @@ describe('check-camelcase-naming.mjs (Equoria-pjvp8)', () => {
     expect(res.status).toBe(0);
   });
 
+  // Equoria-pjvp8.7: a JavaScript built-in's member is the language's name, and
+  // k6's __ENV holds environment variables; neither is Equoria's to rename.
+  it('does not count members of JavaScript built-ins or k6 __ENV reads', () => {
+    plant(
+      'plantedBuiltins.mjs',
+      [
+        `export const top = Number.${['POSITIVE', 'INFINITY'].join(us)};`,
+        `export const bottom = Number.${['NEGATIVE', 'INFINITY'].join(us)};`,
+        `export const big = Number.${['MAX', 'SAFE', 'INTEGER'].join(us)};`,
+        `export const url = __ENV.${['API', 'URL'].join(us)};`,
+        '',
+      ].join('\n'),
+    );
+    const res = runCheck();
+    expect(res.stderr).toBe('');
+    expect(res.status).toBe(0);
+  });
+
+  it('SENTINEL: the built-in exemption covers only real members of real built-ins', () => {
+    const builtinSpelling = ['POSITIVE', 'INFINITY'].join(us);
+    plant(
+      'plantedNotBuiltin.mjs',
+      [
+        // Equoria's own object, own key, and an invented member of a built-in.
+        'const limits = {};',
+        `export const own = limits.${upperName};`,
+        `export const key = { ${builtinSpelling}: 1 };`,
+        `export const invented = Number.${upperName};`,
+        '',
+      ].join('\n'),
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(`${plantRel}/plantedNotBuiltin.mjs: 3 snake-case names`);
+  });
+
   it('fails when a file drops below its baseline without shrinking it', () => {
     const baseline = readCanonical();
     const [file, count] = Object.entries(baseline)[0];

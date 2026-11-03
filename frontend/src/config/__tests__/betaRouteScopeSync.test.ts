@@ -17,13 +17,12 @@ import { resolve } from 'path';
 import { betaScope } from '../betaRouteScope';
 
 // Vitest runs from the frontend/ directory; docs/ is one level up at the project root
-const TABLE_PATH = resolve(process.cwd(), '../docs/beta-route-truth-table.md');
+const truthTablePath = resolve(process.cwd(), '../docs/beta-route-truth-table.md');
 
 // ── Parse beta-live routes from truth table ────────────────────────────────────
 
 function parseBetaLiveRoutesFromTruthTable(): string[] {
-  const tablePath = TABLE_PATH;
-  const content = readFileSync(tablePath, 'utf-8');
+  const content = readFileSync(truthTablePath, 'utf-8');
 
   const routes: string[] = [];
 

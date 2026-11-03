@@ -26,16 +26,16 @@ import { staffLevelFee, staffLevels } from '../constants/staffLevels.mjs';
 // ─── trainerMarketplaceConfig ───────────────────────────────────────────────
 
 describe('trainerMarketplaceConfig', () => {
-  it('has DEFAULT_MARKETPLACE_SIZE of 6', () => {
-    expect(trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE).toBe(6);
+  it('has defaultMarketplaceSize of 6', () => {
+    expect(trainerMarketplaceConfig.defaultMarketplaceSize).toBe(6);
   });
 
-  it('has REFRESH_INTERVAL_HOURS of 24', () => {
-    expect(trainerMarketplaceConfig.REFRESH_INTERVAL_HOURS).toBe(24);
+  it('has refreshIntervalHours of 24', () => {
+    expect(trainerMarketplaceConfig.refreshIntervalHours).toBe(24);
   });
 
-  it('has PREMIUM_REFRESH_COST of 50', () => {
-    expect(trainerMarketplaceConfig.PREMIUM_REFRESH_COST).toBe(50);
+  it('has premiumRefreshCost of 50', () => {
+    expect(trainerMarketplaceConfig.premiumRefreshCost).toBe(50);
   });
 
   // OLD CONTRACT: a random session rate inside a per-skill range.
@@ -49,8 +49,8 @@ describe('trainerMarketplaceConfig', () => {
     }
   });
 
-  it('SKILL_DISTRIBUTION percentages sum to 100', () => {
-    const total = Object.values(trainerMarketplaceConfig.SKILL_DISTRIBUTION).reduce((s, v) => s + v, 0);
+  it('skillDistribution percentages sum to 100', () => {
+    const total = Object.values(trainerMarketplaceConfig.skillDistribution).reduce((s, v) => s + v, 0);
     expect(total).toBe(100);
   });
 
@@ -83,7 +83,7 @@ describe('generateRandomTrainer', () => {
   });
 
   it('skillLevel is one of the defined levels', () => {
-    const validLevels = Object.keys(trainerMarketplaceConfig.SKILL_DISTRIBUTION);
+    const validLevels = Object.keys(trainerMarketplaceConfig.skillDistribution);
     for (let i = 0; i < 20; i++) {
       const trainer = generateRandomTrainer();
       expect(validLevels).toContain(trainer.skillLevel);
@@ -149,7 +149,7 @@ describe('generateTrainerMarketplace', () => {
   it('returns an array of default size (6) when no size given', () => {
     const marketplace = generateTrainerMarketplace();
     expect(Array.isArray(marketplace)).toBe(true);
-    expect(marketplace).toHaveLength(trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE);
+    expect(marketplace).toHaveLength(trainerMarketplaceConfig.defaultMarketplaceSize);
   });
 
   it('returns array of the requested size', () => {
@@ -245,12 +245,12 @@ describe('getTrainerRefreshCost', () => {
     expect(getTrainerRefreshCost(oldDate)).toBe(0);
   });
 
-  it('returns PREMIUM_REFRESH_COST when refresh is not yet needed', () => {
+  it('returns premiumRefreshCost when refresh is not yet needed', () => {
     const recentDate = new Date(Date.now() - 1 * 60 * 60 * 1000);
-    expect(getTrainerRefreshCost(recentDate)).toBe(trainerMarketplaceConfig.PREMIUM_REFRESH_COST);
+    expect(getTrainerRefreshCost(recentDate)).toBe(trainerMarketplaceConfig.premiumRefreshCost);
   });
 
-  it('PREMIUM_REFRESH_COST matches config (50)', () => {
+  it('premiumRefreshCost matches config (50)', () => {
     const recentDate = new Date(Date.now() - 1 * 60 * 60 * 1000);
     expect(getTrainerRefreshCost(recentDate)).toBe(50);
   });
@@ -281,7 +281,7 @@ describe('trainerMarketplace — distribution, bio & config invariants (merged f
     sample.forEach(t => {
       counts[t.skillLevel]++;
     });
-    const expected = trainerMarketplaceConfig.SKILL_DISTRIBUTION;
+    const expected = trainerMarketplaceConfig.skillDistribution;
     Object.keys(counts).forEach(skill => {
       const actual = (counts[skill] / 1000) * 100;
       expect(actual).toBeGreaterThanOrEqual(expected[skill] - 10);
@@ -294,7 +294,7 @@ describe('trainerMarketplace — distribution, bio & config invariants (merged f
   });
 
   it('config marketplace size and premium cost are positive', () => {
-    expect(trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE).toBeGreaterThan(0);
-    expect(trainerMarketplaceConfig.PREMIUM_REFRESH_COST).toBeGreaterThan(0);
+    expect(trainerMarketplaceConfig.defaultMarketplaceSize).toBeGreaterThan(0);
+    expect(trainerMarketplaceConfig.premiumRefreshCost).toBeGreaterThan(0);
   });
 });

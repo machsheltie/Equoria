@@ -73,9 +73,6 @@ const PERSONALITIES = ['gentle', 'energetic', 'patient', 'strict'];
 // Available specialties
 const _SPECIALTIES = ['general', 'foalCare', 'training', 'medical'];
 
-// Available skill levels
-const _SKILL_LEVELS = ['novice', 'intermediate', 'expert', 'master'];
-
 /**
  * Generate a random groom for the marketplace
  * @returns {Object} Generated groom data

@@ -185,7 +185,7 @@ describe('riderMarketplaceController (real DB)', () => {
     });
 
     it('deducts cost and refreshes when force=true and user has enough money', async () => {
-      const user = await createUser(500); // PREMIUM_REFRESH_COST is 50
+      const user = await createUser(500); // premiumRefreshCost is 50
       await seedMarketplaceState(user.id, { lastRefresh: new Date() });
 
       const h = makeReqRes(user.id, { body: { force: true } });
@@ -199,7 +199,7 @@ describe('riderMarketplaceController (real DB)', () => {
     });
 
     it('returns 400 when user has insufficient funds for paid refresh', async () => {
-      const user = await createUser(10); // less than PREMIUM_REFRESH_COST
+      const user = await createUser(10); // less than premiumRefreshCost
       await seedMarketplaceState(user.id, { lastRefresh: new Date() });
 
       const h = makeReqRes(user.id, { body: { force: true } });

@@ -68,7 +68,7 @@ const sigsOf = router =>
     .map(r => `${r.methods.sort().join(',')} ${r.path}`)
     .sort();
 
-const HORSE_QUERY_ROUTES = ['GET /:id/overview', 'GET /:id/training-history', 'GET /:id/breeding-data'].sort();
+const expectedHorseQueryRoutes = ['GET /:id/overview', 'GET /:id/training-history', 'GET /:id/breeding-data'].sort();
 
 // Owner ruling 2026-10-28 (q152, Equoria-a7f1p): no trait reports for players.
 // Old contract: GET /:id/trait-card (query router) and GET /trait-trends
@@ -122,10 +122,10 @@ describe('application query routers mounting sentinel (Equoria-q4uem.4)', () => 
   });
 
   it('EXACT: horseQueryRoutes exposes exactly the re-homed horse reads', () => {
-    expect(sigsOf(horseQueryRoutes)).toEqual(HORSE_QUERY_ROUTES);
+    expect(sigsOf(horseQueryRoutes)).toEqual(expectedHorseQueryRoutes);
     // and the module tree no longer hosts them (no duplicate first-match candidates)
     const moduleSigs = new Set(sigsOf(horseRoutes));
-    for (const sig of HORSE_QUERY_ROUTES) {
+    for (const sig of expectedHorseQueryRoutes) {
       expect(moduleSigs.has(sig)).toBe(false);
     }
   });

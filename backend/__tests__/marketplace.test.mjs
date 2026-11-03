@@ -32,7 +32,7 @@ import {
 // marketplaceConfig shape
 // ---------------------------------------------------------------------------
 describe('marketplaceConfig', () => {
-  it('has DEFAULT_MARKETPLACE_SIZE', () => {
+  it('has defaultMarketplaceSize', () => {
     expect(typeof marketplaceConfig.defaultMarketplaceSize).toBe('number');
   });
 
@@ -152,7 +152,7 @@ describe('getRefreshCost — groom marketplace', () => {
     expect(getRefreshCost(old)).toBe(0);
   });
 
-  it('returns PREMIUM_REFRESH_COST when refresh is not yet due', () => {
+  it('returns premiumRefreshCost when refresh is not yet due', () => {
     const now = new Date();
     expect(getRefreshCost(now)).toBe(marketplaceConfig.premiumRefreshCost);
   });
@@ -237,7 +237,7 @@ describe('generateTrainerMarketplace', () => {
   it('returns array of default size', () => {
     const marketplace = generateTrainerMarketplace();
     expect(Array.isArray(marketplace)).toBe(true);
-    expect(marketplace).toHaveLength(trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE);
+    expect(marketplace).toHaveLength(trainerMarketplaceConfig.defaultMarketplaceSize);
   });
 
   it('returns specified size', () => {
@@ -266,6 +266,6 @@ describe('getTrainerRefreshCost', () => {
   });
 
   it('returns premium cost for fresh marketplace', () => {
-    expect(getTrainerRefreshCost(new Date())).toBe(trainerMarketplaceConfig.PREMIUM_REFRESH_COST);
+    expect(getTrainerRefreshCost(new Date())).toBe(trainerMarketplaceConfig.premiumRefreshCost);
   });
 });

@@ -32,11 +32,11 @@ import { staffLevelFee } from '../constants/staffLevels.mjs';
 // marketplaceConfig (groom)
 // ---------------------------------------------------------------------------
 describe('marketplaceConfig', () => {
-  it('has DEFAULT_MARKETPLACE_SIZE of 12', () => {
+  it('has defaultMarketplaceSize of 12', () => {
     expect(marketplaceConfig.defaultMarketplaceSize).toBe(12);
   });
 
-  it('has PREMIUM_REFRESH_COST of 100', () => {
+  it('has premiumRefreshCost of 100', () => {
     expect(marketplaceConfig.premiumRefreshCost).toBe(100);
   });
 
@@ -177,11 +177,11 @@ describe('needsRefresh (groom)', () => {
 
   it('returns false for a recent lastRefresh', () => {
     const recent = new Date(Date.now() - 30 * 60 * 1000); // 30 min ago
-    // In test env REFRESH_INTERVAL_HOURS is 1 hour
+    // In test env refreshIntervalHours is 1 hour
     expect(needsRefresh(recent)).toBe(false);
   });
 
-  it('returns true for lastRefresh older than REFRESH_INTERVAL_HOURS', () => {
+  it('returns true for lastRefresh older than refreshIntervalHours', () => {
     const old = new Date(Date.now() - 25 * 60 * 60 * 1000); // 25 hours ago
     expect(needsRefresh(old)).toBe(true);
   });
@@ -192,7 +192,7 @@ describe('getRefreshCost (groom)', () => {
     expect(getRefreshCost(null)).toBe(0);
   });
 
-  it('returns PREMIUM_REFRESH_COST when refresh is not needed', () => {
+  it('returns premiumRefreshCost when refresh is not needed', () => {
     const recent = new Date(Date.now() - 30 * 60 * 1000);
     expect(getRefreshCost(recent)).toBe(marketplaceConfig.premiumRefreshCost);
   });
@@ -207,12 +207,12 @@ describe('getRefreshCost (groom)', () => {
 // riderMarketplaceConfig
 // ---------------------------------------------------------------------------
 describe('riderMarketplaceConfig', () => {
-  it('has DEFAULT_MARKETPLACE_SIZE of 6', () => {
+  it('has defaultMarketplaceSize of 6', () => {
     expect(riderMarketplaceConfig.defaultMarketplaceSize).toBe(6);
   });
 
   // Owner rulings 2026-10-29 (q282/q283) retired the riders' old skill word and
-  // visible speciality. Old contract: SKILL_DISTRIBUTION (rookie/developing/
+  // visible speciality. Old contract: skillDistribution (rookie/developing/
   // experienced) summing to 100 and SPECIALTIES listing every discipline.
   it('has no skill-word odds and no speciality list', () => {
     expect(riderMarketplaceConfig).not.toHaveProperty('skillDistribution');
@@ -309,7 +309,7 @@ describe('getRiderRefreshCost', () => {
     expect(getRiderRefreshCost(null)).toBe(0);
   });
 
-  it('returns PREMIUM_REFRESH_COST for recent timestamp', () => {
+  it('returns premiumRefreshCost for recent timestamp', () => {
     const recent = new Date(Date.now() - 60 * 60 * 1000);
     expect(getRiderRefreshCost(recent)).toBe(riderMarketplaceConfig.premiumRefreshCost);
   });
@@ -319,12 +319,12 @@ describe('getRiderRefreshCost', () => {
 // trainerMarketplaceConfig
 // ---------------------------------------------------------------------------
 describe('trainerMarketplaceConfig', () => {
-  it('has DEFAULT_MARKETPLACE_SIZE', () => {
-    expect(typeof trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE).toBe('number');
+  it('has defaultMarketplaceSize', () => {
+    expect(typeof trainerMarketplaceConfig.defaultMarketplaceSize).toBe('number');
   });
 
-  it('SKILL_DISTRIBUTION sums to 100', () => {
-    const sum = Object.values(trainerMarketplaceConfig.SKILL_DISTRIBUTION).reduce((a, b) => a + b, 0);
+  it('skillDistribution sums to 100', () => {
+    const sum = Object.values(trainerMarketplaceConfig.skillDistribution).reduce((a, b) => a + b, 0);
     expect(sum).toBe(100);
   });
 
@@ -368,7 +368,7 @@ describe('generateRandomTrainer', () => {
   });
 
   it('skillLevel is one of known levels', () => {
-    const valid = new Set(Object.keys(trainerMarketplaceConfig.SKILL_DISTRIBUTION));
+    const valid = new Set(Object.keys(trainerMarketplaceConfig.skillDistribution));
     for (let i = 0; i < 20; i++) {
       expect(valid.has(generateRandomTrainer().skillLevel)).toBe(true);
     }
@@ -382,7 +382,7 @@ describe('generateTrainerMarketplace', () => {
   it('returns array of default size', () => {
     const m = generateTrainerMarketplace();
     expect(Array.isArray(m)).toBe(true);
-    expect(m).toHaveLength(trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE);
+    expect(m).toHaveLength(trainerMarketplaceConfig.defaultMarketplaceSize);
   });
 
   it('returns exact count when size given', () => {
@@ -425,9 +425,9 @@ describe('getTrainerRefreshCost', () => {
     expect(getTrainerRefreshCost(null)).toBe(0);
   });
 
-  it('returns PREMIUM_REFRESH_COST for recent timestamp', () => {
+  it('returns premiumRefreshCost for recent timestamp', () => {
     const recent = new Date(Date.now() - 60 * 60 * 1000);
-    expect(getTrainerRefreshCost(recent)).toBe(trainerMarketplaceConfig.PREMIUM_REFRESH_COST);
+    expect(getTrainerRefreshCost(recent)).toBe(trainerMarketplaceConfig.premiumRefreshCost);
   });
 
   it('returns 0 for expired timestamp', () => {

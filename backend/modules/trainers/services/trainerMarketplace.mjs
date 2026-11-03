@@ -12,14 +12,14 @@ import { disciplineValues } from '../../../constants/schema.mjs';
 import { drawStaffLevel, staffLevelFee, staffSkillOdds } from '../../../constants/staffLevels.mjs';
 
 export const trainerMarketplaceConfig = {
-  DEFAULT_MARKETPLACE_SIZE: 6,
-  REFRESH_INTERVAL_HOURS: 24,
-  PREMIUM_REFRESH_COST: 50,
+  defaultMarketplaceSize: 6,
+  refreshIntervalHours: 24,
+  premiumRefreshCost: 50,
 
   // Skill level distribution. Owner ruling 2026-10-28 (Equoria-nawn5): these odds, and
   // the session price (the star level's), live with the star levels in
   // backend/constants/staffLevels.mjs.
-  SKILL_DISTRIBUTION: staffSkillOdds('trainer'),
+  skillDistribution: staffSkillOdds('trainer'),
 
   // Discipline specialties: an even pick across every competition discipline
   // (owner ruling 2026-10-21), so a new discipline appears without an edit here.
@@ -170,9 +170,7 @@ function generateStarterTrainer() {
  * @param {number} size
  * @returns {Array}
  */
-export function generateTrainerMarketplace(
-  size = trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE,
-) {
+export function generateTrainerMarketplace(size = trainerMarketplaceConfig.defaultMarketplaceSize) {
   const marketplace = [generateStarterTrainer()];
   for (let i = 1; i < size; i++) {
     marketplace.push(generateRandomTrainer());
@@ -185,11 +183,11 @@ export function trainerMarketplaceNeedsRefresh(lastRefresh) {
     return true;
   }
   const hoursDiff = (Date.now() - new Date(lastRefresh).getTime()) / (1000 * 60 * 60);
-  return hoursDiff >= trainerMarketplaceConfig.REFRESH_INTERVAL_HOURS;
+  return hoursDiff >= trainerMarketplaceConfig.refreshIntervalHours;
 }
 
 export function getTrainerRefreshCost(lastRefresh) {
   return trainerMarketplaceNeedsRefresh(lastRefresh)
     ? 0
-    : trainerMarketplaceConfig.PREMIUM_REFRESH_COST;
+    : trainerMarketplaceConfig.premiumRefreshCost;
 }

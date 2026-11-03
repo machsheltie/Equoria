@@ -19,7 +19,8 @@
  * Never counted (not Equoria's to rename):
  *   - comments, regex literals, template-literal fragments;
  *   - environment variable names (collected from `process.env.X`,
- *     `import.meta.env.X` and the tracked `.env.example` files);
+ *     `import.meta.env.X`, k6's `__ENV.X` and the tracked `.env.example` files);
+ *   - members of JavaScript built-in globals (`Number.MAX_SAFE_INTEGER`);
  *   - import/export module specifiers;
  *   - Postgres physical names in Prisma `@map`/`@@map`/`map:` (kept by ruling);
  *   - genetic locus keys (`E_Extension`, `MFSD12_Mushroom`): upper-start
@@ -180,7 +181,34 @@ function parseCode(file, src) {
 
 function isEnvObject(expr) {
   const text = expr.getText();
-  return text === 'process.env' || text === 'import.meta.env' || /(^|\.)env$/.test(text);
+  // `__ENV` is k6's environment object (backend/tests/load/*.test.js).
+  return (
+    text === 'process.env' ||
+    text === 'import.meta.env' ||
+    text === '__ENV' ||
+    /(^|\.)env$/.test(text)
+  );
+}
+
+/**
+ * A member read off a JavaScript built-in global — `Number.POSITIVE_INFINITY`,
+ * `Number.MAX_SAFE_INTEGER` — is the language's name, not Equoria's. True when
+ * `node` is the member name of `Global.member`, `Global` is a property of the
+ * running engine's globalThis and the member is one of its own properties.
+ */
+function isBuiltinMember(node) {
+  const parent = node.parent;
+  if (!parent || !ts.isPropertyAccessExpression(parent) || parent.name !== node) return false;
+  const owner = parent.expression;
+  if (!ts.isIdentifier(owner) || !Object.prototype.hasOwnProperty.call(globalThis, owner.text)) {
+    return false;
+  }
+  const value = globalThis[owner.text];
+  return (
+    (typeof value === 'object' || typeof value === 'function') &&
+    value !== null &&
+    Object.prototype.hasOwnProperty.call(value, node.text)
+  );
 }
 
 /**
@@ -305,7 +333,7 @@ function scanCode(file, src, envNames, allow) {
         ((ts.isPropertyAssignment(parent) && parent.name === node) ||
           (ts.isPropertySignature(parent) && parent.name === node) ||
           (ts.isBindingElement(parent) && parent.propertyName === node));
-      if (!envMember && !envKey) record(node, node.text, 'identifier');
+      if (!envMember && !envKey && !isBuiltinMember(node)) record(node, node.text, 'identifier');
     } else if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
       if (
         !isModuleSpecifier(node) &&

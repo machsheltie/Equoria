@@ -49,7 +49,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = process.argv[2]
+const defaultRepoRoot = process.argv[2]
   ? path.resolve(process.argv[2])
   : path.resolve(scriptDir, '..', '..');
 
@@ -153,7 +153,7 @@ function isCommentLine(text) {
  * Pure detector — returns [{file, line, rule, text}] for every violation in
  * the given repo root. Exported for the sentinel test.
  */
-export function scanShadcnSemanticColors(repoRoot = REPO_ROOT) {
+export function scanShadcnSemanticColors(repoRoot = defaultRepoRoot) {
   const findings = [];
   const srcRoot = path.join(repoRoot, 'frontend', 'src');
   const files = [];
