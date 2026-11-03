@@ -23,10 +23,10 @@ import { AppError, ValidationError } from '../../../errors/index.mjs';
 // value only the login handler reads. The getter is awaited on BOTH
 // branches before the compare, so even the first request pays the one-time
 // generation equally whether or not the email is registered.
-let FAKE_BCRYPT_HASH = null;
+let fakeBcryptHash = null;
 function getFakeBcryptHash() {
-  FAKE_BCRYPT_HASH ??= bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
-  return FAKE_BCRYPT_HASH;
+  fakeBcryptHash ??= bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
+  return fakeBcryptHash;
 }
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -68,21 +68,21 @@ import { meetsCoppaMinimumAge, coppaMinAgeYears } from '../../../utils/humanAge.
 // Re-exported below for backward compatibility (existing tests still import
 // from this controller module by path).
 import {
-  STARTER_KIT_INVENTORY,
-  STARTER_CRAFTING_MATERIALS,
-  STARTER_BONUS_COINS,
+  starterKitInventory,
+  starterCraftingMaterials,
+  starterBonusCoins,
   // Equoria-448du: server-authoritative starting economy. Registration
   // never reads money/level/xp from the request body — these constants are
   // the canonical start for every new account.
-  STARTER_MONEY,
-  STARTER_LEVEL,
-  STARTER_XP,
+  starterMoney,
+  starterLevel,
+  starterXp,
 } from '../constants/authConstants.mjs';
 
 export {
-  STARTER_KIT_INVENTORY,
-  STARTER_CRAFTING_MATERIALS,
-  ALLOWED_PREFERENCE_KEYS,
+  starterKitInventory,
+  starterCraftingMaterials,
+  allowedPreferenceKeys,
 } from '../constants/authConstants.mjs';
 
 /**
@@ -107,8 +107,8 @@ export {
 export function buildStarterSettings() {
   return {
     completedOnboarding: false,
-    inventory: STARTER_KIT_INVENTORY,
-    craftingMaterials: { ...STARTER_CRAFTING_MATERIALS },
+    inventory: starterKitInventory,
+    craftingMaterials: { ...starterCraftingMaterials },
   };
 }
 
@@ -119,8 +119,8 @@ export const register = async (req, res, next) => {
   try {
     const { username, email, password, firstName, lastName, dateOfBirth } = req.body;
     // Equoria-448du: money / level / xp are NO LONGER read from req.body.
-    // They are server-authoritative (STARTER_MONEY / STARTER_LEVEL /
-    // STARTER_XP below) so a submitted economy field can never affect a new
+    // They are server-authoritative (starterMoney / starterLevel /
+    // starterXp below) so a submitted economy field can never affect a new
     // account's balance/level/xp — this no longer depends on
     // sanitizeRequestData stripping the fields upstream.
     // (Earlier: 'name', 'role', and 'settings' were also removed —
@@ -174,9 +174,9 @@ export const register = async (req, res, next) => {
 
     // Create user with starter kit in inventory and starter bonus coins.
     // Equoria-448du: starting balance is ALWAYS the server-authoritative
-    // STARTER_MONEY + STARTER_BONUS_COINS (10,000 per the 2026-07-07 economy
+    // starterMoney + starterBonusCoins (10,000 per the 2026-07-07 economy
     // ruling), regardless of any client-supplied money field (no longer read).
-    const startingMoney = STARTER_MONEY + STARTER_BONUS_COINS;
+    const startingMoney = starterMoney + starterBonusCoins;
     // Equoria-x5n89: at most four accounts per player. The device's count, the
     // new account and its sighting commit together under the device's signup lock.
     let user;
@@ -196,8 +196,8 @@ export const register = async (req, res, next) => {
             // Equoria-448du: server-authoritative economy. NOT sourced from
             // req.body — a client cannot self-seed money/level/xp at signup.
             money: startingMoney,
-            level: STARTER_LEVEL,
-            xp: STARTER_XP,
+            level: starterLevel,
+            xp: starterXp,
             // Equoria-aazk: starter settings are ALWAYS server-seeded so a
             // client-supplied settings body can never skip the crafting grant.
             settings: buildStarterSettings(),
@@ -324,7 +324,7 @@ export const login = async (req, res, next) => {
     // Equoria-gm4fg: timing-oracle fix. Always run bcrypt.compare regardless
     // of whether the user exists, so the wall-clock cost of "unknown email"
     // matches "known email + wrong password". The unknown-email branch runs
-    // the compare against FAKE_BCRYPT_HASH (a hash of a random secret that
+    // the compare against fakeBcryptHash (a hash of a random secret that
     // no submitted password can match) before returning the same 401. Do NOT
     // short-circuit on !user — that re-introduces the enumeration oracle.
     const fakeBcryptHash = await getFakeBcryptHash();

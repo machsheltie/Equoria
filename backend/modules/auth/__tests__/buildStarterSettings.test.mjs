@@ -10,17 +10,13 @@
  * `settings || {default}`, or dropping craftingMaterials) fails fast.
  */
 
-import {
-  buildStarterSettings,
-  STARTER_CRAFTING_MATERIALS,
-  STARTER_KIT_INVENTORY,
-} from '../controllers/authController.mjs';
+import { buildStarterSettings, starterCraftingMaterials, starterKitInventory } from '../controllers/authController.mjs';
 
 describe('buildStarterSettings value lock (Equoria-aazk)', () => {
-  test('STARTER_CRAFTING_MATERIALS affords at least one Tier 0 recipe', () => {
+  test('starterCraftingMaterials affords at least one Tier 0 recipe', () => {
     // basic-halter needs leather:1; simple-bridle needs leather:1,dye:1;
     // cloth-blanket needs cloth:2,dye:2,thread:1. The starter must cover one.
-    expect(STARTER_CRAFTING_MATERIALS).toEqual({
+    expect(starterCraftingMaterials).toEqual({
       leather: 2,
       cloth: 2,
       dye: 2,
@@ -32,8 +28,8 @@ describe('buildStarterSettings value lock (Equoria-aazk)', () => {
   test('buildStarterSettings always returns the full server-owned starter', () => {
     const s = buildStarterSettings();
     expect(s.completedOnboarding).toBe(false);
-    expect(s.inventory).toBe(STARTER_KIT_INVENTORY);
-    expect(s.craftingMaterials).toEqual(STARTER_CRAFTING_MATERIALS);
+    expect(s.inventory).toBe(starterKitInventory);
+    expect(s.craftingMaterials).toEqual(starterCraftingMaterials);
   });
 
   test('craftingMaterials is a fresh copy, not the shared constant reference', () => {
@@ -41,10 +37,10 @@ describe('buildStarterSettings value lock (Equoria-aazk)', () => {
     // poisoning every subsequent registration.
     const a = buildStarterSettings();
     const b = buildStarterSettings();
-    expect(a.craftingMaterials).not.toBe(STARTER_CRAFTING_MATERIALS);
+    expect(a.craftingMaterials).not.toBe(starterCraftingMaterials);
     expect(a.craftingMaterials).not.toBe(b.craftingMaterials);
     a.craftingMaterials.leather = 9999;
-    expect(STARTER_CRAFTING_MATERIALS.leather).toBe(2);
+    expect(starterCraftingMaterials.leather).toBe(2);
     expect(buildStarterSettings().craftingMaterials.leather).toBe(2);
   });
 

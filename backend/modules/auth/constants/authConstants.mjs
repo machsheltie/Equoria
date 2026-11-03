@@ -8,11 +8,11 @@
  *     prisma / bcrypt / jwt / mfa deps into a one-shot migration.
  *
  * Test-locking contracts (do NOT silently change values without owners):
- *   - STARTER_KIT_INVENTORY: backend/modules/auth/__tests__/starterKitInventory.test.mjs
+ *   - starterKitInventory: backend/modules/auth/__tests__/starterKitInventory.test.mjs
  *     (Equoria-oroi).
- *   - STARTER_CRAFTING_MATERIALS: backend/modules/auth/__tests__/buildStarterSettings.test.mjs
+ *   - starterCraftingMaterials: backend/modules/auth/__tests__/buildStarterSettings.test.mjs
  *     and backfillCraftingMaterials.integration.test.mjs (Equoria-aazk).
- *   - ALLOWED_PREFERENCE_KEYS: backend/modules/auth/__tests__/preferencesRoutes.integration.test.mjs
+ *   - allowedPreferenceKeys: backend/modules/auth/__tests__/preferencesRoutes.integration.test.mjs
  *     and users/services/settingsValidation.mjs (cross-module consumer).
  */
 
@@ -20,7 +20,7 @@
  * Starter kit seeded for every new user at registration (Story 15-2).
  * Any drift in itemId / name / bonus values must be intentional.
  */
-export const STARTER_KIT_INVENTORY = [
+export const starterKitInventory = [
   {
     id: 'starter-saddle',
     itemId: 'all-purpose-saddle',
@@ -43,7 +43,7 @@ export const STARTER_KIT_INVENTORY = [
  * Starter crafting materials — enough to craft at least one Tier 0 recipe (4.3 fix).
  * Tier 0 recipes: basic-halter (leather:1), cloth-blanket (cloth:2, dye:1, thread:1).
  */
-export const STARTER_CRAFTING_MATERIALS = Object.freeze({
+export const starterCraftingMaterials = Object.freeze({
   leather: 2,
   cloth: 2,
   dye: 2,
@@ -54,10 +54,10 @@ export const STARTER_CRAFTING_MATERIALS = Object.freeze({
 /**
  * One-time coin bonus added to a new account's starting money.
  * Set to 0 since the 2026-07-07 economy ruling folded the entire starting
- * grant into STARTER_MONEY (user decision: new players start at 10,000).
+ * grant into starterMoney (user decision: new players start at 10,000).
  * The mechanism is kept so a future signup-bonus promotion is a one-line change.
  */
-export const STARTER_BONUS_COINS = 0;
+export const starterBonusCoins = 0;
 
 /**
  * Server-authoritative starting economy for every brand-new account
@@ -72,17 +72,17 @@ export const STARTER_BONUS_COINS = 0;
  * using them unconditionally in the create() call makes the canonical start
  * explicit and removes the footgun.
  *
- * STARTER_MONEY is the base balance BEFORE STARTER_BONUS_COINS is added (the
- * account is credited STARTER_MONEY + STARTER_BONUS_COINS at create time).
+ * starterMoney is the base balance BEFORE starterBonusCoins is added (the
+ * account is credited starterMoney + starterBonusCoins at create time).
  * 10,000 + 0 = 10,000 per the owner-ratified economy ruling now recorded in
  * PRODUCT.md § "Economy and show rulings" (previously 1,000 + 500 = 1,500).
  *
  * Test-locking contract: backend/modules/auth/__tests__/registerEconomyFieldsServerAuthoritative.integration.test.mjs
  * (Equoria-448du). Any drift in these values must be intentional.
  */
-export const STARTER_MONEY = 10_000;
-export const STARTER_LEVEL = 1;
-export const STARTER_XP = 0;
+export const starterMoney = 10_000;
+export const starterLevel = 1;
+export const starterXp = 0;
 
 /**
  * Whitelisted preference keys persisted under `settings.preferences`.
@@ -95,7 +95,7 @@ export const STARTER_XP = 0;
  * Story 21S-5 — when adding a new preference, extend this list AND the
  * frontend types; unknown keys are rejected by the validator.
  */
-export const ALLOWED_PREFERENCE_KEYS = [
+export const allowedPreferenceKeys = [
   // Email notifications
   'emailCompetition',
   'emailBreeding',

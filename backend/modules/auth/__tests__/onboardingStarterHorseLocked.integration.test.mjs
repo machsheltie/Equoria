@@ -38,7 +38,7 @@ import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { isRosterTrait } from '../../../utils/epigeneticTraits.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const PLANTED_TEMPERAMENT = 'TestFixture-planted-temperament';
+const plantedTemperament = 'TestFixture-planted-temperament';
 
 describe('POST /auth/advance-onboarding — starter horse is chosen once (Equoria-gu8jk)', () => {
   const userIds = [];
@@ -94,7 +94,7 @@ describe('POST /auth/advance-onboarding — starter horse is chosen once (Equori
         sex: 'Mare',
         age: 3,
         dateOfBirth: new Date(2023, 0, 1),
-        temperament: PLANTED_TEMPERAMENT,
+        temperament: plantedTemperament,
         speed: 11,
       }),
     });
@@ -162,7 +162,7 @@ describe('POST /auth/advance-onboarding — starter horse is chosen once (Equori
   });
 
   it.each([
-    ['temperament', PLANTED_TEMPERAMENT],
+    ['temperament', plantedTemperament],
     ['personality', 'TestFixture-planted-personality'],
     ['epigeneticModifiers', { positive: ['legendaryBloodline'], negative: [], hidden: [] }],
     ['epigeneticFlags', ['brave']],

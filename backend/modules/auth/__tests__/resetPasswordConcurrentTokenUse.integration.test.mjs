@@ -45,7 +45,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const EMAIL_PREFIX = 'bvddn9_reset_';
+const emailPrefix = 'bvddn9_reset_';
 
 const sha256 = value => createHash('sha256').update(value).digest('hex');
 
@@ -59,7 +59,7 @@ afterEach(async () => {
   captureFile = null;
 
   const users = await prisma.user.findMany({
-    where: { email: { startsWith: EMAIL_PREFIX } },
+    where: { email: { startsWith: emailPrefix } },
     select: { id: true },
   });
   const ids = users.map(u => u.id);
@@ -85,7 +85,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 describe('Equoria-bvddn.9 — reset-password token cannot be consumed by two concurrent submissions', () => {
   it('EXPLICIT_LOCK sentinel: two real reset-password requests forced to race the same token — exactly one succeeds', async () => {
     const timestamp = Date.now();
-    const email = `${EMAIL_PREFIX}lock_${timestamp}@example.com`;
+    const email = `${emailPrefix}lock_${timestamp}@example.com`;
     const originalPassword = 'OriginalPass1!Bat';
     const candidateA = 'ConcurrentA1!Batt';
     const candidateB = 'ConcurrentB2!Batt';
@@ -97,7 +97,7 @@ describe('Equoria-bvddn.9 — reset-password token cannot be consumed by two con
     await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${EMAIL_PREFIX}lock_${timestamp}`,
+        username: `${emailPrefix}lock_${timestamp}`,
         email,
         password: hashedOriginal,
         firstName: 'Concurrent',

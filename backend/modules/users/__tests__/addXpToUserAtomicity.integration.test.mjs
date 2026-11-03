@@ -44,14 +44,14 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { addXpToUser } from '../services/userModelService.mjs';
 
 const CONCURRENCY = 10;
-const XP_EACH = 5; // 10 x 5 = 50
+const xpEach = 5; // 10 x 5 = 50
 
 // A NUL character (char code 0), built at runtime so the SOURCE file contains no
 // literal NUL byte. It is a valid JS string that passes addXpToUser's reason
 // validation, but Postgres text columns reject NUL, so xpEvent.create throws at
 // the DB boundary while the xp increment would otherwise apply — the exact
 // injection needed to prove the audit row is inside the transaction.
-const NUL_CHAR = String.fromCharCode(0);
+const nulChar = String.fromCharCode(0);
 
 const createdUserIds = [];
 
@@ -87,7 +87,7 @@ describe('INTEGRATION: addXpToUser atomic XP award (Equoria-jvi3u)', () => {
     const user = await makeUser(0);
 
     const results = await Promise.all(
-      Array.from({ length: CONCURRENCY }, () => addXpToUser(user.id, XP_EACH, 'TestFixture-jvi3u-concurrent')),
+      Array.from({ length: CONCURRENCY }, () => addXpToUser(user.id, xpEach, 'TestFixture-jvi3u-concurrent')),
     );
 
     // Every award must succeed.
@@ -101,12 +101,12 @@ describe('INTEGRATION: addXpToUser atomic XP award (Equoria-jvi3u)', () => {
     const eventSum = events.reduce((sum, e) => sum + e.amount, 0);
 
     // XP conservation: all N increments applied (pre-fix: last-writer-wins loses most).
-    expect(after.xp).toBe(CONCURRENCY * XP_EACH); // 50
+    expect(after.xp).toBe(CONCURRENCY * xpEach); // 50
     // Level stays 1 (floor(50/100) + 1 == 1).
     expect(after.level).toBe(1);
     // Audit consistency: one event per award, and xp == SUM(events) (base was 0).
     expect(events.length).toBe(CONCURRENCY); // 10
-    expect(eventSum).toBe(CONCURRENCY * XP_EACH); // 50
+    expect(eventSum).toBe(CONCURRENCY * xpEach); // 50
     expect(after.xp).toBe(eventSum);
   }, 120000);
 
@@ -116,7 +116,7 @@ describe('INTEGRATION: addXpToUser atomic XP award (Equoria-jvi3u)', () => {
     const user = await makeUser(70);
 
     const results = await Promise.all(
-      Array.from({ length: CONCURRENCY }, () => addXpToUser(user.id, XP_EACH, 'TestFixture-jvi3u-levelup')),
+      Array.from({ length: CONCURRENCY }, () => addXpToUser(user.id, xpEach, 'TestFixture-jvi3u-levelup')),
     );
     expect(results.every(r => r.success)).toBe(true);
 
@@ -126,7 +126,7 @@ describe('INTEGRATION: addXpToUser atomic XP award (Equoria-jvi3u)', () => {
     });
     const events = await prisma.xpEvent.findMany({ where: { userId: user.id } });
 
-    expect(after.xp).toBe(70 + CONCURRENCY * XP_EACH); // 120
+    expect(after.xp).toBe(70 + CONCURRENCY * xpEach); // 120
     // Threshold crossed exactly once: 70 (L1) -> 120 (L2). Never over/under-shoots.
     expect(after.level).toBe(2);
     expect(events.length).toBe(CONCURRENCY); // 10
@@ -138,7 +138,7 @@ describe('INTEGRATION: addXpToUser atomic XP award (Equoria-jvi3u)', () => {
   it('SENTINEL: a failure at the audit-create boundary rolls back the XP write (atomicity)', async () => {
     const user = await makeUser(0);
 
-    const result = await addXpToUser(user.id, XP_EACH, `bad${NUL_CHAR}reason`);
+    const result = await addXpToUser(user.id, xpEach, `bad${nulChar}reason`);
 
     expect(result.success).toBe(false);
 
@@ -183,12 +183,12 @@ describe('INTEGRATION: addXpToUser atomic XP award (Equoria-jvi3u)', () => {
   it('two-arg backward-compat call still writes an audit event with the default reason', async () => {
     const user = await makeUser(0);
 
-    const result = await addXpToUser(user.id, XP_EACH); // no reason arg
+    const result = await addXpToUser(user.id, xpEach); // no reason arg
 
     expect(result.success).toBe(true);
     const events = await prisma.xpEvent.findMany({ where: { userId: user.id } });
     expect(events.length).toBe(1);
-    expect(events[0].amount).toBe(XP_EACH);
+    expect(events[0].amount).toBe(xpEach);
     expect(events[0].reason).toBe('XP award');
   }, 120000);
 });

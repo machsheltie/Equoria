@@ -82,8 +82,8 @@ const extractCookie = (cookies, name) => {
 // user rows and cleanup never crosses test boundaries (CLAUDE.md §3 scoped
 // cleanup). Both are name-scoped under the shared `progress-test` prefix that
 // the email-scoped cleanup arms below catch via a `startsWith` probe.
-const WORKFLOW_EMAIL = 'progress-test@example.com';
-const EDGECASE_EMAIL = 'progress-test-edgecase@example.com';
+const workflowEmail = 'progress-test@example.com';
+const edgecaseEmail = 'progress-test-edgecase@example.com';
 
 describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () => {
   // Fail-loud, scoped cleanup tracker (Equoria-cu3t5). Replaces the swallowed
@@ -158,7 +158,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         username: 'progresstest',
         firstName: 'Progress',
         lastName: 'Test',
-        email: WORKFLOW_EMAIL,
+        email: workflowEmail,
         password: 'TestPassword123!',
         // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
         dateOfBirth: '1990-01-01',
@@ -175,7 +175,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       .post('/api/v1/auth/login')
       .set('Origin', 'http://localhost:3000')
       .send({
-        email: WORKFLOW_EMAIL,
+        email: workflowEmail,
         password: 'TestPassword123!',
       })
       .expect(200);
@@ -558,7 +558,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         username: 'progresstestedge',
         firstName: 'ProgressEdge',
         lastName: 'Test',
-        email: EDGECASE_EMAIL,
+        email: edgecaseEmail,
         password: 'TestPassword123!',
         dateOfBirth: '1990-01-01',
       })
@@ -572,7 +572,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       .post('/api/v1/auth/login')
       .set('Origin', 'http://localhost:3000')
       .send({
-        email: EDGECASE_EMAIL,
+        email: edgecaseEmail,
         password: 'TestPassword123!',
       })
       .expect(200);

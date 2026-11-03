@@ -46,9 +46,9 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
 
   // Counts chosen so the over-cap user has a clear excess and the under-cap
   // user is comfortably below the 100 cap.
-  const OVER_CAP_TOTAL = notificationRetentionCount + 25; // 125
-  const UNDER_CAP_TOTAL = 7;
-  const NON_ADMIN_TOTAL = notificationRetentionCount + 15; // 115
+  const overCapTotal = notificationRetentionCount + 25; // 125
+  const underCapTotal = 7;
+  const nonAdminTotal = notificationRetentionCount + 15; // 115
 
   const makeUser = async overrides => {
     const pw = await bcrypt.hash('AdminPassword123!', 1);
@@ -90,9 +90,9 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
     adminDevice = await checkedInDeviceCookie(adminUser.id);
     nonAdminToken = generateTestToken({ id: nonAdminUser.id, role: 'user' });
 
-    await seedNotifications(overCapUser.id, OVER_CAP_TOTAL);
-    await seedNotifications(underCapUser.id, UNDER_CAP_TOTAL);
-    await seedNotifications(nonAdminUser.id, NON_ADMIN_TOTAL);
+    await seedNotifications(overCapUser.id, overCapTotal);
+    await seedNotifications(underCapUser.id, underCapTotal);
+    await seedNotifications(nonAdminUser.id, nonAdminTotal);
   }, 120000);
 
   afterAll(async () => {
@@ -115,7 +115,7 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
 
     // The non-admin's over-cap backlog must be untouched by the rejected call.
     const count = await prisma.notification.count({ where: { userId: nonAdminUser.id } });
-    expect(count).toBe(NON_ADMIN_TOTAL);
+    expect(count).toBe(nonAdminTotal);
   });
 
   it('admin call prunes over-cap user to exactly the cap and leaves under-cap user untouched', async () => {
@@ -142,13 +142,13 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
       select: { payload: true },
     });
     expect(survivors).toHaveLength(notificationRetentionCount);
-    // We seeded OVER_CAP_TOTAL rows idx 0..(OVER_CAP_TOTAL-1); deleting the
+    // We seeded overCapTotal rows idx 0..(overCapTotal-1); deleting the
     // oldest 25 leaves idx 25..124 as the survivors.
-    expect(survivors[0].payload).toMatchObject({ idx: OVER_CAP_TOTAL - notificationRetentionCount });
-    expect(survivors[survivors.length - 1].payload).toMatchObject({ idx: OVER_CAP_TOTAL - 1 });
+    expect(survivors[0].payload).toMatchObject({ idx: overCapTotal - notificationRetentionCount });
+    expect(survivors[survivors.length - 1].payload).toMatchObject({ idx: overCapTotal - 1 });
 
     // (b) under-cap user untouched.
     const underCount = await prisma.notification.count({ where: { userId: underCapUser.id } });
-    expect(underCount).toBe(UNDER_CAP_TOTAL);
+    expect(underCount).toBe(underCapTotal);
   }, 120000);
 });

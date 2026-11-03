@@ -40,7 +40,7 @@ const EVENINGS = [
   ['winter, 22:30 EST', new Date('2026-12-12T03:30:00.000Z')],
 ];
 
-const REAL_EXCEPT_DATE = [
+const realExceptDate = [
   'hrtime',
   'nextTick',
   'performance',
@@ -59,7 +59,7 @@ const REAL_EXCEPT_DATE = [
 
 /** Run `fn` with the wall clock (Date only) frozen at `instant`. */
 async function at(instant, fn) {
-  jest.useFakeTimers({ now: instant, doNotFake: REAL_EXCEPT_DATE });
+  jest.useFakeTimers({ now: instant, doNotFake: realExceptDate });
   try {
     return await fn();
   } finally {

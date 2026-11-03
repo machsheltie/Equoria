@@ -7,7 +7,7 @@
  * generator was emitting `__Host-csrf` in production while the validator
  * read `_csrf` — breaking every real-world mutation.
  *
- * The correction unified both ends behind `CSRF_COOKIE_NAME` in
+ * The correction unified both ends behind `csrfCookieName` in
  * `backend/middleware/csrf.mjs`. This file proves two things the checklist
  * demands:
  *
@@ -54,8 +54,8 @@ const probePath = path.resolve(__dirname, '../../../tests/helpers/csrf-productio
 
 describe('CSRF cookie-name contract', () => {
   it('resolves to `_csrf` in the current (non-production) test env', async () => {
-    const { csrfCookieName: CSRF_COOKIE_NAME } = await import('../../../middleware/csrf.mjs');
-    expect(CSRF_COOKIE_NAME).toBe('_csrf');
+    const { csrfCookieName } = await import('../../../middleware/csrf.mjs');
+    expect(csrfCookieName).toBe('_csrf');
   });
 
   it('GET /api/v1/auth/csrf-token under NODE_ENV=production emits __Host-csrf Set-Cookie', () => {
@@ -65,7 +65,7 @@ describe('CSRF cookie-name contract', () => {
     // @sentry/core, while still exercising the real middleware/app.
     // Inherit real test-env secrets (DATABASE_URL / JWT_SECRET / …) so
     // config.mjs passes its required-vars check, then flip NODE_ENV to
-    // production so csrf.mjs resolves CSRF_COOKIE_NAME to `__Host-csrf`.
+    // production so csrf.mjs resolves csrfCookieName to `__Host-csrf`.
     // The request never touches the DB (csrf-token route is middleware-only),
     // so pointing at the test DATABASE_URL is safe.
     const result = spawnSync(process.execPath, ['--experimental-vm-modules', probePath], {

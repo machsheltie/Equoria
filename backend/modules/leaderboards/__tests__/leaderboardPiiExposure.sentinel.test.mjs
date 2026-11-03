@@ -51,9 +51,9 @@ const cleanup = createCleanupTracker();
 // Using values that are clearly distinguishable so we can assert each one
 // independently in the response bodies.
 const RNG = randomBytes(6).toString('hex');
-const FIXTURE_FIRST = `PIIFirstSentinel${RNG}`;
-const FIXTURE_LAST = `PIILastSentinel${RNG}`;
-const FIXTURE_USERNAME = `pii_username_${RNG}`;
+const fixtureFirst = `PIIFirstSentinel${RNG}`;
+const fixtureLast = `PIILastSentinel${RNG}`;
+const fixtureUsername = `pii_username_${RNG}`;
 
 let fixtureUser;
 let token;
@@ -81,10 +81,10 @@ beforeAll(async () => {
     data: {
       emailVerified: true,
       email: `pii-sentinel-${RNG}@testfixture.invalid`,
-      username: FIXTURE_USERNAME,
+      username: fixtureUsername,
       password: 'irrelevant-hash',
-      firstName: FIXTURE_FIRST,
-      lastName: FIXTURE_LAST,
+      firstName: fixtureFirst,
+      lastName: fixtureLast,
       money: 0,
       level: 99, // high level so they appear at the top of the level leaderboard
       xp: 9999999, // top xp so they appear on the first page of the playerXp board
@@ -142,11 +142,11 @@ function bodyString(res) {
 function assertPiiNotExposed(res) {
   const body = bodyString(res);
   // firstName must NOT appear anywhere in the response
-  expect(body).not.toContain(FIXTURE_FIRST);
+  expect(body).not.toContain(fixtureFirst);
   // lastName must NOT appear anywhere in the response
-  expect(body).not.toContain(FIXTURE_LAST);
+  expect(body).not.toContain(fixtureLast);
   // username MUST appear somewhere in the response
-  expect(body).toContain(FIXTURE_USERNAME);
+  expect(body).toContain(fixtureUsername);
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -172,7 +172,7 @@ describe('PII exposure sentinel — leaderboard endpoints (Equoria-2gfor)', () =
 
     assertPiiNotExposed(res);
 
-    expect(fixtureEntry.ownerName).toBe(FIXTURE_USERNAME);
+    expect(fixtureEntry.ownerName).toBe(fixtureUsername);
   });
 
   it('GET /api/v1/leaderboards/boards/horseEarnings — does NOT expose firstName/lastName in ownerName', async () => {
@@ -190,7 +190,7 @@ describe('PII exposure sentinel — leaderboard endpoints (Equoria-2gfor)', () =
 
     assertPiiNotExposed(res);
 
-    expect(fixtureEntry.ownerName).toBe(FIXTURE_USERNAME);
+    expect(fixtureEntry.ownerName).toBe(fixtureUsername);
   });
 
   it('GET /api/v1/leaderboards/user-summary/:userId — does NOT expose firstName/lastName in userName', async () => {
@@ -204,6 +204,6 @@ describe('PII exposure sentinel — leaderboard endpoints (Equoria-2gfor)', () =
     assertPiiNotExposed(res);
 
     // The top-level `userName` field must be the username handle
-    expect(res.body.userName).toBe(FIXTURE_USERNAME);
+    expect(res.body.userName).toBe(fixtureUsername);
   });
 });

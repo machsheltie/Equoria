@@ -35,7 +35,7 @@ import { confirmEmail } from '../../../tests/helpers/confirmEmail.mjs';
 _jest.setTimeout(120000);
 
 const ORIGIN = 'http://localhost:3000';
-const TEST_EMAIL_PREFIX = 'csrftest';
+const testEmailPrefix = 'csrftest';
 
 const extractAccessCookie = setCookieHeader => {
   const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : setCookieHeader ? [setCookieHeader] : [];
@@ -56,17 +56,17 @@ describe('CSRF protection — real browser flow', () => {
     // user owns a starter horse, so horses must go before users — both for
     // this suite's fixtures and any leaked-prefix rows from prior runs.
     await prisma.horse.deleteMany({
-      where: { user: { email: { startsWith: TEST_EMAIL_PREFIX } } },
+      where: { user: { email: { startsWith: testEmailPrefix } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { startsWith: TEST_EMAIL_PREFIX } },
+      where: { email: { startsWith: testEmailPrefix } },
     });
   });
 
   beforeEach(async () => {
     const unique = `${randomBytes(8).toString('hex')}${Math.floor(Math.random() * 10000)}`;
-    const email = `${TEST_EMAIL_PREFIX}${unique}@test.com`;
-    const username = `${TEST_EMAIL_PREFIX}${unique}`;
+    const email = `${testEmailPrefix}${unique}@test.com`;
+    const username = `${testEmailPrefix}${unique}`;
 
     const res = await request(app).post('/api/v1/auth/register').set('Origin', ORIGIN).send({
       email,
@@ -103,10 +103,10 @@ describe('CSRF protection — real browser flow', () => {
 
   afterAll(async () => {
     await prisma.horse.deleteMany({
-      where: { user: { email: { startsWith: TEST_EMAIL_PREFIX } } },
+      where: { user: { email: { startsWith: testEmailPrefix } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { startsWith: TEST_EMAIL_PREFIX } },
+      where: { email: { startsWith: testEmailPrefix } },
     });
   });
 
@@ -288,8 +288,8 @@ describe('CSRF cookie lifetime — decoupled from access token (21R-AUTH-2)', ()
   it('issues CSRF cookie with 24h Max-Age, longer than the 15-min access token', async () => {
     // Express converts cookie maxAge (ms) into the Set-Cookie Max-Age
     // directive in seconds.
-    const ACCESS_TOKEN_MAX_AGE_SECS = 15 * 60; // 900s
-    const CSRF_COOKIE_MAX_AGE_SECS = 24 * 60 * 60; // 86400s
+    const accessTokenMaxAgeSecs = 15 * 60; // 900s
+    const csrfCookieMaxAgeSecs = 24 * 60 * 60; // 86400s
 
     const res = await request(app).get('/api/v1/auth/csrf-token').set('Origin', 'http://localhost:3000');
     expect(res.status).toBe(200);
@@ -302,7 +302,7 @@ describe('CSRF cookie lifetime — decoupled from access token (21R-AUTH-2)', ()
     expect(maxAgeMatch).toBeTruthy();
     const csrfMaxAge = Number(maxAgeMatch[1]);
 
-    expect(csrfMaxAge).toBe(CSRF_COOKIE_MAX_AGE_SECS);
-    expect(csrfMaxAge).toBeGreaterThan(ACCESS_TOKEN_MAX_AGE_SECS);
+    expect(csrfMaxAge).toBe(csrfCookieMaxAgeSecs);
+    expect(csrfMaxAge).toBeGreaterThan(accessTokenMaxAgeSecs);
   });
 });

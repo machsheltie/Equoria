@@ -13,8 +13,8 @@
  * submitted `money: 999999` would have been honored.
  *
  * Fix (Equoria-448du): the controller no longer reads money/level/xp from the
- * body. They are pinned to server-authoritative constants (STARTER_MONEY +
- * STARTER_BONUS_COINS / STARTER_LEVEL / STARTER_XP) and used unconditionally.
+ * body. They are pinned to server-authoritative constants (starterMoney +
+ * starterBonusCoins / starterLevel / starterXp) and used unconditionally.
  *
  * AC:
  *   - controller no longer reads money/level/xp from request body;
@@ -40,10 +40,10 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { register } from '../controllers/authController.mjs';
-import { STARTER_MONEY, STARTER_LEVEL, STARTER_XP, STARTER_BONUS_COINS } from '../constants/authConstants.mjs';
+import { starterMoney, starterLevel, starterXp, starterBonusCoins } from '../constants/authConstants.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const CANONICAL_STARTING_MONEY = STARTER_MONEY + STARTER_BONUS_COINS; // 1500
+const canonicalStartingMoney = starterMoney + starterBonusCoins; // 1500
 
 function uniq(prefix) {
   return `${prefix}${randomBytes(6).toString('hex')}`;
@@ -109,15 +109,15 @@ describe('INTEGRATION: register economy fields are server-authoritative (Equoria
       select: { money: true, level: true, xp: true },
     });
 
-    expect(user.money).toBe(CANONICAL_STARTING_MONEY); // 1000 + 500, NOT 999999
-    expect(user.level).toBe(STARTER_LEVEL); // 1, NOT 99
-    expect(user.xp).toBe(STARTER_XP); // 0, NOT 99999
+    expect(user.money).toBe(canonicalStartingMoney); // 1000 + 500, NOT 999999
+    expect(user.level).toBe(starterLevel); // 1, NOT 99
+    expect(user.xp).toBe(starterXp); // 0, NOT 99999
 
     // The response envelope must also reflect the canonical values, not the
     // submitted ones (no leak of the attacker's intent back to the client).
-    expect(body.data.user.money).toBe(CANONICAL_STARTING_MONEY);
-    expect(body.data.user.level).toBe(STARTER_LEVEL);
-    expect(body.data.user.xp).toBe(STARTER_XP);
+    expect(body.data.user.money).toBe(canonicalStartingMoney);
+    expect(body.data.user.level).toBe(starterLevel);
+    expect(body.data.user.xp).toBe(starterXp);
   }, 60000);
 
   it('normal registration (no economy fields) is unchanged — canonical defaults', async () => {
@@ -128,13 +128,13 @@ describe('INTEGRATION: register economy fields are server-authoritative (Equoria
       select: { money: true, level: true, xp: true },
     });
 
-    expect(user.money).toBe(CANONICAL_STARTING_MONEY);
-    expect(user.level).toBe(STARTER_LEVEL);
-    expect(user.xp).toBe(STARTER_XP);
+    expect(user.money).toBe(canonicalStartingMoney);
+    expect(user.level).toBe(starterLevel);
+    expect(user.xp).toBe(starterXp);
 
-    expect(body.data.user.money).toBe(CANONICAL_STARTING_MONEY);
-    expect(body.data.user.level).toBe(STARTER_LEVEL);
-    expect(body.data.user.xp).toBe(STARTER_XP);
+    expect(body.data.user.money).toBe(canonicalStartingMoney);
+    expect(body.data.user.level).toBe(starterLevel);
+    expect(body.data.user.xp).toBe(starterXp);
   }, 60000);
 
   it('a partial economy injection (money only) still cannot move the balance', async () => {
@@ -144,9 +144,9 @@ describe('INTEGRATION: register economy fields are server-authoritative (Equoria
       where: { id: userId },
       select: { money: true, level: true, xp: true },
     });
-    expect(user.money).toBe(CANONICAL_STARTING_MONEY);
-    expect(user.level).toBe(STARTER_LEVEL);
-    expect(user.xp).toBe(STARTER_XP);
+    expect(user.money).toBe(canonicalStartingMoney);
+    expect(user.level).toBe(starterLevel);
+    expect(user.xp).toBe(starterXp);
   }, 60000);
 });
 
@@ -256,8 +256,8 @@ describe('SENTINEL: register() controller ignores body economy fields even witho
     });
 
     // The load-bearing assertions: pre-fix these would be 1000499.../99/99999.
-    expect(user.money).toBe(CANONICAL_STARTING_MONEY); // NOT 999999 + 500
-    expect(user.level).toBe(STARTER_LEVEL); // NOT 99
-    expect(user.xp).toBe(STARTER_XP); // NOT 99999
+    expect(user.money).toBe(canonicalStartingMoney); // NOT 999999 + 500
+    expect(user.level).toBe(starterLevel); // NOT 99
+    expect(user.xp).toBe(starterXp); // NOT 99999
   }, 60000);
 });

@@ -22,7 +22,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
-const MAX_ITEMS = 8;
+const maxItems = 8;
 // A foal is a horse under game age 3.
 const foalAgeLimit = 3;
 
@@ -302,14 +302,14 @@ export async function getWhileYouWereGone(req, res) {
       return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
     });
 
-    const limited = items.slice(0, MAX_ITEMS);
+    const limited = items.slice(0, maxItems);
 
     return res.status(200).json({
       success: true,
       data: {
         items: limited,
         since: since.toISOString(),
-        hasMore: items.length > MAX_ITEMS,
+        hasMore: items.length > maxItems,
         ...(dataWarnings.length > 0 && { dataWarnings }),
       },
     });

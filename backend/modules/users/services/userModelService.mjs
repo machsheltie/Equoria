@@ -8,7 +8,7 @@ const xpPerLevel = 100;
 // Default audit reason for an award whose caller supplies none (e.g. the admin
 // `POST /api/user/:id/add-xp` path). XpEvent.reason is a NOT-NULL text column, so
 // the tx-aware core always needs a non-empty string here (Equoria-jvi3u).
-const DEFAULT_XP_REASON = 'XP award';
+const defaultXpReason = 'XP award';
 
 /**
  * The canonical stored level for a given cumulative xp (owner decision
@@ -318,7 +318,7 @@ async function addXpToUserCore(db, userId, amount, reason) {
  *   Callers that previously called `logXpEvent` separately now pass their reason
  *   here (competition/training controllers) so the event is written once, in-tx.
  */
-async function addXpToUser(userId, amount, reason = DEFAULT_XP_REASON) {
+async function addXpToUser(userId, amount, reason = defaultXpReason) {
   try {
     if (!userId) {
       throw new Error('User ID is required.');

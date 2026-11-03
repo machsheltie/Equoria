@@ -42,7 +42,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { createStarterHorseForNewUser } from '../services/onboardingService.mjs';
 import { defaultTemperamentBreed } from '../../horses/index.mjs';
 
-const SERVICE_SRC = readFileSync(
+const serviceSrc = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), '../services/onboardingService.mjs'),
   'utf8',
 );
@@ -136,7 +136,7 @@ describe('INTEGRATION: onboarding starter horse is fail-closed on breed (Equoria
     // Equoria team lesson: prove the guard, not the intention. This is the exact
     // defect shape that produced the breedless population — a conditional spread
     // that silently omits breedId instead of refusing to write.
-    expect(SERVICE_SRC).not.toMatch(/\.\.\.\(\s*defaultBreedId\s*!==\s*null\s*&&/);
-    expect(SERVICE_SRC).not.toMatch(/\.\.\.\(\s*\w*[Bb]reedId\s*(!==|!=)\s*null\s*&&\s*\{\s*breedId/);
+    expect(serviceSrc).not.toMatch(/\.\.\.\(\s*defaultBreedId\s*!==\s*null\s*&&/);
+    expect(serviceSrc).not.toMatch(/\.\.\.\(\s*\w*[Bb]reedId\s*(!==|!=)\s*null\s*&&\s*\{\s*breedId/);
   });
 });

@@ -69,7 +69,7 @@ import {
 } from '../../horses/index.mjs';
 import { generateStoreHorseTraitRoster } from '../../traits/index.mjs';
 
-const STARTER_HORSE_AGE_GAME_YEARS = 3;
+const starterHorseAgeGameYears = 3;
 
 const starterHorseNameSuffix = "'s First Horse";
 
@@ -114,7 +114,7 @@ export async function createStarterHorseForNewUser(
     // Equoria game-year convention: 1 game-year = 7 real days. A 3-game-year
     // starter horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
     // (which the canonical age helper would read as ~156 game-years).
-    const dateOfBirth = birthDateForAge(STARTER_HORSE_AGE_GAME_YEARS);
+    const dateOfBirth = birthDateForAge(starterHorseAgeGameYears);
 
     // Equoria-b9zgr: resolve the breed id so the starter horse is never born
     // with a NULL breedId (the prior behaviour left every registration starter

@@ -23,15 +23,15 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { accessTokenTtlMs, refreshTokenTtlMs, getNow, _setNowFn } from '../../../utils/cookieConfig.mjs';
 
-const SUITE_PREFIX = 'seslife21r';
+const suitePrefix = 'seslife21r';
 
 const credentials = {
-  email: `${SUITE_PREFIX}-main@example.com`,
+  email: `${suitePrefix}-main@example.com`,
   // Equoria ASVS L1 password policy (passwordComplexityAsvsL1): 12-128 chars,
   // all four classes (lower/upper/digit/special). The old 11-char fixture
   // ('SesLife1!Aa') now correctly 400s at registration.
   password: 'SesLife21R!Aa',
-  username: `${SUITE_PREFIX}_main`,
+  username: `${suitePrefix}_main`,
   firstName: 'Ses',
   lastName: 'Life',
   // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
@@ -44,7 +44,7 @@ let server;
 async function cleanupSuiteUsers() {
   const rows = await prisma.user.findMany({
     where: {
-      OR: [{ email: { startsWith: `${SUITE_PREFIX}-` } }, { username: { startsWith: `${SUITE_PREFIX}_` } }],
+      OR: [{ email: { startsWith: `${suitePrefix}-` } }, { username: { startsWith: `${suitePrefix}_` } }],
     },
     select: { id: true },
   });

@@ -7,7 +7,7 @@
  * the registered branch still does more work (an UPDATE + INSERT transaction
  * and the email template build). That additive difference is a timing oracle
  * for "is this email registered?". The fix makes the handler wait until
- * `startedAt + FORGOT_PASSWORD_MIN_RESPONSE_MS` before it answers, on both
+ * `startedAt + forgotPasswordMinResponseMs` before it answers, on both
  * branches, so response time no longer depends on the work done.
  *
  * What it asserts
@@ -38,19 +38,19 @@ import * as passwordController from '../controllers/passwordController.mjs';
 
 // Namespace import: if the export is ever removed this reads undefined and the
 // assertions below fail with the measured durations, not a module load error.
-const FORGOT_PASSWORD_MIN_RESPONSE_MS = passwordController.FORGOT_PASSWORD_MIN_RESPONSE_MS;
+const forgotPasswordMinResponseMs = passwordController.forgotPasswordMinResponseMs;
 
 // The route validator lowercases the email, so the fixture email is lowercase.
-const EMAIL_PREFIX = 'testfixture-jeci6floor';
-const SAMPLES_PER_BRANCH = 4;
-const OWNER_APPROVED_MIN_FLOOR_MS = 1000;
+const emailPrefix = 'testfixture-jeci6floor';
+const samplesPerBranch = 4;
+const ownerApprovedMinFloorMs = 1000;
 
 const createdUserIds = [];
 let knownEmail;
 
 beforeAll(async () => {
   const tag = randomBytes(6).toString('hex');
-  knownEmail = `${EMAIL_PREFIX}-${tag}@example.com`;
+  knownEmail = `${emailPrefix}-${tag}@example.com`;
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
@@ -84,25 +84,25 @@ async function timedForgot(email) {
 
 describe('Sentinel: forgot-password response floor (Equoria-jeci6)', () => {
   it('the floor is the owner-approved value (at least 1000 ms)', () => {
-    expect(typeof FORGOT_PASSWORD_MIN_RESPONSE_MS).toBe('number');
-    expect(FORGOT_PASSWORD_MIN_RESPONSE_MS).toBeGreaterThanOrEqual(OWNER_APPROVED_MIN_FLOOR_MS);
+    expect(typeof forgotPasswordMinResponseMs).toBe('number');
+    expect(forgotPasswordMinResponseMs).toBeGreaterThanOrEqual(ownerApprovedMinFloorMs);
   });
 
   it('registered and unknown emails both wait at least the floor before answering', async () => {
     const samples = [];
-    for (let i = 0; i < SAMPLES_PER_BRANCH; i++) {
+    for (let i = 0; i < samplesPerBranch; i++) {
       samples.push({ branch: 'registered', ...(await timedForgot(knownEmail)) });
       samples.push({
         branch: 'unknown',
-        ...(await timedForgot(`${EMAIL_PREFIX}-nobody-${randomBytes(6).toString('hex')}@example.com`)),
+        ...(await timedForgot(`${emailPrefix}-nobody-${randomBytes(6).toString('hex')}@example.com`)),
       });
     }
 
-    expect(samples.map(s => s.status)).toEqual(Array(SAMPLES_PER_BRANCH * 2).fill(200));
+    expect(samples.map(s => s.status)).toEqual(Array(samplesPerBranch * 2).fill(200));
     // Lists every sample that answered early, so a failure shows which branch
     // lost the floor and by how much.
     const early = samples
-      .filter(s => !(s.ms >= FORGOT_PASSWORD_MIN_RESPONSE_MS - 1))
+      .filter(s => !(s.ms >= forgotPasswordMinResponseMs - 1))
       .map(s => ({ branch: s.branch, ms: Math.round(s.ms) }));
     expect(early).toEqual([]);
   }, 60000);
@@ -110,7 +110,7 @@ describe('Sentinel: forgot-password response floor (Equoria-jeci6)', () => {
   // Owner ruling 2026-10-19: server logs on the forgot-password path carry a
   // masked address (first character + *** + @domain), never the raw one.
   it('forgot-password logs carry only masked email addresses, on both branches', async () => {
-    const unknownEmail = `${EMAIL_PREFIX}-nobody-${randomBytes(6).toString('hex')}@example.com`;
+    const unknownEmail = `${emailPrefix}-nobody-${randomBytes(6).toString('hex')}@example.com`;
     const spies = ['info', 'warn', 'error'].map(level => jest.spyOn(logger, level));
     let loggedText;
     try {

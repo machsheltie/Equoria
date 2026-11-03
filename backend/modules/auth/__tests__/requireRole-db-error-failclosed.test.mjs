@@ -32,7 +32,7 @@ import { requireRole } from '../../../middleware/auth.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const AUTH_SRC = readFileSync(join(__dirname, '../../../middleware/auth.mjs'), 'utf8');
+const authSrc = readFileSync(join(__dirname, '../../../middleware/auth.mjs'), 'utf8');
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
@@ -73,11 +73,11 @@ describe('auth.mjs requireRole — structural: DB-error catch block returns 500 
   it('auth.mjs requireRole catch block contains 500 + fail-closed return, not a silent fall-through', () => {
     // The requireRole function is in the source between the two export const lines.
     // We find the requireRole block and verify it contains our sentinel response.
-    const requireRoleStart = AUTH_SRC.indexOf('export const requireRole');
+    const requireRoleStart = authSrc.indexOf('export const requireRole');
     expect(requireRoleStart).toBeGreaterThan(-1);
 
     // Find the section after the requireRole declaration up to the next top-level export.
-    const afterRequireRole = AUTH_SRC.slice(requireRoleStart);
+    const afterRequireRole = authSrc.slice(requireRoleStart);
     const nextExport = afterRequireRole.indexOf('\nexport const ', 1);
     const requireRoleBlock = nextExport > -1 ? afterRequireRole.slice(0, nextExport) : afterRequireRole;
 
@@ -101,7 +101,7 @@ describe('auth.mjs requireRole — structural: DB-error catch block returns 500 
   });
 
   it('auth.mjs requireRole catch block message is "Role verification unavailable. Please retry."', () => {
-    expect(AUTH_SRC).toContain('Role verification unavailable. Please retry.');
+    expect(authSrc).toContain('Role verification unavailable. Please retry.');
   });
 
   it('auth.mjs requireRole catch block returns 500 status code (not 403)', () => {
@@ -109,10 +109,10 @@ describe('auth.mjs requireRole — structural: DB-error catch block returns 500 
     // There are two `catch (lookupError)` blocks in auth.mjs — one in authenticateToken
     // (passwordChangedAt check) and one in requireRole. Find the requireRole one by
     // locating it AFTER the requireRole export declaration.
-    const requireRoleStart = AUTH_SRC.indexOf('export const requireRole');
+    const requireRoleStart = authSrc.indexOf('export const requireRole');
     expect(requireRoleStart).toBeGreaterThan(-1);
 
-    const requireRoleSection = AUTH_SRC.slice(requireRoleStart);
+    const requireRoleSection = authSrc.slice(requireRoleStart);
     const lookupErrorStart = requireRoleSection.indexOf('} catch (lookupError) {');
     expect(lookupErrorStart).toBeGreaterThan(-1);
 

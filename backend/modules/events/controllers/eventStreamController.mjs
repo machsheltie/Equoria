@@ -26,17 +26,17 @@ import { subscribeUserEvents, userListenerCount } from '../../../services/eventB
 // ': ping' frame, rather than asserting only the initial ': connected'
 // frame and skipping the 25s wait. Resolved per-call (not module-load) so a
 // test can set it before opening a stream without re-importing the module.
-const DEFAULT_HEARTBEAT_MS = 25_000;
+const defaultHeartbeatMs = 25_000;
 
 function resolveHeartbeatMs() {
   const raw = process.env.SSE_HEARTBEAT_MS;
   if (raw === undefined) {
-    return DEFAULT_HEARTBEAT_MS;
+    return defaultHeartbeatMs;
   }
   const parsed = Number.parseInt(raw, 10);
   // Fail safe to the default on a non-positive / non-numeric override so a
   // bad env value can never produce a 0ms busy-loop or a negative interval.
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_HEARTBEAT_MS;
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : defaultHeartbeatMs;
 }
 
 /**

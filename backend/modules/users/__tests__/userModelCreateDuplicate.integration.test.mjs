@@ -29,8 +29,8 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createUser } from '../services/userModelService.mjs';
 import { DatabaseError } from '../../../errors/index.mjs';
 
-const RUN_ID = `${randomBytes(4).toString('hex')}_${Math.floor(Math.random() * 100000)}`;
-const PREFIX = `TestFixture-iqdc7_${RUN_ID}`;
+const runId = `${randomBytes(4).toString('hex')}_${Math.floor(Math.random() * 100000)}`;
+const PREFIX = `TestFixture-iqdc7_${runId}`;
 
 const createdIds = [];
 

@@ -35,8 +35,8 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-dv1lv';
-const N_SAMPLES = 8; // small N to keep CI runtime sane; medians are robust at this size
+const fixturePrefix = 'TestFixture-dv1lv';
+const nSamples = 8; // small N to keep CI runtime sane; medians are robust at this size
 
 let user;
 const createdUserIds = [];
@@ -47,8 +47,8 @@ beforeAll(async () => {
   user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Timing',
       lastName: 'Oracle',
@@ -102,7 +102,7 @@ function samplesOnce() {
     // Warm-up to defeat JIT / pool-connection cold start dominating sample 0.
     await timedForgotPassword(user.email);
     await timedForgotPassword(`warmup-${randomBytes(4).toString('hex')}@example.com`);
-    for (let i = 0; i < N_SAMPLES; i++) {
+    for (let i = 0; i < nSamples; i++) {
       // Interleave so any system-wide warm-up affects both samples equally.
       goodSamples.push(await timedForgotPassword(user.email));
       badSamples.push(await timedForgotPassword(`unknown-${randomBytes(4).toString('hex')}@example.com`));

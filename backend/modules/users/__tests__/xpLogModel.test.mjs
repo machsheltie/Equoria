@@ -17,7 +17,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { logXpEvent, getUserXpEvents, getUserXpSummary, getRecentXpEvents } from '../services/xpLogModelService.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-const USER_ID = 'test-user-xp-log';
+const userId = 'test-user-xp-log';
 
 // ─── date helpers ─────────────────────────────────────────────────────────────
 
@@ -32,12 +32,12 @@ const cleanup = createCleanupTracker();
 const createdEventIds = [];
 
 beforeAll(async () => {
-  await prisma.xpEvent.deleteMany({ where: { userId: USER_ID } });
-  await prisma.user.deleteMany({ where: { id: USER_ID } });
+  await prisma.xpEvent.deleteMany({ where: { userId } });
+  await prisma.user.deleteMany({ where: { id: userId } });
   await prisma.user.create({
     data: {
       emailVerified: true,
-      id: USER_ID,
+      id: userId,
       username: 'xpLogTestUser',
       email: 'xplog@example.com',
       password: 'TestPassword123!',
@@ -48,7 +48,7 @@ beforeAll(async () => {
   });
   // Delete tracked events by id first, then the user (cascade covers the rest).
   cleanup.add(() => prisma.xpEvent.deleteMany({ where: { id: { in: createdEventIds } } }), 'xpEvents');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: USER_ID } }), 'user');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: userId } }), 'user');
 });
 
 afterAll(() => cleanup.run());
@@ -58,13 +58,13 @@ afterAll(() => cleanup.run());
 describe('logXpEvent', () => {
   it('creates an XP event and returns the record', async () => {
     const result = await logXpEvent({
-      userId: USER_ID,
+      userId,
       amount: 5,
       reason: 'Trained horse in Dressage',
     });
 
     expect(result.id).toBeDefined();
-    expect(result.userId).toBe(USER_ID);
+    expect(result.userId).toBe(userId);
     expect(result.amount).toBe(5);
     expect(result.reason).toBe('Trained horse in Dressage');
     expect(result.timestamp).toBeTruthy(); // DateTime returned by Prisma
@@ -77,13 +77,13 @@ describe('logXpEvent', () => {
 
   it('creates an XP event with a negative amount', async () => {
     const result = await logXpEvent({
-      userId: USER_ID,
+      userId,
       amount: -10,
       reason: 'XP penalty for rule violation',
     });
 
     expect(result.amount).toBe(-10);
-    expect(result.userId).toBe(USER_ID);
+    expect(result.userId).toBe(userId);
   });
 
   it('throws when userId is missing', async () => {
@@ -91,13 +91,13 @@ describe('logXpEvent', () => {
   });
 
   it('throws when amount is not a number', async () => {
-    await expect(logXpEvent({ userId: USER_ID, amount: 'invalid', reason: 'Test reason' })).rejects.toThrow(
+    await expect(logXpEvent({ userId, amount: 'invalid', reason: 'Test reason' })).rejects.toThrow(
       'Amount must be a number',
     );
   });
 
   it('throws when reason is missing', async () => {
-    await expect(logXpEvent({ userId: USER_ID, amount: 5 })).rejects.toThrow('Reason is required and must be a string');
+    await expect(logXpEvent({ userId, amount: 5 })).rejects.toThrow('Reason is required and must be a string');
   });
 });
 
@@ -291,9 +291,9 @@ describe('getUserXpSummary', () => {
 
 describe('getRecentXpEvents', () => {
   it('returns events with user relation included', async () => {
-    // Create an event for USER_ID and verify it appears in the global feed
+    // Create an event for userId and verify it appears in the global feed
     const event = await prisma.xpEvent.create({
-      data: { userId: USER_ID, amount: 99, reason: 'Global feed test event' },
+      data: { userId, amount: 99, reason: 'Global feed test event' },
     });
     // Tracked for scoped, fail-loud cleanup in afterAll (Equoria-cu3t5).
     createdEventIds.push(event.id);
@@ -304,7 +304,7 @@ describe('getRecentXpEvents', () => {
     const found = results.find(e => e.id === event.id);
     expect(found).toBeDefined();
     expect(found.user).toBeDefined();
-    expect(found.user.id).toBe(USER_ID);
+    expect(found.user.id).toBe(userId);
     expect(found.user.username).toBe('xpLogTestUser');
   });
 

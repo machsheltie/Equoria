@@ -28,15 +28,15 @@ const ORIGIN = 'http://localhost:3000';
 // "middle" query (2 chars from the centre) cannot accidentally be a prefix too.
 const SUFFIX = randomBytes(4).toString('hex'); // e.g. "a1b2c3d4"
 // Full username: e.g. "TestFixture-search-a1b2c3d4"
-const TEST_USERNAME = `TestFixture-search-${SUFFIX}`;
+const testUsername = `TestFixture-search-${SUFFIX}`;
 
 // A 2-char substring that appears ONLY in the middle of the username (never at
 // the start).  We take chars from position 14 onward (after "TestFixture-sea")
 // to ensure it is never also a prefix.
-const MIDDLE_QUERY = TEST_USERNAME.slice(14, 16); // e.g. "rc" from "search-…"
+const middleQuery = testUsername.slice(14, 16); // e.g. "rc" from "search-…"
 
 // A prefix query: the first 11 chars ("TestFixture").  Must match from position 0.
-const PREFIX_QUERY = TEST_USERNAME.slice(0, 11); // "TestFixture"
+const prefixQuery = testUsername.slice(0, 11); // "TestFixture"
 
 let fixtureUser;
 let token;
@@ -47,7 +47,7 @@ beforeAll(async () => {
     data: {
       emailVerified: true,
       email: `TestFixture-search-${SUFFIX}@sentinel.test`,
-      username: TEST_USERNAME,
+      username: testUsername,
       password: 'irrelevant-hash',
       firstName: 'SentinelFirst',
       lastName: 'SentinelLast',
@@ -69,7 +69,7 @@ describe('GET /api/v1/users/search — security sentinel (Equoria-o7c0x L3)', ()
   // ──────────────────────────────────────────────────────────────────────────
   it('(a) result objects must NOT contain firstName or lastName', async () => {
     const res = await request(app)
-      .get(`/api/v1/users/search?username=${encodeURIComponent(PREFIX_QUERY)}`)
+      .get(`/api/v1/users/search?username=${encodeURIComponent(prefixQuery)}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -89,17 +89,17 @@ describe('GET /api/v1/users/search — security sentinel (Equoria-o7c0x L3)', ()
   // (b) Substring-only queries must return ZERO matches (prefix-only semantics)
   // ──────────────────────────────────────────────────────────────────────────
   it('(b) a query matching only the MIDDLE of a username returns no results', async () => {
-    // MIDDLE_QUERY is chars 14-15 of TEST_USERNAME — they appear in the
+    // middleQuery is chars 14-15 of testUsername — they appear in the
     // middle, never at position 0, so startsWith must return nothing for our
     // fixture user.  We verify our fixture user is NOT in the result set.
     const res = await request(app)
-      .get(`/api/v1/users/search?username=${encodeURIComponent(MIDDLE_QUERY)}`)
+      .get(`/api/v1/users/search?username=${encodeURIComponent(middleQuery)}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     const users = res.body.data.users;
-    const found = users.some(u => u.username === TEST_USERNAME);
+    const found = users.some(u => u.username === testUsername);
     expect(found).toBe(false);
   });
 
@@ -108,13 +108,13 @@ describe('GET /api/v1/users/search — security sentinel (Equoria-o7c0x L3)', ()
   // ──────────────────────────────────────────────────────────────────────────
   it('(c) a query matching the START of the username finds the user', async () => {
     const res = await request(app)
-      .get(`/api/v1/users/search?username=${encodeURIComponent(PREFIX_QUERY)}`)
+      .get(`/api/v1/users/search?username=${encodeURIComponent(prefixQuery)}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     const users = res.body.data.users;
-    const found = users.some(u => u.username === TEST_USERNAME);
+    const found = users.some(u => u.username === testUsername);
     expect(found).toBe(true);
   });
 
@@ -132,7 +132,7 @@ describe('GET /api/v1/users/search — security sentinel (Equoria-o7c0x L3)', ()
 
   it('returns 401 without auth', async () => {
     const res = await request(app)
-      .get(`/api/v1/users/search?username=${encodeURIComponent(PREFIX_QUERY)}`)
+      .get(`/api/v1/users/search?username=${encodeURIComponent(prefixQuery)}`)
       .set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);

@@ -30,7 +30,7 @@ describe('Auth — Password Reset Integration', () => {
     __csrf__ = await fetchCsrf(app);
   });
 
-  const EMAIL_PREFIX = 'pwreset_int_';
+  const emailPrefix = 'pwreset_int_';
 
   beforeEach(async () => {
     // Each test gets a fresh capture file so concurrent or back-to-back tests
@@ -40,7 +40,7 @@ describe('Auth — Password Reset Integration', () => {
 
     // Clean up any leftover test users from prior runs
     const users = await prisma.user.findMany({
-      where: { email: { startsWith: EMAIL_PREFIX } },
+      where: { email: { startsWith: emailPrefix } },
       select: { id: true },
     });
     const ids = users.map(u => u.id);
@@ -74,7 +74,7 @@ describe('Auth — Password Reset Integration', () => {
   // ────────────────────────────────────────────────────────────────────────
   it('complete flow: forgot-password → reset-password → verify old/new passwords', async () => {
     const timestamp = Date.now();
-    const email = `${EMAIL_PREFIX}${timestamp}@example.com`;
+    const email = `${emailPrefix}${timestamp}@example.com`;
     const originalPassword = 'OriginalPass1!';
     const newPassword = 'NewSecurePass2@';
 
@@ -83,7 +83,7 @@ describe('Auth — Password Reset Integration', () => {
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${EMAIL_PREFIX}${timestamp}`,
+        username: `${emailPrefix}${timestamp}`,
         email,
         password: hashedOriginal,
         firstName: 'Reset',
@@ -179,7 +179,7 @@ describe('Auth — Password Reset Integration', () => {
   // accepted). Verified once at write time and pasted into bd notes.
   it('CWE-613: resetPassword invalidates pre-reset access tokens (sentinel)', async () => {
     const timestamp = Date.now();
-    const email = `${EMAIL_PREFIX}cwe613_${timestamp}@example.com`;
+    const email = `${emailPrefix}cwe613_${timestamp}@example.com`;
     const originalPassword = 'OriginalPass1!';
     const newPassword = 'NewSecurePass2@';
 
@@ -188,7 +188,7 @@ describe('Auth — Password Reset Integration', () => {
     await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${EMAIL_PREFIX}cwe613_${timestamp}`,
+        username: `${emailPrefix}cwe613_${timestamp}`,
         email,
         password: hashedOriginal,
         firstName: 'CWE613',
@@ -244,7 +244,7 @@ describe('Auth — Password Reset Integration', () => {
   // ────────────────────────────────────────────────────────────────────────
   it('resetPassword rejects a used token (prevents token replay)', async () => {
     const timestamp = Date.now();
-    const email = `${EMAIL_PREFIX}replay_${timestamp}@example.com`;
+    const email = `${emailPrefix}replay_${timestamp}@example.com`;
     const originalPassword = 'OriginalPass1!';
     const newPassword = 'NewSecurePass2@';
 
@@ -252,7 +252,7 @@ describe('Auth — Password Reset Integration', () => {
     await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${EMAIL_PREFIX}replay_${timestamp}`,
+        username: `${emailPrefix}replay_${timestamp}`,
         email,
         password: hashedOriginal,
         firstName: 'Replay',
@@ -287,7 +287,7 @@ describe('Auth — Password Reset Integration', () => {
   // This FAILS if the `expiresAt > NOW()` clause is removed from the guard.
   it('resetPassword rejects an expired token with 400 and does not change the password', async () => {
     const timestamp = Date.now();
-    const email = `${EMAIL_PREFIX}expired_${timestamp}@example.com`;
+    const email = `${emailPrefix}expired_${timestamp}@example.com`;
     const originalPassword = 'OriginalPass1!';
     const attemptedNewPassword = 'ShouldNotApply9@';
 
@@ -295,7 +295,7 @@ describe('Auth — Password Reset Integration', () => {
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${EMAIL_PREFIX}expired_${timestamp}`,
+        username: `${emailPrefix}expired_${timestamp}`,
         email,
         password: hashedOriginal,
         firstName: 'Expired',
@@ -358,14 +358,14 @@ describe('Auth — Password Reset Integration', () => {
   // removed from the route.
   it('resetPassword rejects a weak newPassword with 400 and leaves the token unused', async () => {
     const timestamp = Date.now();
-    const email = `${EMAIL_PREFIX}weakpw_${timestamp}@example.com`;
+    const email = `${emailPrefix}weakpw_${timestamp}@example.com`;
     const originalPassword = 'OriginalPass1!';
 
     const hashedOriginal = await bcrypt.hash(originalPassword, 1);
     await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${EMAIL_PREFIX}weakpw_${timestamp}`,
+        username: `${emailPrefix}weakpw_${timestamp}`,
         email,
         password: hashedOriginal,
         firstName: 'WeakPw',

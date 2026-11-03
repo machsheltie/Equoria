@@ -73,7 +73,7 @@ import { getFeedHealth, hasBadHealth, hungerFeedingPlan } from '../../../utils/h
 import { damBreedingCooldownEndsAt } from '../../horses/index.mjs';
 
 // Story 23.4 priority table. 1 = highest.
-const SPEC_PRIORITY = Object.freeze({
+const specPriority = Object.freeze({
   'claim-prize': 1,
   'check-results': 2,
   train: 3,
@@ -244,7 +244,7 @@ export async function getNextActions(req, res) {
     if (unviewedResultCount > 0 && mostRecentUnviewed) {
       actions.push({
         type: 'check-results',
-        priority: SPEC_PRIORITY['check-results'],
+        priority: specPriority['check-results'],
         metadata: {
           count: unviewedResultCount,
           showId: mostRecentUnviewed.showId,
@@ -261,7 +261,7 @@ export async function getNextActions(req, res) {
       if (isTrainable(h, now)) {
         actions.push({
           type: 'train',
-          priority: SPEC_PRIORITY.train,
+          priority: specPriority.train,
           horseId: h.id,
           horseName: h.name,
           // Normalise to a controller-owned Date so it serialises to an ISO
@@ -306,7 +306,7 @@ export async function getNextActions(req, res) {
         if (eligible) {
           actions.push({
             type: 'compete',
-            priority: SPEC_PRIORITY.compete,
+            priority: specPriority.compete,
             horseId: eligible.id,
             horseName: eligible.name,
             metadata: {
@@ -337,7 +337,7 @@ export async function getNextActions(req, res) {
         if (damBreedingCooldownEndsAt(h, now) === null) {
           actions.push({
             type: 'breed',
-            priority: SPEC_PRIORITY.breed,
+            priority: specPriority.breed,
             horseId: h.id,
             horseName: h.name,
             metadata: { cooldownEndsAt: null },
@@ -353,7 +353,7 @@ export async function getNextActions(req, res) {
         : null;
       actions.push({
         type: 'groom-foal',
-        priority: SPEC_PRIORITY['groom-foal'],
+        priority: specPriority['groom-foal'],
         horseId: foalDev.foalId,
         horseName: foalDev.foal?.name,
         metadata: { foalAge },
@@ -374,7 +374,7 @@ export async function getNextActions(req, res) {
         const hungry = ['Fair', 'Bad'].includes(getFeedHealth(h, now));
         actions.push({
           type: 'visit-vet',
-          priority: SPEC_PRIORITY['visit-vet'],
+          priority: specPriority['visit-vet'],
           horseId: h.id,
           horseName: h.name,
           metadata: { healthStatus: h.healthStatus, needsFeeding: hungry },
@@ -383,7 +383,7 @@ export async function getNextActions(req, res) {
       if (badHealth && hungerFeedingPlan(h, now).canFeed) {
         actions.push({
           type: 'feed',
-          priority: SPEC_PRIORITY.feed,
+          priority: specPriority.feed,
           horseId: h.id,
           horseName: h.name,
           metadata: { displayedHealth: 'Bad' },

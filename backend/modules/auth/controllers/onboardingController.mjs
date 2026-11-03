@@ -70,7 +70,7 @@ import { horseArrivalCare } from '../../../utils/horseArrivalCare.mjs';
 // Equoria-3f0yx: ESM-native JSON load. See module docstring for the
 // rationale on readFileSync vs createRequire vs import attributes.
 const breedStarterStatsDir = dirname(fileURLToPath(import.meta.url));
-const BREED_STARTER_STATS = JSON.parse(
+const breedStarterStats = JSON.parse(
   readFileSync(resolve(breedStarterStatsDir, '../../../data/breedStarterStats.json'), 'utf8'),
 );
 
@@ -81,7 +81,7 @@ const BREED_STARTER_STATS = JSON.parse(
  */
 function generateStarterStats(breedName) {
   const statNames = horseStatValues;
-  const breedData = breedName ? BREED_STARTER_STATS[breedName] : null;
+  const breedData = breedName ? breedStarterStats[breedName] : null;
 
   const stats = {};
 

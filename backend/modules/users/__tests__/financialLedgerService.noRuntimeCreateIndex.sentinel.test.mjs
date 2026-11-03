@@ -38,7 +38,7 @@ const __dirname = dirname(__filename);
 // previously resolved the OLD path and silently failed with ENOENT — a guard
 // that doesn't guard (Principle 3). From backend/modules/users/__tests__/,
 // the canonical location is ../../economy/services/financialLedgerService.mjs.
-const SERVICE_PATH = resolve(__dirname, '..', '..', 'economy', 'services', 'financialLedgerService.mjs');
+const servicePath = resolve(__dirname, '..', '..', 'economy', 'services', 'financialLedgerService.mjs');
 
 // Match any `$executeRaw*` reference followed (within a short window of
 // whitespace, parens, and quote chars — possibly across a newline) by
@@ -47,7 +47,7 @@ const SERVICE_PATH = resolve(__dirname, '..', '..', 'economy', 'services', 'fina
 //   - tagged-template form: `$executeRaw`CREATE INDEX ...``
 //   - multi-line form:    `$executeRawUnsafe(\n    'CREATE INDEX ...')`
 // Uses the `s` flag (dotAll) so `.` matches newlines inside the gap.
-const RUNTIME_CREATE_INDEX_PATTERN = /\$executeRaw[a-zA-Z]*[\s(`'"]{1,40}CREATE\s+INDEX/is;
+const runtimeCreateIndexPattern = /\$executeRaw[a-zA-Z]*[\s(`'"]{1,40}CREATE\s+INDEX/is;
 
 function stripCommentLines(source) {
   // Drop any line that is "obviously a comment" so the source's own
@@ -82,7 +82,7 @@ function findRuntimeCreateIndexCalls(source) {
   // every multi-line `$executeRawUnsafe(\n    'CREATE INDEX ...')`
   // pattern even when the open-paren and the CREATE INDEX are on
   // different lines.
-  const globalPattern = new RegExp(RUNTIME_CREATE_INDEX_PATTERN.source, 'gis');
+  const globalPattern = new RegExp(runtimeCreateIndexPattern.source, 'gis');
   let m;
   while ((m = globalPattern.exec(stripped)) !== null) {
     // Compute the line number by counting newlines up to the match index.
@@ -95,7 +95,7 @@ function findRuntimeCreateIndexCalls(source) {
 
 describe('Equoria-z8leh — financialLedgerService no-runtime-CREATE-INDEX sentinel', () => {
   it('contains no `$executeRaw*(... CREATE INDEX ...)` calls (use schema.prisma @@index instead)', () => {
-    const source = readFileSync(SERVICE_PATH, 'utf8');
+    const source = readFileSync(servicePath, 'utf8');
     const violations = findRuntimeCreateIndexCalls(source);
 
     // Sentinel-positive diagnostic: if any violations are present, list

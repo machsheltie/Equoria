@@ -38,26 +38,26 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 
 /** Floor so a misconfigured env can never wipe near-current audit history. */
-export const MIN_RETENTION_DAYS = 7;
+export const minRetentionDays = 7;
 
 /** Default retention window (days) — aligned with the 90-day CI audit-report retention. */
-export const DEFAULT_RETENTION_DAYS = 90;
+export const defaultRetentionDays = 90;
 
 /**
  * Resolve the effective retention window in days.
  *
- * Reads AUDIT_LOG_RETENTION_DAYS; falls back to DEFAULT_RETENTION_DAYS.
+ * Reads AUDIT_LOG_RETENTION_DAYS; falls back to defaultRetentionDays.
  * Non-numeric / non-positive values fall back to the default. The result is
- * clamped to MIN_RETENTION_DAYS so the trail can never be effectively
+ * clamped to minRetentionDays so the trail can never be effectively
  * disabled or wiped near-instantly by env misconfiguration.
  *
- * @returns {number} retention window in whole days, >= MIN_RETENTION_DAYS
+ * @returns {number} retention window in whole days, >= minRetentionDays
  */
 export function getRetentionDays() {
   const raw = process.env.AUDIT_LOG_RETENTION_DAYS;
   const parsed = Number.parseInt(raw, 10);
-  const days = Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_RETENTION_DAYS;
-  return Math.max(MIN_RETENTION_DAYS, days);
+  const days = Number.isFinite(parsed) && parsed > 0 ? parsed : defaultRetentionDays;
+  return Math.max(minRetentionDays, days);
 }
 
 /**
@@ -88,7 +88,7 @@ export function computeCutoff(retentionDays, now = new Date()) {
 export async function purgeExpiredAuditLogs({ retentionDays, now } = {}) {
   const effectiveRetentionDays =
     Number.isFinite(retentionDays) && retentionDays > 0
-      ? Math.max(MIN_RETENTION_DAYS, retentionDays)
+      ? Math.max(minRetentionDays, retentionDays)
       : getRetentionDays();
   const cutoff = computeCutoff(effectiveRetentionDays, now);
 

@@ -47,7 +47,7 @@ import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/he
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const msPerDay = 24 * 60 * 60 * 1000;
 
 const rand = () => randomBytes(6).toString('hex');
 // XP that yields exactly the given XP-bracket level: floor(xp/100)+1 = level.
@@ -117,10 +117,10 @@ async function makeSettledShow(showIds) {
       levelMax: 999,
       entryFee: 100,
       prize: 1000,
-      runDate: new Date(now.getTime() - 2 * MS_PER_DAY),
+      runDate: new Date(now.getTime() - 2 * msPerDay),
       status: 'completed',
-      openDate: new Date(now.getTime() - 9 * MS_PER_DAY),
-      closeDate: new Date(now.getTime() - 2 * MS_PER_DAY),
+      openDate: new Date(now.getTime() - 9 * msPerDay),
+      closeDate: new Date(now.getTime() - 2 * msPerDay),
     },
   });
   showIds.push(show.id);
@@ -167,7 +167,7 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
   let show;
   let settledShow;
   const now = new Date();
-  const cooldownEndedAt = new Date(now.getTime() - 1 * MS_PER_DAY); // trainingCooldown expired yesterday
+  const cooldownEndedAt = new Date(now.getTime() - 1 * msPerDay); // trainingCooldown expired yesterday
 
   beforeAll(async () => {
     user = await makeUser(userIds);
@@ -311,7 +311,7 @@ describe('GET /api/v1/next-actions — check-results off viewedAt (Equoria-oey96
         // No rider → no compete pollution (B9). Colt → no breed.
         horseXp: xpForLevel(1900),
         // Cooldown still running → no train, so check-results stands alone.
-        trainingCooldown: new Date(now.getTime() + 2 * MS_PER_DAY),
+        trainingCooldown: new Date(now.getTime() + 2 * msPerDay),
         userId: user.id,
       },
       horseIds,
@@ -328,7 +328,7 @@ describe('GET /api/v1/next-actions — check-results off viewedAt (Equoria-oey96
     // Same show, different owner, result already marked viewed.
     viewedUser = await makeUser(userIds);
     const viewedHorse = await seedHorse(viewedUser, 'viewed');
-    await makeResult(settled, viewedHorse.id, { viewedAt: new Date(now.getTime() - 1 * MS_PER_DAY) }, resultIds);
+    await makeResult(settled, viewedHorse.id, { viewedAt: new Date(now.getTime() - 1 * msPerDay) }, resultIds);
   }, 60000);
 
   afterAll(() => cleanup.run(), 60000);
@@ -496,13 +496,13 @@ describe('GET /api/v1/next-actions — caps at 10 actions (Equoria-oey96.28)', (
 
   let user;
   const now = new Date();
-  const TRAINABLE_COUNT = 12;
+  const trainableCount = 12;
 
   beforeAll(async () => {
     user = await makeUser(userIds);
     // 12 trainable Colts at an unreachable level (no compete), never bred,
     // so each yields exactly ONE `train` candidate → 12 candidates → cap 10.
-    for (let i = 0; i < TRAINABLE_COUNT; i += 1) {
+    for (let i = 0; i < trainableCount; i += 1) {
       await createTestHorse(
         prisma,
         {

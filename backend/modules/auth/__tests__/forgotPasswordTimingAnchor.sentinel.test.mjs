@@ -11,10 +11,10 @@
  * UPDATE+INSERT cost, so response latency still leaked registration state
  * (account enumeration). Equoria-54sk7 replaces that ineffective "delay
  * padding" with a cryptographically sound constant-time anchor: a fixed-cost
- * `bcrypt.compare(TIMING_ANCHOR_INPUT, FAKE_BCRYPT_HASH)` run UNCONDITIONALLY
+ * `bcrypt.compare(TIMING_ANCHOR_INPUT, fakeBcryptHash)` run UNCONDITIONALLY
  * before the branch split, so the dominant deterministic CPU cost is identical
  * whether or not the email is registered. This mirrors the login handler's
- * FAKE_BCRYPT_HASH approach (authController, Equoria-gm4fg).
+ * fakeBcryptHash approach (authController, Equoria-gm4fg).
  *
  * What this sentinel asserts (BEHAVIOUR / INVOCATION, not wall-clock)
  * ──────────────────────────────────────────────────────────────────
@@ -53,8 +53,8 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // The forgot-password route validator runs normalizeEmail() (all_lowercase),
 // so fixture emails MUST be already-lowercase or the controller findUnique
 // misses the user. Username keeps a cased prefix; cleanup is by userId.
-const EMAIL_PREFIX = 'testfixture-54sk7';
-const USERNAME_PREFIX = 'TestFixture-54sk7';
+const emailPrefix = 'testfixture-54sk7';
+const usernamePrefix = 'TestFixture-54sk7';
 
 const forgot = email =>
   request(app).post('/api/v1/auth/forgot-password').set('Origin', 'http://localhost:3000').send({ email });
@@ -65,12 +65,12 @@ describe('🔒 Sentinel — forgotPassword constant-time bcrypt anchor (Equoria-
 
   beforeAll(async () => {
     const tag = randomBytes(6).toString('hex');
-    knownEmail = `${EMAIL_PREFIX}-${tag}@example.com`;
+    knownEmail = `${emailPrefix}-${tag}@example.com`;
     const password = await bcrypt.hash('AnchorPass1!', 1);
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${USERNAME_PREFIX}-${tag}`,
+        username: `${usernamePrefix}-${tag}`,
         email: knownEmail,
         password,
         firstName: 'Anchor',
@@ -93,7 +93,7 @@ describe('🔒 Sentinel — forgotPassword constant-time bcrypt anchor (Equoria-
   it('UNKNOWN-email branch invokes bcrypt.compare against a bcrypt hash (anchor ran, no short-circuit)', async () => {
     const spy = jest.spyOn(bcrypt, 'compare');
     try {
-      const unknownEmail = `${EMAIL_PREFIX}-nobody-${randomBytes(6).toString('hex')}@example.com`;
+      const unknownEmail = `${emailPrefix}-nobody-${randomBytes(6).toString('hex')}@example.com`;
       const res = await forgot(unknownEmail);
 
       // The handler must respond with the neutral 200 envelope (no enumeration
@@ -158,6 +158,6 @@ describe('🔒 Sentinel — forgotPassword constant-time bcrypt anchor (Equoria-
     expect(src).not.toMatch(/pg_sleep/);
     // The constant-time anchor helper must exist (the replacement is present).
     expect(src).toMatch(/runTimingAnchorCompare/);
-    expect(src).toMatch(/FAKE_BCRYPT_HASH/);
+    expect(src).toMatch(/fakeBcryptHash/);
   });
 });

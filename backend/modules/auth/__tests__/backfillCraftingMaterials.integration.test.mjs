@@ -8,7 +8,7 @@
  * Tier 0 recipe is affordable for those existing beta testers, even though
  * crafting is beta-live and must work for real testers.
  *
- * Fix: an idempotent, scoped backfill that grants STARTER_CRAFTING_MATERIALS
+ * Fix: an idempotent, scoped backfill that grants starterCraftingMaterials
  * to any account whose settings.craftingMaterials is absent — without
  * touching accounts that already have it (no double-grant) and without
  * disturbing any other settings keys.
@@ -28,10 +28,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import {
-  backfillCraftingMaterials,
-  STARTER_CRAFTING_MATERIALS,
-} from '../../../scripts/backfill-crafting-materials.mjs';
+import { backfillCraftingMaterials, starterCraftingMaterials } from '../../../scripts/backfill-crafting-materials.mjs';
 import { confirmEmail } from '../../../tests/helpers/confirmEmail.mjs';
 
 const ORIGIN = 'http://localhost:3000';
@@ -112,7 +109,7 @@ describe('INTEGRATION: backfill craftingMaterials for pre-fix accounts (Equoria-
 
     // Granted materials are exactly the server starter, not zeros.
     const updated = await prisma.user.findUnique({ where: { id: userId } });
-    expect(updated.settings.craftingMaterials).toEqual(STARTER_CRAFTING_MATERIALS);
+    expect(updated.settings.craftingMaterials).toEqual(starterCraftingMaterials);
     // Other settings keys preserved.
     expect(Array.isArray(updated.settings.inventory)).toBe(true);
     expect(updated.settings.completedOnboarding).toBe(false);
@@ -151,12 +148,12 @@ describe('INTEGRATION: backfill craftingMaterials for pre-fix accounts (Equoria-
   it('post-fix account (already has craftingMaterials) is left untouched', async () => {
     const { userId } = await registerAndLogin();
     const before = await prisma.user.findUnique({ where: { id: userId } });
-    expect(before.settings.craftingMaterials).toEqual(STARTER_CRAFTING_MATERIALS);
+    expect(before.settings.craftingMaterials).toEqual(starterCraftingMaterials);
 
     const result = await backfillCraftingMaterials({ userIds: [userId] });
     expect(result.granted).toBe(0);
 
     const after = await prisma.user.findUnique({ where: { id: userId } });
-    expect(after.settings.craftingMaterials).toEqual(STARTER_CRAFTING_MATERIALS);
+    expect(after.settings.craftingMaterials).toEqual(starterCraftingMaterials);
   }, 90000);
 });

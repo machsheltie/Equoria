@@ -274,7 +274,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
   // Equoria-f5372 — the onboarding starter-horse paths must never leave the
   // temperament column NULL (the frontend would show 'not recorded').
   it('fills a NULL temperament on the existing starter horse during onboarding customization', async () => {
-    const { temperamentTypes: TEMPERAMENT_TYPES } = await import('../../horses/data/temperamentTypes.mjs');
+    const { temperamentTypes } = await import('../../horses/data/temperamentTypes.mjs');
     const breed = await prisma.breed.findFirst({
       where: { name: onboardingBreedName },
       select: { id: true, name: true },
@@ -308,14 +308,14 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
 
     const horse = await prisma.horse.findFirst({ where: { userId: testUser.id } });
     expect(horse.temperament).toBeTruthy();
-    expect(TEMPERAMENT_TYPES).toContain(horse.temperament);
+    expect(temperamentTypes).toContain(horse.temperament);
   });
 
   // Equoria-8vwly — temperament permanence boundary is BREED FINALIZATION
   // (onboarding), not registration. The register-time placeholder is replaced
   // with the user's chosen breed's weighted distribution at onboarding.
   it('SENTINEL: REASSIGNS the temperament from the chosen breed at onboarding (not preserved as the register-time placeholder, Equoria-8vwly)', async () => {
-    const { temperamentTypes: TEMPERAMENT_TYPES } = await import('../../horses/data/temperamentTypes.mjs');
+    const { temperamentTypes } = await import('../../horses/data/temperamentTypes.mjs');
     const breed = await prisma.breed.findFirst({
       where: { name: onboardingBreedName },
       select: { id: true, name: true },
@@ -326,7 +326,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
     // value the user never saw. If onboarding correctly reassigns from the
     // chosen breed, this sentinel string MUST be replaced; under the pre-8vwly
     // conditional ("preserve any existing temperament") it would survive.
-    const SENTINEL_PLACEHOLDER = 'REGISTER_TIME_PLACEHOLDER_8VWLY';
+    const sentinelPlaceholder = 'REGISTER_TIME_PLACEHOLDER_8VWLY';
     await prisma.horse.deleteMany({ where: { userId: testUser.id } });
     await prisma.horse.create({
       data: await testHorseData(prisma, {
@@ -337,7 +337,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
         dateOfBirth: new Date(2023, 0, 1),
         userId: testUser.id,
         healthStatus: 'Excellent',
-        temperament: SENTINEL_PLACEHOLDER,
+        temperament: sentinelPlaceholder,
       }),
     });
 
@@ -353,13 +353,13 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
 
     const horse = await prisma.horse.findFirst({ where: { userId: testUser.id } });
     // The placeholder MUST be gone — proves reassignment happened.
-    expect(horse.temperament).not.toBe(SENTINEL_PLACEHOLDER);
+    expect(horse.temperament).not.toBe(sentinelPlaceholder);
     // And the replacement value is from the canonical breed-weighted set.
-    expect(TEMPERAMENT_TYPES).toContain(horse.temperament);
+    expect(temperamentTypes).toContain(horse.temperament);
   });
 
   it('sets a temperament when onboarding creates the starter horse (no prior horse)', async () => {
-    const { temperamentTypes: TEMPERAMENT_TYPES } = await import('../../horses/data/temperamentTypes.mjs');
+    const { temperamentTypes } = await import('../../horses/data/temperamentTypes.mjs');
     const breed = await prisma.breed.findFirst({
       where: { name: onboardingBreedName },
       select: { id: true, name: true },
@@ -382,7 +382,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
     const horse = await prisma.horse.findFirst({ where: { userId: testUser.id } });
     expect(horse).toBeTruthy();
     expect(horse.temperament).toBeTruthy();
-    expect(TEMPERAMENT_TYPES).toContain(horse.temperament);
+    expect(temperamentTypes).toContain(horse.temperament);
   });
 
   // Equoria-vbrc4 — the tx.horse.create branch (no prior starter horse) must

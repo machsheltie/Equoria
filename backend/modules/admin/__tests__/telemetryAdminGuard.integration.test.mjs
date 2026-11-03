@@ -43,7 +43,7 @@ const ORIGIN = 'http://localhost:3000';
 // metrics + optimization metrics/performance). The fix is a mount-level gate,
 // so any of these proves coverage of the whole mount; we assert several to
 // prove the gate is on the MOUNT (not just one handler).
-const MEMORY_READ_ROUTES = [
+const memoryReadRoutes = [
   '/api/v1/memory/status',
   '/api/v1/memory/metrics',
   '/api/v1/memory/resources',
@@ -51,14 +51,14 @@ const MEMORY_READ_ROUTES = [
   '/api/v1/memory/alerts',
 ];
 
-const OPTIMIZATION_READ_ROUTES = [
+const optimizationReadRoutes = [
   '/api/v1/optimization/metrics',
   '/api/v1/optimization/performance',
   '/api/v1/optimization/compression-stats',
   '/api/v1/optimization/cache-analytics',
 ];
 
-const ALL_READ_ROUTES = [...MEMORY_READ_ROUTES, ...OPTIMIZATION_READ_ROUTES];
+const allReadRoutes = [...memoryReadRoutes, ...optimizationReadRoutes];
 
 describe('INTEGRATION: telemetry admin guard — read endpoints (Equoria-rvmse)', () => {
   let regularToken;
@@ -88,7 +88,7 @@ describe('INTEGRATION: telemetry admin guard — read endpoints (Equoria-rvmse)'
   }, 120000);
 
   describe('unauthenticated → 401 (sentinel: the mount still requires auth)', () => {
-    it.each(ALL_READ_ROUTES)('GET %s returns 401 without a token', async route => {
+    it.each(allReadRoutes)('GET %s returns 401 without a token', async route => {
       const res = await request(app).get(route).set('Origin', ORIGIN);
       expect(res.status).toBe(401);
       expect(res.body.success).toBe(false);
@@ -96,7 +96,7 @@ describe('INTEGRATION: telemetry admin guard — read endpoints (Equoria-rvmse)'
   });
 
   describe('authenticated NON-admin → 403 (the Equoria-rvmse fix)', () => {
-    it.each(ALL_READ_ROUTES)('GET %s returns 403 for a non-admin user', async route => {
+    it.each(allReadRoutes)('GET %s returns 403 for a non-admin user', async route => {
       const res = await request(app).get(route).set('Origin', ORIGIN).set('Authorization', `Bearer ${regularToken}`);
       expect(res.status).toBe(403);
       expect(res.body.success).toBe(false);
@@ -106,7 +106,7 @@ describe('INTEGRATION: telemetry admin guard — read endpoints (Equoria-rvmse)'
   });
 
   describe('authenticated admin → 200 (gate passes, telemetry returned)', () => {
-    it.each(ALL_READ_ROUTES)('GET %s returns 200 for an admin user', async route => {
+    it.each(allReadRoutes)('GET %s returns 200 for an admin user', async route => {
       const res = await request(app)
         .get(route)
         .set('Origin', ORIGIN)

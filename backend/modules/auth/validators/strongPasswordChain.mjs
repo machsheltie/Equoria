@@ -15,10 +15,10 @@
 
 import { body } from 'express-validator';
 
-const PASSWORD_MIN_LENGTH = 12;
-const PASSWORD_MAX_LENGTH = 128;
-const PASSWORD_COMPLEXITY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/;
-const PASSWORD_COMPLEXITY_MESSAGE =
+const passwordMinLength = 12;
+const passwordMaxLength = 128;
+const passwordComplexityRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/;
+const passwordComplexityMessage =
   'must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)';
 
 /**
@@ -35,10 +35,10 @@ export function strongPasswordChain(fieldName, label, { optional = false } = {})
     chain.optional();
   }
   return chain
-    .isLength({ min: PASSWORD_MIN_LENGTH, max: PASSWORD_MAX_LENGTH })
+    .isLength({ min: passwordMinLength, max: passwordMaxLength })
     .withMessage(
-      `${label} must be between ${PASSWORD_MIN_LENGTH} and ${PASSWORD_MAX_LENGTH} characters long`,
+      `${label} must be between ${passwordMinLength} and ${passwordMaxLength} characters long`,
     )
-    .matches(PASSWORD_COMPLEXITY_REGEX)
-    .withMessage(`${label} ${PASSWORD_COMPLEXITY_MESSAGE}`);
+    .matches(passwordComplexityRegex)
+    .withMessage(`${label} ${passwordComplexityMessage}`);
 }

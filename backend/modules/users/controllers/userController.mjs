@@ -53,7 +53,7 @@ import { computeUserCompetitionStats, countUserBredFoals } from '../services/use
 // Safe field selection for user search results — id and username (social handle) only.
 // firstName/lastName are real-name PII; they must NOT be returned from a search endpoint
 // that any authenticated user can query (CWE-200/CWE-359, Equoria-o7c0x L3).
-const USER_SEARCH_SELECT = { id: true, username: true };
+const userSearchSelect = { id: true, username: true };
 
 /**
  * Get comprehensive user progress information
@@ -327,14 +327,14 @@ export const getUser = async (req, res, next) => {
  * (role, money, level, xp, password, emailVerified*, etc.) — those
  * each have dedicated, properly-gated endpoints.
  */
-const USER_UPDATE_ALLOWLIST = ['username', 'email', 'firstName', 'lastName', 'settings'];
+const userUpdateAllowlist = ['username', 'email', 'firstName', 'lastName', 'settings'];
 
 /**
  * Fields that are sensitive/privileged enough that their presence in a
  * self-update request body should be logged as a security warning.
  * (Still stripped — this list triggers the warning only.)
  */
-const SENSITIVE_BLOCKED_FIELDS = new Set([
+const sensitiveBlockedFields = new Set([
   'role',
   'money',
   'level',
@@ -362,7 +362,7 @@ function userMissingError() {
  * @route PUT /api/v1/users/:id
  *
  * SECURITY (Equoria-qia4j): Applies a strict server-side allowlist before
- * passing data to the model. Only USER_UPDATE_ALLOWLIST fields may be set
+ * passing data to the model. Only userUpdateAllowlist fields may be set
  * via this endpoint. Any sensitive/privileged field in the request body
  * triggers a security warning log but the request is still processed
  * (strip-and-proceed for forward-compatibility).
@@ -380,9 +380,7 @@ export const updateUserController = async (req, res, next) => {
     const rawBody = req.body || {};
 
     // ── Step 1: Detect any attempt to set protected/privileged fields ───────
-    const presentSensitiveFields = Object.keys(rawBody).filter(k =>
-      SENSITIVE_BLOCKED_FIELDS.has(k),
-    );
+    const presentSensitiveFields = Object.keys(rawBody).filter(k => sensitiveBlockedFields.has(k));
     if (presentSensitiveFields.length > 0) {
       logger.warn(
         `[userController.updateUser] SECURITY: user ${id} attempted to set protected field(s) via self-update: [${presentSensitiveFields.join(', ')}] — stripped before DB write`,
@@ -393,7 +391,7 @@ export const updateUserController = async (req, res, next) => {
     const updates = {};
     // Populated in Step 2b, written in Step 4 inside the transaction.
     let settingsPaths;
-    for (const key of USER_UPDATE_ALLOWLIST) {
+    for (const key of userUpdateAllowlist) {
       if (Object.prototype.hasOwnProperty.call(rawBody, key)) {
         updates[key] = rawBody[key];
       }
@@ -565,7 +563,7 @@ export async function searchUsers(q, { limit = 10, skip = 0 } = {}) {
       where,
       take: safeLimit,
       skip: safeSkip,
-      select: USER_SEARCH_SELECT,
+      select: userSearchSelect,
       orderBy: { username: 'asc' },
     }),
     prisma.user.count({ where }),

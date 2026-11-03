@@ -22,8 +22,8 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { authenticateToken, evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 
-const SUITE_PREFIX = 'pwcache_';
-const JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-for-ci';
+const suitePrefix = 'pwcache_';
+const jwtSecret = process.env.JWT_SECRET || 'test-jwt-secret-for-ci';
 
 function makeTracked(returnValue) {
   const calls = [];
@@ -65,15 +65,15 @@ describe('Equoria-2bbf — passwordChangedAt cache', () => {
   beforeAll(async () => {
     // Clean any leftovers from prior crashed runs.
     await prisma.user.deleteMany({
-      where: { email: { startsWith: SUITE_PREFIX } },
+      where: { email: { startsWith: suitePrefix } },
     });
 
     const ts = randomBytes(8).toString('hex');
     testUser = await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${SUITE_PREFIX}${ts}`,
-        email: `${SUITE_PREFIX}${ts}@example.com`,
+        username: `${suitePrefix}${ts}`,
+        email: `${suitePrefix}${ts}@example.com`,
         password: await bcrypt.hash('TestPassword123!', 1),
         firstName: 'Cache',
         lastName: 'Test',
@@ -92,7 +92,7 @@ describe('Equoria-2bbf — passwordChangedAt cache', () => {
     evictPasswordChangedAtCache(testUser.id);
 
     const iatSec = Math.floor(Date.now() / 1000);
-    const token = jwt.sign({ userId: testUser.id, iat: iatSec }, JWT_SECRET, {
+    const token = jwt.sign({ userId: testUser.id, iat: iatSec }, jwtSecret, {
       algorithm: 'HS256',
       expiresIn: '15m',
     });

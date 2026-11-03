@@ -43,13 +43,13 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-nz94y';
+const fixturePrefix = 'TestFixture-nz94y';
 // The forgot-password route validator runs normalizeEmail() (default
 // all_lowercase: true) before the controller's user lookup. The controller
 // then findUnique()s on the normalized value, so test fixture emails MUST be
 // already-lowercase or the lookup misses the user we created. Username keeps
 // the cased prefix (scoped cleanup is by collected userId, not by email).
-const EMAIL_PREFIX = 'testfixture-nz94y';
+const emailPrefix = 'testfixture-nz94y';
 
 describe('passwordController — parameterized raw queries (Equoria-nz94y)', () => {
   let captureFile = null;
@@ -98,7 +98,7 @@ describe('passwordController — parameterized raw queries (Equoria-nz94y)', () 
   // 1. The converted INSERT/SELECT/UPDATE paths persist and consume a token.
   it('forgot-password INSERT persists a token row and reset-password SELECT/UPDATE consume it', async () => {
     const tag = randomBytes(6).toString('hex');
-    const email = `${EMAIL_PREFIX}-${tag}@example.com`;
+    const email = `${emailPrefix}-${tag}@example.com`;
     const originalPassword = 'OriginalPass1!';
     const newPassword = 'NewSecurePass2@';
 
@@ -106,7 +106,7 @@ describe('passwordController — parameterized raw queries (Equoria-nz94y)', () 
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${FIXTURE_PREFIX}-${tag}`,
+        username: `${fixturePrefix}-${tag}`,
         email,
         password: hashedOriginal,
         firstName: 'Param',
@@ -174,14 +174,14 @@ describe('passwordController — parameterized raw queries (Equoria-nz94y)', () 
   //    unsafe form is reintroduced. That is the AC's failure signal.
   it('forgot-password INSERT binds a SQL-injection User-Agent header as data, not SQL', async () => {
     const tag = randomBytes(6).toString('hex');
-    const email = `${EMAIL_PREFIX}-ua-${tag}@example.com`;
+    const email = `${emailPrefix}-ua-${tag}@example.com`;
     const originalPassword = 'OriginalPass1!';
 
     const hashedOriginal = await bcrypt.hash(originalPassword, 1);
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${FIXTURE_PREFIX}-ua-${tag}`,
+        username: `${fixturePrefix}-ua-${tag}`,
         email,
         password: hashedOriginal,
         firstName: 'UserAgent',

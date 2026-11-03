@@ -31,11 +31,11 @@ import {
 import { retireStaffCheckinCodesTx } from '../../staff/index.mjs';
 
 // Email verification configuration
-const EMAIL_CONFIG = {
-  TOKEN_LENGTH: 32, // 32 bytes = 256 bits
-  TOKEN_EXPIRY_HOURS: 24, // 24 hours
-  MAX_PENDING_TOKENS: 5, // Maximum pending tokens per user
-  RESEND_COOLDOWN_MINUTES: 5, // Minimum time between resend requests
+const emailConfig = {
+  tokenLength: 32, // 32 bytes = 256 bits
+  tokenExpiryHours: 24, // 24 hours
+  maxPendingTokens: 5, // Maximum pending tokens per user
+  resendCooldownMinutes: 5, // Minimum time between resend requests
 };
 
 /**
@@ -44,8 +44,8 @@ const EMAIL_CONFIG = {
  * its own token rows without duplicating the numbers (Equoria-6p398.5 fix
  * round 1). Kept here because this module owns the token lifecycle.
  */
-export const VERIFICATION_RESEND_COOLDOWN_MS = EMAIL_CONFIG.RESEND_COOLDOWN_MINUTES * 60 * 1000;
-export const MAX_PENDING_VERIFICATION_TOKENS = EMAIL_CONFIG.MAX_PENDING_TOKENS;
+export const verificationResendCooldownMs = emailConfig.resendCooldownMinutes * 60 * 1000;
+export const maxPendingVerificationTokens = emailConfig.maxPendingTokens;
 
 /**
  * Purposes a verification token may serve (Equoria-6p398.5, Finding 5).
@@ -56,9 +56,9 @@ export const MAX_PENDING_VERIFICATION_TOKENS = EMAIL_CONFIG.MAX_PENDING_TOKENS;
  * be able to move the recovery identity, and an email-change token must not be
  * redeemable at `GET /auth/verify-email`.
  */
-export const VERIFICATION_TOKEN_PURPOSE = Object.freeze({
+export const verificationTokenPurpose = Object.freeze({
   SIGNUP: 'signup',
-  EMAIL_CHANGE: 'email_change',
+  emailChange: 'email_change',
 });
 
 /**
@@ -72,20 +72,20 @@ export const VERIFICATION_TOKEN_PURPOSE = Object.freeze({
  * a bare hex token is, correctly, a signup token. URL-safe (unreserved
  * characters only) so it survives the emailed link unescaped.
  */
-const EMAIL_CHANGE_TOKEN_PREFIX = 'ec1_';
+const emailChangeTokenPrefix = 'ec1_';
 
 /**
  * Generate Cryptographically Secure Verification Token
  * Creates a URL-safe token with 256-bit entropy, tagged with its purpose.
  *
- * @param {string} [purpose] - One of VERIFICATION_TOKEN_PURPOSE. Defaults to
+ * @param {string} [purpose] - One of verificationTokenPurpose. Defaults to
  *   SIGNUP so every existing call site keeps its current behavior.
  * @returns {string} Purpose-tagged, hex-encoded verification token
  */
-export function generateVerificationToken(purpose = VERIFICATION_TOKEN_PURPOSE.SIGNUP) {
-  const secret = crypto.randomBytes(EMAIL_CONFIG.TOKEN_LENGTH).toString('hex');
-  return purpose === VERIFICATION_TOKEN_PURPOSE.EMAIL_CHANGE
-    ? `${EMAIL_CHANGE_TOKEN_PREFIX}${secret}`
+export function generateVerificationToken(purpose = verificationTokenPurpose.SIGNUP) {
+  const secret = crypto.randomBytes(emailConfig.tokenLength).toString('hex');
+  return purpose === verificationTokenPurpose.emailChange
+    ? `${emailChangeTokenPrefix}${secret}`
     : secret;
 }
 
@@ -94,12 +94,12 @@ export function generateVerificationToken(purpose = VERIFICATION_TOKEN_PURPOSE.S
  * tokens read as SIGNUP.
  *
  * @param {unknown} rawToken
- * @returns {string} A VERIFICATION_TOKEN_PURPOSE value
+ * @returns {string} A verificationTokenPurpose value
  */
 export function readTokenPurpose(rawToken) {
-  return typeof rawToken === 'string' && rawToken.startsWith(EMAIL_CHANGE_TOKEN_PREFIX)
-    ? VERIFICATION_TOKEN_PURPOSE.EMAIL_CHANGE
-    : VERIFICATION_TOKEN_PURPOSE.SIGNUP;
+  return typeof rawToken === 'string' && rawToken.startsWith(emailChangeTokenPrefix)
+    ? verificationTokenPurpose.emailChange
+    : verificationTokenPurpose.SIGNUP;
 }
 
 /**
@@ -152,9 +152,9 @@ export async function createVerificationToken(userId, email, metadata = {}) {
     },
   });
 
-  if (pendingTokens >= EMAIL_CONFIG.MAX_PENDING_TOKENS) {
+  if (pendingTokens >= emailConfig.maxPendingTokens) {
     throw new AppError(
-      `Maximum pending verification tokens (${EMAIL_CONFIG.MAX_PENDING_TOKENS}) reached`,
+      `Maximum pending verification tokens (${emailConfig.maxPendingTokens}) reached`,
       400,
     );
   }
@@ -166,7 +166,7 @@ export async function createVerificationToken(userId, email, metadata = {}) {
   });
 
   if (recentToken) {
-    const cooldownMs = EMAIL_CONFIG.RESEND_COOLDOWN_MINUTES * 60 * 1000;
+    const cooldownMs = emailConfig.resendCooldownMinutes * 60 * 1000;
     const timeSinceLastToken = Date.now() - recentToken.createdAt.getTime();
 
     if (timeSinceLastToken < cooldownMs) {
@@ -182,7 +182,7 @@ export async function createVerificationToken(userId, email, metadata = {}) {
   const token = generateVerificationToken();
 
   // Calculate expiration
-  const expiresAt = new Date(Date.now() + EMAIL_CONFIG.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + emailConfig.tokenExpiryHours * 60 * 60 * 1000);
 
   // Store only the hash (Equoria-uy73). The raw token leaves this process
   // in the return value and the outbound email; it is never persisted.
@@ -227,7 +227,7 @@ export async function verifyEmailToken(token, metadata = {}) {
     // here; otherwise "proof of ownership of one address" would verify another.
     // Checked before the lookup, and folded into the same generic
     // invalid-token response (with the same timing pad) so it is not an oracle.
-    if (readTokenPurpose(token) !== VERIFICATION_TOKEN_PURPOSE.SIGNUP) {
+    if (readTokenPurpose(token) !== verificationTokenPurpose.SIGNUP) {
       await new Promise(resolve => setTimeout(resolve, 100));
       return {
         success: false,

@@ -15,7 +15,7 @@
  *   - updateProfile merges notifications/display INTO existing
  *     settings JSON without clobbering server-owned keys (onboarding,
  *     milestones, inventory, economy).
- *   - updateUserPreferences gates keys by ALLOWED_PREFERENCE_KEYS (from
+ *   - updateUserPreferences gates keys by allowedPreferenceKeys (from
  *     the auth-constants module). Unknown keys → 400; non-boolean
  *     values → 400. Merge happens inside a prisma.$transaction for
  *     read-modify-write atomicity (CodeRabbit Major 2026-04-20).
@@ -29,7 +29,7 @@ import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
-import { ALLOWED_PREFERENCE_KEYS } from '../constants/authConstants.mjs';
+import { allowedPreferenceKeys } from '../constants/authConstants.mjs';
 import { sanitizeInput } from '../../../utils/securityValidation.mjs';
 import { assertNoDirectEmailWrite } from '../../../utils/emailIdentityPolicy.mjs';
 
@@ -401,7 +401,7 @@ export const updateUserPreferences = async (req, res, next) => {
     }
 
     // Whitelist validation — reject unknown keys
-    const unknownKeys = submittedKeys.filter(k => !ALLOWED_PREFERENCE_KEYS.includes(k));
+    const unknownKeys = submittedKeys.filter(k => !allowedPreferenceKeys.includes(k));
     if (unknownKeys.length > 0) {
       throw new AppError(`Unknown preference key(s): ${unknownKeys.join(', ')}`, 400);
     }

@@ -107,7 +107,7 @@ describe('recordTransactionTx — Equoria-pqp69 sentinel-positive', () => {
     // taking a `prisma` reference into the closure), this test will FAIL
     // because the ledger row will survive the throw.
     const user = await makeFixtureUser(1000);
-    const ROLLBACK_MARKER = `pqp69-rollback-${randomBytes(4).toString('hex')}`;
+    const rollbackMarker = `pqp69-rollback-${randomBytes(4).toString('hex')}`;
 
     await expect(
       prisma.$transaction(async tx => {
@@ -120,7 +120,7 @@ describe('recordTransactionTx — Equoria-pqp69 sentinel-positive', () => {
           userId: user.id,
           type: 'debit',
           amount: 100,
-          category: ROLLBACK_MARKER,
+          category: rollbackMarker,
           description: 'sentinel-2: should be rolled back',
         });
         // Force the rollback. If recordTransactionTx wrote through the
@@ -132,7 +132,7 @@ describe('recordTransactionTx — Equoria-pqp69 sentinel-positive', () => {
     // Verify the ledger row did NOT persist — query by the unique category
     // marker so we can't false-positive on unrelated rows.
     const rows = await prisma.userTransaction.findMany({
-      where: { userId: user.id, category: ROLLBACK_MARKER },
+      where: { userId: user.id, category: rollbackMarker },
     });
     expect(rows).toHaveLength(0);
 

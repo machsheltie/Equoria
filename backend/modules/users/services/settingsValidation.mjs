@@ -11,17 +11,17 @@
  *
  * This module constrains the client-writable surface of `settings` to the
  * SAME known structure the sibling auth paths allow:
- *   - PATCH /auth/profile/preferences → `preferences` keys ∈ ALLOWED_PREFERENCE_KEYS
+ *   - PATCH /auth/profile/preferences → `preferences` keys ∈ allowedPreferenceKeys
  *   - PUT   /auth/profile            → `notifications` / `display` (plain prefs)
  *
- * It deliberately imports `ALLOWED_PREFERENCE_KEYS` from the auth-module
+ * It deliberately imports `allowedPreferenceKeys` from the auth-module
  * constants (the single source of truth) so the two paths can NOT drift —
  * adding a preference key in one place updates both. Equoria-vhv3i moved
  * the constant out of the controller into a dedicated constants module so
  * the cross-module import no longer crosses a controller boundary.
  */
 
-import { ALLOWED_PREFERENCE_KEYS } from '../../auth/index.mjs';
+import { allowedPreferenceKeys } from '../../auth/index.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
 /**
@@ -31,7 +31,7 @@ import AppError from '../../../errors/AppError.mjs';
  * client-writable here, or unknown and must be rejected. These three mirror
  * exactly what the /auth/profile + /auth/profile/preferences paths expose.
  */
-export const ALLOWED_SETTINGS_KEYS = Object.freeze(['preferences', 'notifications', 'display']);
+export const allowedSettingsKeys = Object.freeze(['preferences', 'notifications', 'display']);
 
 /**
  * Hard cap on the serialized size of the client-supplied `settings` payload.
@@ -39,7 +39,7 @@ export const ALLOWED_SETTINGS_KEYS = Object.freeze(['preferences', 'notification
  * (a handful of boolean/string/number toggles) is well under 1 KB; 4 KB is a
  * generous ceiling that still rejects multi-megabyte abuse.
  */
-export const MAX_SETTINGS_BYTES = 4096;
+export const maxSettingsBytes = 4096;
 
 /**
  * A plain object of primitive values (boolean | string | number). Mirrors
@@ -60,10 +60,10 @@ function isPlainPrefs(value) {
  *
  * Throws AppError(400) on:
  *   - non-object / array / null settings
- *   - oversized serialized payload (> MAX_SETTINGS_BYTES)
- *   - unknown top-level settings key (not in ALLOWED_SETTINGS_KEYS)
+ *   - oversized serialized payload (> maxSettingsBytes)
+ *   - unknown top-level settings key (not in allowedSettingsKeys)
  *   - non-flat-primitive notifications/display object
- *   - unknown preference key (not in ALLOWED_PREFERENCE_KEYS)
+ *   - unknown preference key (not in allowedPreferenceKeys)
  *   - non-flat-primitive preferences object
  *
  * Returns the validated (sanitized) settings object — only allow-listed
@@ -87,12 +87,12 @@ export function validateSettingsPayload(settings) {
     // Circular structure or non-serializable value → reject (fail closed).
     throw new AppError('settings is not serializable', 400);
   }
-  if (serializedBytes > MAX_SETTINGS_BYTES) {
-    throw new AppError(`settings payload too large (max ${MAX_SETTINGS_BYTES} bytes)`, 400);
+  if (serializedBytes > maxSettingsBytes) {
+    throw new AppError(`settings payload too large (max ${maxSettingsBytes} bytes)`, 400);
   }
 
   const submittedKeys = Object.keys(settings);
-  const unknownTopLevel = submittedKeys.filter(k => !ALLOWED_SETTINGS_KEYS.includes(k));
+  const unknownTopLevel = submittedKeys.filter(k => !allowedSettingsKeys.includes(k));
   if (unknownTopLevel.length > 0) {
     throw new AppError(`Unknown settings key(s): ${unknownTopLevel.join(', ')}`, 400);
   }
@@ -110,14 +110,14 @@ export function validateSettingsPayload(settings) {
     }
   }
 
-  // preferences — keys gated by ALLOWED_PREFERENCE_KEYS (matches /auth/profile/preferences)
+  // preferences — keys gated by allowedPreferenceKeys (matches /auth/profile/preferences)
   if (Object.prototype.hasOwnProperty.call(settings, 'preferences')) {
     const preferences = settings.preferences;
     if (typeof preferences !== 'object' || preferences === null || Array.isArray(preferences)) {
       throw new AppError('settings.preferences must be an object', 400);
     }
     const prefKeys = Object.keys(preferences);
-    const unknownPrefs = prefKeys.filter(k => !ALLOWED_PREFERENCE_KEYS.includes(k));
+    const unknownPrefs = prefKeys.filter(k => !allowedPreferenceKeys.includes(k));
     if (unknownPrefs.length > 0) {
       throw new AppError(`Unknown preference key(s): ${unknownPrefs.join(', ')}`, 400);
     }

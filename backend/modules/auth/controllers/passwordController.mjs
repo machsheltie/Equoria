@@ -20,15 +20,15 @@
  *     invocations that bypass the route validator.
  *   - Equoria-dv1lv / Equoria-54sk7: forgotPassword has TWO timing-side-
  *     channel mitigations. (a) BOTH branches run a fixed-cost
- *     bcrypt.compare against FAKE_BCRYPT_HASH (Equoria-54sk7) so the
+ *     bcrypt.compare against fakeBcryptHash (Equoria-54sk7) so the
  *     dominant, deterministic CPU cost is identical whether or not the
  *     email is registered — the same constant-time anchor the login
- *     handler uses (authController FAKE_BCRYPT_HASH, Equoria-gm4fg). This
+ *     handler uses (authController fakeBcryptHash, Equoria-gm4fg). This
  *     replaced the prior SQL-sleep "delay padding", which was a literal
  *     no-op that did NOT mirror the user-branch UPDATE+INSERT cost. (b) the
  *     email send is fire-and-forget AFTER the response so the SMTP RTT does
  *     not encode registration-state. (c) Equoria-jeci6: both branches wait
- *     for FORGOT_PASSWORD_MIN_RESPONSE_MS from handler entry before
+ *     for forgotPasswordMinResponseMs from handler entry before
  *     answering, and a failed token save answers the same 200 (no 503
  *     status oracle).
  *   - Equoria-54sk7: the reset-token lookup compares a SHA-256 hash of the
@@ -66,7 +66,7 @@ import {
   maskEmailsInText,
 } from '../../../utils/emailIdentityPolicy.mjs';
 
-const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+const passwordResetTokenTtlMs = 60 * 60 * 1000;
 
 // Equoria-jeci6 (owner ruling J-1, 2026-10-19): forgot-password never answers
 // sooner than this, on either branch. The registered branch does more work than
@@ -76,7 +76,7 @@ const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 // measured p99 of the whole request is ~361 ms on the dev laptop (80 quiet
 // samples, 2026-10-19), and the worst ever logged under contention was 612 ms.
 // forgotPasswordResponseFloor.sentinel.test.mjs reads this export.
-export const FORGOT_PASSWORD_MIN_RESPONSE_MS = 1000;
+export const forgotPasswordMinResponseMs = 1000;
 
 // Equoria-jeci6 fix round 1: the registered branch's token save is bounded so
 // a contended save (row lock, slow statement, busy pool) fails well before the
@@ -86,17 +86,17 @@ export const FORGOT_PASSWORD_MIN_RESPONSE_MS = 1000;
 // Prisma's interactive timeout alone does NOT interrupt a statement blocked on
 // a lock (measured: it waited until the lock was released), so the save also
 // sets a transaction-local Postgres statement_timeout.
-const TOKEN_SAVE_TIMEOUT_MS = 500;
-const TOKEN_SAVE_MAX_POOL_WAIT_MS = 100;
+const tokenSaveTimeoutMs = 500;
+const tokenSaveMaxPoolWaitMs = 100;
 
 /**
- * Wait until `startedAt + FORGOT_PASSWORD_MIN_RESPONSE_MS` (hrtime). Loops
+ * Wait until `startedAt + forgotPasswordMinResponseMs` (hrtime). Loops
  * because a Node timer can fire up to a millisecond early against hrtime. If
  * the work already took longer, return at once and log the overrun, so a
  * breach of the timing guarantee shows in the server log.
  */
 async function waitForResponseFloor(startedAt) {
-  const deadline = startedAt + BigInt(FORGOT_PASSWORD_MIN_RESPONSE_MS) * 1_000_000n;
+  const deadline = startedAt + BigInt(forgotPasswordMinResponseMs) * 1_000_000n;
   const overNs = process.hrtime.bigint() - deadline;
   if (overNs > 0n) {
     logger.warn('[forgotPassword] timing floor exceeded', { overMs: Number(overNs / 1_000_000n) });
@@ -114,7 +114,7 @@ async function waitForResponseFloor(startedAt) {
 // ms) is the dominant deterministic cost on BOTH branches — it swamps the
 // small difference between the user-branch UPDATE+INSERT and the no-user
 // branch, which the prior SQL-sleep no-op failed to mirror. This mirrors the
-// login handler's FAKE_BCRYPT_HASH approach (authController.mjs, Equoria-gm4fg).
+// login handler's fakeBcryptHash approach (authController.mjs, Equoria-gm4fg).
 //
 // The placeholder hashes a random ~32-byte secret; the passphrase is never
 // persisted, so a successful compare here is structurally impossible. Cost is
@@ -128,24 +128,24 @@ async function waitForResponseFloor(startedAt) {
 // value only the forgotPassword handler reads. The getter is awaited on
 // BOTH branches before the compare, so even the first request pays the
 // one-time generation equally regardless of registration state.
-let FAKE_BCRYPT_HASH = null;
+let fakeBcryptHash = null;
 function getFakeBcryptHash() {
-  FAKE_BCRYPT_HASH ??= bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
-  return FAKE_BCRYPT_HASH;
+  fakeBcryptHash ??= bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
+  return fakeBcryptHash;
 }
 // Fixed input fed to the constant-time compare. Static so the compare cost is
 // data-independent and identical on every request, on both branches.
-const TIMING_ANCHOR_INPUT = 'forgot-password-timing-anchor';
+const timingAnchorInput = 'forgot-password-timing-anchor';
 
 /**
  * Run the fixed-cost bcrypt compare that anchors the forgotPassword timing
- * envelope. Always returns false (FAKE_BCRYPT_HASH is unmatchable); the return
+ * envelope. Always returns false (fakeBcryptHash is unmatchable); the return
  * value is intentionally ignored — only the wall-clock cost matters. Called on
  * BOTH the registered-email and unknown-email branches so the dominant CPU
  * cost is identical regardless of registration state (Equoria-54sk7).
  */
 async function runTimingAnchorCompare() {
-  return bcrypt.compare(TIMING_ANCHOR_INPUT, await getFakeBcryptHash());
+  return bcrypt.compare(timingAnchorInput, await getFakeBcryptHash());
 }
 
 /**
@@ -352,7 +352,7 @@ export const forgotPassword = async (req, res, next) => {
     // tracked separately per OPTIMAL_FIX §3 (do-not-bundle).
     const ipAddress = req.ip || req.connection?.remoteAddress || null;
     const userAgent = req.headers['user-agent'];
-    const ttlSeconds = Math.floor(PASSWORD_RESET_TOKEN_TTL_MS / 1000);
+    const ttlSeconds = Math.floor(passwordResetTokenTtlMs / 1000);
 
     // Invalidate existing unused tokens and insert the new one atomically.
     // The password_reset_tokens table is created by migration
@@ -376,7 +376,7 @@ export const forgotPassword = async (req, res, next) => {
         prisma.$transaction(
           async tx => {
             // Transaction-local (is_local = true), so it ends with this save.
-            await tx.$queryRaw`SELECT set_config('statement_timeout', ${`${TOKEN_SAVE_TIMEOUT_MS}ms`}, true)`;
+            await tx.$queryRaw`SELECT set_config('statement_timeout', ${`${tokenSaveTimeoutMs}ms`}, true)`;
             await tx.$executeRaw`
             UPDATE password_reset_tokens
             SET "usedAt" = NOW()
@@ -393,7 +393,7 @@ export const forgotPassword = async (req, res, next) => {
               ${userAgent}
             )`;
           },
-          { timeout: TOKEN_SAVE_TIMEOUT_MS, maxWait: TOKEN_SAVE_MAX_POOL_WAIT_MS },
+          { timeout: tokenSaveTimeoutMs, maxWait: tokenSaveMaxPoolWaitMs },
         ),
         { message: 'Password reset service is busy right now, please retry in a moment.' },
       );

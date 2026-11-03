@@ -21,10 +21,10 @@ import path from 'node:path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const ROUTE_FILE = path.resolve(__dirname, '../routes/leaderboardRoutes.mjs');
+const routeFile = path.resolve(__dirname, '../routes/leaderboardRoutes.mjs');
 
 describe('SENTINEL: leaderboardRoutes /user-summary/:userId single registration (Equoria-z6eh)', () => {
-  const source = readFileSync(ROUTE_FILE, 'utf8');
+  const source = readFileSync(routeFile, 'utf8');
 
   it('registers GET /user-summary/:userId exactly once', () => {
     const matches = source.match(/router\.get\(\s*['"]\/user-summary\/:userId['"]/g) || [];

@@ -33,13 +33,13 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { VERIFICATION_RESEND_COOLDOWN_MS } from '../services/emailVerificationService.mjs';
+import { verificationResendCooldownMs } from '../services/emailVerificationService.mjs';
 import { maskEmailAddress } from '../../../utils/emailIdentityPolicy.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const PREFIX = 'f9ecstatus';
 const PASSWORD = 'CorrectHorse1!';
-const STATUS_URL = '/api/v1/auth/email-change/status';
+const statusUrl = '/api/v1/auth/email-change/status';
 
 const uid = () => randomBytes(5).toString('hex');
 
@@ -135,7 +135,7 @@ async function authedSend(method, url, body, actingToken = token) {
 }
 
 const readStatus = (actingToken = token) =>
-  request(app).get(STATUS_URL).set('Origin', ORIGIN).set('Authorization', `Bearer ${actingToken}`);
+  request(app).get(statusUrl).set('Origin', ORIGIN).set('Authorization', `Bearer ${actingToken}`);
 
 const requestChange = (body, actingToken) => authedSend('post', '/api/v1/auth/email-change/request', body, actingToken);
 
@@ -172,7 +172,7 @@ async function resetIdentity(email) {
 
 describe('Finding 9 — GET /api/v1/auth/email-change/status', () => {
   it('refuses an unauthenticated read', async () => {
-    const res = await request(app).get(STATUS_URL).set('Origin', ORIGIN);
+    const res = await request(app).get(statusUrl).set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 
@@ -222,7 +222,7 @@ describe('Finding 9 — GET /api/v1/auth/email-change/status', () => {
       select: { createdAt: true },
     });
     expect(new Date(res.body.data.pending.resendAvailableAt).getTime()).toBe(
-      tokenRow.createdAt.getTime() + VERIFICATION_RESEND_COOLDOWN_MS,
+      tokenRow.createdAt.getTime() + verificationResendCooldownMs,
     );
   });
 

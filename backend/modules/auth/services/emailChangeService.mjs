@@ -59,15 +59,15 @@ import {
   generateVerificationToken,
   hashVerificationToken,
   readTokenPurpose,
-  MAX_PENDING_VERIFICATION_TOKENS,
-  VERIFICATION_RESEND_COOLDOWN_MS,
-  VERIFICATION_TOKEN_PURPOSE,
+  maxPendingVerificationTokens,
+  verificationResendCooldownMs,
+  verificationTokenPurpose,
 } from '../services/emailVerificationService.mjs';
 import { retireStaffCheckinCodesTx, revokeStaffTrustedDevicesTx } from '../../staff/index.mjs';
 import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 
 /** Pending changes expire on the same 24h clock as signup verification. */
-export const PENDING_EMAIL_CHANGE_TTL_MS = 24 * 60 * 60 * 1000;
+export const pendingEmailChangeTtlMs = 24 * 60 * 60 * 1000;
 
 /**
  * Deliberately generic rejection for every unusable confirmation link (unknown,
@@ -75,10 +75,9 @@ export const PENDING_EMAIL_CHANGE_TTL_MS = 24 * 60 * 60 * 1000;
  * a holder WHICH of those applies is an oracle over other people's pending
  * changes.
  */
-const INVALID_LINK_MESSAGE =
-  'This email change link is invalid, expired, or has already been used.';
+const invalidLinkMessage = 'This email change link is invalid, expired, or has already been used.';
 
-const invalidLink = () => new AppError(INVALID_LINK_MESSAGE, 400);
+const invalidLink = () => new AppError(invalidLinkMessage, 400);
 
 /**
  * Prisma `where` that selects a user's OUTSTANDING pending recovery-address
@@ -205,9 +204,9 @@ export async function requestEmailChange({ userId, requestedEmail, password, met
   const livePendingChanges = await prisma.emailVerificationToken.count({
     where: { ...pendingChangeWhere, expiresAt: { gt: new Date() } },
   });
-  if (livePendingChanges >= MAX_PENDING_VERIFICATION_TOKENS) {
+  if (livePendingChanges >= maxPendingVerificationTokens) {
     throw new AppError(
-      `Maximum pending email changes (${MAX_PENDING_VERIFICATION_TOKENS}) reached`,
+      `Maximum pending email changes (${maxPendingVerificationTokens}) reached`,
       400,
     );
   }
@@ -219,8 +218,8 @@ export async function requestEmailChange({ userId, requestedEmail, password, met
   });
   if (lastChangeRequest) {
     const elapsedMs = Date.now() - lastChangeRequest.createdAt.getTime();
-    if (elapsedMs < VERIFICATION_RESEND_COOLDOWN_MS) {
-      const remainingSeconds = Math.ceil((VERIFICATION_RESEND_COOLDOWN_MS - elapsedMs) / 1000);
+    if (elapsedMs < verificationResendCooldownMs) {
+      const remainingSeconds = Math.ceil((verificationResendCooldownMs - elapsedMs) / 1000);
       const error = new AppError(
         `Please wait ${remainingSeconds} seconds before requesting another email change`,
         429,
@@ -231,8 +230,8 @@ export async function requestEmailChange({ userId, requestedEmail, password, met
   }
 
   // ── Stage it ────────────────────────────────────────────────────────────
-  const rawToken = generateVerificationToken(VERIFICATION_TOKEN_PURPOSE.EMAIL_CHANGE);
-  const expiresAt = new Date(Date.now() + PENDING_EMAIL_CHANGE_TTL_MS);
+  const rawToken = generateVerificationToken(verificationTokenPurpose.emailChange);
+  const expiresAt = new Date(Date.now() + pendingEmailChangeTtlMs);
 
   await withRetryableTxMapping(
     prisma.$transaction(async tx => {
@@ -285,7 +284,7 @@ export async function confirmEmailChange({ rawToken, metadata = {} }) {
   }
   // PURPOSE binding: a signup-verification token (or any untagged legacy token)
   // can never confirm a recovery-address change.
-  if (readTokenPurpose(rawToken) !== VERIFICATION_TOKEN_PURPOSE.EMAIL_CHANGE) {
+  if (readTokenPurpose(rawToken) !== verificationTokenPurpose.emailChange) {
     throw invalidLink();
   }
 
@@ -487,9 +486,7 @@ export async function readEmailChangeStatus(userId) {
       ? {
           maskedEmail: maskEmailAddress(pending.email),
           expiresAt: pending.expiresAt,
-          resendAvailableAt: new Date(
-            pending.createdAt.getTime() + VERIFICATION_RESEND_COOLDOWN_MS,
-          ),
+          resendAvailableAt: new Date(pending.createdAt.getTime() + verificationResendCooldownMs),
         }
       : null,
   };

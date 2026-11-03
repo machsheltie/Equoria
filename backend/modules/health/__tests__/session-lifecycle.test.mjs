@@ -45,16 +45,16 @@ describe('Session Lifecycle Management', () => {
   }
 
   // Per-suite prefix prevents cross-suite collisions when shards run in
-  // parallel. Cleanup uses startsWith(SUITE_PREFIX) for resilience against
+  // parallel. Cleanup uses startsWith(suitePrefix) for resilience against
   // crashed prior runs (Phase 3b).
-  const SUITE_PREFIX = 'slcycle';
+  const suitePrefix = 'slcycle';
   let testUser;
   let server;
   let _csrfToken;
   let hashedTestPassword;
   const testUserData = {
-    username: `${SUITE_PREFIX}_main`,
-    email: `${SUITE_PREFIX}-main@example.com`,
+    username: `${suitePrefix}_main`,
+    email: `${suitePrefix}-main@example.com`,
     password: 'TestPassword123!',
     firstName: 'Session',
     lastName: 'Test',
@@ -81,7 +81,7 @@ describe('Session Lifecycle Management', () => {
    * the user ids come from a suite-prefix lookup, and the horse delete is
    * id-scoped to the ids resolved from those users.
    *
-   * @param {string[]} ids - user ids previously resolved via SUITE_PREFIX lookup.
+   * @param {string[]} ids - user ids previously resolved via suitePrefix lookup.
    */
   async function deleteSuiteUsers(ids) {
     if (!Array.isArray(ids) || ids.length === 0) {
@@ -110,7 +110,7 @@ describe('Session Lifecycle Management', () => {
     // to make this very sweep throw the horses_userId_fkey RESTRICT error and
     // fail the whole suite at load.
     const stale = await prisma.user.findMany({
-      where: { OR: [{ email: { startsWith: `${SUITE_PREFIX}-` } }, { username: { startsWith: `${SUITE_PREFIX}_` } }] },
+      where: { OR: [{ email: { startsWith: `${suitePrefix}-` } }, { username: { startsWith: `${suitePrefix}_` } }] },
       select: { id: true },
     });
     await deleteSuiteUsers(stale.map(u => u.id));
@@ -176,7 +176,7 @@ describe('Session Lifecycle Management', () => {
       // horses -> refreshTokens -> users via deleteSuiteUsers).
       const remaining = await prisma.user.findMany({
         where: {
-          OR: [{ email: { startsWith: `${SUITE_PREFIX}-` } }, { username: { startsWith: `${SUITE_PREFIX}_` } }],
+          OR: [{ email: { startsWith: `${suitePrefix}-` } }, { username: { startsWith: `${suitePrefix}_` } }],
         },
         select: { id: true },
       });
@@ -722,8 +722,8 @@ describe('Session Lifecycle Management', () => {
     it('should handle complete user journey: register -> login -> use session -> change password -> re-login', async () => {
       // Step 1: Register new user (suite-prefixed so afterAll cleanup catches orphans)
       const newUserData = {
-        username: `${SUITE_PREFIX}_lc${randomBytes(8).toString('hex')}`,
-        email: `${SUITE_PREFIX}-lc-${randomBytes(8).toString('hex')}@example.com`,
+        username: `${suitePrefix}_lc${randomBytes(8).toString('hex')}`,
+        email: `${suitePrefix}-lc-${randomBytes(8).toString('hex')}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Lifecycle',
         lastName: 'Test',

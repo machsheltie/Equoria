@@ -24,12 +24,12 @@ describe('Authentication with HttpOnly Cookies', () => {
   // Per-suite prefix prevents cross-suite collisions when shards run in
   // parallel. All emails/usernames in this suite must share this prefix
   // so the startsWith cleanup below catches everything (Phase 3b).
-  const SUITE_PREFIX = 'acookie';
+  const suitePrefix = 'acookie';
   let _testUser;
   let server;
   const testUserData = {
-    username: `${SUITE_PREFIX}_main`,
-    email: `${SUITE_PREFIX}-main@example.com`,
+    username: `${suitePrefix}_main`,
+    email: `${suitePrefix}-main@example.com`,
     password: 'TestPassword123!',
     firstName: 'Cookie',
     lastName: 'Test',
@@ -45,7 +45,7 @@ describe('Authentication with HttpOnly Cookies', () => {
 
     // Clean up any lingering rows from prior crashed runs (suite-prefix scoped).
     const stale = await prisma.user.findMany({
-      where: { OR: [{ email: { startsWith: `${SUITE_PREFIX}-` } }, { username: { startsWith: `${SUITE_PREFIX}_` } }] },
+      where: { OR: [{ email: { startsWith: `${suitePrefix}-` } }, { username: { startsWith: `${suitePrefix}_` } }] },
       select: { id: true },
     });
     if (stale.length > 0) {
@@ -75,7 +75,7 @@ describe('Authentication with HttpOnly Cookies', () => {
   afterAll(async () => {
     // Clean up everything created under this suite's prefix.
     const remaining = await prisma.user.findMany({
-      where: { OR: [{ email: { startsWith: `${SUITE_PREFIX}-` } }, { username: { startsWith: `${SUITE_PREFIX}_` } }] },
+      where: { OR: [{ email: { startsWith: `${suitePrefix}-` } }, { username: { startsWith: `${suitePrefix}_` } }] },
       select: { id: true },
     });
     if (remaining.length > 0) {
@@ -97,8 +97,8 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should set httpOnly cookies on successful registration', async () => {
       const registrationUser = {
         ...testUserData,
-        email: `${SUITE_PREFIX}-reg-${randomBytes(8).toString('hex')}@example.com`,
-        username: `${SUITE_PREFIX}_r${randomBytes(8).toString('hex')}`,
+        email: `${suitePrefix}-reg-${randomBytes(8).toString('hex')}@example.com`,
+        username: `${suitePrefix}_r${randomBytes(8).toString('hex')}`,
       };
       const response = await request(app)
         .post('/api/v1/auth/register')
@@ -151,8 +151,8 @@ describe('Authentication with HttpOnly Cookies', () => {
       // catch this row if the inline cleanup below never runs (crashed run).
       const seedUser = {
         ...testUserData,
-        email: `${SUITE_PREFIX}-seed-${unique}@example.com`,
-        username: `${SUITE_PREFIX}_s${unique}`,
+        email: `${suitePrefix}-seed-${unique}@example.com`,
+        username: `${suitePrefix}_s${unique}`,
       };
       const response = await request(app)
         .post('/api/v1/auth/register')
@@ -177,8 +177,8 @@ describe('Authentication with HttpOnly Cookies', () => {
     });
 
     it('should NOT expose tokens in response body (XSS protection)', async () => {
-      const noxssEmail = `${SUITE_PREFIX}-noxss@example.com`;
-      const noxssUsername = `${SUITE_PREFIX}_noxss`;
+      const noxssEmail = `${suitePrefix}-noxss@example.com`;
+      const noxssUsername = `${suitePrefix}_noxss`;
       const _response = await request(app)
         .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
@@ -557,8 +557,8 @@ describe('Authentication with HttpOnly Cookies', () => {
 
   describe('Security: XSS Protection Verification', () => {
     it('should never include JWT tokens in any response body', async () => {
-      const xssEmail = `${SUITE_PREFIX}-xss@example.com`;
-      const xssUsername = `${SUITE_PREFIX}_xss`;
+      const xssEmail = `${suitePrefix}-xss@example.com`;
+      const xssUsername = `${suitePrefix}_xss`;
       // Pre-clean any lingering rows from prior crashed runs.
       const staleUsers = await prisma.user.findMany({
         where: { OR: [{ email: xssEmail }, { username: xssUsername }] },
@@ -667,12 +667,12 @@ describe('Authentication with HttpOnly Cookies', () => {
       // Suite-prefixed so the afterAll prefix sweep deletes this row (the
       // old `fallback+...` naming escaped the sweep and leaked the user).
       const uniqueSuffix = Date.now();
-      fallbackEmail = `${SUITE_PREFIX}-fb-${uniqueSuffix}@example.com`;
+      fallbackEmail = `${suitePrefix}-fb-${uniqueSuffix}@example.com`;
       const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
       const user = await prisma.user.create({
         data: {
           emailVerified: true,
-          username: `${SUITE_PREFIX}_fb${uniqueSuffix}`,
+          username: `${suitePrefix}_fb${uniqueSuffix}`,
           email: fallbackEmail,
           password: hashedPassword,
           firstName: 'Fallback', // Required field

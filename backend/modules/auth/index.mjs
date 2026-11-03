@@ -9,4 +9,4 @@
  * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export { ALLOWED_PREFERENCE_KEYS, STARTER_CRAFTING_MATERIALS } from './constants/authConstants.mjs';
+export { allowedPreferenceKeys, starterCraftingMaterials } from './constants/authConstants.mjs';

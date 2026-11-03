@@ -26,7 +26,7 @@
  *     can operate on an explicit set without scanning the whole table.
  *
  * Single source of truth:
- *   STARTER_CRAFTING_MATERIALS is re-exported from the auth controller so the
+ *   starterCraftingMaterials is re-exported from the auth controller so the
  *   grant value can never drift from what new registrations receive.
  *
  * The accompanying Prisma migration
@@ -49,9 +49,9 @@ import { fileURLToPath } from 'node:url';
 // Equoria-vhv3i: pulled from constants module instead of the auth controller
 // so this one-shot backfill does NOT drag the full auth graph (bcrypt, jwt,
 // mfa services, email service) into its runtime.
-import { STARTER_CRAFTING_MATERIALS } from '../modules/auth/index.mjs';
+import { starterCraftingMaterials } from '../modules/auth/index.mjs';
 
-export { STARTER_CRAFTING_MATERIALS };
+export { starterCraftingMaterials };
 
 /**
  * True when the settings object lacks a usable craftingMaterials object.
@@ -69,7 +69,7 @@ export function needsCraftingBackfill(settings) {
 }
 
 /**
- * Grant STARTER_CRAFTING_MATERIALS to accounts missing it.
+ * Grant starterCraftingMaterials to accounts missing it.
  *
  * @param {object}   [opts]
  * @param {string[]} [opts.userIds]  Restrict to these user ids (test/targeted rerun).
@@ -112,7 +112,7 @@ export async function backfillCraftingMaterials(opts = {}) {
         user.settings && typeof user.settings === 'object' && !Array.isArray(user.settings)
           ? user.settings
           : {};
-      const next = { ...existing, craftingMaterials: { ...STARTER_CRAFTING_MATERIALS } };
+      const next = { ...existing, craftingMaterials: { ...starterCraftingMaterials } };
 
       if (dryRun) {
         granted += 1;

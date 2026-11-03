@@ -34,18 +34,18 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import * as passwordController from '../controllers/passwordController.mjs';
 
-const FLOOR_MS = passwordController.FORGOT_PASSWORD_MIN_RESPONSE_MS;
-const EMAIL_PREFIX = 'testfixture-jeci6busy';
+const floorMs = passwordController.forgotPasswordMinResponseMs;
+const emailPrefix = 'testfixture-jeci6busy';
 // The holder releases its lock as soon as the request has answered; this cap
 // only bounds the test if the request never answers. It is longer than
 // Prisma's default 5000 ms interactive timeout, so an unbounded token save
 // would still be holding the request when it fires.
-const LOCK_CAP_MS = 8000;
+const lockCapMs = 8000;
 // Upper tolerance for a contended request: the floor plus half of it. Without
 // a bounded token save the request waits ~5000 ms; with one it answers at the
 // floor. Load only matters if the pre-save work (bcrypt anchor) plus the
 // bounded save exceed 1500 ms.
-const CONTENDED_UPPER_MS = FLOOR_MS * 1.5;
+const contendedUpperMs = floorMs * 1.5;
 
 const createdUserIds = [];
 let user;
@@ -56,7 +56,7 @@ beforeAll(async () => {
     data: {
       emailVerified: true,
       username: `TestFixture-jeci6busy-${tag}`,
-      email: `${EMAIL_PREFIX}-${tag}@example.com`,
+      email: `${emailPrefix}-${tag}@example.com`,
       password: await bcrypt.hash('BusyPass123!', 1),
       firstName: 'Busy',
       lastName: 'Sentinel',
@@ -106,16 +106,16 @@ function holdTokenRowLock(userId) {
         WHERE "userId" = ${userId} AND "usedAt" IS NULL
         FOR UPDATE`;
       lockTaken();
-      await Promise.race([released, sleep(LOCK_CAP_MS)]);
+      await Promise.race([released, sleep(lockCapMs)]);
     },
-    { timeout: LOCK_CAP_MS + 10000 },
+    { timeout: lockCapMs + 10000 },
   );
   return { locked, release, done };
 }
 
 describe('forgot-password under database overload (Equoria-jeci6 J-2)', () => {
   it('a registered email whose token save fails gets the same answer as an unknown email, at the floor', async () => {
-    const unknown = await timedForgot(`${EMAIL_PREFIX}-nobody-${randomBytes(6).toString('hex')}@example.com`);
+    const unknown = await timedForgot(`${emailPrefix}-nobody-${randomBytes(6).toString('hex')}@example.com`);
 
     const spies = ['info', 'warn', 'error'].map(level => jest.spyOn(logger, level));
     const holder = holdTokenRowLock(user.id);
@@ -142,9 +142,9 @@ describe('forgot-password under database overload (Equoria-jeci6 J-2)', () => {
     });
 
     // No timing oracle: the contended request also answers at the floor.
-    expect(unknown.ms).toBeGreaterThanOrEqual(FLOOR_MS - 1);
-    expect(known.ms).toBeGreaterThanOrEqual(FLOOR_MS - 1);
-    expect(Math.round(known.ms)).toBeLessThan(CONTENDED_UPPER_MS);
+    expect(unknown.ms).toBeGreaterThanOrEqual(floorMs - 1);
+    expect(known.ms).toBeGreaterThanOrEqual(floorMs - 1);
+    expect(Math.round(known.ms)).toBeLessThan(contendedUpperMs);
 
     // The failure path really ran: no new token row was saved.
     const rows = await prisma.$queryRaw`
