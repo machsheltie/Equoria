@@ -95,8 +95,6 @@ async function makeRider(userId, starLevel) {
       firstName: prefix,
       lastName: `Rider-${tag()}`,
       personality: 'gentle',
-      skillLevel: 'developing',
-      speciality: 'Dressage',
       starLevel,
       userId,
     },
