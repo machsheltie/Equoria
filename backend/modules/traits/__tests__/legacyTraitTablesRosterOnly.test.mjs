@@ -12,21 +12,27 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { EPIGENETIC_FLAG_DEFINITIONS } from '../../../config/epigeneticFlagDefinitions.mjs';
-import { ENVIRONMENTAL_TRIGGERS } from '../services/environmentalTriggerRules.mjs';
+import { getAllFlagDefinitions } from '../../../config/epigeneticFlagDefinitions.mjs';
+import * as triggerRules from '../services/environmentalTriggerRules.mjs';
 import { isRosterTrait } from '../../../utils/epigeneticTraits.mjs';
 
 const offRoster = names => names.filter(name => !isRosterTrait(name));
 
 describe('Equoria-qw4kp: legacy trait tables name only roster traits', () => {
   it('flag conflict lists name no retired trait', () => {
-    const named = Object.values(EPIGENETIC_FLAG_DEFINITIONS).flatMap(flag => flag.conflictsWith ?? []);
+    const named = Object.values(getAllFlagDefinitions()).flatMap(flag => flag.conflictsWith ?? []);
     expect(named.length).toBeGreaterThan(0);
     expect(offRoster(named)).toEqual([]);
   });
 
   it('environmental trigger trait lists name no retired trait', () => {
-    const named = Object.values(ENVIRONMENTAL_TRIGGERS).flatMap(trigger => trigger.traitsAffected);
+    // Every trigger in the rules module (the triggers table is the one whose
+    // entries carry traitsAffected).
+    const named = Object.values(triggerRules)
+      .filter(table => table && typeof table === 'object' && !Array.isArray(table))
+      .flatMap(table => Object.values(table))
+      .filter(entry => Array.isArray(entry?.traitsAffected))
+      .flatMap(trigger => trigger.traitsAffected);
     expect(named.length).toBeGreaterThan(0);
     expect(offRoster(named)).toEqual([]);
   });
