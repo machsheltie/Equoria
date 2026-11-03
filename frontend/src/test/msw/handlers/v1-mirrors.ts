@@ -190,7 +190,6 @@ export const v1MirrorHandlers = [
           entryFee: 50,
           prizePool: 5000,
           status: 'open',
-          maxEntries: 20,
           currentEntries: 12,
           location: 'Central Arena',
         },
@@ -202,7 +201,6 @@ export const v1MirrorHandlers = [
           entryFee: 25,
           prizePool: 2500,
           status: 'open',
-          maxEntries: 30,
           currentEntries: 28,
         },
         {
@@ -213,7 +211,6 @@ export const v1MirrorHandlers = [
           entryFee: 0,
           prizePool: 0,
           status: 'open',
-          maxEntries: 50,
           currentEntries: 15,
         },
       ],

@@ -183,7 +183,6 @@ const CompetitionBrowserPage = (): JSX.Element => {
         entryFee: found.entryFee,
         description: found.description,
         location: found.location,
-        maxParticipants: found.maxEntries,
         currentParticipants: found.currentEntries,
       });
       // Equoria-ocn9: preserve a pre-selected horse (from ?horse= deep link

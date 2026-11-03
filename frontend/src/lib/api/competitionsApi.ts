@@ -37,12 +37,10 @@ export interface ShowFieldResponse {
     name: string;
     discipline: string;
     entryFee: number;
-    maxEntries: number | null;
     status: string;
     closeDate: string | null;
   };
   entryCount: number;
-  maxEntries: number | null;
   daysRemaining: number | null;
   entries: ShowFieldEntry[];
 }

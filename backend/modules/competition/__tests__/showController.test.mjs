@@ -631,17 +631,16 @@ describe('POST /api/v1/shows/:id/enter — unlimited entries (Equoria-nx8t1 R3)'
 
   afterAll(() => fullShowCleanup.run());
 
-  it('accepts entry even when a legacy maxEntries cap would have blocked it', async () => {
-    // Equoria-nx8t1 R3: entries are UNLIMITED. The 7-day deferred-window model
-    // removes the maxEntries cap entirely. Even a row that still carries a
-    // legacy maxEntries:1 value must NOT block additional entries — the
-    // controller no longer reads or enforces maxEntries.
+  it('accepts a second entry: shows have no entry cap', async () => {
+    // Equoria-nx8t1 R3: entries are UNLIMITED. Owner ruling q339 (2026-11-03):
+    // shows have no entry cap, ever; the old maxEntries column is dropped
+    // (20261103120000_shows_drop_max_entries), so this fixture no longer carries
+    // a legacy maxEntries:1 and the test proves a second entry is still accepted.
     const fullShow = await prisma.show.create({
       data: {
         name: `TestFixture-UncappedShow-${Date.now()}`,
         discipline: 'Vaulting',
         entryFee: 0,
-        maxEntries: 1, // legacy value — must be ignored by the controller
         levelMin: 1,
         levelMax: 999,
         prize: 0,
@@ -654,7 +653,7 @@ describe('POST /api/v1/shows/:id/enter — unlimited entries (Equoria-nx8t1 R3)'
     });
     fullShowId = fullShow.id;
 
-    // First horse already entered (would reach the legacy cap of 1).
+    // First horse already entered.
     await prisma.showEntry.create({
       data: {
         showId: fullShowId,

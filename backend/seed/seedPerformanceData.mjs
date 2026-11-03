@@ -233,7 +233,6 @@ async function seedPerformanceShows() {
         // Entries close when the show runs, as createShow sets it; an undated
         // show could never be entered (owner ruling 2026-10-05/07/12: undated shows refuse entry (Equoria-576c0 B10)).
         closeDate: showDate,
-        maxEntries: Math.floor(Math.random() * 50) + 20,
         status: 'open',
         hostUserId: user.id,
       });

@@ -56,7 +56,6 @@ async function makeShow() {
       name: `${PREFIX}-show-${uid()}`,
       discipline: 'Dressage',
       entryFee: 0,
-      maxEntries: null,
       ...oldBracket,
       prize: 0,
       runDate: future(),

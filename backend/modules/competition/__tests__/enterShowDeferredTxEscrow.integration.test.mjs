@@ -127,7 +127,6 @@ async function makeShow(creatorId, entryFee) {
         name: `${fixturePrefix}-show-${randomBytes(4).toString('hex')}`,
         discipline: 'Dressage',
         entryFee,
-        maxEntries: null,
         levelMin: 1,
         levelMax: 10,
         prize: 1000,

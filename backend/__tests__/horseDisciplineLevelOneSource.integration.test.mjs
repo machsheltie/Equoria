@@ -79,7 +79,6 @@ beforeAll(async () => {
       hostUserId: owner.user.id,
       status: 'open',
       closeDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-      maxEntries: 10,
     });
     showByDiscipline.set(discipline, show);
     await prisma.showEntry.create({

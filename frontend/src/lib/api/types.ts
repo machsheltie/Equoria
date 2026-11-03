@@ -419,7 +419,6 @@ export interface Competition {
   location?: string;
   prizePool: number;
   entryFee: number;
-  maxEntries?: number;
   currentEntries?: number;
   status?: string;
   entryDeadline?: string;

@@ -3,7 +3,7 @@
  *
  * Shows show entry status for an open show:
  *  - Entered horses with stat comparison radar
- *  - Entry count vs. max entries
+ *  - Entry count (shows have no entry cap)
  *  - Closing date CooldownTimer
  *  - "Scout the Field" expandable section
  *
@@ -26,7 +26,6 @@ interface ShowSummary {
   name: string;
   discipline: string;
   entryFee: number;
-  maxEntries?: number | null;
   entryCount?: number;
   closeDate?: string | null;
   status: string;
@@ -75,44 +74,15 @@ function buildEntryAriaLabel(entry: EnteredHorse, position: number): string {
 
 // ── Entry count bar ────────────────────────────────────────────────────────────
 
-function EntryCountBar({ count, max }: { count: number; max: number | null | undefined }) {
-  if (!max) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-[var(--text-muted)] font-[var(--font-body)]">
-        <Users className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-        <span>
-          {count} {count === 1 ? 'entry' : 'entries'}
-        </span>
-      </div>
-    );
-  }
-
-  const pct = Math.min(100, Math.round((count / max) * 100));
-  const isFull = count >= max;
-
+function EntryCountBar({ count }: { count: number }) {
+  // Owner ruling q339 (2026-11-03): shows have no entry cap, ever, so the
+  // count is shown on its own, never against a ceiling.
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs font-[var(--font-body)]">
-        <span className="flex items-center gap-1 text-[var(--text-muted)]">
-          <Users className="w-3.5 h-3.5" aria-hidden="true" />
-          Entries
-        </span>
-        <span className={isFull ? 'text-red-400 font-semibold' : 'text-[var(--text-primary)]'}>
-          {count} / {max}
-        </span>
-      </div>
-      <div
-        className="h-1.5 rounded-full bg-[var(--celestial-navy-700)] overflow-hidden"
-        role="progressbar"
-        aria-valuenow={count}
-        aria-valuemin={0}
-        aria-valuemax={max}
-      >
-        <div
-          className={`h-full rounded-full transition-all ${isFull ? 'bg-red-500' : 'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)]'}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+    <div className="flex items-center gap-2 text-sm text-[var(--text-muted)] font-[var(--font-body)]">
+      <Users className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+      <span>
+        {count} {count === 1 ? 'entry' : 'entries'}
+      </span>
     </div>
   );
 }
@@ -166,7 +136,7 @@ export function CompetitionFieldPreview({
       )}
 
       {/* Entry count */}
-      <EntryCountBar count={show.entryCount ?? 0} max={show.maxEntries} />
+      <EntryCountBar count={show.entryCount ?? 0} />
 
       {/* Closing timer */}
       {show.closeDate && <CooldownTimer endsAt={show.closeDate} label="Entries close" compact />}

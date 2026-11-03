@@ -856,7 +856,6 @@ paths:
                 name: { type: string, minLength: 2 }
                 discipline: { type: string }
                 entryFee: { type: integer, minimum: 0, maximum: 100000, default: 0 }
-                maxEntries: { type: integer, nullable: true }
                 description: { type: string, nullable: true }
       responses:
         '201': { description: 'Show created' }

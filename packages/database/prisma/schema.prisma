@@ -849,8 +849,6 @@ model Show {
   createdByClubId    Int?
   /// Optional description (BA-2)
   description        String?
-  /// Max entries allowed (BA-2)
-  maxEntries         Int?
   /// Show type: 'ridden' (default discipline scoring), 'conformation', or 'parade' (presentation scoring)
   showType           String              @default("ridden")
   /// Equoria-si69u: per-show escrow accounting columns. prizeEscrow tracks

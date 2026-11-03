@@ -49,7 +49,6 @@ export function getShowMetadata(showId) {
       name: true,
       discipline: true,
       entryFee: true,
-      maxEntries: true,
       status: true,
       closeDate: true,
     },

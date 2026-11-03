@@ -346,7 +346,7 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
   );
   afterAll(() => bulkCleanup.run(), 30000);
 
-  it('creates a fee show (no maxEntries cap)', async () => {
+  it('creates a fee show (no entry cap)', async () => {
     const res = await createShowReq({
       // Equoria-g8qg0: the entrant + bulk horses below are created with default
       // horseXp (0 → level 1). The show's advertised bracket is now enforced at
@@ -362,7 +362,9 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
     expect(res.status).toBe(201);
     showId = res.body.data.show.id;
     showIds.push(showId);
-    expect(res.body.data.show.maxEntries).toBeNull();
+    // Old contract: maxEntries null. Owner ruling q339 (2026-11-03): shows have
+    // no entry cap, ever; the column is dropped (20261103120000_shows_drop_max_entries).
+    expect(res.body.data.show).not.toHaveProperty('maxEntries');
   });
 
   // Equoria-si69u / Equoria-9iffb: entry fees are held in

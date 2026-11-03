@@ -131,7 +131,6 @@ async function runShow({ prize, entrantCount, entryFee = 0 }) {
         name: `${PREFIX}-show-${uid()}`,
         discipline: 'Dressage',
         entryFee,
-        maxEntries: null,
         levelMin: 1,
         levelMax: 1,
         prize,

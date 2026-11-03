@@ -35,7 +35,6 @@ const mockCompetitionDetails: competitionsApi.CompetitionData = {
   location: 'Central Arena',
   prizePool: 5000,
   entryFee: 50,
-  maxEntries: 20,
   currentEntries: 12,
   status: 'open',
   requirements: {

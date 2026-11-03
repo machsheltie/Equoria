@@ -14,7 +14,6 @@ const baseShow = {
   name: 'Spring Championship',
   discipline: 'Dressage',
   entryFee: 500,
-  maxEntries: 20,
   entryCount: 12,
   closeDate: '2026-04-01T00:00:00Z',
   status: 'open',
@@ -37,23 +36,18 @@ describe('CompetitionFieldPreview', () => {
     expect(screen.getByText('Dressage')).toBeInTheDocument();
   });
 
-  it('displays entry count with max entries', () => {
+  // Old contract: the count was drawn against Show.maxEntries with a progress bar
+  // and a red "full" marker. Owner ruling q339 (2026-11-03): shows have no entry
+  // cap, ever, so the count stands alone.
+  it('displays the entry count with no ceiling', () => {
     render(<CompetitionFieldPreview show={baseShow} />);
-    expect(screen.getByText('12 / 20')).toBeInTheDocument();
-  });
-
-  it('shows entry count without max when maxEntries is null', () => {
-    const showNoMax = { ...baseShow, maxEntries: null };
-    render(<CompetitionFieldPreview show={showNoMax} />);
     expect(screen.getByText('12 entries')).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 
-  it('shows full capacity indicator when count >= max', () => {
-    const fullShow = { ...baseShow, entryCount: 20 };
-    render(<CompetitionFieldPreview show={fullShow} />);
-    const countText = screen.getByText('20 / 20');
-    // Full capacity: red styling on the count text
-    expect(countText.className).toContain('text-red-400');
+  it('uses the singular for one entry', () => {
+    render(<CompetitionFieldPreview show={{ ...baseShow, entryCount: 1 }} />);
+    expect(screen.getByText('1 entry')).toBeInTheDocument();
   });
 
   it('displays entry fee', () => {
@@ -140,7 +134,7 @@ describe('CompetitionFieldPreview', () => {
       expect(card).toHaveAttribute('data-variant', 'compact');
       // Still shows core info (name + entry count) in compact form
       expect(screen.getByText('Spring Championship')).toBeInTheDocument();
-      expect(screen.getByText('12 / 20')).toBeInTheDocument();
+      expect(screen.getByText('12 entries')).toBeInTheDocument();
     });
 
     it('defaults to the full variant when no variant prop given', () => {

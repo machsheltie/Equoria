@@ -1,0 +1,14 @@
+-- Owner ruling q339 (2026-11-03, Equoria-oey96.45): shows have no entry cap, ever.
+-- Drops shows."maxEntries" (added for BA-2). Equoria-nx8t1 R3 (May 2026) already
+-- made entries unlimited: createShow wrote NULL and enterShow never read it.
+--
+-- No reader is left: the application release that ships with this migration has no
+-- maxEntries in createShow, enterShow, the show list DTO, the show-field response,
+-- the seed scripts or the frontend.
+--
+-- NOT backward compatible with the previous application release: its generated Prisma
+-- client lists this column, so a bare show read from an old instance would fail once
+-- it is gone. Deploy the new release and this migration together.
+--
+-- No data is copied (production held 0 shows on 2026-11-03).
+ALTER TABLE "shows" DROP COLUMN IF EXISTS "maxEntries";

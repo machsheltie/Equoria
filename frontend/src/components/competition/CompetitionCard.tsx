@@ -26,7 +26,6 @@ export interface Competition {
   date: string;
   prizePool: number;
   entryFee: number;
-  maxParticipants?: number;
   currentParticipants?: number;
 }
 
@@ -81,10 +80,10 @@ const CompetitionCard = ({
     return <CompetitionCardSkeleton className={className} />;
   }
 
-  const { id, name, discipline, date, prizePool, entryFee, maxParticipants, currentParticipants } =
-    competition;
+  const { id, name, discipline, date, prizePool, entryFee, currentParticipants } = competition;
 
-  const hasParticipantInfo = maxParticipants !== undefined && currentParticipants !== undefined;
+  // Owner ruling q339 (2026-11-03): shows have no entry cap, so the count stands alone.
+  const hasParticipantInfo = currentParticipants !== undefined;
 
   const handleClick = () => {
     onClick(id);
@@ -140,7 +139,7 @@ const CompetitionCard = ({
           <div className="flex items-center" data-testid="competition-participants">
             <Users className="h-4 w-4 text-[var(--role-info-text)] mr-2" aria-hidden="true" />
             <span className="text-role-primary">
-              {currentParticipants}/{maxParticipants} participants
+              {currentParticipants} {currentParticipants === 1 ? 'entry' : 'entries'}
             </span>
           </div>
         )}

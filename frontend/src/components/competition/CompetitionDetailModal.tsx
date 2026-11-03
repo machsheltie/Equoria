@@ -44,7 +44,6 @@ export interface Competition {
   prizePool: number;
   entryFee: number;
   description?: string;
-  maxParticipants?: number;
   currentParticipants?: number;
   entryRequirements?: string[];
   location?: string;
@@ -222,7 +221,6 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                     name: competition.name,
                     discipline: competition.discipline,
                     entryFee: competition.entryFee,
-                    maxEntries: fieldData?.maxEntries ?? competition.maxParticipants ?? null,
                     entryCount: fieldData?.entryCount ?? competition.currentParticipants ?? 0,
                     closeDate: fieldData?.show.closeDate ?? null,
                     status: fieldData?.show.status ?? 'open',
@@ -417,19 +415,6 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                       Add a horse to your stable before entering competitions.
                     </p>
                   )}
-                </div>
-              )}
-
-              {/* Participants Info */}
-              {/* != null guards BOTH null and undefined — the API ships null
-                  maxParticipants, which passed the old !== undefined gate and
-                  rendered a dangling "0 / " (Equoria-izmsb). */}
-              {competition.maxParticipants != null && (
-                <div className="flex items-center justify-between p-3 bg-[var(--alpha-bg-midnight-50)] rounded-lg">
-                  <span className="text-sm text-[var(--text-secondary)]">Current Participants</span>
-                  <span className="font-medium text-[var(--text-primary)]">
-                    {competition.currentParticipants ?? 0} / {competition.maxParticipants}
-                  </span>
                 </div>
               )}
 

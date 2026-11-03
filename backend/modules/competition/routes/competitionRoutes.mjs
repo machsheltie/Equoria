@@ -186,12 +186,10 @@ router.get(
           name: show.name,
           discipline: show.discipline,
           entryFee: show.entryFee,
-          maxEntries: show.maxEntries,
           ...toPlayerShowStatus(show.status),
           closeDate: show.closeDate,
         },
         entryCount: field.length,
-        maxEntries: show.maxEntries ?? null,
         daysRemaining,
         entries: field,
       });

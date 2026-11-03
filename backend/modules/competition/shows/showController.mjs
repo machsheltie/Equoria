@@ -139,8 +139,6 @@ export async function createShow(req, res) {
               name: name.trim(),
               discipline,
               entryFee,
-              // Equoria-nx8t1 R3: unlimited entries — no maxEntries cap.
-              maxEntries: null,
               description: description ?? null,
               levelMin,
               levelMax,
@@ -329,7 +327,7 @@ export async function enterShow(req, res) {
         .status(409)
         .json({ success: false, code: 'entryPeriodClosed', message: 'Entry period has closed' });
     }
-    // Equoria-nx8t1 R3: entries are UNLIMITED — no maxEntries cap is enforced.
+    // Owner ruling q339 (2026-11-03): shows have no entry cap, ever.
 
     // Verify horse ownership via WHERE-scoped findFirst — collapses
     // not-found and cross-user-owned into a single null result, returning

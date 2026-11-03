@@ -29,7 +29,6 @@ describe('CompetitionList', () => {
       date: '2025-03-15',
       prizePool: 5000,
       entryFee: 100,
-      maxParticipants: 20,
       currentParticipants: 12,
     },
     {
@@ -39,7 +38,6 @@ describe('CompetitionList', () => {
       date: '2025-06-20',
       prizePool: 3500,
       entryFee: 75,
-      maxParticipants: 15,
       currentParticipants: 8,
     },
     {
@@ -49,7 +47,6 @@ describe('CompetitionList', () => {
       date: '2025-09-10',
       prizePool: 4000,
       entryFee: 90,
-      maxParticipants: 25,
       currentParticipants: 20,
     },
     {
@@ -59,7 +56,6 @@ describe('CompetitionList', () => {
       date: '2025-12-05',
       prizePool: 2500,
       entryFee: 50,
-      maxParticipants: 30,
       currentParticipants: 15,
     },
   ];

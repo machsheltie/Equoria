@@ -98,7 +98,6 @@ async function makeOpenShow(entryFee) {
       name: `${PREFIX}-show-${uid()}`,
       discipline: 'Dressage',
       entryFee,
-      maxEntries: null,
       levelMin: 1,
       levelMax: 999,
       prize: 1000,

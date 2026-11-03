@@ -33,7 +33,6 @@ export interface CompetitionData {
   location?: string;
   prizePool?: number;
   entryFee: number;
-  maxEntries: number;
   currentEntries: number;
   status: 'open' | 'closed' | 'running' | 'completed';
   requirements?: {

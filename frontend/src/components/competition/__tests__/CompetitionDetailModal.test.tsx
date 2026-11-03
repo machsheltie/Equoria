@@ -47,7 +47,6 @@ describe('CompetitionDetailModal', () => {
     prizePool: 10000,
     entryFee: 250,
     description: 'Annual spring grand prix event for experienced jumpers.',
-    maxParticipants: 30,
     currentParticipants: 18,
     entryRequirements: [
       'Horse must be at least 4 years old',
@@ -433,12 +432,10 @@ describe('CompetitionDetailModal', () => {
         name: 'Spring Grand Prix',
         discipline: 'Show Jumping',
         entryFee: 250,
-        maxEntries: 30,
         status: 'open',
         closeDate: '2999-04-15T00:00:00Z',
       },
       entryCount: 2,
-      maxEntries: 30,
       daysRemaining: 5,
       entries: [
         {

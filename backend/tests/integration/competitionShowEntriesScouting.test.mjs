@@ -65,7 +65,6 @@ describe('INTEGRATION: GET /api/v1/competition/show/:showId/entries (Equoria-lfk
       hostUserId: user.id,
       status: 'open',
       closeDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days out
-      maxEntries: 10,
     });
 
     for (const h of [horseA, horseB]) {
@@ -103,7 +102,10 @@ describe('INTEGRATION: GET /api/v1/competition/show/:showId/entries (Equoria-lfk
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.entryCount).toBe(2);
-    expect(res.body.maxEntries).toBe(10);
+    // Old contract: the field echoed Show.maxEntries. Owner ruling q339
+    // (2026-11-03): shows have no entry cap, ever, so there is no ceiling to send.
+    expect(res.body).not.toHaveProperty('maxEntries');
+    expect(res.body.show).not.toHaveProperty('maxEntries');
     expect(res.body.daysRemaining).toBeGreaterThan(0);
     expect(res.body.daysRemaining).toBeLessThanOrEqual(3);
     expect(res.body.show.discipline).toBe('Racing');

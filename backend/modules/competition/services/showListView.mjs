@@ -9,15 +9,14 @@
 
 /**
  * A listed show for the Arena. `currentEntries` is the real number of entries on
- * the show. `maxEntries` is present only when the show has a cap: entries are
- * unlimited by default (showController), and an uncapped show reports no ceiling
- * rather than a fabricated one.
+ * the show. There is no ceiling: owner ruling q339 (2026-11-03), shows have no
+ * entry cap, ever.
  *
  * @param {object} show A Show row read with `_count: { select: { entries: true } }`.
  * @returns {object}
  */
 export function toShowListItem(show) {
-  const item = {
+  return {
     id: show.id,
     name: show.name,
     description: show.description ?? undefined,
@@ -35,8 +34,4 @@ export function toShowListItem(show) {
     hostUserId: show.hostUserId,
     currentEntries: show._count?.entries ?? 0,
   };
-  if (show.maxEntries !== null && show.maxEntries !== undefined) {
-    item.maxEntries = show.maxEntries;
-  }
-  return item;
 }

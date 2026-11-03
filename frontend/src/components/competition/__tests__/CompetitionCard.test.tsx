@@ -26,7 +26,6 @@ describe('CompetitionCard', () => {
     date: '2025-03-15',
     prizePool: 5000,
     entryFee: 100,
-    maxParticipants: 20,
     currentParticipants: 12,
   };
 
@@ -80,7 +79,8 @@ describe('CompetitionCard', () => {
     it('displays participant count when provided', () => {
       render(<CompetitionCard {...defaultProps} />);
       expect(screen.getByTestId('competition-participants')).toBeInTheDocument();
-      expect(screen.getByText(/12\/20/)).toBeInTheDocument();
+      // Old contract: entries shown against a cap. Owner ruling q339 (2026-11-03): shows have no entry cap, ever.
+      expect(screen.getByText('12 entries')).toBeInTheDocument();
     });
   });
 
@@ -134,13 +134,12 @@ describe('CompetitionCard', () => {
   });
 
   describe('Optional Fields', () => {
-    it('handles missing maxParticipants gracefully', () => {
-      const competitionWithoutMax: Competition = {
+    it('handles a missing participant count gracefully', () => {
+      const competitionWithoutCount: Competition = {
         ...sampleCompetition,
-        maxParticipants: undefined,
         currentParticipants: undefined,
       };
-      render(<CompetitionCard competition={competitionWithoutMax} onClick={mockOnClick} />);
+      render(<CompetitionCard competition={competitionWithoutCount} onClick={mockOnClick} />);
       expect(screen.queryByTestId('competition-participants')).not.toBeInTheDocument();
     });
 

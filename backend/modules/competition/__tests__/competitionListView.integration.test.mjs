@@ -1,7 +1,7 @@
 /**
  * GET /api/v1/competition — the Arena list sends a scoped DTO (Equoria-fyoca).
  *
- * The client reads `date`, `prizePool`, `currentEntries` and `maxEntries`; the
+ * The client reads `date`, `prizePool` and `currentEntries`; the
  * route used to send raw Show rows (runDate, prize, no counts), so every card
  * showed no date, a zero prize and no field size. The list is also paged, so
  * it must honour page and limit and report the real total.
@@ -80,7 +80,7 @@ beforeAll(async () => {
   const runDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const base = { discipline: 'Dressage', levelMin: 1, levelMax: 10, status: 'open', runDate };
   cappedShow = await prisma.show.create({
-    data: { ...base, name: `TestFixture-ListViewCapped-${tag}`, prize: 4200, entryFee: 150, maxEntries: 8 },
+    data: { ...base, name: `TestFixture-ListViewCapped-${tag}`, prize: 4200, entryFee: 150 },
   });
   uncappedShow = await prisma.show.create({
     data: { ...base, name: `TestFixture-ListViewUncapped-${tag}`, prize: 900, entryFee: 0 },
@@ -101,13 +101,15 @@ describe('GET /api/v1/competition list DTO', () => {
     expect(item.entryFee).toBe(150);
     expect(new Date(item.date).getTime()).toBe(cappedShow.runDate.getTime());
     expect(item.currentEntries).toBe(1);
-    expect(item.maxEntries).toBe(8);
+    // Old contract: a capped show sent maxEntries. Owner ruling q339 (2026-11-03):
+    // shows have no entry cap, ever, so no show sends a ceiling.
+    expect(item).not.toHaveProperty('maxEntries');
     expect(item.discipline).toBe('Dressage');
     // Not a raw row: the stored column names are not the wire names.
     expect(item).not.toHaveProperty('prize');
   });
 
-  it('reports no ceiling for a show with no entry cap, and a zero count for an empty field', async () => {
+  it('reports no ceiling and a zero count for an empty field', async () => {
     const item = await findListed(uncappedShow.id);
 
     expect(item).toBeDefined();
