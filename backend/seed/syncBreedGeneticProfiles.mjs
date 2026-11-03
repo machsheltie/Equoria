@@ -3,12 +3,22 @@
  *
  * Copies each breed's genetic profile from the breed data files into
  * `breeds.breedGeneticProfile` for breeds that ALREADY EXIST in the target
- * database. It touches nothing else:
+ * database. By default it touches nothing else:
  *   - updates only the `breedGeneticProfile` column,
  *   - never inserts a breed, never deletes a breed,
  *   - never changes `name`, `description` or `defaultTrait`,
  *   - skips rows whose stored profile already equals the file profile
  *     (jsonb equality), so a second run changes 0 rows.
+ *
+ * --insert-missing (Equoria-rd1ed): production's breeds table was filled from
+ * an older breed-name list, not from these files, so three file breeds never
+ * got a row (Pony Of The Americas, Taishū horse — prod had the ASCII
+ * 'Taishu horse' — and Tennessee Walking Horse), and this update-only sync
+ * could not add them. With the flag, a file breed with no row is inserted with
+ * the file's name, default_trait and profile (ON CONFLICT DO NOTHING, so a
+ * second run inserts 0). A file breed whose name matches an existing row once
+ * accents and case are folded is NOT inserted; it is reported as a near
+ * duplicate for a person to resolve.
  *
  * Source of the profile: backend/data/breeds/*.txt — the files
  * populateBreedsFromSql.mjs loads into the DB locally. They carry the FULL
@@ -30,6 +40,11 @@
  *     node backend/seed/syncBreedGeneticProfiles.mjs
  *   Apply:
  *     node backend/seed/syncBreedGeneticProfiles.mjs --apply
+ *   Also insert file breeds that have no DB row (dry run, then apply):
+ *     node backend/seed/syncBreedGeneticProfiles.mjs --insert-missing --dry-run
+ *     node backend/seed/syncBreedGeneticProfiles.mjs --insert-missing --apply
+ *   (--dry-run is the default and is accepted to make the intent explicit;
+ *   it wins if both --dry-run and --apply are given.)
  *
  * Output: counts of breeds that would update / updated, already in sync,
  * file breeds with no DB row (never inserted), and DB breeds with no file.
@@ -55,15 +70,18 @@ const skipFiles = new Set(['generichorse.txt', '_breed-list.txt', '_gait-registr
  *
  * @param {string} rawSql
  * @param {string} fileLabel - used in error messages
- * @returns {{ name: string, profile: object }}
+ * @returns {{ name: string, defaultTrait: string, profile: object }}
  */
 export function parseBreedSourceFile(rawSql, fileLabel) {
   const sql = sanitizeSql(rawSql);
-  const nameMatch = sql.match(/VALUES\s*\(\s*'((?:[^']|'')*)'/);
+  const nameMatch = sql.match(/VALUES\s*\(\s*'((?:[^']|'')*)'\s*,\s*'((?:[^']|'')*)'/);
   if (!nameMatch) {
-    throw new Error(`${fileLabel}: no INSERT ... VALUES ('<name>', ...) row found`);
+    throw new Error(
+      `${fileLabel}: no INSERT ... VALUES ('<name>', '<default_trait>', ...) row found`,
+    );
   }
   const name = nameMatch[1].replace(/''/g, "'");
+  const defaultTrait = nameMatch[2].replace(/''/g, "'");
   const start = sql.indexOf('$json$');
   const end = start === -1 ? -1 : sql.indexOf('$json$', start + '$json$'.length);
   if (start === -1 || end === -1) {
@@ -81,7 +99,7 @@ export function parseBreedSourceFile(rawSql, fileLabel) {
   if (!profile.ratingProfiles || !profile.temperamentWeights) {
     throw new Error(`${fileLabel}: profile lacks ratingProfiles or temperamentWeights`);
   }
-  return { name, profile };
+  return { name, defaultTrait, profile };
 }
 
 /**
@@ -91,21 +109,37 @@ export function parseBreedSourceFile(rawSql, fileLabel) {
  * @returns {Promise<Map<string, object>>} breed name -> full profile
  */
 export async function loadBreedSourceProfiles(dataDir = defaultBreedDataDir) {
+  const rows = await loadBreedSourceRows(dataDir);
+  return new Map([...rows].map(([name, row]) => [name, row.profile]));
+}
+
+/**
+ * Read every breed .txt file in a directory, keeping its default_trait.
+ *
+ * @param {string} [dataDir]
+ * @returns {Promise<Map<string, { defaultTrait: string, profile: object }>>}
+ */
+export async function loadBreedSourceRows(dataDir = defaultBreedDataDir) {
   const files = (await readdir(dataDir))
     .filter(f => f.endsWith('.txt') && !skipFiles.has(f))
     .sort();
-  const profiles = new Map();
+  const rows = new Map();
   for (const file of files) {
-    const { name, profile } = parseBreedSourceFile(
+    const { name, defaultTrait, profile } = parseBreedSourceFile(
       await readFile(join(dataDir, file), 'utf8'),
       file,
     );
-    if (profiles.has(name)) {
+    if (rows.has(name)) {
       throw new Error(`${file}: breed "${name}" is defined by more than one file`);
     }
-    profiles.set(name, profile);
+    rows.set(name, { defaultTrait, profile });
   }
-  return profiles;
+  return rows;
+}
+
+/** Fold a breed name for near-duplicate detection: accents and case removed. */
+export function foldBreedName(name) {
+  return name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
 
 function canonicalJson(value) {
@@ -160,16 +194,24 @@ export function findSourceJsonDrift(sourceProfiles, profilesJson) {
  * @param {object} opts
  * @param {Map<string, object>} opts.profiles - breed name -> full profile
  * @param {boolean} [opts.apply=false] - false = report only, write nothing
+ * @param {boolean} [opts.insertMissing=false] - also insert file breeds with no row
+ * @param {Map<string, string>} [opts.defaultTraits] - breed name -> default_trait,
+ *   required for every breed insertMissing would insert
  * @returns {Promise<{
  *   apply: boolean,
  *   sourceCount: number,
  *   changed: string[],        // updated (apply) or would update (dry run)
  *   alreadyInSync: number,
- *   missingInDb: string[],    // file breeds with no DB row (never inserted)
+ *   missingInDb: string[],    // file breeds with no DB row after this run
+ *   inserted: string[],       // inserted (apply) or would insert (dry run)
+ *   nearDuplicates: Array<{ file: string, db: string }>, // not inserted: name clash
  *   dbWithoutSource: string[] // DB breeds with no file (left untouched)
  * }>}
  */
-export async function syncBreedGeneticProfiles(db, { profiles, apply = false }) {
+export async function syncBreedGeneticProfiles(
+  db,
+  { profiles, apply = false, insertMissing = false, defaultTraits = new Map() },
+) {
   if (!(profiles instanceof Map) || profiles.size === 0) {
     throw new Error('syncBreedGeneticProfiles requires a non-empty Map of breed profiles');
   }
@@ -181,7 +223,43 @@ export async function syncBreedGeneticProfiles(db, { profiles, apply = false }) 
     names,
   );
   const existingNames = new Set(existing.map(r => r.name));
-  const missingInDb = names.filter(n => !existingNames.has(n)).sort();
+  let missingInDb = names.filter(n => !existingNames.has(n)).sort();
+
+  const inserted = [];
+  const nearDuplicates = [];
+  if (insertMissing && missingInDb.length > 0) {
+    const allDbNames = (await db.$queryRawUnsafe('SELECT name FROM breeds')).map(r => r.name);
+    const dbByFold = new Map(allDbNames.map(n => [foldBreedName(n), n]));
+    const toInsert = [];
+    for (const name of missingInDb) {
+      const clash = dbByFold.get(foldBreedName(name));
+      if (clash !== undefined) {
+        nearDuplicates.push({ file: name, db: clash });
+        continue;
+      }
+      const defaultTrait = defaultTraits.get(name);
+      if (typeof defaultTrait !== 'string' || defaultTrait.length === 0) {
+        throw new Error(`insertMissing: no defaultTrait for "${name}"`);
+      }
+      toInsert.push({ name, defaultTrait, profile: profiles.get(name) });
+    }
+    if (apply && toInsert.length > 0) {
+      const rows = await db.$queryRawUnsafe(
+        `INSERT INTO breeds (name, "defaultTrait", "breedGeneticProfile")
+         SELECT r->>'name', r->>'defaultTrait', r->'profile'
+           FROM jsonb_array_elements($1::jsonb) AS r
+         ON CONFLICT (name) DO NOTHING
+         RETURNING name`,
+        JSON.stringify(toInsert),
+      );
+      inserted.push(...rows.map(r => r.name));
+      const insertedNames = new Set(inserted);
+      missingInDb = missingInDb.filter(n => !insertedNames.has(n));
+    } else {
+      inserted.push(...toInsert.map(r => r.name));
+    }
+    inserted.sort();
+  }
 
   const changedRows = apply
     ? await db.$queryRawUnsafe(
@@ -212,6 +290,8 @@ export async function syncBreedGeneticProfiles(db, { profiles, apply = false }) 
     changed,
     alreadyInSync: existingNames.size - changed.length,
     missingInDb,
+    inserted,
+    nearDuplicates,
     dbWithoutSource: others.map(r => r.name),
   };
 }
@@ -223,8 +303,11 @@ function describeTarget() {
 }
 
 async function main() {
-  const apply = process.argv.includes('--apply');
-  const profiles = await loadBreedSourceProfiles();
+  const apply = process.argv.includes('--apply') && !process.argv.includes('--dry-run');
+  const insertMissing = process.argv.includes('--insert-missing');
+  const rows = await loadBreedSourceRows();
+  const profiles = new Map([...rows].map(([name, row]) => [name, row.profile]));
+  const defaultTraits = new Map([...rows].map(([name, row]) => [name, row.defaultTrait]));
   const drift = findSourceJsonDrift(
     profiles,
     JSON.parse(readFileSync(defaultBreedProfilesJson, 'utf8')),
@@ -244,10 +327,25 @@ async function main() {
       `breedGeneticProfile sync — target ${describeTarget()} — ${apply ? 'APPLY' : 'DRY RUN (no writes)'}`,
     );
     console.log(`  source breeds (.txt, agree with breedProfiles.json): ${profiles.size}`);
-    const r = await syncBreedGeneticProfiles(prisma, { profiles, apply });
+    const r = await syncBreedGeneticProfiles(prisma, {
+      profiles,
+      apply,
+      insertMissing,
+      defaultTraits,
+    });
     console.log(`  ${apply ? 'updated' : 'would update'}: ${r.changed.length}`);
     console.log(`  already in sync: ${r.alreadyInSync}`);
-    console.log(`  file breeds with no DB row (not inserted): ${r.missingInDb.length}`);
+    if (insertMissing) {
+      console.log(`  ${apply ? 'inserted' : 'would insert'}: ${r.inserted.length}`);
+      r.inserted.forEach(n => console.log(`    + ${n}`));
+      console.log(
+        `  not inserted, name matches a DB row apart from accents/case: ${r.nearDuplicates.length}`,
+      );
+      r.nearDuplicates.forEach(d => console.log(`    ! file "${d.file}" vs DB "${d.db}"`));
+    }
+    console.log(
+      `  file breeds with no DB row${insertMissing ? '' : ' (not inserted; see --insert-missing)'}: ${r.missingInDb.length}`,
+    );
     r.missingInDb.forEach(n => console.log(`    - ${n}`));
     console.log(`  DB breeds with no file (left untouched): ${r.dbWithoutSource.length}`);
     r.dbWithoutSource.forEach(n => console.log(`    - ${n}`));

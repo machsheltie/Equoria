@@ -126,6 +126,86 @@ describe('syncBreedGeneticProfiles (Equoria-hxhqk)', () => {
     expect(second.alreadyInSync).toBe(3);
   });
 
+  // Equoria-rd1ed: production's breeds came from an older name list, so three
+  // seed-file breeds never got a row and the sync (update-only) could not add
+  // them. insertMissing adds a file breed that has no row, from its file.
+  it('insertMissing: dry run lists, apply inserts name + defaultTrait + profile, second apply inserts 0', async () => {
+    const newName = `TestFixture-BreedSync-${tag}-new`;
+    const rows = new Map([
+      [syncedName, { defaultTrait: 'Endurance', profile: profileA }],
+      [newName, { defaultTrait: 'Gaited', profile: profileB }],
+    ]);
+    const profiles = new Map([...rows].map(([n, r]) => [n, r.profile]));
+    const defaultTraits = new Map([...rows].map(([n, r]) => [n, r.defaultTrait]));
+
+    const dry = await syncBreedGeneticProfiles(prisma, { profiles, defaultTraits, insertMissing: true });
+    expect(dry.inserted).toEqual([newName]);
+    expect(dry.missingInDb).toEqual([newName]);
+    expect(await prisma.breed.findUnique({ where: { name: newName } })).toBeNull();
+
+    const first = await syncBreedGeneticProfiles(prisma, {
+      profiles,
+      defaultTraits,
+      insertMissing: true,
+      apply: true,
+    });
+    expect(first.inserted).toEqual([newName]);
+    expect(first.missingInDb).toEqual([]);
+    const row = await prisma.breed.findUnique({ where: { name: newName } });
+    expect(row.defaultTrait).toBe('Gaited');
+    expect(row.breedGeneticProfile).toEqual(profileB);
+
+    const second = await syncBreedGeneticProfiles(prisma, {
+      profiles,
+      defaultTraits,
+      insertMissing: true,
+      apply: true,
+    });
+    expect(second.inserted).toEqual([]);
+    expect(second.changed).toEqual([]);
+    expect(second.missingInDb).toEqual([]);
+  });
+
+  it('insertMissing never inserts a breed whose name differs from a DB row only by accents or case', async () => {
+    // Production held 'Taishu horse' while the file says 'Taishū horse'.
+    const asciiName = `TestFixture-BreedSync-${tag}-Taishu horse`;
+    const accentedName = `TestFixture-BreedSync-${tag}-Taishū HORSE`;
+    await prisma.breed.create({ data: { name: asciiName } });
+    const profiles = new Map([[accentedName, profileA]]);
+    const defaultTraits = new Map([[accentedName, 'Endurance']]);
+
+    const r = await syncBreedGeneticProfiles(prisma, {
+      profiles,
+      defaultTraits,
+      insertMissing: true,
+      apply: true,
+    });
+    expect(r.inserted).toEqual([]);
+    expect(r.nearDuplicates).toEqual([{ file: accentedName, db: asciiName }]);
+    expect(await prisma.breed.findUnique({ where: { name: accentedName } })).toBeNull();
+  });
+
+  it('insertMissing requires a defaultTrait for every breed it would insert', async () => {
+    const lonely = `TestFixture-BreedSync-${tag}-nodefault`;
+    await expect(
+      syncBreedGeneticProfiles(prisma, {
+        profiles: new Map([[lonely, profileA]]),
+        defaultTraits: new Map(),
+        insertMissing: true,
+      }),
+    ).rejects.toThrow(/defaultTrait/);
+  });
+
+  it('loads each file breed with its defaultTrait', async () => {
+    const { loadBreedSourceRows } = await import('./syncBreedGeneticProfiles.mjs');
+    const rowsBySource = await loadBreedSourceRows();
+    expect(rowsBySource.size).toBe(312);
+    expect(rowsBySource.get('Tennessee Walking Horse').defaultTrait).toBe('Gaited');
+    expect(rowsBySource.get('Taishū horse').defaultTrait).toBe('Endurance');
+    expect(rowsBySource.get('Pony Of The Americas').defaultTrait).toBe('Gymkhana');
+    expect(rowsBySource.get('Abaga').profile).toEqual(profileA);
+  });
+
   it('refuses an empty profile map', async () => {
     await expect(syncBreedGeneticProfiles(prisma, { profiles: new Map() })).rejects.toThrow(/non-empty Map/);
   });
