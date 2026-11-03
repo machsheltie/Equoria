@@ -14,7 +14,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { maxHorseLevel } from '../../../utils/competitionLogic.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
-import { MS_PER_WEEK } from '../../../constants/time.mjs';
+import { msPerWeek } from '../../../constants/time.mjs';
 // Equoria-si69u: show money now routes through a named system-account escrow
 // so creator account deletion can never sink entry fees mid-flight. See the
 // si69u close note for the full design + the money-conservation sentinel.
@@ -95,7 +95,7 @@ export async function createShow(req, res) {
     }
 
     const openDate = new Date();
-    const closeDate = new Date(openDate.getTime() + MS_PER_WEEK);
+    const closeDate = new Date(openDate.getTime() + msPerWeek);
 
     // Equoria-nx8t1 R5 + Equoria-si69u: charge the FULL prize to the creator
     // atomically with the show row, AND route it through SystemAccount[showEscrow]

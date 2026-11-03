@@ -18,7 +18,7 @@ const backendSchema = readFileSync(
   join(__dirname, '../../../../backend/constants/schema.mjs'),
   'utf8'
 );
-const block = /export const GROOM_SPECIALTIES = \{([\s\S]*?)\};/.exec(backendSchema);
+const block = /export const groomSpecialties = \{([\s\S]*?)\};/.exec(backendSchema);
 const backendSpecialties = [...(block?.[1] ?? '').matchAll(/:\s*'(\w+)'/g)].map((m) => m[1]);
 
 const Wrapper = ({ children }: { children: ReactNode }) => (

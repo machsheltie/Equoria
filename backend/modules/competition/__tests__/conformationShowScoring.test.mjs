@@ -27,7 +27,7 @@ import {
   SHOW_HANDLING_SKILL_SCORES,
   CONFORMATION_AGE_CLASSES,
 } from '../services/conformationShowService.mjs';
-import { CONFORMATION_CLASSES } from '../../../constants/schema.mjs';
+import { conformationClasses } from '../../../constants/schema.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -346,7 +346,7 @@ describe('calculateConformationShowScore', () => {
   };
 
   // Use the schema constant instead of a string literal — immune to schema renames
-  const validClass = CONFORMATION_CLASSES.MARES;
+  const validClass = conformationClasses.MARES;
 
   test('produces an integer finalScore in [0, 100]', () => {
     const result = calculateConformationShowScore(horse, groom, validClass);

@@ -8,7 +8,7 @@
  */
 
 import crypto from 'crypto';
-import { DISCIPLINE_VALUES } from '../../../constants/schema.mjs';
+import { disciplineValues } from '../../../constants/schema.mjs';
 import { drawStaffLevel, staffLevelFee, staffSkillOdds } from '../../../constants/staffLevels.mjs';
 
 export const TRAINER_MARKETPLACE_CONFIG = {
@@ -23,7 +23,7 @@ export const TRAINER_MARKETPLACE_CONFIG = {
 
   // Discipline specialties: an even pick across every competition discipline
   // (owner ruling 2026-10-21), so a new discipline appears without an edit here.
-  SPECIALTIES: DISCIPLINE_VALUES,
+  SPECIALTIES: disciplineValues,
 };
 
 const PERSONALITIES = ['focused', 'encouraging', 'technical', 'competitive', 'patient'];

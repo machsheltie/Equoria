@@ -102,7 +102,7 @@ const validateFoalCreation = [
     .custom(async value => {
       const { isValidHorseSex } = await import('../../../constants/schema.mjs');
       if (value && !isValidHorseSex(value)) {
-        const { HORSE_SEX_VALUES } = await import('../../../constants/schema.mjs');
+        const { horseSexValues: HORSE_SEX_VALUES } = await import('../../../constants/schema.mjs');
         throw new Error(`Sex must be one of: ${HORSE_SEX_VALUES.join(', ')}`);
       }
       return true;

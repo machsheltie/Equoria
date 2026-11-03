@@ -17,7 +17,7 @@ import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
-import { HORSE_STAT_VALUES } from '../../../../constants/schema.mjs';
+import { horseStatValues } from '../../../../constants/schema.mjs';
 import { shoeHorse, shoeingCost } from '../controllers/farrierController.mjs';
 import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
@@ -72,7 +72,7 @@ async function makeFixture(money) {
   return { user, horse };
 }
 
-const statSum = h => HORSE_STAT_VALUES.reduce((n, k) => n + (h[k] ?? 0), 0);
+const statSum = h => horseStatValues.reduce((n, k) => n + (h[k] ?? 0), 0);
 
 afterAll(async () => {
   await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } });

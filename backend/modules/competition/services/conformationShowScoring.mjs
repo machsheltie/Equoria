@@ -18,7 +18,7 @@
  */
 
 import logger from '../../../utils/logger.mjs';
-import { CONFORMATION_CLASSES } from '../../../constants/schema.mjs';
+import { conformationClasses } from '../../../constants/schema.mjs';
 
 import { calculateOverallConformation } from '../../horses/index.mjs';
 
@@ -62,7 +62,7 @@ export const SHOW_HANDLING_SKILL_SCORES = {
 
 /**
  * Age class definitions for conformation shows.
- * SEPARATE from CONFORMATION_CLASSES (sex/category) in schema.mjs — do NOT merge.
+ * SEPARATE from conformationClasses (sex/category) in schema.mjs — do NOT merge.
  */
 export const CONFORMATION_AGE_CLASSES = {
   WEANLING: 'Weanling',
@@ -76,7 +76,7 @@ export const CONFORMATION_AGE_CLASSES = {
  * Score-irrelevant class default for execution-time scoring (Equoria-axad9.1).
  *
  * `calculateConformationShowScore` validates `className` against
- * CONFORMATION_CLASSES but NEVER uses it in the score math (the formula reads
+ * conformationClasses but NEVER uses it in the score math (the formula reads
  * only conformationScores, showHandlingSkill, bondScore, and
  * temperament/personality). `ShowEntry` has no per-entry class column in the
  * schema (packages/database/prisma/schema.prisma model ShowEntry), so there is
@@ -86,7 +86,7 @@ export const CONFORMATION_AGE_CLASSES = {
  * data that influences any outcome. If a future migration adds a per-entry
  * class column, replace this with the persisted value.
  */
-export const SCORE_NEUTRAL_CONFORMATION_CLASS = Object.values(CONFORMATION_CLASSES)[0];
+export const SCORE_NEUTRAL_CONFORMATION_CLASS = Object.values(conformationClasses)[0];
 
 // ---------------------------------------------------------------------------
 // Temperament synergy table (PRD-03 §3.6) — AC2
@@ -135,7 +135,7 @@ const NEUTRAL_SYNERGY_SCORE = 0;
  * @returns {boolean}
  */
 export function isValidConformationClass(className) {
-  return Object.values(CONFORMATION_CLASSES).includes(className);
+  return Object.values(conformationClasses).includes(className);
 }
 
 /**
@@ -230,7 +230,7 @@ export function calculateSynergy(temperament, personality) {
  *
  * @param {Object} horse - Horse with conformationScores, bondScore, temperament
  * @param {Object} groom - Groom with showHandlingSkill, personality
- * @param {string} className - Conformation class name (validated against CONFORMATION_CLASSES)
+ * @param {string} className - Conformation class name (validated against conformationClasses)
  * @returns {Object} Scoring breakdown including finalScore
  */
 export function calculateConformationShowScore(horse, groom, className) {

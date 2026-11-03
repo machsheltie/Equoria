@@ -20,7 +20,7 @@ import {
 } from '../rules/disciplineRules.mjs';
 import { calculateStatGains } from '../../../utils/competitionRewards.mjs';
 import { getDisciplineConfig } from '../../../utils/competitionLogic.mjs';
-import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
+import { horseStatValues } from '../../../constants/schema.mjs';
 
 // The bible table, transcribed: [50% primary, 30% secondary, 20% tertiary].
 const BIBLE = {
@@ -70,7 +70,7 @@ describe('DISCIPLINE_STATS — the bible table (R8, C6)', () => {
   it('uses only stats the Horse model has', () => {
     for (const stats of Object.values(DISCIPLINE_STATS)) {
       for (const stat of stats) {
-        expect(HORSE_STAT_VALUES).toContain(stat);
+        expect(horseStatValues).toContain(stat);
       }
     }
   });

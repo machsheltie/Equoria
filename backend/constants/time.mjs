@@ -20,25 +20,24 @@
  *   arithmetic where calendar-day math is overkill).
  */
 
-export const MS_PER_SECOND = 1000;
-export const MS_PER_MINUTE = 60 * MS_PER_SECOND;
-export const MS_PER_HOUR = 60 * MS_PER_MINUTE;
-export const MS_PER_DAY = 24 * MS_PER_HOUR;
-/** One real week in ms; the camelCase spelling for new code (Equoria-pjvp8). */
-export const msPerWeek = 7 * MS_PER_DAY;
-export const MS_PER_WEEK = msPerWeek;
+export const msPerSecond = 1000;
+export const msPerMinute = 60 * msPerSecond;
+export const msPerHour = 60 * msPerMinute;
+export const msPerDay = 24 * msPerHour;
+/** One real week in ms. */
+export const msPerWeek = 7 * msPerDay;
 
 /**
  * Equoria game-year cadence: 7 real-time days = 1 game year. Numerically
- * identical to MS_PER_WEEK by design; this alias lets the call site name
+ * identical to msPerWeek by design; this alias lets the call site name
  * "game-year math" rather than an undifferentiated week.
  */
-export const MS_PER_GAME_YEAR = MS_PER_WEEK;
+export const msPerGameYear = msPerWeek;
 
 /**
  * Equine gestation in the game: 7 real-time days (= 1 game year). Used
  * by the breeding system for foal due dates. Numerically identical to
- * MS_PER_WEEK / MS_PER_GAME_YEAR by design.
+ * msPerWeek / msPerGameYear by design.
  */
-export const GESTATION_DAYS = 7;
-export const GESTATION_MS = GESTATION_DAYS * MS_PER_DAY;
+export const gestationDays = 7;
+export const gestationMs = gestationDays * msPerDay;

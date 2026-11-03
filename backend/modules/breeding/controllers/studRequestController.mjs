@@ -26,7 +26,7 @@
  */
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { GESTATION_DAYS } from '../../../constants/time.mjs';
+import { gestationDays } from '../../../constants/time.mjs';
 import { gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { validateBreedingPair, pregnancyClaimData } from '../../horses/index.mjs';
@@ -417,7 +417,7 @@ export async function approveStudRequest(req, res) {
             throw new BookingRefusal(409, REQUEST_NOT_PENDING);
           }
 
-          const foalDueDate = startOfGameDayIndex(gameDayIndex(now) + GESTATION_DAYS).toISOString();
+          const foalDueDate = startOfGameDayIndex(gameDayIndex(now) + gestationDays).toISOString();
           const notifications = [];
           await notify(
             tx,

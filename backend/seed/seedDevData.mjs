@@ -9,7 +9,7 @@
 // packages/database) — the previous bare `@prisma/client` import stopped
 // resolving once the package was no longer hoisted to backend/node_modules.
 import prisma from '../../packages/database/prismaClient.mjs';
-import { MS_PER_GAME_YEAR } from '../constants/time.mjs';
+import { msPerGameYear } from '../constants/time.mjs';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -118,7 +118,7 @@ function randomStat(min = 20, max = 80) {
 // `gameYears` old was born gameYears * 7 real days ago — NOT calendar-years ago
 // (which the canonical age helper, floor((now - dob) / 7), reads as ~52x older).
 function gameYearsAgo(gameYears) {
-  return new Date(Date.now() - gameYears * MS_PER_GAME_YEAR);
+  return new Date(Date.now() - gameYears * msPerGameYear);
 }
 
 const HORSES = [

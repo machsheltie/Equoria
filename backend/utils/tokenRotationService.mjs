@@ -16,7 +16,7 @@
  */
 
 import { verifyWithKeyRing } from './jwtKeyRing.mjs';
-import { MS_PER_WEEK } from '../constants/time.mjs';
+import { msPerWeek } from '../constants/time.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { maskEmailAddress } from './emailIdentityPolicy.mjs';
@@ -56,7 +56,7 @@ export async function createTokenPair(userId, familyId, role) {
   }
 
   let { accessToken, refreshToken } = buildSignedTokenPair(userId, familyId, role);
-  const expiresAt = new Date(Date.now() + MS_PER_WEEK); // 7 days
+  const expiresAt = new Date(Date.now() + msPerWeek); // 7 days
 
   // Equoria-x243u: createTokenPair NEVER materialises the user. Every real
   // caller (authController register/login, refresh) passes an already-persisted
@@ -365,7 +365,7 @@ export async function rotateRefreshToken(oldToken) {
         // automatically rather than surfacing a 500 to the user.
         const userId = validation.decoded.userId;
         const familyId = validation.decoded.familyId;
-        const expiresAt = new Date(Date.now() + MS_PER_WEEK); // 7 days
+        const expiresAt = new Date(Date.now() + msPerWeek); // 7 days
         // Equoria-ovp9: look up the user's role so the rotated access token
         // carries it. This avoids a requireRole() DB round-trip on every admin-
         // guarded request after a token rotation. The lookup is within the

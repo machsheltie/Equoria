@@ -1,128 +1,128 @@
 import { describe, it, expect } from '@jest/globals';
 import {
-  HORSE_SEX,
-  HORSE_SEX_VALUES,
-  HORSE_TEMPERAMENT,
-  HORSE_TEMPERAMENT_VALUES,
-  HORSE_HEALTH_STATUS,
-  HORSE_HEALTH_STATUS_VALUES,
+  horseSex,
+  horseSexValues,
+  horseTemperament,
+  horseTemperamentValues,
+  horseHealthStatus,
+  horseHealthStatusValues,
   DISCIPLINES,
-  DISCIPLINE_VALUES,
-  CONFORMATION_CLASSES,
-  CONFORMATION_CLASS_VALUES,
-  COMPETITION_PLACEMENTS,
-  COMPETITION_PLACEMENT_VALUES,
-  GROOM_SPECIALTIES,
-  GROOM_SPECIALTY_VALUES,
-  GROOM_SKILL_LEVELS,
-  GROOM_SKILL_LEVEL_VALUES,
-  GROOM_PERSONALITIES,
-  GROOM_PERSONALITY_VALUES,
-  GROOM_INTERACTION_TYPES,
-  GROOM_INTERACTION_TYPE_VALUES,
-  HORSE_STATS,
-  HORSE_STAT_VALUES,
-  TRAINING_LIMITS,
-  COMPETITION_LIMITS,
-  BREEDING_LIMITS,
-  FOAL_LIMITS,
-  USER_PROGRESSION,
-  SCORE_RANGES,
+  disciplineValues,
+  conformationClasses,
+  conformationClassValues,
+  competitionPlacements,
+  competitionPlacementValues,
+  groomSpecialties,
+  groomSpecialtyValues,
+  groomSkillLevels,
+  groomSkillLevelValues,
+  groomPersonalities,
+  groomPersonalityValues,
+  groomInteractionTypes,
+  groomInteractionTypeValues,
+  horseStats,
+  horseStatValues,
+  trainingLimits,
+  competitionLimits,
+  breedingLimits,
+  foalLimits,
+  userProgression,
+  scoreRanges,
   isValidHorseSex,
 } from '../constants/schema.mjs';
 
-// ─── HORSE_SEX ────────────────────────────────────────────────────────────────
+// ─── horseSex ────────────────────────────────────────────────────────────────
 
-describe('HORSE_SEX', () => {
+describe('horseSex', () => {
   it('is an object', () => {
-    expect(typeof HORSE_SEX).toBe('object');
-    expect(HORSE_SEX).not.toBeNull();
+    expect(typeof horseSex).toBe('object');
+    expect(horseSex).not.toBeNull();
   });
 
   it('has STALLION', () => {
-    expect(HORSE_SEX.STALLION).toBe('Stallion');
+    expect(horseSex.STALLION).toBe('Stallion');
   });
 
   it('has MARE', () => {
-    expect(HORSE_SEX.MARE).toBe('Mare');
+    expect(horseSex.MARE).toBe('Mare');
   });
 
   it('has COLT', () => {
-    expect(typeof HORSE_SEX.COLT).toBe('string');
+    expect(typeof horseSex.COLT).toBe('string');
   });
 
   it('has FILLY', () => {
-    expect(typeof HORSE_SEX.FILLY).toBe('string');
+    expect(typeof horseSex.FILLY).toBe('string');
   });
 
   it('has no RIG (owner ruling 2026-08-19: no rigs, no geldings)', () => {
-    expect(HORSE_SEX).not.toHaveProperty('RIG');
+    expect(horseSex).not.toHaveProperty('RIG');
   });
 });
 
-describe('HORSE_SEX_VALUES', () => {
+describe('horseSexValues', () => {
   it('is an array', () => {
-    expect(Array.isArray(HORSE_SEX_VALUES)).toBe(true);
+    expect(Array.isArray(horseSexValues)).toBe(true);
   });
 
   it('has at least 4 entries', () => {
-    expect(HORSE_SEX_VALUES.length).toBeGreaterThanOrEqual(4);
+    expect(horseSexValues.length).toBeGreaterThanOrEqual(4);
   });
 
   it('contains Stallion', () => {
-    expect(HORSE_SEX_VALUES).toContain('Stallion');
+    expect(horseSexValues).toContain('Stallion');
   });
 
   it('contains Mare', () => {
-    expect(HORSE_SEX_VALUES).toContain('Mare');
+    expect(horseSexValues).toContain('Mare');
   });
 
   it('all values are strings', () => {
-    for (const v of HORSE_SEX_VALUES) {
+    for (const v of horseSexValues) {
       expect(typeof v).toBe('string');
     }
   });
 });
 
-// ─── HORSE_TEMPERAMENT ────────────────────────────────────────────────────────
+// ─── horseTemperament ────────────────────────────────────────────────────────
 
-describe('HORSE_TEMPERAMENT', () => {
+describe('horseTemperament', () => {
   it('is an object', () => {
-    expect(typeof HORSE_TEMPERAMENT).toBe('object');
-    expect(HORSE_TEMPERAMENT).not.toBeNull();
+    expect(typeof horseTemperament).toBe('object');
+    expect(horseTemperament).not.toBeNull();
   });
 
   it('all values are strings', () => {
-    for (const v of Object.values(HORSE_TEMPERAMENT)) {
+    for (const v of Object.values(horseTemperament)) {
       expect(typeof v).toBe('string');
     }
   });
 });
 
-describe('HORSE_TEMPERAMENT_VALUES', () => {
+describe('horseTemperamentValues', () => {
   it('is an array of strings', () => {
-    expect(Array.isArray(HORSE_TEMPERAMENT_VALUES)).toBe(true);
-    for (const v of HORSE_TEMPERAMENT_VALUES) {
+    expect(Array.isArray(horseTemperamentValues)).toBe(true);
+    for (const v of horseTemperamentValues) {
       expect(typeof v).toBe('string');
     }
   });
 });
 
-// ─── HORSE_HEALTH_STATUS ──────────────────────────────────────────────────────
+// ─── horseHealthStatus ──────────────────────────────────────────────────────
 
-describe('HORSE_HEALTH_STATUS', () => {
+describe('horseHealthStatus', () => {
   it('is an object with string values', () => {
-    expect(typeof HORSE_HEALTH_STATUS).toBe('object');
-    for (const v of Object.values(HORSE_HEALTH_STATUS)) {
+    expect(typeof horseHealthStatus).toBe('object');
+    for (const v of Object.values(horseHealthStatus)) {
       expect(typeof v).toBe('string');
     }
   });
 });
 
-describe('HORSE_HEALTH_STATUS_VALUES', () => {
+describe('horseHealthStatusValues', () => {
   it('is a non-empty array', () => {
-    expect(Array.isArray(HORSE_HEALTH_STATUS_VALUES)).toBe(true);
-    expect(HORSE_HEALTH_STATUS_VALUES.length).toBeGreaterThan(0);
+    expect(Array.isArray(horseHealthStatusValues)).toBe(true);
+    expect(horseHealthStatusValues.length).toBeGreaterThan(0);
   });
 });
 
@@ -145,144 +145,144 @@ describe('DISCIPLINES', () => {
   });
 });
 
-describe('DISCIPLINE_VALUES', () => {
+describe('disciplineValues', () => {
   it('is a non-empty array of strings', () => {
-    expect(Array.isArray(DISCIPLINE_VALUES)).toBe(true);
-    expect(DISCIPLINE_VALUES.length).toBeGreaterThan(0);
-    for (const v of DISCIPLINE_VALUES) {
+    expect(Array.isArray(disciplineValues)).toBe(true);
+    expect(disciplineValues.length).toBeGreaterThan(0);
+    for (const v of disciplineValues) {
       expect(typeof v).toBe('string');
     }
   });
 });
 
-// ─── CONFORMATION_CLASSES ─────────────────────────────────────────────────────
+// ─── conformationClasses ─────────────────────────────────────────────────────
 
-describe('CONFORMATION_CLASSES', () => {
+describe('conformationClasses', () => {
   it('is an object with string values', () => {
-    expect(typeof CONFORMATION_CLASSES).toBe('object');
-    for (const v of Object.values(CONFORMATION_CLASSES)) {
+    expect(typeof conformationClasses).toBe('object');
+    for (const v of Object.values(conformationClasses)) {
       expect(typeof v).toBe('string');
     }
   });
 });
 
-describe('CONFORMATION_CLASS_VALUES', () => {
+describe('conformationClassValues', () => {
   it('is an array', () => {
-    expect(Array.isArray(CONFORMATION_CLASS_VALUES)).toBe(true);
+    expect(Array.isArray(conformationClassValues)).toBe(true);
   });
 });
 
-// ─── COMPETITION_PLACEMENTS ───────────────────────────────────────────────────
+// ─── competitionPlacements ───────────────────────────────────────────────────
 
-describe('COMPETITION_PLACEMENTS', () => {
+describe('competitionPlacements', () => {
   it('is an object with string values', () => {
-    expect(typeof COMPETITION_PLACEMENTS).toBe('object');
-    for (const v of Object.values(COMPETITION_PLACEMENTS)) {
+    expect(typeof competitionPlacements).toBe('object');
+    for (const v of Object.values(competitionPlacements)) {
       expect(typeof v).toBe('string');
     }
   });
 
   it('has FIRST place', () => {
-    expect(COMPETITION_PLACEMENTS.FIRST).toBe('1st');
+    expect(competitionPlacements.FIRST).toBe('1st');
   });
 });
 
-describe('COMPETITION_PLACEMENT_VALUES', () => {
+describe('competitionPlacementValues', () => {
   it('is an array', () => {
-    expect(Array.isArray(COMPETITION_PLACEMENT_VALUES)).toBe(true);
+    expect(Array.isArray(competitionPlacementValues)).toBe(true);
   });
 });
 
 // ─── GROOM constants ──────────────────────────────────────────────────────────
 
-describe('GROOM_SPECIALTIES', () => {
+describe('groomSpecialties', () => {
   it('is an object with string values', () => {
-    expect(typeof GROOM_SPECIALTIES).toBe('object');
-    for (const v of Object.values(GROOM_SPECIALTIES)) {
+    expect(typeof groomSpecialties).toBe('object');
+    for (const v of Object.values(groomSpecialties)) {
       expect(typeof v).toBe('string');
     }
   });
 });
 
-describe('GROOM_SPECIALTY_VALUES', () => {
+describe('groomSpecialtyValues', () => {
   it('is a non-empty array', () => {
-    expect(Array.isArray(GROOM_SPECIALTY_VALUES)).toBe(true);
-    expect(GROOM_SPECIALTY_VALUES.length).toBeGreaterThan(0);
+    expect(Array.isArray(groomSpecialtyValues)).toBe(true);
+    expect(groomSpecialtyValues.length).toBeGreaterThan(0);
   });
 });
 
-describe('GROOM_SKILL_LEVELS', () => {
+describe('groomSkillLevels', () => {
   it('is an object with string values', () => {
-    expect(typeof GROOM_SKILL_LEVELS).toBe('object');
-    for (const v of Object.values(GROOM_SKILL_LEVELS)) {
+    expect(typeof groomSkillLevels).toBe('object');
+    for (const v of Object.values(groomSkillLevels)) {
       expect(typeof v).toBe('string');
     }
   });
 });
 
-describe('GROOM_SKILL_LEVEL_VALUES', () => {
+describe('groomSkillLevelValues', () => {
   it('is a non-empty array', () => {
-    expect(Array.isArray(GROOM_SKILL_LEVEL_VALUES)).toBe(true);
-    expect(GROOM_SKILL_LEVEL_VALUES.length).toBeGreaterThan(0);
+    expect(Array.isArray(groomSkillLevelValues)).toBe(true);
+    expect(groomSkillLevelValues.length).toBeGreaterThan(0);
   });
 });
 
-describe('GROOM_PERSONALITIES', () => {
+describe('groomPersonalities', () => {
   it('is an object with string values', () => {
-    expect(typeof GROOM_PERSONALITIES).toBe('object');
-    for (const v of Object.values(GROOM_PERSONALITIES)) {
+    expect(typeof groomPersonalities).toBe('object');
+    for (const v of Object.values(groomPersonalities)) {
       expect(typeof v).toBe('string');
     }
   });
 });
 
-describe('GROOM_PERSONALITY_VALUES', () => {
+describe('groomPersonalityValues', () => {
   it('is a non-empty array', () => {
-    expect(Array.isArray(GROOM_PERSONALITY_VALUES)).toBe(true);
-    expect(GROOM_PERSONALITY_VALUES.length).toBeGreaterThan(0);
+    expect(Array.isArray(groomPersonalityValues)).toBe(true);
+    expect(groomPersonalityValues.length).toBeGreaterThan(0);
   });
 });
 
-describe('GROOM_INTERACTION_TYPES', () => {
+describe('groomInteractionTypes', () => {
   it('is an object with string values', () => {
-    expect(typeof GROOM_INTERACTION_TYPES).toBe('object');
-    for (const v of Object.values(GROOM_INTERACTION_TYPES)) {
+    expect(typeof groomInteractionTypes).toBe('object');
+    for (const v of Object.values(groomInteractionTypes)) {
       expect(typeof v).toBe('string');
     }
   });
 });
 
-describe('GROOM_INTERACTION_TYPE_VALUES', () => {
+describe('groomInteractionTypeValues', () => {
   it('is a non-empty array', () => {
-    expect(Array.isArray(GROOM_INTERACTION_TYPE_VALUES)).toBe(true);
-    expect(GROOM_INTERACTION_TYPE_VALUES.length).toBeGreaterThan(0);
+    expect(Array.isArray(groomInteractionTypeValues)).toBe(true);
+    expect(groomInteractionTypeValues.length).toBeGreaterThan(0);
   });
 });
 
-// ─── HORSE_STATS ──────────────────────────────────────────────────────────────
+// ─── horseStats ──────────────────────────────────────────────────────────────
 
-describe('HORSE_STATS', () => {
+describe('horseStats', () => {
   it('is an object', () => {
-    expect(typeof HORSE_STATS).toBe('object');
-    expect(HORSE_STATS).not.toBeNull();
+    expect(typeof horseStats).toBe('object');
+    expect(horseStats).not.toBeNull();
   });
 
   it('all values are strings', () => {
-    for (const v of Object.values(HORSE_STATS)) {
+    for (const v of Object.values(horseStats)) {
       expect(typeof v).toBe('string');
     }
   });
 
   it('has at least 8 stat types', () => {
-    expect(Object.keys(HORSE_STATS).length).toBeGreaterThanOrEqual(8);
+    expect(Object.keys(horseStats).length).toBeGreaterThanOrEqual(8);
   });
 });
 
-describe('HORSE_STAT_VALUES', () => {
+describe('horseStatValues', () => {
   it('is a non-empty array of strings', () => {
-    expect(Array.isArray(HORSE_STAT_VALUES)).toBe(true);
-    expect(HORSE_STAT_VALUES.length).toBeGreaterThan(0);
-    for (const v of HORSE_STAT_VALUES) {
+    expect(Array.isArray(horseStatValues)).toBe(true);
+    expect(horseStatValues.length).toBeGreaterThan(0);
+    for (const v of horseStatValues) {
       expect(typeof v).toBe('string');
     }
   });
@@ -290,59 +290,59 @@ describe('HORSE_STAT_VALUES', () => {
 
 // ─── Limit constants ──────────────────────────────────────────────────────────
 
-describe('TRAINING_LIMITS', () => {
+describe('trainingLimits', () => {
   it('is an object with numeric values', () => {
-    expect(typeof TRAINING_LIMITS).toBe('object');
-    for (const v of Object.values(TRAINING_LIMITS)) {
+    expect(typeof trainingLimits).toBe('object');
+    for (const v of Object.values(trainingLimits)) {
       expect(typeof v).toBe('number');
     }
   });
 });
 
-describe('COMPETITION_LIMITS', () => {
+describe('competitionLimits', () => {
   it('is an object with numeric values', () => {
-    expect(typeof COMPETITION_LIMITS).toBe('object');
-    for (const v of Object.values(COMPETITION_LIMITS)) {
+    expect(typeof competitionLimits).toBe('object');
+    for (const v of Object.values(competitionLimits)) {
       expect(typeof v).toBe('number');
     }
   });
 });
 
-describe('BREEDING_LIMITS', () => {
+describe('breedingLimits', () => {
   it('is an object with numeric values', () => {
-    expect(typeof BREEDING_LIMITS).toBe('object');
-    for (const v of Object.values(BREEDING_LIMITS)) {
+    expect(typeof breedingLimits).toBe('object');
+    for (const v of Object.values(breedingLimits)) {
       expect(typeof v).toBe('number');
     }
   });
 });
 
-describe('FOAL_LIMITS', () => {
+describe('foalLimits', () => {
   it('is an object', () => {
-    expect(typeof FOAL_LIMITS).toBe('object');
-    expect(FOAL_LIMITS).not.toBeNull();
+    expect(typeof foalLimits).toBe('object');
+    expect(foalLimits).not.toBeNull();
   });
 });
 
-// ─── USER_PROGRESSION and SCORE_RANGES ───────────────────────────────────────
+// ─── userProgression and scoreRanges ───────────────────────────────────────
 
-describe('USER_PROGRESSION', () => {
+describe('userProgression', () => {
   it('is an object', () => {
-    expect(typeof USER_PROGRESSION).toBe('object');
-    expect(USER_PROGRESSION).not.toBeNull();
+    expect(typeof userProgression).toBe('object');
+    expect(userProgression).not.toBeNull();
   });
 
   it('has numeric values', () => {
-    for (const v of Object.values(USER_PROGRESSION)) {
+    for (const v of Object.values(userProgression)) {
       expect(typeof v).toBe('number');
     }
   });
 });
 
-describe('SCORE_RANGES', () => {
+describe('scoreRanges', () => {
   it('is an object', () => {
-    expect(typeof SCORE_RANGES).toBe('object');
-    expect(SCORE_RANGES).not.toBeNull();
+    expect(typeof scoreRanges).toBe('object');
+    expect(scoreRanges).not.toBeNull();
   });
 });
 

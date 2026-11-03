@@ -34,17 +34,17 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  HORSE_SEX,
-  HORSE_SEX_VALUES,
-  HORSE_TEMPERAMENT,
-  HORSE_TEMPERAMENT_VALUES,
+  horseSex,
+  horseSexValues,
+  horseTemperament,
+  horseTemperamentValues,
   DISCIPLINES,
-  DISCIPLINE_VALUES,
-  GROOM_SPECIALTIES,
-  GROOM_SPECIALTY_VALUES,
-  GROOM_SKILL_LEVELS,
-  HORSE_STATS,
-  HORSE_STAT_VALUES,
+  disciplineValues,
+  groomSpecialties,
+  groomSpecialtyValues,
+  groomSkillLevels,
+  horseStats,
+  horseStatValues,
   isValidHorseSex,
   isValidTemperament,
   isValidDiscipline,
@@ -62,12 +62,12 @@ import { TEMPERAMENTS } from '../../modules/competition/index.mjs';
 describe('🏇 UNIT: Schema Constants Validation', () => {
   describe('Horse Sex Constants', () => {
     it('should have all required horse sex values', () => {
-      expect(HORSE_SEX.STALLION).toBe('Stallion');
-      expect(HORSE_SEX.MARE).toBe('Mare');
-      expect(HORSE_SEX.COLT).toBe('Colt');
-      expect(HORSE_SEX.FILLY).toBe('Filly');
-      // Owner ruling 2026-08-19 (Equoria-z92x3): no rigs. Old contract: HORSE_SEX.RIG was 'Rig'.
-      expect(HORSE_SEX).not.toHaveProperty('RIG');
+      expect(horseSex.STALLION).toBe('Stallion');
+      expect(horseSex.MARE).toBe('Mare');
+      expect(horseSex.COLT).toBe('Colt');
+      expect(horseSex.FILLY).toBe('Filly');
+      // Owner ruling 2026-08-19 (Equoria-z92x3): no rigs. Old contract: horseSex.RIG was 'Rig'.
+      expect(horseSex).not.toHaveProperty('RIG');
     });
 
     it('should validate horse sex correctly', () => {
@@ -79,9 +79,9 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
     });
 
     it('should have consistent values array', () => {
-      expect(HORSE_SEX_VALUES).toContain('Stallion');
-      expect(HORSE_SEX_VALUES).toContain('Mare');
-      expect(HORSE_SEX_VALUES).toHaveLength(4);
+      expect(horseSexValues).toContain('Stallion');
+      expect(horseSexValues).toContain('Mare');
+      expect(horseSexValues).toHaveLength(4);
     });
   });
 
@@ -91,7 +91,7 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
     // including 'Docile' and 'Unpredictable', which are not among the 11.
     // Owner ruling 2026-10-21: Playful renamed Driven, Willing added (12 temperaments). Old contract: the 11, with PLAYFUL.
     it("should have exactly the owner's 12 temperaments", () => {
-      expect(HORSE_TEMPERAMENT).toEqual({
+      expect(horseTemperament).toEqual({
         SPIRITED: 'Spirited',
         NERVOUS: 'Nervous',
         CALM: 'Calm',
@@ -105,7 +105,7 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
         LAZY: 'Lazy',
         AGGRESSIVE: 'Aggressive',
       });
-      expect(HORSE_TEMPERAMENT_VALUES).toEqual([...TEMPERAMENTS]);
+      expect(horseTemperamentValues).toEqual([...TEMPERAMENTS]);
     });
 
     it('should validate temperament correctly', () => {
@@ -134,19 +134,19 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
     });
 
     it('should have comprehensive discipline list', () => {
-      expect(DISCIPLINE_VALUES.length).toBeGreaterThanOrEqual(20);
-      expect(DISCIPLINE_VALUES).toContain('Racing');
-      expect(DISCIPLINE_VALUES).toContain('Dressage');
-      expect(DISCIPLINE_VALUES).toContain('Gaited');
+      expect(disciplineValues.length).toBeGreaterThanOrEqual(20);
+      expect(disciplineValues).toContain('Racing');
+      expect(disciplineValues).toContain('Dressage');
+      expect(disciplineValues).toContain('Gaited');
     });
   });
 
   describe('Groom Constants', () => {
     it('should have all groom specialties', () => {
-      expect(GROOM_SPECIALTIES.FOAL_CARE).toBe('foalCare');
-      expect(GROOM_SPECIALTIES.GENERAL).toBe('general');
-      expect(GROOM_SPECIALTIES.TRAINING).toBe('training');
-      expect(GROOM_SPECIALTIES.MEDICAL).toBe('medical');
+      expect(groomSpecialties.foalCare).toBe('foalCare');
+      expect(groomSpecialties.GENERAL).toBe('general');
+      expect(groomSpecialties.TRAINING).toBe('training');
+      expect(groomSpecialties.MEDICAL).toBe('medical');
     });
 
     it('should validate groom specialties correctly', () => {
@@ -156,10 +156,10 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
     });
 
     it('should have all skill levels', () => {
-      expect(GROOM_SKILL_LEVELS.NOVICE).toBe('novice');
-      expect(GROOM_SKILL_LEVELS.INTERMEDIATE).toBe('intermediate');
-      expect(GROOM_SKILL_LEVELS.EXPERT).toBe('expert');
-      expect(GROOM_SKILL_LEVELS.MASTER).toBe('master');
+      expect(groomSkillLevels.NOVICE).toBe('novice');
+      expect(groomSkillLevels.INTERMEDIATE).toBe('intermediate');
+      expect(groomSkillLevels.EXPERT).toBe('expert');
+      expect(groomSkillLevels.MASTER).toBe('master');
     });
 
     it('should validate skill levels correctly', () => {
@@ -243,12 +243,12 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
       ];
 
       expectedStats.forEach(stat => {
-        expect(HORSE_STAT_VALUES).toContain(stat);
+        expect(horseStatValues).toContain(stat);
       });
 
       // Verify flexibility is specifically included
-      expect(HORSE_STATS.FLEXIBILITY).toBe('flexibility');
-      expect(HORSE_STAT_VALUES).toContain('flexibility');
+      expect(horseStats.FLEXIBILITY).toBe('flexibility');
+      expect(horseStatValues).toContain('flexibility');
     });
 
     it('should validate horse stats correctly', () => {
@@ -265,7 +265,7 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
     });
 
     it('should have consistent stat object and array values', () => {
-      expect(Object.values(HORSE_STATS)).toEqual(HORSE_STAT_VALUES);
+      expect(Object.values(horseStats)).toEqual(horseStatValues);
     });
   });
 
@@ -276,17 +276,17 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
         expect(unique.length).toBe(arr.length);
       };
 
-      checkNoDuplicates(HORSE_SEX_VALUES, 'HORSE_SEX_VALUES');
-      checkNoDuplicates(DISCIPLINE_VALUES, 'DISCIPLINE_VALUES');
-      checkNoDuplicates(GROOM_SPECIALTY_VALUES, 'GROOM_SPECIALTY_VALUES');
-      checkNoDuplicates(HORSE_STAT_VALUES, 'HORSE_STAT_VALUES');
+      checkNoDuplicates(horseSexValues, 'horseSexValues');
+      checkNoDuplicates(disciplineValues, 'disciplineValues');
+      checkNoDuplicates(groomSpecialtyValues, 'groomSpecialtyValues');
+      checkNoDuplicates(horseStatValues, 'horseStatValues');
     });
 
     it('should have consistent object and array values', () => {
-      expect(Object.values(HORSE_SEX)).toEqual(HORSE_SEX_VALUES);
-      expect(Object.values(DISCIPLINES)).toEqual(DISCIPLINE_VALUES);
-      expect(Object.values(GROOM_SPECIALTIES)).toEqual(GROOM_SPECIALTY_VALUES);
-      expect(Object.values(HORSE_STATS)).toEqual(HORSE_STAT_VALUES);
+      expect(Object.values(horseSex)).toEqual(horseSexValues);
+      expect(Object.values(DISCIPLINES)).toEqual(disciplineValues);
+      expect(Object.values(groomSpecialties)).toEqual(groomSpecialtyValues);
+      expect(Object.values(horseStats)).toEqual(horseStatValues);
     });
   });
 });

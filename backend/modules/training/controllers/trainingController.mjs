@@ -7,7 +7,7 @@ import {
 } from '../services/trainingModelService.mjs';
 import { getHorseById } from '../../horses/index.mjs';
 import { commitTrainingSession, trainingFeeFor } from '../services/trainingSessionTx.mjs';
-import { MS_PER_WEEK } from '../../../constants/time.mjs';
+import { msPerWeek } from '../../../constants/time.mjs';
 import { breedAllowsDiscipline } from '../../../utils/gaitedBreed.mjs';
 import { liveHorseAgeYears } from '../../../utils/horseAge.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
@@ -221,7 +221,7 @@ async function trainHorse(horseId, requestedDiscipline, { actorUserId = null } =
     const cooldownNow = new Date();
     // One training per horse per week (owner ruling 2026-10-22): the column holds
     // exactly one week, and every reader of train-ability reads it (Equoria-w0qb7).
-    const nextEligibleClaim = new Date(cooldownNow.getTime() + MS_PER_WEEK);
+    const nextEligibleClaim = new Date(cooldownNow.getTime() + msPerWeek);
 
     // Equoria-3kegj: the assigned trainer (if any) is paid a fee per session.
     // Fail-soft — a trainer load / DB error degrades to the no-trainer path

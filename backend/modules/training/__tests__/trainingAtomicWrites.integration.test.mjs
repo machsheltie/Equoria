@@ -26,7 +26,7 @@ import { randomBytes } from 'node:crypto';
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { trainHorse } from '../controllers/trainingController.mjs';
-import { DISCIPLINE_VALUES, HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
+import { disciplineValues, horseStatValues } from '../../../constants/schema.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
@@ -135,8 +135,8 @@ describe('trainHorse — all training writes commit or roll back together (Equor
   // the trained discipline's score, in every discipline. Gaited is left out
   // only because its own gate refuses a non-gaited fixture horse.
   it('training in every discipline adds +5 to that discipline and moves no stat', async () => {
-    const statSelect = Object.fromEntries(HORSE_STAT_VALUES.map(stat => [stat, true]));
-    const disciplines = DISCIPLINE_VALUES.filter(d => d !== 'Gaited');
+    const statSelect = Object.fromEntries(horseStatValues.map(stat => [stat, true]));
+    const disciplines = disciplineValues.filter(d => d !== 'Gaited');
     expect(disciplines).toContain('Pleasure Driving');
 
     for (const discipline of disciplines) {

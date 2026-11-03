@@ -27,14 +27,14 @@ import { maxActiveAgeYears, minActiveAgeYears } from './horseAgePolicy.mjs';
  * sync with CANONICAL_HORSE_SEX_VALUES in
  * packages/database/horseSexCanonical.mjs.
  */
-export const HORSE_SEX = {
+export const horseSex = {
   STALLION: 'Stallion',
   MARE: 'Mare',
   COLT: 'Colt',
   FILLY: 'Filly',
 };
 
-export const HORSE_SEX_VALUES = Object.values(HORSE_SEX);
+export const horseSexValues = Object.values(horseSex);
 
 // Re-export the canonicalizer so callers reaching for sex utilities have
 // one obvious place to find them.
@@ -53,7 +53,7 @@ export {
 // file, so the reverse import would be a cycle). Was six values including
 // 'Docile' and 'Unpredictable', which are not temperaments. Owner ruling
 // 2026-10-21: Playful was renamed Driven and Willing was added (was 11).
-export const HORSE_TEMPERAMENT = Object.freeze({
+export const horseTemperament = Object.freeze({
   SPIRITED: 'Spirited',
   NERVOUS: 'Nervous',
   CALM: 'Calm',
@@ -68,9 +68,8 @@ export const HORSE_TEMPERAMENT = Object.freeze({
   AGGRESSIVE: 'Aggressive',
 });
 
-/** The 12 temperaments as a list; camelCase name for new code (Equoria-pjvp8). */
-export const horseTemperamentValues = Object.freeze(Object.values(HORSE_TEMPERAMENT));
-export const HORSE_TEMPERAMENT_VALUES = horseTemperamentValues;
+/** The 12 temperaments as a list. */
+export const horseTemperamentValues = Object.freeze(Object.values(horseTemperament));
 
 /**
  * Horse health words (owner ruling 2026-10-23, Equoria-u0jop): exactly
@@ -78,7 +77,7 @@ export const HORSE_TEMPERAMENT_VALUES = horseTemperamentValues;
  * through utils/horseHealth.mjs toHealthWord. Old contract: Excellent, Good,
  * Fair, Poor, Injured.
  */
-export const HORSE_HEALTH_STATUS = {
+export const horseHealthStatus = {
   excellent: 'Excellent',
   veryGood: 'Very Good',
   good: 'Good',
@@ -86,7 +85,7 @@ export const HORSE_HEALTH_STATUS = {
   bad: 'Bad',
 };
 
-export const HORSE_HEALTH_STATUS_VALUES = Object.values(HORSE_HEALTH_STATUS);
+export const horseHealthStatusValues = Object.values(horseHealthStatus);
 
 /**
  * Competition disciplines
@@ -122,59 +121,58 @@ export const DISCIPLINES = {
  * Conformation show classes (separate from performance disciplines)
  * These are not added to DISCIPLINES as they're a separate competition system
  */
-export const CONFORMATION_CLASSES = {
-  FOALS_YOUNGSTOCK: 'Foals/Youngstock',
+export const conformationClasses = {
+  foalsYoungstock: 'Foals/Youngstock',
   MARES: 'Mares',
   STALLIONS: 'Stallions',
   VETERANS: 'Veterans',
-  OPEN_ALL_BREED: 'Open All-Breed',
-  BREED_SPECIFIC: 'Breed-Specific',
+  openAllBreed: 'Open All-Breed',
+  breedSpecific: 'Breed-Specific',
 };
 
-/** Every competition discipline; camelCase name for new code (Equoria-pjvp8). */
+/** Every competition discipline. */
 export const disciplineValues = Object.values(DISCIPLINES);
-export const DISCIPLINE_VALUES = disciplineValues;
-export const CONFORMATION_CLASS_VALUES = Object.values(CONFORMATION_CLASSES);
+export const conformationClassValues = Object.values(conformationClasses);
 
 /**
  * Competition placements
  */
-export const COMPETITION_PLACEMENTS = {
+export const competitionPlacements = {
   FIRST: '1st',
   SECOND: '2nd',
   THIRD: '3rd',
 };
 
-export const COMPETITION_PLACEMENT_VALUES = Object.values(COMPETITION_PLACEMENTS);
+export const competitionPlacementValues = Object.values(competitionPlacements);
 
 /**
  * Groom specialties
  */
-export const GROOM_SPECIALTIES = {
-  FOAL_CARE: 'foalCare',
+export const groomSpecialties = {
+  foalCare: 'foalCare',
   GENERAL: 'general',
   TRAINING: 'training',
   MEDICAL: 'medical',
 };
 
-export const GROOM_SPECIALTY_VALUES = Object.values(GROOM_SPECIALTIES);
+export const groomSpecialtyValues = Object.values(groomSpecialties);
 
 /**
  * Groom skill levels
  */
-export const GROOM_SKILL_LEVELS = {
+export const groomSkillLevels = {
   NOVICE: 'novice',
   INTERMEDIATE: 'intermediate',
   EXPERT: 'expert',
   MASTER: 'master',
 };
 
-export const GROOM_SKILL_LEVEL_VALUES = Object.values(GROOM_SKILL_LEVELS);
+export const groomSkillLevelValues = Object.values(groomSkillLevels);
 
 /**
  * Groom personalities
  */
-export const GROOM_PERSONALITIES = {
+export const groomPersonalities = {
   GENTLE: 'gentle',
   ENERGETIC: 'energetic',
   PATIENT: 'patient',
@@ -183,25 +181,25 @@ export const GROOM_PERSONALITIES = {
   CALM: 'calm',
 };
 
-export const GROOM_PERSONALITY_VALUES = Object.values(GROOM_PERSONALITIES);
+export const groomPersonalityValues = Object.values(groomPersonalities);
 
 /**
  * Groom interaction types
  */
-export const GROOM_INTERACTION_TYPES = {
-  DAILY_CARE: 'dailyCare',
+export const groomInteractionTypes = {
+  dailyCare: 'dailyCare',
   FEEDING: 'feeding',
   GROOMING: 'grooming',
   EXERCISE: 'exercise',
-  MEDICAL_CHECK: 'medicalCheck',
+  medicalCheck: 'medicalCheck',
 };
 
-export const GROOM_INTERACTION_TYPE_VALUES = Object.values(GROOM_INTERACTION_TYPES);
+export const groomInteractionTypeValues = Object.values(groomInteractionTypes);
 
 /**
  * Horse stats/attributes
  */
-export const HORSE_STATS = {
+export const horseStats = {
   SPEED: 'speed',
   STAMINA: 'stamina',
   AGILITY: 'agility',
@@ -216,33 +214,33 @@ export const HORSE_STATS = {
   FLEXIBILITY: 'flexibility',
 };
 
-export const HORSE_STAT_VALUES = Object.values(HORSE_STATS);
+export const horseStatValues = Object.values(horseStats);
 
 /**
  * Training age limits
  */
-export const TRAINING_LIMITS = {
-  MIN_AGE: minActiveAgeYears,
-  MAX_AGE: maxActiveAgeYears,
-  COOLDOWN_DAYS: 7,
+export const trainingLimits = {
+  minAge: minActiveAgeYears,
+  maxAge: maxActiveAgeYears,
+  cooldownDays: 7,
 };
 
 /**
  * Competition age limits
  */
-export const COMPETITION_LIMITS = {
-  MIN_AGE: minActiveAgeYears,
-  MAX_AGE: maxActiveAgeYears,
+export const competitionLimits = {
+  minAge: minActiveAgeYears,
+  maxAge: maxActiveAgeYears,
 };
 
 /**
  * Breeding age limits
  */
-export const BREEDING_LIMITS = {
-  MIN_STALLION_AGE: minActiveAgeYears,
-  MIN_MARE_AGE: minActiveAgeYears,
-  MAX_STALLION_AGE: maxActiveAgeYears,
-  MAX_MARE_AGE: maxActiveAgeYears,
+export const breedingLimits = {
+  minStallionAge: minActiveAgeYears,
+  minMareAge: minActiveAgeYears,
+  maxStallionAge: maxActiveAgeYears,
+  maxMareAge: maxActiveAgeYears,
 };
 
 /**
@@ -264,18 +262,18 @@ export const listedStudStatuses = Object.freeze([studStatuses.public, studStatus
 /**
  * Foal trait discovery age limits
  */
-export const FOAL_LIMITS = {
-  MAX_TRAIT_DISCOVERY_AGE: 3, // Foals can discover traits until age 3
-  ADULT_AGE: 3, // Horses are considered adults at age 3
+export const foalLimits = {
+  maxTraitDiscoveryAge: 3, // Foals can discover traits until age 3
+  adultAge: 3, // Horses are considered adults at age 3
 };
 
 /**
  * User progression constants
  */
-export const USER_PROGRESSION = {
-  MIN_LEVEL: 1,
-  MIN_XP: 0,
-  MIN_MONEY: 0,
+export const userProgression = {
+  minLevel: 1,
+  minXp: 0,
+  minMoney: 0,
   // NOTE (Equoria-dmrw3): the former LEVEL_XP_BASE (100) / LEVEL_XP_MULTIPLIER (1.5)
   // exponential-curve constants were removed alongside the dead calculateXpForLevel /
   // calculateLevelFromXp helpers below. They disagreed with the canonical LINEAR
@@ -287,54 +285,51 @@ export const USER_PROGRESSION = {
 /**
  * Score ranges
  */
-export const SCORE_RANGES = {
-  MIN_SCORE: 0,
-  MAX_SCORE: 1000,
-  MIN_DISCIPLINE_SCORE: 0,
-  MAX_DISCIPLINE_SCORE: 100,
+export const scoreRanges = {
+  minScore: 0,
+  maxScore: 1000,
+  minDisciplineScore: 0,
+  maxDisciplineScore: 100,
 };
 
 /**
  * Validation helper functions
  */
-export const isValidHorseSex = sex => HORSE_SEX_VALUES.includes(sex);
+export const isValidHorseSex = sex => horseSexValues.includes(sex);
 export const isValidTemperament = temperament => horseTemperamentValues.includes(temperament);
-export const isValidHealthStatus = status => HORSE_HEALTH_STATUS_VALUES.includes(status);
+export const isValidHealthStatus = status => horseHealthStatusValues.includes(status);
 export const isValidDiscipline = discipline => disciplineValues.includes(discipline);
-export const isValidPlacement = placement => COMPETITION_PLACEMENT_VALUES.includes(placement);
-export const isValidGroomSpecialty = specialty => GROOM_SPECIALTY_VALUES.includes(specialty);
-export const isValidGroomSkillLevel = level => GROOM_SKILL_LEVEL_VALUES.includes(level);
-export const isValidGroomPersonality = personality =>
-  GROOM_PERSONALITY_VALUES.includes(personality);
-export const isValidInteractionType = type => GROOM_INTERACTION_TYPE_VALUES.includes(type);
-export const isValidHorseStat = stat => HORSE_STAT_VALUES.includes(stat);
+export const isValidPlacement = placement => competitionPlacementValues.includes(placement);
+export const isValidGroomSpecialty = specialty => groomSpecialtyValues.includes(specialty);
+export const isValidGroomSkillLevel = level => groomSkillLevelValues.includes(level);
+export const isValidGroomPersonality = personality => groomPersonalityValues.includes(personality);
+export const isValidInteractionType = type => groomInteractionTypeValues.includes(type);
+export const isValidHorseStat = stat => horseStatValues.includes(stat);
 
 /**
  * Age validation helpers
  */
-export const isTrainingAge = age =>
-  age >= TRAINING_LIMITS.MIN_AGE && age <= TRAINING_LIMITS.MAX_AGE;
+export const isTrainingAge = age => age >= trainingLimits.minAge && age <= trainingLimits.maxAge;
 export const isCompetitionAge = age =>
-  age >= COMPETITION_LIMITS.MIN_AGE && age <= COMPETITION_LIMITS.MAX_AGE;
+  age >= competitionLimits.minAge && age <= competitionLimits.maxAge;
 export const isBreedingAge = (age, sex) => {
-  if (sex === HORSE_SEX.STALLION) {
-    return age >= BREEDING_LIMITS.MIN_STALLION_AGE && age <= BREEDING_LIMITS.MAX_STALLION_AGE;
+  if (sex === horseSex.STALLION) {
+    return age >= breedingLimits.minStallionAge && age <= breedingLimits.maxStallionAge;
   }
-  if (sex === HORSE_SEX.MARE) {
-    return age >= BREEDING_LIMITS.MIN_MARE_AGE && age <= BREEDING_LIMITS.MAX_MARE_AGE;
+  if (sex === horseSex.MARE) {
+    return age >= breedingLimits.minMareAge && age <= breedingLimits.maxMareAge;
   }
   return false;
 };
-export const isFoalAge = age => age < FOAL_LIMITS.MAX_TRAIT_DISCOVERY_AGE;
-export const isAdultAge = age => age >= FOAL_LIMITS.ADULT_AGE;
+export const isFoalAge = age => age < foalLimits.maxTraitDiscoveryAge;
+export const isAdultAge = age => age >= foalLimits.adultAge;
 
 /**
  * Score validation helpers
  */
-export const isValidScore = score =>
-  score >= SCORE_RANGES.MIN_SCORE && score <= SCORE_RANGES.MAX_SCORE;
+export const isValidScore = score => score >= scoreRanges.minScore && score <= scoreRanges.maxScore;
 export const isValidDisciplineScore = score =>
-  score >= SCORE_RANGES.MIN_DISCIPLINE_SCORE && score <= SCORE_RANGES.MAX_DISCIPLINE_SCORE;
+  score >= scoreRanges.minDisciplineScore && score <= scoreRanges.maxDisciplineScore;
 
 /**
  * User progression helpers — REMOVED (Equoria-dmrw3)
@@ -353,32 +348,32 @@ export const isValidDisciplineScore = score =>
  */
 
 export default {
-  HORSE_SEX,
-  HORSE_SEX_VALUES,
-  HORSE_TEMPERAMENT,
-  HORSE_TEMPERAMENT_VALUES,
-  HORSE_HEALTH_STATUS,
-  HORSE_HEALTH_STATUS_VALUES,
+  horseSex,
+  horseSexValues,
+  horseTemperament,
+  horseTemperamentValues,
+  horseHealthStatus,
+  horseHealthStatusValues,
   DISCIPLINES,
-  DISCIPLINE_VALUES,
-  COMPETITION_PLACEMENTS,
-  COMPETITION_PLACEMENT_VALUES,
-  GROOM_SPECIALTIES,
-  GROOM_SPECIALTY_VALUES,
-  GROOM_SKILL_LEVELS,
-  GROOM_SKILL_LEVEL_VALUES,
-  GROOM_PERSONALITIES,
-  GROOM_PERSONALITY_VALUES,
-  GROOM_INTERACTION_TYPES,
-  GROOM_INTERACTION_TYPE_VALUES,
-  HORSE_STATS,
-  HORSE_STAT_VALUES,
-  TRAINING_LIMITS,
-  COMPETITION_LIMITS,
-  BREEDING_LIMITS,
-  FOAL_LIMITS,
-  USER_PROGRESSION,
-  SCORE_RANGES,
+  disciplineValues,
+  competitionPlacements,
+  competitionPlacementValues,
+  groomSpecialties,
+  groomSpecialtyValues,
+  groomSkillLevels,
+  groomSkillLevelValues,
+  groomPersonalities,
+  groomPersonalityValues,
+  groomInteractionTypes,
+  groomInteractionTypeValues,
+  horseStats,
+  horseStatValues,
+  trainingLimits,
+  competitionLimits,
+  breedingLimits,
+  foalLimits,
+  userProgression,
+  scoreRanges,
   isValidHorseSex,
   isValidTemperament,
   isValidHealthStatus,

@@ -15,29 +15,24 @@
  * - Breeding   : shared stud eligibility validator (planned — 2nacc legs; the
  *                breeding leg is expected to add MAX_MARE_BREEDING_AGE_YEARS here)
  *
- * Only MIN/MAX_ACTIVE_AGE_YEARS + RETIREMENT_AGE_YEARS exist in this commit; the
+ * Only min/maxActiveAgeYears + retirementAgeYears exist in this commit; the
  * competition/breeding consumers and any breeding-specific re-exports land with
  * their own 2nacc legs (do NOT assume they exist yet).
  *
  * ⏰ Age is always read via getHorseAgeYears / backend/utils/horseAge.mjs
  * (Equoria-vdw5, date-only, Eastern game clock). NEVER inline `Math.floor((Date.now()-dob)/…)`.
  *
- * Rule form (game-years, inclusive): MIN_ACTIVE_AGE_YEARS <= age <= MAX_ACTIVE_AGE_YEARS.
+ * Rule form (game-years, inclusive): minActiveAgeYears <= age <= maxActiveAgeYears.
  */
 
 // First game-year at which training / competition / breeding all begin.
-// camelCase spelling for new consumers (Equoria-pjvp8 ratchet); same value.
 export const minActiveAgeYears = 3;
-export const MIN_ACTIVE_AGE_YEARS = minActiveAgeYears;
 
 // Last ACTIVE game-year, inclusive. A horse aged exactly 20 is still active;
 // 21 is over the cap. Tuning this changes lifetime training opportunity and
 // competition balance; require a fresh owner ruling and coordinated review.
 export const maxActiveAgeYears = 20;
-export const MAX_ACTIVE_AGE_YEARS = maxActiveAgeYears;
 
 // Display / UX label: the age at which a horse "retires" (one past the last
-// active year). Not itself a gate — the gate is `age > MAX_ACTIVE_AGE_YEARS`.
-// camelCase spelling for new consumers (Equoria-pjvp8 ratchet); same value.
+// active year). Not itself a gate — the gate is `age > maxActiveAgeYears`.
 export const retirementAgeYears = 21;
-export const RETIREMENT_AGE_YEARS = retirementAgeYears;

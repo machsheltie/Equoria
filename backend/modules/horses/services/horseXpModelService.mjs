@@ -21,7 +21,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { DatabaseError } from '../../../errors/index.mjs';
-import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
+import { horseStatValues } from '../../../constants/schema.mjs';
 import { invalidateCache, invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 import { addHorseMonthlyTotals } from '../../../utils/monthlyTotals.mjs';
 import {
@@ -38,7 +38,7 @@ import {
 export const HORSE_POINTS_PER_STAT_POINT = 1000;
 
 // Valid horse stats that can receive stat point allocations
-const VALID_HORSE_STATS = HORSE_STAT_VALUES;
+const VALID_HORSE_STATS = horseStatValues;
 
 /**
  * Cache keys of the horse XP routes (horseXpController): the status read and

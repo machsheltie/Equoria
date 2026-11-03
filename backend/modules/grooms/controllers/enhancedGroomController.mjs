@@ -5,7 +5,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { MS_PER_WEEK } from '../../../constants/time.mjs';
+import { msPerWeek } from '../../../constants/time.mjs';
 import {
   getAvailableInteractions,
   calculateRelationshipLevel,
@@ -88,7 +88,7 @@ export async function getEnhancedInteractions(req, res) {
         groomId: parseInt(groomId),
         foalId: parseInt(horseId),
         timestamp: {
-          gte: new Date(Date.now() - MS_PER_WEEK), // Last 7 days
+          gte: new Date(Date.now() - msPerWeek), // Last 7 days
         },
       },
       orderBy: { timestamp: 'desc' },

@@ -3,6 +3,6 @@
 // column order); this re-exports it under the name the module has always used.
 // Owner ruling 2026-10-21: it moved here when the invented 12-breed table
 // (breedGeneticProfiles.mjs), which used to hold a second copy, was deleted.
-import { HORSE_TEMPERAMENT_VALUES } from '../../../constants/schema.mjs';
+import { horseTemperamentValues } from '../../../constants/schema.mjs';
 
-export const TEMPERAMENT_TYPES = HORSE_TEMPERAMENT_VALUES;
+export const TEMPERAMENT_TYPES = horseTemperamentValues;

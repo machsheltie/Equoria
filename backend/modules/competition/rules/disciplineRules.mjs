@@ -14,7 +14,7 @@
  * competition one.
  */
 
-import { HORSE_TEMPERAMENT_VALUES } from '../../../constants/schema.mjs';
+import { horseTemperamentValues } from '../../../constants/schema.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
 /** [50% primary, 30% secondary, 20% tertiary] per competition discipline. */
@@ -77,7 +77,7 @@ export function getDisciplineStats(discipline) {
  * (EquoriaBible/RelevantFiles/Equoria_Temperament_Competition_Matrix.xlsx).
  * The one list is constants/schema.mjs HORSE_TEMPERAMENT.
  */
-export const TEMPERAMENTS = HORSE_TEMPERAMENT_VALUES;
+export const TEMPERAMENTS = horseTemperamentValues;
 
 /**
  * Temperament effect per ridden discipline: 1 Positive, 0 Neutral, -1 Negative.

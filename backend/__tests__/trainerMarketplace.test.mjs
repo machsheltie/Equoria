@@ -20,7 +20,7 @@ import {
   trainerMarketplaceNeedsRefresh,
   getTrainerRefreshCost,
 } from '../modules/trainers/services/trainerMarketplace.mjs';
-import { DISCIPLINE_VALUES } from '../constants/schema.mjs';
+import { disciplineValues } from '../constants/schema.mjs';
 import { staffLevelFee, staffLevels } from '../constants/staffLevels.mjs';
 
 // ─── TRAINER_MARKETPLACE_CONFIG ───────────────────────────────────────────────
@@ -57,7 +57,7 @@ describe('TRAINER_MARKETPLACE_CONFIG', () => {
   // Owner ruling 2026-10-21: specialties are an even pick across every competition
   // discipline. Old contract: a 6-discipline percentage spread summing to 100.
   it('SPECIALTIES is every competition discipline', () => {
-    expect(TRAINER_MARKETPLACE_CONFIG.SPECIALTIES).toEqual(DISCIPLINE_VALUES);
+    expect(TRAINER_MARKETPLACE_CONFIG.SPECIALTIES).toEqual(disciplineValues);
   });
 });
 

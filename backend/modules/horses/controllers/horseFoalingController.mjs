@@ -13,7 +13,7 @@
  * honours the pending-request lock (owner ruling S-Q4, 2026-10-16) and writes
  * the BreedingRecord (S-Q7: own pair, stud fee 0).
  */
-import { GESTATION_DAYS } from '../../../constants/time.mjs';
+import { gestationDays } from '../../../constants/time.mjs';
 import { getHorseById } from '../services/horseRouteQueries.mjs';
 import {
   validateBreedingPair,
@@ -185,7 +185,7 @@ export async function createFoal(req, res) {
     );
 
     // 00:00 Eastern on the day the nightly foaling run delivers (bred day + 7).
-    const foalDueDate = startOfGameDayIndex(gameDayIndex(now) + GESTATION_DAYS);
+    const foalDueDate = startOfGameDayIndex(gameDayIndex(now) + gestationDays);
 
     logger.info(
       `[horseController.createFoal] Pregnancy started for dam ${damId} (sire ${sireId}); foal due ${foalDueDate.toISOString()}`,

@@ -44,7 +44,7 @@ import { maskEmailsInError } from '../../../utils/emailIdentityPolicy.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
-import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
+import { horseStatValues } from '../../../constants/schema.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
 // Equoria-zalyb: the starter horse's name is a player-typed horse name, so it
 // meets the SAME rule as every other one, imported from the horses barrel. (Until
@@ -80,7 +80,7 @@ const BREED_STARTER_STATS = JSON.parse(
  * Clamps each stat to [1, 100] and ensures total does not exceed 200.
  */
 function generateStarterStats(breedName) {
-  const statNames = HORSE_STAT_VALUES;
+  const statNames = horseStatValues;
   const breedData = breedName ? BREED_STARTER_STATS[breedName] : null;
 
   const stats = {};

@@ -25,7 +25,7 @@ import {
   riderMarketplaceNeedsRefresh,
   getRiderRefreshCost,
 } from '../modules/riders/services/riderMarketplace.mjs';
-import { DISCIPLINE_VALUES } from '../constants/schema.mjs';
+import { disciplineValues } from '../constants/schema.mjs';
 import { staffLevelFee, staffLevels } from '../constants/staffLevels.mjs';
 
 // ─── RIDER_MARKETPLACE_CONFIG ─────────────────────────────────────────────────
@@ -136,7 +136,7 @@ describe('generateRandomRider', () => {
       const rider = generateRandomRider();
       expect(rider).not.toHaveProperty('knownAffinities');
       expect(rider).not.toHaveProperty('speciality');
-      for (const discipline of DISCIPLINE_VALUES) {
+      for (const discipline of disciplineValues) {
         expect(rider.bio).not.toContain(discipline);
       }
     }

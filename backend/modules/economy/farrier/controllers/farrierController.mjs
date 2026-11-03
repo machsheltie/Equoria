@@ -30,7 +30,7 @@ import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.m
 import { gameDayIndex, startOfGameDayIndex } from '../../../../utils/gameTime.mjs';
 import { retirementAgeYears } from '../../../../constants/horseAgePolicy.mjs';
 import { liveAgeBelowClauses } from '../../../../utils/horseAge.mjs';
-import { HORSE_STAT_VALUES } from '../../../../constants/schema.mjs';
+import { horseStatValues } from '../../../../constants/schema.mjs';
 import {
   recordTransactionTx,
   debitMoneyOrThrow,
@@ -118,7 +118,7 @@ export async function getFarrierHorses(req, res) {
 }
 
 function pickRandomStat() {
-  return HORSE_STAT_VALUES[Math.floor(Math.random() * HORSE_STAT_VALUES.length)];
+  return horseStatValues[Math.floor(Math.random() * horseStatValues.length)];
 }
 
 /**

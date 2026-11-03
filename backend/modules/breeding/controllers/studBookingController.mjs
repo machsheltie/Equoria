@@ -34,7 +34,7 @@
  */
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { GESTATION_DAYS } from '../../../constants/time.mjs';
+import { gestationDays } from '../../../constants/time.mjs';
 import { gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 import {
   withRetryableTxMapping,
@@ -266,7 +266,7 @@ export async function bookPublicStud(req, res) {
       result.notification.payload,
     );
 
-    const foalDueDate = startOfGameDayIndex(gameDayIndex(now) + GESTATION_DAYS);
+    const foalDueDate = startOfGameDayIndex(gameDayIndex(now) + gestationDays);
     logger.info(
       `[studBooking] dam ${damId} booked to public stud ${sireId}; fee ${result.fee}; record ${result.record.id}`,
     );
