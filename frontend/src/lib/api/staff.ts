@@ -30,6 +30,8 @@
  *   GET  /api/v1/staff/server-health                  → { health, filing }    (owner only)
  *   POST /api/v1/staff/shows/quarantined/:id/file | payroll/:type/:id/file | server-health/file
  *                                                     → { filing }            (owner only)
+ *   POST /api/v1/admin/horses/:id/set-age { gameAge } → HorseAgeSet           (owner only, q341)
+ *   POST /api/v1/admin/horses/age                     → HorseAgingRun         (owner only, q341)
  */
 
 import { apiClient } from '../http/apiClient.js';
@@ -322,6 +324,20 @@ export interface PayrollDiagnosis {
   report: string;
 }
 
+/** q341: what setting one horse's age did. */
+export interface HorseAgeSet {
+  horseId: number;
+  horseName: string;
+  newAge: number;
+}
+
+/** q341: what aging every horse now did. */
+export interface HorseAgingRun {
+  totalProcessed: number;
+  birthdaysFound: number;
+  errors: number;
+}
+
 /** Equoria-brh8c: the server's memory and speed, as the owner's panel shows them. */
 export interface ServerHealth {
   commitSha: string | null;
@@ -448,6 +464,11 @@ export const staffApi = {
     ),
   serverHealth: () =>
     apiClient.get<{ health: ServerHealth; filing: OwnerFiling }>(`${BASE}/server-health`),
+  // Owner ruling q341 (2026-11-03): the two horse-age tools stay on the admin
+  // routes, Owner only; the staff device cookie is scoped to all of /api/v1.
+  setHorseAge: (horseId: number, gameAge: number) =>
+    apiClient.post<HorseAgeSet>(`/api/v1/admin/horses/${horseId}/set-age`, { gameAge }),
+  ageEveryHorse: () => apiClient.post<HorseAgingRun>('/api/v1/admin/horses/age', {}),
   runQuarantinedShow: (showId: number) =>
     apiClient.post<{ result: { showId: number; status: 'completed'; settled: number } }>(
       `${BASE}/shows/quarantined/${showId}/run`,

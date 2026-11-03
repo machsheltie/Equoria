@@ -8,6 +8,7 @@
  */
 
 import express from 'express';
+import { requireRole, requireStaffCheckin } from '../../../middleware/auth.mjs';
 import {
   getCronStatus,
   getCronHealth,
@@ -50,8 +51,11 @@ router.get('/traits/analytics', getTraitRevelationAnalyticsHandler);
 router.get('/foals/development', getFoalDevelopment);
 
 // ── Horses ────────────────────────────────────────────────────────────────────
-router.post('/horses/age', manualHorseAging);
-router.post('/horses/:id/set-age', setHorseAge);
+// Owner only (owner ruling q341, 2026-11-03): an admin passes the router's admin
+// gate but not this one. The Steward's Office shows them under horses.age.set.
+const ownerOnly = [requireRole('owner'), requireStaffCheckin('owner')];
+router.post('/horses/age', ...ownerOnly, manualHorseAging);
+router.post('/horses/:id/set-age', ...ownerOnly, setHorseAge);
 
 // ── Foaling ───────────────────────────────────────────────────────────────────
 router.post('/foaling/trigger', triggerFoaling);

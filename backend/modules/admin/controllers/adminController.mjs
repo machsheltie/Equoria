@@ -11,8 +11,8 @@
  *   POST /api/admin/traits/evaluate      — manually trigger trait evaluation
  *   GET  /api/admin/foals/development    — get foals in development (ages 0–1)
  *   GET  /api/admin/traits/definitions   — get all trait definitions
- *   POST /api/admin/horses/age           — manually trigger horse aging for all horses
- *   POST /api/admin/horses/:id/set-age   — set a specific horse's game age
+ *   POST /api/admin/horses/age           — manually trigger horse aging for all horses (Owner only, q341)
+ *   POST /api/admin/horses/:id/set-age   — set a specific horse's game age (Owner only, q341)
  *   POST /api/admin/foaling/trigger      — force-run foaling job with advanced clock
  *   POST /api/admin/docs/generate        — regenerate the OpenAPI spec (Equoria-7osu4)
  *   POST /api/admin/docs/endpoints       — register an API endpoint for docs (Equoria-7osu4)

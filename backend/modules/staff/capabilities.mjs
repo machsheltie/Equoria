@@ -82,6 +82,10 @@ const ownerOnly = [
   // memory and speed. Never admins, moderators or players.
   'payroll.diagnose',
   'server.health.view',
+  // Owner ruling q341 (2026-11-03, Equoria-a7f1p): the two tools that change a
+  // horse's age (set one horse's age; age every horse now) are kept for the Owner
+  // alone, in the Steward's Office. Their routes are gated requireRole('owner').
+  'horses.age.set',
 ];
 
 // Private and frozen (STAFF-CR-12): no importer can reach a mutable copy of

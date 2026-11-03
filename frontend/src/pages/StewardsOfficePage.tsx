@@ -24,6 +24,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import StaffActionLog from '@/components/staff/StaffActionLog';
 import StaffCheckIn from '@/components/staff/StaffCheckIn';
 import StaffConduct from '@/components/staff/StaffConduct';
+import StaffHorseAges from '@/components/staff/StaffHorseAges';
 import { StaffFlaggedAddresses } from '@/components/staff/StaffLinkedAccounts';
 import StaffPayrollDiagnostics from '@/components/staff/StaffPayrollDiagnostics';
 import StaffQuarantinedShows from '@/components/staff/StaffQuarantinedShows';
@@ -104,6 +105,7 @@ export default function StewardsOfficePage() {
             <StaffPayrollDiagnostics onCheckinRequired={onCheckinRequired} />
           )}
           {can('server.health.view') && <StaffServerHealth onCheckinRequired={onCheckinRequired} />}
+          {can('horses.age.set') && <StaffHorseAges onCheckinRequired={onCheckinRequired} />}
           {(can('log.view.own') || can('log.view.all')) && (
             <StaffActionLog
               selfId={user?.id === undefined ? undefined : String(user.id)}

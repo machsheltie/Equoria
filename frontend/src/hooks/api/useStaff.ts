@@ -464,3 +464,28 @@ export function useFilePayrollReport() {
 export function useFileServerReport() {
   return useFileForClaudeCode((_vars: void) => staffApi.fileServerHealth());
 }
+
+/** q341: the owner sets one horse's age. Horse pages read the new age. */
+export function useSetHorseAge() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: [...staffKeys.all, 'set-horse-age'],
+    mutationFn: ({ horseId, gameAge }: { horseId: number; gameAge: number }) =>
+      staffApi.setHorseAge(horseId, gameAge),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses'] });
+    },
+  });
+}
+
+/** q341: the owner ages every horse now, as the nightly job does. */
+export function useAgeEveryHorse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: [...staffKeys.all, 'age-every-horse'],
+    mutationFn: (_vars: void) => staffApi.ageEveryHorse(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses'] });
+    },
+  });
+}
