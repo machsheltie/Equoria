@@ -570,6 +570,15 @@
     --text-secondary: GrayText;
     --celestial-primary: Highlight;
   }
+
+  /* Buttons drawn only by a fill or gradient lose their shape when the browser
+     replaces fills with system colors; give every button a system-colored edge
+     in this mode only (Equoria-oey96.75, q344). Element-level specificity, so a
+     button that sets its own border keeps it. */
+  button,
+  [role='button'] {
+    border: 1px solid ButtonText;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
