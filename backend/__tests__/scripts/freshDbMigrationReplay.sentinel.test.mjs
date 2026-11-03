@@ -43,7 +43,8 @@
 import { describe, test, beforeAll, afterAll, expect } from '@jest/globals';
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
@@ -188,8 +189,8 @@ async function withAdmin(fn) {
   }
 }
 
-function runPrisma(args, databaseUrl) {
-  return execFileSync(process.execPath, [prismaCli, ...args, `--schema=${schemaPath}`], {
+function runPrisma(args, databaseUrl, schema = schemaPath) {
+  return execFileSync(process.execPath, [prismaCli, ...args, `--schema=${schema}`], {
     env: { ...process.env, DATABASE_URL: databaseUrl },
     cwd: dbPackage,
     encoding: 'utf8',
@@ -339,15 +340,25 @@ describe('fresh-database migration replay sentinel (Equoria-fefh2.14)', () => {
       '',
     ].join('\n');
 
-    mkdirSync(plantedDir, { recursive: true });
+    // Plant into a private COPY of the schema and migrations, never the real
+    // tree: another suite (liveSchemaDrift) runs `migrate deploy` on the real
+    // folder in parallel and applied this planted migration in Quality Gate run
+    // 41726019265 (P3018, horses_userId_fkey already exists).
+    const scratchRoot = mkdtempSync(path.join(os.tmpdir(), 'equoria-replay-plant-'));
+    const scratchPrisma = path.join(scratchRoot, 'prisma');
+    mkdirSync(scratchPrisma);
+    cpSync(schemaPath, path.join(scratchPrisma, 'schema.prisma'));
+    cpSync(migrationsDir, path.join(scratchPrisma, 'migrations'), { recursive: true });
+    const scratchPlantedDir = path.join(scratchPrisma, 'migrations', plantedMigrationName);
+    mkdirSync(scratchPlantedDir);
     try {
-      writeFileSync(path.join(plantedDir, 'migration.sql'), plantedSql, 'utf8');
+      writeFileSync(path.join(scratchPlantedDir, 'migration.sql'), plantedSql, 'utf8');
 
       let failure = null;
       try {
         // The replay DB is already fully migrated, so deploy applies ONLY the
         // planted migration — cheap, and exactly the fresh-collision failure.
-        runPrisma(['migrate', 'deploy'], replayUrl());
+        runPrisma(['migrate', 'deploy'], replayUrl(), path.join(scratchPrisma, 'schema.prisma'));
       } catch (err) {
         failure = err;
       }
@@ -355,11 +366,11 @@ describe('fresh-database migration replay sentinel (Equoria-fefh2.14)', () => {
       const combined = `${failure.stdout ?? ''}\n${failure.stderr ?? ''}\n${failure.message}`;
       expect(combined).toMatch(/already exists/i);
     } finally {
-      rmSync(plantedDir, { recursive: true, force: true });
+      rmSync(scratchRoot, { recursive: true, force: true });
     }
-
     // The failed planted migration leaves a failed row in the replay DB's
-    // _prisma_migrations; the DB is dropped in afterAll, so no residue.
+    // _prisma_migrations; the DB is dropped in afterAll, so no residue. The
+    // real migrations folder was never touched.
     expect(existsSync(plantedDir)).toBe(false);
   }, 120_000);
 });
