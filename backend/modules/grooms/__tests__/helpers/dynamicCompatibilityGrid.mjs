@@ -92,7 +92,7 @@ export const CONTEXTS = [
     },
   ],
 ];
-const PREDICTION_CONTEXTS = [
+const predictionContexts = [
   'morning-quiet',
   'evening-noisy',
   'hoof-junk-factors',
@@ -256,8 +256,8 @@ export async function cleanupCompatibilityFixtures(prisma, fx) {
   await prisma.user.deleteMany({ where: { id: { in: Object.values(fx.owners).map(o => o.id) } } });
 }
 
-const MISSING_GROOM_ID = 2000000002;
-const MISSING_HORSE_ID = 2000000003;
+const missingGroomId = 2000000002;
+const missingHorseId = 2000000003;
 
 // The only place the services' text names a row id: their "Groom not found:
 // <id>" / "Horse not found: <id>" errors.
@@ -286,10 +286,10 @@ export function labelText(text, labels) {
   }
   return out.replace(idInText, (match, prefix, digits) => {
     const id = Number(digits);
-    if (id === MISSING_GROOM_ID) {
+    if (id === missingGroomId) {
       return `${prefix}<missing-groom>`;
     }
-    if (id === MISSING_HORSE_ID) {
+    if (id === missingHorseId) {
       return `${prefix}<missing-horse>`;
     }
     const label = labels.get(`groom:${id}`) ?? labels.get(`horse:${id}`);
@@ -314,7 +314,7 @@ function normalize(value, labels, key = '') {
   }
   if (typeof value === 'number' && /^(groomId|horseId)$/.test(key)) {
     const kind = key === 'groomId' ? 'groom' : 'horse';
-    if (value === MISSING_GROOM_ID || value === MISSING_HORSE_ID) {
+    if (value === missingGroomId || value === missingHorseId) {
       return `<missing-${kind}>`;
     }
     return labels.get(`${kind}:${value}`) ?? value;
@@ -337,11 +337,11 @@ export async function runCompatibilityGrid(api, fx) {
   const out = {};
   const grooms = [
     ...Object.entries(fx.grooms).map(([k, g]) => [k, g.id]),
-    ['missing', MISSING_GROOM_ID],
+    ['missing', missingGroomId],
   ];
   const horses = [
     ...Object.entries(fx.horses).map(([k, h]) => [k, h.id]),
-    ['missing', MISSING_HORSE_ID],
+    ['missing', missingHorseId],
   ];
   const contexts = Object.fromEntries(CONTEXTS);
   const record = async (key, fn) => {
@@ -353,7 +353,7 @@ export async function runCompatibilityGrid(api, fx) {
       for (const [ck, ctx] of CONTEXTS) {
         await record(`compatibility|${pair}|${ck}`, () => api.compatibility(gid, hid, ctx));
       }
-      for (const ck of PREDICTION_CONTEXTS) {
+      for (const ck of predictionContexts) {
         await record(`prediction|${pair}|${ck}`, () => api.prediction(gid, hid, contexts[ck]));
       }
       await record(`factors|${pair}`, () => api.factors(gid, hid));

@@ -35,7 +35,7 @@ import { getAvailableInteractions } from '../services/enhancedGroomInteractions.
 import { groomHorse } from '../services/groomCareService.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-tfo3c-free';
+const fixturePrefix = 'TestFixture-tfo3c-free';
 const tag = () => randomBytes(6).toString('hex');
 
 describe('Equoria-tfo3c — the care menu quotes no price', () => {
@@ -80,8 +80,8 @@ describe('Equoria-tfo3c — a real grooming session writes no price and takes no
     user = await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${FIXTURE_PREFIX}-${suffix}`.slice(0, 30),
-        email: `${FIXTURE_PREFIX}-${suffix}@example.com`,
+        username: `${fixturePrefix}-${suffix}`.slice(0, 30),
+        email: `${fixturePrefix}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',
         firstName: 'Free',
         lastName: 'Care',
@@ -92,7 +92,7 @@ describe('Equoria-tfo3c — a real grooming session writes no price and takes no
     horse = await prisma.horse.create({
       data: await testHorseData(prisma, {
         ...fixtureColor(),
-        name: `${FIXTURE_PREFIX}-horse-${suffix}`,
+        name: `${fixturePrefix}-horse-${suffix}`,
         sex: 'Filly',
         dateOfBirth: new Date('2026-08-20'),
         age: 0,
@@ -103,7 +103,7 @@ describe('Equoria-tfo3c — a real grooming session writes no price and takes no
     });
     groom = await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-groom-${suffix}`,
+        name: `${fixturePrefix}-groom-${suffix}`,
         speciality: 'foalCare',
         personality: 'gentle',
         skillLevel: 'expert',

@@ -51,13 +51,13 @@ import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { refreshMarketplace } from '../controllers/groomMarketplaceController.mjs';
-import { MARKETPLACE_CONFIG } from '../services/groomMarketplace.mjs';
+import { marketplaceConfig } from '../services/groomMarketplace.mjs';
 import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-t7ywe-groom';
-const STAFF_TYPE = 'groom';
-const REFRESH_COST = MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST; // 100
-const PG_MAX_INT4 = 2147483647;
+const fixturePrefix = 'TestFixture-t7ywe-groom';
+const staffType = 'groom';
+const refreshCost = marketplaceConfig.premiumRefreshCost; // 100
+const pgMaxInt4 = 2147483647;
 
 const createdUserIds = [];
 
@@ -82,8 +82,8 @@ async function makeUser(money) {
   const u = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: 'irrelevant-hash',
       firstName: 'T7ywe',
       lastName: 'Groom',
@@ -96,15 +96,15 @@ async function makeUser(money) {
 
 /**
  * Seed a groom marketplace state whose lastRefresh is "now" so the next refresh
- * is a PAID refresh (getRefreshCost returns PREMIUM_REFRESH_COST). refreshCount
+ * is a PAID refresh (getRefreshCost returns premiumRefreshCost). refreshCount
  * lets us force an int4-overflow on the upsert for the atomicity test.
  */
 async function seedPaidRefreshState(userId, refreshCount = 0) {
   return prisma.staffMarketplaceState.upsert({
-    where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+    where: { userId_staffType: { userId, staffType } },
     create: {
       userId,
-      staffType: STAFF_TYPE,
+      staffType,
       offers: [],
       lastRefresh: new Date(),
       refreshCount,
@@ -147,7 +147,7 @@ afterAll(async () => {
 
 describe('groomMarketplaceController.refreshMarketplace money-debit hardening (Equoria-t7ywe)', () => {
   it('SENTINEL: two concurrent force-refreshes with money for ONE — exactly one 200, wallet never negative, burn credited once', async () => {
-    const buyer = await makeUser(REFRESH_COST); // exactly one paid refresh
+    const buyer = await makeUser(refreshCost); // exactly one paid refresh
     await seedPaidRefreshState(buyer.id, 0);
 
     const responses = await Promise.all(
@@ -180,20 +180,20 @@ describe('groomMarketplaceController.refreshMarketplace money-debit hardening (E
     });
     expect(debitRows).toHaveLength(1);
     expect(debitRows[0].type).toBe('debit');
-    expect(debitRows[0].amount).toBe(REFRESH_COST);
+    expect(debitRows[0].amount).toBe(refreshCost);
 
     const burnCreditRows = await prisma.userTransaction.findMany({
       where: { userId: buyer.id, category: 'groomMarketplaceRefreshBurn' },
     });
     expect(burnCreditRows).toHaveLength(1);
     expect(burnCreditRows[0].type).toBe('credit');
-    expect(burnCreditRows[0].amount).toBe(REFRESH_COST);
+    expect(burnCreditRows[0].amount).toBe(refreshCost);
     expect(burnCreditRows[0].metadata?.systemAccount).toBe(SYSTEM_ACCOUNT_BURN);
     expect(burnCreditRows[0].metadata?.systemAccountSide).toBe('credit');
   });
 
   it('MONEY CONSERVATION: a paid refresh moves exactly the cost from wallet to burn, with paired ledger rows', async () => {
-    const buyer = await makeUser(REFRESH_COST * 3);
+    const buyer = await makeUser(refreshCost * 3);
     await seedPaidRefreshState(buyer.id, 0);
 
     const moneyBefore = await userMoney(buyer.id);
@@ -210,24 +210,24 @@ describe('groomMarketplaceController.refreshMarketplace money-debit hardening (E
     const burnAfter = await burnBalance();
 
     // The user lost exactly the refresh cost (owned solely by this suite).
-    expect(moneyBefore - moneyAfter).toBe(REFRESH_COST);
+    expect(moneyBefore - moneyAfter).toBe(refreshCost);
     // Conservation: the money landed in burn (>= because burn is shared).
-    expect(burnAfter - burnBefore).toBeGreaterThanOrEqual(REFRESH_COST);
+    expect(burnAfter - burnBefore).toBeGreaterThanOrEqual(refreshCost);
 
     const debitRows = await prisma.userTransaction.findMany({
       where: { userId: buyer.id, category: 'groomMarketplaceRefresh' },
     });
     expect(debitRows).toHaveLength(1);
     expect(debitRows[0].type).toBe('debit');
-    expect(debitRows[0].amount).toBe(REFRESH_COST);
-    expect(Number(debitRows[0].balanceAfter)).toBe(moneyBefore - REFRESH_COST);
+    expect(debitRows[0].amount).toBe(refreshCost);
+    expect(Number(debitRows[0].balanceAfter)).toBe(moneyBefore - refreshCost);
 
     const burnCreditRows = await prisma.userTransaction.findMany({
       where: { userId: buyer.id, category: 'groomMarketplaceRefreshBurn' },
     });
     expect(burnCreditRows).toHaveLength(1);
     expect(burnCreditRows[0].type).toBe('credit');
-    expect(burnCreditRows[0].amount).toBe(REFRESH_COST);
+    expect(burnCreditRows[0].amount).toBe(refreshCost);
     expect(burnCreditRows[0].metadata?.systemAccount).toBe(SYSTEM_ACCOUNT_BURN);
   });
 
@@ -236,8 +236,8 @@ describe('groomMarketplaceController.refreshMarketplace money-debit hardening (E
     // refreshCount + 1 = 2147483648 and the upsert throws "integer out of
     // range" INSIDE the tx, AFTER debitMoneyOrThrow. A real DB constraint, no
     // mock. On the hardened path the whole tx rolls back -> user NOT charged.
-    const buyer = await makeUser(REFRESH_COST * 5);
-    await seedPaidRefreshState(buyer.id, PG_MAX_INT4);
+    const buyer = await makeUser(refreshCost * 5);
+    await seedPaidRefreshState(buyer.id, pgMaxInt4);
 
     const moneyBefore = await userMoney(buyer.id);
 

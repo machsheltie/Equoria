@@ -26,18 +26,18 @@ import {
   getTaskCompatibilityModifier,
 } from './groomHorseCompatibilityTaskPolicy.mjs';
 import {
-  ENVIRONMENT_FACTOR_MULTIPLIERS,
-  ENVIRONMENT_MODIFIER_RANGE,
-  PREDICTION_RECOMMENDATION_RULES,
-  TIME_OF_DAY_DEFAULT,
-  TIME_OF_DAY_MODIFIERS,
+  environmentFactorMultipliers,
+  environmentModifierRange,
+  predictionRecommendationRules,
+  timeOfDayDefault,
+  timeOfDayModifiers,
   ruleTexts,
 } from './dynamicCompatibilityRules.mjs';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const HISTORY_WINDOW_DAYS = 14;
-const HISTORY_SAMPLE = 10;
-const GROOM_SELECT = {
+const dayMs = 24 * 60 * 60 * 1000;
+const historyWindowDays = 14;
+const historySample = 10;
+const groomSelect = {
   id: true,
   name: true,
   epigeneticInfluenceType: true,
@@ -65,11 +65,11 @@ export async function loadCompatibilityInputs(
   });
   let grooms = [];
   if (!ownerGrooms) {
-    grooms = await client.groom.findMany({ where: { id: { in: groomIds } }, select: GROOM_SELECT });
+    grooms = await client.groom.findMany({ where: { id: { in: groomIds } }, select: groomSelect });
   } else if (horse) {
     grooms = await client.groom.findMany({
       where: { userId: horse.userId },
-      select: GROOM_SELECT,
+      select: groomSelect,
       orderBy: { id: 'asc' },
     });
   }
@@ -371,7 +371,7 @@ export function compatibilityTrends(inputs, groomId) {
 
 /**
  * History modifier from this groom's recent interactions with the horse: the
- * NEWEST HISTORY_SAMPLE in the last HISTORY_WINDOW_DAYS, by createdAt then id,
+ * NEWEST historySample in the last historyWindowDays, by createdAt then id,
  * both descending (owner ruling 2026-10-23, Equoria-ld219). A failed
  * interaction read counts as neutral (1.0), as before S6.
  */
@@ -380,11 +380,11 @@ function calculateHistoricalModifier(inputs, groomId) {
     logger.error('Error calculating historical modifier:', inputs.interactionsError);
     return 1.0;
   }
-  const since = new Date(inputs.now.getTime() - HISTORY_WINDOW_DAYS * DAY_MS);
+  const since = new Date(inputs.now.getTime() - historyWindowDays * dayMs);
   const recentInteractions = inputs.interactions
     .filter(i => i.groomId === groomId && i.createdAt >= since)
     .sort((a, b) => b.createdAt - a.createdAt || b.id - a.id)
-    .slice(0, HISTORY_SAMPLE);
+    .slice(0, historySample);
 
   if (recentInteractions.length === 0) {
     return 1.0;
@@ -421,19 +421,19 @@ function calculateEnvironmentalModifier(context) {
   let modifier = 1.0;
   factors.forEach(factor => {
     // Only a string names a factor (the old switch compared with ===).
-    if (typeof factor === 'string' && Object.hasOwn(ENVIRONMENT_FACTOR_MULTIPLIERS, factor)) {
-      modifier *= ENVIRONMENT_FACTOR_MULTIPLIERS[factor];
+    if (typeof factor === 'string' && Object.hasOwn(environmentFactorMultipliers, factor)) {
+      modifier *= environmentFactorMultipliers[factor];
     }
   });
-  const [min, max] = ENVIRONMENT_MODIFIER_RANGE;
+  const [min, max] = environmentModifierRange;
   return Math.max(min, Math.min(max, modifier));
 }
 
 function calculateTimeOfDayModifier(context) {
   const { timeOfDay } = context;
-  return typeof timeOfDay === 'string' && Object.hasOwn(TIME_OF_DAY_MODIFIERS, timeOfDay)
-    ? TIME_OF_DAY_MODIFIERS[timeOfDay]
-    : TIME_OF_DAY_DEFAULT;
+  return typeof timeOfDay === 'string' && Object.hasOwn(timeOfDayModifiers, timeOfDay)
+    ? timeOfDayModifiers[timeOfDay]
+    : timeOfDayDefault;
 }
 
 function calculateConfidence(groom, historicalModifier) {
@@ -453,7 +453,7 @@ function calculateConfidence(groom, historicalModifier) {
 // ===== ADVICE =====
 
 function generatePredictionRecommendations(compatibility) {
-  return ruleTexts(PREDICTION_RECOMMENDATION_RULES, {
+  return ruleTexts(predictionRecommendationRules, {
     overallScore: compatibility.overallScore,
   });
 }

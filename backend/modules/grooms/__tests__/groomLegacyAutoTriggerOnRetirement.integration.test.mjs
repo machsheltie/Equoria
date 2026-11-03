@@ -22,7 +22,7 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { processRetirement, RETIREMENT_REASONS } from '../services/groomRetirementService.mjs';
+import { processRetirement, retirementReasons } from '../services/groomRetirementService.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const TAG = `c0vo-${randomBytes(4).toString('hex')}`;
@@ -105,7 +105,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
     });
     expect(preLogs).toBe(0);
 
-    const result = await processRetirement(mentor.id, RETIREMENT_REASONS.VOLUNTARY, true);
+    const result = await processRetirement(mentor.id, retirementReasons.VOLUNTARY, true);
     expect(result.legacyLog).toBeNull();
 
     expect(await prisma.groomLegacyLog.count({ where: { retiredGroomId: mentor.id } })).toBe(0);
@@ -142,7 +142,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
       },
     });
 
-    const result = await processRetirement(lowMentor.id, RETIREMENT_REASONS.VOLUNTARY, true);
+    const result = await processRetirement(lowMentor.id, retirementReasons.VOLUNTARY, true);
     expect(result.legacyLog).toBeNull();
 
     const legacyRow = await prisma.groomLegacyLog.findFirst({
@@ -166,7 +166,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
       },
     });
 
-    const result = await processRetirement(soloMentor.id, RETIREMENT_REASONS.VOLUNTARY, true);
+    const result = await processRetirement(soloMentor.id, retirementReasons.VOLUNTARY, true);
     expect(result.legacyLog).toBeNull();
 
     const legacyRow = await prisma.groomLegacyLog.findFirst({
@@ -248,7 +248,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
       },
     });
 
-    const result = await processRetirement(ownerlessMentor.id, RETIREMENT_REASONS.VOLUNTARY, true);
+    const result = await processRetirement(ownerlessMentor.id, retirementReasons.VOLUNTARY, true);
 
     // Since q244 no groom clears the mentor level, so the level guard refuses first;
     // the ownerless guard still stands behind it for when staff growth arrives.

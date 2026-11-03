@@ -23,8 +23,8 @@ import {
   scoreCompatibility,
 } from '../services/dynamicCompatibilityScoring.mjs';
 import {
-  GROOM_HORSE_COMPATIBILITY_TASK_TYPES,
-  GROOM_HORSE_COMPATIBILITY_PERSONALITIES,
+  groomHorseCompatibilityTaskTypes,
+  groomHorseCompatibilityPersonalities,
 } from '../services/groomHorseCompatibilityTaskPolicy.mjs';
 
 /** An AppError (e.g. the policy's 400 for an unsupported task) keeps its status; anything else is a 500. */
@@ -177,7 +177,7 @@ export async function getCompatibilityConfig(req, res) {
     );
 
     const config = {
-      personalityTypes: [...GROOM_HORSE_COMPATIBILITY_PERSONALITIES],
+      personalityTypes: [...groomHorseCompatibilityPersonalities],
       temperamentTypes: [
         'nervous',
         'fearful',
@@ -188,7 +188,7 @@ export async function getCompatibilityConfig(req, res) {
         'curious',
         'complex',
       ],
-      taskTypes: [...GROOM_HORSE_COMPATIBILITY_TASK_TYPES],
+      taskTypes: [...groomHorseCompatibilityTaskTypes],
       environmentalFactors: [
         'quiet',
         'noisy',

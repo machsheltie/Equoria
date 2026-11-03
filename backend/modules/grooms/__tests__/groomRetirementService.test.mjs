@@ -26,7 +26,7 @@
  * DB-fixture branch coverage (checkRetirementEligibility):
  *   retired=true → 'alreadyRetired'
  *   no schedule drawn → 'notScheduled' (and no age is invented)
- *   careerWeeks >= its own hidden retirementAge → RETIREMENT_REASONS.AGE (mandatory=true)
+ *   careerWeeks >= its own hidden retirementAge → retirementReasons.AGE (mandatory=true)
  *   careerWeeks one short of it → notEligible, and NO countdown field
  *   level >= 10 / 12+ assignment logs → NOT eligible any more (no early triggers)
  *
@@ -36,8 +36,8 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
-  RETIREMENT_REASONS,
-  CAREER_CONSTANTS,
+  retirementReasons,
+  careerConstants,
   incrementCareerWeeks,
   checkRetirementEligibility,
   processRetirement,
@@ -52,9 +52,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 
 // Equoria-ypb7d.1: a groom's age is `startAge + careerWeeks`. Fixtures that need a
 // groom of a known age fix the start age here rather than drawing one, so
-// `careerWeeks = targetAge - FIXTURE_START_AGE` is exact. 20 sits inside the
+// `careerWeeks = targetAge - fixtureStartAge` is exact. 20 sits inside the
 // 18..24 band the `grooms_start_age_range` CHECK constraint enforces.
-const FIXTURE_START_AGE = 20;
+const fixtureStartAge = 20;
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -219,10 +219,10 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         speciality: 'general',
         personality: 'gentle',
         // Equoria-ypb7d.1: a groom's age is `startAge + careerWeeks`, so a fixture
-        // that wants a groom OF A GIVEN AGE must set both. FIXTURE_START_AGE is a
+        // that wants a groom OF A GIVEN AGE must set both. fixtureStartAge is a
         // fixed value inside the 18..24 band the CHECK constraint enforces, so the
         // arithmetic below is deterministic rather than depending on a draw.
-        startAge: FIXTURE_START_AGE,
+        startAge: fixtureStartAge,
         userId: grsUser.id,
       },
     });
@@ -232,7 +232,7 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     grsGroomMandatoryAge = await ensureRetirementSchedule(prisma, grsGroomMandatory.id);
     await prisma.groom.update({
       where: { id: grsGroomMandatory.id },
-      data: { careerWeeks: grsGroomMandatoryAge - FIXTURE_START_AGE },
+      data: { careerWeeks: grsGroomMandatoryAge - fixtureStartAge },
     });
 
     grsGroomLevelCap = await prisma.groom.create({
@@ -240,7 +240,7 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         name: `TestFixture-GRS-LevelCap-${ts}`,
         speciality: 'general',
         personality: 'gentle',
-        startAge: FIXTURE_START_AGE,
+        startAge: fixtureStartAge,
         careerWeeks: 5, // age 25 — far below any retirement age
         userId: grsUser.id,
       },
@@ -252,7 +252,7 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         name: `TestFixture-GRS-AssignLimit-${ts}`,
         speciality: 'general',
         personality: 'gentle',
-        startAge: FIXTURE_START_AGE,
+        startAge: fixtureStartAge,
         careerWeeks: 10, // age 30 — below every drawn retirement age
         userId: grsUser.id,
       },
@@ -276,7 +276,7 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         name: `TestFixture-GRS-Notice-${ts}`,
         speciality: 'general',
         personality: 'gentle',
-        startAge: FIXTURE_START_AGE,
+        startAge: fixtureStartAge,
         userId: grsUser.id,
       },
     });
@@ -284,7 +284,7 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     grsGroomNoticeAge = await ensureRetirementSchedule(prisma, grsGroomNotice.id);
     await prisma.groom.update({
       where: { id: grsGroomNotice.id },
-      data: { careerWeeks: grsGroomNoticeAge - FIXTURE_START_AGE - 1 },
+      data: { careerWeeks: grsGroomNoticeAge - fixtureStartAge - 1 },
     });
 
     grsGroomNormal = await prisma.groom.create({
@@ -309,12 +309,12 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     const result = await checkRetirementEligibility(grsGroomMandatory.id);
     expect(result).toEqual({
       eligible: true,
-      reason: RETIREMENT_REASONS.AGE,
+      reason: retirementReasons.AGE,
       mandatory: true,
     });
     // The threshold really was per-groom, drawn in the ruling's band.
-    expect(grsGroomMandatoryAge).toBeGreaterThanOrEqual(CAREER_CONSTANTS.RETIREMENT_AGE_MIN);
-    expect(grsGroomMandatoryAge).toBeLessThanOrEqual(CAREER_CONSTANTS.RETIREMENT_AGE_MAX);
+    expect(grsGroomMandatoryAge).toBeGreaterThanOrEqual(careerConstants.retirementAgeMin);
+    expect(grsGroomMandatoryAge).toBeLessThanOrEqual(careerConstants.retirementAgeMax);
   });
 
   it('checkRetirementEligibility: level=10 is NOT a retirement trigger any more', async () => {
@@ -371,9 +371,9 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         userId: grsUser.id,
       },
     });
-    const result = await processRetirement(tempGroom.id, RETIREMENT_REASONS.VOLUNTARY, true);
+    const result = await processRetirement(tempGroom.id, retirementReasons.VOLUNTARY, true);
     expect(result.groom.retired).toBe(true);
-    expect(result.retirementReason).toBe(RETIREMENT_REASONS.VOLUNTARY);
+    expect(result.retirementReason).toBe(retirementReasons.VOLUNTARY);
     // Realm-independent — see __tests__/helpers/expectRealDate.mjs. Do not
     // replace with toBeInstanceOf(Date).
     expect(realDateOrReason(result.retirementTimestamp)).toBe('valid date');
@@ -382,19 +382,19 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     // cleanup handled by afterAll groom.deleteMany startsWith 'TestFixture-GRS-'
   });
 
-  it('CAREER_CONSTANTS and RETIREMENT_REASONS exports are correctly shaped', () => {
+  it('careerConstants and retirementReasons exports are correctly shaped', () => {
     // Equoria-m9lz1: the fixed thresholds are gone; the band from the owner's
     // ruling replaces them. The DB CHECK constraint
     // `groom_retirement_schedules_age_range` enforces the same numbers, so
     // widening either without the other is a write error, not a silent change.
-    expect(CAREER_CONSTANTS.RETIREMENT_AGE_MIN).toBe(50);
-    expect(CAREER_CONSTANTS.RETIREMENT_AGE_MAX).toBe(65);
-    expect(CAREER_CONSTANTS).not.toHaveProperty('MANDATORY_RETIREMENT_WEEKS');
-    expect(CAREER_CONSTANTS).not.toHaveProperty('RETIREMENT_NOTICE_WEEKS');
-    expect(RETIREMENT_REASONS.AGE).toBe('age');
+    expect(careerConstants.retirementAgeMin).toBe(50);
+    expect(careerConstants.retirementAgeMax).toBe(65);
+    expect(careerConstants).not.toHaveProperty('mandatoryRetirementWeeks');
+    expect(careerConstants).not.toHaveProperty('retirementNoticeWeeks');
+    expect(retirementReasons.AGE).toBe('age');
     // Retained for historical Groom.retirementReason rows only.
-    expect(RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT).toBe('mandatoryCareerLimit');
-    expect(RETIREMENT_REASONS.VOLUNTARY).toBe('voluntary');
+    expect(retirementReasons.mandatoryCareerLimit).toBe('mandatoryCareerLimit');
+    expect(retirementReasons.VOLUNTARY).toBe('voluntary');
   });
 
   it('getRetirementStatistics: returns object with required numeric keys and NO approaching count', async () => {
@@ -475,7 +475,7 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
         // Equoria-ypb7d.1: fixed so the arithmetic below is exact. wcpGroomNormal
         // deliberately leaves it NULL, which exercises the pass's `ensureStartAge`
         // backstop for grooms that predate this story.
-        startAge: FIXTURE_START_AGE,
+        startAge: fixtureStartAge,
         userId: wcpUser.id,
       },
     });
@@ -487,7 +487,7 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
     wcpGroomMandatoryAge = await ensureRetirementSchedule(prisma, wcpGroomMandatory.id);
     await prisma.groom.update({
       where: { id: wcpGroomMandatory.id },
-      data: { careerWeeks: wcpGroomMandatoryAge - FIXTURE_START_AGE - 1 },
+      data: { careerWeeks: wcpGroomMandatoryAge - fixtureStartAge - 1 },
     });
   }, 30000);
 
@@ -504,8 +504,8 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
     expect(Array.isArray(result.retirements)).toBe(true);
     const mandatoryEntry = result.retirements.find(r => r.groomId === wcpGroomMandatory.id);
     expect(mandatoryEntry).toBeDefined();
-    // Equoria-m9lz1: the reason is AGE, not the retired MANDATORY_CAREER_LIMIT.
-    expect(mandatoryEntry.reason).toBe(RETIREMENT_REASONS.AGE);
+    // Equoria-m9lz1: the reason is AGE, not the retired mandatoryCareerLimit.
+    expect(mandatoryEntry.reason).toBe(retirementReasons.AGE);
     // Equoria-maeba: the pass reports the AGE the groom retired at, in years.
     expect(mandatoryEntry.ageYears).toBe(wcpGroomMandatoryAge);
     // Normal groom incremented to careerWeeks=1 and given a schedule of its own
@@ -519,8 +519,8 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
     expect(result.aged).toBeGreaterThanOrEqual(1);
     expect(updated.retired).toBe(false);
     const normalAge = await readRetirementAge(prisma, wcpGroomNormal.id);
-    expect(normalAge).toBeGreaterThanOrEqual(CAREER_CONSTANTS.RETIREMENT_AGE_MIN);
-    expect(normalAge).toBeLessThanOrEqual(CAREER_CONSTANTS.RETIREMENT_AGE_MAX);
+    expect(normalAge).toBeGreaterThanOrEqual(careerConstants.retirementAgeMin);
+    expect(normalAge).toBeLessThanOrEqual(careerConstants.retirementAgeMax);
     // The retirement announced itself to the groom's own user, in its own
     // transaction (see groomRetirementGameDriven.integration.test.mjs).
     expect(await prisma.notification.count({ where: { userId: wcpUser.id, type: 'groomRetired' } })).toBe(1);

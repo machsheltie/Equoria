@@ -10,7 +10,7 @@ import AppError from '../../../errors/AppError.mjs';
 // Equoria-95yrv: the cap, the rate and the refusal wording are the fee's, so they
 // are DEFINED with the fee and imported here. Two copies would drift.
 import {
-  MAX_HORSES_PER_GROOM,
+  maxHorsesPerGroom,
   acquireGroomRosterLockTx,
   assertGroomHasRoomForAnotherHorse,
   atCapacityMessage,
@@ -38,9 +38,9 @@ import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
  *     one lives in groomFeeBasisService. A published rate nobody charges is a lie
  *     to whoever reads GET /api/groom-assignments/config.
  */
-export const ASSIGNMENT_CONFIG = {
+export const assignmentConfig = {
   // The most horses one groom may be working at a time.
-  MAX_HORSES_PER_GROOM,
+  maxHorsesPerGroom,
 };
 
 /** Said to a player whose horse changed hands while the groom was being assigned. */
@@ -83,7 +83,7 @@ export async function assertOwnerStillHoldsHorseAndGroomTx(tx, { horseId, groomI
  */
 export async function getGroomAssignmentLimits(groom) {
   // Equoria-95yrv: one cap for every groom, whatever their skill.
-  const maxAssignments = MAX_HORSES_PER_GROOM;
+  const maxAssignments = maxHorsesPerGroom;
 
   // Count current active assignments
   const currentAssignments = await prisma.groomAssignment.count({

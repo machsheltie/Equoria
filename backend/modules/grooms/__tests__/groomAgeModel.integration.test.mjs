@@ -40,13 +40,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { prismaRejectionOf } from '../../../__tests__/helpers/expectPrismaRejection.mjs';
-import {
-  START_AGE_MIN,
-  START_AGE_MAX,
-  drawStartAge,
-  groomAgeYears,
-  ensureStartAge,
-} from '../services/groomAgeService.mjs';
+import { startAgeMin, startAgeMax, drawStartAge, groomAgeYears, ensureStartAge } from '../services/groomAgeService.mjs';
 import { checkRetirementEligibility } from '../services/groomRetirementService.mjs';
 import { processWeeklyCareerProgression } from '../services/groomCareerProgressionService.mjs';
 // The hidden retirement age. Imported BY PATH, never through the grooms barrel —
@@ -54,14 +48,14 @@ import { processWeeklyCareerProgression } from '../services/groomCareerProgressi
 // a test may read it, and the arithmetic here needs it.
 import {
   ensureRetirementSchedule,
-  RETIREMENT_AGE_MIN,
-  RETIREMENT_AGE_MAX,
+  retirementAgeMin,
+  retirementAgeMax,
 } from '../services/groomRetirementScheduleService.mjs';
 import { hireFromMarketplace, refreshMarketplace } from '../controllers/groomMarketplaceController.mjs';
 import { listFreeAgentGrooms } from '../controllers/groomFreeAgentController.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-ypb7d-age';
+const fixturePrefix = 'TestFixture-ypb7d-age';
 const tag = () => randomBytes(6).toString('hex');
 
 function fakeRes() {
@@ -85,8 +79,8 @@ async function makeUser(label, money = 20000) {
   return prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${label}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${label}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${label}-${suffix}`,
+      email: `${fixturePrefix}-${label}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Ypb7d',
       lastName: label,
@@ -99,7 +93,7 @@ async function makeUser(label, money = 20000) {
 async function makeGroom(userId, label, extra = {}) {
   return prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       speciality: 'general',
       personality: 'gentle',
       skillLevel: 'novice',
@@ -115,12 +109,12 @@ describe('Equoria-ypb7d.1 — drawStartAge and groomAgeYears (pure)', () => {
     const draws = Array.from({ length: 200 }, () => drawStartAge());
     for (const value of draws) {
       expect(Number.isInteger(value)).toBe(true);
-      expect(value).toBeGreaterThanOrEqual(START_AGE_MIN);
-      expect(value).toBeLessThanOrEqual(START_AGE_MAX);
+      expect(value).toBeGreaterThanOrEqual(startAgeMin);
+      expect(value).toBeLessThanOrEqual(startAgeMax);
     }
     // The band the owner named, not an off-by-one reading of it.
-    expect(START_AGE_MIN).toBe(18);
-    expect(START_AGE_MAX).toBe(24);
+    expect(startAgeMin).toBe(18);
+    expect(startAgeMax).toBe(24);
     // A fixed value would satisfy every assertion above; this is what says the
     // draw is a draw. With 200 samples over 7 values, a single distinct value has
     // probability (1/7)^199 — this cannot flake.
@@ -128,8 +122,8 @@ describe('Equoria-ypb7d.1 — drawStartAge and groomAgeYears (pure)', () => {
     // Both ends of an inclusive band must be reachable; a half-open draw would
     // never produce 24. 200 samples miss a given value with probability (6/7)^200,
     // about 1e-14.
-    expect(draws).toContain(START_AGE_MIN);
-    expect(draws).toContain(START_AGE_MAX);
+    expect(draws).toContain(startAgeMin);
+    expect(draws).toContain(startAgeMax);
   });
 
   it('age is startAge + careerWeeks, and is NULL — not 0 — when the start age is unknown', () => {
@@ -148,8 +142,8 @@ describe('Equoria-ypb7d.1 — drawStartAge and groomAgeYears (pure)', () => {
     // The honest consequence of the two bands, computed rather than asserted from
     // memory. It is the figure Equoria-ypb7d.1 requires be reported: still months
     // of real time, which is inherent to a year-per-week clock.
-    const shortest = RETIREMENT_AGE_MIN - START_AGE_MAX;
-    const longest = RETIREMENT_AGE_MAX - START_AGE_MIN;
+    const shortest = retirementAgeMin - startAgeMax;
+    const longest = retirementAgeMax - startAgeMin;
     expect(shortest).toBe(26);
     expect(longest).toBe(47);
   });
@@ -163,7 +157,7 @@ describe('Equoria-ypb7d.1 — the start age is persisted, bounded and idempotent
   beforeAll(async () => {
     user = await makeUser('persist');
     cleanup.add(
-      () => prisma.groom.deleteMany({ where: { name: { startsWith: `${FIXTURE_PREFIX}-persist` } } }),
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: `${fixturePrefix}-persist` } } }),
       'grooms',
     );
     cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
@@ -176,8 +170,8 @@ describe('Equoria-ypb7d.1 — the start age is persisted, bounded and idempotent
     expect(groom.startAge).toBeNull();
 
     const first = await ensureStartAge(prisma, groom.id);
-    expect(first).toBeGreaterThanOrEqual(START_AGE_MIN);
-    expect(first).toBeLessThanOrEqual(START_AGE_MAX);
+    expect(first).toBeGreaterThanOrEqual(startAgeMin);
+    expect(first).toBeLessThanOrEqual(startAgeMax);
 
     // Idempotent: the guarded conditional update no longer matches, so the second
     // call re-reads instead of drawing again. A second draw would be a silent
@@ -297,12 +291,12 @@ describe('Equoria-ypb7d.1 — hiring gives a groom an age', () => {
       where: { id: res.body.data.groom.id },
       select: { startAge: true, careerWeeks: true, experience: true },
     });
-    expect(groom.startAge).toBeGreaterThanOrEqual(START_AGE_MIN);
-    expect(groom.startAge).toBeLessThanOrEqual(START_AGE_MAX);
+    expect(groom.startAge).toBeGreaterThanOrEqual(startAgeMin);
+    expect(groom.startAge).toBeLessThanOrEqual(startAgeMax);
     // The whole point of the ruling: a freshly hired groom is an adult, not a
     // newborn. Pre-ypb7d their age was `careerWeeks`, which is 0 here.
     expect(groom.careerWeeks).toBe(0);
-    expect(groomAgeYears(groom)).toBeGreaterThanOrEqual(START_AGE_MIN);
+    expect(groomAgeYears(groom)).toBeGreaterThanOrEqual(startAgeMin);
     // Whatever the tier's experience is, the start age stays inside the flat band.
     expect(groom.experience).toBeGreaterThan(0);
   });
@@ -310,7 +304,7 @@ describe('Equoria-ypb7d.1 — hiring gives a groom an age', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides when', () => {
-  const FIXTURE_START_AGE = 20;
+  const fixtureStartAge = 20;
   let user;
   let horse;
   // A groom this suite RELEASES, so the free-agent pool is provably non-empty when the
@@ -336,7 +330,7 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
     horse = await prisma.horse.create({
       data: await testHorseData(prisma, {
         ...fixtureColor(),
-        name: `${FIXTURE_PREFIX}-retire-horse-${tag()}`,
+        name: `${fixturePrefix}-retire-horse-${tag()}`,
         sex: 'Filly',
         dateOfBirth: new Date('2024-06-15'),
         age: 1,
@@ -352,11 +346,11 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
     // defect restored.
     pooledGroom = await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-retire-pooled-${tag()}`,
+        name: `${fixturePrefix}-retire-pooled-${tag()}`,
         speciality: 'general',
         personality: 'gentle',
         skillLevel: 'novice',
-        startAge: FIXTURE_START_AGE,
+        startAge: fixtureStartAge,
         userId: null,
       },
     });
@@ -373,14 +367,14 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
   afterAll(() => cleanup.run(), 30000);
 
   it('at the drawn age it retires; one year short it does not', async () => {
-    const groom = await makeGroom(user.id, 'retire-exact', { startAge: FIXTURE_START_AGE });
+    const groom = await makeGroom(user.id, 'retire-exact', { startAge: fixtureStartAge });
     const retirementAge = await ensureRetirementSchedule(prisma, groom.id);
 
     // One year short in AGE. Pre-ypb7d this was `retirementAge - 1` careerWeeks,
     // which with a start age of 20 is twenty years past the line.
     await prisma.groom.update({
       where: { id: groom.id },
-      data: { careerWeeks: retirementAge - FIXTURE_START_AGE - 1 },
+      data: { careerWeeks: retirementAge - fixtureStartAge - 1 },
     });
     expect(await checkRetirementEligibility(groom.id)).toEqual({
       eligible: false,
@@ -391,7 +385,7 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
     // Exactly on it.
     await prisma.groom.update({
       where: { id: groom.id },
-      data: { careerWeeks: retirementAge - FIXTURE_START_AGE },
+      data: { careerWeeks: retirementAge - fixtureStartAge },
     });
     expect(await checkRetirementEligibility(groom.id)).toEqual({
       eligible: true,
@@ -417,7 +411,7 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
     // "Math.random determines when they retire between 50-65 years old. That is
     // all." A groom with every merit signal maxed, at age 25, must not retire.
     const groom = await makeGroom(user.id, 'retire-merit', {
-      startAge: FIXTURE_START_AGE,
+      startAge: fixtureStartAge,
       careerWeeks: 5, // age 25
       experience: 5000,
       skillLevel: 'master',
@@ -452,21 +446,21 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
       where: { id: legacy.id },
       select: { startAge: true, careerWeeks: true, retired: true },
     });
-    expect(row.startAge).toBeGreaterThanOrEqual(START_AGE_MIN);
-    expect(row.startAge).toBeLessThanOrEqual(START_AGE_MAX);
+    expect(row.startAge).toBeGreaterThanOrEqual(startAgeMin);
+    expect(row.startAge).toBeLessThanOrEqual(startAgeMax);
     // One year per pass: the counter advanced by exactly one, so the age did.
     expect(row.careerWeeks).toBe(4);
     expect(row.retired).toBe(false);
   });
 
   it('the weekly pass retires the groom whose AGE reaches its drawn age, in that week', async () => {
-    const groom = await makeGroom(user.id, 'retire-pass', { startAge: FIXTURE_START_AGE });
+    const groom = await makeGroom(user.id, 'retire-pass', { startAge: fixtureStartAge });
     const retirementAge = await ensureRetirementSchedule(prisma, groom.id);
     // One year short, so the pass's single increment carries it over the line —
     // "the week they retire".
     await prisma.groom.update({
       where: { id: groom.id },
-      data: { careerWeeks: retirementAge - FIXTURE_START_AGE - 1 },
+      data: { careerWeeks: retirementAge - fixtureStartAge - 1 },
     });
 
     const result = await processWeeklyCareerProgression(user.id);
@@ -481,8 +475,8 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
     expect(row.retirementReason).toBe('age');
     // The groom retired at its drawn age, in the ruling's band.
     expect(row.startAge + row.careerWeeks).toBe(retirementAge);
-    expect(retirementAge).toBeGreaterThanOrEqual(RETIREMENT_AGE_MIN);
-    expect(retirementAge).toBeLessThanOrEqual(RETIREMENT_AGE_MAX);
+    expect(retirementAge).toBeGreaterThanOrEqual(retirementAgeMin);
+    expect(retirementAge).toBeLessThanOrEqual(retirementAgeMax);
   });
 
   it('the hidden retirement age is still absent from the new free-agent pool read', async () => {

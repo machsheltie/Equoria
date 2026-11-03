@@ -53,14 +53,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const BACKEND_ROOT = path.resolve(HERE, '..', '..', '..');
+const backendRoot = path.resolve(HERE, '..', '..', '..');
 
 /**
  * Every backend test file that calls the weekly fee pass. An explicit list rather
  * than a walk: the list IS the claim, so a new caller has to be added here
  * deliberately, and the third case below proves the list still matches the tree.
  */
-const GUARDED_FILES = [
+const guardedFiles = [
   'modules/grooms/__tests__/groomSalaryIdempotency.integration.test.mjs',
   'modules/grooms/__tests__/groomSalaryServiceTxConservation.integration.test.mjs',
   // Fix round 2: `groomEngagementLifecycle.integration` was split along the service
@@ -148,7 +148,7 @@ function blankComments(rawSource) {
  * `/await\s+processWeeklySalaries\(/` — the very regex that produced the
  * eleven-versus-fifteen undercount, because only the `Promise.all` is awaited, not the
  * calls inside it. A future suite whose ONLY calls sat in a `Promise.all` would
- * therefore never be discovered, never be added to `GUARDED_FILES`, and never be
+ * therefore never be discovered, never be added to `guardedFiles`, and never be
  * guarded: the guard would be structurally unable to find the thing it exists to find.
  * Sharing one finder is the fix — discovery and audit cannot disagree about what a call
  * is, because they ask the same function.
@@ -247,8 +247,8 @@ export function auditSalaryPassScoping(rawSource) {
 }
 
 describe('Equoria-ypb7d.3 — the weekly fee pass is scoped in every test that calls it', () => {
-  it.each(GUARDED_FILES)('%s scopes every processWeeklySalaries call', relative => {
-    const absolute = path.join(BACKEND_ROOT, relative);
+  it.each(guardedFiles)('%s scopes every processWeeklySalaries call', relative => {
+    const absolute = path.join(backendRoot, relative);
     expect(fs.existsSync(absolute)).toBe(true);
     const source = fs.readFileSync(absolute, 'utf8');
     // The file must actually call it, or this entry is stale headroom.
@@ -315,7 +315,7 @@ describe('Equoria-ypb7d.3 — the weekly fee pass is scoped in every test that c
 
     // The OLD discovery regex, quoted here so the miss is DEMONSTRATED rather than
     // asserted from memory. It matches nothing, so the file would never have been
-    // discovered, never added to GUARDED_FILES, and never guarded.
+    // discovered, never added to guardedFiles, and never guarded.
     const oldDiscovery = /await\s+processWeeklySalaries\(/;
     expect(oldDiscovery.test(suiteShaped)).toBe(false);
 
@@ -338,7 +338,7 @@ describe('Equoria-ypb7d.3 — the weekly fee pass is scoped in every test that c
     // The list above is only a guarantee if nothing escapes it. Walk the tree and
     // compare, so adding a fifth caller fails HERE rather than silently going
     // unguarded.
-    expect(discoverCallers(BACKEND_ROOT).sort()).toEqual([...GUARDED_FILES].sort());
+    expect(discoverCallers(backendRoot).sort()).toEqual([...guardedFiles].sort());
   });
 
   it('SENTINEL-POSITIVE: DISCOVERY itself is guarded — a Promise.all-only suite is found', () => {

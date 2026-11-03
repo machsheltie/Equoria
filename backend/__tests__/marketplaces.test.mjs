@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  MARKETPLACE_CONFIG,
+  marketplaceConfig,
   generateRandomGroom,
   generateMarketplace,
   needsRefresh,
@@ -29,36 +29,36 @@ import {
 import { staffLevelFee } from '../constants/staffLevels.mjs';
 
 // ---------------------------------------------------------------------------
-// MARKETPLACE_CONFIG (groom)
+// marketplaceConfig (groom)
 // ---------------------------------------------------------------------------
-describe('MARKETPLACE_CONFIG', () => {
+describe('marketplaceConfig', () => {
   it('has DEFAULT_MARKETPLACE_SIZE of 12', () => {
-    expect(MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBe(12);
+    expect(marketplaceConfig.defaultMarketplaceSize).toBe(12);
   });
 
   it('has PREMIUM_REFRESH_COST of 100', () => {
-    expect(MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBe(100);
+    expect(marketplaceConfig.premiumRefreshCost).toBe(100);
   });
 
-  it('QUALITY_DISTRIBUTION sums to 100', () => {
-    const sum = Object.values(MARKETPLACE_CONFIG.QUALITY_DISTRIBUTION).reduce((a, b) => a + b, 0);
+  it('qualityDistribution sums to 100', () => {
+    const sum = Object.values(marketplaceConfig.qualityDistribution).reduce((a, b) => a + b, 0);
     expect(sum).toBe(100);
   });
 
-  it('SPECIALTY_DISTRIBUTION sums to 100', () => {
-    const sum = Object.values(MARKETPLACE_CONFIG.SPECIALTY_DISTRIBUTION).reduce((a, b) => a + b, 0);
+  it('specialtyDistribution sums to 100', () => {
+    const sum = Object.values(marketplaceConfig.specialtyDistribution).reduce((a, b) => a + b, 0);
     expect(sum).toBe(100);
   });
 
-  it('has EXPERIENCE_RANGES for all skill levels', () => {
+  it('has experienceRanges for all skill levels', () => {
     for (const level of ['novice', 'intermediate', 'expert', 'master']) {
-      expect(MARKETPLACE_CONFIG.EXPERIENCE_RANGES[level]).toBeDefined();
+      expect(marketplaceConfig.experienceRanges[level]).toBeDefined();
     }
   });
 
-  it('has BASE_SESSION_RATES for all skill levels', () => {
+  it('has baseSessionRates for all skill levels', () => {
     for (const level of ['novice', 'intermediate', 'expert', 'master']) {
-      expect(typeof MARKETPLACE_CONFIG.BASE_SESSION_RATES[level]).toBe('number');
+      expect(typeof marketplaceConfig.baseSessionRates[level]).toBe('number');
     }
   });
 });
@@ -110,7 +110,7 @@ describe('generateRandomGroom', () => {
   it('experience is within skill level range', () => {
     for (let i = 0; i < 30; i++) {
       const g = generateRandomGroom();
-      const range = MARKETPLACE_CONFIG.EXPERIENCE_RANGES[g.skillLevel];
+      const range = marketplaceConfig.experienceRanges[g.skillLevel];
       expect(g.experience).toBeGreaterThanOrEqual(range.min);
       expect(g.experience).toBeLessThanOrEqual(range.max);
     }
@@ -135,7 +135,7 @@ describe('generateMarketplace', () => {
   it('returns array of default size (12)', () => {
     const m = generateMarketplace();
     expect(Array.isArray(m)).toBe(true);
-    expect(m).toHaveLength(MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE);
+    expect(m).toHaveLength(marketplaceConfig.defaultMarketplaceSize);
   });
 
   it('returns exact count when size given', () => {
@@ -194,7 +194,7 @@ describe('getRefreshCost (groom)', () => {
 
   it('returns PREMIUM_REFRESH_COST when refresh is not needed', () => {
     const recent = new Date(Date.now() - 30 * 60 * 1000);
-    expect(getRefreshCost(recent)).toBe(MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST);
+    expect(getRefreshCost(recent)).toBe(marketplaceConfig.premiumRefreshCost);
   });
 
   it('returns 0 when lastRefresh is very old', () => {

@@ -10,10 +10,10 @@ import {
   calculateRelationshipLevel,
   checkForSpecialEvent,
   getAvailableInteractions,
-  RELATIONSHIP_LEVELS,
-  ENHANCED_INTERACTIONS,
-  SPECIAL_EVENTS,
-  GROOM_PREFERENCES,
+  relationshipLevels,
+  enhancedInteractions,
+  specialEvents,
+  groomPreferences,
 } from '../services/enhancedGroomInteractions.mjs';
 
 // ---------------------------------------------------------------------------
@@ -54,27 +54,27 @@ const adultHorse = {
 // Constants shape
 // ---------------------------------------------------------------------------
 describe('exported constants', () => {
-  it('RELATIONSHIP_LEVELS has 7 levels', () => {
-    expect(Object.keys(RELATIONSHIP_LEVELS)).toHaveLength(7);
+  it('relationshipLevels has 7 levels', () => {
+    expect(Object.keys(relationshipLevels)).toHaveLength(7);
   });
 
-  it('ENHANCED_INTERACTIONS has 5 types', () => {
-    expect(Object.keys(ENHANCED_INTERACTIONS)).toHaveLength(5);
+  it('enhancedInteractions has 5 types', () => {
+    expect(Object.keys(enhancedInteractions)).toHaveLength(5);
   });
 
-  it('SPECIAL_EVENTS has probability on each event', () => {
-    for (const event of Object.values(SPECIAL_EVENTS)) {
+  it('specialEvents has probability on each event', () => {
+    for (const event of Object.values(specialEvents)) {
       expect(typeof event.probability).toBe('number');
       expect(event.probability).toBeGreaterThan(0);
       expect(event.probability).toBeLessThan(1);
     }
   });
 
-  it('GROOM_PREFERENCES has entries for gentle, energetic, patient, strict', () => {
-    expect(GROOM_PREFERENCES).toHaveProperty('gentle');
-    expect(GROOM_PREFERENCES).toHaveProperty('energetic');
-    expect(GROOM_PREFERENCES).toHaveProperty('patient');
-    expect(GROOM_PREFERENCES).toHaveProperty('strict');
+  it('groomPreferences has entries for gentle, energetic, patient, strict', () => {
+    expect(groomPreferences).toHaveProperty('gentle');
+    expect(groomPreferences).toHaveProperty('energetic');
+    expect(groomPreferences).toHaveProperty('patient');
+    expect(groomPreferences).toHaveProperty('strict');
   });
 });
 
@@ -139,7 +139,7 @@ describe('checkForSpecialEvent', () => {
     const context = {
       groom: gentleGroom,
       horse: youngHorse,
-      relationshipLevel: RELATIONSHIP_LEVELS.STRANGER,
+      relationshipLevel: relationshipLevels.STRANGER,
       interactionType: 'dailyCare',
     };
     const result = checkForSpecialEvent(context);
@@ -154,7 +154,7 @@ describe('checkForSpecialEvent', () => {
         // Equoria-yny4: age is game-years; 1 = young foal
         groom: gentleGroom,
         horse: { ...youngHorse, age: 1 },
-        relationshipLevel: RELATIONSHIP_LEVELS.STRANGER,
+        relationshipLevel: relationshipLevels.STRANGER,
         interactionType: 'enrichment',
       };
       const result = checkForSpecialEvent(context);
@@ -249,7 +249,7 @@ describe('getAvailableInteractions', () => {
 describe('calculateRelationshipLevel — negative-points fallback (line 180)', () => {
   it('returns STRANGER object when totalBondingPoints is negative (exhausts loop, hits fallback)', () => {
     const result = calculateRelationshipLevel(-1);
-    expect(result).toBe(RELATIONSHIP_LEVELS.STRANGER);
+    expect(result).toBe(relationshipLevels.STRANGER);
   });
 });
 

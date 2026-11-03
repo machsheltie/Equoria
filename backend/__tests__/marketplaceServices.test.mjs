@@ -25,7 +25,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  MARKETPLACE_CONFIG,
+  marketplaceConfig,
   generateRandomGroom,
   generateMarketplace,
   needsRefresh,
@@ -63,7 +63,7 @@ describe('groomMarketplace — generateRandomGroom', () => {
   });
 
   it('skillLevel is one of the defined quality distribution keys', () => {
-    const validSkillLevels = Object.keys(MARKETPLACE_CONFIG.QUALITY_DISTRIBUTION);
+    const validSkillLevels = Object.keys(marketplaceConfig.qualityDistribution);
     const groom = generateRandomGroom();
     expect(validSkillLevels).toContain(groom.skillLevel);
   });
@@ -72,7 +72,7 @@ describe('groomMarketplace — generateRandomGroom', () => {
 describe('groomMarketplace — generateMarketplace', () => {
   it('returns array of DEFAULT_MARKETPLACE_SIZE grooms', () => {
     const marketplace = generateMarketplace();
-    expect(marketplace).toHaveLength(MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE);
+    expect(marketplace).toHaveLength(marketplaceConfig.defaultMarketplaceSize);
     expect(marketplace[0]).toHaveProperty('marketplaceId');
   });
 
@@ -91,13 +91,13 @@ describe('groomMarketplace — needsRefresh', () => {
     expect(needsRefresh(undefined)).toBe(true);
   });
 
-  it('returns false when lastRefresh is recent (hoursDiff < REFRESH_INTERVAL_HOURS)', () => {
+  it('returns false when lastRefresh is recent (hoursDiff < refreshIntervalHours)', () => {
     // lastRefresh = 30 seconds ago → well within any interval
     const recent = new Date(Date.now() - 30 * 1000);
     expect(needsRefresh(recent)).toBe(false);
   });
 
-  it('returns true when lastRefresh is stale (hoursDiff >= REFRESH_INTERVAL_HOURS)', () => {
+  it('returns true when lastRefresh is stale (hoursDiff >= refreshIntervalHours)', () => {
     // lastRefresh = 3 days ago → always stale
     const stale = new Date(Date.now() - 72 * 60 * 60 * 1000);
     expect(needsRefresh(stale)).toBe(true);
@@ -111,18 +111,18 @@ describe('groomMarketplace — getRefreshCost', () => {
 
   it('returns PREMIUM_REFRESH_COST when no free refresh available (needsRefresh=false)', () => {
     const recent = new Date(Date.now() - 30 * 1000);
-    expect(getRefreshCost(recent)).toBe(MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST);
+    expect(getRefreshCost(recent)).toBe(marketplaceConfig.premiumRefreshCost);
   });
 });
 
-describe('groomMarketplace — MARKETPLACE_CONFIG export', () => {
+describe('groomMarketplace — marketplaceConfig export', () => {
   it('has expected constants', () => {
-    expect(MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBe(12);
-    expect(MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBe(100);
-    expect(typeof MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS).toBe('number');
+    expect(marketplaceConfig.defaultMarketplaceSize).toBe(12);
+    expect(marketplaceConfig.premiumRefreshCost).toBe(100);
+    expect(typeof marketplaceConfig.refreshIntervalHours).toBe('number');
     // Owner ruling 2026-10-28 (q177): every new groom on the hiring list is a Rookie,
     // from the novice tier. Old contract: novice 40%.
-    expect(MARKETPLACE_CONFIG.QUALITY_DISTRIBUTION.novice).toBe(100);
+    expect(marketplaceConfig.qualityDistribution.novice).toBe(100);
   });
 });
 

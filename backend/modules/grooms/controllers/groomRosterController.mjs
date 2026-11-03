@@ -29,7 +29,7 @@ import {
 } from '../../../services/staffGrowthService.mjs';
 import { engagementEndReasons, releaseGroomTx } from '../services/groomEngagementService.mjs';
 
-const GROOM_LIST_SELECT = {
+const groomListSelect = {
   id: true,
   name: true,
   // Equoria-fby1t: selected so the age can be COMPUTED; both are stripped from the
@@ -80,7 +80,7 @@ export async function getUserGrooms(req, res) {
       prisma.groom.findMany({
         where,
         select: {
-          ...GROOM_LIST_SELECT,
+          ...groomListSelect,
           groomAssignments: {
             where: { isActive: true },
             select: { id: true, foal: { select: { id: true, name: true } } },

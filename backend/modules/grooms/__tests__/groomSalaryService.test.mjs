@@ -16,7 +16,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
-  MAX_HORSES_PER_GROOM,
+  maxHorsesPerGroom,
   calculateWeeklyFee,
   getSalaryPaymentHistory,
   calculateUserSalaryCost,
@@ -35,7 +35,7 @@ describe('calculateWeeklyFee — the groom star level price, per groom per week'
     expect(calculateWeeklyFee({ starLevel: 'rookie' })).toBe(100);
     expect(calculateWeeklyFee({ starLevel: 'expert' })).toBe(500);
     // Owner ruling 2026-10-26 (q68): the horse cap stays twenty.
-    expect(MAX_HORSES_PER_GROOM).toBe(20);
+    expect(maxHorsesPerGroom).toBe(20);
   });
 
   it('refuses a missing or nonsense level rather than inventing a fee', () => {

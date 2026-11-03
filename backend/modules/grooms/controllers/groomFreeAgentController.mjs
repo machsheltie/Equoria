@@ -40,7 +40,7 @@ import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
 import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
 import { publicStaffRow, staffLabels } from '../../../utils/staffPublicView.mjs';
 import {
-  FREE_AGENT_WHERE,
+  freeAgentWhere,
   listFreeAgents,
   openEngagementTx,
 } from '../services/groomEngagementService.mjs';
@@ -107,7 +107,7 @@ export async function listFreeAgentGrooms(req, res) {
  * record intact, and this opens a NEW engagement on them.
  *
  * ONE PREDICATE, USED BY BOTH PATHS (Equoria-ypb7d.3 fix round 1, finding F1).
- *   `FREE_AGENT_WHERE` — imported from groomEngagementService, the same frozen object
+ *   `freeAgentWhere` — imported from groomEngagementService, the same frozen object
  *   `listFreeAgents` filters the pool with — is spread into BOTH the 404 pre-read and
  *   the guarded claim below. It is deliberately not restated, because the first
  *   version restated it and the two copies drifted: the listing required a closed
@@ -167,7 +167,7 @@ export async function hireFreeAgent(req, res) {
     // fast-path. The PREDICATE, however, is the pool's own and not a restatement
     // of it (F1).
     const offer = await prisma.groom.findFirst({
-      where: { id: groomId, ...FREE_AGENT_WHERE },
+      where: { id: groomId, ...freeAgentWhere },
       select: { id: true, name: true, starLevel: true },
     });
     if (!offer) {
@@ -233,7 +233,7 @@ export async function hireFreeAgent(req, res) {
           const claimed = await tx.groom.updateMany({
             // The SAME predicate the pool lists with, spread from the same frozen
             // object (F1). Do not restate it here.
-            where: { id: groomId, ...FREE_AGENT_WHERE },
+            where: { id: groomId, ...freeAgentWhere },
             data: {
               userId,
               // A fresh engagement starts paid up, whatever the last one ended as.

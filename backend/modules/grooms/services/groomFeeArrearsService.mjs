@@ -19,9 +19,9 @@ import { gameDateKey, gameDayIndex, startOfGameDayIndex } from '../../../utils/g
 // Equoria-bgdfb: what an unpaid week becomes, and the two ways it stops being owed.
 import { arrearsOwedStatuses, arrearsWrittenOffStatus } from './groomFeeBasisService.mjs';
 import {
-  ENGAGEMENT_END_REASONS,
-  GROOM_FEE_UNPAID_NOTIFICATION_TYPE,
-  GROOM_RELEASED_NOTIFICATION_TYPE,
+  engagementEndReasons,
+  groomFeeUnpaidNotificationType,
+  groomReleasedNotificationType,
   acquirePayWeekLockTx,
   enterFeeGraceTx,
   hasFullUnpaidWeek,
@@ -29,8 +29,8 @@ import {
 } from './groomEngagementService.mjs';
 
 // camelCase names for the two notification types this file sends (Equoria-pjvp8).
-const groomReleasedType = GROOM_RELEASED_NOTIFICATION_TYPE;
-const groomFeeUnpaidType = GROOM_FEE_UNPAID_NOTIFICATION_TYPE;
+const groomReleasedType = groomReleasedNotificationType;
+const groomFeeUnpaidType = groomFeeUnpaidNotificationType;
 
 /**
  * Equoria-hc96y: was this groom's fee for `payWeekStart` paid? Read under the pay-week
@@ -62,7 +62,7 @@ async function releaseUnpaidGroomTx(tx, { groom, salary, userId, payWeekStart })
   const result = await releaseGroomTx(tx, {
     groomId: groom.id,
     userId,
-    reason: ENGAGEMENT_END_REASONS.FEE_UNPAID,
+    reason: engagementEndReasons.feeUnpaid,
     notificationPayloadExtras: {
       weeklyFee: salary,
       unpaidSince: new Date(groom.feeUnpaidSince).toISOString(),

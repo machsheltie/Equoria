@@ -60,7 +60,7 @@
  * assignment logs. Both retire a groom at any age, and the assignment-count one
  * fires after a dozen ordinary re-assignments — long before age 50 — so keeping
  * it would have meant the age rule almost never fired. The reason strings stay in
- * `RETIREMENT_REASONS` for existing `Groom.retirementReason` rows, which
+ * `retirementReasons` for existing `Groom.retirementReason` rows, which
  * `getRetirementStatistics` groups by; nothing computes them. Reinstating a
  * "master groom graduates" mechanic is a product decision (Equoria-8l6lg).
  *
@@ -90,8 +90,8 @@ import { autoCreateLegacyOnRetirement } from './groomLegacyService.mjs';
 // The hidden retirement age lives in its own module so that every read or draw
 // of it is one grep away (Equoria-m9lz1 invariant I3).
 import {
-  RETIREMENT_AGE_MIN,
-  RETIREMENT_AGE_MAX,
+  retirementAgeMin,
+  retirementAgeMax,
   ensureRetirementSchedule,
   readRetirementAge,
 } from './groomRetirementScheduleService.mjs';
@@ -102,7 +102,7 @@ import { groomAgeYears } from './groomAgeService.mjs';
 // Equoria-bgdfb (F3): the arrears vocabulary, so a career ending also ends the debt.
 import { arrearsOwedStatuses, arrearsWrittenOffStatus } from './groomFeeBasisService.mjs';
 // Equoria-ypb7d.2: retirement CLOSES the engagement (players never own grooms).
-import { ENGAGEMENT_END_REASONS, endEngagementTx } from './groomEngagementService.mjs';
+import { engagementEndReasons, endEngagementTx } from './groomEngagementService.mjs';
 // Equoria-ypb7d.1: a reporting read over rows retirement already wrote, split out
 // so the age model fits under the 600-line cap. Re-exported so the route and every
 // existing importer are unchanged.
@@ -125,16 +125,16 @@ export { getRetirementStatistics };
  * Retirement reasons enum.
  *
  * `AGE` is the only value the game computes after Equoria-m9lz1.
- * `MANDATORY_CAREER_LIMIT`, `EARLY_LEVEL_CAP`, `EARLY_ASSIGNMENT_LIMIT` and
+ * `mandatoryCareerLimit`, `earlyLevelCap`, `earlyAssignmentLimit` and
  * `VOLUNTARY` are retained for HISTORICAL rows only — `Groom.retirementReason`
  * already holds them and `getRetirementStatistics` groups by that column.
  * Nothing produces them any more.
  */
-export const RETIREMENT_REASONS = {
+export const retirementReasons = {
   AGE: 'age',
-  MANDATORY_CAREER_LIMIT: 'mandatoryCareerLimit',
-  EARLY_LEVEL_CAP: 'earlyLevelCap',
-  EARLY_ASSIGNMENT_LIMIT: 'earlyAssignmentLimit',
+  mandatoryCareerLimit: 'mandatoryCareerLimit',
+  earlyLevelCap: 'earlyLevelCap',
+  earlyAssignmentLimit: 'earlyAssignmentLimit',
   VOLUNTARY: 'voluntary',
 };
 
@@ -146,13 +146,13 @@ export const RETIREMENT_REASONS = {
  * migration 20260908180000_m9lz1_groom_retirement_schedule. Widening the band
  * here without widening that constraint produces a write error, deliberately.
  */
-export const CAREER_CONSTANTS = {
-  RETIREMENT_AGE_MIN,
-  RETIREMENT_AGE_MAX,
+export const careerConstants = {
+  retirementAgeMin,
+  retirementAgeMax,
 };
 
 /** The notification type the game emits in the week a groom retires. */
-export const GROOM_RETIRED_NOTIFICATION_TYPE = 'groomRetired';
+export const groomRetiredNotificationType = 'groomRetired';
 
 /**
  * Advance the groom's age by one game-year.
@@ -290,7 +290,7 @@ export async function checkRetirementEligibility(groomId) {
   }
 
   if (age >= retirementAge) {
-    return { eligible: true, reason: RETIREMENT_REASONS.AGE, mandatory: true };
+    return { eligible: true, reason: retirementReasons.AGE, mandatory: true };
   }
 
   return { eligible: false, reason: 'notEligible', mandatory: false };
@@ -332,7 +332,7 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     throw new Error(`Groom ${groomId} is not eligible for retirement`);
   }
 
-  const retirementReason = reason || eligibility.reason || RETIREMENT_REASONS.AGE;
+  const retirementReason = reason || eligibility.reason || retirementReasons.AGE;
   const retirementTimestamp = new Date();
 
   const committed = await prisma.$transaction(async tx => {
@@ -385,7 +385,7 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     const closedEngagements = await endEngagementTx(
       tx,
       groomId,
-      ENGAGEMENT_END_REASONS.RETIREMENT,
+      engagementEndReasons.RETIREMENT,
       retirementTimestamp,
     );
 
@@ -430,7 +430,7 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
       const notification = await createNotificationTx(
         tx,
         recipientId,
-        GROOM_RETIRED_NOTIFICATION_TYPE,
+        groomRetiredNotificationType,
         payload,
       );
       notificationIds.push(notification.id);
@@ -468,7 +468,7 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
   // list, not by `retiredGroom.userId`, so a fallback recipient gets its stream
   // nudge and its retention prune too.
   for (const [recipientId, payload] of committed.notificationPayloadsByRecipient) {
-    finalizeNotificationAfterCommit(recipientId, GROOM_RETIRED_NOTIFICATION_TYPE, payload);
+    finalizeNotificationAfterCommit(recipientId, groomRetiredNotificationType, payload);
   }
 
   // Equoria-c0vo: auto-create GroomLegacyLog for mentor-level retirees (Advanced,
@@ -515,7 +515,7 @@ export default {
   checkRetirementEligibility,
   processRetirement,
   getRetirementStatistics,
-  RETIREMENT_REASONS,
-  CAREER_CONSTANTS,
-  GROOM_RETIRED_NOTIFICATION_TYPE,
+  retirementReasons,
+  careerConstants,
+  groomRetiredNotificationType,
 };

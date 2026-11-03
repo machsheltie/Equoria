@@ -61,7 +61,7 @@ import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const FIXTURE_PREFIX = 'TestFixture-7r67q';
+const fixturePrefix = 'TestFixture-7r67q';
 
 const createdAssignmentIds = [];
 const createdGroomIds = [];
@@ -78,8 +78,8 @@ async function makeUser(money) {
   const u = await prisma.user.create({
     data: {
       emailVerified: true,
-      email: `${FIXTURE_PREFIX}-${tag}@test.com`,
-      username: `${FIXTURE_PREFIX}-${tag}`.slice(0, 30),
+      email: `${fixturePrefix}-${tag}@test.com`,
+      username: `${fixturePrefix}-${tag}`.slice(0, 30),
       password: 'irrelevant-hash',
       firstName: '7r67q',
       lastName: 'Tester',
@@ -94,7 +94,7 @@ async function makeGroomAssignment(user, { skillLevel = 'novice', speciality = '
   const tag = uniq();
   const groom = await prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-Groom-${tag}`,
+      name: `${fixturePrefix}-Groom-${tag}`,
       speciality,
       personality: 'gentle',
       skillLevel,
@@ -108,7 +108,7 @@ async function makeGroomAssignment(user, { skillLevel = 'novice', speciality = '
   const horse = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-Horse-${tag}`,
+      name: `${fixturePrefix}-Horse-${tag}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,

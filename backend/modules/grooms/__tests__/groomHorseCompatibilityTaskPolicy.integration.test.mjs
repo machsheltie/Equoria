@@ -31,12 +31,12 @@ import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const POLICY_MODULE = '../services/groomHorseCompatibilityTaskPolicy.mjs';
+const policyModule = '../services/groomHorseCompatibilityTaskPolicy.mjs';
 
 // Pre-refactor scorer values, verbatim. `balanced` (the Groom schema default) was
 // not in the scorer's table and fell through to the `|| 1.0` fallback, as did the
 // three accepted-but-unlisted tasks.
-const EXPECTED_TASK_MODIFIERS = {
+const expectedTaskModifiers = {
   trustBuilding: { calm: 1.3, methodical: 1.1, energetic: 0.8, balanced: 1 },
   desensitization: { energetic: 1.1, calm: 1.2, methodical: 0.9, balanced: 1 },
   hoofHandling: { methodical: 1.2, calm: 1.1, energetic: 0.8, balanced: 1 },
@@ -46,11 +46,11 @@ const EXPECTED_TASK_MODIFIERS = {
   tyingPractice: { calm: 1, energetic: 1, methodical: 1, balanced: 1 },
   earlyTouch: { calm: 1, energetic: 1, methodical: 1, balanced: 1 },
 };
-const FORMERLY_UNSCORED_TASKS = ['coatCheck', 'tyingPractice', 'earlyTouch'];
-const UNSUPPORTED_TASK = 'grooming';
+const formerlyUnscoredTasks = ['coatCheck', 'tyingPractice', 'earlyTouch'];
+const unsupportedTask = 'grooming';
 // POST /predict and /recommendations were retired (Equoria-a7f1p); their cases went
 // with them (Equoria-ytwl7).
-const TASK_ROUTES = ['/calculate'];
+const taskRoutes = ['/calculate'];
 
 const sorted = values => [...values].sort();
 
@@ -204,18 +204,18 @@ describe('one task vocabulary for validator, config and scorer', () => {
     expect(res.status).toBe(200);
     const advertised = res.body.data.taskTypes;
 
-    for (const routePath of TASK_ROUTES) {
+    for (const routePath of taskRoutes) {
       expect(sorted(routeAcceptedTaskTypes(routePath))).toEqual(sorted(advertised));
     }
 
-    const { GROOM_HORSE_COMPATIBILITY_TASK_POLICY, GROOM_HORSE_COMPATIBILITY_TASK_TYPES } = await import(POLICY_MODULE);
-    expect(sorted(Object.keys(GROOM_HORSE_COMPATIBILITY_TASK_POLICY))).toEqual(sorted(advertised));
-    expect(sorted(GROOM_HORSE_COMPATIBILITY_TASK_TYPES)).toEqual(sorted(advertised));
+    const { groomHorseCompatibilityTaskPolicy, groomHorseCompatibilityTaskTypes } = await import(policyModule);
+    expect(sorted(Object.keys(groomHorseCompatibilityTaskPolicy))).toEqual(sorted(advertised));
+    expect(sorted(groomHorseCompatibilityTaskTypes)).toEqual(sorted(advertised));
   });
 
   it('accepts exactly the eight tasks the routes accepted before q4uem.3', async () => {
-    const { GROOM_HORSE_COMPATIBILITY_TASK_TYPES } = await import(POLICY_MODULE);
-    expect(sorted(GROOM_HORSE_COMPATIBILITY_TASK_TYPES)).toEqual(sorted(Object.keys(EXPECTED_TASK_MODIFIERS)));
+    const { groomHorseCompatibilityTaskTypes } = await import(policyModule);
+    expect(sorted(groomHorseCompatibilityTaskTypes)).toEqual(sorted(Object.keys(expectedTaskModifiers)));
   });
 });
 
@@ -226,22 +226,22 @@ describe('task modifiers', () => {
     const { personalities } = await getPersonalityTraitDefinitions();
     const defined = sorted(Object.keys(personalities));
     expect(sorted(res.body.data.personalityTypes)).toEqual(defined);
-    const { GROOM_HORSE_COMPATIBILITY_PERSONALITIES } = await import(POLICY_MODULE);
-    expect(sorted(GROOM_HORSE_COMPATIBILITY_PERSONALITIES)).toEqual(defined);
+    const { groomHorseCompatibilityPersonalities } = await import(policyModule);
+    expect(sorted(groomHorseCompatibilityPersonalities)).toEqual(defined);
   });
 
   it('gives every accepted task an explicit finite modifier for every supported personality', async () => {
     const {
-      GROOM_HORSE_COMPATIBILITY_TASK_POLICY,
-      GROOM_HORSE_COMPATIBILITY_TASK_TYPES,
-      GROOM_HORSE_COMPATIBILITY_PERSONALITIES,
+      groomHorseCompatibilityTaskPolicy,
+      groomHorseCompatibilityTaskTypes,
+      groomHorseCompatibilityPersonalities,
       getTaskCompatibilityModifier,
-    } = await import(POLICY_MODULE);
-    for (const taskType of GROOM_HORSE_COMPATIBILITY_TASK_TYPES) {
-      expect(sorted(Object.keys(GROOM_HORSE_COMPATIBILITY_TASK_POLICY[taskType]))).toEqual(
-        sorted(GROOM_HORSE_COMPATIBILITY_PERSONALITIES),
+    } = await import(policyModule);
+    for (const taskType of groomHorseCompatibilityTaskTypes) {
+      expect(sorted(Object.keys(groomHorseCompatibilityTaskPolicy[taskType]))).toEqual(
+        sorted(groomHorseCompatibilityPersonalities),
       );
-      for (const personality of GROOM_HORSE_COMPATIBILITY_PERSONALITIES) {
+      for (const personality of groomHorseCompatibilityPersonalities) {
         const modifier = getTaskCompatibilityModifier(taskType, personality);
         expect(Number.isFinite(modifier)).toBe(true);
       }
@@ -249,21 +249,21 @@ describe('task modifiers', () => {
   });
 
   it('reproduces the pre-refactor scorer values exactly (no mechanics change)', async () => {
-    const { GROOM_HORSE_COMPATIBILITY_TASK_POLICY } = await import(POLICY_MODULE);
-    expect(GROOM_HORSE_COMPATIBILITY_TASK_POLICY).toEqual(EXPECTED_TASK_MODIFIERS);
+    const { groomHorseCompatibilityTaskPolicy } = await import(policyModule);
+    expect(groomHorseCompatibilityTaskPolicy).toEqual(expectedTaskModifiers);
   });
 
   it('keeps coatCheck, tyingPractice and earlyTouch neutral (1) for every personality', async () => {
-    const { getTaskCompatibilityModifier, GROOM_HORSE_COMPATIBILITY_PERSONALITIES } = await import(POLICY_MODULE);
-    for (const taskType of FORMERLY_UNSCORED_TASKS) {
-      for (const personality of GROOM_HORSE_COMPATIBILITY_PERSONALITIES) {
+    const { getTaskCompatibilityModifier, groomHorseCompatibilityPersonalities } = await import(policyModule);
+    for (const taskType of formerlyUnscoredTasks) {
+      for (const personality of groomHorseCompatibilityPersonalities) {
         expect(getTaskCompatibilityModifier(taskType, personality)).toBe(1);
       }
     }
   });
 
   it('scorer applies the table for every task and personality through real grooms', async () => {
-    for (const [taskType, byPersonality] of Object.entries(EXPECTED_TASK_MODIFIERS)) {
+    for (const [taskType, byPersonality] of Object.entries(expectedTaskModifiers)) {
       for (const [personality, expected] of Object.entries(byPersonality)) {
         const result = await analyzePair(groomsByPersonality[personality].id, horse.id, scoreCompatibility, {
           taskType,
@@ -295,20 +295,20 @@ describe('unsupported task types are rejected, never defaulted', () => {
     ).rejects.toMatchObject({ message: 'Unsupported compatibility task type: grooming', statusCode: 400 });
   });
 
-  it.each(TASK_ROUTES)('POST %s rejects an unsupported task with 400', async routePath => {
+  it.each(taskRoutes)('POST %s rejects an unsupported task with 400', async routePath => {
     const res = await postWithCsrf(routePath, {
       groomId: groomsByPersonality.calm.id,
       horseId: horse.id,
-      context: { taskType: UNSUPPORTED_TASK },
+      context: { taskType: unsupportedTask },
     });
     expect(res.status).toBe(400);
     expect(res.body.message).toBe('Task type must be a valid task type');
   });
 
   it('the scorer throws for an unsupported task instead of scoring it neutral', async () => {
-    const context = { taskType: UNSUPPORTED_TASK };
+    const context = { taskType: unsupportedTask };
     const unsupported = {
-      message: `Unsupported compatibility task type: ${UNSUPPORTED_TASK}`,
+      message: `Unsupported compatibility task type: ${unsupportedTask}`,
       statusCode: 400,
     };
     await expect(analyzePair(groomsByPersonality.calm.id, horse.id, scoreCompatibility, context)).rejects.toMatchObject(
@@ -321,7 +321,7 @@ describe('unsupported task types are rejected, never defaulted', () => {
   });
 
   it('the policy lookup throws a 400 for an unsupported task or personality', async () => {
-    const { getTaskCompatibilityModifier } = await import(POLICY_MODULE);
+    const { getTaskCompatibilityModifier } = await import(policyModule);
     const thrownBy = fn => {
       try {
         fn();
@@ -330,8 +330,8 @@ describe('unsupported task types are rejected, never defaulted', () => {
       }
       return null;
     };
-    expect(thrownBy(() => getTaskCompatibilityModifier(UNSUPPORTED_TASK, 'calm'))).toEqual({
-      message: `Unsupported compatibility task type: ${UNSUPPORTED_TASK}`,
+    expect(thrownBy(() => getTaskCompatibilityModifier(unsupportedTask, 'calm'))).toEqual({
+      message: `Unsupported compatibility task type: ${unsupportedTask}`,
       statusCode: 400,
     });
     expect(thrownBy(() => getTaskCompatibilityModifier('constructor', 'calm'))).toEqual({
@@ -406,9 +406,9 @@ describe('trait task bonuses through the full scorer (characterization)', () => 
     ['trustBuilding', 'calm', () => horse, 1.3, 0.9126, 1.071397647112],
     ['desensitization', 'energetic', () => horse, 1.1, 0.7722, 1.060999848596],
   ];
-  const CONTROL_OVERALL = 0.702;
-  const CONTROL_TASK_EFFECTIVENESS = 1.04060401;
-  const BASE_COMPATIBILITY = 0.6;
+  const controlOverall = 0.702;
+  const controlTaskEffectiveness = 1.04060401;
+  const baseCompatibility = 0.6;
 
   it.each(cases)(
     '%s with a %s groom: policy modifier applied, trait bonus present in taskEffectiveness, coatCheck control lower',
@@ -424,18 +424,18 @@ describe('trait task bonuses through the full scorer (characterization)', () => 
       expect(task.taskSpecificModifier).toBe(policyModifier);
       expect(control.taskSpecificModifier).toBe(1);
       expect(task.overallScore).toBeCloseTo(overall, 6);
-      expect(control.overallScore).toBeCloseTo(CONTROL_OVERALL, 6);
+      expect(control.overallScore).toBeCloseTo(controlOverall, 6);
       expect(control.overallScore).toBeLessThan(task.overallScore);
 
       // Trait task bonus: present in the personality modifiers, higher than the control.
       expect(taskMods.taskEffectiveness).toBeCloseTo(taskEffectiveness, 6);
-      expect(controlMods.taskEffectiveness).toBeCloseTo(CONTROL_TASK_EFFECTIVENESS, 6);
+      expect(controlMods.taskEffectiveness).toBeCloseTo(controlTaskEffectiveness, 6);
       expect(controlMods.taskEffectiveness).toBeLessThan(taskMods.taskEffectiveness);
 
       // ...but it does not reach the scorer: base compatibility is task-independent and
       // the score ratio is exactly the policy modifier.
-      expect(task.baseCompatibility).toBeCloseTo(BASE_COMPATIBILITY, 6);
-      expect(control.baseCompatibility).toBeCloseTo(BASE_COMPATIBILITY, 6);
+      expect(task.baseCompatibility).toBeCloseTo(baseCompatibility, 6);
+      expect(control.baseCompatibility).toBeCloseTo(baseCompatibility, 6);
       expect(task.overallScore / control.overallScore).toBeCloseTo(policyModifier, 6);
     },
   );

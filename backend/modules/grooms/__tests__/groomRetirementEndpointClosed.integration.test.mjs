@@ -86,7 +86,7 @@ import { ensureRetirementSchedule } from '../services/groomRetirementScheduleSer
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-m9lz1-closed';
+const fixturePrefix = 'TestFixture-m9lz1-closed';
 
 const tag = () => randomBytes(6).toString('hex');
 
@@ -95,8 +95,8 @@ async function makeUser(label) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${label}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${label}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${label}-${suffix}`,
+      email: `${fixturePrefix}-${label}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Task19',
       lastName: label,
@@ -115,7 +115,7 @@ async function makeHorse(ownerId, label) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       sex: 'Filly',
       dateOfBirth: new Date('2024-06-15'),
       age: 1,
@@ -126,12 +126,12 @@ async function makeHorse(ownerId, label) {
 }
 
 // Equoria-ypb7d.1: see the note on `startAge` in makeGroom below.
-const FIXTURE_START_AGE = 20;
+const fixtureStartAge = 20;
 
 async function makeGroom(ownerId, label, extra = {}) {
   return prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       speciality: 'foalCare',
       personality: 'gentle',
       skillLevel: 'intermediate',
@@ -140,7 +140,7 @@ async function makeGroom(ownerId, label, extra = {}) {
       // that parks a groom on a target age must set both. Fixed at 20 (inside the
       // 18..24 band the `grooms_start_age_range` CHECK enforces) so the arithmetic
       // in the game-path case below is exact rather than depending on a draw.
-      startAge: FIXTURE_START_AGE,
+      startAge: fixtureStartAge,
       userId: ownerId,
       ...extra,
     },
@@ -425,7 +425,7 @@ describe('Equoria-m9lz1 — POST /api/v1/grooms/:id/retirement/process is closed
       // Equoria-ypb7d.1: exactly ON its hidden age, and age is
       // `startAge + careerWeeks` — not `careerWeeks` alone, which was the defect
       // Equoria-maeba raised.
-      data: { careerWeeks: retirementAge - FIXTURE_START_AGE },
+      data: { careerWeeks: retirementAge - fixtureStartAge },
     });
 
     const result = await processRetirement(groom.id);

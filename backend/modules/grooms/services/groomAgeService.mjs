@@ -58,11 +58,11 @@ import { randomInt } from 'node:crypto';
  * 20260909120000_ypb7d_groom_age_and_engagement. Widening the band here alone
  * produces a write error rather than a silently wider distribution.
  */
-export const START_AGE_MIN = 18;
-export const START_AGE_MAX = 24;
+export const startAgeMin = 18;
+export const startAgeMax = 24;
 
 /**
- * Draw a start age uniformly from [START_AGE_MIN, START_AGE_MAX] inclusive.
+ * Draw a start age uniformly from [startAgeMin, startAgeMax] inclusive.
  *
  * `crypto.randomInt(min, max)` is half-open on `max`, hence the `+ 1`. It is used
  * rather than `Math.random()` for the same reason the retirement draw does: a
@@ -76,7 +76,7 @@ export const START_AGE_MAX = 24;
  * @returns {number} An integer in [18, 24]
  */
 export function drawStartAge() {
-  return randomInt(START_AGE_MIN, START_AGE_MAX + 1);
+  return randomInt(startAgeMin, startAgeMax + 1);
 }
 
 /**
@@ -141,8 +141,8 @@ export async function ensureStartAge(client, groomId) {
 }
 
 export default {
-  START_AGE_MIN,
-  START_AGE_MAX,
+  startAgeMin,
+  startAgeMax,
   drawStartAge,
   groomAgeYears,
   ensureStartAge,

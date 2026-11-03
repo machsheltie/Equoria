@@ -6,12 +6,12 @@
  */
 
 import {
-  PERSONALITY_MATCH_DEFAULT,
-  PERSONALITY_MATCH_MATRIX,
-  RISK_FACTOR_RULES,
-  STRENGTH_FACTOR_RULES,
-  TASK_EFFECTIVENESS_DEFAULT,
-  TASK_EFFECTIVENESS_MATRIX,
+  personalityMatchDefault,
+  personalityMatchMatrix,
+  riskFactorRules,
+  strengthFactorRules,
+  taskEffectivenessDefault,
+  taskEffectivenessMatrix,
   ruleTexts,
 } from './dynamicCompatibilityRules.mjs';
 
@@ -44,7 +44,7 @@ export function factorBreakdown(groomTraits, horseTemperament, horse) {
 function analyzePersonalityMatch(groomTraits, horseTemperament) {
   const personality = groomTraits.primaryPersonality;
   const temperament = horseTemperament.primaryTemperament;
-  const score = PERSONALITY_MATCH_MATRIX[personality]?.[temperament] || PERSONALITY_MATCH_DEFAULT;
+  const score = personalityMatchMatrix[personality]?.[temperament] || personalityMatchDefault;
 
   return {
     score,
@@ -90,9 +90,9 @@ function analyzeTaskEffectiveness(groomTraits, horseTemperament) {
   const personality = groomTraits.primaryPersonality;
   const temperament = horseTemperament.primaryTemperament;
   const score =
-    TASK_EFFECTIVENESS_MATRIX[personality]?.[temperament] ||
-    TASK_EFFECTIVENESS_MATRIX[personality]?.all ||
-    TASK_EFFECTIVENESS_DEFAULT;
+    taskEffectivenessMatrix[personality]?.[temperament] ||
+    taskEffectivenessMatrix[personality]?.all ||
+    taskEffectivenessDefault;
 
   return {
     score,
@@ -111,11 +111,11 @@ function factorFacts(groomTraits, horseTemperament, horse) {
 }
 
 function identifyRiskFactors(groomTraits, horseTemperament, horse) {
-  return ruleTexts(RISK_FACTOR_RULES, factorFacts(groomTraits, horseTemperament, horse));
+  return ruleTexts(riskFactorRules, factorFacts(groomTraits, horseTemperament, horse));
 }
 
 function identifyStrengthFactors(groomTraits, horseTemperament, horse) {
-  return ruleTexts(STRENGTH_FACTOR_RULES, factorFacts(groomTraits, horseTemperament, horse));
+  return ruleTexts(strengthFactorRules, factorFacts(groomTraits, horseTemperament, horse));
 }
 
 function calculateOverallAssessment(personalityMatch, experienceLevel) {

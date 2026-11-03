@@ -34,9 +34,9 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { getUserGrooms, getGroomProfile } from '../controllers/groomRosterController.mjs';
 import { ensureRetirementSchedule } from '../services/groomRetirementScheduleService.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-fby1t-age';
-const FIXTURE_START_AGE = 21;
-const FIXTURE_CAREER_WEEKS = 13; // so the groom is 34
+const fixturePrefix = 'TestFixture-fby1t-age';
+const fixtureStartAge = 21;
+const fixtureCareerWeeks = 13; // so the groom is 34
 const tag = () => randomBytes(6).toString('hex');
 
 function fakeRes() {
@@ -73,8 +73,8 @@ describe('Equoria-fby1t — the player can see how old their groom is', () => {
     user = await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${FIXTURE_PREFIX}-${suffix}`.slice(0, 30),
-        email: `${FIXTURE_PREFIX}-${suffix}@example.com`,
+        username: `${fixturePrefix}-${suffix}`.slice(0, 30),
+        email: `${fixturePrefix}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',
         firstName: 'Age',
         lastName: 'Visible',
@@ -84,12 +84,12 @@ describe('Equoria-fby1t — the player can see how old their groom is', () => {
     });
     groom = await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-groom-${suffix}`,
+        name: `${fixturePrefix}-groom-${suffix}`,
         speciality: 'general',
         personality: 'gentle',
         skillLevel: 'novice',
-        startAge: FIXTURE_START_AGE,
-        careerWeeks: FIXTURE_CAREER_WEEKS,
+        startAge: fixtureStartAge,
+        careerWeeks: fixtureCareerWeeks,
         userId: user.id,
       },
     });
@@ -105,7 +105,7 @@ describe('Equoria-fby1t — the player can see how old their groom is', () => {
 
     const row = res.body.grooms.find(g => g.id === groom.id);
     expect(row).toBeDefined();
-    expect(row.ageYears).toBe(FIXTURE_START_AGE + FIXTURE_CAREER_WEEKS);
+    expect(row.ageYears).toBe(fixtureStartAge + fixtureCareerWeeks);
     expect(row).not.toHaveProperty('careerWeeks');
     expect(row).not.toHaveProperty('startAge');
     expect(row).not.toHaveProperty('retirementSchedule');
@@ -116,7 +116,7 @@ describe('Equoria-fby1t — the player can see how old their groom is', () => {
     await getGroomProfile({ params: { id: String(groom.id) }, user: { id: user.id } }, res);
     expect(res.statusCode).toBe(200);
 
-    expect(res.body.groom.ageYears).toBe(FIXTURE_START_AGE + FIXTURE_CAREER_WEEKS);
+    expect(res.body.groom.ageYears).toBe(fixtureStartAge + fixtureCareerWeeks);
     expect(res.body.groom).not.toHaveProperty('careerWeeks');
     expect(res.body.groom).not.toHaveProperty('startAge');
   }, 30000);
@@ -127,7 +127,7 @@ describe('Equoria-fby1t — the player can see how old their groom is', () => {
     // pretends they are newborn.
     const ageless = await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-ageless-${tag()}`,
+        name: `${fixturePrefix}-ageless-${tag()}`,
         speciality: 'general',
         personality: 'gentle',
         skillLevel: 'novice',

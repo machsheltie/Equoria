@@ -40,11 +40,11 @@ import { randomInt } from 'node:crypto';
  * The inclusive random band for a groom's retirement age.
  * Re-exported through `CAREER_CONSTANTS` in groomRetirementService.mjs.
  */
-export const RETIREMENT_AGE_MIN = 50;
-export const RETIREMENT_AGE_MAX = 65;
+export const retirementAgeMin = 50;
+export const retirementAgeMax = 65;
 
 /**
- * Draw a retirement age uniformly from [RETIREMENT_AGE_MIN, RETIREMENT_AGE_MAX]
+ * Draw a retirement age uniformly from [retirementAgeMin, retirementAgeMax]
  * inclusive.
  *
  * `crypto.randomInt(min, max)` is half-open on `max`, hence the `+ 1`. It is
@@ -55,7 +55,7 @@ export const RETIREMENT_AGE_MAX = 65;
  * @returns {number} an integer in [50, 65]
  */
 export function drawRetirementAge() {
-  return randomInt(RETIREMENT_AGE_MIN, RETIREMENT_AGE_MAX + 1);
+  return randomInt(retirementAgeMin, retirementAgeMax + 1);
 }
 
 /**
@@ -133,8 +133,8 @@ export async function ensureRetirementSchedule(client, groomId) {
 }
 
 export default {
-  RETIREMENT_AGE_MIN,
-  RETIREMENT_AGE_MAX,
+  retirementAgeMin,
+  retirementAgeMax,
   drawRetirementAge,
   readRetirementAge,
   ensureRetirementSchedule,

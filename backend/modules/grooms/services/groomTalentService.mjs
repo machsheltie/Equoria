@@ -23,7 +23,7 @@ import { staffCareerStarLevel, staffLevelAtLeast } from '../../../constants/staf
 /**
  * Talent tree requirements
  */
-export const TALENT_REQUIREMENTS = {
+export const talentRequirements = {
   tier1: { minStarLevel: 'novice' },
   tier2: { minStarLevel: 'intermediate' },
   tier3: { minStarLevel: 'advanced' },
@@ -32,7 +32,7 @@ export const TALENT_REQUIREMENTS = {
 /**
  * Talent tree definitions by personality type
  */
-export const TALENT_TREES = {
+export const talentTrees = {
   calm: {
     tier1: [
       {
@@ -148,7 +148,7 @@ export const TALENT_TREES = {
  * @returns {Object} Complete talent tree structure
  */
 export function getTalentTreeDefinitions() {
-  return TALENT_TREES;
+  return talentTrees;
 }
 
 /**
@@ -187,7 +187,7 @@ export async function validateTalentSelection(groomId, tier, talentId) {
     };
   }
 
-  const requiredStarLevel = TALENT_REQUIREMENTS[tier]?.minStarLevel;
+  const requiredStarLevel = talentRequirements[tier]?.minStarLevel;
   if (!requiredStarLevel) {
     return {
       valid: false,
@@ -196,7 +196,7 @@ export async function validateTalentSelection(groomId, tier, talentId) {
   }
 
   // Check if talent exists for groom's personality
-  const personalityTree = TALENT_TREES[groom.personality];
+  const personalityTree = talentTrees[groom.personality];
   if (!personalityTree || !personalityTree[tier]) {
     return {
       valid: false,
@@ -314,7 +314,7 @@ export async function applyTalentEffects(groomId, baseInteraction) {
     select: { personality: true },
   });
 
-  const personalityTree = TALENT_TREES[groom.personality];
+  const personalityTree = talentTrees[groom.personality];
   const talentBonuses = [];
   const enhancedInteraction = { ...baseInteraction };
 
@@ -358,6 +358,6 @@ export default {
   selectTalent,
   validateTalentSelection,
   applyTalentEffects,
-  TALENT_TREES,
-  TALENT_REQUIREMENTS,
+  talentTrees,
+  talentRequirements,
 };

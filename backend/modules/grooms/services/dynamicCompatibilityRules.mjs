@@ -21,7 +21,7 @@ const deepFreeze = value => {
 
 // Each listed environmental factor multiplies the modifier (in the context's
 // order); unlisted factors are ignored. The product is clamped to the range.
-export const ENVIRONMENT_FACTOR_MULTIPLIERS = deepFreeze({
+export const environmentFactorMultipliers = deepFreeze({
   quiet: 1.1,
   noisy: 0.9,
   familiar: 1.1,
@@ -30,34 +30,34 @@ export const ENVIRONMENT_FACTOR_MULTIPLIERS = deepFreeze({
   chaotic: 0.85,
   stimulating: 1.0,
 });
-export const ENVIRONMENT_MODIFIER_RANGE = deepFreeze([0.7, 1.3]);
+export const environmentModifierRange = deepFreeze([0.7, 1.3]);
 
-export const TIME_OF_DAY_MODIFIERS = deepFreeze({
+export const timeOfDayModifiers = deepFreeze({
   morning: 1.1, // Generally better for interactions
   afternoon: 1.0,
   evening: 0.95,
 });
-export const TIME_OF_DAY_DEFAULT = 1.0;
+export const timeOfDayDefault = 1.0;
 
 // personality -> temperament -> match score (missing: 0.5).
-export const PERSONALITY_MATCH_MATRIX = deepFreeze({
+export const personalityMatchMatrix = deepFreeze({
   calm: { nervous: 0.9, fearful: 0.9, reactive: 0.8, confident: 0.7, developing: 0.7 },
   energetic: { confident: 0.4, outgoing: 0.8, nervous: 0.3, fearful: 0.2, developing: 0.6 },
   methodical: { developing: 0.4, complex: 0.5, confident: 0.4, nervous: 0.5, reactive: 0.4 },
 });
-export const PERSONALITY_MATCH_DEFAULT = 0.5;
+export const personalityMatchDefault = 0.5;
 
 // personality -> temperament (or `all`) -> task effectiveness (missing: 0.6).
-export const TASK_EFFECTIVENESS_MATRIX = deepFreeze({
+export const taskEffectivenessMatrix = deepFreeze({
   calm: { nervous: 0.9, fearful: 0.9, developing: 0.8 },
   energetic: { confident: 0.9, outgoing: 0.8, curious: 0.8 },
   methodical: { developing: 0.9, complex: 0.8, all: 0.7 },
 });
-export const TASK_EFFECTIVENESS_DEFAULT = 0.6;
+export const taskEffectivenessDefault = 0.6;
 
 // Text rules: every condition must hold. Facts: personality, temperament,
 // bondScore, experienceLevel.
-export const RISK_FACTOR_RULES = deepFreeze([
+export const riskFactorRules = deepFreeze([
   {
     when: [
       { field: 'personality', op: 'eq', value: 'energetic' },
@@ -81,7 +81,7 @@ export const RISK_FACTOR_RULES = deepFreeze([
   },
 ]);
 
-export const STRENGTH_FACTOR_RULES = deepFreeze([
+export const strengthFactorRules = deepFreeze([
   {
     when: [
       { field: 'personality', op: 'eq', value: 'calm' },
@@ -110,7 +110,7 @@ export const STRENGTH_FACTOR_RULES = deepFreeze([
 ]);
 
 // Facts: overallScore.
-export const PREDICTION_RECOMMENDATION_RULES = deepFreeze([
+export const predictionRecommendationRules = deepFreeze([
   {
     when: [{ field: 'overallScore', op: 'lt', value: 0.5 }],
     texts: ['Consider using a different groom for this interaction'],

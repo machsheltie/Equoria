@@ -36,8 +36,8 @@ import {
   checkRetirementEligibility,
   processRetirement,
   getRetirementStatistics,
-  RETIREMENT_REASONS,
-  CAREER_CONSTANTS,
+  retirementReasons,
+  careerConstants,
 } from '../../modules/grooms/services/groomRetirementService.mjs';
 // Equoria-m9lz1 fix round 3: the schedule module is imported BY PATH, never via
 // the grooms barrel. `ensureRetirementSchedule` returns the hidden retirement
@@ -203,8 +203,8 @@ describe('Groom Retirement Service', () => {
 
     test('should identify not eligible below the groom own hidden retirement age', async () => {
       const retirementAge = await ensureRetirementSchedule(prisma, testGroom.id);
-      expect(retirementAge).toBeGreaterThanOrEqual(CAREER_CONSTANTS.RETIREMENT_AGE_MIN);
-      expect(retirementAge).toBeLessThanOrEqual(CAREER_CONSTANTS.RETIREMENT_AGE_MAX);
+      expect(retirementAge).toBeGreaterThanOrEqual(careerConstants.retirementAgeMin);
+      expect(retirementAge).toBeLessThanOrEqual(careerConstants.retirementAgeMax);
 
       await prisma.groom.update({
         where: { id: testGroom.id },
@@ -234,7 +234,7 @@ describe('Groom Retirement Service', () => {
       const eligibility = await checkRetirementEligibility(testGroom.id);
 
       expect(eligibility.eligible).toBe(true);
-      expect(eligibility.reason).toBe(RETIREMENT_REASONS.AGE);
+      expect(eligibility.reason).toBe(retirementReasons.AGE);
       expect(eligibility.mandatory).toBe(true);
     });
 
@@ -315,7 +315,7 @@ describe('Groom Retirement Service', () => {
 
       expect(result.groom.retired).toBe(true);
       expect(result.groom.isActive).toBe(false);
-      expect(result.retirementReason).toBe(RETIREMENT_REASONS.AGE);
+      expect(result.retirementReason).toBe(retirementReasons.AGE);
       // Realm-independent: `toBeInstanceOf(Date)` compares CONSTRUCTOR IDENTITY, which
       // fails across the module realms `--experimental-vm-modules` can create — it
       // passes single-file and fails in a shard. See
@@ -339,10 +339,10 @@ describe('Groom Retirement Service', () => {
     });
 
     test('should process voluntary retirement', async () => {
-      const result = await processRetirement(testGroom.id, RETIREMENT_REASONS.VOLUNTARY, true);
+      const result = await processRetirement(testGroom.id, retirementReasons.VOLUNTARY, true);
 
       expect(result.groom.retired).toBe(true);
-      expect(result.retirementReason).toBe(RETIREMENT_REASONS.VOLUNTARY);
+      expect(result.retirementReason).toBe(retirementReasons.VOLUNTARY);
     });
 
     // Equoria-m9lz1 — THIS CASE PREVIOUSLY ASSERTED THE DEFECT.
@@ -375,7 +375,7 @@ describe('Groom Retirement Service', () => {
         },
       });
 
-      await processRetirement(testGroom.id, RETIREMENT_REASONS.VOLUNTARY, true);
+      await processRetirement(testGroom.id, retirementReasons.VOLUNTARY, true);
 
       const assignments = await prisma.groomAssignment.findMany({
         where: { groomId: testGroom.id },
@@ -547,7 +547,7 @@ describe('Groom Retirement Service', () => {
       // Equoria-m9lz1: every game-driven retirement now carries reason AGE, and
       // it fires exactly when the groom's careerWeeks reach the age drawn for it.
       for (const retired of retiredGrooms) {
-        expect(retired.retirementReason).toBe(RETIREMENT_REASONS.AGE);
+        expect(retired.retirementReason).toBe(retirementReasons.AGE);
         // `>=`, not `===`: the pass increments careerWeeks and THEN tests
         // `age >= retirementAge`, so a groom already at or past its age when the
         // pass starts retires one tick above it. The two grooms parked one short

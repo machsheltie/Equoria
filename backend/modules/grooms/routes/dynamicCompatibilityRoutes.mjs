@@ -26,7 +26,7 @@ import {
   getCompatibilityTrends,
   getCompatibilityConfig,
 } from '../controllers/dynamicCompatibilityController.mjs';
-import { GROOM_HORSE_COMPATIBILITY_TASK_TYPES } from '../services/groomHorseCompatibilityTaskPolicy.mjs';
+import { groomHorseCompatibilityTaskTypes } from '../services/groomHorseCompatibilityTaskPolicy.mjs';
 
 const router = express.Router();
 
@@ -45,7 +45,7 @@ router.post(
     body('context').isObject().withMessage('Context must be an object'),
     body('context.taskType')
       .isString()
-      .isIn(GROOM_HORSE_COMPATIBILITY_TASK_TYPES)
+      .isIn(groomHorseCompatibilityTaskTypes)
       .withMessage('Task type must be a valid task type'),
     body('context.timeOfDay')
       .optional()

@@ -21,7 +21,7 @@ import { ValidationError } from '../../../errors/index.mjs';
 
 const NEUTRAL = Object.freeze({ calm: 1, energetic: 1, methodical: 1, balanced: 1 });
 
-export const GROOM_HORSE_COMPATIBILITY_TASK_POLICY = Object.freeze({
+export const groomHorseCompatibilityTaskPolicy = Object.freeze({
   trustBuilding: Object.freeze({ calm: 1.3, methodical: 1.1, energetic: 0.8, balanced: 1 }),
   desensitization: Object.freeze({ energetic: 1.1, calm: 1.2, methodical: 0.9, balanced: 1 }),
   hoofHandling: Object.freeze({ methodical: 1.2, calm: 1.1, energetic: 0.8, balanced: 1 }),
@@ -32,15 +32,15 @@ export const GROOM_HORSE_COMPATIBILITY_TASK_POLICY = Object.freeze({
   earlyTouch: NEUTRAL,
 });
 
-export const GROOM_HORSE_COMPATIBILITY_TASK_TYPES = Object.freeze(
-  Object.keys(GROOM_HORSE_COMPATIBILITY_TASK_POLICY),
+export const groomHorseCompatibilityTaskTypes = Object.freeze(
+  Object.keys(groomHorseCompatibilityTaskPolicy),
 );
 
-export const GROOM_HORSE_COMPATIBILITY_PERSONALITIES = Object.freeze(Object.keys(NEUTRAL));
+export const groomHorseCompatibilityPersonalities = Object.freeze(Object.keys(NEUTRAL));
 
-/** Throws a ValidationError (400) unless `taskType` is one of GROOM_HORSE_COMPATIBILITY_TASK_TYPES. */
+/** Throws a ValidationError (400) unless `taskType` is one of groomHorseCompatibilityTaskTypes. */
 export function assertCompatibilityTaskType(taskType) {
-  if (!Object.hasOwn(GROOM_HORSE_COMPATIBILITY_TASK_POLICY, taskType)) {
+  if (!Object.hasOwn(groomHorseCompatibilityTaskPolicy, taskType)) {
     throw new ValidationError(
       `Unsupported compatibility task type: ${taskType}`,
       'taskType',
@@ -52,7 +52,7 @@ export function assertCompatibilityTaskType(taskType) {
 /** The task modifier for a groom personality; throws a ValidationError (400) for an unsupported task or personality. */
 export function getTaskCompatibilityModifier(taskType, personality) {
   assertCompatibilityTaskType(taskType);
-  const byPersonality = GROOM_HORSE_COMPATIBILITY_TASK_POLICY[taskType];
+  const byPersonality = groomHorseCompatibilityTaskPolicy[taskType];
   if (!Object.hasOwn(byPersonality, personality)) {
     throw new ValidationError(
       `Unsupported groom personality: ${personality}`,

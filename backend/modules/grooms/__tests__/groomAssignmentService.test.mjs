@@ -1,7 +1,7 @@
 /**
  * groomAssignmentService branch-coverage tests (Equoria-jkht coverage sprint).
  *
- * Pure-path tests (no DB fixture needed): getUserAssignments, ASSIGNMENT_CONFIG.
+ * Pure-path tests (no DB fixture needed): getUserAssignments, assignmentConfig.
  *
  * DB-fixture branch coverage:
  *   getGroomAssignmentLimits — skillLevel fallback to 2 (pure), real groom path
@@ -15,7 +15,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
-  ASSIGNMENT_CONFIG,
+  assignmentConfig,
   getGroomAssignmentLimits,
   validateAssignmentEligibility,
   createAssignment,
@@ -48,16 +48,16 @@ describe('getUserAssignments — non-existent user', () => {
 // Equoria-95yrv (owner, 2026-09-14): one cap and one rate for every groom. The
 // per-skill caps (2/3/4/5) contradicted the ten-horse ruling outright, and the
 // per-skill pay table they sat beside was never charged by anything.
-describe('ASSIGNMENT_CONFIG export is correctly shaped', () => {
+describe('assignmentConfig export is correctly shaped', () => {
   // The owner ruling 2026-10-26 (q68) raised the cap from ten to twenty.
   // Owner ruling 2026-10-28 (q228) removed the per-horse rate: a groom costs their
   // star level's price, shown on the groom.
   it('publishes the twenty-horse cap, no per-horse rate, and nothing per-skill', () => {
-    expect(ASSIGNMENT_CONFIG.MAX_HORSES_PER_GROOM).toBe(20);
-    expect(ASSIGNMENT_CONFIG).not.toHaveProperty('FEE_PER_HORSE_PER_WEEK');
-    expect(ASSIGNMENT_CONFIG).not.toHaveProperty('MAX_ASSIGNMENTS_BY_SKILL');
-    expect(ASSIGNMENT_CONFIG).not.toHaveProperty('WEEKLY_SALARY_BY_SKILL');
-    expect(ASSIGNMENT_CONFIG).not.toHaveProperty('SALARY_MULTIPLIERS');
+    expect(assignmentConfig.maxHorsesPerGroom).toBe(20);
+    expect(assignmentConfig).not.toHaveProperty('feePerHorsePerWeek');
+    expect(assignmentConfig).not.toHaveProperty('maxAssignmentsBySkill');
+    expect(assignmentConfig).not.toHaveProperty('weeklySalaryBySkill');
+    expect(assignmentConfig).not.toHaveProperty('salaryMultipliers');
   });
 });
 

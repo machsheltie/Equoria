@@ -31,7 +31,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-kccmt-groom';
+const fixturePrefix = 'TestFixture-kccmt-groom';
 
 function tag() {
   return randomBytes(6).toString('hex');
@@ -53,8 +53,8 @@ describe('groom assignment active-only unique index (Equoria-kccmt)', () => {
     owner = await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${FIXTURE_PREFIX}-owner-${suffix}`,
-        email: `${FIXTURE_PREFIX}-owner-${suffix}@example.com`,
+        username: `${fixturePrefix}-owner-${suffix}`,
+        email: `${fixturePrefix}-owner-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',
         firstName: 'Kccmt',
         lastName: 'GroomOwner',
@@ -64,7 +64,7 @@ describe('groom assignment active-only unique index (Equoria-kccmt)', () => {
     horse = await prisma.horse.create({
       data: await testHorseData(prisma, {
         ...fixtureColor(),
-        name: `${FIXTURE_PREFIX}-horse-${tag()}`,
+        name: `${fixturePrefix}-horse-${tag()}`,
         sex: 'Mare',
         dateOfBirth: new Date('2019-06-15'),
         age: 6,
@@ -74,7 +74,7 @@ describe('groom assignment active-only unique index (Equoria-kccmt)', () => {
     });
     groom = await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-groom-${tag()}`,
+        name: `${fixturePrefix}-groom-${tag()}`,
         speciality: 'foalCare',
         skillLevel: 'intermediate',
         personality: 'gentle',

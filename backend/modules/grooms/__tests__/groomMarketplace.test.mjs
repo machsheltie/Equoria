@@ -16,7 +16,7 @@ import {
   generateMarketplace,
   needsRefresh,
   getRefreshCost,
-  MARKETPLACE_CONFIG,
+  marketplaceConfig,
 } from '../services/groomMarketplace.mjs';
 
 describe('🏪 Groom Marketplace System', () => {
@@ -63,7 +63,7 @@ describe('🏪 Groom Marketplace System', () => {
       // Generate multiple grooms to test ranges
       for (let i = 0; i < 50; i++) {
         const groom = generateRandomGroom();
-        const expectedRange = MARKETPLACE_CONFIG.EXPERIENCE_RANGES[groom.skillLevel];
+        const expectedRange = marketplaceConfig.experienceRanges[groom.skillLevel];
 
         expect(groom.experience).toBeGreaterThanOrEqual(expectedRange.min);
         expect(groom.experience).toBeLessThanOrEqual(expectedRange.max);
@@ -74,8 +74,8 @@ describe('🏪 Groom Marketplace System', () => {
       // Test multiple grooms to verify pricing logic
       for (let i = 0; i < 20; i++) {
         const groom = generateRandomGroom();
-        const baseRate = MARKETPLACE_CONFIG.BASE_SESSION_RATES[groom.skillLevel];
-        const experienceRange = MARKETPLACE_CONFIG.EXPERIENCE_RANGES[groom.skillLevel];
+        const baseRate = marketplaceConfig.baseSessionRates[groom.skillLevel];
+        const experienceRange = marketplaceConfig.experienceRanges[groom.skillLevel];
 
         // Session rate should be at least the base rate
         expect(groom.sessionRate).toBeGreaterThanOrEqual(baseRate);
@@ -123,7 +123,7 @@ describe('🏪 Groom Marketplace System', () => {
       const marketplace = generateMarketplace();
 
       expect(Array.isArray(marketplace)).toBe(true);
-      expect(marketplace.length).toBe(MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE);
+      expect(marketplace.length).toBe(marketplaceConfig.defaultMarketplaceSize);
 
       // All grooms should be valid
       marketplace.forEach(groom => {
@@ -156,7 +156,7 @@ describe('🏪 Groom Marketplace System', () => {
       });
 
       // Check distributions are roughly correct (within 10% tolerance)
-      const expectedDistribution = MARKETPLACE_CONFIG.QUALITY_DISTRIBUTION;
+      const expectedDistribution = marketplaceConfig.qualityDistribution;
 
       Object.keys(skillCounts).forEach(skill => {
         const actualPercentage = (skillCounts[skill] / 1000) * 100;
@@ -177,7 +177,7 @@ describe('🏪 Groom Marketplace System', () => {
 
     it('should need refresh when enough time has passed', () => {
       const oldDate = new Date();
-      oldDate.setHours(oldDate.getHours() - (MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS + 1));
+      oldDate.setHours(oldDate.getHours() - (marketplaceConfig.refreshIntervalHours + 1));
 
       expect(needsRefresh(oldDate)).toBe(true);
     });
@@ -193,14 +193,14 @@ describe('🏪 Groom Marketplace System', () => {
     it('should calculate correct refresh cost', () => {
       // Free refresh when needed
       const oldDate = new Date();
-      oldDate.setHours(oldDate.getHours() - (MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS + 1));
+      oldDate.setHours(oldDate.getHours() - (marketplaceConfig.refreshIntervalHours + 1));
       expect(getRefreshCost(oldDate)).toBe(0);
 
       // Paid refresh when not needed
       const recentDate = new Date();
       // In test environment, use a very recent time that doesn't need refresh
       recentDate.setMilliseconds(recentDate.getMilliseconds() - 1);
-      expect(getRefreshCost(recentDate)).toBe(MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST);
+      expect(getRefreshCost(recentDate)).toBe(marketplaceConfig.premiumRefreshCost);
 
       // Free refresh when no last refresh
       expect(getRefreshCost(null)).toBe(0);
@@ -210,30 +210,30 @@ describe('🏪 Groom Marketplace System', () => {
   describe('Configuration Validation', () => {
     it('should have valid marketplace configuration', () => {
       // Check required config properties
-      expect(MARKETPLACE_CONFIG).toHaveProperty('DEFAULT_MARKETPLACE_SIZE');
-      expect(MARKETPLACE_CONFIG).toHaveProperty('REFRESH_INTERVAL_HOURS');
-      expect(MARKETPLACE_CONFIG).toHaveProperty('PREMIUM_REFRESH_COST');
-      expect(MARKETPLACE_CONFIG).toHaveProperty('QUALITY_DISTRIBUTION');
-      expect(MARKETPLACE_CONFIG).toHaveProperty('SPECIALTY_DISTRIBUTION');
-      expect(MARKETPLACE_CONFIG).toHaveProperty('EXPERIENCE_RANGES');
-      expect(MARKETPLACE_CONFIG).toHaveProperty('BASE_SESSION_RATES');
+      expect(marketplaceConfig).toHaveProperty('defaultMarketplaceSize');
+      expect(marketplaceConfig).toHaveProperty('refreshIntervalHours');
+      expect(marketplaceConfig).toHaveProperty('premiumRefreshCost');
+      expect(marketplaceConfig).toHaveProperty('qualityDistribution');
+      expect(marketplaceConfig).toHaveProperty('specialtyDistribution');
+      expect(marketplaceConfig).toHaveProperty('experienceRanges');
+      expect(marketplaceConfig).toHaveProperty('baseSessionRates');
 
       // Check distribution percentages add up to 100
-      const qualityTotal = Object.values(MARKETPLACE_CONFIG.QUALITY_DISTRIBUTION).reduce((a, b) => a + b, 0);
-      const specialtyTotal = Object.values(MARKETPLACE_CONFIG.SPECIALTY_DISTRIBUTION).reduce((a, b) => a + b, 0);
+      const qualityTotal = Object.values(marketplaceConfig.qualityDistribution).reduce((a, b) => a + b, 0);
+      const specialtyTotal = Object.values(marketplaceConfig.specialtyDistribution).reduce((a, b) => a + b, 0);
 
       expect(qualityTotal).toBe(100);
       expect(specialtyTotal).toBe(100);
 
       // Check experience ranges are logical
-      Object.values(MARKETPLACE_CONFIG.EXPERIENCE_RANGES).forEach(range => {
+      Object.values(marketplaceConfig.experienceRanges).forEach(range => {
         expect(range.min).toBeLessThanOrEqual(range.max);
         expect(range.min).toBeGreaterThanOrEqual(1);
         expect(range.max).toBeLessThanOrEqual(20);
       });
 
       // Check base session rates are positive
-      Object.values(MARKETPLACE_CONFIG.BASE_SESSION_RATES).forEach(rate => {
+      Object.values(marketplaceConfig.baseSessionRates).forEach(rate => {
         expect(rate).toBeGreaterThan(0);
       });
     });

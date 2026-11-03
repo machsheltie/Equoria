@@ -89,8 +89,8 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 // load-order dependent (green alone, red in a shard).
 import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
 import {
-  CAREER_CONSTANTS,
-  GROOM_RETIRED_NOTIFICATION_TYPE,
+  careerConstants,
+  groomRetiredNotificationType,
   checkRetirementEligibility,
   processRetirement,
 } from '../services/groomRetirementService.mjs';
@@ -104,7 +104,7 @@ import {
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-m9lz1-game';
+const fixturePrefix = 'TestFixture-m9lz1-game';
 
 const tag = () => randomBytes(6).toString('hex');
 
@@ -113,8 +113,8 @@ async function makeUser(label) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${label}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${label}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${label}-${suffix}`,
+      email: `${fixturePrefix}-${label}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Task19',
       lastName: label,
@@ -132,7 +132,7 @@ async function makeHorse(ownerId, label) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       sex: 'Filly',
       dateOfBirth: new Date('2024-06-15'),
       age: 1,
@@ -144,17 +144,17 @@ async function makeHorse(ownerId, label) {
 
 // ypb7d.1: age is `startAge + careerWeeks`; fixtures fix the start age (20, inside
 // the 18..24 band the `grooms_start_age_range` CHECK enforces) rather than draw it.
-const FIXTURE_START_AGE = 20;
+const fixtureStartAge = 20;
 
 async function makeGroom(ownerId, label, extra = {}) {
   return prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       speciality: 'foalCare',
       personality: 'gentle',
       skillLevel: 'intermediate',
       careerWeeks: 5,
-      startAge: FIXTURE_START_AGE,
+      startAge: fixtureStartAge,
       userId: ownerId,
       ...extra,
     },
@@ -284,8 +284,8 @@ describe('Equoria-m9lz1 — the hidden retirement age', () => {
     for (let i = 0; i < 400; i++) {
       const age = drawRetirementAge();
       expect(Number.isInteger(age)).toBe(true);
-      expect(age).toBeGreaterThanOrEqual(CAREER_CONSTANTS.RETIREMENT_AGE_MIN);
-      expect(age).toBeLessThanOrEqual(CAREER_CONSTANTS.RETIREMENT_AGE_MAX);
+      expect(age).toBeGreaterThanOrEqual(careerConstants.retirementAgeMin);
+      expect(age).toBeLessThanOrEqual(careerConstants.retirementAgeMax);
       seen.add(age);
     }
     // Not a single constant, and not a band narrower than the ruling allows.
@@ -502,7 +502,7 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
     await prisma.groom.update({
       where: { id: groom.id },
       // ypb7d.1: one tick short in AGE (`startAge + careerWeeks`).
-      data: { careerWeeks: retirementAge - FIXTURE_START_AGE - 1 },
+      data: { careerWeeks: retirementAge - fixtureStartAge - 1 },
     });
 
     const historical = await prisma.groomAssignment.create({
@@ -572,7 +572,7 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
       retired: true,
       isActive: false,
       retirementReason: 'age',
-      careerWeeks: retirementAge - FIXTURE_START_AGE,
+      careerWeeks: retirementAge - fixtureStartAge,
     });
 
     // The young groom simply aged a year and kept working.
@@ -621,7 +621,7 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
 
     // Exactly one notification, to the groom's own user and nobody else.
     const notifications = await prisma.notification.findMany({
-      where: { userId: owner.id, type: GROOM_RETIRED_NOTIFICATION_TYPE },
+      where: { userId: owner.id, type: groomRetiredNotificationType },
     });
     expect(notifications).toHaveLength(1);
     expect(notifications[0].isRead).toBe(false);
@@ -709,7 +709,7 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
       '    await tx.groomAssignmentLog.updateMany({ where: { groomId }, data: {} });',
       '    return {};',
       '  });',
-      '  await createNotification(userId, GROOM_RETIRED_NOTIFICATION_TYPE, {});',
+      '  await createNotification(userId, groomRetiredNotificationType, {});',
       '  return committed;',
       '}',
     ].join('\n');
@@ -741,13 +741,13 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
     // ypb7d.1: exactly ON its hidden age (`startAge + careerWeeks`).
     await prisma.groom.update({
       where: { id: groom.id },
-      data: { careerWeeks: retirementAge - FIXTURE_START_AGE },
+      data: { careerWeeks: retirementAge - fixtureStartAge },
     });
 
     const first = await processRetirement(groom.id);
     expect(first.groom.retired).toBe(true);
     const notificationsAfterFirst = await prisma.notification.count({
-      where: { userId: owner.id, type: GROOM_RETIRED_NOTIFICATION_TYPE },
+      where: { userId: owner.id, type: groomRetiredNotificationType },
     });
     expect(notificationsAfterFirst).toBe(1);
 
@@ -765,7 +765,7 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
     // No second notification, and no re-stamped endDate.
     expect(
       await prisma.notification.count({
-        where: { userId: owner.id, type: GROOM_RETIRED_NOTIFICATION_TYPE },
+        where: { userId: owner.id, type: groomRetiredNotificationType },
       }),
     ).toBe(1);
     expect(

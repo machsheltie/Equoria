@@ -3,10 +3,10 @@
  *
  * The defect class: hireFromMarketplace creates a user-owned groom
  * (groomMarketplaceController.mjs, `tx.groom.create`) with NO
- * MAX_GROOMS_PER_USER enforcement — neither a pre-tx fast-path count nor an
+ * maxGroomsPerUser enforcement — neither a pre-tx fast-path count nor an
  * in-tx re-count. So the marketplace hire path is a TOTAL bypass of the roster
  * cap that the direct-hire path (hireGroom) advertises: a user can exceed
- * MAX_GROOMS_PER_USER even under fully sequential hiring, and unboundedly under
+ * maxGroomsPerUser even under fully sequential hiring, and unboundedly under
  * concurrency. This is the marketplace sibling of Equoria-n4m5j (which fixed the
  * direct-hire cap TOCTOU); found during n4m5j's OPTIMAL_FIX_DISCIPLINE §3
  * adjacent-locations check and filed separately per no-bundling (§7).
@@ -14,8 +14,8 @@
  * The fix mirrors n4m5j: after debitMoneyOrThrow row-locks the User row inside
  * the hire tx (serializing concurrent same-user hires), re-count the user's
  * grooms and throw CapExceededError (-> 400) if the post-create count exceeds
- * MAX_GROOMS_PER_USER, rolling back the create + debit together. A pre-tx count
- * is kept as the cheap fast-path. MAX_GROOMS_PER_USER + CapExceededError are
+ * maxGroomsPerUser, rolling back the create + debit together. A pre-tx count
+ * is kept as the cheap fast-path. maxGroomsPerUser + CapExceededError are
  * lifted to shared module locations so both hire paths use one source of truth.
  *
  * THIS SENTINEL asserts (fails-first against the no-cap code):
@@ -37,15 +37,15 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { staffLevelFee } from '../../../constants/staffLevels.mjs';
 import { hireFromMarketplace } from '../controllers/groomMarketplaceController.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-hduc5-groom';
+const fixturePrefix = 'TestFixture-hduc5-groom';
 
 // Mirrors the shared roster-cap constant (backend/utils/groomSystem.mjs).
-const MAX_GROOMS_PER_USER = 10;
+const maxGroomsPerUser = 10;
 // hireFromMarketplace charges one week at the offer's star-level price (owner
 // rulings q226/q228, Equoria-7hu4d). Old contract: sessionRate x 7.
-const SESSION_RATE = 100;
+const sessionRate = 100;
 const offerStarLevel = 'novice';
-const HIRING_COST = staffLevelFee(offerStarLevel);
+const hiringCost = staffLevelFee(offerStarLevel);
 
 const createdUserIds = [];
 const createdMarketplaceStateIds = [];
@@ -71,8 +71,8 @@ async function makeUser(money) {
   const u = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: 'irrelevant-hash',
       firstName: 'Hduc5',
       lastName: 'Groom',
@@ -89,7 +89,7 @@ async function seedGrooms(userId, count) {
   for (let i = 0; i < count; i++) {
     await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-seed-${i}-${randomBytes(3).toString('hex')}`,
+        name: `${fixturePrefix}-seed-${i}-${randomBytes(3).toString('hex')}`,
         speciality: 'foalCare',
         personality: 'gentle',
         userId,
@@ -110,7 +110,7 @@ async function makeMarketplace(userId, count) {
     skillLevel: 'experienced',
     personality: 'gentle',
     experience: 5,
-    sessionRate: SESSION_RATE,
+    sessionRate,
     starLevel: offerStarLevel,
     bio: 'hduc5 cap fixture',
   }));
@@ -156,8 +156,8 @@ afterAll(async () => {
 describe('groomMarketplaceController.hireFromMarketplace roster-cap (Equoria-hduc5)', () => {
   it('SENTINEL: concurrent marketplace hires racing for ONE open slot — exactly one 201, count never exceeds MAX, charged once', async () => {
     const CONCURRENCY = 8;
-    const buyer = await makeUser(HIRING_COST * (CONCURRENCY + 2)); // money is not the limiter
-    await seedGrooms(buyer.id, MAX_GROOMS_PER_USER - 1); // 9 grooms -> one slot left
+    const buyer = await makeUser(hiringCost * (CONCURRENCY + 2)); // money is not the limiter
+    await seedGrooms(buyer.id, maxGroomsPerUser - 1); // 9 grooms -> one slot left
     const marketplaceIds = await makeMarketplace(buyer.id, CONCURRENCY);
 
     const moneyBefore = await userMoney(buyer.id);
@@ -186,19 +186,19 @@ describe('groomMarketplaceController.hireFromMarketplace roster-cap (Equoria-hdu
 
     // The roster invariant under concurrency: COUNT(groom) <= MAX.
     const groomCount = await prisma.groom.count({ where: { userId: buyer.id } });
-    expect(groomCount).toBe(MAX_GROOMS_PER_USER);
+    expect(groomCount).toBe(maxGroomsPerUser);
 
     // Charged exactly once — every loser's debit rolled back with its create.
     const debitRows = await prisma.userTransaction.findMany({
       where: { userId: buyer.id, category: 'groomHire' },
     });
     expect(debitRows).toHaveLength(1);
-    expect(await userMoney(buyer.id)).toBe(moneyBefore - HIRING_COST);
+    expect(await userMoney(buyer.id)).toBe(moneyBefore - hiringCost);
   });
 
   it('FAST-PATH: hiring from marketplace while already AT MAX -> 400 maximum-limit, no groom, no charge', async () => {
-    const buyer = await makeUser(HIRING_COST * 2);
-    await seedGrooms(buyer.id, MAX_GROOMS_PER_USER); // already full
+    const buyer = await makeUser(hiringCost * 2);
+    await seedGrooms(buyer.id, maxGroomsPerUser); // already full
     const [mid] = await makeMarketplace(buyer.id, 1);
 
     const moneyBefore = await userMoney(buyer.id);
@@ -210,7 +210,7 @@ describe('groomMarketplaceController.hireFromMarketplace roster-cap (Equoria-hdu
     expect(res.body?.message).toMatch(/maximum limit/i);
 
     // No new groom, no ledger row, wallet untouched.
-    expect(await prisma.groom.count({ where: { userId: buyer.id } })).toBe(MAX_GROOMS_PER_USER);
+    expect(await prisma.groom.count({ where: { userId: buyer.id } })).toBe(maxGroomsPerUser);
     const ledgerRows = await prisma.userTransaction.findMany({ where: { userId: buyer.id } });
     expect(ledgerRows).toHaveLength(0);
     expect(await userMoney(buyer.id)).toBe(moneyBefore);

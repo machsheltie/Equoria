@@ -41,7 +41,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { ENGAGEMENT_END_REASONS } from '../services/groomEngagementService.mjs';
+import { engagementEndReasons } from '../services/groomEngagementService.mjs';
 import { __TESTING_ONLY_setGroomHireRaceBarrier } from '../services/groomHireRaceBarrier.mjs';
 
 const ORIGIN = 'http://localhost:3000';
@@ -93,7 +93,7 @@ async function makeFreeGroom(label, { withClosedEngagement, formerEmployerId }) 
         groomId: groom.id,
         userId: formerEmployerId,
         endedAt: new Date('2026-03-09T09:00:00.000Z'),
-        endReason: ENGAGEMENT_END_REASONS.FEE_UNPAID,
+        endReason: engagementEndReasons.feeUnpaid,
       },
     });
   }

@@ -1,5 +1,5 @@
 /**
- * Equoria-bvddn.12 — retired grooms must not count toward MAX_GROOMS_PER_USER.
+ * Equoria-bvddn.12 — retired grooms must not count toward maxGroomsPerUser.
  *
  * THE DEFECT: all six roster-cap counts (groomMarketplaceController.mjs:297,
  * :365; groomFreeAgentController.mjs:178, :237; groomRosterController.mjs:246,
@@ -9,7 +9,7 @@
  * employer (schema.prisma: "Retirement deliberately does NOT clear it ... what
  * lets a player still read their retired grooms"). So a retired groom still
  * satisfies `{ userId }` and still counts against the cap forever. Once a
- * player has accumulated MAX_GROOMS_PER_USER (10) grooms total, retired or
+ * player has accumulated maxGroomsPerUser (10) grooms total, retired or
  * not, every hire path refuses them even if every retired groom is doing
  * nothing and most of the roster is empty. Riders and trainers already guard
  * against this (riderMarketplaceController.mjs:255,
@@ -41,10 +41,10 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-bvddn12-groom';
-const MAX_GROOMS_PER_USER = 10;
-const RETIRED_COUNT = 6;
-const ACTIVE_COUNT = MAX_GROOMS_PER_USER - RETIRED_COUNT; // 4 — well under the cap
+const fixturePrefix = 'TestFixture-bvddn12-groom';
+const maxGroomsPerUser = 10;
+const retiredCount = 6;
+const activeCount = maxGroomsPerUser - retiredCount; // 4 — well under the cap
 // The marketplace offer's sessionRate is procedurally generated per-offer
 // (groomMarketplace.mjs: base rate 15-60 by skill tier, up to +50% by
 // experience within the tier -> worst case master/max-experience is 90,
@@ -54,7 +54,7 @@ const ACTIVE_COUNT = MAX_GROOMS_PER_USER - RETIRED_COUNT; // 4 — well under th
 // under-funded the buyer whenever the RNG rolled a pricier offer, producing
 // an intermittent false-negative 400 (insufficient funds) unrelated to the
 // cap fix under test.
-const MARKETPLACE_BUYER_MONEY = 10000;
+const marketplaceBuyerMoney = 10000;
 
 const tag = () => randomBytes(6).toString('hex');
 
@@ -63,8 +63,8 @@ async function makeUser(label, money) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${label}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${label}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${label}-${suffix}`,
+      email: `${fixturePrefix}-${label}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Bvddn12',
       lastName: label,
@@ -78,16 +78,16 @@ async function makeUser(label, money) {
   };
 }
 
-// Seeds a roster of MAX_GROOMS_PER_USER grooms for `userId`: RETIRED_COUNT
+// Seeds a roster of maxGroomsPerUser grooms for `userId`: retiredCount
 // retired (userId still set, per the schema's documented "does not clear it"
-// behavior) and ACTIVE_COUNT active. Bypasses the hire path entirely — this
+// behavior) and activeCount active. Bypasses the hire path entirely — this
 // suite exercises the CAP COUNT, not a hire race.
 async function seedFullRetiredHeavyRoster(userId) {
   const ids = [];
-  for (let i = 0; i < RETIRED_COUNT; i++) {
+  for (let i = 0; i < retiredCount; i++) {
     const g = await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-retired-${i}-${tag()}`,
+        name: `${fixturePrefix}-retired-${i}-${tag()}`,
         speciality: 'foalCare',
         personality: 'gentle',
         userId,
@@ -99,10 +99,10 @@ async function seedFullRetiredHeavyRoster(userId) {
     });
     ids.push(g.id);
   }
-  for (let i = 0; i < ACTIVE_COUNT; i++) {
+  for (let i = 0; i < activeCount; i++) {
     const g = await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-active-${i}-${tag()}`,
+        name: `${fixturePrefix}-active-${i}-${tag()}`,
         speciality: 'foalCare',
         personality: 'gentle',
         userId,
@@ -131,15 +131,15 @@ describe('Equoria-bvddn.12 — retired grooms excluded from the roster cap', () 
   afterEach(() => cleanup.run(), 60000);
 
   it('marketplace hire path: 10 total grooms (6 retired, 4 active) still allows a hire', async () => {
-    const buyer = await makeUser('mkt', MARKETPLACE_BUYER_MONEY);
+    const buyer = await makeUser('mkt', marketplaceBuyerMoney);
     cleanup.add(() => prisma.groom.deleteMany({ where: { userId: buyer.id } }), 'grooms');
     cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: buyer.id } }), 'ledger rows');
     cleanup.add(() => prisma.staffMarketplaceState.deleteMany({ where: { userId: buyer.id } }), 'marketplace state');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: buyer.id } }), 'user');
 
     await seedFullRetiredHeavyRoster(buyer.id);
-    expect(await prisma.groom.count({ where: { userId: buyer.id } })).toBe(MAX_GROOMS_PER_USER);
-    expect(await prisma.groom.count({ where: { userId: buyer.id, retired: false } })).toBe(ACTIVE_COUNT);
+    expect(await prisma.groom.count({ where: { userId: buyer.id } })).toBe(maxGroomsPerUser);
+    expect(await prisma.groom.count({ where: { userId: buyer.id, retired: false } })).toBe(activeCount);
 
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${buyer.token}`] });
 
@@ -158,6 +158,6 @@ describe('Equoria-bvddn.12 — retired grooms excluded from the roster cap', () 
     expect(hireRes.status).toBe(201);
     expect(hireRes.body.success).toBe(true);
 
-    expect(await prisma.groom.count({ where: { userId: buyer.id } })).toBe(MAX_GROOMS_PER_USER + 1);
+    expect(await prisma.groom.count({ where: { userId: buyer.id } })).toBe(maxGroomsPerUser + 1);
   }, 30000);
 });

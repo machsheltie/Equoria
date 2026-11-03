@@ -12,7 +12,7 @@
  *
  * Owner rulings 2026-10-28 (q229, q244; Equoria-2xxvd): the old 1-10 level is gone and
  * the mentoring level is the old level 1 (staffCareerStarLevel) for every groom, below
- * MINIMUM_MENTOR_STAR_LEVEL (Advanced, the old 7), so no groom mentors for now. Old
+ * minimumMentorStarLevel (Advanced, the old 7), so no groom mentors for now. Old
  * contract: a retired level-8 groom was eligible and generated a protégé.
  *
  * generateLegacyProtege / buildProtegeGroomData are gone (Equoria-bhoka). Owner ruling
@@ -31,8 +31,8 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
-  LEGACY_CONSTANTS,
-  LEGACY_PERKS,
+  legacyConstants,
+  legacyPerks,
   getLegacyPerks,
   checkLegacyEligibility,
   getUserLegacyHistory,
@@ -68,17 +68,17 @@ describe('getLegacyPerks — pure function', () => {
     expect(perks).toEqual([]);
   });
 
-  it('LEGACY_CONSTANTS and LEGACY_PERKS exports are correctly shaped', () => {
-    expect(LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL).toBe('advanced');
+  it('legacyConstants and legacyPerks exports are correctly shaped', () => {
+    expect(legacyConstants.minimumMentorStarLevel).toBe('advanced');
     // Equoria-ixya8 (owner-changed behaviour, see header): no protégé experience bonus.
-    expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_EXPERIENCE_BONUS');
-    expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_LEVEL_BONUS');
+    expect(legacyConstants).not.toHaveProperty('protegeExperienceBonus');
+    expect(legacyConstants).not.toHaveProperty('protegeLevelBonus');
     // Equoria-h82zc: old contract said a numeric protégé skill bonus existed; it was
     // never applied, and the orchestrator ruled (rulings 10-21, q244) to drop it.
-    expect(LEGACY_CONSTANTS).not.toHaveProperty('PROTEGE_SKILL_BONUS');
-    expect(LEGACY_PERKS.calm).toHaveLength(3);
-    expect(LEGACY_PERKS.energetic).toHaveLength(3);
-    expect(LEGACY_PERKS.methodical).toHaveLength(3);
+    expect(legacyConstants).not.toHaveProperty('protegeSkillBonus');
+    expect(legacyPerks.calm).toHaveLength(3);
+    expect(legacyPerks.energetic).toHaveLength(3);
+    expect(legacyPerks.methodical).toHaveLength(3);
   });
 });
 
@@ -256,7 +256,7 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
     expect(result.eligible).toBe(false);
     expect(result.reason).toBe('insufficientLevel');
     expect(result.starLevel).toBe('rookie');
-    expect(result.requiredStarLevel).toBe(LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL);
+    expect(result.requiredStarLevel).toBe(legacyConstants.minimumMentorStarLevel);
   });
 
   it('checkLegacyEligibility: existing legacy → legacyAlreadyCreated', async () => {

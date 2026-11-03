@@ -37,11 +37,11 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const BARREL_PATH = resolve(__dirname, '..', 'index.mjs');
+const barrelPath = resolve(__dirname, '..', 'index.mjs');
 
 describe('grooms barrel — no conflicting star exports (Equoria-p7z26)', () => {
   it('barrel source has no `export *` in executable code (named re-exports only)', () => {
-    const source = readFileSync(BARREL_PATH, 'utf8');
+    const source = readFileSync(barrelPath, 'utf8');
     // Strip /* … */ and // … comments so the header's own mention of `export *` cannot trip this.
     const stripped = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
     expect(stripped).not.toMatch(/\bexport\s*\*/);

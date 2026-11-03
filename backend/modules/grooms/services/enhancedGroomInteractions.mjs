@@ -15,7 +15,7 @@ import logger from '../../../utils/logger.mjs';
 import { liveHorseAgeYears } from '../../../utils/horseAge.mjs';
 
 // Enhanced interaction types with contextual variations
-export const ENHANCED_INTERACTIONS = {
+export const enhancedInteractions = {
   // Basic care interactions
   DAILY_CARE: {
     id: 'dailyCare',
@@ -83,7 +83,7 @@ export const ENHANCED_INTERACTIONS = {
 };
 
 // Relationship progression levels
-export const RELATIONSHIP_LEVELS = {
+export const relationshipLevels = {
   STRANGER: { level: 0, name: 'Stranger', threshold: 0, multiplier: 0.8 },
   ACQUAINTANCE: { level: 1, name: 'Acquaintance', threshold: 20, multiplier: 1.0 },
   FAMILIAR: { level: 2, name: 'Familiar', threshold: 50, multiplier: 1.1 },
@@ -94,7 +94,7 @@ export const RELATIONSHIP_LEVELS = {
 };
 
 // Special events that can occur during interactions
-export const SPECIAL_EVENTS = {
+export const specialEvents = {
   BREAKTHROUGH: {
     id: 'breakthrough',
     name: 'Breakthrough Moment',
@@ -138,7 +138,7 @@ export const SPECIAL_EVENTS = {
  * are camelCase.
  */
 export function findEnhancedInteraction(interactionType) {
-  return Object.values(ENHANCED_INTERACTIONS).find(
+  return Object.values(enhancedInteractions).find(
     interaction => interaction.id === interactionType,
   );
 }
@@ -157,7 +157,7 @@ export function interactionWithVariationKey(interactionType, variation) {
 }
 
 // Groom preferences based on personality and specialty
-export const GROOM_PREFERENCES = {
+export const groomPreferences = {
   gentle: {
     preferredInteractions: ['bondingTime', 'dailyCare'],
     preferredContexts: ['peaceful', 'trust', 'routine'],
@@ -189,7 +189,7 @@ export const GROOM_PREFERENCES = {
  * @returns {Object} Relationship level information
  */
 export function calculateRelationshipLevel(totalBondingPoints) {
-  const levels = Object.values(RELATIONSHIP_LEVELS).sort((a, b) => b.threshold - a.threshold);
+  const levels = Object.values(relationshipLevels).sort((a, b) => b.threshold - a.threshold);
 
   for (const level of levels) {
     if (totalBondingPoints >= level.threshold) {
@@ -197,7 +197,7 @@ export function calculateRelationshipLevel(totalBondingPoints) {
     }
   }
 
-  return RELATIONSHIP_LEVELS.STRANGER;
+  return relationshipLevels.STRANGER;
 }
 
 /**
@@ -213,7 +213,7 @@ export function checkForSpecialEvent(context) {
     interactionType: _interactionType,
   } = context;
 
-  for (const [eventId, event] of Object.entries(SPECIAL_EVENTS)) {
+  for (const [eventId, event] of Object.entries(specialEvents)) {
     // Check probability
     if (Math.random() > event.probability) {
       continue;
@@ -276,7 +276,7 @@ function evaluateCondition(condition, context) {
 export function getAvailableInteractions(groom, horse) {
   const available = [];
 
-  for (const [_key, interaction] of Object.entries(ENHANCED_INTERACTIONS)) {
+  for (const [_key, interaction] of Object.entries(enhancedInteractions)) {
     // Check if groom can perform this interaction type
     if (canPerformInteraction(groom, horse, interaction)) {
       const interactionData = {

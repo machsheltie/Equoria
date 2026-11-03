@@ -35,10 +35,10 @@ import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { hireFromMarketplace } from '../controllers/groomMarketplaceController.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-26wuo-groom';
-const SESSION_RATE = 100;
+const fixturePrefix = 'TestFixture-26wuo-groom';
+const sessionRate = 100;
 // One week at the offer's star level price (owner ruling 2026-10-28, q226): Advanced.
-const HIRING_COST = 400;
+const hiringCost = 400;
 
 let happyUser;
 let happyMarketplaceId;
@@ -76,7 +76,7 @@ async function seedOfferState(userId) {
       starLevel: 'advanced',
       personality: 'gentle',
       experience: 5,
-      sessionRate: SESSION_RATE,
+      sessionRate,
       bio: 'sentinel fixture',
     },
   ];
@@ -96,12 +96,12 @@ beforeAll(async () => {
   happyUser = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-happy-${happyTag}`,
-      email: `${FIXTURE_PREFIX}-happy-${happyTag}@example.com`,
+      username: `${fixturePrefix}-happy-${happyTag}`,
+      email: `${fixturePrefix}-happy-${happyTag}@example.com`,
       password: pw,
       firstName: 'Sentinel',
       lastName: 'Happy',
-      money: HIRING_COST,
+      money: hiringCost,
     },
   });
   createdUserIds.push(happyUser.id);
@@ -114,8 +114,8 @@ beforeAll(async () => {
   brokeUser = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-broke-${brokeTag}`,
-      email: `${FIXTURE_PREFIX}-broke-${brokeTag}@example.com`,
+      username: `${fixturePrefix}-broke-${brokeTag}`,
+      email: `${fixturePrefix}-broke-${brokeTag}@example.com`,
       password: pw,
       firstName: 'Sentinel',
       lastName: 'Broke',
@@ -179,7 +179,7 @@ describe('hireFromMarketplace — recordTransactionTx migration (Equoria-26wuo)'
     });
     expect(row).not.toBeNull();
     expect(row.type).toBe('debit');
-    expect(Number(row.amount)).toBe(HIRING_COST);
+    expect(Number(row.amount)).toBe(hiringCost);
     expect(row.category).toBe('groomHire');
     expect(row.metadata).toMatchObject({ marketplaceId: happyMarketplaceId });
 
@@ -189,8 +189,8 @@ describe('hireFromMarketplace — recordTransactionTx migration (Equoria-26wuo)'
       where: { id: happyUser.id },
       select: { money: true },
     });
-    expect(Number(userAfter.money)).toBe(HIRING_COST - HIRING_COST); // 0
-    expect(Number(row.balanceAfter)).toBe(HIRING_COST - HIRING_COST); // 0
+    expect(Number(userAfter.money)).toBe(hiringCost - hiringCost); // 0
+    expect(Number(row.balanceAfter)).toBe(hiringCost - hiringCost); // 0
   });
 
   it('rolls back the ledger row when the tx fails on insufficient funds (rollback parity)', async () => {

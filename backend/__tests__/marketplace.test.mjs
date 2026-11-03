@@ -11,7 +11,7 @@ import {
   generateMarketplace,
   needsRefresh,
   getRefreshCost,
-  MARKETPLACE_CONFIG,
+  marketplaceConfig,
 } from '../modules/grooms/services/groomMarketplace.mjs';
 import {
   generateRandomRider,
@@ -29,20 +29,20 @@ import {
 } from '../modules/trainers/services/trainerMarketplace.mjs';
 
 // ---------------------------------------------------------------------------
-// MARKETPLACE_CONFIG shape
+// marketplaceConfig shape
 // ---------------------------------------------------------------------------
-describe('MARKETPLACE_CONFIG', () => {
+describe('marketplaceConfig', () => {
   it('has DEFAULT_MARKETPLACE_SIZE', () => {
-    expect(typeof MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBe('number');
+    expect(typeof marketplaceConfig.defaultMarketplaceSize).toBe('number');
   });
 
-  it('QUALITY_DISTRIBUTION values sum to 100', () => {
-    const total = Object.values(MARKETPLACE_CONFIG.QUALITY_DISTRIBUTION).reduce((s, v) => s + v, 0);
+  it('qualityDistribution values sum to 100', () => {
+    const total = Object.values(marketplaceConfig.qualityDistribution).reduce((s, v) => s + v, 0);
     expect(total).toBe(100);
   });
 
-  it('SPECIALTY_DISTRIBUTION values sum to 100', () => {
-    const total = Object.values(MARKETPLACE_CONFIG.SPECIALTY_DISTRIBUTION).reduce((s, v) => s + v, 0);
+  it('specialtyDistribution values sum to 100', () => {
+    const total = Object.values(marketplaceConfig.specialtyDistribution).reduce((s, v) => s + v, 0);
     expect(total).toBe(100);
   });
 });
@@ -77,7 +77,7 @@ describe('generateRandomGroom', () => {
 
   it('experience is within expected range for skill level', () => {
     const groom = generateRandomGroom();
-    const range = MARKETPLACE_CONFIG.EXPERIENCE_RANGES[groom.skillLevel];
+    const range = marketplaceConfig.experienceRanges[groom.skillLevel];
     expect(groom.experience).toBeGreaterThanOrEqual(range.min);
     expect(groom.experience).toBeLessThanOrEqual(range.max);
   });
@@ -106,7 +106,7 @@ describe('generateMarketplace', () => {
   it('returns array of default size', () => {
     const marketplace = generateMarketplace();
     expect(Array.isArray(marketplace)).toBe(true);
-    expect(marketplace).toHaveLength(MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE);
+    expect(marketplace).toHaveLength(marketplaceConfig.defaultMarketplaceSize);
   });
 
   it('returns array of specified size', () => {
@@ -154,7 +154,7 @@ describe('getRefreshCost — groom marketplace', () => {
 
   it('returns PREMIUM_REFRESH_COST when refresh is not yet due', () => {
     const now = new Date();
-    expect(getRefreshCost(now)).toBe(MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST);
+    expect(getRefreshCost(now)).toBe(marketplaceConfig.premiumRefreshCost);
   });
 
   it('returns 0 for null lastRefresh', () => {

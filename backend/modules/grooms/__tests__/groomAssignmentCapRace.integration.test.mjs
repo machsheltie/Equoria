@@ -45,12 +45,12 @@ import { buildDatabaseUrl } from '../../../../packages/database/dbPoolConfig.mjs
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { jobNameToLockKey } from '../../../utils/cronLock.mjs';
-import { MAX_HORSES_PER_GROOM } from '../services/groomFeeBasisService.mjs';
+import { maxHorsesPerGroom } from '../services/groomFeeBasisService.mjs';
 import { createAssignment } from '../services/groomAssignmentService.mjs';
 import { assignGroomToFoal } from '../services/groomFoalAssignmentService.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-95yrv-race';
+const fixturePrefix = 'TestFixture-95yrv-race';
 const tag = () => randomBytes(6).toString('hex');
 
 // A dedicated client so the barrier never competes with the racers for the app
@@ -139,7 +139,7 @@ async function makeHorse(userId, label) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       sex: 'Filly',
       dateOfBirth: new Date('2023-05-01'),
       age: 3,
@@ -166,8 +166,8 @@ describe('Equoria-95yrv F1 — two assignments racing one short of the cap seat 
     user = await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${FIXTURE_PREFIX}-${suffix}`.slice(0, 30),
-        email: `${FIXTURE_PREFIX}-${suffix}@example.com`,
+        username: `${fixturePrefix}-${suffix}`.slice(0, 30),
+        email: `${fixturePrefix}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',
         firstName: 'Cap',
         lastName: 'Race',
@@ -177,7 +177,7 @@ describe('Equoria-95yrv F1 — two assignments racing one short of the cap seat 
     });
     groom = await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-groom-${suffix}`,
+        name: `${fixturePrefix}-groom-${suffix}`,
         speciality: 'general',
         personality: 'gentle',
         skillLevel: 'novice',
@@ -187,7 +187,7 @@ describe('Equoria-95yrv F1 — two assignments racing one short of the cap seat 
     });
 
     // Nine horses already in this groom's care — one seat left.
-    for (let i = 0; i < MAX_HORSES_PER_GROOM - 1; i++) {
+    for (let i = 0; i < maxHorsesPerGroom - 1; i++) {
       const horse = await makeHorse(user.id, `seated-${i}`);
       await prisma.groomAssignment.create({
         data: { groomId: groom.id, foalId: horse.id, userId: user.id, isActive: true },
@@ -249,7 +249,7 @@ describe('Equoria-95yrv F1 — two assignments racing one short of the cap seat 
     const active = await prisma.groomAssignment.count({
       where: { groomId: groom.id, isActive: true },
     });
-    expect(active).toBe(MAX_HORSES_PER_GROOM);
+    expect(active).toBe(maxHorsesPerGroom);
   }, 120000);
 
   it('assignGroomToFoal: the loser is refused and the roster holds the cap', async () => {
@@ -259,6 +259,6 @@ describe('Equoria-95yrv F1 — two assignments racing one short of the cap seat 
     const active = await prisma.groomAssignment.count({
       where: { groomId: groom.id, isActive: true },
     });
-    expect(active).toBe(MAX_HORSES_PER_GROOM);
+    expect(active).toBe(maxHorsesPerGroom);
   }, 120000);
 });

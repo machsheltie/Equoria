@@ -24,7 +24,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import {
-  MAX_HORSES_PER_GROOM,
+  maxHorsesPerGroom,
   calculateWeeklyFee,
   calculateUserSalaryCost,
   processWeeklySalaries,
@@ -34,7 +34,7 @@ import { assignGroomToFoal } from '../../../utils/groomSystem.mjs';
 import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-95yrv-fee';
+const fixturePrefix = 'TestFixture-95yrv-fee';
 const tag = () => randomBytes(6).toString('hex');
 
 async function makeUser(label, money = 50000) {
@@ -42,8 +42,8 @@ async function makeUser(label, money = 50000) {
   return prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${label}-${suffix}`.slice(0, 30),
-      email: `${FIXTURE_PREFIX}-${label}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${label}-${suffix}`.slice(0, 30),
+      email: `${fixturePrefix}-${label}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Fee',
       lastName: label,
@@ -56,7 +56,7 @@ async function makeUser(label, money = 50000) {
 async function makeGroom(userId, label, extra = {}) {
   return prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       speciality: 'general',
       personality: 'gentle',
       skillLevel: 'novice',
@@ -71,7 +71,7 @@ async function makeHorse(userId, label) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       sex: 'Filly',
       dateOfBirth: new Date('2023-05-01'),
       age: 3,
@@ -98,7 +98,7 @@ async function moneyOf(userId) {
 
 describe('q228 — the weekly fee is the groom star level price', () => {
   it('is 100-500 by level, and the horse cap is twenty (q68)', () => {
-    expect(MAX_HORSES_PER_GROOM).toBe(20);
+    expect(maxHorsesPerGroom).toBe(20);
     expect(
       ['rookie', 'novice', 'intermediate', 'advanced', 'expert'].map(starLevel => calculateWeeklyFee({ starLevel })),
     ).toEqual([100, 200, 300, 400, 500]);
@@ -199,7 +199,7 @@ describe('Equoria-95yrv — a groom works at most twenty horses (q68)', () => {
     user = await makeUser('cap');
     groom = await makeGroom(user.id, 'capped');
 
-    for (let i = 0; i < MAX_HORSES_PER_GROOM; i++) {
+    for (let i = 0; i < maxHorsesPerGroom; i++) {
       const horse = await makeHorse(user.id, `capped-${i}`);
       await assign(groom.id, horse.id, user.id);
     }
@@ -214,7 +214,7 @@ describe('Equoria-95yrv — a groom works at most twenty horses (q68)', () => {
     const count = await prisma.groomAssignment.count({
       where: { groomId: groom.id, isActive: true },
     });
-    expect(count).toBe(MAX_HORSES_PER_GROOM);
+    expect(count).toBe(maxHorsesPerGroom);
   }, 30000);
 
   it('refuses the horse past the cap through assignGroomToFoal too', async () => {
@@ -223,6 +223,6 @@ describe('Equoria-95yrv — a groom works at most twenty horses (q68)', () => {
     const count = await prisma.groomAssignment.count({
       where: { groomId: groom.id, isActive: true },
     });
-    expect(count).toBe(MAX_HORSES_PER_GROOM);
+    expect(count).toBe(maxHorsesPerGroom);
   }, 30000);
 });

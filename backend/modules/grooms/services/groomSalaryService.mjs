@@ -21,7 +21,7 @@
  *        weekly fee for a groom = their star level's price (100-500)
  *
  *      This replaces the 70-per-horse basis of Equoria-95yrv (owner ruling
- *      2026-09-14). The per-groom horse cap (`MAX_HORSES_PER_GROOM`) is still
+ *      2026-09-14). The per-groom horse cap (`maxHorsesPerGroom`) is still
  *      enforced where assignments are made.
  *
  *   2. NON-PAYMENT. `terminateGroomsForNonPayment` is GONE. It had never once
@@ -98,7 +98,7 @@ import { groomPayrollFailureRecorder } from './groomPayrollFailures.mjs';
 // unpaid week becomes. Defined next door so this file stays the COLLECTION of the
 // fee; re-exported below so every existing importer of this module is unchanged.
 import {
-  MAX_HORSES_PER_GROOM,
+  maxHorsesPerGroom,
   arrearsOwedStatuses,
   arrearsSettledStatus,
   arrearsWrittenOffStatus,
@@ -111,7 +111,7 @@ import {
 export { getSalaryPaymentHistory, calculateUserSalaryCost } from './groomSalaryReadService.mjs';
 
 export {
-  MAX_HORSES_PER_GROOM,
+  maxHorsesPerGroom,
   arrearsOwedStatuses,
   arrearsSettledStatus,
   arrearsWrittenOffStatus,
@@ -120,13 +120,13 @@ export {
 };
 
 // Salary configuration
-export const SALARY_CONFIG = {
-  MAX_HORSES_PER_GROOM,
+export const salaryConfig = {
+  maxHorsesPerGroom,
 
   // The day a pay week starts (0 = Sunday). Owner ruling 2026-10-29 (q268, Equoria-hc96y):
   // players pay any time during the week, and the week ends Sunday midnight Eastern — the
   // same Sunday-to-Sunday game week as the Hall of Fame (q265). Old contract: Monday.
-  PAYMENT_DAY: 0,
+  paymentDay: 0,
 
   // Equoria-ypb7d.3: the owner's grace period is ONE PAY WEEK, and it is now
   // measured in pay weeks per groom (`Groom.feeUnpaidSince` vs the pay week being
@@ -134,10 +134,10 @@ export const SALARY_CONFIG = {
   // This constant is retained ONLY because `groomSalaryController.getSalarySummary`
   // renders `gracePeriodDaysRemaining` from `User.groomSalaryGracePeriod` + 7 days,
   // which is the same seven days. Nothing in the release decision reads it.
-  GRACE_PERIOD_DAYS: 7,
+  gracePeriodDays: 7,
 
   // Minimum balance required to keep grooms
-  MINIMUM_BALANCE: 0,
+  minimumBalance: 0,
 };
 
 /**
@@ -145,14 +145,14 @@ export const SALARY_CONFIG = {
  *
  * The pay week is the half-open interval [start, start + 7 days), where
  * `start` is 00:00 Eastern (the game clock) of the most recent
- * SALARY_CONFIG.PAYMENT_DAY (Sunday) at-or-before `now`. Date-only game-day
+ * salaryConfig.paymentDay (Sunday) at-or-before `now`. Date-only game-day
  * arithmetic means time-of-day on `now` never shifts the week boundary.
  *
  * @param {Date} [now]
  * @returns {Date} Eastern midnight of the pay week's Sunday
  */
 export function getPayWeekStart(now = new Date()) {
-  return startOfGameWeek(now, SALARY_CONFIG.PAYMENT_DAY);
+  return startOfGameWeek(now, salaryConfig.paymentDay);
 }
 
 /**

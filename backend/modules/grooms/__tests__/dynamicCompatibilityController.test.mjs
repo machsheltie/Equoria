@@ -46,8 +46,8 @@ function makeRes() {
   return res;
 }
 
-const NON_EXISTENT_ID = 999999998;
-const NON_EXISTENT_USER_ID = '00000000-0000-0000-0000-000000000077';
+const nonExistentId = 999999998;
+const nonExistentUserId = '00000000-0000-0000-0000-000000000077';
 
 // ─── getCompatibilityConfig — no auth required ────────────────────────────────
 
@@ -97,7 +97,7 @@ describe('calculateCompatibility guard clauses', () => {
   it('returns 400 when groomId is missing', async () => {
     const req = {
       body: { horseId: 1, context: { task: 'trustBuilding' } },
-      user: { id: NON_EXISTENT_USER_ID },
+      user: { id: nonExistentUserId },
     };
     const res = makeRes();
 
@@ -111,7 +111,7 @@ describe('calculateCompatibility guard clauses', () => {
   it('returns 400 when horseId is missing', async () => {
     const req = {
       body: { groomId: 1, context: { task: 'trustBuilding' } },
-      user: { id: NON_EXISTENT_USER_ID },
+      user: { id: nonExistentUserId },
     };
     const res = makeRes();
 
@@ -124,7 +124,7 @@ describe('calculateCompatibility guard clauses', () => {
   it('returns 400 when context is missing', async () => {
     const req = {
       body: { groomId: 1, horseId: 2 },
-      user: { id: NON_EXISTENT_USER_ID },
+      user: { id: nonExistentUserId },
     };
     const res = makeRes();
 
@@ -137,7 +137,7 @@ describe('calculateCompatibility guard clauses', () => {
   it('returns 400 when all fields are missing', async () => {
     const req = {
       body: {},
-      user: { id: NON_EXISTENT_USER_ID },
+      user: { id: nonExistentUserId },
     };
     const res = makeRes();
 
@@ -150,11 +150,11 @@ describe('calculateCompatibility guard clauses', () => {
   it('returns 404 when groom is not owned (non-existent)', async () => {
     const req = {
       body: {
-        groomId: NON_EXISTENT_ID,
-        horseId: NON_EXISTENT_ID + 1,
+        groomId: nonExistentId,
+        horseId: nonExistentId + 1,
         context: { task: 'trustBuilding' },
       },
-      user: { id: NON_EXISTENT_USER_ID },
+      user: { id: nonExistentUserId },
     };
     const res = makeRes();
 
@@ -170,8 +170,8 @@ describe('calculateCompatibility guard clauses', () => {
 describe('getCompatibilityFactors', () => {
   it('returns 200 or 500 without crashing for non-existent IDs', async () => {
     const req = {
-      params: { groomId: String(NON_EXISTENT_ID), horseId: String(NON_EXISTENT_ID + 1) },
-      user: { id: NON_EXISTENT_USER_ID },
+      params: { groomId: String(nonExistentId), horseId: String(nonExistentId + 1) },
+      user: { id: nonExistentUserId },
     };
     const res = makeRes();
 
@@ -189,8 +189,8 @@ describe('getCompatibilityFactors', () => {
 describe('getCompatibilityTrends', () => {
   it('returns 200 or 500 without crashing for non-existent IDs', async () => {
     const req = {
-      params: { groomId: String(NON_EXISTENT_ID), horseId: String(NON_EXISTENT_ID + 1) },
-      user: { id: NON_EXISTENT_USER_ID },
+      params: { groomId: String(nonExistentId), horseId: String(nonExistentId + 1) },
+      user: { id: nonExistentUserId },
     };
     const res = makeRes();
 

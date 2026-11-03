@@ -14,11 +14,11 @@ import crypto from 'crypto';
 import { staffLevelFee } from '../../../constants/staffLevels.mjs';
 
 // Marketplace configuration
-export const MARKETPLACE_CONFIG = {
+export const marketplaceConfig = {
   // Marketplace size and refresh
-  DEFAULT_MARKETPLACE_SIZE: 12,
-  MAX_MARKETPLACE_SIZE: 20,
-  MIN_MARKETPLACE_SIZE: 6,
+  defaultMarketplaceSize: 12,
+  maxMarketplaceSize: 20,
+  minMarketplaceSize: 6,
 
   // Refresh timing (in hours)
   // Test mode uses 1 hour so two consecutive HTTP calls in a single integration
@@ -27,14 +27,14 @@ export const MARKETPLACE_CONFIG = {
   // marketplace on subsequent calls" on slow CI — Equoria-26to). Tests that need
   // an expired marketplace call forceExpireMarketplace() explicitly; nothing
   // relied on the prior 10-second auto-expiry. Production stays daily.
-  REFRESH_INTERVAL_HOURS: process.env.NODE_ENV === 'test' ? 1 : 24,
-  PREMIUM_REFRESH_COST: 100, // Cost for manual refresh
+  refreshIntervalHours: process.env.NODE_ENV === 'test' ? 1 : 24,
+  premiumRefreshCost: 100, // Cost for manual refresh
 
   // Quality distribution (percentages). Owner ruling 2026-10-28 (q177): every groom the
   // game makes for the hiring list starts as a Rookie (the bottom of the old novice
   // tier). Better grooms come from growth (Equoria-xlw03) and from grooms that leave a
   // player's staff and return to the list at their own level.
-  QUALITY_DISTRIBUTION: {
+  qualityDistribution: {
     novice: 100,
     intermediate: 0,
     expert: 0,
@@ -42,7 +42,7 @@ export const MARKETPLACE_CONFIG = {
   },
 
   // Specialty distribution
-  SPECIALTY_DISTRIBUTION: {
+  specialtyDistribution: {
     general: 40, // 40% general grooms
     foalCare: 25, // 25% foal care specialists
     training: 20, // 20% training specialists
@@ -50,7 +50,7 @@ export const MARKETPLACE_CONFIG = {
   },
 
   // Experience ranges by skill level
-  EXPERIENCE_RANGES: {
+  experienceRanges: {
     // 1-2 years: a Rookie (3 years would place an older offer at Novice, staffLevels.mjs).
     novice: { min: 1, max: 2 },
     intermediate: { min: 3, max: 8 },
@@ -59,7 +59,7 @@ export const MARKETPLACE_CONFIG = {
   },
 
   // Base session rates by skill level (before experience modifier)
-  BASE_SESSION_RATES: {
+  baseSessionRates: {
     novice: 15,
     intermediate: 25,
     expert: 40,
@@ -82,16 +82,16 @@ const _SKILL_LEVELS = ['novice', 'intermediate', 'expert', 'master'];
  */
 export function generateRandomGroom() {
   // Select skill level based on distribution
-  const skillLevel = selectByDistribution(MARKETPLACE_CONFIG.QUALITY_DISTRIBUTION);
+  const skillLevel = selectByDistribution(marketplaceConfig.qualityDistribution);
   // Owner rulings 2026-10-28: a new groom is a Rookie (q177); hiring costs one week of
   // its star level's price (Equoria-nawn5, backend/constants/staffLevels.mjs).
   const starLevel = 'rookie';
 
   // Select specialty based on distribution
-  const specialty = selectByDistribution(MARKETPLACE_CONFIG.SPECIALTY_DISTRIBUTION);
+  const specialty = selectByDistribution(marketplaceConfig.specialtyDistribution);
 
   // Generate experience within skill level range
-  const experienceRange = MARKETPLACE_CONFIG.EXPERIENCE_RANGES[skillLevel];
+  const experienceRange = marketplaceConfig.experienceRanges[skillLevel];
   const experience =
     Math.floor(Math.random() * (experienceRange.max - experienceRange.min + 1)) +
     experienceRange.min;
@@ -100,7 +100,7 @@ export function generateRandomGroom() {
   const personality = PERSONALITIES[Math.floor(Math.random() * PERSONALITIES.length)];
 
   // Calculate session rate
-  const baseRate = MARKETPLACE_CONFIG.BASE_SESSION_RATES[skillLevel];
+  const baseRate = marketplaceConfig.baseSessionRates[skillLevel];
   const experienceModifier = 1 + (experience - experienceRange.min) * 0.1; // 10% per year above minimum
   const sessionRate = Math.round(baseRate * experienceModifier);
 
@@ -309,7 +309,7 @@ function generateMarketplaceId() {
  * @param {number} size - Number of grooms to generate
  * @returns {Array} Array of generated grooms
  */
-export function generateMarketplace(size = MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE) {
+export function generateMarketplace(size = marketplaceConfig.defaultMarketplaceSize) {
   const marketplace = [];
 
   for (let i = 0; i < size; i++) {
@@ -333,7 +333,7 @@ export function needsRefresh(lastRefresh) {
   const timeDiff = now - new Date(lastRefresh);
   const hoursDiff = timeDiff / (1000 * 60 * 60);
 
-  return hoursDiff >= MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS;
+  return hoursDiff >= marketplaceConfig.refreshIntervalHours;
 }
 
 /**
@@ -346,5 +346,5 @@ export function getRefreshCost(lastRefresh) {
     return 0; // Free refresh available
   }
 
-  return MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST;
+  return marketplaceConfig.premiumRefreshCost;
 }

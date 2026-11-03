@@ -72,7 +72,7 @@ import {
  */
 export const engagementEndReasons = Object.freeze({
   /** A full pay week went unpaid; the groom returned to the hire pool. */
-  FEE_UNPAID: 'feeUnpaid',
+  feeUnpaid: 'feeUnpaid',
   /** The groom aged out (groomRetirementService.processRetirement). */
   RETIREMENT: 'retirement',
   /**
@@ -83,13 +83,12 @@ export const engagementEndReasons = Object.freeze({
 });
 
 /** The same reasons under the older name, for existing callers. */
-export const ENGAGEMENT_END_REASONS = engagementEndReasons;
 
 /** The player is told their groom cannot work until this week's fee is paid. */
-export const GROOM_FEE_UNPAID_NOTIFICATION_TYPE = 'groomFeeUnpaid';
+export const groomFeeUnpaidNotificationType = 'groomFeeUnpaid';
 
 /** The player is told the groom has left for the grooms-for-hire pool. */
-export const GROOM_RELEASED_NOTIFICATION_TYPE = 'groomReleased';
+export const groomReleasedNotificationType = 'groomReleased';
 
 /**
  * The predicate that defines the grooms-for-hire pool.
@@ -108,7 +107,7 @@ export const GROOM_RELEASED_NOTIFICATION_TYPE = 'groomReleased';
  * is a deliberate widening of this predicate plus a way to mark such a groom, not
  * an accident of a NULL column.
  */
-export const FREE_AGENT_WHERE = Object.freeze({
+export const freeAgentWhere = Object.freeze({
   userId: null,
   retired: false,
   isActive: true,
@@ -137,7 +136,7 @@ export const FREE_AGENT_WHERE = Object.freeze({
  * as part of claiming a free agent, which is fee state, but it cannot contend with the
  * pass over the same groom. `releaseGroomTx` clears `feeUnpaidSince` when it releases,
  * so a free agent always has it NULL already; and a groom in grace has a non-NULL
- * `userId`, so it fails `FREE_AGENT_WHERE` and the claim's guarded `updateMany` matches
+ * `userId`, so it fails `freeAgentWhere` and the claim's guarded `updateMany` matches
  * nothing. It is the ORDER, not this lock, that keeps `hireFreeAgent` out of a cycle
  * with the grace transaction: both write `User` before any staff row.
  *
@@ -246,7 +245,7 @@ export async function ensureEngagementsTx(tx, groomIds, userId) {
  *
  * @param {Object} tx - Prisma transaction client
  * @param {number} groomId
- * @param {string} reason - one of ENGAGEMENT_END_REASONS
+ * @param {string} reason - one of engagementEndReasons
  * @param {Date} endedAt
  * @returns {Promise<number>} rows closed (0 or 1)
  */
@@ -291,7 +290,7 @@ export async function endEngagementTx(tx, groomId, reason, endedAt) {
  * @param {Object} params
  * @param {number} params.groomId
  * @param {string} params.userId - the player releasing the groom (the precondition)
- * @param {string} params.reason - one of ENGAGEMENT_END_REASONS
+ * @param {string} params.reason - one of engagementEndReasons
  * @param {Object} [params.notificationPayloadExtras] - merged into the notice
  * @param {boolean} [params.notify] - false: write no notification (default true)
  * @param {Date} [params.now]
@@ -379,7 +378,7 @@ export async function releaseGroomTx(tx, params) {
   };
 
   const notification = notify
-    ? await createNotificationTx(tx, userId, GROOM_RELEASED_NOTIFICATION_TYPE, notificationPayload)
+    ? await createNotificationTx(tx, userId, groomReleasedNotificationType, notificationPayload)
     : null;
 
   if (horses.length !== endedAssignments.count) {
@@ -457,7 +456,7 @@ export async function enterFeeGraceTx(tx, params) {
   const notification = await createNotificationTx(
     tx,
     userId,
-    GROOM_FEE_UNPAID_NOTIFICATION_TYPE,
+    groomFeeUnpaidNotificationType,
     notificationPayload,
   );
 
@@ -501,7 +500,7 @@ export async function listFreeAgents(client, options = {}) {
   const { limit = 20, skip = 0 } = options;
   const [grooms, total] = await Promise.all([
     client.groom.findMany({
-      where: FREE_AGENT_WHERE,
+      where: freeAgentWhere,
       // Explicit projection, NOT a bare findMany: the pool is a player-facing
       // read, and an explicit select is what keeps a future column from
       // appearing here by accident.
@@ -521,7 +520,7 @@ export async function listFreeAgents(client, options = {}) {
       take: limit,
       skip,
     }),
-    client.groom.count({ where: FREE_AGENT_WHERE }),
+    client.groom.count({ where: freeAgentWhere }),
   ]);
   // Owner ruling q177: a pool groom shows its level and only its revealed growth items.
   const views = await revealedGrowthViews(client, 'groom', grooms);
@@ -530,10 +529,10 @@ export async function listFreeAgents(client, options = {}) {
 
 export default {
   acquirePayWeekLockTx,
-  ENGAGEMENT_END_REASONS,
-  GROOM_FEE_UNPAID_NOTIFICATION_TYPE,
-  GROOM_RELEASED_NOTIFICATION_TYPE,
-  FREE_AGENT_WHERE,
+  engagementEndReasons,
+  groomFeeUnpaidNotificationType,
+  groomReleasedNotificationType,
+  freeAgentWhere,
   openEngagementTx,
   ensureEngagementTx,
   ensureEngagementsTx,

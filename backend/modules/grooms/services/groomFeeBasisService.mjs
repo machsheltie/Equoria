@@ -25,7 +25,7 @@ import { hiredStaffFee } from '../../../constants/staffLevels.mjs';
  * Owner ruling 2026-10-26 (q68): twenty horses (was ten). Players still press
  * "groom horse" for every horse every day.
  */
-export const MAX_HORSES_PER_GROOM = 20;
+export const maxHorsesPerGroom = 20;
 
 /**
  * Equoria-bgdfb, owner ruling 2026-09-14 10:23: "It's owed."
@@ -185,7 +185,7 @@ export async function assertGroomHasRoomForAnotherHorse(client, groomId, groomNa
   const active = await client.groomAssignment.count({
     where: { groomId, isActive: true },
   });
-  if (active >= MAX_HORSES_PER_GROOM) {
+  if (active >= maxHorsesPerGroom) {
     throw new Error(atCapacityMessage(groomName));
   }
 }
@@ -193,14 +193,14 @@ export async function assertGroomHasRoomForAnotherHorse(client, groomId, groomNa
 /** The player-facing refusal, in one place so both doors say the same thing. */
 export function atCapacityMessage(groomName) {
   return (
-    `${groomName} is already caring for ${MAX_HORSES_PER_GROOM} horses, which is as many as ` +
+    `${groomName} is already caring for ${maxHorsesPerGroom} horses, which is as many as ` +
     'one groom can take. Free up a horse or assign a different groom.'
   );
 }
 
 export default {
   acquireGroomRosterLockTx,
-  MAX_HORSES_PER_GROOM,
+  maxHorsesPerGroom,
   arrearsOwedStatuses,
   arrearsSettledStatus,
   arrearsWrittenOffStatus,

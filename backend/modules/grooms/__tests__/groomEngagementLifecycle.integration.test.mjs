@@ -59,13 +59,13 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { prismaRejectionOf } from '../../../__tests__/helpers/expectPrismaRejection.mjs';
-import { ENGAGEMENT_END_REASONS, FREE_AGENT_WHERE } from '../services/groomEngagementService.mjs';
+import { engagementEndReasons, freeAgentWhere } from '../services/groomEngagementService.mjs';
 import { processRetirement } from '../services/groomRetirementService.mjs';
 import { ensureRetirementSchedule } from '../services/groomRetirementScheduleService.mjs';
 import { hireFromMarketplace, refreshMarketplace } from '../controllers/groomMarketplaceController.mjs';
 import { listFreeAgentGrooms, hireFreeAgent } from '../controllers/groomFreeAgentController.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-ypb7d-eng';
+const fixturePrefix = 'TestFixture-ypb7d-eng';
 const tag = () => randomBytes(6).toString('hex');
 
 function fakeRes() {
@@ -89,8 +89,8 @@ async function makeUser(label, money) {
   return prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${label}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${label}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${label}-${suffix}`,
+      email: `${fixturePrefix}-${label}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Ypb7d',
       lastName: label,
@@ -103,7 +103,7 @@ async function makeUser(label, money) {
 async function makeGroom(userId, label, extra = {}) {
   const groom = await prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       speciality: 'general',
       personality: 'gentle',
       skillLevel: 'novice',
@@ -151,7 +151,7 @@ function registerUserCleanup(cleanup, getUser, label) {
     // database AND into the free-agent pool. Now the sweep exists. Its engagement
     // rows go first (FK), and it is narrowly scoped to this file's own prefix.
     const strays = await prisma.groom.findMany({
-      where: { name: { startsWith: FIXTURE_PREFIX } },
+      where: { name: { startsWith: fixturePrefix } },
       select: { id: true },
     });
     if (strays.length) {
@@ -170,7 +170,7 @@ function registerUserCleanup(cleanup, getUser, label) {
       await prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: strayIds } } });
     }
     await prisma.groom.deleteMany({ where: { userId: user.id } });
-    await prisma.groom.deleteMany({ where: { name: { startsWith: FIXTURE_PREFIX } } });
+    await prisma.groom.deleteMany({ where: { name: { startsWith: fixturePrefix } } });
     if (horseIds.length) {
       await prisma.horse.deleteMany({ where: { id: { in: horseIds } } });
     }
@@ -264,7 +264,7 @@ describe('Equoria-ypb7d.2 — hiring opens an engagement, never an ownership', (
           groomId: groom.id,
           userId: other.id,
           endedAt: new Date(),
-          endReason: ENGAGEMENT_END_REASONS.FEE_UNPAID,
+          endReason: engagementEndReasons.feeUnpaid,
         },
       });
       expect(closed.id).toBeGreaterThan(0);
@@ -301,7 +301,7 @@ describe('Equoria-ypb7d.2 — two players cannot hire the same free agent', () =
     // puts them in the pool.
     groom = await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-race-groom-${tag()}`,
+        name: `${fixturePrefix}-race-groom-${tag()}`,
         speciality: 'general',
         personality: 'gentle',
         skillLevel: 'novice',
@@ -314,7 +314,7 @@ describe('Equoria-ypb7d.2 — two players cannot hire the same free agent', () =
         groomId: groom.id,
         userId: owner.id,
         endedAt: new Date('2026-03-09T09:00:00.000Z'),
-        endReason: ENGAGEMENT_END_REASONS.FEE_UNPAID,
+        endReason: engagementEndReasons.feeUnpaid,
       },
     });
   }, 30000);
@@ -383,7 +383,7 @@ describe('Equoria-ypb7d.2 — two players cannot hire the same free agent', () =
     // DB, no mocks — the same statement the controller runs, with the same predicate
     // object, against the state the race just produced.
     const secondClaim = await prisma.groom.updateMany({
-      where: { id: groom.id, ...FREE_AGENT_WHERE },
+      where: { id: groom.id, ...freeAgentWhere },
       data: { userId: loserId },
     });
     expect(secondClaim.count).toBe(0);
@@ -421,7 +421,7 @@ describe('Equoria-ypb7d.2 — retirement closes the engagement but keeps the his
 
     const engagements = await prisma.groomEngagement.findMany({ where: { groomId: groom.id } });
     expect(engagements).toHaveLength(1);
-    expect(engagements[0].endReason).toBe(ENGAGEMENT_END_REASONS.RETIREMENT);
+    expect(engagements[0].endReason).toBe(engagementEndReasons.RETIREMENT);
     expect(engagements[0].endedAt).not.toBeNull();
 
     const row = await prisma.groom.findUnique({

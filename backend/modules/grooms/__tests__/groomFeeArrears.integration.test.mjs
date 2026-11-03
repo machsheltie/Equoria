@@ -48,9 +48,9 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { processWeeklySalaries, getPayWeekStart, calculateWeeklyFee } from '../services/groomSalaryService.mjs';
 import {
-  ENGAGEMENT_END_REASONS,
-  GROOM_FEE_UNPAID_NOTIFICATION_TYPE,
-  GROOM_RELEASED_NOTIFICATION_TYPE,
+  engagementEndReasons,
+  groomFeeUnpaidNotificationType,
+  groomReleasedNotificationType,
   checkGroomMayWork,
   hasFullUnpaidWeek,
 } from '../services/groomEngagementService.mjs';
@@ -58,13 +58,13 @@ import { groomHorse } from '../services/groomCareService.mjs';
 import { listFreeAgentGrooms, hireFreeAgent } from '../controllers/groomFreeAgentController.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-ypb7d-fee';
+const fixturePrefix = 'TestFixture-ypb7d-fee';
 const tag = () => randomBytes(6).toString('hex');
 
 // Two consecutive pay weeks, both safely in the past so they cannot collide with a
 // real cron run's pay week. Mondays, per SALARY_CONFIG.PAYMENT_DAY.
-const WEEK_ONE = new Date('2026-03-02T09:00:00.000Z'); // a Monday
-const WEEK_TWO = new Date('2026-03-09T09:00:00.000Z'); // the next Monday
+const weekOne = new Date('2026-03-02T09:00:00.000Z'); // a Monday
+const weekTwo = new Date('2026-03-09T09:00:00.000Z'); // the next Monday
 
 function fakeRes() {
   const res = {
@@ -87,8 +87,8 @@ async function makeUser(label, money) {
   return prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${label}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${label}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${label}-${suffix}`,
+      email: `${fixturePrefix}-${label}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Ypb7d',
       lastName: label,
@@ -102,7 +102,7 @@ async function makeHorse(userId, label) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       sex: 'Filly',
       dateOfBirth: new Date('2024-06-15'),
       age: 1,
@@ -115,7 +115,7 @@ async function makeHorse(userId, label) {
 async function makeGroom(userId, label, extra = {}) {
   const groom = await prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       speciality: 'general',
       personality: 'gentle',
       skillLevel: 'novice',
@@ -163,7 +163,7 @@ function registerUserCleanup(cleanup, getUser, label) {
     // database AND into the free-agent pool. Now the sweep exists. Its engagement
     // rows go first (FK), and it is narrowly scoped to this file's own prefix.
     const strays = await prisma.groom.findMany({
-      where: { name: { startsWith: FIXTURE_PREFIX } },
+      where: { name: { startsWith: fixturePrefix } },
       select: { id: true },
     });
     if (strays.length) {
@@ -182,7 +182,7 @@ function registerUserCleanup(cleanup, getUser, label) {
       await prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: strayIds } } });
     }
     await prisma.groom.deleteMany({ where: { userId: user.id } });
-    await prisma.groom.deleteMany({ where: { name: { startsWith: FIXTURE_PREFIX } } });
+    await prisma.groom.deleteMany({ where: { name: { startsWith: fixturePrefix } } });
     if (horseIds.length) {
       await prisma.horse.deleteMany({ where: { id: { in: horseIds } } });
     }
@@ -230,7 +230,7 @@ describe('q228 — the fee is per GROOM, at their star level price', () => {
 
     const before = Number((await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money);
 
-    const result = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
+    const result = await processWeeklySalaries(weekOne, { userId: user.id });
     expect(result.errors).toEqual([]);
     expect(result.successful).toBe(1);
     expect(result.totalAmount).toBe(expectedUnassigned + expectedBusy);
@@ -251,7 +251,7 @@ describe('q228 — the fee is per GROOM, at their star level price', () => {
 
   it('a re-run in the same pay week is a no-op (Equoria-icqqm idempotency holds)', async () => {
     const before = Number((await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money);
-    const result = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
+    const result = await processWeeklySalaries(weekOne, { userId: user.id });
     expect(result.skipped).toBe(1);
     expect(result.totalAmount).toBe(0);
     const after = Number((await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money);
@@ -299,7 +299,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
   afterAll(() => cleanup.run(), 30000);
 
   it('week one unpaid: grace begins, the groom stays on staff, and the player is told', async () => {
-    const result = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
+    const result = await processWeeklySalaries(weekOne, { userId: user.id });
     expect(result.failed).toBe(1);
     expect(result.graced).toBe(1);
     expect(result.released).toBe(0);
@@ -313,7 +313,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
     expect(row.userId).toBe(user.id);
     expect(row.retired).toBe(false);
     // Marked with the pay week that went unpaid, not with "now".
-    expect(row.feeUnpaidSince?.getTime()).toBe(getPayWeekStart(WEEK_ONE).getTime());
+    expect(row.feeUnpaidSince?.getTime()).toBe(getPayWeekStart(weekOne).getTime());
 
     // The engagement is still open.
     const open = await prisma.groomEngagement.findFirst({
@@ -330,7 +330,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
 
     // The player was told, and the notice says the groom cannot work.
     const notices = await prisma.notification.findMany({
-      where: { userId: user.id, type: GROOM_FEE_UNPAID_NOTIFICATION_TYPE },
+      where: { userId: user.id, type: groomFeeUnpaidNotificationType },
     });
     expect(notices).toHaveLength(1);
     expect(notices[0].payload).toEqual(expect.objectContaining({ groomId: groom.id, canWork: false, graceWeeks: 1 }));
@@ -403,13 +403,13 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
     });
 
     const noticesBefore = await prisma.notification.count({
-      where: { userId: user.id, type: GROOM_FEE_UNPAID_NOTIFICATION_TYPE },
+      where: { userId: user.id, type: groomFeeUnpaidNotificationType },
     });
     expect(noticesBefore).toBe(1);
 
     // Same pay week, still no money. The pass reaches the debit (no `paid` row exists
     // for this pay week), fails it, and routes to the arrears handler again.
-    const result = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
+    const result = await processWeeklySalaries(weekOne, { userId: user.id });
     expect(result.failed).toBe(1);
     // Not counted as a NEW grace entry, and certainly not released — a full pay week
     // has not elapsed.
@@ -428,7 +428,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
     // 2. the player is not told twice.
     expect(
       await prisma.notification.count({
-        where: { userId: user.id, type: GROOM_FEE_UNPAID_NOTIFICATION_TYPE },
+        where: { userId: user.id, type: groomFeeUnpaidNotificationType },
       }),
     ).toBe(1);
 
@@ -468,9 +468,9 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
   it('week two unpaid: released to the pool, history ended and never deleted', async () => {
     // A full pay week has now gone by unpaid. The predicate is pay-week based, not
     // millisecond based — the reason the release cannot turn on cron jitter.
-    expect(hasFullUnpaidWeek(getPayWeekStart(WEEK_ONE), getPayWeekStart(WEEK_TWO))).toBe(true);
+    expect(hasFullUnpaidWeek(getPayWeekStart(weekOne), getPayWeekStart(weekTwo))).toBe(true);
 
-    const result = await processWeeklySalaries(WEEK_TWO, { userId: user.id });
+    const result = await processWeeklySalaries(weekTwo, { userId: user.id });
     expect(result.released).toBe(1);
     expect(result.terminated).toBe(1);
 
@@ -493,7 +493,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
     const engagements = await prisma.groomEngagement.findMany({ where: { groomId: groom.id } });
     expect(engagements).toHaveLength(1);
     expect(engagements[0].endedAt).not.toBeNull();
-    expect(engagements[0].endReason).toBe(ENGAGEMENT_END_REASONS.FEE_UNPAID);
+    expect(engagements[0].endReason).toBe(engagementEndReasons.feeUnpaid);
 
     // The ACTIVE assignment is ENDED. The INACTIVE one is untouched. Both rows
     // survive — a release must never destroy history, the Equoria-m9lz1 invariant.
@@ -520,13 +520,13 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
 
     // The player was told they lost the groom, and which horse is uncovered.
     const notices = await prisma.notification.findMany({
-      where: { userId: user.id, type: GROOM_RELEASED_NOTIFICATION_TYPE },
+      where: { userId: user.id, type: groomReleasedNotificationType },
     });
     expect(notices).toHaveLength(1);
     expect(notices[0].payload).toEqual(
       expect.objectContaining({
         groomId: groom.id,
-        reason: ENGAGEMENT_END_REASONS.FEE_UNPAID,
+        reason: engagementEndReasons.feeUnpaid,
         horsesLeftUnattended: 1,
         horses: [{ id: horse.id, name: expect.any(String) }],
       }),
@@ -570,7 +570,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
         orderBy: { id: 'asc' },
       });
       expect(engagements).toHaveLength(2);
-      expect(engagements[0].endReason).toBe(ENGAGEMENT_END_REASONS.FEE_UNPAID);
+      expect(engagements[0].endReason).toBe(engagementEndReasons.feeUnpaid);
       expect(engagements[1].userId).toBe(newEmployer.id);
       expect(engagements[1].endedAt).toBeNull();
     } finally {
@@ -593,18 +593,18 @@ describe('Equoria-ypb7d.3 — paying clears the arrears', () => {
     user = await makeUser('cleared', 20000);
     groom = await makeGroom(user.id, 'cleared-groom', {
       // Already in grace for week one, and the user now has money.
-      feeUnpaidSince: getPayWeekStart(WEEK_ONE),
+      feeUnpaidSince: getPayWeekStart(weekOne),
     });
     await prisma.user.update({
       where: { id: user.id },
-      data: { groomSalaryGracePeriod: getPayWeekStart(WEEK_ONE) },
+      data: { groomSalaryGracePeriod: getPayWeekStart(weekOne) },
     });
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);
 
   it('a paid pay week clears feeUnpaidSince, the user pointer, and lets the groom work', async () => {
-    const result = await processWeeklySalaries(WEEK_TWO, { userId: user.id });
+    const result = await processWeeklySalaries(weekTwo, { userId: user.id });
     expect(result.errors).toEqual([]);
     expect(result.successful).toBe(1);
     expect(result.released).toBe(0);
@@ -648,7 +648,7 @@ describe('Equoria-ypb7d.3 — a retired groom is no longer billed', () => {
 
   it('is excluded from the staff read, so the player is charged nothing', async () => {
     const before = Number((await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money);
-    const result = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
+    const result = await processWeeklySalaries(weekOne, { userId: user.id });
     // The retired groom KEEPS its `userId` (that is what lets the player still read
     // their retired grooms), so what excludes it from the fee is `retired: false` in
     // the staff read — the mechanism F10 corrected the comments to name. Billing a

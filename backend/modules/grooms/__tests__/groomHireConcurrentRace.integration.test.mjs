@@ -13,7 +13,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { staffLevelFee } from '../../../constants/staffLevels.mjs';
 import { hireFromMarketplace } from '../controllers/groomMarketplaceController.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-6g8wm-groom';
+const fixturePrefix = 'TestFixture-6g8wm-groom';
 const N = 4;
 
 let buyer;
@@ -52,8 +52,8 @@ beforeAll(async () => {
   buyer = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Groom',
       lastName: 'Race',

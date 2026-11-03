@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import {
-  LEGACY_PERKS,
+  legacyPerks,
   getLegacyPerks,
   checkLegacyEligibility,
   getUserLegacyHistory,
@@ -53,11 +53,11 @@ afterAll(() => cleanup.run(), 30000);
 
 // ── groomLegacyService ────────────────────────────────────────────────────────
 
-describe('LEGACY_PERKS', () => {
+describe('legacyPerks', () => {
   it('contains personality categories', () => {
-    expect(typeof LEGACY_PERKS).toBe('object');
-    expect(Array.isArray(LEGACY_PERKS.calm)).toBe(true);
-    expect(LEGACY_PERKS.calm.length).toBeGreaterThan(0);
+    expect(typeof legacyPerks).toBe('object');
+    expect(Array.isArray(legacyPerks.calm)).toBe(true);
+    expect(legacyPerks.calm.length).toBeGreaterThan(0);
   });
 });
 

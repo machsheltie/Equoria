@@ -43,14 +43,14 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { hireFromMarketplace } from '../controllers/groomMarketplaceController.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-bvddn19-groom';
+const fixturePrefix = 'TestFixture-bvddn19-groom';
 
 // hireFromMarketplace: one week at the offer's star level price (owner ruling q226).
-const SESSION_RATE = 100;
-const HIRING_COST = 400; // an Advanced offer
+const sessionRate = 100;
+const hiringCost = 400; // an Advanced offer
 // Fund the buyer far beyond what even several concurrent hires could ever
 // cost — the scenario under test is the offer-list race, not money.
-const BUYER_FUNDS = HIRING_COST * 1000;
+const buyerFunds = hiringCost * 1000;
 
 const createdUserIds = [];
 const createdMarketplaceStateIds = [];
@@ -76,8 +76,8 @@ async function makeUser(money) {
   const u = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: 'irrelevant-hash',
       firstName: 'Bvddn19',
       lastName: 'Groom',
@@ -102,7 +102,7 @@ async function makeSingleOfferMarketplace(userId) {
       starLevel: 'advanced',
       personality: 'gentle',
       experience: 5,
-      sessionRate: SESSION_RATE,
+      sessionRate,
       bio: 'bvddn19 offer-cas fixture',
     },
   ];
@@ -147,7 +147,7 @@ afterAll(async () => {
 
 describe('groomMarketplaceController.hireFromMarketplace offer-removal race (Equoria-bvddn.19)', () => {
   it('SENTINEL: two concurrent hires of the SAME offer -> exactly one 201, one 409, charged once', async () => {
-    const buyer = await makeUser(BUYER_FUNDS);
+    const buyer = await makeUser(buyerFunds);
     const marketplaceId = await makeSingleOfferMarketplace(buyer.id);
 
     const moneyBefore = await userMoney(buyer.id);
@@ -181,7 +181,7 @@ describe('groomMarketplaceController.hireFromMarketplace offer-removal race (Equ
       where: { userId: buyer.id, category: 'groomHire' },
     });
     expect(debitRows).toHaveLength(1);
-    expect(await userMoney(buyer.id)).toBe(moneyBefore - HIRING_COST);
+    expect(await userMoney(buyer.id)).toBe(moneyBefore - hiringCost);
 
     // The offer is gone from the persisted list — not resurrected by the
     // loser's stale-snapshot write.

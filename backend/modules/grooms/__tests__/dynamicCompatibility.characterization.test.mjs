@@ -52,7 +52,7 @@ const API = {
 };
 
 // Only Date is faked (timers, I/O and Prisma run normally).
-const REAL_EXCEPT_DATE = [
+const realExceptDate = [
   'hrtime',
   'nextTick',
   'performance',
@@ -71,7 +71,7 @@ const REAL_EXCEPT_DATE = [
 
 async function digestsAt(instant) {
   if (instant) {
-    jest.useFakeTimers({ now: new Date(instant), doNotFake: REAL_EXCEPT_DATE });
+    jest.useFakeTimers({ now: new Date(instant), doNotFake: realExceptDate });
   }
   const fx = await buildCompatibilityFixtures(prisma, randomBytes(6).toString('hex'), fixtureColor);
   try {

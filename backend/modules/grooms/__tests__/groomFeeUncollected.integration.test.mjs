@@ -43,15 +43,15 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { processWeeklySalaries, getPayWeekStart, calculateWeeklyFee } from '../services/groomSalaryService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { recordUncollectedFees } from '../services/groomFeeArrearsService.mjs';
-import { GROOM_FEE_UNPAID_NOTIFICATION_TYPE, checkGroomMayWork } from '../services/groomEngagementService.mjs';
+import { groomFeeUnpaidNotificationType, checkGroomMayWork } from '../services/groomEngagementService.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-2ti1j';
+const fixturePrefix = 'TestFixture-2ti1j';
 const tag = () => randomBytes(6).toString('hex');
 
 // Mondays, safely in the past so they cannot collide with a real cron run's pay week.
-const WEEK_ONE = new Date('2026-02-02T09:00:00.000Z');
-const WEEK_TWO = new Date('2026-02-09T09:00:00.000Z');
+const weekOne = new Date('2026-02-02T09:00:00.000Z');
+const weekTwo = new Date('2026-02-09T09:00:00.000Z');
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -60,8 +60,8 @@ async function makeUser(label, money) {
   return prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${suffix}`,
+      email: `${fixturePrefix}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Uncollected',
       lastName: label,
@@ -74,7 +74,7 @@ async function makeUser(label, money) {
 async function makeGroom(userId, label, extra = {}) {
   const groom = await prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       speciality: 'general',
       personality: 'gentle',
       skillLevel: 'novice',
@@ -89,7 +89,7 @@ async function makeGroom(userId, label, extra = {}) {
   const horse = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag()}`,
+      name: `${fixturePrefix}-horse-${tag()}`,
       sex: 'Filly',
       dateOfBirth: new Date('2023-05-01'),
       age: 3,
@@ -149,7 +149,7 @@ describe('Equoria-2ti1j — a non-funds throw must not grant a free week of staf
   }, 60000);
 
   it('records the week as uncollected and stops the groom working, not passing as paid', async () => {
-    const payWeekStart = getPayWeekStart(WEEK_ONE);
+    const payWeekStart = getPayWeekStart(weekOne);
     const moneyBefore = (await prisma.user.findUnique({ where: { id: user.id } })).money;
 
     // A second connection takes the fixture user's row lock, so the debit inside
@@ -189,7 +189,7 @@ describe('Equoria-2ti1j — a non-funds throw must not grant a free week of staf
 
     let results;
     try {
-      results = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
+      results = await processWeeklySalaries(weekOne, { userId: user.id });
     } finally {
       await lockHeld;
     }
@@ -220,7 +220,7 @@ describe('Equoria-2ti1j — a non-funds throw must not grant a free week of staf
 
     // The player is told, because their groom has stopped working.
     const notices = await prisma.notification.findMany({
-      where: { userId: user.id, type: GROOM_FEE_UNPAID_NOTIFICATION_TYPE },
+      where: { userId: user.id, type: groomFeeUnpaidNotificationType },
     });
     expect(notices).toHaveLength(1);
 
@@ -242,7 +242,7 @@ describe('Equoria-2ti1j — a collection error never costs the player the groom'
     user = await makeUser('carried', 100000);
     // Already in grace since the EARLIER pay week — the exact state in which
     // `handleUnpaidFees` releases a groom for non-payment.
-    groom = await makeGroom(user.id, 'in-grace', { feeUnpaidSince: getPayWeekStart(WEEK_ONE) });
+    groom = await makeGroom(user.id, 'in-grace', { feeUnpaidSince: getPayWeekStart(weekOne) });
     salary = calculateWeeklyFee(groom);
   }, 60000);
 
@@ -251,7 +251,7 @@ describe('Equoria-2ti1j — a collection error never costs the player the groom'
   }, 60000);
 
   it('records the second week but does not release a groom already in grace', async () => {
-    const payWeekTwo = getPayWeekStart(WEEK_TWO);
+    const payWeekTwo = getPayWeekStart(weekTwo);
 
     const outcome = await recordUncollectedFees(
       user.id,
@@ -269,7 +269,7 @@ describe('Equoria-2ti1j — a collection error never costs the player the groom'
     expect(checkGroomMayWork(after).allowed).toBe(false);
     // The marker still names the FIRST unpaid week — re-entry must never push it
     // forward and quietly extend the grace period.
-    expect(new Date(after.feeUnpaidSince).toISOString()).toBe(getPayWeekStart(WEEK_ONE).toISOString());
+    expect(new Date(after.feeUnpaidSince).toISOString()).toBe(getPayWeekStart(weekOne).toISOString());
 
     const engagement = await prisma.groomEngagement.findFirst({
       where: { groomId: groom.id, endedAt: null },
@@ -285,7 +285,7 @@ describe('Equoria-2ti1j — a collection error never costs the player the groom'
   }, 60000);
 
   it('a second collection error in the same pay week adds a record but changes nothing else', async () => {
-    const payWeekTwo = getPayWeekStart(WEEK_TWO);
+    const payWeekTwo = getPayWeekStart(weekTwo);
     const reread = await prisma.groom.findUnique({ where: { id: groom.id } });
 
     const outcome = await recordUncollectedFees(
@@ -299,7 +299,7 @@ describe('Equoria-2ti1j — a collection error never costs the player the groom'
     expect(outcome.graced).toBe(0);
 
     const after = await prisma.groom.findUnique({ where: { id: groom.id } });
-    expect(new Date(after.feeUnpaidSince).toISOString()).toBe(getPayWeekStart(WEEK_ONE).toISOString());
+    expect(new Date(after.feeUnpaidSince).toISOString()).toBe(getPayWeekStart(weekOne).toISOString());
     expect(after.userId).toBe(user.id);
 
     const rows = await prisma.groomSalaryPayment.findMany({ where: { groomId: groom.id } });

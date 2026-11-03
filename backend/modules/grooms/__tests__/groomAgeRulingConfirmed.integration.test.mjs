@@ -33,8 +33,8 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { processRetirement, getRetirementStatistics } from '../services/groomRetirementService.mjs';
 import { ensureRetirementSchedule } from '../services/groomRetirementScheduleService.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-maeba-age';
-const FIXTURE_START_AGE = 20;
+const fixturePrefix = 'TestFixture-maeba-age';
+const fixtureStartAge = 20;
 const tag = () => randomBytes(6).toString('hex');
 
 async function makeUser(label, money = 20000) {
@@ -42,8 +42,8 @@ async function makeUser(label, money = 20000) {
   return prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${label}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${label}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${label}-${suffix}`,
+      email: `${fixturePrefix}-${label}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Maeba',
       lastName: label,
@@ -56,11 +56,11 @@ async function makeUser(label, money = 20000) {
 async function makeGroom(userId, label, extra = {}) {
   return prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       speciality: 'general',
       personality: 'gentle',
       skillLevel: 'novice',
-      startAge: FIXTURE_START_AGE,
+      startAge: fixtureStartAge,
       userId,
       ...extra,
     },
@@ -85,7 +85,7 @@ describe('Equoria-maeba — the game speaks in YEARS, not career weeks', () => {
     const retirementAge = await ensureRetirementSchedule(prisma, groom.id);
     await prisma.groom.update({
       where: { id: groom.id },
-      data: { careerWeeks: retirementAge - FIXTURE_START_AGE },
+      data: { careerWeeks: retirementAge - fixtureStartAge },
     });
 
     const result = await processRetirement(groom.id);

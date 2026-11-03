@@ -67,26 +67,26 @@ import { ensureRetirementSchedule } from '../services/groomRetirementScheduleSer
 import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-bgdfb-owed';
+const fixturePrefix = 'TestFixture-bgdfb-owed';
 const tag = () => randomBytes(6).toString('hex');
 
 // Three consecutive Mondays, safely in the past so they cannot collide with a real
 // cron run's pay week.
-const WEEK_ONE = new Date('2026-04-06T09:00:00.000Z');
-const WEEK_TWO = new Date('2026-04-13T09:00:00.000Z');
-const WEEK_THREE = new Date('2026-04-20T09:00:00.000Z');
-const WEEK_FOUR = new Date('2026-04-27T09:00:00.000Z');
+const weekOne = new Date('2026-04-06T09:00:00.000Z');
+const weekTwo = new Date('2026-04-13T09:00:00.000Z');
+const weekThree = new Date('2026-04-20T09:00:00.000Z');
+const weekFour = new Date('2026-04-27T09:00:00.000Z');
 
 // Owner ruling 2026-10-28 (q228): one Rookie groom's weekly fee, however many horses.
-const ONE_GROOM_FEE = calculateWeeklyFee({ starLevel: 'rookie' });
+const oneGroomFee = calculateWeeklyFee({ starLevel: 'rookie' });
 
 async function makeUser(label, money) {
   const suffix = tag();
   return prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${label}-${suffix}`.slice(0, 30),
-      email: `${FIXTURE_PREFIX}-${label}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${label}-${suffix}`.slice(0, 30),
+      email: `${fixturePrefix}-${label}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Owed',
       lastName: label,
@@ -96,11 +96,11 @@ async function makeUser(label, money) {
   });
 }
 
-/** One Rookie groom on one horse, so the weekly fee is exactly ONE_GROOM_FEE. */
+/** One Rookie groom on one horse, so the weekly fee is exactly oneGroomFee. */
 async function makeStaffedGroom(userId, label) {
   const groom = await prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       speciality: 'general',
       personality: 'gentle',
       skillLevel: 'novice',
@@ -113,7 +113,7 @@ async function makeStaffedGroom(userId, label) {
   const horse = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-${label}-horse-${tag()}`,
+      name: `${fixturePrefix}-${label}-horse-${tag()}`,
       sex: 'Filly',
       dateOfBirth: new Date('2024-06-15'),
       age: 1,
@@ -138,7 +138,7 @@ function registerUserCleanup(cleanup, getUser, label) {
     // cannot see it. This file's own prefix finds it, and nothing else.
     const strayIds = (
       await prisma.groom.findMany({
-        where: { name: { startsWith: FIXTURE_PREFIX } },
+        where: { name: { startsWith: fixturePrefix } },
         select: { id: true },
       })
     ).map(g => g.id);
@@ -188,7 +188,7 @@ describe('Equoria-bgdfb — the missed week is collected with the next one, once
   afterAll(() => cleanup.run(), 60000);
 
   it('week one goes unpaid and is recorded as owed', async () => {
-    const result = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
+    const result = await processWeeklySalaries(weekOne, { userId: user.id });
     expect(result.graced).toBe(1);
     expect(result.released).toBe(0);
 
@@ -196,21 +196,21 @@ describe('Equoria-bgdfb — the missed week is collected with the next one, once
       where: { userId: user.id, groomId: groom.id, status: 'missedInsufficientFunds' },
     });
     expect(missed).toHaveLength(1);
-    expect(missed[0].amount).toBe(ONE_GROOM_FEE);
+    expect(missed[0].amount).toBe(oneGroomFee);
   }, 60000);
 
   it('the next successful collection takes the owed week AND the current one, in one debit', async () => {
     await prisma.user.update({ where: { id: user.id }, data: { money: 1000 } });
     const before = await moneyOf(user.id);
 
-    const result = await processWeeklySalaries(WEEK_TWO, { userId: user.id });
+    const result = await processWeeklySalaries(weekTwo, { userId: user.id });
     expect(result.errors).toEqual([]);
     expect(result.successful).toBe(1);
 
     // Both weeks, together.
-    expect(await moneyOf(user.id)).toBe(before - ONE_GROOM_FEE * 2);
-    expect(result.arrearsCollected).toBe(ONE_GROOM_FEE);
-    expect(result.totalAmount).toBe(ONE_GROOM_FEE * 2);
+    expect(await moneyOf(user.id)).toBe(before - oneGroomFee * 2);
+    expect(result.arrearsCollected).toBe(oneGroomFee);
+    expect(result.totalAmount).toBe(oneGroomFee * 2);
 
     // ONE debit, not two: a single burn-ledger row carries the whole move.
     const burnRows = await prisma.userTransaction.findMany({
@@ -218,14 +218,14 @@ describe('Equoria-bgdfb — the missed week is collected with the next one, once
       select: { amount: true },
     });
     expect(burnRows).toHaveLength(1);
-    expect(Number(burnRows[0].amount)).toBe(ONE_GROOM_FEE * 2);
+    expect(Number(burnRows[0].amount)).toBe(oneGroomFee * 2);
 
     // The owed week is marked settled, so it cannot be collected a second time.
     const settled = await prisma.groomSalaryPayment.findMany({
       where: { userId: user.id, groomId: groom.id, status: arrearsSettledStatus },
     });
     expect(settled).toHaveLength(1);
-    expect(settled[0].amount).toBe(ONE_GROOM_FEE);
+    expect(settled[0].amount).toBe(oneGroomFee);
     const stillOwed = await prisma.groomSalaryPayment.count({
       where: { userId: user.id, status: 'missedInsufficientFunds' },
     });
@@ -249,10 +249,10 @@ describe('Equoria-bgdfb — the missed week is collected with the next one, once
   it('the settled week is never charged again: the following week costs the ordinary fee', async () => {
     const before = await moneyOf(user.id);
 
-    const result = await processWeeklySalaries(WEEK_THREE, { userId: user.id });
+    const result = await processWeeklySalaries(weekThree, { userId: user.id });
     expect(result.errors).toEqual([]);
     expect(result.arrearsCollected).toBe(0);
-    expect(await moneyOf(user.id)).toBe(before - ONE_GROOM_FEE);
+    expect(await moneyOf(user.id)).toBe(before - oneGroomFee);
   }, 60000);
 });
 
@@ -271,10 +271,10 @@ describe('Equoria-bgdfb — a debt does not outlive the groom it was owed for', 
   afterAll(() => cleanup.run(), 60000);
 
   it('releasing the groom for a full unpaid week writes the owed week off', async () => {
-    const graceRun = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
+    const graceRun = await processWeeklySalaries(weekOne, { userId: user.id });
     expect(graceRun.graced).toBe(1);
 
-    const releaseRun = await processWeeklySalaries(WEEK_TWO, { userId: user.id });
+    const releaseRun = await processWeeklySalaries(weekTwo, { userId: user.id });
     expect(releaseRun.released).toBe(1);
 
     // The groom is gone from this player's staff...
@@ -298,7 +298,7 @@ describe('Equoria-bgdfb — a debt does not outlive the groom it was owed for', 
       where: { userId: user.id, groomId: groom.id, status: arrearsWrittenOffStatus },
     });
     expect(writtenOff).toHaveLength(1);
-    expect(writtenOff[0].amount).toBe(ONE_GROOM_FEE);
+    expect(writtenOff[0].amount).toBe(oneGroomFee);
   }, 90000);
 });
 
@@ -317,27 +317,27 @@ describe('Equoria-bgdfb F2 — the debt never blocks the current week', () => {
   afterAll(() => cleanup.run(), 60000);
 
   it('a wallet that covers this week but not the debt pays this week, and the groom works', async () => {
-    const graceRun = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
+    const graceRun = await processWeeklySalaries(weekOne, { userId: user.id });
     expect(graceRun.graced).toBe(1);
 
     // Enough for one week's fee, not for two.
     await prisma.user.update({
       where: { id: user.id },
-      data: { money: ONE_GROOM_FEE + 10 },
+      data: { money: oneGroomFee + 10 },
     });
     const before = await moneyOf(user.id);
-    expect(before).toBeLessThan(ONE_GROOM_FEE * 2);
+    expect(before).toBeLessThan(oneGroomFee * 2);
 
-    const result = await processWeeklySalaries(WEEK_TWO, { userId: user.id });
+    const result = await processWeeklySalaries(weekTwo, { userId: user.id });
     expect(result.errors).toEqual([]);
     expect(result.successful).toBe(1);
     expect(result.graced).toBe(0);
     expect(result.released).toBe(0);
 
     // THIS week was taken; the debt was not.
-    expect(await moneyOf(user.id)).toBe(before - ONE_GROOM_FEE);
+    expect(await moneyOf(user.id)).toBe(before - oneGroomFee);
     expect(result.arrearsCollected).toBe(0);
-    expect(result.totalAmount).toBe(ONE_GROOM_FEE);
+    expect(result.totalAmount).toBe(oneGroomFee);
 
     // The groom is paid up for the week they are working, so they work.
     const row = await prisma.groom.findUnique({
@@ -353,17 +353,17 @@ describe('Equoria-bgdfb F2 — the debt never blocks the current week', () => {
       where: { userId: user.id, groomId: groom.id, status: 'missedInsufficientFunds' },
     });
     expect(stillOwed).toHaveLength(1);
-    expect(stillOwed[0].amount).toBe(ONE_GROOM_FEE);
+    expect(stillOwed[0].amount).toBe(oneGroomFee);
   }, 90000);
 
   it('the debt is collected on the first week the player can afford both', async () => {
     await prisma.user.update({ where: { id: user.id }, data: { money: 1000 } });
     const before = await moneyOf(user.id);
 
-    const result = await processWeeklySalaries(WEEK_THREE, { userId: user.id });
+    const result = await processWeeklySalaries(weekThree, { userId: user.id });
     expect(result.errors).toEqual([]);
-    expect(result.arrearsCollected).toBe(ONE_GROOM_FEE);
-    expect(await moneyOf(user.id)).toBe(before - ONE_GROOM_FEE * 2);
+    expect(result.arrearsCollected).toBe(oneGroomFee);
+    expect(await moneyOf(user.id)).toBe(before - oneGroomFee * 2);
 
     const settled = await prisma.groomSalaryPayment.findMany({
       where: { userId: user.id, groomId: groom.id, status: arrearsSettledStatus },
@@ -372,9 +372,9 @@ describe('Equoria-bgdfb F2 — the debt never blocks the current week', () => {
 
     // And it is not collected a second time on the following week.
     const afterSettling = await moneyOf(user.id);
-    const nextWeek = await processWeeklySalaries(WEEK_FOUR, { userId: user.id });
+    const nextWeek = await processWeeklySalaries(weekFour, { userId: user.id });
     expect(nextWeek.arrearsCollected).toBe(0);
-    expect(await moneyOf(user.id)).toBe(afterSettling - ONE_GROOM_FEE);
+    expect(await moneyOf(user.id)).toBe(afterSettling - oneGroomFee);
   }, 90000);
 });
 
@@ -393,7 +393,7 @@ describe('Equoria-bgdfb F3 — a debt does not outlive the career either', () =>
   afterAll(() => cleanup.run(), 60000);
 
   it('retirement writes the owed week off, as a release does', async () => {
-    const graceRun = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
+    const graceRun = await processWeeklySalaries(weekOne, { userId: user.id });
     expect(graceRun.graced).toBe(1);
 
     // Age the groom exactly onto its hidden retirement age, so the GAME retires it.
@@ -426,6 +426,6 @@ describe('Equoria-bgdfb F3 — a debt does not outlive the career either', () =>
       where: { userId: user.id, groomId: groom.id, status: arrearsWrittenOffStatus },
     });
     expect(writtenOff).toHaveLength(1);
-    expect(writtenOff[0].amount).toBe(ONE_GROOM_FEE);
+    expect(writtenOff[0].amount).toBe(oneGroomFee);
   }, 90000);
 });

@@ -53,8 +53,8 @@ import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-icqqm';
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const fixturePrefix = 'TestFixture-icqqm';
+const msPerDay = 24 * 60 * 60 * 1000;
 
 /**
  * Owner ruling 2026-10-28 (q228): the weekly fee is the groom's star level price,
@@ -62,7 +62,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
  * (the column default), so one groom costs exactly this much a week. (It was 70 per
  * horse under Equoria-95yrv; the ruling changed it.)
  */
-const FEE_ONE_HORSE = 100;
+const feeOneHorse = 100;
 
 const createdAssignmentIds = [];
 const createdGroomIds = [];
@@ -115,7 +115,7 @@ function payWeekStartOf(now) {
 function payWeekWindowOf(now) {
   const start = payWeekStartOf(now);
   // The next Sunday's start (a DST week is 7 days +/- 1 hour long).
-  return { start, end: payWeekStartOf(new Date(start.getTime() + 8 * MS_PER_DAY)) };
+  return { start, end: payWeekStartOf(new Date(start.getTime() + 8 * msPerDay)) };
 }
 
 async function makeUser(money) {
@@ -123,8 +123,8 @@ async function makeUser(money) {
   const u = await prisma.user.create({
     data: {
       emailVerified: true,
-      email: `${FIXTURE_PREFIX}-${tag}@test.com`,
-      username: `${FIXTURE_PREFIX}-${tag}`.slice(0, 30),
+      email: `${fixturePrefix}-${tag}@test.com`,
+      username: `${fixturePrefix}-${tag}`.slice(0, 30),
       password: 'irrelevant-hash',
       firstName: 'icqqm',
       lastName: 'Tester',
@@ -139,7 +139,7 @@ async function makeGroomAssignment(user, { skillLevel = 'novice', speciality = '
   const tag = uniq();
   const groom = await prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-Groom-${tag}`,
+      name: `${fixturePrefix}-Groom-${tag}`,
       speciality,
       personality: 'gentle',
       skillLevel,
@@ -151,7 +151,7 @@ async function makeGroomAssignment(user, { skillLevel = 'novice', speciality = '
   const horse = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-Horse-${tag}`,
+      name: `${fixturePrefix}-Horse-${tag}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
       age: 0,
@@ -256,14 +256,14 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
     expect(run1.successful).toBe(1);
 
     const afterRun1 = await getUserMoney(user.id);
-    expect(afterRun1).toBe(1000 - FEE_ONE_HORSE);
+    expect(afterRun1).toBe(1000 - feeOneHorse);
 
     // THE DEFECT: this second run, same pay week, must be a no-op for
     // this user. Pre-fix it double-debits (two debits, 2 paid rows).
     const run2 = await processWeeklySalaries(now, { userId: user.id });
 
     const afterRun2 = await getUserMoney(user.id);
-    expect(afterRun2).toBe(1000 - FEE_ONE_HORSE); // debited exactly ONCE
+    expect(afterRun2).toBe(1000 - feeOneHorse); // debited exactly ONCE
 
     const paidRows = await paidRowsInWindow(user.id, groom.id, window);
     expect(paidRows.length).toBe(1); // exactly one 'paid' row for the pay week
@@ -281,7 +281,7 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
   it('a run in a NEW pay week still debits (idempotency must not become never-pays-again)', async () => {
     const now = new Date();
     const weekA = payWeekWindowOf(now);
-    const nextWeekNow = new Date(now.getTime() + 7 * MS_PER_DAY);
+    const nextWeekNow = new Date(now.getTime() + 7 * msPerDay);
     const weekB = payWeekWindowOf(nextWeekNow);
 
     const user = await makeUser(1000);
@@ -291,11 +291,11 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
     });
 
     await processWeeklySalaries(now, { userId: user.id });
-    expect(await getUserMoney(user.id)).toBe(1000 - FEE_ONE_HORSE);
+    expect(await getUserMoney(user.id)).toBe(1000 - feeOneHorse);
 
     // NEW pay week → the guard must NOT suppress this debit.
     await processWeeklySalaries(nextWeekNow, { userId: user.id });
-    expect(await getUserMoney(user.id)).toBe(1000 - FEE_ONE_HORSE - FEE_ONE_HORSE);
+    expect(await getUserMoney(user.id)).toBe(1000 - feeOneHorse - feeOneHorse);
 
     // One paid row per groom per pay week, each dated inside its own window.
     const rowsWeekA = await paidRowsInWindow(user.id, groom.id, weekA);
@@ -324,7 +324,7 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
       data: {
         groomId: groomA.id,
         userId: user.id,
-        amount: FEE_ONE_HORSE,
+        amount: feeOneHorse,
         paymentDate: now,
         paymentType: 'weeklySalary',
         status: 'paid',
@@ -334,7 +334,7 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
     await processWeeklySalaries(now, { userId: user.id });
 
     // Only groom B's fee may be debited — NOT both grooms'.
-    expect(await getUserMoney(user.id)).toBe(1000 - FEE_ONE_HORSE);
+    expect(await getUserMoney(user.id)).toBe(1000 - feeOneHorse);
 
     // Groom A still has exactly the one (pre-planted) paid row; groom B one.
     const rowsA = await paidRowsInWindow(user.id, groomA.id, window);
@@ -365,7 +365,7 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
       processWeeklySalaries(now, { userId: user.id }),
     ]);
 
-    expect(await getUserMoney(user.id)).toBe(1000 - FEE_ONE_HORSE); // exactly one debit
+    expect(await getUserMoney(user.id)).toBe(1000 - feeOneHorse); // exactly one debit
 
     const paidRows = await paidRowsInWindow(user.id, groom.id, window);
     expect(paidRows.length).toBe(1);
@@ -404,7 +404,7 @@ describe('getPayWeekStart — Eastern Sunday anchoring (Equoria-icqqm; owner rul
 
   it('exactly one week later lands on the NEXT Sunday (windows tile with no gap/overlap)', () => {
     const sunday = new Date('2026-08-16T13:00:00.000Z');
-    const nextTick = new Date(sunday.getTime() + 7 * MS_PER_DAY);
+    const nextTick = new Date(sunday.getTime() + 7 * msPerDay);
     expect(getPayWeekStart(nextTick).toISOString()).toBe('2026-08-23T04:00:00.000Z');
   });
 

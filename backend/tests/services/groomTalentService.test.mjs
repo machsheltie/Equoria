@@ -19,7 +19,7 @@ import {
   selectTalent,
   validateTalentSelection,
   applyTalentEffects,
-  TALENT_REQUIREMENTS,
+  talentRequirements,
 } from '../../modules/grooms/services/groomTalentService.mjs';
 
 describe('Groom Talent Service', () => {
@@ -109,7 +109,7 @@ describe('Groom Talent Service', () => {
     });
 
     test('should have consistent talent requirements', async () => {
-      const requirements = TALENT_REQUIREMENTS;
+      const requirements = talentRequirements;
 
       // q229: the star levels equivalent to the old levels 3, 5 and 8.
       expect(requirements.tier1.minStarLevel).toBe('novice');

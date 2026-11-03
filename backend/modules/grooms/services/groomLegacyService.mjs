@@ -25,10 +25,10 @@ import { staffCareerStarLevel, staffLevelAtLeast } from '../../../constants/staf
 /**
  * Legacy system constants
  */
-export const LEGACY_CONSTANTS = {
+export const legacyConstants = {
   // The star level equivalent to the old level 7 (q229). The old protégé +1 level bonus
   // went with the old level.
-  MINIMUM_MENTOR_STAR_LEVEL: 'advanced',
+  minimumMentorStarLevel: 'advanced',
   // Equoria-ixya8: the old +50 starting experience is gone (staff never gain XP, owner
   // ruling 2026-10-21; every groom starts as a Rookie, q177).
   // Equoria-h82zc: the +10% protégé skill bonus was never applied by
@@ -41,14 +41,14 @@ export const LEGACY_CONSTANTS = {
  * @returns {boolean}
  */
 function meetsMentorLevel() {
-  return staffLevelAtLeast(staffCareerStarLevel, LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL);
+  return staffLevelAtLeast(staffCareerStarLevel, legacyConstants.minimumMentorStarLevel);
 }
 
 /**
  * Legacy perks by personality type
  * Each perk provides specific bonuses to the protégé
  */
-export const LEGACY_PERKS = {
+export const legacyPerks = {
   calm: [
     {
       id: 'gentleHands',
@@ -138,7 +138,7 @@ export function getPlayerLegacyPerks(personality) {
  * @returns {{ id: string, name: string, description: string } | null}
  */
 export function findPlayerLegacyPerk(perkId) {
-  for (const perks of Object.values(LEGACY_PERKS)) {
+  for (const perks of Object.values(legacyPerks)) {
     const perk = perks.find(p => p.id === perkId);
     if (perk) {
       return toPlayerLegacyPerk(perk);
@@ -196,7 +196,7 @@ export async function checkLegacyEligibility(groomId) {
       eligible: false,
       reason: 'insufficientLevel',
       starLevel: groom.starLevel,
-      requiredStarLevel: LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL,
+      requiredStarLevel: legacyConstants.minimumMentorStarLevel,
     };
   }
 
@@ -219,7 +219,7 @@ export async function checkLegacyEligibility(groomId) {
  * @returns {Array} Array of available perks
  */
 export function getLegacyPerks(personality) {
-  return LEGACY_PERKS[personality] || [];
+  return legacyPerks[personality] || [];
 }
 
 /**
@@ -286,7 +286,7 @@ export async function getUserLegacyHistory(userId) {
  * Equoria-c0vo: Auto-create a GroomLegacyLog when a mentor-eligible groom retires.
  *
  * Eligibility: the mentoring level (meetsMentorLevel) is at least
- * LEGACY_CONSTANTS.MINIMUM_MENTOR_STAR_LEVEL (Advanced).
+ * legacyConstants.minimumMentorStarLevel (Advanced).
  * Protégé selection: the least experienced active (non-retired) groom of the same user,
  * excluding the retiring groom itself, that is not already a legacy protégé.
  * If no eligible protégé exists yet, returns null and logs an info message (there
@@ -381,6 +381,6 @@ export default {
   createLegacyLog,
   getUserLegacyHistory,
   autoCreateLegacyOnRetirement,
-  LEGACY_CONSTANTS,
-  LEGACY_PERKS,
+  legacyConstants,
+  legacyPerks,
 };

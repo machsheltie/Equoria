@@ -18,7 +18,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
-  MAX_HORSES_PER_GROOM,
+  maxHorsesPerGroom,
   calculateWeeklyFee,
   countActiveAssignments,
 } from './groomFeeBasisService.mjs';
@@ -119,7 +119,7 @@ export async function calculateUserSalaryCost(userId) {
     return {
       totalWeeklyCost,
       groomCount: staff.length,
-      maxHorsesPerGroom: MAX_HORSES_PER_GROOM,
+      maxHorsesPerGroom,
       breakdown,
     };
   } catch (error) {
@@ -129,7 +129,7 @@ export async function calculateUserSalaryCost(userId) {
     return {
       totalWeeklyCost: 0,
       groomCount: 0,
-      maxHorsesPerGroom: MAX_HORSES_PER_GROOM,
+      maxHorsesPerGroom,
       breakdown: [],
     };
   }

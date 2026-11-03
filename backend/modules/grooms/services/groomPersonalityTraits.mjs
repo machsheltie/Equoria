@@ -26,7 +26,7 @@ const neutralTraitCompatibility = 0.1;
 const neutralOverallCompatibility = 0.6;
 
 // Personality trait definitions
-const PERSONALITY_TRAIT_DEFINITIONS = {
+const personalityTraitDefinitions = {
   calm: {
     name: 'Calm',
     description: 'Steady, patient, and reassuring approach to horse care',
@@ -245,7 +245,7 @@ export async function getGroomPersonalityTraits(groomId) {
 
 /** A groom row's personality traits, scaled by experience; throws for an unknown type. Pure. */
 export function personalityTraitsFor(groom) {
-  const personalityDef = PERSONALITY_TRAIT_DEFINITIONS[groom.epigeneticInfluenceType];
+  const personalityDef = personalityTraitDefinitions[groom.epigeneticInfluenceType];
   if (!personalityDef) {
     throw new Error(`Unknown personality type: ${groom.epigeneticInfluenceType}`);
   }
@@ -386,7 +386,7 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
  */
 export async function getPersonalityTraitDefinitions() {
   return {
-    personalities: PERSONALITY_TRAIT_DEFINITIONS,
+    personalities: personalityTraitDefinitions,
     compatibilityMatrix: generateCompatibilityMatrix(),
     experienceLevels: {
       low: { min: 0, max: 50, description: 'Developing traits, basic effectiveness' },

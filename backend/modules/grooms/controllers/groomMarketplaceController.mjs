@@ -13,7 +13,7 @@ import {
   generateMarketplace,
   needsRefresh,
   getRefreshCost,
-  MARKETPLACE_CONFIG,
+  marketplaceConfig,
 } from '../services/groomMarketplace.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -44,9 +44,9 @@ import { drawStartAge } from '../services/groomAgeService.mjs';
 import { openEngagementTx } from '../services/groomEngagementService.mjs';
 import { ensureGrowthProfileTx } from '../../../services/staffGrowthService.mjs';
 // Equoria-95yrv: the weekly fee's rate and cap, published with the offer list.
-import { MAX_HORSES_PER_GROOM } from '../services/groomSalaryService.mjs';
+import { maxHorsesPerGroom } from '../services/groomSalaryService.mjs';
 
-const STAFF_TYPE = 'groom';
+const staffType = 'groom';
 
 /**
  * Load (or auto-generate) the persisted marketplace state for a user.
@@ -57,15 +57,15 @@ const STAFF_TYPE = 'groom';
  */
 async function loadOrCreateMarketplace(userId) {
   const record = await prisma.staffMarketplaceState.findUnique({
-    where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+    where: { userId_staffType: { userId, staffType } },
   });
 
   if (!record || needsRefresh(record.lastRefresh)) {
     const grooms = generateMarketplace();
     const refreshCount = (record?.refreshCount ?? 0) + 1;
     const updated = await prisma.staffMarketplaceState.upsert({
-      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
-      create: { userId, staffType: STAFF_TYPE, offers: grooms, refreshCount },
+      where: { userId_staffType: { userId, staffType } },
+      create: { userId, staffType, offers: grooms, refreshCount },
       update: { offers: grooms, lastRefresh: new Date(), refreshCount },
     });
     logger.info(
@@ -96,9 +96,7 @@ export async function getMarketplace(req, res) {
     const { offers, lastRefresh, refreshCount } = await loadOrCreateMarketplace(userId);
 
     const nextFreeRefresh = new Date(lastRefresh);
-    nextFreeRefresh.setHours(
-      nextFreeRefresh.getHours() + MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS,
-    );
+    nextFreeRefresh.setHours(nextFreeRefresh.getHours() + marketplaceConfig.refreshIntervalHours);
     const refreshCost = getRefreshCost(lastRefresh);
 
     res.status(200).json({
@@ -116,7 +114,7 @@ export async function getMarketplace(req, res) {
         refreshCount,
         // Each offer carries its own weekly fee (its star level's price, owner
         // ruling 2026-10-28, q228); the horse cap travels with the list.
-        maxHorsesPerGroom: MAX_HORSES_PER_GROOM,
+        maxHorsesPerGroom,
       },
     });
   } catch (error) {
@@ -135,7 +133,7 @@ export async function refreshMarketplace(req, res) {
     logger.info(`[groomMarketplace] Refreshing marketplace for user ${userId}, force: ${force}`);
 
     const record = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+      where: { userId_staffType: { userId, staffType } },
     });
     const refreshCost = getRefreshCost(record?.lastRefresh ?? null);
 
@@ -143,8 +141,7 @@ export async function refreshMarketplace(req, res) {
     if (refreshCost > 0 && !force) {
       const nextFreeRefresh = record
         ? new Date(
-            record.lastRefresh.getTime() +
-              MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS * 60 * 60 * 1000,
+            record.lastRefresh.getTime() + marketplaceConfig.refreshIntervalHours * 60 * 60 * 1000,
           )
         : new Date();
       return res.status(400).json({
@@ -197,7 +194,7 @@ export async function refreshMarketplace(req, res) {
               systemAccount: SYSTEM_ACCOUNT_BURN,
               category: 'groomMarketplaceRefreshBurn',
               description: 'Groom marketplace refresh fee',
-              metadata: { staffType: STAFF_TYPE },
+              metadata: { staffType },
             });
             // Principal user-facing debit ledger row (t7ywe: ledger row present).
             await recordTransactionTx(tx, {
@@ -206,12 +203,12 @@ export async function refreshMarketplace(req, res) {
               amount: refreshCost,
               category: 'groomMarketplaceRefresh',
               description: 'Groom marketplace refresh fee',
-              metadata: { staffType: STAFF_TYPE },
+              metadata: { staffType },
             });
           }
           return tx.staffMarketplaceState.upsert({
-            where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
-            create: { userId, staffType: STAFF_TYPE, offers: grooms, refreshCount },
+            where: { userId_staffType: { userId, staffType } },
+            create: { userId, staffType, offers: grooms, refreshCount },
             update: { offers: grooms, lastRefresh: new Date(), refreshCount },
           });
         }),
@@ -229,9 +226,7 @@ export async function refreshMarketplace(req, res) {
     }
 
     const nextFreeRefresh = new Date(updated.lastRefresh);
-    nextFreeRefresh.setHours(
-      nextFreeRefresh.getHours() + MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS,
-    );
+    nextFreeRefresh.setHours(nextFreeRefresh.getHours() + marketplaceConfig.refreshIntervalHours);
 
     logger.info(
       `[groomMarketplace] Refreshed marketplace for user ${userId} with ${grooms.length} new grooms`,
@@ -277,7 +272,7 @@ export async function hireFromMarketplace(req, res) {
     logger.info(`[groomMarketplace] User ${userId} attempting to hire groom ${marketplaceId}`);
 
     const record = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+      where: { userId_staffType: { userId, staffType } },
     });
     if (!record) {
       return res.status(404).json({
@@ -410,7 +405,7 @@ export async function hireFromMarketplace(req, res) {
           const updatedOffers = offers.filter((_, i) => i !== groomIndex);
           const offerClaim = await removeMarketplaceOfferCas(tx, {
             userId,
-            staffType: STAFF_TYPE,
+            staffType,
             expectedOffers: offers,
             updatedOffers,
           });
@@ -505,7 +500,7 @@ export async function forceExpireMarketplace(userId) {
     return;
   }
   await prisma.staffMarketplaceState.updateMany({
-    where: { userId, staffType: STAFF_TYPE },
+    where: { userId, staffType },
     data: { lastRefresh: new Date(0) },
   });
 }
@@ -518,7 +513,7 @@ export async function getMarketplaceStats(req, res) {
     const userId = req.user.id;
 
     const record = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+      where: { userId_staffType: { userId, staffType } },
     });
 
     if (!record) {
@@ -554,9 +549,9 @@ export async function getMarketplaceStats(req, res) {
         qualityDistribution,
         specialtyDistribution,
         config: {
-          refreshIntervalHours: MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS,
-          premiumRefreshCost: MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST,
-          defaultSize: MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE,
+          refreshIntervalHours: marketplaceConfig.refreshIntervalHours,
+          premiumRefreshCost: marketplaceConfig.premiumRefreshCost,
+          defaultSize: marketplaceConfig.defaultMarketplaceSize,
         },
       },
     });
