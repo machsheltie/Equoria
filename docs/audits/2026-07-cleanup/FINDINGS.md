@@ -4010,3 +4010,55 @@ Scope: Claude's rework range `a724734c5^..5d3c3bf7a`, reviewed at `5d3c3bf7a` ag
 - No application or test source was modified by this review. The only repository write is this requested findings-ledger update; unrelated working-tree changes were preserved.
 
 VERDICT: REVISE
+
+## 2026-11-03 — Story 30.5 measured accessibility evidence (Equoria-oey96.10)
+
+The retired static audit (`docs/sprint-artifacts/wcag-audit-epic30-2026-05-13.md`, retired in fee265d07) said axe, Lighthouse, contrast and forced-colors had never been measured. This section records the first measured run on the eight Story 30.5 pages.
+
+**Instruments.** axe-core 4.11.4 through `@axe-core/playwright` (tags wcag2a, wcag2aa, wcag21a, wcag21aa), Playwright 1.61.1 Chromium (Desktop Chrome, 1280x720), and `page.emulateMedia({ forcedColors: 'active' })`. **Lighthouse was not used.** It is not installed, and CLAUDE.md forbids new dependencies without owner approval, so no Lighthouse scores exist. AC1 (a Lighthouse score per page) is still not done.
+
+**How it ran.** `npx playwright test --project=a11y --workers=1 --retries=0` from the repo root, using the `playwright.config.ts` web servers (real backend with `NODE_ENV=beta` on :3001, Vite dev frontend on :3000, local `equoria` database). global-setup registered a fresh player, confirmed her email, onboarded her and logged in for real. There were no bypass headers. The pages were measured on the dev server, not a production build. The same player was used for every page, so results, messages and competitions show what a new player sees, including empty states. Each test attaches its raw evidence (`axe-*.json`, `contrast-*.json`, `contrast-sampled-*.json`, `contrast-backdrop-*.png`, `keyboard-*.json`, `forced-colors-*.png`); rerun the command above to regenerate it. The five fixture players these runs created were removed afterwards with `executeScopedPurge` (scoped by id).
+
+**Pages.** Login `/login`; hub `/`; train `/training`; compete `/competitions`; horse page `/horses/:id`; breed = the horse page's Stud / Sale tab (the Breeding Hall route was removed by owner ruling q89 and `/breeding` now redirects to `/stable`); results `/competition-results`; messages `/messages`.
+
+### Results per page
+
+| Page                | axe serious/critical            | axe moderate/minor | axe contrast: pass / fail / undecided (min passing ratio) | Undecided text sampled: measured / below 4.5 or 3 | Forced colors: axe serious/critical (contrast rule excluded) | Keyboard: Tab stops with a visible indicator, default / forced |
+| ------------------- | ------------------------------- | ------------------ | --------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------- |
+| Login               | 0                               | 0                  | 0 / 0 / 12                                                | 11 / 1                                            | 0                                                            | 14 of 14 / 13 of 13                                            |
+| Hub                 | 0                               | 0                  | 6 / 0 / 61 (6.40)                                         | 60 / 5                                            | 0                                                            | 14 of 15 (skip link) / 15 of 15                                |
+| Train               | 0                               | 0                  | 15 / 0 / 32 (5.22)                                        | 32 / 6                                            | 0                                                            | 14 of 15 / 15 of 15                                            |
+| Compete             | **1** (color-contrast, 3 nodes) | 0                  | 8 / 3 / 726 (6.40)                                        | 726 / 2                                           | 0                                                            | 14 of 15 / 15 of 15                                            |
+| Horse page          | 0                               | 0                  | 37 / 0 / 75 (6.07)                                        | 70 / 13                                           | 0                                                            | 14 of 15 / 15 of 15                                            |
+| Breed (Stud / Sale) | 0                               | 0                  | 33 / 0 / 40 (6.07)                                        | 38 / 12                                           | 0                                                            | 13 of 14 / 14 of 14                                            |
+| Results             | 0                               | 0                  | 6 / 0 / 33 (6.40)                                         | 33 / 1                                            | 0                                                            | 14 of 15 / 15 of 15                                            |
+| Messages            | 0                               | 0                  | 13 / 0 / 21 (6.40)                                        | 19 / 6                                            | 0                                                            | 14 of 15 / 15 of 15                                            |
+
+The only Tab stop without an outline or shadow is the "Skip to main content" link. It is invisible until focused and appears when focused, so focus is still visible. Every focus indicator in forced-colors mode is a 2-3px system-colored outline. Tab order started with the skip link, then the sidebar, on every signed-in page. No focus traps were seen in the first 15 stops.
+
+### Contrast: what axe could and could not decide
+
+axe left most text **undecided** because it sits on the painted backdrop, a gradient, or a translucent glass panel (`bgGradient` in its output). The spec's `sampledContrast` step measures those boxes. It hides the text, captures the page at full height, and compares every captured pixel behind each text box with the text's computed color. It reports the 5th-percentile ratio ("worst") and the median. Rows where worst and median agree are reliable. Rows where they diverge widely, for example the Excellent health badge at 4.07/7.59, the Equip button at 1.00/10.43, or the overflowing "This Month" chip at 1.82/6.54, are box-edge artifacts and were not filed. The measured failures that are real:
+
+- `--text-muted` #64748b used for 12-14px text: 2.03-3.96:1 on every page. Examples: inactive tabs, helper and empty-state copy, the hub "Next Actions" eyebrow, the login footer. tokens.css already labels this token "AA large only". Filed as **Equoria-oey96.77**.
+- `--status-danger` #ef4444 small warning text: 3.58-4.06:1 (care chips, "Not Fit to Train", "Last shod"). Filed as **Equoria-oey96.78**.
+- Selected competition filter chips, #dcebff on #3a6fdd at 12px: 3.86:1 (axe-decided, serious). Filed as **Equoria-oey96.74**.
+- Borderline: `--text-secondary` #94a3b8 on the horse page's lighter panel, 4.42-4.48 worst / 4.52-4.85 median. Recorded under Equoria-oey96.77.
+
+### Forced colors
+
+The emulation was confirmed in effect on every page (`matchMedia('(forced-colors: active)')` was true). axe's color-contrast rule was not scored in this mode. It reads the authored text color against the forced background, so it reported pairs nobody sees: it scored the sidebar wordmark gold #c8a84e on #ffffff (2.29:1), while the screenshot shows it painted in the system text color. All other axe rules found nothing serious or critical. The screenshots show two defects:
+
+- Buttons drawn only with a fill or gradient lose their shape and render as bare text: login "Enter", "Host a Show", and the horse page Quick Actions bar. Filed as **Equoria-oey96.75**.
+- Glass panels stay translucent over the background art, so the tokens.css `@media (forced-colors: active)` Canvas override never reaches them. Text stays readable on the browser's backplates. Filed as **Equoria-oey96.76**.
+
+### Story 30.5 "What was not done", updated 2026-11-03
+
+- Automated axe scan in a browser: **done 2026-11-03.** It is a standing gate (`tests/e2e/accessibility.spec.ts`, Playwright project `a11y`) over all eight pages, in default and forced-colors modes. The competitions test fails today and will keep failing until Equoria-oey96.74 is fixed.
+- Instrumental contrast: **done 2026-11-03** from rendered pages (computed colors, plus backdrop sampling for the text axe could not decide). The ratios are measured on real backdrops, not on token pairs. There is no separate token-pair script: the token sheet's own stated ratios are against `--bg-night-sky`, which these pages do not actually paint behind text.
+- Forced-colors in-browser verification: **done 2026-11-03** (emulated in Chromium, not a real Windows High Contrast session).
+- Keyboard-only: **done 2026-11-03** as a 15-stop Tab sweep per page. A full login-to-breed task flow driven only by keyboard was **not** done.
+- Lighthouse a11y scores: **not done.** Not installed; adding it needs owner approval.
+- Production build (`vite build` + preview) measurement: **not done.** The dev server was measured.
+- Screen-reader (NVDA) pass: **not done.**
+- eslint-plugin-jsx-a11y enablement: **not done** (unchanged).
