@@ -19,6 +19,14 @@ const BACKEND = 'http://localhost:3001';
 const suitePrefix = 'seslife_e2e';
 
 test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
+  // This suite's own player logs in, so it starts from an empty cookie jar. A
+  // login ends the session of the refresh cookie the browser presents (one
+  // sign-in per browser, Equoria-wj4bc), so logging in from the shared
+  // global-setup storageState ended THAT player's session for every later spec
+  // ("Token rejected: session ended", CI run 41697709247), and signing up from it
+  // counted this player on the shared player's device (Equoria-x5n89).
+  test.use({ storageState: { cookies: [], origins: [] } });
+
   let userEmail: string;
   let userPassword: string;
 

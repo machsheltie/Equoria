@@ -135,7 +135,16 @@ function storageStateDirectory(): string {
  */
 export async function createSeededPlayerSession(browser: Browser): Promise<SeededPlayerSession> {
   // No storageState: this context starts anonymous and becomes the new player.
-  const context = await browser.newContext({ baseURL: e2eBaseUrl });
+  // It must be EXPLICITLY empty. Created inside a test, `browser.newContext()`
+  // inherits the config's `storageState` (the global-setup player), and with it
+  // that player's equoriaDevice cookie, so every seeded player signed up on one
+  // device and the fifth was refused accountLimitReached (Equoria-x5n89, owner
+  // ruling 2026-10-23: four accounts per device). Each seeded player is its own
+  // person on its own device.
+  const context = await browser.newContext({
+    baseURL: e2eBaseUrl,
+    storageState: { cookies: [], origins: [] },
+  });
   const request = context.request;
 
   const stamp = `${Date.now()}_${randomUUID().slice(0, 8)}`;
