@@ -27,7 +27,8 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { calendarDateDayIndex, gameCalendarDate, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
+import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // Minimal groomCareHistory stub used by functions that accept it but don't branch on it
@@ -426,5 +427,99 @@ describe('evaluateEnhancedMilestone() — personality effects + interaction bran
     expect(result.personalityCompatibility).toBeDefined();
     // finalScore reflects personality modifier
     expect(typeof result.finalScore).toBe('number');
+  });
+});
+
+// ── FOAL-11 (Equoria-gveno): a window's care history counts from the foal's birth ──
+// A foal 10 days old is in the curiosityPlay window (days 8-14). Its care on
+// days 8 and 9 belongs to that window; care on day 1 and two days before its
+// birth date does not. The old query counted back from today (today-14 to
+// today-8), which picked the day-1 and pre-birth care and missed days 8 and 9.
+
+describe('evaluateEnhancedMilestone() — window history counts from birth (FOAL-11, Equoria-gveno)', () => {
+  const cleanup = createCleanupTracker();
+  let foal;
+  const careIds = {};
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+    const fx = {};
+    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: foal.id } }), 'interactions');
+    cleanup.add(() => prisma.horse.delete({ where: { id: foal.id } }), 'horse');
+    cleanup.add(() => prisma.groom.delete({ where: { id: fx.groom.id } }), 'groom');
+    cleanup.add(() => prisma.user.delete({ where: { id: fx.user.id } }), 'user');
+
+    const user = await prisma.user.create({
+      data: {
+        emailVerified: true,
+        email: `emes-frombirth-${ts}-${rand()}@test.com`,
+        username: `emesfrombirth${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'EMES',
+        lastName: 'FromBirth',
+        money: 1000,
+      },
+    });
+    fx.user = user;
+    const groom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-FromBirthGroom-${ts}`,
+        speciality: 'foalCare',
+        personality: 'gentle',
+        userId: user.id,
+        isActive: true,
+      },
+    });
+    fx.groom = groom;
+    const dateOfBirth = gameCalendarDate(new Date(), -10);
+    foal = await prisma.horse.create({
+      data: await testHorseData(prisma, {
+        ...fixtureColor(),
+        name: `TestFixture-EMES-FromBirth-${ts}`,
+        sex: 'Filly',
+        dateOfBirth,
+        age: 1,
+        userId: user.id,
+      }),
+    });
+
+    // Noon Eastern on the foal's development day `day` (0 = its birth date).
+    const birthIndex = calendarDateDayIndex(dateOfBirth);
+    const noonOfDay = day => new Date(startOfGameDayIndex(birthIndex + day).getTime() + 12 * 3600000);
+    for (const [key, day, taskType] of [
+      ['beforeBirth', -2, 'earlyTouch'],
+      ['day1', 1, 'grooming'],
+      ['day8', 8, 'showingMisc'],
+      ['day9', 9, 'handling'],
+    ]) {
+      const row = await prisma.groomInteraction.create({
+        data: {
+          foalId: foal.id,
+          groomId: groom.id,
+          interactionType: taskType,
+          taskType,
+          duration: 30,
+          timestamp: noonOfDay(day),
+        },
+      });
+      careIds[key] = row.id;
+    }
+  }, 30000);
+
+  afterAll(() => cleanup.run(), 30000);
+
+  it('counts the care on days 8 and 9 and none from before day 8', async () => {
+    expect(getHorseAgeDays(foal.dateOfBirth)).toBe(10);
+
+    const result = await evaluateEnhancedMilestone(foal.id, milestoneTypes.curiosityPlay);
+
+    expect(result.success).toBe(true);
+    const counted = result.groomCareHistory.interactions.map(i => i.id).sort((a, b) => a - b);
+    expect(counted).toEqual([careIds.day8, careIds.day9].sort((a, b) => a - b));
+    expect(result.groomCareHistory.totalInteractions).toBe(2);
+    expect(result.groomCareHistory.taskDiversity).toBe(2);
+    // Two of the window's seven days had care: round(2 / 7 * 5) = 1.
+    expect(result.groomCareHistory.taskConsistency).toBe(1);
   });
 });

@@ -15,7 +15,7 @@
 
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
-import { gameDateKey } from './gameTime.mjs';
+import { calendarDateDayIndex, gameDateKey, startOfGameDayIndex } from './gameTime.mjs';
 import { applyPersonalityEffectsToMilestone } from './personalityModifierEngine.mjs';
 import { getHorseAgeDays, getHorseAgeYears } from './horseAge.mjs';
 import { minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
@@ -151,7 +151,7 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
   }
 
   // Get groom care history for milestone window
-  const groomCareHistory = await getGroomCareHistory(horseId, window);
+  const groomCareHistory = await getGroomCareHistory(horseId, window, horse.dateOfBirth);
 
   // Get current groom assignment
   const currentGroom = horse.groomAssignments.length > 0 ? horse.groomAssignments[0].groom : null;
@@ -261,20 +261,30 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
 
 /**
  * Get groom care history for a specific window
+ *
+ * FOAL-11 (Equoria-gveno): the window's days count from the foal's birth date,
+ * on the same day model as its age (utils/horseAge.mjs getHorseAgeDays: Eastern
+ * game days since the date-only dateOfBirth). Window day d is the game day
+ * birth + d, so the window runs from 00:00 Eastern on birth + start up to
+ * 00:00 Eastern on birth + end + 1. It used to count back from now, which
+ * picked care from before the window and missed the care inside it.
+ *
  * @param {number} horseId - Horse ID
- * @param {Object} window - Developmental window
+ * @param {Object} window - Developmental window ({start, end} in development days)
+ * @param {Date} dateOfBirth - The foal's date-only birth date
  * @returns {Object} Groom care history data
  */
-async function getGroomCareHistory(horseId, window) {
-  const windowStart = new Date(Date.now() - window.end * 24 * 60 * 60 * 1000);
-  const windowEnd = new Date(Date.now() - window.start * 24 * 60 * 60 * 1000);
+async function getGroomCareHistory(horseId, window, dateOfBirth) {
+  const birthIndex = calendarDateDayIndex(dateOfBirth);
+  const windowStart = startOfGameDayIndex(birthIndex + window.start);
+  const windowEnd = startOfGameDayIndex(birthIndex + window.end + 1);
 
   const interactions = await prisma.groomInteraction.findMany({
     where: {
       foalId: horseId,
       timestamp: {
         gte: windowStart,
-        lte: windowEnd,
+        lt: windowEnd,
       },
     },
     include: {
