@@ -18,6 +18,11 @@
  * the owner has not yet ruled what any trait does (2026-10-27, q117: "Do not
  * add what each actually does yet"). Add an effect here only with her ruling
  * and a live consumer.
+ *
+ * Equoria-qw4kp: `conflictsWith` names only roster traits (q117, q137); the
+ * retired names (anxious, antisocial, withdrawn, social, sensitive, calm,
+ * steady, hardy) were removed. Whether any two roster traits may be held
+ * together is an open owner question (Equoria-is62q).
  */
 
 export const FLAG_TYPES = {
@@ -48,7 +53,7 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.POSITIVE,
     sourceCategory: SOURCE_CATEGORIES.NOVELTY,
     description: 'Horse shows courage and confidence in new situations',
-    conflictsWith: ['fearful', 'anxious'],
+    conflictsWith: ['fearful'],
   },
 
   CONFIDENT: {
@@ -66,7 +71,7 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.POSITIVE,
     sourceCategory: SOURCE_CATEGORIES.BONDING,
     description: 'Horse forms strong bonds with handlers and shows trust',
-    conflictsWith: ['antisocial', 'withdrawn'],
+    conflictsWith: [],
   },
 
   RESILIENT: {
@@ -75,7 +80,7 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.POSITIVE,
     sourceCategory: SOURCE_CATEGORIES.ENVIRONMENT,
     description: 'Horse adapts well to challenges',
-    conflictsWith: ['fragile', 'sensitive'],
+    conflictsWith: ['fragile'],
   },
 
   // NEGATIVE FLAGS (5)
@@ -103,7 +108,7 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.NEGATIVE,
     sourceCategory: SOURCE_CATEGORIES.BONDING,
     description: 'Horse maintains emotional distance and resists bonding',
-    conflictsWith: ['affectionate', 'social'],
+    conflictsWith: ['affectionate'],
   },
 
   SKITTISH: {
@@ -112,7 +117,7 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.NEGATIVE,
     sourceCategory: SOURCE_CATEGORIES.ENVIRONMENT,
     description: 'Horse is easily startled and overreacts to environmental stimuli',
-    conflictsWith: ['calm', 'steady'],
+    conflictsWith: [],
   },
 
   FRAGILE: {
@@ -121,7 +126,7 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     type: FLAG_TYPES.NEGATIVE,
     sourceCategory: SOURCE_CATEGORIES.ENVIRONMENT,
     description: 'Horse is emotionally sensitive and easily overwhelmed',
-    conflictsWith: ['resilient', 'hardy'],
+    conflictsWith: ['resilient'],
   },
 };
 

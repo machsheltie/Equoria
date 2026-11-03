@@ -8,6 +8,10 @@
  * analysis interprets, never as functions. Lists whose entries are summed are
  * ORDERED; their order is the original if-chain order, which keeps the
  * floating-point sums bit-for-bit identical. Imported only by the analysis.
+ *
+ * `traitsAffected` names only roster traits (owner rulings 2026-10-27, q117,
+ * q137; Equoria-qw4kp): reactive, social, antisocial, withdrawn, intelligent,
+ * calm, patient and stable were retired with the old roster.
  */
 
 const deepFreeze = value => {
@@ -22,32 +26,32 @@ export const ENVIRONMENTAL_TRIGGERS = deepFreeze({
   harshEnvironment: {
     name: 'Harsh Environment',
     factors: ['roughHandling', 'timePressure'],
-    traitsAffected: ['fearful', 'reactive', 'insecure', 'fragile'],
+    traitsAffected: ['fearful', 'insecure', 'fragile'],
   },
   confidenceBuilding: {
     name: 'Confidence Building Environment',
     factors: ['calmAtmosphere', 'patientHandling', 'positiveReinforcement', 'gradualExposure'],
-    traitsAffected: ['brave', 'confident', 'social', 'curious'],
+    traitsAffected: ['brave', 'confident', 'curious'],
   },
   socialStimulation: {
     name: 'Social Stimulation Environment',
     factors: ['multipleHandlers', 'groupActivities', 'variedInteractions', 'socialExposure'],
-    traitsAffected: ['social', 'affectionate', 'outgoing'],
+    traitsAffected: ['affectionate', 'outgoing'],
   },
   isolation: {
     name: 'Isolation Environment',
     factors: ['limitedContact', 'minimalInteraction', 'solitaryConfinement', 'neglect'],
-    traitsAffected: ['antisocial', 'withdrawn', 'insecure'],
+    traitsAffected: ['insecure'],
   },
   sensoryEnrichment: {
     name: 'Sensory Enrichment Environment',
     factors: ['variedTextures', 'differentSounds', 'visualStimulation', 'tactileExperiences'],
-    traitsAffected: ['curious', 'intelligent', 'adaptable'],
+    traitsAffected: ['curious', 'adaptable'],
   },
   routineStability: {
     name: 'Routine Stability Environment',
     factors: ['consistentSchedule', 'familiarHandlers', 'predictableEnvironment', 'stableRoutine'],
-    traitsAffected: ['calm', 'patient', 'stable'],
+    traitsAffected: [],
   },
 });
 
