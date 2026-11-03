@@ -53,6 +53,8 @@ export async function refreshAccessToken(): Promise<boolean> {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
+      // Only the status matters here; the body is read so the request ends.
+      await releaseBody(response);
 
       if (response.ok) {
         // New access token issued — invalidate cached CSRF so the next mutation
@@ -74,6 +76,22 @@ export async function refreshAccessToken(): Promise<boolean> {
   } finally {
     // Clear AFTER the promise settles so all concurrent awaiters resolve first.
     refreshPromise = null;
+  }
+}
+
+/**
+ * Read and drop a response body the transport does not need (Equoria-svpri).
+ *
+ * The browser keeps a fetch open until its body is consumed. The 401 answer
+ * and the refresh answer were never read, so a logged-out visit to /login kept
+ * GET /auth/profile, GET /auth/verification-status and POST
+ * /auth/refresh-token in flight long after the server had answered.
+ */
+async function releaseBody(response: Response): Promise<void> {
+  try {
+    await response.arrayBuffer();
+  } catch {
+    // swallowed-catch: api-client-internals - the body is being thrown away; a read failure only means it is already gone
   }
 }
 
@@ -189,6 +207,8 @@ export async function fetchWithAuth<T>(
     // fall through to the generic non-2xx branch below so
     // the real authentication failure reaches the caller intact.
     if (response.status === 401 && retryCount === 0 && !isPreSessionAuthEndpoint(endpoint)) {
+      // The 401 itself is the whole answer; read its body so the request ends.
+      await releaseBody(response);
       // Don't retry refresh endpoint itself
       if (!endpoint.includes('/refresh')) {
         const refreshed = await refreshAccessToken();
