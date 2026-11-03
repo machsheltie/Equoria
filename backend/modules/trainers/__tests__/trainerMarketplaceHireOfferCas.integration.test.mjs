@@ -44,14 +44,14 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { hireTrainerFromMarketplace } from '../controllers/trainerMarketplaceController.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-bvddn19-trainer';
+const fixturePrefix = 'TestFixture-bvddn19-trainer';
 
 // The trainer's per-training fee; the hire itself is free (Equoria-3kegj).
-const SESSION_RATE = 120;
-const BUYER_FUNDS = 1000;
+const sessionRate = 120;
+const buyerFunds = 1000;
 // User.level 5 -> getStableLevel -> stable level 2 -> trainer roster cap 2.
 // (Stable level 1's cap is exactly 1 and would mask the race under test.)
-const BUYER_LEVEL = 5;
+const buyerLevel = 5;
 
 const createdUserIds = [];
 const createdMarketplaceStateIds = [];
@@ -77,13 +77,13 @@ async function makeUser(money) {
   const u = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: 'irrelevant-hash',
       firstName: 'Bvddn19',
       lastName: 'Trainer',
       money,
-      level: BUYER_LEVEL,
+      level: buyerLevel,
     },
   });
   createdUserIds.push(u.id);
@@ -102,7 +102,7 @@ async function makeSingleOfferMarketplace(userId) {
       personality: 'disciplined',
       skillLevel: 'experienced',
       speciality: 'jumping',
-      sessionRate: SESSION_RATE,
+      sessionRate,
       experience: 5,
       bio: 'bvddn19 offer-cas fixture',
     },
@@ -148,7 +148,7 @@ afterAll(async () => {
 
 describe('trainerMarketplaceController.hireTrainerFromMarketplace offer-removal race (Equoria-bvddn.19)', () => {
   it('SENTINEL: two concurrent hires of the SAME offer -> exactly one 201, one 409, one trainer', async () => {
-    const buyer = await makeUser(BUYER_FUNDS);
+    const buyer = await makeUser(buyerFunds);
     const marketplaceId = await makeSingleOfferMarketplace(buyer.id);
 
     const moneyBefore = await userMoney(buyer.id);

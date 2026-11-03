@@ -46,7 +46,7 @@
  * either weakening the assertion (forbidden, EDGE_CASE_FIX_DISCIPLINE §2) or
  * mutating game data out of scope.
  *
- * Resolution: KNOWN_MISSING_AT_BIRTH_TRAITS is an explicit, visible baseline of
+ * Resolution: knownMissingAtBirthTraits is an explicit, visible baseline of
  * the CURRENTLY-accepted gaps. The sentinel asserts:
  *   (a) NO at-birth-emittable trait is missing from traitEffects UNLESS it is
  *       in the baseline — so a NEW dead trait fails the build immediately; and
@@ -69,9 +69,9 @@ import { DISCIPLINES } from '../../../constants/schema.mjs';
 import { disciplineAffinityKey } from '../../../utils/epigeneticTraitKeyMap.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const UTILS_DIR = path.resolve(__dirname, '../../../utils');
-const FOALING_SERVICE = path.resolve(__dirname, '../../horses/services/foalingService.mjs');
-const AT_BIRTH_EMITTER = path.join(UTILS_DIR, 'applyEpigeneticTraitsAtBirth.mjs');
+const utilsDir = path.resolve(__dirname, '../../../utils');
+const foalingService = path.resolve(__dirname, '../../horses/services/foalingService.mjs');
+const atBirthEmitter = path.join(utilsDir, 'applyEpigeneticTraitsAtBirth.mjs');
 
 /**
  * Currently-accepted at-birth-emittable traits with NO traitEffects entry.
@@ -99,7 +99,7 @@ const AT_BIRTH_EMITTER = path.join(UTILS_DIR, 'applyEpigeneticTraitsAtBirth.mjs'
 // With the baseline empty, the sentinel reduces to the pure "zero missing"
 // assertion the issue (Equoria-2mgor) originally described: every at-birth-
 // emittable trait MUST have a traitEffects entry, no exceptions.
-const KNOWN_MISSING_AT_BIRTH_TRAITS = new Set([]);
+const knownMissingAtBirthTraits = new Set([]);
 
 /**
  * Extract the static trait-name literals an emitter classifies into its
@@ -130,7 +130,7 @@ function extractPushedTraitLiterals(filePath) {
  * variable names so unrelated literals are not swept in.
  */
 function extractPregnancyBonusPoolTraits() {
-  const src = readFileSync(FOALING_SERVICE, 'utf8');
+  const src = readFileSync(foalingService, 'utf8');
   const found = new Set();
   for (const poolName of ['pregnancyBonusPositiveTraits', 'pregnancyBonusNegativeTraits']) {
     // Match `const POOL = Object.freeze([ ... ]);` (or plain `[ ... ]`).
@@ -167,7 +167,7 @@ function buildEmittableAffinityTraits() {
  * dead trait.
  */
 function collectAtBirthEmittableTraits() {
-  const literal = new Set([...extractPushedTraitLiterals(AT_BIRTH_EMITTER), ...extractPregnancyBonusPoolTraits()]);
+  const literal = new Set([...extractPushedTraitLiterals(atBirthEmitter), ...extractPregnancyBonusPoolTraits()]);
   const affinity = buildEmittableAffinityTraits();
   return { literal, affinity, all: new Set([...literal, ...affinity]) };
 }
@@ -195,7 +195,7 @@ describe('at-birth-emittable trait → traitEffects coverage (sentinel, Equoria-
     // (a) Any NEW gap (not in the known-gap baseline) fails the build. This is
     //     the permanent "born trait with no effect" catch the issue asks for.
     const missing = [...all].filter(name => !effectKeys.has(name));
-    const unexpectedMissing = missing.filter(name => !KNOWN_MISSING_AT_BIRTH_TRAITS.has(name)).sort();
+    const unexpectedMissing = missing.filter(name => !knownMissingAtBirthTraits.has(name)).sort();
 
     // Diagnostic split so a future failure tells you which class of gap it is.
     const unexpectedLiterals = unexpectedMissing.filter(n => literal.has(n));
@@ -213,9 +213,7 @@ describe('at-birth-emittable trait → traitEffects coverage (sentinel, Equoria-
     //     baseline entry is removed — forcing the allowlist toward empty. Also
     //     guards against a baseline entry that is no longer emittable at all
     //     (drifted away from the source-of-truth files).
-    const staleBaseline = [...KNOWN_MISSING_AT_BIRTH_TRAITS]
-      .filter(name => effectKeys.has(name) || !all.has(name))
-      .sort();
+    const staleBaseline = [...knownMissingAtBirthTraits].filter(name => effectKeys.has(name) || !all.has(name)).sort();
 
     expect(staleBaseline).toEqual([]);
   });
@@ -230,7 +228,7 @@ describe('sentinel-positive proof: the coverage check fires on a violation (Equo
   function unexpectedMissingFor(emittableSet) {
     return [...emittableSet]
       .filter(name => !effectKeys.has(name))
-      .filter(name => !KNOWN_MISSING_AT_BIRTH_TRAITS.has(name))
+      .filter(name => !knownMissingAtBirthTraits.has(name))
       .sort();
   }
 

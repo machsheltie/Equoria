@@ -24,18 +24,18 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-// TEMPERAMENT_TYPES is part of the horses barrel's documented public API.
-const { temperamentTypes: TEMPERAMENT_TYPES } = horsesModule;
+// temperamentTypes is part of the horses barrel's documented public API.
+const { temperamentTypes } = horsesModule;
 
-const SUITE_PREFIX = 'tmod';
+const suitePrefix = 'tmod';
 
 async function createUser() {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${SUITE_PREFIX}-${uid}`,
-      username: `${SUITE_PREFIX}_${uid}`,
-      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      id: `${suitePrefix}-${uid}`,
+      username: `${suitePrefix}_${uid}`,
+      email: `${suitePrefix}-${uid}@example.com`,
       firstName: 'Tmod',
       lastName: 'Test',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -49,7 +49,7 @@ async function createUser() {
 
 async function createBreed() {
   return prisma.breed.create({
-    data: { name: `${SUITE_PREFIX}-breed-${randomBytes(4).toString('hex')}` },
+    data: { name: `${suitePrefix}-breed-${randomBytes(4).toString('hex')}` },
   });
 }
 
@@ -57,7 +57,7 @@ async function createHorse(userId, breedId, overrides = {}) {
   const horse = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
+      name: `${suitePrefix}-h-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: birthDateForAge(overrides.age ?? 5),
       age: overrides.age ?? 5,
@@ -76,7 +76,7 @@ async function createHorse(userId, breedId, overrides = {}) {
 
 async function cleanupSuite() {
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: SUITE_PREFIX } },
+    where: { id: { startsWith: suitePrefix } },
     select: { id: true },
   });
   if (users.length === 0) {
@@ -93,7 +93,7 @@ async function cleanupSuite() {
   }
   await prisma.horseXpEvent.deleteMany({ where: { horseId: { in: horseIds } } });
   await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
-  await prisma.breed.deleteMany({ where: { name: { startsWith: SUITE_PREFIX } } });
+  await prisma.breed.deleteMany({ where: { name: { startsWith: suitePrefix } } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
   await cleanupTestTrainers();
 }
@@ -105,9 +105,9 @@ describe('the horses module no longer offers temperament training modifiers', ()
   });
 
   it('the 12 temperaments include Willing and Driven, not Playful', () => {
-    expect(TEMPERAMENT_TYPES).toHaveLength(12);
-    expect(TEMPERAMENT_TYPES).toEqual(expect.arrayContaining(['Willing', 'Driven']));
-    expect(TEMPERAMENT_TYPES).not.toContain('Playful');
+    expect(temperamentTypes).toHaveLength(12);
+    expect(temperamentTypes).toEqual(expect.arrayContaining(['Willing', 'Driven']));
+    expect(temperamentTypes).not.toContain('Playful');
   });
 });
 

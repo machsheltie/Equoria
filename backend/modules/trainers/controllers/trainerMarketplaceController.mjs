@@ -9,7 +9,7 @@ import {
   generateTrainerMarketplace,
   trainerMarketplaceNeedsRefresh,
   getTrainerRefreshCost,
-  TRAINER_MARKETPLACE_CONFIG,
+  trainerMarketplaceConfig,
 } from '../services/trainerMarketplace.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -17,7 +17,7 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 import {
   debitMoneyOrThrow,
   InsufficientFundsError,
-  SYSTEM_ACCOUNT_BURN,
+  systemAccountBurn,
 } from '../../economy/index.mjs';
 // Equoria-oey96.8: roster-cap enforcement. Same-module config deep import;
 // Shared roster-cap error. The cap keys on the player's level (q245).
@@ -33,7 +33,7 @@ import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
 // read-filter-write against a pre-transaction snapshot.
 import { removeMarketplaceOfferCas } from '../../../utils/staffMarketplaceOfferCas.mjs';
 
-const STAFF_TYPE = 'trainer';
+const staffType = 'trainer';
 
 /** An error the hire's catch block turns into a specific HTTP status. */
 function httpError(status, message) {
@@ -47,15 +47,15 @@ function httpError(status, message) {
  */
 async function loadOrCreateMarketplace(userId) {
   const record = await prisma.staffMarketplaceState.findUnique({
-    where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+    where: { userId_staffType: { userId, staffType } },
   });
 
   if (!record || trainerMarketplaceNeedsRefresh(record.lastRefresh)) {
     const trainers = generateTrainerMarketplace();
     const refreshCount = (record?.refreshCount ?? 0) + 1;
     const updated = await prisma.staffMarketplaceState.upsert({
-      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
-      create: { userId, staffType: STAFF_TYPE, offers: trainers, refreshCount },
+      where: { userId_staffType: { userId, staffType } },
+      create: { userId, staffType, offers: trainers, refreshCount },
       update: { offers: trainers, lastRefresh: new Date(), refreshCount },
     });
     logger.info(
@@ -85,7 +85,7 @@ export async function getTrainerMarketplace(req, res) {
 
     const nextFreeRefresh = new Date(lastRefresh);
     nextFreeRefresh.setHours(
-      nextFreeRefresh.getHours() + TRAINER_MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS,
+      nextFreeRefresh.getHours() + trainerMarketplaceConfig.REFRESH_INTERVAL_HOURS,
     );
     const refreshCost = getTrainerRefreshCost(lastRefresh);
 
@@ -121,7 +121,7 @@ export async function refreshTrainerMarketplace(req, res) {
     const { force = false } = req.body;
 
     const record = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+      where: { userId_staffType: { userId, staffType } },
     });
     const refreshCost = getTrainerRefreshCost(record?.lastRefresh ?? null);
 
@@ -166,15 +166,15 @@ export async function refreshTrainerMarketplace(req, res) {
             await debitMoneyOrThrow(tx, {
               userId,
               amount: refreshCost,
-              systemAccount: SYSTEM_ACCOUNT_BURN,
+              systemAccount: systemAccountBurn,
               category: 'trainerMarketplaceRefreshBurn',
               description: 'Trainer marketplace refresh fee',
-              metadata: { staffType: STAFF_TYPE },
+              metadata: { staffType },
             });
           }
           return tx.staffMarketplaceState.upsert({
-            where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
-            create: { userId, staffType: STAFF_TYPE, offers: trainers, refreshCount },
+            where: { userId_staffType: { userId, staffType } },
+            create: { userId, staffType, offers: trainers, refreshCount },
             update: { offers: trainers, lastRefresh: new Date(), refreshCount },
           });
         }),
@@ -193,7 +193,7 @@ export async function refreshTrainerMarketplace(req, res) {
 
     const nextFreeRefresh = new Date(updated.lastRefresh);
     nextFreeRefresh.setHours(
-      nextFreeRefresh.getHours() + TRAINER_MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS,
+      nextFreeRefresh.getHours() + trainerMarketplaceConfig.REFRESH_INTERVAL_HOURS,
     );
 
     res.status(200).json({
@@ -244,7 +244,7 @@ export async function hireTrainerFromMarketplace(req, res) {
     }
 
     const record = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+      where: { userId_staffType: { userId, staffType } },
     });
     if (!record) {
       return res.status(404).json({
@@ -354,7 +354,7 @@ export async function hireTrainerFromMarketplace(req, res) {
         const updatedOffers = offers.filter((_, i) => i !== trainerIndex);
         const offerClaim = await removeMarketplaceOfferCas(tx, {
           userId,
-          staffType: STAFF_TYPE,
+          staffType,
           expectedOffers: offers,
           updatedOffers,
         });

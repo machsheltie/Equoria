@@ -65,9 +65,9 @@ describe('POST /api/v1/feed-shop/purchase — concurrent purchase race (Equoria-
   // inventory base and clobbers the sibling's add. Test-env pool is 3, so a
   // handful of concurrent posts reliably overlaps at least one pair.
   const CONCURRENCY = 8;
-  const INITIAL_MONEY = 5000;
-  const PACK_PRICE = 100; // FEED_CATALOG basic.packPrice
-  const UNITS_PER_PACK = 100;
+  const initialMoney = 5000;
+  const packPrice = 100; // FEED_CATALOG basic.packPrice
+  const unitsPerPack = 100;
 
   const post = () =>
     request(app)
@@ -79,7 +79,7 @@ describe('POST /api/v1/feed-shop/purchase — concurrent purchase race (Equoria-
       .send({ feedTier: 'basic', packs: 1 });
 
   it('concurrent basic-feed purchases: money debited and units received must agree (no lost pack)', async () => {
-    await prisma.user.update({ where: { id: user.id }, data: { money: INITIAL_MONEY } });
+    await prisma.user.update({ where: { id: user.id }, data: { money: initialMoney } });
 
     // Fire N purchases at once. Each debits 100 coins and adds 100 units of
     // feed-basic. If the inventory read-modify-write is ordered before the
@@ -95,7 +95,7 @@ describe('POST /api/v1/feed-shop/purchase — concurrent purchase race (Equoria-
     const fresh = await prisma.user.findUnique({ where: { id: user.id } });
 
     // Every debit landed (row lock serializes the debits): all N charged.
-    expect(fresh.money).toBe(INITIAL_MONEY - CONCURRENCY * PACK_PRICE);
+    expect(fresh.money).toBe(initialMoney - CONCURRENCY * packPrice);
 
     const debitRows = await prisma.userTransaction.count({
       where: { userId: user.id, category: 'feedPurchase', type: 'debit' },
@@ -103,14 +103,14 @@ describe('POST /api/v1/feed-shop/purchase — concurrent purchase race (Equoria-
     expect(debitRows).toBe(CONCURRENCY);
 
     // THE INVARIANT: units received must equal units paid for. Coins spent
-    // (INITIAL_MONEY - final) buys (coinsSpent / PACK_PRICE) packs, each
-    // UNITS_PER_PACK units. The pre-fix code debits every purchase but loses
+    // (initialMoney - final) buys (coinsSpent / packPrice) packs, each
+    // unitsPerPack units. The pre-fix code debits every purchase but loses
     // the clobbered adds, so units received is strictly less than units paid.
-    const coinsSpent = INITIAL_MONEY - fresh.money;
-    const unitsPaidFor = (coinsSpent / PACK_PRICE) * UNITS_PER_PACK;
+    const coinsSpent = initialMoney - fresh.money;
+    const unitsPaidFor = (coinsSpent / packPrice) * unitsPerPack;
     const basicRows = (fresh.settings.inventory || []).filter(i => i.id === 'feed-basic');
     expect(basicRows).toHaveLength(1);
     expect(basicRows[0].quantity).toBe(unitsPaidFor);
-    expect(basicRows[0].quantity).toBe(CONCURRENCY * UNITS_PER_PACK);
+    expect(basicRows[0].quantity).toBe(CONCURRENCY * unitsPerPack);
   });
 });

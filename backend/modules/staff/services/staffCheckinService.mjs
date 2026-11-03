@@ -33,17 +33,17 @@ import { isStaffRole } from '../capabilities.mjs';
 import { recordStaffActionTx } from './staffActionLogService.mjs';
 import { retireStaffCheckinCodesTx } from './staffChallengeRetirement.mjs';
 
-export const CHECKIN_CODE_TTL_MS = 10 * 60 * 1000;
-export const CHECKIN_MAX_ATTEMPTS = 5;
-export const CHECKIN_REQUEST_LIMIT = 3;
-export const CHECKIN_REQUEST_WINDOW_MS = 15 * 60 * 1000;
+export const checkinCodeTtlMs = 10 * 60 * 1000;
+export const checkinMaxAttempts = 5;
+export const checkinRequestLimit = 3;
+export const checkinRequestWindowMs = 15 * 60 * 1000;
 export const trustedDeviceTtlMs = 30 * 24 * 60 * 60 * 1000;
 export const staffDeviceCookie = 'staff_device';
 
 // bcrypt cost for a 10-minute, 5-guess code: the attempt cap is the real
 // brute-force limit, so the hash only has to keep a leaked row from being
 // read back instantly.
-const CODE_HASH_ROUNDS = 10;
+const codeHashRounds = 10;
 
 /** Outcome of a refused check-in step; the controller maps `reason` to HTTP. */
 export class StaffCheckinError extends Error {
@@ -156,7 +156,7 @@ async function newestLiveCodeTx(tx, account, now, { requireAttemptLeft }) {
   if (!newest || newest.usedAt !== null || newest.retiredAt !== null || newest.expiresAt <= now) {
     return null;
   }
-  if (requireAttemptLeft && newest.attempts >= CHECKIN_MAX_ATTEMPTS) {
+  if (requireAttemptLeft && newest.attempts >= checkinMaxAttempts) {
     return null;
   }
   return issuedUnderCurrentState(account, newest) ? newest : null;
@@ -178,7 +178,7 @@ export async function requestCheckinCode(account) {
   }
 
   const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
-  const codeHash = await bcrypt.hash(code, CODE_HASH_ROUNDS);
+  const codeHash = await bcrypt.hash(code, codeHashRounds);
 
   const sendTo = await prisma.$transaction(async tx => {
     // Serialize issuance and verification per account so the window count is
@@ -194,10 +194,10 @@ export async function requestCheckinCode(account) {
     const recent = await tx.staffCheckinCode.count({
       where: {
         userId: fresh.id,
-        createdAt: { gt: new Date(now.getTime() - CHECKIN_REQUEST_WINDOW_MS) },
+        createdAt: { gt: new Date(now.getTime() - checkinRequestWindowMs) },
       },
     });
-    if (recent >= CHECKIN_REQUEST_LIMIT) {
+    if (recent >= checkinRequestLimit) {
       throw new StaffCheckinError('rateLimited');
     }
     await retireStaffCheckinCodesTx(tx, fresh.id, now);
@@ -208,7 +208,7 @@ export async function requestCheckinCode(account) {
         userId: fresh.id,
         codeHash,
         createdAt: now,
-        expiresAt: new Date(now.getTime() + CHECKIN_CODE_TTL_MS),
+        expiresAt: new Date(now.getTime() + checkinCodeTtlMs),
       },
     });
     return fresh.email;
@@ -249,7 +249,7 @@ export async function verifyCheckinCode(account, code) {
       return null;
     }
     const reserved = await tx.staffCheckinCode.updateMany({
-      where: { id: newest.id, attempts: { lt: CHECKIN_MAX_ATTEMPTS } },
+      where: { id: newest.id, attempts: { lt: checkinMaxAttempts } },
       data: { attempts: { increment: 1 } },
     });
     return reserved.count === 1 ? { id: newest.id, codeHash: newest.codeHash } : null;

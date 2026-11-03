@@ -36,12 +36,12 @@ const handleValidation = (req, res, next) => {
   next();
 };
 
-const VALID_SECTIONS = ['general', 'art', 'sales', 'services', 'venting'];
+const validSections = ['general', 'art', 'sales', 'services', 'venting'];
 
 router.get(
   '/threads',
   [
-    query('section').optional().isIn(VALID_SECTIONS).withMessage('Invalid section'),
+    query('section').optional().isIn(validSections).withMessage('Invalid section'),
     query('page').optional().isInt({ min: 1 }).withMessage('page must be a positive integer'),
     handleValidation,
   ],
@@ -54,8 +54,8 @@ router.post(
   '/threads',
   [
     body('section')
-      .isIn(VALID_SECTIONS)
-      .withMessage(`section must be one of: ${VALID_SECTIONS.join(', ')}`),
+      .isIn(validSections)
+      .withMessage(`section must be one of: ${validSections.join(', ')}`),
     body('title')
       .trim()
       .notEmpty()

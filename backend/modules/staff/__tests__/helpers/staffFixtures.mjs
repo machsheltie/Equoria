@@ -21,7 +21,7 @@ import { whenTicketEmailKicksFinish } from '../../services/ticketEmailOutbox.mjs
 import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 export const ORIGIN = 'http://localhost:3000';
-export const STAFF_API = '/api/v1/staff';
+export const staffApi = '/api/v1/staff';
 
 export const uid = () => crypto.randomBytes(5).toString('hex');
 export const sha256 = value => crypto.createHash('sha256').update(value, 'utf8').digest('hex');
@@ -241,8 +241,8 @@ export function deviceCookieFrom(res) {
 
 /** Full real check-in for a user; returns the raw device token. */
 export async function checkIn(user) {
-  expect((await post(`${STAFF_API}/checkin/request`, user)).status).toBe(202);
-  const res = await post(`${STAFF_API}/checkin/verify`, user, { code: latestCode(user.email) });
+  expect((await post(`${staffApi}/checkin/request`, user)).status).toBe(202);
+  const res = await post(`${staffApi}/checkin/verify`, user, { code: latestCode(user.email) });
   expect(res.status).toBe(200);
   const cookie = deviceCookieFrom(res);
   expect(cookie).not.toBeNull();

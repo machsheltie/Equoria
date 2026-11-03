@@ -36,7 +36,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { SYSTEM_ACCOUNT_SHOW_ESCROW, creditSystemAccount } from '../../economy/index.mjs';
+import { systemAccountShowEscrow, creditSystemAccount } from '../../economy/index.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { enterShowDeferredTx } from '../services/competitionRouteQueries.mjs';
 // Equoria-576c0 B9: enterShowDeferredTx runs the shared entry rules first (age
@@ -212,7 +212,7 @@ describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
     const credits = await escrowCreditRows(show.id, entrant.id);
     expect(credits).toHaveLength(1);
     expect(credits[0]).toMatchObject({ type: 'credit', amount: entryFee });
-    expect(credits[0].metadata).toMatchObject({ systemAccount: SYSTEM_ACCOUNT_SHOW_ESCROW, showId: show.id });
+    expect(credits[0].metadata).toMatchObject({ systemAccount: systemAccountShowEscrow, showId: show.id });
     expect(Number(showAfter.feeEscrow)).toBe(entryFee);
   });
 
@@ -252,7 +252,7 @@ describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
     const credits = await escrowCreditRows(show.id, creator.id);
     expect(credits).toHaveLength(1);
     expect(credits[0]).toMatchObject({ type: 'credit', amount: entryFee });
-    expect(credits[0].metadata).toMatchObject({ systemAccount: SYSTEM_ACCOUNT_SHOW_ESCROW, showId: show.id });
+    expect(credits[0].metadata).toMatchObject({ systemAccount: systemAccountShowEscrow, showId: show.id });
     expect(Number(showAfter.feeEscrow)).toBe(entryFee);
   });
 });

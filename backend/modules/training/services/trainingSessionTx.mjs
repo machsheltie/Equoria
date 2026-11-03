@@ -27,7 +27,7 @@ import {
   debitMoneyOrThrow,
   InsufficientFundsError,
   recordTransactionTx,
-  SYSTEM_ACCOUNT_BURN,
+  systemAccountBurn,
 } from '../../economy/index.mjs';
 
 /**
@@ -120,7 +120,7 @@ export async function commitTrainingSession({
           await debitMoneyOrThrow(tx, {
             userId: ownerId,
             amount: trainerFee.amount,
-            systemAccount: SYSTEM_ACCOUNT_BURN,
+            systemAccount: systemAccountBurn,
             category: 'trainingFeeBurn',
             description: `Training fee — ${trainerFee.trainerName}`,
             metadata: feeMetadata,

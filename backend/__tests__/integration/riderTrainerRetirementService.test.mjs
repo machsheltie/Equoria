@@ -22,7 +22,7 @@ import { processRiderTrainerRetirement } from '../../modules/trainers/index.mjs'
 import { processRiderRetirement } from '../../modules/riders/index.mjs';
 import {
   autoRetireOverdueTrainers,
-  TRAINER_MANDATORY_RETIREMENT_WEEKS,
+  trainerMandatoryRetirementWeeks,
 } from '../../modules/trainers/services/riderTrainerRetirementService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -158,7 +158,7 @@ describe('autoRetireOverdueTrainers (Equoria-osum)', () => {
         personality: 'focused',
         skillLevel: 'expert',
         speciality: 'Cross Country',
-        careerWeeks: TRAINER_MANDATORY_RETIREMENT_WEEKS + 5,
+        careerWeeks: trainerMandatoryRetirementWeeks + 5,
         retired: false,
       },
     });
@@ -194,7 +194,7 @@ describe('autoRetireOverdueTrainers (Equoria-osum)', () => {
         personality: 'patient',
         skillLevel: 'novice',
         speciality: 'Dressage',
-        careerWeeks: TRAINER_MANDATORY_RETIREMENT_WEEKS - 10,
+        careerWeeks: trainerMandatoryRetirementWeeks - 10,
         retired: false,
       },
     });

@@ -64,7 +64,7 @@ import {
 import { checkGroomMayWork } from '../services/groomEngagementService.mjs';
 import { processRetirement } from '../services/groomRetirementService.mjs';
 import { ensureRetirementSchedule } from '../services/groomRetirementScheduleService.mjs';
-import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
+import { systemAccountBurn } from '../../economy/index.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const fixturePrefix = 'TestFixture-bgdfb-owed';
@@ -167,8 +167,8 @@ async function moneyOf(userId) {
 
 beforeAll(async () => {
   await prisma.systemAccount.upsert({
-    where: { name: SYSTEM_ACCOUNT_BURN },
-    create: { name: SYSTEM_ACCOUNT_BURN, balance: 0 },
+    where: { name: systemAccountBurn },
+    create: { name: systemAccountBurn, balance: 0 },
     update: {},
   });
 }, 30000);

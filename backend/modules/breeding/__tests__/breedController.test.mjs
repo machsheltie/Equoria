@@ -31,13 +31,13 @@ const ORIGIN = 'http://localhost:3000';
 
 // Test fixture breed — cleaned up after all tests in this file
 let testBreedId;
-const TEST_BREED_NAME = `TestFixture-Breed-${Date.now()}`;
+const testBreedName = `TestFixture-Breed-${Date.now()}`;
 const cleanup = createCleanupTracker();
 
 describe('breedController integration', () => {
   beforeAll(async () => {
     const breed = await prisma.breed.create({
-      data: { name: TEST_BREED_NAME, description: 'Integration test breed' },
+      data: { name: testBreedName, description: 'Integration test breed' },
     });
     testBreedId = breed.id;
     // Scoped, fail-loud cleanup (Equoria-0y9f5): id-scoped deleteMany so a
@@ -64,7 +64,7 @@ describe('breedController integration', () => {
       const res = await request(app).get('/api/v1/breeds').set('Origin', ORIGIN);
 
       const names = res.body.data.map(b => b.name);
-      expect(names).toContain(TEST_BREED_NAME);
+      expect(names).toContain(testBreedName);
     });
 
     it('returns breeds sorted by name ascending (per the DB collation)', async () => {
@@ -104,7 +104,7 @@ describe('breedController integration', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.id).toBe(testBreedId);
-      expect(res.body.data.name).toBe(TEST_BREED_NAME);
+      expect(res.body.data.name).toBe(testBreedName);
     });
 
     it('returns 400 for a non-numeric ID', async () => {

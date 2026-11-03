@@ -32,8 +32,8 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import config from '../../../config/config.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-oey96_8-trainer';
-const SESSION_RATE = 50; // the trainer's per-training fee; the hire itself is free
+const fixturePrefix = 'TestFixture-oey96_8-trainer';
+const sessionRate = 50; // the trainer's per-training fee; the hire itself is free
 
 const createdUserIds = [];
 const cleanup = createCleanupTracker();
@@ -44,8 +44,8 @@ async function makeUser({ level, money }) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Cap',
       lastName: 'Buyer',
@@ -76,7 +76,7 @@ async function seedTrainers(userId, { active = 0, retired = 0 } = {}) {
         personality: 'patient',
         skillLevel: 'expert',
         speciality: 'Dressage',
-        sessionRate: SESSION_RATE,
+        sessionRate,
         retired: isRetired,
       },
     });
@@ -93,7 +93,7 @@ async function seedMarketplace(userId, count) {
     personality: 'patient',
     skillLevel: 'expert',
     speciality: 'Dressage',
-    sessionRate: SESSION_RATE,
+    sessionRate,
     bio: 'roster-cap fixture',
   }));
   await prisma.staffMarketplaceState.upsert({

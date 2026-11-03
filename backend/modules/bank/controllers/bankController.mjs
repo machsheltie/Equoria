@@ -17,7 +17,7 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 import { getTransactionsForUser, recordTransactionTx } from '../../economy/index.mjs';
 
 /** Amount of coins awarded per weekly claim (2026-07-07 economy ruling) */
-const WEEKLY_REWARD_AMOUNT = 5_000;
+const weeklyRewardAmount = 5_000;
 
 /**
  * Get the most recent Sunday at 00:00 Eastern (the game clock).
@@ -71,7 +71,7 @@ export async function claimWeeklyReward(req, res) {
         // the positional-param form ($1..$4 → the four bound values, same order).
         const rows = await tx.$queryRaw`
         UPDATE "User"
-        SET money = money + ${WEEKLY_REWARD_AMOUNT},
+        SET money = money + ${weeklyRewardAmount},
             settings = jsonb_set(
               COALESCE(settings, '{}'::jsonb),
               '{lastWeeklyClaimDate}',
@@ -90,13 +90,13 @@ export async function claimWeeklyReward(req, res) {
           // structurally required (first arg); the service reads the
           // authoritative balanceAfter inside the same tx, so the caller no
           // longer supplies it. The weeklyReward credit happens after the
-          // atomic UPDATE bumped money by WEEKLY_REWARD_AMOUNT in the same
+          // atomic UPDATE bumped money by weeklyRewardAmount in the same
           // tx, so the service's balanceAfter read will observe the new
           // post-credit balance.
           await recordTransactionTx(tx, {
             userId,
             type: 'credit',
-            amount: WEEKLY_REWARD_AMOUNT,
+            amount: weeklyRewardAmount,
             category: 'weeklyReward',
             description: 'Weekly reward claim',
             metadata: { weekStart: weekStartISO },
@@ -134,14 +134,14 @@ export async function claimWeeklyReward(req, res) {
     const newBalance = updatedRows[0].money;
 
     logger.info(
-      `Weekly reward claimed: userId=${userId}, amount=${WEEKLY_REWARD_AMOUNT}, newBalance=${newBalance}`,
+      `Weekly reward claimed: userId=${userId}, amount=${weeklyRewardAmount}, newBalance=${newBalance}`,
     );
 
     return res.status(200).json({
       success: true,
-      message: `Claimed ${WEEKLY_REWARD_AMOUNT} coins!`,
+      message: `Claimed ${weeklyRewardAmount} coins!`,
       data: {
-        amount: WEEKLY_REWARD_AMOUNT,
+        amount: weeklyRewardAmount,
         newBalance,
         nextClaimDate: nextSunday.toISOString(),
       },
@@ -240,7 +240,7 @@ export async function getClaimStatus(req, res) {
       data: {
         canClaim,
         nextClaimDate: canClaim ? null : nextSunday.toISOString(),
-        rewardAmount: WEEKLY_REWARD_AMOUNT,
+        rewardAmount: weeklyRewardAmount,
       },
     });
   } catch (error) {

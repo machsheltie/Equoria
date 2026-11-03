@@ -27,7 +27,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { SYSTEM_ACCOUNT_BURN } from '../modules/economy/index.mjs';
+import { systemAccountBurn } from '../modules/economy/index.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // Equoria-576c0 B9: entering needs age 3-20 game years and an eligible rider
@@ -63,7 +63,7 @@ async function snapMoney(userIds) {
 
 async function snapBurn() {
   const row = await prisma.systemAccount.findUnique({
-    where: { name: SYSTEM_ACCOUNT_BURN },
+    where: { name: systemAccountBurn },
     select: { balance: true },
   });
   return row ? Number(row.balance) : 0;

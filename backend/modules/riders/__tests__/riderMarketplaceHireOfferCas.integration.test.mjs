@@ -41,18 +41,18 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { staffLevelFee } from '../../../constants/staffLevels.mjs';
 import { hireRiderFromMarketplace } from '../controllers/riderMarketplaceController.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-bvddn19-rider';
+const fixturePrefix = 'TestFixture-bvddn19-rider';
 
 // hireRiderFromMarketplace charges one week at the offer's star-level price
 // (owner ruling q226, Equoria-7hu4d). Old contract: riderData.weeklyRate (150).
 const offerStarLevel = 'novice';
-const HIRING_COST = staffLevelFee(offerStarLevel);
-const WEEKLY_RATE = HIRING_COST;
+const hiringCost = staffLevelFee(offerStarLevel);
+const weeklyRate = hiringCost;
 // Fund the buyer far beyond what even several concurrent hires could ever
 // cost — the scenario under test is the offer-list race, not money.
-const BUYER_FUNDS = HIRING_COST * 1000;
+const buyerFunds = hiringCost * 1000;
 // User.level 5 -> getStableLevel -> stable level 2 -> rider roster cap 3.
-const BUYER_LEVEL = 5;
+const buyerLevel = 5;
 
 const createdUserIds = [];
 const createdMarketplaceStateIds = [];
@@ -78,13 +78,13 @@ async function makeUser(money) {
   const u = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: 'irrelevant-hash',
       firstName: 'Bvddn19',
       lastName: 'Rider',
       money,
-      level: BUYER_LEVEL,
+      level: buyerLevel,
     },
   });
   createdUserIds.push(u.id);
@@ -101,7 +101,7 @@ async function makeSingleOfferMarketplace(userId) {
       firstName: 'Cas',
       lastName: 'Rider',
       personality: 'focused',
-      weeklyRate: WEEKLY_RATE,
+      weeklyRate,
       starLevel: offerStarLevel,
       experience: 5,
       bio: 'bvddn19 offer-cas fixture',
@@ -148,7 +148,7 @@ afterAll(async () => {
 
 describe('riderMarketplaceController.hireRiderFromMarketplace offer-removal race (Equoria-bvddn.19)', () => {
   it('SENTINEL: two concurrent hires of the SAME offer -> exactly one 201, one 409, charged once', async () => {
-    const buyer = await makeUser(BUYER_FUNDS);
+    const buyer = await makeUser(buyerFunds);
     const marketplaceId = await makeSingleOfferMarketplace(buyer.id);
 
     const moneyBefore = await userMoney(buyer.id);
@@ -182,7 +182,7 @@ describe('riderMarketplaceController.hireRiderFromMarketplace offer-removal race
       where: { userId: buyer.id, category: 'riderHire' },
     });
     expect(debitRows).toHaveLength(1);
-    expect(await userMoney(buyer.id)).toBe(moneyBefore - HIRING_COST);
+    expect(await userMoney(buyer.id)).toBe(moneyBefore - hiringCost);
 
     // The offer is gone from the persisted list — not resurrected by the
     // loser's stale-snapshot write.

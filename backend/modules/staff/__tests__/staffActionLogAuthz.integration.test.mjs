@@ -264,14 +264,14 @@ describe('Staff action recording (Equoria-puj1e.1)', () => {
   // exports exactly these two purges, for check-in codes, trusted devices and the
   // email outbox. Neither deletes staff_action_log rows (proved below). Every other
   // export matching the regex still fails.
-  const RETENTION_PURGES = ['purgeSettledEmails', 'purgeStaleStaffCheckinRecords'];
+  const retentionPurges = ['purgeSettledEmails', 'purgeStaleStaffCheckinRecords'];
 
   it('keeps the log permanent: no update or delete is exposed', () => {
-    const names = [...Object.keys(logService), ...Object.keys(staff).filter(n => !RETENTION_PURGES.includes(n))];
+    const names = [...Object.keys(logService), ...Object.keys(staff).filter(n => !retentionPurges.includes(n))];
     expect(names.filter(n => /^(update|delete|remove|purge|edit|clear|reset)/i.test(n))).toEqual([]);
     expect(Object.keys(logService).sort()).toEqual(
       [
-        'LOG_PAGE_SIZE',
+        'logPageSize',
         'isPunitiveCapability',
         'listStaffActions',
         'listStaffLogActors', // read-only actor list (STAFF-CR-16)

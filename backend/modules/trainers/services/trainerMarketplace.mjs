@@ -11,7 +11,7 @@ import crypto from 'crypto';
 import { disciplineValues } from '../../../constants/schema.mjs';
 import { drawStaffLevel, staffLevelFee, staffSkillOdds } from '../../../constants/staffLevels.mjs';
 
-export const TRAINER_MARKETPLACE_CONFIG = {
+export const trainerMarketplaceConfig = {
   DEFAULT_MARKETPLACE_SIZE: 6,
   REFRESH_INTERVAL_HOURS: 24,
   PREMIUM_REFRESH_COST: 50,
@@ -126,7 +126,7 @@ function generateBio(firstName, skillLevel, specialty) {
  */
 export function generateRandomTrainer() {
   const { skillLevel, starLevel } = drawStaffLevel('trainer');
-  const { SPECIALTIES } = TRAINER_MARKETPLACE_CONFIG;
+  const { SPECIALTIES } = trainerMarketplaceConfig;
   const specialty = SPECIALTIES[Math.floor(Math.random() * SPECIALTIES.length)];
   const personality = PERSONALITIES[Math.floor(Math.random() * PERSONALITIES.length)];
   const sessionRate = staffLevelFee(starLevel);
@@ -171,7 +171,7 @@ function generateStarterTrainer() {
  * @returns {Array}
  */
 export function generateTrainerMarketplace(
-  size = TRAINER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE,
+  size = trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE,
 ) {
   const marketplace = [generateStarterTrainer()];
   for (let i = 1; i < size; i++) {
@@ -185,11 +185,11 @@ export function trainerMarketplaceNeedsRefresh(lastRefresh) {
     return true;
   }
   const hoursDiff = (Date.now() - new Date(lastRefresh).getTime()) / (1000 * 60 * 60);
-  return hoursDiff >= TRAINER_MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS;
+  return hoursDiff >= trainerMarketplaceConfig.REFRESH_INTERVAL_HOURS;
 }
 
 export function getTrainerRefreshCost(lastRefresh) {
   return trainerMarketplaceNeedsRefresh(lastRefresh)
     ? 0
-    : TRAINER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST;
+    : trainerMarketplaceConfig.PREMIUM_REFRESH_COST;
 }

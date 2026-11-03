@@ -28,8 +28,8 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import config from '../../../config/config.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-oey96_8-rider';
-const WEEKLY_RATE = 100; // hiringCost = weeklyRate (one week upfront)
+const fixturePrefix = 'TestFixture-oey96_8-rider';
+const weeklyRate = 100; // hiringCost = weeklyRate (one week upfront)
 
 const createdUserIds = [];
 const cleanup = createCleanupTracker();
@@ -40,8 +40,8 @@ async function makeUser({ level, money }) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Cap',
       lastName: 'Buyer',
@@ -70,7 +70,7 @@ async function seedRiders(userId, { active = 0, retired = 0 } = {}) {
         firstName: 'Seed',
         lastName: `Rider${randomBytes(3).toString('hex')}`,
         personality: 'calm',
-        weeklyRate: WEEKLY_RATE,
+        weeklyRate,
         retired: isRetired,
       },
     });
@@ -87,7 +87,7 @@ async function seedMarketplace(userId, count) {
     personality: 'calm',
     // Owner ruling 2026-10-28 (q226): the hire charges the offer's star level price.
     starLevel: 'rookie',
-    weeklyRate: WEEKLY_RATE,
+    weeklyRate,
     experience: 5,
     bio: 'roster-cap fixture',
   }));
@@ -217,6 +217,6 @@ describe('POST /api/riders/marketplace/hire — roster cap (Equoria-oey96.8)', (
     const activeCount = await prisma.rider.count({ where: { userId: user.id, retired: false } });
     expect(activeCount).toBe(2); // exactly at cap, never over
     const after = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
-    expect(Number(after.money)).toBe(1000 - WEEKLY_RATE); // exactly one debit
+    expect(Number(after.money)).toBe(1000 - weeklyRate); // exactly one debit
   });
 });

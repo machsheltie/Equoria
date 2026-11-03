@@ -34,8 +34,8 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-6p398-4-integrity';
-const INT4_MAX = 2147483647;
+const fixturePrefix = 'TestFixture-6p398-4-integrity';
+const int4Max = 2147483647;
 
 const cleanup = createCleanupTracker();
 let userIds = [];
@@ -50,8 +50,8 @@ async function makeUser(role, money) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${role}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${role}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${role}-${suffix}`,
+      email: `${fixturePrefix}-${role}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Integrity',
       lastName: role,
@@ -69,7 +69,7 @@ async function makeListedHorse(sellerId, salePrice) {
   const horse = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag()}`,
+      name: `${fixturePrefix}-horse-${tag()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
@@ -241,7 +241,7 @@ describe('buyHorse — sale integrity invariants (finding 4)', () => {
     const seller = await makeUser('richSeller', 2_000_000_000);
     const horse = await makeListedHorse(seller.user.id, price);
     const buyer = await makeUser('richBuyer', price);
-    expect(2_000_000_000 + price).toBeGreaterThan(INT4_MAX);
+    expect(2_000_000_000 + price).toBeGreaterThan(int4Max);
 
     const res = await buy(buyer.token, horse.id);
     // 500, describing reality: an int4 overflow is an UNHANDLED Prisma error

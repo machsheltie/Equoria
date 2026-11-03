@@ -28,7 +28,7 @@ import { getAllTraitEffects } from '../../../utils/traitEffects.mjs';
 import { getTraitDefinition } from '../../../utils/epigeneticTraits.mjs';
 
 // All four dropped names, both casings — must be absent everywhere.
-const DROPPED_NAMES = [
+const droppedNames = [
   'weather_immunity',
   'weatherImmunity',
   'night_vision',
@@ -43,7 +43,7 @@ describe('rare-trait roster — dropped traits have ZERO code presence (Equoria-
   const competitionMap = getAllTraitCompetitionEffects();
   const effectsMap = getAllTraitEffects();
 
-  it.each(DROPPED_NAMES)('dropped trait "%s" is absent from every code map', name => {
+  it.each(droppedNames)('dropped trait "%s" is absent from every code map', name => {
     expect(competitionMap[name]).toBeUndefined();
     expect(effectsMap[name]).toBeUndefined();
     expect(getTraitDefinition(name)).toBeNull();

@@ -44,7 +44,7 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
-  SYSTEM_ACCOUNT_BURN,
+  systemAccountBurn,
 } from '../../services/financialLedgerService.mjs';
 
 export const healthCheckId = 'health-check';
@@ -52,7 +52,7 @@ export const geneticTestingId = 'genetic-testing';
 
 // The owner-set service list. Prices are the owner's; never change them here
 // without a ruling.
-export const VET_SERVICES = [
+export const vetServices = [
   {
     id: healthCheckId,
     name: 'General Health Check',
@@ -115,7 +115,7 @@ export async function getVetServices(_req, res) {
   res.status(200).json({
     success: true,
     message: 'Vet services retrieved successfully',
-    data: VET_SERVICES,
+    data: vetServices,
   });
 }
 
@@ -167,7 +167,7 @@ export async function bookVetAppointment(req, res) {
     const userId = req.user.id;
     const { horseId, serviceId } = req.body;
 
-    const service = VET_SERVICES.find(s => s.id === serviceId);
+    const service = vetServices.find(s => s.id === serviceId);
     if (!service) {
       return res.status(404).json({ success: false, message: 'Service not found', data: null });
     }
@@ -214,7 +214,7 @@ export async function bookVetAppointment(req, res) {
           const moneyAfter = await debitMoneyOrThrow(tx, {
             userId,
             amount: fee,
-            systemAccount: SYSTEM_ACCOUNT_BURN,
+            systemAccount: systemAccountBurn,
             category: 'vetServiceBurn',
             description: `Vet fee — ${service.name} for ${horse.name}`,
             metadata: { horseId, serviceId },

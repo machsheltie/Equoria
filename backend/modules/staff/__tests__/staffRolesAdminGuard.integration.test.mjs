@@ -18,7 +18,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import {
   ORIGIN,
-  STAFF_API,
+  staffApi,
   checkIn,
   cookiesFor,
   createUserFactory,
@@ -29,9 +29,9 @@ import {
   uid,
 } from './helpers/staffFixtures.mjs';
 
-const ROLES = `${STAFF_API}/roles`;
+const ROLES = `${staffApi}/roles`;
 const LOOKUP = `${ROLES}/lookup`;
-const LOG = `${STAFF_API}/log`;
+const LOG = `${staffApi}/log`;
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('staffroles');

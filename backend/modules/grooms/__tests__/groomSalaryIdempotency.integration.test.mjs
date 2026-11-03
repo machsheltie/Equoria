@@ -49,7 +49,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { processWeeklySalaries, getPayWeekStart } from '../services/groomSalaryService.mjs';
-import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
+import { systemAccountBurn } from '../../economy/index.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
@@ -196,8 +196,8 @@ async function paidRowsInWindow(userId, groomId, window) {
 beforeAll(async () => {
   // Belt-and-braces: the burn SystemAccount must exist for the debit pairing.
   await prisma.systemAccount.upsert({
-    where: { name: SYSTEM_ACCOUNT_BURN },
-    create: { name: SYSTEM_ACCOUNT_BURN, balance: 0 },
+    where: { name: systemAccountBurn },
+    create: { name: systemAccountBurn, balance: 0 },
     update: {},
   });
 }, 30000);

@@ -33,8 +33,8 @@ import { createBarrierClient, holdLock } from '../../../__tests__/helpers/rowLoc
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-6p398-6-owner';
-const LIST_PRICE = 500;
+const fixturePrefix = 'TestFixture-6p398-6-owner';
+const listPrice = 500;
 const barrierClient = createBarrierClient();
 
 function tag() {
@@ -46,8 +46,8 @@ async function makeUser(role, money) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${role}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${role}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${role}-${suffix}`,
+      email: `${fixturePrefix}-${role}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Finding6',
       lastName: role,
@@ -64,7 +64,7 @@ async function makeHorse(ownerId) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag()}`,
+      name: `${fixturePrefix}-horse-${tag()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
@@ -186,7 +186,7 @@ describe('rider assignment ownership (finding 6)', () => {
 
     await prisma.horse.update({
       where: { id: horse.id },
-      data: { forSale: true, salePrice: LIST_PRICE },
+      data: { forSale: true, salePrice: listPrice },
     });
     const bought = await buyRequest(buyer.token, horse.id);
     expect(bought.status).toBe(200);
@@ -218,7 +218,7 @@ describe('rider assignment ownership (finding 6)', () => {
 
     await prisma.horse.update({
       where: { id: horse.id },
-      data: { forSale: true, salePrice: LIST_PRICE },
+      data: { forSale: true, salePrice: listPrice },
     });
     expect((await buyRequest(buyer.token, horse.id)).status).toBe(200);
     const replacement = await assignRiderRequest(buyer.token, buyerRider.id, horse.id);

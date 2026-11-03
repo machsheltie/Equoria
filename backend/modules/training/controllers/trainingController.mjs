@@ -148,7 +148,7 @@ async function computeCanTrain(parsedHorseId, discipline) {
 
 // Owner ruling 2026-10-23 (Equoria-576c0.1): a weekly session adds exactly +5 to the
 // trained discipline, whatever the horse's traits, temperament or trainer.
-const TRAINING_DISCIPLINE_GAIN = 5;
+const trainingDisciplineGain = 5;
 /** Player XP per weekly session (the long-standing base amount, now never scaled). */
 const trainingPlayerXp = 5;
 
@@ -245,7 +245,7 @@ async function trainHorse(horseId, requestedDiscipline, { actorUserId = null } =
     // to the trained discipline. No trainer bonus, no trait scaling, no
     // temperament scaling. (Old contract, Equoria-oey96.7: the gain was
     // max(1, round(5 * (1 + trait trainingXpModifier) * (1 + trainer net))).)
-    const disciplineScoreIncrease = TRAINING_DISCIPLINE_GAIN;
+    const disciplineScoreIncrease = trainingDisciplineGain;
 
     // Owner rulings 2026-10-19 and 2026-10-21: training adds to the trained
     // discipline's score and never raises a horse stat, in every discipline.

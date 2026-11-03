@@ -5,7 +5,7 @@
  * Locks two invariants that the en1ab migration introduced:
  *
  *   1. The store-horse debit routes through `debitMoneyOrThrow` (atomic
- *      `updateMany` with `money >= STORE_PRICE` predicate) — closes the
+ *      `updateMany` with `money >= storePrice` predicate) — closes the
  *      historical TOCTOU race where two concurrent purchases on a thin
  *      wallet both passed the `findUnique + if(money<cost)` pre-check and
  *      both decremented. Asserted at the code level (source-text grep) AND
@@ -13,7 +13,7 @@
  *      other gets 400).
  *   2. Money-conservation parallels `showEscrowMoneyConservation`: every
  *      successful store-horse purchase pairs the user debit with a
- *      SYSTEM_ACCOUNT_BURN credit so
+ *      systemAccountBurn credit so
  *        sum(User.money) + sum(SystemAccount.balance)
  *      stays constant across the move. Asserted per-purchase: exact delta on
  *      the test-owned user row, plus the purchase's OWN burn-credit ledger
@@ -36,7 +36,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
+import { systemAccountBurn } from '../../economy/index.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
@@ -50,7 +50,7 @@ function uniqueUsername(prefix = 'en1ab') {
   return `${prefix}${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
 }
 
-const STORE_PRICE = 1000; // mirrors marketplaceController.STORE_PRICE
+const storePrice = 1000; // mirrors marketplaceController.storePrice
 
 let realBreedId;
 let createdHorseIds = [];
@@ -118,7 +118,7 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
 
   // ─── CODE-LEVEL SENTINEL ──────────────────────────────────────────────────
 
-  it('CODE SENTINEL: buyStoreHorse calls debitMoneyOrThrow with systemAccount: SYSTEM_ACCOUNT_BURN (Equoria-kl16c)', () => {
+  it('CODE SENTINEL: buyStoreHorse calls debitMoneyOrThrow with systemAccount: systemAccountBurn (Equoria-kl16c)', () => {
     // Per OPTIMAL_FIX_DISCIPLINE §2 — sentinel-positive test required for
     // any check the fix introduces. The race window is too narrow to
     // reliably reproduce in CI (the first tx commits before the second
@@ -140,17 +140,17 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
     // (2) Equoria-kl16c: the burn pairing is now done INTERNALLY by
     //     debitMoneyOrThrow (systemAccount + category are required args), so
     //     the conservation pairing is expressed by passing
-    //     `systemAccount: SYSTEM_ACCOUNT_BURN` to the debit helper rather than
+    //     `systemAccount: systemAccountBurn` to the debit helper rather than
     //     a separate creditSystemAccount call (which would double-credit).
-    expect(buyStoreHorseBody).toMatch(/systemAccount:\s*SYSTEM_ACCOUNT_BURN/);
+    expect(buyStoreHorseBody).toMatch(/systemAccount:\s*systemAccountBurn/);
     expect(buyStoreHorseBody).toMatch(/category:\s*'storeHorsePurchaseBurn'/);
 
     // (3) Must NOT use the historical raw `tx.user.findUnique` + manual
-    //     `money < STORE_PRICE` pre-check — that's the TOCTOU shape.
+    //     `money < storePrice` pre-check — that's the TOCTOU shape.
     //     A manual pre-check followed by an unconditional decrement is the
     //     exact bug debitMoneyOrThrow exists to prevent.
-    expect(buyStoreHorseBody).not.toMatch(/buyer\.money\s*<\s*STORE_PRICE/);
-    expect(buyStoreHorseBody).not.toMatch(/data:\s*\{\s*money:\s*\{\s*decrement:\s*STORE_PRICE\s*\}/);
+    expect(buyStoreHorseBody).not.toMatch(/buyer\.money\s*<\s*storePrice/);
+    expect(buyStoreHorseBody).not.toMatch(/data:\s*\{\s*money:\s*\{\s*decrement:\s*storePrice\s*\}/);
   });
 
   // ─── RUNTIME INVARIANT ────────────────────────────────────────────────────
@@ -160,7 +160,7 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
     // assert an exact global balance delta — the canonical DB is shared with
     // parallel jest workers, and any other suite crediting burn between the
     // two snapshots makes the exact-delta flake (observed 2026-08-18:
-    // expected +STORE_PRICE, got +STORE_PRICE+400). Per CLAUDE.md
+    // expected +storePrice, got +storePrice+400). Per CLAUDE.md
     // fixture-coexistence, exact deltas are asserted only on rows this test
     // OWNS (the fixture user's money) and conservation is proven through the
     // purchase's OWN burn-credit ledger row, which debitMoneyOrThrow writes
@@ -192,18 +192,18 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
       select: { money: true },
     });
 
-    // User lost EXACTLY STORE_PRICE (test-owned row — exact delta is safe)
-    expect(Number(userAfter.money)).toBe(Number(userBefore.money) - STORE_PRICE);
+    // User lost EXACTLY storePrice (test-owned row — exact delta is safe)
+    expect(Number(userAfter.money)).toBe(Number(userBefore.money) - storePrice);
 
-    // THIS purchase credited SystemAccount.burn with EXACTLY STORE_PRICE,
+    // THIS purchase credited SystemAccount.burn with EXACTLY storePrice,
     // attributed to EXACTLY this user: the paired ledger row (userId-scoped,
     // so exclusively owned by this test's fresh fixture user).
     const burnCreditRows = await prisma.userTransaction.findMany({
       where: { userId: user.id, type: 'credit', category: 'storeHorsePurchaseBurn' },
     });
     expect(burnCreditRows).toHaveLength(1);
-    expect(Number(burnCreditRows[0].amount)).toBe(STORE_PRICE);
-    expect(burnCreditRows[0].metadata?.systemAccount).toBe(SYSTEM_ACCOUNT_BURN);
+    expect(Number(burnCreditRows[0].amount)).toBe(storePrice);
+    expect(burnCreditRows[0].metadata?.systemAccount).toBe(systemAccountBurn);
     expect(burnCreditRows[0].metadata?.systemAccountSide).toBe('credit');
 
     // CONSERVATION for THIS purchase: what left the user's wallet equals
@@ -233,7 +233,7 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
       where: { userId: user.id, type: 'debit', category: 'horseTraderPurchase' },
     });
     expect(debitRows).toHaveLength(1);
-    expect(Number(debitRows[0].amount)).toBe(STORE_PRICE);
+    expect(Number(debitRows[0].amount)).toBe(storePrice);
 
     // The new paired SystemAccount.burn credit ledger row (Equoria-en1ab)
     const burnRows = await prisma.userTransaction.findMany({
@@ -244,24 +244,24 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
       },
     });
     expect(burnRows).toHaveLength(1);
-    expect(Number(burnRows[0].amount)).toBe(STORE_PRICE);
+    expect(Number(burnRows[0].amount)).toBe(storePrice);
     // The systemAccount counterparty is recorded in metadata
     expect(burnRows[0].metadata).toBeTruthy();
-    expect(burnRows[0].metadata?.systemAccount).toBe(SYSTEM_ACCOUNT_BURN);
+    expect(burnRows[0].metadata?.systemAccount).toBe(systemAccountBurn);
     expect(burnRows[0].metadata?.systemAccountSide).toBe('credit');
   }, 60000);
 
   // ─── TOCTOU RACE — runtime sentinel ───────────────────────────────────────
 
   it('TOCTOU: two concurrent purchases on a wallet sized for exactly one debit yield exactly one success', async () => {
-    // Fund the wallet to STORE_PRICE exactly — two concurrent debits
+    // Fund the wallet to storePrice exactly — two concurrent debits
     // cannot both succeed if the conditional updateMany predicate is
     // intact. Pre-en1ab, the findUnique + if(money<cost) + decrement
     // shape would let both transactions race past the check and both
-    // decrement, taking the wallet to -STORE_PRICE.
+    // decrement, taking the wallet to -storePrice.
     await prisma.user.update({
       where: { id: user.id },
-      data: { money: STORE_PRICE },
+      data: { money: storePrice },
     });
 
     // Issue two concurrent purchases. They share the same auth token /
@@ -294,7 +294,7 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
     expect(successes).toBe(1);
     expect(failures).toBe(1);
 
-    // Wallet must NOT be negative. Pre-en1ab this could go to -STORE_PRICE.
+    // Wallet must NOT be negative. Pre-en1ab this could go to -storePrice.
     const userAfter = await prisma.user.findUnique({
       where: { id: user.id },
       select: { money: true },

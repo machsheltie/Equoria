@@ -36,25 +36,25 @@ import {
   transferUserMoneyOrThrow,
 } from '../../economy/index.mjs';
 import {
-  PRIVATE_STUD,
-  BUSY_MESSAGE,
-  STALLION_UNAVAILABLE,
-  MARE_NOT_FOUND,
+  privateStud,
+  busyMessage,
+  stallionUnavailable,
+  mareNotFound,
   BookingRefusal,
   ClaimLost,
   feeOf,
   feePredicate,
   feeChanged,
   resolveLostClaim,
-  REQUEST_NOT_FOUND,
-  REQUEST_NOT_PENDING,
+  requestNotFound,
+  requestNotPending,
   finalizeAll,
   notify,
   requestPayload,
   sendUnexpected,
 } from '../services/studBookingShared.mjs';
 
-const PENDING_INDEX = 'breeding_records_one_pending_per_dam';
+const pendingIndex = 'breeding_records_one_pending_per_dam';
 /** An approval that must end the request (S6 / S-Q3 / M-2), decided inside the rolled-back transaction. */
 class Decline extends Error {
   /**
@@ -76,7 +76,7 @@ function isPendingIndexViolation(error) {
   }
   const target = error.meta?.target;
   if (typeof target === 'string') {
-    return target === PENDING_INDEX;
+    return target === pendingIndex;
   }
   return Array.isArray(target) && target.length === 1 && target[0] === 'damId';
 }
@@ -98,11 +98,11 @@ export async function requestPrivateStud(req, res) {
         async tx => {
           const dam = await tx.horse.findUnique({ where: { id: damId } });
           if (!dam || dam.userId !== requesterId) {
-            throw new BookingRefusal(404, MARE_NOT_FOUND);
+            throw new BookingRefusal(404, mareNotFound);
           }
           const sire = await tx.horse.findUnique({ where: { id: sireId } });
-          if (!sire || sire.studStatus !== PRIVATE_STUD || !sire.userId) {
-            throw new BookingRefusal(404, STALLION_UNAVAILABLE);
+          if (!sire || sire.studStatus !== privateStud || !sire.userId) {
+            throw new BookingRefusal(404, stallionUnavailable);
           }
           if (sire.userId === requesterId) {
             throw new BookingRefusal(400, {
@@ -142,7 +142,7 @@ export async function requestPrivateStud(req, res) {
               where: {
                 id: sireId,
                 userId: stallionOwnerId,
-                studStatus: PRIVATE_STUD,
+                studStatus: privateStud,
                 ...feePredicate(expectedStudFee),
               },
               data: { studFee: expectedStudFee },
@@ -210,7 +210,7 @@ export async function requestPrivateStud(req, res) {
         },
         { timeout: 30000 },
       ),
-      { message: BUSY_MESSAGE },
+      { message: busyMessage },
     );
 
     finalizeAll(result.notifications);
@@ -238,7 +238,7 @@ export async function requestPrivateStud(req, res) {
           requesterId,
           stallionOwnerId,
           expectedStudFee,
-          studStatus: PRIVATE_STUD,
+          studStatus: privateStud,
         });
         return res.status(status).json(body);
       } catch (readError) {
@@ -276,10 +276,10 @@ export async function approveStudRequest(req, res) {
             request.kind !== 'PRIVATE_STUD' ||
             request.stallionOwnerId !== approverId
           ) {
-            throw new BookingRefusal(404, REQUEST_NOT_FOUND);
+            throw new BookingRefusal(404, requestNotFound);
           }
           if (request.status !== 'PENDING') {
-            throw new BookingRefusal(409, REQUEST_NOT_PENDING);
+            throw new BookingRefusal(409, requestNotPending);
           }
           const mareOwnerId = request.mareOwnerId;
           const fee = request.fee;
@@ -296,7 +296,7 @@ export async function approveStudRequest(req, res) {
               `You now own ${dam.name}; breed her to your stallion free from his page.`,
             );
           }
-          if (!sire || sire.userId !== approverId || sire.studStatus !== PRIVATE_STUD) {
+          if (!sire || sire.userId !== approverId || sire.studStatus !== privateStud) {
             throw new Decline('stallionUnavailable', 'The stallion is no longer at private stud.');
           }
           if (!dam || !mareOwnerId || dam.userId !== mareOwnerId) {
@@ -375,7 +375,7 @@ export async function approveStudRequest(req, res) {
           // ── Horses second, ascending id ──
           const pinSire = async () => {
             const pinned = await tx.horse.updateMany({
-              where: { id: sire.id, userId: approverId, studStatus: PRIVATE_STUD },
+              where: { id: sire.id, userId: approverId, studStatus: privateStud },
               data: { userId: approverId },
             });
             if (pinned.count !== 1) {
@@ -414,7 +414,7 @@ export async function approveStudRequest(req, res) {
             data: { status: 'COMPLETED', resolvedAt: now },
           });
           if (claimed.count !== 1) {
-            throw new BookingRefusal(409, REQUEST_NOT_PENDING);
+            throw new BookingRefusal(409, requestNotPending);
           }
 
           const foalDueDate = startOfGameDayIndex(gameDayIndex(now) + gestationDays).toISOString();
@@ -434,7 +434,7 @@ export async function approveStudRequest(req, res) {
         },
         { timeout: 30000 },
       ),
-      { message: BUSY_MESSAGE },
+      { message: busyMessage },
     );
 
     finalizeAll(result.notifications);
@@ -490,10 +490,10 @@ async function declineAfterFailedApproval(res, { requestId, approverId, decline 
         },
         { timeout: 30000 },
       ),
-      { message: BUSY_MESSAGE },
+      { message: busyMessage },
     );
     if (!outcome.declined) {
-      return res.status(409).json(REQUEST_NOT_PENDING);
+      return res.status(409).json(requestNotPending);
     }
     finalizeAll(outcome.notifications);
     return res.status(409).json({
@@ -504,6 +504,6 @@ async function declineAfterFailedApproval(res, { requestId, approverId, decline 
     });
   } catch (error) {
     logger.error(`[studRequest] decline of request ${requestId} failed: ${error.message}`);
-    return res.status(503).json({ success: false, message: BUSY_MESSAGE });
+    return res.status(503).json({ success: false, message: busyMessage });
   }
 }

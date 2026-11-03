@@ -445,7 +445,7 @@ describe('marketplaceController integration', () => {
       // stdDev, so we use a generous bound here. The point is to catch a
       // generator regression that returns constant zeros or random 1-100,
       // not to pin the distribution shape.
-      const STAT_KEYS = [
+      const statKeys = [
         'speed',
         'stamina',
         'agility',
@@ -459,7 +459,7 @@ describe('marketplaceController integration', () => {
         'endurance',
         'strength',
       ];
-      for (const key of STAT_KEYS) {
+      for (const key of statKeys) {
         const s = profile[key];
         const mean = s.mean;
         const std = s.std ?? s.stdDev ?? 3;
@@ -474,7 +474,7 @@ describe('marketplaceController integration', () => {
       }
 
       // Owner ruling 2026-10-16: the stored total is exactly 200.
-      const total = STAT_KEYS.reduce((sum, k) => sum + stored[k], 0);
+      const total = statKeys.reduce((sum, k) => sum + stored[k], 0);
       expect(total).toBe(200);
 
       createdHorseIds.push(horseId);
@@ -561,7 +561,7 @@ describe('marketplaceController integration', () => {
         return;
       }
 
-      const { temperamentTypes: TEMPERAMENT_TYPES } = await import('../../horses/data/temperamentTypes.mjs');
+      const { temperamentTypes } = await import('../../horses/data/temperamentTypes.mjs');
 
       await prisma.user.update({ where: { id: user.id }, data: { money: 5000 } });
 
@@ -584,7 +584,7 @@ describe('marketplaceController integration', () => {
       });
       expect(stored).toBeTruthy();
       expect(stored.temperament).toBeTruthy();
-      expect(TEMPERAMENT_TYPES).toContain(stored.temperament);
+      expect(temperamentTypes).toContain(stored.temperament);
 
       createdHorseIds.push(horseId);
     });

@@ -31,7 +31,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 
 const ORIGIN = 'http://localhost:3000';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const dayMs = 24 * 60 * 60 * 1000;
 
 const cleanup = createCleanupTracker();
 
@@ -138,16 +138,16 @@ beforeAll(async () => {
         clubId: clubMine.id,
         position: 'TestFixture-hubstats-open',
         status: 'open',
-        startsAt: new Date(now - DAY_MS),
-        endsAt: new Date(now + DAY_MS),
+        startsAt: new Date(now - dayMs),
+        endsAt: new Date(now + dayMs),
       },
       // Upcoming — startsAt in the future → not counted.
       {
         clubId: clubMine.id,
         position: 'TestFixture-hubstats-upcoming',
         status: 'upcoming',
-        startsAt: new Date(now + DAY_MS),
-        endsAt: new Date(now + 2 * DAY_MS),
+        startsAt: new Date(now + dayMs),
+        endsAt: new Date(now + 2 * dayMs),
       },
       // Manually closed despite open dates → not counted (mirrors
       // resolveElectionStatus: manual close always wins).
@@ -155,8 +155,8 @@ beforeAll(async () => {
         clubId: clubMine.id,
         position: 'TestFixture-hubstats-manually-closed',
         status: 'closed',
-        startsAt: new Date(now - DAY_MS),
-        endsAt: new Date(now + DAY_MS),
+        startsAt: new Date(now - dayMs),
+        endsAt: new Date(now + dayMs),
       },
       // Date-expired but status column still 'open' (stale row) → not counted
       // (mirrors resolveElectionStatus: endsAt <= now is closed).
@@ -164,16 +164,16 @@ beforeAll(async () => {
         clubId: clubMine.id,
         position: 'TestFixture-hubstats-date-expired',
         status: 'open',
-        startsAt: new Date(now - 3 * DAY_MS),
-        endsAt: new Date(now - DAY_MS),
+        startsAt: new Date(now - 3 * dayMs),
+        endsAt: new Date(now - dayMs),
       },
       // Open election in a club the caller does NOT belong to → not counted.
       {
         clubId: clubOther.id,
         position: 'TestFixture-hubstats-other-club-open',
         status: 'open',
-        startsAt: new Date(now - DAY_MS),
-        endsAt: new Date(now + DAY_MS),
+        startsAt: new Date(now - dayMs),
+        endsAt: new Date(now + dayMs),
       },
     ],
   });

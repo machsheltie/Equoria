@@ -17,13 +17,13 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
-  SYSTEM_ACCOUNT_BURN,
+  systemAccountBurn,
 } from '../../services/financialLedgerService.mjs';
 // Equoria-q4uem.4 (WS4 S4): the feed catalog lives in ../services/feedCatalog.mjs
 // (data, not HTTP). Re-exported here so same-module importers and tests keep
 // their existing specifiers.
-import { FEED_CATALOG } from '../services/feedCatalog.mjs';
-export { FEED_CATALOG } from '../services/feedCatalog.mjs';
+import { feedCatalog } from '../services/feedCatalog.mjs';
+export { feedCatalog } from '../services/feedCatalog.mjs';
 
 /**
  * GET /api/feed-shop/catalog
@@ -32,7 +32,7 @@ export async function getFeedCatalog(_req, res) {
   res.status(200).json({
     success: true,
     message: 'Feed catalog retrieved successfully',
-    data: FEED_CATALOG,
+    data: feedCatalog,
   });
 }
 
@@ -58,7 +58,7 @@ export async function purchaseFeed(req, res) {
     const userId = req.user.id;
     const { feedTier, packs } = req.body;
 
-    const tier = FEED_CATALOG.find(f => f.id === feedTier);
+    const tier = feedCatalog.find(f => f.id === feedTier);
     if (!tier) {
       return res
         .status(404)
@@ -115,7 +115,7 @@ export async function purchaseFeed(req, res) {
           const remainingMoney = await debitMoneyOrThrow(tx, {
             userId,
             amount: totalCost,
-            systemAccount: SYSTEM_ACCOUNT_BURN,
+            systemAccount: systemAccountBurn,
             category: 'feedPurchaseBurn',
             description: `Feed purchase — ${packs} pack(s) of ${tier.name}`,
             metadata: { feedTier: tier.id, packs, totalUnits },

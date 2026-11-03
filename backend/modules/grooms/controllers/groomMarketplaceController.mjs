@@ -22,7 +22,7 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
-  SYSTEM_ACCOUNT_BURN,
+  systemAccountBurn,
 } from '../../economy/index.mjs';
 import { maxGroomsPerUser } from '../../../config/groomConfig.mjs';
 import { CapExceededError } from '../groomErrors.mjs';
@@ -191,7 +191,7 @@ export async function refreshMarketplace(req, res) {
             await debitMoneyOrThrow(tx, {
               userId,
               amount: refreshCost,
-              systemAccount: SYSTEM_ACCOUNT_BURN,
+              systemAccount: systemAccountBurn,
               category: 'groomMarketplaceRefreshBurn',
               description: 'Groom marketplace refresh fee',
               metadata: { staffType },
@@ -371,7 +371,7 @@ export async function hireFromMarketplace(req, res) {
           const moneyAfter = await debitMoneyOrThrow(tx, {
             userId,
             amount: hiringCost,
-            systemAccount: SYSTEM_ACCOUNT_BURN,
+            systemAccount: systemAccountBurn,
             category: 'groomHireBurn',
             description: `Groom hire fee — ${groom.name}`,
             metadata: { groomId: groom.id, marketplaceId },

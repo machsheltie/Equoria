@@ -49,7 +49,7 @@ export const riderAssignRefusal = Object.freeze({
  * Same wording as the inventory controller's ownership guard — a former owner
  * acting on a sold horse gets one consistent, honest answer across the app.
  */
-const HORSE_NOT_YOURS = 'That horse is no longer yours. Please reload your stable.';
+const horseNotYours = 'That horse is no longer yours. Please reload your stable.';
 
 /**
  * Message for a request that names an assignment which is no longer the
@@ -57,7 +57,7 @@ const HORSE_NOT_YOURS = 'That horse is no longer yours. Please reload your stabl
  * Rejecting is the only honest outcome: the requested end state already holds,
  * and continuing would clear a rider this request never chose.
  */
-const ASSIGNMENT_NOT_CURRENT =
+const assignmentNotCurrent =
   'That rider assignment is no longer active. Please reload your stable.';
 
 /**
@@ -203,7 +203,7 @@ export async function assignRider(req, res) {
           SELECT "id", "name", "age", "dateOfBirth" FROM "horses"
           WHERE "id" = ${horseId} AND "userId" = ${userId} FOR UPDATE`;
         if (claimed.length !== 1) {
-          throw httpError(409, HORSE_NOT_YOURS);
+          throw httpError(409, horseNotYours);
         }
         // A horse is ridden from 3, the age it can enter shows (Equoria-y2ksc). Read
         // on the locked row, at its live age (a third birthday counts at once).
@@ -317,14 +317,14 @@ export async function deleteRiderAssignment(req, res) {
         // authority — the guarded UPDATE below is, and it re-proves this under
         // a concurrent writer.
         if (!assignment.isActive) {
-          throw httpError(409, ASSIGNMENT_NOT_CURRENT);
+          throw httpError(409, assignmentNotCurrent);
         }
 
         // Lock the horse row, but only a horse still owned by the caller.
         const locked = await tx.$queryRaw`
           SELECT "id" FROM "horses" WHERE "id" = ${assignment.horseId} AND "userId" = ${userId} FOR UPDATE`;
         if (locked.length !== 1) {
-          throw httpError(409, HORSE_NOT_YOURS);
+          throw httpError(409, horseNotYours);
         }
 
         const deactivated = await tx.riderAssignment.updateMany({
@@ -332,7 +332,7 @@ export async function deleteRiderAssignment(req, res) {
           data: { isActive: false },
         });
         if (deactivated.count !== 1) {
-          throw httpError(409, ASSIGNMENT_NOT_CURRENT);
+          throw httpError(409, assignmentNotCurrent);
         }
       }),
       { message: 'Rider assignments are busy right now, please retry in a moment.' },

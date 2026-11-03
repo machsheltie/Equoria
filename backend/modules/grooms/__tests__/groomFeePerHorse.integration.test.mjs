@@ -31,7 +31,7 @@ import {
 } from '../services/groomSalaryService.mjs';
 import { createAssignment } from '../services/groomAssignmentService.mjs';
 import { assignGroomToFoal } from '../../../utils/groomSystem.mjs';
-import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
+import { systemAccountBurn } from '../../economy/index.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const fixturePrefix = 'TestFixture-95yrv-fee';
@@ -130,8 +130,8 @@ describe('q228 — the weekly pass and the summary charge the same thing', () =>
     cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 
     await prisma.systemAccount.upsert({
-      where: { name: SYSTEM_ACCOUNT_BURN },
-      create: { name: SYSTEM_ACCOUNT_BURN, balance: 0 },
+      where: { name: systemAccountBurn },
+      create: { name: systemAccountBurn, balance: 0 },
       update: {},
     });
 

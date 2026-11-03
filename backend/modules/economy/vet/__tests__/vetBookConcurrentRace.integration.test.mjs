@@ -20,10 +20,10 @@ import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
-import { bookVetAppointment, healthCheckFee, VET_SERVICES } from '../controllers/vetController.mjs';
+import { bookVetAppointment, healthCheckFee, vetServices } from '../controllers/vetController.mjs';
 import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-6g8wm-vet';
+const fixturePrefix = 'TestFixture-6g8wm-vet';
 const N = 5;
 
 let user;
@@ -57,8 +57,8 @@ beforeAll(async () => {
   user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Vet',
       lastName: 'Race',
@@ -70,7 +70,7 @@ beforeAll(async () => {
   horse = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag}`,
+      name: `${fixturePrefix}-horse-${tag}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
@@ -99,7 +99,7 @@ afterAll(async () => {
 
 describe('vet bookVetAppointment concurrent-race sentinel (Equoria-6g8wm)', () => {
   it('SENTINEL: N parallel bookings with money for ONE — exactly 1 succeeds, money never negative', async () => {
-    const service = VET_SERVICES[0];
+    const service = vetServices[0];
     const reqs = Array.from({ length: N }, () => ({
       user: { id: user.id },
       body: { horseId: horse.id, serviceId: service.id },

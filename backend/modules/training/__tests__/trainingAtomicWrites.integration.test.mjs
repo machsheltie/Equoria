@@ -34,7 +34,7 @@ import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
-const FIXTURE_PREFIX = 'TestFixture-bvddn17';
+const fixturePrefix = 'TestFixture-bvddn17';
 const tag = randomBytes(4).toString('hex');
 const constraintName = `tf_bvddn17_block_score_${tag}`;
 
@@ -46,7 +46,7 @@ async function createHorse(label, extra = {}) {
   const horse = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-${label}-${tag}`,
+      name: `${fixturePrefix}-${label}-${tag}`,
       sex: 'Mare',
       dateOfBirth: birthDateForAge(6),
       age: 6,
@@ -66,8 +66,8 @@ beforeAll(async () => {
   testUser = await prisma.user.create({
     data: {
       emailVerified: true,
-      email: `${FIXTURE_PREFIX}-${tag}@test.com`,
-      username: `${FIXTURE_PREFIX}-${tag}`.slice(0, 30),
+      email: `${fixturePrefix}-${tag}@test.com`,
+      username: `${fixturePrefix}-${tag}`.slice(0, 30),
       password: 'irrelevant-hash',
       firstName: 'Atomic',
       lastName: 'Training',

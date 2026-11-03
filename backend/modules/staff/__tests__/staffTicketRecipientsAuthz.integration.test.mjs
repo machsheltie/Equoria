@@ -14,7 +14,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import {
-  STAFF_API,
+  staffApi,
   checkIn,
   createUserFactory,
   post,
@@ -26,8 +26,8 @@ import {
   removeTicketEmails,
 } from './helpers/staffFixtures.mjs';
 
-const TICKETS = `${STAFF_API}/tickets`;
-const STAFF_BELLS = ['staffTicket', 'staffTicketUpdate'];
+const TICKETS = `${staffApi}/tickets`;
+const staffBellTypes = ['staffTicket', 'staffTicketUpdate'];
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('stbellto');
@@ -77,10 +77,10 @@ async function filedTicket() {
   return { mod, ticket };
 }
 
-const demotePath = mod => `${STAFF_API}/roles/${mod.id}`;
+const demotePath = mod => `${staffApi}/roles/${mod.id}`;
 const demote = mod => post(demotePath(mod), owner, { role: 'user', reason: 'Stepping down' }, ownerDevice);
 
-const staffBells = userId => prisma.notification.findMany({ where: { userId, type: { in: STAFF_BELLS } } });
+const staffBells = userId => prisma.notification.findMany({ where: { userId, type: { in: staffBellTypes } } });
 
 describe('A filer who is no longer a moderator', () => {
   it('gets no bell for a status change or an admin reply', async () => {

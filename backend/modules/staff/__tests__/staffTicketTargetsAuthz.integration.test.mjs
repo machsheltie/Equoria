@@ -30,7 +30,7 @@ import {
 
 const TICKETS = '/api/v1/staff/tickets';
 
-const NOT_A_PLAYER = {
+const notAPlayer = {
   success: false,
   message: 'Tickets can only be about players',
   code: 'notAPlayer',
@@ -115,7 +115,7 @@ describe('A ticket about an account names a player only (STAFF-CR-02)', () => {
 
     for (const res of [byName, byId, byBoth]) {
       expect(res.status).toBe(403);
-      expect(res.body).toEqual(NOT_A_PLAYER);
+      expect(res.body).toEqual(notAPlayer);
     }
     expect(await trail()).toEqual(before);
   });
@@ -178,7 +178,7 @@ describe('A ticket about an account names a player only (STAFF-CR-02)', () => {
     const res = await filing;
 
     expect(res.status).toBe(403);
-    expect(res.body).toEqual(NOT_A_PLAYER);
+    expect(res.body).toEqual(notAPlayer);
     expect(await trail()).toEqual(before);
   });
 });

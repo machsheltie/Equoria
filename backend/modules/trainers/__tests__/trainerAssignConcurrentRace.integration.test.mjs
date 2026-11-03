@@ -30,8 +30,8 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-bvddn8-trainer';
-const N_ATTEMPTS = 6;
+const fixturePrefix = 'TestFixture-bvddn8-trainer';
+const nAttempts = 6;
 
 function tag() {
   return randomBytes(6).toString('hex');
@@ -42,8 +42,8 @@ async function makeUser() {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-owner-${suffix}`,
-      email: `${FIXTURE_PREFIX}-owner-${suffix}@example.com`,
+      username: `${fixturePrefix}-owner-${suffix}`,
+      email: `${fixturePrefix}-owner-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Bvddn8',
       lastName: 'TrainerOwner',
@@ -60,7 +60,7 @@ async function makeHorse(ownerId, label) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${label}-${tag()}`,
+      name: `${fixturePrefix}-horse-${label}-${tag()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
@@ -110,7 +110,7 @@ describe('trainer assign concurrency (Equoria-bvddn.8)', () => {
 
     owner = await makeUser();
     trainer = await makeTrainer(owner.id);
-    horses = await Promise.all(Array.from({ length: N_ATTEMPTS }, (_, i) => makeHorse(owner.id, String(i))));
+    horses = await Promise.all(Array.from({ length: nAttempts }, (_, i) => makeHorse(owner.id, String(i))));
   }, 30000);
 
   afterEach(() => cleanup.run(), 30000);
@@ -123,7 +123,7 @@ describe('trainer assign concurrency (Equoria-bvddn.8)', () => {
 
     // Every response must be either a success or the documented
     // "already assigned elsewhere" business rejection — never a 500.
-    expect(succeeded.length + rejected.length).toBe(N_ATTEMPTS);
+    expect(succeeded.length + rejected.length).toBe(nAttempts);
 
     const activeRows = await prisma.trainerAssignment.findMany({
       where: { trainerId: trainer.id, isActive: true },

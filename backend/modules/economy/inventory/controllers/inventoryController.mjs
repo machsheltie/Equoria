@@ -16,7 +16,7 @@ import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 import { updateUserSettingsPaths } from '../../../../utils/userSettingsPaths.mjs';
 import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
-import { TACK_INVENTORY } from '../../tackShop/controllers/tackShopController.mjs';
+import { tackInventory } from '../../tackShop/controllers/tackShopController.mjs';
 import {
   allTackItems,
   tackEffectFields,
@@ -26,7 +26,7 @@ import {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /** The shop catalogue entry for a tack item id, or undefined. */
-const catalogEntry = itemId => TACK_INVENTORY.find(entry => entry.id === itemId);
+const catalogEntry = itemId => tackInventory.find(entry => entry.id === itemId);
 
 /**
  * Read inventory array from User.settings, defaulting to empty array.
@@ -151,12 +151,12 @@ function asObject(raw) {
  * `tack.decorative` — which this file did before Equoria-6p398.12 — produced an
  * item that was equipped, invisible to the shop's remove endpoint.
  */
-const DECORATIVE_CATEGORY = 'decorative';
-const DECORATIONS_KEY = 'decorations';
+const decorativeCategory = 'decorative';
+const decorationsKey = 'decorations';
 
 /** Read `tack.decorations` as an array of item ids. */
 function readDecorations(tack) {
-  return Array.isArray(tack[DECORATIONS_KEY]) ? tack[DECORATIONS_KEY] : [];
+  return Array.isArray(tack[decorationsKey]) ? tack[decorationsKey] : [];
 }
 
 /**
@@ -166,11 +166,11 @@ function readDecorations(tack) {
  * @param {{category: string, itemId: string}} item
  */
 function withTackItem(tack, item) {
-  if (item.category === DECORATIVE_CATEGORY) {
+  if (item.category === decorativeCategory) {
     const decorations = readDecorations(tack);
     return decorations.includes(item.itemId)
       ? { ...tack }
-      : { ...tack, [DECORATIONS_KEY]: [...decorations, item.itemId] };
+      : { ...tack, [decorationsKey]: [...decorations, item.itemId] };
   }
   // The show-score bonus is read from the item in the slot
   // (competition/rules/tackScoring.mjs), so nothing numeric is stored beside it
@@ -186,10 +186,10 @@ function withTackItem(tack, item) {
  */
 function withoutTackItem(tack, item) {
   const next = { ...tack };
-  if (item.category === DECORATIVE_CATEGORY) {
-    next[DECORATIONS_KEY] = readDecorations(tack).filter(id => id !== item.itemId);
-    if (next[DECORATIONS_KEY].length === 0) {
-      delete next[DECORATIONS_KEY];
+  if (item.category === decorativeCategory) {
+    next[decorationsKey] = readDecorations(tack).filter(id => id !== item.itemId);
+    if (next[decorationsKey].length === 0) {
+      delete next[decorationsKey];
     }
     return next;
   }
@@ -210,7 +210,7 @@ function httpError(status, message) {
  * continuing would silently discard the other writer's change (the Finding 1
  * defect) — the player simply retries against fresh state.
  */
-const INVENTORY_CONFLICT = 'Your inventory changed while this request was in flight. Please retry.';
+const inventoryConflict = 'Your inventory changed while this request was in flight. Please retry.';
 
 /**
  * Compare-and-swap `settings.inventory` from `current` to `next`, `inventory` path
@@ -223,7 +223,7 @@ async function swapInventory(tx, userId, current, next) {
     expect: { inventory: { equals: current, whenMissing: [] } },
   });
   if (affected !== 1) {
-    throw httpError(409, INVENTORY_CONFLICT);
+    throw httpError(409, inventoryConflict);
   }
 }
 
@@ -385,7 +385,7 @@ export async function equipItem(req, res) {
             return { ...i, equippedToHorseId: horseId };
           }
           if (
-            item.category !== DECORATIVE_CATEGORY &&
+            item.category !== decorativeCategory &&
             i.category === item.category &&
             i.equippedToHorseId === horseId
           ) {

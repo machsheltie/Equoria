@@ -19,7 +19,7 @@ import {
   hireRiderFromMarketplace,
 } from '../controllers/riderMarketplaceController.mjs';
 
-const SUITE_PREFIX = 'rmkt';
+const suitePrefix = 'rmkt';
 
 function makeReqRes(userId, overrides = {}) {
   let _status = 200;
@@ -55,9 +55,9 @@ async function createUser(money = 9999) {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${SUITE_PREFIX}-${uid}`,
-      username: `${SUITE_PREFIX}_${uid}`,
-      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      id: `${suitePrefix}-${uid}`,
+      username: `${suitePrefix}_${uid}`,
+      email: `${suitePrefix}-${uid}@example.com`,
       firstName: 'Rmkt',
       lastName: 'Test',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -88,7 +88,7 @@ async function seedMarketplaceState(userId, overrides = {}) {
 
 async function cleanupSuite() {
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: SUITE_PREFIX } },
+    where: { id: { startsWith: suitePrefix } },
     select: { id: true },
   });
   if (users.length === 0) {

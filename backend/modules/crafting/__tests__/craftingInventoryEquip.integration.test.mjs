@@ -33,12 +33,12 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { findRecipe } from '../data/craftingRecipes.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-craftinv-htt6';
+const fixturePrefix = 'TestFixture-craftinv-htt6';
 const ORIGIN = 'http://localhost:3000';
 
 // Tier-0 recipe with a clean small footprint. Cost 75, materials { leather: 1 }.
-const RECIPE_ID = 'basic-halter';
-const RECIPE = findRecipe(RECIPE_ID);
+const recipeId = 'basic-halter';
+const RECIPE = findRecipe(recipeId);
 
 let owner;
 let token;
@@ -77,8 +77,8 @@ beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
 
   const created = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+    username: `${fixturePrefix}-${tag}`,
+    email: `${fixturePrefix}-${tag}@example.com`,
     money: 1000,
   });
   owner = created.user;
@@ -110,7 +110,7 @@ beforeAll(async () => {
   });
 
   horse = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-horse-${tag}`,
+    name: `${fixturePrefix}-horse-${tag}`,
     userId: owner.id,
     age: 5,
   });
@@ -151,7 +151,7 @@ describe('Crafting API — real-DB integration (Equoria-htt6)', () => {
     const affordable = res.body.data.recipes.filter(r => r.affordable === true);
     expect(affordable.length).toBeGreaterThan(0);
     // The recipe we will craft must be among the affordable set.
-    expect(affordable.some(r => r.id === RECIPE_ID)).toBe(true);
+    expect(affordable.some(r => r.id === recipeId)).toBe(true);
   });
 
   it('POST /crafting/craft deducts materials + coins, persists crafted item, reload reflects state', async () => {
@@ -163,7 +163,7 @@ describe('Crafting API — real-DB integration (Equoria-htt6)', () => {
     const beforeInvLen = before.settings.inventory.length;
 
     const res = await sendAuthCsrf('post', '/api/v1/crafting/craft', {
-      recipeId: RECIPE_ID,
+      recipeId,
     });
 
     expect(res.status).toBe(200);
@@ -211,7 +211,7 @@ describe('Crafting API — real-DB integration (Equoria-htt6)', () => {
     });
 
     const res = await sendAuthCsrf('post', '/api/v1/crafting/craft', {
-      recipeId: RECIPE_ID,
+      recipeId,
     });
 
     expect(res.status).toBe(400);
@@ -291,12 +291,12 @@ describe('Inventory equip/unequip API — real-DB integration (Equoria-htt6)', (
     // A horse owned by a *different* user.
     const otherTag = randomBytes(4).toString('hex');
     const other = await createTestUser({
-      username: `${FIXTURE_PREFIX}-other-${otherTag}`,
-      email: `${FIXTURE_PREFIX}-other-${otherTag}@example.com`,
+      username: `${fixturePrefix}-other-${otherTag}`,
+      email: `${fixturePrefix}-other-${otherTag}@example.com`,
     });
     ids.users.push(other.user.id);
     const foreignHorse = await createTestHorse({
-      name: `${FIXTURE_PREFIX}-foreign-${otherTag}`,
+      name: `${fixturePrefix}-foreign-${otherTag}`,
       userId: other.user.id,
       age: 5,
     });

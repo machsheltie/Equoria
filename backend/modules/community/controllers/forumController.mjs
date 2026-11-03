@@ -27,10 +27,10 @@ import { publishUserEvent } from '../../../services/eventBus.mjs';
 
 /** In-memory dedup map: key = `${userId}:${threadId}`, value = timestamp of last view increment */
 const _viewLog = new Map();
-const VIEW_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+const viewCooldownMs = 60 * 60 * 1000; // 1 hour
 
-const VALID_SECTIONS = ['general', 'art', 'sales', 'services', 'venting'];
-const THREADS_PER_PAGE = 20;
+const validSections = ['general', 'art', 'sales', 'services', 'venting'];
+const threadsPerPage = 20;
 
 // Pinned threads first, then the most recently active, ties broken by id
 // (Equoria-cmw85.21). A thread that is bumped or pinned while a player pages moves to the
@@ -50,15 +50,15 @@ const threadSort = [
 export async function getThreads(req, res) {
   const { section } = req.query;
   const { limit, cursor, skip } = readKeysetParams(req.query, {
-    def: THREADS_PER_PAGE,
+    def: threadsPerPage,
     max: 100,
   });
   const pageNum = Math.max(1, parseInt(req.query.page ?? '1', 10) || 1);
 
-  if (section && !VALID_SECTIONS.includes(section)) {
+  if (section && !validSections.includes(section)) {
     return res.status(400).json({
       success: false,
-      message: `Invalid section. Valid sections: ${VALID_SECTIONS.join(', ')}`,
+      message: `Invalid section. Valid sections: ${validSections.join(', ')}`,
     });
   }
   const where = section ? { section } : {};
@@ -249,14 +249,14 @@ export async function incrementView(req, res) {
   const key = `${userId}:${id}`;
   const now = Date.now();
   const last = _viewLog.get(key);
-  if (last && now - last < VIEW_COOLDOWN_MS) {
+  if (last && now - last < viewCooldownMs) {
     return res.json({ success: true });
   }
   _viewLog.set(key, now);
 
   // Prune entries older than the cooldown window to prevent unbounded growth
   for (const [k, ts] of _viewLog) {
-    if (now - ts >= VIEW_COOLDOWN_MS) {
+    if (now - ts >= viewCooldownMs) {
       _viewLog.delete(k);
     }
   }

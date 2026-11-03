@@ -50,7 +50,7 @@ import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 const ORIGIN = 'http://localhost:3000';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const PROTECTED_HORSE_FIELDS = {
+const protectedHorseFields = {
   epigeneticModifiers: { positive: ['legendaryBloodline'], negative: [], hidden: [] },
   temperament: 'TestFixture-planted-temperament',
   personality: 'TestFixture-planted-personality',
@@ -63,7 +63,7 @@ const retiredHorseFields = {
   temporaryEpigeneticFlags: [{ flag: 'brave', expiresAt: '2099-01-01', source: 'player' }],
   ultraRareTraits: { ultraRare: [{ name: 'phoenixBorn' }], exotic: [] },
 };
-const hostileHorseFields = { ...PROTECTED_HORSE_FIELDS, ...retiredHorseFields };
+const hostileHorseFields = { ...protectedHorseFields, ...retiredHorseFields };
 
 describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
   let player;
@@ -147,7 +147,7 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
   const horseRow = () =>
     prisma.horse.findUnique({
       where: { id: horse.id },
-      select: Object.fromEntries(Object.keys(PROTECTED_HORSE_FIELDS).map(k => [k, true])),
+      select: Object.fromEntries(Object.keys(protectedHorseFields).map(k => [k, true])),
     });
 
   it.each(Object.entries(hostileHorseFields))(
@@ -197,7 +197,7 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
     const bought = await prisma.horse.findFirst({
       where: { userId: player.id, id: { not: horse.id } },
       orderBy: { id: 'desc' },
-      select: Object.fromEntries(Object.keys(PROTECTED_HORSE_FIELDS).map(k => [k, true])),
+      select: Object.fromEntries(Object.keys(protectedHorseFields).map(k => [k, true])),
     });
     // Old contract: the store horse came with no traits at all. Owner rulings
     // 2026-10-22 and 2026-10-28 (q174, Equoria-i366a): the server gives it 1-5

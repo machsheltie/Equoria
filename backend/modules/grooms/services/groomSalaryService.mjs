@@ -59,7 +59,7 @@
  *      the unconditional update at the bottom — a perfect TOCTOU window the
  *      cron processor was wide-open to because it runs unattended.
  *   3. Pair every successful user debit with
- *      `creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, totalSalary, ...)` so the
+ *      `creditSystemAccount(tx, systemAccountBurn, totalSalary, ...)` so the
  *      destroyed money satisfies the conservation invariant
  *        sum(User.money) + sum(SystemAccount.balance) = const
  *      that Equoria-si69u / Equoria-en1ab established for the other sinks.
@@ -284,7 +284,7 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
         // purchases. On count===0 it throws `InsufficientFundsError` which
         // we catch and route to the existing insufficient-funds branch.
         //
-        // The user debit is paired with `creditSystemAccount(SYSTEM_ACCOUNT_BURN)`
+        // The user debit is paired with `creditSystemAccount(systemAccountBurn)`
         // inside the same tx so money-conservation holds:
         //   sum(User.money) + sum(SystemAccount.balance) is invariant
         // across the salary move (paralleling Equoria-en1ab / si69u).

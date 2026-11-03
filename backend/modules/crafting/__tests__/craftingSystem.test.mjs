@@ -24,10 +24,10 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { CRAFTING_RECIPES, findRecipe } from '../data/craftingRecipes.mjs';
+import { craftingRecipes, findRecipe } from '../data/craftingRecipes.mjs';
 import { getMaterialsEndpoint, getRecipes, craftItem } from '../controllers/craftingController.mjs';
 
-const SUITE_PREFIX = 'craft';
+const suitePrefix = 'craft';
 
 function makeReq(userId, overrides = {}) {
   return {
@@ -66,9 +66,9 @@ async function createUser(extra = {}) {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${SUITE_PREFIX}-${uid}`,
-      username: `${SUITE_PREFIX}_${uid}`,
-      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      id: `${suitePrefix}-${uid}`,
+      username: `${suitePrefix}_${uid}`,
+      email: `${suitePrefix}-${uid}@example.com`,
       firstName: 'Craft',
       lastName: 'Test',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -81,7 +81,7 @@ async function createUser(extra = {}) {
 
 async function cleanupSuite() {
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: SUITE_PREFIX } },
+    where: { id: { startsWith: suitePrefix } },
     select: { id: true },
   });
   if (users.length === 0) {
@@ -92,17 +92,17 @@ async function cleanupSuite() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CRAFTING_RECIPES catalog (pure data — no DB)
+// craftingRecipes catalog (pure data — no DB)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('CRAFTING_RECIPES catalog', () => {
+describe('craftingRecipes catalog', () => {
   it('exports a non-empty array', () => {
-    expect(Array.isArray(CRAFTING_RECIPES)).toBe(true);
-    expect(CRAFTING_RECIPES.length).toBeGreaterThan(0);
+    expect(Array.isArray(craftingRecipes)).toBe(true);
+    expect(craftingRecipes.length).toBeGreaterThan(0);
   });
 
   it('every recipe has required fields', () => {
-    for (const r of CRAFTING_RECIPES) {
+    for (const r of craftingRecipes) {
       expect(typeof r.id).toBe('string');
       expect(typeof r.name).toBe('string');
       expect(typeof r.tier).toBe('number');
@@ -116,27 +116,27 @@ describe('CRAFTING_RECIPES catalog', () => {
   });
 
   it('tier values are 0-3', () => {
-    for (const r of CRAFTING_RECIPES) {
+    for (const r of craftingRecipes) {
       expect(r.tier).toBeGreaterThanOrEqual(0);
       expect(r.tier).toBeLessThanOrEqual(3);
     }
   });
 
   it('all recipe IDs are unique', () => {
-    const ids = CRAFTING_RECIPES.map(r => r.id);
+    const ids = craftingRecipes.map(r => r.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('at least one recipe per tier 0-2', () => {
     for (const tier of [0, 1, 2]) {
-      expect(CRAFTING_RECIPES.some(r => r.tier === tier)).toBe(true);
+      expect(craftingRecipes.some(r => r.tier === tier)).toBe(true);
     }
   });
 });
 
 describe('findRecipe()', () => {
   it('returns the recipe for a valid id', () => {
-    const first = CRAFTING_RECIPES[0];
+    const first = craftingRecipes[0];
     expect(findRecipe(first.id)).toEqual(first);
   });
 
@@ -185,7 +185,7 @@ describe('craftingController (real DB)', () => {
 
     it('returns 404 when the user does not exist', async () => {
       const res = makeRes();
-      await getMaterialsEndpoint(makeReq(`${SUITE_PREFIX}-nonexistent-${randomBytes(4).toString('hex')}`), res);
+      await getMaterialsEndpoint(makeReq(`${suitePrefix}-nonexistent-${randomBytes(4).toString('hex')}`), res);
 
       expect(res._status).toBe(404);
       expect(res._body.success).toBe(false);
@@ -234,7 +234,7 @@ describe('craftingController (real DB)', () => {
 
     it('returns 404 when the user does not exist', async () => {
       const res = makeRes();
-      await getRecipes(makeReq(`${SUITE_PREFIX}-nonexistent-${randomBytes(4).toString('hex')}`), res);
+      await getRecipes(makeReq(`${suitePrefix}-nonexistent-${randomBytes(4).toString('hex')}`), res);
       expect(res._status).toBe(404);
     });
   });
@@ -330,7 +330,7 @@ describe('craftingController (real DB)', () => {
     it('returns 404 when the user does not exist', async () => {
       const res = makeRes();
       await craftItem(
-        makeReq(`${SUITE_PREFIX}-nonexistent-${randomBytes(4).toString('hex')}`, {
+        makeReq(`${suitePrefix}-nonexistent-${randomBytes(4).toString('hex')}`, {
           body: { recipeId: 'basic-halter' },
         }),
         res,

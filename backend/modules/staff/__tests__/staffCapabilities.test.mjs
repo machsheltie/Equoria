@@ -15,7 +15,7 @@ import {
   can,
   rolesWithCapability,
   satisfiesRole,
-  STAFF_ROLES,
+  staffRoles,
 } from '../capabilities.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
@@ -96,7 +96,7 @@ describe('staff capabilities (Equoria-puj1e.2)', () => {
     });
 
     it('agrees with hasCapability for every listed capability', () => {
-      for (const role of STAFF_ROLES) {
+      for (const role of staffRoles) {
         for (const cap of capabilitiesFor(role)) {
           expect(hasCapability(role, cap)).toBe(true);
         }
@@ -120,7 +120,7 @@ describe('staff capabilities (Equoria-puj1e.2)', () => {
       }
       // Owner ruling 2026-10-23 (Equoria-4tleh): three staff levels. Was
       // ['moderator', 'admin'] under the 2026-10-06 two-role contract.
-      expect(STAFF_ROLES).toEqual(['moderator', 'admin', 'owner']);
+      expect(staffRoles).toEqual(['moderator', 'admin', 'owner']);
     });
 
     it('a list handed out cannot grant a capability, to that caller or to any other', () => {
@@ -130,7 +130,7 @@ describe('staff capabilities (Equoria-puj1e.2)', () => {
       expect(() => {
         mine[0] = 'roles.manage';
       }).toThrow();
-      expect(() => STAFF_ROLES.push('user')).toThrow();
+      expect(() => staffRoles.push('user')).toThrow();
 
       expect(hasCapability('moderator', 'roles.manage')).toBe(false);
       expect(capabilitiesFor('moderator')).not.toContain('roles.manage');

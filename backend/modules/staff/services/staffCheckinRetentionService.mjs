@@ -19,8 +19,8 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
-export const CHECKIN_CODE_RETENTION_MS = 24 * 60 * 60 * 1000;
-export const TRUSTED_DEVICE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+export const checkinCodeRetentionMs = 24 * 60 * 60 * 1000;
+export const trustedDeviceRetentionMs = 30 * 24 * 60 * 60 * 1000;
 /** Owner ruling q102 (Equoria-w47x7): login IP and device records are kept 90 days. */
 export const loginSightingRetentionMs = 90 * 24 * 60 * 60 * 1000;
 
@@ -30,8 +30,8 @@ export const loginSightingRetentionMs = 90 * 24 * 60 * 60 * 1000;
  *   codeCutoff: string, deviceCutoff: string }>}
  */
 export async function purgeStaleStaffCheckinRecords(now = new Date()) {
-  const codeCutoff = new Date(now.getTime() - CHECKIN_CODE_RETENTION_MS);
-  const deviceCutoff = new Date(now.getTime() - TRUSTED_DEVICE_RETENTION_MS);
+  const codeCutoff = new Date(now.getTime() - checkinCodeRetentionMs);
+  const deviceCutoff = new Date(now.getTime() - trustedDeviceRetentionMs);
 
   const codes = await prisma.staffCheckinCode.deleteMany({
     where: { OR: [{ usedAt: { lt: codeCutoff } }, { expiresAt: { lt: codeCutoff } }] },

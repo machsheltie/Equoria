@@ -17,7 +17,7 @@ import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 // Equoria-si69u: show money now routes through a named system-account escrow
 // so creator account deletion can never sink entry fees mid-flight. See the
 // si69u close note for the full design + the money-conservation sentinel.
-import { SYSTEM_ACCOUNT_SHOW_ESCROW, debitSystemAccountOrThrow } from '../../economy/index.mjs';
+import { systemAccountShowEscrow, debitSystemAccountOrThrow } from '../../economy/index.mjs';
 // Equoria-8pb6w: the two escrow-touching transactions live in a sibling module
 // (extracted for deterministic testability + file-size discipline).
 import { refundUnpaidPrizeShareInTx, settleShowFeeEscrow } from './showEscrowTx.mjs';
@@ -117,7 +117,7 @@ export async function settleEntryInTx(
   if (paid > 0) {
     // Equoria-si69u: the share leaves SystemAccount[showEscrow] (credited at
     // createShow) in the same tx as the Show.prizeEscrow decrement above.
-    await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, paid, {
+    await debitSystemAccountOrThrow(tx, systemAccountShowEscrow, paid, {
       category: 'showPayoutPrize',
       description: `Prize payout for show ${show.id}, placement ${placement}`,
       linkedUserId: userId,

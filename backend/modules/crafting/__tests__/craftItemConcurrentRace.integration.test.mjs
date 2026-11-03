@@ -13,9 +13,9 @@ import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { craftItem } from '../controllers/craftingController.mjs';
-import { CRAFTING_RECIPES } from '../data/craftingRecipes.mjs';
+import { craftingRecipes } from '../data/craftingRecipes.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-6g8wm-craft';
+const fixturePrefix = 'TestFixture-6g8wm-craft';
 const N = 5;
 
 let user;
@@ -41,7 +41,7 @@ beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
   const pw = await bcrypt.hash('TestPassword123!', 1);
   // Pick a tier-0 recipe so workshop tier check passes by default.
-  const recipe = CRAFTING_RECIPES.find(r => r.tier === 0);
+  const recipe = craftingRecipes.find(r => r.tier === 0);
 
   // Seed user with EXACTLY one craft's worth of coins. Materials seeded
   // VERY high so the test isolates the MONEY race specifically (the
@@ -49,8 +49,8 @@ beforeAll(async () => {
   user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Craft',
       lastName: 'Race',
@@ -83,7 +83,7 @@ afterAll(async () => {
 
 describe('crafting craftItem concurrent-race sentinel (Equoria-6g8wm)', () => {
   it('SENTINEL: N parallel crafts with money for ONE — exactly 1 succeeds, money never negative', async () => {
-    const recipe = CRAFTING_RECIPES.find(r => r.tier === 0);
+    const recipe = craftingRecipes.find(r => r.tier === 0);
     const reqs = Array.from({ length: N }, () => ({
       user: { id: user.id },
       body: { recipeId: recipe.id },

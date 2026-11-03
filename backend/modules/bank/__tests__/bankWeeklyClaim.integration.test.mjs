@@ -29,9 +29,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-bank-qfky';
+const fixturePrefix = 'TestFixture-bank-qfky';
 const ORIGIN = 'http://localhost:3000';
-const WEEKLY_REWARD = 5000; // 2026-07-07 economy ruling (previously 500)
+const weeklyReward = 5000; // 2026-07-07 economy ruling (previously 500)
 
 let owner;
 let token;
@@ -56,8 +56,8 @@ async function sendAuthCsrf(method, endpoint, body) {
 beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
   const created = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+    username: `${fixturePrefix}-${tag}`,
+    email: `${fixturePrefix}-${tag}@example.com`,
     money: 1000,
   });
   owner = created.user;
@@ -84,7 +84,7 @@ describe('Bank + transactions API — real-DB integration (Equoria-qfky)', () =>
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.canClaim).toBe(true);
-    expect(res.body.data.rewardAmount).toBe(WEEKLY_REWARD);
+    expect(res.body.data.rewardAmount).toBe(weeklyReward);
   });
 
   it('POST /bank/claim credits the weekly reward and PERSISTS the balance delta', async () => {
@@ -97,15 +97,15 @@ describe('Bank + transactions API — real-DB integration (Equoria-qfky)', () =>
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.amount).toBe(WEEKLY_REWARD);
-    expect(res.body.data.newBalance).toBe(before.money + WEEKLY_REWARD);
+    expect(res.body.data.amount).toBe(weeklyReward);
+    expect(res.body.data.newBalance).toBe(before.money + weeklyReward);
 
     // Persisted: re-read straight from the DB (not the response body).
     const after = await prisma.user.findUnique({
       where: { id: owner.id },
       select: { money: true, settings: true },
     });
-    expect(after.money).toBe(before.money + WEEKLY_REWARD);
+    expect(after.money).toBe(before.money + weeklyReward);
     // The atomic claim must have stamped lastWeeklyClaimDate.
     expect(after.settings.lastWeeklyClaimDate).toBeTruthy();
   });
@@ -122,7 +122,7 @@ describe('Bank + transactions API — real-DB integration (Equoria-qfky)', () =>
     // History shape varies (array vs { transactions, ... }); normalize.
     const list = Array.isArray(res.body.data) ? res.body.data : res.body.data.transactions || res.body.data.items || [];
 
-    const claimRow = list.find(t => t.category === 'weeklyReward' && Number(t.amount) === WEEKLY_REWARD);
+    const claimRow = list.find(t => t.category === 'weeklyReward' && Number(t.amount) === weeklyReward);
     expect(claimRow).toBeDefined();
     expect(claimRow.type).toBe('credit');
   });

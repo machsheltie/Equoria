@@ -9,7 +9,7 @@
 
 const SEP = '|';
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-const MAX_INT4 = 2147483647;
+const maxInt4 = 2147483647;
 
 /** The cursor for a row: its createdAt and id. */
 export function encodeCursor(row) {
@@ -30,7 +30,7 @@ export function decodeCursor(raw) {
   }
   const createdAt = new Date(stamp);
   const id = Number(idText);
-  if (Number.isNaN(createdAt.getTime()) || createdAt.toISOString() !== stamp || id > MAX_INT4) {
+  if (Number.isNaN(createdAt.getTime()) || createdAt.toISOString() !== stamp || id > maxInt4) {
     return null;
   }
   return { createdAt, id };

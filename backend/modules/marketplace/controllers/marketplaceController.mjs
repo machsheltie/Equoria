@@ -17,7 +17,7 @@ import { createNotification } from '../../../utils/notificationService.mjs';
 import {
   recordTransactionTx,
   debitMoneyOrThrow,
-  SYSTEM_ACCOUNT_BURN,
+  systemAccountBurn,
   InsufficientFundsError,
   TransferPayeeNotFoundError,
   transferUserMoneyOrThrow,
@@ -53,7 +53,7 @@ import {
 
 // ── Horse Trader store constants ──────────────────────────────────────────────
 
-const STORE_PRICE = 1000;
+const storePrice = 1000;
 
 /**
  * POST /api/v1/marketplace/list
@@ -345,7 +345,7 @@ export async function myListings(req, res) {
 
 /**
  * POST /api/v1/marketplace/store/buy
- * Buy a horse from the game store. Atomically deducts STORE_PRICE coins from the
+ * Buy a horse from the game store. Atomically deducts storePrice coins from the
  * buyer and creates a 3-year-old horse of the chosen breed and sex.
  *
  * Body: { breedId: number, sex: 'Mare' | 'Stallion' (case-insensitive) }
@@ -397,9 +397,9 @@ export async function buyStoreHorse(req, res) {
     // leaves a charge behind. The findFirst is inherently racy — there is no DB
     // unique constraint on horse.name — which is an accepted residual: the worst
     // case is a duplicate name, not a money-integrity defect.
-    const MAX_NAME_RETRIES = 5;
+    const maxNameRetries = 5;
     let horseName = null;
-    for (let attempt = 0; attempt < MAX_NAME_RETRIES; attempt++) {
+    for (let attempt = 0; attempt < maxNameRetries; attempt++) {
       const candidate = `${breed.name} #${String(Math.floor(100000 + Math.random() * 900000))}`;
 
       const existing = await prisma.horse.findFirst({
@@ -429,8 +429,8 @@ export async function buyStoreHorse(req, res) {
     // Equoria game-year convention: 1 game-year = 7 real days. A 3-game-year
     // store horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
     // (which the canonical age helper would read as ~156 game-years).
-    const STORE_HORSE_AGE_GAME_YEARS = 3;
-    const dateOfBirth = birthDateForAge(STORE_HORSE_AGE_GAME_YEARS);
+    const storeHorseAgeGameYears = 3;
+    const dateOfBirth = birthDateForAge(storeHorseAgeGameYears);
 
     // 31E color genetics (Equoria-kiep): generate colorGenotype + phenotype the
     // same way the starter-horse (authController) and POST /api/v1/horses
@@ -461,7 +461,7 @@ export async function buyStoreHorse(req, res) {
 
     const epigeneticModifiers = generateStoreHorseTraitRoster(); // hidden, 1-5 by tier (i366a, q174, q246)
     // ── Atomic money + horse transaction (Equoria-gumnp) ──────────────────────
-    // The debit, its paired SYSTEM_ACCOUNT_BURN credit, the purchase ledger row,
+    // The debit, its paired systemAccountBurn credit, the purchase ledger row,
     // and the horse INSERT all commit or roll back
     // TOGETHER. Because the horse and the charge are one atomic unit, there is no
     // compensating-refund saga: a failure anywhere in here rolls back the charge
@@ -486,8 +486,8 @@ export async function buyStoreHorse(req, res) {
           // (`sum(User.money) + sum(SystemAccount.balance)` constant).
           const balanceAfter = await debitMoneyOrThrow(tx, {
             userId: buyerId,
-            amount: STORE_PRICE,
-            systemAccount: SYSTEM_ACCOUNT_BURN,
+            amount: storePrice,
+            systemAccount: systemAccountBurn,
             category: 'storeHorsePurchaseBurn',
             description: `Burn paired with horseTraderPurchase by user ${buyerId}`,
             metadata: { breedId: parsedBreedId, sex: canonicalSex },
@@ -498,7 +498,7 @@ export async function buyStoreHorse(req, res) {
           await recordTransactionTx(tx, {
             userId: buyerId,
             type: 'debit',
-            amount: STORE_PRICE,
+            amount: storePrice,
             category: 'horseTraderPurchase',
             description: `Purchased ${breedRecord.name} from Horse Trader`,
             metadata: { breedId: parsedBreedId, sex: canonicalSex },
@@ -536,7 +536,7 @@ export async function buyStoreHorse(req, res) {
     );
 
     logger.info(
-      `[marketplace] User ${buyerId} bought store horse "${horseName}" (breed ${parsedBreedId}) for ${STORE_PRICE} coins`,
+      `[marketplace] User ${buyerId} bought store horse "${horseName}" (breed ${parsedBreedId}) for ${storePrice} coins`,
     );
 
     return res.status(201).json({
@@ -544,7 +544,7 @@ export async function buyStoreHorse(req, res) {
       message: `${horseName} has been added to your stable!`,
       data: {
         horse,
-        pricePaid: STORE_PRICE,
+        pricePaid: storePrice,
         newBalance,
       },
     });

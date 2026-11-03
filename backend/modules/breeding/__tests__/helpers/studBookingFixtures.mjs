@@ -137,7 +137,7 @@ export async function seedPendingRequest({ sire, dam, mareOwner, stallionOwner, 
   });
 }
 
-const LOCK_WAIT_TIMEOUT_MS = 20000;
+const lockWaitTimeoutMs = 20000;
 
 /**
  * The held lock lives on its OWN client (own connection pool), as
@@ -217,7 +217,7 @@ export async function holdRowLockUntil(
       });
       const ownPid = (await tx.$queryRaw`SELECT pg_backend_pid() AS pid`)[0].pid;
       const waitForBlocked = async (wanted, isSettled) => {
-        const deadline = Date.now() + LOCK_WAIT_TIMEOUT_MS;
+        const deadline = Date.now() + lockWaitTimeoutMs;
         for (;;) {
           const waiting = await tx.$queryRaw`
             WITH RECURSIVE queued(pid) AS (
@@ -264,7 +264,7 @@ export async function holdRowLockUntil(
         });
       }
     },
-    { timeout: LOCK_WAIT_TIMEOUT_MS + 10000 },
+    { timeout: lockWaitTimeoutMs + 10000 },
   );
   return actionPromise;
 }

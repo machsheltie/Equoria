@@ -31,21 +31,21 @@ import { calculatePregnancyEpigeneticChances } from '../../../utils/pregnancyBon
 // stubborn (this mirror had drifted from the source, which held athletic,
 // lowImmunity and reactive instead). Owner ruling 2026-10-27 (q117) replaced the
 // roster; only roster traits stay in the pools.
-const PREGNANCY_BONUS_POOL = [
+const pregnancyBonusPool = [
   'resilient',
   'peopleTrusting', // positive
   'fragile', // negative
 ];
 
-const FORMER_DEAD_NAMES = ['wellNourished', 'vigorous', 'undernourished', 'weakImmunity', 'lowVigor'];
+const formerDeadNames = ['wellNourished', 'vigorous', 'undernourished', 'weakImmunity', 'lowVigor'];
 
 describe('pregnancy-bonus pool is approved + effect-backed (Equoria-9o3n7.4)', () => {
-  it.each(PREGNANCY_BONUS_POOL)('"%s" resolves in traitEffects AND TRAIT_DEFINITIONS', trait => {
+  it.each(pregnancyBonusPool)('"%s" resolves in traitEffects AND TRAIT_DEFINITIONS', trait => {
     expect(getTraitEffects(trait)).not.toBeNull();
     expect(getTraitDefinition(trait)).not.toBeNull();
   });
 
-  it.each(FORMER_DEAD_NAMES)('former dead trait "%s" no longer resolves in traitEffects', name => {
+  it.each(formerDeadNames)('former dead trait "%s" no longer resolves in traitEffects', name => {
     expect(getTraitEffects(name)).toBeNull();
   });
 });

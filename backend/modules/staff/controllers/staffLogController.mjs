@@ -7,29 +7,29 @@
  */
 
 import logger from '../../../utils/logger.mjs';
-import { STAFF_ROLES, capabilitiesFor, hasCapability } from '../capabilities.mjs';
+import { staffRoles, capabilitiesFor, hasCapability } from '../capabilities.mjs';
 import { listStaffActions, listStaffLogActors } from '../services/staffActionLogService.mjs';
 
 // Logged actions that are not capabilities: things any staff member does
 // (reply to a ticket, check in). Never granted, so they stay out of
 // capabilities.mjs and are only accepted here as ledger filters.
-const LOGGED_NON_CAPABILITY_ACTIONS = ['ticket.reply', 'staff.checkin'];
-const ALL_CAPABILITIES = new Set([
-  ...STAFF_ROLES.flatMap(role => capabilitiesFor(role)),
-  ...LOGGED_NON_CAPABILITY_ACTIONS,
+const loggedNonCapabilityActions = ['ticket.reply', 'staff.checkin'];
+const allCapabilities = new Set([
+  ...staffRoles.flatMap(role => capabilitiesFor(role)),
+  ...loggedNonCapabilityActions,
 ]);
-const FILTER_KEYS = new Set(['actorId', 'targetType', 'targetId', 'capability', 'cursor']);
-const MAX_TEXT = 100;
-const MAX_INT4 = 2147483647;
+const filterKeys = new Set(['actorId', 'targetType', 'targetId', 'capability', 'cursor']);
+const maxText = 100;
+const maxInt4 = 2147483647;
 
 const invalid = (res, message) => res.status(400).json({ success: false, message });
 
-const isText = value => typeof value === 'string' && value.length > 0 && value.length <= MAX_TEXT;
+const isText = value => typeof value === 'string' && value.length > 0 && value.length <= maxText;
 
 /** Returns an error message, or null when the query is acceptable. */
 function validateQuery(query) {
   for (const key of Object.keys(query)) {
-    if (!FILTER_KEYS.has(key)) {
+    if (!filterKeys.has(key)) {
       return `Unknown filter: ${key}`;
     }
   }
@@ -38,14 +38,14 @@ function validateQuery(query) {
       return `Invalid ${key}`;
     }
   }
-  if (query.capability !== undefined && !ALL_CAPABILITIES.has(query.capability)) {
+  if (query.capability !== undefined && !allCapabilities.has(query.capability)) {
     return 'Invalid capability';
   }
   if (query.cursor !== undefined) {
     const ok =
       typeof query.cursor === 'string' &&
       /^[1-9]\d{0,9}$/.test(query.cursor) &&
-      Number(query.cursor) <= MAX_INT4;
+      Number(query.cursor) <= maxInt4;
     if (!ok) {
       return 'Invalid cursor';
     }

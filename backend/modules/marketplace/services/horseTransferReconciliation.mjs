@@ -58,11 +58,11 @@
  * @module modules/marketplace/services/horseTransferReconciliation
  */
 
-import { TACK_INVENTORY, tackEffectFields } from '../../economy/index.mjs';
+import { tackInventory, tackEffectFields } from '../../economy/index.mjs';
 import { declinePendingRequestsForSire, cancelPendingRequestForMare } from '../../horses/index.mjs';
 import { finalizeNotificationAfterCommit } from '../../../utils/notificationService.mjs';
 import { studStatuses } from '../../../constants/schema.mjs';
-import { CRAFTING_RECIPES, craftedItemRecipes } from '../../crafting/index.mjs';
+import { craftingRecipes, craftedItemRecipes } from '../../crafting/index.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 // Same-module internal (NOT part of the marketplace public API): the test-only
 // interleaving/abort seam. See `reconcileHorseOnTransfer` for why it is here.
@@ -82,24 +82,24 @@ import { __TESTING_ONLY_awaitMarketplaceRaceBarrier } from './marketplaceRaceBar
  * there. `equipItem` applies no category whitelist of its own, and the tack
  * shop is not the only supplier:
  *
- *   - `TACK_INVENTORY` — the shop catalogue's non-decorative categories
+ *   - `tackInventory` — the shop catalogue's non-decorative categories
  *     (saddle, bridle, halter, saddlePad, legWraps, girth, reins,
  *     breastplate); `decorations` carries the decorative array;
- *   - `CRAFTING_RECIPES` — crafted items are equippable and carry categories
+ *   - `craftingRecipes` — crafted items are equippable and carry categories
  *     the shop does not sell, `blanket` today (`crafted-cloth-blanket`,
  *     `crafted-overlay-saddle-pad`);
  *   - per sale, the categories of the SELLER'S OWN records that point at this
  *     horse. A record naming a category is proof that the key is equipment,
  *     whatever the catalogues currently say — see `equipmentKeysFor`.
  */
-const CATALOGUE_CATEGORY_KEYS = Object.freeze(
+const catalogueCategoryKeys = Object.freeze(
   new Set(
-    [...TACK_INVENTORY.map(item => item.category), ...CRAFTING_RECIPES.map(r => r.resultCategory)]
+    [...tackInventory.map(item => item.category), ...craftingRecipes.map(r => r.resultCategory)]
       .filter(Boolean)
       .filter(category => category !== 'decorative'),
   ),
 );
-const DECORATIONS_KEY = 'decorations';
+const decorationsKey = 'decorations';
 
 /**
  * The equipment keys to honour for ONE sale: the catalogue union plus every
@@ -109,7 +109,7 @@ const DECORATIONS_KEY = 'decorations';
  * @returns {Set<string>}
  */
 function equipmentKeysFor(releasedRecords) {
-  const keys = new Set(CATALOGUE_CATEGORY_KEYS);
+  const keys = new Set(catalogueCategoryKeys);
   for (const record of releasedRecords) {
     if (
       typeof record.category === 'string' &&
@@ -149,7 +149,7 @@ function readInventory(settings) {
 function tackEntries(tack, equipmentKeys) {
   const entries = [];
   for (const [key, value] of Object.entries(tack)) {
-    if (key === DECORATIONS_KEY) {
+    if (key === decorationsKey) {
       if (Array.isArray(value)) {
         for (const itemId of value) {
           if (typeof itemId === 'string' && itemId) {
@@ -207,7 +207,7 @@ function stripReturnedTack(tack, entries) {
  *   `findIndex`, so a duplicate id is an item the player can never touch again.
  */
 function deriveReturnedItem(horseId, entry, takenIds) {
-  const definition = TACK_INVENTORY.find(item => item.id === entry.itemId);
+  const definition = tackInventory.find(item => item.id === entry.itemId);
 
   let id = `${horseId}-${entry.itemId}`;
   for (let suffix = 2; takenIds.has(id); suffix += 1) {

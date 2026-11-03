@@ -39,8 +39,8 @@ import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
-const FIXTURE_PREFIX = 'TestFixture-0ihyi';
-const N_PARALLEL = 10;
+const fixturePrefix = 'TestFixture-0ihyi';
+const nParallel = 10;
 
 let testUser;
 let testHorse;
@@ -53,8 +53,8 @@ beforeAll(async () => {
   testUser = await prisma.user.create({
     data: {
       emailVerified: true,
-      email: `${FIXTURE_PREFIX}-${tag}@test.com`,
-      username: `${FIXTURE_PREFIX}-${tag}`.slice(0, 30),
+      email: `${fixturePrefix}-${tag}@test.com`,
+      username: `${fixturePrefix}-${tag}`.slice(0, 30),
       password: 'irrelevant-hash',
       firstName: 'Race',
       lastName: 'Cooldown',
@@ -68,7 +68,7 @@ beforeAll(async () => {
   testHorse = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag}`,
+      name: `${fixturePrefix}-horse-${tag}`,
       sex: 'Mare',
       dateOfBirth: birthDateForAge(6),
       age: 6,
@@ -106,14 +106,14 @@ describe('trainHorse — atomic cooldown gate sentinel (Equoria-0ihyi)', () => {
     });
     const beforeRacing = (before.disciplineScores ?? {}).Racing ?? 0;
 
-    const results = await Promise.all(Array.from({ length: N_PARALLEL }, () => trainHorse(testHorse.id, 'Racing')));
+    const results = await Promise.all(Array.from({ length: nParallel }, () => trainHorse(testHorse.id, 'Racing')));
 
     const successes = results.filter(r => r.success === true);
     expect(successes).toHaveLength(1);
 
     // Every loser must surface the cooldown rejection — never silently 'success'.
     const losers = results.filter(r => r.success === false);
-    expect(losers).toHaveLength(N_PARALLEL - 1);
+    expect(losers).toHaveLength(nParallel - 1);
     for (const l of losers) {
       expect(l.reason).toBe('Training cooldown active for this horse');
     }

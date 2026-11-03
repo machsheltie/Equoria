@@ -29,7 +29,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { SYSTEM_ACCOUNT_SHOW_ESCROW, creditSystemAccount } from '../../economy/index.mjs';
+import { systemAccountShowEscrow, creditSystemAccount } from '../../economy/index.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { settleShowFeeEscrow } from '../shows/showEscrowTx.mjs';
 
@@ -95,7 +95,7 @@ describe('settleShowFeeEscrow — decrement, not absolute-zero (Equoria-8pb6w)',
     // Fund SystemAccount[showEscrow] so the settlement debit (== read amount)
     // succeeds regardless of the shared row's starting balance. Delta-based:
     // we credit exactly settledAmount and settlement debits it back.
-    await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, settledAmount, {
+    await creditSystemAccount(prisma, systemAccountShowEscrow, settledAmount, {
       category: 'testSeedEscrow',
     });
 

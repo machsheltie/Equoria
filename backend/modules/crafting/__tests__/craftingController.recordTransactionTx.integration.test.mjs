@@ -27,9 +27,9 @@ import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { craftItem } from '../controllers/craftingController.mjs';
-import { CRAFTING_RECIPES } from '../data/craftingRecipes.mjs';
+import { craftingRecipes } from '../data/craftingRecipes.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-4539b-craft-tx';
+const fixturePrefix = 'TestFixture-4539b-craft-tx';
 
 let recipe;
 const createdUserIds = [];
@@ -56,8 +56,8 @@ async function makeCraftingUser(money) {
   const u = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Tx',
       lastName: 'Sentinel',
@@ -79,7 +79,7 @@ async function makeCraftingUser(money) {
 }
 
 beforeAll(async () => {
-  recipe = CRAFTING_RECIPES.find(r => r.tier === 0);
+  recipe = craftingRecipes.find(r => r.tier === 0);
   expect(recipe).toBeDefined();
 }, 30000);
 

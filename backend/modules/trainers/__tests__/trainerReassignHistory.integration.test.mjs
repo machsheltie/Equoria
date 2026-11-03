@@ -29,7 +29,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-kccmt-trainer';
+const fixturePrefix = 'TestFixture-kccmt-trainer';
 
 function tag() {
   return randomBytes(6).toString('hex');
@@ -40,8 +40,8 @@ async function makeUser() {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-owner-${suffix}`,
-      email: `${FIXTURE_PREFIX}-owner-${suffix}@example.com`,
+      username: `${fixturePrefix}-owner-${suffix}`,
+      email: `${fixturePrefix}-owner-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Kccmt',
       lastName: 'TrainerOwner',
@@ -58,7 +58,7 @@ async function makeHorse(ownerId) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag()}`,
+      name: `${fixturePrefix}-horse-${tag()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,

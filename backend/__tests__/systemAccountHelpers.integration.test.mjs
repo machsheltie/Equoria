@@ -16,8 +16,8 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/glo
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import {
-  SYSTEM_ACCOUNT_SHOW_ESCROW,
-  SYSTEM_ACCOUNT_BURN,
+  systemAccountShowEscrow,
+  systemAccountBurn,
   creditSystemAccount,
   debitSystemAccountOrThrow,
 } from '../modules/economy/index.mjs';
@@ -81,7 +81,7 @@ beforeEach(async () => {
 describe('SystemAccount helpers (Equoria-si69u)', () => {
   it('seeded accounts exist post-migration', async () => {
     const rows = await prisma.systemAccount.findMany({
-      where: { name: { in: [SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN] } },
+      where: { name: { in: [systemAccountShowEscrow, systemAccountBurn] } },
       orderBy: { name: 'asc' },
     });
     expect(rows.map(r => r.name).sort()).toEqual(['burn', 'showEscrow']);

@@ -68,7 +68,7 @@ export class InsufficientFundsError extends Error {
  * @param {number} params.amount - Positive integer, currency minor units.
  * @param {string} params.systemAccount - REQUIRED. One of the
  *   `SYSTEM_ACCOUNT_*` constants naming the counterparty the debited money
- *   moves TO (e.g. `SYSTEM_ACCOUNT_BURN` for a fee/purchase sink). Omitting
+ *   moves TO (e.g. `systemAccountBurn` for a fee/purchase sink). Omitting
  *   it throws — there is no unpaired-debit path.
  * @param {string} params.category - REQUIRED. Ledger category for the paired
  *   credit row (e.g. 'craftingFeeBurn').
@@ -95,7 +95,7 @@ export async function debitMoneyOrThrow(
   // user-money debit (the hjtys defect class) cannot be expressed.
   if (!systemAccount || typeof systemAccount !== 'string') {
     throw new Error(
-      'debitMoneyOrThrow: systemAccount is required (the counterparty the money moves to — e.g. SYSTEM_ACCOUNT_BURN). Money conservation: every user debit must pair a SystemAccount credit.',
+      'debitMoneyOrThrow: systemAccount is required (the counterparty the money moves to — e.g. systemAccountBurn). Money conservation: every user debit must pair a SystemAccount credit.',
     );
   }
   if (!category) {
@@ -145,10 +145,8 @@ export async function debitMoneyOrThrow(
  */
 /** The show escrow account. camelCase name for new code (Equoria-pjvp8); same value. */
 export const systemAccountShowEscrow = 'showEscrow';
-export const SYSTEM_ACCOUNT_SHOW_ESCROW = systemAccountShowEscrow;
 /** The fee/purchase sink. camelCase name for new code (Equoria-pjvp8); same value. */
 export const systemAccountBurn = 'burn';
-export const SYSTEM_ACCOUNT_BURN = systemAccountBurn;
 
 /**
  * Equoria-si69u: thrown when a debit against a SystemAccount would drive its

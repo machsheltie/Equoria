@@ -48,7 +48,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const STORE_PRICE = 1000; // mirrors marketplaceController.STORE_PRICE
+const storePrice = 1000; // mirrors marketplaceController.storePrice
 
 function uniqueEmail() {
   return `gumnp-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`;
@@ -123,7 +123,7 @@ describe('buyStoreHorse — money+horse atomicity (Equoria-gumnp)', () => {
       prisma.$transaction(async tx => {
         await tx.user.update({
           where: { id: user.id },
-          data: { money: { decrement: STORE_PRICE } },
+          data: { money: { decrement: storePrice } },
         });
 
         const horse = await createHorse(

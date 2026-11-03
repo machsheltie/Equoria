@@ -66,7 +66,7 @@ const ORIGIN = 'http://localhost:3000';
 // An id that is a valid positive int4 but will not exist in the canonical DB.
 // int4 max is 2_147_483_647; this stays inside the ownership middleware's
 // INT4_MAX guard so the request reaches the ownership lookup (not a 400).
-const MISSING_ID = 2_000_111_222;
+const missingId = 2_000_111_222;
 
 describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes (pwjs5)', () => {
   let owner;
@@ -128,7 +128,7 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
   describe('(a) genuinely missing resource id → 404 typed JSON envelope', () => {
     it('GET /foals/:foalId/development → 404 (ownership gate; foal route)', async () => {
       const res = await request(app)
-        .get(`/api/v1/foals/${MISSING_ID}/development`)
+        .get(`/api/v1/foals/${missingId}/development`)
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${ownerToken}`);
 
@@ -140,7 +140,7 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
 
     it('GET /foals/:foalId (getFoalHandler) → 404 (ownership gate; foal route)', async () => {
       const res = await request(app)
-        .get(`/api/v1/foals/${MISSING_ID}`)
+        .get(`/api/v1/foals/${missingId}`)
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${ownerToken}`);
 
@@ -150,7 +150,7 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
 
     it('GET /horses/:id/breeding-data → 404 (ownership gate; horseQueryRoutes)', async () => {
       const res = await request(app)
-        .get(`/api/v1/horses/${MISSING_ID}/breeding-data`)
+        .get(`/api/v1/horses/${missingId}/breeding-data`)
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${ownerToken}`);
 
@@ -160,7 +160,7 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
 
     it('GET /horses/:id/training-history → 404 (ownership gate; horseHistoryRoutes)', async () => {
       const res = await request(app)
-        .get(`/api/v1/horses/${MISSING_ID}/training-history`)
+        .get(`/api/v1/horses/${missingId}/training-history`)
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${ownerToken}`);
 

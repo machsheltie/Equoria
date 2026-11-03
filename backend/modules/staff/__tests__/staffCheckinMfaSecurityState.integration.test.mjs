@@ -22,7 +22,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { readFileSync, existsSync } from 'node:fs';
 import {
   ORIGIN,
-  STAFF_API,
+  staffApi,
   capturedFor,
   checkIn,
   createUserFactory,
@@ -36,12 +36,12 @@ import {
   uid,
 } from './helpers/staffFixtures.mjs';
 
-const REQUEST = `${STAFF_API}/checkin/request`;
-const VERIFY = `${STAFF_API}/checkin/verify`;
+const REQUEST = `${staffApi}/checkin/request`;
+const VERIFY = `${staffApi}/checkin/verify`;
 const PASSWORD = 'CorrectHorse1!';
-const NEW_PASSWORD = 'RescuedPass9!x';
+const newPassword = 'RescuedPass9!x';
 // Usernames with this prefix make the test-only trigger refuse their log rows.
-const FAILING_LOG_PREFIX = 'stfaillog';
+const failingLogPrefix = 'stfaillog';
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('stsecstate');
@@ -128,11 +128,7 @@ describe('An outstanding code dies with the security state it was issued under (
     const mod = await makeModerator();
     const code = await requestCode(mod);
 
-    const changed = await authedPost(
-      '/api/v1/auth/change-password',
-      { oldPassword: PASSWORD, newPassword: NEW_PASSWORD },
-      mod,
-    );
+    const changed = await authedPost('/api/v1/auth/change-password', { oldPassword: PASSWORD, newPassword }, mod);
     expect(changed.status).toBe(200);
 
     await expectRefused(freshSession(mod), code);
@@ -150,7 +146,7 @@ describe('An outstanding code dies with the security state it was issued under (
     const reset = await request(app)
       .post('/api/v1/auth/reset-password')
       .set('Origin', ORIGIN)
-      .send({ token: capturedLinkToken('password-reset'), newPassword: NEW_PASSWORD });
+      .send({ token: capturedLinkToken('password-reset'), newPassword });
     expect(reset.status).toBe(200);
 
     await expectRefused(freshSession(mod), code);
@@ -185,7 +181,7 @@ describe('An outstanding code dies with the security state it was issued under (
     const code = await requestCode(mod);
 
     for (const role of ['user', 'moderator']) {
-      const res = await post(`${STAFF_API}/roles/${mod.id}`, owner, { role, reason: 'role review' }, ownerDevice);
+      const res = await post(`${staffApi}/roles/${mod.id}`, owner, { role, reason: 'role review' }, ownerDevice);
       expect(res.status).toBe(200);
     }
 
@@ -279,7 +275,7 @@ describe('Check-in races resolve against the live account (STAFF-CR-01)', () => 
         .set('Authorization', `Bearer ${mod.token}`)
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ oldPassword: PASSWORD, newPassword: NEW_PASSWORD });
+        .send({ oldPassword: PASSWORD, newPassword });
 
     await raceChangeAgainstVerify(mod, code, sendChange);
   }, 60_000);
@@ -294,7 +290,7 @@ describe('Check-in races resolve against the live account (STAFF-CR-01)', () => 
     expect(forgot.status).toBe(200);
     const token = capturedLinkToken('password-reset');
     const sendReset = () =>
-      request(app).post('/api/v1/auth/reset-password').set('Origin', ORIGIN).send({ token, newPassword: NEW_PASSWORD });
+      request(app).post('/api/v1/auth/reset-password').set('Origin', ORIGIN).send({ token, newPassword });
 
     await raceChangeAgainstVerify(mod, code, sendReset);
   }, 60_000);
@@ -356,11 +352,11 @@ describe('Check-in races resolve against the live account (STAFF-CR-01)', () => 
 describe('A check-in commits whole or not at all (STAFF-CR-01)', () => {
   beforeAll(async () => {
     // Test-only trigger: refuse log rows written by a fixture whose username
-    // carries FAILING_LOG_PREFIX. Every other actor is untouched.
+    // carries failingLogPrefix. Every other actor is untouched.
     await prisma.$executeRawUnsafe(`
       CREATE OR REPLACE FUNCTION staff_test_fail_log() RETURNS trigger AS $$
       BEGIN
-        IF EXISTS (SELECT 1 FROM "User" WHERE id = NEW."actorId" AND username LIKE '${FAILING_LOG_PREFIX}%') THEN
+        IF EXISTS (SELECT 1 FROM "User" WHERE id = NEW."actorId" AND username LIKE '${failingLogPrefix}%') THEN
           RAISE EXCEPTION 'staff log write refused by test trigger';
         END IF;
         RETURN NEW;
@@ -377,7 +373,7 @@ describe('A check-in commits whole or not at all (STAFF-CR-01)', () => {
 
   it('a failed log write leaves no trusted device and an unconsumed code', async () => {
     const suffix = `${uid()}${uid()}`;
-    const mod = await makeModerator({ username: `${FAILING_LOG_PREFIX}${suffix}` });
+    const mod = await makeModerator({ username: `${failingLogPrefix}${suffix}` });
     const code = await requestCode(mod);
 
     const res = await post(VERIFY, mod, { code });

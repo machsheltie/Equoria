@@ -36,12 +36,12 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { staffLevelFee } from '../../../constants/staffLevels.mjs';
 import { hireRiderFromMarketplace } from '../controllers/riderMarketplaceController.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-vp393-rider';
-const STARTING_MONEY = 10000;
+const fixturePrefix = 'TestFixture-vp393-rider';
+const startingMoney = 10000;
 // A hire charges one week at the offer's star-level price (owner ruling q226,
 // Equoria-7hu4d). Old contract: the offer's weeklyRate (250).
 const offerStarLevel = 'intermediate';
-const HIRING_COST = staffLevelFee(offerStarLevel);
+const hiringCost = staffLevelFee(offerStarLevel);
 
 let user;
 let marketplaceId;
@@ -72,12 +72,12 @@ beforeAll(async () => {
   user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Rider',
       lastName: 'Migration',
-      money: STARTING_MONEY,
+      money: startingMoney,
     },
   });
   createdUserIds.push(user.id);
@@ -89,7 +89,7 @@ beforeAll(async () => {
       firstName: 'Sentinel',
       lastName: 'Rider',
       personality: 'calm',
-      weeklyRate: HIRING_COST,
+      weeklyRate: hiringCost,
       starLevel: offerStarLevel,
       experience: 5,
       bio: 'vp393 sentinel fixture',
@@ -153,7 +153,7 @@ describe('rider hireRiderFromMarketplace recordTransactionTx migration sentinel 
       where: { id: user.id },
       select: { money: true },
     });
-    const expectedMoneyAfter = STARTING_MONEY - HIRING_COST;
+    const expectedMoneyAfter = startingMoney - hiringCost;
     expect(Number(afterUser.money)).toBe(expectedMoneyAfter);
 
     // Ledger row was created with the correct shape — balanceAfter
@@ -166,7 +166,7 @@ describe('rider hireRiderFromMarketplace recordTransactionTx migration sentinel 
     });
     expect(ledgerRow).not.toBeNull();
     expect(ledgerRow.type).toBe('debit');
-    expect(Number(ledgerRow.amount)).toBe(HIRING_COST);
+    expect(Number(ledgerRow.amount)).toBe(hiringCost);
     expect(ledgerRow.category).toBe('riderHire');
     expect(Number(ledgerRow.balanceAfter)).toBe(expectedMoneyAfter);
     expect(ledgerRow.metadata).toMatchObject({

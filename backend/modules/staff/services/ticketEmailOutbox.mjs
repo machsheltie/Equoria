@@ -9,9 +9,9 @@
  *
  * Each attempt claims one row at a time (FOR UPDATE SKIP LOCKED, attempts + 1,
  * claimedAt = now), then sends through the real email service. A claim older
- * than LEASE_MS belongs to a worker that died; the next run retakes it as the
+ * than leaseMs belongs to a worker that died; the next run retakes it as the
  * same attempt (STAFF-RR-02), so a crash before the send never uses up one of
- * the MAX_ATTEMPTS. Two workers never hold the same row, so a send is never
+ * the maxAttempts. Two workers never hold the same row, so a send is never
  * duplicated except when the process dies after the provider accepted the
  * message and before the row is marked sent (no mail provider here offers an
  * idempotent send).
@@ -22,7 +22,7 @@
  * no alert goes to an admin already demoted or to an address already replaced.
  * The email service's own timeouts end every send well inside sendTxTimeoutMs.
  *
- * A failed send waits BACKOFF_MS before the next try; the MAX_ATTEMPTS-th
+ * A failed send waits backoffMs before the next try; the maxAttempts-th
  * failure ends the row as `failed`, logged as an error and counted in the
  * job's summary on /api/admin/cron/health. When it comes due, an email whose
  * recipient is no longer a verified admin is `cancelled`, not sent.
@@ -34,9 +34,9 @@ import { maskEmailsInText } from '../../../utils/emailIdentityPolicy.mjs';
 import { sendStaffTicketEmail } from '../../../utils/emailService.mjs';
 import { hasCapability } from '../capabilities.mjs';
 
-export const MAX_ATTEMPTS = 5;
+export const maxAttempts = 5;
 /** Far longer than one send can take (see sendTxTimeoutMs). */
-export const LEASE_MS = 15 * 60 * 1000;
+export const leaseMs = 15 * 60 * 1000;
 /**
  * Most one send may hold the recipient's row lock. Both transports give up
  * long before (emailService SMTP timeouts, the Gmail transport's per-stage
@@ -50,15 +50,15 @@ const sendTxTimeoutMs = 3 * 60 * 1000;
  */
 export const runBudgetMs = 3 * 60 * 1000;
 /** Wait after the 1st, 2nd, 3rd and 4th failed attempt. */
-const BACKOFF_MS = [60 * 1000, 5 * 60 * 1000, 15 * 60 * 1000, 60 * 60 * 1000];
+const backoffMs = [60 * 1000, 5 * 60 * 1000, 15 * 60 * 1000, 60 * 60 * 1000];
 /** Most rows one run delivers; the rest wait for the next run. */
-const MAX_PER_RUN = 50;
-const ERROR_TEXT_LIMIT = 1000;
+const maxPerRun = 50;
+const errorTextLimit = 1000;
 
-const TICKET_TEMPLATE = 'staffTicket';
+const ticketTemplate = 'staffTicket';
 
 export const ticketEmailKey = (ticketId, recipientId) =>
-  `${TICKET_TEMPLATE}:${ticketId}:${recipientId}`;
+  `${ticketTemplate}:${ticketId}:${recipientId}`;
 
 /**
  * Queue the ticket alert for each recipient inside the filing transaction.
@@ -73,7 +73,7 @@ export async function enqueueTicketEmailsTx(tx, recipients, { ticketId, category
   const data = recipients.map(recipient => ({
     idempotencyKey: ticketEmailKey(ticketId, recipient.id),
     recipientId: recipient.id,
-    templateKey: TICKET_TEMPLATE,
+    templateKey: ticketTemplate,
     payload: { ticketId, category, filedBy },
     nextAttemptAt,
   }));
@@ -96,7 +96,7 @@ export async function claimDueEmails({ now = new Date(), keys = null } = {}) {
   if (keys && keys.length === 0) {
     return [];
   }
-  const leaseCutoff = new Date(now.getTime() - LEASE_MS);
+  const leaseCutoff = new Date(now.getTime() - leaseMs);
   const scope = keys ? Prisma.sql`AND "idempotencyKey" IN (${Prisma.join(keys)})` : Prisma.empty;
   // Composed with Prisma.sql and passed whole, so the nested fragments are
   // never mistaken for values.
@@ -202,7 +202,7 @@ async function deliver(row, clock) {
     return 'failed';
   };
 
-  const details = row.templateKey === TICKET_TEMPLATE ? ticketDetails(row.payload) : null;
+  const details = row.templateKey === ticketTemplate ? ticketDetails(row.payload) : null;
   if (!details) {
     return fail(`unusable ${row.templateKey} payload`);
   }
@@ -216,11 +216,11 @@ async function deliver(row, clock) {
   if (outcome.error) {
     const { error } = outcome;
     // Equoria-5vyuh: a provider error can name the recipient; mask before log/store.
-    const message = maskEmailsInText(String(error?.message ?? error)).slice(0, ERROR_TEXT_LIMIT);
-    if (row.attempts >= MAX_ATTEMPTS) {
+    const message = maskEmailsInText(String(error?.message ?? error)).slice(0, errorTextLimit);
+    if (row.attempts >= maxAttempts) {
       return fail(message);
     }
-    const delay = BACKOFF_MS[Math.min(row.attempts, BACKOFF_MS.length) - 1];
+    const delay = backoffMs[Math.min(row.attempts, backoffMs.length) - 1];
     logger.warn(
       `[emailOutbox] ${row.idempotencyKey} attempt ${row.attempts} failed, retrying: ${message}`,
     );
@@ -256,7 +256,7 @@ export async function runEmailOutbox({
   budgetMs = keys ? Infinity : runBudgetMs,
 } = {}) {
   const summary = { claimed: 0, sent: 0, retrying: 0, failed: 0, cancelled: 0 };
-  const limit = keys ? Math.min(keys.length, MAX_PER_RUN) : MAX_PER_RUN;
+  const limit = keys ? Math.min(keys.length, maxPerRun) : maxPerRun;
   let startedAt = null;
   while (summary.claimed < limit) {
     const now = clock();
@@ -274,8 +274,8 @@ export async function runEmailOutbox({
   return summary;
 }
 
-export const SENT_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
-export const FAILED_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+export const sentRetentionMs = 30 * 24 * 60 * 60 * 1000;
+export const failedRetentionMs = 90 * 24 * 60 * 60 * 1000;
 
 /**
  * Retention (STAFF-CR-10 review): a sent or cancelled email is deleted 30
@@ -285,8 +285,8 @@ export const FAILED_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
  * sending rows are never deleted here. Runs in the nightly staff retention job.
  */
 export async function purgeSettledEmails(now = new Date()) {
-  const sentCutoff = new Date(now.getTime() - SENT_RETENTION_MS);
-  const failedCutoff = new Date(now.getTime() - FAILED_RETENTION_MS);
+  const sentCutoff = new Date(now.getTime() - sentRetentionMs);
+  const failedCutoff = new Date(now.getTime() - failedRetentionMs);
   const { count } = await prisma.emailOutbox.deleteMany({
     where: {
       OR: [

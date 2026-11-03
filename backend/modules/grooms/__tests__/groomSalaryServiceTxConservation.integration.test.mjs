@@ -6,7 +6,7 @@
  * `processWeeklySalaries`:
  *
  *   1. CONSERVATION — every successful salary debit pairs with a
- *      SYSTEM_ACCOUNT_BURN credit so
+ *      systemAccountBurn credit so
  *        sum(User.money) + sum(SystemAccount.balance)
  *      stays constant across the move. (Pre-7r67q the user was decremented
  *      with no paired credit — the salary money was destroyed invisibly.)
@@ -54,7 +54,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { processWeeklySalaries, calculateWeeklyFee } from '../services/groomSalaryService.mjs';
-import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
+import { systemAccountBurn } from '../../economy/index.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
@@ -132,7 +132,7 @@ async function makeGroomAssignment(user, { skillLevel = 'novice', speciality = '
 
 async function getBurnBalance() {
   const row = await prisma.systemAccount.findUnique({
-    where: { name: SYSTEM_ACCOUNT_BURN },
+    where: { name: systemAccountBurn },
     select: { balance: true },
   });
   return row ? Number(row.balance) : 0;
@@ -151,8 +151,8 @@ beforeAll(async () => {
   // belt-and-braces defense against the test running on a partially-migrated
   // DB — the credit path requires the row to be present).
   await prisma.systemAccount.upsert({
-    where: { name: SYSTEM_ACCOUNT_BURN },
-    create: { name: SYSTEM_ACCOUNT_BURN, balance: 0 },
+    where: { name: systemAccountBurn },
+    create: { name: systemAccountBurn, balance: 0 },
     update: {},
   });
 }, 30000);
@@ -205,7 +205,7 @@ afterAll(async () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('groomSalaryService.processWeeklySalaries — code sentinel (Equoria-7r67q)', () => {
-  it('source uses debitMoneyOrThrow(systemAccount: SYSTEM_ACCOUNT_BURN) and $transaction (Equoria-kl16c)', () => {
+  it('source uses debitMoneyOrThrow(systemAccount: systemAccountBurn) and $transaction (Equoria-kl16c)', () => {
     const servicePath = resolve(__dirname, '..', 'services', 'groomSalaryService.mjs');
     const source = readFileSync(servicePath, 'utf8');
 
@@ -235,7 +235,7 @@ describe('groomSalaryService.processWeeklySalaries — code sentinel (Equoria-7r
     // (3) Equoria-kl16c: the SystemAccount burn pairing is now done INTERNALLY
     //     by debitMoneyOrThrow (systemAccount + category are required args), so
     //     the conservation guarantee is expressed by passing
-    //     `systemAccount: SYSTEM_ACCOUNT_BURN` to the debit helper rather than a
+    //     `systemAccount: systemAccountBurn` to the debit helper rather than a
     //     separate creditSystemAccount call. Assert the required pairing arg is
     //     present so a regression that drops it (and thus the conservation
     //     pairing) is caught at source level.
@@ -290,7 +290,7 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
     // concurrency-proof.
     expect(userAfter).toBe(userBefore - expectedSalary);
 
-    // Equoria-3n2g4: SYSTEM_ACCOUNT_BURN is a SHARED singleton row that sibling
+    // Equoria-3n2g4: systemAccountBurn is a SHARED singleton row that sibling
     // money-conservation suites (debit / showEscrow / gdpr) credit concurrently
     // under maxWorkers=50%. An exact `burnAfter === burnBefore + expectedSalary`
     // is therefore unsound: a concurrent sibling can only INFLATE the burn
@@ -339,7 +339,7 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
     });
     expect(ledgerRows.length).toBeGreaterThanOrEqual(1);
     expect(Number(ledgerRows[0].amount)).toBe(100);
-    expect(ledgerRows[0].metadata?.systemAccount).toBe(SYSTEM_ACCOUNT_BURN);
+    expect(ledgerRows[0].metadata?.systemAccount).toBe(systemAccountBurn);
     expect(ledgerRows[0].metadata?.systemAccountSide).toBe('credit');
   }, 60000);
 });
@@ -496,7 +496,7 @@ describe('groomSalaryService.processWeeklySalaries — code sentinel positive (E
     `;
     // The principal checks (tx wrap, debit helper, burn-pairing arg) all MUST
     // miss on the pre-fix shape. (Equoria-kl16c: the burn pairing is now the
-    // `systemAccount: SYSTEM_ACCOUNT_BURN` arg to debitMoneyOrThrow, so that
+    // `systemAccount: systemAccountBurn` arg to debitMoneyOrThrow, so that
     // is the check the planted body must fail.)
     expect(planted).not.toMatch(/prisma\.\$transaction\(\s*\n?\s*async\s+tx\s*=>/);
     expect(planted).not.toMatch(/debitMoneyOrThrow\(\s*tx\s*,/);

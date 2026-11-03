@@ -62,7 +62,7 @@ const feedCatalogEntries = [
   },
 ];
 
-export const FEED_CATALOG = feedCatalogEntries;
+export const feedCatalog = feedCatalogEntries;
 
 /**
  * The feed catalog (camelCase accessor; the nightly News pass reads new items

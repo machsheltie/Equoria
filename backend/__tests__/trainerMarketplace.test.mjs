@@ -5,7 +5,7 @@
  * No database required — all functions are pure random generators or date checks.
  *
  * Exported:
- *   - TRAINER_MARKETPLACE_CONFIG (constant)
+ *   - trainerMarketplaceConfig (constant)
  *   - generateRandomTrainer()
  *   - generateTrainerMarketplace(size?)
  *   - trainerMarketplaceNeedsRefresh(lastRefresh)
@@ -14,7 +14,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  TRAINER_MARKETPLACE_CONFIG,
+  trainerMarketplaceConfig,
   generateRandomTrainer,
   generateTrainerMarketplace,
   trainerMarketplaceNeedsRefresh,
@@ -23,19 +23,19 @@ import {
 import { disciplineValues } from '../constants/schema.mjs';
 import { staffLevelFee, staffLevels } from '../constants/staffLevels.mjs';
 
-// ─── TRAINER_MARKETPLACE_CONFIG ───────────────────────────────────────────────
+// ─── trainerMarketplaceConfig ───────────────────────────────────────────────
 
-describe('TRAINER_MARKETPLACE_CONFIG', () => {
+describe('trainerMarketplaceConfig', () => {
   it('has DEFAULT_MARKETPLACE_SIZE of 6', () => {
-    expect(TRAINER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBe(6);
+    expect(trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE).toBe(6);
   });
 
   it('has REFRESH_INTERVAL_HOURS of 24', () => {
-    expect(TRAINER_MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS).toBe(24);
+    expect(trainerMarketplaceConfig.REFRESH_INTERVAL_HOURS).toBe(24);
   });
 
   it('has PREMIUM_REFRESH_COST of 50', () => {
-    expect(TRAINER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBe(50);
+    expect(trainerMarketplaceConfig.PREMIUM_REFRESH_COST).toBe(50);
   });
 
   // OLD CONTRACT: a random session rate inside a per-skill range.
@@ -50,14 +50,14 @@ describe('TRAINER_MARKETPLACE_CONFIG', () => {
   });
 
   it('SKILL_DISTRIBUTION percentages sum to 100', () => {
-    const total = Object.values(TRAINER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION).reduce((s, v) => s + v, 0);
+    const total = Object.values(trainerMarketplaceConfig.SKILL_DISTRIBUTION).reduce((s, v) => s + v, 0);
     expect(total).toBe(100);
   });
 
   // Owner ruling 2026-10-21: specialties are an even pick across every competition
   // discipline. Old contract: a 6-discipline percentage spread summing to 100.
   it('SPECIALTIES is every competition discipline', () => {
-    expect(TRAINER_MARKETPLACE_CONFIG.SPECIALTIES).toEqual(disciplineValues);
+    expect(trainerMarketplaceConfig.SPECIALTIES).toEqual(disciplineValues);
   });
 });
 
@@ -83,7 +83,7 @@ describe('generateRandomTrainer', () => {
   });
 
   it('skillLevel is one of the defined levels', () => {
-    const validLevels = Object.keys(TRAINER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION);
+    const validLevels = Object.keys(trainerMarketplaceConfig.SKILL_DISTRIBUTION);
     for (let i = 0; i < 20; i++) {
       const trainer = generateRandomTrainer();
       expect(validLevels).toContain(trainer.skillLevel);
@@ -99,7 +99,7 @@ describe('generateRandomTrainer', () => {
   });
 
   it('speciality is one of the defined disciplines', () => {
-    const validSpecialties = TRAINER_MARKETPLACE_CONFIG.SPECIALTIES;
+    const validSpecialties = trainerMarketplaceConfig.SPECIALTIES;
     for (let i = 0; i < 20; i++) {
       const trainer = generateRandomTrainer();
       expect(validSpecialties).toContain(trainer.speciality);
@@ -149,7 +149,7 @@ describe('generateTrainerMarketplace', () => {
   it('returns an array of default size (6) when no size given', () => {
     const marketplace = generateTrainerMarketplace();
     expect(Array.isArray(marketplace)).toBe(true);
-    expect(marketplace).toHaveLength(TRAINER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE);
+    expect(marketplace).toHaveLength(trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE);
   });
 
   it('returns array of the requested size', () => {
@@ -247,7 +247,7 @@ describe('getTrainerRefreshCost', () => {
 
   it('returns PREMIUM_REFRESH_COST when refresh is not yet needed', () => {
     const recentDate = new Date(Date.now() - 1 * 60 * 60 * 1000);
-    expect(getTrainerRefreshCost(recentDate)).toBe(TRAINER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST);
+    expect(getTrainerRefreshCost(recentDate)).toBe(trainerMarketplaceConfig.PREMIUM_REFRESH_COST);
   });
 
   it('PREMIUM_REFRESH_COST matches config (50)', () => {
@@ -281,7 +281,7 @@ describe('trainerMarketplace — distribution, bio & config invariants (merged f
     sample.forEach(t => {
       counts[t.skillLevel]++;
     });
-    const expected = TRAINER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION;
+    const expected = trainerMarketplaceConfig.SKILL_DISTRIBUTION;
     Object.keys(counts).forEach(skill => {
       const actual = (counts[skill] / 1000) * 100;
       expect(actual).toBeGreaterThanOrEqual(expected[skill] - 10);
@@ -294,7 +294,7 @@ describe('trainerMarketplace — distribution, bio & config invariants (merged f
   });
 
   it('config marketplace size and premium cost are positive', () => {
-    expect(TRAINER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBeGreaterThan(0);
-    expect(TRAINER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBeGreaterThan(0);
+    expect(trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE).toBeGreaterThan(0);
+    expect(trainerMarketplaceConfig.PREMIUM_REFRESH_COST).toBeGreaterThan(0);
   });
 });

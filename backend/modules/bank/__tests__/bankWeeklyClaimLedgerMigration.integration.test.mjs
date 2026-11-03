@@ -38,9 +38,9 @@ import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { claimWeeklyReward, getCurrentWeekStart } from '../controllers/bankController.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-hw3c8-bank';
-const STARTING_MONEY = 1000;
-const WEEKLY_REWARD_AMOUNT = 5000; // 2026-07-07 economy ruling (previously 500)
+const fixturePrefix = 'TestFixture-hw3c8-bank';
+const startingMoney = 1000;
+const weeklyRewardAmount = 5000; // 2026-07-07 economy ruling (previously 500)
 
 let user;
 const createdUserIds = [];
@@ -68,12 +68,12 @@ beforeAll(async () => {
   user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Bank',
       lastName: 'Migration',
-      money: STARTING_MONEY,
+      money: startingMoney,
       settings: {}, // no prior weekly claim → first claim succeeds
     },
   });
@@ -105,14 +105,14 @@ describe('bank claimWeeklyReward recordTransactionTx migration sentinel (Equoria
     // Claim succeeded
     expect(res.statusCode).toBe(200);
     expect(res.body?.success).toBe(true);
-    expect(res.body?.data?.amount).toBe(WEEKLY_REWARD_AMOUNT);
+    expect(res.body?.data?.amount).toBe(weeklyRewardAmount);
 
     // User money was credited correctly
     const afterUser = await prisma.user.findUnique({
       where: { id: user.id },
       select: { money: true },
     });
-    const expectedMoneyAfter = STARTING_MONEY + WEEKLY_REWARD_AMOUNT;
+    const expectedMoneyAfter = startingMoney + weeklyRewardAmount;
     expect(Number(afterUser.money)).toBe(expectedMoneyAfter);
 
     // Ledger row was created with the correct shape — balanceAfter
@@ -125,7 +125,7 @@ describe('bank claimWeeklyReward recordTransactionTx migration sentinel (Equoria
     });
     expect(ledgerRow).not.toBeNull();
     expect(ledgerRow.type).toBe('credit');
-    expect(Number(ledgerRow.amount)).toBe(WEEKLY_REWARD_AMOUNT);
+    expect(Number(ledgerRow.amount)).toBe(weeklyRewardAmount);
     expect(ledgerRow.category).toBe('weeklyReward');
     expect(Number(ledgerRow.balanceAfter)).toBe(expectedMoneyAfter);
 

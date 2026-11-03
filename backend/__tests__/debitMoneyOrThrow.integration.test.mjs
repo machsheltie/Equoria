@@ -18,7 +18,7 @@
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { debitMoneyOrThrow, InsufficientFundsError, SYSTEM_ACCOUNT_BURN } from '../modules/economy/index.mjs';
+import { debitMoneyOrThrow, InsufficientFundsError, systemAccountBurn } from '../modules/economy/index.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-hjzwt';
 
@@ -26,7 +26,7 @@ const FIXTURE_PREFIX = 'TestFixture-hjzwt';
 // (it pairs a SystemAccount credit internally so the debit conserves money).
 // These hjzwt sentinels exercise the TOCTOU-race guarantee, which is
 // orthogonal to the pairing — they just need to pass the now-required args.
-const PAIR = { systemAccount: SYSTEM_ACCOUNT_BURN, category: 'hjzwtRaceTestBurn' };
+const PAIR = { systemAccount: systemAccountBurn, category: 'hjzwtRaceTestBurn' };
 
 let user;
 const createdUserIds = [];
@@ -90,7 +90,7 @@ describe('debitMoneyOrThrow — atomic debit helper (Equoria-hjzwt)', () => {
     // omits the pairing args.
     await expect(debitMoneyOrThrow(prisma, { userId: 'x', amount: 1 })).rejects.toThrow(/systemAccount is required/);
     await expect(
-      debitMoneyOrThrow(prisma, { userId: 'x', amount: 1, systemAccount: SYSTEM_ACCOUNT_BURN }),
+      debitMoneyOrThrow(prisma, { userId: 'x', amount: 1, systemAccount: systemAccountBurn }),
     ).rejects.toThrow(/category is required/);
   });
 

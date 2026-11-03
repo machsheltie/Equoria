@@ -25,7 +25,7 @@ import {
   pinThread,
 } from '../controllers/forumController.mjs';
 
-const SUITE_PREFIX = 'forum';
+const suitePrefix = 'forum';
 
 function makeReqRes(userId, overrides = {}) {
   let _status = 200;
@@ -61,9 +61,9 @@ async function createUser() {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${SUITE_PREFIX}-${uid}`,
-      username: `${SUITE_PREFIX}_${uid}`,
-      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      id: `${suitePrefix}-${uid}`,
+      username: `${suitePrefix}_${uid}`,
+      email: `${suitePrefix}-${uid}@example.com`,
       firstName: 'Forum',
       lastName: 'Test',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -76,7 +76,7 @@ async function createThreadInDb(authorId, overrides = {}) {
   return prisma.forumThread.create({
     data: {
       section: overrides.section ?? 'general',
-      title: overrides.title ?? `${SUITE_PREFIX}-${randomBytes(4).toString('hex')}`,
+      title: overrides.title ?? `${suitePrefix}-${randomBytes(4).toString('hex')}`,
       author: { connect: { id: authorId } },
       tags: overrides.tags ?? [],
       ...overrides.extra,
@@ -96,7 +96,7 @@ async function createPostInDb(threadId, authorId, content) {
 
 async function cleanupSuite() {
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: SUITE_PREFIX } },
+    where: { id: { startsWith: suitePrefix } },
     select: { id: true },
   });
   if (users.length === 0) {

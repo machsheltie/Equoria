@@ -36,10 +36,10 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
-import { purchaseTackItem, TACK_INVENTORY } from '../controllers/tackShopController.mjs';
+import { purchaseTackItem, tackInventory } from '../controllers/tackShopController.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-0caxg-tack';
-const STARTING_MONEY = 10000;
+const fixturePrefix = 'TestFixture-0caxg-tack';
+const startingMoney = 10000;
 
 let user;
 let item;
@@ -65,17 +65,17 @@ beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
   const pw = await bcrypt.hash('TestPassword123!', 1);
   // Pick the first non-legacy functional item with a positive cost.
-  item = TACK_INVENTORY.filter(i => !i.isLegacyAlias && i.cost > 0)[0];
+  item = tackInventory.filter(i => !i.isLegacyAlias && i.cost > 0)[0];
 
   user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Tack',
       lastName: 'Migration',
-      money: STARTING_MONEY,
+      money: startingMoney,
     },
   });
   createdUserIds.push(user.id);
@@ -112,7 +112,7 @@ describe('tackShop purchaseTackItem recordTransactionTx migration sentinel (Equo
       where: { id: user.id },
       select: { money: true },
     });
-    const expectedMoneyAfter = STARTING_MONEY - item.cost;
+    const expectedMoneyAfter = startingMoney - item.cost;
     expect(Number(afterUser.money)).toBe(expectedMoneyAfter);
 
     // Ledger row was created with the correct shape — and balanceAfter

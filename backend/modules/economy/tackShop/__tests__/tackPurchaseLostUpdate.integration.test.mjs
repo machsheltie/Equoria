@@ -20,17 +20,17 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
-import { purchaseTackItem, TACK_INVENTORY } from '../controllers/tackShopController.mjs';
+import { purchaseTackItem, tackInventory } from '../controllers/tackShopController.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-bvddn14-tack';
-const STARTING_MONEY = 1_000_000;
+const fixturePrefix = 'TestFixture-bvddn14-tack';
+const startingMoney = 1_000_000;
 const ROUNDS = 3;
 
 let user;
 const createdUserIds = [];
 
-const firstOf = category => TACK_INVENTORY.find(i => i.category === category && !i.isLegacyAlias);
-const decoratives = () => TACK_INVENTORY.filter(i => i.category === 'decorative' && !i.isLegacyAlias);
+const firstOf = category => tackInventory.find(i => i.category === category && !i.isLegacyAlias);
+const decoratives = () => tackInventory.filter(i => i.category === 'decorative' && !i.isLegacyAlias);
 
 function fakeRes() {
   const res = {
@@ -69,12 +69,12 @@ beforeAll(async () => {
   user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Tack',
       lastName: 'LostUpdate',
-      money: STARTING_MONEY,
+      money: startingMoney,
     },
   });
   createdUserIds.push(user.id);

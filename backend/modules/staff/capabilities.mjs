@@ -23,9 +23,7 @@
 
 import AppError from '../../errors/AppError.mjs';
 
-export const STAFF_ROLES = Object.freeze(['moderator', 'admin', 'owner']);
-/** camelCase name for the same frozen list (Equoria-pjvp8 naming). */
-export const staffRoles = STAFF_ROLES;
+export const staffRoles = Object.freeze(['moderator', 'admin', 'owner']);
 
 const MODERATOR = [
   'warn',
@@ -89,7 +87,7 @@ const ownerOnly = [
 // Private and frozen (STAFF-CR-12): no importer can reach a mutable copy of
 // the policy. Callers ask through hasCapability and capabilitiesFor only.
 const ADMIN = [...MODERATOR.filter(c => c !== 'ticket.file'), ...adminOnly];
-const ROLE_CAPABILITIES = Object.freeze({
+const roleCapabilities = Object.freeze({
   moderator: Object.freeze([...MODERATOR]),
   admin: Object.freeze([...ADMIN]),
   owner: Object.freeze([...ADMIN, ...ownerOnly]),
@@ -97,8 +95,8 @@ const ROLE_CAPABILITIES = Object.freeze({
 
 /** The role's own frozen list, or null. Inherited keys are never roles. */
 function listFor(role) {
-  return typeof role === 'string' && Object.hasOwn(ROLE_CAPABILITIES, role)
-    ? ROLE_CAPABILITIES[role]
+  return typeof role === 'string' && Object.hasOwn(roleCapabilities, role)
+    ? roleCapabilities[role]
     : null;
 }
 
@@ -108,7 +106,7 @@ function listFor(role) {
  * @returns {boolean}
  */
 export function isStaffRole(role) {
-  return STAFF_ROLES.includes(role);
+  return staffRoles.includes(role);
 }
 
 /**
@@ -144,12 +142,12 @@ export function can(user, cap) {
 }
 
 /**
- * The staff roles holding a capability, in STAFF_ROLES order (frozen).
+ * The staff roles holding a capability, in staffRoles order (frozen).
  * @param {unknown} cap
  * @returns {readonly string[]}
  */
 export function rolesWithCapability(cap) {
-  return Object.freeze(STAFF_ROLES.filter(role => hasCapability(role, cap)));
+  return Object.freeze(staffRoles.filter(role => hasCapability(role, cap)));
 }
 
 /**

@@ -2,7 +2,7 @@
  * staff_device cookie attributes in every environment profile (verification
  * gap 5).
  *
- * STAFF_DEVICE_COOKIE_OPTIONS (controllers/staffCheckinController.mjs) is
+ * staffDeviceCookieOptions (controllers/staffCheckinController.mjs) is
  * frozen at import from the access-token cookie options in
  * utils/cookieConfig.mjs, which resolve secure / sameSite / domain from
  * NODE_ENV (config/config.mjs) and the explicit COOKIE_SECURE,
@@ -21,7 +21,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { accessTokenCookieOptions } from '../../../utils/cookieConfig.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import {
-  STAFF_API,
+  staffApi,
   createUserFactory,
   deviceCookieFrom,
   latestCode,
@@ -30,33 +30,33 @@ import {
   stopEmailCapture,
 } from './helpers/staffFixtures.mjs';
 
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
 // Deployable profiles (production, beta) refuse to boot on the committed test
 // JWT secrets; config.mjs needs real-looking ones to load at all.
-const DEPLOYABLE_SECRETS = {
+const deployableSecrets = {
   JWT_SECRET: 'profile-test-jwt-secret-0123456789abcdefghij',
   JWT_REFRESH_SECRET: 'profile-test-refresh-secret-0123456789abcdef',
 };
-const COOKIE_FLAGS = ['COOKIE_SECURE', 'COOKIE_SAMESITE', 'COOKIE_DOMAIN'];
+const cookieFlags = ['COOKIE_SECURE', 'COOKIE_SAMESITE', 'COOKIE_DOMAIN'];
 
 const PROFILES = [
-  { name: 'production', env: { NODE_ENV: 'production', ...DEPLOYABLE_SECRETS }, secure: true, sameSite: 'strict' },
+  { name: 'production', env: { NODE_ENV: 'production', ...deployableSecrets }, secure: true, sameSite: 'strict' },
   {
     name: 'production with a shared cookie domain',
-    env: { NODE_ENV: 'production', COOKIE_DOMAIN: '.equoria.test', ...DEPLOYABLE_SECRETS },
+    env: { NODE_ENV: 'production', COOKIE_DOMAIN: '.equoria.test', ...deployableSecrets },
     secure: true,
     sameSite: 'strict',
     domain: '.equoria.test',
   },
   {
     name: 'beta over HTTPS (explicit COOKIE_SECURE / COOKIE_SAMESITE)',
-    env: { NODE_ENV: 'beta', COOKIE_SECURE: 'true', COOKIE_SAMESITE: 'strict', ...DEPLOYABLE_SECRETS },
+    env: { NODE_ENV: 'beta', COOKIE_SECURE: 'true', COOKIE_SAMESITE: 'strict', ...deployableSecrets },
     secure: true,
     sameSite: 'strict',
   },
   {
     name: 'beta Playwright over HTTP',
-    env: { NODE_ENV: 'beta', ...DEPLOYABLE_SECRETS },
+    env: { NODE_ENV: 'beta', ...deployableSecrets },
     secure: false,
     sameSite: 'lax',
   },
@@ -69,7 +69,7 @@ const PROFILES = [
 async function loadUnder(env) {
   const saved = { ...process.env };
   try {
-    for (const key of COOKIE_FLAGS) {
+    for (const key of cookieFlags) {
       delete process.env[key];
     }
     Object.assign(process.env, env);
@@ -80,7 +80,7 @@ async function loadUnder(env) {
       staff = await import('../controllers/staffCheckinController.mjs');
     });
     return {
-      device: staff.STAFF_DEVICE_COOKIE_OPTIONS,
+      device: staff.staffDeviceCookieOptions,
       auth: cookies.accessTokenCookieOptions,
       env: cookies.getCookieConfigSummary().environment,
     };
@@ -110,7 +110,7 @@ describe('staff_device cookie options follow the auth cookie in every profile (v
     expect(device.domain).toBe(profile.domain);
     // Equoria-n256i (owner ruling q289): the whole API, so admin routes see it too.
     expect(device.path).toBe('/api/v1');
-    expect(device.maxAge).toBe(THIRTY_DAYS_MS);
+    expect(device.maxAge).toBe(thirtyDaysMs);
     expect(Object.isFrozen(device)).toBe(true);
   });
 });
@@ -135,8 +135,8 @@ describe('staff_device Set-Cookie over real HTTP in the test profile (verificati
 
   it('carries HttpOnly, the auth Secure / SameSite / Domain, the API path and 30 days', async () => {
     const mod = await makeUser('moderator');
-    expect((await post(`${STAFF_API}/checkin/request`, mod)).status).toBe(202);
-    const res = await post(`${STAFF_API}/checkin/verify`, mod, { code: latestCode(mod.email) });
+    expect((await post(`${staffApi}/checkin/request`, mod)).status).toBe(202);
+    const res = await post(`${staffApi}/checkin/verify`, mod, { code: latestCode(mod.email) });
     expect(res.status).toBe(200);
 
     const [, ...parts] = deviceCookieFrom(res)
@@ -154,7 +154,7 @@ describe('staff_device Set-Cookie over real HTTP in the test profile (verificati
     expect(attrs.samesite.toLowerCase()).toBe(accessTokenCookieOptions.sameSite);
     expect(attrs.domain).toBe(accessTokenCookieOptions.domain);
     expect(attrs.path).toBe('/api/v1');
-    expect(attrs['max-age']).toBe(String(THIRTY_DAYS_MS / 1000));
+    expect(attrs['max-age']).toBe(String(thirtyDaysMs / 1000));
     // The test profile itself: plain-HTTP cookie, lax, host-only.
     expect(accessTokenCookieOptions).toMatchObject({ secure: false, sameSite: 'lax', domain: undefined });
   }, 60_000);

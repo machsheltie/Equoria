@@ -55,10 +55,10 @@ import {
   transferUserMoneyOrThrow,
 } from '../../economy/index.mjs';
 import {
-  PUBLIC_STUD,
-  BUSY_MESSAGE,
-  STALLION_UNAVAILABLE,
-  MARE_NOT_FOUND,
+  publicStud,
+  busyMessage,
+  stallionUnavailable,
+  mareNotFound,
   BookingRefusal,
   ClaimLost,
   feeOf,
@@ -87,11 +87,11 @@ export async function bookPublicStud(req, res) {
           // ── Snapshot reads (every value is re-proved by a guarded write) ──
           const dam = await tx.horse.findUnique({ where: { id: damId } });
           if (!dam || dam.userId !== requesterId) {
-            throw new BookingRefusal(404, MARE_NOT_FOUND);
+            throw new BookingRefusal(404, mareNotFound);
           }
           const sire = await tx.horse.findUnique({ where: { id: sireId } });
-          if (!sire || sire.studStatus !== PUBLIC_STUD || !sire.userId) {
-            throw new BookingRefusal(404, STALLION_UNAVAILABLE);
+          if (!sire || sire.studStatus !== publicStud || !sire.userId) {
+            throw new BookingRefusal(404, stallionUnavailable);
           }
           if (sire.userId === requesterId) {
             throw new BookingRefusal(400, {
@@ -165,7 +165,7 @@ export async function bookPublicStud(req, res) {
               where: {
                 id: sireId,
                 userId: stallionOwnerId,
-                studStatus: PUBLIC_STUD,
+                studStatus: publicStud,
                 ...feePredicate(fee),
               },
               data: { studFee: fee },
@@ -257,7 +257,7 @@ export async function bookPublicStud(req, res) {
         },
         { timeout: 30000 },
       ),
-      { message: BUSY_MESSAGE },
+      { message: busyMessage },
     );
 
     finalizeNotificationAfterCommit(
@@ -298,7 +298,7 @@ export async function bookPublicStud(req, res) {
           requesterId,
           stallionOwnerId,
           expectedStudFee,
-          studStatus: PUBLIC_STUD,
+          studStatus: publicStud,
         });
         return res.status(status).json(body);
       } catch (readError) {

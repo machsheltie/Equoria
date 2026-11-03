@@ -175,9 +175,9 @@ describe('craftingController integration', () => {
 // inventory preservation, money decrement — none covered above.
 describe('craftingRecipes catalog (merged from legacy backend/tests, Equoria-wvuin)', () => {
   it('exports at least 4 recipes, each with the required fields', async () => {
-    const { CRAFTING_RECIPES } = await import('../data/craftingRecipes.mjs');
-    expect(CRAFTING_RECIPES.length).toBeGreaterThanOrEqual(4);
-    for (const r of CRAFTING_RECIPES) {
+    const { craftingRecipes } = await import('../data/craftingRecipes.mjs');
+    expect(craftingRecipes.length).toBeGreaterThanOrEqual(4);
+    for (const r of craftingRecipes) {
       expect(r).toHaveProperty('id');
       expect(r).toHaveProperty('name');
       expect(r).toHaveProperty('tier');

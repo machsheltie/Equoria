@@ -110,4 +110,4 @@ export function craftedItemRecipes(resultCategory) {
 
 // The recipe list keeps its snake-case export name for its current consumers
 // until the camelCase conversion renames them (Equoria-pjvp8).
-export { recipes as CRAFTING_RECIPES };
+export { recipes as craftingRecipes };

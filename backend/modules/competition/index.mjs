@@ -17,7 +17,6 @@ export { disciplineStandingScore } from './services/competitionScoring.mjs';
 // table. The shared stat-gain and competition-config helpers read it.
 export {
   disciplineStats,
-  competitionDisciplines as COMPETITION_DISCIPLINES,
   competitionDisciplines,
   isKnownDiscipline,
   getDisciplineStats,

@@ -33,10 +33,10 @@ import config from '../../../config/config.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-zz1ii-race';
+const fixturePrefix = 'TestFixture-zz1ii-race';
 
-const N_BUYERS = 5; // Use a modest number to avoid hammering the DB unnecessarily
-const SALE_PRICE = 500;
+const nBuyers = 5; // Use a modest number to avoid hammering the DB unnecessarily
+const salePrice = 500;
 
 let seller;
 let horse;
@@ -51,8 +51,8 @@ async function makeUser(suffix, money) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${suffix}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${suffix}-${tag}@example.com`,
+      username: `${fixturePrefix}-${suffix}-${tag}`,
+      email: `${fixturePrefix}-${suffix}-${tag}@example.com`,
       password: pw,
       firstName: 'Race',
       lastName: suffix,
@@ -80,26 +80,26 @@ beforeAll(async () => {
 
   ({ user: seller } = await makeUser('seller', 0));
 
-  // The horse for sale (owned by seller, forSale=true, salePrice=SALE_PRICE).
+  // The horse for sale (owned by seller, forSale=true, salePrice=salePrice).
   horse = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
+      name: `${fixturePrefix}-horse-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
       userId: seller.id,
       healthStatus: 'healthy',
       forSale: true,
-      salePrice: SALE_PRICE,
+      salePrice,
     }),
   });
   createdHorseIds.push(horse.id);
 
   // N buyers, each with EXACTLY the salePrice — so a double-debit would
   // produce a negative balance, providing a sharp sentinel.
-  for (let i = 0; i < N_BUYERS; i++) {
-    const b = await makeUser(`buyer${i}`, SALE_PRICE);
+  for (let i = 0; i < nBuyers; i++) {
+    const b = await makeUser(`buyer${i}`, salePrice);
     buyers.push(b);
   }
 }, 120000);
@@ -152,14 +152,14 @@ describe('POST /api/v1/marketplace/buy/:horseId — concurrent-race sentinel (Eq
     const winnerIds = buyers.map(b => b.user.id);
     expect(winnerIds).toContain(horseAfter.userId);
 
-    // Winner's money should be exactly 0 (debited the full SALE_PRICE).
+    // Winner's money should be exactly 0 (debited the full salePrice).
     const winner = await prisma.user.findUnique({
       where: { id: horseAfter.userId },
       select: { money: true },
     });
     expect(Number(winner.money)).toBe(0);
 
-    // Every NON-winner buyer's money is UNCHANGED (still SALE_PRICE; nobody
+    // Every NON-winner buyer's money is UNCHANGED (still salePrice; nobody
     // was silently charged for losing the race). This is the precise
     // protection the bd issue describes.
     for (const { user } of buyers) {
@@ -170,7 +170,7 @@ describe('POST /api/v1/marketplace/buy/:horseId — concurrent-race sentinel (Eq
         where: { id: user.id },
         select: { money: true },
       });
-      expect(Number(loser.money)).toBe(SALE_PRICE);
+      expect(Number(loser.money)).toBe(salePrice);
     }
 
     // Seller credited EXACTLY ONCE (no double-credit from a duplicate buy).
@@ -178,6 +178,6 @@ describe('POST /api/v1/marketplace/buy/:horseId — concurrent-race sentinel (Eq
       where: { id: seller.id },
       select: { money: true },
     });
-    expect(Number(sellerAfter.money) - Number(sellerBefore.money)).toBe(SALE_PRICE);
+    expect(Number(sellerAfter.money) - Number(sellerBefore.money)).toBe(salePrice);
   });
 });

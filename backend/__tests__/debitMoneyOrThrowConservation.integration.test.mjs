@@ -41,7 +41,7 @@
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { debitMoneyOrThrow, InsufficientFundsError, SYSTEM_ACCOUNT_BURN } from '../modules/economy/index.mjs';
+import { debitMoneyOrThrow, InsufficientFundsError, systemAccountBurn } from '../modules/economy/index.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-kl16c-conserv';
 const createdUserIds = [];
@@ -70,7 +70,7 @@ async function userMoney(userId) {
 
 async function burnBalance() {
   const row = await prisma.systemAccount.findUnique({
-    where: { name: SYSTEM_ACCOUNT_BURN },
+    where: { name: systemAccountBurn },
     select: { balance: true },
   });
   return Number(row?.balance ?? 0);
@@ -102,7 +102,7 @@ describe('debitMoneyOrThrow money-conservation sentinel (Equoria-kl16c)', () => 
       await debitMoneyOrThrow(tx, {
         userId: user.id,
         amount: 250,
-        systemAccount: SYSTEM_ACCOUNT_BURN,
+        systemAccount: systemAccountBurn,
         category: 'kl16cConservationTestBurn',
         description: 'paired debit conservation test',
         metadata: { test: 'conservation' },
@@ -130,7 +130,7 @@ describe('debitMoneyOrThrow money-conservation sentinel (Equoria-kl16c)', () => 
     expect(ledger.length).toBe(1);
     expect(ledger[0].type).toBe('credit');
     expect(ledger[0].amount).toBe(250);
-    expect(ledger[0].metadata?.systemAccount).toBe(SYSTEM_ACCOUNT_BURN);
+    expect(ledger[0].metadata?.systemAccount).toBe(systemAccountBurn);
     expect(ledger[0].metadata?.systemAccountSide).toBe('credit');
   });
 
@@ -190,7 +190,7 @@ describe('debitMoneyOrThrow money-conservation sentinel (Equoria-kl16c)', () => 
         debitMoneyOrThrow(tx, {
           userId: user.id,
           amount: 100,
-          systemAccount: SYSTEM_ACCOUNT_BURN,
+          systemAccount: systemAccountBurn,
         }),
       ),
     ).rejects.toThrow(/category is required/i);
@@ -207,7 +207,7 @@ describe('debitMoneyOrThrow money-conservation sentinel (Equoria-kl16c)', () => 
         await debitMoneyOrThrow(tx, {
           userId: user.id,
           amount: 300,
-          systemAccount: SYSTEM_ACCOUNT_BURN,
+          systemAccount: systemAccountBurn,
           category: ROLLBACK_CATEGORY,
           description: 'rollback sentinel — should not persist',
         });
@@ -236,7 +236,7 @@ describe('debitMoneyOrThrow money-conservation sentinel (Equoria-kl16c)', () => 
         debitMoneyOrThrow(tx, {
           userId: user.id,
           amount: 100, // more than the 50 balance
-          systemAccount: SYSTEM_ACCOUNT_BURN,
+          systemAccount: systemAccountBurn,
           category: FAIL_CATEGORY,
         }),
       ),

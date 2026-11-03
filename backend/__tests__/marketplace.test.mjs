@@ -18,14 +18,14 @@ import {
   generateRiderMarketplace,
   riderMarketplaceNeedsRefresh,
   getRiderRefreshCost,
-  RIDER_MARKETPLACE_CONFIG,
+  riderMarketplaceConfig,
 } from '../modules/riders/services/riderMarketplace.mjs';
 import {
   generateRandomTrainer,
   generateTrainerMarketplace,
   trainerMarketplaceNeedsRefresh,
   getTrainerRefreshCost,
-  TRAINER_MARKETPLACE_CONFIG,
+  trainerMarketplaceConfig,
 } from '../modules/trainers/services/trainerMarketplace.mjs';
 
 // ---------------------------------------------------------------------------
@@ -184,7 +184,7 @@ describe('generateRiderMarketplace', () => {
   it('returns array of default size', () => {
     const marketplace = generateRiderMarketplace();
     expect(Array.isArray(marketplace)).toBe(true);
-    expect(marketplace).toHaveLength(RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE);
+    expect(marketplace).toHaveLength(riderMarketplaceConfig.defaultMarketplaceSize);
   });
 
   it('returns specified size', () => {
@@ -213,7 +213,7 @@ describe('getRiderRefreshCost', () => {
   });
 
   it('returns premium cost for fresh marketplace', () => {
-    expect(getRiderRefreshCost(new Date())).toBe(RIDER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST);
+    expect(getRiderRefreshCost(new Date())).toBe(riderMarketplaceConfig.premiumRefreshCost);
   });
 });
 
@@ -237,7 +237,7 @@ describe('generateTrainerMarketplace', () => {
   it('returns array of default size', () => {
     const marketplace = generateTrainerMarketplace();
     expect(Array.isArray(marketplace)).toBe(true);
-    expect(marketplace).toHaveLength(TRAINER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE);
+    expect(marketplace).toHaveLength(trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE);
   });
 
   it('returns specified size', () => {
@@ -266,6 +266,6 @@ describe('getTrainerRefreshCost', () => {
   });
 
   it('returns premium cost for fresh marketplace', () => {
-    expect(getTrainerRefreshCost(new Date())).toBe(TRAINER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST);
+    expect(getTrainerRefreshCost(new Date())).toBe(trainerMarketplaceConfig.PREMIUM_REFRESH_COST);
   });
 });

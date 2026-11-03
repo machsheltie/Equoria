@@ -30,7 +30,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
-const SUITE_PREFIX = 'rctrl';
+const suitePrefix = 'rctrl';
 
 function makeReqRes(userId, overrides = {}) {
   let _status = 200;
@@ -60,9 +60,9 @@ async function createUser() {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${SUITE_PREFIX}-${uid}`,
-      username: `${SUITE_PREFIX}_${uid}`,
-      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      id: `${suitePrefix}-${uid}`,
+      username: `${suitePrefix}_${uid}`,
+      email: `${suitePrefix}-${uid}@example.com`,
       firstName: 'Rc',
       lastName: 'Test',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -75,7 +75,7 @@ async function createHorse(userId) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
+      name: `${suitePrefix}-h-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: birthDateForAge(6), // an adult, well under the retirement age of 21
       user: { connect: { id: userId } },
@@ -112,7 +112,7 @@ const pooledRiderIds = [];
 
 async function cleanupSuite() {
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: SUITE_PREFIX } },
+    where: { id: { startsWith: suitePrefix } },
     select: { id: true },
   });
   if (users.length === 0) {

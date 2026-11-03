@@ -9,7 +9,7 @@ import {
   generateRiderMarketplace,
   riderMarketplaceNeedsRefresh,
   getRiderRefreshCost,
-  RIDER_MARKETPLACE_CONFIG,
+  riderMarketplaceConfig,
 } from '../services/riderMarketplace.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -18,7 +18,7 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
-  SYSTEM_ACCOUNT_BURN,
+  systemAccountBurn,
 } from '../../economy/index.mjs';
 // Equoria-oey96.8: roster-cap enforcement. Same-module config deep import;
 // getStableLevel via the users barrel (cross-module); shared roster-cap error.
@@ -39,22 +39,22 @@ import { offerAtLevelPrice, offerLevelAndFee } from '../../../constants/staffLev
 import { publicStaffRow } from '../../../utils/staffPublicView.mjs';
 import { ensureGrowthProfileTx } from '../../../services/staffGrowthService.mjs';
 
-const STAFF_TYPE = 'rider';
+const staffType = 'rider';
 
 /**
  * Load (or auto-generate) the persisted marketplace state for a user.
  */
 async function loadOrCreateMarketplace(userId) {
   const record = await prisma.staffMarketplaceState.findUnique({
-    where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+    where: { userId_staffType: { userId, staffType } },
   });
 
   if (!record || riderMarketplaceNeedsRefresh(record.lastRefresh)) {
     const riders = generateRiderMarketplace();
     const refreshCount = (record?.refreshCount ?? 0) + 1;
     const updated = await prisma.staffMarketplaceState.upsert({
-      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
-      create: { userId, staffType: STAFF_TYPE, offers: riders, refreshCount },
+      where: { userId_staffType: { userId, staffType } },
+      create: { userId, staffType, offers: riders, refreshCount },
       update: { offers: riders, lastRefresh: new Date(), refreshCount },
     });
     logger.info(
@@ -84,7 +84,7 @@ export async function getRiderMarketplace(req, res) {
 
     const nextFreeRefresh = new Date(lastRefresh);
     nextFreeRefresh.setHours(
-      nextFreeRefresh.getHours() + RIDER_MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS,
+      nextFreeRefresh.getHours() + riderMarketplaceConfig.refreshIntervalHours,
     );
     const refreshCost = getRiderRefreshCost(lastRefresh);
 
@@ -120,7 +120,7 @@ export async function refreshRiderMarketplace(req, res) {
     const { force = false } = req.body;
 
     const record = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+      where: { userId_staffType: { userId, staffType } },
     });
     const refreshCost = getRiderRefreshCost(record?.lastRefresh ?? null);
 
@@ -164,15 +164,15 @@ export async function refreshRiderMarketplace(req, res) {
             await debitMoneyOrThrow(tx, {
               userId,
               amount: refreshCost,
-              systemAccount: SYSTEM_ACCOUNT_BURN,
+              systemAccount: systemAccountBurn,
               category: 'riderMarketplaceRefreshBurn',
               description: 'Rider marketplace refresh fee',
-              metadata: { staffType: STAFF_TYPE },
+              metadata: { staffType },
             });
           }
           return tx.staffMarketplaceState.upsert({
-            where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
-            create: { userId, staffType: STAFF_TYPE, offers: riders, refreshCount },
+            where: { userId_staffType: { userId, staffType } },
+            create: { userId, staffType, offers: riders, refreshCount },
             update: { offers: riders, lastRefresh: new Date(), refreshCount },
           });
         }),
@@ -191,7 +191,7 @@ export async function refreshRiderMarketplace(req, res) {
 
     const nextFreeRefresh = new Date(updated.lastRefresh);
     nextFreeRefresh.setHours(
-      nextFreeRefresh.getHours() + RIDER_MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS,
+      nextFreeRefresh.getHours() + riderMarketplaceConfig.refreshIntervalHours,
     );
 
     res.status(200).json({
@@ -233,7 +233,7 @@ export async function hireRiderFromMarketplace(req, res) {
     }
 
     const record = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+      where: { userId_staffType: { userId, staffType } },
     });
     if (!record) {
       return res.status(404).json({
@@ -344,7 +344,7 @@ export async function hireRiderFromMarketplace(req, res) {
           const moneyAfter = await debitMoneyOrThrow(tx, {
             userId,
             amount: hiringCost,
-            systemAccount: SYSTEM_ACCOUNT_BURN,
+            systemAccount: systemAccountBurn,
             category: 'riderHireBurn',
             description: `Rider hire fee — ${rider.firstName} ${rider.lastName}`,
             metadata: { riderId: rider.id, marketplaceId },
@@ -399,7 +399,7 @@ export async function hireRiderFromMarketplace(req, res) {
           const updatedOffers = offers.filter((_, i) => i !== riderIndex);
           const offerClaim = await removeMarketplaceOfferCas(tx, {
             userId,
-            staffType: STAFF_TYPE,
+            staffType,
             expectedOffers: offers,
             updatedOffers,
           });

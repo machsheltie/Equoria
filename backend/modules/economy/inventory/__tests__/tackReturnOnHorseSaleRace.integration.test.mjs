@@ -56,10 +56,10 @@ import { buyAndEquip } from '../../../../__tests__/helpers/tackShopBuy.mjs';
 import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-6p398-12-race';
-const LIST_PRICE = 400;
-const SOLD_SADDLE = 'all-purpose-saddle'; // 400, category `saddle`
-const SPARE_BRIDLE = 'snaffle-bridle'; // 200, category `bridle`
+const fixturePrefix = 'TestFixture-6p398-12-race';
+const listPrice = 400;
+const soldSaddle = 'all-purpose-saddle'; // 400, category `saddle`
+const spareBridle = 'snaffle-bridle'; // 200, category `bridle`
 
 // A dedicated client so the barrier transaction never competes with the app
 // singleton's pool for the connections the blocked requests hold.
@@ -76,8 +76,8 @@ async function makeUser(role, money) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${role}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${role}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${role}-${suffix}`,
+      email: `${fixturePrefix}-${role}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'TackRace',
       lastName: role,
@@ -94,7 +94,7 @@ async function makeHorse(ownerId, { forSale = false, salePrice = 0 } = {}) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${uniq()}`,
+      name: `${fixturePrefix}-horse-${uniq()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
@@ -232,22 +232,22 @@ describe('tack return on sale vs a concurrent inventory write (Equoria-6p398.12)
 
     seller = await makeUser('seller', 5000);
     buyer = await makeUser('buyer', 10000);
-    listedHorse = await makeHorse(seller.id, { forSale: true, salePrice: LIST_PRICE });
+    listedHorse = await makeHorse(seller.id, { forSale: true, salePrice: listPrice });
     keptHorse = await makeHorse(seller.id);
 
     // Real provenance, through the real endpoints: a saddle on the LISTED horse
     // (which the sale must return) and a spare bridle the seller is free to
     // move (the concurrent write that races the sale).
-    expect((await buyAndEquip(post, seller.token, listedHorse.id, SOLD_SADDLE)).status).toBe(200);
-    expect((await buyAndEquip(post, seller.token, keptHorse.id, SPARE_BRIDLE)).status).toBe(200);
+    expect((await buyAndEquip(post, seller.token, listedHorse.id, soldSaddle)).status).toBe(200);
+    expect((await buyAndEquip(post, seller.token, keptHorse.id, spareBridle)).status).toBe(200);
 
     const seeded = await request(app)
       .get('/api/v1/inventory')
       .set('Authorization', `Bearer ${seller.token}`)
       .set('Origin', ORIGIN);
     expect(seeded.status).toBe(200);
-    saddleRecordId = seeded.body.data.items.find(i => i.itemId === SOLD_SADDLE).id;
-    bridleRecordId = seeded.body.data.items.find(i => i.itemId === SPARE_BRIDLE).id;
+    saddleRecordId = seeded.body.data.items.find(i => i.itemId === soldSaddle).id;
+    bridleRecordId = seeded.body.data.items.find(i => i.itemId === spareBridle).id;
 
     // Free the bridle so the racing action is an ordinary equip.
     expect((await post('/api/v1/inventory/unequip', seller.token, { inventoryItemId: bridleRecordId })).status).toBe(
@@ -319,7 +319,7 @@ describe('tack return on sale vs a concurrent inventory write (Equoria-6p398.12)
       horseId: keptHorse.id,
     });
     expect(retry.status).toBe(200);
-    expect((await readTack(keptHorse.id)).bridle).toBe(SPARE_BRIDLE);
+    expect((await readTack(keptHorse.id)).bridle).toBe(spareBridle);
     // The sale's return still stands after the retry.
     expect((await readInventory(seller.id)).find(i => i.id === saddleRecordId).equippedToHorseId).toBeNull();
   }, 120000);

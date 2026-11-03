@@ -22,7 +22,7 @@ import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const PREFIX = 'TestFixture-TraitMilestone-';
-const USER_ID = `${PREFIX}user`;
+const userId = `${PREFIX}user`;
 
 // ─── fixtures ─────────────────────────────────────────────────────────────────
 
@@ -30,12 +30,12 @@ let testFoal;
 
 beforeAll(async () => {
   await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
-  await prisma.user.deleteMany({ where: { id: USER_ID } });
+  await prisma.user.deleteMany({ where: { id: userId } });
 
   await prisma.user.create({
     data: {
       emailVerified: true,
-      id: USER_ID,
+      id: userId,
       username: `${PREFIX}user`,
       email: `${PREFIX}@example.com`,
       password: 'TestPassword123!',
@@ -52,7 +52,7 @@ beforeAll(async () => {
       sex: 'Colt',
       dateOfBirth: gameCalendarDate(new Date(), -360),
       age: 360,
-      user: { connect: { id: USER_ID } },
+      user: { connect: { id: userId } },
       bondScore: 75,
       taskLog: null,
       lastGroomed: null,
@@ -63,7 +63,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
-  await prisma.user.deleteMany({ where: { id: USER_ID } });
+  await prisma.user.deleteMany({ where: { id: userId } });
 });
 
 // ─── helpers ─────────────────────────────────────────────────────────────────

@@ -37,12 +37,13 @@ const { createTestHorse, cleanupTestHorses } = await import(
   join(__dirname, '../../../__tests__/helpers/createTestHorse.mjs')
 );
 const { trainHorse, trainRouteHandler } = await import(join(__dirname, '../controllers/trainingController.mjs'));
-const { computeTrainerModifiers, TRAINER_BONUS_CAP, TRAINER_PENALTY_CAP, TRAINER_CANONICAL_TEMPERAMENTS } =
-  await import(join(__dirname, '../../trainers/index.mjs'));
+const { computeTrainerModifiers, trainerBonusCap, trainerPenaltyCap, trainerCanonicalTemperaments } = await import(
+  join(__dirname, '../../trainers/index.mjs')
+);
 // Cross-module barrel import (allowed in tests) — the horses module OWNS the
 // canonical temperament list; the trainer service duplicates it locally to stay
 // a leaf, and this sentinel proves the two never drift.
-const { temperamentTypes: TEMPERAMENT_TYPES } = await import(join(__dirname, '../../horses/index.mjs'));
+const { temperamentTypes } = await import(join(__dirname, '../../horses/index.mjs'));
 
 const SUFFIX = randomBytes(6).toString('hex');
 
@@ -298,7 +299,7 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
     });
     // 0.10 + 0.05 + 0.04 = 0.19; neither the stars nor a stray old level add anything.
     expect(result.bonusPercent).toBeCloseTo(0.19, 10);
-    expect(result.bonusPercent).toBeLessThanOrEqual(TRAINER_BONUS_CAP);
+    expect(result.bonusPercent).toBeLessThanOrEqual(trainerBonusCap);
     expect(result.penaltyPercent).toBe(0);
   });
 
@@ -360,7 +361,7 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
       horseTemperament: 'Stubborn',
     });
     expect(result.bonusPercent).toBe(0);
-    expect(result.penaltyPercent).toBeCloseTo(TRAINER_PENALTY_CAP, 10);
+    expect(result.penaltyPercent).toBeCloseTo(trainerPenaltyCap, 10);
     expect(result.bonusPercent - result.penaltyPercent).toBeLessThan(0);
   });
 
@@ -377,10 +378,10 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
     expect(result.penaltyPercent).toBe(0);
   });
 
-  it('drift sentinel: trainer-local canonical temperaments === horses TEMPERAMENT_TYPES', () => {
+  it('drift sentinel: trainer-local canonical temperaments === horses temperamentTypes', () => {
     // The compat guard duplicates the 12-temperament list to keep the trainer
     // service a leaf (no heavyweight horses-barrel import). If the horses module
     // ever adds/renames a temperament, this fails so the duplicate is updated.
-    expect([...TRAINER_CANONICAL_TEMPERAMENTS].sort()).toEqual([...TEMPERAMENT_TYPES].sort());
+    expect([...trainerCanonicalTemperaments].sort()).toEqual([...temperamentTypes].sort());
   });
 });

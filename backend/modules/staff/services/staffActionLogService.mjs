@@ -11,7 +11,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
-export const LOG_PAGE_SIZE = 50;
+export const logPageSize = 50;
 
 /** Capabilities that need a stated reason: warn, freeze, any ban.*, roles.manage. */
 export function isPunitiveCapability(capability) {
@@ -107,10 +107,10 @@ export async function listStaffActions({ actorId, targetType, targetId, capabili
   const rows = await prisma.staffActionLog.findMany({
     where,
     orderBy: { id: 'desc' },
-    take: LOG_PAGE_SIZE + 1,
+    take: logPageSize + 1,
   });
-  const entries = rows.slice(0, LOG_PAGE_SIZE);
-  const nextCursor = rows.length > LOG_PAGE_SIZE ? entries[entries.length - 1].id : null;
+  const entries = rows.slice(0, logPageSize);
+  const nextCursor = rows.length > logPageSize ? entries[entries.length - 1].id : null;
   return { entries, nextCursor };
 }
 

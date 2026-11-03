@@ -2,7 +2,7 @@
  * Tests for Decorative & Parade Tack System (Equoria-rmlh).
  *
  * Covers:
- *   - TACK_INVENTORY decorative items shape and values
+ *   - tackInventory decorative items shape and values
  */
 
 // NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
@@ -11,14 +11,14 @@
 // runs at LOG_LEVEL=error per setup.mjs which keeps test output clean.
 
 import { describe, it, expect } from '@jest/globals';
-import { TACK_INVENTORY } from '../../economy/index.mjs';
+import { tackInventory } from '../../economy/index.mjs';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TACK_INVENTORY — decorative items shape
+// tackInventory — decorative items shape
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('TACK_INVENTORY — decorative items', () => {
-  const decorative = TACK_INVENTORY.filter(i => i.category === 'decorative');
+describe('tackInventory — decorative items', () => {
+  const decorative = tackInventory.filter(i => i.category === 'decorative');
 
   it('exports at least 5 decorative items', () => {
     expect(decorative.length).toBeGreaterThanOrEqual(5);

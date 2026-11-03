@@ -18,12 +18,12 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { FEED_CATALOG, withCategoryLabel } from '../../economy/index.mjs';
+import { feedCatalog, withCategoryLabel } from '../../economy/index.mjs';
 import { feedHorse } from '../services/horseFeedService.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 
-const validTiers = new Set(FEED_CATALOG.map(t => t.id));
+const validTiers = new Set(feedCatalog.map(t => t.id));
 
 /**
  * Read inventory array from User.settings, defaulting to empty array.

@@ -32,10 +32,10 @@ import { processRiderRetirement } from '../../riders/index.mjs';
  * Riders no longer share it: since owner ruling 2026-10-23 (Equoria-or2ua) they
  * retire at a hidden random age, see modules/riders riderRetirementService.mjs.
  */
-export const TRAINER_MANDATORY_RETIREMENT_WEEKS = 80;
+export const trainerMandatoryRetirementWeeks = 80;
 
 /**
- * Auto-retire all Trainers whose careerWeeks >= TRAINER_MANDATORY_RETIREMENT_WEEKS
+ * Auto-retire all Trainers whose careerWeeks >= trainerMandatoryRetirementWeeks
  * and who are not already retired. Deactivates each retired trainer's active
  * assignments.
  *
@@ -45,7 +45,7 @@ export async function autoRetireOverdueTrainers() {
   const eligible = await prisma.trainer.findMany({
     where: {
       retired: false,
-      careerWeeks: { gte: TRAINER_MANDATORY_RETIREMENT_WEEKS },
+      careerWeeks: { gte: trainerMandatoryRetirementWeeks },
     },
     select: { id: true },
   });

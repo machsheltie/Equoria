@@ -18,12 +18,12 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
-import { CRAFTING_RECIPES, findRecipe } from '../data/craftingRecipes.mjs';
+import { craftingRecipes, findRecipe } from '../data/craftingRecipes.mjs';
 import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
-  SYSTEM_ACCOUNT_BURN,
+  systemAccountBurn,
 } from '../../economy/index.mjs';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -168,7 +168,7 @@ export async function getRecipes(req, res) {
     const workshopTier = getWorkshopTier(user.settings);
     const materials = getMaterials(user.settings);
 
-    const recipes = CRAFTING_RECIPES.map(recipe => {
+    const recipes = craftingRecipes.map(recipe => {
       const locked = recipe.tier > workshopTier;
       const deficit = getMaterialDeficit(materials, recipe.materials);
       return {
@@ -269,7 +269,7 @@ export async function craftItem(req, res) {
           const moneyAfter = await debitMoneyOrThrow(tx, {
             userId,
             amount: recipe.cost,
-            systemAccount: SYSTEM_ACCOUNT_BURN,
+            systemAccount: systemAccountBurn,
             category: 'craftingFeeBurn',
             description: `Crafting fee — ${recipe.resultName}`,
             metadata: { recipeId, result: recipe.result },

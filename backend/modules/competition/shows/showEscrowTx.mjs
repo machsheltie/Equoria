@@ -18,8 +18,8 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { checkEntryEligibility } from '../services/entryEligibility.mjs';
 import {
-  SYSTEM_ACCOUNT_SHOW_ESCROW,
-  SYSTEM_ACCOUNT_BURN,
+  systemAccountShowEscrow,
+  systemAccountBurn,
   creditSystemAccount,
   debitSystemAccountOrThrow,
   recordTransaction,
@@ -112,7 +112,7 @@ export function enterShowTx(
           // really is a transfer worth recording — the creator paid their
           // own fee into escrow and will get it back at execute time IF
           // they're still around.
-          await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, show.entryFee, {
+          await creditSystemAccount(tx, systemAccountShowEscrow, show.entryFee, {
             category: 'showEntryFeeEscrow',
             description: `Entry fee for show ${showId}`,
             linkedUserId: userId,
@@ -245,7 +245,7 @@ export async function refundUnpaidPrizeShareInTx(tx, { showId, creatorId, amount
   if (!creatorId || amount <= 0) {
     return;
   }
-  await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, amount, {
+  await debitSystemAccountOrThrow(tx, systemAccountShowEscrow, amount, {
     category: 'showRefundUnpaidPrize',
     description: `Unpaid prize share refund for show ${showId}`,
     linkedUserId: creatorId,
@@ -309,7 +309,7 @@ async function readUnsettledFeeEscrow(client, showId) {
  */
 async function moveFeeEscrow(tx, showId, settled) {
   // Always debit the escrow account by the full feeEscrow amount.
-  await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, settled.feeEscrow, {
+  await debitSystemAccountOrThrow(tx, systemAccountShowEscrow, settled.feeEscrow, {
     category: settled.createdByUserId ? 'showSettleFeesToCreator' : 'showSettleFeesToBurn',
     description: `Fee settlement for show ${showId}`,
     linkedUserId: settled.createdByUserId ?? null,
@@ -329,7 +329,7 @@ async function moveFeeEscrow(tx, showId, settled) {
     // System-to-system move; no linkedUserId so no ledger row, but
     // the SystemAccount.balance mutations themselves form the audit
     // pair (escrow.balance -= X, burn.balance += X).
-    await creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, settled.feeEscrow, {
+    await creditSystemAccount(tx, systemAccountBurn, settled.feeEscrow, {
       category: 'showBurnOrphanedFees',
       description: `Burn orphaned fees for show ${showId} (creator GDPR-deleted)`,
     });

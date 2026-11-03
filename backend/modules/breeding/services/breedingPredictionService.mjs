@@ -31,11 +31,11 @@ import { hiddenTraitSet, publicTraitModifiers } from '../../../utils/publicTrait
 import { getTraitsByType } from '../../../utils/epigeneticTraits.mjs';
 
 // Constants for inheritance calculations
-const AGE_CUTOFF_DAYS = 1460; // 4 years in days
+const ageCutoffDays = 1460; // 4 years in days
 
 // Negative traits, keyed on the twenty-trait roster's polarity (q135) from
 // utils/epigeneticTraits.mjs, their one source (Equoria-qw4kp).
-const NEGATIVE_TRAITS = Object.freeze(getTraitsByType('negative'));
+const negativeTraits = Object.freeze(getTraitsByType('negative'));
 
 /**
  * Calculate temperament influence and compatibility
@@ -163,7 +163,7 @@ export async function generateBreedingData(horseId) {
   const traitHistory = await prisma.traitHistoryLog.findMany({
     where: {
       horseId,
-      ageInDays: { lt: AGE_CUTOFF_DAYS },
+      ageInDays: { lt: ageCutoffDays },
       traitName: { notIn: hiddenTraits },
     },
     orderBy: { ageInDays: 'asc' },
@@ -173,7 +173,7 @@ export async function generateBreedingData(horseId) {
   const traitSummary = {
     totalTraits: traitHistory.length,
     epigeneticTraits: traitHistory.filter(t => t.isEpigenetic).length,
-    negativeTraits: traitHistory.filter(t => NEGATIVE_TRAITS.includes(t.traitName)).length,
+    negativeTraits: traitHistory.filter(t => negativeTraits.includes(t.traitName)).length,
     traitsBySource: {
       milestone: traitHistory.filter(t => t.sourceType === 'milestone').length,
       groom: traitHistory.filter(t => t.sourceType === 'groom').length,

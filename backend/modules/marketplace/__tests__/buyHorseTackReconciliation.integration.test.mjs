@@ -56,16 +56,16 @@ import { __TESTING_ONLY_setMarketplaceRaceBarrier } from '../services/marketplac
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-6p398-12-tack';
-const LIST_PRICE = 400;
+const fixturePrefix = 'TestFixture-6p398-12-tack';
+const listPrice = 400;
 
 // Catalogue entries used below (backend/modules/economy/tackShop). Ids, costs,
 // categories and bonus strings are read back from the live catalogue in the
 // assertions rather than hard-coded twice.
-const SHOP_HALTER = 'show-halter'; // category `halter`
-const SHOP_DECORATION = 'show-ribbon'; // category `decorative`
-const INVENTORY_SADDLE = 'all-purpose-saddle'; // category `saddle`
-const SPARE_BRIDLE = 'snaffle-bridle'; // 200, category `bridle`
+const shopHalter = 'show-halter'; // category `halter`
+const shopDecoration = 'show-ribbon'; // category `decorative`
+const inventorySaddle = 'all-purpose-saddle'; // category `saddle`
+const spareBridle = 'snaffle-bridle'; // 200, category `bridle`
 
 function tag() {
   return randomBytes(6).toString('hex');
@@ -76,8 +76,8 @@ async function makeUser(role, money) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${role}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${role}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${role}-${suffix}`,
+      email: `${fixturePrefix}-${role}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'TackTransfer',
       lastName: role,
@@ -94,7 +94,7 @@ async function makeHorse(ownerId, { forSale = false, salePrice = 0 } = {}) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag()}`,
+      name: `${fixturePrefix}-horse-${tag()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
@@ -264,7 +264,7 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
     // sale credit is asserted separately.
     seller = await makeUser('seller', 5000);
     buyer = await makeUser('buyer', 10000);
-    listedHorse = await makeHorse(seller.id, { forSale: true, salePrice: LIST_PRICE });
+    listedHorse = await makeHorse(seller.id, { forSale: true, salePrice: listPrice });
     keptHorse = await makeHorse(seller.id);
   }, 60000);
 
@@ -277,13 +277,13 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
     // Shop-origin: purchaseTackItem writes ONLY Horse.tack — there is no
     // inventory record anywhere, which is why the sale used to give the item
     // away outright.
-    await seedShopTack(listedHorse.id, SHOP_HALTER);
-    await seedShopTack(listedHorse.id, SHOP_DECORATION);
+    await seedShopTack(listedHorse.id, shopHalter);
+    await seedShopTack(listedHorse.id, shopDecoration);
     expect(await sellerInventory(seller.id)).toEqual([]);
 
     const beforeSale = await horseRow(listedHorse.id);
-    expect(beforeSale.tack.halter).toBe(SHOP_HALTER);
-    expect(beforeSale.tack.decorations).toEqual([SHOP_DECORATION]);
+    expect(beforeSale.tack.halter).toBe(shopHalter);
+    expect(beforeSale.tack.decorations).toEqual([shopDecoration]);
 
     expect((await buyRequest(buyer.token, listedHorse.id)).status).toBe(200);
 
@@ -296,14 +296,14 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
     // ... and the seller keeps both items, unequipped, in the same record shape
     // `deriveInventoryFromHorseTack` persists on the first GET /api/inventory.
     const inventory = await sellerInventory(seller.id);
-    const halter = recordsFor(inventory, SHOP_HALTER);
+    const halter = recordsFor(inventory, shopHalter);
     expect(halter).toHaveLength(1);
     expect(halter[0].category).toBe('halter');
     expect(halter[0].name).toBe('Show Halter');
     expect(halter[0].quantity).toBe(1);
     expect(halter[0].equippedToHorseId).toBeNull();
 
-    const ribbon = recordsFor(inventory, SHOP_DECORATION);
+    const ribbon = recordsFor(inventory, shopDecoration);
     expect(ribbon).toHaveLength(1);
     expect(ribbon[0].category).toBe('decorative');
     expect(ribbon[0].equippedToHorseId).toBeNull();
@@ -313,14 +313,14 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
     // Inventory-origin: buy the saddle for a horse the seller KEEPS, surface it
     // as an inventory record (the GET seed), then equip it onto the listing
     // through the real endpoint. Now both representations exist.
-    await seedShopTack(keptHorse.id, INVENTORY_SADDLE);
+    await seedShopTack(keptHorse.id, inventorySaddle);
     const seeded = await getInventoryRequest(seller.token);
     expect(seeded.status).toBe(200);
-    const saddleRecord = seeded.body.data.items.find(i => i.itemId === INVENTORY_SADDLE);
+    const saddleRecord = seeded.body.data.items.find(i => i.itemId === inventorySaddle);
     expect(saddleRecord).toBeDefined();
 
     expect((await equipRequest(seller.token, saddleRecord.id, listedHorse.id)).status).toBe(200);
-    expect((await horseRow(listedHorse.id)).tack.saddle).toBe(INVENTORY_SADDLE);
+    expect((await horseRow(listedHorse.id)).tack.saddle).toBe(inventorySaddle);
     expect((await sellerInventory(seller.id)).find(i => i.id === saddleRecord.id).equippedToHorseId).toBe(
       listedHorse.id,
     );
@@ -333,28 +333,28 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
 
     // The SAME record is released — not deleted, not duplicated.
     const inventory = await sellerInventory(seller.id);
-    const saddles = recordsFor(inventory, INVENTORY_SADDLE);
+    const saddles = recordsFor(inventory, inventorySaddle);
     expect(saddles).toHaveLength(1);
     expect(saddles[0].id).toBe(saddleRecord.id);
     expect(saddles[0].equippedToHorseId).toBeNull();
 
     // And it is usable again: the seller can put it on a horse they still own.
     expect((await equipRequest(seller.token, saddleRecord.id, keptHorse.id)).status).toBe(200);
-    expect((await horseRow(keptHorse.id)).tack.saddle).toBe(INVENTORY_SADDLE);
+    expect((await horseRow(keptHorse.id)).tack.saddle).toBe(inventorySaddle);
   }, 90000);
 
   it('returns both provenances at once and leaves the buyer’s horse bare', async () => {
-    await seedShopTack(keptHorse.id, INVENTORY_SADDLE);
+    await seedShopTack(keptHorse.id, inventorySaddle);
     const seeded = await getInventoryRequest(seller.token);
-    const saddleRecord = seeded.body.data.items.find(i => i.itemId === INVENTORY_SADDLE);
+    const saddleRecord = seeded.body.data.items.find(i => i.itemId === inventorySaddle);
     expect((await equipRequest(seller.token, saddleRecord.id, listedHorse.id)).status).toBe(200);
-    await seedShopTack(listedHorse.id, SHOP_HALTER);
-    await seedShopTack(listedHorse.id, SHOP_DECORATION);
+    await seedShopTack(listedHorse.id, shopHalter);
+    await seedShopTack(listedHorse.id, shopDecoration);
 
     const loaded = await horseRow(listedHorse.id);
-    expect(loaded.tack.saddle).toBe(INVENTORY_SADDLE);
-    expect(loaded.tack.halter).toBe(SHOP_HALTER);
-    expect(loaded.tack.decorations).toEqual([SHOP_DECORATION]);
+    expect(loaded.tack.saddle).toBe(inventorySaddle);
+    expect(loaded.tack.halter).toBe(shopHalter);
+    expect(loaded.tack.decorations).toEqual([shopDecoration]);
 
     expect((await buyRequest(buyer.token, listedHorse.id)).status).toBe(200);
 
@@ -370,7 +370,7 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
     expect(sold.tack.bridleBonus).toBeUndefined();
 
     const inventory = await sellerInventory(seller.id);
-    for (const itemId of [INVENTORY_SADDLE, SHOP_HALTER, SHOP_DECORATION]) {
+    for (const itemId of [inventorySaddle, shopHalter, shopDecoration]) {
       const records = recordsFor(inventory, itemId);
       expect(records).toHaveLength(1);
       expect(records[0].equippedToHorseId).toBeNull();
@@ -385,11 +385,11 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
     cleanup.add(() => prisma.notification.deleteMany({ where: { userId: brokeBuyer.id } }), 'brokeNotification');
     cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: brokeBuyer.id } }), 'brokeTransaction');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: brokeBuyer.id } }), 'brokeBuyer');
-    await seedShopTack(keptHorse.id, INVENTORY_SADDLE);
+    await seedShopTack(keptHorse.id, inventorySaddle);
     const seeded = await getInventoryRequest(seller.token);
-    const saddleRecord = seeded.body.data.items.find(i => i.itemId === INVENTORY_SADDLE);
+    const saddleRecord = seeded.body.data.items.find(i => i.itemId === inventorySaddle);
     expect((await equipRequest(seller.token, saddleRecord.id, listedHorse.id)).status).toBe(200);
-    await seedShopTack(listedHorse.id, SHOP_HALTER);
+    await seedShopTack(listedHorse.id, shopHalter);
 
     const tackBefore = (await horseRow(listedHorse.id)).tack;
     const inventoryBefore = await sellerInventory(seller.id);
@@ -407,12 +407,12 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
 
   it('does not erase an equip the seller committed while the purchase was in flight', async () => {
     // Both provenances present, plus a SPARE bridle the seller is free to move.
-    await seedShopTack(listedHorse.id, INVENTORY_SADDLE);
-    await seedShopTack(keptHorse.id, SPARE_BRIDLE);
+    await seedShopTack(listedHorse.id, inventorySaddle);
+    await seedShopTack(keptHorse.id, spareBridle);
     const seeded = await getInventoryRequest(seller.token);
     expect(seeded.status).toBe(200);
-    const saddleRecordId = seeded.body.data.items.find(i => i.itemId === INVENTORY_SADDLE).id;
-    const bridleRecordId = seeded.body.data.items.find(i => i.itemId === SPARE_BRIDLE).id;
+    const saddleRecordId = seeded.body.data.items.find(i => i.itemId === inventorySaddle).id;
+    const bridleRecordId = seeded.body.data.items.find(i => i.itemId === spareBridle).id;
     expect(
       (await unequipRequest(seller.token, bridleRecordId)).status,
       // Free the bridle so the racing action is an ordinary equip.
@@ -445,7 +445,7 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
     // ... and the seller's committed equip survives it (the Finding 1 defect
     // would have rewritten the array from the pre-equip snapshot).
     expect(inventory.find(i => i.id === bridleRecordId).equippedToHorseId).toBe(keptHorse.id);
-    expect((await horseRow(keptHorse.id)).tack.bridle).toBe(SPARE_BRIDLE);
+    expect((await horseRow(keptHorse.id)).tack.bridle).toBe(spareBridle);
 
     const sold = await horseRow(listedHorse.id);
     expect(sold.userId).toBe(buyer.id);
@@ -475,11 +475,11 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
   }, 90000);
 
   it('rolls the tack return back when the purchase fails AFTER the reconciliation', async () => {
-    await seedShopTack(keptHorse.id, INVENTORY_SADDLE);
+    await seedShopTack(keptHorse.id, inventorySaddle);
     const seeded = await getInventoryRequest(seller.token);
-    const saddleRecordId = seeded.body.data.items.find(i => i.itemId === INVENTORY_SADDLE).id;
+    const saddleRecordId = seeded.body.data.items.find(i => i.itemId === inventorySaddle).id;
     expect((await equipRequest(seller.token, saddleRecordId, listedHorse.id)).status).toBe(200);
-    await seedShopTack(listedHorse.id, SHOP_HALTER);
+    await seedShopTack(listedHorse.id, shopHalter);
 
     const tackBefore = (await horseRow(listedHorse.id)).tack;
     const inventoryBefore = await sellerInventory(seller.id);
@@ -521,13 +521,13 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
       select: { forSale: true, salePrice: true },
     });
     expect(relisted.forSale).toBe(true);
-    expect(relisted.salePrice).toBe(LIST_PRICE);
+    expect(relisted.salePrice).toBe(listPrice);
   }, 90000);
 
   it('leaves the former owner with nothing to unequip once the sale returned the item', async () => {
-    await seedShopTack(keptHorse.id, INVENTORY_SADDLE);
+    await seedShopTack(keptHorse.id, inventorySaddle);
     const seeded = await getInventoryRequest(seller.token);
-    const saddleRecordId = seeded.body.data.items.find(i => i.itemId === INVENTORY_SADDLE).id;
+    const saddleRecordId = seeded.body.data.items.find(i => i.itemId === inventorySaddle).id;
     expect((await equipRequest(seller.token, saddleRecordId, listedHorse.id)).status).toBe(200);
 
     expect((await buyRequest(buyer.token, listedHorse.id)).status).toBe(200);

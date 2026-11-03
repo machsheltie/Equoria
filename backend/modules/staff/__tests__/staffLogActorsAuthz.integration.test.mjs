@@ -14,9 +14,9 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { LOG_PAGE_SIZE, recordStaffActionTx } from '../services/staffActionLogService.mjs';
+import { logPageSize, recordStaffActionTx } from '../services/staffActionLogService.mjs';
 import {
-  STAFF_API,
+  staffApi,
   checkIn,
   createUserFactory,
   get,
@@ -26,8 +26,8 @@ import {
   uid,
 } from './helpers/staffFixtures.mjs';
 
-const LOG = `${STAFF_API}/log`;
-const ACTORS = `${STAFF_API}/log/actors`;
+const LOG = `${staffApi}/log`;
+const ACTORS = `${staffApi}/log/actors`;
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('staffactors');
@@ -69,7 +69,7 @@ describe('The ledger actor list (STAFF-CR-16)', () => {
     const revokedSecond = await recordStaffActionTx(prisma, entryFor(revoked));
 
     const demoted = await post(
-      `${STAFF_API}/roles/${revoked.id}`,
+      `${staffApi}/roles/${revoked.id}`,
       owner,
       { role: 'user', reason: 'stepped down' },
       ownerDevice,
@@ -77,7 +77,7 @@ describe('The ledger actor list (STAFF-CR-16)', () => {
     expect(demoted.status).toBe(200);
 
     // Bury the steward's entries below a full page of newer ones.
-    for (let i = 0; i < LOG_PAGE_SIZE; i += 1) {
+    for (let i = 0; i < logPageSize; i += 1) {
       await recordStaffActionTx(prisma, entryFor(admin));
     }
     const firstPage = await get(LOG, admin, adminDevice);

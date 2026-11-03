@@ -13,9 +13,9 @@ import {
   finalizeNotificationAfterCommit,
 } from '../../../utils/notificationService.mjs';
 
-export const PUBLIC_STUD = studStatuses.public;
-export const PRIVATE_STUD = studStatuses.private;
-export const BUSY_MESSAGE = 'The stud barn is busy right now, please retry in a moment.';
+export const publicStud = studStatuses.public;
+export const privateStud = studStatuses.private;
+export const busyMessage = 'The stud barn is busy right now, please retry in a moment.';
 
 /**
  * Same body for a stallion that does not exist and one that is not at stud in
@@ -24,12 +24,12 @@ export const BUSY_MESSAGE = 'The stud barn is busy right now, please retry in a 
  * ({ success, message, status: 'fail' }) that requireOwnership and the other
  * AppError 404s send, so the shape gives nothing away either.
  */
-export const STALLION_UNAVAILABLE = Object.freeze({
+export const stallionUnavailable = Object.freeze({
   success: false,
   message: 'Stallion not available at stud',
   status: 'fail',
 });
-export const MARE_NOT_FOUND = Object.freeze({
+export const mareNotFound = Object.freeze({
   success: false,
   message: 'Mare not found',
   status: 'fail',
@@ -103,26 +103,26 @@ export async function resolveLostClaim(
     ) {
       return [409, feeChanged(feeOf(sire)).body];
     }
-    return [404, STALLION_UNAVAILABLE];
+    return [404, stallionUnavailable];
   }
   const dam = await prisma.horse.findUnique({
     where: { id: damId },
     select: { userId: true, name: true },
   });
   if (!dam || dam.userId !== requesterId) {
-    return [404, MARE_NOT_FOUND];
+    return [404, mareNotFound];
   }
   return [400, { success: false, message: `${dam.name} is already in foal.` }];
 }
 
 // ── Private-request helpers (shared by the request and queue controllers) ──
 
-export const REQUEST_NOT_FOUND = Object.freeze({
+export const requestNotFound = Object.freeze({
   success: false,
   message: 'Request not found',
   status: 'fail',
 });
-export const REQUEST_NOT_PENDING = Object.freeze({
+export const requestNotPending = Object.freeze({
   success: false,
   code: 'requestNotPending',
   message: 'This request has already been answered or withdrawn.',

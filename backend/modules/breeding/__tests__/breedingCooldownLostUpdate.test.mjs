@@ -47,7 +47,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FOALING_CONTROLLER_SRC = readFileSync(
+const foalingControllerSrc = readFileSync(
   resolve(dirname(fileURLToPath(import.meta.url)), '../../horses/controllers/horseFoalingController.mjs'),
   'utf8',
 );
@@ -253,13 +253,13 @@ describe('createFoal — breeding-cooldown lost-update guard (Equoria-9gsxg, rea
     // findFirst + unguarded update passing it), so every assertion below is
     // tied to the DAM claim itself: the statement that starts the pregnancy.
     it('starts the pregnancy via a guarded updateMany on the dam whose WHERE carries inFoalSinceDate:null (the guard)', () => {
-      expect(FOALING_CONTROLLER_SRC).toMatch(
+      expect(foalingControllerSrc).toMatch(
         /tx\.horse\.updateMany\(\{\s*where:\s*\{\s*id:\s*dam\.id,[^}]*inFoalSinceDate:\s*null/,
       );
     });
 
     it('asserts the affected-row count and rejects on 0 (no silent double-apply)', () => {
-      expect(FOALING_CONTROLLER_SRC).toMatch(/affected\s*===\s*0/);
+      expect(foalingControllerSrc).toMatch(/affected\s*===\s*0/);
     });
 
     it('does NOT read-then-write the dam (no update/findFirst/findUnique keyed on the dam id: the racy shape)', () => {
@@ -268,7 +268,7 @@ describe('createFoal — breeding-cooldown lost-update guard (Equoria-9gsxg, rea
       // read-then-write on the dam (find the dam "not in foal", then an
       // unconditional update) is exactly what a concurrent loser would
       // double-apply through; any such statement keyed on dam.id fails here.
-      expect(FOALING_CONTROLLER_SRC).not.toMatch(
+      expect(foalingControllerSrc).not.toMatch(
         /\.horse\.(?:update|findFirst|findUnique)\(\{\s*where:\s*\{\s*id:\s*dam\.id/,
       );
     });

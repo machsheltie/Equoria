@@ -26,10 +26,10 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { generateTrainerMarketplace, TRAINER_MARKETPLACE_CONFIG } from '../services/trainerMarketplace.mjs';
+import { generateTrainerMarketplace, trainerMarketplaceConfig } from '../services/trainerMarketplace.mjs';
 import { refreshTrainerMarketplace } from '../controllers/trainerMarketplaceController.mjs';
 
-const SUITE_PREFIX = 'TestFixture-t65fh-trainer';
+const suitePrefix = 'TestFixture-t65fh-trainer';
 
 function makeReqRes(userId, body = {}) {
   let _status = 200;
@@ -59,9 +59,9 @@ async function createUser(money) {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${SUITE_PREFIX}-${uid}`,
-      username: `${SUITE_PREFIX}_${uid}`,
-      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      id: `${suitePrefix}-${uid}`,
+      username: `${suitePrefix}_${uid}`,
+      email: `${suitePrefix}-${uid}@example.com`,
       firstName: 'Refresh',
       lastName: 'Test',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -97,7 +97,7 @@ async function seedRecentMarketplace(userId) {
 
 async function cleanupSuite() {
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: SUITE_PREFIX } },
+    where: { id: { startsWith: suitePrefix } },
     select: { id: true },
   });
   if (users.length === 0) {
@@ -124,7 +124,7 @@ describe('refreshTrainerMarketplace — $transaction wrap (Equoria-t65fh)', () =
     const startingMoney = 10_000;
     const user = await createUser(startingMoney);
     const seeded = await seedRecentMarketplace(user.id);
-    const refreshCost = TRAINER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST;
+    const refreshCost = trainerMarketplaceConfig.PREMIUM_REFRESH_COST;
 
     const before = await prisma.user.findUnique({
       where: { id: user.id },
@@ -154,7 +154,7 @@ describe('refreshTrainerMarketplace — $transaction wrap (Equoria-t65fh)', () =
   });
 
   it('insufficient funds: NO money debited AND NO offer-list mutation (rollback parity)', async () => {
-    const refreshCost = TRAINER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST;
+    const refreshCost = trainerMarketplaceConfig.PREMIUM_REFRESH_COST;
     // User has refreshCost - 1 — fails the pre-check at 400.
     const startingMoney = refreshCost - 1;
     const user = await createUser(startingMoney);
@@ -189,7 +189,7 @@ describe('refreshTrainerMarketplace — $transaction wrap (Equoria-t65fh)', () =
     await refreshTrainerMarketplace(h.req, h.res);
 
     expect(h.res.statusValue).toBe(400);
-    expect(h.res.jsonValue.data.cost).toBe(TRAINER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST);
+    expect(h.res.jsonValue.data.cost).toBe(trainerMarketplaceConfig.PREMIUM_REFRESH_COST);
 
     const after = await prisma.user.findUnique({
       where: { id: user.id },

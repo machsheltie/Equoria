@@ -38,11 +38,11 @@ import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
-import { bookVetAppointment, healthCheckFee, VET_SERVICES } from '../controllers/vetController.mjs';
+import { bookVetAppointment, healthCheckFee, vetServices } from '../controllers/vetController.mjs';
 import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-2hfss-vet';
-const STARTING_MONEY = 10000;
+const fixturePrefix = 'TestFixture-2hfss-vet';
+const startingMoney = 10000;
 
 let user;
 let horse;
@@ -72,12 +72,12 @@ beforeAll(async () => {
   user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Vet',
       lastName: 'Migration',
-      money: STARTING_MONEY,
+      money: startingMoney,
     },
   });
   createdUserIds.push(user.id);
@@ -85,7 +85,7 @@ beforeAll(async () => {
   horse = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag}`,
+      name: `${fixturePrefix}-horse-${tag}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
@@ -121,7 +121,7 @@ describe('vet bookVetAppointment recordTransactionTx migration sentinel (Equoria
   it('SENTINEL: ledger row balanceAfter is sourced from inside the tx (post-debit)', async () => {
     // Owner ruling 2026-10-27 (old contract: flat 100): the fixture horse was last
     // vetted in 2024, so its vet health is Bad and the check costs 400.
-    const service = { ...VET_SERVICES[0], cost: healthCheckFee('Bad') };
+    const service = { ...vetServices[0], cost: healthCheckFee('Bad') };
     const req = {
       user: { id: user.id },
       body: { horseId: horse.id, serviceId: service.id },
@@ -138,7 +138,7 @@ describe('vet bookVetAppointment recordTransactionTx migration sentinel (Equoria
       where: { id: user.id },
       select: { money: true },
     });
-    const expectedMoneyAfter = STARTING_MONEY - service.cost;
+    const expectedMoneyAfter = startingMoney - service.cost;
     expect(Number(afterUser.money)).toBe(expectedMoneyAfter);
 
     // Ledger row was created with the correct shape — and balanceAfter

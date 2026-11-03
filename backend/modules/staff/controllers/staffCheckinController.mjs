@@ -32,7 +32,7 @@ const deviceCookieAttributes = Object.freeze({
  * per-route admin gates) ask for the same check-in, so the browser must send
  * it to them too. It was scoped to /api/v1/staff before.
  */
-export const STAFF_DEVICE_COOKIE_OPTIONS = Object.freeze({
+export const staffDeviceCookieOptions = Object.freeze({
   ...deviceCookieAttributes,
   maxAge: trustedDeviceTtlMs,
   path: '/api/v1',
@@ -85,7 +85,7 @@ export async function requestCheckin(req, res, next) {
 export async function verifyCheckin(req, res, next) {
   try {
     const { rawToken } = await verifyCheckinCode(req.staffAccount, req.body?.code);
-    res.cookie(staffDeviceCookie, rawToken, STAFF_DEVICE_COOKIE_OPTIONS);
+    res.cookie(staffDeviceCookie, rawToken, staffDeviceCookieOptions);
     // A browser checked in before the path widened still holds the old cookie;
     // sent first on staff paths (longer path), a stale one would shadow this one.
     res.clearCookie(staffDeviceCookie, legacyDeviceCookieOptions);

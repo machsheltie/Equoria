@@ -84,7 +84,7 @@ function ticketEmailsFor(email) {
     .filter(entry => entry.kind === 'staff-ticket' && entry.to === email);
 }
 
-const SMTP_KEYS = ['NODE_ENV', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS'];
+const smtpKeys = ['NODE_ENV', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS'];
 
 /**
  * File one ticket through the real email service in production mode, with
@@ -117,7 +117,7 @@ async function fileWithSmtpPort(mod, modDevice, port, whileProduction) {
     await whileProduction(res, Date.now() - started);
     return res;
   } finally {
-    for (const key of SMTP_KEYS) {
+    for (const key of smtpKeys) {
       if (saved[key] === undefined) {
         delete process.env[key];
       } else {

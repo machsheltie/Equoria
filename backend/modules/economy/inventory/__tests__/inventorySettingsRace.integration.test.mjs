@@ -62,8 +62,8 @@ import { createTestHorse } from '../../../../__tests__/helpers/createTestHorse.m
 import { createCleanupTracker } from '../../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const WEEKLY_REWARD = 5000;
-const FIXTURE_PREFIX = 'TestFixture-Finding1';
+const weeklyReward = 5000;
+const fixturePrefix = 'TestFixture-Finding1';
 
 // A dedicated client so the barrier transaction never competes with the app
 // singleton's pool for the connections the blocked requests hold.
@@ -86,7 +86,7 @@ const saddleItem = id => ({
 });
 
 /** Unrelated settings keys that every repaired writer must leave untouched. */
-const UNRELATED_SETTINGS = Object.freeze({
+const unrelatedSettings = Object.freeze({
   craftingMaterials: { leather: 3, cloth: 2, dye: 1, metal: 4, thread: 5 },
   milestones: { firstWin: '2026-01-01T00:00:00.000Z' },
   completedOnboarding: true,
@@ -236,8 +236,8 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
     user = await prisma.user.create({
       data: {
         emailVerified: true,
-        email: `${FIXTURE_PREFIX}-${tag}@example.com`,
-        username: `${FIXTURE_PREFIX}-${tag}`,
+        email: `${fixturePrefix}-${tag}@example.com`,
+        username: `${fixturePrefix}-${tag}`,
         password: 'irrelevant-hash',
         firstName: 'Finding',
         lastName: 'One',
@@ -263,12 +263,12 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
     const itemId = `inv-${uniq()}`;
     await prisma.user.update({
       where: { id: user.id },
-      data: { settings: { ...UNRELATED_SETTINGS, inventory: [saddleItem(itemId)] } },
+      data: { settings: { ...unrelatedSettings, inventory: [saddleItem(itemId)] } },
     });
     const horse = await createTestHorse(
       prisma,
       {
-        name: `${FIXTURE_PREFIX}-horse-${uniq()}`,
+        name: `${fixturePrefix}-horse-${uniq()}`,
         sex: 'Filly',
         dateOfBirth: new Date('2022-01-01'),
         age: 3,
@@ -343,8 +343,8 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
     expect((await readTack(horse.id)).saddle).toBe('all-purpose-saddle');
 
     // Unrelated keys untouched.
-    expect(settings.craftingMaterials).toEqual(UNRELATED_SETTINGS.craftingMaterials);
-    expect(settings.milestones).toEqual(UNRELATED_SETTINGS.milestones);
+    expect(settings.craftingMaterials).toEqual(unrelatedSettings.craftingMaterials);
+    expect(settings.milestones).toEqual(unrelatedSettings.milestones);
 
     // A second claim in the same week must be rejected, and money stays 5,000.
     const secondClaim = await post('/api/v1/bank/claim', token);
@@ -354,7 +354,7 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
       where: { id: user.id },
       select: { money: true },
     });
-    expect(after.money).toBe(WEEKLY_REWARD);
+    expect(after.money).toBe(weeklyReward);
 
     const credits = await prisma.userTransaction.findMany({
       where: { userId: user.id, category: 'weeklyReward' },
@@ -366,12 +366,12 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
     const itemId = `inv-${uniq()}`;
     await prisma.user.update({
       where: { id: user.id },
-      data: { settings: { ...UNRELATED_SETTINGS, inventory: [saddleItem(itemId)] } },
+      data: { settings: { ...unrelatedSettings, inventory: [saddleItem(itemId)] } },
     });
     const horseA = await createTestHorse(
       prisma,
       {
-        name: `${FIXTURE_PREFIX}-a-${uniq()}`,
+        name: `${fixturePrefix}-a-${uniq()}`,
         sex: 'Filly',
         dateOfBirth: new Date('2022-01-01'),
         age: 3,
@@ -382,7 +382,7 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
     const horseB = await createTestHorse(
       prisma,
       {
-        name: `${FIXTURE_PREFIX}-b-${uniq()}`,
+        name: `${fixturePrefix}-b-${uniq()}`,
         sex: 'Filly',
         dateOfBirth: new Date('2022-01-01'),
         age: 3,
@@ -450,15 +450,15 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
     const startingInventory = [saddleItem(itemId)];
     await prisma.user.update({
       where: { id: user.id },
-      data: { settings: { ...UNRELATED_SETTINGS, inventory: startingInventory } },
+      data: { settings: { ...unrelatedSettings, inventory: startingInventory } },
     });
 
     const tag = uniq();
     const newOwner = await prisma.user.create({
       data: {
         emailVerified: true,
-        email: `${FIXTURE_PREFIX}-new-${tag}@example.com`,
-        username: `${FIXTURE_PREFIX}-new-${tag}`,
+        email: `${fixturePrefix}-new-${tag}@example.com`,
+        username: `${fixturePrefix}-new-${tag}`,
         password: 'irrelevant-hash',
         firstName: 'Finding',
         lastName: 'One',
@@ -471,7 +471,7 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
     const horse = await createTestHorse(
       prisma,
       {
-        name: `${FIXTURE_PREFIX}-sold-${uniq()}`,
+        name: `${fixturePrefix}-sold-${uniq()}`,
         sex: 'Filly',
         dateOfBirth: new Date('2022-01-01'),
         age: 3,
@@ -512,7 +512,7 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
     // And the former owner's inventory write rolled back with it.
     const settings = await readSettings(user.id);
     expect(settings.inventory).toEqual(startingInventory);
-    expect(settings.craftingMaterials).toEqual(UNRELATED_SETTINGS.craftingMaterials);
+    expect(settings.craftingMaterials).toEqual(unrelatedSettings.craftingMaterials);
   }, 120000);
 
   describe('sibling User.settings writers preserve the weekly-claim marker', () => {
@@ -522,16 +522,16 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
       await prisma.user.update({
         where: { id: user.id },
         data: {
-          settings: { ...UNRELATED_SETTINGS, lastWeeklyClaimDate: MARKER, ...extra },
+          settings: { ...unrelatedSettings, lastWeeklyClaimDate: MARKER, ...extra },
         },
       });
     };
 
-    const expectPreserved = async ({ craftingMaterials = UNRELATED_SETTINGS.craftingMaterials } = {}) => {
+    const expectPreserved = async ({ craftingMaterials = unrelatedSettings.craftingMaterials } = {}) => {
       const settings = await readSettings(user.id);
       expect(settings.lastWeeklyClaimDate).toBe(MARKER);
       expect(settings.craftingMaterials).toEqual(craftingMaterials);
-      expect(settings.milestones).toEqual(UNRELATED_SETTINGS.milestones);
+      expect(settings.milestones).toEqual(unrelatedSettings.milestones);
       return settings;
     };
 
@@ -540,7 +540,7 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
       const horse = await createTestHorse(
         prisma,
         {
-          name: `${FIXTURE_PREFIX}-uneq-${uniq()}`,
+          name: `${fixturePrefix}-uneq-${uniq()}`,
           sex: 'Filly',
           dateOfBirth: new Date('2022-01-01'),
           age: 3,
@@ -564,7 +564,7 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
       const horse = await createTestHorse(
         prisma,
         {
-          name: `${FIXTURE_PREFIX}-seed-${uniq()}`,
+          name: `${fixturePrefix}-seed-${uniq()}`,
           sex: 'Filly',
           dateOfBirth: new Date('2022-01-01'),
           age: 3,
@@ -618,7 +618,7 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
       // Crafting DOES own craftingMaterials, so that key legitimately changes;
       // the marker and every key crafting does not own must not.
       const settings = await expectPreserved({
-        craftingMaterials: { ...UNRELATED_SETTINGS.craftingMaterials, leather: 2 },
+        craftingMaterials: { ...unrelatedSettings.craftingMaterials, leather: 2 },
       });
       expect(settings.inventory).toEqual([expect.objectContaining({ itemId: 'crafted-basic-halter' })]);
       const after = await prisma.user.findUnique({

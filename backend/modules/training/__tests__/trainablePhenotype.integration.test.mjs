@@ -23,7 +23,7 @@ import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/a
 
 afterAll(() => cleanupTestTrainers(), 60000);
 
-const FIXTURE_PREFIX = 'TestFixture-trainable-phenotype';
+const fixturePrefix = 'TestFixture-trainable-phenotype';
 
 let owner;
 let token;
@@ -34,14 +34,14 @@ beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
 
   const a = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+    username: `${fixturePrefix}-${tag}`,
+    email: `${fixturePrefix}-${tag}@example.com`,
   });
   owner = a.user;
   token = a.token;
 
   horseWithPhenotype = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-WithColor-${tag}`,
+    name: `${fixturePrefix}-WithColor-${tag}`,
     userId: owner.id,
     age: 5, // training-eligible (≥3 game-years)
     phenotype: {
@@ -52,7 +52,7 @@ beforeAll(async () => {
   });
 
   horseWithoutPhenotype = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-NoColor-${tag}`,
+    name: `${fixturePrefix}-NoColor-${tag}`,
     userId: owner.id,
     age: 5,
     phenotype: null,

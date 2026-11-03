@@ -34,7 +34,7 @@ const DROPPED = ['weatherimmunity', 'nightvision', 'fireresistance', 'waterphobi
 // generic GROOM_PERSONALITY_VALUES set — "calm" and "confident" are legitimate
 // horse epigenetic traits AND groom personalities; the ghosts below are names
 // that exist ONLY on the groom side and must never appear as horse traits.
-const GROOM_GHOSTS = [
+const groomGhosts = [
   'spooky',
   'self_assured',
   'selfAssured',
@@ -104,7 +104,7 @@ describe('canonical trait roster — the owner roster of 2026-10-27 (q117)', () 
 describe('canonical trait roster — §B groom-personality names excluded', () => {
   it('no groom-personality ghost appears in the horse trait effect/definition catalogs', () => {
     const horseKeys = [...effectsKeys, ...definitionKeys].map(k => k.toLowerCase());
-    const leaked = GROOM_GHOSTS.filter(g => horseKeys.includes(g.toLowerCase()));
+    const leaked = groomGhosts.filter(g => horseKeys.includes(g.toLowerCase()));
     expect(leaked).toEqual([]);
   });
 });

@@ -18,7 +18,7 @@ import { msPerWeek } from '../../../constants/time.mjs';
 // Equoria-si69u: show money now routes through a named system-account escrow
 // so creator account deletion can never sink entry fees mid-flight. See the
 // si69u close note for the full design + the money-conservation sentinel.
-import { SYSTEM_ACCOUNT_SHOW_ESCROW, creditSystemAccount } from '../../economy/index.mjs';
+import { systemAccountShowEscrow, creditSystemAccount } from '../../economy/index.mjs';
 // Equoria-8pb6w: the two escrow-touching transactions live in a sibling module
 // (extracted for deterministic testability + file-size discipline).
 import { enterShowAtomicTx } from './showEscrowTx.mjs';
@@ -128,7 +128,7 @@ export async function createShow(req, res) {
               throw new Error('insufficientFunds');
             }
             // Credit the escrow account by the same amount in the same tx.
-            await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, prize, {
+            await creditSystemAccount(tx, systemAccountShowEscrow, prize, {
               category: 'showCreatePrizeEscrow',
               description: `Prize escrow for show "${name.trim()}"`,
               linkedUserId: userId,

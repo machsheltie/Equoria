@@ -10,7 +10,7 @@
  * with 0 experience whose bio names no discipline.
  *
  * Exported:
- *   - RIDER_MARKETPLACE_CONFIG (constant)
+ *   - riderMarketplaceConfig (constant)
  *   - generateRandomRider()
  *   - generateRiderMarketplace(size?)
  *   - riderMarketplaceNeedsRefresh(lastRefresh)
@@ -19,7 +19,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  RIDER_MARKETPLACE_CONFIG,
+  riderMarketplaceConfig,
   generateRandomRider,
   generateRiderMarketplace,
   riderMarketplaceNeedsRefresh,
@@ -28,19 +28,19 @@ import {
 import { disciplineValues } from '../constants/schema.mjs';
 import { staffLevelFee, staffLevels } from '../constants/staffLevels.mjs';
 
-// ─── RIDER_MARKETPLACE_CONFIG ─────────────────────────────────────────────────
+// ─── riderMarketplaceConfig ─────────────────────────────────────────────────
 
-describe('RIDER_MARKETPLACE_CONFIG', () => {
-  it('has DEFAULT_MARKETPLACE_SIZE of 6', () => {
-    expect(RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBe(6);
+describe('riderMarketplaceConfig', () => {
+  it('has defaultMarketplaceSize of 6', () => {
+    expect(riderMarketplaceConfig.defaultMarketplaceSize).toBe(6);
   });
 
-  it('has REFRESH_INTERVAL_HOURS of 24', () => {
-    expect(RIDER_MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS).toBe(24);
+  it('has refreshIntervalHours of 24', () => {
+    expect(riderMarketplaceConfig.refreshIntervalHours).toBe(24);
   });
 
-  it('has PREMIUM_REFRESH_COST of 50', () => {
-    expect(RIDER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBe(50);
+  it('has premiumRefreshCost of 50', () => {
+    expect(riderMarketplaceConfig.premiumRefreshCost).toBe(50);
   });
 
   // OLD CONTRACT: a random weekly rate inside a per-skill range.
@@ -55,8 +55,8 @@ describe('RIDER_MARKETPLACE_CONFIG', () => {
   });
 
   it('has no skill-word odds and no speciality list (q282/q283)', () => {
-    expect(RIDER_MARKETPLACE_CONFIG).not.toHaveProperty('SKILL_DISTRIBUTION');
-    expect(RIDER_MARKETPLACE_CONFIG).not.toHaveProperty('SPECIALTIES');
+    expect(riderMarketplaceConfig).not.toHaveProperty('skillDistribution');
+    expect(riderMarketplaceConfig).not.toHaveProperty('SPECIALTIES');
   });
 });
 
@@ -154,7 +154,7 @@ describe('generateRiderMarketplace', () => {
   it('returns an array of default size (6) when no size given', () => {
     const marketplace = generateRiderMarketplace();
     expect(Array.isArray(marketplace)).toBe(true);
-    expect(marketplace).toHaveLength(RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE);
+    expect(marketplace).toHaveLength(riderMarketplaceConfig.defaultMarketplaceSize);
   });
 
   it('returns array of the requested size', () => {
@@ -263,12 +263,12 @@ describe('getRiderRefreshCost', () => {
     expect(getRiderRefreshCost(oldDate)).toBe(0);
   });
 
-  it('returns PREMIUM_REFRESH_COST when refresh is not yet needed', () => {
+  it('returns premiumRefreshCost when refresh is not yet needed', () => {
     const recentDate = new Date(Date.now() - 1 * 60 * 60 * 1000);
-    expect(getRiderRefreshCost(recentDate)).toBe(RIDER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST);
+    expect(getRiderRefreshCost(recentDate)).toBe(riderMarketplaceConfig.premiumRefreshCost);
   });
 
-  it('PREMIUM_REFRESH_COST matches config (50)', () => {
+  it('premiumRefreshCost matches config (50)', () => {
     const recentDate = new Date(Date.now() - 1 * 60 * 60 * 1000);
     expect(getRiderRefreshCost(recentDate)).toBe(50);
   });
@@ -310,7 +310,7 @@ describe('riderMarketplace — distribution, bio & config invariants (merged fro
   });
 
   it('config marketplace size and premium cost are positive', () => {
-    expect(RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBeGreaterThan(0);
-    expect(RIDER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBeGreaterThan(0);
+    expect(riderMarketplaceConfig.defaultMarketplaceSize).toBeGreaterThan(0);
+    expect(riderMarketplaceConfig.premiumRefreshCost).toBeGreaterThan(0);
   });
 });

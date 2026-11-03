@@ -26,12 +26,12 @@ import { staffRoles, staffTargetRefusal } from '../capabilities.mjs';
 import { recordStaffActionTx } from '../services/staffActionLogService.mjs';
 import { retireStaffCheckinCodesTx } from '../services/staffChallengeRetirement.mjs';
 
-const ASSIGNABLE_ROLES = new Set(['moderator', 'admin', 'user']);
-const MAX_TEXT = 100;
-const MAX_REASON = 1000;
-const PUBLIC_FIELDS = { id: true, username: true, role: true };
+const assignableRoles = new Set(['moderator', 'admin', 'user']);
+const maxText = 100;
+const maxReason = 1000;
+const publicFields = { id: true, username: true, role: true };
 // Bells that link into the Steward's Office (STAFF-CR-11).
-const STAFF_BELL_TYPES = ['staffTicket', 'staffTicketUpdate'];
+const staffBellTypes = ['staffTicket', 'staffTicketUpdate'];
 
 const fail = (res, status, message, code) =>
   res.status(status).json({ success: false, message, ...(code ? { code } : {}) });
@@ -46,7 +46,7 @@ export async function listStaff(req, res, next) {
   try {
     const staff = await prisma.user.findMany({
       where: { role: { in: [...staffRoles] } },
-      select: PUBLIC_FIELDS,
+      select: publicFields,
       orderBy: [{ role: 'asc' }, { username: 'asc' }],
     });
     return res.status(200).json({ staff });
@@ -60,10 +60,10 @@ export async function listStaff(req, res, next) {
 export async function lookupUser(req, res, next) {
   try {
     const username = req.body?.username;
-    if (!isText(username, MAX_TEXT)) {
+    if (!isText(username, maxText)) {
       return fail(res, 400, 'A username is required');
     }
-    const user = await prisma.user.findUnique({ where: { username }, select: PUBLIC_FIELDS });
+    const user = await prisma.user.findUnique({ where: { username }, select: publicFields });
     if (!user) {
       return fail(res, 404, 'No player has that username');
     }
@@ -112,19 +112,19 @@ export async function setUserRole(req, res, next) {
     const { userId } = req.params;
     const toRole = req.body?.role;
     const reason = req.body?.reason;
-    if (typeof toRole !== 'string' || !ASSIGNABLE_ROLES.has(toRole)) {
+    if (typeof toRole !== 'string' || !assignableRoles.has(toRole)) {
       return fail(res, 400, 'Role must be moderator or user');
     }
-    if (!isText(reason, MAX_REASON)) {
+    if (!isText(reason, maxReason)) {
       return fail(res, 400, 'A reason is required');
     }
-    if (!isText(userId, MAX_TEXT)) {
+    if (!isText(userId, maxText)) {
       return fail(res, 404, 'No such player');
     }
 
     const target = await prisma.user.findUnique({
       where: { id: userId },
-      select: { ...PUBLIC_FIELDS, emailVerified: true },
+      select: { ...publicFields, emailVerified: true },
     });
     if (!target) {
       return fail(res, 404, 'No such player');
@@ -160,7 +160,7 @@ export async function setUserRole(req, res, next) {
       // the office. A ticket change holding a share lock on this user row
       // commits first, so its bell is deleted here too.
       if (toRole === 'user') {
-        await deleteUnreadNotificationsTx(tx, target.id, STAFF_BELL_TYPES);
+        await deleteUnreadNotificationsTx(tx, target.id, staffBellTypes);
       }
       await recordStaffActionTx(tx, {
         actorId: req.staff.id,

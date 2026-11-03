@@ -12,10 +12,10 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import {
-  BUSY_MESSAGE,
+  busyMessage,
   BookingRefusal,
-  REQUEST_NOT_FOUND,
-  REQUEST_NOT_PENDING,
+  requestNotFound,
+  requestNotPending,
   finalizeAll,
   notify,
   requestPayload,
@@ -39,9 +39,9 @@ async function closeRequest({ requestId, callerId, field, data, notifyField, typ
         const record = await tx.breedingRecord.findUnique({ where: { id: requestId } });
         if (claimed.count !== 1) {
           if (!record || record.kind !== 'PRIVATE_STUD' || record[field] !== callerId) {
-            throw new BookingRefusal(404, REQUEST_NOT_FOUND);
+            throw new BookingRefusal(404, requestNotFound);
           }
-          throw new BookingRefusal(409, REQUEST_NOT_PENDING);
+          throw new BookingRefusal(409, requestNotPending);
         }
         const notifications = [];
         await notify(tx, notifications, record[notifyField], type, requestPayload(record, data));
@@ -49,7 +49,7 @@ async function closeRequest({ requestId, callerId, field, data, notifyField, typ
       },
       { timeout: 30000 },
     ),
-    { message: BUSY_MESSAGE },
+    { message: busyMessage },
   );
 }
 

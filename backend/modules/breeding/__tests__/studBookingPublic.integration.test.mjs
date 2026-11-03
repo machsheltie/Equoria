@@ -40,7 +40,7 @@ const PREFIX = 'TestFixture-q4uem9-pubstud';
 const FEE = 1234;
 // Every 404 these endpoints send carries the AppError body shape (status: 'fail'),
 // identical across causes so ids cannot be probed.
-const UNAVAILABLE_404 = { success: false, message: 'Stallion not available at stud', status: 'fail' };
+const unavailable404 = { success: false, message: 'Stallion not available at stud', status: 'fail' };
 
 describe('public stud booking moves the stud fee atomically with the pregnancy (Equoria-q4uem.9)', () => {
   const cleanup = createCleanupTracker();
@@ -302,7 +302,7 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
       );
 
       expect(res.status).toBe(404);
-      expect(res.body).toEqual(UNAVAILABLE_404);
+      expect(res.body).toEqual(unavailable404);
       expect(await moneyOf(mareOwner.user.id)).toBe(5000);
       expect(await moneyOf(studOwner.user.id)).toBe(100);
       expect((await prisma.horse.findUnique({ where: { id: mare.id } })).inFoalSinceDate).toBeNull();
@@ -334,7 +334,7 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
       );
 
       expect(res.status).toBe(404);
-      expect(res.body).toEqual(UNAVAILABLE_404);
+      expect(res.body).toEqual(unavailable404);
       expect(await moneyOf(studOwner.user.id)).toBe(100);
       expect(await moneyOf(newOwner.user.id)).toBe(0);
       expect(await moneyOf(mareOwner.user.id)).toBe(5000);
@@ -364,7 +364,7 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
 
     expect(a.status).toBe(404);
     expect(b.status).toBe(404);
-    expect(a.body).toEqual(UNAVAILABLE_404);
+    expect(a.body).toEqual(unavailable404);
     expect(b.body).toEqual(a.body);
   });
 

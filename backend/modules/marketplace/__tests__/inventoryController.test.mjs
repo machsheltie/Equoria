@@ -53,7 +53,7 @@ function uniqueUsername(prefix = 'inv') {
 }
 
 // A valid inventory item that can be seeded directly into User.settings
-const SEED_ITEM = {
+const seedItem = {
   id: 'test-inv-saddle-1',
   itemId: 'all-purpose-saddle',
   category: 'saddle',
@@ -115,7 +115,7 @@ describe('inventoryController integration', () => {
     it('returns 200 with seeded inventory items', async () => {
       await prisma.user.update({
         where: { id: user.id },
-        data: { settings: { inventory: [SEED_ITEM] } },
+        data: { settings: { inventory: [seedItem] } },
       });
 
       const res = await request(app)
@@ -125,7 +125,7 @@ describe('inventoryController integration', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.total).toBe(1);
-      expect(res.body.data.items[0].id).toBe(SEED_ITEM.id);
+      expect(res.body.data.items[0].id).toBe(seedItem.id);
     });
 
     it('returns 401 without auth token', async () => {
@@ -182,7 +182,7 @@ describe('inventoryController integration', () => {
       // Seed inventory item
       await prisma.user.update({
         where: { id: user.id },
-        data: { settings: { inventory: [SEED_ITEM] } },
+        data: { settings: { inventory: [seedItem] } },
       });
 
       // Create horse owned by user; tracked for scoped afterEach cleanup.
@@ -205,7 +205,7 @@ describe('inventoryController integration', () => {
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ inventoryItemId: SEED_ITEM.id, horseId: horse.id });
+        .send({ inventoryItemId: seedItem.id, horseId: horse.id });
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -261,7 +261,7 @@ describe('inventoryController integration', () => {
     it('returns 400 when item exists but is not equipped', async () => {
       await prisma.user.update({
         where: { id: user.id },
-        data: { settings: { inventory: [SEED_ITEM] } },
+        data: { settings: { inventory: [seedItem] } },
       });
 
       const csrf = await fetchCsrfFor(token);
@@ -271,7 +271,7 @@ describe('inventoryController integration', () => {
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ inventoryItemId: SEED_ITEM.id });
+        .send({ inventoryItemId: seedItem.id });
 
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
@@ -293,7 +293,7 @@ describe('inventoryController integration', () => {
       createdHorseIds.push(horse.id);
 
       // Seed inventory with item already equipped to this horse
-      const equippedItem = { ...SEED_ITEM, equippedToHorseId: horse.id };
+      const equippedItem = { ...seedItem, equippedToHorseId: horse.id };
       await prisma.user.update({
         where: { id: user.id },
         data: { settings: { inventory: [equippedItem] } },
@@ -306,7 +306,7 @@ describe('inventoryController integration', () => {
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ inventoryItemId: SEED_ITEM.id });
+        .send({ inventoryItemId: seedItem.id });
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);

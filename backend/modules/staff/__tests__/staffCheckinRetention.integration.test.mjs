@@ -13,8 +13,8 @@ import cronJobService from '../../../services/cronJobs.mjs';
 import { cronJobRegistry } from '../../../services/jobs/index.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import {
-  CHECKIN_CODE_RETENTION_MS,
-  TRUSTED_DEVICE_RETENTION_MS,
+  checkinCodeRetentionMs,
+  trustedDeviceRetentionMs,
   purgeStaleStaffCheckinRecords,
 } from '../services/staffCheckinRetentionService.mjs';
 import { createUserFactory, uid } from './helpers/staffFixtures.mjs';
@@ -61,8 +61,8 @@ describe('Staff check-in retention (STAFF-CR-18)', () => {
   it('deletes codes 1 day after use or expiry and devices 30 days after expiry or revocation, and nothing sooner', async () => {
     const mod = await makeUser('moderator');
     const now = new Date();
-    const codeEdge = -CHECKIN_CODE_RETENTION_MS;
-    const deviceEdge = -TRUSTED_DEVICE_RETENTION_MS;
+    const codeEdge = -checkinCodeRetentionMs;
+    const deviceEdge = -trustedDeviceRetentionMs;
     const old = at(now, deviceEdge - 60 * MINUTE);
 
     const codes = {
@@ -131,12 +131,12 @@ describe('Staff check-in retention (STAFF-CR-18)', () => {
     const mod = await makeUser('moderator');
     const now = Date.now();
     const stale = await code(mod.id, {
-      createdAt: new Date(now - 3 * CHECKIN_CODE_RETENTION_MS),
-      expiresAt: new Date(now - 2 * CHECKIN_CODE_RETENTION_MS),
+      createdAt: new Date(now - 3 * checkinCodeRetentionMs),
+      expiresAt: new Date(now - 2 * checkinCodeRetentionMs),
     });
     const staleDevice = await device(mod.id, {
-      createdAt: new Date(now - 2 * TRUSTED_DEVICE_RETENTION_MS),
-      expiresAt: new Date(now - TRUSTED_DEVICE_RETENTION_MS - MINUTE),
+      createdAt: new Date(now - 2 * trustedDeviceRetentionMs),
+      expiresAt: new Date(now - trustedDeviceRetentionMs - MINUTE),
     });
 
     const summary = await job.run(cronJobService);

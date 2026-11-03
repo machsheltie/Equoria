@@ -13,14 +13,14 @@ import {
   getRefreshCost,
 } from '../modules/grooms/services/groomMarketplace.mjs';
 import {
-  RIDER_MARKETPLACE_CONFIG,
+  riderMarketplaceConfig,
   generateRandomRider,
   generateRiderMarketplace,
   riderMarketplaceNeedsRefresh,
   getRiderRefreshCost,
 } from '../modules/riders/services/riderMarketplace.mjs';
 import {
-  TRAINER_MARKETPLACE_CONFIG,
+  trainerMarketplaceConfig,
   generateRandomTrainer,
   generateTrainerMarketplace,
   trainerMarketplaceNeedsRefresh,
@@ -204,19 +204,19 @@ describe('getRefreshCost (groom)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// RIDER_MARKETPLACE_CONFIG
+// riderMarketplaceConfig
 // ---------------------------------------------------------------------------
-describe('RIDER_MARKETPLACE_CONFIG', () => {
+describe('riderMarketplaceConfig', () => {
   it('has DEFAULT_MARKETPLACE_SIZE of 6', () => {
-    expect(RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBe(6);
+    expect(riderMarketplaceConfig.defaultMarketplaceSize).toBe(6);
   });
 
   // Owner rulings 2026-10-29 (q282/q283) retired the riders' old skill word and
   // visible speciality. Old contract: SKILL_DISTRIBUTION (rookie/developing/
   // experienced) summing to 100 and SPECIALTIES listing every discipline.
   it('has no skill-word odds and no speciality list', () => {
-    expect(RIDER_MARKETPLACE_CONFIG).not.toHaveProperty('SKILL_DISTRIBUTION');
-    expect(RIDER_MARKETPLACE_CONFIG).not.toHaveProperty('SPECIALTIES');
+    expect(riderMarketplaceConfig).not.toHaveProperty('skillDistribution');
+    expect(riderMarketplaceConfig).not.toHaveProperty('SPECIALTIES');
   });
 });
 
@@ -271,7 +271,7 @@ describe('generateRiderMarketplace', () => {
   it('returns array of default size (6)', () => {
     const m = generateRiderMarketplace();
     expect(Array.isArray(m)).toBe(true);
-    expect(m).toHaveLength(RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE);
+    expect(m).toHaveLength(riderMarketplaceConfig.defaultMarketplaceSize);
   });
 
   it('returns exact count when size given', () => {
@@ -311,29 +311,29 @@ describe('getRiderRefreshCost', () => {
 
   it('returns PREMIUM_REFRESH_COST for recent timestamp', () => {
     const recent = new Date(Date.now() - 60 * 60 * 1000);
-    expect(getRiderRefreshCost(recent)).toBe(RIDER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST);
+    expect(getRiderRefreshCost(recent)).toBe(riderMarketplaceConfig.premiumRefreshCost);
   });
 });
 
 // ---------------------------------------------------------------------------
-// TRAINER_MARKETPLACE_CONFIG
+// trainerMarketplaceConfig
 // ---------------------------------------------------------------------------
-describe('TRAINER_MARKETPLACE_CONFIG', () => {
+describe('trainerMarketplaceConfig', () => {
   it('has DEFAULT_MARKETPLACE_SIZE', () => {
-    expect(typeof TRAINER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBe('number');
+    expect(typeof trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE).toBe('number');
   });
 
   it('SKILL_DISTRIBUTION sums to 100', () => {
-    const sum = Object.values(TRAINER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION).reduce((a, b) => a + b, 0);
+    const sum = Object.values(trainerMarketplaceConfig.SKILL_DISTRIBUTION).reduce((a, b) => a + b, 0);
     expect(sum).toBe(100);
   });
 
   // Owner ruling 2026-10-21: specialties are an even pick across every competition
   // discipline. Old contract: a 6-discipline percentage spread summing to 100.
   it('SPECIALTIES lists every competition discipline once', () => {
-    expect(TRAINER_MARKETPLACE_CONFIG.SPECIALTIES).toHaveLength(24);
-    expect(new Set(TRAINER_MARKETPLACE_CONFIG.SPECIALTIES).size).toBe(24);
-    expect(TRAINER_MARKETPLACE_CONFIG.SPECIALTIES).toContain('Pleasure Driving');
+    expect(trainerMarketplaceConfig.SPECIALTIES).toHaveLength(24);
+    expect(new Set(trainerMarketplaceConfig.SPECIALTIES).size).toBe(24);
+    expect(trainerMarketplaceConfig.SPECIALTIES).toContain('Pleasure Driving');
   });
 });
 
@@ -368,7 +368,7 @@ describe('generateRandomTrainer', () => {
   });
 
   it('skillLevel is one of known levels', () => {
-    const valid = new Set(Object.keys(TRAINER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION));
+    const valid = new Set(Object.keys(trainerMarketplaceConfig.SKILL_DISTRIBUTION));
     for (let i = 0; i < 20; i++) {
       expect(valid.has(generateRandomTrainer().skillLevel)).toBe(true);
     }
@@ -382,7 +382,7 @@ describe('generateTrainerMarketplace', () => {
   it('returns array of default size', () => {
     const m = generateTrainerMarketplace();
     expect(Array.isArray(m)).toBe(true);
-    expect(m).toHaveLength(TRAINER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE);
+    expect(m).toHaveLength(trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE);
   });
 
   it('returns exact count when size given', () => {
@@ -427,7 +427,7 @@ describe('getTrainerRefreshCost', () => {
 
   it('returns PREMIUM_REFRESH_COST for recent timestamp', () => {
     const recent = new Date(Date.now() - 60 * 60 * 1000);
-    expect(getTrainerRefreshCost(recent)).toBe(TRAINER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST);
+    expect(getTrainerRefreshCost(recent)).toBe(trainerMarketplaceConfig.PREMIUM_REFRESH_COST);
   });
 
   it('returns 0 for expired timestamp', () => {

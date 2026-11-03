@@ -44,10 +44,10 @@ import { __TESTING_ONLY_setMarketplaceRaceBarrier } from '../services/marketplac
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-6p398-4-stale';
-const LIST_PRICE = 100;
-const RELIST_PRICE = 700;
-const BARRIER_TIMEOUT_MS = 20000;
+const fixturePrefix = 'TestFixture-6p398-4-stale';
+const listPrice = 100;
+const relistPrice = 700;
+const barrierTimeoutMs = 20000;
 
 function tag() {
   return randomBytes(6).toString('hex');
@@ -58,8 +58,8 @@ async function makeUser(role, money) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${role}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${role}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${role}-${suffix}`,
+      email: `${fixturePrefix}-${role}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Stale',
       lastName: role,
@@ -76,7 +76,7 @@ async function makeListedHorse(sellerId, salePrice) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag()}`,
+      name: `${fixturePrefix}-horse-${tag()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
@@ -164,7 +164,7 @@ async function waitFor(promise, label) {
     await Promise.race([
       promise,
       new Promise((_resolve, reject) => {
-        timer = setTimeout(() => reject(new Error(`Timed out waiting for ${label}`)), BARRIER_TIMEOUT_MS);
+        timer = setTimeout(() => reject(new Error(`Timed out waiting for ${label}`)), barrierTimeoutMs);
       }),
     ]);
   } finally {
@@ -199,7 +199,7 @@ describe('buyHorse — a purchase is bound to the listing it actually buys (find
     sellerA = await makeUser('sellerA', 0);
     buyerB = await makeUser('buyerB', 1000);
     buyerC = await makeUser('buyerC', 1000);
-    horse = await makeListedHorse(sellerA.user.id, LIST_PRICE);
+    horse = await makeListedHorse(sellerA.user.id, listPrice);
   }, 60000);
 
   afterEach(async () => {
@@ -220,7 +220,7 @@ describe('buyHorse — a purchase is bound to the listing it actually buys (find
       const cBuy = await buy(buyerC.token, horse.id);
       cBuyStatus = cBuy.status;
       // ... and relists the horse it now owns at 700.
-      const cRelist = await listForSale(buyerC.token, horse.id, RELIST_PRICE);
+      const cRelist = await listForSale(buyerC.token, horse.id, relistPrice);
       cRelistStatus = cRelist.status;
     } finally {
       barrier.release();
@@ -243,21 +243,21 @@ describe('buyHorse — a purchase is bound to the listing it actually buys (find
     });
     expect(horseAfter.userId).toBe(buyerC.user.id);
     expect(horseAfter.forSale).toBe(true);
-    expect(horseAfter.salePrice).toBe(RELIST_PRICE);
+    expect(horseAfter.salePrice).toBe(relistPrice);
 
-    expect(await money(sellerA.user.id)).toBe(LIST_PRICE); // credited ONCE, by C's purchase
+    expect(await money(sellerA.user.id)).toBe(listPrice); // credited ONCE, by C's purchase
     expect(await money(buyerB.user.id)).toBe(1000); // never charged
-    expect(await money(buyerC.user.id)).toBe(1000 - LIST_PRICE);
+    expect(await money(buyerC.user.id)).toBe(1000 - listPrice);
 
     const sales = await prisma.horseSale.findMany({ where: { horseId: horse.id } });
     expect(sales).toHaveLength(1);
     expect(sales[0].sellerId).toBe(sellerA.user.id);
     expect(sales[0].buyerId).toBe(buyerC.user.id);
-    expect(sales[0].salePrice).toBe(LIST_PRICE);
+    expect(sales[0].salePrice).toBe(listPrice);
 
     expect(await ledgerFor(buyerB.user.id, 'marketplacePurchase')).toHaveLength(0);
-    expect(await ledgerFor(buyerC.user.id, 'marketplacePurchase')).toEqual([{ amount: LIST_PRICE }]);
-    expect(await ledgerFor(sellerA.user.id, 'marketplaceSale')).toEqual([{ amount: LIST_PRICE }]);
+    expect(await ledgerFor(buyerC.user.id, 'marketplacePurchase')).toEqual([{ amount: listPrice }]);
+    expect(await ledgerFor(sellerA.user.id, 'marketplaceSale')).toEqual([{ amount: listPrice }]);
   }, 120000);
 
   it('rejects a purchase whose seller delisted and relisted at a higher price mid-request', async () => {
@@ -271,7 +271,7 @@ describe('buyHorse — a purchase is bound to the listing it actually buys (find
 
       const delisted = await delist(sellerA.token, horse.id);
       delistStatus = delisted.status;
-      const relisted = await listForSale(sellerA.token, horse.id, RELIST_PRICE);
+      const relisted = await listForSale(sellerA.token, horse.id, relistPrice);
       relistStatus = relisted.status;
     } finally {
       barrier.release();
@@ -293,7 +293,7 @@ describe('buyHorse — a purchase is bound to the listing it actually buys (find
     });
     expect(horseAfter.userId).toBe(sellerA.user.id);
     expect(horseAfter.forSale).toBe(true);
-    expect(horseAfter.salePrice).toBe(RELIST_PRICE);
+    expect(horseAfter.salePrice).toBe(relistPrice);
 
     expect(await money(sellerA.user.id)).toBe(0);
     expect(await money(buyerB.user.id)).toBe(1000);
@@ -325,16 +325,16 @@ describe('buyHorse — a purchase is bound to the listing it actually buys (find
     expect(horseAfter.forSale).toBe(false);
     expect(horseAfter.salePrice).toBe(0);
 
-    expect(await money(sellerA.user.id)).toBe(LIST_PRICE);
-    expect(await money(buyerB.user.id)).toBe(1000 - LIST_PRICE);
+    expect(await money(sellerA.user.id)).toBe(listPrice);
+    expect(await money(buyerB.user.id)).toBe(1000 - listPrice);
 
     const sales = await prisma.horseSale.findMany({ where: { horseId: horse.id } });
     expect(sales).toHaveLength(1);
     expect(sales[0].sellerId).toBe(sellerA.user.id);
     expect(sales[0].buyerId).toBe(buyerB.user.id);
-    expect(sales[0].salePrice).toBe(LIST_PRICE);
+    expect(sales[0].salePrice).toBe(listPrice);
 
-    expect(await ledgerFor(buyerB.user.id, 'marketplacePurchase')).toEqual([{ amount: LIST_PRICE }]);
-    expect(await ledgerFor(sellerA.user.id, 'marketplaceSale')).toEqual([{ amount: LIST_PRICE }]);
+    expect(await ledgerFor(buyerB.user.id, 'marketplacePurchase')).toEqual([{ amount: listPrice }]);
+    expect(await ledgerFor(sellerA.user.id, 'marketplaceSale')).toEqual([{ amount: listPrice }]);
   }, 120000);
 });

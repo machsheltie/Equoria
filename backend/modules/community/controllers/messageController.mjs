@@ -27,13 +27,13 @@ import { runRetryableTransaction } from '../../../utils/retryableTransaction.mjs
 import { isStaffRole } from '../../staff/index.mjs';
 import { sendHelpMessageTx } from '../services/helpGuardrails.mjs';
 
-const USER_SELECT = { id: true, username: true };
+const userSelect = { id: true, username: true };
 
-const PAGE_SIZE = 50;
+const pageSize = 50;
 
 // Newest first, ties on the instant broken by id (Equoria-cmw85.20), so a message
 // written while the player pages through the box is neither skipped nor repeated.
-const MESSAGE_SORT = [
+const messageSort = [
   { key: 'createdAt', dir: 'desc', type: 'date' },
   { key: 'id', dir: 'desc', type: 'int' },
 ];
@@ -45,15 +45,15 @@ const MESSAGE_SORT = [
  */
 async function respondWithMessageBox(req, res, { where, counterpart, label }) {
   try {
-    const { limit, cursor, skip } = readKeysetParams(req.query, { def: PAGE_SIZE, max: 100 });
+    const { limit, cursor, skip } = readKeysetParams(req.query, { def: pageSize, max: 100 });
     const [{ items, pageInfo }, total] = await Promise.all([
       findKeysetPage(args => prisma.directMessage.findMany(args), {
         where,
-        sort: MESSAGE_SORT,
+        sort: messageSort,
         limit,
         cursor,
         skip,
-        extra: { include: { [counterpart]: { select: USER_SELECT } } },
+        extra: { include: { [counterpart]: { select: userSelect } } },
       }),
       prisma.directMessage.count({ where }),
     ]);
@@ -155,8 +155,8 @@ export async function getMessage(req, res) {
         OR: [{ senderId: userId }, { recipientId: userId }],
       },
       include: {
-        sender: { select: USER_SELECT },
-        recipient: { select: USER_SELECT },
+        sender: { select: userSelect },
+        recipient: { select: userSelect },
       },
     });
 
@@ -223,8 +223,8 @@ export async function sendMessage(req, res) {
       message = await prisma.directMessage.create({
         data: { senderId, recipientId, subject, content, tag },
         include: {
-          sender: { select: USER_SELECT },
-          recipient: { select: USER_SELECT },
+          sender: { select: userSelect },
+          recipient: { select: userSelect },
         },
       });
     }

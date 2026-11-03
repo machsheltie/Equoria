@@ -39,9 +39,9 @@ import { buyAndEquip } from '../../../../__tests__/helpers/tackShopBuy.mjs';
 import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-6p398-12-tackdoc';
-const LIST_PRICE = 400;
-const SHOP_SADDLE = 'all-purpose-saddle'; // 400, category `saddle`, +2 (Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. Old contract: +5.)
+const fixturePrefix = 'TestFixture-6p398-12-tackdoc';
+const listPrice = 400;
+const shopSaddle = 'all-purpose-saddle'; // 400, category `saddle`, +2 (Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. Old contract: +5.)
 const RIBBON = 'show-ribbon'; // 120, category `decorative`
 const BROWBAND = 'floral-browband'; // 160, category `decorative`
 
@@ -52,8 +52,8 @@ async function makeUser(role, money) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${role}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${role}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${role}-${suffix}`,
+      email: `${fixturePrefix}-${role}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'TackDoc',
       lastName: role,
@@ -70,7 +70,7 @@ async function makeHorse(ownerId, { forSale = false, salePrice = 0 } = {}) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${uniq()}`,
+      name: `${fixturePrefix}-horse-${uniq()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
@@ -123,21 +123,21 @@ describe('Horse.tack document integrity around equip/unequip (Equoria-6p398.12)'
     owner = await makeUser('owner', 5000);
     buyer = await makeUser('buyer', 10000);
     horse = await makeHorse(owner.id);
-    listedHorse = await makeHorse(owner.id, { forSale: true, salePrice: LIST_PRICE });
+    listedHorse = await makeHorse(owner.id, { forSale: true, salePrice: listPrice });
   }, 60000);
 
   afterEach(() => cleanup.run(), 30000);
 
   it('stores no bonus mirror beside the item, and unequip takes off exactly the item key', async () => {
-    expect((await buyAndEquip(post, owner.token, horse.id, SHOP_SADDLE)).status).toBe(200);
+    expect((await buyAndEquip(post, owner.token, horse.id, shopSaddle)).status).toBe(200);
 
     const equipped = await readTack(horse.id);
-    expect(equipped.saddle).toBe(SHOP_SADDLE);
+    expect(equipped.saddle).toBe(shopSaddle);
     // Equoria-lsudd: no numeric mirror is written beside the item id.
     expect(equipped.saddleBonus).toBeUndefined();
     expect(equipped.bridleBonus).toBeUndefined();
 
-    const record = (await inventoryOf(owner.token)).find(i => i.itemId === SHOP_SADDLE);
+    const record = (await inventoryOf(owner.token)).find(i => i.itemId === shopSaddle);
     expect(record).toBeDefined();
 
     expect((await post('/api/v1/inventory/unequip', owner.token, { inventoryItemId: record.id })).status).toBe(200);

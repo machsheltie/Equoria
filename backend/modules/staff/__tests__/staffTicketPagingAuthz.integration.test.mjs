@@ -17,8 +17,8 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { checkIn, createUserFactory, get, startEmailCapture, stopEmailCapture, uid } from './helpers/staffFixtures.mjs';
 
 const TICKETS = '/api/v1/staff/tickets';
-const LIST_PAGE = 100;
-const REPLY_PAGE = 50;
+const listPage = 100;
+const replyPage = 50;
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('stpaging');
@@ -94,7 +94,7 @@ async function allPages(user, device, status) {
     }
     const res = await get(`${TICKETS}?${params.join('&')}`, user, device);
     expect(res.status).toBe(200);
-    expect(res.body.tickets.length).toBeLessThanOrEqual(LIST_PAGE);
+    expect(res.body.tickets.length).toBeLessThanOrEqual(listPage);
     seen.push(...res.body.tickets);
     cursor = res.body.nextCursor;
     pages += 1;
@@ -134,7 +134,7 @@ describe('The ticket list pages past 100 tickets', () => {
     const { seen, pages } = await allPages(mod, modDevice, 'inProgress');
 
     const expected = mine.filter(t => t.status === 'inProgress');
-    expect(expected.length).toBeGreaterThan(LIST_PAGE);
+    expect(expected.length).toBeGreaterThan(listPage);
     expect(pages).toBe(2);
     expect(seen.every(t => t.status === 'inProgress')).toBe(true);
     expect(idsOf(seen).sort((a, b) => a - b)).toEqual(idsOf(expected).sort((a, b) => a - b));
@@ -205,7 +205,7 @@ describe('A ticket thread pages its replies', () => {
         device,
       );
       expect(res.status).toBe(200);
-      expect(res.body.ticket.replies.length).toBeLessThanOrEqual(REPLY_PAGE);
+      expect(res.body.ticket.replies.length).toBeLessThanOrEqual(replyPage);
       pages.push(res.body.ticket.replies);
       before = res.body.olderRepliesCursor;
       if (pages.length > 20) {

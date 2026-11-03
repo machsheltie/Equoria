@@ -174,7 +174,7 @@ const retiredSharedAliases = retiredSharedTack.map(({ id, target }) => {
 
 // ── Tack inventory catalog ──────────────────────────────────────────────────
 
-export const TACK_INVENTORY = [
+export const tackInventory = [
   // ── All Purpose saddle and bridle (+2 in every discipline) ──────────────
   {
     id: 'all-purpose-saddle',
@@ -498,5 +498,5 @@ export function tackCatalogItems(category) {
  * @returns {ReadonlyArray<object>}
  */
 export function allTackItems() {
-  return TACK_INVENTORY;
+  return tackInventory;
 }

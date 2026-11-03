@@ -31,7 +31,7 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
-  SYSTEM_ACCOUNT_BURN,
+  systemAccountBurn,
 } from '../../economy/index.mjs';
 import { maxGroomsPerUser } from '../../../config/groomConfig.mjs';
 import { CapExceededError } from '../groomErrors.mjs';
@@ -224,7 +224,7 @@ export async function hireFreeAgent(req, res) {
           const moneyAfter = await debitMoneyOrThrow(tx, {
             userId,
             amount: hiringCost,
-            systemAccount: SYSTEM_ACCOUNT_BURN,
+            systemAccount: systemAccountBurn,
             category: 'groomHireBurn',
             description: `Groom hire fee — ${offer.name}`,
             metadata: { groomId, freeAgent: true },

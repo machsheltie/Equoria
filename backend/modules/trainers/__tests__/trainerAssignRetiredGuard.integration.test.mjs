@@ -32,7 +32,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-oey96_24-trainer';
+const fixturePrefix = 'TestFixture-oey96_24-trainer';
 
 const createdUserIds = [];
 const createdHorseIds = [];
@@ -44,8 +44,8 @@ async function makeUser() {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Assign',
       lastName: 'Guard',
@@ -75,7 +75,7 @@ async function seedHorse(userId) {
   const horse = await createTestHorse(
     prisma,
     {
-      name: `${FIXTURE_PREFIX}-horse-${randomBytes(3).toString('hex')}`,
+      name: `${fixturePrefix}-horse-${randomBytes(3).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: birthDateForAge(6), // an adult, well under the retirement age of 21
       userId,

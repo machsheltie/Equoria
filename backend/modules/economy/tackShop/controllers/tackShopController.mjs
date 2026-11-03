@@ -24,17 +24,17 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
-  SYSTEM_ACCOUNT_BURN,
+  systemAccountBurn,
 } from '../../services/financialLedgerService.mjs';
 // Equoria-q4uem.4 (WS4 S4): the tack catalog and the tack-bonus policy live in
 // ../services/tackInventory.mjs (data/policy, not HTTP). Re-exported here so
 // same-module importers and tests keep their existing specifiers.
-import { TACK_INVENTORY, tackEffectFields, withCategoryLabel } from '../services/tackInventory.mjs';
-export { TACK_INVENTORY } from '../services/tackInventory.mjs';
+import { tackInventory, tackEffectFields, withCategoryLabel } from '../services/tackInventory.mjs';
+export { tackInventory } from '../services/tackInventory.mjs';
 
 // ── Category display configuration ──────────────────────────────────────────
 
-const CATEGORY_DISPLAY = {
+const categoryDisplay = {
   saddle: 'Saddles & Harnesses',
   bridle: 'Bridles',
   halter: 'Halters',
@@ -48,7 +48,7 @@ const CATEGORY_DISPLAY = {
 
 /** The catalogue entry for an item id, or undefined. */
 function catalogItem(itemId) {
-  return TACK_INVENTORY.find(item => item.id === itemId);
+  return tackInventory.find(item => item.id === itemId);
 }
 
 function decorationError(status, message) {
@@ -117,7 +117,7 @@ function returnDecorationToInventory(inventory, horseId, itemId) {
  */
 export async function getTackInventory(_req, res) {
   // Equoria-no441: each item carries its category's word beside the code.
-  const visibleItems = TACK_INVENTORY.filter(item => !item.isLegacyAlias).map(withCategoryLabel);
+  const visibleItems = tackInventory.filter(item => !item.isLegacyAlias).map(withCategoryLabel);
   const categories = {};
   for (const item of visibleItems) {
     const key = item.category;
@@ -133,7 +133,7 @@ export async function getTackInventory(_req, res) {
     data: {
       items: visibleItems,
       categories,
-      categoryDisplayNames: CATEGORY_DISPLAY,
+      categoryDisplayNames: categoryDisplay,
     },
   });
 }
@@ -147,7 +147,7 @@ function debitTackPurchase(tx, { userId, item, description, metadata }) {
   return debitMoneyOrThrow(tx, {
     userId,
     amount: item.cost,
-    systemAccount: SYSTEM_ACCOUNT_BURN,
+    systemAccount: systemAccountBurn,
     category: 'tackPurchaseBurn',
     description,
     metadata,

@@ -19,7 +19,7 @@ import {
 // and join/leave remain intentionally poll-only (see transferLeadership note).
 import { createNotification } from '../../../utils/notificationService.mjs';
 
-const USER_SELECT = { id: true, username: true };
+const userSelect = { id: true, username: true };
 
 // The club lists answer one page, newest first with the id as the final key
 // (Equoria-cmw85.22). The default and maximum are both 100: the screens read the whole
@@ -61,7 +61,7 @@ export async function getClubs(req, res) {
       skip,
       extra: {
         include: {
-          leader: { select: USER_SELECT },
+          leader: { select: userSelect },
           _count: { select: { members: true } },
         },
       },
@@ -93,7 +93,7 @@ export async function getMyClubs(req, res) {
         extra: {
           include: {
             club: {
-              include: { leader: { select: USER_SELECT }, _count: { select: { members: true } } },
+              include: { leader: { select: userSelect }, _count: { select: { members: true } } },
             },
           },
         },
@@ -119,8 +119,8 @@ export async function getClub(req, res) {
     const club = await prisma.club.findUnique({
       where: { id },
       include: {
-        leader: { select: USER_SELECT },
-        members: { include: { user: { select: USER_SELECT } }, orderBy: { joinedAt: 'asc' } },
+        leader: { select: userSelect },
+        members: { include: { user: { select: userSelect } }, orderBy: { joinedAt: 'asc' } },
       },
     });
     if (!club) {
@@ -478,7 +478,7 @@ export async function getElectionResults(req, res) {
     const candidates = await prisma.clubCandidate.findMany({
       where: { electionId },
       include: {
-        user: { select: USER_SELECT },
+        user: { select: userSelect },
         _count: { select: { ballots: true } },
       },
       // Most votes first; ties by id so equal tallies keep their places (Equoria-cmw85.22).

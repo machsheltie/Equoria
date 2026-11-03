@@ -34,7 +34,7 @@ import {
   transferLeadership,
 } from '../controllers/clubController.mjs';
 
-const SUITE_PREFIX = 'club';
+const suitePrefix = 'club';
 
 function makeReqRes(userId, overrides = {}) {
   let _status = 200;
@@ -64,9 +64,9 @@ async function createUser() {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${SUITE_PREFIX}-${uid}`,
-      username: `${SUITE_PREFIX}_${uid}`,
-      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      id: `${suitePrefix}-${uid}`,
+      username: `${suitePrefix}_${uid}`,
+      email: `${suitePrefix}-${uid}@example.com`,
       firstName: 'Club',
       lastName: 'Test',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -78,7 +78,7 @@ async function createUser() {
 async function createClubInDb(leaderId, overrides = {}) {
   return prisma.club.create({
     data: {
-      name: overrides.name ?? `${SUITE_PREFIX}-${randomBytes(4).toString('hex')}`,
+      name: overrides.name ?? `${suitePrefix}-${randomBytes(4).toString('hex')}`,
       type: overrides.type ?? 'discipline',
       category: overrides.category ?? 'racing',
       description: overrides.description ?? 'Test club',
@@ -127,7 +127,7 @@ async function createCandidateInDb(electionId, userId, statement = 'My pledge') 
 
 async function cleanupSuite() {
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: SUITE_PREFIX } },
+    where: { id: { startsWith: suitePrefix } },
     select: { id: true },
   });
   if (users.length === 0) {
@@ -159,7 +159,7 @@ describe('clubController (real DB)', () => {
     it('returns clubs list with memberCount and stripped _count', async () => {
       const leader = await createUser();
       const club = await createClubInDb(leader.id, {
-        name: `${SUITE_PREFIX}-dressage-${randomBytes(4).toString('hex')}`,
+        name: `${suitePrefix}-dressage-${randomBytes(4).toString('hex')}`,
       });
 
       const h = makeReqRes(leader.id, { query: {} });
@@ -191,7 +191,7 @@ describe('clubController (real DB)', () => {
       const user = await createUser();
       const h = makeReqRes(user.id, {
         body: {
-          name: `${SUITE_PREFIX}-Speed-${randomBytes(4).toString('hex')}`,
+          name: `${suitePrefix}-Speed-${randomBytes(4).toString('hex')}`,
           type: 'discipline',
           category: 'racing',
           description: 'Fast horses',
@@ -215,7 +215,7 @@ describe('clubController (real DB)', () => {
 
     it('returns 409 when club name already taken', async () => {
       const user = await createUser();
-      const taken = await createClubInDb(user.id, { name: `${SUITE_PREFIX}-Taken-${randomBytes(4).toString('hex')}` });
+      const taken = await createClubInDb(user.id, { name: `${suitePrefix}-Taken-${randomBytes(4).toString('hex')}` });
 
       const h = makeReqRes(user.id, { body: { name: taken.name } });
       await createClub(h.req, h.res);
@@ -344,7 +344,7 @@ describe('clubController (real DB)', () => {
   describe('getMyClubs', () => {
     it('returns memberships for authenticated user', async () => {
       const user = await createUser();
-      const club = await createClubInDb(user.id, { name: `${SUITE_PREFIX}-mine-${randomBytes(4).toString('hex')}` });
+      const club = await createClubInDb(user.id, { name: `${suitePrefix}-mine-${randomBytes(4).toString('hex')}` });
 
       const h = makeReqRes(user.id);
       await getMyClubs(h.req, h.res);

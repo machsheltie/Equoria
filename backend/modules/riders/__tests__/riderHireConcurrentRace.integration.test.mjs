@@ -21,8 +21,8 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import config from '../../../config/config.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-kyrqo-rider';
-const N_HIRES = 4;
+const fixturePrefix = 'TestFixture-kyrqo-rider';
+const nHires = 4;
 
 let buyer;
 let buyerToken;
@@ -38,8 +38,8 @@ async function makeUser(suffix, money) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${suffix}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${suffix}-${tag}@example.com`,
+      username: `${fixturePrefix}-${suffix}-${tag}`,
+      email: `${fixturePrefix}-${suffix}-${tag}@example.com`,
       password: pw,
       firstName: 'Hire',
       lastName: suffix,
@@ -83,7 +83,7 @@ beforeAll(async () => {
   hiringCost = 100;
   await prisma.user.update({ where: { id: buyer.id }, data: { money: hiringCost } });
 
-  marketplaceIds = Array.from({ length: N_HIRES }, () => `mid-${randomBytes(4).toString('hex')}`);
+  marketplaceIds = Array.from({ length: nHires }, () => `mid-${randomBytes(4).toString('hex')}`);
   const offers = marketplaceIds.map((mid, i) => ({
     marketplaceId: mid,
     firstName: 'Race',

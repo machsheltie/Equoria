@@ -35,7 +35,7 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
-  SYSTEM_ACCOUNT_BURN,
+  systemAccountBurn,
 } from '../../services/financialLedgerService.mjs';
 
 /** The shoe types, as data. Prices are the owner's. */
@@ -154,7 +154,7 @@ export async function shoeHorse(req, res) {
           const balance = await debitMoneyOrThrow(tx, {
             userId,
             amount: service.cost,
-            systemAccount: SYSTEM_ACCOUNT_BURN,
+            systemAccount: systemAccountBurn,
             category: 'farrierServiceBurn',
             description: `Farrier fee, shoeing ${horse.name}`,
             metadata: { horseId },

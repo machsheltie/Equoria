@@ -17,10 +17,10 @@ import { staffLevelFee } from '../../../constants/staffLevels.mjs';
 import { drawRiderStartAge } from './riderRetirementScheduleService.mjs';
 
 // Marketplace configuration
-export const RIDER_MARKETPLACE_CONFIG = {
-  DEFAULT_MARKETPLACE_SIZE: 6,
-  REFRESH_INTERVAL_HOURS: 24,
-  PREMIUM_REFRESH_COST: 50,
+export const riderMarketplaceConfig = {
+  defaultMarketplaceSize: 6,
+  refreshIntervalHours: 24,
+  premiumRefreshCost: 50,
 };
 
 const PERSONALITIES = ['daring', 'methodical', 'intuitive', 'competitive'];
@@ -163,7 +163,7 @@ function generateStarterRider() {
  * @param {number} size - Number of riders to generate
  * @returns {Array}
  */
-export function generateRiderMarketplace(size = RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE) {
+export function generateRiderMarketplace(size = riderMarketplaceConfig.defaultMarketplaceSize) {
   const marketplace = [generateStarterRider()];
   for (let i = 1; i < size; i++) {
     marketplace.push(generateRandomRider());
@@ -181,7 +181,7 @@ export function riderMarketplaceNeedsRefresh(lastRefresh) {
     return true;
   }
   const hoursDiff = (Date.now() - new Date(lastRefresh).getTime()) / (1000 * 60 * 60);
-  return hoursDiff >= RIDER_MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS;
+  return hoursDiff >= riderMarketplaceConfig.refreshIntervalHours;
 }
 
 /**
@@ -190,7 +190,5 @@ export function riderMarketplaceNeedsRefresh(lastRefresh) {
  * @returns {number}
  */
 export function getRiderRefreshCost(lastRefresh) {
-  return riderMarketplaceNeedsRefresh(lastRefresh)
-    ? 0
-    : RIDER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST;
+  return riderMarketplaceNeedsRefresh(lastRefresh) ? 0 : riderMarketplaceConfig.premiumRefreshCost;
 }

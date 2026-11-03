@@ -16,7 +16,7 @@ import {
 } from '../services/staffTicketService.mjs';
 import { decodeCursor } from '../services/staffTicketCursor.mjs';
 
-const TARGET_TYPES = new Set(['user', 'post', 'horse', 'show']);
+const targetTypes = new Set(['user', 'post', 'horse', 'show']);
 const STATUSES = new Set(['open', 'inProgress', 'resolved', 'declined']);
 
 const invalid = (res, message) => res.status(400).json({ success: false, message });
@@ -75,7 +75,7 @@ export async function createTicket(req, res, next) {
     const targetUsername = text(body.targetUsername, 100);
     const category = text(body.category, 40);
     const note = text(body.note, 2000);
-    if (!TARGET_TYPES.has(targetType)) {
+    if (!targetTypes.has(targetType)) {
       return invalid(res, 'targetType must be user, post, horse or show');
     }
     if (!category || !note) {

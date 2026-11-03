@@ -11,9 +11,9 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
-import { purchaseFeed, FEED_CATALOG } from '../controllers/feedShopController.mjs';
+import { purchaseFeed, feedCatalog } from '../controllers/feedShopController.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-6g8wm-feed';
+const fixturePrefix = 'TestFixture-6g8wm-feed';
 const N = 5;
 
 let user;
@@ -38,12 +38,12 @@ function fakeRes() {
 beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
   const pw = await bcrypt.hash('TestPassword123!', 1);
-  const tier = FEED_CATALOG[0];
+  const tier = feedCatalog[0];
   user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Feed',
       lastName: 'Race',
@@ -67,7 +67,7 @@ afterAll(async () => {
 
 describe('feedShop purchaseFeed concurrent-race sentinel (Equoria-6g8wm)', () => {
   it('SENTINEL: N parallel purchases with money for ONE — exactly 1 succeeds, money never negative', async () => {
-    const tier = FEED_CATALOG[0];
+    const tier = feedCatalog[0];
     const reqs = Array.from({ length: N }, () => ({
       user: { id: user.id },
       body: { feedTier: tier.id, packs: 1 },

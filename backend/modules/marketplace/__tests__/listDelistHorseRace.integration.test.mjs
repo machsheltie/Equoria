@@ -31,8 +31,8 @@ import config from '../../../config/config.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-kj4g7';
-const SALE_PRICE = 250;
+const fixturePrefix = 'TestFixture-kj4g7';
+const salePrice = 250;
 
 let seller;
 let sellerToken;
@@ -48,8 +48,8 @@ async function makeUser(suffix) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${suffix}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${suffix}-${tag}@example.com`,
+      username: `${fixturePrefix}-${suffix}-${tag}`,
+      email: `${fixturePrefix}-${suffix}-${tag}@example.com`,
       password: pw,
       firstName: 'Race',
       lastName: suffix,
@@ -67,14 +67,14 @@ async function makeHorse(forSale) {
   const horse = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
+      name: `${fixturePrefix}-horse-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
       userId: seller.id,
       healthStatus: 'healthy',
       forSale,
-      salePrice: forSale ? SALE_PRICE : 0,
+      salePrice: forSale ? salePrice : 0,
     }),
   });
   createdHorseIds.push(horse.id);
@@ -104,14 +104,14 @@ describe('POST /api/v1/marketplace/list — conditional updateMany sentinel (Equ
         .set('Authorization', `Bearer ${sellerToken}`)
         .set('Cookie', csrf[0].cookieHeader)
         .set('X-CSRF-Token', csrf[0].csrfToken)
-        .send({ horseId: horseListable.id, price: SALE_PRICE }),
+        .send({ horseId: horseListable.id, price: salePrice }),
       request(app)
         .post('/api/v1/marketplace/list')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${sellerToken}`)
         .set('Cookie', csrf[1].cookieHeader)
         .set('X-CSRF-Token', csrf[1].csrfToken)
-        .send({ horseId: horseListable.id, price: SALE_PRICE + 1 }),
+        .send({ horseId: horseListable.id, price: salePrice + 1 }),
     ]);
     const successes = results.filter(r => r.status === 200);
     expect(successes).toHaveLength(1);
@@ -127,7 +127,7 @@ describe('POST /api/v1/marketplace/list — conditional updateMany sentinel (Equ
       select: { forSale: true, salePrice: true },
     });
     expect(after.forSale).toBe(true);
-    expect([SALE_PRICE, SALE_PRICE + 1]).toContain(after.salePrice);
+    expect([salePrice, salePrice + 1]).toContain(after.salePrice);
   });
 });
 

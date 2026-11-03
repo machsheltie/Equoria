@@ -21,7 +21,7 @@ import { horseStatValues } from '../../../../constants/schema.mjs';
 import { shoeHorse, shoeingCost } from '../controllers/farrierController.mjs';
 import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-6g8wm-farrier';
+const fixturePrefix = 'TestFixture-6g8wm-farrier';
 const N = 5;
 const createdUserIds = [];
 const createdHorseIds = [];
@@ -48,8 +48,8 @@ async function makeFixture(money) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Farrier',
       lastName: 'Race',
@@ -60,7 +60,7 @@ async function makeFixture(money) {
   const horse = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag}`,
+      name: `${fixturePrefix}-horse-${tag}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,

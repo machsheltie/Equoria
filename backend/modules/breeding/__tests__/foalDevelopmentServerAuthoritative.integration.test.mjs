@@ -44,9 +44,9 @@ import cronJobService from '../../../services/cronJobs.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-mwjst-foaldev';
+const fixturePrefix = 'TestFixture-mwjst-foaldev';
 const ORIGIN = 'http://localhost:3000';
-const DAY0_ACTIVITY = 'gentleTouch';
+const day0Activity = 'gentleTouch';
 const tag = randomBytes(4).toString('hex');
 
 let owner;
@@ -58,7 +58,7 @@ let seq = 0;
 async function makeFoal({ bornDaysAgo = 0 } = {}) {
   seq += 1;
   const foal = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-${seq}-${tag}`,
+    name: `${fixturePrefix}-${seq}-${tag}`,
     userId: owner.id,
     age: 0,
     sex: 'Filly',
@@ -89,8 +89,8 @@ async function readDevelopment(foalId) {
 
 beforeAll(async () => {
   ({ user: owner, token } = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+    username: `${fixturePrefix}-${tag}`,
+    email: `${fixturePrefix}-${tag}@example.com`,
   }));
   csrf = await fetchCsrf(app);
 }, 120000);
@@ -174,8 +174,8 @@ describe('foal development is server-authoritative (Equoria-mwjst Finding 3)', (
     const before = await readDevelopment(foal.id);
 
     const responses = await Promise.all([
-      send('post', `/api/v1/foals/${foal.id}/activity`, { activityType: DAY0_ACTIVITY }),
-      send('post', `/api/v1/foals/${foal.id}/activity`, { activityType: DAY0_ACTIVITY }),
+      send('post', `/api/v1/foals/${foal.id}/activity`, { activityType: day0Activity }),
+      send('post', `/api/v1/foals/${foal.id}/activity`, { activityType: day0Activity }),
     ]);
 
     expect(responses.map(r => r.status)).toEqual([404, 404]);

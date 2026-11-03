@@ -26,7 +26,7 @@ export const maxHorsesPerRider = 20;
  * Maximum NON-retired riders a user may hold, keyed by stable level (1–5).
  * Adopts the (previously orphaned) frontend SLOT_CAP_BY_STABLE_LEVEL map.
  */
-export const RIDER_ROSTER_CAP_BY_STABLE_LEVEL = Object.freeze({
+export const riderRosterCapByStableLevel = Object.freeze({
   1: 2,
   2: 3,
   3: 4,
@@ -44,5 +44,5 @@ export const RIDER_ROSTER_CAP_BY_STABLE_LEVEL = Object.freeze({
  * @returns {number} Max non-retired riders allowed.
  */
 export function getRiderRosterCap(stableLevel) {
-  return RIDER_ROSTER_CAP_BY_STABLE_LEVEL[stableLevel] ?? RIDER_ROSTER_CAP_BY_STABLE_LEVEL[1];
+  return riderRosterCapByStableLevel[stableLevel] ?? riderRosterCapByStableLevel[1];
 }

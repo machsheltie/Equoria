@@ -21,14 +21,14 @@ import { recordStaffActionTx } from './staffActionLogService.mjs';
 import { olderThan, pageOf } from './staffTicketCursor.mjs';
 import { enqueueTicketEmailsTx, kickTicketEmails } from './ticketEmailOutbox.mjs';
 
-export const LIST_LIMIT = 100;
+export const listLimit = 100;
 /** Replies per thread page (STAFF-CR-09). */
-export const REPLY_PAGE_SIZE = 50;
-const MAX_INT4 = 2147483647;
+export const replyPageSize = 50;
+const maxInt4 = 2147483647;
 
 /** A positive int4 written plainly (no sign, no leading zero), else null. */
 export const parseTicketId = raw =>
-  typeof raw === 'string' && /^[1-9]\d{0,9}$/.test(raw) && Number(raw) <= MAX_INT4
+  typeof raw === 'string' && /^[1-9]\d{0,9}$/.test(raw) && Number(raw) <= maxInt4
     ? Number(raw)
     : null;
 
@@ -74,10 +74,10 @@ function finalizeAll(notes) {
   }
 }
 
-const NO_PLAYER = { error: 'noPlayer' };
-const NOT_A_PLAYER = { error: 'notAPlayer' };
-const NAME_ID_DISAGREE = { error: 'nameIdMismatch' };
-const NO_TARGET = { error: 'noTarget' };
+const noPlayer = { error: 'noPlayer' };
+const notAPlayer = { error: 'notAPlayer' };
+const nameIdDisagree = { error: 'nameIdMismatch' };
+const noTarget = { error: 'noTarget' };
 
 /**
  * The player a ticket names, by ID, by username, or by both. Usernames match
@@ -97,21 +97,21 @@ async function resolvePlayer(tx, staff, { targetId, targetUsername }) {
       : null,
   ]);
   if ((targetId && !byId) || (targetUsername && !byName)) {
-    return NO_PLAYER;
+    return noPlayer;
   }
   if (byId && byName && byId.id !== byName.id) {
-    return NAME_ID_DISAGREE;
+    return nameIdDisagree;
   }
   const id = (byId ?? byName).id;
   const [locked] = await tx.$queryRaw`SELECT id, role FROM "User" WHERE id = ${id} FOR UPDATE`;
   if (!locked) {
-    return NO_PLAYER;
+    return noPlayer;
   }
   try {
     assertActionableTarget({ actorId: staff.id, targetUser: locked });
   } catch (error) {
     if (error instanceof AppError) {
-      return NOT_A_PLAYER;
+      return notAPlayer;
     }
     throw error;
   }
@@ -132,7 +132,7 @@ const lockedTargetRow = {
 /**
  * The horse, show or forum post a ticket names. Its ID is a positive integer
  * written plainly; anything else, and any ID with no row, is the same
- * NO_TARGET, so the answer never says which.
+ * noTarget, so the answer never says which.
  */
 async function resolveTarget(tx, targetType, targetId) {
   const lockRow = lockedTargetRow[targetType];
@@ -141,10 +141,10 @@ async function resolveTarget(tx, targetType, targetId) {
   }
   const id = parseTicketId(targetId);
   if (id === null) {
-    return NO_TARGET;
+    return noTarget;
   }
   const [row] = await lockRow(tx, id);
-  return row ? { id: String(row.id) } : NO_TARGET;
+  return row ? { id: String(row.id) } : noTarget;
 }
 
 /** Attach each user-targeted ticket's current username in one query. */
@@ -237,16 +237,16 @@ export async function listTickets(staff, status, cursor = null) {
   const rows = await prisma.staffTicket.findMany({
     where: { AND: filters },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    take: LIST_LIMIT + 1,
+    take: listLimit + 1,
     include: { filedBy: { select: { id: true, username: true } } },
   });
-  const { page, next } = pageOf(rows, LIST_LIMIT);
+  const { page, next } = pageOf(rows, listLimit);
   return { tickets: await withTargetUsernames(page), nextCursor: next };
 }
 
 /**
  * A ticket with one page of its replies (STAFF-CR-09): the newest
- * REPLY_PAGE_SIZE before `before` (already decoded; null for the latest),
+ * replyPageSize before `before` (already decoded; null for the latest),
  * returned oldest first for reading, with the cursor for the page before it.
  */
 export async function getTicket(staff, id, before = null) {
@@ -260,10 +260,10 @@ export async function getTicket(staff, id, before = null) {
   const rows = await prisma.staffTicketReply.findMany({
     where: before ? { AND: [{ ticketId: id }, olderThan(before)] } : { ticketId: id },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    take: REPLY_PAGE_SIZE + 1,
+    take: replyPageSize + 1,
     include: { author: { select: { id: true, username: true } } },
   });
-  const { page, next } = pageOf(rows, REPLY_PAGE_SIZE);
+  const { page, next } = pageOf(rows, replyPageSize);
   const [withName] = await withTargetUsernames([ticket]);
   return { ticket: { ...withName, replies: page.reverse() }, olderRepliesCursor: next };
 }

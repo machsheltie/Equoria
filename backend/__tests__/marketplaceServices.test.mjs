@@ -32,13 +32,13 @@ import {
   getRefreshCost,
 } from '../modules/grooms/services/groomMarketplace.mjs';
 import {
-  RIDER_MARKETPLACE_CONFIG,
+  riderMarketplaceConfig,
   generateRiderMarketplace,
   riderMarketplaceNeedsRefresh,
   getRiderRefreshCost,
 } from '../modules/riders/services/riderMarketplace.mjs';
 import {
-  TRAINER_MARKETPLACE_CONFIG,
+  trainerMarketplaceConfig,
   generateRandomTrainer,
   generateTrainerMarketplace,
   trainerMarketplaceNeedsRefresh,
@@ -131,7 +131,7 @@ describe('groomMarketplace — marketplaceConfig export', () => {
 describe('riderMarketplace — generateRiderMarketplace', () => {
   it('returns array of DEFAULT_MARKETPLACE_SIZE riders', () => {
     const marketplace = generateRiderMarketplace();
-    expect(marketplace).toHaveLength(RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE);
+    expect(marketplace).toHaveLength(riderMarketplaceConfig.defaultMarketplaceSize);
   });
 
   // Owner rulings 2026-10-29 (q282/q283): the rider skill word and the visible
@@ -178,17 +178,17 @@ describe('riderMarketplace — getRiderRefreshCost', () => {
 
   it('returns PREMIUM_REFRESH_COST when no free refresh', () => {
     const recent = new Date(Date.now() - 30 * 1000);
-    expect(getRiderRefreshCost(recent)).toBe(RIDER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST);
+    expect(getRiderRefreshCost(recent)).toBe(riderMarketplaceConfig.premiumRefreshCost);
   });
 });
 
-describe('riderMarketplace — RIDER_MARKETPLACE_CONFIG export', () => {
+describe('riderMarketplace — riderMarketplaceConfig export', () => {
   it('has expected constants', () => {
-    expect(RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBe(6);
-    expect(RIDER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBe(50);
+    expect(riderMarketplaceConfig.defaultMarketplaceSize).toBe(6);
+    expect(riderMarketplaceConfig.premiumRefreshCost).toBe(50);
     // Equoria-nawn5: weekly rates are now the star level's price (constants/staffLevels.mjs).
     // Owner ruling 2026-10-29 (q282): no skill-word odds. Old contract: SKILL_DISTRIBUTION.rookie 45.
-    expect(RIDER_MARKETPLACE_CONFIG).not.toHaveProperty('SKILL_DISTRIBUTION');
+    expect(riderMarketplaceConfig).not.toHaveProperty('skillDistribution');
   });
 });
 
@@ -211,7 +211,7 @@ describe('trainerMarketplace — generateRandomTrainer', () => {
 describe('trainerMarketplace — generateTrainerMarketplace', () => {
   it('returns array of DEFAULT_MARKETPLACE_SIZE trainers', () => {
     const marketplace = generateTrainerMarketplace();
-    expect(marketplace).toHaveLength(TRAINER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE);
+    expect(marketplace).toHaveLength(trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE);
   });
 
   it('index 0 is always the starter trainer (novice/patient/Dressage)', () => {
@@ -251,15 +251,15 @@ describe('trainerMarketplace — getTrainerRefreshCost', () => {
 
   it('returns PREMIUM_REFRESH_COST when no free refresh', () => {
     const recent = new Date(Date.now() - 30 * 1000);
-    expect(getTrainerRefreshCost(recent)).toBe(TRAINER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST);
+    expect(getTrainerRefreshCost(recent)).toBe(trainerMarketplaceConfig.PREMIUM_REFRESH_COST);
   });
 });
 
-describe('trainerMarketplace — TRAINER_MARKETPLACE_CONFIG export', () => {
+describe('trainerMarketplace — trainerMarketplaceConfig export', () => {
   it('has expected constants', () => {
-    expect(TRAINER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBe(6);
-    expect(TRAINER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBe(50);
+    expect(trainerMarketplaceConfig.DEFAULT_MARKETPLACE_SIZE).toBe(6);
+    expect(trainerMarketplaceConfig.PREMIUM_REFRESH_COST).toBe(50);
     // Equoria-nawn5: session rates are now the star level's price (constants/staffLevels.mjs).
-    expect(TRAINER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION.novice).toBe(45);
+    expect(trainerMarketplaceConfig.SKILL_DISTRIBUTION.novice).toBe(45);
   });
 });

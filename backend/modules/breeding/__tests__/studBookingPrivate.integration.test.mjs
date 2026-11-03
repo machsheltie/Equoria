@@ -37,7 +37,7 @@ const PREFIX = 'TestFixture-q4uem9-privstud';
 const FEE = 700;
 // Every 404 these endpoints send carries the AppError body shape (status: 'fail'),
 // identical across causes so ids cannot be probed.
-const UNAVAILABLE_404 = { success: false, message: 'Stallion not available at stud', status: 'fail' };
+const unavailable404 = { success: false, message: 'Stallion not available at stud', status: 'fail' };
 
 describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem.9)', () => {
   const cleanup = createCleanupTracker();
@@ -158,7 +158,7 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
       expect(own.status).toBe(400);
       expect(own.body.code).toBe('ownStallion');
       expect(pub.status).toBe(404);
-      expect(pub.body).toEqual(UNAVAILABLE_404);
+      expect(pub.body).toEqual(unavailable404);
       expect(stale.status).toBe(409);
       expect(stale.body).toMatchObject({ code: 'studFeeChanged', data: { studFee: FEE } });
       expect(cooling.status).toBe(400);
@@ -175,7 +175,7 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
           send,
         );
         expect(res.status).toBe(404);
-        expect(res.body).toEqual(UNAVAILABLE_404);
+        expect(res.body).toEqual(unavailable404);
         expect(await prisma.breedingRecord.count({ where: { damId: mare.id } })).toBe(0);
       });
 

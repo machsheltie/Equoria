@@ -17,7 +17,7 @@ import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 // merged from legacy backend/tests, Equoria-wvuin — pure catalog + bonus + controller-direct
-import { TACK_INVENTORY, purchaseTackItem, unequipDecoration } from '../controllers/tackShopController.mjs';
+import { tackInventory, purchaseTackItem, unequipDecoration } from '../controllers/tackShopController.mjs';
 import { createCleanupTracker } from '../../../../__tests__/helpers/failLoudCleanup.mjs';
 import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
@@ -217,11 +217,11 @@ describe('POST /api/tack-shop/unequip-decoration', () => {
 });
 
 // ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
-// Pure TACK_INVENTORY decorative-item invariants and controller-direct decorative purchase/unequip
+// Pure tackInventory decorative-item invariants and controller-direct decorative purchase/unequip
 // behaviors (decorations-array append/dedup, ledger-sync, unequip) — none
 // covered by the HTTP shells above.
-describe('TACK_INVENTORY — decorative items (merged from legacy backend/tests, Equoria-wvuin)', () => {
-  const decorativeItems = TACK_INVENTORY.filter(i => i.category === 'decorative');
+describe('tackInventory — decorative items (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  const decorativeItems = tackInventory.filter(i => i.category === 'decorative');
 
   it('includes at least 5 decorative items with the required core IDs', () => {
     expect(decorativeItems.length).toBeGreaterThanOrEqual(5);

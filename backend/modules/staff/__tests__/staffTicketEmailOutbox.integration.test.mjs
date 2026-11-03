@@ -28,18 +28,18 @@ import {
 import { _resetTransporter } from '../../../utils/emailService.mjs';
 import cronJobService from '../../../services/cronJobs.mjs';
 import {
-  FAILED_RETENTION_MS,
-  LEASE_MS as leaseMs,
-  MAX_ATTEMPTS as maxAttempts,
+  failedRetentionMs,
+  leaseMs,
+  maxAttempts,
   runBudgetMs,
-  SENT_RETENTION_MS,
+  sentRetentionMs,
   claimDueEmails,
   enqueueTicketEmailsTx,
   purgeSettledEmails,
   runEmailOutbox,
 } from '../services/ticketEmailOutbox.mjs';
 import {
-  STAFF_API,
+  staffApi,
   capturedTicketEmailsFor,
   checkIn,
   createTargetFactory,
@@ -52,7 +52,7 @@ import {
   uid,
 } from './helpers/staffFixtures.mjs';
 
-const TICKETS = `${STAFF_API}/tickets`;
+const TICKETS = `${staffApi}/tickets`;
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('stoutbox');
@@ -67,7 +67,7 @@ const goodTicket = () => ({
   note: `private note ${uid()}`,
 });
 
-const MAIL_KEYS = [
+const mailKeys = [
   'NODE_ENV',
   'GMAIL_CLIENT_ID',
   'GMAIL_CLIENT_SECRET',
@@ -82,8 +82,8 @@ const MAIL_KEYS = [
 
 /** Run fn with the real email service in production mode on the given transport. */
 async function withMail(values, fn) {
-  const saved = Object.fromEntries(MAIL_KEYS.map(key => [key, process.env[key]]));
-  for (const key of MAIL_KEYS) {
+  const saved = Object.fromEntries(mailKeys.map(key => [key, process.env[key]]));
+  for (const key of mailKeys) {
     delete process.env[key];
   }
   Object.assign(process.env, { NODE_ENV: 'production', ...values });
@@ -91,7 +91,7 @@ async function withMail(values, fn) {
   try {
     return await fn();
   } finally {
-    for (const key of MAIL_KEYS) {
+    for (const key of mailKeys) {
       if (saved[key] === undefined) {
         delete process.env[key];
       } else {
@@ -538,8 +538,8 @@ describe('Ticket email outbox (STAFF-CR-10)', () => {
   it('deletes sent and cancelled emails 30 days after they settle and failed ones after 90, and nothing sooner', async () => {
     const { admin } = await staffPair();
     const now = new Date();
-    const sentCutoff = now.getTime() - SENT_RETENTION_MS;
-    const failedCutoff = now.getTime() - FAILED_RETENTION_MS;
+    const sentCutoff = now.getTime() - sentRetentionMs;
+    const failedCutoff = now.getTime() - failedRetentionMs;
     const tag = uid();
     const make = (name, status, updatedAt) =>
       prisma.emailOutbox.create({
@@ -601,7 +601,7 @@ describe('Ticket email outbox (STAFF-CR-10)', () => {
         templateKey: 'staffTicket',
         payload: { ticketId: 1, category: 'retention', filedBy: 'nobody' },
         status: 'sent',
-        updatedAt: new Date(Date.now() - SENT_RETENTION_MS - 60 * 60 * 1000),
+        updatedAt: new Date(Date.now() - sentRetentionMs - 60 * 60 * 1000),
       },
     });
 

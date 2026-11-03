@@ -11,7 +11,7 @@
  *     decrement -> negative balance / double-spend.
  *   - Charge-without-refresh: the debit autocommits; if the SEPARATE upsert
  *     then fails, the user is charged for nothing.
- *   - Off-ledger: no ledger row, no SYSTEM_ACCOUNT_BURN pairing -> breaks
+ *   - Off-ledger: no ledger row, no systemAccountBurn pairing -> breaks
  *     conservation (total = sum(User.money) + sum(SystemAccount.balance)).
  *
  * The fix mirrors the hardened siblings refreshTrainerMarketplace /
@@ -52,7 +52,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { refreshMarketplace } from '../controllers/groomMarketplaceController.mjs';
 import { marketplaceConfig } from '../services/groomMarketplace.mjs';
-import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
+import { systemAccountBurn } from '../../economy/index.mjs';
 
 const fixturePrefix = 'TestFixture-t7ywe-groom';
 const staffType = 'groom';
@@ -120,7 +120,7 @@ async function userMoney(userId) {
 
 async function burnBalance() {
   const row = await prisma.systemAccount.findUnique({
-    where: { name: SYSTEM_ACCOUNT_BURN },
+    where: { name: systemAccountBurn },
     select: { balance: true },
   });
   return Number(row?.balance ?? 0);
@@ -188,7 +188,7 @@ describe('groomMarketplaceController.refreshMarketplace money-debit hardening (E
     expect(burnCreditRows).toHaveLength(1);
     expect(burnCreditRows[0].type).toBe('credit');
     expect(burnCreditRows[0].amount).toBe(refreshCost);
-    expect(burnCreditRows[0].metadata?.systemAccount).toBe(SYSTEM_ACCOUNT_BURN);
+    expect(burnCreditRows[0].metadata?.systemAccount).toBe(systemAccountBurn);
     expect(burnCreditRows[0].metadata?.systemAccountSide).toBe('credit');
   });
 
@@ -228,7 +228,7 @@ describe('groomMarketplaceController.refreshMarketplace money-debit hardening (E
     expect(burnCreditRows).toHaveLength(1);
     expect(burnCreditRows[0].type).toBe('credit');
     expect(burnCreditRows[0].amount).toBe(refreshCost);
-    expect(burnCreditRows[0].metadata?.systemAccount).toBe(SYSTEM_ACCOUNT_BURN);
+    expect(burnCreditRows[0].metadata?.systemAccount).toBe(systemAccountBurn);
   });
 
   it('ATOMICITY: upsert failure AFTER the debit rolls back the charge (no charge-without-refresh)', async () => {

@@ -28,7 +28,7 @@
  */
 
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
-import { FEED_CATALOG } from '../../economy/index.mjs';
+import { feedCatalog } from '../../economy/index.mjs';
 import { hungerFeedingPlan } from '../../../utils/horseHealth.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { retirementAgeYears } from '../../../constants/horseAgePolicy.mjs';
@@ -51,7 +51,7 @@ const STATS = [
   'focus',
 ];
 
-const tierById = Object.fromEntries(FEED_CATALOG.map(t => [t.id, t]));
+const tierById = Object.fromEntries(feedCatalog.map(t => [t.id, t]));
 
 // Equoria-zvp4 / Equoria-lnblu: the optimistic-claim UPDATE interpolates the
 // stat-boost column name as a raw identifier (`Prisma.raw`) — a parameterized
@@ -97,7 +97,7 @@ function getInventory(settings) {
  * selection — so deterministic tests can drive both outcomes by seeding
  * the rng with a sequence of known values.
  *
- * @param {string} feedTier - Tier id (one of FEED_CATALOG ids)
+ * @param {string} feedTier - Tier id (one of feedCatalog ids)
  * @param {() => number} [rng=Math.random] - 0..1 random function
  * @returns {{ stat: string, amount: number } | null}
  */
@@ -315,7 +315,7 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       if (horse.inFoalSinceDate) {
         // pregnancyFeedingsByTier[tier.id] += 1, atomically, on the column's
         // committed value at statement time (NOT a stale read-modify-write).
-        // tier.id is a FEED_CATALOG id (basic/performance/…); bound as a param.
+        // tier.id is a feedCatalog id (basic/performance/…); bound as a param.
         setFragments.push(
           Prisma.sql`"pregnancyFeedingsByTier" = jsonb_set(COALESCE("pregnancyFeedingsByTier", '{}'::jsonb), ARRAY[${tier.id}], to_jsonb(COALESCE(("pregnancyFeedingsByTier" ->> ${tier.id})::int, 0) + 1), true)`,
         );

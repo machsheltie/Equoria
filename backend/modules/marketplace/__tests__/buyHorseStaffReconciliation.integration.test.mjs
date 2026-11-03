@@ -37,9 +37,9 @@ import { __TESTING_ONLY_setMarketplaceRaceBarrier } from '../services/marketplac
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-6p398-6-staff';
-const LIST_PRICE = 400;
-const BARRIER_TIMEOUT_MS = 20000;
+const fixturePrefix = 'TestFixture-6p398-6-staff';
+const listPrice = 400;
+const barrierTimeoutMs = 20000;
 
 function tag() {
   return randomBytes(6).toString('hex');
@@ -50,8 +50,8 @@ async function makeUser(role, money) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${role}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${role}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${role}-${suffix}`,
+      email: `${fixturePrefix}-${role}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'StaffTransfer',
       lastName: role,
@@ -68,7 +68,7 @@ async function makeHorse(ownerId, { forSale = false, salePrice = 0 } = {}) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag()}`,
+      name: `${fixturePrefix}-horse-${tag()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
@@ -228,7 +228,7 @@ async function waitFor(promise, label) {
     await Promise.race([
       promise,
       new Promise((_resolve, reject) => {
-        timer = setTimeout(() => reject(new Error(`Timed out waiting for ${label}`)), BARRIER_TIMEOUT_MS);
+        timer = setTimeout(() => reject(new Error(`Timed out waiting for ${label}`)), barrierTimeoutMs);
       }),
     ]);
   } finally {
@@ -287,7 +287,7 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
 
     seller = await makeUser('seller', 0);
     buyer = await makeUser('buyer', 10000);
-    listedHorse = await makeHorse(seller.id, { forSale: true, salePrice: LIST_PRICE });
+    listedHorse = await makeHorse(seller.id, { forSale: true, salePrice: listPrice });
     keptHorse = await makeHorse(seller.id);
     rider = await makeRider(seller.id);
     trainer = await makeTrainer(seller.id);
