@@ -23,7 +23,8 @@ import cronJobService from '../../../services/cronJobs.mjs';
 import { getActiveConnectionMetrics } from '../../../services/eventBus.mjs';
 import { getMultiInstanceStatus } from '../../../utils/sseMultiInstanceGuard.mjs';
 import { runFoalingJob } from '../../horses/index.mjs';
-import { updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
+import { finishHorseAge, planHorseAge, writeHorseAgeTx } from '../../../utils/horseAgingSystem.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { pruneNotificationsForAllUsers } from '../../../utils/notificationService.mjs';
 import { getTraitRevelationAnalytics } from '../../traits/index.mjs';
 import { can } from '../../staff/index.mjs';
@@ -258,6 +259,10 @@ export async function manualHorseAging(req, res) {
  * Set a horse's game age by deriving a correct dateOfBirth and re-running aging.
  *
  * Body: { gameAge: number }  — desired age in game years (1 game year = 7 real days)
+ *
+ * Equoria-0ro0p: the birth date and the age it implies are written in one
+ * transaction, and a number that names no horse answers 404 with the
+ * Steward's Office copy.
  */
 export async function setHorseAge(req, res) {
   try {
@@ -280,11 +285,30 @@ export async function setHorseAge(req, res) {
     // 1 game year = 7 real days — derive the correct dateOfBirth
     const dateOfBirth = birthDateForAge(gameAge);
 
-    // Update dateOfBirth so the aging cron stays consistent going forward
-    await prisma.horse.update({ where: { id: horseId }, data: { dateOfBirth } });
-
-    // Re-run aging for this horse to immediately sync horse.age
-    const result = await updateHorseAge(horseId);
+    // The new dateOfBirth keeps the aging cron consistent going forward; the
+    // age it implies is written in the same transaction. The update locks the
+    // row, so the stored age the plan starts from cannot move underneath it.
+    let written;
+    try {
+      written = await withRetryableTxMapping(
+        prisma.$transaction(async tx => {
+          const horse = await tx.horse.update({
+            where: { id: horseId },
+            data: { dateOfBirth },
+            select: { id: true, name: true, dateOfBirth: true, age: true },
+          });
+          const plan = planHorseAge(horse);
+          await writeHorseAgeTx(tx, horseId, plan);
+          return { horse, plan };
+        }),
+      );
+    } catch (error) {
+      if (error?.code === 'P2025') {
+        return res.status(404).json({ success: false, message: 'No horse has that number.' });
+      }
+      throw error;
+    }
+    const result = await finishHorseAge(written.horse, written.plan);
 
     res.json({
       success: true,
@@ -293,6 +317,9 @@ export async function setHorseAge(req, res) {
     });
   } catch (error) {
     logger.error(`[adminController] POST /api/v1/admin/horses/:id/set-age error: ${error.message}`);
+    if (error.status === 503) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
     res.status(500).json({
       success: false,
       message: 'Failed to set horse age',

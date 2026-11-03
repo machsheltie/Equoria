@@ -21,6 +21,7 @@ const maxAge = 30;
 const setAgeMessages = {
   400: `Enter a horse number and an age from ${minAge} to ${maxAge}.`,
   403: 'Only the Owner can change a horse’s age.',
+  404: 'No horse has that number.',
 };
 
 const ageEveryMessages = {

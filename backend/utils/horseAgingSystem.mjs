@@ -115,6 +115,90 @@ function birthdayHasMilestone(storedAge, ageInDays) {
 }
 
 /**
+ * Plan a horse's age sync from its dateOfBirth: the game-year age to store and
+ * whether that is a birthday and a 21st (retiring) birthday. Pure.
+ * @param {{dateOfBirth: Date, age: number|null}} horse
+ * @returns {{ageInDays: number, storedAge: number, calculatedAge: number, ageUpdated: boolean, hadBirthday: boolean, retiring: boolean}}
+ */
+export function planHorseAge(horse) {
+  // Compute both day-granular age (for milestone day-threshold checks) and
+  // game-year age (the value persisted to Horse.age). Equoria-son6: previously
+  // the days value was written directly to Horse.age, producing 1111-year
+  // displays since the rest of the codebase reads Horse.age as game-years.
+  const ageInDays = calculateAgeFromBirth(horse.dateOfBirth);
+  const calculatedAge = Math.floor(ageInDays / daysPerGameYear); // game-years
+  const storedAge = horse.age || 0;
+  const ageUpdated = calculatedAge !== storedAge;
+  const hadBirthday = calculatedAge > storedAge;
+  const retiring =
+    hadBirthday &&
+    crossesThreshold(previousAgeInDays(storedAge), ageInDays, retirementMilestoneDays);
+  return { ageInDays, storedAge, calculatedAge, ageUpdated, hadBirthday, retiring };
+}
+
+/**
+ * Write a planned age inside the caller's transaction (game-years, not days —
+ * Equoria-son6 fix). A 21st birthday also releases the horse's staff in the
+ * same transaction unless it is in foal (Equoria-6p398.14, owner rulings
+ * 2026-10-23). No write when the stored age is already current.
+ * @param {object} tx - interactive transaction client
+ * @param {number} horseId
+ * @param {ReturnType<typeof planHorseAge>} plan
+ */
+export async function writeHorseAgeTx(tx, horseId, plan) {
+  if (!plan.ageUpdated) {
+    return null;
+  }
+  return writeBirthdayTx(tx, { horseId, age: plan.calculatedAge, retiring: plan.retiring });
+}
+
+/**
+ * After a planned age has been written: log it, run the birthday milestones
+ * and shape the result updateHorseAge returns.
+ * @param {{id: number, name: string}} horse
+ * @param {ReturnType<typeof planHorseAge>} plan
+ */
+export async function finishHorseAge(horse, plan) {
+  const { ageInDays, storedAge, calculatedAge, ageUpdated, hadBirthday } = plan;
+  if (!ageUpdated) {
+    logger.info(
+      `[horseAgingSystem.updateHorseAge] Horse ${horse.name} age is current: ${calculatedAge} game-years (${ageInDays} days)`,
+    );
+    return {
+      horseId: horse.id,
+      horseName: horse.name,
+      ageUpdated: false,
+      newAge: calculatedAge,
+      hadBirthday: false,
+      milestonesTriggered: [],
+    };
+  }
+
+  logger.info(
+    `[horseAgingSystem.updateHorseAge] Updated horse ${horse.name} age: ${storedAge} → ${calculatedAge} game-years (${ageInDays} days)${hadBirthday ? ' (BIRTHDAY!)' : ''}`,
+  );
+
+  // Check for milestones if this was a birthday. We pass the previous and
+  // current day-equivalents so milestone day-threshold logic (7, 14, 21,
+  // 147 days) keeps working at fine granularity. The previous day-equivalent
+  // is `storedAge * daysPerGameYear` (lower bound of the previous game-year
+  // bucket); the current day-equivalent is `ageInDays`.
+  let milestoneResult = { milestonesTriggered: [] };
+  if (hadBirthday) {
+    milestoneResult = await checkForMilestones(horse.id, previousAgeInDays(storedAge), ageInDays);
+  }
+
+  return {
+    horseId: horse.id,
+    horseName: horse.name,
+    ageUpdated: true,
+    newAge: calculatedAge,
+    hadBirthday,
+    milestonesTriggered: milestoneResult.milestonesTriggered,
+  };
+}
+
+/**
  * Update a single horse's age based on dateOfBirth
  * @param {number} horseId - Horse ID to update
  * @param {Object|null} knownHorse - The horse's {id, name, dateOfBirth, age} when the
@@ -136,60 +220,11 @@ export async function updateHorseAge(horseId, knownHorse = null) {
     throw new Error(`Horse with ID ${horseId} not found`);
   }
 
-  // Compute both day-granular age (for milestone day-threshold checks) and
-  // game-year age (the value persisted to Horse.age). Equoria-son6: previously
-  // the days value was written directly to Horse.age, producing 1111-year
-  // displays since the rest of the codebase reads Horse.age as game-years.
-  const ageInDays = calculateAgeFromBirth(horse.dateOfBirth);
-  const calculatedAge = Math.floor(ageInDays / daysPerGameYear); // game-years
-  const storedAge = horse.age || 0;
-
-  // Check if age needs updating
-  if (calculatedAge === storedAge) {
-    logger.info(
-      `[horseAgingSystem.updateHorseAge] Horse ${horse.name} age is current: ${calculatedAge} game-years (${ageInDays} days)`,
-    );
-    return {
-      horseId,
-      horseName: horse.name,
-      ageUpdated: false,
-      newAge: calculatedAge,
-      hadBirthday: false,
-      milestonesTriggered: [],
-    };
+  const plan = planHorseAge(horse);
+  if (plan.ageUpdated) {
+    await prisma.$transaction(tx => writeHorseAgeTx(tx, horseId, plan));
   }
-
-  // Update age in database (game-years, not days — Equoria-son6 fix). A 21st
-  // birthday also releases the horse's staff in the same transaction unless it
-  // is in foal (Equoria-6p398.14, owner rulings 2026-10-23).
-  const hadBirthday = calculatedAge > storedAge;
-  const retiring =
-    hadBirthday &&
-    crossesThreshold(previousAgeInDays(storedAge), ageInDays, retirementMilestoneDays);
-  await prisma.$transaction(tx => writeBirthdayTx(tx, { horseId, age: calculatedAge, retiring }));
-
-  logger.info(
-    `[horseAgingSystem.updateHorseAge] Updated horse ${horse.name} age: ${storedAge} → ${calculatedAge} game-years (${ageInDays} days)${hadBirthday ? ' (BIRTHDAY!)' : ''}`,
-  );
-
-  // Check for milestones if this was a birthday. We pass the previous and
-  // current day-equivalents so milestone day-threshold logic (7, 14, 21,
-  // 147 days) keeps working at fine granularity. The previous day-equivalent
-  // is `storedAge * daysPerGameYear` (lower bound of the previous game-year
-  // bucket); the current day-equivalent is `ageInDays`.
-  let milestoneResult = { milestonesTriggered: [] };
-  if (hadBirthday) {
-    milestoneResult = await checkForMilestones(horseId, previousAgeInDays(storedAge), ageInDays);
-  }
-
-  return {
-    horseId,
-    horseName: horse.name,
-    ageUpdated: true,
-    newAge: calculatedAge,
-    hadBirthday,
-    milestonesTriggered: milestoneResult.milestonesTriggered,
-  };
+  return finishHorseAge({ id: horseId, name: horse.name }, plan);
 }
 
 /**

@@ -99,6 +99,22 @@ describe('StaffHorseAges', () => {
     expect(await screen.findByText('Only the Owner can age every horse.')).toBeInTheDocument();
   });
 
+  it('says no horse has that number when the server finds none (Equoria-0ro0p)', async () => {
+    server.use(
+      http.post(`${ADMIN}/horses/9999/set-age`, () =>
+        HttpResponse.json({ success: false, message: 'No horse has that number.' }, { status: 404 })
+      )
+    );
+    const user = userEvent.setup();
+    renderWithClient(<StaffHorseAges onCheckinRequired={() => undefined} />);
+
+    await user.type(screen.getByLabelText('Horse number'), '9999');
+    await user.type(screen.getByLabelText('Age in years (0 to 30)'), '6');
+    await user.click(screen.getByRole('button', { name: 'Set age' }));
+
+    expect(await screen.findByText('No horse has that number.')).toBeInTheDocument();
+  });
+
   it('returns to check-in when the trust ran out', async () => {
     server.use(
       http.post(`${ADMIN}/horses/age`, () =>

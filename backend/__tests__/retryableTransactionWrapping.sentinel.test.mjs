@@ -196,6 +196,9 @@ const MIGRATED = [
   // transaction each (lock, paid-this-week read, debit, paid row).
   ['modules/grooms/services/groomPlayerPayService.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/riders/services/riderPlayerPayService.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-0ro0p: the Owner's set-age tool writes the birth date and the age
+  // it implies in one wrapped transaction.
+  ['modules/admin/controllers/adminController.mjs', { wrapped: 1, totalTx: 1 }],
 ];
 
 // marketplaceController is asserted separately: it has 2 wrapped sites
