@@ -557,9 +557,9 @@ async function sampledContrast(page: Page, label: string) {
 test.describe('a11y — Story 30.5 key pages (real login, real DB)', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  // Known failing (measured 2026-11-03): competitions — selected filter chips
-  // are #dcebff on #3a6fdd, 3.86:1 at 12px (WCAG 1.4.3 needs 4.5:1). Tracked as
-  // Equoria-oey96.74; the fix is a palette decision for the owner.
+  // competitions: the selected filter chips measured #dcebff on #3a6fdd, 3.86:1
+  // at 12px (WCAG 1.4.3 needs 4.5:1). Fixed by --celestial-primary-fill #3163cc,
+  // 4.59:1 (Equoria-oey96.74, owner ruling q344).
   for (const keyPage of keyPages.filter((p) =>
     ['competitions', 'breeding-stud-sale', 'competition-results', 'messages'].includes(p.name)
   )) {

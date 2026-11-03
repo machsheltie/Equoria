@@ -248,6 +248,10 @@
   --celestial-primary: var(--electric-blue-500);
   --celestial-primary-hover: var(--electric-blue-400);
   --celestial-primary-pressed: var(--electric-blue-700);
+  /* Selected-chip fill under --text-primary: 4.59:1 (the base #3a6fdd is 3.86:1,
+     below AA for small text). Same hue, one nudge darker; still 3.27:1 against
+     --bg-night-sky so the selected state reads (Equoria-oey96.74, q344). */
+  --celestial-primary-fill: #3163cc;
   /* Celestial secondary — the emerald counterpart in progress-fill gradients
      (FenceJumpBar). Minted 2026-08-17 (user ruling): the token was consumed
      but never defined, so its #10b981 fallback was what actually rendered —
