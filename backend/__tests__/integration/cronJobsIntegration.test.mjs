@@ -198,7 +198,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
         expect(trait).toHaveProperty('label');
         expect(trait).toHaveProperty('category', 'epigenetic');
         expect(trait).toHaveProperty('rarity');
-        expect(Array.isArray(trait.conflicts)).toBe(true);
+        expect(trait).not.toHaveProperty('conflicts');
       }
       expect(response.body.data.map(trait => trait.name)).not.toContain('legendaryBloodline');
     });

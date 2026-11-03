@@ -11,7 +11,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { generateStoreHorseTraitRoster } from '../services/storeHorseTraitRoster.mjs';
 import { storeHorseTraitSettings } from '../config/storeHorseTraitSettings.mjs';
-import { checkTraitConflict, getTraitDefinition, traitRosterIds } from '../../../utils/epigeneticTraits.mjs';
+import { getTraitDefinition, traitRosterIds } from '../../../utils/epigeneticTraits.mjs';
 
 // Deterministic mulberry32 in [0, 1): well mixed even for consecutive seeds.
 function seeded(seed) {
@@ -50,7 +50,7 @@ describe('generateStoreHorseTraitRoster', () => {
     expect(roster.hidden.length).toBeGreaterThan(0);
   });
 
-  it('draws only distinct roster traits, never a conflicting pair, 1 to 5 of them', () => {
+  it('draws only distinct roster traits, 1 to 5 of them', () => {
     const counts = new Set();
     for (let seed = 1; seed <= 500; seed++) {
       const { hidden } = generateStoreHorseTraitRoster(seeded(seed));
@@ -60,11 +60,6 @@ describe('generateStoreHorseTraitRoster', () => {
       expect(new Set(hidden).size).toBe(hidden.length);
       for (const trait of hidden) {
         expect(traitRosterIds).toContain(trait);
-      }
-      for (const a of hidden) {
-        for (const b of hidden) {
-          expect(checkTraitConflict(a, b)).toBe(false);
-        }
       }
     }
     expect([...counts].sort()).toEqual([1, 2, 3, 4, 5]);
@@ -76,6 +71,23 @@ describe('generateStoreHorseTraitRoster', () => {
       generateStoreHorseTraitRoster(seeded(seed)).hidden.forEach(t => seen.add(t));
     }
     expect([...seen].sort()).toEqual([...traitRosterIds].sort());
+  });
+
+  // Owner ruling 2026-11-03 (q334): "No restriction." Old contract: a drawn
+  // trait was skipped when it conflicted with one already carried
+  // (confident/fearful, resilient/fragile). New: a horse may carry both.
+  it('may carry two "opposite" traits at once (q334)', () => {
+    const pairs = new Set();
+    for (let seed = 1; seed <= 500; seed++) {
+      const { hidden } = generateStoreHorseTraitRoster(seeded(seed));
+      if (hidden.includes('confident') && hidden.includes('fearful')) {
+        pairs.add('confident+fearful');
+      }
+      if (hidden.includes('resilient') && hidden.includes('fragile')) {
+        pairs.add('resilient+fragile');
+      }
+    }
+    expect([...pairs].sort()).toEqual(['confident+fearful', 'resilient+fragile']);
   });
 
   // A constant roll c carries exactly the tiers whose chance is above c.

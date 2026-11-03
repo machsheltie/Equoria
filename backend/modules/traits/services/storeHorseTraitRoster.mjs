@@ -13,17 +13,17 @@
  *     rarity tier (config/storeHorseTraitSettings.mjs), at most 5 traits, and
  *     every store horse carries at least 1: if no trait came up, roll again
  *     until one does.
+ *   - 2026-11-03 (q334): "No restriction." A horse may carry two "opposite"
+ *     traits at once, so no trait turns another away.
  *
  * Each roll visits the roster in a freshly shuffled order, so when the cap of
- * 5 or a conflict (confident/fearful, resilient/fragile) turns a trait away,
- * no trait is favoured by its place in the roster. A trait that conflicts with
- * one already carried is skipped, so a carried set is never self-contradictory.
+ * 5 turns a trait away, no trait is favoured by its place in the roster.
  *
  * Pure: the caller passes the random source (`rng`, returns [0, 1)) so tests
  * can seed it. Nothing here touches the database.
  */
 
-import { checkTraitConflict, traitRosterIds } from '../../../utils/epigeneticTraits.mjs';
+import { traitRosterIds } from '../../../utils/epigeneticTraits.mjs';
 import { storeHorseTraitSettings } from '../config/storeHorseTraitSettings.mjs';
 
 /**
@@ -53,9 +53,7 @@ function rollOnce(rng) {
     if (rng() >= tierChance[traitRarity[trait]]) {
       continue;
     }
-    if (!carried.some(held => checkTraitConflict(held, trait))) {
-      carried.push(trait);
-    }
+    carried.push(trait);
   }
   return carried;
 }

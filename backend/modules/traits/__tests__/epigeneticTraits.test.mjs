@@ -19,14 +19,13 @@ import {
   getTraitsByCategory,
   getTraitsAtOrAboveRarity,
   getTraitMetadata,
-  checkTraitConflict,
 } from '../../../utils/epigeneticTraits.mjs';
 
 // Known valid traits from TRAIT_DEFINITIONS
-const RESILIENT = 'resilient'; // positive, rare, epigenetic — conflicts: fragile
-const CONFIDENT = 'confident'; // positive, common, epigenetic — conflicts: fearful
-const FEARFUL = 'fearful'; // negative, common, epigenetic — conflicts: confident
-const FRAGILE = 'fragile'; // negative, uncommon, epigenetic — conflicts: resilient
+const RESILIENT = 'resilient'; // positive, rare, epigenetic
+const CONFIDENT = 'confident'; // positive, common, epigenetic
+const FEARFUL = 'fearful'; // negative, common, epigenetic
+const FRAGILE = 'fragile'; // negative, uncommon, epigenetic
 
 // ---------------------------------------------------------------------------
 // getTraitDefinition
@@ -50,10 +49,10 @@ describe('getTraitDefinition', () => {
     expect(getTraitDefinition('totallyUnknownTrait')).toBeNull();
   });
 
-  it('includes conflicts array', () => {
-    const def = getTraitDefinition(RESILIENT);
-    expect(Array.isArray(def.conflicts)).toBe(true);
-    expect(def.conflicts).toContain('fragile');
+  // Owner ruling 2026-11-03 (q334): "No restriction." Old contract: Resilient
+  // declared a conflict with Fragile. New: no trait declares a conflict.
+  it('declares no conflicts (q334)', () => {
+    expect(getTraitDefinition(RESILIENT)).not.toHaveProperty('conflicts');
   });
 
   it('includes description string', () => {
@@ -148,44 +147,11 @@ describe('getTraitMetadata', () => {
     expect(meta.category).toBe('epigenetic');
     expect(typeof meta.description).toBe('string');
     expect(meta.rarity).toBe('rare');
-    expect(Array.isArray(meta.conflicts)).toBe(true);
+    expect(meta).not.toHaveProperty('conflicts');
   });
 
   it('returns null for unknown trait', () => {
     expect(getTraitMetadata('noSuchTrait')).toBeNull();
-  });
-
-  it('conflicts array is a copy (not reference to internal)', () => {
-    const meta = getTraitMetadata(RESILIENT);
-    const originalLength = meta.conflicts.length;
-    meta.conflicts.push('mutated');
-    const meta2 = getTraitMetadata(RESILIENT);
-    expect(meta2.conflicts).toHaveLength(originalLength);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// checkTraitConflict
-// ---------------------------------------------------------------------------
-describe('checkTraitConflict', () => {
-  it('returns true for conflicting traits (resilient vs fragile)', () => {
-    expect(checkTraitConflict(RESILIENT, FRAGILE)).toBe(true);
-  });
-
-  it('returns true regardless of argument order (fragile vs resilient)', () => {
-    expect(checkTraitConflict(FRAGILE, RESILIENT)).toBe(true);
-  });
-
-  it('returns true for confident vs fearful', () => {
-    expect(checkTraitConflict(CONFIDENT, FEARFUL)).toBe(true);
-  });
-
-  it('returns false for non-conflicting traits (resilient vs confident)', () => {
-    expect(checkTraitConflict(RESILIENT, CONFIDENT)).toBe(false);
-  });
-
-  it('returns false for unknown trait pairs', () => {
-    expect(checkTraitConflict('unknownA', 'unknownB')).toBe(false);
   });
 });
 

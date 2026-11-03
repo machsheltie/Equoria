@@ -32,7 +32,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Import trait functions and definitions
-const { getTraitDefinition, getTraitsByType, getTraitsByCategory, getTraitMetadata, checkTraitConflict } = await import(
+const { getTraitDefinition, getTraitsByType, getTraitsByCategory, getTraitMetadata } = await import(
   join(__dirname, '../../../utils/epigeneticTraits.mjs')
 );
 
@@ -87,7 +87,7 @@ describe('Trait Metadata Validation', () => {
         expect(['positive', 'negative']).toContain(metadata.type);
         expect(metadata.category).toBe('epigenetic');
         expect(['common', 'uncommon', 'rare', 'ultraRare', 'legendary']).toContain(metadata.rarity);
-        expect(Array.isArray(metadata.conflicts)).toBe(true);
+        expect(metadata).not.toHaveProperty('conflicts');
       });
     });
   });
@@ -150,47 +150,11 @@ describe('Trait Metadata Validation', () => {
     });
   });
 
-  describe('Trait Conflicts', () => {
-    it('should have bidirectional conflicts', () => {
-      const allTraits = getTraitsByType('all');
-
-      allTraits.forEach(trait1 => {
-        const metadata1 = getTraitMetadata(trait1);
-
-        metadata1.conflicts.forEach(trait2 => {
-          const metadata2 = getTraitMetadata(trait2);
-          expect(metadata2).not.toBeNull();
-          expect(metadata2.conflicts).toContain(trait1);
-        });
-      });
-    });
-
-    it('should validate specific conflict relationships', () => {
-      expect(checkTraitConflict('confident', 'fearful')).toBe(true);
-      expect(checkTraitConflict('resilient', 'fragile')).toBe(true);
-
-      // Non-conflicting pairs
-      expect(checkTraitConflict('confident', 'resilient')).toBe(false);
-      expect(checkTraitConflict('heart', 'curious')).toBe(false);
-      // Off-roster names conflict with nothing.
-      expect(checkTraitConflict('confident', 'nervous')).toBe(false);
-    });
-
-    it('should not have self-conflicts', () => {
-      const allTraits = getTraitsByType('all');
-
-      allTraits.forEach(trait => {
-        expect(checkTraitConflict(trait, trait)).toBe(false);
-      });
-    });
-  });
-
   describe('Error Handling', () => {
     it('should handle invalid trait names gracefully', () => {
       expect(getTraitMetadata('invalidTrait')).toBeNull();
       expect(getTraitDefinition('nonexistent')).toBeNull();
       expect(getTraitDefinition('toString')).toBeNull();
-      expect(checkTraitConflict('invalid1', 'invalid2')).toBe(false);
     });
 
     it('should handle empty category queries', () => {

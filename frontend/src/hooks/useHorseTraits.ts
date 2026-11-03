@@ -42,7 +42,6 @@ export interface RawTraitDefinition {
   type?: 'positive' | 'negative' | null;
   description?: string;
   category?: string;
-  conflicts?: string[];
   [key: string]: unknown;
 }
 

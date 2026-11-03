@@ -14,8 +14,12 @@
  * "Do not add what each actually does yet. We will address that later." So a
  * trait new to this roster has no description or effect here. The five that
  * were already defined (resilient, confident, eagerLearner, fragile, fearful)
- * keep the description and conflicts they had (owner ruling 2026-10-27, q137:
- * keep the old effects, add none).
+ * keep the description they had (owner ruling 2026-10-27, q137: keep the old
+ * effects, add none).
+ *
+ * No trait excludes another (owner ruling 2026-11-03, q334: "No restriction."):
+ * a horse may carry two "opposite" traits, such as Confident and Fearful, at
+ * once, so the roster declares no conflicts.
  *
  * `type` and `rarity` are the owner's rulings of 2026-10-27 (q134 rarity, q135
  * polarity: fearful, insecure, aloof, fragile, skittish and excitable act
@@ -32,7 +36,6 @@ const rosterTrait = (label, type, rarity, known = {}) =>
     label,
     type,
     rarity,
-    conflicts: Object.freeze(known.conflicts ?? []),
     description: known.description ?? null,
     category: 'epigenetic',
   });
@@ -40,23 +43,19 @@ const rosterTrait = (label, type, rarity, known = {}) =>
 const traitDefinitions = Object.freeze({
   brave: rosterTrait('Brave', 'positive', 'common'),
   confident: rosterTrait('Confident', 'positive', 'common', {
-    conflicts: ['fearful'],
     description: 'This horse is brave in new situations.',
   }),
   outgoing: rosterTrait('Outgoing', 'positive', 'uncommon'),
   affectionate: rosterTrait('Affectionate', 'positive', 'common'),
   resilient: rosterTrait('Resilient', 'positive', 'rare', {
-    conflicts: ['fragile'],
     description: 'Takes challenges in stride.',
   }),
   fearful: rosterTrait('Fearful', 'negative', 'common', {
-    conflicts: ['confident'],
     description: 'Hesitation or spook-prone behavior under pressure.',
   }),
   insecure: rosterTrait('Insecure', 'negative', 'common'),
   aloof: rosterTrait('Aloof', 'negative', 'uncommon'),
   fragile: rosterTrait('Fragile', 'negative', 'uncommon', {
-    conflicts: ['resilient'],
     description: 'More susceptible to injury.',
   }),
   skittish: rosterTrait('Skittish', 'negative', 'common'),
@@ -116,31 +115,14 @@ export function playerTraitLabels(traits) {
  * A trait definition as a player may see it: the authored label, type,
  * description and category. Never the rarity (q112). Null off the roster.
  * @param {string} trait
- * @returns {{label:string, type:string|null, description:string|null, category:string, conflicts:string[]}|null}
+ * @returns {{label:string, type:string|null, description:string|null, category:string}|null}
  */
 export function playerTraitDefinition(trait) {
   if (!isRosterTrait(trait)) {
     return null;
   }
-  const { label, type, description, category, conflicts } = traitDefinitions[trait];
-  return { label, type, description, category, conflicts: [...conflicts] };
-}
-
-/**
- * Determines if traits conflict with each other
- * @param {string} trait1 - First trait
- * @param {string} trait2 - Second trait
- * @returns {boolean} True if traits conflict
- */
-function traitsConflict(trait1, trait2) {
-  const def1 = getTraitDefinition(trait1);
-  const def2 = getTraitDefinition(trait2);
-
-  if (!def1 || !def2) {
-    return false;
-  }
-
-  return def1.conflicts.includes(trait2) || def2.conflicts.includes(trait1);
+  const { label, type, description, category } = traitDefinitions[trait];
+  return { label, type, description, category };
 }
 
 /**
@@ -220,16 +202,5 @@ export function getTraitMetadata(trait) {
     category: definition.category,
     description: definition.description,
     rarity: definition.rarity,
-    conflicts: [...definition.conflicts],
   };
-}
-
-/**
- * Check if two traits conflict with each other
- * @param {string} trait1 - First trait
- * @param {string} trait2 - Second trait
- * @returns {boolean} True if traits conflict
- */
-export function checkTraitConflict(trait1, trait2) {
-  return traitsConflict(trait1, trait2);
 }

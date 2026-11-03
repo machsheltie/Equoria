@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { traitRosterIds, checkTraitConflict } from '../utils/epigeneticTraits.mjs';
+import { traitRosterIds } from '../utils/epigeneticTraits.mjs';
 import { generateStoreHorseTraitRoster } from '../modules/traits/index.mjs';
 import {
   classifyTraitModifiers,
@@ -165,9 +165,6 @@ describe('runTraitlessHorseBackfill against the real database', () => {
       expect(new Set(stored.hidden).size).toBe(stored.hidden.length);
       for (const trait of stored.hidden) {
         expect(traitRosterIds).toContain(trait);
-        for (const other of stored.hidden) {
-          expect(checkTraitConflict(trait, other)).toBe(false);
-        }
       }
     }
     // Other keys on the stored object survive; a store horse's three lists are added over them.

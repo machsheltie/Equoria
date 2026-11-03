@@ -10,8 +10,8 @@
  * store horse was stored with { positive: [], negative: [], hidden: [] }.
  *
  * This buys horses through the real POST /api/v1/marketplace/store/buy route
- * and checks (1) the stored row carries 1..5 distinct, non-conflicting roster
- * traits, all hidden; (2) neither the purchase response nor the owner's
+ * and checks (1) the stored row carries 1..5 distinct roster traits, all
+ * hidden; (2) neither the purchase response nor the owner's
  * horse reads name any of them, while the hidden count is sent.
  *
  * Real app, real DB, no mocks. Cleanup is scoped to the rows this file creates.
@@ -25,7 +25,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { checkTraitConflict, isRosterTrait } from '../../../utils/epigeneticTraits.mjs';
+import { isRosterTrait } from '../../../utils/epigeneticTraits.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const PURCHASES = 4;
@@ -82,7 +82,7 @@ describe('POST /marketplace/store/buy: the horse carries hidden roster traits (E
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('stores 1 to 5 distinct, non-conflicting roster traits, every one hidden', () => {
+  it('stores 1 to 5 distinct roster traits, every one hidden', () => {
     for (const { stored } of purchases) {
       expect(stored.positive).toEqual([]);
       expect(stored.negative).toEqual([]);
@@ -91,11 +91,6 @@ describe('POST /marketplace/store/buy: the horse carries hidden roster traits (E
       expect(new Set(stored.hidden).size).toBe(stored.hidden.length);
       for (const trait of stored.hidden) {
         expect(isRosterTrait(trait)).toBe(true);
-      }
-      for (const a of stored.hidden) {
-        for (const b of stored.hidden) {
-          expect(checkTraitConflict(a, b)).toBe(false);
-        }
       }
     }
   });

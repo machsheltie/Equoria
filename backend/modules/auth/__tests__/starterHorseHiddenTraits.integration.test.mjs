@@ -26,7 +26,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { checkTraitConflict, isRosterTrait } from '../../../utils/epigeneticTraits.mjs';
+import { isRosterTrait } from '../../../utils/epigeneticTraits.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -57,11 +57,6 @@ function expectStoreRoster(modifiers) {
   expect(new Set(modifiers.hidden).size).toBe(modifiers.hidden.length);
   for (const trait of modifiers.hidden) {
     expect(isRosterTrait(trait)).toBe(true);
-  }
-  for (const a of modifiers.hidden) {
-    for (const b of modifiers.hidden) {
-      expect(checkTraitConflict(a, b)).toBe(false);
-    }
   }
 }
 
