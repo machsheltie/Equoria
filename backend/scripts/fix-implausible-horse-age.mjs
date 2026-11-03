@@ -13,7 +13,8 @@
  * horse age). The script:
  *   - Selects horses with age > THRESHOLD (clearly corrupted; game retirement is
  *     ~21 game-years, so > 30 cannot be a legitimate age).
- *   - Sets age = targetAge and dateOfBirth = startOfUtcDay(now) - targetAge*7 days
+ *   - Sets age = targetAge and dateOfBirth = birthDateForAge(targetAge, now), the
+ *     Eastern game date targetAge*7 days back,
  *     so getHorseAgeYears(dob) === targetAge.
  *
  * Scoped per-horse updates (no raw updateMany). Idempotent: after a run, no row
@@ -32,14 +33,7 @@
 
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fileURLToPath } from 'node:url';
-import { getHorseAgeYears } from '../utils/horseAge.mjs';
-
-const msPerDay = 1000 * 60 * 60 * 24;
-const daysPerGameYear = 7;
-
-function startOfUtcDay(d) {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-}
+import { birthDateForAge, getHorseAgeYears } from '../utils/horseAge.mjs';
 
 function parseArgs(argv) {
   const args = { dryRun: false, age: 3, threshold: 30 };
@@ -58,7 +52,7 @@ function parseArgs(argv) {
 async function main() {
   const args = parseArgs(process.argv);
   const now = new Date();
-  const newDob = new Date(startOfUtcDay(now).getTime() - args.age * daysPerGameYear * msPerDay);
+  const newDob = birthDateForAge(args.age, now);
 
   console.log('═══════════════════════════════════════════════════════════');
   console.log('  fix-implausible-horse-age');
