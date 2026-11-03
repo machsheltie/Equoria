@@ -81,7 +81,7 @@ export async function assignClassicPalominoPortraits({
   return result;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   assignClassicPalominoPortraits({ apply: process.argv.includes('--apply') })
     .catch(error => {
       console.error(error);

@@ -174,7 +174,7 @@ export async function renameSaddlebredPalominoShades({
   return result;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   renameSaddlebredPalominoShades({ apply: process.argv.includes('--apply') })
     .then(result => {
       for (const [rename, count] of Object.entries(result.renames).sort((a, b) => b[1] - a[1])) {

@@ -268,7 +268,7 @@ export async function renameStoredCoatColors({
   return result;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const apply = process.argv.includes('--apply');
   renameStoredCoatColors({ apply })
     .then(result => {
