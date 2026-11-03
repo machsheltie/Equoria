@@ -185,9 +185,6 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Black Pearl": {
       "light tan": 0.4,
       "dark points": 0.6
-    },
-    "Sparse Mane/Tail": {
-      "sparse mane/tail": 1
     }
   },
   "advancedMarkingsBias": {

@@ -163,9 +163,6 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "light": 0.3,
       "standard": 0.4,
       "dark": 0.3
-    },
-    "Sparse Mane/Tail": {
-      "sparse mane/tail": 1
     }
   },
   "advancedMarkingsBias": {

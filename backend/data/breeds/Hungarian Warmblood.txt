@@ -173,9 +173,6 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "standard": 0.5,
       "faded": 0.5
     },
-    "Sparse Mane/Tail": {
-      "sparse mane/tail": 1
-    },
     "Palomino": {
       "pale": 0.3,
       "golden": 0.4,

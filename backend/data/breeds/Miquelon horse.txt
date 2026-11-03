@@ -210,9 +210,6 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Heavy Frost Roan Varnish": {
       "heavy frost": 1
     },
-    "Sparse Mane/Tail": {
-      "sparse mane/tail": 1
-    },
     "Fewspot Leopard": {
       "porcelain": 0.6,
       "frosted": 0.4

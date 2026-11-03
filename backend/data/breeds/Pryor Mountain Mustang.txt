@@ -202,9 +202,6 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     },
     "Red Roan": {"rose": 0.25, "cherry": 0.15, "rust": 0.1, "pinkish": 0.2, "amber": 0.2, "wine": 0.1},
     "Blue Roan": {"steel": 0.4, "cool grey": 0.4, "charcoal": 0.2},
-    "Sparse Mane/Tail": {
-      "sparse mane/tail": 1
-    },
     "Smoky Black": {
       "faded": 0.5,
       "rich chocolate": 0.5

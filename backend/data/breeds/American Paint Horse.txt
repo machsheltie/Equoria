@@ -89,8 +89,7 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Buckskin Pearl": {"light apricot": 0.4, "reddish-brown points": 0.6},
     "Palomino Pearl": {"pale apricot": 0.5, "pale mane": 0.5},
     "Smoky Black Pearl": {"pale tan": 0.4, "dark points": 0.6},
-    "Dominant White": {"white": 1.0},
-    "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
+    "Dominant White": {"white": 1.0}
   },
   "advancedMarkingsBias": {
     "bloodyShoulderProbabilityMultiplier": 1.0,

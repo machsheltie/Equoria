@@ -478,7 +478,8 @@ What it needs:
   the calculation never produces, so those shades never show: "Black Pearl"
   (12 breeds), "Chestnut Pearl" (12), "Palomino Pearl" (11), "Silver Black"
   (16), "Silver Buckskin" (4), "Strawberry Roan" (120) and "Sparse Mane/Tail"
-  (312). The first five already use the owner's names; renaming the game
+  (312; a mane trait, not a color, removed from every breed 2026-11-03 by
+  Equoria-fmnq5). The first five already use the owner's names; renaming the game
   names to the owner's names brings them to life.
 - **Hidden roan.** Roan on a champagne, pearl or two-cream horse sets a roan
   flag the player never sees; the name stays e.g. "Perlino".

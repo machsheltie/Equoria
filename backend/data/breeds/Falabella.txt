@@ -286,9 +286,6 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "peppered": 0.4,
       "faded": 0.2
     },
-    "Sparse Mane/Tail": {
-      "sparse mane/tail": 1
-    },
     "Light Snowflake Leopard": {
       "light snowflake": 1
     },

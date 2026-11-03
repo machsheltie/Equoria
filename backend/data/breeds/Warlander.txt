@@ -182,9 +182,6 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "golden": 0.4,
       "copper": 0.3
     },
-    "Sparse Mane/Tail": {
-      "sparse mane/tail": 1
-    },
     "Buckskin": {
       "cream": 0.3,
       "golden": 0.4,

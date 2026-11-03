@@ -206,9 +206,6 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "light tan": 0.4,
       "dark points": 0.6
     },
-    "Sparse Mane/Tail": {
-      "sparse mane/tail": 1
-    },
     "Palomino Pearl": {
       "pale apricot": 0.5,
       "pale mane": 0.5

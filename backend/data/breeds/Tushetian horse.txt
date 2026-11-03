@@ -218,9 +218,6 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     },
     "Heavy Frost Roan Varnish": {
       "heavy frost": 1
-    },
-    "Sparse Mane/Tail": {
-      "sparse mane/tail": 1
     }
   },
   "advancedMarkingsBias": {

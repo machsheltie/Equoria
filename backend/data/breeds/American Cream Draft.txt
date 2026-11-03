@@ -63,8 +63,7 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Black": {"standard": 0.5, "faded": 0.5},
     "Gold Champagne": {"pale": 0.25, "golden": 0.5, "dark": 0.25},
     "Amber Champagne": {"light": 0.3, "medium": 0.4, "deep": 0.3},
-    "Classic Champagne": {"faded": 0.3, "standard": 0.4, "rich": 0.3},
-    "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
+    "Classic Champagne": {"faded": 0.3, "standard": 0.4, "rich": 0.3}
   },
   "advancedMarkingsBias": {
     "bloodyShoulderProbabilityMultiplier": 1.0,

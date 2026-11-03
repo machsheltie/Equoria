@@ -59,8 +59,7 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
   },
   "shadeBias": {
     "Black": {"standard": 0.5, "faded": 0.5},
-    "Bay": {"light": 0.3, "standard": 0.4, "dark": 0.3},
-    "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
+    "Bay": {"light": 0.3, "standard": 0.4, "dark": 0.3}
   },
   "advancedMarkingsBias": {
     "bloodyShoulderProbabilityMultiplier": 1.0,

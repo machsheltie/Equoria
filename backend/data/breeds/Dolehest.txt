@@ -63,8 +63,7 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Black": {"standard": 0.5, "faded": 0.5},
     "Palomino": {"pale": 0.3, "golden": 0.4, "copper": 0.3},
     "Buckskin": {"cream": 0.3, "golden": 0.4, "burnished": 0.3},
-    "Smoky Black": {"faded": 0.5, "rich chocolate": 0.5},
-    "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
+    "Smoky Black": {"faded": 0.5, "rich chocolate": 0.5}
   },
   "advancedMarkingsBias": {
     "bloodyShoulderProbabilityMultiplier": 1.0,

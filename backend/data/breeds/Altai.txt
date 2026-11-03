@@ -76,8 +76,7 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Heavy Snowflake Leopard": {"heavy snowflake": 1.0},
     "Light Frost Roan Varnish": {"light frost": 1.0},
     "Moderate Frost Roan Varnish": {"moderate frost": 1.0},
-    "Heavy Frost Roan Varnish": {"heavy frost": 1.0},
-    "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
+    "Heavy Frost Roan Varnish": {"heavy frost": 1.0}
   },
   "advancedMarkingsBias": {
     "bloodyShoulderProbabilityMultiplier": 1.0,

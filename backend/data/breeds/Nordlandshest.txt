@@ -200,9 +200,6 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "steel": 0.5,
       "rich black": 0.5
     },
-    "Sparse Mane/Tail": {
-      "sparse mane/tail": 1
-    },
     "Cremello": {
       "ice": 0.5,
       "peachy": 0.5

@@ -76,8 +76,7 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Gold Cream Champagne": {"pale": 0.333, "golden": 0.333, "burnished": 0.333},
     "Amber Cream Champagne": {"light": 0.333, "rich": 0.333, "dark": 0.333},
     "Classic Cream Champagne": {"light": 0.333, "silver": 0.333, "charcoal": 0.333},
-    "Dominant White": {"white": 1.0},
-    "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
+    "Dominant White": {"white": 1.0}
   },
   "advancedMarkingsBias": {
     "bloodyShoulderProbabilityMultiplier": 1.0,

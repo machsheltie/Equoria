@@ -48,6 +48,13 @@ describe('breedProfiles.json agrees with the seed files (owner ruling 2026-10-21
     expect(json.temperamentWeights).toEqual(seed.temperamentWeights);
   });
 
+  it('lists no "Sparse Mane/Tail" shade: it is a mane trait, not a coat color (Equoria-fmnq5)', () => {
+    const carriers = Object.entries(seedProfiles)
+      .filter(([, profile]) => Object.hasOwn(profile.shadeBias ?? {}, 'Sparse Mane/Tail'))
+      .map(([name]) => name);
+    expect(carriers).toEqual([]);
+  });
+
   it('carries no starterStats copy (backend/data/breedStarterStats.json is the one copy)', () => {
     expect(Object.values(jsonProfiles).filter(p => 'starterStats' in p)).toEqual([]);
   });
