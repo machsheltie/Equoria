@@ -10,14 +10,6 @@
  */
 
 export {
-  getAllDocuments,
-  getDocument,
-  getDocumentationAnalytics,
-  getTableOfContents,
-  getUserDocumentationService,
-  searchDocumentation,
-} from './services/userDocumentationService.mjs';
-export {
   addXpToUser,
   addXpToUserCore,
   createUser,

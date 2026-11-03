@@ -44,7 +44,6 @@ import { handleValidationErrors } from '../../middleware/validationErrorHandler.
 import { handlePing, handleHealthCheck } from '../../modules/health/controllers/pingController.mjs';
 import memoryManagementRoutes from '../../modules/admin/routes/memoryManagementRoutes.mjs';
 import documentationRoutes from '../../modules/docs/routes/documentationRoutes.mjs';
-import userDocumentationRoutes from '../../modules/docs/routes/userDocumentationRoutes.mjs';
 import {
   initializeMemoryManagement,
   shutdownMemoryManagement,
@@ -105,7 +104,6 @@ const createTestApp = () => {
   // System health routes
   app.use('/api/memory', memoryManagementRoutes);
   app.use('/api/docs', documentationRoutes);
-  app.use('/api/user-docs', userDocumentationRoutes);
 
   // Test endpoint for health monitoring validation
   app.get('/api/test/health-status', authenticateToken, (req, res) => {
@@ -328,17 +326,8 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       expect(response.body.data.validation).toBeDefined();
     });
 
-    test('should provide user documentation health status', async () => {
-      const response = await request(app).get('/api/user-docs/health').set('Origin', 'http://localhost:3000');
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(response.body.data.status).toBe('healthy');
-      expect(response.body.data.documentsLoaded).toBeDefined();
-      expect(response.body.data.searchIndexSize).toBeDefined();
-      expect(response.body.data.systemTime).toBeDefined();
-    });
+    // The user-documentation health check went with the old player-guide
+    // server (owner ruling q340, 2026-11-03, Equoria-a7f1p).
   });
 
   // The epigenetic flag health stub went with the /flags routes (Equoria-a7f1p).
@@ -351,7 +340,6 @@ describe('🏥 Health Monitoring Integration Tests', () => {
         { path: '/ready', requiresAuth: false },
         { path: '/api/memory/health', requiresAuth: true },
         { path: '/api/docs/health', requiresAuth: true },
-        { path: '/api/user-docs/health', requiresAuth: false },
       ];
 
       for (const endpoint of healthEndpoints) {
@@ -381,7 +369,6 @@ describe('🏥 Health Monitoring Integration Tests', () => {
           .get('/api/memory/health')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${authToken}`),
-        request(app).get('/api/user-docs/health').set('Origin', 'http://localhost:3000'),
       ]);
 
       responses.forEach(response => {
@@ -438,7 +425,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     });
 
     test('should allow public access to basic health endpoints', async () => {
-      const publicEndpoints = ['/ping', '/health', '/ready', '/api/user-docs/health'];
+      const publicEndpoints = ['/ping', '/health', '/ready'];
 
       for (const endpoint of publicEndpoints) {
         const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');

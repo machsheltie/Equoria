@@ -70,7 +70,6 @@ import leaderboardRoutes from '../modules/leaderboards/routes/leaderboardRoutes.
 import apiOptimizationRoutes from '../modules/admin/routes/apiOptimizationRoutes.mjs';
 import memoryManagementRoutes from '../modules/admin/routes/memoryManagementRoutes.mjs';
 import documentationRoutes from '../modules/docs/routes/documentationRoutes.mjs';
-import userDocumentationRoutes from '../modules/docs/routes/userDocumentationRoutes.mjs';
 import adminRoutes from '../modules/admin/routes/adminRoutes.mjs';
 import riderRoutes from '../modules/riders/routes/riderRoutes.mjs';
 import trainerRoutes from '../modules/trainers/routes/trainerRoutes.mjs';
@@ -168,9 +167,8 @@ export function buildRouters() {
   // Documentation endpoints
   publicRouter.use('/docs', documentationRoutes);
   publicRouter.use('/api/docs', documentationRoutes);
-  publicRouter.use('/user-docs', userDocumentationRoutes);
-  // Backward compatibility for tests hitting /api/user-docs/*
-  publicRouter.use('/api/user-docs', userDocumentationRoutes);
+  // Owner ruling q340 (2026-11-03, Equoria-a7f1p): the hidden old player-guide
+  // server (/user-docs, /api/user-docs) is removed; the in-game Guide is /guide.
 
   // Public health / readiness / ping / api-info endpoints.
   // Health check endpoint — keep lightweight for Railway liveness probes.

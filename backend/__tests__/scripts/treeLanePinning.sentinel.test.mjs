@@ -600,8 +600,6 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
         '__tests__/scripts/doctrineBaselineStale.sentinel.test.mjs',
         '__tests__/scripts/moduleBarrelBoundaryEslint.sentinel.test.mjs',
         '__tests__/scripts/moduleDependencyGraphDoctrine.sentinel.test.mjs',
-        'modules/docs/__tests__/userDocumentation.test.mjs',
-        'modules/docs/__tests__/userDocumentationRoutes.test.mjs',
         'modules/grooms/__tests__/groomSalaryPassScoped.sentinel.test.mjs',
         'modules/traits/__tests__/flagEngineSingleSource.sentinel.test.mjs',
       ];
