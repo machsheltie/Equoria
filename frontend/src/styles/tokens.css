@@ -561,6 +561,9 @@
 
 @media (forced-colors: active) {
   :root {
+    /* .glass-panel and the page panels paint with --glass-bg itself, which the
+       --glass-surface-* aliases below never reached (Equoria-oey96.76). */
+    --glass-bg: Canvas;
     --glass-surface-bg: Canvas;
     --glass-surface-heavy-bg: Canvas;
     --glass-surface-subtle-bg: Canvas;
