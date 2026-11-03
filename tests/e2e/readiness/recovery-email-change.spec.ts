@@ -186,7 +186,8 @@ test.describe('Recovery address — Settings to a moved identity', () => {
     // really moved, and nothing waits.
     await loginViaUi(page, { email: replacement, password: player.password });
     expect(await liveAccountEmail(page)).toBe(replacement);
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    // Signing in lands on home, so Settings is opened again.
+    await visitLiveRoute(page, '/settings');
     await page.locator('[data-testid="settings-nav-account"]').click();
     await expect(page.locator('[data-testid="settings-recovery-address"]')).toContainText(
       replacement
